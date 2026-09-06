@@ -7,6 +7,7 @@ import pygame
 import pytest
 
 from src.core import config
+from src.core.commands import MAP_STATIONS, event_feed_heading
 from src.core.game import Game
 from src.core.station import Station
 
@@ -298,3 +299,44 @@ def test_alt_enter_never_confirms_current_action(game, monkeypatch, context):
         assert game.input_mode == "course"
     else:
         assert game.quit_confirm
+
+
+def test_escape_quits_but_q_is_station_scoped_map_zoom(game):
+    game.station = Station.BRIDGE
+    before = game.map_view.scale
+    press(game, pygame.K_q)
+    assert not game.quit_confirm
+    assert game.map_view.scale < before
+    press(game, pygame.K_e)
+    assert game.map_view.scale == pytest.approx(before)
+    press(game, pygame.K_ESCAPE)
+    assert game.quit_confirm
+
+
+@pytest.mark.parametrize("station", list(Station))
+def test_map_keyboard_controls_are_limited_to_visible_map_stations(game, station):
+    game.station = station
+    scale, follow = game.map_view.scale, game.map_follow
+    press(game, pygame.K_q)
+    press(game, pygame.K_k)
+    if station in MAP_STATIONS:
+        assert game.map_view.scale < scale
+        assert game.map_follow is not follow
+    else:
+        assert game.map_view.scale == scale
+        assert game.map_follow is follow
+
+
+def test_event_feed_does_not_advertise_station_commands():
+    for station in Station:
+        assert event_feed_heading(station) == "EREIGNIS-FEED"
+
+
+def test_stale_held_depth_controls_never_steer_outside_bridge(game):
+    game.station = Station.WEAPONS
+    game.held.update((pygame.K_UP, pygame.K_DOWN))
+    game._joy_turn = 1
+    before = game.ship.target_course
+    assert game.steering_input() == (0, 0)
+    game.update(0.1)
+    assert game.ship.target_course == before

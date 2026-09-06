@@ -1,7 +1,7 @@
 # GDD – U-Jagd (Game Design Document)
 
-**Projekt:** u-jagd | **Plattform:** ClockworkPi uConsole (Debian 13, RPi CM5, 1280×800)
-**Rendering:** virtuelles 1280×720-Canvas mit Letterboxing; native 1280×800-Ansichten sind geplant.
+**Projekt:** u-jagd | **Plattform:** ClockworkPi uConsole (Debian 13, RPi CM5)
+**Rendering:** natives 1280×720-Canvas; Vollbild skaliert auf die verfügbare Displayfläche.
 **Engine:** Python 3.13 + pygame 2.6 (venv) | **Modus:** Echtzeit mit Pause | **Sprache:** Deutsch
 
 ---
@@ -37,7 +37,8 @@ Sonarzentrale deiner Fregatte – jedes Ping, jeder Kurs, jeder Torpedo entschei
 | 8 | Helikopter-Deck | HSP-5-Status, Treibstoff, Bojen, Lufttorpedos, Datenlink |
 
 **Steuerung (globale):**
-- `P`: Pause | `F1`: Hilfe | `Q`/`Esc`: Beenden-Dialog mit sicherer Vorauswahl
+- `P`: Pause | `F1`: kontextabhängige Hilfe | `Esc`: Eingabe/Ansicht schließen
+  oder Beenden-Dialog mit sicherer Vorauswahl
 - Verwaltung pausiert, keine operativen Befehle in Pause; U/V-Eingaben bleiben live.
 - `U`/`V`: Zielkurs/Zielfahrt direkt eingeben | `Alt+Enter`: Vollbild
 - `↑/↓`: Kurs/Ruder (Brücke/Engine) bzw. Torpedotiefe (Waffen)
@@ -49,14 +50,24 @@ Sonarzentrale deiner Fregatte – jedes Ping, jeder Kurs, jeder Torpedo entschei
 - `Z`/`X` oder `[`/`]`: Zeitraffer; Sonar `I`/`O`: Gain; Space nur Sonar-Peak-Hold
 - `S`: Speichern (JSON) | `L`: Laden (M6)
 - Slots 1-5 auswählen, Enter bestätigen; Überschreiben/Laden zusätzlich bestätigen.
+- `Q`/`E`: Kartenzoom ausschließlich auf Brücke, Waffen- und
+  Helikopterstation; `Q` ist keine Beenden-Taste.
+- Kurzhinweise im Ereignis-Feed sind stationsbezogen und nennen nur Befehle der
+  aktiven Station; `F1` enthält globale und stationsspezifische Seiten.
 
 Der aktuelle Ausbaustand, bekannte Grenzen und die weitere Roadmap stehen in
 `implementation-plan.md`. Die folgenden Fachkapitel enthalten teilweise noch
 historische Zielbeschreibungen, keine vollständige Implementierungszusage.
 
 ## 4. Welt & Dynamik
-- **Karte**: 500×500 NM, prozeduraler Küstenrand + Bathymetrie-Farbschema (Tiefe),
-  Seed pro Mission; U-Jagd-Sektoren als Zonen.
+- **Karte**: Der Seed wählt stabil einen von genau 128 vorvalidierten realen
+  500×500-NM-Küstensektoren. Küsten, geografische/Ländernamen und Namen realer
+  Militärstützpunkte stammen aus den in `THIRD_PARTY_NOTICES.md` fixierten
+  Quellen. Alternativ bleibt die feste stilisierte Legacy-Karte wählbar.
+- **Übungsrollen und Tiefe**: Freundliche, feindliche und neutrale Rollen sind
+  unabhängig von den realen Namen zugewiesene fiktionale Übungsrollen. Die
+  Bathymetrie ist seedbasierte Synthese aus Küstenabstand und Variation, keine
+  reale Vermessung und nicht navigationstauglich.
 - **Tag/Nacht**: 24h-Zyklus (24h pro Mission, beschleunigt 1 min = 1 h),
   beeinflusst Radar-Sichtbarkeit & Stimmung.
 - **Wetter**: Seegang 0–6, Regen/Nebel (Radar-Sicht), ändert sich pro Mission.
@@ -93,7 +104,10 @@ Zustände: `PATROLLE` → (Kontakt) → `EVALUATION` → (`VERMEIDUNG` | `LAUER`
 - **Missions-Typen**: Patrouille (1 Boot), Doppeljagd (2 Boote), Konvoi-Schutz
   (Zivile eskortieren + U-Boot im Gebiet), Nuklearer-Abfang (SSN, Zeitdruck)
 - **Zufall**: Seed-basierte Erzeugung (Typen, Startpositionen, Tierdichte, Thermokline)
-- **Save/Load**: Mission-Zustand als JSON (Positionen, Schäden, Munition, Uhrzeit)
+- **Save/Load**: Mission-Zustand als JSON; Save v7 bettet einen kanonischen,
+  deterministischen Snapshot von Küstengeometrie, Stützpunkten, Metadaten und
+  synthetischer Bathymetrie ein. Das Laden hängt damit nicht von einer späteren
+  Generator- oder Katalogversion ab.
 
 ## 9. Schwierigkeit (implementiert in M7, `config.LEVELS`)
 - `LEICHT`: U-Boote lauter (quiet_mult 0.8), Torpedos toleranter
@@ -104,13 +118,20 @@ Zustände: `PATROLLE` → (Kontakt) → `EVALUATION` → (`VERMEIDUNG` | `LAUER`
 - Auswahl im Startmenü (Tasten 1/2/3, Enter/Space = Start); `main.py` startet
   immer im Menü
 
-## 10. UI/UX (virtuelles 1280×720-Canvas)
+## 10. UI/UX (natives 1280×720-Canvas)
 - **Hauptlayout**: linke Hälfte = Haupt-View der aktiven Station, rechte Hälfte =
   sekundäre Info (Kontaktliste / Kompartiment / Munition) + HUD-Leiste oben
   (Uhrzeit, Kurs, Geschw., Flutungs-Summe, Munition, Mission-Status)
-- **Sonar-Kreisbild**: Fregatte in der Mitte, 360°, Ring-Skalierung (0–30 NM),
+- **Sonar-Kreisbild**: Fregatte in der Mitte, 360°, stationsabhängige Skalierung,
   Kontakte als farbige Punkte (grün = zivil/AIS, gelb = unbestimmt, rot = U-Boot-Verdacht)
-- **Radar-Scope**: 360°, Oberflächenschiffe als Blips, Periskop selten
+- **Radar-PPI**: dunkelblaues geografisches PPI, 360°, Darstellungsbereiche
+  10/20/40/80/120 NM. Die nominelle Sensorreichweite ist davon getrennt:
+  30 NM für Seeziele und 100 NM für Luftziele; Wetter und Stationsschaden
+  können sie reduzieren.
+- **Gemeinsames Lagebild**: NATO-ähnliche Symbole für See, Luft und Flugkörper;
+  der eigene HSP-5 erscheint als freundliches Luftsymbol aus Datalink-Daten.
+- **Geografische Karten**: dunkelblaue Seekarten und PPI-Flächen mit
+  zurückhaltender blauer synthetischer Tiefenstaffelung.
 - **Hud-Stile**: dunkel, phosphor-grün (CRT-Feeling), große lesbare Zahlen
 - **Menüs**: Pause-Menü (Fortsetzen/Neustart/Optionen), Start-Menü (Mission/Schwierigkeit)
 
@@ -120,7 +141,8 @@ Zustände: `PATROLLE` → (Kontakt) → `EVALUATION` → (`VERMEIDUNG` | `LAUER`
 
 ## 12. Non-Goals (bewusst außen vor)
 - Kein 3D, keine Crew-Charaktere mit Namen (nur Rollen), keine Diplomatie-Dialoge,
-  kein Multiplayer, keine realen Karten-Daten (prozedurale Seekarte),
+  kein Multiplayer, keine Navigation oder reale Einsatzplanung mit den
+  abgeleiteten Geodaten und der synthetischen Bathymetrie,
   keine Munitions-Nachlieferung mid-Mission.
 
 ## 13. Meilenstein-Definition of Done
@@ -139,7 +161,8 @@ Jeder Meilenstein ist fertig, wenn:
   50 % Konfidenz zeigt das Sonar-Panel „Sig.: mechanisch / biologisch" –
   Spieler soll Tiere erkennen und nicht abschießen.
 - **Zivile Schiffe** (`src/enemies/civilian.py`): 2–3 pro Mission, 6–12 kn,
-  mit AIS-Rufzeichen. Sichtbar auf Brücken-Karte und Radar (40 NM Scope).
+  mit AIS-Rufzeichen. Sichtbar auf Brücken-Karte und innerhalb der nominellen
+  30-NM-Seeradarreichweite; der PPI-Darstellungsbereich ist separat wählbar.
   Namen + Status-Label. (Aktualisiert in §23: zivile Schiffe sind jetzt auch
   passive Sonarkontakte – „nie im Sonar" gilt nicht mehr.)
 - **Politischer Vorfall**: Torpedo innerhalb `CIVILIAN_HIT_RADIUS_NM` (0.2 NM)
@@ -183,9 +206,9 @@ Jeder Meilenstein ist fertig, wenn:
     Ziel-Boot entkommen (>150 NM vom Startpunkt, Torus-Abstand), Zeitlimit abgelaufen.
 - **Score**: 1000 pro versenktem U-Boot + Zeitbonus (anteilig, max. 500)
   + 200 pro ungenutztem Torpedo + 500 Zivil-Schutz-Bonus (nur bei Sieg).
-- **Save/Load**: `S` speichert den kompletten Spielstand (Mission, Schiff, Schaden,
-  Teams, U-Boote, Tiere, Zivile, Munition) als JSON nach `~/.u-jagd/save.json`,
-  `L` lädt ihn; World-Seed bleibt erhalten, UI-Uhr wird nicht gesichert (bekannte Einschränkung).
+- **Historischer M6-Stand**: `S` speicherte Mission, Schiff, Schaden, Teams,
+  U-Boote, Tiere, Zivile und Munition. Der aktuelle Stand ist Save v7 mit fünf
+  Slots und eingebettetem Welt-Snapshot; siehe §21 und §24.
 - **Missions-HUD**: Name, Ziel, Restzeit und Score im Sidepanel (alle Stationen).
  - **Tests**: `/tmp/opencode/m6_smoke.py` (Determinismus, alle 4 Typen, Sieg/Defeat-Pfade,
    Flucht, Zeitlimit, Save/Load-Roundtrip, Game-Loop) – alle grün,
@@ -199,7 +222,7 @@ Jeder Meilenstein ist fertig, wenn:
 - **Startmenü** (`game.py`): `Game(seed, level, start_menu)` zeigt
   `draw_menu()` (Titel, 1/2/3-Auswahl, Seed); `update()` ist im Menü
   inaktiv. Tasten: `1/2/3` Auswahl, `Enter`/`Space`/`KP_Enter` Start
-  (setzt Level + `reset(seed)`), `Esc`/`Q` beenden. `main.py` startet
+  (setzt Level + `reset(seed)`), `Esc` beendet. `main.py` startet
   immer mit `start_menu=True` und zufälligem Seed (Seed-Arg bleibt).
 - **Level-Effekte**: Munition (`harte` 4 statt 6), Torpedo-Treffer-Toleranz
   pro Instanz (`torpedo.py`: `kill_dist_nm` / `kill_depth_m`), Lautstärke
@@ -214,13 +237,13 @@ Jeder Meilenstein ist fertig, wenn:
   Seed+Level) – grün; M2–M7 ohne Regression.
 
 ## 18. Implementierungsstatus M8 (Polish & Vollbild/Scaling)
-- **Virtuelles 1280×800-Canvas + Letterbox**: Die Logik rendert unverändert auf
-  `self.screen` (virtuell 1280×800); `Game.compose_frame()` skaliert aspect-correct
-  (`letterbox_layout()`) auf `self.display` (RESIZABLE-Fenster) – bei kleineren
-  Bildschirmen wird nichts mehr abgeschnitten, stattdessen schwarze Balken.
+- **Historischer Scaling-Schritt, heute 1280×720**: Die Logik rendert auf
+  `self.screen` mit nativ 1280×720; `Game.compose_frame()` skaliert den Canvas
+  auf `self.display`. Die optionale Letterbox-Berechnung bleibt vorhanden.
 - **Vollbild**: `F` toggle (Menü + Spiel), Konstrukt-Param `fullscreen=True`,
   CLI-Flag `--fullscreen` in `main.py`; `toggle_fullscreen()` mit
-  pygame-Fallback auf `set_mode`.
+  pygame-Fallback auf `set_mode`; die aktuelle globale Belegung ist
+  `Alt+Enter`.
 - **End-Panel** (`draw_end_panel()`): SIEG/VERLOREN mit Grund, Score, Mission/Level,
   Restzeit + R/Esc-Hinweis; ersetzt das frühere 2-zeilige HUD-Banner.
 - **Pause-Overlay** (`draw_pause_overlay()`): Verdunkelung + „PAUSE / P = weiter";
@@ -255,7 +278,8 @@ Jeder Meilenstein ist fertig, wenn:
   („erst pingen"), (3) als U-Boot klassifiziert („nicht als U-Boot
   klassifiziert") – dann erst Munitions-/Station-Checks.
 - **ESM** (`game.esm_contacts()`, `civilian.emitter`): Zivile Schiffe mit
-  aktivem Radargerät (60 %) liefern jenseits der Radarreichweite (40 NM) bis
+  aktivem Radargerät (60 %) liefern jenseits der nominellen
+  Seeradarreichweite (30 NM) bis
   `ESM_RANGE_NM = 150` nur **Peilungen** (±3°, deterministisch per
   `c.id*1000 + t//5`); Radar-Station zeigt Peilstriche + Panel-Zeile.
 - **UI-Anpassungen**: Sonar-Scope rendert unpositionierte Kontakte als
@@ -265,7 +289,7 @@ Jeder Meilenstein ist fertig, wenn:
 - **Echtes Vollbild (Fix des M8-Feedbacks)**: `Game._desktop_size()` holt die
   tatsächliche Desktop-Auflösung (`pygame.display.get_desktop()`);
   `fullscreen=True` startet mit Desktop-Größe + `FULLSCREEN`-Flag (deckt
-  Taskleiste ab), `toggle_fullscreen()` wechselt zu/von 1280×800-Fenster.
+  Taskleiste ab), `toggle_fullscreen()` wechselt zu/von 1280×720-Fenster.
   **Fill- statt Letterbox**: `config.FILL_SCREEN = True` streckt den virtuellen
   Canvas auf die gesamte Fensterfläche (keine schwarzen Balken bei 16:9);
   `letterbox_layout()` bleibt für `FILL_SCREEN=False` verfügbar.
@@ -313,7 +337,7 @@ Jeder Meilenstein ist fertig, wenn:
 - `radar_on` schaltet das Radargerät
   (EMCON): `R` schaltet See-, `Shift+R` Luftraumüberwachung; bei
   ausgeschalteten Radaren liefert das Lagebild nur andere Sensorquellen wie
-  ESM/HOJ. `Bild Auf/Ab` wählt 5/10/20/40 NM Darstellungsbereich. Bei an:
+  ESM/HOJ. `Bild Auf/Ab` wählt 10/20/40/80/120 NM Darstellungsbereich. Bei an:
   lokale, kreisbeschnittene Küstenreflexe, rechtsdrehender Sweep und AIS-Tracks
   mit `aspect_rcs_factor` + Seegang-Faktor, ASM-Tracks (Jammer-ASMs jenseits
   `ASM_JAM_BREAK_NM` nur als HOJ-Peilung ±5°).
@@ -414,7 +438,8 @@ Jeder Meilenstein ist fertig, wenn:
 - **Per-Instanz-Fingerprint** (`src/data/fingerprint.py`): Jede Entität
   (U-Boot, Schiff, Dekoy) trägt einen aus `sensor_seed` deterministisch
   gerollten Fingerprint (Blattzahl, Tacho-Faktor ±15 %, Ton-Offsets ±0.5 Hz,
-  Kavitations-/Breitband-Skalierung) – gespeichert und geladen (Save v4).
+  Kavitations-/Breitband-Skalierung) – seit Save v4 gespeichert und geladen;
+  das aktuelle Format ist Save v7.
 - **Breitband-Akustik**: `AcousticReceiver.update(..., own_cavitation=0.0)`
   mischt pro-Quelle bandlimitiertes Rauschen (`broadband`-Dict) und die
   eigene Kavitation (80–380 Hz, bei `ship.cavitating`). Ohne Daten bleibt
@@ -436,3 +461,22 @@ Jeder Meilenstein ist fertig, wenn:
 - **Tests**: `tests/test_contacts_catalog.py`, `tests/test_fingerprint.py`,
   `tests/test_warship.py` (zusätzlich zu den 259 Baseline-Tests; aktuell
   278 grün, Smoke-Test durchläuft).
+
+## 24. Reale Sektoren, Kartendarstellung und Save v7
+
+- `data/coastlines/real_sectors.json.gz` enthält genau 128 reale,
+  vorvalidierte 500-NM-Sektoren. `seed % 128` wählt stabil den Sektor.
+- Natural Earth liefert abgeleitete Küsten- und Ländernamen; ein fixierter
+  Wikidata-Snapshot liefert reale Militärstützpunktnamen und Koordinaten. Exakte
+  Versionen, Prüfsummen, Transformationen und Rechte stehen in
+  `THIRD_PARTY_NOTICES.md`. Es gibt keine Billigung durch die Quellenanbieter.
+- Gameplay-Zugehörigkeiten der Stützpunkte sind unabhängig vergebene fiktionale
+  Übungsrollen. Die Bathymetrie wird synthetisch erzeugt. Sämtliche Kartendaten
+  sind nicht navigationstauglich.
+- Die feste `data/coastlines/region.json` bleibt als Legacy-Kartenoption.
+- Geografische Karten und Radar-PPI verwenden einen dunkelblauen gemeinsamen
+  Hintergrund. Der eigene HSP-5 wird auf Karte und PPI als freundliches
+  NATO-ähnliches Luftsymbol dargestellt.
+- Save v7 speichert den kanonischen Welt-Snapshot einschließlich Geometrie,
+  Stützpunkten, Provenienzmetadaten und Bathymetrie. Ein gespeicherter Sektor
+  wird beim Laden direkt restauriert und nicht neu generiert.

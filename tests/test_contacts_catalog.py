@@ -1,5 +1,7 @@
 """Kontakt-Katalog (Kontakt-DB): Vollstaendigkeit, JSON-Load, Ranking."""
 
+from importlib import resources
+
 from src.audio import database
 from src.data import catalog
 from src.data.catalog import CATALOG, load_catalog
@@ -18,18 +20,25 @@ def test_catalog_completeness():
     assert len(CATALOG.acoustic_profiles) == 106
 
 
-def test_json_load_matches_builtin_defaults():
+def test_builtin_catalog_loads_from_package_resources():
     loaded = load_catalog()
     assert loaded.db_source == "contacts"
-    default = catalog.build_catalog()
-    assert {s.key for s in loaded.subs.values()} == \
-        {s.key for s in default.subs.values()}
+    contact_files = resources.files("data.contacts")
+    assert (contact_files / "subs.json").is_file()
+    assert (contact_files / "acoustics.json").is_file()
+    assert catalog.build_catalog().subs == loaded.subs
     for key in ("diesel_alt", "ssn"):
         a, b = CATALOG.acoustic_by_key[key], loaded.acoustic_by_key[key]
         assert (a.blade_counts, a.rpm_range, a.tonal_band_hz, a.broadband,
                 a.cavitation_tendency) == \
                (b.blade_counts, b.rpm_range, b.tonal_band_hz, b.broadband,
                 b.cavitation_tendency)
+
+
+def test_invalid_external_catalog_falls_back_to_packaged_data(tmp_path):
+    loaded = load_catalog(tmp_path, quiet=True)
+    assert loaded.db_source == "contacts"
+    assert loaded.subs == CATALOG.subs
 
 
 def test_broadband_bands_are_within_sonar_range():

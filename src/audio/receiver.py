@@ -21,6 +21,7 @@ _OWN_CAV_GAIN = 0.10        # rms-Skalierung der Eigen-Kavitation
 _OWN_CAV_LOW_HZ = 80.0
 _OWN_CAV_HIGH_HZ = 380.0
 _SCAN_BROADBAND_GAIN = 0.35  # BTR-Scan-Aufschlag fuer Breitband-Quellen
+OWN_NOISE_LOBE_WIDTH_DEG = 70.0
 
 
 def _finite(value, default=0.0):
@@ -29,6 +30,14 @@ def _finite(value, default=0.0):
     except (TypeError, ValueError, OverflowError):
         return default
     return value if math.isfinite(value) else default
+
+
+def directional_gain(bearing_deg: float, center_deg: float,
+                     width_deg: float = OWN_NOISE_LOBE_WIDTH_DEG) -> float:
+    """Gaussian amplitude gain used for displayed and simulated lobes."""
+    delta = (center_deg - bearing_deg + 180.0) % 360.0 - 180.0
+    gain = np.exp(-4.0 * math.log(2.0) * (delta / width_deg) ** 2)
+    return float(gain) if np.ndim(gain) == 0 else gain
 
 
 class AcousticReceiver:
@@ -86,6 +95,8 @@ class AcousticReceiver:
         self.demon_spectrum = [0.0] * 80
         self.demon_analysis = None
         self.peaks = []
+        self.ownship_tonals = []
+        self.own_noise_lobe = None
         self.sequence += 1
 
     def _band_mask(self, low_hz: float, high_hz: float) -> np.ndarray:
@@ -115,7 +126,9 @@ class AcousticReceiver:
         return signal
 
     def update(self, sources, bearing_deg, beam_width_deg, own_noise,
-               sea_state, own_speed, own_cavitation=0.0):
+               sea_state, own_speed, own_cavitation=0.0,
+               own_noise_bearing=None,
+               own_noise_width_deg=OWN_NOISE_LOBE_WIDTH_DEG):
         """Mix all received sources and publish one block; returns None.
 
         Source dictionaries contain bearing, level, lines [(Hz, amp, width)],
@@ -131,12 +144,38 @@ class AcousticReceiver:
         sea = np.clip(_finite(sea_state), 0, 9)
         speed = np.clip(_finite(own_speed), 0, 60)
         own_cav = np.clip(_finite(own_cavitation), 0, 1)
-        noise_rms = 0.002 + 0.035 * sea / 9 + 0.04 * own + 0.025 * speed / 60
+        lobe_bearing = _finite(own_noise_bearing, float("nan"))
+        if math.isfinite(lobe_bearing):
+            lobe_bearing %= 360.0
+            lobe_width = float(np.clip(_finite(own_noise_width_deg, 70), 1, 360))
+            own_gain = directional_gain(bearing, lobe_bearing, lobe_width)
+            self.own_noise_lobe = {
+                "bearing": lobe_bearing, "width_deg": lobe_width,
+                "level": float(own),
+            }
+        else:
+            lobe_width = 360.0
+            own_gain = 1.0
+            self.own_noise_lobe = None
+        noise_rms = (0.002 + 0.035 * sea / 9
+                     + (0.04 * own + 0.025 * speed / 60) * own_gain)
         t = self._time + self.elapsed
         audio = self._rng.normal(0, noise_rms, self._time.size)
         engine_amp = 0.08 * min(speed / 20, 1) * (0.25 + own)
-        audio += engine_amp * np.sin(2 * np.pi * (10 + 1.9 * speed) * t)
-        scan = np.full(180, (noise_rms / 0.25)**2 + (engine_amp / 0.25)**2 / 2)
+        shaft_hz = 10 + 1.9 * speed
+        audio += engine_amp * np.sin(2 * np.pi * shaft_hz * t)
+        self.ownship_tonals = [{
+            "label": "OWN SHAFT", "frequency_hz": shaft_hz,
+            "rpm": speed * config.SHIP_RPM_PER_KN + config.SHIP_RPM_MIN,
+        }] if speed > 0 else []
+        # Shaft frequency is machinery/RPM evidence, not a bearing return.
+        scan = np.full(180, (0.002 + 0.035 * sea / 9)**2 / .25**2
+                       + (engine_amp / .25)**2 / 2)
+        if math.isfinite(lobe_bearing):
+            lobe = directional_gain(self._angles, lobe_bearing, lobe_width)
+            scan += (((0.04 * own + 0.025 * speed / 60) * lobe) / .25)**2
+        else:
+            scan += ((0.04 * own + 0.025 * speed / 60) / .25)**2
 
         entries = []
         for source in sources:

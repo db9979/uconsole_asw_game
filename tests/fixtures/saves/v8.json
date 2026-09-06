@@ -1,0 +1,18 @@
+{
+  "version": 8,
+  "seed": 1008,
+  "mission_type": "patrouille",
+  "mission_time": 88.0,
+  "score": 108,
+  "incident": false,
+  "ship": {"x": 280.0, "y": 281.0, "course": 82.0, "target_course": 83.0, "speed": 8.0, "target_speed": 9.0},
+  "torpedoes": {"total": 8, "count": 0, "depth": 68.0},
+  "damage": {"compartments": {}, "teams": {}},
+  "subs": [],
+  "animals": [],
+  "civilians": [],
+  "radars": {"surface": true, "air": false, "range_nm": 120.0},
+  "sonar_controls": {"sonar_page": 5},
+  "sonar": {"tow_state": "DEPLOYING", "tow_payout": 0.42, "tow_heading_deg": 91.0, "tow_settle_s": 2.0, "tow_handling_ok": true, "ping_cooldown": 7.5, "ping_active": true, "ping_anim_timer": 0.5, "echo_history": [{"t": 80.0, "contact_id": 2}], "tracks": {}},
+  "ui": {"station": "SONAR", "tooltips_enabled": false, "pinned_tooltip": null, "tooltip_anchor": null}
+}

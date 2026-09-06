@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "seed": 1002,
+  "mission_type": "patrouille",
+  "mission_time": 22.0,
+  "score": 102,
+  "incident": false,
+  "ship": {"x": 220.0, "y": 221.0, "course": 22.0, "target_course": 23.0, "speed": 8.0, "target_speed": 9.0},
+  "torpedoes": {"total": 8, "count": 6, "depth": 62.0},
+  "damage": {"compartments": {}, "teams": {}},
+  "subs": [],
+  "animals": [],
+  "civilians": [],
+  "sonar_mode": "TOWED",
+  "messages": [[22.0, "v2 fixture"]]
+}

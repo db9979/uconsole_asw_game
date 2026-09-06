@@ -9,6 +9,7 @@ from src.ship.ship import Ship
 from src.sonar.sonar import bearing_error_deg, snr_db
 from src.sonar.sonar import SonarSystem
 from src.sonar.tma import BearingTrack, solve_tma
+from src.sonar import tma as tma_module
 from src.world.world import World
 from src.weapons.torpedo import Torpedo
 
@@ -64,6 +65,27 @@ def test_tma_requires_observable_maneuver():
     for i in range(5):
         track.add(float(i * 3), 90.0, 0.0, float(i), 0.0)
     assert solve_tma(track) is None
+
+
+def test_tma_refinement_keeps_best_rmse(monkeypatch):
+    track = BearingTrack()
+    for i in range(config.TMA_MIN_PTS):
+        track.add(i * config.TMA_MIN_SPAN_S / (config.TMA_MIN_PTS - 1),
+                  30 + i, i, 0, i * config.TMA_MIN_COURSE_CHG_DEG)
+    calls = 0
+    refinement_rmse = iter((9.0, 8.0, 10.0, 7.0, 6.0, 9.0))
+
+    def candidate(pts, t0, course, speed, max_range):
+        nonlocal calls
+        calls += 1
+        if calls <= 240:
+            rmse = 10.0 if course == 0 and speed == 0 else 20.0
+        else:
+            rmse = next(refinement_rmse)
+        return rmse, course, speed, (1.0, 1.0), .5
+
+    monkeypatch.setattr(tma_module, "_try_candidate", candidate)
+    assert solve_tma(track).rmse_deg == 6.0
 
 
 def test_sub_utility_prefers_hiding_below_thermocline():

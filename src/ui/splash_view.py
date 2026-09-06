@@ -5,12 +5,14 @@ import math
 import pygame
 
 from src.core import config
+from src.core.i18n import localized
 from src.core.version import SPLASH_TEXT
 from src.ui import layout
 
 
+@localized
 def draw_splash(surface: pygame.Surface, elapsed_s: float,
-                duration_s: float = 4.5) -> None:
+                 duration_s: float = 4.5, tr=None) -> None:
     """Draw an original radar/sonar/ASW splash without external assets."""
     surface.fill((3, 10, 16))
     width, height = surface.get_size()

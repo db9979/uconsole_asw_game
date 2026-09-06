@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "animal",
+      "label": "Biologischer Kontakt",
+      "propulsion": "nicht mechanisch",
+      "blades": [],
+      "rpm_range": [0.0, 0.0],
+      "tonal_band_hz": [0.0, 300.0],
+      "cavitation_tendency": 0.0,
+      "category": "BIOLOGISCH",
+      "secondary_tonals": [],
+      "broadband": null,
+      "signature_text": "biologisches Signal (Tier?)"
+    },
+    {
+      "key": "decoy",
+      "label": "Akustischer Dekoy",
+      "propulsion": "Puls-/Rauschquelle",
+      "blades": [],
+      "rpm_range": [0.0, 0.0],
+      "tonal_band_hz": [40.0, 180.0],
+      "cavitation_tendency": 0.9,
+      "category": "FAHRZEUG",
+      "secondary_tonals": [],
+      "broadband": [0.8, 40.0, 300.0],
+      "signature_text": "kurzes lautes Rauschen"
+    }
+  ]
+}

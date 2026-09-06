@@ -9,12 +9,34 @@ from contextlib import contextmanager
 import pygame
 
 from src.core import config
+from src.core.i18n import localize
 
 # Font-Cache: pygame-Fonts sind teuer -> pro Größe einmal erzeugen.
 _FONT_CACHE: dict = {}
+_FONT_CACHE_DISPLAY = None
+MIN_OPERATIONAL_FONT = 12
+
+
+def clear_font_cache() -> None:
+    """Drop SDL-bound fonts before pygame teardown or display replacement."""
+    global _FONT_CACHE_DISPLAY
+    _FONT_CACHE.clear()
+    _FONT_CACHE_DISPLAY = None
 
 
 def font(size: int, bold: bool = False) -> pygame.font.Font:
+    global _FONT_CACHE_DISPLAY
+    if not pygame.font.get_init():
+        clear_font_cache()
+        pygame.font.init()
+    display = pygame.display.get_surface()
+    # Tests and standalone tools can quit/reinitialize SDL between surfaces.
+    # Cache only while a live display provides a stable SDL lifetime token.
+    if display is None:
+        return pygame.font.SysFont("monospace", size, bold=bold)
+    if display is not _FONT_CACHE_DISPLAY:
+        clear_font_cache()
+        _FONT_CACHE_DISPLAY = display
     key = (size, bold)
     f = _FONT_CACHE.get(key)
     if f is None:
@@ -57,7 +79,7 @@ def wrap_text(text: str, f: pygame.font.Font, width_px: int) -> list:
 
 
 def fit_text(text: str, size: int, width_px: int, height_px: int,
-             min_size: int = 9) -> tuple:
+             min_size: int = MIN_OPERATIONAL_FONT) -> tuple:
     """Text so groß wie möglich (ab min_size), dass er in w×h passt.
 
     Liefert (Font, [Zeilen]). Zeilen werden bei Bedarf auf die verfügbare
@@ -85,9 +107,10 @@ def fit_text(text: str, size: int, width_px: int, height_px: int,
 
 
 def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
-               color, size: int = 16, min_size: int = 9,
+               color, size: int = 16, min_size: int = MIN_OPERATIONAL_FONT,
                align: str = "left", valign: str = "top") -> None:
     """Blendet einen Textblock, der garantiert in (x,y,w,h) bleibt."""
+    text = localize(text)
     if not text or w <= 0 or h <= 0:
         return
     rect = pygame.Rect(x, y, w, h)
@@ -119,7 +142,7 @@ def box(screen, rect, title: str = "", border=None, fill=(14, 24, 18),
     if title:
         f = font(title_size, bold=True)
         blit_block(screen, title, x + 10, top, w - 20, f.get_linesize() + 2,
-                   config.COLOR_TEXT, title_size, min_size=10)
+                   config.COLOR_TEXT, title_size, min_size=MIN_OPERATIONAL_FONT)
         top += f.get_linesize() + 8
     return x + 10, top, max(1, w - 20), max(1, y + h - top - 8)
 
@@ -129,7 +152,7 @@ def blit_line(screen, text: str, rect, color, size: int = 14,
     """Einzeilige, horizontal und vertikal begrenzte Textausgabe."""
     x, y, w, h = rect
     blit_block(screen, text, x, y, w, h, color=color, size=size,
-               min_size=max(9, size - 4), align=align)
+               min_size=min(size, max(MIN_OPERATIONAL_FONT, size - 4)), align=align)
 
 
 def blit_lines(screen, lines, rect, color, size: int = 14,
@@ -163,6 +186,7 @@ def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
     x, y, w, h = rect
     pygame.draw.rect(screen, (14, 24, 18), (x, y, w, h))
     pygame.draw.rect(screen, config.COLOR_SONAR_RING, (x, y, w, h), 1)
+    title = localize(title)
     if title:
         f, lines = fit_text(title, title_size, w - 28, 40, min_size=12)
         screen.blit(f.render(lines[0], True, config.COLOR_TEXT), (x + 14, y + 8))
@@ -177,9 +201,10 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
     f = font(size)
     col = color or config.COLOR_TEXT
     dcol = dim_color or config.COLOR_TEXT_DIM
-    lab = label
+    lab = localize(label)
     while lab and f.size(lab)[0] > label_w - 4:
         lab = lab[:-1]
+    value = localize(value)
     val = value
     rest = w - label_w - 4
     ellipsis = "…"
@@ -190,3 +215,69 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
     with clip_to(screen, (x, y, w, f.get_linesize())):
         screen.blit(f.render(lab, True, dcol), (x, y))
         screen.blit(f.render(val, True, col), (x + label_w + 4, y))
+
+
+def tooltip_payload(title: str, *lines: str, target_id: str = "") -> dict:
+    """Return an object-free tooltip value safe to retain or serialize."""
+    return {
+        "id": str(target_id),
+        "title": localize(title),
+        "lines": [localize(line) for line in lines
+                  if line is not None and str(line)],
+    }
+
+
+def valid_tooltip(value) -> dict | None:
+    """Validate untrusted/save-loaded tooltip data without retaining objects."""
+    if not isinstance(value, dict) or not isinstance(value.get("title"), str):
+        return None
+    lines = value.get("lines", [])
+    if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
+        return None
+    return tooltip_payload(value["title"], *lines[:12],
+                           target_id=value.get("id", ""))
+
+
+def tooltip_rect(payload: dict, pointer, bounds=(0, 0, 1280, 720),
+                 max_width: int = 420) -> tuple[pygame.Rect, list[str]]:
+    """Lay out a readable tooltip, flipping and clamping it at canvas edges."""
+    bounds = pygame.Rect(bounds)
+    f = font(MIN_OPERATIONAL_FONT)
+    available = max(80, min(max_width, bounds.w - 16))
+    source = [payload.get("title", "")] + list(payload.get("lines", []))
+    natural = max((f.size(line)[0] for line in source), default=0) + 24
+    width = max(180, min(available, natural))
+    lines = []
+    for line in source:
+        lines.extend(wrap_text(str(line), f, width - 24) or [""])
+    line_h = _line_height(f)
+    height = 16 + line_h * len(lines)
+    height = min(max(44, height), bounds.h - 16)
+    x, y = int(pointer[0]) + 14, int(pointer[1]) + 18
+    if x + width > bounds.right - 8:
+        x = int(pointer[0]) - width - 14
+    if y + height > bounds.bottom - 8:
+        y = int(pointer[1]) - height - 14
+    rect = pygame.Rect(x, y, width, height)
+    rect.clamp_ip(bounds.inflate(-16, -16))
+    return rect, lines
+
+
+def draw_tooltip(screen, payload: dict, pointer,
+                 bounds=(0, 0, 1280, 720)) -> pygame.Rect | None:
+    """Draw a high-contrast tooltip and return its bounded rectangle."""
+    payload = valid_tooltip(payload)
+    if payload is None:
+        return None
+    rect, lines = tooltip_rect(payload, pointer, bounds)
+    pygame.draw.rect(screen, (5, 13, 10), rect)
+    pygame.draw.rect(screen, config.COLOR_WARN, rect, 2)
+    f = font(MIN_OPERATIONAL_FONT)
+    line_h = _line_height(f)
+    with clip_to(screen, rect.inflate(-10, -8)):
+        for index, line in enumerate(lines):
+            face = font(MIN_OPERATIONAL_FONT, bold=True) if index == 0 else f
+            color = config.COLOR_TEXT if index == 0 else config.COLOR_TEXT_DIM
+            screen.blit(face.render(line, True, color),
+                        (rect.x + 12, rect.y + 8 + index * line_h))
+    return rect

@@ -1,4 +1,4 @@
-"""Deterministic procedural coastlines and bathymetry."""
+"""Deterministic real-sector coastlines and bathymetry."""
 
 from collections import deque
 import json
@@ -31,22 +31,21 @@ def test_generation_is_exactly_deterministic_and_seed_varied():
 
     assert _snapshot(first) == _snapshot(again)
     assert _snapshot(first) != _snapshot(different)
-    assert first.landmasses[0].points != different.landmasses[0].points
+    assert first.metadata["sector_id"] != different.metadata["sector_id"]
 
 
 def test_generated_geometry_airbases_and_radar_are_usable():
     coast = Coastline.generate(19)
 
-    assert all(len(land.points) >= 10 and abs(_signed_area(land.points)) > 1.0
+    assert all(len(land.points) >= 3 and abs(_signed_area(land.points)) > 0.1
                for land in coast.landmasses)
     assert coast.contour_segments_in_circle(250.0, 250.0, 250.0)
     assert len(coast.friendly_bases()) >= 2
-    assert coast.hostile_base()["nation"] == "BOREN"
-    assert coast.neutral_base()["nation"] == "SKANDIA"
+    assert coast.hostile_base()["gameplay_role"] == "hostile"
+    assert coast.neutral_base()["gameplay_role"] == "neutral"
     for base in coast.airbases:
-        land = coast.landmass_at(base["x"], base["y"])
-        assert land is not None
-        assert land.nation == base["nation"]
+        assert coast.landmass_at(base["x"], base["y"]) is not None
+        assert base["wikidata"].startswith("Q")
 
 
 def test_land_ratio_and_central_ocean_connectivity_across_seeds():
@@ -64,7 +63,7 @@ def test_land_ratio_and_central_ocean_connectivity_across_seeds():
                 else:
                     water.add((column, row))
         ratio = land_count / (grid_size * grid_size)
-        assert 0.18 <= ratio <= 0.42
+        assert 0.07 <= ratio <= 0.47
 
         center = (grid_size // 2, grid_size // 2)
         reached = {center}
@@ -76,14 +75,18 @@ def test_land_ratio_and_central_ocean_connectivity_across_seeds():
                 if neighbor in water and neighbor not in reached:
                     reached.add(neighbor)
                     pending.append(neighbor)
-        assert len(reached) >= len(water) * 0.95
+        # Narrow real straits and enclosed seas vary with sampling resolution;
+        # the central ocean must still dominate the playable water area.
+        assert len(reached) >= len(water) * 0.85
 
 
 def test_bathymetry_is_seeded_and_deepens_away_from_coast():
     coast = Coastline.generate(44)
     assert coast.depth_m(250.0, 250.0) > 350.0
     assert coast.depth_m(250.0, 250.0) != Coastline.generate(45).depth_m(250.0, 250.0)
-    assert coast.depth_m(0.0, 250.0) == 0.0
+    land_point = next((x, y) for y in range(0, 501, 10)
+                      for x in range(0, 501, 10) if coast.on_land(x, y))
+    assert coast.depth_m(*land_point) == 0.0
 
     world = World(seed=44)
     assert world.depth_m(250.0, 250.0) == coast.depth_m(250.0, 250.0)
@@ -103,6 +106,14 @@ def test_legacy_load_remains_fixed(tmp_path):
     assert coast.on_land(2, 2)
     with pytest.raises(ValueError, match="no bathymetry"):
         coast.depth_m(50, 50)
+
+
+def test_generated_snapshot_round_trip_is_generator_independent():
+    original = Coastline.generate(83)
+    restored = Coastline.from_dict(original.to_dict())
+
+    assert restored.to_dict() == original.to_dict()
+    assert restored.metadata["sector_id"] == "real-083"
 
 
 @pytest.mark.parametrize("size", [0, -10, float("inf")])

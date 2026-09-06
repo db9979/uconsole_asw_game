@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "key": "user.training_torpedo",
+  "profile_kind": "torpedo",
+  "name": "Training torpedo",
+  "used_by": "enemy",
+  "speed_kn": 28.0,
+  "range_nm": 20.0,
+  "hit_dist_nm": 0.25,
+  "acoustic": null
+}

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "key": "user.training_animal",
+  "profile_kind": "animal",
+  "name": "Training biological contact",
+  "depth_min": 20.0,
+  "depth_max": 100.0,
+  "speed_kn": 2.0,
+  "quiet": 0.5,
+  "size_nm": 0.3,
+  "spawn_weight": 1.0,
+  "lines": [[45.0, 0.4, 3.0]],
+  "signature_text": "Editor template"
+}

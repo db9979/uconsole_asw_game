@@ -98,7 +98,7 @@ def test_save_load_roundtrip_keeps_warships():
     old_id, old_x, old_y, old_course, old_damage = \
         ws.id, ws.x, ws.y, ws.course, ws.damage
     data = g.save_state()
-    assert data["version"] == 6
+    assert data["version"] == 8
     g2 = Game(seed=0, start_menu=False)
     g2.load_state(data)
     loaded = {w.id: w for w in g2.warships}

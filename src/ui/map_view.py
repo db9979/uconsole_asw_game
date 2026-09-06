@@ -9,8 +9,106 @@ import math
 import pygame
 
 from src.core import config
+from src.core.i18n import localized, localize
 from src.ui import layout
 from src.ui import nato_symbols
+
+
+def _near(pos, point, radius=12):
+    return (pos[0] - point[0]) ** 2 + (pos[1] - point[1]) ** 2 <= radius ** 2
+
+
+@localized
+def map_hit_target(game, pos):
+    """Describe the chart item under *pos* using chart and displayed data only."""
+    if pos is None or not pygame.Rect(config.MAP_RECT).collidepoint(pos):
+        return None
+    view = game.map_view
+    x_nm, y_nm = view.screen_to_world(*pos)
+    if not (0.0 <= x_nm <= game.world.size_nm and
+            0.0 <= y_nm <= game.world.size_nm):
+        return None
+    metadata = getattr(game.world.coast, "metadata", None) or {}
+    center = metadata.get("center")
+    if isinstance(center, (list, tuple)) and len(center) == 2:
+        from src.world.projection import nm_to_lonlat
+        lon, lat = nm_to_lonlat(x_nm, y_nm, center[0], center[1],
+                                game.world.size_nm)
+        coordinate = f"{abs(lat):.4f} {'N' if lat >= 0 else 'S'} / {abs(lon):.4f} {'E' if lon >= 0 else 'W'}"
+    else:
+        coordinate = f"Lokal X {x_nm:.2f} NM / Y {y_nm:.2f} NM"
+    depth = float(game.world.depth_m(x_nm, y_nm))
+    terrain = "LAND" if depth <= 0.0 else f"Wassertiefe etwa {depth:.0f} m"
+    chart_lines = (coordinate, terrain)
+    tracks = game.radar_tracks()
+    for track in reversed(tracks):
+        if track.get("x") is None or track.get("y") is None:
+            continue
+        if _near(pos, view.world_to_screen(track["x"], track["y"]), 14):
+            affiliation = game.opz_affiliation(track["track_id"])
+            domain = nato_symbols.domain_for_kind(track["kind"])
+            distance = (f"{track['dist']:.1f} NM" if track.get("dist") is not None
+                        else "nur Peilung")
+            return layout.tooltip_payload(
+                f"{track['track_id']} / {track['label']}",
+                f"Beobachtet: {domain} / {affiliation}",
+                f"{track['bearing'] % 360:05.1f} deg / {distance}",
+                f"Quelle {track['source']} | Q {track.get('quality', 0):.0%} | Alter {track.get('age', 0):.0f}s",
+                *chart_lines,
+                target_id=f"map-track:{track['track_id']}")
+    ship_point = view.world_to_screen(game.ship.x, game.ship.y)
+    if _near(pos, ship_point, 14):
+        return layout.tooltip_payload(
+            "EIGENES SCHIFF",
+            f"Kurs {game.ship.course:05.1f} deg | Fahrt {game.ship.speed:.1f} kn",
+            f"Soll {game.ship.target_course:05.1f} deg / {game.ship.target_speed:.1f} kn",
+            "Eigenposition / operativer Navigationsstatus",
+            *chart_lines,
+            target_id="map:ownship")
+    helo = getattr(game, "helo", None)
+    if helo is not None and helo.airborne and _near(
+            pos, view.world_to_screen(helo.x, helo.y), 15):
+        return layout.tooltip_payload(
+            "HSP-5 / EIGEN",
+            f"{localize('enum.helo.' + helo.state)} | Kurs {helo.course:05.1f} deg",
+            f"Treibstoff {helo.fuel_s / 60:.0f} min | Datenlink",
+            *chart_lines,
+            target_id="map:helo")
+    contact = getattr(game, "target", None) or getattr(game, "selected_contact", None)
+    if contact is not None:
+        bearing = float(getattr(contact, "bearing", 0.0)) % 360.0
+        estimated_range = getattr(contact, "range_est", None)
+        if estimated_range is not None:
+            angle = math.radians(bearing)
+            point = view.world_to_screen(
+                game.ship.x + float(estimated_range) * math.sin(angle),
+                game.ship.y - float(estimated_range) * math.cos(angle))
+            hit = _near(pos, point, 15)
+        else:
+            start = view.world_to_screen(game.ship.x, game.ship.y)
+            angle = math.radians(bearing)
+            direction = (math.sin(angle), -math.cos(angle))
+            along = ((pos[0] - start[0]) * direction[0]
+                     + (pos[1] - start[1]) * direction[1])
+            perpendicular = abs((pos[0] - start[0]) * direction[1]
+                                - (pos[1] - start[1]) * direction[0])
+            hit = 15 <= along <= 300 and perpendicular <= 7
+        if hit:
+            distance = (f"{float(estimated_range):.1f} NM"
+                        if estimated_range is not None else "nur Peilung")
+            sigma = getattr(contact, "range_sigma_nm", None)
+            uncertainty = (f" | +/-{float(sigma):.2f} NM" if sigma is not None
+                           else "")
+            return layout.tooltip_payload(
+                f"SONARSPUR K{contact.id}",
+                f"Peilung {bearing:05.1f} deg | {distance}{uncertainty}",
+                f"Klasse {getattr(contact, 'player_class', None) or 'UNBEKANNT'} | Konfidenz {getattr(contact, 'confidence', 0):.0%}",
+                f"Quelle {getattr(contact, 'range_source', None) or 'passive Peilung'} | beobachtet",
+                *chart_lines,
+                target_id=f"map:sonar:{contact.id}")
+    return layout.tooltip_payload("KARTENPOSITION", coordinate, terrain,
+                                  "Seekarte / kein Zielkontakt",
+                                  target_id=f"chart:{x_nm:.1f}:{y_nm:.1f}")
 
 
 def _in_rect(px: float, py: float, r: tuple, m: float = 60.0) -> bool:
@@ -18,7 +116,19 @@ def _in_rect(px: float, py: float, r: tuple, m: float = 60.0) -> bool:
             r[1] - m <= py <= r[1] + r[3] + m)
 
 
-def draw_map_view(game) -> None:
+def _visible_landmasses(coast, view, rect):
+    """Cull in world space before transforming dense coastline points."""
+    left, top = view.screen_to_world(rect[0], rect[1])
+    right, bottom = view.screen_to_world(rect[0] + rect[2], rect[1] + rect[3])
+    left, right = min(left, right), max(left, right)
+    top, bottom = min(top, bottom), max(top, bottom)
+    return [land for land in coast.landmasses
+            if land.bounds[2] >= left and land.bounds[0] <= right
+            and land.bounds[3] >= top and land.bounds[1] <= bottom]
+
+
+@localized
+def draw_map_view(game, tr=None) -> None:
     s = game.screen
     r = config.MAP_RECT
     view = game.map_view
@@ -32,8 +142,8 @@ def draw_map_view(game) -> None:
     w = game.world
     coast = w.coast
 
-    # See-Hintergrund
-    pygame.draw.rect(s, config.COLOR_BG, r)
+    # See-Hintergrund; bleibt auch ausserhalb der Weltgrenzen sichtbar.
+    pygame.draw.rect(s, config.COLOR_GEO_BG, r)
     with layout.clip_to(s, r):
         # Seedbasierte Bathymetrie: dezente taktische Tiefenfaerbung.
         if coast.has_bathymetry:
@@ -52,7 +162,10 @@ def draw_map_view(game) -> None:
                                       y_nm + cell_nm * .5)
                     if depth > 0.0:
                         deep = max(0.0, min(1.0, depth / 900.0))
-                        color = (5, int(24 + 15 * deep), int(34 + 27 * deep))
+                        color = tuple(
+                            int(shallow + (deep_color - shallow) * deep)
+                            for shallow, deep_color in zip(
+                                config.COLOR_SHALLOW, config.COLOR_DEEP))
                         px, py = view.world_to_screen(x_nm, y_nm)
                         px2, py2 = view.world_to_screen(
                             x_nm + cell_nm, y_nm + cell_nm)
@@ -73,23 +186,40 @@ def draw_map_view(game) -> None:
         for g in range(gx0, gx1 + 1, step):
             x, _ = view.world_to_screen(g, 0)
             if _in_rect(x, 0, r, 0.0):
-                pygame.draw.line(s, config.COLOR_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
+                pygame.draw.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
                 s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
                        (int(x) + 3, r[1] + r[3] - 18))
         for g in range(gy0, gy1 + 1, step):
             _, y = view.world_to_screen(0, g)
             if _in_rect(0, y, r, 0.0):
-                pygame.draw.line(s, config.COLOR_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
+                pygame.draw.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
                 s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
                        (r[0] + 3, int(y) + 3))
 
-        # Land / Inseln
-        for poly in coast.land_points_px(view):
+        # Land / Inseln. Legacy/fake coast providers retain their old API.
+        landmasses = getattr(coast, "landmasses", None)
+        visible_land = (_visible_landmasses(coast, view, r)
+                        if landmasses is not None else None)
+        polygons = ([[view.world_to_screen(px, py) for px, py in land.points]
+                     for land in visible_land]
+                    if visible_land is not None else coast.land_points_px(view))
+        for poly in polygons:
             pygame.draw.polygon(s, config.COLOR_LAND, poly)
             pygame.draw.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
+        shown_countries = set()
+        for land in visible_land or ():
+            if land.name in shown_countries:
+                continue
+            px, py = view.world_to_screen(*land.centroid)
+            if _in_rect(px, py, r, 18.0):
+                shown_countries.add(land.name)
+                layout.blit_line(s, land.name.upper(),
+                                 (int(px) - 70, int(py) - 9, 140, 18),
+                                 config.COLOR_LAND_EDGE, size=12,
+                                 align="center")
         # Airbases
         for base, px, py in coast.airbase_px(view):
-            col = config.COLOR_DANGER if base.get("nation") == "BOREN" \
+            col = config.COLOR_DANGER if base.get("gameplay_role") == "hostile" \
                 else config.COLOR_FLIGHT
             pygame.draw.rect(s, col, (int(px) - 4, int(py) - 4, 8, 8), 2)
             s.blit(game.font.render(base["name"], True, config.COLOR_TEXT_DIM),
@@ -156,15 +286,6 @@ def draw_map_view(game) -> None:
             px, py = view.world_to_screen(e.x, e.y)
             pygame.draw.circle(s, (220, 200, 90), (int(px), int(py)), 3)
 
-        # HSP-5
-        if game.helo.airborne:
-            px, py = view.world_to_screen(game.helo.x, game.helo.y)
-            ang = math.radians(game.helo.course - 90.0)
-            pygame.draw.line(s, config.COLOR_OK, (int(px), int(py)),
-                             (int(px + 9 * math.cos(ang)), int(py + 9 * math.sin(ang))), 2)
-            s.blit(game.font.render("HSP-5", True, config.COLOR_OK),
-                   (int(px) + 10, int(py) - 12))
-
         # Peilstrich + Ziel-Kreuz (ausgewählter Kontakt / Ziel)
         contact = game.selected_contact or game.target
         if contact is not None:
@@ -192,8 +313,8 @@ def draw_map_view(game) -> None:
                 ey = fy - 300 * math.cos(brg)
                 pygame.draw.line(s, config.COLOR_WARN, (int(fx), int(fy)),
                                  (int(ex), int(ey)), 1)
-                s.blit(game.font.render(f"K{contact.id} (nur Peilung)",
-                                        True, config.COLOR_WARN),
+                s.blit(game.font.render(localize(f"K{contact.id} (nur Peilung)"),
+                                         True, config.COLOR_WARN),
                        (int(fx) + 14, int(fy) - 20))
 
         # Manuell protokollierte HFDF-Messungen und daraus berechnete Fixes.
@@ -219,8 +340,8 @@ def draw_map_view(game) -> None:
         pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(px), int(py)),
                          (target_ex, target_ey), 1)
         layout.blit_line(s, f"Kursziel {game.ship.target_course:03.0f}°",
-                         (int(px) + 8, int(py) + 10, 110, 16),
-                         config.COLOR_TEXT_DIM, size=10)
+                         (int(px) + 8, int(py) + 10, 124, 18),
+                         config.COLOR_TEXT_DIM, size=12)
         L = 14
         pygame.draw.line(s, config.COLOR_TEXT, (int(px), int(py)),
                          (int(px + L * math.cos(ang)), int(py + L * math.sin(ang))), 3)
@@ -231,14 +352,30 @@ def draw_map_view(game) -> None:
         vx = int(px + vector_px * math.cos(ang))
         vy = int(py + vector_px * math.sin(ang))
         pygame.draw.line(s, config.COLOR_OK, (int(px), int(py)), (vx, vy), 1)
-        layout.blit_line(s, "30 min", (vx + 4, vy - 8, 54, 16),
-                         config.COLOR_OK, size=11)
+        layout.blit_line(s, "30 min", (vx + 4, vy - 8, 60, 18),
+                         config.COLOR_OK, size=12)
 
-    pygame.draw.rect(s, config.COLOR_GRID, r, 1)
+        # HSP-5 zuletzt: beim Start an gleicher Position bleibt es ueber dem Schiff.
+        if game.helo.airborne:
+            px, py = view.world_to_screen(game.helo.x, game.helo.y)
+            ang = math.radians(game.helo.course - 90.0)
+            pygame.draw.line(
+                s, nato_symbols.AFFILIATION_COLORS["FRIEND"],
+                (int(px), int(py)),
+                (int(px + 20 * math.cos(ang)), int(py + 20 * math.sin(ang))), 2)
+            col = nato_symbols.draw_symbol(
+                s, (px, py), "FRIEND", "AIR", size=22)
+            s.blit(game.font.render("HSP-5", True, col),
+                   (int(px) + 15, int(py) - 14))
+
+    pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
     # Zoom-Stufenanzeige
     zoom_nm = r[3] / view.scale
     follow = "K: Follow" if getattr(game, "map_follow", True) else "K: Follow AUS"
-    s.blit(game.font.render(
-        f"{getattr(game, 'world_mode', 'fixed').upper()} | "
-        f"Zoom: {zoom_nm:3.0f} NM | Q/E: Zoom | Drag: Pan | {follow}",
-        True, config.COLOR_TEXT_DIM), (r[0] + 4, r[1] + 4))
+    metadata = getattr(coast, "metadata", None) or {}
+    region = metadata.get("name")
+    prefix = region if region else getattr(game, "world_mode", "fixed").upper()
+    layout.blit_line(
+        s, f"{prefix} | Zoom {zoom_nm:3.0f} NM | Q/E Zoom | Drag Pan | {follow}",
+        (r[0] + 4, r[1] + 4, r[2] - 8, 20), config.COLOR_TEXT_DIM,
+        size=13)

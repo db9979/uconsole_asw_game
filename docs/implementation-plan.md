@@ -3,18 +3,28 @@
 ## Aktueller Ausbau: strenge Simulation auf uConsole
 
 Die folgende Roadmap konkretisiert die historischen Phasen weiter unten.
-Zielplattform ist die uConsole; eine native 1280x800-Oberflaeche ist geplant,
-aber noch nicht umgesetzt. Die laufende Simulation verwendet weiterhin das
-alte Zeitmodell; das Speicherformat ist mit Lieferung 2 auf v4 umgestellt
-(Kontakt-DB, Fingerprints, warships-Block).
+Zielplattform ist die uConsole; die Arbeitsoberflaeche rendert nativ in
+1280x720 und wird im Vollbild auf die Displayflaeche skaliert. Die laufende
+Simulation verwendet weiterhin das alte Zeitmodell; das aktuelle Speicherformat
+ist v7 und enthaelt neben Kontakt-DB, Fingerprints und `warships`-Block einen
+kanonischen Snapshot der vollstaendigen Weltgeometrie.
 
 ### Festgelegte Entscheidungen
 
 - Stationen 1-8: Bruecke, Sonar, Waffen, Schaden, OPZ, Funk, Maschine, Helikopter.
 - Verwaltung pausiert; bereits gesetzte manuelle/Fokus-Pause bleibt erhalten.
 - Keine operativen Befehle in Pause. U/V-Zahleneingaben bleiben im Livebetrieb.
-- Alte Saves werden spaeter als Snapshot importiert, nicht mit einer zweiten
-  Legacy-Engine ausgefuehrt. Originaldateien bleiben unveraendert.
+- Save v7 restauriert eingebettete Welt-Snapshots generatorunabhaengig. Der
+  weiter unten geplante robuste Import aelterer Saves bleibt davon getrennt;
+  Originaldateien bleiben unveraendert.
+- Der Standard-Weltmodus waehlt per Seed einen von genau 128 realen,
+  vorvalidierten 500-NM-Sektoren. Die feste stilisierte Karte bleibt als
+  Legacy-Option verfuegbar.
+- Reale geografische, Laender- und Militaerstuetzpunktnamen bleiben erhalten;
+  Gameplay-Rollen sind unabhaengig vergebene fiktionale Uebungsrollen.
+  Bathymetrie ist synthetisch und nicht navigationstauglich.
+- Geografische Karte und Radar-PPI verwenden dunkelblaue Flaechen. Der eigene
+  HSP-5 wird als freundliches NATO-aehnliches Luftsymbol angezeigt.
 - Physikalische Simulationszeit und Bedien-/Audiozeit werden getrennt.
 - Sensorwissen ist die einzige Grundlage fuer Anzeige, Klassifikation und
   Feuerleitung; Weltwahrheit bleibt der Sensorerzeugung/Trefferwirkung vorbehalten.
@@ -28,7 +38,9 @@ Implementiert:
 
 - pytest und eigenstaendiger Smoke isolieren SAVE_DIR und SAVE_PATH.
 - Verwaltungsansichten blockieren Tastatur, Maus und Joystick im Hintergrund.
-- Esc schliesst die aktive Ansicht; Esc/Q/Fenster-Schliessen fragen vor dem Ende.
+- Esc schliesst die aktive Eingabe/Ansicht oder oeffnet den Beenden-Dialog;
+  Fenster-Schliessen fragt ebenfalls nach. Q/E sind ausschliesslich Kartenzoom
+  auf Bruecke, Waffen und Helikopter, nicht Beenden.
 - Beenden hat die sichere Vorauswahl Zurueck; Speichern und beenden ist erst
   nach Missionsstart verfuegbar und beendet nur nach erfolgreichem Schreiben.
 - Slots werden mit 1-5 ausgewaehlt und mit Enter bestaetigt. Ueberschreiben
@@ -43,6 +55,8 @@ Implementiert:
 - Telegraph +/- gilt auch im Sonar, ohne STOP/FLANK-Wrap; I/O Sonar-Gain;
   Z/X oder [/] Zeitraffer; P Pause; Alt+Enter Vollbild.
 - Hilfe hat getrennte Seiten fuer globale Tasten, Station und Erklaerungen.
+- Ereignis-Feed-Hinweise sind stationsbezogen und enthalten nur am sichtbaren
+  Arbeitsplatz gueltige Befehle.
 - Verschachtelte Layoutclips schneiden sich; lange Woerter und Textbloecke
   bleiben in ihren Rechtecken.
 - Szenario-/Schwierigkeitsauswahl und Dialogreihenfolge nach Missionsende repariert.
@@ -68,17 +82,37 @@ spaeteren Lieferungen durch zwingende Szenarien ergaenzt.
 - `src/audio/database.py` ist ein Kompatibilitaets-Shim auf den Katalog.
 - Per-Instanz-Fingerprints (`src/data/fingerprint.py`): deterministisch aus
   sensor_seed (Blattzahl, Tacho-Faktor, Ton-Offsets, Kavitations-/
-  Breitband-Skalierung), im Save v4 persistiert.
+  Breitband-Skalierung), seit Save v4 und weiterhin in Save v7 persistiert.
 - Gemeinsame Empfangssignalkette: Receiver mischt pro-Quellen-Breitband und
   Eigen-Kavitation bandlimitiert (80-380 Hz); ohne Daten bit-identisch.
 - Feindtorpedos sind im passiven Sonar hoerbar (Subharmonische + Tonales,
   `kind="torpedo"`); Sonarkontakte kennen jetzt sub/surface/torpedo/decoy/animal.
 - KAMPFSCHIFF als Spieler-Klasse: feindliche Kriegsschiffe (loitern um
   feindliche Basis, ASM-Salven < 35 NM), Radar-/ESM-Tracks, versenkbare
-  Torpedo-Ziele, Save/Load v4 inkl. `warships`-Block und Torpedo-IDs.
+  Torpedo-Ziele; der mit v4 eingefuehrte `warships`-Block und die Torpedo-IDs
+  sind im aktuellen Save v7 enthalten.
 - Zivilschiffe sind jetzt auch passive Sonarkontakte (GDD 14 angepasst).
 - Tests: test_contacts_catalog.py, test_fingerprint.py, test_warship.py;
   278 Tests + Smoke-Test bestanden.
+
+### Reale Sektoren, Kartendarstellung und Persistenz (Implementiert)
+
+- `data/coastlines/real_sectors.json.gz` enthaelt genau 128 reale 500-NM-
+  Kuestensektoren; die Seedabbildung ist stabil und deckt alle 128 Eintraege ab.
+- Natural Earth 1:50m Admin 0 Countries v5.1.1 und ein fixierter Wikidata-CC0-
+  Snapshot liefern Kuesten, Laender- und Stuetzpunktnamen. Exakte Provenienz,
+  Pruefsummen, Transformationen und der Ausschluss einer Billigung stehen in
+  `THIRD_PARTY_NOTICES.md`.
+- Sektorwahl und synthetische 17x17-Bathymetrie sind deterministisch. Reale
+  Nationen bestimmen keine freundliche oder feindliche Gameplay-Rolle.
+- Save v7 bettet `Coastline.to_dict()` mit Geometrie, Stuetzpunkten,
+  Bathymetrie und Provenienzmetadaten ein; Laden restauriert diesen Snapshot
+  ohne erneute Generierung.
+- Die feste stilisierte `region.json` ist weiterhin im Startmenue waehlbar.
+- Native 1280x720-Oberflaeche; dunkelblaue geografische Karten/PPI;
+  freundliches NATO-aehnliches Luftsymbol fuer den eigenen HSP-5.
+- OPZ-Darstellungsbereiche: 10/20/40/80/120 NM. Nominelle Radarreichweiten:
+  30 NM See und 100 NM Luft, getrennt von der Darstellungsskala.
 
 ### Ausstehende Lieferungen
 
@@ -88,10 +122,11 @@ spaeteren Lieferungen durch zwingende Szenarien ergaenzt.
    Ziel-/Kontakt-IDs; Feuerleitung und KI auf begrenztes Wissen umstellen.
 3. Quellen fuer alle 100 Kernplattformen erfassen und dokumentieren;
    gemeinsame Empfangssignalkette aus Lieferung 2 vertiefen.
-4. Native 1280x800-Ansichten, vollstaendige DEMON/TMA-Anzeige und durchsuchbare
-   Akustikbibliothek mit manuellen Hypothesen und synthetischen Hoerbeispielen.
-5. Snapshot-Import v1-v3, transaktionales Laden auch strukturell beschaedigter
-   Dateien, vollstaendige deterministische Fortsetzung, Missionsbalance.
+4. Vollstaendige DEMON/TMA-Anzeige und durchsuchbare Akustikbibliothek mit
+   manuellen Hypothesen und synthetischen Hoerbeispielen.
+5. Robuster Legacy-Snapshot-Import, transaktionales Laden auch strukturell
+   beschaedigter Dateien, vollstaendige deterministische Fortsetzung und
+   Missionsbalance. Save v7-Welt-Snapshots sind generatorunabhaengig; v6-Snapshots bleiben lauffaehig.
 6. Instrumentierung, gezielte Optimierung und uConsole-Hardwareabnahme.
 
 Die bisherigen Wahrheitszugriffe, widerspruechliche Zeitbasis und unvollstaendige

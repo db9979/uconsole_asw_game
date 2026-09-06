@@ -9,6 +9,20 @@ Layout: Widescreen-Grid 1280x720 (Top-Bar / 2x Hauptpanel / Bottom-Feed).
 import math
 import os
 
+from src.data.catalog import CATALOG
+
+
+def _required_catalog_profile(kind: str, key: str):
+    profiles = getattr(CATALOG, kind, None)
+    if profiles is None or key not in profiles:
+        raise RuntimeError(
+            f"Kontaktkatalog unvollstaendig: {kind}-Profil '{key}' fehlt")
+    return profiles[key]
+
+
+_DECOY_PROFILE = _required_catalog_profile("decoys", "decoy")
+_HELO_TORP_PROFILE = _required_catalog_profile("torpedoes", "helo_torp")
+
 # Display: virtuelles 1280x720-Canvas (uConsole: Stretch per FILL_SCREEN).
 SCREEN_W = 1280
 SCREEN_H = 720
@@ -72,6 +86,9 @@ SONAR_ACTIVE_BASE_NM = 18.0           # Basis-Grundreichweite aktiv (Ping)
 SONAR_PING_COOLDOWN_S = 30.0          # Sende-/Auswertezyklus
 SONAR_PING_FIX_MAX_AGE_S = 120.0      # Unsicherheit waechst danach stark
 SONAR_PING_HEAR_RANGE_NM = 60.0       # Intercept deutlich weiter als Echo
+SONAR_PING_RANGE_ERROR_NM = 0.18      # max. gleichverteilter Messfehler
+SONAR_PING_DEPTH_ERROR_M = 12.0       # max. gleichverteilter Messfehler
+SONAR_ECHO_HISTORY_MAX = 80           # persistente ACTIVE-Beobachtungen
 SONAR_THERMO_PASSIVE_ABOVE = 1.15     # Ziel über Thermokline: besser
 SONAR_THERMO_PASSIVE_BELOW = 0.55     # Ziel unter Thermokline: schlechter
 SONAR_THERMO_ACTIVE_BELOW = 0.35      # Ping in Schattenzone
@@ -99,10 +116,11 @@ SUB_PATROL_TURN_PERIOD_S = 600.0
 SUB_LUER_DURATION_S = (300.0, 900.0) # LAUER: still liegen + lauschen
 SUB_LUER_DIST_NM = 25.0              # LAUER nur, wenn Fregatte naeher
 SUB_TORPEDO_ALERT_NM = 35.0          # Torpedostart akustisch hörbar
-SUB_DECOY_CHANCE = 0.5               # Wahrscheinlichkeit pro Torpedo-Warnung
-SUB_DECOY_LIFE_S = 600.0             # Dekoy-Lebensdauer (sim-Sek.)
-SUB_DECOY_COOLDOWN_S = 180.0         # Abklingzeit je Dekoy
-SUB_DECOY_SPEED_KN = 8.0             # Dekoy driftet vom U-Boot weg
+# Kompatibilitaetsnamen; das geladene JSON-Profil ist die Laufzeitquelle.
+SUB_DECOY_CHANCE = _DECOY_PROFILE.chance
+SUB_DECOY_LIFE_S = _DECOY_PROFILE.life_s
+SUB_DECOY_COOLDOWN_S = _DECOY_PROFILE.cooldown_s
+SUB_DECOY_SPEED_KN = _DECOY_PROFILE.speed_kn
 
 # M4: Zivile Schiffe & Radar
 CIVILIAN_HIT_RADIUS_NM = 0.2   # Torpedo-Annäherung, die als Vorfall zählt
@@ -184,6 +202,15 @@ SONAR_TOWED_DEPTH_MIN_M = 20.0
 SONAR_TOWED_DEPTH_MAX_M = 260.0
 SONAR_TOWED_DEPTH_RATE_M_S = 4.0
 SONAR_TOWED_SPEED_SHALLOW_M_PER_KN = 4.0
+SONAR_TOWED_DEPLOY_S = 360.0
+SONAR_TOWED_RETRIEVE_S = 480.0
+SONAR_TOWED_HANDLING_MIN_KN = 3.0
+SONAR_TOWED_HANDLING_MAX_KN = 12.0
+SONAR_TOWED_MAX_SAFE_KN = 20.0
+SONAR_TOWED_AVAILABLE_PAYOUT = 0.95
+SONAR_TOWED_SETTLE_S = 30.0
+SONAR_TOWED_HEADING_LAG_S = 45.0
+SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
 SONAR_FUSION_CONFIRM_DEG = 5.0
 SONAR_FUSION_DIVERGENT_DEG = 9.0
 SONAR_BT_COOLDOWN_S = 60.0
@@ -243,7 +270,7 @@ BUOY_COUNT = 5
 BUOY_SPACING_NM = 3.0
 BUOY_RANGE_NM = 8.0
 BUOY_BATTERY_S = 3600.0
-HELO_TORP_SPEED_KN = 45.0
+HELO_TORP_SPEED_KN = _HELO_TORP_PROFILE.speed_kn
 
 # M16: Fliegerabwehr (physikalische Geschwindigkeiten)
 ASM_SPAWN_DIST_NM = (30.0, 40.0)
@@ -410,7 +437,10 @@ SCENARIOS = {
 
 # Farben (CRT-Grün-Theme)
 COLOR_BG = (8, 14, 10)
+# Gemeinsamer geografischer Hintergrund fuer Karte und PPI.
+COLOR_GEO_BG = (5, 18, 34)
 COLOR_GRID = (20, 38, 28)
+COLOR_GEO_GRID = (18, 49, 72)
 COLOR_TEXT = (140, 230, 160)
 COLOR_TEXT_DIM = (105, 158, 126)
 COLOR_WARN = (230, 190, 60)
@@ -423,9 +453,10 @@ COLOR_CONTACT_WARSHIP = (230, 120, 60)
 COLOR_CONTACT_UNBEST = (230, 200, 80)
 COLOR_CONTACT_UBOOT = (230, 90, 70)
 COLOR_CONTACT_BIO = (110, 200, 200)
-COLOR_LAND = (22, 34, 26)
-COLOR_LAND_EDGE = (70, 120, 88)
-COLOR_SHALLOW = (14, 26, 20)
+COLOR_LAND = (25, 43, 55)
+COLOR_LAND_EDGE = (76, 126, 153)
+COLOR_SHALLOW = (12, 43, 68)
+COLOR_DEEP = (4, 24, 48)
 COLOR_ESM = (140, 150, 220)
 COLOR_HFDF = (200, 140, 220)
 COLOR_FLIGHT = (220, 180, 90)

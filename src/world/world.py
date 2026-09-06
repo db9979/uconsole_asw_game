@@ -73,6 +73,20 @@ class World:
     def landmass_at(self, x_nm: float, y_nm: float):
         return self.coast.landmass_at(x_nm, y_nm)
 
+    def land_blocks_line(self, x1_nm: float, y1_nm: float,
+                         x2_nm: float, y2_nm: float) -> bool:
+        """Delegate a radar/HFDF-style terrain occlusion query."""
+        return self.coast.land_blocks_line(x1_nm, y1_nm, x2_nm, y2_nm)
+
+    def sonar_path_blocked(self, x1_nm: float, y1_nm: float,
+                           source_depth_m: float, x2_nm: float, y2_nm: float,
+                           target_depth_m: float,
+                           clearance_m: float = 0.0) -> bool:
+        """Delegate a straight-ray sonar terrain occlusion query."""
+        return self.coast.sonar_path_blocked(
+            x1_nm, y1_nm, source_depth_m, x2_nm, y2_nm, target_depth_m,
+            clearance_m)
+
     # --- W2: Schallfeld ---
 
     def echo_delay_s(self, dist_nm: float) -> float:

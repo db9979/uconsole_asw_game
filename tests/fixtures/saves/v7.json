@@ -1,0 +1,16 @@
+{
+  "version": 7,
+  "seed": 1007,
+  "mission_type": "patrouille",
+  "mission_time": 77.0,
+  "score": 107,
+  "incident": false,
+  "ship": {"x": 270.0, "y": 271.0, "course": 72.0, "target_course": 73.0, "speed": 8.0, "target_speed": 9.0},
+  "torpedoes": {"total": 8, "count": 1, "depth": 67.0},
+  "damage": {"compartments": {}, "teams": {}},
+  "subs": [],
+  "animals": [],
+  "civilians": [],
+  "world": {"hour": 7.5, "sea_state": 4, "weather_shift_timer": 84.0, "mode": "procedural", "generator": "natural-earth-v1", "coast": {"world_nm": 500.0, "landmasses": [], "airbases": [], "bathymetry": {"size": 2, "values": [[100.0, 100.0], [100.0, 100.0]]}, "metadata": {"sector_id": "fixture-v7", "provenance": "fixture"}}},
+  "opz_affiliations": {"S-7": "HOSTILE"}
+}

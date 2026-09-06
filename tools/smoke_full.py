@@ -163,9 +163,11 @@ def _run_smoke() -> None:
     assert not ok_empty, "Slot 5 sollte leer sein"
     print("Save/Load Slot-2 OK")
 
-    # --- W4: Menue (Szenario -> Level -> Briefing) ---
+    # --- W4: Menue (Hauptmenue -> Szenario -> Level -> Briefing) ---
     g2 = Game(seed=42, start_menu=True)
-    assert g2.in_menu and g2.menu_screen == "scenario"
+    assert g2.in_menu and g2.main_menu
+    g2._handle_menu_key(pygame.K_RETURN)     # New Game -> scenario
+    assert not g2.main_menu and g2.menu_screen == "scenario"
     g2._handle_menu_key(pygame.K_4)          # s4_zufall
     g2._handle_menu_key(pygame.K_RETURN)     # -> Level
     assert g2.menu_screen == "level"

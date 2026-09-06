@@ -81,15 +81,18 @@ python main.py --version
 
 Dies sind die aktuell unterstützten Startparameter. Im Startmenü wählst du das
 Szenario mit Pfeiltasten oder Ziffern und bestätigst mit `Enter` oder Leertaste.
-`W` wählt eine prozedurale Welt oder die feste Referenzkarte; `R` erzeugt einen
-neuen Seed. Derselbe Seed und Weltmodus erzeugen reproduzierbar dieselbe Welt.
+`W` wählt einen der 128 seedbestimmten realen 500-NM-Sektoren oder die feste
+Legacy-Referenzkarte; `R` erzeugt einen neuen Seed. Derselbe Seed und Weltmodus
+erzeugen reproduzierbar dieselbe Welt. Die realen Namen und Küsten sind kein
+Navigationsprodukt; Tiefen sind synthetisch, und militärische Gameplay-Rollen
+sind fiktionale Übungsrollen.
 `F` schaltet dort den Vollbildmodus um. Im Spiel öffnet `F1` die
 kontextabhängige Hilfe; `Alt+Enter` wechselt jederzeit zwischen Vollbild und
 Fenster.
 
-Die Oberfläche verwendet intern 1280 x 720 Pixel und wird seitenrichtig in das
-uConsole-Display eingepasst. Bei einem 1280-x-800-Display sind daher kleine
-ungenutzte Bereiche normal.
+Die Arbeitsoberfläche rendert nativ auf einem 1280 x 720 Pixel großen Canvas.
+Sie wird im Vollbild auf die verfügbare Displayfläche skaliert; im Fenstermodus
+ist 1280 x 720 die native Größe.
 
 ## 5. Optional als Paket installieren
 
@@ -102,6 +105,11 @@ u-jagd --windowed
 
 Der direkte Start mit `python main.py` bleibt für einen Git-Checkout der
 einfachste Weg. Kontakt- und Küstendaten sind in der Paketkonfiguration enthalten.
+
+Im Spiel öffnet `Esc` den Beenden-Dialog beziehungsweise schließt die laufende
+Eingabe oder Verwaltungsansicht. `Q`/`E` zoomen ausschließlich auf Brücke,
+Waffen- und Helikopterstation. Die Hinweise im Ereignis-Feed sind auf die aktive
+Station begrenzt; die vollständige kontextabhängige Belegung steht unter `F1`.
 
 ## 6. Aktualisieren
 
@@ -196,12 +204,14 @@ Default-Katalog` erscheinen. Im Git-Checkout prüfen:
 ```sh
 test -f data/contacts/subs.json
 test -f data/coastlines/region.json
+test -f data/coastlines/real_sectors.json.gz
 ```
 
 Fehlende oder lokal veränderte Dateien mit `git status` untersuchen. Die
-Kontakt-DB besitzt einen eingebauten Fallback; fehlende Küstendaten führen zu
-einer leeren Küstenkarte. Bei einer Paketinstallation das Paket erneut aus dem
-aktuellen Checkout installieren.
+Kontakt-DB besitzt einen eingebauten Fallback. Die feste Legacy-Karte kann bei
+fehlender Datei leer sein; ein fehlender oder beschädigter Katalog der realen
+Sektoren verhindert dagegen den Start dieses Weltmodus. Bei einer
+Paketinstallation das Paket erneut aus dem aktuellen Checkout installieren.
 
 ### Speichern oder Laden schlägt fehl
 

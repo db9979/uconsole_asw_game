@@ -185,6 +185,8 @@ def test_bathythermograph_and_towed_depth_are_operator_controls(game):
     assert profile["cz_bands_nm"]
     assert game.sonar.bt_cooldown == config.SONAR_BT_COOLDOWN_S
 
+    game.sonar.tow_state = game.sonar.STREAMED
+    game.sonar.tow_payout = 1.0
     before = game.sonar.towed_depth_target_m
     press(game, pygame.K_v)
     assert game.sonar.towed_depth_target_m == before + 10.0
@@ -197,6 +199,9 @@ def test_towed_array_below_layer_improves_deep_target_range():
     world = SimpleNamespace(sea_state=0, thermocline_depth_m=lambda x, y: 100)
     sub = Sub(255, 250, 160, 0, "diesel_alt", random.Random(4))
     sonar = SonarSystem(4)
+    sonar.tow_state = sonar.STREAMED
+    sonar.tow_payout = 1.0
+    sonar._tow_settle_s = config.SONAR_TOWED_SETTLE_S
     sonar.towed_depth_m = 50.0
     shadowed = sonar.passive_range_nm(sub, 5.0, ship, world, 1.0, "TOWED")
     sonar.towed_depth_m = 150.0
@@ -213,6 +218,9 @@ def test_hms_tas_fusion_uses_separate_observed_bearings(offset, status):
     world = SimpleNamespace(sea_state=0, thermocline_depth_m=lambda x, y: 100)
     sub = Sub(252, 250, 40, 0, "diesel_alt", random.Random(5))
     sonar = SonarSystem(5)
+    sonar.tow_state = sonar.STREAMED
+    sonar.tow_payout = 1.0
+    sonar._tow_settle_s = config.SONAR_TOWED_SETTLE_S
     sonar._observed_bearing = lambda target, true, frigate, quality, mode, t: \
         true + (offset if mode == "TOWED" else 0.0)
     sonar.update(.25, .25, ship, [sub], world)

@@ -1,0 +1,15 @@
+{
+  "version": 6,
+  "seed": 1006,
+  "mission_type": "patrouille",
+  "mission_time": 66.0,
+  "score": 106,
+  "incident": false,
+  "ship": {"x": 260.0, "y": 261.0, "course": 62.0, "target_course": 63.0, "speed": 8.0, "target_speed": 9.0},
+  "torpedoes": {"total": 8, "count": 2, "depth": 66.0},
+  "damage": {"compartments": {}, "teams": {}},
+  "subs": [],
+  "animals": [],
+  "civilians": [],
+  "world": {"hour": 6.5, "sea_state": 3, "weather_shift_timer": 42.0, "mode": "procedural", "generator": "coastal-v1", "coast": {"world_nm": 500.0, "landmasses": [], "airbases": [], "metadata": {"sector_id": "fixture-v6"}}}
+}

@@ -1,9 +1,7 @@
-"""Kontakt-Katalog: alle Plattformprofile (Akustik + Verhalten) an einer Stalle.
+"""Kontakt-Katalog: alle Plattformprofile (Akustik + Verhalten) an einer Stelle.
 
-Primärquelle: data/contacts/*.json (erweiterbar, Schema in docs/contacts-db.md).
-Fehlt ein Verzeichnis oder ist eine Datei kaputt, wird der eingebaute
-Default-Katalog verwendet (identische Werte, wie sie tools/gen_contacts.py
-exportiert). Der Katalog enthält:
+Die eingebauten Profile werden aus den paketierten ``data.contacts``-JSON-
+Ressourcen geladen. Der Katalog enthält:
 
 - 23 U-Boot-Profile (3 Legacy-Archetypen + 20 benannte Klassen)
 - 25 feindliche Kampfschiffe (spawnbar, KAMPFSCHIFF)
@@ -19,6 +17,7 @@ Blätterzahl, Takt-Skala und Linien-Offsets ein Fingerprint gerollt
 import json
 import os
 from dataclasses import dataclass
+from importlib import resources
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CONTACTS_DIR = os.path.join(_ROOT, "data", "contacts")
@@ -135,265 +134,9 @@ class DecoyProfile:
     signature_text: str = ""
 
 
-# ---------------------------------------------------------------------------
-# Eingebauter Default (gleiche Werte wie der JSON-Export)
-# ---------------------------------------------------------------------------
-
-# Akustische Familien: (propulsion, blades, rpm, tonal_band, cav,
-#                       broadband(level,lo,hi), signature_text)
-FAMILY_ACOUSTIC = {
-    "sub_nuclear": ("elektrisch/Kernantrieb", (5, 7), (120.0, 360.0),
-                    (12.0, 40.0), 0.20, (0.15, 30.0, 250.0),
-                    "sehr leise, gleichmäßig (Kern?)"),
-    "sub_aip": ("elektrisch/AIP", (5, 7), (45.0, 150.0),
-                (6.0, 25.0), 0.15, (0.10, 25.0, 180.0),
-                "leise, elektrischer Antrieb"),
-    "sub_diesel": ("Diesel-elektrisch", (4, 5), (90.0, 220.0),
-                   (8.0, 22.0), 0.65, (0.40, 30.0, 250.0),
-                   "Diesel-Propeller, deutlich hörbar"),
-    "warship": ("Diesel/Gasturbine", (4, 5, 6), (200.0, 700.0),
-                (18.0, 190.0), 0.55, (0.55, 40.0, 300.0),
-                "kräftige Gasturbinen-Tonals"),
-    "tanker": ("langsamer Diesel", (4, 5, 6), (90.0, 420.0),
-               (12.0, 130.0), 0.72, (0.45, 30.0, 250.0),
-               "langsamer Mahlrhythmus"),
-    "passenger": ("Mehrfachdiesel/Getriebe", (4, 5, 6), (120.0, 650.0),
-                  (15.0, 175.0), 0.68, (0.50, 40.0, 300.0),
-                  "Mehrfachdiesel, Getriebe"),
-    "cargo": ("Diesel/Getriebe", (4, 5, 6), (100.0, 500.0),
-              (14.0, 160.0), 0.78, (0.55, 40.0, 300.0),
-              "stetiger Frachter-Mahl"),
-    "aux": ("Diesel/Arbeitsmaschine", (3, 4, 5), (180.0, 1100.0),
-            (20.0, 240.0), 0.88, (0.60, 50.0, 320.0),
-            "Arbeitsmaschine, unregelmäßig"),
-}
-
-# Sekundäre Tonals (Getriebe/Pumpen) pro Familie – optional, modellhaft
-FAMILY_SECONDARY = {
-    "warship": ((25.0, 0.25, 2.0),),
-    "passenger": ((30.0, 0.20, 2.0),),
-    "aux": ((40.0, 0.30, 3.0),),
-}
-
-# (key, name, family, speed_kn, max_depth_m, torpedoes, quiet, aggression,
-#  spawn_weight)
-SUB_ENTRIES = (
-    # Legacy-Archetypen (Spielverhalt unverändert gegenüber v1)
-    ("diesel_alt", "Altmetall (Diesel, älter)", "sub_diesel", (6.0, 11.0),
-     200.0, 4, 0.75, 0.5, 1.0),
-    ("aip_modern", "Geisterschwärmer (AIP-modern)", "sub_aip", (7.0, 13.0),
-     250.0, 5, 0.85, 0.7, 1.0),
-    ("ssn", "Knochenbrecher (Nuklear)", "sub_nuclear", (12.0, 18.0),
-     400.0, 8, 0.92, 1.0, 0.8),
-    # Benannte Klassen (Modellannahmen, nicht verifizierte Daten)
-    ("sub_01", "Type 212CD", "sub_aip", (10.0, 13.0), 250.0, 5, 0.88, 0.7, 0.5),
-    ("sub_02", "Type 214", "sub_aip", (10.0, 13.0), 250.0, 5, 0.88, 0.7, 0.5),
-    ("sub_03", "Virginia-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.92, 1.0, 0.5),
-    ("sub_04", "Los-Angeles-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.90, 0.9, 0.5),
-    ("sub_05", "Seawolf-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.93, 1.0, 0.5),
-    ("sub_06", "Astute-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.92, 0.9, 0.5),
-    ("sub_07", "Trafalgar-Klasse", "sub_diesel", (8.0, 12.0), 200.0, 4,
-     0.82, 0.6, 0.5),
-    ("sub_08", "Rubis-Klasse", "sub_diesel", (8.0, 12.0), 200.0, 4,
-     0.80, 0.6, 0.5),
-    ("sub_09", "Suffren-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.92, 0.9, 0.5),
-    ("sub_10", "Scorpene-Klasse", "sub_aip", (10.0, 13.0), 250.0, 5,
-     0.86, 0.6, 0.5),
-    ("sub_11", "Kilo-Klasse", "sub_diesel", (8.0, 12.0), 200.0, 4,
-     0.78, 0.7, 0.5),
-    ("sub_12", "Improved-Kilo", "sub_aip", (10.0, 13.0), 250.0, 5,
-     0.86, 0.7, 0.5),
-    ("sub_13", "Lada-Klasse", "sub_aip", (10.0, 13.0), 250.0, 5,
-     0.86, 0.7, 0.5),
-    ("sub_14", "Yasen-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.94, 1.0, 0.5),
-    ("sub_15", "Oscar-II-Klasse", "sub_nuclear", (12.0, 16.0), 400.0, 12,
-     0.88, 1.0, 0.5),
-    ("sub_16", "Akula-Klasse", "sub_nuclear", (12.0, 16.0), 400.0, 12,
-     0.88, 1.0, 0.5),
-    ("sub_17", "Borei-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.95, 1.0, 0.5),
-    ("sub_18", "Collins-Klasse", "sub_nuclear", (14.0, 18.0), 400.0, 8,
-     0.92, 0.9, 0.5),
-    ("sub_19", "Soryu-Klasse", "sub_aip", (10.0, 13.0), 250.0, 5,
-     0.88, 0.7, 0.5),
-    ("sub_20", "Taigei-Klasse", "sub_aip", (10.0, 13.0), 250.0, 5,
-     0.88, 0.7, 0.5),
-)
-
-WARP_SHIP_NAMES = (
-    "Arleigh-Burke-Zerstoerer", "Ticonderoga-Kreuzer", "Zumwalt-Zerstoerer",
-    "Type-45-Zerstoerer", "Type-23-Fregatte", "Type-26-Fregatte",
-    "F124-Fregatte", "F125-Fregatte", "Sachsen-Fregatte",
-    "Baden-Wuerttemberg-Fregatte", "De-Zeven-Provincien-Fregatte",
-    "Horizon-Zerstoerer", "FREMM-Fregatte", "La-Fayette-Fregatte",
-    "Visby-Korvette", "Iver-Huitfeldt-Fregatte", "Nansen-Fregatte",
-    "KDX-III-Zerstoerer", "Mogami-Fregatte", "Atago-Zerstoerer",
-    "Akizuki-Zerstoerer", "Kirov-Kreuzer", "Udaloy-Zerstoerer",
-    "Admiral-Gorshkov-Fregatte", "Type-055-Zerstoerer",
-)
-
-# (key_prefix, akustische Familie, Kategorie, Namen)
-CIVILIAN_FAMILIES = (
-    ("tanker", "tanker", "TANKER", (
-        "Lewis-and-Clark-Versorger", "John-Lewis-Tanker", "Tide-Klasse",
-        "Berlin-Klasse-Versorger", "Wave-Klasse-Tanker", "Aegir-Klasse",
-        "Vulcano-Versorger", "Etna-Versorger", "Supply-Klasse",
-        "Maersk-Triple-E", "VLCC-Tanker", "Aframax-Tanker",
-        "Suezmax-Tanker", "Q-Max-LNG-Tanker", "Shuttle-Tanker")),
-    ("passenger", "passenger", "PASSAGIER", (
-        "Queen-Mary-2", "Oasis-Kreuzfahrer", "Icon-Kreuzfahrer",
-        "Disney-Wish", "AIDAnova", "MSC-Seashore", "Mein-Schiff",
-        "Color-Magic-Faehre", "Stena-Britannica", "DFDS-RoPax",
-        "Hurtigruten-Expedition", "Arctic-Expedition-Schiff",
-        "River-Cruise-Schiff", "Schnellfaehre", "Nachtfaehre")),
-    ("cargo", "cargo", "FRACHT", (
-        "Emma-Maersk", "Ever-Given-Klasse", "Hapag-Lloyd-Containerschiff",
-        "Feeder-Containerschiff", "Panamax-Containerschiff", "Handymax-Bulker",
-        "RoRo-Frachter", "Autotransporter", "Kuehlfrachter",
-        "Bulk-Carrier", "Heavy-Lift-Schiff", "General-Cargo-Schiff",
-        "Container-Feeder", "Mehrzweckfrachter", "Kuestenfrachter")),
-    ("aux", "aux", "SONSTIGES", (
-        "Minenabwehrfahrzeug", "Hafenschlepper", "Seenotrettungskreuzer",
-        "Forschungsschiff", "Kabelleger", "Offshore-Versorger",
-        "Fischtrawler", "Vermessungsschiff", "Bergungsschlepper",
-        "Lotsenboot")),
-)
-
-# Rufzeichen-Pools je Kategorie (AIS/Brückenauskunft)
-CALLSIGN_POOLS = {
-    "TANKER": ("MV NORDWIND", "MV BALTICA", "MV OZEANSTERNE", "MV WINDSTILL",
-               "MT NORDSEE", "MT HAVBRAK", "MV EIDER", "MT POLARIS"),
-    "PASSAGIER": ("SS FJORDLAND", "SS HAVBRAK", "SS NORDSEE", "MS POLARIS",
-                  "MS BORENSUND", "FV KALVSVIK", "MS VIKINGFJORD",
-                  "FV SVALBAREN"),
-    "FRACHT": ("MV KOTKA", "MV BALTISC", "CV NORDSTERN", "MV OSTSEEWIND",
-               "MV KURELA", "CV BALTIK", "MV SKAGERRAK", "CV TROLLFJORD"),
-    "SONSTIGES": ("PS HELIOS", "SV BOREN-RECHER", "MS SEEBRUECKE",
-                  "PS LEUCHT-4", "SV OZEANFORSCHER", "MS KANALBAHN",
-                  "PS HAFEN-7", "SV VERMESSER"),
-}
-
-_AIRCRAFT_DEFAULTS = (
-    AircraftProfile("mil_patrol", "BOREN Patrouille", "BOREN", "military",
-                    200.0, True, 60.0, (15.0, 30.0), 1.0,
-                    "militärisch, nur ESM/Radar"),
-    AircraftProfile("civil_transit", "Ziviler Verkehrsflug", "HANSE", "civil",
-                    450.0, False, 0.0, (0.0, 0.0), 1.0,
-                    "ziviler Transport, nur Radar"),
-)
-
-_ANIMAL_DEFAULTS = (
-    AnimalProfile("whale", "Wal", 80.0, 200.0, 4.0, 0.45, 0.5, 1.0,
-                  ((32.0, 0.55, 3.0), (45.0, 0.35, 2.0)),
-                  "Gesang, periodisch, tieffrequenz"),
-    AnimalProfile("fish_school", "Fischschwarm", 30.0, 80.0, 1.0, 0.60, 0.3,
-                  1.0, ((90.0, 0.25, 6.0), (140.0, 0.18, 5.0)),
-                  "Knistern/Schlecken, unregelmäßig"),
-    AnimalProfile("jellyfish", "Quallen", 5.0, 25.0, 0.2, 0.75, 0.2, 1.0,
-                  ((180.0, 0.12, 4.0),),
-                  "kaum hörbar, leises Platschen"),
-)
-
-_TORPEDO_DEFAULTS = (
-    TorpedoProfile("frigate_torp", "Drahttorpedo (Fregatte)", "frigate",
-                   45.0, 12.0, 0.135, None),
-    TorpedoProfile("helo_torp", "Leichttorpedo (HSP-5)", "helo",
-                   55.0, 12.0, 0.135, None),
-    TorpedoProfile("enemy_torp", "Feindtorpedo", "enemy",
-                   28.0, 30.0, 0.25,
-                   TargetSignature("enemy_torp", "Feindtorpedo",
-                                   "Torpedorantrieb", (), (0.0, 0.0),
-                                   (90.0, 150.0), 0.90, "FAHRZEUG",
-                                   (), (0.50, 80.0, 300.0),
-                                   "aggressives, hochfrequentes Kreischen")),
-)
-
-_DECOY_DEFAULTS = (
-    DecoyProfile("decoy", "Akustischer Dekoy", 45.0, 8.0, 60.0, 0.5,
-                 ((120.0, 0.9, 8.0), (75.0, 0.4, 3.0)),
-                 "kurzes lautes Rauschen"),
-)
-
-# Eintrag für die Akustik-Bibliothek (BIOLOGISCH, kein Spawn)
-_ANIMAL_LIBRARY_SIG = TargetSignature(
-    "animal", "Biologischer Kontakt", "nicht mechanisch", (), (0.0, 0.0),
-    (0.0, 300.0), 0.0, "BIOLOGISCH", (), None,
-    "biologisches Signal (Tier?)")
-
-_DECOY_LIBRARY_SIG = TargetSignature(
-    "decoy", "Akustischer Dekoy", "Puls-/Rauschquelle", (), (0.0, 0.0),
-    (40.0, 180.0), 0.90, "FAHRZEUG", (), (0.80, 40.0, 300.0),
-    "kurzes lautes Rauschen")
-
-
-def _series_signature(prefix: str, index: int, name: str, family: str,
-                      category: str) -> TargetSignature:
-    """Individuell unterscheidbare Signatur aus einer Familie (gleiche
-    Shift-Formel wie die ursprüngliche 100-Profile-Datenbank)."""
-    propulsion, blades, rpm, tonal, cav, bb, text = FAMILY_ACOUSTIC[family]
-    rpm_shift = (index % 5 - 2) * 7.0
-    tone_shift = (index % 4 - 1.5) * 1.5
-    return TargetSignature(
-        key=f"{prefix}_{index + 1:02d}", label=name, propulsion=propulsion,
-        blade_counts=blades,
-        rpm_range=(max(20.0, rpm[0] + rpm_shift), rpm[1] + rpm_shift),
-        tonal_band_hz=(max(1.0, tonal[0] + tone_shift),
-                       tonal[1] + tone_shift),
-        cavitation_tendency=max(0.0, min(1.0,
-                                         cav + (index % 3 - 1) * 0.04)),
-        category=category,
-        secondary_tonals=FAMILY_SECONDARY.get(family, ()),
-        broadband=bb, signature_text=text)
-
-
 def build_catalog() -> "ContactCatalog":
-    """Eingebauter Default-Katalog (Referenz für tools/gen_contacts.py)."""
-    subs = {}
-    for (key, name, family, speed, depth, torps, quiet, agg,
-         weight) in SUB_ENTRIES:
-        propulsion, blades, rpm, tonal, cav, bb, text = \
-            FAMILY_ACOUSTIC[family]
-        sig = TargetSignature(
-            key=key, label=name, propulsion=propulsion, blade_counts=blades,
-            rpm_range=rpm, tonal_band_hz=tonal,
-            cavitation_tendency=cav, category="U_BOOT",
-            secondary_tonals=(), broadband=bb, signature_text=text)
-        subs[key] = SubProfile(key, name, speed, depth, torps, quiet,
-                               agg, weight, sig)
-
-    surfaces = {}
-    civilian_speeds = {
-        "TANKER": (10.0, 16.0),
-        "PASSAGIER": (18.0, 25.0),
-        "FRACHT": (12.0, 20.0),
-        "SONSTIGES": (8.0, 16.0),
-    }
-    for prefix, family, category, names in CIVILIAN_FAMILIES:
-        for i, name in enumerate(names):
-            key = f"{prefix}_{i + 1:02d}"
-            surfaces[key] = SurfaceProfile(
-                key, name, category, False, civilian_speeds[category],
-                CALLSIGN_POOLS[category], 0.6, (0, 0), 0.0, 0.0, 1.0,
-                _series_signature(prefix, i, name, family, category))
-    for i, name in enumerate(WARP_SHIP_NAMES):
-        key = f"warship_{i + 1:02d}"
-        surfaces[key] = SurfaceProfile(
-            key, name, "KAMPFSCHIFF", True, (12.0, 28.0), (), 1.0, (2, 4),
-            900.0, 20.0, 1.0,
-            _series_signature("warship", i, name, "warship", "KAMPFSCHIFF"))
-
-    aircraft = {a.key: a for a in _AIRCRAFT_DEFAULTS}
-    animals = {a.key: a for a in _ANIMAL_DEFAULTS}
-    torpedoes = {t.key: t for t in _TORPEDO_DEFAULTS}
-    decoys = {d.key: d for d in _DECOY_DEFAULTS}
-    return ContactCatalog(subs, surfaces, aircraft, animals, torpedoes,
-                          decoys, db_source="eingebauter Default")
+    """Lädt den vollständigen eingebauten Katalog aus Paketressourcen."""
+    return _load_catalog_from(resources.files("data.contacts"))
 
 
 # ---------------------------------------------------------------------------
@@ -404,7 +147,7 @@ class ContactCatalog:
     """Alle Plattformprofile + abgeleitete Listen (Spawn-Pools, Bibliothek)."""
 
     def __init__(self, subs, surfaces, aircraft, animals, torpedoes, decoys,
-                 db_source: str = "data/contacts"):
+                 db_source: str = "data/contacts", library_signatures=()):
         self.subs = dict(subs)
         self.surfaces = dict(surfaces)
         self.aircraft = dict(aircraft)
@@ -418,9 +161,8 @@ class ContactCatalog:
         for t in self.torpedoes.values():
             if t.acoustic is not None:
                 self.acoustic_by_key[t.acoustic.key] = t.acoustic
-        for d in self.decoys.values():
-            self.acoustic_by_key[d.key] = _DECOY_LIBRARY_SIG
-        self.acoustic_by_key[_ANIMAL_LIBRARY_SIG.key] = _ANIMAL_LIBRARY_SIG
+        for signature in library_signatures:
+            self.acoustic_by_key[signature.key] = signature
         self.acoustic_profiles = tuple(self.acoustic_by_key.values())
         self.civilian_signatures = tuple(
             s for s in self.acoustic_profiles
@@ -481,12 +223,12 @@ def _weighted_pick(rng, pool):
 # JSON-Loader
 # ---------------------------------------------------------------------------
 
-def _read_entries(path: str) -> list:
-    with open(path, "r", encoding="utf-8") as f:
+def _read_entries(path) -> list:
+    with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
     entries = data.get("entries")
     if not isinstance(entries, list) or not entries:
-        raise ValueError(f"{os.path.basename(path)}: 'entries' fehlt/leer")
+        raise ValueError(f"{path.name}: 'entries' fehlt/leer")
     return entries
 
 
@@ -623,6 +365,14 @@ def _load_decoys(path: str) -> dict:
     return out
 
 
+def _load_library_signatures(path) -> tuple:
+    return tuple(
+        _acoustic_from_dict(entry, str(entry["key"]),
+                            entry.get("category", "FAHRZEUG"))
+        for entry in _read_entries(path)
+    )
+
+
 def _validate(cat: ContactCatalog) -> None:
     n_platforms = sum(1 for s in cat.acoustic_profiles
                       if s.category != "BIOLOGISCH")
@@ -652,30 +402,35 @@ def _validate(cat: ContactCatalog) -> None:
             raise ValueError(f"broadband-Band inversed: {s.key}")
 
 
-def load_catalog(base_dir: str = None, quiet: bool = False) -> ContactCatalog:
-    """Lädt data/contacts/*.json; bei Fehlern: eingebauter Default.
+def _load_catalog_from(base_dir) -> ContactCatalog:
+    cat = ContactCatalog(
+        _load_subs(base_dir / "subs.json"),
+        _load_surfaces(base_dir / "warships.json") |
+        _load_surfaces(base_dir / "civilians.json"),
+        _load_aircraft(base_dir / "aircraft.json"),
+        _load_animals(base_dir / "animals.json"),
+        _load_torpedoes(base_dir / "torpedoes.json"),
+        _load_decoys(base_dir / "decoys.json"),
+        db_source=base_dir.name or "data/contacts",
+        library_signatures=_load_library_signatures(
+            base_dir / "acoustics.json"))
+    _validate(cat)
+    return cat
 
-    db_source auf dem Katalog zeigt, welche Quelle aktiv ist
-    ("data/contacts" oder "eingebauter Default").
-    """
-    base_dir = base_dir or CONTACTS_DIR
+
+def load_catalog(base_dir: str = None, quiet: bool = False) -> ContactCatalog:
+    """Lädt einen Katalog; fehlerhafte externe Daten fallen auf Paketdaten zurück."""
+    if base_dir is None:
+        return build_catalog()
+    source = os.fspath(base_dir)
     try:
-        cat = ContactCatalog(
-            _load_subs(os.path.join(base_dir, "subs.json")),
-            _load_surfaces(os.path.join(base_dir, "warships.json")) |
-            _load_surfaces(os.path.join(base_dir, "civilians.json")),
-            _load_aircraft(os.path.join(base_dir, "aircraft.json")),
-            _load_animals(os.path.join(base_dir, "animals.json")),
-            _load_torpedoes(os.path.join(base_dir, "torpedoes.json")),
-            _load_decoys(os.path.join(base_dir, "decoys.json")),
-            db_source=os.path.basename(base_dir) or "data/contacts")
-        _validate(cat)
-        return cat
-    except Exception as exc:  # noqa: BLE001 – Fallback ist Absicht
+        from pathlib import Path
+        return _load_catalog_from(Path(source))
+    except Exception as exc:  # noqa: BLE001 - external data may be user-edited
         if not quiet:
             import sys
-            print(f"[kontakt-db] {base_dir}: {exc} – "
-                  f"verwende eingebauten Default-Katalog", file=sys.stderr)
+            print(f"[kontakt-db] {source}: {exc} - "
+                  f"verwende paketierten Katalog", file=sys.stderr)
         return build_catalog()
 
 

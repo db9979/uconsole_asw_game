@@ -4,6 +4,8 @@ import pygame
 import pytest
 
 from src.ui import layout
+from src.ui import editor_widgets
+from src.core.i18n import Translator, pseudolocale, translation_scope
 
 
 @pytest.fixture
@@ -50,6 +52,42 @@ def test_fit_text_does_not_emit_an_oversized_ellipsis(monkeypatch, text_font):
     fitted_font, lines = layout.fit_text("i\ni\ni", 24, width, 1, min_size=24)
     assert len(lines) == 1
     assert all(fitted_font.size(line)[0] <= width for line in lines)
+
+
+def test_operational_text_defaults_never_shrink_below_twelve_pixels(monkeypatch):
+    requested = []
+    original = layout.font
+
+    def record(size, bold=False):
+        requested.append(size)
+        return original(size, bold)
+
+    monkeypatch.setattr(layout, "font", record)
+    layout.fit_text("A deliberately long operational status line", 16, 20, 12)
+
+    assert layout.MIN_OPERATIONAL_FONT == 12
+    assert requested
+    assert min(requested) >= 12
+
+
+def test_fonts_are_shared_cached_and_replaced_with_display_lifetime(monkeypatch):
+    first_display = pygame.Surface((1, 1))
+    second_display = pygame.Surface((1, 1))
+    created = []
+
+    monkeypatch.setattr(pygame.display, "get_surface", lambda: first_display)
+    monkeypatch.setattr(pygame.font, "SysFont",
+                        lambda *args, **kwargs: created.append(object()) or created[-1])
+    layout.clear_font_cache()
+    first = layout.font(16)
+    assert editor_widgets.font(16) is first
+    assert len(created) == 1
+
+    monkeypatch.setattr(pygame.display, "get_surface", lambda: second_display)
+    assert layout.font(16) is not first
+    assert len(created) == 2
+    editor_widgets.clear_font_cache()
+    assert layout._FONT_CACHE == {}
 
 
 class SolidFont:
@@ -157,3 +195,44 @@ def test_blit_lines_consumes_iterable_once(monkeypatch, height, visible, kind):
     assert drawn == [(text, (10, 10 + i * 12, 50, 12))
                      for i, text in enumerate(values[:visible])]
     assert screen.get_clip() == original_clip
+
+
+@pytest.mark.parametrize("translator", [
+    Translator("en"), Translator("de"),
+    Translator("en", catalog=pseudolocale()),
+])
+def test_localized_operational_text_stays_inside_1280x720(translator):
+    pygame.font.init()
+    screen = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    rect = pygame.Rect(1030, 650, 240, 60)
+    with translation_scope(translator.t):
+        layout.blit_block(
+            screen,
+            "Current progress is retained only if you save first.",
+            *rect, color="white", size=18)
+    assert screen.get_bounding_rect().clip(rect) == screen.get_bounding_rect()
+
+
+def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale():
+    from src.core.game import Game
+    from src.core.station import Station
+
+    game = Game(seed=31, fullscreen=False, window_size=(1280, 720),
+                audio_enabled=False)
+    translators = (Translator("en"), Translator("de"),
+                   Translator("en", catalog=pseudolocale()))
+    for translator in translators:
+        game.translator = translator
+        game.tr = translator.t
+        for station in Station:
+            game.station = station
+            game.draw()
+            assert game.screen.get_size() == (1280, 720)
+            assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
+        for overlay in ("help", "nations", "save", "load", "options", "quit"):
+            game._open_administration(overlay)
+            game.draw()
+            assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
+        game.help_open = game.nations_open = game.options_open = False
+        game.quit_confirm = False
+        game.save_ui = None

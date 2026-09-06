@@ -12,16 +12,23 @@ AFFILIATION_COLORS = {
 
 DOMAIN_LABELS = {
     "SURFACE": "See",
+    "SUBSURFACE": "Untersee",
     "AIR": "Luft",
     "MISSILE": "Flugkoerper",
+    "UNDERWATER_WEAPON": "Unterwasserwaffe",
 }
 
 
 def domain_for_kind(kind: str) -> str:
+    kind = kind.upper()
     if kind == "FLG":
         return "AIR"
     if kind == "ASM":
         return "MISSILE"
+    if kind == "SUB":
+        return "SUBSURFACE"
+    if kind == "TORP":
+        return "UNDERWATER_WEAPON"
     return "SURFACE"
 
 
@@ -57,6 +64,18 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
         pygame.draw.line(surface, color, (x, y + 4), (x, y - 4), 2)
         pygame.draw.lines(surface, color, False,
                           [(x - 3, y - 1), (x, y - 4), (x + 3, y - 1)], 2)
+    elif domain == "SUBSURFACE":
+        # Keel and conning tower: distinct from the surface-domain wave.
+        pygame.draw.arc(surface, color, (x - 6, y - 2, 12, 7), 3.14159, 6.28318, 2)
+        pygame.draw.line(surface, color, (x - 2, y + 1), (x - 2, y - 2), 2)
+        pygame.draw.line(surface, color, (x - 2, y - 2), (x + 2, y - 2), 2)
+    elif domain == "UNDERWATER_WEAPON":
+        # Horizontal weapon body with nose and contra-rotating tail marks.
+        pygame.draw.line(surface, color, (x - 5, y), (x + 4, y), 2)
+        pygame.draw.lines(surface, color, False,
+                          [(x + 2, y - 2), (x + 5, y), (x + 2, y + 2)], 2)
+        pygame.draw.line(surface, color, (x - 5, y), (x - 2, y - 3), 1)
+        pygame.draw.line(surface, color, (x - 5, y), (x - 2, y + 3), 1)
     else:
         pygame.draw.line(surface, color, (x - 5, y + 2), (x + 5, y + 2), 2)
         pygame.draw.arc(surface, color, (x - 5, y - 3, 10, 7), 0, 3.14159, 1)

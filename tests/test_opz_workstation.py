@@ -1,5 +1,7 @@
 """OPZ/CIC: Track-Fokus, NATO-Symbole und Persistenz."""
 
+from types import SimpleNamespace as NS
+
 import pygame
 
 from src.core import config
@@ -119,8 +121,9 @@ def test_weather_has_no_radar_effect_until_sea_state_five():
     assert game.radar_weather_severity() == 1.0
 
 
-def test_separate_radars_publish_only_their_domains():
+def test_separate_radars_publish_only_their_domains(monkeypatch):
     game = opz_game()
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
     civilian = game.civilians[0]
     civilian.x, civilian.y = game.ship.x + 5.0, game.ship.y
     civilian.emitter = False
@@ -198,6 +201,28 @@ def test_opz_draws_positioned_and_bearing_only_tracks():
     game.draw()
 
 
+def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
+    game = opz_game()
+    observe(game, "S-1", "AIS")
+    game.opz_selected_track_id = "S-1"
+    game.opz_affiliations["S-1"] = "NEUTRAL"
+    lines = []
+    original = stations_view.layout.blit_line
+
+    def record(screen, text, *args, **kwargs):
+        lines.append(text)
+        return original(screen, text, *args, **kwargs)
+
+    monkeypatch.setattr(stations_view.layout, "blit_line", record)
+    stations_view.draw_opz_view(game)
+    assert any("Quelle" in line and "RADAR" in line for line in lines)
+    assert any("Peilung" in line and "vorhanden" in line for line in lines)
+    assert any("Entfernung" in line and "vorhanden" in line for line in lines)
+    assert any("Kurs" in line and "vorhanden" in line for line in lines)
+    assert any("Alter/Q" in line for line in lines)
+    assert any("Zuordnung" in line and "Neutral" in line for line in lines)
+
+
 def test_coast_reflections_are_requested_only_with_surface_radar(monkeypatch):
     game = opz_game()
     calls = []
@@ -238,6 +263,91 @@ def test_scope_hides_positioned_tracks_outside_selected_range(monkeypatch):
     assert len(calls) == 2
 
 
+def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypatch):
+    game = opz_game()
+    observe(game, "S-1", "AIS", range_nm=30.0)
+    game.opz_range_nm = 40.0
+    game.radar_range_nm = 20.0
+    symbols = []
+    lines = []
+    original_symbol = nato_symbols.draw_symbol
+    original_line = stations_view.layout.blit_line
+
+    def record_symbol(*args, **kwargs):
+        symbols.append(args[2:4])
+        return original_symbol(*args, **kwargs)
+
+    def record_line(screen, text, *args, **kwargs):
+        lines.append(text)
+        return original_line(screen, text, *args, **kwargs)
+
+    monkeypatch.setattr(nato_symbols, "draw_symbol", record_symbol)
+    monkeypatch.setattr(stations_view.layout, "blit_line", record_line)
+    stations_view.draw_opz_view(game)
+
+    assert symbols == [("FRIEND", "SURFACE")]
+    footer = next(line for line in lines if "PgUp/PgDn" in line)
+    assert "BEREICH 20 NM" in footer and "Rad ueber PPI" in footer
+    assert all(str(scale) in footer for scale in (10, 20, 40, 80, 120))
+
+
+def test_opz_ppi_hit_rect_is_bounded_at_1280x720(monkeypatch):
+    monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
+    ppi = stations_view.opz_ppi_rect()
+    assert pygame.Rect(0, 0, 1280, 720).contains(ppi)
+    assert ppi.right <= int(config.STATION_RECT[2] * .66)
+
+
+def test_contact_scale_tracks_selected_range(monkeypatch):
+    game = opz_game()
+    observe(game, "S-1", "AIS", range_nm=10.0)
+    positions = []
+
+    def symbol(surface, position, affiliation, domain, *args, **kwargs):
+        if affiliation != "FRIEND":
+            positions.append(position)
+        return nato_symbols.AFFILIATION_COLORS[affiliation]
+
+    monkeypatch.setattr(nato_symbols, "draw_symbol", symbol)
+    center_x = stations_view.opz_ppi_rect().centerx
+    game.radar_range_nm = 20.0
+    stations_view.draw_opz_view(game)
+    near_displacement = positions[-1][0] - center_x
+    game.radar_range_nm = 40.0
+    stations_view.draw_opz_view(game)
+    far_displacement = positions[-1][0] - center_x
+
+    assert near_displacement == 2 * far_displacement
+
+
+def test_underwater_tracks_have_table_codes_and_affiliation_colors(monkeypatch):
+    game = opz_game()
+    observe(game, "U-1", "SUB", source="SONAR-PING")
+    observe(game, "T-2", "TORP", source="SONAR")
+    game.opz_affiliations.update({"U-1": "FRIEND", "T-2": "HOSTILE"})
+    rows = []
+    original = stations_view.layout.blit_line
+
+    def record(screen, text, rect, color, *args, **kwargs):
+        if " UBT " in text or " TOR " in text:
+            rows.append((text, color))
+        return original(screen, text, rect, color, *args, **kwargs)
+
+    monkeypatch.setattr(stations_view.layout, "blit_line", record)
+    stations_view.draw_opz_view(game)
+
+    assert [code for code in (" UBT ", " TOR ")
+            if any(code in text for text, _ in rows)] == [" UBT ", " TOR "]
+    assert {color for _, color in rows} == {
+        nato_symbols.AFFILIATION_COLORS["FRIEND"],
+        nato_symbols.AFFILIATION_COLORS["HOSTILE"],
+    }
+    assert (stations_view.OPZ_DOMAIN_COLORS["SUBSURFACE"] ==
+            config.COLOR_CONTACT_UBOOT)
+    assert (stations_view.OPZ_DOMAIN_COLORS["UNDERWATER_WEAPON"] ==
+            config.COLOR_DANGER)
+
+
 def test_weather_clutter_is_absent_before_five_and_deterministic_at_six():
     game = opz_game()
     first = pygame.Surface((240, 240))
@@ -268,3 +378,33 @@ def test_nato_symbol_frames_draw_for_every_affiliation_and_domain():
             assert color == nato_symbols.AFFILIATION_COLORS[affiliation]
             assert pygame.mask.from_threshold(
                 surface, color, threshold=(1, 1, 1, 255)).count() > 0
+
+
+def test_own_airborne_helicopter_is_direct_friend_air_datalink_not_track(monkeypatch):
+    monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
+    symbols = []
+    sensor_tracks = []
+
+    def symbol(surface, position, affiliation, domain, *args, **kwargs):
+        symbols.append((affiliation, domain, position))
+        return (100, 220, 150)
+
+    game = NS(
+        screen=pygame.Surface((1280, 720)), opz_range_nm=40.0,
+        ship=NS(x=100.0, y=100.0, course=0.0),
+        helo=NS(airborne=True, x=110.0, y=100.0),
+        damage=NS(station_down=lambda station: False),
+        surface_radar_on=False, air_radar_on=False,
+        radar_tracks=lambda: sensor_tracks,
+        opz_selected_track_id=None, asm_tracks=lambda: [],
+        radar_weather_severity=lambda: 0.0,
+        world=NS(sea_state=2), vls_cells=8, chaff_cd=0.0,
+        selected_opz_track=lambda: None, ciws_ammo=100,
+    )
+    monkeypatch.setattr(nato_symbols, "draw_symbol", symbol)
+
+    stations_view.draw_opz_view(game)
+
+    assert [(affiliation, domain) for affiliation, domain, _ in symbols] == [
+        ("FRIEND", "SURFACE"), ("FRIEND", "AIR")]
+    assert sensor_tracks == []

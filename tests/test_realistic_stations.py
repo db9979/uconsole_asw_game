@@ -145,6 +145,90 @@ def test_trackball_cannot_steer_outside_bridge():
     assert game._joy_turn == 1
 
 
+def test_trackball_axes_match_damage_team_and_compartment():
+    game = Game(seed=658, start_menu=False)
+    game.station = Station.DAMAGE
+    game.dmg_team = 1
+    game.dmg_cursor = 0
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=1, value=1.0))
+    assert game.dmg_team == 2 and game.dmg_cursor == 0
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=0, value=1.0))
+    assert game.dmg_cursor == 1 and game.dmg_team == 2
+
+
+def test_trackball_axes_match_weapon_depth_and_contact_selection():
+    game = Game(seed=659, start_menu=False)
+    game.station = Station.WEAPONS
+    first = Contact(1, 101, "passiv", "sub")
+    second = Contact(2, 102, "passiv", "sub")
+    game.sonar.contacts = {101: first, 102: second}
+    depth = game.torpedo_depth
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=0, value=1.0))
+    assert game.selected_contact is first
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=1, value=-1.0))
+    assert game.torpedo_depth > depth
+
+
+def test_trackball_axes_match_helicopter_bearing_and_range():
+    game = Game(seed=660, start_menu=False)
+    game.station = Station.HELICOPTER
+    before_bearing, before_range = game._helo_waypoint_polar()
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=0, value=1.0))
+    bearing, distance = game._helo_waypoint_polar()
+    assert bearing == (before_bearing + 15.0) % 360.0
+    assert abs(distance - before_range) < 1e-9
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=1, value=-1.0))
+    assert game._helo_waypoint_polar()[1] > distance
+
+
+def test_trackball_axes_match_sonar_beam_and_contact_selection():
+    game = Game(seed=661, start_menu=False)
+    game.station = Station.SONAR
+    contact = Contact(1, 101, "passiv", "sub")
+    game.sonar.contacts = {101: contact}
+    bearing = game.sonar.listen_bearing
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=0, value=1.0))
+    assert game.sonar.listen_bearing == bearing + .5
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=1, value=1.0))
+    assert game.selected_contact is contact
+
+
+def test_trackball_axes_match_opz_asm_and_cic_selection():
+    game = Game(seed=662, start_menu=False)
+    game.station = Station.OPZ
+    game.air_picture._tracks.clear()
+    for track_id, kind in (("S-1", "AIS"), ("M-2", "ASM"), ("M-3", "ASM")):
+        game.air_picture.observe(
+            track_id=track_id, kind=kind, target_id=int(track_id[-1]),
+            source="RADAR", bearing=90.0, range_nm=5.0,
+            observer_x=game.ship.x, observer_y=game.ship.y, course=0.0,
+            quality=.8, now=game.sim_t, label=track_id)
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=0, value=1.0))
+    assert game.asm_sel == 1
+    for _ in range(2):
+        game.handle_event(pygame.event.Event(
+            pygame.JOYAXISMOTION, axis=1, value=1.0))
+    assert game.opz_selected_track_id == "M-2"
+
+
 def test_procedural_world_snapshot_survives_save_load():
     game = Game(seed=656, start_menu=False)
     before = game.world.coast.to_dict()

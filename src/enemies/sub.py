@@ -12,6 +12,10 @@ from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
 
 CATALOG = catalog.CATALOG
+DECOY_PROFILE = CATALOG.get_decoy("decoy")
+if DECOY_PROFILE is None:
+    raise RuntimeError(
+        "Kontaktkatalog unvollstaendig: Dekoy-Profil 'decoy' fehlt")
 
 
 class SubType:
@@ -222,9 +226,9 @@ class Sub:
 
         # W2: Torpedo-Alarm -> einmalig Dekoy-Abwurf (Chance je Level-Faktor)
         if self.torpedo_alerted and self._decoy_cd <= 0.0:
-            if self.rng.random() < config.SUB_DECOY_CHANCE:
+            if self.rng.random() < DECOY_PROFILE.chance:
                 self.pending_decoys.append((self.x, self.y))
-                self._decoy_cd = config.SUB_DECOY_COOLDOWN_S
+                self._decoy_cd = DECOY_PROFILE.cooldown_s
             self.torpedo_alerted = False
 
         if self.state == "SINKING":

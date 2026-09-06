@@ -5,9 +5,9 @@ from src.core.version import APP_VERSION, SPLASH_TEXT
 
 
 def test_release_version_and_exact_splash_text():
-    assert APP_VERSION == "0.1.0"
+    assert APP_VERSION == "0.1.5"
     assert SPLASH_TEXT == (
-        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 0.1.0"
+        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 0.1.5"
     )
 
 

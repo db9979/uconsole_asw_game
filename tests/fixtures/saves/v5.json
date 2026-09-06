@@ -1,0 +1,16 @@
+{
+  "version": 5,
+  "seed": 1005,
+  "mission_type": "patrouille",
+  "mission_time": 55.0,
+  "score": 105,
+  "incident": false,
+  "ship": {"x": 250.0, "y": 251.0, "course": 52.0, "target_course": 53.0, "speed": 8.0, "target_speed": 9.0, "turn_rate_scale": 0.8, "rudder_angle": 3.0, "yaw_rate": 0.2, "roll": 1.5, "pitch": -0.5, "quiet_mode": true, "clock": 5.5},
+  "torpedoes": {"total": 8, "count": 3, "depth": 65.0},
+  "damage": {"compartments": {}, "teams": {}},
+  "subs": [],
+  "animals": [],
+  "civilians": [],
+  "warships": [],
+  "decoys": []
+}

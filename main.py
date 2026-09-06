@@ -5,6 +5,7 @@ import argparse
 import random
 
 from src.core.game import Game
+from src.core.preferences import load_preferences
 from src.core.version import APP_VERSION
 
 
@@ -15,10 +16,14 @@ def main(argv=None) -> int:
     parser.add_argument("--no-audio", action="store_true")
     parser.add_argument("--version", action="version", version=APP_VERSION)
     args = parser.parse_args(argv)
+    preferences = load_preferences()
     seed = args.seed if args.seed is not None else random.SystemRandom().randrange(
         1, 1_000_000_000)
-    Game(seed=seed, start_menu=True, fullscreen=not args.windowed,
-         show_splash=True, audio_enabled=not args.no_audio).run()
+    Game(seed=seed, start_menu=True,
+         preferences=preferences,
+         fullscreen=preferences.fullscreen and not args.windowed,
+         show_splash=True,
+         audio_enabled=preferences.audio and not args.no_audio).run()
     return 0
 
 

@@ -5,10 +5,30 @@ Bewegung, Treibstoff und Zeitfenster verwenden dieselbe Simulationszeit.
 """
 
 import math
+from dataclasses import dataclass
 
 from src.core import config
 from src.air.sonobuoy import Sonobuoy
+from src.data.catalog import CATALOG
 from src.weapons.torpedo import Torpedo
+
+
+HELO_TORPEDO_PROFILE = CATALOG.get_torpedo("helo_torp")
+if HELO_TORPEDO_PROFILE is None:
+    raise RuntimeError(
+        "Kontaktkatalog unvollstaendig: Torpedo-Profil 'helo_torp' fehlt")
+
+
+@dataclass(frozen=True)
+class ReleaseDatum:
+    """Observed world datum and the helicopter-relative delivery geometry."""
+
+    x_nm: float
+    y_nm: float
+    course_deg: float
+    range_nm: float
+    bearing_uncertainty_deg: float
+    range_uncertainty_nm: float
 
 
 class Helicopter:
@@ -92,11 +112,38 @@ class Helicopter:
         self.buoys_left -= 1
         return Sonobuoy(self.x, self.y, seq)
 
+    def release_datum_from_ship_observation(
+            self, ship, observed_bearing_deg: float, observed_range_nm: float,
+            bearing_uncertainty_deg: float = 0.0,
+            range_uncertainty_nm: float = 0.0) -> ReleaseDatum:
+        """Convert a ship-relative observation for a helicopter release.
+
+        The observed bearing is world-referenced, as elsewhere in the sensor
+        model. Uncertainty remains attached rather than being mistaken for an
+        exact helicopter-relative measurement.
+        """
+        bearing_rad = math.radians(observed_bearing_deg)
+        x_nm = ship.x + observed_range_nm * math.sin(bearing_rad)
+        y_nm = ship.y - observed_range_nm * math.cos(bearing_rad)
+        dx, dy = x_nm - self.x, y_nm - self.y
+        return ReleaseDatum(
+            x_nm=x_nm,
+            y_nm=y_nm,
+            course_deg=math.degrees(math.atan2(dx, -dy)) % 360.0,
+            range_nm=math.hypot(dx, dy),
+            bearing_uncertainty_deg=bearing_uncertainty_deg,
+            range_uncertainty_nm=range_uncertainty_nm,
+        )
+
     def drop_torpedo(self, target, target_depth_m: float, seq: int,
-                      kill_dist_nm: float, kill_depth_m: float,
+                      kill_dist_nm: float = None, kill_depth_m: float = None,
                       guidance_x: float = None,
                       guidance_y: float = None) -> "Torpedo | None":
-        """M15: Leichttorpedo vom Hubschrauber (nicht aus Fregatten-Munition)."""
+        """Drop a catalog torpedo with an optional absolute hit-envelope result.
+
+        The catalog remains the default; callers may supply the intentionally
+        difficulty-adjusted result used by the game level configuration.
+        """
         if not self.airborne or self.torps <= 0:
             return None
         self.torps -= 1
@@ -105,6 +152,9 @@ class Helicopter:
         course = math.degrees(math.atan2(aim_x - self.x,
                                          -(aim_y - self.y))) % 360.0
         return Torpedo(self.x, self.y, course, target_depth_m, target, seq,
-                       kill_dist_nm=kill_dist_nm, kill_depth_m=kill_depth_m,
-                       speed_kn=config.HELO_TORP_SPEED_KN,
-                       guidance_x=aim_x, guidance_y=aim_y)
+                       kill_dist_nm=(HELO_TORPEDO_PROFILE.hit_dist_nm
+                                     if kill_dist_nm is None else kill_dist_nm),
+                       kill_depth_m=kill_depth_m,
+                       speed_kn=HELO_TORPEDO_PROFILE.speed_kn,
+                       guidance_x=aim_x, guidance_y=aim_y,
+                       range_nm=HELO_TORPEDO_PROFILE.range_nm)

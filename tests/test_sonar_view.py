@@ -59,7 +59,7 @@ def test_lofar_nonlinear_bins_land_at_true_linear_hz(index):
     assert peak_hz == pytest.approx(config.lofar_bin_freq(index), abs=.5)
 
 
-@pytest.mark.parametrize("page", range(5))
+@pytest.mark.parametrize("page", range(6))
 def test_all_pages_clip_to_station_and_restore_clip(game, page):
     game.sonar_page = page
     game.screen.fill((201, 12, 93))
@@ -102,6 +102,7 @@ def test_cache_reuses_bitmap_and_invalidates_history_controls_size_sequence(game
     assert len(view._WATERFALL_CACHE) == 1
     assert next(iter(view._WATERFALL_CACHE.values()))[0] is first
     game.sonar.broadband_history[0][0] = .8
+    game.sonar.receiver.sequence += 1
     view._waterfall(game, 0, rect)
     assert len(view._WATERFALL_CACHE) == 2
     game.sonar.gain_db = 6
@@ -146,6 +147,27 @@ def test_tma_wrap_uses_observed_track_only(game):
     view.draw_sonar_view(game)
 
 
+def test_tma_summary_reports_observed_rate_legs_and_clear_states():
+    short = NS(pts=[NS(t=0., bearing=358., fcourse=0.),
+                    NS(t=20., bearing=0., fcourse=0.)])
+    summary = view.tma_observation_summary(short, 20.)
+    assert summary["state"] == "ZU WENIG HISTORIE"
+    assert summary["rate"] == pytest.approx(6.0)
+    assert summary["legs"] == 1
+
+    weak = NS(pts=[NS(t=t, bearing=90. + t / 60., fcourse=0.)
+                   for t in (0., 60., 120., 180.)])
+    assert view.tma_observation_summary(weak, 180.)["state"] == "SCHWACHE GEOMETRIE"
+
+    useful = NS(pts=[NS(t=t, bearing=90. + t / 60., fcourse=course)
+                     for t, course in ((0., 0.), (60., 0.), (120., 20.), (180., 20.))])
+    summary = view.tma_observation_summary(useful, 180., solution_quality=.1)
+    assert summary["state"] == "KONVERGIEREND"
+    assert summary["geometry"] == "BRAUCHBAR"
+    assert summary["legs"] == 2
+    assert view.tma_observation_summary(useful, 211.)["state"] == "VERALTET"
+
+
 def test_contact_window_keeps_last_selection_visible(game, monkeypatch):
     contacts = [NS(id=i, bearing=i * 10) for i in range(1, 21)]
     game.sonar.active_contacts = lambda: contacts
@@ -172,7 +194,9 @@ def test_demon_requires_envelope_evidence_and_labels_hypotheses(game, monkeypatc
     texts.clear()
     view._draw_details(game, rect, 2)
     assert sum("Candidate" in text for text in texts) == 3
-    assert any("Aehnlichkeit" in text for text in texts)
+    assert any("REFERENZ" in text for text in texts)
+    assert any("BEOBACHTET" in text for text in texts)
+    assert any("ALTERNATIVE" in text for text in texts)
     assert any("3: 400 RPM" in text for text in texts)
     assert any("4: 300 RPM" in text for text in texts)
 
@@ -181,7 +205,7 @@ def test_minimal_preintegration_fields_render(game):
     game.sonar = NS(active_contacts=lambda: [])
     del game.sonar_page
     view.draw_sonar_view(game)
-    for page in range(1, 5):
+    for page in range(1, 6):
         game.sonar_page = page
         view.draw_sonar_view(game)
 
@@ -196,6 +220,19 @@ def test_station_layout_has_large_plot_and_readable_contact_window(game, monkeyp
     assert panels[0].h >= 380
     assert contact_panels[0].w == 350
     assert (contact_panels[0].h - 33) // 43 >= 3
+
+
+def test_station_header_uses_divided_status_groups_without_microtext(game, monkeypatch):
+    drawn = []
+    monkeypatch.setattr(view, "_text", lambda screen, text, rect, color=view.TEXT,
+                        size=14, align="left": drawn.append((text, pygame.Rect(rect), size)))
+
+    view.draw_sonar_view(game)
+
+    groups = [item for item in drawn if item[0].startswith(("ARRAY", "HOEREN", "FILTER"))]
+    assert [item[0].split()[0] for item in groups] == ["ARRAY", "HOEREN", "FILTER"]
+    assert len({item[1].x for item in groups}) == 3
+    assert min(size for _, _, size in drawn) >= 12
 
 
 def test_demon_chart_uses_actual_envelope_bins_on_hz_axis(game, monkeypatch):
@@ -224,7 +261,7 @@ def test_drawing_never_reads_contact_identity_or_world_truth(game):
 
     game.selected_contact = ObservedContact()
     game.sonar.active_contacts = lambda: [game.selected_contact]
-    for page in range(5):
+    for page in range(6):
         game.sonar_page = page
         view.draw_sonar_view(game)
 
@@ -244,5 +281,75 @@ def test_environment_page_uses_measured_profile(game, monkeypatch):
     game.sonar_page = 4
     view.draw_sonar_view(game)
     assert any("Sprungschicht ~80" in text for text in texts)
-    assert any("TAS 95m -> 110m" in text for text in texts)
+    assert any("95m -> 110m" in text for text in texts)
     assert any("CZ Prognose 40-70" in text for text in texts)
+
+
+def test_active_history_is_age_bounded_copied_and_does_not_read_contacts(game):
+    game.sim_t = 200.0
+    source = [
+        dict(t=70., contact_id=1, bearing=10., range_nm=2., snr_db=4.),
+        dict(t=100., contact_id=2, bearing=20., range_nm=3., snr_db=5.),
+        dict(t=199., contact_id=3, bearing=30., range_nm=4.,
+             range_sigma_nm=.2, depth_m=80., depth_sigma_m=6., snr_db=8., mode="BOW"),
+    ]
+    game.sonar.echo_history = source
+    echoes = view.active_echoes(game.sonar, game.sim_t)
+    assert [echo["contact_id"] for echo in echoes] == [2, 3]
+    assert echoes[-1]["age_s"] == 1
+    assert "age_s" not in source[-1]
+
+    game.sonar.active_contacts = lambda: pytest.fail("ACTIVE read live contacts")
+    game.selected_contact = NS(
+        __getattr__=lambda self, name: pytest.fail(f"ACTIVE read contact {name}"))
+    game.sonar_page = 5
+    view.draw_sonar_view(game)
+
+
+def test_active_page_draws_range_uncertainty_and_readiness(game, monkeypatch):
+    game.sim_t = 50.
+    game.sonar.echo_history = [
+        dict(t=49., contact_id=7, bearing=45., range_nm=8.,
+             range_sigma_nm=.4, depth_m=120., depth_sigma_m=9.,
+             snr_db=10., mode="BOW")]
+    game.sonar.ping_ready = False
+    game.sonar.ping_cooldown_remaining = 17.
+    texts, amber_lines = [], []
+    monkeypatch.setattr(view, "_text", lambda screen, text, *args, **kwargs:
+                        texts.append(text))
+    original_line = pygame.draw.line
+
+    def record_line(surface, color, start, end, width=1):
+        if color == view.AMBER:
+            amber_lines.append((start, end, width))
+        return original_line(surface, color, start, end, width)
+
+    monkeypatch.setattr(pygame.draw, "line", record_line)
+    game.sonar_page = 5
+    view.draw_sonar_view(game)
+    assert any("PING 17s" in text for text in texts)
+    assert any("8.00 +/- 0.40 NM" in text for text in texts)
+    assert len(amber_lines) >= 2  # A-scope interval and radial interval.
+
+
+@pytest.mark.parametrize("page", range(6))
+def test_every_sonar_page_shows_tas_payout_and_stability(game, page, monkeypatch):
+    game.sonar.tow_status = lambda speed=None: dict(
+        state="DEPLOYING", payout=.42, payout_percent=42., available=False,
+        handling_ok=False, performance=.25, depth_m=50., depth_target_m=70.)
+    texts = []
+    monkeypatch.setattr(view, "_text", lambda screen, text, *args, **kwargs:
+                        texts.append(text))
+    game.sonar_page = page
+    view.draw_sonar_view(game)
+    assert any("TAS DEPLOYING 42% STAB 25% PAUSE" in text for text in texts)
+
+
+def test_sonar_view_accepts_optional_translator(game, monkeypatch):
+    texts = []
+    monkeypatch.setattr(view, "_text", lambda screen, text, *args, **kwargs:
+                        texts.append(text))
+    game.sonar_page = 5
+    view.draw_sonar_view(game, lambda text: f"TR:{text}")
+    assert "TR:SONAR / ACTIVE" in texts
+    assert "TR:ACTIVE / ECHO-AUSWERTUNG" in texts

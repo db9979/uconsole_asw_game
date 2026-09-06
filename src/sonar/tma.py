@@ -152,7 +152,7 @@ def solve_tma(track: BearingTrack,
     if best is None:
         return None
     # Verfeinerung um den besten Kandidaten
-    b_rmse, b_course, b_speed, b_pos, _ = best
+    _, b_course, b_speed, _, _ = best
     for dc in (-15, 0, 15):
         for ds in (-2.0, 0.0, 2.0):
             c2 = (b_course + dc) % 360
@@ -160,7 +160,7 @@ def solve_tma(track: BearingTrack,
             if s2 < 0.0:
                 continue
             cand = _try_candidate(pts, t0, c2, s2, max_range_nm)
-            if cand is not None and cand[0] < b_rmse:
+            if cand is not None and cand[0] < best[0]:
                 best = cand
     rmse, course, speed, pos, quality = best
     return TMASolution(pos=pos, course=course, speed=speed, quality=quality,

@@ -9,8 +9,13 @@ import pygame
 
 from src.audio.engine import AudioEngine
 from src.core import config
+from src.core.commands import (MAP_STATIONS, event_feed_heading, sonar_page_step,
+                               toggle_tas)
+from src.core.i18n import Translator, localized, localize
+from src.core.preferences import Preferences, save_preferences
 from src.core.help import GLOBAL_HELP, get_help
 from src.core.mission import Mission
+from src.core.mission_definition import static_preview, validate_mission
 from src.core.station import Station
 from src.data import fingerprint as fingerprint_mod
 from src.data.catalog import CATALOG
@@ -23,19 +28,24 @@ from src.nations.nations import NATIONS, get_nation
 from src.sensors.tracks import TrackPicture
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
-from src.sonar.sonar import Contact, SonarSystem
+from src.sonar.sonar import Contact, SonarSystem, TowState
 from src.sonar.tma import BearingPoint, BearingTrack
 from src.ui import layout
 from src.ui.feedback import EventFeed
-from src.ui.map_view import draw_map_view
+from src.ui.map_view import draw_map_view, map_hit_target
 from src.ui.splash_view import draw_splash
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.stations_view import (draw_bridge_view, draw_damage_view,
                                   draw_engine_view, draw_opz_view,
                                   draw_radio_view, draw_radar_view,
-                                  draw_helicopter_view)
+                                   draw_helicopter_view, station_hit_target)
+from src.ui.stations_view import opz_ppi_rect
+from src.ui.mission_editor import MissionEditor
+from src.ui.unit_editor import UnitEditor, catalog_builtins
 from src.ui.viewport import Viewport
-from src.ui.weapons_view import draw_weapons_overlay, draw_weapons_panel
+from src.ui.weapons_view import (draw_weapons_overlay, draw_weapons_panel,
+                                 weapons_hit_target)
+from src.ui.sonar_view import sonar_hit_target
 from src.air.asm import ASM, ESSM
 from src.air.helicopter import Helicopter
 from src.air.flights import Flight, FlightManager
@@ -64,12 +74,28 @@ def make_scanlines(w: int, h: int, alpha: int = config.SCANLINE_ALPHA):
 
 class Game:
     def __init__(self, seed: int = 42, level: str = None,
-                 start_menu: bool = False, fullscreen: bool = False,
+                  start_menu: bool = False, fullscreen: bool = None,
                  window_size: tuple = None, show_splash: bool = False,
-                 audio_enabled: bool = None):
+                  audio_enabled: bool = None, preferences: Preferences = None,
+                  language: str = None):
+        requested_fullscreen = (preferences.fullscreen
+                                if preferences is not None and fullscreen is None
+                                else bool(fullscreen))
+        requested_audio = (preferences.audio
+                           if preferences is not None and audio_enabled is None
+                           else (config.AUDIO_ENABLED if audio_enabled is None
+                                 else bool(audio_enabled)))
+        self.preferences = preferences or Preferences(
+            language=language or Preferences.defaults().language,
+            fullscreen=requested_fullscreen, audio=requested_audio)
+        if language is not None and language != self.preferences.language:
+            from dataclasses import replace
+            self.preferences = replace(self.preferences, language=language)
+        self.translator = Translator(self.preferences.language)
+        self.tr = self.translator.t
         pygame.init()
         pygame.display.set_caption("U-Jagd – Fregatte")
-        if fullscreen:
+        if requested_fullscreen:
             # Echtes Vollbild: (0,0)+FULLSCREEN laesst SDL die native
             # Desktop-Aufloesung waehlen -> deckt Taskleiste ab, keine
             # schwarzen Balken. FILL_SCREEN streckt den virtuellen
@@ -86,14 +112,12 @@ class Game:
             if config.CRT_SCANLINES else None
         self.clock = pygame.time.Clock()
         self.audio = AudioEngine(sample_rate=config.AUDIO_SAMPLE_RATE,
-                                 enabled=(config.AUDIO_ENABLED if audio_enabled is None
-                                          else audio_enabled))
+                                 enabled=requested_audio)
         self._audio_timer = 0.0
         self._sensor_acc = 0.0
         self._radio_acc = 0.0
         self._slow_acc = 0.0
-        self.font = pygame.font.SysFont("monospace", 18)
-        self.font_big = pygame.font.SysFont("monospace", 28, bold=True)
+        self._apply_text_size()
         self.level = level if level in config.LEVELS else config.DEFAULT_LEVEL
         self.in_menu = start_menu
         self.menu_sel = 1  # Index in LEVEL_ORDER (Default: normal)
@@ -102,6 +126,11 @@ class Game:
         # W4: Szenario-Auswahl im Hauptmenü
         self.scenario_key = "s1_patrouille"
         self.menu_screen = "scenario"  # "scenario" | "level" | "briefing"
+        self.main_menu = bool(start_menu)
+        self.main_menu_sel = 0
+        self.editor = None
+        self.options_open = False
+        self.options_sel = 0
         self.menu_back = False
         # W0: neue UI-Zustände
         self.help_open = False
@@ -110,11 +139,25 @@ class Game:
         self.save_ui = None  # None | "save" | "load"
         self.save_slot = 1
         self._map_drag = None
+        self._map_drag_moved = False
         self.map_follow = True
         self.reset(seed)
         self.splash_active = bool(show_splash)
         self.splash_started_at = self._t
         self.splash_duration_s = 4.5
+
+    def _apply_text_size(self) -> None:
+        scale = 1.25 if self.preferences.large_text else 1.0
+        self.font = pygame.font.SysFont("monospace", round(18 * scale))
+        self.font_big = pygame.font.SysFont("monospace", round(28 * scale), bold=True)
+
+    @property
+    def radar_range_nm(self) -> float:
+        return self.opz_range_nm
+
+    @radar_range_nm.setter
+    def radar_range_nm(self, value: float) -> None:
+        self.opz_range_nm = value
 
     def reset(self, seed: int, scenario_key: str = None) -> None:
         """Spielzustand neu aufbauen (Start/Neustart).
@@ -141,6 +184,7 @@ class Game:
             course = 90.0
         self.ship = Ship(x_nm=sx, y_nm=sy, course_deg=course)
         self.sonar = SonarSystem(seed=seed)
+        self._last_tow_state = self.sonar.tow_state
         rng = random.Random(seed)
         self.rng_world = rng  # Phase 2: geteilt mit allen Entitäten (Save/Load)
         self.seed = seed
@@ -153,6 +197,7 @@ class Game:
 
         # M6: Mission (W4: Szenario kann den Typ fixieren)
         self.mission = Mission(seed, type_key=sc["mission_type"])
+        self.custom_mission_definition = None
         self.mission_time = 0.0
         self.score = 0
         self.mission_result = None   # None | "SIEG" | "VERLOREN"
@@ -229,6 +274,7 @@ class Game:
         self.running = True
         self.held = set()
         self._map_drag = None
+        self._map_drag_moved = False
         # Waffenzentrale (M3, M7: Munitionsbestand je Level)
         self.torpedo_total = lv["torp_total"]
         self.torpedo_count = lv["torp_total"]
@@ -247,6 +293,7 @@ class Game:
         self.damage = DamageModel(random.Random(seed + 777),
                                   repair_mult=lv["repair_mult"])
         self.enemy_torpedoes = []
+        self._observed_enemy_torpedoes = set()
         self.game_over = False
         # M10–M16
         self.sonar_mode = "BOW"                      # "BOW" | "TOWED"
@@ -282,6 +329,9 @@ class Game:
         self.ciws_ammo = config.CIWS_AMMO_DEFAULT
         self.hq_timer = 15.0
         self._mission_warnings = set()
+        self.tooltips_enabled = True
+        self.pinned_tooltip = None
+        self._tooltip_anchor = None
         self._nav_warning_cd = 0.0
         self.quit_confirm = False
         self.quit_selection = 0
@@ -293,6 +343,7 @@ class Game:
         self.save_info = []
         self.help_page = 0
         self._joy_acc = 0.0
+        self._joy_x_acc = 0.0
         self._joy_turn = 0
         # W3: Luftfahrt (Airbases + Flüge) und W0: Karten-Viewport
         self.flights = FlightManager(self.world.coast, random.Random(seed + 2024))
@@ -304,6 +355,84 @@ class Game:
         self.hq_msg(f"HQ: Wetter: Seegang {self.world.sea_state}.")
         self.feed.add(self.world.format_time(), "mission",
                       f"Mission: {self.mission.name} ({config.LEVELS[self.level]['label']}) – {self.mission.objective}")
+
+    def start_custom_mission(self, definition: dict) -> bool:
+        """Start the currently runtime-effective subset of an authored mission.
+
+        Fixed player/environment values, built-in submarine/surface units and
+        sink/survive objectives are effective. Events, random groups, custom
+        world sizes and protect/reach objectives remain editor-only and are
+        rejected rather than silently ignored.
+        """
+        if validate_mission(definition, catalog_builtins(CATALOG).keys()):
+            return False
+        if (definition["events"] or definition["units"]["random_groups"]
+                or definition["objective"]["type"] not in ("sink", "survive")
+                or float(definition["world"]["size_nm"]) != config.WORLD_SIZE_NM
+                or definition["world"]["kind"] != "fixed"
+                or definition["environment"]["weather"] != "clear"):
+            return False
+        markers = {item["id"]: item for item in static_preview(definition)["markers"]}
+        exact = definition["units"]["exact"]
+        if any(unit["profile"] not in CATALOG.subs | CATALOG.surfaces
+               for unit in exact):
+            return False
+        if any(unit["profile"] in CATALOG.subs and unit["side"] != "hostile"
+               for unit in exact):
+            return False
+        expected_targets = {unit["id"] for unit in exact
+                            if unit["profile"] in CATALOG.subs}
+        if (definition["objective"]["type"] == "sink"
+                and set(definition["objective"]["target_ids"]) != expected_targets):
+            return False
+        self.reset(int(definition["seed"]), "s4_zufall")
+        self.subs, self.civilians, self.warships = [], [], []
+        self.animals, self.asms = [], []
+        player = definition["player"]
+        self.ship.x, self.ship.y = self.world.nearest_water(player["x"], player["y"])
+        self.ship.course = self.ship.target_course = float(player["course_deg"])
+        self.ship.speed = self.ship.target_speed = config.clamp(
+            float(player["speed_kn"]), 0.0, config.SHIP_SPEED_MAX_KN)
+        self.ship.order_idx = min(range(len(config.TELEGRAPH_ORDERS)),
+                                  key=lambda i: abs(config.TELEGRAPH_ORDERS[i][1]
+                                                    - self.ship.target_speed))
+        env = definition["environment"]
+        self.world.hour = float(env["time_hour"])
+        self.world.sea_state = int(env["sea_state"])
+        thermo = float(env["thermocline_depth_m"])
+        self.world._thermo = [[thermo for _ in row] for row in self.world._thermo]
+        for unit in exact:
+            marker = markers[unit["id"]]
+            x, y = self.world.nearest_water(marker["x"], marker["y"])
+            profile = unit["profile"]
+            if profile in CATALOG.subs:
+                self.subs.append(Sub(x, y, float(unit.get("depth_m", 60.0)),
+                                     float(unit.get("course_deg", 0.0)), profile,
+                                     self.rng_world))
+            elif unit["side"] == "hostile":
+                entity = SurfaceShip(
+                    x, y, rng=self.rng_world, hostile=True,
+                    profile=CATALOG.surfaces[profile])
+                entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
+                entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
+                self.warships.append(entity)
+            else:
+                entity = CivilianShip(
+                    x, y, rng=self.rng_world, profile=CATALOG.surfaces[profile])
+                entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
+                entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
+                self.civilians.append(entity)
+        self.mission.name = definition["name"]
+        self.mission.win_mode = definition["objective"]["type"]
+        self.mission.time_limit_s = float(definition["objective"]["time_limit_s"])
+        self.mission.sub_count = len(self.subs)
+        self.mission.animal_count = self.mission.civilian_count = 0
+        self.mission.asm_count = self.mission.warship_count = 0
+        self.custom_mission_definition = json.loads(json.dumps(definition))
+        self.in_menu = False
+        self.main_menu = False
+        self._reset_map_view()
+        return True
 
     def flash(self, text: str, seconds: float = 3.0) -> None:
         self.msg = text
@@ -425,7 +554,7 @@ class Game:
 
     # --- Display (M8): Letterbox-Scaling + Vollbild ---
 
-    def toggle_fullscreen(self) -> None:
+    def toggle_fullscreen(self, persist: bool = True) -> None:
         """Vollbild: (0,0)+FULLSCREEN = native Desktop-Größe (deckt Taskleiste
         ab, keine schwarzen Balken). Zurück = 1280x800-Fenster."""
         self.fullscreen = not self.fullscreen
@@ -434,7 +563,35 @@ class Game:
         else:
             self.display = pygame.display.set_mode(
                 (config.SCREEN_W, config.SCREEN_H), pygame.RESIZABLE)
+        if persist:
+            from dataclasses import replace
+            self.preferences = replace(self.preferences, fullscreen=self.fullscreen)
+            try:
+                save_preferences(self.preferences)
+            except OSError:
+                pass
         self.flash("Vollbild: AN" if self.fullscreen else "Vollbild: AUS", 2.0)
+
+    def _set_preference(self, name: str, value) -> None:
+        from dataclasses import replace
+        self.preferences = replace(self.preferences, **{name: value})
+        if name == "language":
+            self.translator = Translator(value)
+            self.tr = self.translator.t
+            if self.editor is not None:
+                self.editor.tr = self.tr
+        elif name == "fullscreen" and bool(value) != self.fullscreen:
+            self.toggle_fullscreen(persist=False)
+        elif name == "audio":
+            self.audio.stop_sonar()
+            self.audio = AudioEngine(sample_rate=config.AUDIO_SAMPLE_RATE,
+                                     enabled=bool(value))
+        elif name == "large_text":
+            self._apply_text_size()
+        try:
+            save_preferences(self.preferences)
+        except OSError:
+            self.flash(self.tr("status.preferences_error"), 3.0)
 
     def compose_frame(self) -> None:
         """Virtuellen 1280x800-Canvas aufs Display bringen (M8/M9).
@@ -462,13 +619,15 @@ class Game:
     @property
     def administration_open(self) -> bool:
         return (self.help_open or self.nations_open or self.quit_confirm
-                or self.save_ui is not None)
+                or self.save_ui is not None or self.options_open)
 
     def _clear_controls(self) -> None:
         self.held.clear()
         self._joy_turn = 0
         self._joy_acc = 0.0
+        self._joy_x_acc = 0.0
         self._map_drag = None
+        self._map_drag_moved = False
         self.audio.stop_sonar()
 
     def _open_administration(self, name: str) -> None:
@@ -480,6 +639,7 @@ class Game:
         self.nations_open = name == "nations"
         self.quit_confirm = name == "quit"
         self.save_ui = name if name in ("save", "load") else None
+        self.options_open = name == "options"
         self.quit_selection = 0
         self.quit_after_save = False
         self.save_confirm = False
@@ -503,7 +663,24 @@ class Game:
 
     def _handle_administration_key(self, key: int) -> None:
         enter = key in (pygame.K_RETURN, pygame.K_KP_ENTER)
-        if self.quit_confirm:
+        if self.options_open:
+            if key == pygame.K_ESCAPE:
+                self.options_open = False
+            elif key in (pygame.K_UP, pygame.K_DOWN):
+                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 5
+            elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
+                names = ("language", "fullscreen", "audio", "large_text",
+                         "tooltips")
+                name = names[self.options_sel]
+                if name == "tooltips":
+                    self.tooltips_enabled = not self.tooltips_enabled
+                    self.pinned_tooltip = None
+                    self._tooltip_anchor = None
+                    return
+                value = ("de" if self.preferences.language == "en" else "en") \
+                    if name == "language" else not getattr(self.preferences, name)
+                self._set_preference(name, value)
+        elif self.quit_confirm:
             choices = (0, 2) if self.in_menu else (0, 1, 2)
             if key in (pygame.K_ESCAPE, pygame.K_n):
                 self.quit_confirm = False
@@ -576,12 +753,43 @@ class Game:
         """Return a virtual-canvas pointer only when the map is visible."""
         pos = event_pos if event_pos is not None else pygame.mouse.get_pos()
         canvas = self._window_to_canvas(pos)
-        if canvas is None or self.station not in (
-                Station.BRIDGE, Station.WEAPONS, Station.HELICOPTER):
+        if canvas is None or self.station not in MAP_STATIONS:
             return None
         if not pygame.Rect(config.MAP_RECT).collidepoint(canvas):
             return None
         return canvas
+
+    def tooltip_at(self, canvas_pos):
+        """Return serializable context for the meaningful visual under the pointer."""
+        if (not self.tooltips_enabled or canvas_pos is None or self.in_menu
+                or self.game_over or self.administration_open):
+            return None
+        previous = config.STATION_RECT
+        config.STATION_RECT = (config.STATION_PANEL_RECT
+                               if self.station in MAP_STATIONS
+                               else config.FULL_STATION_RECT)
+        try:
+            if (self.station in MAP_STATIONS
+                    and pygame.Rect(config.MAP_RECT).collidepoint(canvas_pos)):
+                return map_hit_target(self, canvas_pos)
+            if self.station is Station.SONAR:
+                return sonar_hit_target(self, canvas_pos)
+            if self.station is Station.WEAPONS:
+                return weapons_hit_target(self, canvas_pos)
+            return station_hit_target(self, canvas_pos)
+        finally:
+            config.STATION_RECT = previous
+
+    def _pin_tooltip_at(self, event_pos) -> bool:
+        if not self.tooltips_enabled:
+            return False
+        canvas = self._window_to_canvas(event_pos)
+        payload = self.tooltip_at(canvas)
+        if payload is None:
+            return False
+        self.pinned_tooltip = layout.valid_tooltip(payload)
+        self._tooltip_anchor = tuple(canvas)
+        return self.pinned_tooltip is not None
 
     def handle_event(self, e) -> None:
         if self.splash_active:
@@ -594,8 +802,33 @@ class Game:
         if e.type == pygame.KEYUP:
             self.held.discard(e.key)
             return
+        if self.editor is not None:
+            if e.type == pygame.QUIT:
+                self.editor = None
+                self._open_administration("quit")
+                return
+            if (e.type == pygame.KEYDOWN and e.key == pygame.K_F5
+                    and isinstance(self.editor, MissionEditor)
+                    and self.editor.mode == "browser"):
+                selected = self.editor.selected
+                if selected is not None and not selected.builtin:
+                    if self.start_custom_mission(selected.data):
+                        self.editor = None
+                    else:
+                        self.editor.status = self.tr("editor.runtime_unsupported")
+                return
+            if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
+                    and getattr(self.editor, "mode", "browser") == "browser"):
+                self.editor = None
+                self.main_menu = True
+                return
+            self.editor.handle_event(e)
+            return
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
+            if self._map_drag is not None and not self._map_drag_moved:
+                self._pin_tooltip_at(getattr(e, "pos", None))
             self._map_drag = None
+            self._map_drag_moved = False
             return
         if e.type == pygame.WINDOWFOCUSLOST:
             self._clear_controls()
@@ -613,6 +846,11 @@ class Game:
                 and e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                 and getattr(e, "mod", 0) & pygame.KMOD_ALT):
             self.toggle_fullscreen()
+            return
+        if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
+                and self.pinned_tooltip is not None):
+            self.pinned_tooltip = None
+            self._tooltip_anchor = None
             return
         if self.administration_open:
             if e.type == pygame.KEYDOWN:
@@ -634,11 +872,14 @@ class Game:
                 elif e.key == pygame.K_p:
                     self.paused = False
                 return
-            if e.key in (pygame.K_ESCAPE, pygame.K_q):
+            if e.key == pygame.K_ESCAPE:
                 self._open_administration("quit")
                 return
             if e.key == pygame.K_F1:
                 self._open_administration("help")
+                return
+            if e.key == pygame.K_F10 or (e.key == pygame.K_o and self.paused):
+                self._open_administration("options")
                 return
             if e.key == pygame.K_n and self.station is not Station.SONAR:
                 self._open_administration("nations")
@@ -649,7 +890,7 @@ class Game:
             if e.key == pygame.K_p and not self.game_over:
                 self._clear_controls()
                 self.paused = not self.paused
-                self.flash("PAUSE" if self.paused else "WEITER")
+                self.flash(self.tr("status.paused" if self.paused else "status.resumed"))
                 return
             if pygame.K_1 <= e.key <= pygame.K_8:
                 self._clear_controls()
@@ -669,9 +910,8 @@ class Game:
                 return
             if self.station is Station.SONAR:
                 if e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
-                    self.sonar_page = (self.sonar_page
-                                       + (1 if e.key == pygame.K_PAGEDOWN else -1)) \
-                        % config.SONAR_PAGE_COUNT
+                    self.sonar_page = sonar_page_step(
+                        self.sonar_page, 1 if e.key == pygame.K_PAGEDOWN else -1)
                     return
                 if e.key == pygame.K_e:
                     if self.sonar.measure_environment(self.world, self.ship,
@@ -741,8 +981,12 @@ class Game:
                 if self.station is Station.DAMAGE:
                     self.dmg_team = (self.dmg_team - 1 +
                                      (1 if e.key == pygame.K_DOWN else -1)) % 3 + 1
-                elif self.station in (Station.BRIDGE, Station.WEAPONS):
+                elif self.station is Station.WEAPONS:
                     self.held.add(e.key)
+                elif self.station is Station.BRIDGE:
+                    self.ship.cycle_telegraph(
+                        1 if e.key == pygame.K_UP else -1)
+                    self.flash(f"Telegraph: {self.ship.telegraph}", 1.5)
                 elif self.station is Station.ENGINE:
                     self.ship.cycle_telegraph(
                         1 if e.key == pygame.K_UP else -1)
@@ -792,6 +1036,9 @@ class Game:
                 if self.station is Station.SONAR:
                     if self.damage.station_down("sonar"):
                         self.flash("Sonarzentrale ausgefallen!", 3.0)
+                    elif (self.sonar_mode == "TOWED"
+                          and not self.sonar.tow_status(self.ship.speed)["available"]):
+                        pass
                     elif self.sonar.fire_ping():
                         self.flash("Ping", 1.5)
                         self.audio.play_ping()
@@ -812,14 +1059,17 @@ class Game:
                               & pygame.KMOD_SHIFT else "surface")
                     self.toggle_radar(domain)
             elif e.key == pygame.K_m:
-                if self.station in (Station.SONAR, Station.WEAPONS):
+                if self.station in (Station.SONAR, Station.WEAPONS,
+                                    Station.HELICOPTER):
                     self.set_target()
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self.designate_opz_track()
             elif e.key == pygame.K_u and self.station is Station.BRIDGE:
                 self._begin_numeric_input("course")
             elif e.key == pygame.K_LEFT:
-                if self.station is Station.SONAR:
+                if self.station is Station.BRIDGE:
+                    self.held.add(e.key)
+                elif self.station is Station.WEAPONS:
                     self._cycle_selected_contact(-1)
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self._cycle_asm_track(-1)
@@ -829,7 +1079,9 @@ class Game:
                 elif self.station is Station.HELICOPTER:
                     self._adjust_helo_waypoint(bearing_delta=-15.0)
             elif e.key == pygame.K_RIGHT:
-                if self.station is Station.SONAR:
+                if self.station is Station.BRIDGE:
+                    self.held.add(e.key)
+                elif self.station is Station.WEAPONS:
                     self._cycle_selected_contact(1)
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self._cycle_asm_track(1)
@@ -850,8 +1102,7 @@ class Game:
                     self.deploy_buoys()
             elif e.key == pygame.K_y:
                 if self.station is Station.SONAR:
-                    self.sonar_mode = "TOWED"
-                    self.flash("Sonar-Array: Towed (Y)", 1.5)
+                    toggle_tas(self, self.tr)
             elif e.key == pygame.K_h and self.station in (Station.WEAPONS,
                                                           Station.HELICOPTER):
                 self.toggle_helo()
@@ -861,8 +1112,7 @@ class Game:
             elif e.key == pygame.K_e:
                 if self.station in (Station.OPZ, Station.RADAR):
                     self.launch_essm()
-                elif self.station in (Station.BRIDGE, Station.WEAPONS,
-                                      Station.HELICOPTER):
+                elif self.station in MAP_STATIONS:
                     self.map_view.set_rect(config.MAP_RECT)
                     self.map_view.zoom(config.MAP_ZOOM_WHEEL_FACTOR)
             elif e.key == pygame.K_g and self.station in (Station.OPZ,
@@ -879,23 +1129,28 @@ class Game:
                 if self.station is Station.SONAR:
                     self._cycle_sonar_band()
             elif e.key == pygame.K_k:
-                self.map_follow = not self.map_follow
-                self.flash("Karte: Follow "
-                            + ("AN" if self.map_follow else "AUS"), 1.5)
-            elif e.key == pygame.K_q and self.station in (
-                    Station.BRIDGE, Station.WEAPONS, Station.HELICOPTER):
+                if self.station in MAP_STATIONS:
+                    self.map_follow = not self.map_follow
+                    self.flash("Karte: Follow "
+                                + ("AN" if self.map_follow else "AUS"), 1.5)
+            elif e.key == pygame.K_q and self.station in MAP_STATIONS:
                 self.map_view.set_rect(config.MAP_RECT)
                 self.map_view.zoom(1.0 / config.MAP_ZOOM_WHEEL_FACTOR)
             elif e.key == pygame.K_v and self.station in (Station.BRIDGE,
                                                           Station.ENGINE):
                 self._begin_numeric_input("speed")
         elif e.type == pygame.JOYAXISMOTION:
-            # Stationsfokus: ein Zeigegeraet darf ausserhalb der Bruecke
-            # niemals unbeabsichtigt das Schiff steuern.
             if e.axis == 0:
-                self._joy_turn = ((1 if e.value > 0.25 else
-                                   -1 if e.value < -0.25 else 0)
-                                  if self.station is Station.BRIDGE else 0)
+                if self.station is Station.BRIDGE:
+                    self._joy_turn = (1 if e.value > 0.25 else
+                                      -1 if e.value < -0.25 else 0)
+                else:
+                    self._joy_turn = 0
+                    self._joy_x_acc += e.value * 0.6
+                    if abs(self._joy_x_acc) > 0.8:
+                        step = 1 if self._joy_x_acc > 0.0 else -1
+                        self._joy_x_acc = 0.0
+                        self._joy_horizontal_step(step)
             elif e.axis == 1:
                 self._joy_acc += e.value * 0.6
                 if self._joy_acc > 0.8:
@@ -912,6 +1167,12 @@ class Game:
             # Wheel-Events haben nicht in allen SDL-Versionen ein pos.
             if self.in_menu or self.game_over:
                 return
+            canvas = self._window_to_canvas(getattr(e, "pos", None)
+                                            or pygame.mouse.get_pos())
+            if (self.station is Station.OPZ and canvas is not None
+                    and opz_ppi_rect().collidepoint(canvas)):
+                self._cycle_radar_range(1 if e.y > 0 else -1)
+                return
             pointer = self._map_pointer(getattr(e, "pos", None))
             if pointer is None:
                 return
@@ -923,7 +1184,12 @@ class Game:
                 pointer = self._map_pointer(getattr(e, "pos", None))
                 if pointer is not None:
                     self._map_drag = pointer
+                    self._map_drag_moved = False
                     self.map_follow = False
+                    return
+                if self._pin_tooltip_at(getattr(e, "pos", None)):
+                    self._map_drag = None
+                    return
         elif e.type == pygame.MOUSEMOTION:
             if self._map_drag is not None:
                 pointer = self._window_to_canvas(getattr(e, "pos", None))
@@ -931,6 +1197,8 @@ class Game:
                     return
                 dx = pointer[0] - self._map_drag[0]
                 dy = pointer[1] - self._map_drag[1]
+                if abs(dx) + abs(dy) > 2:
+                    self._map_drag_moved = True
                 self.map_view.pan_px(dx, dy)
                 self._map_drag = pointer
 
@@ -944,10 +1212,12 @@ class Game:
     def steering_input(self) -> tuple:
         """Turn direction from held keys/Trackball (-1/0/+1).
         M10: Fahrtsatz kommt über den Telegraphen (+/-), nicht per Dauer-Taste."""
+        if self.station is not Station.BRIDGE:
+            return 0, 0
         turn = 0
-        if pygame.K_UP in self.held:
+        if pygame.K_RIGHT in self.held:
             turn += 1
-        if pygame.K_DOWN in self.held:
+        if pygame.K_LEFT in self.held:
             turn -= 1
         if self._joy_turn:
             turn = max(-1, min(1, turn + self._joy_turn))
@@ -1077,7 +1347,11 @@ class Game:
             self.target = None
             self.flash("Kein gültiges Ziel (M = Ziel setzen)")
             return
-        if self.roe == "STD" and self.target.range_est is None:
+        blocked = self._target_affiliation_interlock()
+        if blocked is not None:
+            self.flash(f"ROE-Sperre: CIC-Zugehoerigkeit {config.NATO_AFFILIATION_LABELS[blocked]}")
+            return
+        if self.roe == "STD" and not self._contact_range_fresh(self.target):
             self.flash("Kontakt nicht geortet – erst pingen (A, Station 2)")
             return
         if self.target.player_class != "U_BOOT":
@@ -1095,13 +1369,14 @@ class Game:
             tgt.alert_torpedo()  # W2: U-Boot hört den Torpedostart
         lv = config.LEVELS[self.level]
         range_nm = self.target.range_est or config.ROE_FREE_LAUNCH_RANGE_NM
-        brg = math.radians(self.target.bearing)
-        aim_x = self.helo.x + range_nm * math.sin(brg)
-        aim_y = self.helo.y - range_nm * math.cos(brg)
+        datum = self.helo.release_datum_from_ship_observation(
+            self.ship, self.target.bearing, range_nm,
+            bearing_uncertainty_deg=max(0.0, (1.0 - self.target.quality) * 8.0),
+            range_uncertainty_nm=self.target.range_sigma_nm or 0.0)
         torp = self.helo.drop_torpedo(
             tgt, self.torpedo_depth, self.torpedo_seq,
             kill_dist_nm=lv["kill_dist_nm"], kill_depth_m=lv["kill_depth_m"],
-            guidance_x=aim_x, guidance_y=aim_y)
+            guidance_x=datum.x_nm, guidance_y=datum.y_nm)
         if torp is None:
             return
         self.torpedoes.append(torp)
@@ -1170,19 +1445,38 @@ class Game:
         if self.in_menu or self.game_over:
             return
         if self.station is Station.DAMAGE:
-            n = len(self.damage.compartments)
-            self.dmg_cursor = (self.dmg_cursor + delta) % n
+            self.dmg_team = (self.dmg_team - 1 + delta) % 3 + 1
         elif self.station is Station.SONAR:
             self._cycle_selected_contact(delta)
+        elif self.station is Station.WEAPONS:
+            self.torpedo_depth = config.clamp(
+                self.torpedo_depth - delta * 10.0, 10.0, 300.0)
         elif self.station is Station.OPZ:
             self._cycle_opz_track(delta)
         elif self.station is Station.RADIO:
             self._cycle_hfdf(delta)
         elif self.station is Station.HELICOPTER:
-            self._adjust_helo_waypoint(range_delta=float(delta))
+            self._adjust_helo_waypoint(range_delta=float(-delta))
         elif self.station in (Station.BRIDGE, Station.ENGINE):
-            self.ship.cycle_telegraph(delta)
+            self.ship.cycle_telegraph(-delta)
             self.flash(f"Telegraph: {self.ship.telegraph}", 1.5)
+
+    def _joy_horizontal_step(self, delta: int) -> None:
+        """uConsole-Trackball X-Achse: selection or bearing step."""
+        if self.in_menu or self.game_over:
+            return
+        if self.station is Station.DAMAGE:
+            n = len(self.damage.compartments)
+            self.dmg_cursor = (self.dmg_cursor + delta) % n
+        elif self.station is Station.SONAR:
+            self.sonar.set_listen_bearing(self.sonar.listen_bearing + delta * .5)
+            self.audio.stop_sonar()
+        elif self.station is Station.WEAPONS:
+            self._cycle_selected_contact(delta)
+        elif self.station is Station.OPZ:
+            self._cycle_asm_track(delta)
+        elif self.station is Station.HELICOPTER:
+            self._adjust_helo_waypoint(bearing_delta=float(delta * 15))
 
     def _update_air_picture(self) -> None:
         """Create noisy observations; consumers never receive world objects."""
@@ -1200,7 +1494,9 @@ class Game:
             dist = c.distance_nm(self.ship)
             bearing = c.bearing_from_frigate(self.ship)
             aspect = config.aspect_rcs_factor(c.course, bearing)
-            if surface_live and dist <= surface_eff * aspect:
+            radar_clear = not self.world.land_blocks_line(
+                self.ship.x, self.ship.y, c.x, c.y)
+            if surface_live and radar_clear and dist <= surface_eff * aspect:
                 rng = random.Random(c.sensor_seed * 3571 + int(self.sim_t * 2.0))
                 bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
                 brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
@@ -1225,7 +1521,9 @@ class Game:
             dist = w.distance_nm(self.ship)
             bearing = w.bearing_from_frigate(self.ship)
             aspect = config.aspect_rcs_factor(w.course, bearing)
-            if surface_live and dist <= surface_eff * aspect:
+            radar_clear = not self.world.land_blocks_line(
+                self.ship.x, self.ship.y, w.x, w.y)
+            if surface_live and radar_clear and dist <= surface_eff * aspect:
                 rng = random.Random(w.sensor_seed * 3571 + int(self.sim_t * 2.0))
                 bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
                 brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
@@ -1249,7 +1547,9 @@ class Game:
         for f in self.flights.flights:
             dist = f.distance_nm(self.ship)
             bearing = f.bearing_to_frigate(self.ship)
-            if air_live and dist <= air_eff:
+            radar_clear = not self.world.land_blocks_line(
+                self.ship.x, self.ship.y, f.x, f.y)
+            if air_live and radar_clear and dist <= air_eff:
                 rng = random.Random((f.seq + 10000) * 3571 + int(self.sim_t * 2.0))
                 bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
                 brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
@@ -1283,7 +1583,9 @@ class Game:
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.55, now=self.sim_t, label=f"ASM-{a.seq}",
                     hostile=True, jamming=True)
-            elif air_live and dist <= air_eff:
+            elif (air_live and dist <= air_eff
+                  and not self.world.land_blocks_line(
+                      self.ship.x, self.ship.y, a.x, a.y)):
                 rng = random.Random(a.seq * 7919 + int(self.sim_t * 2.0))
                 bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
                 brg = (a.bearing_to_frigate(self.ship)
@@ -1377,6 +1679,8 @@ class Game:
                 continue
             dist = sub.distance_nm(self.ship)
             if dist > config.HFDF_RANGE_NM:
+                continue
+            if self.world.land_blocks_line(self.ship.x, self.ship.y, sub.x, sub.y):
                 continue
             rng = random.Random(getattr(sub, "sensor_seed", sub.id) * 777
                                 + int(self._t // 10.0))
@@ -1489,7 +1793,8 @@ class Game:
     # --- Waffenzentrale ---
 
     def set_target(self) -> None:
-        contacts = self.sonar.active_contacts()
+        contacts = [c for c in self.sonar.active_contacts()
+                    if self.sim_t - c.last_seen < config.SONAR_CONTACT_LOST_S]
         if not contacts:
             self.target = None
             self.flash("Keine Kontakte")
@@ -1505,7 +1810,11 @@ class Game:
         """Return an operator-readable fire-control state and color."""
         if self.target is None:
             return "BLOCKIERT: KEIN ZIEL", config.COLOR_WARN
-        if self.target.range_est is None and self.roe == "STD":
+        blocked = self._target_affiliation_interlock()
+        if blocked is not None:
+            return (f"BLOCKIERT: ZUGEHOERIGKEIT {blocked}",
+                    config.COLOR_DANGER)
+        if not self._contact_range_fresh(self.target) and self.roe == "STD":
             return "BLOCKIERT: KEINE ENTFERNUNG", config.COLOR_WARN
         if self.target.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
             return ("BLOCKIERT: NICHT ALS U-BOOT/KAMPFSCHIFF KLASSIFIZIERT",
@@ -1520,10 +1829,29 @@ class Game:
             return "BLOCKIERT: WAFFENZENTRALE GESTOERT", config.COLOR_DANGER
         return "FEUER FREI", config.COLOR_OK
 
+    def _target_affiliation_interlock(self):
+        """Return a protected OPZ affiliation for the assigned sonar target."""
+        if self.target is None:
+            return None
+        affiliations = [self.opz_affiliation(track.track_id)
+                        for track in self.opz_tracks()
+                        if track.target_id == self.target.target_id]
+        return next((value for value in ("FRIEND", "NEUTRAL")
+                     if value in affiliations), None)
+
+    def _contact_range_fresh(self, contact) -> bool:
+        if contact is None or contact.range_est is None:
+            return False
+        observed_at = (contact.range_seen if contact.range_seen is not None
+                       else contact.last_seen)
+        return self.sim_t - observed_at <= config.SONAR_CONTACT_LOST_S
+
     # --- M9: Kontakt-Auswahl & manuelle Klassifizierung ---
 
     def _cycle_selected_contact(self, delta: int) -> None:
-        cs = sorted(self.sonar.contacts.values(), key=lambda c: c.id)
+        cs = sorted((c for c in self.sonar.contacts.values()
+                     if self.sim_t - c.last_seen < config.SONAR_CONTACT_LOST_S),
+                    key=lambda c: c.id)
         if not cs:
             self.selected_contact = None
             return
@@ -1608,8 +1936,13 @@ class Game:
             self.target = None
             self.flash("Kein gültiges Ziel (M = Ziel setzen)")
             return
+        blocked = self._target_affiliation_interlock()
+        if blocked is not None:
+            label = config.NATO_AFFILIATION_LABELS[blocked]
+            self.flash(f"ROE-Sperre: CIC-Zugehoerigkeit {label}")
+            return
         if self.roe == "STD":
-            if self.target.range_est is None:
+            if not self._contact_range_fresh(self.target):
                 self.flash("Kontakt nicht geortet – erst pingen (A, Station 2)")
                 return
             if self.target.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
@@ -1621,9 +1954,10 @@ class Game:
                 self.flash("Ziel nicht als U-Boot/Kampfschiff klassifiziert "
                            "(C, Station 2)")
                 return
-        in_air = len([t for t in self.torpedoes if t.state == "RUN"])
-        if in_air >= config.TORP_MAX_IN_AIR[config.TORP_DOCTRINE]:
-            self.flash(f"Salven-Doktrin: max. {in_air} Torpedos in der Luft")
+        active_torpedoes = len([t for t in self.torpedoes if t.state == "RUN"])
+        salvo_limit = config.TORP_MAX_IN_AIR[config.TORP_DOCTRINE]
+        if active_torpedoes >= salvo_limit:
+            self.flash(f"Salven-Doktrin: max. {salvo_limit} aktive Torpedos im Wasser")
             return
         if self.torpedo_count <= 0:
             self.flash("Keine Torpedos mehr")
@@ -1638,10 +1972,15 @@ class Game:
         self.torpedo_seq += 1
         if tgt is not None and hasattr(tgt, "alert_torpedo"):
             tgt.alert_torpedo()  # W2: U-Boot hört den Torpedostart
-        range_nm = (self.target.range_est if self.target.range_est is not None
-                    else config.ROE_FREE_LAUNCH_RANGE_NM)
-        est_x = self.ship.x + range_nm * math.sin(math.radians(self.target.bearing))
-        est_y = self.ship.y - range_nm * math.cos(math.radians(self.target.bearing))
+        if (self.target.tma_pos is not None
+                and self.target.tma_quality >= config.TMA_RANGE_MIN_QUALITY
+                and self._contact_range_fresh(self.target)):
+            est_x, est_y = self.target.tma_pos
+        else:
+            range_nm = (self.target.range_est if self.target.range_est is not None
+                        else config.ROE_FREE_LAUNCH_RANGE_NM)
+            est_x = self.ship.x + range_nm * math.sin(math.radians(self.target.bearing))
+            est_y = self.ship.y - range_nm * math.cos(math.radians(self.target.bearing))
         course = math.degrees(math.atan2(est_x - self.ship.x,
                                          -(est_y - self.ship.y))) % 360.0
         lv = config.LEVELS[self.level]
@@ -1680,7 +2019,6 @@ class Game:
                 self.enemy_torpedoes.append(
                     EnemyTorpedo(x, y, course, depth,
                                  len(self.enemy_torpedoes) + 1))
-                self.flash("Feindlicher Torpedo abgefeuert!", 4.0)
 
     def update(self, dt: float) -> None:
         """W0: Zeitraffer – sim_dt = dt * time_scale, Sub-Stepping gegen
@@ -1848,12 +2186,19 @@ class Game:
         for torpedo in self.torpedoes:
             target_id = getattr(torpedo.target, "id", None)
             contact = self.sonar.contacts.get(target_id)
-            if contact is not None and contact.range_est is not None:
+            solution_fresh = self._contact_range_fresh(contact)
+            if solution_fresh and contact.tma_pos is not None \
+                    and contact.tma_quality >= config.TMA_RANGE_MIN_QUALITY:
+                torpedo.wire_update(*contact.tma_pos)
+            elif solution_fresh and contact.range_est is not None:
                 brg = math.radians(contact.bearing)
                 torpedo.wire_update(
                     self.ship.x + contact.range_est * math.sin(brg),
                     self.ship.y - contact.range_est * math.cos(brg))
-            torpedo.update(dt)
+            torpedo.update(dt, seeker_candidates=(
+                [s for s in self.subs if not s.sunk]
+                + [d for d in self.decoys if not d.dead]
+                + [w for w in self.warships if not w.sunk]))
         alive = []
         for torpedo in self.torpedoes:
             if torpedo.state == "RUN":
@@ -1928,8 +2273,9 @@ class Game:
         self.sonar.update(dt, self.sim_t, self.ship, targets, self.world,
                           range_factor=self._sonar_range_factor(),
                           mode=self.sonar_mode, buoys=self.buoys,
-                          focus_tgt=focus,
-                          own_cavitation=1.0 if self.ship.cavitating else 0.0)
+                           focus_tgt=focus,
+                           own_cavitation=1.0 if self.ship.cavitating else 0.0,
+                           advance_mechanics=False)
         for contact in self.sonar.active_contacts():
             self.air_picture.observe(
                 track_id=f"U-{contact.target_id}",
@@ -1958,7 +2304,11 @@ class Game:
                 self.feed.add(self.world.format_time(), "sonar",
                               f"Kontakt K{contact.id} neu: Rtg "
                               f"{contact.bearing:4.0f}°{distance} "
-                              f"[{contact.origin}]{extra}")
+                               f"[{contact.origin}]{extra}")
+                if (contact.kind == "torpedo"
+                        and contact.target_id not in self._observed_enemy_torpedoes):
+                    self._observed_enemy_torpedoes.add(contact.target_id)
+                    self.flash(f"SONAR: Torpedo erstmals beobachtet, K{contact.id}", 4.0)
 
     def _update_damage_and_mission(self, dt: float) -> None:
         """Fortschritt von Schaden, Flugverkehr und Missionszielen."""
@@ -1971,6 +2321,17 @@ class Game:
         self.mission_time += dt
         self._mission_time_warning()
         self._update_navigation(dt)
+        self.sonar.advance_mechanics(dt, self.sim_t, self.ship)
+        if self.sonar.tow_state != self._last_tow_state:
+            keys = {TowState.STREAMED: "status.tas.streamed",
+                    TowState.STOWED: "status.tas.stowed",
+                    TowState.FAULT: "status.tas.fault"}
+            key = keys.get(self.sonar.tow_state)
+            if key is not None:
+                message = self.tr(key)
+                self.flash(message, 3.0)
+                self.feed.add(self.world.format_time(), "sonar", message)
+            self._last_tow_state = self.sonar.tow_state
         self._update_underwater_entities(dt)
         self._update_aviation(dt)
         self._sensor_acc += dt
@@ -2072,7 +2433,7 @@ class Game:
         (sunk/damage statt hit).
         """
         return {
-            "version": 6,
+            "version": 8,
             "seed": self.seed,
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
@@ -2094,6 +2455,11 @@ class Game:
                               depth=self.torpedo_depth),
             "level": self.level,
             "mission_name": self.mission.name,
+            "mission_runtime": dict(
+                name=self.mission.name, win_mode=self.mission.win_mode,
+                time_limit_s=self.mission.time_limit_s,
+                asm_count=self.mission.asm_count,
+                custom_definition=self.custom_mission_definition),
             "damage": dict(
                 repair_mult=self.damage.repair_mult,
                 compartments={k: dict(state=c.state, flood=c.flood, fire=c.fire)
@@ -2103,7 +2469,9 @@ class Game:
                            sea_state=self.world.sea_state,
                            weather_shift_timer=self.world.weather_shift_timer,
                            mode=self.world_mode,
-                           generator="coastal-v1",
+                           generator=("natural-earth-v1"
+                                      if self.world_mode == "procedural"
+                                      else "fixed-reference-v1"),
                            coast=self.world.coast.to_dict()),
             "sonar_mode": self.sonar_mode,
             "sonar_controls": dict(
@@ -2283,6 +2651,15 @@ class Game:
                                   for p in self.sonar._pending_pings],
                 "towed_depth_m": self.sonar.towed_depth_m,
                 "towed_depth_target_m": self.sonar.towed_depth_target_m,
+                "tow_state": self.sonar.tow_state.value,
+                "tow_payout": self.sonar.tow_payout,
+                "tow_heading_deg": self.sonar.tow_heading_deg,
+                "tow_settle_s": self.sonar._tow_settle_s,
+                "tow_handling_ok": self.sonar._tow_handling_ok,
+                "ping_cooldown": self.sonar.ping_cooldown,
+                "ping_active": self.sonar.ping_active,
+                "ping_anim_timer": self.sonar._ping_anim_timer,
+                "echo_history": list(self.sonar.echo_history),
                 "bt_profile": self.sonar.bt_profile,
                 "bt_cooldown": self.sonar.bt_cooldown,
             },
@@ -2299,6 +2676,11 @@ class Game:
                 map_scale=self.map_view.scale,
                 map_follow=self.map_follow,
                 paused=self.paused,
+                tooltips_enabled=getattr(self, "tooltips_enabled", True),
+                pinned_tooltip=layout.valid_tooltip(
+                    getattr(self, "pinned_tooltip", None)),
+                tooltip_anchor=list(self._tooltip_anchor)
+                if self._tooltip_anchor is not None else None,
             ),
             "rngs": {
                 "world": self._rng_state(self.rng_world),
@@ -2371,6 +2753,25 @@ class Game:
         self.ship.quiet_mode = ship.get("quiet_mode", False)
         self.ship._clock = ship.get("clock", 0.0)
         self.mission = Mission(seed, type_key=data.get("mission_type"))
+        runtime_mission = data.get("mission_runtime", {})
+        if isinstance(runtime_mission, dict):
+            self.mission.name = str(runtime_mission.get("name", self.mission.name))
+            win_mode = runtime_mission.get("win_mode", self.mission.win_mode)
+            self.mission.win_mode = win_mode if win_mode in ("sink", "survive") else self.mission.win_mode
+            limit = runtime_mission.get("time_limit_s", self.mission.time_limit_s)
+            self.mission.time_limit_s = max(1.0, float(limit))
+            self.mission.asm_count = max(0, int(runtime_mission.get(
+                "asm_count", self.mission.asm_count)))
+            custom = runtime_mission.get("custom_definition")
+            self.custom_mission_definition = custom if isinstance(custom, dict) else None
+            if self.custom_mission_definition is not None:
+                environment = self.custom_mission_definition.get("environment", {})
+                thermo = environment.get("thermocline_depth_m")
+                if isinstance(thermo, (int, float)) and not isinstance(thermo, bool):
+                    self.world._thermo = [[float(thermo) for _ in row]
+                                          for row in self.world._thermo]
+        else:
+            self.custom_mission_definition = None
         self.mission_time = data["mission_time"]
         self.score = data["score"]
         self.incident = data["incident"]
@@ -2408,6 +2809,8 @@ class Game:
         self.damage.ship_sunk = self.damage.total >= config.DMG_SHIP_SINK_TOTAL
         # M10–M16
         self.sonar_mode = data.get("sonar_mode", "BOW")
+        if self.sonar_mode not in ("BOW", "TOWED"):
+            self.sonar_mode = "BOW"
         sonar_controls = data.get("sonar_controls", {})
         self.sonar.gain_db = sonar_controls.get("gain_db", 0.0)
         self.sonar.band_low_hz = sonar_controls.get("band_low_hz", 0.0)
@@ -2468,6 +2871,7 @@ class Game:
         self.hq_timer = data.get("hq_timer", 15.0)
         self.rng_asm = random.Random(seed + 31337)
         self._joy_acc = 0.0
+        self._joy_x_acc = 0.0
         self._joy_turn = 0
         hd = data.get("helo")
         self.helo = Helicopter(random.Random(seed + 555))
@@ -2720,6 +3124,19 @@ class Game:
                 "towed_depth_m", config.SONAR_TOWED_DEPTH_M)
             self.sonar.towed_depth_target_m = sn.get(
                 "towed_depth_target_m", self.sonar.towed_depth_m)
+            try:
+                self.sonar.tow_state = TowState(sn.get("tow_state", "STOWED"))
+            except (TypeError, ValueError):
+                self.sonar.tow_state = TowState.STOWED
+            self.sonar.tow_payout = config.clamp(float(sn.get("tow_payout", 0.0)), 0.0, 1.0)
+            self.sonar.tow_heading_deg = float(sn.get("tow_heading_deg", 0.0)) % 360.0
+            self.sonar._tow_settle_s = config.clamp(
+                float(sn.get("tow_settle_s", 0.0)), 0.0, config.SONAR_TOWED_SETTLE_S)
+            self.sonar._tow_handling_ok = bool(sn.get("tow_handling_ok", True))
+            self.sonar.ping_cooldown = max(0.0, float(sn.get("ping_cooldown", 0.0)))
+            self.sonar.ping_active = bool(sn.get("ping_active", False))
+            self.sonar._ping_anim_timer = max(0.0, float(sn.get("ping_anim_timer", 0.0)))
+            self.sonar.echo_history = list(sn.get("echo_history", []))[-config.SONAR_ECHO_HISTORY_MAX:]
             self.sonar.bt_profile = sn.get("bt_profile")
             self.sonar.bt_cooldown = sn.get("bt_cooldown", 0.0)
             for target_id, points in sn.get("tracks", {}).items():
@@ -2741,6 +3158,10 @@ class Game:
                         "range_factor": pd.get("range_factor", 1.0),
                         "mode": pd.get("mode", "BOW"),
                     })
+        self._last_tow_state = self.sonar.tow_state
+        self._observed_enemy_torpedoes.update(
+            contact.target_id for contact in self.sonar.contacts.values()
+            if contact.kind == "torpedo")
         # Phase 2: RNG-Zustaende (deterministischer Fortgang)
         rg = data.get("rngs", {})
         self._restore_rng(rng, rg.get("world"))
@@ -2767,6 +3188,15 @@ class Game:
         self.map_view.cx = ui.get("map_cx", self.ship.x)
         self.map_view.cy = ui.get("map_cy", self.ship.y)
         self.map_follow = bool(ui.get("map_follow", True))
+        self.tooltips_enabled = bool(ui.get("tooltips_enabled", True))
+        self.pinned_tooltip = (layout.valid_tooltip(ui.get("pinned_tooltip"))
+                               if self.tooltips_enabled else None)
+        anchor = ui.get("tooltip_anchor")
+        valid_anchor = (isinstance(anchor, list) and len(anchor) == 2
+                        and all(isinstance(value, (int, float))
+                                and math.isfinite(value) for value in anchor))
+        self._tooltip_anchor = (tuple(anchor) if self.pinned_tooltip is not None
+                                and valid_anchor else None)
         self.map_view.clamp_center()
         target_id = ui.get("target_id")
         selected_id = ui.get("selected_contact_id")
@@ -2786,7 +3216,6 @@ class Game:
             or self.mission_result is not None
 
     def load_game(self, path: str = None) -> bool:
-        import json
         path = path or config.SAVE_PATH
         if not os.path.exists(path):
             return False
@@ -2795,26 +3224,102 @@ class Game:
                 data = json.load(f)
         except (OSError, ValueError):
             return False
-        if not isinstance(data, dict) or data.get("version") not in (1, 2, 3, 4, 5, 6):
+        if not self._valid_save_document(data):
             return False
-        backup = self.save_state()
+        return self._load_save_data(data)
+
+    @staticmethod
+    def _valid_save_document(data) -> bool:
+        def finite_number(value) -> bool:
+            return (isinstance(value, (int, float))
+                    and not isinstance(value, bool) and math.isfinite(value))
+
+        if not isinstance(data, dict):
+            return False
+        version = data.get("version")
+        if type(version) is not int or not 1 <= version <= 8:
+            return False
+        sonar = data.get("sonar")
+        if sonar is None:
+            return True
+        if not isinstance(sonar, dict):
+            return False
+        for key in ("lofar", "lofar_times", "lofar_bearings",
+                    "broadband", "history_times", "echo_history",
+                    "pending_pings"):
+            if key in sonar and not isinstance(sonar[key], list):
+                return False
+        for key in ("lofar", "broadband"):
+            if any(not isinstance(row, list)
+                   or any(not finite_number(value) for value in row)
+                   for row in sonar.get(key, [])):
+                return False
+        for key in ("lofar_times", "lofar_bearings", "history_times"):
+            if any(not finite_number(value) for value in sonar.get(key, [])):
+                return False
+        echoes = sonar.get("echo_history", [])
+        if any(not isinstance(item, dict)
+               or not finite_number(item.get("t"))
+               or not finite_number(item.get("contact_id"))
+               or any(name in item and not finite_number(item[name])
+                      for name in ("bearing", "range_nm", "range_sigma_nm",
+                                   "depth_m", "depth_sigma_m", "snr_db"))
+               for item in echoes):
+            return False
+        tracks = sonar.get("tracks", {})
+        if not isinstance(tracks, dict):
+            return False
+        if any(not isinstance(points, list)
+               or any(not isinstance(point, dict)
+                      or any(not finite_number(point.get(name))
+                             for name in ("t", "bearing", "fx", "fy",
+                                          "fcourse"))
+                      for point in points)
+               for points in tracks.values()):
+            return False
+        if any(not isinstance(item, dict)
+               for item in sonar.get("pending_pings", [])):
+            return False
+        return True
+
+    def _load_save_data(self, data: dict) -> bool:
+        import copy
+
+        candidate = copy.copy(self)
+        candidate.held = set(self.held)
+        candidate.map_view = copy.copy(self.map_view)
+        candidate._observed_enemy_torpedoes = set(
+            self._observed_enemy_torpedoes)
+        candidate.audio = copy.copy(self.audio)
+        candidate.audio.stop_sonar = lambda: None
+        id_classes = (Sub, Animal, SurfaceShip, Decoy, EnemyTorpedo)
+        next_ids = tuple(cls._next_id for cls in id_classes)
         try:
-            self.load_state(data)
-        except (KeyError, TypeError, ValueError, IndexError, AttributeError):
-            self.load_state(backup)
+            candidate.load_state(data)
+        except Exception:
+            for cls, next_id in zip(id_classes, next_ids):
+                cls._next_id = next_id
             return False
+        candidate.audio = self.audio
+        self.__dict__.update(candidate.__dict__)
+        self.in_menu = False
+        self.main_menu = False
         return True
 
     # --- W4: Save-Slots 1-5 ---
 
     def save_to_slot(self, slot: int) -> None:
+        if type(slot) is not int or not 1 <= slot <= 5:
+            raise ValueError("slot must be an integer from 1 to 5")
         path = os.path.join(config.SAVE_DIR, f"slot{slot}.json")
         self.save_game(path)
-        self.flash(f"Slot {slot}: gespeichert", 2.0)
+        self.flash(self.tr("status.saved", slot=slot), 2.0)
         self.feed.add(self.world.format_time(), "mission",
-                      f"Spielstand gespeichert (Slot {slot})")
+                      self.tr("status.save_feed", slot=slot))
 
     def load_from_slot(self, slot: int) -> bool:
+        if type(slot) is not int or not 1 <= slot <= 5:
+            raise ValueError("slot must be an integer from 1 to 5")
         path = os.path.join(config.SAVE_DIR, f"slot{slot}.json")
         if not os.path.exists(path):
             return False
@@ -2823,15 +3328,11 @@ class Game:
                 data = json.load(f)
         except (OSError, ValueError):
             return False
-        if not isinstance(data, dict) or data.get("version") not in (1, 2, 3, 4, 5, 6):
+        if not self._valid_save_document(data):
             return False
-        backup = self.save_state()
-        try:
-            self.load_state(data)
-        except (KeyError, TypeError, ValueError, IndexError, AttributeError):
-            self.load_state(backup)
+        if not self._load_save_data(data):
             return False
-        self.flash(f"Slot {slot} geladen", 2.0)
+        self.flash(self.tr("status.loaded", slot=slot), 2.0)
         return True
 
     # --- W4: Hauptmenü (Szenario -> [Level] -> Briefing) ---
@@ -2847,6 +3348,38 @@ class Game:
     def _handle_menu_key(self, key) -> None:
         if key == pygame.K_f:
             self.toggle_fullscreen()
+            return
+        if self.main_menu:
+            entries = ("new", "load", "mission_editor", "unit_editor", "options", "quit")
+            if key == pygame.K_w:
+                self.world_mode = ("fixed" if self.world_mode == "procedural"
+                                   else "procedural")
+            elif key == pygame.K_r:
+                import random
+                self.seed = random.SystemRandom().randrange(1, 1_000_000_000)
+            elif key == pygame.K_UP:
+                self.main_menu_sel = (self.main_menu_sel - 1) % len(entries)
+            elif key == pygame.K_DOWN:
+                self.main_menu_sel = (self.main_menu_sel + 1) % len(entries)
+            elif key in (pygame.K_RETURN, pygame.K_SPACE):
+                action = entries[self.main_menu_sel]
+                if action == "new":
+                    self.main_menu = False
+                    self.menu_screen = "scenario"
+                    self.menu_sel = 0
+                elif action == "load":
+                    self._open_administration("load")
+                elif action == "mission_editor":
+                    profiles = set(catalog_builtins(CATALOG))
+                    self.editor = MissionEditor(tr=self.tr, profile_keys=profiles)
+                elif action == "unit_editor":
+                    self.editor = UnitEditor(catalog_builtins(CATALOG), tr=self.tr)
+                elif action == "options":
+                    self._open_administration("options")
+                else:
+                    self._open_administration("quit")
+            elif key in (pygame.K_ESCAPE, pygame.K_q):
+                self._open_administration("quit")
             return
         if self.menu_screen == "scenario":
             n = len(config.SCENARIO_ORDER)
@@ -2897,6 +3430,7 @@ class Game:
         elif key == pygame.K_ESCAPE:
             self.menu_screen = "scenario"
 
+    @localized
     def draw_menu(self) -> None:
         """W4: Szenario -> (Level bei s4) -> Briefing -> Start."""
         s = self.screen
@@ -2905,12 +3439,20 @@ class Game:
 
         def center(text: str, y: int, font=None, color=config.COLOR_TEXT) -> None:
             f = font or self.font
+            text = localize(text)
             surf = f.render(text, True, color)
             s.blit(surf, surf.get_rect(center=(cx, y)))
 
         center("U-JAGD – FREGATTE F-217", 100, self.font_big)
 
-        if self.menu_screen == "scenario":
+        if self.main_menu:
+            labels = ("menu.new_game", "menu.load", "menu.mission_editor",
+                      "menu.unit_editor", "option.title", "menu.quit")
+            for i, key in enumerate(labels):
+                marker = "> " if i == self.main_menu_sel else "  "
+                color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
+                center(marker + self.tr(key).upper(), 205 + i * 50, color=color)
+        elif self.menu_screen == "scenario":
             center("Szenario wählen (↑/↓ oder 1-4) – Enter: weiter | Esc/Q: Beenden",
                    150, color=config.COLOR_TEXT_DIM)
             for i, key in enumerate(config.SCENARIO_ORDER):
@@ -2944,8 +3486,12 @@ class Game:
             center("Enter/Space: Start  |  Esc: zurück", 520,
                    color=config.COLOR_TEXT_DIM)
 
-        world_label = ("PROZEDURAL" if self.world_mode == "procedural"
-                       else "FESTE REFERENZKARTE")
+        if self.world_mode == "procedural":
+            from src.world.real_coast import sector_for_seed
+            sector, _ = sector_for_seed(self.seed)
+            world_label = sector["name"]
+        else:
+            world_label = "FESTE REFERENZKARTE"
         center(f"Welt: {world_label} (W)  |  Seed: {self.seed} (R: neu)",
                config.SCREEN_H - 68, color=config.COLOR_OK)
         center(f"Missions-Seed: {self.seed}   |   "
@@ -2955,12 +3501,20 @@ class Game:
 
     # --- W0: Draw-Grid ---
 
+    @localized
     def draw(self) -> None:
         s = self.screen
         s.fill(config.COLOR_BG)
         if self.splash_active:
             draw_splash(s, self._t - self.splash_started_at,
-                        self.splash_duration_s)
+                        self.splash_duration_s, self.tr)
+        elif self.editor is not None:
+            self.editor.draw(s)
+            if isinstance(self.editor, MissionEditor) and self.editor.mode == "browser":
+                hint = self.font.render(localize("F5: start selected runtime-compatible mission"),
+                                        True, config.COLOR_OK)
+                s.blit(hint, (config.SCREEN_W - hint.get_width() - 20,
+                              config.SCREEN_H - 68))
         elif self.in_menu:
             self.draw_menu()
         else:
@@ -3006,15 +3560,28 @@ class Game:
             self.draw_nations_overlay()
         elif self.save_ui is not None:
             self.draw_save_ui()
+        elif self.options_open:
+            self.draw_options_overlay()
         if self.msg and self._t < self.msg_until:
-            r = self.font_big.render(self.msg, True, config.COLOR_WARN).get_rect(
+            message = localize(self.msg)
+            r = self.font_big.render(message, True, config.COLOR_WARN).get_rect(
                 center=(config.SCREEN_W // 2, 80))
-            s.blit(self.font_big.render(self.msg, True, config.COLOR_BG),
+            s.blit(self.font_big.render(message, True, config.COLOR_BG),
                    (r.x + 2, r.y + 2))
-            s.blit(self.font_big.render(self.msg, True, config.COLOR_WARN), r)
+            s.blit(self.font_big.render(message, True, config.COLOR_WARN), r)
+        if (not self.in_menu and not self.splash_active and self.editor is None
+                and self.tooltips_enabled
+                and not self.administration_open and not self.game_over):
+            canvas = self._window_to_canvas(pygame.mouse.get_pos())
+            payload = self.pinned_tooltip or self.tooltip_at(canvas)
+            anchor = self._tooltip_anchor if self.pinned_tooltip else canvas
+            if payload is not None and anchor is not None:
+                layout.draw_tooltip(s, payload, anchor,
+                                    (0, 0, config.SCREEN_W, config.SCREEN_H))
         if self._scanlines is not None:
             s.blit(self._scanlines, (0, 0))
 
+    @localized
     def draw_navigation_input(self) -> None:
         """Show the active numeric command without hiding the simulation."""
         if self.input_mode is None:
@@ -3031,6 +3598,7 @@ class Game:
                          (rect.x + 14, rect.y + 34, rect.w - 28, 18),
                          config.COLOR_TEXT_DIM, size=12)
 
+    @localized
     def draw_top_bar(self) -> None:
         s = self.screen
         pygame.draw.rect(s, (14, 24, 18), (0, 0, config.SCREEN_W, config.TOP_BAR_H))
@@ -3043,7 +3611,7 @@ class Game:
                f"{self.ship.speed:4.1f} kn  Kurs {self.ship.course:4.0f}°")
         if self.paused:
             txt += "   || PAUSE"
-        s.blit(self.font.render(txt, True, config.COLOR_TEXT), (10, 6))
+        s.blit(self.font.render(localize(txt), True, config.COLOR_TEXT), (10, 6))
         x = 960
         for i, ts in enumerate(config.TIME_SCALE_STEPS):
             col = config.COLOR_TEXT if i == self.time_scale_idx \
@@ -3052,13 +3620,14 @@ class Game:
         s.blit(self.font.render("[ ]", True, config.COLOR_TEXT_DIM),
                (x + len(config.TIME_SCALE_STEPS) * 42, 6))
 
+    @localized
     def draw_bottom_feed(self) -> None:
         s = self.screen
         x, y, w, h = config.FEED_RECT
         pygame.draw.rect(s, (10, 18, 14), (x, y, w, h))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (x, y, w, h), 1)
         s.blit(self.font.render(
-            "EREIGNIS-FEED  F1 Hilfe | U Kurs | V Fahrt | S/L Save | [ ] Zeit | K Follow",
+            localize(event_feed_heading(self.station)),
             True, config.COLOR_TEXT_DIM), (x + 8, y + 5))
         ly = y + 27
         for e in self.feed.recent(6):
@@ -3067,7 +3636,7 @@ class Game:
             prefix = f"[{e.stamp}] {tag:4s} "
             s.blit(self.font.render(prefix, True, config.COLOR_TEXT_DIM),
                    (x + 8, ly))
-            txt = e.text
+            txt = localize(e.text)
             pw = self.font.size(prefix)[0]
             maxw = w - 16 - pw
             while txt and self.font.size(txt)[0] > maxw:
@@ -3078,12 +3647,13 @@ class Game:
                    (x + 8 + pw, ly))
             ly += 23
 
+    @localized
     def draw_bottom_telemetry(self) -> None:
         s = self.screen
         x, y, w, h = config.TELEMETRY_RECT
         pygame.draw.rect(s, (10, 18, 14), (x, y, w, h))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (x, y, w, h), 1)
-        s.blit(self.font.render("TELEMETRIE", True, config.COLOR_TEXT_DIM),
+        s.blit(self.font.render(localize("TELEMETRIE"), True, config.COLOR_TEXT_DIM),
                (x + 8, y + 5))
         profile = self.sonar.bt_profile
         thermo = (f"~{profile['thermocline_m']:.0f}m BT" if profile else "-- BT")
@@ -3108,6 +3678,7 @@ class Game:
                                label_w=100, size=13)
             ly += 18
 
+    @localized
     def draw_help_overlay(self) -> None:
         s = self.screen
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
@@ -3118,10 +3689,10 @@ class Game:
         by = (config.SCREEN_H - bh) // 2
         pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
-        s.blit(self.font_big.render(
-            f"HILFE – {self.station.label.upper()}", True, config.COLOR_TEXT),
+        s.blit(self.font_big.render(localize(
+            f"HILFE – {self.station.label.upper()}"), True, config.COLOR_TEXT),
             (bx + 18, by + 12))
-        intro, keys, params, tactics = get_help(self.station)
+        intro, keys, params, tactics = get_help(self.station, self.tr)
         x = bx + 20
         w = bw - 40
         y = by + 52
@@ -3137,6 +3708,7 @@ class Game:
         layout.blit_line(s, f"Seite {self.help_page + 1}/3 | Links/Rechts/Tab: Seite | F1/Esc: zurück",
                          (x, by + bh - 32, w, 24), config.COLOR_TEXT_DIM, size=16)
 
+    @localized
     def draw_nations_overlay(self) -> None:
         s = self.screen
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
@@ -3147,7 +3719,7 @@ class Game:
         by = (config.SCREEN_H - bh) // 2
         pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
-        s.blit(self.font_big.render("NATIONEN & EINHEITEN", True, config.COLOR_TEXT),
+        s.blit(self.font_big.render(localize("NATIONEN & EINHEITEN"), True, config.COLOR_TEXT),
                (bx + 18, by + 12))
         cw, ch = 520, 260
         for i, key in enumerate(list(NATIONS.keys())[:4]):
@@ -3156,20 +3728,22 @@ class Game:
             cyy = by + 52 + (i // 2) * (ch + 12)
             pygame.draw.rect(s, (14, 24, 18), (cx, cyy, cw, ch))
             pygame.draw.rect(s, n["color"], (cx, cyy, cw, ch), 1)
-            s.blit(self.font_big.render(
-                f"{n['flag']} – {n['name']}"
-                + ("   [FEINDLICH]" if n["hostile"] else ""),
+            s.blit(self.font_big.render(localize(
+                f"{n['flag']} – {localize(n['name'])}"
+                + ("   [FEINDLICH]" if n["hostile"] else "")),
                 True, n["color"]), (cx + 12, cyy + 10))
             layout.blit_block(s, n["desc"], cx + 12, cyy + 44, cw - 24, 130,
                               color=config.COLOR_TEXT, size=13)
-            s.blit(self.font.render(f"Radar: {n['radar']}", True, config.COLOR_TEXT_DIM),
+            s.blit(self.font.render(
+                f"Radar: {localize(n['radar'])}", True, config.COLOR_TEXT_DIM),
                    (cx + 12, cyy + 184))
-            s.blit(self.font.render(f"U-Boote: {n['submarines']}",
+            s.blit(self.font.render(localize(f"U-Boote: {n['submarines']}"),
                                     True, config.COLOR_TEXT_DIM),
                    (cx + 12, cyy + 206))
-        s.blit(self.font.render("N: schließen", True, config.COLOR_TEXT_DIM),
+        s.blit(self.font.render(localize("N: schließen"), True, config.COLOR_TEXT_DIM),
                (bx + bw - 120, by + bh - 26))
 
+    @localized
     def draw_save_ui(self) -> None:
         s = self.screen
         mode = "SPEICHERN" if self.save_ui == "save" else "LADEN"
@@ -3198,6 +3772,7 @@ class Game:
         layout.blit_line(s, hint, (bx + 18, by + bh - 50, bw - 36, 30),
                          config.COLOR_WARN, size=16)
 
+    @localized
     def draw_end_panel(self) -> None:
         """M8: Endpanel mit Score-Bruchrechnung und Hinweisen."""
         s = self.screen
@@ -3227,23 +3802,53 @@ class Game:
             if not text:
                 ly += 14
                 continue
+            text = localize(text)
             f = self.font_big if big else self.font
             r = f.render(text, True, c).get_rect(center=(config.SCREEN_W // 2, ly))
             s.blit(f.render(text, True, c), r)
             ly += 36 if big else 26
 
+    @localized
+    def draw_options_overlay(self) -> None:
+        rect = pygame.Rect(360, 190, 560, 390)
+        pygame.draw.rect(self.screen, (7, 18, 13), rect)
+        pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
+        title = self.font_big.render(self.tr("option.title"), True, config.COLOR_WARN)
+        self.screen.blit(title, title.get_rect(center=(rect.centerx, rect.y + 42)))
+        values = (
+            self.tr("option.language") + ": " + self.tr("option.language." + self.preferences.language),
+            self.tr("option.fullscreen") + ": " + self.tr("common.on" if self.preferences.fullscreen else "common.off"),
+            self.tr("option.audio") + ": " + self.tr("common.on" if self.preferences.audio else "common.off"),
+            self.tr("option.large_text") + ": " + self.tr("common.on" if self.preferences.large_text else "common.off"),
+            self.tr("option.tooltips") + ": "
+            + self.tr("common.on" if self.tooltips_enabled else "common.off"),
+        )
+        for index, value in enumerate(values):
+            color = config.COLOR_TEXT if index == self.options_sel else config.COLOR_TEXT_DIM
+            prefix = "> " if index == self.options_sel else "  "
+            rendered = self.font.render(prefix + value, True, color)
+            self.screen.blit(rendered, (rect.x + 70, rect.y + 105 + index * 50))
+        hint = self.font.render(localize(
+            "Up/Down: select | Enter/Left/Right: change | Esc: back"),
+                                True, config.COLOR_TEXT_DIM)
+        self.screen.blit(hint, hint.get_rect(center=(rect.centerx, rect.bottom - 35)))
+
+    @localized
     def draw_pause_overlay(self) -> None:
         s = self.screen
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 90))
         s.blit(dim, (0, 0))
-        r = self.font_big.render("PAUSE", True, config.COLOR_TEXT).get_rect(
+        pause = localize("PAUSE")
+        r = self.font_big.render(pause, True, config.COLOR_TEXT).get_rect(
             center=(config.SCREEN_W // 2, config.SCREEN_H // 2 - 40))
-        s.blit(self.font_big.render("PAUSE", True, config.COLOR_TEXT), r)
-        r = self.font.render("P = weiter", True, config.COLOR_TEXT_DIM).get_rect(
+        s.blit(self.font_big.render(pause, True, config.COLOR_TEXT), r)
+        resume = localize("P = weiter")
+        r = self.font.render(resume, True, config.COLOR_TEXT_DIM).get_rect(
             center=(config.SCREEN_W // 2, config.SCREEN_H // 2))
-        s.blit(self.font.render("P = weiter", True, config.COLOR_TEXT_DIM), r)
+        s.blit(self.font.render(resume, True, config.COLOR_TEXT_DIM), r)
 
+    @localized
     def draw_quit_overlay(self) -> None:
         """Require an explicit confirmation before leaving a live mission."""
         s = self.screen

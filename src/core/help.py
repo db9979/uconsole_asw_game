@@ -14,16 +14,17 @@ GLOBAL_HELP = (
         ("5 / 6 / 7 / 8", "OPZ / Funk / Maschine / Helikopter"),
         ("P", "Pause / Weiter (nur P)"),
         ("Z / X oder [ / ]", "Zeitraffer langsamer / schneller (auch im Sonar)"),
-        ("Auf / Ab", "Stationsbezogene Auswahl; Ruder nur auf der Bruecke"),
+        ("Pfeiltasten", "Stationsbezogene Auswahl oder Einstellung"),
         ("U / V", "Bruecke: Zielkurs / Zielgeschwindigkeit"),
         ("+ / -", "Telegraph (auch im Sonar)"),
         ("F1", "Hilfe (diese Anzeige)"),
         ("N", "Nationen & Einheiten; im Sonar: Notchfilter"),
         ("S / L", "Speichern / Laden (Slots 1-5)"),
         ("Alt+Enter", "Vollbild (alle Stationen)"),
-        ("Q / E oder Mausrad", "Karte: heraus-/hineinzoomen"),
-        ("Drag", "Karte verschieben (Führungsstationen)"),
-        ("K", "Karte: Kamera-Follow an/aus (Drag schaltet Follow aus)"),
+        ("Q / E oder Mausrad", "Kartenzoom nur auf Bruecke, Waffen und Helikopter"),
+        ("Drag", "Karte verschieben (Bruecke, Waffen und Helikopter)"),
+        ("K", "Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus)"),
+        ("Esc", "Eingabe abbrechen oder Beenden-Dialog oeffnen"),
     ],
 )
 
@@ -31,12 +32,14 @@ STATION_HELP = {
     Station.BRIDGE: (
         "Brücke / Nautik – Navigation, Kurs & Fahrt, Missionsüberblick.",
         [
-            ("Auf / Ab", "Ruder: Zielkurs ändern"),
+            ("<- / ->", "Ruder: Zielkurs ändern"),
+            ("Auf / Ab", "Telegraph hoch / runter"),
             ("U", "Direkten Zielkurs eingeben (000-359)"),
             ("V", "Direkte Zielgeschwindigkeit eingeben (0-25 kn)"),
             ("+ / -", "Telegraph: Motorenbefehl (STOP-SLOW-HALF-FULL-FLANK)"),
             ("Karte", "Mausrad: Zoom, Maus-Drag: Pan"),
             ("Q / E", "Karte heraus-/hineinzoomen"),
+            ("K", "Kamera-Follow an/aus"),
         ],
         [
             "Fahrt = Lärm: Hohe Fahrt verschlechtert das passive Sonar und "
@@ -50,8 +53,9 @@ STATION_HELP = {
         "Sonarzentrale – LOFAR-Wasserfall, Kontakte, Peilungen, Ping, TMA.",
         [
             ("A", "Aktiv-Ping abfeuern (Kühlzeit, verrät Position!)"),
-            ("B / Y", "B: Array wechseln Bug/Towed; Y: Towed waehlen"),
-            ("Bild auf/ab", "Broadband / LOFAR / DEMON / TMA / Umwelt-Fusion"),
+            ("B", "Empfangsarray zwischen HMS und TAS wechseln"),
+            ("Y", "TAS ausbringen / einholen (nur bei 3-12 kn)"),
+            ("Bild auf/ab", "Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE"),
             ("E", "Bathythermograph: lokales Schallprofil messen"),
             ("U / V", "TAS/VDS-Solltiefe um 10 m heben / senken"),
             ("R", "Hoerpeilung direkt: 000 bis 359.9 Grad rechtweisend"),
@@ -65,7 +69,7 @@ STATION_HELP = {
             ("N", "Notchfilter gegen Eigenantrieb"),
             ("SPACE", "LOFAR Peak-Hold ein/aus"),
             ("T", "TMA für ausgewählten Kontakt ein/aus"),
-            ("C", "Kontakt klassifizieren (U-Boot / Biologisch / Fahrzeug)"),
+            ("C", "Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug)"),
             ("M", "Ausgewählten Kontakt als Ziel setzen"),
         ],
         [
@@ -85,7 +89,11 @@ STATION_HELP = {
             "Thermokline: Ziel darunter = Schattenzone (schlechter SNR).",
             "HMS und TAS laufen parallel; gleiche Peilungen bestätigen Tracks.",
             "Starke Arrayabweichung markiert einen möglichen Geisterkontakt.",
+            "TAS-Leistung steht erst nach vollstaendigem Ausbringen und Stabilisieren bereit. "
+            "Ausbringen/Einholen pausiert ausserhalb 3-12 kn; Ueberfahrt kann das TAS beschaedigen.",
             "TAS unter die gemessene Sprungschicht fahren, um tiefe Ziele zu hören.",
+            "ACTIVE zeigt ausschliesslich gespeicherte Echo-Messungen: Alter/Fading, "
+            "Peilung, Entfernung und deren Messunsicherheit.",
         ],
         ["Erst passiv lauschen (langsam fahren), dann gezielt pingen. "
          "Ping = Waffe + Warnung an den U-Boot-Fahrer."],
@@ -95,16 +103,19 @@ STATION_HELP = {
         [
             ("M", "Ziel setzen (aus Sonarkontakten)"),
             ("Auf / Ab", "Torpedotiefe (10-300 m)"),
-            ("T", "Torpedo abfeuren (ROE-Prüfung)"),
+            ("<- / ->", "Sonarkontakt fuer Zielwahl waehlen"),
+            ("T", "Torpedo abfeuern (ROE-Prüfung)"),
             ("H", "HSP-5 starten / zurückrufen"),
             ("B", "Sonarbojen aussetzen (HSP-5 in Luft)"),
             ("D", "Leichttorpedo vom HSP-5"),
+            ("Q / E", "Karte heraus-/hineinzoomen"),
+            ("K", "Kamera-Follow an/aus"),
         ],
         [
             "ROE STD: Ziel muss geortet (Ping/TMA) + als U-Boot "
             "klassifiziert sein. ROE FREE: nur Klassifikation.",
             "Zieltiefe: aus aktivem Ping, nicht aus TMA; falsche Tiefe = Fehlschuss.",
-            "Salven-Doktrin: max. 2 Drahttorpedos gleichzeitig in der Luft.",
+            "Salven-Doktrin: max. 2 Drahttorpedos gleichzeitig im Wasser.",
         ],
         ["Tiefe erst aus Ping, dann Schuss. Dekoys: Signatur-Nachbau – "
          "Kontakt verliert dann Eigenfrequenzen."],
@@ -135,7 +146,7 @@ STATION_HELP = {
             ("Auf / Ab", "CIC-Track waehlen"),
             ("C", "NATO-Zugehoerigkeit setzen"),
             ("M", "CIC-Track an Sonar/Waffen uebergeben"),
-            ("Bild Auf / Ab", "Radarbereich 5/10/20/40 NM"),
+            ("Bild Auf / Ab", "Radarbereich 10/20/40/80/120 NM"),
             ("<- / ->", "ASM-Track wählen"),
             ("E", "ESSM abfeuern (VLS-Cell)"),
             ("G", "Chaff abwerfen (8 NM-Kegel, Kühlzeit)"),
@@ -171,8 +182,9 @@ STATION_HELP = {
         "Maschinenraum – Telegraph, RPM, Lärm, Maschinerie-Status.",
         [
             ("+ / -", "Motorenbefehl (Telegraph)"),
-            ("Auf / Ab", "Telegraph runter / hoch"),
+            ("Auf / Ab", "Telegraph hoch / runter"),
             ("A", "Akustikmodus LEISE/NORMAL"),
+            ("V", "Direkte Zielgeschwindigkeit eingeben (0-25 kn)"),
         ],
         [
             "Kavitation ab 15 kn: Lärm stark erhöht, passives Sonar bricht.",
@@ -187,8 +199,11 @@ STATION_HELP = {
         [
             ("H", "HSP-5 starten / zurueckrufen"),
             ("Pfeile", "Wegpunktpeilung und -entfernung einstellen"),
+            ("M", "Sonarkontakt als Ziel fuer Lufttorpedo setzen"),
             ("B", "Eine Sonarboje an aktueller Position aussetzen"),
             ("D", "Leichttorpedo abwerfen"),
+            ("Q / E", "Karte heraus-/hineinzoomen"),
+            ("K", "Kamera-Follow an/aus"),
         ],
         [
             "Der HSP-5 hat endliche Bojen- und Torpedovorraete; Starts laden nicht nach.",
@@ -204,6 +219,12 @@ STATION_HELP = {
 }
 
 
-def get_help(station: Station) -> tuple:
-    return STATION_HELP.get(
+def get_help(station: Station, tr=None) -> tuple:
+    """Return station help, optionally translated one display string at a time."""
+    help_data = STATION_HELP.get(
         station, ("Unbekannte Station.", [], [], []))
+    if tr is None:
+        return help_data
+    intro, controls, parameters, tactics = help_data
+    return (tr(intro), [(tr(key), tr(action)) for key, action in controls],
+            [tr(text) for text in parameters], [tr(text) for text in tactics])

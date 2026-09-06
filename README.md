@@ -8,6 +8,9 @@ Python und Pygame.
 
 Aktuelle Projektversion: **0.1.0**
 
+<img width="1139" height="634" alt="image" src="https://github.com/user-attachments/assets/df2501a0-f46e-4f0f-878c-2d0d9159c025" />
+
+
 > Entwicklungsstand: spielbarer früher Release. Bedienung, Balancing und
 > Plattformunterstützung können sich noch ändern.
 

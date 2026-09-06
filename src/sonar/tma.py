@@ -151,10 +151,12 @@ def solve_tma(track: BearingTrack,
                 best = cand
     if best is None:
         return None
-    # Verfeinerung um den besten Kandidaten
+    # Fine local search remains based solely on the immutable raw bearings.
     _, b_course, b_speed, _, _ = best
-    for dc in (-15, 0, 15):
-        for ds in (-2.0, 0.0, 2.0):
+    course_step = config.TMA_FINE_COURSE_STEP_DEG
+    speed_step = config.TMA_FINE_SPEED_STEP_KN
+    for dc in (-course_step, 0, course_step):
+        for ds in (-speed_step, 0.0, speed_step):
             c2 = (b_course + dc) % 360
             s2 = b_speed + ds
             if s2 < 0.0:

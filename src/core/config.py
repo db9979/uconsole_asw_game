@@ -214,7 +214,7 @@ SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
 SONAR_FUSION_CONFIRM_DEG = 5.0
 SONAR_FUSION_DIVERGENT_DEG = 9.0
 SONAR_BT_COOLDOWN_S = 60.0
-SONAR_PAGE_COUNT = 5
+SONAR_PAGE_COUNT = 6
 CZ_BANDS = ((40.0, 70.0), (90.0, 130.0))  # Konvergenzzonen (NM, vom Schallfenster)
 CZ_BONUS_NM = 25.0              # zusätzliche passive Reichweite in der Zone
 
@@ -237,6 +237,12 @@ RADAR_WEATHER_ERROR_GAIN = 1.5
 RADAR_TRACK_STALE_S = 30.0
 RADAR_BEARING_ERR_DEG = 0.8
 RADAR_RANGE_ERR_FRAC = 0.015
+# Observation filters operate on sensor epochs, not render/physics substeps.
+OBS_RADAR_EPOCH_S = 0.5
+OBS_BEARING_EPOCH_S = 5.0
+OBS_RADAR_SMOOTH_TAU_S = 1.5
+OBS_BEARING_SMOOTH_TAU_S = 4.0
+OBS_HISTORY_MAX = 12
 
 # M13: Funkraum / HFDF
 SNOCKEL_DURATION_S = 30.0       # Sendezeit beim Schnorcheln
@@ -309,12 +315,16 @@ TMA_MAX_RANGE_NM = 45.0         # Lösungsraum
 TMA_SEARCH_STEP_S = 1.5         # Zeit-Schritt der Geschwindigkeits-Suche
 TMA_QUALITY_DB = 8.0            # Peil-RMSE (°), ab dem Qualität 0 wird
 TMA_RANGE_MIN_QUALITY = 0.35    # TMA-Range erst ab dieser Qualität nutzen
+TMA_FINE_COURSE_STEP_DEG = 3
+TMA_FINE_SPEED_STEP_KN = 0.5
+TMA_PRESENTATION_ALPHA = 0.35
 BEARING_TRACK_MAX_PTS = 60
 BEARING_TRACK_MIN_INTERVAL_S = 1.0  # sim-s zwischen Peilungen im Track
 BEARING_ERR_BOW_DEG = 6.0           # Peilfehler Basis: Bug-Array (±)
 BEARING_ERR_TOWED_DEG = 2.0         # Peilfehler Basis: Schleppsonar (±)
 BEARING_ERR_SPEED_FACTOR = 0.12     # relativer Aufschlag pro kn Eigenfahrt
 BEARING_ERR_QUALITY_SPAN = 0.9      # Fehlerfaktor: 1.4 - SPAN*quality
+SONAR_BEARING_NOISE_EPOCH_S = 2.0
 
 # M7: Schwierigkeitslevel (GDD §9)
 # quiet_mult: Faktor auf U-Boot-Stillheit (<1 = lauter/easier zu finden)

@@ -3,8 +3,9 @@
 import numpy as np
 import pytest
 
-from src.audio.receiver import AcousticReceiver
+from src.audio.receiver import AcousticReceiver, smooth_limit
 from src.core import config
+from src.data.catalog import CATALOG
 
 
 def source(bearing=0, level=1, lines=None, seed=1234):
@@ -58,6 +59,53 @@ def test_all_source_mix_is_additive_and_ignores_identity_metadata():
     a.update(target_id="secret", true_class="sub", selected=True)
     b.update(target_id="other", signature_key="irrelevant")
     np.testing.assert_array_equal(mixed.samples, run([b, a]).samples)
+
+
+def test_receiver_retains_normal_mix_headroom_before_analysis():
+    sources = [source(lines=[(24, 1, 0)], seed=0) for _ in range(8)]
+    receiver = run(sources, blocks=1)
+    assert np.max(np.abs(receiver.samples)) > 1.0
+    assert np.isfinite(receiver.samples).all()
+
+
+def test_smooth_limiter_is_monotonic_transparent_and_off_the_rails():
+    values = np.linspace(-32, 32, 20001)
+    limited = smooth_limit(values)
+    assert np.all(np.diff(limited) >= 0)
+    np.testing.assert_allclose(limited[np.abs(values) <= .75],
+                               values[np.abs(values) <= .75], atol=3e-8)
+    assert np.max(np.abs(limited)) < 1.0
+    assert not np.any(np.abs(limited) == 1.0)
+    dirty = smooth_limit([np.nan, np.inf, -np.inf])
+    assert np.isfinite(dirty).all()
+
+
+def test_representative_catalog_mix_keeps_analysis_headroom():
+    profiles = [CATALOG.subs["diesel_alt"].acoustic,
+                CATALOG.subs["aip_modern"].acoustic,
+                CATALOG.surfaces["warship_01"].acoustic,
+                CATALOG.surfaces["warship_02"].acoustic]
+    sources = []
+    for index, profile in enumerate(profiles):
+        low, high = profile.tonal_band_hz
+        item = source(bearing=index * 3, level=.85,
+                      lines=[((low + high) / 2, .8, 0),
+                             *profile.secondary_tonals], seed=100 + index)
+        if profile.broadband:
+            level, low_hz, high_hz = profile.broadband
+            item["broadband"] = {"level": level, "low_hz": low_hz,
+                                  "high_hz": high_hz}
+        sources.append(item)
+    receiver = run(sources, width=30, blocks=1, own_noise=.5,
+                   sea_state=6, own_speed=18)
+    assert np.isfinite(receiver.samples).all()
+    assert .1 < np.max(np.abs(receiver.samples)) < 4.0
+    assert np.isfinite(receiver.spectrum).all()
+    for gain_db in (12, 24):
+        playback = smooth_limit(receiver.samples * 10 ** (gain_db / 20) * .55)
+        assert np.isfinite(playback).all()
+        assert np.max(np.abs(playback)) < 1.0
+        assert not np.any(np.abs(playback) == 1.0)
 
 
 def test_tone_peaks_and_nonuniform_lofar_mapping():
@@ -145,7 +193,7 @@ def test_warmup_bounded_history_and_reset_replay():
         assert receiver.samples.shape == (1024,)
         assert receiver.samples.dtype == np.float32
         assert np.isfinite(receiver.samples).all()
-        assert max(abs(receiver.samples)) <= 1
+        assert max(abs(receiver.samples)) <= 8
         assert receiver._history.shape == (8192,)
         assert receiver._filled <= 8192
         for values, count in ((receiver.spectrum, 110), (receiver.broadband, 180),
@@ -200,7 +248,7 @@ def test_nonfinite_inputs_and_overload_are_bounded():
     assert np.isfinite(receiver.samples).all()
     overloaded = run([source(seed=i) for i in range(100)], width=-1, own_noise=999, sea_state=999)
     assert np.isfinite(overloaded.samples).all()
-    assert np.max(np.abs(overloaded.samples)) <= 1
+    assert np.max(np.abs(overloaded.samples)) <= 8
     assert all(0 <= value <= 1 for value in overloaded.spectrum + overloaded.broadband)
     receiver._analyze(np.full(8192, np.nan))
     assert receiver.demon_analysis is None and receiver.peaks == []

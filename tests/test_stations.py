@@ -4,6 +4,7 @@ import pygame
 import pytest
 
 from src.core.game import Game
+from src.core.i18n import localize
 from src.core.station import Station
 from src.sonar.sonar import Contact
 
@@ -193,7 +194,9 @@ def test_opz_protected_affiliation_blocks_ship_torpedo(affiliation):
     game.launch_torpedo()
     assert game.torpedo_count == before
     assert not game.torpedoes
-    assert "ROE-Sperre" in game.msg
+    expected_affiliation = game.tr(f"affiliation.{affiliation.lower()}")
+    assert localize(game.msg, game.tr) == game.tr(
+        "runtime.roe.blocked", affiliation=expected_affiliation)
 
 
 def test_unknown_opz_affiliation_keeps_existing_ship_launch_policy():
@@ -231,7 +234,8 @@ def test_enemy_launch_is_hidden_until_first_sonar_observation(monkeypatch):
 
     monkeypatch.setattr(game.sonar, "update", observe_torpedo)
     game._update_sensors(.25)
-    assert "Torpedo erstmals beobachtet" in game.msg
+    assert localize(game.msg, game.tr) == game.tr(
+        "runtime.sonar.torpedo", contact=88)
     game.sonar.contacts.clear()
     game.msg = "keine neue Warnung"
     game._update_sensors(.25)

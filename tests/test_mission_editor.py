@@ -1,7 +1,7 @@
 import pygame
 import pytest
 
-from src.core.i18n import Translator, translation_scope
+from src.core.i18n import RawText, Translator, translation_scope
 from src.core.mission_definition import default_mission
 from src.data.user_content import UserContentStore
 from src.ui.mission_editor import MissionEditor
@@ -55,6 +55,25 @@ def test_imported_mission_text_is_rendered_without_translation(tmp_path):
     editor = MissionEditor(store=store, tr=controlled_only)
     with translation_scope(Translator("en").translate):
         editor.draw(pygame.Surface((1280, 720)))
+    pygame.quit()
+
+
+def test_catalog_literal_mission_name_is_explicit_raw_text(tmp_path, monkeypatch):
+    pygame.init()
+    mission = default_mission("user.saved")
+    mission["name"] = "Saved"
+    editor = MissionEditor({"user.saved": mission}, store=UserContentStore(tmp_path),
+                           tr=Translator("de").translate)
+    captured = []
+    original = __import__("src.ui.editor_widgets", fromlist=["draw_text"]).draw_text
+
+    def record(surface, value, rect, **kwargs):
+        captured.append(value)
+        return original(surface, value, rect, **kwargs)
+
+    monkeypatch.setattr("src.ui.editor_widgets.draw_text", record)
+    editor.draw(pygame.Surface((1280, 720)))
+    assert any(isinstance(value, RawText) and value.value == "Saved" for value in captured)
     pygame.quit()
 
 

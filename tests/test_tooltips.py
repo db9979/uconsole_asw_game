@@ -8,6 +8,7 @@ import pytest
 
 from src.core import config
 from src.core.game import Game
+from src.core.i18n import Translator, message
 from src.core.station import Station
 from src.ui import layout, map_view, sonar_view, stations_view
 
@@ -32,7 +33,18 @@ def test_tooltip_box_wraps_flips_and_stays_on_1280x720():
     assert rect.right <= 1280 and rect.bottom <= 720
     assert rect.left < 1279 and rect.top < 719
     assert len(lines) > 3
-    assert layout.MIN_OPERATIONAL_FONT >= 12
+    assert layout.MIN_OPERATIONAL_FONT >= 14
+
+
+def test_tooltip_truncation_is_explicit_and_title_uses_distinct_size():
+    pygame.font.init()
+    layout.configure_for(large_text=False)
+    payload = layout.tooltip_payload("TITLE " * 20, *("body " * 30 for _ in range(12)))
+    rect, lines = layout.tooltip_rect(payload, (50, 50), bounds=(0, 0, 260, 120))
+    assert pygame.Rect(0, 0, 260, 120).contains(rect)
+    assert lines[-1].endswith("...")
+    assert layout.font(layout.TOOLTIP_TITLE_SIZE, bold=True).get_height() > \
+        layout.font(layout.TOOLTIP_BODY_SIZE).get_height()
 
 
 def test_click_pins_and_escape_clears_before_quit(game):
@@ -88,6 +100,32 @@ def test_every_station_has_meaningful_context(game, station, pos):
     assert payload["title"] and payload["lines"]
 
 
+@pytest.mark.parametrize("station,pos,english", [
+    (Station.BRIDGE, (700, 150), "COURSE / RUDDER"),
+    (Station.SONAR, (100, 200), "BROADBAND BIN"),
+    (Station.WEAPONS, (700, 150), "FIRE-CONTROL SOLUTION"),
+    (Station.DAMAGE, (30, 100), "Flooding"),
+    (Station.OPZ, (1100, 120), "OPERATIONS / CIC CONTROLS"),
+    (Station.RADIO, (30, 120), "HFDF BEARINGS"),
+    (Station.ENGINE, (30, 120), "ENGINE ORDER"),
+    (Station.HELICOPTER, (700, 120), "FLIGHT STATUS HSP-5"),
+])
+def test_every_station_tooltip_is_composed_in_english(game, station, pos, english):
+    game.tr = Translator("en").translate
+    game.station = station
+    payload = game.tooltip_at(pos)
+    assert english in "\n".join((payload["title"], *payload["lines"]))
+
+
+def test_radio_tooltip_localizes_structured_feed_message(game):
+    game.tr = Translator("en").translate
+    game.station = Station.RADIO
+    game.messages[:] = [("12:34", message("runtime.helo.return"))]
+    payload = game.tooltip_at((1100, 120))
+    assert payload["lines"][0] == "12:34 HSP-5: return ordered"
+    assert "__u_jagd_i18n__" not in payload["lines"][0]
+
+
 def test_map_context_never_reads_world_entities(game):
     class ForbiddenEntities:
         def __iter__(self):
@@ -126,6 +164,68 @@ def test_sonar_contact_tooltip_does_not_read_truth_attributes(monkeypatch):
               sim_t=100.0, station=Station.SONAR)
     payload = sonar_view.sonar_hit_target(fake, (950, 360))
     assert payload["id"] == "sonar:contact:7"
+
+
+def test_map_contact_position_uses_observation_datum_without_truth_fallback():
+    class ObservationOnly:
+        observed_x = 12.0
+        observed_y = 34.0
+        range_est = 8.0
+
+        def __getattr__(self, name):
+            if name in {"x", "y", "target", "entity", "truth"}:
+                pytest.fail(f"UI read hidden truth: {name}")
+            raise AttributeError(name)
+
+    assert map_view.contact_position(
+        ObservationOnly(), NS(x=1.0, y=2.0)) == (12.0, 34.0)
+
+
+def test_map_marker_hit_and_tooltip_recompute_bearing_from_observed_position(game):
+    game.tr = Translator("en").translate
+    game.map_view.set_rect(config.MAP_RECT)
+    observed = (game.ship.x + 10.0, game.ship.y)
+    track = {"track_id": "S-9", "label": "FIX", "kind": "AIS",
+             "observed_x": observed[0], "observed_y": observed[1],
+             "bearing": 270.0, "source": "RADAR-S", "quality": .8, "age": 2.0}
+    game.radar_tracks = lambda: [track]
+    marker = game.map_view.world_to_screen(*observed)
+    first = map_view.map_hit_target(game, marker)
+    assert "090.0" in first["lines"][1]
+
+    game.ship.x += 5.0
+    game.ship.y += 5.0
+    second = map_view.map_hit_target(game, marker)
+    assert "045.0" in second["lines"][1]
+    assert second["id"] == "map-track:S-9"
+
+
+def test_opz_marker_hit_and_tooltip_share_position_bearing_after_ownship_move(monkeypatch):
+    monkeypatch.setattr(config, "STATION_RECT", config.FULL_STATION_RECT)
+
+    class Track:
+        track_id, label, kind, source = "S-9", "FIX", "AIS", "RADAR-S"
+        observed_x, observed_y, bearing, range_nm = 10.0, 0.0, 270.0, 10.0
+
+        def age(self, now): return 2.0
+        def display_quality(self, now, stale): return .8
+
+    track = Track()
+    fake = NS(ship=NS(x=0.0, y=0.0, course=0.0), opz_tracks=lambda: [track],
+              opz_affiliation=lambda _: "NEUTRAL", radar_range_nm=20.0,
+              sim_t=10.0, air_picture=NS(stale_s=8.0), helo=None,
+              tr=Translator("en").translate)
+    ppi = stations_view.opz_ppi_rect()
+    radius = ppi.w // 2
+    first_pos = (ppi.centerx + 10.0 / 20.0 * radius, ppi.centery)
+    first = stations_view.opz_hit_target(fake, first_pos)
+    assert "090.0" in first["lines"][1]
+
+    fake.ship.x, fake.ship.y = 5.0, 5.0
+    second_pos = (ppi.centerx + 5.0 / 20.0 * radius,
+                  ppi.centery - 5.0 / 20.0 * radius)
+    second = stations_view.opz_hit_target(fake, second_pos)
+    assert "045.0" in second["lines"][1]
 
 
 def test_opz_track_tooltip_uses_observation_fields_only(monkeypatch):

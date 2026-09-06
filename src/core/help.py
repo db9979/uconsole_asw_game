@@ -1,230 +1,128 @@
-"""W0: Kontextbezogenes Hilfe-System (F1) – pro Station.
+"""Catalog-keyed, context-sensitive help for all eight stations."""
 
-STATION_HELP[Station]: (Einleitung, [(Taste, Aktion), ...],
-                        [Parameter/Erklärung], [Taktik-Hinweise])
-"""
-
+from src.core.i18n import Translator
 from src.core.station import Station
 
-GLOBAL_HELP = (
-    "Steuerung (alle Stationen):",
+
+_GLOBAL_HELP = (
+    "help.global.title",
     [
-        ("Tab / Shift+Tab", "Naechste / vorherige Station"),
-        ("1 / 2 / 3 / 4", "Bruecke / Sonar / Waffen / Schaden"),
-        ("5 / 6 / 7 / 8", "OPZ / Funk / Maschine / Helikopter"),
-        ("P", "Pause / Weiter (nur P)"),
-        ("Z / X oder [ / ]", "Zeitraffer langsamer / schneller (auch im Sonar)"),
-        ("Pfeiltasten", "Stationsbezogene Auswahl oder Einstellung"),
-        ("U / V", "Bruecke: Zielkurs / Zielgeschwindigkeit"),
-        ("+ / -", "Telegraph (auch im Sonar)"),
-        ("F1", "Hilfe (diese Anzeige)"),
-        ("N", "Nationen & Einheiten; im Sonar: Notchfilter"),
-        ("S / L", "Speichern / Laden (Slots 1-5)"),
-        ("Alt+Enter", "Vollbild (alle Stationen)"),
-        ("Q / E oder Mausrad", "Kartenzoom nur auf Bruecke, Waffen und Helikopter"),
-        ("Drag", "Karte verschieben (Bruecke, Waffen und Helikopter)"),
-        ("K", "Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus)"),
-        ("Esc", "Eingabe abbrechen oder Beenden-Dialog oeffnen"),
+        ("Tab / Shift+Tab", "help.next_station"),
+        ("1 / 2 / 3 / 4", "help.global.stations_1"),
+        ("5 / 6 / 7 / 8", "help.global.stations_2"),
+        ("help.key.station_number", "help.repeat_station"),
+        ("P", "help.pause"),
+        ("help.key.time_scale", "help.time_scale"),
+        ("help.key.arrows", "help.station_control"),
+        ("U / V", "help.global.course_speed"),
+        ("+ / -", "help.global.telegraph"),
+        ("F1", "help.global.display"),
+        ("N", "help.global.nations"),
+        ("S / L", "help.save_load"),
+        ("Alt+Enter", "help.fullscreen"),
+        ("help.key.mouse_zoom", "help.global.map_zoom"),
+        ("Drag", "help.global.map_pan"),
+        ("K", "help.global.map_follow"),
+        ("Esc", "help.cancel"),
     ],
 )
 
+
+def _station(intro, controls, notes, tactic):
+    return intro, controls, notes, [tactic]
+
+
 STATION_HELP = {
-    Station.BRIDGE: (
-        "Brücke / Nautik – Navigation, Kurs & Fahrt, Missionsüberblick.",
-        [
-            ("<- / ->", "Ruder: Zielkurs ändern"),
-            ("Auf / Ab", "Telegraph hoch / runter"),
-            ("U", "Direkten Zielkurs eingeben (000-359)"),
-            ("V", "Direkte Zielgeschwindigkeit eingeben (0-25 kn)"),
-            ("+ / -", "Telegraph: Motorenbefehl (STOP-SLOW-HALF-FULL-FLANK)"),
-            ("Karte", "Mausrad: Zoom, Maus-Drag: Pan"),
-            ("Q / E", "Karte heraus-/hineinzoomen"),
-            ("K", "Kamera-Follow an/aus"),
-        ],
-        [
-            "Fahrt = Lärm: Hohe Fahrt verschlechtert das passive Sonar und "
-            "verratet die Fregatte. Kavitation ab 15 kn.",
-            "Küsten: Fregatte kann nicht in Land fahren (Rückstoß).",
-        ],
-        ["Stillstand/4 kn = bestes Lauschen. Schnell anrennen, dann leise "
-         "werfen – taktisch nutzen."],
-    ),
-    Station.SONAR: (
-        "Sonarzentrale – LOFAR-Wasserfall, Kontakte, Peilungen, Ping, TMA.",
-        [
-            ("A", "Aktiv-Ping abfeuern (Kühlzeit, verrät Position!)"),
-            ("B", "Empfangsarray zwischen HMS und TAS wechseln"),
-            ("Y", "TAS ausbringen / einholen (nur bei 3-12 kn)"),
-            ("Bild auf/ab", "Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE"),
-            ("E", "Bathythermograph: lokales Schallprofil messen"),
-            ("U / V", "TAS/VDS-Solltiefe um 10 m heben / senken"),
-            ("R", "Hoerpeilung direkt: 000 bis 359.9 Grad rechtweisend"),
-            ("<- / ->", "Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1"),
-            ("Auf / Ab", "Kontakt fuer TMA und Klassifikation waehlen"),
-            ("Enter", "Gemessener Kontaktpeilung folgen / manuell halten"),
-            ("J | , / .", "Empfangston an/aus | Lautstaerke senken/erhoehen"),
-            ("D", "Abhoeren: Breitband oder gefiltertes LOFAR-Band"),
-            ("I / O", "Gain senken / erhoehen (3 dB)"),
-            ("F", "Frequenzband wählen: breit / tief / mittel"),
-            ("N", "Notchfilter gegen Eigenantrieb"),
-            ("SPACE", "LOFAR Peak-Hold ein/aus"),
-            ("T", "TMA für ausgewählten Kontakt ein/aus"),
-            ("C", "Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug)"),
-            ("M", "Ausgewählten Kontakt als Ziel setzen"),
-        ],
-        [
-            "Passiv: nur Peilung (± Peilfehler je Array & Eigenfahrt).",
-            "TMA: durch Manövrieren + Peilungsreihe wird Position + "
-            "Geschwindigkeit des Ziels geschätzt (Konfidenz steigt), keine Tiefe.",
-            "Wasserfall: neu oben, alt unten. Broadband: X = Peilung; "
-            "LOFAR: X = Frequenz. Helligkeit = relativer Empfangspegel.",
-            "Ton und Spektren stammen aus demselben synthetischen Hoerstrahl. "
-            "Mehrere Quellen und Eigenrauschen koennen sich ueberlagern.",
-            "DEMON: gemessene Modulation, keine sichere Blattfrequenz oder Identitaet. "
-            "FFT-Fenster bis 2 s; nach Umpeilen mindestens 1 s neu auswerten.",
-            "Gain wirkt auf Anzeige und Ton, nicht auf Detektion. D aktiviert "
-            "Band/Notch im Ton; DEMON analysiert den ungefilterten Hoerstrahl.",
-            "SNR: Signal/Rauschen aus Entfernung, Thermokline, Seegang, "
-            "Eigenrauschen & Schleppsonar-Tiefe.",
-            "Thermokline: Ziel darunter = Schattenzone (schlechter SNR).",
-            "HMS und TAS laufen parallel; gleiche Peilungen bestätigen Tracks.",
-            "Starke Arrayabweichung markiert einen möglichen Geisterkontakt.",
-            "TAS-Leistung steht erst nach vollstaendigem Ausbringen und Stabilisieren bereit. "
-            "Ausbringen/Einholen pausiert ausserhalb 3-12 kn; Ueberfahrt kann das TAS beschaedigen.",
-            "TAS unter die gemessene Sprungschicht fahren, um tiefe Ziele zu hören.",
-            "ACTIVE zeigt ausschliesslich gespeicherte Echo-Messungen: Alter/Fading, "
-            "Peilung, Entfernung und deren Messunsicherheit.",
-        ],
-        ["Erst passiv lauschen (langsam fahren), dann gezielt pingen. "
-         "Ping = Waffe + Warnung an den U-Boot-Fahrer."],
-    ),
-    Station.WEAPONS: (
-        "Waffenzentrale – Ziel, Torpedotiefe, Start, HSP-5.",
-        [
-            ("M", "Ziel setzen (aus Sonarkontakten)"),
-            ("Auf / Ab", "Torpedotiefe (10-300 m)"),
-            ("<- / ->", "Sonarkontakt fuer Zielwahl waehlen"),
-            ("T", "Torpedo abfeuern (ROE-Prüfung)"),
-            ("H", "HSP-5 starten / zurückrufen"),
-            ("B", "Sonarbojen aussetzen (HSP-5 in Luft)"),
-            ("D", "Leichttorpedo vom HSP-5"),
-            ("Q / E", "Karte heraus-/hineinzoomen"),
-            ("K", "Kamera-Follow an/aus"),
-        ],
-        [
-            "ROE STD: Ziel muss geortet (Ping/TMA) + als U-Boot "
-            "klassifiziert sein. ROE FREE: nur Klassifikation.",
-            "Zieltiefe: aus aktivem Ping, nicht aus TMA; falsche Tiefe = Fehlschuss.",
-            "Salven-Doktrin: max. 2 Drahttorpedos gleichzeitig im Wasser.",
-        ],
-        ["Tiefe erst aus Ping, dann Schuss. Dekoys: Signatur-Nachbau – "
-         "Kontakt verliert dann Eigenfrequenzen."],
-    ),
-    Station.DAMAGE: (
-        "Schadensbekämpfung – Kompartimente, Flutung, Brand, Reparaturteams.",
-        [
-            ("<- / ->", "Kompartiment wählen"),
-            ("Auf / Ab", "Team 1-3 auswaehlen (ohne Zuweisung)"),
-            ("Enter", "Gewaehltes Team dem gewaehlten Kompartiment zuweisen"),
-            ("Backspace", "Gewaehltes Team zurueckziehen"),
-            ("1-8", "Immer Station wechseln, keine Teamzuweisung"),
-        ],
-        [
-            "ZUSTÄNDE: OK -> BESCHAEDIGT/FLUTEND -> ZERSTOERT.",
-            "ZERSTOERT = Station unwiederbringlich verloren.",
-            "Ab 60 % mittlerer Flutung über alle Räume sinkt die Fregatte.",
-            "Feuer: breitet sich aus; Löschteams reduzieren es.",
-            "Zuweisung nur zu reparierbaren Schaeden; belegte Kompartimente "
-            "verdrängen kein anderes Team.",
-        ],
-        ["Priorität: Maschinerie & Sonarzentrale, dann Rumpf. "
-         "Feuer sofort besetzen."],
-    ),
-    Station.OPZ: (
-        "OPZ / CIC – Radar, AIS, ESM, Lagebild und ASM-Abwehr.",
-        [
-            ("Auf / Ab", "CIC-Track waehlen"),
-            ("C", "NATO-Zugehoerigkeit setzen"),
-            ("M", "CIC-Track an Sonar/Waffen uebergeben"),
-            ("Bild Auf / Ab", "Radarbereich 10/20/40/80/120 NM"),
-            ("<- / ->", "ASM-Track wählen"),
-            ("E", "ESSM abfeuern (VLS-Cell)"),
-            ("G", "Chaff abwerfen (8 NM-Kegel, Kühlzeit)"),
-            ("R", "Seeraumradar an/aus (EMCON)"),
-            ("Shift+R", "Luftraumradar an/aus (EMCON)"),
-        ],
-        [
-            "Radar sieht Oberflaeche und ASMs; getauchte U-Boote bleiben unsichtbar.",
-            "AIS liefert zivile Tracks; ESM liefert Bearing-only.",
-            "NATO-Rahmen: Freund blau, Neutral gruen, Feind rot, Unbekannt gelb.",
-            "CIWS: automatisch abfangend < 1.5 NM (begrenzt).",
-            "JAMMER-ASMs: jenseits 20 NM nur HOJ-Peilung (Bearing-only).",
-            "Radarclutter und Messstoerung beginnen erst bei Seegang 5.",
-            "Chaff: Rakete bricht ab (40 %) oder wird kurz blind.",
-        ],
-        ["Erst Chaff + Manöver, dann ESSM gezielt. VLS-Zellen sind knapp."],
-    ),
-    Station.RADIO: (
-        "Funkraum – HFDF-Peilungen, Teletype (HQ), Funkverkehr.",
-        [
-            ("Auf / Ab", "HFDF-Signal auswählen"),
-            ("Enter", "Peilung mit eigener Position protokollieren"),
-        ],
-        [
-            "HFDF: Peilung (±8°) sendender U-Boote (Schnorchel, HF).",
-            "Teletype: HQ-Bulletins, Wetter, ROE-Änderungen.",
-            "Protokollierte Peilstriche und Kreuzpeilungen erscheinen auf der Karte.",
-        ],
-        ["HFDF-Peilung + Sonar-Peilung -> Kreuzpeilung zur "
-         "Positionsschätzung."],
-    ),
-    Station.ENGINE: (
-        "Maschinenraum – Telegraph, RPM, Lärm, Maschinerie-Status.",
-        [
-            ("+ / -", "Motorenbefehl (Telegraph)"),
-            ("Auf / Ab", "Telegraph hoch / runter"),
-            ("A", "Akustikmodus LEISE/NORMAL"),
-            ("V", "Direkte Zielgeschwindigkeit eingeben (0-25 kn)"),
-        ],
-        [
-            "Kavitation ab 15 kn: Lärm stark erhöht, passives Sonar bricht.",
-            "Maschinerie gestört: Fahrt-Cap 15 kn; zerstört: 8 kn.",
-            "Lärm % = eigene Detektions-/Verraten-Weite.",
-            "LEISE reduziert Eigenlärm, begrenzt die Fahrt aber auf 12 kn.",
-        ],
-        ["Schnell anrennen (FULL/FLANK), dann SLOW zum Lauschen."],
-    ),
-    Station.HELICOPTER: (
-        "Helikopter-Deck – HSP-5, Sonarbojen und Lufttorpedos.",
-        [
-            ("H", "HSP-5 starten / zurueckrufen"),
-            ("Pfeile", "Wegpunktpeilung und -entfernung einstellen"),
-            ("M", "Sonarkontakt als Ziel fuer Lufttorpedo setzen"),
-            ("B", "Eine Sonarboje an aktueller Position aussetzen"),
-            ("D", "Leichttorpedo abwerfen"),
-            ("Q / E", "Karte heraus-/hineinzoomen"),
-            ("K", "Kamera-Follow an/aus"),
-        ],
-        [
-            "Der HSP-5 hat endliche Bojen- und Torpedovorraete; Starts laden nicht nach.",
-            "Treibstoffende vor der Landung bedeutet Verlust des HSP-5.",
-            "Bojen liefern passive Daten und bleiben bis zum Batterieverlust aktiv.",
-            "Das Ziel muss vor dem Lufttorpedo-Einsatz als U-Boot klassifiziert sein.",
-            "H/B/D sind auch in der Waffenstation verfuegbar. "
-            "Dipping-Sonar ist nicht implementiert.",
-        ],
-        ["Bojenfeld vor der vermuteten Zielposition auslegen; danach HSP-5 "
-         "rechtzeitig zurueckrufen."],
-    ),
+    Station.BRIDGE: _station(
+        "help.bridge.intro",
+        [("<- / ->", "help.control.rudder"), ("help.key.up_down", "help.control.telegraph_up"),
+         ("U", "help.control.course_input"), ("V", "help.control.speed_input"),
+         ("+ / -", "help.control.engine_order"), ("help.key.chart", "help.control.mouse_map"),
+         ("Q / E", "help.control.zoom"), ("K", "help.control.follow")],
+        ["help.note.bridge_noise", "help.note.bridge_coast"], "help.note.bridge_tactic"),
+    Station.SONAR: _station(
+        "help.sonar.intro",
+        [("A", "help.control.active_ping"), ("B", "help.control.array"),
+         ("Y", "help.control.tas"), ("help.key.page_spaced", "help.control.pages"),
+         ("2", "help.control.repeat_sonar_page"), ("E", "help.control.bt"),
+         ("U / V", "help.control.tas_depth"), ("R", "help.control.listen_input"),
+         ("<- / ->", "help.control.bearing_step"), ("help.key.up_down", "help.control.contact_select"),
+         ("Enter", "help.control.track_bearing"), ("J | , / .", "help.control.audio"),
+         ("D", "help.control.filter"), ("I / O", "help.control.gain"),
+         ("F", "help.control.band"), ("N", "help.control.notch"),
+         ("SPACE", "help.control.peak"), ("T", "help.control.tma"),
+         ("C", "help.control.classify"), ("M", "help.control.target")],
+        ["help.note.passive", "help.note.tma", "help.note.waterfall",
+         "help.note.audio_model", "help.note.demon", "help.note.gain",
+         "help.note.snr", "help.note.shadow", "help.note.parallel",
+         "help.note.ghost", "help.note.tas_handling", "help.note.tas_depth",
+         "help.note.active"], "help.note.sonar_tactic"),
+    Station.WEAPONS: _station(
+        "help.weapons.intro",
+        [("M", "help.control.target_from_sonar"), ("help.key.up_down", "help.control.torp_depth"),
+         ("<- / ->", "help.control.target_select"), ("T", "help.control.fire"),
+         ("H", "help.control.helo_toggle"), ("B", "help.control.buoy"),
+         ("D", "help.control.air_torp"), ("Q / E", "help.control.zoom"),
+         ("K", "help.control.follow")],
+        ["help.note.roe", "help.note.target_depth", "help.note.salvo"],
+        "help.note.weapon_tactic"),
+    Station.DAMAGE: _station(
+        "help.damage.intro",
+        [("<- / ->", "help.control.compartment"), ("help.key.up_down", "help.control.team"),
+         ("Enter", "help.control.assign"), ("Backspace", "help.control.withdraw"),
+         ("1-8", "help.control.station_only")],
+        ["help.note.damage_states", "help.note.destroyed", "help.note.sinking",
+         "help.note.fire", "help.note.assignment"], "help.note.damage_tactic"),
+    Station.OPZ: _station(
+        "help.opz.intro",
+        [("help.key.up_down", "help.control.cic_track"), ("C", "help.control.affiliation"),
+         ("M", "help.control.designate"), ("help.key.page_spaced", "help.control.radar_range"),
+         ("<- / ->", "help.control.asm_track"), ("E", "help.control.essm"),
+         ("G", "help.control.chaff"), ("R", "help.control.surface_radar"),
+         ("Shift+R", "help.control.air_radar")],
+        ["help.note.radar", "help.note.ais_esm", "help.note.nato", "help.note.ciws",
+         "help.note.jammer", "help.note.clutter", "help.note.chaff"],
+        "help.note.air_defense"),
+    Station.RADIO: _station(
+        "help.radio.intro",
+        [("help.key.up_down", "help.control.hfdf"), ("Enter", "help.control.log_bearing")],
+        ["help.note.hfdf", "help.note.teletype", "help.note.hfdf_map"],
+        "help.note.hfdf_tactic"),
+    Station.ENGINE: _station(
+        "help.engine.intro",
+        [("+ / -", "help.control.engine"), ("help.key.up_down", "help.control.telegraph_up"),
+         ("A", "help.control.quiet"), ("V", "help.control.speed_input")],
+        ["help.note.cavitation", "help.note.engine_damage", "help.note.noise_range",
+         "help.note.quiet"], "help.note.engine_tactic"),
+    Station.HELICOPTER: _station(
+        "help.helo.intro",
+        [("H", "help.control.helo_toggle"), ("help.key.arrows", "help.control.waypoint"),
+         ("M", "help.control.helo_target"), ("B", "help.control.drop_buoy"),
+         ("D", "help.control.drop_torp"), ("Q / E", "help.control.zoom"),
+         ("K", "help.control.follow")],
+        ["help.note.helo_stores", "help.note.helo_fuel", "help.note.buoys",
+         "help.note.helo_roe", "help.note.shared_controls"], "help.note.helo_tactic"),
 }
 
 
-def get_help(station: Station, tr=None) -> tuple:
-    """Return station help, optionally translated one display string at a time."""
-    help_data = STATION_HELP.get(
-        station, ("Unbekannte Station.", [], [], []))
-    if tr is None:
-        return help_data
-    intro, controls, parameters, tactics = help_data
+def _translate_help(data, tr):
+    intro, controls, notes, tactics = data
     return (tr(intro), [(tr(key), tr(action)) for key, action in controls],
-            [tr(text) for text in parameters], [tr(text) for text in tactics])
+            [tr(text) for text in notes], [tr(text) for text in tactics])
+
+
+def get_global_help(tr=None) -> tuple:
+    tr = tr or Translator("de").t
+    title, controls = _GLOBAL_HELP
+    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+
+
+# Compatibility for callers that display the historical German default.
+GLOBAL_HELP = get_global_help()
+
+
+def get_help(station: Station, tr=None) -> tuple:
+    """Return localized station help from stable catalog keys."""
+    tr = tr or Translator("de").t
+    data = STATION_HELP.get(station, ("help.unknown_station", [], [], []))
+    return _translate_help(data, tr)

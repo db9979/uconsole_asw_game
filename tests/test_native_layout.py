@@ -6,6 +6,7 @@ import random
 import pygame
 
 from src.core import config
+from src.core.i18n import localize
 from src.ship.damage import DamageModel
 from src.ui import layout, stations_view, weapons_view
 
@@ -46,11 +47,11 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
     original_status = layout.status_line
 
     def record_line(screen, text, *args, **kwargs):
-        lines.append(text)
+        lines.append(localize(text))
         return original_line(screen, text, *args, **kwargs)
 
     def record_status(screen, x, y, w, label, value, *args, **kwargs):
-        lines.append(f"{label} {value}")
+        lines.append(f"{localize(label)} {localize(value)}")
         return original_status(screen, x, y, w, label, value, *args, **kwargs)
 
     monkeypatch.setattr(layout, "blit_line", record_line)
@@ -67,12 +68,12 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
         helo=NS(torps=2, buoys_left=6, airborne=False),
     )
     weapons_view.draw_weapons_panel(game)
-    assert any("TMA KURS" in line and "FAHRT" in line and "Q 72%" in line
-               for line in lines)
-    assert "ZIEL ZUGEWIESEN" in lines
-    assert "LOESUNG GUELTIG" in lines
-    assert "FREIGABE AUTORISIERT" in lines
-    assert "WAFFE BEREIT" in lines
+    assert any("TMA COURSE" in line and "SPEED" in line and "Q 72%" in line
+                for line in lines)
+    assert "Target ASSIGNED" in lines
+    assert "Solution VALID" in lines
+    assert "Authorization AUTHORIZED" in lines
+    assert "Weapon READY" in lines
 
 
 def test_engine_native_layout_uses_two_equal_work_columns(monkeypatch):
@@ -124,3 +125,51 @@ def test_damage_native_layout_has_selected_detail_panel(monkeypatch):
     stations_view.draw_damage_view(game)
 
     assert "AUSWAHL / MASSNAHMEN" in titles
+
+
+def test_helicopter_regions_are_shared_bounded_and_adapt_to_large_text(monkeypatch):
+    pygame.font.init()
+    monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
+    normal_game = NS(preferences=NS(large_text=False))
+    large_game = NS(preferences=NS(large_text=True))
+    normal = stations_view.helicopter_regions(normal_game)
+    large = stations_view.helicopter_regions(large_game)
+    station = pygame.Rect(config.STATION_RECT)
+
+    for regions in (normal, large):
+        assert all(station.contains(regions[name])
+                   for name in ("status", "resources", "rules"))
+        assert regions["status"].bottom < regions["resources"].top
+        assert regions["resources"].bottom < regions["rules"].top
+        assert regions["rules"].h >= 100
+    assert large["status"].h > normal["status"].h
+    layout.configure_for(large_text=False)
+
+
+def test_large_text_helicopter_resource_lines_have_full_text_bounds(monkeypatch):
+    pygame.font.init()
+    monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
+    game = NS(
+        screen=pygame.Surface((1280, 720)), preferences=NS(large_text=True),
+        helo=NS(state="HANGAR", airborne=False, fuel_s=1800.0, x=0.0, y=0.0,
+                course=0.0, torps=2, buoys_left=6),
+        ship=NS(x=0.0, y=0.0, course=0.0), buoys=[],
+        _helo_waypoint_polar=lambda: (0.0, 10.0),
+    )
+    calls = []
+    original = layout.blit_line
+
+    def record(screen, text, rect, color, size=14, align="left"):
+        if text in {"LUFTTORPEDOS", "SONARBOJEN BEREIT", "SONARBOJEN AKTIV", "DATALINK",
+                    "2", "6", "0", "STANDBY"}:
+            calls.append((text, pygame.Rect(rect), size))
+        return original(screen, text, rect, color, size=size, align=align)
+
+    monkeypatch.setattr(layout, "blit_line", record)
+    stations_view.draw_helicopter_view(game)
+    assert len(calls) == 8
+    for _, rect, size in calls:
+        assert rect.h >= layout.font(size).get_linesize()
+    for label, value in zip(calls[::2], calls[1::2]):
+        assert label[1].bottom <= value[1].top
+    layout.configure_for(large_text=False)

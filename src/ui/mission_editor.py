@@ -8,11 +8,12 @@ from typing import Any, Iterable, Mapping
 
 import pygame
 
-from src.core.i18n import translation_scope
+from src.core.i18n import raw_text, translation_scope
 from src.core.mission_definition import (MISSION_FIELD_METADATA, MissionDefinition,
                                          default_mission)
 from src.data.user_content import ContentRecord, UserContentStore
-from src.data.validation import ContentValidationError
+from src.data.validation import (ContentValidationError, localized_error,
+                                 localized_issue)
 from src.ui import editor_widgets as widgets
 
 
@@ -85,7 +86,7 @@ class MissionEditor:
         self.current = MissionDefinition(record.data)
         if record.builtin:
             self.current = self.current.clone("user.clone")
-            self.status = self.tr("Built-ins are read-only; editing a clone.")
+            self.status = self.tr("editor.read_only_clone")
         self.mode = "editor"
         self._sync_fields()
         return self.current
@@ -172,7 +173,7 @@ class MissionEditor:
         if problems:
             raise ContentValidationError(problems)
         path = self.store.save("mission", self.current.data)
-        self.status = self.tr("Saved")
+        self.status = self.tr("editor.saved")
         self.refresh()
         return path
 
@@ -321,14 +322,14 @@ class MissionEditor:
         if 0 <= index < len(values):
             del values[index]
         self._delete_pending = None
-        self.status = self.tr("Deleted")
+        self.status = self.tr("editor.deleted")
         self._sync_fields()
 
     def _begin_path(self, action: str) -> None:
         self.path_action = action
         self.path_input.value = str(self.store.root / "editor-bundle.json")
         self.path_input.selected_all = True
-        self.status = self.tr("Enter bundle path")
+        self.status = self.tr("editor.enter_bundle_path")
 
     def _handle_path(self, event: pygame.event.Event) -> bool:
         if event.type != pygame.KEYDOWN and event.type != pygame.TEXTINPUT:
@@ -340,12 +341,16 @@ class MissionEditor:
             try:
                 if self.path_action == "export":
                     self.export_bundle(self.path_input.value)
-                    self.status = self.tr("Exported") + ": " + self.path_input.value
+                    self.status = self.tr("editor.path_result",
+                                          action=self.tr("editor.exported"),
+                                          path=self.path_input.value)
                 else:
                     self.import_bundle(self.path_input.value)
-                    self.status = self.tr("Imported") + ": " + self.path_input.value
+                    self.status = self.tr("editor.path_result",
+                                          action=self.tr("editor.imported"),
+                                          path=self.path_input.value)
             except (ContentValidationError, OSError, ValueError) as exc:
-                self.status = str(exc)
+                self.status = localized_error(exc, self.tr)
             self.path_action = None
             return True
         if event.type == pygame.TEXTINPUT:
@@ -382,7 +387,7 @@ class MissionEditor:
                     try:
                         self.save()
                     except (ContentValidationError, OSError) as exc:
-                        self.status = str(exc)
+                        self.status = localized_error(exc, self.tr)
                 return True
             handled = self.fields.handle_event(event, self._rects.get("fields", pygame.Rect(40, 150, 900, 450)))
             if self.fields.error:
@@ -455,13 +460,13 @@ class MissionEditor:
                     self._delete(target)
                 else:
                     self._delete_pending = target
-                    self.status = self.tr("Delete selected item? Enter: yes | Esc: no")
+                    self.status = self.tr("editor.delete_confirm")
                 return True
             if event.key == pygame.K_s and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                 try:
                     self.save()
                 except (ContentValidationError, OSError) as exc:
-                    self.status = str(exc)
+                    self.status = localized_error(exc, self.tr)
                 return True
             if event.key == pygame.K_e and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                 self._begin_path("export"); return True
@@ -478,7 +483,7 @@ class MissionEditor:
     def _draw(self, surface: pygame.Surface) -> None:
         bounds = surface.get_rect()
         surface.fill(widgets.PALETTE.background)
-        widgets.draw_text(surface, self.tr("MISSION OPERATIONS BUILDER"),
+        widgets.draw_text(surface, self.tr("editor.mission_title"),
                           (20, 15, bounds.width - 40, 40), size=24, bold=True)
         footer = pygame.Rect(0, max(0, bounds.height - 42), bounds.width, min(42, bounds.height))
         content = pygame.Rect(20, 66, max(1, bounds.width - 40), max(1, footer.y - 76))
@@ -487,36 +492,36 @@ class MissionEditor:
                 self._draw_browser(surface, content)
             elif self.current:
                 self._draw_editor(surface, content)
-        hints = (("Up/Down or trackball: select", "Enter: open/clone", "N: new")
+        hints = (("editor.select_hint", "editor.open_hint", "editor.new_hint")
                   if self.mode == "browser" else
-                  ("Arrows: select/section", "Enter: edit/apply", "E/G/A: add", "Del: remove",
-                   "Ctrl+S: validate/save", "Ctrl+E/I: export/import", "Esc: cancel/back"))
+                  ("editor.arrow_hint", "editor.edit_hint", "editor.add_hint", "editor.remove_hint",
+                   "editor.save_hint", "editor.bundle_hint", "editor.cancel_hint"))
         widgets.draw_footer(surface, footer, hints, tr=self.tr)
         if self.path_action:
             box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 55,
                               max(1, bounds.width * 2 // 3), 110)
-            inner = widgets.panel(surface, box, "Bundle path", tr=self.tr)
+            inner = widgets.panel(surface, box, "editor.bundle_path", tr=self.tr)
             self.path_input.draw(surface, pygame.Rect(inner.x, inner.y + 5, inner.width, 34), focused=True)
         if self.status:
-            widgets.draw_text(surface, self.status, (bounds.width // 2, 18, bounds.width // 2 - 20, 28),
+            widgets.draw_text(surface, raw_text(self.status), (bounds.width // 2, 18, bounds.width // 2 - 20, 28),
                               color=widgets.PALETTE.focus, align="right", size=13)
 
     def _draw_browser(self, surface: pygame.Surface, content: pygame.Rect) -> None:
         left = pygame.Rect(content.x, content.y, min(440, content.width), content.height)
-        self._rects["browser"] = widgets.panel(surface, left, "Mission library", tr=self.tr)
+        self._rects["browser"] = widgets.panel(surface, left, "editor.mission_library", tr=self.tr)
         self.listbox.draw(surface, self._rects["browser"])
         right = pygame.Rect(left.right + 12, content.y, max(1, content.right - left.right - 12), content.height)
-        inner = widgets.panel(surface, right, "Brief", tr=self.tr)
+        inner = widgets.panel(surface, right, "editor.brief", tr=self.tr)
         record = self.selected
         if not record:
-            widgets.draw_text(surface, self.tr("No missions. Press N to create one."), inner,
+            widgets.draw_text(surface, self.tr("editor.no_missions"), inner,
                               color=widgets.PALETTE.dim)
             return
         values = (record.key, record.data.get("name", ""), record.data.get("description", ""),
-                  self.tr("Built-in / read-only" if record.builtin else "User mission"),
-                  self.tr("Editor-supported; runtime effective: no"))
+                  self.tr("editor.read_only" if record.builtin else "editor.user_mission"),
+                  self.tr("editor.runtime_no"))
         for row, value in enumerate(values):
-            widgets.draw_text(surface, str(value),
+            widgets.draw_text(surface, raw_text(value),
                               (inner.x, inner.y + row * 32, inner.width, 28),
                               color=widgets.PALETTE.focus if row == 4 else widgets.PALETTE.text)
 
@@ -530,21 +535,21 @@ class MissionEditor:
                                min(tab_w, content.right - (content.x + index * tab_w)), tab_h)
             pygame.draw.rect(surface, widgets.PALETTE.raised if index == self.tab_index else widgets.PALETTE.panel, rect)
             pygame.draw.rect(surface, widgets.PALETTE.focus if index == self.tab_index else widgets.PALETTE.border, rect, 1)
-            widgets.draw_text(surface, self.tr(name.upper()), rect, align="center", size=13)
+            widgets.draw_text(surface, self.tr("editor." + name), rect, align="center", size=13)
             tab_rects.append(rect)
         self._rects["tabs"] = tab_rects
         body = pygame.Rect(content.x, content.y + tab_h + 8, content.width, content.height - tab_h - 8)
         if self.tab == "preview":
             self._draw_preview(surface, body)
             return
-        inner = widgets.panel(surface, body, self.tab.title(), tr=self.tr)
+        inner = widgets.panel(surface, body, "editor." + self.tab, tr=self.tr)
         field_area = pygame.Rect(inner.x, inner.y, inner.width, max(1, inner.height - 32))
         if self.tab == "units":
             list_width = min(285, max(180, inner.width // 4))
             half = max(50, (field_area.height - 34) // 2)
-            widgets.draw_text(surface, self.tr("Exact units"), (inner.x, inner.y, list_width, 24), size=13)
+            widgets.draw_text(surface, self.tr("editor.exact_units"), (inner.x, inner.y, list_width, 24), size=13)
             exact_rect = pygame.Rect(inner.x, inner.y + 25, list_width, half - 25)
-            widgets.draw_text(surface, self.tr("Seeded groups"), (inner.x, exact_rect.bottom + 4, list_width, 24), size=13)
+            widgets.draw_text(surface, self.tr("editor.seeded_groups"), (inner.x, exact_rect.bottom + 4, list_width, 24), size=13)
             group_rect = pygame.Rect(inner.x, exact_rect.bottom + 29, list_width,
                                      max(1, field_area.bottom - exact_rect.bottom - 29))
             self._rects.update(exact=exact_rect, groups=group_rect)
@@ -562,18 +567,19 @@ class MissionEditor:
         self._rects["fields"] = field_area
         self.fields.draw(surface, field_area, tr=self.tr)
         problems = self.validate()
-        message = (str(problems[0]) if problems else
-                   self.tr("Valid editor data / not runtime-effective"))
+        message = (localized_issue(problems[0], self.tr) if problems else
+                   self.tr("editor.valid_data"))
         widgets.draw_text(surface, message,
                            (inner.x, inner.bottom - 30, inner.width, 26),
                           color=widgets.PALETTE.danger if problems else widgets.PALETTE.focus)
 
     def _draw_preview(self, surface: pygame.Surface, rect: pygame.Rect) -> None:
-        inner = widgets.panel(surface, rect, "Seeded static preview", tr=self.tr)
+        inner = widgets.panel(surface, rect, "editor.preview", tr=self.tr)
         try:
             preview = self.preview()
         except ContentValidationError as exc:
-            widgets.draw_text(surface, str(exc), inner, color=widgets.PALETTE.danger)
+            widgets.draw_text(surface, localized_error(exc, self.tr), inner,
+                              color=widgets.PALETTE.danger)
             return
         map_size = min(inner.height, inner.width - 260)
         map_rect = pygame.Rect(inner.x, inner.y, max(1, map_size), max(1, map_size))
@@ -594,10 +600,10 @@ class MissionEditor:
                          round(map_rect.y + marker["y"] / world_size * map_rect.height))
                 pygame.draw.circle(surface, colors.get(marker["side"], widgets.PALETTE.text), point, 5, 1)
         details = pygame.Rect(map_rect.right + 14, inner.y, max(1, inner.right - map_rect.right - 14), inner.height)
-        lines = (self.tr("Seed") + f" {preview['seed']}",
-                 self.tr("Markers") + f" {len(preview['markers'])}",
-                 self.tr("Events") + f" {len(preview['events'])}",
-                 self.tr("STATIC ONLY"), self.tr("Runtime effective: no"))
+        lines = (self.tr("editor.preview_seed", seed=preview["seed"]),
+                 self.tr("editor.preview_markers", count=len(preview["markers"])),
+                 self.tr("editor.preview_events", count=len(preview["events"])),
+                 self.tr("editor.static_only"), self.tr("editor.runtime_no"))
         for row, line in enumerate(lines):
             widgets.draw_text(surface, line,
                               (details.x, details.y + row * 30, details.width, 26),

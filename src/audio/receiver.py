@@ -24,6 +24,26 @@ _SCAN_BROADBAND_GAIN = 0.35  # BTR-Scan-Aufschlag fuer Breitband-Quellen
 OWN_NOISE_LOBE_WIDTH_DEG = 70.0
 
 
+def smooth_limit(samples, knee: float = 0.75,
+                 ceiling: float = 0.98) -> np.ndarray:
+    """Bound a signal with a transparent, monotonic rational soft knee.
+
+    Values through ``knee`` are unchanged. Above it, the output approaches
+    ``ceiling`` without reaching the +/-1 PCM rails. Non-finite input is
+    converted deterministically before limiting.
+    """
+    if not (math.isfinite(knee) and math.isfinite(ceiling)
+            and 0.0 <= knee < ceiling):
+        raise ValueError("limiter requires 0 <= knee < ceiling")
+    signal = np.nan_to_num(np.asarray(samples, dtype=np.float64), copy=True)
+    magnitude = np.abs(signal)
+    excess = np.maximum(0.0, magnitude - knee)
+    span = ceiling - knee
+    limited = np.where(magnitude <= knee, magnitude,
+                       knee + span * excess / (span + excess))
+    return np.copysign(limited, signal).astype(np.float32)
+
+
 def _finite(value, default=0.0):
     try:
         value = float(value)
@@ -247,7 +267,10 @@ class AcousticReceiver:
                                       _OWN_CAV_GAIN * own_cav)
             scan += (_SCAN_BROADBAND_GAIN * _OWN_CAV_GAIN * own_cav)**2
 
-        self.samples = np.clip(audio, -1, 1).astype(np.float32)
+        # Preserve normal mixture headroom for FFT/DEMON analysis. The high
+        # soft ceiling only bounds hostile/pathological source collections;
+        # audition gain and the final playback limiter are applied later.
+        self.samples = smooth_limit(audio, knee=4.0, ceiling=8.0)
         self.broadband = np.clip(scan, 0, 1).tolist()
         count = self.samples.size
         self._history[self._write:self._write + count] = self.samples

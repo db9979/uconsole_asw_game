@@ -9,18 +9,58 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import localized, localize
+from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.ui import layout
 from src.ui import nato_symbols
+
+
+def message(key, **values):
+    return localize(structured_message(key, **values))
 
 
 def _near(pos, point, radius=12):
     return (pos[0] - point[0]) ** 2 + (pos[1] - point[1]) ** 2 <= radius ** 2
 
 
+def _value(observation, name, fallback=None):
+    if isinstance(observation, dict):
+        value = observation.get(name)
+        return observation.get(fallback) if value is None and fallback else value
+    value = getattr(observation, name, None)
+    return getattr(observation, fallback, None) if value is None and fallback else value
+
+
+def observed_position(observation):
+    """Read the public displayed position, with legacy field compatibility."""
+    return (_value(observation, "observed_x", "x"),
+            _value(observation, "observed_y", "y"))
+
+
+def observed_bearing(observation) -> float:
+    """Read the public smoothed bearing, with legacy field compatibility."""
+    value = _value(observation, "smoothed_bearing", "bearing")
+    return float(value or 0.0) % 360.0
+
+
+def contact_position(contact, ship):
+    """Prefer a fixed observation datum; derive only for legacy contacts."""
+    # Sonar contacts must never fall through to similarly named entity truth.
+    x = getattr(contact, "observed_x", None)
+    y = getattr(contact, "observed_y", None)
+    if x is not None and y is not None:
+        return x, y
+    distance = getattr(contact, "range_est", None)
+    if distance is None:
+        return None, None
+    angle = math.radians(observed_bearing(contact))
+    return (ship.x + float(distance) * math.sin(angle),
+            ship.y - float(distance) * math.cos(angle))
+
+
 @localized
 def map_hit_target(game, pos):
     """Describe the chart item under *pos* using chart and displayed data only."""
+    layout.configure_for(game)
     if pos is None or not pygame.Rect(config.MAP_RECT).collidepoint(pos):
         return None
     view = game.map_view
@@ -34,55 +74,66 @@ def map_hit_target(game, pos):
         from src.world.projection import nm_to_lonlat
         lon, lat = nm_to_lonlat(x_nm, y_nm, center[0], center[1],
                                 game.world.size_nm)
-        coordinate = f"{abs(lat):.4f} {'N' if lat >= 0 else 'S'} / {abs(lon):.4f} {'E' if lon >= 0 else 'W'}"
+        coordinate = message("map.tooltip.coordinate_geo", latitude=f"{abs(lat):.4f}",
+                             ns="N" if lat >= 0 else "S", longitude=f"{abs(lon):.4f}",
+                             ew="E" if lon >= 0 else "W")
     else:
-        coordinate = f"Lokal X {x_nm:.2f} NM / Y {y_nm:.2f} NM"
+        coordinate = message("map.tooltip.coordinate_local", x=f"{x_nm:.2f}", y=f"{y_nm:.2f}")
     depth = float(game.world.depth_m(x_nm, y_nm))
-    terrain = "LAND" if depth <= 0.0 else f"Wassertiefe etwa {depth:.0f} m"
+    terrain = "map.land" if depth <= 0.0 else message(
+        "map.tooltip.water_depth", depth=f"{depth:.0f}")
     chart_lines = (coordinate, terrain)
     tracks = game.radar_tracks()
     for track in reversed(tracks):
-        if track.get("x") is None or track.get("y") is None:
+        observed_x, observed_y = observed_position(track)
+        if observed_x is None or observed_y is None:
             continue
-        if _near(pos, view.world_to_screen(track["x"], track["y"]), 14):
+        if _near(pos, view.world_to_screen(observed_x, observed_y), 14):
             affiliation = game.opz_affiliation(track["track_id"])
             domain = nato_symbols.domain_for_kind(track["kind"])
-            distance = (f"{track['dist']:.1f} NM" if track.get("dist") is not None
-                        else "nur Peilung")
+            distance = math.hypot(observed_x - game.ship.x,
+                                  observed_y - game.ship.y)
+            bearing = math.degrees(math.atan2(
+                observed_x - game.ship.x, -(observed_y - game.ship.y))) % 360.0
             return layout.tooltip_payload(
-                f"{track['track_id']} / {track['label']}",
-                f"Beobachtet: {domain} / {affiliation}",
-                f"{track['bearing'] % 360:05.1f} deg / {distance}",
-                f"Quelle {track['source']} | Q {track.get('quality', 0):.0%} | Alter {track.get('age', 0):.0f}s",
+                message("map.tooltip.track_title", track=track["track_id"], label=track["label"]),
+                message("map.tooltip.observed", domain=display_value('domain', domain),
+                        affiliation=display_value('affiliation', affiliation)),
+                layout.format_bearing_pair(bearing, game.ship.course),
+                message("map.tooltip.range", range=f"{distance:.1f}"),
+                message("map.tooltip.source_quality_age", source=track["source"],
+                        quality=f"{track.get('quality', 0):.0%}", age=f"{track.get('age', 0):.0f}"),
                 *chart_lines,
                 target_id=f"map-track:{track['track_id']}")
     ship_point = view.world_to_screen(game.ship.x, game.ship.y)
     if _near(pos, ship_point, 14):
         return layout.tooltip_payload(
-            "EIGENES SCHIFF",
-            f"Kurs {game.ship.course:05.1f} deg | Fahrt {game.ship.speed:.1f} kn",
-            f"Soll {game.ship.target_course:05.1f} deg / {game.ship.target_speed:.1f} kn",
-            "Eigenposition / operativer Navigationsstatus",
+            "map.own_ship",
+            message("map.tooltip.own_course_speed", course=f"{game.ship.course:05.1f}", speed=f"{game.ship.speed:.1f}"),
+            message("map.tooltip.own_targets", course=f"{game.ship.target_course:05.1f}", speed=f"{game.ship.target_speed:.1f}"),
+            "tooltip.own_position",
             *chart_lines,
             target_id="map:ownship")
     helo = getattr(game, "helo", None)
     if helo is not None and helo.airborne and _near(
             pos, view.world_to_screen(helo.x, helo.y), 15):
+        aircraft_bearing = math.degrees(math.atan2(
+            helo.x - game.ship.x, -(helo.y - game.ship.y))) % 360.0
         return layout.tooltip_payload(
-            "HSP-5 / EIGEN",
-            f"{localize('enum.helo.' + helo.state)} | Kurs {helo.course:05.1f} deg",
-            f"Treibstoff {helo.fuel_s / 60:.0f} min | Datenlink",
+            "tooltip.own_air",
+            message("map.tooltip.helo_state_course", state=localize('enum.helo.' + helo.state), course=f"{helo.course:05.1f}"),
+            message("map.tooltip.ship_air_bearing", bearing=layout.format_bearing_pair(
+                aircraft_bearing, game.ship.course)),
+            message("map.tooltip.helo_fuel", fuel=f"{helo.fuel_s / 60:.0f}"),
             *chart_lines,
             target_id="map:helo")
     contact = getattr(game, "target", None) or getattr(game, "selected_contact", None)
     if contact is not None:
-        bearing = float(getattr(contact, "bearing", 0.0)) % 360.0
+        bearing = observed_bearing(contact)
         estimated_range = getattr(contact, "range_est", None)
-        if estimated_range is not None:
-            angle = math.radians(bearing)
-            point = view.world_to_screen(
-                game.ship.x + float(estimated_range) * math.sin(angle),
-                game.ship.y - float(estimated_range) * math.cos(angle))
+        observed_x, observed_y = contact_position(contact, game.ship)
+        if observed_x is not None and observed_y is not None:
+            point = view.world_to_screen(observed_x, observed_y)
             hit = _near(pos, point, 15)
         else:
             start = view.world_to_screen(game.ship.x, game.ship.y)
@@ -94,20 +145,26 @@ def map_hit_target(game, pos):
                                 - (pos[1] - start[1]) * direction[0])
             hit = 15 <= along <= 300 and perpendicular <= 7
         if hit:
-            distance = (f"{float(estimated_range):.1f} NM"
-                        if estimated_range is not None else "nur Peilung")
+            if observed_x is not None and observed_y is not None:
+                bearing = math.degrees(math.atan2(
+                    observed_x - game.ship.x, -(observed_y - game.ship.y))) % 360.0
+            displayed_range = (math.hypot(observed_x - game.ship.x,
+                                          observed_y - game.ship.y)
+                               if observed_x is not None else estimated_range)
+            distance = (message("map.tooltip.range_value", range=f"{float(displayed_range):.1f}")
+                        if displayed_range is not None else "ui.bearing_only")
             sigma = getattr(contact, "range_sigma_nm", None)
-            uncertainty = (f" | +/-{float(sigma):.2f} NM" if sigma is not None
-                           else "")
+            uncertainty = (f"+/-{float(sigma):.2f} NM" if sigma is not None else "--")
             return layout.tooltip_payload(
-                f"SONARSPUR K{contact.id}",
-                f"Peilung {bearing:05.1f} deg | {distance}{uncertainty}",
-                f"Klasse {getattr(contact, 'player_class', None) or 'UNBEKANNT'} | Konfidenz {getattr(contact, 'confidence', 0):.0%}",
-                f"Quelle {getattr(contact, 'range_source', None) or 'passive Peilung'} | beobachtet",
+                message("map.tooltip.sonar_title", contact=contact.id),
+                layout.format_bearing_pair(bearing, game.ship.course),
+                message("map.tooltip.contact_range", range=localize(distance), uncertainty=uncertainty),
+                message("map.tooltip.class_confidence", classification=display_value('classification', getattr(contact, 'player_class', None)), confidence=f"{getattr(contact, 'confidence', 0):.0%}"),
+                message("map.tooltip.contact_source", source=getattr(contact, 'range_source', None) or localize("map.tooltip.passive_bearing")),
                 *chart_lines,
                 target_id=f"map:sonar:{contact.id}")
-    return layout.tooltip_payload("KARTENPOSITION", coordinate, terrain,
-                                  "Seekarte / kein Zielkontakt",
+    return layout.tooltip_payload("map.position", coordinate, terrain,
+                                  "tooltip.chart_empty",
                                   target_id=f"chart:{x_nm:.1f}:{y_nm:.1f}")
 
 
@@ -129,6 +186,7 @@ def _visible_landmasses(coast, view, rect):
 
 @localized
 def draw_map_view(game, tr=None) -> None:
+    layout.configure_for(game)
     s = game.screen
     r = config.MAP_RECT
     view = game.map_view
@@ -229,10 +287,11 @@ def draw_map_view(game, tr=None) -> None:
 
         # Das Lagebild zeigt nur Sensortracks mit gemessener Position.
         for track in (t for t in tracks if t["kind"] == "AIS"
-                      and t["x"] is not None):
-            if not _in_rect(*view.world_to_screen(track["x"], track["y"]), r):
+                      and observed_position(t)[0] is not None):
+            tx, ty = observed_position(track)
+            if not _in_rect(*view.world_to_screen(tx, ty), r):
                 continue
-            px, py = view.world_to_screen(track["x"], track["y"])
+            px, py = view.world_to_screen(tx, ty)
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(
                 s, (px, py), affiliation, "SURFACE", 14)
@@ -240,8 +299,8 @@ def draw_map_view(game, tr=None) -> None:
                    (int(px) + 7, int(py) - 18))
 
         for track in (t for t in tracks if t["kind"] == "FLG"
-                      and t["x"] is not None):
-            px, py = view.world_to_screen(track["x"], track["y"])
+                      and observed_position(t)[0] is not None):
+            px, py = view.world_to_screen(*observed_position(track))
             if not _in_rect(px, py, r):
                 continue
             affiliation = game.opz_affiliation(track["track_id"])
@@ -266,8 +325,8 @@ def draw_map_view(game, tr=None) -> None:
 
         # ASMs erscheinen nur mit Radarentfernung; HOJ bleibt eine Peilung.
         for track in (t for t in tracks if t["kind"] == "ASM"
-                      and t["x"] is not None):
-            px, py = view.world_to_screen(track["x"], track["y"])
+                      and observed_position(t)[0] is not None):
+            px, py = view.world_to_screen(*observed_position(track))
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(
                 s, (px, py), affiliation, "MISSILE", 14)
@@ -275,8 +334,8 @@ def draw_map_view(game, tr=None) -> None:
                    (int(px) + 10, int(py) - 12))
         fx, fy = view.world_to_screen(game.ship.x, game.ship.y)
         for track in (t for t in tracks if t["kind"] == "ASM"
-                      and t["x"] is None):
-            rad = math.radians(track["bearing"])
+                      and observed_position(t)[0] is None):
+            rad = math.radians(observed_bearing(track))
             ex, ey = fx + 300 * math.sin(rad), fy - 300 * math.cos(rad)
             pygame.draw.line(s, config.COLOR_DANGER, (int(fx), int(fy)),
                              (int(ex), int(ey)), 1)
@@ -290,10 +349,9 @@ def draw_map_view(game, tr=None) -> None:
         contact = game.selected_contact or game.target
         if contact is not None:
             fx, fy = view.world_to_screen(game.ship.x, game.ship.y)
-            brg = math.radians(contact.bearing)
-            if contact.range_est is not None:
-                ex_w = game.ship.x + contact.range_est * math.sin(brg)
-                ey_w = game.ship.y - contact.range_est * math.cos(brg)
+            brg = math.radians(observed_bearing(contact))
+            ex_w, ey_w = contact_position(contact, game.ship)
+            if ex_w is not None and ey_w is not None:
                 tx, ty = view.world_to_screen(ex_w, ey_w)
                 line_col = config.COLOR_DANGER if contact is game.target \
                     else config.COLOR_WARN
@@ -305,15 +363,16 @@ def draw_map_view(game, tr=None) -> None:
                 pygame.draw.line(s, line_col, (int(tx), int(ty) - 8), (int(tx), int(ty) + 8), 2)
                 src = {"tma": "TMA", "ping": "PING",
                        "buoy": "BOJE"}.get(contact.range_source, "FIX")
-                s.blit(game.font.render(
-                    f"K{contact.id} ~{contact.range_est:4.1f} NM ({src})",
+                s.blit(game.font.render(localize(message(
+                    "map.line.contact_fix", contact=contact.id,
+                    range=f"{contact.range_est:4.1f}", source=src)),
                     True, line_col), (int(tx) + 11, int(ty) - 22))
             else:
                 ex = fx + 300 * math.sin(brg)
                 ey = fy - 300 * math.cos(brg)
                 pygame.draw.line(s, config.COLOR_WARN, (int(fx), int(fy)),
                                  (int(ex), int(ey)), 1)
-                s.blit(game.font.render(localize(f"K{contact.id} (nur Peilung)"),
+                s.blit(game.font.render(message("map.line.bearing_only", contact=contact.id),
                                          True, config.COLOR_WARN),
                        (int(fx) + 14, int(fy) - 20))
 
@@ -339,7 +398,8 @@ def draw_map_view(game, tr=None) -> None:
         target_ey = int(py + 42 * math.sin(target_ang))
         pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(px), int(py)),
                          (target_ex, target_ey), 1)
-        layout.blit_line(s, f"Kursziel {game.ship.target_course:03.0f}°",
+        layout.blit_line(s, localize(message("map.target_course",
+                                             course=f"{game.ship.target_course:03.0f}")),
                          (int(px) + 8, int(py) + 10, 124, 18),
                          config.COLOR_TEXT_DIM, size=12)
         L = 14

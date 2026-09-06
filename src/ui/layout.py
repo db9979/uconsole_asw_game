@@ -9,12 +9,17 @@ from contextlib import contextmanager
 import pygame
 
 from src.core import config
-from src.core.i18n import localize
+from src.core.i18n import localize, message
 
 # Font-Cache: pygame-Fonts sind teuer -> pro Größe einmal erzeugen.
 _FONT_CACHE: dict = {}
 _FONT_CACHE_DISPLAY = None
-MIN_OPERATIONAL_FONT = 12
+MIN_OPERATIONAL_FONT = 14
+TOOLTIP_BODY_SIZE = 14
+TOOLTIP_TITLE_SIZE = 16
+LARGE_TEXT_SCALE = 1.2
+_TEXT_SCALE = 1.0
+_GEOMETRY_TRACE = None
 
 
 def clear_font_cache() -> None:
@@ -22,6 +27,55 @@ def clear_font_cache() -> None:
     global _FONT_CACHE_DISPLAY
     _FONT_CACHE.clear()
     _FONT_CACHE_DISPLAY = None
+
+
+def set_text_scale(scale: float = 1.0) -> float:
+    """Set the authoritative logical-to-rendered text scale for UI helpers."""
+    global _TEXT_SCALE
+    try:
+        value = float(scale)
+    except (TypeError, ValueError):
+        value = 1.0
+    _TEXT_SCALE = max(1.0, min(2.0, value))
+    return _TEXT_SCALE
+
+
+def configure_for(game=None, *, large_text: bool | None = None) -> float:
+    """Apply a game's text preference without retaining the game object."""
+    if large_text is None:
+        preferences = getattr(game, "preferences", None)
+        large_text = bool(getattr(preferences, "large_text", False))
+    return set_text_scale(LARGE_TEXT_SCALE if large_text else 1.0)
+
+
+def text_scale() -> float:
+    return _TEXT_SCALE
+
+
+def scaled_size(size: int | float) -> int:
+    return max(1, round(float(size) * _TEXT_SCALE))
+
+
+@contextmanager
+def capture_geometry():
+    """Collect card/panel rectangles for headless layout instrumentation."""
+    global _GEOMETRY_TRACE
+    previous = _GEOMETRY_TRACE
+    captured = []
+    _GEOMETRY_TRACE = captured
+    try:
+        yield captured
+    finally:
+        _GEOMETRY_TRACE = previous
+
+
+def record_geometry(kind: str, rect, title: str = "") -> None:
+    """Record a bounded UI region when ``capture_geometry`` is active."""
+    if _GEOMETRY_TRACE is not None:
+        _GEOMETRY_TRACE.append({
+            "kind": kind, "title": str(title), "rect": pygame.Rect(rect).copy(),
+            "text_scale": _TEXT_SCALE,
+        })
 
 
 def font(size: int, bold: bool = False) -> pygame.font.Font:
@@ -33,14 +87,15 @@ def font(size: int, bold: bool = False) -> pygame.font.Font:
     # Tests and standalone tools can quit/reinitialize SDL between surfaces.
     # Cache only while a live display provides a stable SDL lifetime token.
     if display is None:
-        return pygame.font.SysFont("monospace", size, bold=bold)
+        return pygame.font.SysFont("monospace", scaled_size(size), bold=bold)
     if display is not _FONT_CACHE_DISPLAY:
         clear_font_cache()
         _FONT_CACHE_DISPLAY = display
-    key = (size, bold)
+    rendered_size = scaled_size(size)
+    key = (rendered_size, bold)
     f = _FONT_CACHE.get(key)
     if f is None:
-        f = pygame.font.SysFont("monospace", size, bold=bold)
+        f = pygame.font.SysFont("monospace", rendered_size, bold=bold)
         _FONT_CACHE[key] = f
     return f
 
@@ -78,6 +133,26 @@ def wrap_text(text: str, f: pygame.font.Font, width_px: int) -> list:
     return out
 
 
+def ellipsize(text: object, f: pygame.font.Font, width_px: int,
+              suffix: str = "...") -> str:
+    """Return one explicit, width-bounded line."""
+    value = str(text)
+    if width_px <= 0:
+        return ""
+    if f.size(value)[0] <= width_px:
+        return value
+    if f.size(suffix)[0] > width_px:
+        return ""
+    low, high = 0, len(value)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if f.size(value[:middle] + suffix)[0] <= width_px:
+            low = middle
+        else:
+            high = middle - 1
+    return value[:low] + suffix
+
+
 def fit_text(text: str, size: int, width_px: int, height_px: int,
              min_size: int = MIN_OPERATIONAL_FONT) -> tuple:
     """Text so groß wie möglich (ab min_size), dass er in w×h passt.
@@ -100,9 +175,7 @@ def fit_text(text: str, size: int, width_px: int, height_px: int,
     if len(lines) > max_lines:
         lines = lines[:max_lines]
         last = lines[-1]
-        while last and f.size(last + "…")[0] > width_px:
-            last = last[:-1]
-        lines[-1] = last + "…" if f.size("…")[0] <= width_px else last
+        lines[-1] = ellipsize(last + "...", f, width_px)
     return f, lines
 
 
@@ -135,6 +208,7 @@ def box(screen, rect, title: str = "", border=None, fill=(14, 24, 18),
         title_size: int = 16) -> tuple:
     """Zeichnet eine Box und liefert ihr garantiert inneres Rechteck."""
     x, y, w, h = rect
+    record_geometry("box", rect, title)
     border = border or config.COLOR_SONAR_RING
     pygame.draw.rect(screen, fill, rect)
     pygame.draw.rect(screen, border, rect, 1)
@@ -184,6 +258,7 @@ def clip_to(screen, rect):
 def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
     """Panel-Rahmen + optionaler Titel; liefert y unterhalb des Titels."""
     x, y, w, h = rect
+    record_geometry("panel", rect, title)
     pygame.draw.rect(screen, (14, 24, 18), (x, y, w, h))
     pygame.draw.rect(screen, config.COLOR_SONAR_RING, (x, y, w, h), 1)
     title = localize(title)
@@ -201,17 +276,11 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
     f = font(size)
     col = color or config.COLOR_TEXT
     dcol = dim_color or config.COLOR_TEXT_DIM
-    lab = localize(label)
-    while lab and f.size(lab)[0] > label_w - 4:
-        lab = lab[:-1]
+    lab = ellipsize(localize(label), f, label_w - 4)
     value = localize(value)
     val = value
     rest = w - label_w - 4
-    ellipsis = "…"
-    while val and f.size(val + ellipsis)[0] > rest:
-        val = val[:-1]
-    if val != value:
-        val += ellipsis
+    val = ellipsize(value, f, rest)
     with clip_to(screen, (x, y, w, f.get_linesize())):
         screen.blit(f.render(lab, True, dcol), (x, y))
         screen.blit(f.render(val, True, col), (x + label_w + 4, y))
@@ -234,32 +303,61 @@ def valid_tooltip(value) -> dict | None:
     lines = value.get("lines", [])
     if not isinstance(lines, list) or not all(isinstance(line, str) for line in lines):
         return None
-    return tooltip_payload(value["title"], *lines[:12],
+    retained = lines[:12]
+    if len(lines) > 12:
+        retained[-1] = "... (more omitted)"
+    return tooltip_payload(value["title"], *retained,
                            target_id=value.get("id", ""))
 
 
 def tooltip_rect(payload: dict, pointer, bounds=(0, 0, 1280, 720),
-                 max_width: int = 420) -> tuple[pygame.Rect, list[str]]:
+                  max_width: int = 420) -> tuple[pygame.Rect, list[str]]:
     """Lay out a readable tooltip, flipping and clamping it at canvas edges."""
     bounds = pygame.Rect(bounds)
-    f = font(MIN_OPERATIONAL_FONT)
-    available = max(80, min(max_width, bounds.w - 16))
-    source = [payload.get("title", "")] + list(payload.get("lines", []))
-    natural = max((f.size(line)[0] for line in source), default=0) + 24
-    width = max(180, min(available, natural))
-    lines = []
-    for line in source:
-        lines.extend(wrap_text(str(line), f, width - 24) or [""])
-    line_h = _line_height(f)
-    height = 16 + line_h * len(lines)
-    height = min(max(44, height), bounds.h - 16)
+    inset_x = min(8, max(0, bounds.w // 4))
+    inset_y = min(8, max(0, bounds.h // 4))
+    safe = bounds.inflate(-inset_x * 2, -inset_y * 2)
+    title_font = font(TOOLTIP_TITLE_SIZE, bold=True)
+    body_font = font(TOOLTIP_BODY_SIZE)
+    available = max(1, min(max_width, safe.w))
+    title = str(payload.get("title", ""))
+    body = [str(line) for line in payload.get("lines", [])]
+    natural = max([title_font.size(title)[0]] +
+                  [body_font.size(line)[0] for line in body] + [0]) + 24
+    width = max(min(180, available), min(available, natural))
+    title_lines = wrap_text(title, title_font, width - 24) or [""]
+    body_lines = []
+    for line in body:
+        body_lines.extend(wrap_text(line, body_font, width - 24) or [""])
+    title_h = _line_height(title_font)
+    body_h = _line_height(body_font)
+    max_height = max(1, safe.h)
+    max_title_lines = max(1, (max_height - 16) // title_h)
+    if len(title_lines) > max_title_lines:
+        title_lines = title_lines[:max_title_lines]
+        title_lines[-1] = ellipsize(title_lines[-1] + "...", title_font,
+                                    width - 24)
+        body_lines = []
+    available_body_h = max(0, max_height - 16 - len(title_lines) * title_h)
+    visible_body = available_body_h // body_h
+    truncated = len(body_lines) > visible_body
+    body_lines = body_lines[:visible_body]
+    if truncated and body_lines:
+        body_lines[-1] = ellipsize(body_lines[-1] + "...", body_font,
+                                   width - 24)
+    elif truncated and title_lines:
+        title_lines[-1] = ellipsize(title_lines[-1] + "...", title_font,
+                                    width - 24)
+    lines = title_lines + body_lines
+    height = min(max_height, max(44, 16 + len(title_lines) * title_h
+                                 + len(body_lines) * body_h))
     x, y = int(pointer[0]) + 14, int(pointer[1]) + 18
     if x + width > bounds.right - 8:
         x = int(pointer[0]) - width - 14
     if y + height > bounds.bottom - 8:
         y = int(pointer[1]) - height - 14
     rect = pygame.Rect(x, y, width, height)
-    rect.clamp_ip(bounds.inflate(-16, -16))
+    rect.clamp_ip(safe)
     return rect, lines
 
 
@@ -272,12 +370,35 @@ def draw_tooltip(screen, payload: dict, pointer,
     rect, lines = tooltip_rect(payload, pointer, bounds)
     pygame.draw.rect(screen, (5, 13, 10), rect)
     pygame.draw.rect(screen, config.COLOR_WARN, rect, 2)
-    f = font(MIN_OPERATIONAL_FONT)
-    line_h = _line_height(f)
+    title_font = font(TOOLTIP_TITLE_SIZE, bold=True)
+    body_font = font(TOOLTIP_BODY_SIZE)
+    title_lines = wrap_text(payload["title"], title_font, rect.w - 24) or [""]
+    title_count = min(len(title_lines), len(lines))
+    title_h = _line_height(title_font)
+    body_h = _line_height(body_font)
     with clip_to(screen, rect.inflate(-10, -8)):
         for index, line in enumerate(lines):
-            face = font(MIN_OPERATIONAL_FONT, bold=True) if index == 0 else f
-            color = config.COLOR_TEXT if index == 0 else config.COLOR_TEXT_DIM
+            is_title = index < title_count
+            face = title_font if is_title else body_font
+            color = config.COLOR_TEXT if is_title else config.COLOR_TEXT_DIM
+            y = (rect.y + 8 + index * title_h if is_title else
+                 rect.y + 8 + title_count * title_h
+                 + (index - title_count) * body_h)
             screen.blit(face.render(line, True, color),
-                        (rect.x + 12, rect.y + 8 + index * line_h))
+                        (rect.x + 12, y))
     return rect
+
+
+def bearing_pair(observed_bearing: float, own_course: float) -> tuple[float, float]:
+    """Return north-referenced true and clockwise ship-relative bearings."""
+    true_bearing = float(observed_bearing) % 360.0
+    relative = (true_bearing - float(own_course)) % 360.0
+    return true_bearing, relative
+
+
+def format_bearing_pair(observed_bearing: float, own_course: float) -> str:
+    """Describe an observed bearing without implying target ground truth."""
+    true_bearing, relative = bearing_pair(observed_bearing, own_course)
+    return localize(message("bearing.observed_pair",
+                            true=f"{true_bearing:05.1f}",
+                            relative=f"{relative:05.1f}"))

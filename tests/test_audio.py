@@ -39,6 +39,21 @@ def test_propeller_phase_continuity_and_event_primitives_are_finite():
         assert event[0] == event[-1] == 0
 
 
+def test_propeller_cavitation_rng_and_filter_are_continuous():
+    rate = 8000
+    rng = np.random.default_rng(41)
+    state = np.zeros(5)
+    first = propeller_block(183, 5, rate, cavitation=.7, phase=.4,
+                            rng=rng, filter_state=state)
+    phase = .4 + 2 * np.pi * (183 / 60 * 5) * first.size / rate
+    second = propeller_block(183, 5, rate, cavitation=.7, phase=phase,
+                             rng=rng, filter_state=state)
+    whole = propeller_block(183, 5, rate, duration_s=.5, cavitation=.7,
+                            phase=.4, rng=np.random.default_rng(41),
+                            filter_state=np.zeros(5))
+    np.testing.assert_allclose(np.concatenate((first, second)), whole, atol=2e-7)
+
+
 def test_stereo_bearing_has_expected_channel_bias():
     mono = np.ones(32, dtype=np.float32)
     center = stereo_bearing(mono, 0)
@@ -99,7 +114,7 @@ def test_tone_has_fade_in_and_out():
 
 @pytest.fixture
 def mixer(monkeypatch):
-    channels = [Mock(), Mock()]
+    channels = [Mock(), Mock(), Mock(), Mock()]
     for channel in channels:
         channel.get_busy.return_value = False
         channel.get_queue.return_value = None
@@ -141,10 +156,38 @@ def test_initializes_signed16_and_reserves_independent_channels(mixer):
     engine = AudioEngine()
     backend.init.assert_called_once_with(frequency=22050, size=-16,
                                          channels=2, buffer=512, allowedchanges=0)
-    backend.set_num_channels.assert_called_once_with(3)
-    backend.set_reserved.assert_called_once_with(2)
+    backend.set_num_channels.assert_called_once_with(4)
+    backend.set_reserved.assert_called_once_with(4)
     assert engine._engine_channel is channels[0]
     assert engine._sonar_channel is channels[1]
+    assert engine._ping_channel is channels[2]
+    assert engine._alert_channel is channels[3]
+    for name, channel in zip(("engine", "sonar", "ping", "alert"), channels):
+        channel.set_volume.assert_called_once_with(engine.CHANNEL_GAINS[name])
+
+
+def test_dedicated_channels_allow_overlap_and_ping_rejects_self_overlap(mixer):
+    _, channels, make_sound = mixer
+    engine = AudioEngine()
+    assert engine.update_engine(180)
+    assert engine.play_sonar(np.ones(4096, dtype=np.float32), 4096)
+    assert engine.play_ping()
+    assert engine.play_alert("damage")
+    for channel in channels:
+        channel.play.assert_called_once()
+    calls = make_sound.call_count
+    channels[2].get_busy.return_value = True
+    assert not engine.play_ping()
+    assert make_sound.call_count == calls
+    channels[2].play.side_effect = pygame.error("device lost")
+    channels[2].get_busy.return_value = False
+    assert not engine.play_ping(901)
+    channels[3].get_busy.return_value = True
+    assert engine.play_alert("launch")
+    channels[3].queue.assert_called_once()
+    channels[3].get_queue.return_value = channels[3].queue.call_args.args[0]
+    assert not engine.play_alert("defense")
+    assert engine.alert_dropped_events == 1
 
 
 @pytest.mark.parametrize("mixer_format", [
@@ -190,17 +233,16 @@ def test_sonar_resampling_preserves_pitch_duration_and_fades(mixer, channels):
     pcm = make_sound.call_args.args[0]
     assert pcm.shape == ((44100,) if channels == 1 else (44100, 2))
     mono = pcm if channels == 1 else pcm[:, 0]
-    assert mono[0] == mono[-1] == 0
-    assert 10000 < np.max(np.abs(mono)) <= 13107
+    assert mono[0] == 0
+    assert 10000 < np.max(np.abs(mono)) < 15000
     assert abs(int(mono[1])) < 100
-    assert abs(int(mono[-2])) < 100
     assert np.argmax(np.abs(np.fft.rfft(mono))) == 256
     if channels == 2:
         np.testing.assert_array_equal(pcm[:, 0], pcm[:, 1])
     np.testing.assert_array_equal(samples, original)
     playback[1].play.assert_called_once()
     assert len(playback[1].play.call_args.args) == 1
-    assert playback[1].play.call_args.kwargs == {}
+    assert playback[1].play.call_args.kwargs == {"fade_ms": engine.FADE_MS}
     playback[0].play.assert_not_called()
     assert not engine._cache
 
@@ -240,8 +282,37 @@ def test_sonar_short_and_clipped_blocks(mixer, count, volume):
     assert engine.play_sonar(samples, 44100, volume)
     pcm = mixer[2].call_args.args[0]
     assert pcm.dtype == np.int16
-    assert np.max(np.abs(pcm.astype(np.int32))) <= 32767 * np.clip(volume, 0, 1)
-    assert np.all(pcm[[0, -1]] == 0)
+    assert np.max(np.abs(pcm.astype(np.int32))) < 32767
+    assert not np.any(np.abs(pcm.astype(np.int32)) == 32767)
+    assert np.all(pcm[0] == 0)
+
+
+@pytest.mark.parametrize("gain_db", [12, 24])
+def test_sonar_gain_is_soft_limited_after_headphone_volume(mixer, gain_db):
+    engine = AudioEngine(channels=1)
+    rate = 4096
+    t = np.arange(1024) / rate
+    gained = (.4 * 10 ** (gain_db / 20)
+              * np.sin(2 * np.pi * 173 * t)).astype(np.float32)
+
+    def rendered(volume):
+        mixer[2].reset_mock()
+        engine._reset_sonar_stream()
+        assert engine.play_sonar(gained, rate, volume=volume)
+        pcm = mixer[2].call_args.args[0]
+        mono = pcm if pcm.ndim == 1 else pcm[:, 0]
+        return mono.astype(np.float64) / 32767
+
+    loud = rendered(1.0)
+    assert np.isfinite(loud).all()
+    assert np.max(np.abs(loud)) < 1.0
+    assert not np.any(np.abs(loud) == 1.0)
+    assert np.count_nonzero(np.diff(loud) == 0) < loud.size * .02
+    quiet = rendered(.1)
+    baseline = rendered(.01)
+    loud_error = np.sqrt(np.mean((loud / .55 - baseline / .01) ** 2))
+    quiet_error = np.sqrt(np.mean((quiet / .1 - baseline / .01) ** 2))
+    assert quiet_error < loud_error
 
 
 def test_sonar_queue_is_bounded_and_not_cached(mixer):
@@ -260,16 +331,127 @@ def test_sonar_queue_is_bounded_and_not_cached(mixer):
     assert not engine._cache
 
 
-@pytest.mark.parametrize("method", ["stop_sonar", "stop", "shutdown"])
-def test_stop_includes_sonar(mixer, method):
+def test_stereo_sonar_bearing_play_and_queue_preserve_continuity(mixer):
+    _, channels, make_sound = mixer
     engine = AudioEngine()
-    assert engine.play_ping()
-    getattr(engine, method)()
-    mixer[1][1].stop.assert_called_once()
-    assert mixer[1][0].stop.call_count == (method != "stop_sonar")
-    if method == "shutdown":
-        assert not engine._cache
-        assert not engine.play_sonar(np.ones(100, dtype=np.float32), 4096)
+    source_rate = 4093
+    t = np.arange(2000, dtype=np.float64) / source_rate
+    source = np.sin(2 * np.pi * 173 * t).astype(np.float32)
+    first, second = np.array_split(source, 2)
+
+    assert engine.play_sonar(first, source_rate, bearing_deg=90,
+                             listener_bearing_deg=0)
+    first_pcm = make_sound.call_args.args[0]
+    assert first_pcm.shape[1] == 2
+    assert np.max(np.abs(first_pcm[:, 1])) > np.max(np.abs(first_pcm[:, 0]))
+    assert engine._sonar_input_count == first.size
+    assert isinstance(engine._sonar_output_previous, float)
+
+    channels[1].get_busy.return_value = True
+    assert engine.play_sonar(second, source_rate, bearing_deg=90,
+                             listener_bearing_deg=0)
+    second_pcm = make_sound.call_args.args[0]
+    channels[1].play.assert_called_once()
+    channels[1].queue.assert_called_once()
+    assert make_sound.call_count == 2
+    assert engine._sonar_input_count == source.size
+    assert engine._sonar_output_count == round(source.size * 44100 / source_rate)
+
+    joined = np.concatenate((first_pcm, second_pcm)).astype(np.int32)
+    normal_step = np.quantile(np.abs(np.diff(joined, axis=0))[300:], .999,
+                              axis=0)
+    boundary_step = np.abs(second_pcm[0].astype(np.int32)
+                           - first_pcm[-1].astype(np.int32))
+    assert np.all(boundary_step <= normal_step * 1.2)
+
+
+def test_engine_queues_ahead_and_advances_only_accepted_blocks(mixer):
+    _, channels, make_sound = mixer
+    engine = AudioEngine()
+    assert engine.update_engine(183, cavitation=.7)
+    phase = engine._engine_phase
+    rng_state = repr(engine._engine_rng.bit_generator.state)
+    channels[0].get_busy.return_value = True
+    assert engine.update_engine(183, cavitation=.7)
+    channels[0].queue.assert_called_once()
+    assert engine._engine_phase != phase
+    accepted_phase = engine._engine_phase
+    accepted_rng_state = repr(engine._engine_rng.bit_generator.state)
+    channels[0].get_queue.return_value = channels[0].queue.call_args.args[0]
+    assert not engine.update_engine(183, cavitation=.7)
+    assert engine.engine_dropped_blocks == 1
+    assert engine._engine_phase == accepted_phase
+    assert repr(engine._engine_rng.bit_generator.state) == accepted_rng_state
+    assert repr(engine._engine_rng.bit_generator.state) != rng_state
+    assert make_sound.call_count == 2
+
+
+def test_engine_pcm_boundaries_are_phase_continuous(mixer):
+    _, channels, make_sound = mixer
+    engine = AudioEngine()
+    assert engine.update_engine(183, cavitation=0, volume=.12)
+    channels[0].get_busy.return_value = True
+    assert engine.update_engine(183, cavitation=0, volume=.12)
+    first, second = [call.args[0][:, 0].astype(np.int32)
+                     for call in make_sound.call_args_list]
+    ordinary_step = np.max(np.abs(np.diff(np.concatenate((first, second)))))
+    assert abs(int(second[0]) - int(first[-1])) <= ordinary_step
+
+
+def test_sonar_resampling_uses_cumulative_lengths_and_clean_boundaries(mixer):
+    _, _, make_sound = mixer
+    engine = AudioEngine()
+    source_rate = 4093
+    t = np.arange(3000, dtype=np.float64) / source_rate
+    source = np.sin(2 * np.pi * 173 * t).astype(np.float32)
+    for block in np.array_split(source, 3):
+        assert engine.play_sonar(block, source_rate, volume=1.0)
+    blocks = [call.args[0][:, 0].astype(np.float64) / 32767
+              for call in make_sound.call_args_list]
+    assert sum(map(len, blocks)) == round(source.size * 44100 / source_rate)
+    joined = np.concatenate(blocks)
+    normal_step = np.quantile(np.abs(np.diff(joined))[300:], .999)
+    for boundary in np.cumsum([len(block) for block in blocks[:-1]]):
+        assert abs(joined[boundary] - joined[boundary - 1]) <= normal_step * 1.2
+
+
+def test_mix_policy_has_headroom_for_realistic_composite():
+    rate = 22050
+    duration = .25
+    count = round(rate * duration)
+    sources = {
+        "engine": propeller_block(240, 5, rate, duration_s=duration,
+                                   amplitude=AudioEngine.SOURCE_LIMITS["engine"],
+                                   cavitation=.7),
+        "sonar": np.sin(2 * np.pi * 320 * np.arange(count) / rate)
+                 * AudioEngine.SOURCE_LIMITS["sonar"],
+        "ping": fm_chirp(700, 970, duration, rate,
+                          AudioEngine.SOURCE_LIMITS["ping"]),
+        "alert": tone(180, duration, rate, AudioEngine.SOURCE_LIMITS["alert"]),
+    }
+    composite = sum(sources[name] * AudioEngine.CHANNEL_GAINS[name]
+                    for name in sources)
+    assert np.max(np.abs(composite)) < 1.0
+    assert sum(AudioEngine.SOURCE_LIMITS[name] * AudioEngine.CHANNEL_GAINS[name]
+               for name in sources) < 1.0
+
+
+def test_normal_stop_fades_once_and_shutdown_hard_stops(mixer):
+    engine = AudioEngine()
+    channels = mixer[1]
+    channels[0].get_busy.return_value = True
+    channels[1].get_busy.return_value = True
+    engine.stop()
+    engine.stop()
+    channels[0].fadeout.assert_called_once_with(engine.FADE_MS)
+    channels[1].fadeout.assert_called_once_with(engine.FADE_MS)
+    for channel in channels:
+        channel.stop.assert_not_called()
+    engine.shutdown()
+    for channel in channels:
+        channel.stop.assert_called_once()
+    assert not engine._cache
+    assert not engine.play_sonar(np.ones(100, dtype=np.float32), 4096)
 
 
 def test_cache_size_and_lru_avoid_resynthesis(mixer, monkeypatch):
@@ -339,10 +521,10 @@ def test_dummy_mixer_reservations_and_sonar_stop(monkeypatch, channels):
             engine.play_ping()
             engine.play_alert()
         assert pygame.mixer.Channel(1).get_sound() == current
-        assert pygame.mixer.Channel(0).get_sound() in engine._cache.values()
+        assert pygame.mixer.Channel(0).get_sound() is not None
         engine.stop_sonar()
-        assert not pygame.mixer.Channel(1).get_busy()
-        assert pygame.mixer.Channel(1).get_queue() is None
         engine.shutdown()
+        for index in range(4):
+            assert not pygame.mixer.Channel(index).get_busy()
     finally:
         pygame.mixer.quit()

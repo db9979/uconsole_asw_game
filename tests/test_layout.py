@@ -1,10 +1,13 @@
 """Headless wrapping, clipping, and iterable regression tests."""
 
+from dataclasses import replace
+
 import pygame
 import pytest
 
 from src.ui import layout
 from src.ui import editor_widgets
+from src.core import config
 from src.core.i18n import Translator, pseudolocale, translation_scope
 
 
@@ -54,7 +57,7 @@ def test_fit_text_does_not_emit_an_oversized_ellipsis(monkeypatch, text_font):
     assert all(fitted_font.size(line)[0] <= width for line in lines)
 
 
-def test_operational_text_defaults_never_shrink_below_twelve_pixels(monkeypatch):
+def test_operational_text_defaults_never_shrink_below_fourteen_pixels(monkeypatch):
     requested = []
     original = layout.font
 
@@ -65,9 +68,42 @@ def test_operational_text_defaults_never_shrink_below_twelve_pixels(monkeypatch)
     monkeypatch.setattr(layout, "font", record)
     layout.fit_text("A deliberately long operational status line", 16, 20, 12)
 
-    assert layout.MIN_OPERATIONAL_FONT == 12
+    assert layout.MIN_OPERATIONAL_FONT == 14
     assert requested
-    assert min(requested) >= 12
+    assert min(requested) >= 14
+
+
+@pytest.mark.parametrize("observed,course,expected", [
+    (0, 0, (0, 0)),
+    (5, 355, (5, 10)),
+    (355, 5, (355, 350)),
+    (360, 90, (0, 270)),
+])
+def test_bearing_pair_wraps_true_and_clockwise_relative(observed, course, expected):
+    assert layout.bearing_pair(observed, course) == expected
+    formatted = layout.format_bearing_pair(observed, course)
+    assert "TRUE/NORTH" in formatted and "RELATIVE" in formatted
+    assert "000 ahead, clockwise" in formatted
+
+
+def test_bearing_terms_are_explicit_in_german():
+    with translation_scope(Translator("de").t):
+        formatted = layout.format_bearing_pair(15, 5)
+    assert "nordreferenziert/rechtweisend" in formatted
+    assert "im Uhrzeigersinn vom Bug" in formatted
+
+
+def test_layout_text_scale_is_authoritative_and_cache_keyed(monkeypatch):
+    pygame.font.init()
+    monkeypatch.setattr(pygame.display, "get_surface", lambda: pygame.Surface((1, 1)))
+    layout.clear_font_cache()
+    layout.configure_for(large_text=False)
+    normal = layout.font(14).get_height()
+    layout.configure_for(large_text=True)
+    large = layout.font(14).get_height()
+    assert layout.text_scale() == layout.LARGE_TEXT_SCALE
+    assert large > normal
+    layout.configure_for(large_text=False)
 
 
 def test_fonts_are_shared_cached_and_replaced_with_display_lifetime(monkeypatch):
@@ -213,9 +249,12 @@ def test_localized_operational_text_stays_inside_1280x720(translator):
     assert screen.get_bounding_rect().clip(rect) == screen.get_bounding_rect()
 
 
-def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale():
+def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale(tmp_path):
     from src.core.game import Game
     from src.core.station import Station
+    from src.data.user_content import UserContentStore
+    from src.ui.mission_editor import MissionEditor
+    from src.ui.unit_editor import UnitEditor
 
     game = Game(seed=31, fullscreen=False, window_size=(1280, 720),
                 audio_enabled=False)
@@ -224,15 +263,44 @@ def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale()
     for translator in translators:
         game.translator = translator
         game.tr = translator.t
-        for station in Station:
-            game.station = station
-            game.draw()
-            assert game.screen.get_size() == (1280, 720)
-            assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
-        for overlay in ("help", "nations", "save", "load", "options", "quit"):
-            game._open_administration(overlay)
-            game.draw()
-            assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
+        for large_text in (False, True):
+            game.preferences = replace(game.preferences, large_text=large_text)
+            game._apply_text_size()
+            for station in Station:
+                game.station = station
+                station_rect = pygame.Rect(
+                    config.STATION_PANEL_RECT if station in (
+                        Station.BRIDGE, Station.WEAPONS, Station.HELICOPTER)
+                    else config.FULL_STATION_RECT)
+                pages = range(6) if station is Station.SONAR else range(1)
+                for page in pages:
+                    game.sonar_page = page
+                    with layout.capture_geometry() as geometry:
+                        game.draw()
+                    assert geometry
+                assert game.screen.get_size() == (1280, 720)
+                assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
+                assert all(station_rect.contains(item["rect"])
+                           for item in geometry
+                           if item["kind"] in ("box", "panel", "region")
+                           and item["rect"].colliderect(station_rect))
+            for overlay in ("help", "nations", "save", "load", "options", "quit"):
+                game._open_administration(overlay)
+                game.draw()
+                assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
+            store = UserContentStore(tmp_path / translator.language)
+            mission = MissionEditor(store=store, tr=translator.t)
+            unit = UnitEditor(store=store, tr=translator.t)
+            for editor in (mission, unit):
+                editor.draw(game.screen)
+            mission.new()
+            for tab in range(len(mission.tabs)):
+                mission.tab_index = tab
+                mission.draw(game.screen)
+            unit.mode = "kind"
+            unit.draw(game.screen)
+            unit.new("sub", "user.pseudo_test")
+            unit.draw(game.screen)
         game.help_open = game.nations_open = game.options_open = False
         game.quit_confirm = False
         game.save_ui = None

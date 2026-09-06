@@ -5,11 +5,10 @@ from __future__ import annotations
 import json
 import locale
 import os
-import re
 from collections.abc import Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from functools import lru_cache, wraps
+from functools import wraps
 from importlib import resources
 from string import Formatter
 
@@ -20,6 +19,90 @@ _RESOURCE_PACKAGE = "data.i18n"
 _FORMATTER = Formatter()
 _ACTIVE_TRANSLATOR: ContextVar[object | None] = ContextVar(
     "u_jagd_translator", default=None)
+_MESSAGE_KEY = "__u_jagd_i18n__"
+_RAW_TEXT_KEY = "__u_jagd_raw_text__"
+
+
+# Persisted values remain the keys in these tables. Only their display labels
+# are translated, in one place, at the UI boundary.
+DISPLAY_KEYS = {
+    "station": {
+        "BRIDGE": "station.bridge", "SONAR": "station.sonar",
+        "WEAPONS": "station.weapons", "DAMAGE": "station.damage",
+        "OPZ": "station.opz", "RADIO": "station.radio",
+        "ENGINE": "station.engine", "HELICOPTER": "station.helicopter",
+    },
+    "classification": {
+        None: "class.unknown", "UNKNOWN": "class.unknown",
+        "UNBEKANNT": "class.unknown", "U_BOOT": "class.submarine",
+        "SUBMARINE": "class.submarine", "KAMPFSCHIFF": "class.warship",
+        "WARSHIP": "class.warship", "BIOLOGISCH": "class.biological",
+        "BIOLOGICAL": "class.biological", "FAHRZEUG": "class.vehicle",
+        "VEHICLE": "class.vehicle",
+    },
+    "affiliation": {
+        "UNKNOWN": "affiliation.unknown", "FRIEND": "affiliation.friend",
+        "FRIENDLY": "affiliation.friend", "NEUTRAL": "affiliation.neutral",
+        "HOSTILE": "affiliation.hostile",
+    },
+    "domain": {
+        "SURFACE": "domain.surface", "SUBSURFACE": "domain.subsurface",
+        "AIR": "domain.air", "MISSILE": "domain.missile",
+        "UNDERWATER_WEAPON": "domain.underwater_weapon",
+    },
+    "array": {"BOW": "enum.array.bow", "TOWED": "enum.array.towed"},
+    "tow": {
+        "STOWED": "state.stowed", "DEPLOYING": "state.deploying",
+        "RETRIEVING": "state.retrieving", "STREAMED": "state.streamed",
+        "FAULT": "state.fault",
+    },
+    "tma": {
+        "ZU WENIG HISTORIE": "tma.no_history", "INSUFFICIENT HISTORY": "tma.no_history",
+        "SCHWACHE GEOMETRIE": "tma.weak_geometry", "WEAK GEOMETRY": "tma.weak_geometry",
+        "KONVERGIEREND": "tma.converging", "CONVERGING": "tma.converging",
+        "LOESUNG STABIL": "tma.stable", "SOLUTION STABLE": "tma.stable",
+        "VERALTET": "tma.stale", "STALE": "tma.stale",
+        "BRAUCHBAR": "tma.useful", "USEFUL": "tma.useful",
+        "SCHWACH": "tma.weak", "WEAK": "tma.weak",
+    },
+    "fusion": {
+        "KEINE DATEN": "enum.fusion.none", "KEINE FUSION": "enum.fusion.none",
+        "BESTAETIGT": "enum.fusion.confirmed", "DIVERGENT": "enum.fusion.divergent",
+        "MOEGLICHER GEISTERKONTAKT": "enum.fusion.ghost",
+    },
+    "weapon_mode": {"DRAHT": "enum.weapon.wire", "SUCHER": "enum.weapon.seeker"},
+    "profile_kind": {
+        "sub": "enum.kind.sub", "surface": "enum.kind.surface",
+        "aircraft": "enum.kind.aircraft", "animal": "enum.kind.animal",
+        "torpedo": "enum.kind.torpedo", "decoy": "enum.kind.decoy",
+    },
+    "side": {
+        "friendly": "enum.side.friendly", "neutral": "enum.side.neutral",
+        "hostile": "enum.side.hostile",
+    },
+    "weather": {
+        "clear": "enum.weather.clear", "rain": "enum.weather.rain",
+        "storm": "enum.weather.storm", "fog": "enum.weather.fog",
+    },
+    "objective": {
+        "sink": "enum.objective.sink", "survive": "enum.objective.survive",
+        "protect": "enum.objective.protect", "reach": "enum.objective.reach",
+    },
+    "event": {
+        "message": "enum.event.message", "spawn": "enum.event.spawn",
+        "weather": "enum.event.weather", "objective": "enum.event.objective",
+    },
+    "placement": {"fixed": "enum.placement.fixed", "sector": "enum.placement.sector"},
+    "used_by": {
+        "frigate": "enum.used_by.frigate", "helo": "enum.used_by.helo",
+        "enemy": "enum.used_by.enemy",
+    },
+    "sonar_page": {
+        "BROADBAND": "sonar.broadband", "LOFAR": "enum.sonar_page.lofar",
+        "DEMON": "enum.sonar_page.demon", "TMA": "enum.sonar_page.tma",
+        "UMWELT/FUSION": "sonar.environment", "ACTIVE": "enum.sonar_page.active",
+    },
+}
 
 
 class TranslationError(ValueError):
@@ -125,21 +208,12 @@ def load_catalog(language: str | None = None) -> dict[str, str]:
     return catalog
 
 
-def _alternate_german_spelling(message: str) -> str:
-    """Match legacy ASCII German UI text against the UTF-8 catalog and back."""
-    replacements = (("Ae", "Ä"), ("Oe", "Ö"), ("Ue", "Ü"),
-                    ("ae", "ä"), ("oe", "ö"), ("ue", "ü"))
-    for ascii_text, unicode_text in replacements:
-        message = message.replace(ascii_text, unicode_text)
-    return message
-
-
-def _fold_german(message: str) -> str:
-    for unicode_text, ascii_text in (("Ä", "Ae"), ("Ö", "Oe"), ("Ü", "Ue"),
-                                     ("ä", "ae"), ("ö", "oe"), ("ü", "ue"),
-                                     ("ß", "ss")):
-        message = message.replace(unicode_text, ascii_text)
-    return message
+def _alternate_german_spelling(text: str) -> str:
+    """Support exact legacy umlaut spellings without parsing composed text."""
+    for ascii_text, unicode_text in (("Ae", "Ä"), ("Oe", "Ö"), ("Ue", "Ü"),
+                                     ("ae", "ä"), ("oe", "ö"), ("ue", "ü")):
+        text = text.replace(ascii_text, unicode_text)
+    return text
 
 
 class Translator:
@@ -158,51 +232,13 @@ class Translator:
         self.german = load_catalog("de")
         self._literal_sources = {value: key for key, value in self.reference.items()}
         self._literal_sources.update({value: key for key, value in self.german.items()})
-        self._literal_sources.update({
-            _alternate_german_spelling(value): key
-            for key, value in self.german.items()
-        })
-        self._literal_sources_casefold = {
-            _fold_german(value).casefold(): key
-            for value, key in self._literal_sources.items()
-        }
-        self._literal_templates = []
-        for source_catalog in (self.reference, self.german):
-            for catalog_key, source in source_catalog.items():
-                if "{" not in source:
-                    continue
-                parts = []
-                seen = set()
-                for literal, field, _, _ in _FORMATTER.parse(source):
-                    parts.append(re.escape(literal))
-                    if field is not None:
-                        if field in seen:
-                            parts.append(f"(?P={field})")
-                        else:
-                            parts.append(f"(?P<{field}>.+?)")
-                            seen.add(field)
-                self._literal_templates.append(
-                    (re.compile("^" + "".join(parts) + "$"), catalog_key))
-        phrase_prefixes = ("ui.", "class.", "affiliation.", "domain.",
-                           "damage.", "map.", "panel.", "event.", "state.",
-                           "tma.", "literal.", "compartment.")
-        pairs = []
-        for source_catalog in (self.reference, self.german):
-            pairs.extend((source, self.catalog[key])
-                         for key, source in source_catalog.items()
-                         if key.startswith(phrase_prefixes) and len(source) <= 40)
-        self._display_replacements = sorted(
-            ((source, target) for source, target in pairs
-             if source != target and len(source) >= 3 and "{" not in source),
-            key=lambda pair: len(pair[0]), reverse=True)
+        self._literal_sources.update({_alternate_german_spelling(value): key
+                                      for key, value in self.german.items()})
 
     def translate(self, key: str, **values: object) -> str:
         message = self.catalog.get(key)
         if message is None:
             literal_key = self._literal_sources.get(key)
-            if literal_key is None:
-                literal_key = self._literal_sources_casefold.get(
-                    _fold_german(key).casefold())
             message = self.catalog.get(literal_key, key)
         required = _placeholders(message)
         missing = required - values.keys()
@@ -219,34 +255,16 @@ class Translator:
     __call__ = translate
 
     def display(self, value: object) -> str:
-        """Translate a rendered literal, including text with runtime values."""
+        """Translate a catalog key or exact legacy literal."""
         return self._display_cached(str(value))
 
-    @lru_cache(maxsize=4096)
     def _display_cached(self, text: str) -> str:
+        """Translate a key or exact legacy literal, never parse composed text."""
         if text in self.catalog:
             return self.translate(text)
         direct = self._literal_sources.get(text)
-        if direct is None:
-            direct = self._literal_sources_casefold.get(
-                _fold_german(text).casefold())
         if direct is not None:
             return self.catalog[direct]
-        for pattern, catalog_key in self._literal_templates:
-            match = pattern.match(text)
-            if match is not None:
-                try:
-                    values = {key: self._display_cached(value)
-                              for key, value in match.groupdict().items()}
-                    return self.catalog[catalog_key].format(**values)
-                except (KeyError, TypeError, ValueError):
-                    break
-        for source, target in self._display_replacements:
-            for old, new in ((source.upper(), target.upper()),
-                             (source, target), (source.title(), target.title()),
-                             (_alternate_german_spelling(source), target)):
-                text = re.sub(r"(?<!\w)" + re.escape(old) + r"(?!\w)",
-                              new, text)
         return text
 
 
@@ -254,9 +272,67 @@ def get_translator(language: str | None = None) -> Translator:
     return Translator(language)
 
 
+def message(key: str, **params: object) -> dict[str, object]:
+    """Return a JSON-safe localizable message for feeds, flashes, and saves."""
+    return {_MESSAGE_KEY: str(key), "params": dict(params)}
+
+
+class RawText(dict):
+    """JSON-safe opaque user-authored text that must never be translated."""
+
+    def __init__(self, value: object):
+        super().__init__({_RAW_TEXT_KEY: str(value)})
+
+    @property
+    def value(self) -> str:
+        return self[_RAW_TEXT_KEY]
+
+
+def raw_text(value: object) -> RawText:
+    return RawText(value)
+
+
+def is_message(value: object) -> bool:
+    return (isinstance(value, Mapping)
+            and isinstance(value.get(_MESSAGE_KEY), str)
+            and isinstance(value.get("params", {}), Mapping))
+
+
+def _is_raw_text(value: object) -> bool:
+    return (isinstance(value, Mapping)
+            and isinstance(value.get(_RAW_TEXT_KEY), str))
+
+
+def display_value(kind: str, value: object, tr=None) -> str:
+    """Translate a display enum without changing its internal stored value."""
+    key = DISPLAY_KEYS.get(kind, {}).get(value)
+    if key is None:
+        key = DISPLAY_KEYS.get(kind, {}).get(str(value))
+    translator = tr if tr is not None else _ACTIVE_TRANSLATOR.get()
+    if key is None:
+        return str(value)
+    translator = translator or get_translator().t
+    return str(translator(key))
+
+
 def localize(value: object, tr=None) -> str:
     """Translate display text in the current draw scope."""
+    if _is_raw_text(value):
+        return str(value[_RAW_TEXT_KEY])
     translator = tr if tr is not None else _ACTIVE_TRANSLATOR.get()
+    if is_message(value):
+        if translator is None:
+            translator = get_translator().t
+        params = {
+            key: localize(param, translator)
+            if is_message(param) or _is_raw_text(param) else param
+            for key, param in value.get("params", {}).items()
+        }
+        try:
+            return str(translator(value[_MESSAGE_KEY], **params))
+        except TypeError:
+            # Lightweight test/plugin hooks historically accepted one argument.
+            return str(translator(value[_MESSAGE_KEY]))
     if translator is None:
         return str(value)
     owner = getattr(translator, "__self__", None)

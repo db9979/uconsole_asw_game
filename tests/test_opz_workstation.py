@@ -215,12 +215,12 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
 
     monkeypatch.setattr(stations_view.layout, "blit_line", record)
     stations_view.draw_opz_view(game)
-    assert any("Quelle" in line and "RADAR" in line for line in lines)
-    assert any("Peilung" in line and "vorhanden" in line for line in lines)
-    assert any("Entfernung" in line and "vorhanden" in line for line in lines)
-    assert any("Kurs" in line and "vorhanden" in line for line in lines)
-    assert any("Alter/Q" in line for line in lines)
-    assert any("Zuordnung" in line and "Neutral" in line for line in lines)
+    assert any("Source" in line and "RADAR" in line for line in lines)
+    assert any("Bearing" in line and "available" in line for line in lines)
+    assert any("Range" in line and "available" in line for line in lines)
+    assert any("Course" in line and "available" in line for line in lines)
+    assert any("Age/Q" in line for line in lines)
+    assert any("Affiliation" in line and "Neutral" in line for line in lines)
 
 
 def test_coast_reflections_are_requested_only_with_surface_radar(monkeypatch):
@@ -287,7 +287,7 @@ def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypat
 
     assert symbols == [("FRIEND", "SURFACE")]
     footer = next(line for line in lines if "PgUp/PgDn" in line)
-    assert "BEREICH 20 NM" in footer and "Rad ueber PPI" in footer
+    assert "RANGE 20 NM" in footer and "wheel over PPI" in footer
     assert all(str(scale) in footer for scale in (10, 20, 40, 80, 120))
 
 

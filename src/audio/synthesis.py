@@ -19,7 +19,9 @@ def tone(frequency_hz: float, duration_s: float, sample_rate: int,
 def propeller_block(rpm: float, blade_count: int, sample_rate: int,
                      duration_s: float = 0.25, amplitude: float = 0.12,
                      cavitation: float = 0.0, phase: float = 0.0,
-                     seed: int = 17) -> np.ndarray:
+                     seed: int = 17,
+                     rng: np.random.Generator | None = None,
+                     filter_state: np.ndarray | None = None) -> np.ndarray:
     """Synthese aus Blattfrequenz, Obertoenen und gefilterter Kavitation.
 
     ``phase`` ist die Blattphasenlage am Blockanfang. Fuer lueckenlose Folgen
@@ -36,12 +38,22 @@ def propeller_block(rpm: float, blade_count: int, sample_rate: int,
     signal += 0.16 * np.sin(3.0 * blade_phase - 0.35)
     signal *= 0.92 + 0.08 * np.sin(blade_phase / max(1, blade_count) + 0.7)
     if cavitation > 0.0:
-        rng = np.random.default_rng(seed)
-        noise = rng.normal(0.0, 1.0, count + 8)
+        taps = np.array([.08, .16, .24, .24, .16, .08])
+        if rng is None:
+            noise = np.random.default_rng(seed).normal(0.0, 1.0, count + 8)
+            noise = np.convolve(noise, taps, mode="valid")[:count]
+        else:
+            raw = rng.normal(0.0, 1.0, count)
+            history = np.zeros(taps.size - 1) if filter_state is None \
+                else np.asarray(filter_state, dtype=np.float64)
+            if history.shape != (taps.size - 1,):
+                raise ValueError("filter_state has an incompatible shape")
+            noise = np.convolve(np.concatenate((history, raw)), taps,
+                                mode="valid")
+            if filter_state is not None:
+                filter_state[:] = raw[-history.size:]
         # A short FIR removes the brittle white-noise edge while retaining
         # the impulsive broadband character of cavitation.
-        noise = np.convolve(noise, np.array([.08, .16, .24, .24, .16, .08]),
-                            mode="valid")[:count]
         bursts = np.maximum(0.0, np.sin(blade_phase - 0.8)) ** 3
         signal += min(0.7, cavitation) * noise * (0.35 + 0.65 * bursts)
     # A fixed gain, rather than per-block normalization, preserves amplitude

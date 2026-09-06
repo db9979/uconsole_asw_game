@@ -9,11 +9,12 @@ from typing import Any, Iterable, Mapping
 
 import pygame
 
-from src.core.i18n import translation_scope
+from src.core.i18n import display_value, raw_text, translation_scope
 from src.data.user_content import ContentRecord, UserContentStore
 from src.data.validation import (ContentValidationError, ValidationIssue, enum,
                                  finite_number, integer, issue, pair, text,
-                                 unique, validate_user_key)
+                                 unique, validate_user_key, localized_error,
+                                 localized_issue)
 from src.ui import editor_widgets as widgets
 
 
@@ -348,7 +349,7 @@ class UnitEditor:
         if record.builtin:
             kind, profile = self.builtins[record.key]
             self.current = UnitDefinition.clone_builtin(profile, kind, "user.clone")
-            self.status = self.tr("Built-ins are read-only; editing a clone.")
+            self.status = self.tr("editor.read_only_clone")
         else:
             self.current = UnitDefinition(record.data)
         self.mode = "editor"
@@ -375,7 +376,7 @@ class UnitEditor:
         if problems:
             raise ContentValidationError(problems)
         path = self.store.save("unit", self.current.data)
-        self.status = self.tr("Saved")
+        self.status = self.tr("editor.saved")
         self.refresh()
         return path
 
@@ -400,7 +401,7 @@ class UnitEditor:
         self.path_action = action
         self.path_input.value = str(self.store.root / "editor-bundle.json")
         self.path_input.selected_all = True
-        self.status = self.tr("Enter bundle path")
+        self.status = self.tr("editor.enter_bundle_path")
 
     def _handle_path(self, event: pygame.event.Event) -> bool:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -410,12 +411,16 @@ class UnitEditor:
             try:
                 if self.path_action == "export":
                     self.export_bundle(self.path_input.value)
-                    self.status = self.tr("Exported") + ": " + self.path_input.value
+                    self.status = self.tr("editor.path_result",
+                                          action=self.tr("editor.exported"),
+                                          path=self.path_input.value)
                 else:
                     self.import_bundle(self.path_input.value)
-                    self.status = self.tr("Imported") + ": " + self.path_input.value
+                    self.status = self.tr("editor.path_result",
+                                          action=self.tr("editor.imported"),
+                                          path=self.path_input.value)
             except (ContentValidationError, OSError, ValueError) as exc:
-                self.status = str(exc)
+                self.status = localized_error(exc, self.tr)
             self.path_action = None
             return True
         if event.type == pygame.TEXTINPUT:
@@ -426,7 +431,7 @@ class UnitEditor:
         record = self.selected
         if record is not None and not record.builtin:
             self.store.delete("unit", record.key)
-            self.status = self.tr("Deleted")
+            self.status = self.tr("editor.deleted")
             self.refresh()
         self._delete_pending = False
 
@@ -464,7 +469,7 @@ class UnitEditor:
                         self._delete_selected()
                     else:
                         self._delete_pending = True
-                        self.status = self.tr("Delete selected item? Enter: yes | Esc: no")
+                        self.status = self.tr("editor.delete_confirm")
                     return True
                 if event.key == pygame.K_i and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                     self._begin_path("import"); return True
@@ -480,7 +485,7 @@ class UnitEditor:
                     try:
                         self.save()
                     except (ContentValidationError, OSError) as exc:
-                        self.status = str(exc)
+                        self.status = localized_error(exc, self.tr)
                 return True
             handled = self.fields.handle_event(event, self._rects.get("fields", pygame.Rect(400, 105, 840, 520)))
             if self.fields.error:
@@ -497,7 +502,7 @@ class UnitEditor:
                 try:
                     self.save()
                 except (ContentValidationError, OSError) as exc:
-                    self.status = str(exc)
+                    self.status = localized_error(exc, self.tr)
                 return True
             if event.key == pygame.K_e and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                 self._begin_path("export"); return True
@@ -514,75 +519,78 @@ class UnitEditor:
     def _draw(self, surface: pygame.Surface) -> None:
         bounds = surface.get_rect()
         surface.fill(widgets.PALETTE.background)
-        widgets.draw_text(surface, self.tr("UNIT PROFILE WORKBENCH"),
+        widgets.draw_text(surface, self.tr("editor.unit_title"),
                           (20, 15, bounds.width - 40, 42), size=24, bold=True)
         footer = pygame.Rect(0, max(0, bounds.height - 42), bounds.width, min(42, bounds.height))
         content = pygame.Rect(20, 66, max(1, bounds.width - 40), max(1, footer.y - 76))
         with widgets.clipped(surface, content):
             if self.mode == "browser":
                 left = pygame.Rect(content.x, content.y, min(420, content.width), content.height)
-                inner = widgets.panel(surface, left, "Profiles", tr=self.tr)
+                inner = widgets.panel(surface, left, "editor.profiles", tr=self.tr)
                 self._rects["browser"] = inner
                 self.listbox.draw(surface, inner)
                 right = pygame.Rect(left.right + 12, content.y,
                                     max(1, content.right - left.right - 12), content.height)
-                detail = widgets.panel(surface, right, "Selection", tr=self.tr)
+                detail = widgets.panel(surface, right, "editor.selection", tr=self.tr)
                 record = self.selected
                 if record:
                     lines = [record.key,
-                             self.tr("read-only" if record.read_only else "user content"),
-                             self.tr("Enter: clone/open"), self.tr("Runtime effective: no")]
+                             self.tr("editor.read_only" if record.read_only else "editor.user_content"),
+                             self.tr("editor.open_clone"), self.tr("editor.runtime_no")]
                     for row, line in enumerate(lines):
-                        widgets.draw_text(surface, line,
+                        widgets.draw_text(surface, raw_text(line) if row == 0 else line,
                                           (detail.x, detail.y + row * 28, detail.width, 25),
                                            color=widgets.PALETTE.dim if row else widgets.PALETTE.text)
             elif self.mode == "kind":
                 chooser = pygame.Rect(content.centerx - min(260, content.width // 2), content.y + 35,
                                       min(520, content.width), min(300, content.height - 50))
-                inner = widgets.panel(surface, chooser, "Choose profile kind", tr=self.tr)
+                inner = widgets.panel(surface, chooser, "editor.choose_kind", tr=self.tr)
                 self._rects["kinds"] = inner
-                self.kind_box.draw(surface, inner, tr=self.tr, row_height=38)
+                self.kind_box.draw(
+                    surface, inner,
+                    tr=lambda value: display_value("profile_kind", value, self.tr),
+                    row_height=38)
             elif self.current:
                 self._sync_fields()
                 left_w = min(360, content.width // 3)
                 nav = widgets.panel(surface, (content.x, content.y, left_w, content.height),
-                                    "Profile", tr=self.tr)
+                                     "field.profile", tr=self.tr)
                 lines = (self.current.data.get("key", ""),
                          self.current.data.get("profile_kind", ""),
                          self.current.data.get("name", ""),
-                         self.tr("SUPPORTED / NOT RUNTIME-EFFECTIVE"))
+                         self.tr("editor.supported_no"))
                 for row, line in enumerate(lines):
-                    widgets.draw_text(surface, str(line),
+                    widgets.draw_text(surface, raw_text(line) if row < 3 else line,
                                       (nav.x, nav.y + row * 30, nav.width, 26),
                                       color=widgets.PALETTE.focus if row == 3 else widgets.PALETTE.text,
                                       size=13 if row == 3 else 15)
                 detail = widgets.panel(surface,
                     (content.x + left_w + 12, content.y, content.width - left_w - 12, content.height),
-                    "Validated fields", tr=self.tr)
+                    "editor.validated_fields", tr=self.tr)
                 field_rect = pygame.Rect(detail.x, detail.y, detail.width, max(1, detail.height - 32))
                 self._rects["fields"] = field_rect
                 self.fields.draw(surface, field_rect, tr=self.tr, label_width=260)
                 problems = self.current.validate()
-                message = (str(problems[0]) if problems else
-                           self.tr("Valid editor data / not runtime-effective"))
+                message = (localized_issue(problems[0], self.tr) if problems else
+                           self.tr("editor.valid_data"))
                 widgets.draw_text(surface, message,
                                   (detail.x, detail.bottom - 29, detail.width, 25),
                                   color=widgets.PALETTE.danger if problems else widgets.PALETTE.focus,
                                   size=13)
         if self.mode == "browser":
-            hints = ("Up/Down or trackball: select", "Enter: open/clone", "N: new", "Del: remove",
-                     "Ctrl+I: import", "Esc: browser")
+            hints = ("editor.select_hint", "editor.open_hint", "editor.new_hint", "editor.remove_hint",
+                     "editor.import_hint", "editor.esc_browser")
         elif self.mode == "kind":
-            hints = ("Up/Down or trackball: select", "Enter: create", "Esc: cancel")
+            hints = ("editor.select_hint", "editor.create_hint", "editor.cancel_short_hint")
         else:
-            hints = ("Up/Down: select field", "Enter: edit/apply", "Ctrl+S: validate/save",
-                     "Ctrl+E/I: export/import", "Esc: cancel/back")
+            hints = ("editor.field_hint", "editor.edit_hint", "editor.save_hint",
+                     "editor.bundle_hint", "editor.cancel_hint")
         widgets.draw_footer(surface, footer, hints, tr=self.tr)
         if self.path_action:
             box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 55,
                               max(1, bounds.width * 2 // 3), 110)
-            inner = widgets.panel(surface, box, "Bundle path", tr=self.tr)
+            inner = widgets.panel(surface, box, "editor.bundle_path", tr=self.tr)
             self.path_input.draw(surface, pygame.Rect(inner.x, inner.y + 5, inner.width, 34), focused=True)
         if self.status:
-            widgets.draw_text(surface, self.status, (bounds.width // 2, 18, bounds.width // 2 - 20, 30),
+            widgets.draw_text(surface, raw_text(self.status), (bounds.width // 2, 18, bounds.width // 2 - 20, 30),
                               color=widgets.PALETTE.focus, align="right")

@@ -10,7 +10,7 @@ from typing import Any, Callable, Iterable
 
 import pygame
 
-from src.core.i18n import localize
+from src.core.i18n import localize, raw_text
 from src.ui import layout
 
 
@@ -56,20 +56,7 @@ def clipped(surface: pygame.Surface, rect: pygame.Rect | tuple[int, int, int, in
 
 
 def ellipsize(value: object, width: int, text_font: pygame.font.Font) -> str:
-    value = str(value)
-    if text_font.size(value)[0] <= width:
-        return value
-    suffix = "..."
-    if text_font.size(suffix)[0] > width:
-        return ""
-    low, high = 0, len(value)
-    while low < high:
-        middle = (low + high + 1) // 2
-        if text_font.size(value[:middle] + suffix)[0] <= width:
-            low = middle
-        else:
-            high = middle - 1
-    return value[:low] + suffix
+    return layout.ellipsize(value, text_font, width)
 
 
 def draw_text(surface: pygame.Surface, value: object,
@@ -170,7 +157,7 @@ class ListBox:
                 if index == self.selected:
                     pygame.draw.rect(surface, PALETTE.raised, row_rect)
                     pygame.draw.rect(surface, PALETTE.focus, row_rect, 1)
-                draw_text(surface, tr(item), row_rect.inflate(-8, 0),
+                draw_text(surface, raw_text(tr(item)), row_rect.inflate(-8, 0),
                           color=PALETTE.text if index == self.selected else PALETTE.dim,
                           size=14)
 
@@ -235,7 +222,7 @@ class TextField:
                 else:
                     low = middle + 1
             shown = shown[low:]
-        draw_text(surface, shown, rect.inflate(-8, -2), size=15)
+        draw_text(surface, raw_text(shown), rect.inflate(-8, -2), size=15)
 
 
 @dataclass
@@ -429,7 +416,7 @@ class FieldList:
                 if selected and self.editing:
                     self.input.draw(surface, value_rect, focused=True)
                 else:
-                    draw_text(surface, value_text(row.value), value_rect, size=14)
+                    draw_text(surface, raw_text(value_text(row.value)), value_rect, size=14)
 
 
 def mapping_rows(value: dict[str, Any], prefix: str = "") -> list[FieldRow]:

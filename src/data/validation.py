@@ -17,6 +17,7 @@ class ValidationIssue:
     path: str
     code: str
     message: str
+    params: Mapping[str, Any] | None = None
 
     def __str__(self) -> str:
         return f"{self.path}: {self.message}" if self.path else self.message
@@ -30,8 +31,26 @@ class ContentValidationError(ValueError):
         super().__init__("; ".join(map(str, self.issues)) or "invalid content")
 
 
-def issue(path: str, code: str, message: str) -> ValidationIssue:
-    return ValidationIssue(path, code, message)
+def issue(path: str, code: str, message: str, **params: Any) -> ValidationIssue:
+    """Create a stable coded issue; ``message`` remains the API fallback."""
+    return ValidationIssue(path, code, message, params or None)
+
+
+def localized_issue(problem: ValidationIssue, tr) -> str:
+    """Render an issue without treating paths or authored values as messages."""
+    params = dict(problem.params or {})
+    key = f"validation.{problem.code}"
+    translated = tr(key, **params)
+    if translated == key:
+        translated = problem.message
+    return tr("validation.at_path", path=problem.path, issue=translated) \
+        if problem.path else translated
+
+
+def localized_error(error: BaseException, tr) -> str:
+    if isinstance(error, ContentValidationError) and error.issues:
+        return "; ".join(localized_issue(problem, tr) for problem in error.issues)
+    return str(error)
 
 
 def is_number(value: Any) -> bool:
@@ -44,9 +63,11 @@ def finite_number(value: Any, path: str, *, minimum: float | None = None,
         return [issue(path, "finite", "must be a finite number")]
     result = []
     if minimum is not None and value < minimum:
-        result.append(issue(path, "range", f"must be at least {minimum:g}"))
+        result.append(issue(path, "range_min", f"must be at least {minimum:g}",
+                            minimum=f"{minimum:g}"))
     if maximum is not None and value > maximum:
-        result.append(issue(path, "range", f"must be at most {maximum:g}"))
+        result.append(issue(path, "range_max", f"must be at most {maximum:g}",
+                            maximum=f"{maximum:g}"))
     return result
 
 
@@ -64,7 +85,8 @@ def text(value: Any, path: str, *, required: bool = True,
     if required and not value.strip():
         return [issue(path, "required", "must not be empty")]
     if len(value) > maximum:
-        return [issue(path, "length", f"must contain at most {maximum} characters")]
+        return [issue(path, "length", f"must contain at most {maximum} characters",
+                      maximum=maximum)]
     if any(ord(char) < 32 and char not in "\n\t" for char in value):
         return [issue(path, "characters", "contains control characters")]
     return []
@@ -73,7 +95,8 @@ def text(value: Any, path: str, *, required: bool = True,
 def enum(value: Any, path: str, choices: Iterable[str]) -> list[ValidationIssue]:
     choices = tuple(choices)
     if value not in choices:
-        return [issue(path, "enum", f"must be one of: {', '.join(choices)}")]
+        return [issue(path, "enum", f"must be one of: {', '.join(choices)}",
+                      choices=", ".join(choices))]
     return []
 
 
@@ -107,7 +130,8 @@ def unique(values: Iterable[Any], path: str) -> list[ValidationIssue]:
         except TypeError:
             duplicate = False
         if duplicate:
-            result.append(issue(f"{path}[{index}]", "duplicate", f"duplicate value {value!r}"))
+            result.append(issue(f"{path}[{index}]", "duplicate",
+                                f"duplicate value {value!r}", value=repr(value)))
     return result
 
 

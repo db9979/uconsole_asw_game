@@ -50,6 +50,30 @@ def test_gain_changes_intensity_not_orientation():
     assert gained.get_at((19, 0))[:3] == view.NAVY
 
 
+def test_broadband_interpolation_is_circular_and_preserves_real_bins():
+    row = np.zeros(180)
+    row[0], row[-1] = 1.0, .5
+    plotted = view._circular_broadband(row, 359)
+    assert plotted[0] == pytest.approx(1.0)
+    assert plotted[-1] == pytest.approx(1.0)
+    assert plotted[-2] > .5
+    assert np.max(plotted[2:350]) < 1.0
+
+
+def test_broadband_tooltip_snaps_to_two_degree_source_bin(game):
+    game.sonar.broadband_history = [list(np.arange(180) / 180.0)]
+    station = pygame.Rect(config.STATION_RECT)
+    body = pygame.Rect(station.x + 12, station.y + 73,
+                       station.w - 24, station.h - 124)
+    rail_w = min(350, max(240, round(body.w * .28)))
+    main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
+    plot = pygame.Rect(main.x + 57, main.y + 61, main.w - 83, main.h - 108)
+    payload = view.sonar_hit_target(game, (plot.right - 1, plot.centery))
+    assert payload["id"] == "sonar:broadband:0.0"
+    assert any("2-degree" in line and "180 bins" in line
+               for line in payload["lines"])
+
+
 @pytest.mark.parametrize("index", [20, 50, 90, 109])
 def test_lofar_nonlinear_bins_land_at_true_linear_hz(index):
     row = np.zeros(110)
@@ -195,7 +219,7 @@ def test_demon_requires_envelope_evidence_and_labels_hypotheses(game, monkeypatc
     view._draw_details(game, rect, 2)
     assert sum("Candidate" in text for text in texts) == 3
     assert any("REFERENZ" in text for text in texts)
-    assert any("BEOBACHTET" in text for text in texts)
+    assert any("OBSERVED" in text for text in texts)
     assert any("ALTERNATIVE" in text for text in texts)
     assert any("3: 400 RPM" in text for text in texts)
     assert any("4: 300 RPM" in text for text in texts)
@@ -229,8 +253,8 @@ def test_station_header_uses_divided_status_groups_without_microtext(game, monke
 
     view.draw_sonar_view(game)
 
-    groups = [item for item in drawn if item[0].startswith(("ARRAY", "HOEREN", "FILTER"))]
-    assert [item[0].split()[0] for item in groups] == ["ARRAY", "HOEREN", "FILTER"]
+    groups = [item for item in drawn if item[0].startswith(("ARRAY", "LISTENING", "FILTER"))]
+    assert [item[0].split()[0] for item in groups] == ["ARRAY", "LISTENING", "FILTER"]
     assert len({item[1].x for item in groups}) == 3
     assert min(size for _, _, size in drawn) >= 12
 
@@ -280,9 +304,9 @@ def test_environment_page_uses_measured_profile(game, monkeypatch):
                         texts.append(text))
     game.sonar_page = 4
     view.draw_sonar_view(game)
-    assert any("Sprungschicht ~80" in text for text in texts)
+    assert any("Thermocline ~80" in text for text in texts)
     assert any("95m -> 110m" in text for text in texts)
-    assert any("CZ Prognose 40-70" in text for text in texts)
+    assert any("CZ prediction 40-70" in text for text in texts)
 
 
 def test_active_history_is_age_bounded_copied_and_does_not_read_contacts(game):
@@ -342,7 +366,8 @@ def test_every_sonar_page_shows_tas_payout_and_stability(game, page, monkeypatch
                         texts.append(text))
     game.sonar_page = page
     view.draw_sonar_view(game)
-    assert any("TAS DEPLOYING 42% STAB 25% PAUSE" in text for text in texts)
+    assert any("TAS DEPLOYING 42% STABILITY 25% PAUSE" in text
+               for text in texts)
 
 
 def test_sonar_view_accepts_optional_translator(game, monkeypatch):
@@ -351,5 +376,5 @@ def test_sonar_view_accepts_optional_translator(game, monkeypatch):
                         texts.append(text))
     game.sonar_page = 5
     view.draw_sonar_view(game, lambda text: f"TR:{text}")
-    assert "TR:SONAR / ACTIVE" in texts
+    assert "TR:station.sonar / TR:enum.sonar_page.active" in texts
     assert "TR:ACTIVE / ECHO-AUSWERTUNG" in texts

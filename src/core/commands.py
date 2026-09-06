@@ -1,6 +1,6 @@
 """Shared station command metadata used by input and contextual hints."""
 
-from src.core import config
+from src.core.i18n import message
 from src.core.station import Station
 
 
@@ -10,10 +10,26 @@ MAP_STATIONS = frozenset((
     Station.HELICOPTER,
 ))
 
-SONAR_PAGE_COUNT = 6
-# Game owns page selection but imports this module before handling input. Keep
-# the shared count authoritative until page selection is moved here entirely.
-config.SONAR_PAGE_COUNT = SONAR_PAGE_COUNT
+STATION_PAGES = {
+    Station.BRIDGE: ("BRIDGE",),
+    Station.SONAR: (
+        "BROADBAND",
+        "LOFAR",
+        "DEMON",
+        "TMA",
+        "UMWELT/FUSION",
+        "ACTIVE",
+    ),
+    Station.WEAPONS: ("WEAPONS",),
+    Station.DAMAGE: ("DAMAGE",),
+    Station.OPZ: ("OPZ",),
+    Station.RADIO: ("RADIO",),
+    Station.ENGINE: ("ENGINE",),
+    Station.HELICOPTER: ("HELICOPTER",),
+}
+
+# Compatibility export for callers that have not moved to station metadata yet.
+SONAR_PAGE_COUNT = len(STATION_PAGES[Station.SONAR])
 
 
 STATION_COMMAND_HINTS = {
@@ -33,36 +49,38 @@ def event_feed_heading(station: Station) -> str:
     return "EREIGNIS-FEED"
 
 
+def station_page_step(station: Station, current: int, delta: int) -> int:
+    """Cycle through the pages declared for a station."""
+    return (int(current) + int(delta)) % len(STATION_PAGES[station])
+
+
 def sonar_page_step(current: int, delta: int) -> int:
-    """Cycle all sonar analysis pages, including the ACTIVE workstation."""
-    return (int(current) + int(delta)) % SONAR_PAGE_COUNT
+    """Compatibility wrapper for cycling sonar analysis pages."""
+    return station_page_step(Station.SONAR, current, delta)
 
 
 def toggle_tas(game, tr=None) -> bool:
     """Deploy or retrieve TAS through the public sonar command API."""
-    translate = tr or getattr(game, "tr", None)
     sonar = game.sonar
     speed = getattr(getattr(game, "ship", None), "speed", 0.0)
     changed = sonar.toggle_tow(speed)
     status = sonar.tow_status(speed)
     if not changed:
-        message = (translate("status.tas.fault") if translate
-                   else "TAS STOERUNG: Bedienung gesperrt")
+        notice = message("status.tas.fault")
     else:
         key = ("status.tas.deploy" if status["state"] == "DEPLOYING"
                else "status.tas.retrieve")
-        message = translate(key) if translate else (
-            "TAS ausbringen" if status["state"] == "DEPLOYING" else "TAS einholen")
+        notice = message(key)
         if not status["handling_ok"]:
-            message += " | " + (translate("status.tas.speed") if translate
-                                else "Fahrt 3-12 kn erforderlich")
+            notice = message("status.tas.handling", action=notice,
+                             speed=message("status.tas.speed"))
     flash = getattr(game, "flash", None)
     if flash is not None:
-        flash(message, 2.0)
+        flash(notice, 2.0)
     feed = getattr(game, "feed", None)
     world = getattr(game, "world", None)
     if feed is not None and world is not None:
-        feed.add(world.format_time(), "sonar", message)
+        feed.add(world.format_time(), "sonar", notice)
     return changed
 
 

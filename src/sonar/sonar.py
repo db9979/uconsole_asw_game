@@ -40,6 +40,18 @@ def bearing_error_deg(mode: str, frigate_speed_kn: float, quality: float) -> flo
             * (1.4 - config.BEARING_ERR_QUALITY_SPAN * quality))
 
 
+def _correlated_uniform(seed: int, t: float, epoch_s: float,
+                        salt: int = 0) -> float:
+    """Deterministic smooth noise in [-1, 1], reconstructable from epoch/time."""
+    scaled = max(0.0, t) / epoch_s
+    epoch = math.floor(scaled)
+    fraction = scaled - epoch
+    blend = fraction * fraction * (3.0 - 2.0 * fraction)
+    first = random.Random(seed * 7919 + epoch * 104729 + salt).uniform(-1, 1)
+    second = random.Random(seed * 7919 + (epoch + 1) * 104729 + salt).uniform(-1, 1)
+    return first + (second - first) * blend
+
+
 class TowState(str, Enum):
     STOWED = "STOWED"
     DEPLOYING = "DEPLOYING"
@@ -61,6 +73,10 @@ class Contact:
         self.origin = origin   # "passiv" | "ping"
         self.kind = kind       # "sub"|"animal"|"surface"|"decoy"|"torpedo"
         self.bearing = 0.0
+        self.passive_bearing = None
+        self.raw_bearing = None
+        self.raw_bearings = []
+        self.bearing_uncertainty_deg = None
         self.range_est = None  # None = nicht geortet (nur Peilung)
         self.range_sigma_nm = None  # 1-sigma Unsicherheit der Entfernung
         self.range_source = None  # None | "ping" | "tma"
@@ -78,6 +94,12 @@ class Contact:
         self.tma_course = None
         self.tma_speed = None
         self.tma_quality = 0.0
+        self.ping_pos = None
+        self.observed_x = None
+        self.observed_y = None
+        self._passive_epoch = None
+        self._fx = 0.0
+        self._fy = 0.0
         self.array_observations = {}
         self.fusion_status = "KEINE DATEN"
         self.fusion_delta_deg = None
@@ -85,14 +107,52 @@ class Contact:
 
     def update_passive(self, bearing: float, confidence: float,
                        quality: float, signature: str, t: float,
-                       snr: float = 0.0):
+                       snr: float = 0.0,
+                       bearing_uncertainty_deg: float = None):
         """Passives Hören: nur (fehlerbehaftete) Peilung."""
-        self.bearing = bearing
+        raw = bearing % 360.0
+        self.raw_bearing = raw
+        epoch = math.floor((t + 1e-9) / config.SONAR_BEARING_NOISE_EPOCH_S)
+        uncertainty = (max(0.25, (1.0 - quality) * config.BEARING_ERR_BOW_DEG)
+                       if bearing_uncertainty_deg is None
+                       else max(0.0, bearing_uncertainty_deg))
+        if epoch != self._passive_epoch:
+            if self.passive_bearing is None:
+                self.passive_bearing = raw
+                self.bearing_uncertainty_deg = uncertainty
+            else:
+                alpha = 1.0 - math.exp(
+                    -config.SONAR_BEARING_NOISE_EPOCH_S
+                    / config.OBS_BEARING_SMOOTH_TAU_S)
+                self.passive_bearing = (self.passive_bearing
+                    + config.angle_diff_deg(raw, self.passive_bearing) * alpha) % 360.0
+                self.bearing_uncertainty_deg += (
+                    uncertainty - self.bearing_uncertainty_deg) * alpha
+            self.raw_bearings.append((t, raw, uncertainty))
+            del self.raw_bearings[:-config.BEARING_TRACK_MAX_PTS]
+            self._passive_epoch = epoch
         self.confidence = min(1.0, confidence)
         self.quality = min(1.0, quality)
         self.last_seen = t
         self.snr = snr
         self.expire_ping_fix(t)
+        if self.range_source == "ping" and self.ping_pos is None \
+                and self.range_est is not None:
+            # Legacy saves did not retain the Cartesian active fix.
+            self.ping_pos = (
+                self._fx + self.range_est * math.sin(math.radians(self.bearing)),
+                self._fy - self.range_est * math.cos(math.radians(self.bearing)))
+        if self.range_source == "ping" and self.ping_pos is not None:
+            self.observed_x, self.observed_y = self.ping_pos
+        elif self.range_source == "tma" and self.tma_pos is not None:
+            self.observed_x, self.observed_y = self.tma_pos
+        if self.observed_x is not None and self.observed_y is not None:
+            self.bearing = math.degrees(math.atan2(
+                self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
+            self.range_est = math.hypot(self.observed_x - self._fx,
+                                        self.observed_y - self._fy)
+        elif self.range_source not in ("ping", "tma", "buoy"):
+            self.bearing = self.passive_bearing
         if signature:
             self.signature = signature
 
@@ -100,7 +160,9 @@ class Contact:
                     confidence: float, t: float, snr: float = 0.0,
                     range_sigma_nm: float = None, depth_sigma_m: float = None):
         """Aktiver Ping: liefert Position + Tiefe (maßstabsgenau)."""
-        self.bearing = bearing
+        self.bearing = bearing % 360.0
+        self.raw_bearing = self.bearing
+        self.bearing_uncertainty_deg = 1.5 / math.sqrt(3)
         self.range_est = range_est
         self.range_sigma_nm = (config.SONAR_PING_RANGE_ERROR_NM / math.sqrt(3)
                                if range_sigma_nm is None else max(1e-6, range_sigma_nm))
@@ -114,6 +176,10 @@ class Contact:
         self.quality = 1.0
         self.last_seen = t
         self.snr = snr
+        self.ping_pos = (
+            self._fx + range_est * math.sin(math.radians(self.bearing)),
+            self._fy - range_est * math.cos(math.radians(self.bearing)))
+        self.observed_x, self.observed_y = self.ping_pos
 
     def expire_ping_fix(self, t: float) -> None:
         """Expire active range/depth even when no passive report arrives."""
@@ -124,19 +190,40 @@ class Contact:
             self.range_source = None
             self.depth_est = None
             self.depth_sigma_m = None
+            self.observed_x = self.observed_y = None
+            if self.passive_bearing is not None:
+                self.bearing = self.passive_bearing
 
     def update_tma(self, sol, t: float):
         """TMA-Estimate übernehmen (nur, solange kein frischerer Ping)."""
-        self.tma_pos = sol.pos
-        self.tma_course = sol.course
-        self.tma_speed = sol.speed
-        self.tma_quality = max(self.tma_quality, sol.quality)
+        alpha = config.TMA_PRESENTATION_ALPHA
+        if self.tma_pos is None:
+            self.tma_pos = tuple(sol.pos)
+            self.tma_course = sol.course
+            self.tma_speed = sol.speed
+            self.tma_quality = sol.quality
+        else:
+            self.tma_pos = (self.tma_pos[0] + (sol.pos[0] - self.tma_pos[0]) * alpha,
+                            self.tma_pos[1] + (sol.pos[1] - self.tma_pos[1]) * alpha)
+            if self.tma_course is None:
+                self.tma_course = sol.course
+            else:
+                self.tma_course = (self.tma_course + config.angle_diff_deg(
+                    sol.course, self.tma_course) * alpha) % 360.0
+            if self.tma_speed is None:
+                self.tma_speed = sol.speed
+            else:
+                self.tma_speed += (sol.speed - self.tma_speed) * alpha
+            self.tma_quality += (sol.quality - self.tma_quality) * alpha
         ping_fresh = (self.range_source == "ping" and self.range_seen is not None
                       and t - self.range_seen <= config.SONAR_PING_FIX_MAX_AGE_S)
         if not ping_fresh and \
                 sol.quality >= config.TMA_RANGE_MIN_QUALITY:
-            self.range_est = math.hypot(sol.pos[0] - self._fx,
-                                        sol.pos[1] - self._fy)
+            self.observed_x, self.observed_y = self.tma_pos
+            self.bearing = math.degrees(math.atan2(
+                self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
+            self.range_est = math.hypot(self.observed_x - self._fx,
+                                        self.observed_y - self._fy)
             self.range_sigma_nm = max(0.1, (1.0 - sol.quality) * 12.0)
             self.range_source = "tma"
             self.range_seen = t
@@ -314,7 +401,12 @@ class SonarSystem:
         self.signature_candidates = []
 
     def listening_samples(self):
-        """Same beam as the instruments; optional operator-band audition."""
+        """Return pre-playback beam audio with operator filtering and gain.
+
+        The playback path applies headphone volume before its smooth limiter;
+        keeping floating headroom here lets lower volume reduce compression.
+        Instrument analysis continues to use the receiver's ungained samples.
+        """
         samples = self.receiver.samples.copy()
         if self.listen_filtered:
             frequencies = np.fft.rfftfreq(len(samples), 1.0 / self.receiver.sample_rate)
@@ -323,7 +415,8 @@ class SonarSystem:
             if self.notch_enabled:
                 spectrum[abs(frequencies - self._own_line_hz) < 5] *= .15
             samples = np.fft.irfft(spectrum, n=len(samples))
-        return np.clip(samples * 10 ** (self.gain_db / 20), -1, 1).astype(np.float32)
+        samples *= 10 ** (self.gain_db / 20)
+        return np.nan_to_num(samples, copy=False).astype(np.float32)
 
     @property
     def ping_ready(self) -> bool:
@@ -535,7 +628,9 @@ class SonarSystem:
                 quality=quality,
                 signature=sig,
                 t=t,
-                snr=s_db)
+                snr=s_db,
+                bearing_uncertainty_deg=bearing_error_deg(
+                    mode, frigate.speed, quality) / math.sqrt(3.0))
             # W1: Peilungs-Track (TMA-Datenbasis)
             tr = self._tracks.setdefault(tgt.id, BearingTrack())
             tr.add(t, bearing, frigate.x, frigate.y, frigate.course)
@@ -611,6 +706,7 @@ class SonarSystem:
             c.range_source = "buoy"
             c.range_seen = t
             c.origin = "bojenkreuzpeilung"
+            c.observed_x, c.observed_y = fx, fy
             detected_ids.add(tgt.id)
 
         # M9: Kontakte ohne neue Detektion verfallen
@@ -768,11 +864,12 @@ class SonarSystem:
 
     def _observed_bearing(self, tgt, true_bearing: float, frigate,
                           quality: float, mode: str, t: float) -> float:
-        """Peilung mit deterministischem Fehler (stabil je 2 sim-s)."""
+        """Peilung mit deterministisch korreliertem, glatt interpoliertem Fehler."""
         err = bearing_error_deg(mode, frigate.speed, quality)
-        rng = random.Random(getattr(tgt, "sensor_seed", tgt.id) * 7919
-                             + int(t // 2.0))
-        return (true_bearing + rng.uniform(-err, err)) % 360.0
+        seed = getattr(tgt, "sensor_seed", tgt.id)
+        salt = 17 if mode == "TOWED" else 0
+        return (true_bearing + err * _correlated_uniform(
+            seed, t, config.SONAR_BEARING_NOISE_EPOCH_S, salt)) % 360.0
 
     def _update_tma(self, tgt, t: float) -> None:
         """TMA nur neu lösen, wenn der Peilungs-Track neue Punkte hat
@@ -828,14 +925,13 @@ class SonarSystem:
                 c._fx, c._fy = frigate.x, frigate.y
                 signal = snr_db(active_range, dist)
                 error_scale = 1.0 / max(1.0, 1.0 + signal / 8.0)
-                measured_bearing = (bearing + self.rng.uniform(
-                    -1.5, 1.5) * error_scale) % 360.0
-                measured_range = max(0.0, dist + self.rng.uniform(
-                    -config.SONAR_PING_RANGE_ERROR_NM,
-                    config.SONAR_PING_RANGE_ERROR_NM) * error_scale)
-                measured_depth = max(0.0, tgt.depth + self.rng.uniform(
-                    -config.SONAR_PING_DEPTH_ERROR_M,
-                    config.SONAR_PING_DEPTH_ERROR_M) * error_scale)
+                seed = getattr(tgt, "sensor_seed", tgt.id)
+                measured_bearing = (bearing + 1.5 * error_scale
+                    * _correlated_uniform(seed, t_real, 1.0, 101)) % 360.0
+                measured_range = max(0.0, dist + config.SONAR_PING_RANGE_ERROR_NM
+                    * error_scale * _correlated_uniform(seed, t_real, 1.0, 211))
+                measured_depth = max(0.0, tgt.depth + config.SONAR_PING_DEPTH_ERROR_M
+                    * error_scale * _correlated_uniform(seed, t_real, 1.0, 307))
                 c.update_ping(
                     bearing=measured_bearing,
                     range_est=measured_range,

@@ -18,7 +18,7 @@ def set_locale(monkeypatch, value):
 def test_preferences_round_trip_at_configurable_path(tmp_path):
     path = tmp_path / "nested" / "preferences.json"
     expected = Preferences(language="de", fullscreen=False,
-                           audio=False, large_text=True)
+                           audio=False, large_text=True, tooltips=False)
     assert save_preferences(expected, path) == path
     assert load_preferences(path) == expected
     assert not list(path.parent.glob("*.tmp"))
@@ -40,7 +40,15 @@ def test_invalid_fields_are_individually_replaced_by_defaults(tmp_path,
     path = tmp_path / "preferences.json"
     path.write_text(json.dumps({
         "language": "fr", "fullscreen": "yes",
-        "audio": False, "large_text": 1,
+        "audio": False, "large_text": 1, "tooltips": "yes",
     }), encoding="utf-8")
     assert load_preferences(path) == Preferences(
-        language="en", fullscreen=True, audio=False, large_text=False)
+        language="en", fullscreen=True, audio=False, large_text=False,
+        tooltips=True)
+
+
+def test_legacy_preferences_default_tooltips_on(tmp_path):
+    path = tmp_path / "preferences.json"
+    path.write_text(json.dumps({"language": "de", "audio": False}),
+                    encoding="utf-8")
+    assert load_preferences(path).tooltips is True

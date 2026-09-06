@@ -106,7 +106,7 @@ global controls are:
 
 | Input | Action |
 |---|---|
-| `1` to `8` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter |
+| `1` to `8` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter; press the active station number again to advance its page when available |
 | `Tab` / `Shift+Tab` | Next / previous station |
 | `P` | Pause / resume |
 | `F1` | Context-sensitive help |
@@ -143,6 +143,7 @@ Sonar controls include:
 - `U` / `V`: adjust TAS/VDS target depth after deployment.
 - `Page Up` / `Page Down`: move through Broadband, LOFAR, DEMON, TMA,
   Environment, and ACTIVE pages.
+- `2` while already at Sonar: advance to the next sonar page.
 
 TAS handling progresses only between 3 and 12 kn. Deployment takes six
 simulation minutes, retrieval takes eight, and the fully streamed array needs
@@ -160,11 +161,11 @@ settled.
 
 ## Radar Notes
 
-`Page Up` and `Page Down` select OPZ/CIC display scales of **10, 20, 40, 80, or
-120 NM**. These scales control the scope and visible tracks; they do not change
-sensor power. The modeled clear-weather detection limits are 30 NM for surface
-radar and 100 NM for air radar, with degradation from sea state 5. Surface and
-air radar can be controlled separately with `R` and `Shift+R`.
+At OPZ/CIC, `Page Up` and `Page Down` only select display scales of **10, 20, 40,
+80, or 120 NM**; they do not change pages or sensor power. The modeled
+clear-weather detection limits are 30 NM for surface radar and 100 NM for air
+radar, with degradation from sea state 5. Surface and air radar can be
+controlled separately with `R` and `Shift+R`.
 
 ## Language and Options
 
@@ -172,9 +173,9 @@ On first launch, U-Jagd selects German for a German system locale and English
 for English or unsupported locales. The options screen switches explicitly
 between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
-Language, fullscreen, audio, and large-text preferences are written to
-`~/.u-jagd/settings.json`. The tooltip toggle is session state and is also
-stored in v8 game saves; it is not currently written to `settings.json`.
+Language, fullscreen, audio, large-text, and tooltip preferences are written to
+`~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
+in v8 game saves for deterministic restoration of existing sessions.
 
 ## Editors and Current Limits
 

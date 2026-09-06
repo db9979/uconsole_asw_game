@@ -119,6 +119,18 @@ def test_audition_band_removes_carrier_without_changing_receiver():
     np.testing.assert_array_equal(sonar.receiver.samples, original)
 
 
+@pytest.mark.parametrize("gain_db", [12, 24])
+def test_audition_gain_retains_float_headroom_for_playback(gain_db):
+    sonar = SonarSystem()
+    sonar.receiver.samples[:] = np.linspace(-.2, .2, 1024)
+    sonar.gain_db = gain_db
+    samples = sonar.listening_samples()
+    assert np.isfinite(samples).all()
+    assert np.max(np.abs(samples)) == pytest.approx(.2 * 10 ** (gain_db / 20),
+                                                    rel=1e-6)
+    assert np.max(np.abs(samples)) > (.75 if gain_db == 12 else 3.0)
+
+
 @pytest.mark.parametrize("action", [pygame.K_p, pygame.K_F1, pygame.K_j, pygame.K_1])
 def test_audio_stops_on_pause_administration_mute_and_station_change(game, monkeypatch, action):
     calls = []

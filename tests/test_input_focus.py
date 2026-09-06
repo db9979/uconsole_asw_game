@@ -94,6 +94,33 @@ def test_every_station_reachable_from_every_station(game):
     assert game.station is Station.HELICOPTER
 
 
+def test_active_station_number_cycles_only_its_real_pages(game):
+    game.station = Station.BRIDGE
+    game.sonar_page = 4
+    press(game, pygame.K_2)
+    assert game.station is Station.SONAR and game.sonar_page == 4
+
+    game.held.add(pygame.K_LEFT)
+    game.pinned_tooltip = {"title": "old", "lines": []}
+    press(game, pygame.K_2)
+    assert game.sonar_page == 5
+    assert not game.held and game.pinned_tooltip is None
+    press(game, pygame.K_2)
+    assert game.sonar_page == 0
+
+    press(game, pygame.K_1)
+    press(game, pygame.K_1)
+    assert game.station is Station.BRIDGE and game.sonar_page == 0
+
+
+def test_numeric_entry_owns_station_digits(game):
+    game.station = Station.BRIDGE
+    press(game, pygame.K_u)
+    press(game, pygame.K_2)
+    assert game.station is Station.BRIDGE
+    assert game.input_mode == "course" and game.input_buffer == "2"
+
+
 def test_team_assignment_allows_teams_to_share_selected_room(game):
     game.station = Station.DAMAGE
     rooms = list(game.damage.compartments)

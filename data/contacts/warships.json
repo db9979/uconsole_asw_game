@@ -1,0 +1,1280 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "warship_01",
+      "name": "Arleigh-Burke-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Arleigh-Burke-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          186.0,
+          686.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          187.75
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_02",
+      "name": "Ticonderoga-Kreuzer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Ticonderoga-Kreuzer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          193.0,
+          693.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          189.25
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_03",
+      "name": "Zumwalt-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Zumwalt-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          200.0,
+          700.0
+        ],
+        "tonal_band_hz": [
+          18.75,
+          190.75
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_04",
+      "name": "Type-45-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Type-45-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          207.0,
+          707.0
+        ],
+        "tonal_band_hz": [
+          20.25,
+          192.25
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_05",
+      "name": "Type-23-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Type-23-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          214.0,
+          714.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          187.75
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_06",
+      "name": "Type-26-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Type-26-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          186.0,
+          686.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          189.25
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_07",
+      "name": "F124-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "F124-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          193.0,
+          693.0
+        ],
+        "tonal_band_hz": [
+          18.75,
+          190.75
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_08",
+      "name": "F125-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "F125-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          200.0,
+          700.0
+        ],
+        "tonal_band_hz": [
+          20.25,
+          192.25
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_09",
+      "name": "Sachsen-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Sachsen-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          207.0,
+          707.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          187.75
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_10",
+      "name": "Baden-Wuerttemberg-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Baden-Wuerttemberg-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          214.0,
+          714.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          189.25
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_11",
+      "name": "De-Zeven-Provincien-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "De-Zeven-Provincien-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          186.0,
+          686.0
+        ],
+        "tonal_band_hz": [
+          18.75,
+          190.75
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_12",
+      "name": "Horizon-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Horizon-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          193.0,
+          693.0
+        ],
+        "tonal_band_hz": [
+          20.25,
+          192.25
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_13",
+      "name": "FREMM-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "FREMM-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          200.0,
+          700.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          187.75
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_14",
+      "name": "La-Fayette-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "La-Fayette-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          207.0,
+          707.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          189.25
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_15",
+      "name": "Visby-Korvette",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Visby-Korvette",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          214.0,
+          714.0
+        ],
+        "tonal_band_hz": [
+          18.75,
+          190.75
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_16",
+      "name": "Iver-Huitfeldt-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Iver-Huitfeldt-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          186.0,
+          686.0
+        ],
+        "tonal_band_hz": [
+          20.25,
+          192.25
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_17",
+      "name": "Nansen-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Nansen-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          193.0,
+          693.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          187.75
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_18",
+      "name": "KDX-III-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "KDX-III-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          200.0,
+          700.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          189.25
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_19",
+      "name": "Mogami-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Mogami-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          207.0,
+          707.0
+        ],
+        "tonal_band_hz": [
+          18.75,
+          190.75
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_20",
+      "name": "Atago-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Atago-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          214.0,
+          714.0
+        ],
+        "tonal_band_hz": [
+          20.25,
+          192.25
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_21",
+      "name": "Akizuki-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Akizuki-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          186.0,
+          686.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          187.75
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_22",
+      "name": "Kirov-Kreuzer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Kirov-Kreuzer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          193.0,
+          693.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          189.25
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_23",
+      "name": "Udaloy-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Udaloy-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          200.0,
+          700.0
+        ],
+        "tonal_band_hz": [
+          18.75,
+          190.75
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_24",
+      "name": "Admiral-Gorshkov-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Admiral-Gorshkov-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          207.0,
+          707.0
+        ],
+        "tonal_band_hz": [
+          20.25,
+          192.25
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    },
+    {
+      "key": "warship_25",
+      "name": "Type-055-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Type-055-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          214.0,
+          714.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          187.75
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kräftige Gasturbinen-Tonals"
+      }
+    }
+  ]
+}

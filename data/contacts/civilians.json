@@ -1,0 +1,3125 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "tanker_01",
+      "name": "Lewis-and-Clark-Versorger",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Lewis-and-Clark-Versorger",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          76.0,
+          406.0
+        ],
+        "tonal_band_hz": [
+          9.75,
+          127.75
+        ],
+        "cavitation_tendency": 0.6799999999999999,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_02",
+      "name": "John-Lewis-Tanker",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "John-Lewis-Tanker",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          83.0,
+          413.0
+        ],
+        "tonal_band_hz": [
+          11.25,
+          129.25
+        ],
+        "cavitation_tendency": 0.72,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_03",
+      "name": "Tide-Klasse",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Tide-Klasse",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          90.0,
+          420.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          130.75
+        ],
+        "cavitation_tendency": 0.76,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_04",
+      "name": "Berlin-Klasse-Versorger",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Berlin-Klasse-Versorger",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          97.0,
+          427.0
+        ],
+        "tonal_band_hz": [
+          14.25,
+          132.25
+        ],
+        "cavitation_tendency": 0.6799999999999999,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_05",
+      "name": "Wave-Klasse-Tanker",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Wave-Klasse-Tanker",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          104.0,
+          434.0
+        ],
+        "tonal_band_hz": [
+          9.75,
+          127.75
+        ],
+        "cavitation_tendency": 0.72,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_06",
+      "name": "Aegir-Klasse",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Aegir-Klasse",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          76.0,
+          406.0
+        ],
+        "tonal_band_hz": [
+          11.25,
+          129.25
+        ],
+        "cavitation_tendency": 0.76,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_07",
+      "name": "Vulcano-Versorger",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Vulcano-Versorger",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          83.0,
+          413.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          130.75
+        ],
+        "cavitation_tendency": 0.6799999999999999,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_08",
+      "name": "Etna-Versorger",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Etna-Versorger",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          90.0,
+          420.0
+        ],
+        "tonal_band_hz": [
+          14.25,
+          132.25
+        ],
+        "cavitation_tendency": 0.72,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_09",
+      "name": "Supply-Klasse",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Supply-Klasse",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          97.0,
+          427.0
+        ],
+        "tonal_band_hz": [
+          9.75,
+          127.75
+        ],
+        "cavitation_tendency": 0.76,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_10",
+      "name": "Maersk-Triple-E",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Maersk-Triple-E",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          104.0,
+          434.0
+        ],
+        "tonal_band_hz": [
+          11.25,
+          129.25
+        ],
+        "cavitation_tendency": 0.6799999999999999,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_11",
+      "name": "VLCC-Tanker",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "VLCC-Tanker",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          76.0,
+          406.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          130.75
+        ],
+        "cavitation_tendency": 0.72,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_12",
+      "name": "Aframax-Tanker",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Aframax-Tanker",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          83.0,
+          413.0
+        ],
+        "tonal_band_hz": [
+          14.25,
+          132.25
+        ],
+        "cavitation_tendency": 0.76,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_13",
+      "name": "Suezmax-Tanker",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Suezmax-Tanker",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          90.0,
+          420.0
+        ],
+        "tonal_band_hz": [
+          9.75,
+          127.75
+        ],
+        "cavitation_tendency": 0.6799999999999999,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_14",
+      "name": "Q-Max-LNG-Tanker",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Q-Max-LNG-Tanker",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          97.0,
+          427.0
+        ],
+        "tonal_band_hz": [
+          11.25,
+          129.25
+        ],
+        "cavitation_tendency": 0.72,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "tanker_15",
+      "name": "Shuttle-Tanker",
+      "category": "TANKER",
+      "hostile": false,
+      "speed_kn": [
+        10.0,
+        16.0
+      ],
+      "callsigns": [
+        "MV NORDWIND",
+        "MV BALTICA",
+        "MV OZEANSTERNE",
+        "MV WINDSTILL",
+        "MT NORDSEE",
+        "MT HAVBRAK",
+        "MV EIDER",
+        "MT POLARIS"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Shuttle-Tanker",
+        "propulsion": "langsamer Diesel",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          104.0,
+          434.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          130.75
+        ],
+        "cavitation_tendency": 0.76,
+        "category": "TANKER",
+        "secondary_tonals": [],
+        "broadband": [
+          0.45,
+          30.0,
+          250.0
+        ],
+        "signature_text": "langsamer Mahlrhythmus"
+      }
+    },
+    {
+      "key": "passenger_01",
+      "name": "Queen-Mary-2",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Queen-Mary-2",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          106.0,
+          636.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          172.75
+        ],
+        "cavitation_tendency": 0.64,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_02",
+      "name": "Oasis-Kreuzfahrer",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Oasis-Kreuzfahrer",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          113.0,
+          643.0
+        ],
+        "tonal_band_hz": [
+          14.25,
+          174.25
+        ],
+        "cavitation_tendency": 0.68,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_03",
+      "name": "Icon-Kreuzfahrer",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Icon-Kreuzfahrer",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          120.0,
+          650.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          175.75
+        ],
+        "cavitation_tendency": 0.7200000000000001,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_04",
+      "name": "Disney-Wish",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Disney-Wish",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          127.0,
+          657.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          177.25
+        ],
+        "cavitation_tendency": 0.64,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_05",
+      "name": "AIDAnova",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "AIDAnova",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          134.0,
+          664.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          172.75
+        ],
+        "cavitation_tendency": 0.68,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_06",
+      "name": "MSC-Seashore",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "MSC-Seashore",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          106.0,
+          636.0
+        ],
+        "tonal_band_hz": [
+          14.25,
+          174.25
+        ],
+        "cavitation_tendency": 0.7200000000000001,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_07",
+      "name": "Mein-Schiff",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Mein-Schiff",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          113.0,
+          643.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          175.75
+        ],
+        "cavitation_tendency": 0.64,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_08",
+      "name": "Color-Magic-Faehre",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Color-Magic-Faehre",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          120.0,
+          650.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          177.25
+        ],
+        "cavitation_tendency": 0.68,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_09",
+      "name": "Stena-Britannica",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Stena-Britannica",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          127.0,
+          657.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          172.75
+        ],
+        "cavitation_tendency": 0.7200000000000001,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_10",
+      "name": "DFDS-RoPax",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "DFDS-RoPax",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          134.0,
+          664.0
+        ],
+        "tonal_band_hz": [
+          14.25,
+          174.25
+        ],
+        "cavitation_tendency": 0.64,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_11",
+      "name": "Hurtigruten-Expedition",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Hurtigruten-Expedition",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          106.0,
+          636.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          175.75
+        ],
+        "cavitation_tendency": 0.68,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_12",
+      "name": "Arctic-Expedition-Schiff",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Arctic-Expedition-Schiff",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          113.0,
+          643.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          177.25
+        ],
+        "cavitation_tendency": 0.7200000000000001,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_13",
+      "name": "River-Cruise-Schiff",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "River-Cruise-Schiff",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          120.0,
+          650.0
+        ],
+        "tonal_band_hz": [
+          12.75,
+          172.75
+        ],
+        "cavitation_tendency": 0.64,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_14",
+      "name": "Schnellfaehre",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Schnellfaehre",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          127.0,
+          657.0
+        ],
+        "tonal_band_hz": [
+          14.25,
+          174.25
+        ],
+        "cavitation_tendency": 0.68,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "passenger_15",
+      "name": "Nachtfaehre",
+      "category": "PASSAGIER",
+      "hostile": false,
+      "speed_kn": [
+        18.0,
+        25.0
+      ],
+      "callsigns": [
+        "SS FJORDLAND",
+        "SS HAVBRAK",
+        "SS NORDSEE",
+        "MS POLARIS",
+        "MS BORENSUND",
+        "FV KALVSVIK",
+        "MS VIKINGFJORD",
+        "FV SVALBAREN"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Nachtfaehre",
+        "propulsion": "Mehrfachdiesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          134.0,
+          664.0
+        ],
+        "tonal_band_hz": [
+          15.75,
+          175.75
+        ],
+        "cavitation_tendency": 0.7200000000000001,
+        "category": "PASSAGIER",
+        "secondary_tonals": [
+          [
+            30.0,
+            0.2,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          300.0
+        ],
+        "signature_text": "Mehrfachdiesel, Getriebe"
+      }
+    },
+    {
+      "key": "cargo_01",
+      "name": "Emma-Maersk",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Emma-Maersk",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          86.0,
+          486.0
+        ],
+        "tonal_band_hz": [
+          11.75,
+          157.75
+        ],
+        "cavitation_tendency": 0.74,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_02",
+      "name": "Ever-Given-Klasse",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Ever-Given-Klasse",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          93.0,
+          493.0
+        ],
+        "tonal_band_hz": [
+          13.25,
+          159.25
+        ],
+        "cavitation_tendency": 0.78,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_03",
+      "name": "Hapag-Lloyd-Containerschiff",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Hapag-Lloyd-Containerschiff",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          100.0,
+          500.0
+        ],
+        "tonal_band_hz": [
+          14.75,
+          160.75
+        ],
+        "cavitation_tendency": 0.8200000000000001,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_04",
+      "name": "Feeder-Containerschiff",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Feeder-Containerschiff",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          107.0,
+          507.0
+        ],
+        "tonal_band_hz": [
+          16.25,
+          162.25
+        ],
+        "cavitation_tendency": 0.74,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_05",
+      "name": "Panamax-Containerschiff",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Panamax-Containerschiff",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          114.0,
+          514.0
+        ],
+        "tonal_band_hz": [
+          11.75,
+          157.75
+        ],
+        "cavitation_tendency": 0.78,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_06",
+      "name": "Handymax-Bulker",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Handymax-Bulker",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          86.0,
+          486.0
+        ],
+        "tonal_band_hz": [
+          13.25,
+          159.25
+        ],
+        "cavitation_tendency": 0.8200000000000001,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_07",
+      "name": "RoRo-Frachter",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "RoRo-Frachter",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          93.0,
+          493.0
+        ],
+        "tonal_band_hz": [
+          14.75,
+          160.75
+        ],
+        "cavitation_tendency": 0.74,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_08",
+      "name": "Autotransporter",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Autotransporter",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          100.0,
+          500.0
+        ],
+        "tonal_band_hz": [
+          16.25,
+          162.25
+        ],
+        "cavitation_tendency": 0.78,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_09",
+      "name": "Kuehlfrachter",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Kuehlfrachter",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          107.0,
+          507.0
+        ],
+        "tonal_band_hz": [
+          11.75,
+          157.75
+        ],
+        "cavitation_tendency": 0.8200000000000001,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_10",
+      "name": "Bulk-Carrier",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Bulk-Carrier",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          114.0,
+          514.0
+        ],
+        "tonal_band_hz": [
+          13.25,
+          159.25
+        ],
+        "cavitation_tendency": 0.74,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_11",
+      "name": "Heavy-Lift-Schiff",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Heavy-Lift-Schiff",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          86.0,
+          486.0
+        ],
+        "tonal_band_hz": [
+          14.75,
+          160.75
+        ],
+        "cavitation_tendency": 0.78,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_12",
+      "name": "General-Cargo-Schiff",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "General-Cargo-Schiff",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          93.0,
+          493.0
+        ],
+        "tonal_band_hz": [
+          16.25,
+          162.25
+        ],
+        "cavitation_tendency": 0.8200000000000001,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_13",
+      "name": "Container-Feeder",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Container-Feeder",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          100.0,
+          500.0
+        ],
+        "tonal_band_hz": [
+          11.75,
+          157.75
+        ],
+        "cavitation_tendency": 0.74,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_14",
+      "name": "Mehrzweckfrachter",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Mehrzweckfrachter",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          107.0,
+          507.0
+        ],
+        "tonal_band_hz": [
+          13.25,
+          159.25
+        ],
+        "cavitation_tendency": 0.78,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "cargo_15",
+      "name": "Kuestenfrachter",
+      "category": "FRACHT",
+      "hostile": false,
+      "speed_kn": [
+        12.0,
+        20.0
+      ],
+      "callsigns": [
+        "MV KOTKA",
+        "MV BALTISC",
+        "CV NORDSTERN",
+        "MV OSTSEEWIND",
+        "MV KURELA",
+        "CV BALTIK",
+        "MV SKAGERRAK",
+        "CV TROLLFJORD"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Kuestenfrachter",
+        "propulsion": "Diesel/Getriebe",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          114.0,
+          514.0
+        ],
+        "tonal_band_hz": [
+          14.75,
+          160.75
+        ],
+        "cavitation_tendency": 0.8200000000000001,
+        "category": "FRACHT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "stetiger Frachter-Mahl"
+      }
+    },
+    {
+      "key": "aux_01",
+      "name": "Minenabwehrfahrzeug",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Minenabwehrfahrzeug",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          166.0,
+          1086.0
+        ],
+        "tonal_band_hz": [
+          17.75,
+          237.75
+        ],
+        "cavitation_tendency": 0.84,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_02",
+      "name": "Hafenschlepper",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Hafenschlepper",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          173.0,
+          1093.0
+        ],
+        "tonal_band_hz": [
+          19.25,
+          239.25
+        ],
+        "cavitation_tendency": 0.88,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_03",
+      "name": "Seenotrettungskreuzer",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Seenotrettungskreuzer",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          180.0,
+          1100.0
+        ],
+        "tonal_band_hz": [
+          20.75,
+          240.75
+        ],
+        "cavitation_tendency": 0.92,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_04",
+      "name": "Forschungsschiff",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Forschungsschiff",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          187.0,
+          1107.0
+        ],
+        "tonal_band_hz": [
+          22.25,
+          242.25
+        ],
+        "cavitation_tendency": 0.84,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_05",
+      "name": "Kabelleger",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Kabelleger",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          194.0,
+          1114.0
+        ],
+        "tonal_band_hz": [
+          17.75,
+          237.75
+        ],
+        "cavitation_tendency": 0.88,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_06",
+      "name": "Offshore-Versorger",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Offshore-Versorger",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          166.0,
+          1086.0
+        ],
+        "tonal_band_hz": [
+          19.25,
+          239.25
+        ],
+        "cavitation_tendency": 0.92,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_07",
+      "name": "Fischtrawler",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Fischtrawler",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          173.0,
+          1093.0
+        ],
+        "tonal_band_hz": [
+          20.75,
+          240.75
+        ],
+        "cavitation_tendency": 0.84,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_08",
+      "name": "Vermessungsschiff",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Vermessungsschiff",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          180.0,
+          1100.0
+        ],
+        "tonal_band_hz": [
+          22.25,
+          242.25
+        ],
+        "cavitation_tendency": 0.88,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_09",
+      "name": "Bergungsschlepper",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Bergungsschlepper",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          187.0,
+          1107.0
+        ],
+        "tonal_band_hz": [
+          17.75,
+          237.75
+        ],
+        "cavitation_tendency": 0.92,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    },
+    {
+      "key": "aux_10",
+      "name": "Lotsenboot",
+      "category": "SONSTIGES",
+      "hostile": false,
+      "speed_kn": [
+        8.0,
+        16.0
+      ],
+      "callsigns": [
+        "PS HELIOS",
+        "SV BOREN-RECHER",
+        "MS SEEBRUECKE",
+        "PS LEUCHT-4",
+        "SV OZEANFORSCHER",
+        "MS KANALBAHN",
+        "PS HAFEN-7",
+        "SV VERMESSER"
+      ],
+      "esm_prob": 0.6,
+      "asm_salvo": [
+        0,
+        0
+      ],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Lotsenboot",
+        "propulsion": "Diesel/Arbeitsmaschine",
+        "blades": [
+          3,
+          4,
+          5
+        ],
+        "rpm_range": [
+          194.0,
+          1114.0
+        ],
+        "tonal_band_hz": [
+          19.25,
+          239.25
+        ],
+        "cavitation_tendency": 0.84,
+        "category": "SONSTIGES",
+        "secondary_tonals": [
+          [
+            40.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.6,
+          50.0,
+          320.0
+        ],
+        "signature_text": "Arbeitsmaschine, unregelmäßig"
+      }
+    }
+  ]
+}

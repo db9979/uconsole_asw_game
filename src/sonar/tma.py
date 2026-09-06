@@ -1,0 +1,167 @@
+"""W1: TMA – Position + Geschwindigkeit aus einer Peilungsreihe
+(bearing-only Tracking).
+
+Deterministisch: Gittersuche über (Kurs, Geschwindigkeit) des Ziels;
+pro Kandidat wird die Startposition P0 per Least Squares so gelöst,
+dass alle (bewegte) Fregatten-Positionen + Zielbahn die Peilstriche
+möglichst gut treffen. Der Peil-RMSE liefert die Qualität.
+
+Zeiten in sim-Sekunden, Distanzen in NM.
+"""
+
+import math
+
+from src.core import config
+
+
+class BearingPoint:
+    __slots__ = ("t", "bearing", "fx", "fy", "fcourse")
+
+    def __init__(self, t: float, bearing: float, fx: float, fy: float,
+                 fcourse: float):
+        self.t = t
+        self.bearing = bearing
+        self.fx = fx
+        self.fy = fy
+        self.fcourse = fcourse
+
+
+class BearingTrack:
+    def __init__(self):
+        self.pts: list[BearingPoint] = []
+        self.version = 0  # laeuft hoch bei jeder Aenderung -> TMA-Re-Solve-Gate
+
+    def add(self, t: float, bearing: float, fx: float, fy: float,
+            fcourse: float) -> None:
+        if self.pts and \
+                t - self.pts[-1].t < config.BEARING_TRACK_MIN_INTERVAL_S:
+            return
+        self.pts.append(BearingPoint(t, bearing, fx, fy, fcourse))
+        if len(self.pts) > config.BEARING_TRACK_MAX_PTS:
+            self.pts.pop(0)
+        self.version += 1
+
+    def span_s(self) -> float:
+        return (self.pts[-1].t - self.pts[0].t) if len(self.pts) >= 2 else 0.0
+
+    def course_span_deg(self) -> float:
+        """Beobachtbarkeit: Fregatten-Kursänderung über das Zeitfenster."""
+        if len(self.pts) < 2:
+            return 0.0
+        return abs(config.angle_diff_deg(
+            self.pts[-1].fcourse, self.pts[0].fcourse))
+
+
+class TMASolution:
+    __slots__ = ("pos", "course", "speed", "quality", "rmse_deg", "n_pts")
+
+    def __init__(self, pos: tuple, course: float, speed: float,
+                 quality: float, rmse_deg: float, n_pts: int):
+        self.pos = pos            # (x, y) NM – Zielposition (letzte Peilung)
+        self.course = course      # Zielkurs (°)
+        self.speed = speed        # Zielfahrt (kn)
+        self.quality = quality    # 0..1
+        self.rmse_deg = rmse_deg
+        self.n_pts = n_pts
+
+
+def _bearing_dir(brg_deg: float) -> tuple:
+    """Einheitsvektor einer nautischen Peilung (0° = Nord/-y, 90° = Ost/+x)."""
+    r = math.radians(brg_deg)
+    return math.sin(r), -math.cos(r)
+
+
+def _try_candidate(pts, t0, course_deg, speed_kn, max_range_nm):
+    """RMSE + Position für einen (Kurs, Geschw.)-Kandidaten."""
+    vr = math.radians(course_deg)
+    vmag = config.kn_to_nm_per_s(speed_kn)
+    # Nautisches Koordinatensystem: 0° = Nord/-y, 90° = Ost/+x
+    vx, vy = vmag * math.sin(vr), -vmag * math.cos(vr)
+
+    m00 = m01 = m11 = 0.0
+    b0 = b1 = 0.0
+    for p in pts:
+        ux, uy = _bearing_dir(p.bearing)
+        a00 = 1.0 - ux * ux
+        a01 = -ux * uy
+        a11 = 1.0 - uy * uy
+        # P0 liegt auf dem Peilstrich: (P0 - (F - V*tau)) senkrecht zu U.
+        # => LS-System mit G_i = F_i - V*tau_i.
+        tau = p.t - t0
+        fx = p.fx - vx * tau
+        fy = p.fy - vy * tau
+        m00 += a00
+        m01 += a01
+        m11 += a11
+        b0 += a00 * fx + a01 * fy
+        b1 += a01 * fx + a11 * fy
+    det = m00 * m11 - m01 * m01
+    if det < 1e-9:
+        return None
+    p0x = (b0 * m11 - b1 * m01) / det
+    p0y = (b1 * m00 - b0 * m01) / det
+
+    sq = 0.0
+    for p in pts:
+        tau = p.t - t0
+        tx = p0x + vx * tau
+        ty = p0y + vy * tau
+        ddx, ddy = tx - p.fx, ty - p.fy
+        dist = math.hypot(ddx, ddy)
+        if dist < 1e-3:
+            return None
+        ux, uy = _bearing_dir(p.bearing)
+        perp = abs(ux * ddy - uy * ddx)
+        ang_err = math.degrees(math.atan2(perp, dist))
+        sq += ang_err * ang_err
+    rmse = math.sqrt(sq / len(pts))
+    if rmse > 25.0:
+        return None
+
+    last = pts[-1]
+    tau = last.t - t0
+    last_x = p0x + vx * tau
+    last_y = p0y + vy * tau
+    range_nm = math.hypot(last_x - last.fx, last_y - last.fy)
+    if range_nm > max_range_nm:
+        return None
+    quality = max(0.0, 1.0 - rmse / config.TMA_QUALITY_DB)
+    quality *= min(1.0, len(pts) / (config.TMA_MIN_PTS + 4.0))
+    return (rmse, course_deg, speed_kn, (last_x, last_y), quality)
+
+
+def solve_tma(track: BearingTrack,
+              max_range_nm: float = None) -> "TMASolution | None":
+    """TMA-Lösung oder None (zu wenig Daten / keine Observierbarkeit)."""
+    pts = track.pts
+    if len(pts) < config.TMA_MIN_PTS:
+        return None
+    if track.span_s() < config.TMA_MIN_SPAN_S:
+        return None
+    if track.course_span_deg() < config.TMA_MIN_COURSE_CHG_DEG:
+        return None
+    max_range_nm = max_range_nm or config.TMA_MAX_RANGE_NM
+
+    t0 = pts[0].t
+    best = None
+    for course_deg in range(0, 360, 15):
+        for speed_kn in (0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0):
+            cand = _try_candidate(pts, t0, course_deg, speed_kn, max_range_nm)
+            if cand is not None and (best is None or cand[0] < best[0]):
+                best = cand
+    if best is None:
+        return None
+    # Verfeinerung um den besten Kandidaten
+    b_rmse, b_course, b_speed, b_pos, _ = best
+    for dc in (-15, 0, 15):
+        for ds in (-2.0, 0.0, 2.0):
+            c2 = (b_course + dc) % 360
+            s2 = b_speed + ds
+            if s2 < 0.0:
+                continue
+            cand = _try_candidate(pts, t0, c2, s2, max_range_nm)
+            if cand is not None and cand[0] < b_rmse:
+                best = cand
+    rmse, course, speed, pos, quality = best
+    return TMASolution(pos=pos, course=course, speed=speed, quality=quality,
+                       rmse_deg=rmse, n_pts=len(pts))

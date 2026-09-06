@@ -1,0 +1,879 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "diesel_alt",
+      "name": "Altmetall (Diesel, älter)",
+      "speed_kn": [
+        6.0,
+        11.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.75,
+      "aggression": 0.5,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Altmetall (Diesel, älter)",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich hörbar"
+      }
+    },
+    {
+      "key": "aip_modern",
+      "name": "Geisterschwärmer (AIP-modern)",
+      "speed_kn": [
+        7.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.85,
+      "aggression": 0.7,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Geisterschwärmer (AIP-modern)",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "ssn",
+      "name": "Knochenbrecher (Nuklear)",
+      "speed_kn": [
+        12.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 1.0,
+      "spawn_weight": 0.8,
+      "acoustic": {
+        "label": "Knochenbrecher (Nuklear)",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_01",
+      "name": "Type 212CD",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Type 212CD",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_02",
+      "name": "Type 214",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Type 214",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_03",
+      "name": "Virginia-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Virginia-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_04",
+      "name": "Los-Angeles-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.9,
+      "aggression": 0.9,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Los-Angeles-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_05",
+      "name": "Seawolf-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.93,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Seawolf-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_06",
+      "name": "Astute-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 0.9,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Astute-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_07",
+      "name": "Trafalgar-Klasse",
+      "speed_kn": [
+        8.0,
+        12.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.82,
+      "aggression": 0.6,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Trafalgar-Klasse",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich hörbar"
+      }
+    },
+    {
+      "key": "sub_08",
+      "name": "Rubis-Klasse",
+      "speed_kn": [
+        8.0,
+        12.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.8,
+      "aggression": 0.6,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Rubis-Klasse",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich hörbar"
+      }
+    },
+    {
+      "key": "sub_09",
+      "name": "Suffren-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 0.9,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Suffren-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_10",
+      "name": "Scorpene-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.86,
+      "aggression": 0.6,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Scorpene-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_11",
+      "name": "Kilo-Klasse",
+      "speed_kn": [
+        8.0,
+        12.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.78,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Kilo-Klasse",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich hörbar"
+      }
+    },
+    {
+      "key": "sub_12",
+      "name": "Improved-Kilo",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.86,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Improved-Kilo",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_13",
+      "name": "Lada-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.86,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Lada-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_14",
+      "name": "Yasen-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.94,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Yasen-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_15",
+      "name": "Oscar-II-Klasse",
+      "speed_kn": [
+        12.0,
+        16.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 12,
+      "quiet": 0.88,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Oscar-II-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_16",
+      "name": "Akula-Klasse",
+      "speed_kn": [
+        12.0,
+        16.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 12,
+      "quiet": 0.88,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Akula-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_17",
+      "name": "Borei-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.95,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Borei-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_18",
+      "name": "Collins-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 0.9,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Collins-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichmäßig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_19",
+      "name": "Soryu-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Soryu-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_20",
+      "name": "Taigei-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Taigei-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "mil_patrol",
+      "name": "BOREN Patrouille",
+      "nation": "BOREN",
+      "kind": "military",
+      "speed_kn": 200.0,
+      "esm": true,
+      "esm_range_nm": 60.0,
+      "loiter_nm": [
+        15.0,
+        30.0
+      ],
+      "spawn_weight": 1.0,
+      "signature_text": "militärisch, nur ESM/Radar"
+    },
+    {
+      "key": "civil_transit",
+      "name": "Ziviler Verkehrsflug",
+      "nation": "HANSE",
+      "kind": "civil",
+      "speed_kn": 450.0,
+      "esm": false,
+      "esm_range_nm": 0.0,
+      "loiter_nm": [
+        0.0,
+        0.0
+      ],
+      "spawn_weight": 1.0,
+      "signature_text": "ziviler Transport, nur Radar"
+    }
+  ]
+}

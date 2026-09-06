@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "frigate_torp",
+      "name": "Drahttorpedo (Fregatte)",
+      "used_by": "frigate",
+      "speed_kn": 45.0,
+      "range_nm": 12.0,
+      "hit_dist_nm": 0.135
+    },
+    {
+      "key": "helo_torp",
+      "name": "Leichttorpedo (HSP-5)",
+      "used_by": "helo",
+      "speed_kn": 55.0,
+      "range_nm": 12.0,
+      "hit_dist_nm": 0.135
+    },
+    {
+      "key": "enemy_torp",
+      "name": "Feindtorpedo",
+      "used_by": "enemy",
+      "speed_kn": 28.0,
+      "range_nm": 30.0,
+      "hit_dist_nm": 0.25,
+      "acoustic": {
+        "label": "Feindtorpedo",
+        "propulsion": "Torpedorantrieb",
+        "blades": [],
+        "rpm_range": [
+          0.0,
+          0.0
+        ],
+        "tonal_band_hz": [
+          90.0,
+          150.0
+        ],
+        "cavitation_tendency": 0.9,
+        "category": "FAHRZEUG",
+        "secondary_tonals": [],
+        "broadband": [
+          0.5,
+          80.0,
+          300.0
+        ],
+        "signature_text": "aggressives, hochfrequentes Kreischen"
+      }
+    }
+  ]
+}

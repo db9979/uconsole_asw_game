@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "u-jagd"
+version = "0.1.0"
+description = "U-Jagd - Fregatten-U-Jagd-Taktikspiel (ASW) fuer die uConsole"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Dominik Bornhäußer"},
+]
+requires-python = ">=3.11"
+dependencies = ["pygame>=2.6", "numpy>=2.0"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: German",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Games/Entertainment :: Simulation",
+]
+
+[project.urls]
+Homepage = "https://github.com/db9979/uconsole_asw_game"
+Repository = "https://github.com/db9979/uconsole_asw_game"
+Issues = "https://github.com/db9979/uconsole_asw_game/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+u-jagd = "main:main"
+
+[tool.setuptools]
+py-modules = ["main"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "data*"]
+namespaces = true
+
+[tool.setuptools.package-data]
+"data.contacts" = ["*.json"]
+"data.coastlines" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

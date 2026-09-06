@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "key": "decoy",
+      "name": "Akustischer Dekoy",
+      "life_s": 45.0,
+      "speed_kn": 8.0,
+      "cooldown_s": 60.0,
+      "chance": 0.5,
+      "lines": [
+        [
+          120.0,
+          0.9,
+          8.0
+        ],
+        [
+          75.0,
+          0.4,
+          3.0
+        ]
+      ],
+      "signature_text": "kurzes lautes Rauschen"
+    }
+  ]
+}

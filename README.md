@@ -10,6 +10,12 @@ Aktuelle Projektversion: **0.1.0**
 
 <img width="1139" height="634" alt="image" src="https://github.com/user-attachments/assets/df2501a0-f46e-4f0f-878c-2d0d9159c025" />
 
+<img width="1140" height="641" alt="image" src="https://github.com/user-attachments/assets/2482d19c-f258-43b5-8a3e-4c38e4fdbfac" />
+
+<img width="1140" height="642" alt="image" src="https://github.com/user-attachments/assets/9e8d9aad-be04-4b52-a162-ba74801f713d" />
+
+
+
 
 > Entwicklungsstand: spielbarer früher Release. Bedienung, Balancing und
 > Plattformunterstützung können sich noch ändern.

@@ -11,6 +11,7 @@ AFFILIATION_COLORS = {
 }
 
 DOMAIN_LABELS = {
+    "UNKNOWN": "Unbekannt",
     "SURFACE": "See",
     "SUBSURFACE": "Untersee",
     "AIR": "Luft",
@@ -29,7 +30,7 @@ def domain_for_kind(kind: str) -> str:
         return "SUBSURFACE"
     if kind == "TORP":
         return "UNDERWATER_WEAPON"
-    return "SURFACE"
+    return "SURFACE" if kind in ("AIS", "SURFACE") else "UNKNOWN"
 
 
 def draw_symbol(surface, center, affiliation: str, domain: str,
@@ -76,9 +77,11 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
                           [(x + 2, y - 2), (x + 5, y), (x + 2, y + 2)], 2)
         pygame.draw.line(surface, color, (x - 5, y), (x - 2, y - 3), 1)
         pygame.draw.line(surface, color, (x - 5, y), (x - 2, y + 3), 1)
-    else:
+    elif domain == "SURFACE":
         pygame.draw.line(surface, color, (x - 5, y + 2), (x + 5, y + 2), 2)
         pygame.draw.arc(surface, color, (x - 5, y - 3, 10, 7), 0, 3.14159, 1)
+    else:
+        pygame.draw.circle(surface, color, (x, y), 2, 1)
 
     if selected:
         pygame.draw.circle(surface, (235, 235, 220), (x, y), half + 7, 1)

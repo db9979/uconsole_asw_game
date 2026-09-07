@@ -50,6 +50,9 @@ class SurfaceShip:
         self.turn_delta = 0.0
         self.sunk = False
         self.damage = 0.0
+        self.sunk_score_awarded = False
+        self.sensor_contact = None
+        self.sensor_contact_age = config.RADAR_TRACK_STALE_S
         # Kriegsschiff: Loiter + ASM
         self.anchor = None  # (x, y) – vom Game gesetzt
         self.waypoint = None
@@ -60,6 +63,8 @@ class SurfaceShip:
     # --- Torpedo-Treffer ---
 
     def hit(self) -> None:
+        if self.sunk:
+            return
         self.damage = min(100.0, self.damage + 34.0)
         if self.damage >= 100.0:
             self.sunk = True
@@ -81,13 +86,25 @@ class SurfaceShip:
             self.target_course = (self.course
                                   + self.rng.uniform(-30.0, 30.0)) % 360.0
             self.target_speed = self.rng.uniform(*self.profile.speed_kn)
-        self._steer(dt, .5)
+        self._steer(dt, .5, world)
         self._move(dt, world)
 
     def _update_hostile(self, dt: float, frigate, world) -> None:
-        dist = self.distance_nm(frigate)
-        bearing = math.degrees(math.atan2(
-            frigate.x - self.x, -(frigate.y - self.y))) % 360.0
+        self.sensor_contact_age = min(config.RADAR_TRACK_STALE_S,
+                                      self.sensor_contact_age + dt)
+        # This actor's active radar, not the player's selected track or pose.
+        if (self.emitter and self.distance_nm(frigate) <= config.WARSHIP_ASM_RANGE_NM
+                and not getattr(world, "land_blocks_line", lambda *args: False)(
+                    self.x, self.y, frigate.x, frigate.y)):
+            self.sensor_contact = (frigate.x, frigate.y)
+            self.sensor_contact_age = 0.0
+        if self.sensor_contact_age >= config.RADAR_TRACK_STALE_S:
+            self.sensor_contact = None
+        dist = (math.hypot(self.sensor_contact[0] - self.x, self.sensor_contact[1] - self.y)
+                if self.sensor_contact is not None else float("inf"))
+        bearing = (math.degrees(math.atan2(self.sensor_contact[0] - self.x,
+                                           -(self.sensor_contact[1] - self.y))) % 360.0
+                   if self.sensor_contact is not None else self.course)
         if dist < 18.0:
             self.target_course = (bearing + 180.0) % 360.0
             self.target_speed = self.profile.speed_kn[1]
@@ -107,11 +124,24 @@ class SurfaceShip:
             self.target_course = math.degrees(
                 math.atan2(wx - self.x, -(wy - self.y))) % 360.0
             self.target_speed = min(16.0, self.profile.speed_kn[1])
-        self._steer(dt, 1.0)
+        self._steer(dt, 1.0, world)
         self._move(dt, world)
         self._maybe_asm(dt, frigate)
 
-    def _steer(self, dt: float, max_rate: float) -> None:
+    def _steer(self, dt: float, max_rate: float, world=None) -> None:
+        # Safety owns the final steering order, after tactical/route orders.
+        if world is not None:
+            land = getattr(world, "on_land", lambda x, y: False)
+            blocked = getattr(world, "land_blocks_line", lambda x0, y0, x1, y1: land(x1, y1))
+            lookahead = max(1.0, self.speed / 6.0)
+            for offset in (0.0, 60.0, 120.0, 180.0):
+                course = (self.course + self.orbit_direction * offset) % 360.0
+                x = self.x + lookahead * math.sin(math.radians(course))
+                y = self.y - lookahead * math.cos(math.radians(course))
+                if not blocked(self.x, self.y, x, y):
+                    if offset:
+                        self.target_course = course
+                    break
         diff = config.angle_diff_deg(self.target_course, self.course)
         self.course = (self.course + config.clamp(
             diff, -max_rate * dt, max_rate * dt)) % 360.0
@@ -119,18 +149,13 @@ class SurfaceShip:
         self.speed += config.clamp(delta, -.03 * dt, .03 * dt)
 
     def _move(self, dt: float, world) -> None:
-        # Kuestenvorausschau verhindert, dass lange Legs ins Land fuehren.
         on_land = getattr(world, "on_land", lambda x, y: False)
-        lookahead = max(1.0, self.speed / 6.0)
-        lx = self.x + lookahead * math.sin(math.radians(self.course))
-        ly = self.y - lookahead * math.cos(math.radians(self.course))
-        if on_land(lx, ly):
-            self.target_course = (self.course + self.orbit_direction * 60.0) % 360.0
         v = config.kn_to_nm_per_s(self.speed) * dt
         nx = self.x + v * math.sin(math.radians(self.course))
         ny = self.y - v * math.cos(math.radians(self.course))
         world_size = world.size_nm
-        if on_land(nx, ny):
+        if (on_land(nx, ny) or getattr(world, "land_blocks_line", lambda *args: False)(
+                self.x, self.y, nx, ny)):
             self.target_course = (self.course + 90.0) % 360.0
             return
         self.x, self.y = nx, ny
@@ -147,7 +172,9 @@ class SurfaceShip:
         self.attack_left -= dt
         if self.attack_left > 0.0:
             return
-        dist = self.distance_nm(frigate)
+        if self.sensor_contact is None:
+            return
+        dist = math.hypot(self.sensor_contact[0] - self.x, self.sensor_contact[1] - self.y)
         if dist <= config.WARSHIP_ASM_RANGE_NM:
             n = self.rng.randint(self.profile.asm_salvo[0],
                                  self.profile.asm_salvo[1])

@@ -39,6 +39,11 @@ class Flight:
         self.speed = profile.speed_kn
         self.esm = profile.esm
         self.esm_range_nm = profile.esm_range_nm
+        # Gameplay doctrine, not aircraft equipment specifications: military
+        # patrols transmit radar. ESM is separately a passive receiver capability.
+        self.radar_emitting = kind == "military" and dest is None
+        self.sensor_bearing = None
+        self.sensor_age = config.RADAR_TRACK_STALE_S
         loiter_nm = loiter_nm or self.rng.uniform(*profile.loiter_nm)
         self.loiter_nm = loiter_nm
 
@@ -76,7 +81,9 @@ class Flight:
             self.waypoint_idx = 0
         self.active = True
 
-    def update(self, dt: float, ship=None) -> None:
+    def update(self, dt: float, ship=None, *, ship_emitting=False, world=None) -> None:
+        if not self.active:
+            return
         step = config.kn_to_nm_per_s(self.speed) * dt
         if self.dest is None:
             wx, wy = self.waypoints[self.waypoint_idx]
@@ -85,10 +92,18 @@ class Flight:
                 wx, wy = self.waypoints[self.waypoint_idx]
             target = math.degrees(math.atan2(wx - self.x,
                                              -(wy - self.y))) % 360.0
-            if (ship is not None and self.esm
-                    and self.distance_nm(ship) <= self.esm_range_nm):
-                target = math.degrees(math.atan2(
+            self.sensor_age = min(config.RADAR_TRACK_STALE_S, self.sensor_age + dt)
+            if (ship is not None and ship_emitting and self.esm
+                    and self.distance_nm(ship) <= self.esm_range_nm
+                    and not getattr(world, "land_blocks_line", lambda *args: False)(
+                        self.x, self.y, ship.x, ship.y)):
+                self.sensor_bearing = math.degrees(math.atan2(
                     ship.x - self.x, -(ship.y - self.y))) % 360.0
+                self.sensor_age = 0.0
+            if self.sensor_age >= config.RADAR_TRACK_STALE_S:
+                self.sensor_bearing = None
+            if self.sensor_bearing is not None:
+                target = self.sensor_bearing
             diff = config.angle_diff_deg(target, self.course)
             self.course = (self.course + config.clamp(
                 diff, -2.0 * dt, 2.0 * dt)) % 360.0
@@ -137,9 +152,9 @@ class FlightManager:
                                dest=friendly[0] if friendly else host)
         self._spawn_flight("military", host)
 
-    def update(self, dt: float, ship=None) -> None:
+    def update(self, dt: float, ship=None, *, ship_emitting=False, world=None) -> None:
         for f in self.flights:
-            f.update(dt, ship)
+            f.update(dt, ship, ship_emitting=ship_emitting, world=world)
         self.flights = [f for f in self.flights if f.active]
         self._spawn_cd -= dt
         if self._spawn_cd <= 0.0 and len(self.flights) < self.MAX_FLIGHTS:

@@ -12,6 +12,7 @@ import pygame
 from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.core.station import Station
+from src.ship.damage import COMPARTMENTS
 from src.ui import layout
 from src.ui import nato_symbols
 from src.ui import observations
@@ -111,6 +112,9 @@ def draw_bridge_view(game, tr=None) -> None:
             threats.append(("ASM", localize(message("bridge.line.asm_threat",
                             bearing=observations.format_bearing(nearest, game.ship), range=f"{displayed_range:.1f}",
                             tti=f"{tti:.0f}"))))
+        else:
+            threats.append(("ASM", message("bridge.line.asm_bearing_only",
+                bearing=observations.format_bearing(asm_tracks[0], game.ship))))
     torp_contacts = [c for c in game.sonar.active_contacts()
                      if c.kind == "torpedo"]
     if torp_contacts:
@@ -193,6 +197,7 @@ def draw_bridge_view(game, tr=None) -> None:
 # --- OPZ / CIC (M12) -------------------------------------------------------
 
 OPZ_DOMAIN_CODES = {
+    "UNKNOWN": "UNK",
     "SURFACE": "SEE",
     "SUBSURFACE": "UBT",
     "AIR": "LFT",
@@ -200,6 +205,7 @@ OPZ_DOMAIN_CODES = {
     "UNDERWATER_WEAPON": "TOR",
 }
 OPZ_DOMAIN_COLORS = {
+    "UNKNOWN": config.COLOR_TEXT_DIM,
     "SURFACE": config.COLOR_CONTACT_ZIVIL,
     "SUBSURFACE": config.COLOR_CONTACT_UBOOT,
     "AIR": config.COLOR_FLIGHT,
@@ -217,7 +223,7 @@ def _track_tooltip(game, track):
     quality = track.display_quality(game.sim_t, game.air_picture.stale_s)
     return layout.tooltip_payload(
         message("opz.tooltip.track_title", track=track.track_id, label=track.label),
-        message("opz.tooltip.domain_affiliation", domain=display_value('domain', domain),
+        message("opz.tooltip.domain_affiliation", domain=localize("domain.unknown") if domain == "UNKNOWN" else display_value('domain', domain),
                 affiliation=display_value('affiliation', affiliation)),
         observations.format_bearing_pair(track, ship),
         message("opz.tooltip.range", range=distance),
@@ -393,9 +399,9 @@ def station_hit_target(game, pos):
             return layout.tooltip_payload(
                 "helo.tooltip.status_title",
                 message("helo.tooltip.state_fuel", state=localize('enum.helo.' + helo.state), fuel=f"{helo.fuel_s / 60:.0f}"),
-                message("helo.tooltip.course_range", course=f"{helo.course:05.1f}", range=f"{distance:.1f}"),
+                message("helo.tooltip.course_range", course=f"{helo.course:05.1f}", range=f"{distance:.1f}") if helo.airborne else "helo.navigation_unavailable",
                 message("map.tooltip.ship_air_bearing", bearing=layout.format_bearing_pair(
-                    bearing, game.ship.course)),
+                    bearing, game.ship.course)) if helo.airborne else None,
                 "tooltip.helo_return",
                 target_id="helo:status")
         if regions["resources"].collidepoint(pos):
@@ -415,34 +421,27 @@ def station_hit_target(game, pos):
                 "tooltip.helo_release",
                 target_id="helo:controls")
     elif game.station is Station.DAMAGE:
-        margin, gap, detail_w = 16, 14, 356 if rect.w >= 1000 else 250
-        grid_w = rect.w - margin * 2 - gap - detail_w
-        columns = 3 if grid_w >= 700 else 2
+        regions = damage_regions(game)
         items = list(game.damage.compartments.items())
-        rows = (len(items) + columns - 1) // columns
-        grid_h = rect.bottom - (rect.y + 8 + layout.font(20).get_linesize() + 8) - 68
-        bw = (grid_w - (columns - 1) * gap) // columns
-        bh = (grid_h - (rows - 1) * gap) // rows
-        x0 = rect.x + margin
-        for index, (key, compartment) in enumerate(items):
-            card = pygame.Rect(x0 + index % columns * (bw + gap),
-                               top + index // columns * (bh + gap), bw, bh)
-            if card.collidepoint(pos):
-                teams = game.damage.teams_on(key)
-                return layout.tooltip_payload(
-                    message("station.tooltip.authored", text=_compartment_name(key, compartment.name).upper()),
-                    message("damage.tooltip.condition", state=localize(STATE_LABEL[compartment.state]), flooding=f"{compartment.flood:.0f}", fire=f"{compartment.fire:.0f}"),
-                    message("damage.tooltip.teams", teams=", ".join(map(str, teams)) if teams else localize("common.none")),
-                    "tooltip.compartment_controls",
-                    target_id=f"damage:{key}")
-        if pos[0] >= x0 + grid_w + gap:
+        key = damage_compartment_at(game, pos)
+        if key is not None:
+            compartment = game.damage.compartments[key]
+            teams = game.damage.teams_on(key)
+            return layout.tooltip_payload(
+                _compartment_name(key, compartment.name),
+                message("damage.tooltip.condition", state=localize(STATE_LABEL[compartment.state]), flooding=f"{compartment.flood:.0f}", fire=f"{compartment.fire:.0f}"),
+                message("damage.tooltip.teams", teams=", ".join(map(str, teams)) if teams else localize("common.none")),
+                "tooltip.compartment_controls", target_id=f"damage:{key}")
+        if regions["detail"].collidepoint(pos):
             selected = items[game.dmg_cursor][1]
             assignment = game.damage.teams[game.dmg_team]
             return layout.tooltip_payload(
                 "tooltip.damage_actions", message("damage.tooltip.selection_team",
                     selection=_compartment_name(items[game.dmg_cursor][0], selected.name),
                     team=game.dmg_team),
-                message("damage.tooltip.assignment", assignment=assignment or localize("damage.free")),
+                message("damage.tooltip.assignment", assignment=_compartment_name(
+                    assignment, game.damage.compartments[assignment].name)
+                    if assignment else localize("damage.free")),
                 "tooltip.team_controls",
                 target_id="damage:controls")
     return None
@@ -453,9 +452,9 @@ def _near_point(pos, point, radius):
             <= radius ** 2)
 
 
-def opz_ppi_rect() -> pygame.Rect:
+def opz_ppi_rect(station_rect=None) -> pygame.Rect:
     """Bounding rectangle of the OPZ PPI in virtual-canvas coordinates."""
-    station = pygame.Rect(config.STATION_RECT)
+    station = pygame.Rect(station_rect or config.STATION_RECT)
     scope_w = int(station.w * 0.66)
     radius = min(scope_w // 2 - 28, station.h // 2 - 28)
     center = (station.x + scope_w // 2, station.y + station.h // 2)
@@ -800,7 +799,8 @@ def draw_opz_view(game, tr=None) -> None:
         py += 18
     else:
         n = len(asm_tracks)
-        for i, track in enumerate(asm_tracks[:3]):
+        start = max(0, min(game.asm_sel - 1, n - 3))
+        for i, track in enumerate(asm_tracks[start:start + 3], start):
             sel = i == min(game.asm_sel, n - 1)
             col = config.COLOR_TEXT if sel else config.COLOR_TEXT_DIM
             displayed_range = observations.range_nm(track, game.ship)
@@ -977,10 +977,12 @@ def draw_engine_view(game, tr=None) -> None:
     if game.sonar_mode == "TOWED":
         sonar_range *= max(0.5, config.SONAR_ARRAY_TOWED_PASSIVE
                            - config.SONAR_TOWED_SPEED_PENALTY * ship.speed)
+    available = game.sonar_mode != "TOWED" or game.sonar._tow_available()
     layout.status_line(s, px, py, pw, "ui.sonar_effect",
                          message("engine.line.sonar_effect", range=f"{sonar_range:4.1f}",
-                                 array=display_value("array", game.sonar_mode)),
-                        color=config.COLOR_OK if sonar_range > 10 else config.COLOR_WARN,
+                                 array=display_value("array", game.sonar_mode))
+                         if available else "engine.tas_unavailable",
+                        color=config.COLOR_OK if available and sonar_range > 10 else config.COLOR_WARN,
                         label_w=140, size=14)
     py += 28
     cap_reason = ("engine.limit.down" if game.damage.station_down("engine") else
@@ -1004,7 +1006,7 @@ def helicopter_regions(game=None, station_rect=None) -> dict[str, pygame.Rect]:
     gap = 10
     line_h = layout.font(14).get_linesize()
     available = max(1, station.bottom - 12 - top)
-    row_h = max(line_h, layout.font(15).get_linesize()) + 2
+    row_h = max(22, line_h + 2, layout.font(15).get_linesize() + 2)
     status_h = 8 + layout.font(16, bold=True).get_linesize() + 8 + row_h * 5 + 8
     resource_cell_h = (layout.font(14).get_linesize()
                        + layout.font(16).get_linesize() + 8)
@@ -1044,7 +1046,8 @@ def draw_helicopter_view(game, tr=None) -> None:
     fuel_color = (config.COLOR_DANGER if helo.airborne and helo.fuel_s <= config.HELO_FUEL_RESERVE_S else
                   config.COLOR_WARN if helo.airborne and helo.fuel_s <= config.HELO_FUEL_RESERVE_S * 1.5 else
                   config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
-    row_h = max(22, layout.font(14).get_linesize() + 2)
+    row_h = max(22, layout.font(14).get_linesize() + 2,
+                layout.font(15).get_linesize() + 2)
     layout.status_line(s, sx, sy + row_h, sw, "ui.fuel_colon",
                        message("helo.line.fuel", fuel=f"{helo.fuel_s / 60:4.0f}"), color=fuel_color,
                        label_w=110, size=15)
@@ -1055,12 +1058,12 @@ def draw_helicopter_view(game, tr=None) -> None:
     true_bearing, relative_bearing = layout.bearing_pair(
         aircraft_bearing, game.ship.course)
     layout.status_line(s, sx, sy + row_h * 2, sw, "ui.ship_helo_range",
-                       message("bridge.line.range", range=f"{distance:4.1f}"), label_w=210, size=14)
+                       message("bridge.line.range", range=f"{distance:4.1f}") if helo.airborne else state_label, label_w=210, size=14)
     layout.status_line(s, sx, sy + row_h * 3, sw, "ui.ship_helo_bearing",
-                       message("helo.line.bearing_pair", true=f"{true_bearing:05.1f}", relative=f"{relative_bearing:05.1f}"),
+                       message("helo.line.bearing_pair", true=f"{true_bearing:05.1f}", relative=f"{relative_bearing:05.1f}") if helo.airborne else "--",
                        label_w=210, size=14)
     layout.status_line(s, sx, sy + row_h * 4, sw, "ui.flight_course_true",
-                       message("helo.line.course", course=f"{helo.course:05.1f}"), label_w=210, size=14)
+                       message("helo.line.course", course=f"{helo.course:05.1f}") if helo.airborne else "--", label_w=210, size=14)
 
     resources = layout.box(s, regions["resources"], "ui.resources_grid")
     rx, ry, rw, rh = resources
@@ -1094,11 +1097,12 @@ def draw_helicopter_view(game, tr=None) -> None:
     wp_brg, wp_dist = game._helo_waypoint_polar()
     return_s = distance / max(.001, config.kn_to_nm_per_s(config.HELO_SPEED_KN))
     margin_s = helo.fuel_s - return_s - config.HELO_FUEL_RESERVE_S
-    margin_color = (config.COLOR_DANGER if margin_s < 0 else
+    margin_color = (config.COLOR_TEXT_DIM if not helo.airborne else
+                    config.COLOR_DANGER if margin_s < 0 else
                     config.COLOR_WARN if margin_s < 300 else config.COLOR_OK)
     rules = (localize(message("helo.waypoint_rule", bearing=f"{wp_brg:03.0f}",
                               range=f"{wp_dist:.0f}")),
-             localize(message("helo.rtb_margin", margin=f"{margin_s / 60:+.0f}")),
+             localize(message("helo.rtb_margin", margin=f"{margin_s / 60:+.0f}")) if helo.airborne else localize("helo.rtb_unavailable"),
              localize("helo.launch_rule"), localize("helo.weapon_controls"),
              localize("view.helo.roe"))
     colors = (config.COLOR_TEXT, margin_color, config.COLOR_TEXT_DIM,
@@ -1117,114 +1121,221 @@ def draw_helicopter_view(game, tr=None) -> None:
 
 # --- Schadensbekämpfung (M5, M14) ------------------------------------------
 
+def damage_regions(game=None, station_rect=None) -> dict:
+    """Shared fictional deck-plan geometry in virtual-canvas coordinates.
+
+    ``compartments`` preserves COMPARTMENTS/save ordering. Each entry contains
+    a convex ``polygon``, a ``callout`` Rect and an interior ``anchor`` point.
+    Callers must reject letterbox coordinates before using this API.
+    """
+    if game is not None:
+        layout.configure_for(game)
+    station = pygame.Rect(station_rect or config.STATION_RECT)
+    top = station.y + 16 + int(layout.font(20).get_linesize() * 1.15)
+    detail_w = 356 if station.w >= 1000 else 250
+    schematic = pygame.Rect(station.x + 16, top,
+                            station.w - detail_w - 46, station.bottom - top - 64)
+    detail = pygame.Rect(schematic.right + 14, top, detail_w, schematic.h)
+    hull_w = min(160, int(schematic.w * .30))
+    hull_rect = pygame.Rect(schematic.centerx - hull_w // 2, top + 32,
+                            hull_w, schematic.h - 76)
+
+    def points(coords):
+        return tuple((round(hull_rect.x + x * hull_rect.w),
+                      round(hull_rect.y + y * hull_rect.h)) for x, y in coords)
+
+    hull = points(((.5, 0), (.82, .12), (1, .28), (1, .87),
+                   (.87, 1), (.13, 1), (0, .87), (0, .28), (.18, .12)))
+    polygons = {
+        "bridge": ((.2, .27), (.8, .27), (.8, .37), (.2, .37)),
+        "sonar": ((.35, .07), (.65, .07), (.82, .15), (.18, .15)),
+        "weapons": ((.18, .16), (.82, .16), (.8, .26), (.2, .26)),
+        "opz": ((.2, .38), (.8, .38), (.8, .49), (.2, .49)),
+        "radio": ((.2, .5), (.8, .5), (.8, .6), (.2, .6)),
+        "engine": ((.2, .61), (.8, .61), (.8, .73), (.2, .73)),
+        "flightdeck": ((.2, .74), (.8, .74), (.86, .98), (.14, .98)),
+        "hull_left": ((.02, .29), (.17, .29), (.17, .88), (.12, .96), (.02, .86)),
+        "hull_right": ((.83, .29), (.98, .29), (.98, .86), (.88, .96), (.83, .88)),
+    }
+    # Callout order is spatial; the public mapping and keyboard order are not.
+    left = ("sonar", "bridge", "opz", "engine", "hull_left")
+    right = ("weapons", "radio", "flightdeck", "hull_right")
+    compartments = {}
+    for key, _ in COMPARTMENTS:
+        side = left if key in left else right
+        row = side.index(key)
+        row_h = hull_rect.h // len(side)
+        callout_w = int(schematic.w * .33)
+        callout_h = min(row_h - 5, max(44, layout.font(14).get_linesize() * 2 + 10))
+        callout = pygame.Rect(schematic.x if side is left else schematic.right - callout_w,
+                              hull_rect.y + row * row_h, callout_w, callout_h)
+        polygon = points(polygons[key])
+        anchor = (sum(p[0] for p in polygon) // len(polygon),
+                  sum(p[1] for p in polygon) // len(polygon))
+        compartments[key] = {"polygon": polygon, "callout": callout, "anchor": anchor}
+    features = {
+        "gun": points(((.43, .085), (.57, .085), (.59, .13), (.41, .13))),
+        "barrel": points(((.5, .085), (.5, .035))),
+        "vls": points(((.32, .18), (.68, .18), (.68, .24), (.32, .24))),
+        "mast": points(((.5, .4), (.5, .47), (.28, .435), (.72, .435))),
+        "funnel": points(((.37, .63), (.63, .63), (.63, .7), (.37, .7))),
+        "hangar": points(((.3, .76), (.7, .76), (.7, .83), (.3, .83))),
+        "helipad": points(((.28, .86), (.72, .86), (.72, .95), (.28, .95))),
+    }
+    return {"station": station, "schematic": schematic, "detail": detail,
+            "hull": hull, "features": features, "compartments": compartments,
+            "footer": pygame.Rect(station.x + 16, station.bottom - 56, station.w - 32, 48)}
+
+
+def damage_compartment_at(game, pos):
+    """Return compartment ID for polygon OR callout, otherwise None; no mutation."""
+    regions = damage_regions(game)
+    if pos is None or not regions["station"].collidepoint(pos):
+        return None
+    for key, region in regions["compartments"].items():
+        if region["callout"].collidepoint(pos):
+            return key
+        polygon = region["polygon"]
+        crosses = [(b[0] - a[0]) * (pos[1] - a[1]) -
+                   (b[1] - a[1]) * (pos[0] - a[0])
+                   for a, b in zip(polygon, polygon[1:] + polygon[:1])]
+        if all(v >= 0 for v in crosses) or all(v <= 0 for v in crosses):
+            return key
+    return None
+
+
 @localized
 def draw_damage_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
     rect = pygame.Rect(config.STATION_RECT)
-    top = layout.panel(s, rect, "station.damage.title")
-    margin, gap = 16, 14
-    detail_w = 356 if rect.w >= 1000 else 250
-    grid_w = rect.w - margin * 2 - gap - detail_w
-    columns = 3 if grid_w >= 700 else 2
+    layout.panel(s, rect, "station.damage.title")
+    regions = damage_regions(game)
+    plan = regions["schematic"]
+    layout.record_geometry("schematic", plan, "damage.schematic.title")
+    layout.blit_line(s, "damage.schematic.title", (plan.x, plan.y, plan.w, 24),
+                     config.COLOR_TEXT_DIM, size=14)
+    pygame.draw.polygon(s, (12, 32, 34), regions["hull"])
+    pygame.draw.polygon(s, (115, 161, 163), regions["hull"], 2)
     items = list(game.damage.compartments.items())
-    rows = (len(items) + columns - 1) // columns
-    grid_h = rect.bottom - top - 68
-    bw = (grid_w - (columns - 1) * gap) // columns
-    bh = (grid_h - (rows - 1) * gap) // rows
-    x0 = rect.x + margin
     for i, (key, c) in enumerate(items):
-        bx = x0 + (i % columns) * (bw + gap)
-        by = top + (i // columns) * (bh + gap)
+        region = regions["compartments"][key]
+        polygon, card, anchor = region["polygon"], region["callout"], region["anchor"]
         sc = _state_color(c.state)
-        pygame.draw.rect(s, (12, 20, 15), (bx, by, bw, bh))
-        flood_h = int(bh * min(100.0, c.flood) / 100.0)
-        if flood_h > 0:
-            pygame.draw.rect(s, (40, 70, 90),
-                             (bx + 1, by + bh - flood_h, bw - 2, flood_h - 1))
         selected_card = i == game.dmg_cursor
-        pygame.draw.rect(s, config.COLOR_TEXT if selected_card else sc,
-                         (bx, by, bw, bh), 3 if selected_card else 1)
-        if selected_card:
-            pygame.draw.rect(s, sc, (bx + 5, by + 5, 4, bh - 10))
-        layout.blit_line(s, _compartment_name(key, c.name),
-                         (bx + 14, by + 8, bw - 26, 20),
-                         config.COLOR_TEXT, size=15)
-        layout.blit_line(s, STATE_LABEL[c.state], (bx + 14, by + 31, bw - 26, 20),
-                         sc, size=15)
-        if c.fire > 0:
-            layout.blit_line(s, message("damage.line.fire", fire=f"{c.fire:3.0f}"),
-                              (bx + 14, by + 53, bw - 26, 19),
-                              (255, 120, 60), size=14)
-        severity = max(c.flood, c.fire)
+        fill = ((57, 27, 26) if c.state == "ZERSTOERT" else
+                (34, 66, 83) if c.flood > 0 else (18, 42, 39))
+        pygame.draw.polygon(s, fill, polygon)
+        pygame.draw.polygon(s, config.COLOR_TEXT if selected_card else sc,
+                            polygon, 3 if selected_card else 1)
+        left_side = card.centerx < anchor[0]
+        edge = card.midright if left_side else card.midleft
+        endpoint = (min(p[0] for p in polygon) if left_side else max(p[0] for p in polygon),
+                    anchor[1])
+        pygame.draw.lines(s, sc, False,
+                          (edge, (edge[0] + (10 if left_side else -10), edge[1]), endpoint), 1)
+        pygame.draw.rect(s, (10, 22, 23), card)
+        pygame.draw.rect(s, config.COLOR_TEXT if selected_card else sc, card,
+                         2 if selected_card else 1)
+        label = message("damage.schematic.callout", number=f"{i + 1:02}",
+                        name=localize("damage.short." + key))
+        line_h = layout.font(14).get_linesize() + 2
+        layout.blit_line(s, label, (card.x + 6, card.y + 3, card.w - 12, line_h),
+                         config.COLOR_TEXT, size=14)
         teams = game.damage.teams_on(key)
-        flood_rate = (config.DMG_FLOOD_RATE if c.state == "FLUTEND" else
-                      config.DMG_LEAK_RATE if c.state == "BESCHAEDIGT" else 0.0)
-        net_rate = flood_rate - config.DMG_REPAIR_RATE * len(teams)
-        trend = "STEIGT" if net_rate > .001 else ("FAELLT" if net_rate < -.001 else "STABIL")
-        eta = ((config.DMG_DESTROY_FLOOD - c.flood) / net_rate
-               if net_rate > .001 else None)
-        eta_text = f"{eta / 60:.0f}" if eta is not None else "--"
-        trend_label = localize({"STEIGT": "damage.rising", "FAELLT": "damage.falling",
-                                "STABIL": "damage.stable"}[trend])
-        layout.blit_line(s, message("damage.line.trend", trend=trend_label,
-                                    eta=eta_text, flooding=f"{c.flood:3.0f}"),
-                           (bx + 14, by + bh - 22, bw - 26, 19),
-                           config.COLOR_DANGER if severity >= 70 else config.COLOR_TEXT_DIM,
-                           size=13)
+        markers = ("X" if c.state == "ZERSTOERT" else
+                   "!" if c.state != "OK" else "OK")
+        markers += (" ~" if c.flood > 0 else "") + (" ^" if c.fire > 0 else "")
         if teams:
-            layout.blit_line(s, message("damage.line.team", teams=",".join(str(t) for t in teams)),
-                              (bx + 14, by + bh - 43, bw - 26, 19),
-                              config.COLOR_OK, size=13)
+            markers += " T" + ",".join(map(str, teams))
+        layout.blit_line(s, markers, (card.x + 6, card.y + line_h + 3,
+                                      card.w - 12, line_h), sc, size=14)
+        # Redundant geometric hazard marks remain legible without color.
+        ax, ay = anchor
+        if c.state == "ZERSTOERT":
+            pygame.draw.line(s, sc, (ax - 7, ay - 7), (ax + 7, ay + 7), 2)
+            pygame.draw.line(s, sc, (ax - 7, ay + 7), (ax + 7, ay - 7), 2)
+        if c.fire > 0:
+            pygame.draw.polygon(s, (255, 155, 83),
+                                ((ax - 7, ay + 6), (ax, ay - 8), (ax + 7, ay + 6)), 2)
+        if c.flood > 0:
+            pygame.draw.lines(s, (132, 194, 223), False,
+                              ((ax - 9, ay + 9), (ax - 3, ay + 6),
+                               (ax + 3, ay + 9), (ax + 9, ay + 6)), 2)
+
+    for name, points in regions["features"].items():
+        if name in ("barrel", "mast"):
+            pygame.draw.lines(s, (124, 161, 163), False, points, 2)
+        else:
+            pygame.draw.polygon(s, (124, 161, 163), points, 1)
+        if name in ("vls", "funnel", "hangar"):
+            for step in range(1, 4):
+                x = round(points[0][0] + (points[1][0] - points[0][0]) * step / 4)
+                pygame.draw.line(s, (90, 125, 129), (x, points[0][1]),
+                                 (x, points[2][1]), 1)
+        if name == "helipad":
+            bounds = pygame.Rect(points[0], (points[2][0] - points[0][0],
+                                             points[2][1] - points[0][1]))
+            inset = bounds.inflate(-bounds.w // 2, -bounds.h // 3)
+            pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.topleft, inset.bottomleft, 1)
+            pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.topright, inset.bottomright, 1)
+            pygame.draw.line(s, config.COLOR_TEXT_DIM, inset.midleft, inset.midright, 1)
+    layout.blit_line(s, "damage.schematic.legend",
+                     (plan.x, plan.bottom - 39, plan.w, 36),
+                     config.COLOR_TEXT_DIM, size=14)
 
     selected_key, selected = items[game.dmg_cursor]
-    detail_x = x0 + grid_w + gap
-    detail = layout.box(s, (detail_x, top, detail_w, grid_h),
+    detail = layout.box(s, regions["detail"],
                         "panel.selection_actions", border=_state_color(selected.state))
     dx, dy, dw, _ = detail
     layout.blit_line(s, _compartment_name(selected_key, selected.name),
-                     (dx, dy, dw, 28), config.COLOR_TEXT, size=19)
-    dy += 34
-    layout.status_line(s, dx, dy, dw, "ui.state", STATE_LABEL[selected.state],
-                       color=_state_color(selected.state), label_w=118, size=15)
+                     (dx, dy, dw, 26), config.COLOR_TEXT, size=16)
     dy += 28
-    layout.status_line(s, dx, dy, dw, "ui.flooding", f"{selected.flood:.0f}%",
-                       color=config.COLOR_DANGER if selected.flood >= 50 else config.COLOR_TEXT,
-                       label_w=118, size=15)
-    dy += 28
-    layout.status_line(s, dx, dy, dw, "ui.fire", f"{selected.fire:.0f}%",
-                       color=config.COLOR_DANGER if selected.fire else config.COLOR_TEXT_DIM,
-                       label_w=118, size=15)
-    dy += 38
+    for label, value, color in (
+            ("ui.state", localize(STATE_LABEL[selected.state]), _state_color(selected.state)),
+            ("ui.flooding", f"{selected.flood:.0f}%", config.COLOR_TEXT),
+            ("ui.fire", f"{selected.fire:.0f}%", config.COLOR_DANGER if selected.fire else config.COLOR_TEXT_DIM)):
+        layout.blit_line(s, localize(label), (dx, dy, 90, 22), config.COLOR_TEXT_DIM, size=14)
+        layout.blit_line(s, value, (dx + 94, dy, dw - 94, 22), color, size=14)
+        dy += 24
+    trend = game.damage.compartment_trend(selected_key)
+    for hazard in ("flood", "fire"):
+        rate = trend[hazard + "_rate"]
+        trend_key = ("damage.unrepairable" if not trend["repairable"] else
+                     "damage.rising" if rate > .001 else
+                     "damage.falling" if rate < -.001 else "damage.stable")
+        layout.blit_line(s, message("damage.net." + hazard,
+            trend=localize(trend_key), rate=f"{rate * 60:+.1f}"),
+            (dx, dy, dw, 22), config.COLOR_WARN if rate > 0 else config.COLOR_TEXT_DIM, size=14)
+        dy += 24
     pygame.draw.line(s, config.COLOR_GRID, (dx, dy), (dx + dw, dy))
     dy += 12
     assignment = game.damage.teams[game.dmg_team]
-    assignment_text = (message("damage.line.assigned", compartment=_compartment_name(
-        assignment, game.damage.compartments[assignment].name))
-                        if assignment is not None else "damage.line.unassigned")
-    layout.status_line(s, dx, dy, dw, f"Team {game.dmg_team}", assignment_text,
-                       color=config.COLOR_OK, label_w=96, size=14)
-    dy += 34
+    assignment_text = (_compartment_name(assignment, game.damage.compartments[assignment].name)
+                       if assignment is not None else localize("damage.free"))
+    layout.blit_line(s, message("damage.team_destination", team=game.dmg_team,
+                                destination=assignment_text),
+                     (dx, dy, dw, 44), config.COLOR_OK, size=14)
+    dy += 46
     assigned = game.damage.teams_on(selected_key)
-    layout.status_line(s, dx, dy, dw, "ui.on_scene",
-                        message("damage.line.teams_on_scene", teams=", ".join(str(team) for team in assigned))
-                        if assigned else "damage.line.no_team",
-                       color=config.COLOR_OK if assigned else config.COLOR_WARN,
-                       label_w=96, size=14)
-    dy += 40
+    layout.blit_line(s, "ui.on_scene", (dx, dy, 96, 22), config.COLOR_TEXT_DIM, size=14)
+    layout.blit_line(s, message("damage.line.teams_on_scene", teams=", ".join(map(str, assigned)))
+                     if assigned else "damage.line.no_team", (dx + 100, dy, dw - 100, 22),
+                     config.COLOR_OK if assigned else config.COLOR_WARN, size=14)
+    dy += 26
     layout.blit_block(s, "control.damage_team",
-                      dx, dy, dw, 58, config.COLOR_TEXT, size=14)
+                      dx, dy, dw, max(1, regions["detail"].bottom - dy - 6), config.COLOR_TEXT, size=14)
 
     footer_y = rect.bottom - 52
     layout.status_line(
-        s, x0, footer_y, rect.w - margin * 2, "panel.total_flooding",
+        s, rect.x + 16, footer_y, rect.w - 32, "panel.total_flooding",
          message("damage.line.total", total=f"{game.damage.total:3.0f}",
                  maximum=len(game.damage.compartments) * 100,
                  average=f"{game.damage.avg_flood():.0f}"),
         color=config.COLOR_DANGER if game.damage.ship_sunk else config.COLOR_TEXT,
         label_w=170, size=15)
     layout.blit_line(s, "control.damage_select",
-                     (rect.centerx, footer_y, rect.w // 2 - margin, 21),
+                     (rect.x + 16, footer_y + 26, rect.w - 32, 21),
                      config.COLOR_TEXT_DIM, size=14, align="right")
 
 

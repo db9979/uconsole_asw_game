@@ -232,7 +232,10 @@ def test_identical_seeds_and_continuous_tone_phase():
         assert a.spectrum == b.spectrum and a.demon_analysis == b.demon_analysis
         blocks.append(a.samples - noise.samples)
     t = np.arange(12 * 1024) / 4096
-    np.testing.assert_allclose(np.concatenate(blocks), .2 * np.sin(2 * np.pi * 123.25 * t), atol=2e-8)
+    expected = .2 * np.sin(2 * np.pi * 123.25 * t)
+    edge = round(.005 * 4096)
+    expected[:edge] *= np.linspace(0, 1, edge)
+    np.testing.assert_allclose(np.concatenate(blocks), expected, atol=2e-8)
     other = AcousticReceiver(10)
     other.update([], 0, 20, 0, 0, 0)
     assert not np.array_equal(noise.samples, other.samples)

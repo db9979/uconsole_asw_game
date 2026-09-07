@@ -21,11 +21,15 @@ def propeller_block(rpm: float, blade_count: int, sample_rate: int,
                      cavitation: float = 0.0, phase: float = 0.0,
                      seed: int = 17,
                      rng: np.random.Generator | None = None,
-                     filter_state: np.ndarray | None = None) -> np.ndarray:
+                     filter_state: np.ndarray | None = None,
+                     shaft_phase: float | None = None) -> np.ndarray:
     """Synthese aus Blattfrequenz, Obertoenen und gefilterter Kavitation.
 
     ``phase`` ist die Blattphasenlage am Blockanfang. Fuer lueckenlose Folgen
     wird sie je Block um ``2*pi*blade_hz*len(block)/sample_rate`` erhoeht.
+    Wrapped blade phase needs an independent ``shaft_phase`` advanced by
+    ``2*pi*(blade_hz/blade_count)*len(block)/sample_rate``. If omitted, phase
+    must be unwrapped (the historical one-shot/continuous synthesis API).
     """
     count = max(1, int(duration_s * sample_rate))
     t = np.arange(count, dtype=np.float64) / sample_rate
@@ -36,7 +40,9 @@ def propeller_block(rpm: float, blade_count: int, sample_rate: int,
     signal = np.sin(blade_phase)
     signal += 0.34 * np.sin(2.0 * blade_phase + 0.2)
     signal += 0.16 * np.sin(3.0 * blade_phase - 0.35)
-    signal *= 0.92 + 0.08 * np.sin(blade_phase / max(1, blade_count) + 0.7)
+    shaft = (blade_phase / max(1, blade_count) if shaft_phase is None else
+             2 * math.pi * blade_hz / max(1, blade_count) * t + shaft_phase)
+    signal *= 0.92 + 0.08 * np.sin(shaft + 0.7)
     if cavitation > 0.0:
         taps = np.array([.08, .16, .24, .24, .16, .08])
         if rng is None:
@@ -51,7 +57,7 @@ def propeller_block(rpm: float, blade_count: int, sample_rate: int,
             noise = np.convolve(np.concatenate((history, raw)), taps,
                                 mode="valid")
             if filter_state is not None:
-                filter_state[:] = raw[-history.size:]
+                filter_state[:] = np.concatenate((history, raw))[-history.size:]
         # A short FIR removes the brittle white-noise edge while retaining
         # the impulsive broadband character of cavitation.
         bursts = np.maximum(0.0, np.sin(blade_phase - 0.8)) ** 3

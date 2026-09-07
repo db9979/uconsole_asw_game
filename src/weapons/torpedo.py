@@ -17,6 +17,28 @@ def _required_torpedo_profile(key: str):
 _FRIGATE_TORP_PROFILE = _required_torpedo_profile("frigate_torp")
 
 
+def underwater_path_blocked(world, x0, y0, depth0, x1, y1, depth1):
+    """Bounded collision/receiver query; lightweight callers may omit world."""
+    if world is None:
+        return False
+    size = getattr(world, "size_nm", float("inf"))
+    if not (0 <= x0 <= size and 0 <= y0 <= size
+            and 0 <= x1 <= size and 0 <= y1 <= size):
+        return True
+    path = getattr(world, "sonar_path_blocked", None)
+    if callable(path):
+        return path(x0, y0, max(0.0, depth0), x1, y1, max(0.0, depth1))
+    land = getattr(world, "on_land", lambda x, y: False)
+    bottom = getattr(world, "depth_m", lambda x, y: float("inf"))
+    count = min(64, max(1, math.ceil(math.hypot(x1 - x0, y1 - y0) / 0.05)))
+    for i in range(count + 1):
+        t = i / count
+        x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+        if land(x, y) or bottom(x, y) <= depth0 + (depth1 - depth0) * t:
+            return True
+    return False
+
+
 class Torpedo:
     # Exact speeds, envelopes, rates and timing below are gameplay tuning
     # values. They do not describe real weapon performance or doctrine.
@@ -58,6 +80,7 @@ class Torpedo:
         self.guidance_x = guidance_x
         self.guidance_y = guidance_y
         self.seeker_acquired = False
+        self.terminal_active = False
         self._seeker_target = None
         if guidance_x is not None and guidance_y is not None:
             self._midcourse = self._bearing_to(guidance_x, guidance_y)
@@ -103,7 +126,7 @@ class Torpedo:
         self._midcourse_timer = 0.0
         return True
 
-    def evaluate_seeker_candidates(self, candidates) -> object | None:
+    def evaluate_seeker_candidates(self, candidates, world=None) -> object | None:
         """Return the best viable terminal contact, including decoys.
 
         Candidates only need position/depth attributes. The API deliberately
@@ -119,6 +142,9 @@ class Torpedo:
             distance = math.hypot(candidate.x - self.x, candidate.y - self.y)
             if distance > config.TORP_HOME_RANGE_NM:
                 continue
+            if underwater_path_blocked(world, self.x, self.y, self.depth,
+                    candidate.x, candidate.y, getattr(candidate, "depth", self.target_depth)):
+                continue
             depth_error = abs(getattr(candidate, "depth", self.target_depth)
                               - self.depth)
             viable.append((distance + depth_error / 1000.0, candidate))
@@ -128,7 +154,8 @@ class Torpedo:
         return math.degrees(math.atan2(x_nm - self.x,
                                        -(y_nm - self.y))) % 360.0
 
-    def update(self, dt: float, seeker_candidates=None) -> None:
+    def update(self, dt: float, seeker_candidates=None, world=None,
+               collision_candidates=()) -> None:
         if self.state != "RUN":
             return
 
@@ -142,7 +169,11 @@ class Torpedo:
         # not previously need a separate terminal contact reference.
         if self.seeker_acquired and self._seeker_target is None:
             self._seeker_target = self.target
+        self.terminal_active = self.terminal_active or self.seeker_acquired
         sub = self._seeker_target
+        if self.seeker_acquired and self.evaluate_seeker_candidates([sub], world) is None:
+            self.seeker_acquired = False
+            self._seeker_target = sub = None
         desired = None
         wobble = 0.0
         turn = self.TURN_DEG_PER_S
@@ -151,10 +182,11 @@ class Torpedo:
         seeker_active = self.guidance_distance_nm() <= config.TORP_HOME_RANGE_NM
         if self.guidance_x is None or self.guidance_y is None:
             seeker_active = self.distance_to_target_nm() <= config.TORP_HOME_RANGE_NM
-        if not self.seeker_acquired and seeker_active:
+        self.terminal_active = self.terminal_active or self.seeker_acquired or seeker_active
+        if not self.seeker_acquired and self.terminal_active:
             candidates = ([self.target] if seeker_candidates is None
                           else seeker_candidates)
-            self._seeker_target = self.evaluate_seeker_candidates(candidates)
+            self._seeker_target = self.evaluate_seeker_candidates(candidates, world)
             self.seeker_acquired = self._seeker_target is not None
             sub = self._seeker_target
             if self.seeker_acquired:
@@ -164,6 +196,7 @@ class Torpedo:
                         and getattr(sub, "state", None) != "SINKING")
         if self.seeker_acquired and target_alive:
             desired = self._bearing_to(sub.x, sub.y)
+            self.target_depth = max(0.0, sub.depth)
             turn = 15.0
         else:
             # Vor der Eigenortung folgt der Torpedo nur Drahtdaten und sucht
@@ -179,14 +212,12 @@ class Torpedo:
         # Tiefe ansteuern (im Suchlauf mit Wobble, sonst Zieltiefe).
         # Proportionaler Regelkreis: reicht auch bei kurzen Anflügen,
         # um in Zieltiefe zu treffen (lineares Tauchen kam zu spat an).
-        d_target = self.target_depth + wobble
+        old_depth = self.depth
+        d_target = max(0.0, self.target_depth + wobble)
         d_diff = d_target - self.depth
-        if abs(d_diff) <= 1.0:
-            self.depth = d_target
-        else:
-            self.depth += config.clamp(
-                d_diff, -self.DEPTH_RATE_M_PER_S * dt,
-                self.DEPTH_RATE_M_PER_S * dt)
+        self.depth += config.clamp(
+            d_diff, -self.DEPTH_RATE_M_PER_S * dt,
+            self.DEPTH_RATE_M_PER_S * dt)
 
         throttle = 1.0
         if desired is not None:
@@ -202,27 +233,69 @@ class Torpedo:
                     0.0, min(1.0, (abs(diff) - 30.0) / 30.0))
         # Bewegung (Anti-Tunneling: Swept-Check über den ganzen Schritt)
         ox, oy = self.x, self.y
-        step = self.speed_nm_per_s * dt * throttle
+        step = min(self.speed_nm_per_s * dt * throttle,
+                   max(0.0, self.range_nm - self.travel))
         self.x += step * math.sin(math.radians(self.course))
         self.y -= step * math.cos(math.radians(self.course))
         self.travel += step
 
-        if self.travel >= self.range_nm:
-            self.state = "SASE"
-            return
-
-        # Trefferprüfung (Punkt-Strecke: Zieldistanz entlang der Flugbahn)
-        if target_alive:
-            dist = self._swept_dist(sub, ox, oy)
-            if (dist <= self.kill_dist_nm
-                    and abs(self.depth - sub.depth) <= self.kill_depth_m):
-                if callable(getattr(sub, "hit", None)):
+        bodies = [(body, config.CIVILIAN_HIT_RADIUS_NM)
+                  for body in collision_candidates if not body.sunk]
+        if target_alive and not any(body is sub for body, _ in bodies):
+            bodies.append((sub, self.kill_dist_nm))
+        hits = []
+        for body, radius in bodies:
+            fraction = self._swept_hit_fraction(body, ox, oy, old_depth, radius)
+            if fraction is not None:
+                hits.append((fraction, body))
+        for fraction, body in sorted(hits, key=lambda item: item[0]):
+            hx, hy = ox + (self.x - ox) * fraction, oy + (self.y - oy) * fraction
+            hd = old_depth + (self.depth - old_depth) * fraction
+            if (not underwater_path_blocked(world, ox, oy, old_depth, hx, hy, hd)
+                    and not underwater_path_blocked(world, hx, hy, hd,
+                                                     body.x, body.y, body.depth)):
+                self.x, self.y, self.depth = hx, hy, hd
+                self.travel -= step * (1.0 - fraction)
+                self.target = body
+                if callable(getattr(body, "hit", None)):
                     self.state = "HIT"
-                    sub.hit()
+                    body.hit()
                 else:
                     # A decoy/contact consumes the terminal run but is not a
                     # reportable target hit.
                     self.state = "SASE"
+                return
+        if (underwater_path_blocked(world, ox, oy, old_depth,
+                                    self.x, self.y, self.depth)
+                or self.travel >= self.range_nm):
+            self.state = "SASE"
+
+    def _swept_hit_fraction(self, target, ox, oy, old_depth, radius):
+        """First overlap of the horizontal hit circle and vertical tolerance."""
+        dx, dy = self.x - ox, self.y - oy
+        rx, ry = ox - target.x, oy - target.y
+        a = dx * dx + dy * dy
+        c = rx * rx + ry * ry - radius * radius
+        low, high = 0.0, 1.0
+        if a <= 1e-20:
+            if c > 0:
+                return None
+        else:
+            b = 2.0 * (rx * dx + ry * dy)
+            discriminant = b * b - 4.0 * a * c
+            if discriminant < 0:
+                return None
+            root = math.sqrt(discriminant)
+            low, high = max(low, (-b - root) / (2 * a)), min(high, (-b + root) / (2 * a))
+        dz = self.depth - old_depth
+        if abs(dz) <= 1e-12:
+            if abs(target.depth - old_depth) > self.kill_depth_m:
+                return None
+        else:
+            first = (target.depth - self.kill_depth_m - old_depth) / dz
+            last = (target.depth + self.kill_depth_m - old_depth) / dz
+            low, high = max(low, min(first, last)), min(high, max(first, last))
+        return low if low <= high else None
 
     def _swept_dist(self, sub, ox: float, oy: float) -> float:
         """Min. Distanz Ziel-Position -> Torpedo-Strecke (ox,oy)->(x,y)."""
@@ -257,11 +330,10 @@ class EnemyTorpedo:
         self.travel = 0.0
         self.state = "RUN"  # RUN, HIT, SASE
         self.torpedo_class = "enemy"
-        prof = CATALOG.get_torpedo("enemy_torp")
-        self.speed_kn = (prof.speed_kn if prof is not None
-                         else config.ENEMY_TORP_SPEED_KN)
-        self.range_nm = (prof.range_nm if prof is not None
-                         else config.ENEMY_TORP_RANGE_NM)
+        prof = _required_torpedo_profile("enemy_torp")
+        self.speed_kn = prof.speed_kn
+        self.range_nm = prof.range_nm
+        self.kill_dist_nm = prof.hit_dist_nm
 
     @property
     def dead(self) -> bool:
@@ -271,22 +343,29 @@ class EnemyTorpedo:
     def speed_nm_per_s(self) -> float:
         return config.kn_to_nm_per_s(self.speed_kn)
 
-    def update(self, dt: float, ship) -> None:
+    def update(self, dt: float, ship, world=None) -> None:
         if self.state != "RUN":
             return
         dist_before = math.hypot(ship.x - self.x, ship.y - self.y)
-        if dist_before <= 3.0:
+        if dist_before <= 3.0 and not underwater_path_blocked(
+                world, self.x, self.y, self.depth, ship.x, ship.y, 5.0):
             desired = math.degrees(math.atan2(
                 ship.x - self.x, -(ship.y - self.y))) % 360.0
             diff = config.angle_diff_deg(desired, self.course)
             self.course = (self.course + config.clamp(
                 diff, -6.0 * dt, 6.0 * dt)) % 360.0
-        step = self.speed_nm_per_s * dt
+        ox, oy = self.x, self.y
+        step = min(self.speed_nm_per_s * dt, max(0.0, self.range_nm - self.travel))
         self.x += step * math.sin(math.radians(self.course))
         self.y -= step * math.cos(math.radians(self.course))
         self.travel += step
 
-        if math.hypot(ship.x - self.x, ship.y - self.y) <= config.ENEMY_TORP_HIT_DIST_NM:
+        if underwater_path_blocked(world, ox, oy, self.depth,
+                                   self.x, self.y, self.depth):
+            self.state = "SASE"
+        elif (Torpedo._swept_dist(self, ship, ox, oy) <= self.kill_dist_nm
+              and not underwater_path_blocked(world, self.x, self.y, self.depth,
+                                               ship.x, ship.y, 5.0)):
             self.state = "HIT"
         elif self.travel >= self.range_nm:
             self.state = "SASE"

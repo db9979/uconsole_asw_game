@@ -68,7 +68,8 @@ def test_broadband_tooltip_snaps_to_two_degree_source_bin(game):
     rail_w = min(350, max(240, round(body.w * .28)))
     main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
     plot = pygame.Rect(main.x + 57, main.y + 61, main.w - 83, main.h - 108)
-    payload = view.sonar_hit_target(game, (plot.right - 1, plot.centery))
+    # Only the top sample is drawn; the remainder is empty padded history.
+    payload = view.sonar_hit_target(game, (plot.right - 1, plot.top))
     assert payload["id"] == "sonar:broadband:0.0"
     assert any("2-degree" in line and "180 bins" in line
                for line in payload["lines"])

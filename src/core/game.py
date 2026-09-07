@@ -8,6 +8,7 @@ import os
 import pygame
 
 from src.audio.engine import AudioEngine
+from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
                                station_page_step, toggle_tas)
@@ -40,7 +41,7 @@ from src.ui.stations_view import (draw_bridge_view, draw_damage_view,
                                   draw_engine_view, draw_opz_view,
                                   draw_radio_view, draw_radar_view,
                                    draw_helicopter_view, station_hit_target)
-from src.ui.stations_view import opz_ppi_rect
+from src.ui.stations_view import damage_compartment_at, opz_ppi_rect
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 from src.ui.viewport import Viewport
@@ -97,12 +98,16 @@ class Game:
         pygame.mixer.pre_init(frequency=config.AUDIO_SAMPLE_RATE, size=-16,
                               channels=2, buffer=512)
         pygame.init()
+        self._joysticks = {}
+        if pygame.joystick.get_init():
+            for index in range(pygame.joystick.get_count()):
+                self._open_joystick(index)
         pygame.display.set_caption(self.tr("app.title"))
         if requested_fullscreen:
             # Echtes Vollbild: (0,0)+FULLSCREEN laesst SDL die native
             # Desktop-Aufloesung waehlen -> deckt Taskleiste ab, keine
             # schwarzen Balken. FILL_SCREEN streckt den virtuellen
-            # 1280x800-Canvas danach auf die volle Flaechе.
+            # 1280x720-Canvas danach auf die volle Flaeche.
             self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
             self.fullscreen = True
         else:
@@ -134,6 +139,8 @@ class Game:
         self.editor = None
         self.options_open = False
         self.options_sel = 0
+        self.commander = CommanderConsole()
+        self.commander_open = False
         self.menu_back = False
         # W0: neue UI-Zustände
         self.help_open = False
@@ -150,9 +157,9 @@ class Game:
         self.splash_duration_s = 4.5
 
     def _apply_text_size(self) -> None:
-        scale = 1.25 if self.preferences.large_text else 1.0
-        self.font = pygame.font.SysFont("monospace", round(18 * scale))
-        self.font_big = pygame.font.SysFont("monospace", round(28 * scale), bold=True)
+        layout.configure_for(self)
+        self.font = layout.font(18)
+        self.font_big = layout.font(28, bold=True)
 
     @property
     def radar_range_nm(self) -> float:
@@ -169,6 +176,7 @@ class Game:
         Startposition fest. s4_zufall = seed-basiert wie vor dem Refactor.
         """
         import random
+        self.commander_open = False
         self.audio.stop()
         self._sonar_audio_sequence = -1
         scenario_key = scenario_key or self.scenario_key
@@ -321,6 +329,8 @@ class Game:
         self.chaff_cd = 0.0
         self.rng_asm = random.Random(seed + 31337)
         self.asm_spawned = 0
+        self.asm_seq = 0
+        self.air_threat_reported = False
         self.warship_asm_seq = 0
         self.asm_sel = 0
         self.air_picture = TrackPicture(config.RADAR_TRACK_STALE_S)
@@ -331,6 +341,7 @@ class Game:
         self.hfdf_log = []
         self.hfdf_fixes = {}
         self.ciws_ammo = config.CIWS_AMMO_DEFAULT
+        self.ciws_cooldown_s = 0.0
         self.hq_timer = 15.0
         self._mission_warnings = set()
         self.tooltips_enabled = self.preferences.tooltips
@@ -359,6 +370,11 @@ class Game:
         self.hq_msg(message("runtime.hq.weather", sea_state=self.world.sea_state))
         self.feed.add(self.world.format_time(), "mission",
                       self._mission_started_notice())
+        # Menu input cannot operate the simulation. Only this unstarted world
+        # may be consumed by menu start; loads replace its world/sonar identity.
+        self._prepared_menu_mission = (
+            seed, self.scenario_key, self.world_mode, self.level,
+            id(self.world), id(self.sonar)) if self.in_menu else None
 
     def start_custom_mission(self, definition: dict) -> bool:
         """Start the currently runtime-effective subset of an authored mission.
@@ -405,14 +421,19 @@ class Game:
         self.world.sea_state = int(env["sea_state"])
         thermo = float(env["thermocline_depth_m"])
         self.world._thermo = [[thermo for _ in row] for row in self.world._thermo]
+        lv = config.LEVELS[self.level]
         for unit in exact:
             marker = markers[unit["id"]]
             x, y = self.world.nearest_water(marker["x"], marker["y"])
             profile = unit["profile"]
             if profile in CATALOG.subs:
-                self.subs.append(Sub(x, y, float(unit.get("depth_m", 60.0)),
-                                     float(unit.get("course_deg", 0.0)), profile,
-                                     self.rng_world))
+                entity = Sub(x, y, float(unit.get("depth_m", 60.0)),
+                             float(unit.get("course_deg", 0.0)), profile,
+                             self.rng_world, quiet_mult=lv["quiet_mult"],
+                             attack_mult=lv["enemy_attack_mult"],
+                             attack_cooldown_s=lv["enemy_cooldown_s"])
+                entity.speed = float(unit.get("speed_kn", 0.0))
+                self.subs.append(entity)
             elif unit["side"] == "hostile":
                 entity = SurfaceShip(
                     x, y, rng=self.rng_world, hostile=True,
@@ -618,7 +639,7 @@ class Game:
 
     def toggle_fullscreen(self, persist: bool = True) -> None:
         """Vollbild: (0,0)+FULLSCREEN = native Desktop-Größe (deckt Taskleiste
-        ab, keine schwarzen Balken). Zurück = 1280x800-Fenster."""
+        ab, keine schwarzen Balken). Zurück = 1280x720-Fenster."""
         self.fullscreen = not self.fullscreen
         if self.fullscreen:
             self.display = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -668,7 +689,7 @@ class Game:
             self.flash(message("status.preferences_error"), 3.0)
 
     def compose_frame(self) -> None:
-        """Virtuellen 1280x800-Canvas aufs Display bringen (M8/M9).
+        """Virtuellen 1280x720-Canvas aufs Display bringen (M8/M9).
 
         FILL_SCREEN=True: Stretch auf die volle Fläche (keine schwarzen
         Balken bei 16:9); False: aspect-correctes Letterbox.
@@ -690,10 +711,19 @@ class Game:
 
     # --- Input ---
 
+    def _open_joystick(self, index: int) -> None:
+        """Retain SDL device handles; unavailable devices remain optional."""
+        try:
+            device = pygame.joystick.Joystick(index)
+            device.init()
+            self._joysticks[device.get_instance_id()] = device
+        except pygame.error:
+            pass
+
     @property
     def administration_open(self) -> bool:
         return (self.help_open or self.nations_open or self.quit_confirm
-                or self.save_ui is not None or self.options_open)
+                or self.save_ui is not None or self.options_open or self.commander_open)
 
     def _clear_controls(self) -> None:
         self.held.clear()
@@ -718,11 +748,15 @@ class Game:
         self.quit_confirm = name == "quit"
         self.save_ui = name if name in ("save", "load") else None
         self.options_open = name == "options"
+        self.commander_open = name == "commander"
+        if self.commander_open:
+            self.commander.prepare()
         self.quit_selection = 0
         self.quit_after_save = False
         self.save_confirm = False
         self.msg = ""
         self.help_page = 0
+        self.help_scroll = 0
         if self.save_ui is not None:
             self.save_info = []
             for slot in range(1, 6):
@@ -743,12 +777,17 @@ class Game:
 
     def _handle_administration_key(self, key: int) -> None:
         enter = key in (pygame.K_RETURN, pygame.K_KP_ENTER)
-        if self.options_open:
+        if self.commander_open:
+            self.commander.handle_key(self, key)
+        elif self.options_open:
             if key == pygame.K_ESCAPE:
                 self.options_open = False
             elif key in (pygame.K_UP, pygame.K_DOWN):
-                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 5
+                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 6
             elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
+                if self.options_sel == 5:
+                    self._open_administration("commander")
+                    return
                 names = ("language", "fullscreen", "audio", "large_text",
                          "tooltips")
                 name = names[self.options_sel]
@@ -806,6 +845,14 @@ class Game:
                 self.help_open = False
             elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_TAB):
                 self.help_page = (self.help_page + (-1 if key == pygame.K_LEFT else 1)) % 3
+                self.help_scroll = 0
+            elif key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+                lines, visible = self._help_lines()
+                step = visible if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN) else 1
+                if key in (pygame.K_UP, pygame.K_PAGEUP):
+                    step = -step
+                self.help_scroll = max(0, min(max(0, len(lines) - visible),
+                                              getattr(self, "help_scroll", 0) + step))
         elif self.nations_open and key in (pygame.K_ESCAPE, pygame.K_n):
             self.nations_open = False
 
@@ -862,11 +909,49 @@ class Game:
         payload = self.tooltip_at(canvas)
         if payload is None:
             return False
+        payload = dict(payload, lines=[self.tr("tooltip.snapshot", time=f"{self.sim_t:.1f}")]
+                       + list(payload.get("lines", [])))
         self.pinned_tooltip = layout.valid_tooltip(payload)
         self._tooltip_anchor = tuple(canvas)
         return self.pinned_tooltip is not None
 
     def handle_event(self, e) -> None:
+        # Observe actual input transitions, not candidate restoration. Two owner
+        # changes within one wall frame must still invalidate queued commands.
+        fields = ("paused", "in_menu", "main_menu", "splash_active", "input_mode",
+                  "help_open", "nations_open", "quit_confirm", "save_ui",
+                  "options_open", "commander_open", "running", "game_over")
+        before = tuple(getattr(self, field) for field in fields), id(self.editor)
+        try:
+            self._handle_owned_event(e)
+        finally:
+            after = tuple(getattr(self, field) for field in fields), id(self.editor)
+            if before != after:
+                self.commander.invalidate_commands()
+
+    def _handle_owned_event(self, e) -> None:
+        if e.type == pygame.JOYDEVICEADDED:
+            self._open_joystick(e.device_index)
+            return
+        if e.type == pygame.JOYDEVICEREMOVED:
+            device = self._joysticks.pop(e.instance_id, None)
+            if device is not None:
+                device.quit()
+            self._clear_controls()
+            return
+        if e.type == pygame.WINDOWFOCUSLOST:
+            self._clear_controls()
+            if not self.in_menu and not self.game_over:
+                self.paused = True
+                self.flash(message("runtime.focus_lost"), 3.0)
+            return
+        if e.type == pygame.KEYDOWN and getattr(e, "repeat", False):
+            return
+        if (e.type == pygame.KEYDOWN
+                and e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
+                and getattr(e, "mod", 0) & pygame.KMOD_ALT):
+            self.toggle_fullscreen()
+            return
         if self.splash_active:
             if e.type == pygame.QUIT:
                 self.running = False
@@ -897,6 +982,20 @@ class Game:
                 self.editor = None
                 self.main_menu = True
                 return
+            if e.type in (pygame.JOYAXISMOTION, pygame.JOYBUTTONDOWN):
+                return
+            if e.type in (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP,
+                          pygame.MOUSEMOTION, pygame.MOUSEWHEEL):
+                pos = getattr(e, "pos", pygame.mouse.get_pos())
+                canvas = self._window_to_canvas(pos)
+                if canvas is None:
+                    return
+                attrs = dict(e.dict, pos=canvas)
+                if hasattr(e, "rel"):
+                    previous = self._window_to_canvas((pos[0] - e.rel[0], pos[1] - e.rel[1]))
+                    attrs["rel"] = ((canvas[0] - previous[0], canvas[1] - previous[1])
+                                    if previous is not None else (0, 0))
+                e = pygame.event.Event(e.type, attrs)
             self.editor.handle_event(e)
             return
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
@@ -905,22 +1004,9 @@ class Game:
             self._map_drag = None
             self._map_drag_moved = False
             return
-        if e.type == pygame.WINDOWFOCUSLOST:
-            self._clear_controls()
-            if not self.in_menu and not self.game_over:
-                self.paused = True
-                self.flash(message("runtime.focus_lost"), 3.0)
-            return
         if e.type == pygame.QUIT:
             if not self.quit_confirm:
                 self._open_administration("quit")
-            return
-        if e.type == pygame.KEYDOWN and getattr(e, "repeat", False):
-            return
-        if (e.type == pygame.KEYDOWN
-                and e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
-                and getattr(e, "mod", 0) & pygame.KMOD_ALT):
-            self.toggle_fullscreen()
             return
         if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
                 and self.pinned_tooltip is not None):
@@ -930,6 +1016,18 @@ class Game:
         if self.administration_open:
             if e.type == pygame.KEYDOWN:
                 self._handle_administration_key(e.key)
+            elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                canvas = self._window_to_canvas(getattr(e, "pos", None))
+                if canvas is not None:
+                    if self.commander_open:
+                        self.commander.handle_click(self, canvas)
+                    elif self.options_open:
+                        for index, rect in enumerate(self._options_row_rects()):
+                            if rect.collidepoint(canvas):
+                                self.options_sel = index
+                                if index == 5:
+                                    self._open_administration("commander")
+                                break
             return
         if e.type != pygame.KEYDOWN and (self.input_mode is not None
                                          or self.paused or self.in_menu or self.game_over):
@@ -938,6 +1036,8 @@ class Game:
             if self.in_menu:
                 if e.key == pygame.K_F1:
                     self._open_administration("help")
+                elif e.key == pygame.K_F9:
+                    self._open_administration("commander")
                 else:
                     self._handle_menu_key(e.key)
                 return
@@ -946,6 +1046,9 @@ class Game:
                     self._handle_numeric_input(e.key)
                 elif e.key == pygame.K_p:
                     self.paused = False
+                return
+            if e.key == pygame.K_F9:
+                self._open_administration("commander")
                 return
             if e.key == pygame.K_ESCAPE:
                 self._open_administration("quit")
@@ -981,6 +1084,8 @@ class Game:
                 return
             if e.key == pygame.K_TAB:
                 self._clear_controls()
+                self.pinned_tooltip = None
+                self._tooltip_anchor = None
                 order = list(Station)
                 step = -1 if getattr(e, "mod", 0) & pygame.KMOD_SHIFT else 1
                 self.station = order[(order.index(self.station) + step) % len(order)]
@@ -991,6 +1096,17 @@ class Game:
                 return
             if self.paused:
                 return
+            if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
+                    and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
+                if self.station is Station.WEAPONS:
+                    self.launch_torpedo()
+                    return
+                if self.station is Station.OPZ:
+                    self.launch_essm()
+                    return
+                if self.station is Station.HELICOPTER:
+                    self.launch_helo_torpedo()
+                    return
             if self.station is Station.SONAR:
                 if e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
                     self.sonar_page = station_page_step(
@@ -1252,12 +1368,12 @@ class Game:
                 self._assign_selected_team()
         elif e.type == pygame.MOUSEWHEEL:
             # Wheel-Events haben nicht in allen SDL-Versionen ein pos.
-            if self.in_menu or self.game_over:
+            if self.in_menu or self.game_over or e.y == 0:
                 return
             canvas = self._window_to_canvas(getattr(e, "pos", None)
                                             or pygame.mouse.get_pos())
             if (self.station is Station.OPZ and canvas is not None
-                    and opz_ppi_rect().collidepoint(canvas)):
+                    and opz_ppi_rect(config.FULL_STATION_RECT).collidepoint(canvas)):
                 self._cycle_radar_range(1 if e.y > 0 else -1)
                 return
             pointer = self._map_pointer(getattr(e, "pos", None))
@@ -1268,11 +1384,22 @@ class Game:
             self.map_view.zoom(factor, pivot=pointer)
         elif e.type == pygame.MOUSEBUTTONDOWN:
             if e.button == 1 and not self.in_menu and not self.game_over:
+                if self.station is Station.DAMAGE:
+                    canvas = self._window_to_canvas(getattr(e, "pos", None))
+                    previous = config.STATION_RECT
+                    config.STATION_RECT = config.FULL_STATION_RECT
+                    try:
+                        compartment = damage_compartment_at(self, canvas)
+                    finally:
+                        config.STATION_RECT = previous
+                    if compartment is not None:
+                        self.dmg_cursor = list(self.damage.compartments).index(compartment)
+                        self._pin_tooltip_at(getattr(e, "pos", None))
+                        return
                 pointer = self._map_pointer(getattr(e, "pos", None))
                 if pointer is not None:
                     self._map_drag = pointer
                     self._map_drag_moved = False
-                    self.map_follow = False
                     return
                 if self._pin_tooltip_at(getattr(e, "pos", None)):
                     self._map_drag = None
@@ -1284,8 +1411,11 @@ class Game:
                     return
                 dx = pointer[0] - self._map_drag[0]
                 dy = pointer[1] - self._map_drag[1]
-                if abs(dx) + abs(dy) > 2:
-                    self._map_drag_moved = True
+                # Retain the press origin until cumulative displacement is a drag.
+                if not self._map_drag_moved and abs(dx) + abs(dy) <= 2:
+                    return
+                self._map_drag_moved = True
+                self.map_follow = False
                 self.map_view.pan_px(dx, dy)
                 self._map_drag = pointer
 
@@ -1293,7 +1423,7 @@ class Game:
         destination = list(self.damage.compartments)[self.dmg_cursor]
         if self.damage.assign_team(self.dmg_team, destination):
             self.flash(message("runtime.team.assigned", team=self.dmg_team,
-                               compartment=self.damage.compartments[destination].name))
+                               compartment=message("compartment." + destination)))
         else:
             self.flash(message("runtime.team.rejected"))
 
@@ -1422,8 +1552,11 @@ class Game:
         if not self.helo.airborne:
             self.flash(message("runtime.helo.not_airborne"))
             return
+        if not self.helo.water_entry_clear(self.world):
+            self.flash(message("runtime.helo.water_required"))
+            return
         self.buoy_seq += 1
-        buoy = self.helo.deploy_buoy(self.buoy_seq)
+        buoy = self.helo.deploy_buoy(self.buoy_seq, world=self.world)
         if buoy is not None:
             self.buoys.append(buoy)
             self.flash(message("runtime.buoy.deployed", buoy=buoy.seq))
@@ -1434,7 +1567,8 @@ class Game:
 
     def launch_helo_torpedo(self) -> None:
         """Leichttorpedo vom HSP-5 (eigene Munition, nicht Fregatten-Rohre)."""
-        if self.target is None or self.target.target_id not in self._target_ids():
+        if (self.target is None
+                or self.sim_t - self.target.last_seen >= config.SONAR_CONTACT_LOST_S):
             self.target = None
             self.flash(message("runtime.target.invalid"))
             return
@@ -1455,28 +1589,35 @@ class Game:
         if self.helo.torps <= 0:
             self.flash(message("runtime.helo_no_torpedoes"))
             return
+        if not self.helo.water_entry_clear(self.world):
+            self.flash(message("runtime.helo.water_required"))
+            return
         tgt = self._find_target(self.target.target_id)
-        self.torpedo_seq += 1
-        if tgt is not None and hasattr(tgt, "alert_torpedo"):
-            tgt.alert_torpedo()  # W2: U-Boot hört den Torpedostart
         lv = config.LEVELS[self.level]
-        range_nm = self.target.range_est or config.ROE_FREE_LAUNCH_RANGE_NM
+        range_nm = (self.target.range_est if self.target.range_est is not None
+                    else config.ROE_FREE_LAUNCH_RANGE_NM)
+        use_fix = (self._contact_range_fresh(self.target)
+                   and self.target.observed_x is not None
+                   and self.target.observed_y is not None)
         datum = self.helo.release_datum_from_ship_observation(
             self.ship, self.target.bearing, range_nm,
             bearing_uncertainty_deg=max(0.0, (1.0 - self.target.quality) * 8.0),
-            range_uncertainty_nm=self.target.range_sigma_nm or 0.0)
+            range_uncertainty_nm=self.target.range_sigma_nm or 0.0,
+            datum_x=self.target.observed_x if use_fix else None,
+            datum_y=self.target.observed_y if use_fix else None)
         torp = self.helo.drop_torpedo(
-            tgt, self.torpedo_depth, self.torpedo_seq,
+            tgt, self.torpedo_depth, self.torpedo_seq + 1,
             kill_dist_nm=lv["kill_dist_nm"], kill_depth_m=lv["kill_depth_m"],
-            guidance_x=datum.x_nm, guidance_y=datum.y_nm)
+            guidance_x=datum.x_nm, guidance_y=datum.y_nm, world=self.world)
         if torp is None:
             return
+        self.torpedo_seq += 1
         self.torpedoes.append(torp)
         self.flash(message("runtime.helo_torpedo.launched",
                            torpedo=self.torpedo_seq), 2.0)
         self.feed.add(self.world.format_time(), "waffen",
                       message("runtime.helo_torpedo.feed",
-                              torpedo=self.torpedo_seq, contact=tgt.id))
+                              torpedo=self.torpedo_seq, contact=self.target.id))
 
     def _cycle_asm_track(self, delta: int) -> None:
         n = len(self.asm_tracks())
@@ -1500,14 +1641,17 @@ class Game:
         if track.range_nm is None or track.range_nm > config.ESSM_RANGE_NM:
             self.flash(message("runtime.asm.range", range=f"{config.ESSM_RANGE_NM:.0f}"))
             return
-        tgt = next((a for a in self.asms
-                    if a.seq == track.target_id and a.state in ("LAUF", "CHAFF")), None)
-        if tgt is None:
+        if (track.x is None or track.y is None
+                or track.age(self.sim_t) > self.air_picture.stale_s):
             self.flash(message("runtime.asm.stale"))
             return
-        course = track.bearing
+        tgt = next((a for a in self.asms if a.seq == track.target_id), None)
+        course = math.degrees(math.atan2(track.x - self.ship.x,
+                                        -(track.y - self.ship.y))) % 360.0
         self.essms.append(ESSM(self.ship.x, self.ship.y, course, tgt,
-                               len(self.essms) + 1))
+                               len(self.essms) + 1,
+                               guidance_x=track.x, guidance_y=track.y,
+                               target_id=track.target_id))
         self.vls_cells -= 1
         self.flash(message("runtime.essm.launched", cells=self.vls_cells), 2.0)
 
@@ -1601,9 +1745,11 @@ class Game:
             dist = c.distance_nm(self.ship)
             bearing = c.bearing_from_frigate(self.ship)
             aspect = config.aspect_rcs_factor(c.course, bearing)
-            radar_clear = not self.world.land_blocks_line(
+            radar_eligible = surface_live and dist <= surface_eff * aspect
+            esm_eligible = c.emitter and dist <= config.ESM_RANGE_NM
+            radar_clear = (radar_eligible or esm_eligible) and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, c.x, c.y)
-            if surface_live and radar_clear and dist <= surface_eff * aspect:
+            if radar_eligible and radar_clear:
                 rng = random.Random(c.sensor_seed * 3571 + int(self.sim_t * 2.0))
                 bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
                 brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
@@ -1613,8 +1759,9 @@ class Game:
                 self.air_picture.observe(track_id=f"S-{c.id}", kind="AIS",
                     target_id=c.id, source="RADAR-S/AIS", bearing=brg,
                     range_nm=measured, observer_x=self.ship.x, observer_y=self.ship.y,
-                    course=c.course, quality=.95, now=self.sim_t, label=c.name)
-            elif c.emitter and dist <= config.ESM_RANGE_NM:
+                    course=c.course, quality=.95, now=self.sim_t, label=c.name,
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+            elif esm_eligible and radar_clear:
                 noise = self._smooth_sensor_noise(
                     c.sensor_seed * 1000, self.sim_t, 5.0)
                 brg = (bearing + noise * config.ESM_BEARING_ERR_DEG) % 360.0
@@ -1629,9 +1776,11 @@ class Game:
             dist = w.distance_nm(self.ship)
             bearing = w.bearing_from_frigate(self.ship)
             aspect = config.aspect_rcs_factor(w.course, bearing)
-            radar_clear = not self.world.land_blocks_line(
+            radar_eligible = surface_live and dist <= surface_eff * aspect
+            esm_eligible = w.emitter and dist <= config.ESM_RANGE_NM
+            radar_clear = (radar_eligible or esm_eligible) and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, w.x, w.y)
-            if surface_live and radar_clear and dist <= surface_eff * aspect:
+            if radar_eligible and radar_clear:
                 rng = random.Random(w.sensor_seed * 3571 + int(self.sim_t * 2.0))
                 bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
                 brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
@@ -1642,8 +1791,9 @@ class Game:
                     target_id=w.id, source="RADAR-S", bearing=brg,
                     range_nm=measured, observer_x=self.ship.x, observer_y=self.ship.y,
                     course=None, quality=.9, now=self.sim_t,
-                    label=f"W-{w.id}")
-            elif w.emitter and dist <= config.ESM_RANGE_NM:
+                    label=f"W-{w.id}",
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+            elif esm_eligible and radar_clear:
                 noise = self._smooth_sensor_noise(
                     w.sensor_seed * 1000, self.sim_t, 5.0)
                 brg = (bearing + noise * config.ESM_BEARING_ERR_DEG) % 360.0
@@ -1655,9 +1805,11 @@ class Game:
         for f in self.flights.flights:
             dist = f.distance_nm(self.ship)
             bearing = f.bearing_to_frigate(self.ship)
-            radar_clear = not self.world.land_blocks_line(
+            radar_eligible = air_live and dist <= air_eff
+            esm_eligible = f.radar_emitting and dist <= config.ESM_RANGE_NM
+            radar_clear = (radar_eligible or esm_eligible) and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, f.x, f.y)
-            if air_live and radar_clear and dist <= air_eff:
+            if radar_eligible and radar_clear:
                 rng = random.Random((f.seq + 10000) * 3571 + int(self.sim_t * 2.0))
                 bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
                 brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
@@ -1667,8 +1819,9 @@ class Game:
                 self.air_picture.observe(track_id=f"A-{f.seq}", kind="FLG",
                     target_id=f.seq, source="RADAR-L", bearing=brg, range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                    quality=.85, now=self.sim_t, label=f"A-{f.seq}")
-            elif f.kind == "military" and f.esm and dist <= f.esm_range_nm:
+                    quality=.85, now=self.sim_t, label=f"A-{f.seq}",
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+            elif esm_eligible and radar_clear:
                 noise = self._smooth_sensor_noise(
                     (f.seq + 20000) * 3571, self.sim_t, 5.0)
                 brg = (bearing + noise * config.ESM_BEARING_ERR_DEG) % 360.0
@@ -1681,7 +1834,9 @@ class Game:
             if a.state not in ("LAUF", "CHAFF"):
                 continue
             dist = a.distance_nm(self.ship)
-            if a.jamming(self.ship):
+            if (a.jamming(self.ship) and dist <= config.ESM_RANGE_NM
+                    and not self.world.land_blocks_line(
+                        self.ship.x, self.ship.y, a.x, a.y)):
                 noise = self._smooth_sensor_noise(
                     a.seq * 7919, self.sim_t, 5.0)
                 brg = (a.bearing_to_frigate(self.ship)
@@ -1704,7 +1859,8 @@ class Game:
                 self.air_picture.observe(track_id=f"M-{a.seq}", kind="ASM",
                     target_id=a.seq, source="RADAR-L", bearing=brg, range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                    quality=.9, now=self.sim_t, label=f"A-{a.seq}")
+                    quality=.9, now=self.sim_t, label=f"A-{a.seq}",
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
         self.air_picture.expire(self.sim_t)
 
     def radar_tracks(self) -> list:
@@ -1829,17 +1985,21 @@ class Game:
             self.flash(message("runtime.hfdf.none"))
             return
         report = reports[min(self.radio_sel, len(reports) - 1)]
+        if report.age(self.sim_t) > config.RADAR_TRACK_STALE_S:
+            self.flash(message("runtime.hfdf.stale"))
+            return
         measurement = (report.measurement_history[-1]
                        if report.measurement_history else {})
         row = dict(track_id=report.track_id, label=report.label,
-                   bearing=measurement.get("track_bearing", report.bearing),
+                   bearing=measurement.get("bearing", report.bearing),
                    observer_x=measurement.get("observer_x", self.ship.x),
                    observer_y=measurement.get("observer_y", self.ship.y),
                    t=measurement.get("t", report.last_seen))
         self.hfdf_log.append(row)
         self.hfdf_log = self.hfdf_log[-20:]
         previous = next((item for item in reversed(self.hfdf_log[:-1])
-                         if item["track_id"] == report.track_id
+                          if item["track_id"] == report.track_id
+                          and 0 < row["t"] - item["t"] <= 300.0
                          and math.hypot(item["observer_x"] - row["observer_x"],
                                         item["observer_y"] - row["observer_y"]) >= 1.0), None)
         if previous is None:
@@ -1851,9 +2011,22 @@ class Game:
             self.flash(message("runtime.hfdf.geometry"))
             return
         x, y, geometry = fix
+        # Angular errors projected at the two measurement origins. This assumes
+        # a stationary emitter throughout the bounded observation span.
+        b1, b2 = math.radians(previous["bearing"]), math.radians(row["bearing"])
+        sigma_rad = math.radians(config.HFDF_BEARING_ERR_DEG) / math.sqrt(3.0)
+        v1 = sigma_rad ** 2 * ((x - previous["observer_x"]) ** 2
+                              + (y - previous["observer_y"]) ** 2)
+        v2 = sigma_rad ** 2 * ((x - row["observer_x"]) ** 2
+                              + (y - row["observer_y"]) ** 2)
+        xx = (math.sin(b2) ** 2 * v1 + math.sin(b1) ** 2 * v2) / geometry ** 2
+        yy = (math.cos(b2) ** 2 * v1 + math.cos(b1) ** 2 * v2) / geometry ** 2
+        xy = -(math.sin(b2) * math.cos(b2) * v1
+               + math.sin(b1) * math.cos(b1) * v2) / geometry ** 2
         self.hfdf_fixes[report.track_id] = dict(
             label=report.label, x=x, y=y,
-            sigma_nm=max(1.0, config.HFDF_BEARING_ERR_DEG / geometry),
+            sigma_nm=math.sqrt(max(0.0, (xx + yy + math.hypot(xx - yy, 2 * xy)) / 2)),
+            covariance_nm2=(xx, xy, yy),
             t=row["t"])
         dist = math.hypot(x - row["observer_x"], y - row["observer_y"])
         bearing = math.degrees(math.atan2(
@@ -1874,17 +2047,20 @@ class Game:
         for w in self.warships:
             if w.sunk:
                 continue
-            while w.pending_asm:
-                x, y, n = w.pending_asm.pop(0)
+            pending, w.pending_asm = w.pending_asm, []
+            for x, y, n in pending:
                 for i in range(n):
-                    course = math.degrees(math.atan2(self.ship.x - x,
-                                                     -(self.ship.y - y))) % 360.0
+                    course = (math.degrees(math.atan2(w.sensor_contact[0] - x,
+                                                      -(w.sensor_contact[1] - y))) % 360.0
+                              if w.sensor_contact is not None else w.course)
                     self.warship_asm_seq += 1
                     self.asms.append(ASM(x, y, course,
-                                         1000 + self.warship_asm_seq,
+                                         self._next_asm_sequence(),
                                          self.rng_asm))
-                self.flash(message("runtime.asm.salvo", ship=w.name), 4.0)
-                self.hq_msg(message("runtime.hq.asm_salvo", count=n, ship=w.name))
+
+    def _next_asm_sequence(self) -> int:
+        self.asm_seq += 1
+        return self.asm_seq
 
     def _maybe_spawn_asm(self) -> None:
         """M16: ASM-Wellen laut Missionsplan (zeitgesteuert, deterministisch)."""
@@ -1898,12 +2074,12 @@ class Game:
         self.asm_spawned += 1
         d = self.rng_asm.uniform(*config.ASM_SPAWN_DIST_NM)
         ang = self.rng_asm.uniform(0.0, 360.0)
-        x = (self.ship.x + d * math.cos(math.radians(ang))) % self.world.size_nm
-        y = (self.ship.y + d * math.sin(math.radians(ang))) % self.world.size_nm
-        self.asms.append(ASM(x, y, 0.0, len(self.asms) + 1, self.rng_asm))
-        self.hq_msg(message("runtime.hq.asm_wave", current=self.asm_spawned,
-                            total=m.asm_count))
-        self.flash(message("runtime.asm_inbound"), 4.0)
+        x = config.clamp(self.ship.x + d * math.cos(math.radians(ang)),
+                         0.0, self.world.size_nm)
+        y = config.clamp(self.ship.y + d * math.sin(math.radians(ang)),
+                         0.0, self.world.size_nm)
+        course = math.degrees(math.atan2(self.ship.x - x, -(self.ship.y - y))) % 360.0
+        self.asms.append(ASM(x, y, course, self._next_asm_sequence(), self.rng_asm))
 
     # --- Waffenzentrale ---
 
@@ -1923,7 +2099,8 @@ class Game:
 
     def torpedo_readiness(self) -> tuple[str, tuple]:
         """Return an operator-readable fire-control state and color."""
-        if self.target is None:
+        if (self.target is None
+                or self.sim_t - self.target.last_seen >= config.SONAR_CONTACT_LOST_S):
             return "BLOCKIERT: KEIN ZIEL", config.COLOR_WARN
         blocked = self._target_affiliation_interlock()
         if blocked is not None:
@@ -1948,9 +2125,10 @@ class Game:
         """Return a protected OPZ affiliation for the assigned sonar target."""
         if self.target is None:
             return None
-        affiliations = [self.opz_affiliation(track.track_id)
-                        for track in self.opz_tracks()
-                        if track.target_id == self.target.target_id]
+        # Operator annotations outlive measurements. Aircraft/missile sequence
+        # IDs are a separate namespace and must not annotate a sonar target.
+        affiliations = [self.opz_affiliation(f"{prefix}-{self.target.target_id}")
+                        for prefix in ("U", "S", "W")]
         return next((value for value in ("FRIEND", "NEUTRAL")
                      if value in affiliations), None)
 
@@ -2039,13 +2217,9 @@ class Game:
                 return t
         return None
 
-    def _target_ids(self) -> set:
-        return {s.id for s in self.subs if not s.sunk} | \
-               {a.id for a in self.animals if not a.dead} | \
-               {w.id for w in self.warships if not w.sunk}
-
     def launch_torpedo(self) -> None:
-        if self.target is None or self.target.target_id not in self._target_ids():
+        if (self.target is None
+                or self.sim_t - self.target.last_seen >= config.SONAR_CONTACT_LOST_S):
             self.target = None
             self.flash(message("runtime.target.invalid"))
             return
@@ -2081,8 +2255,6 @@ class Game:
             return
         tgt = self._find_target(self.target.target_id)
         self.torpedo_seq += 1
-        if tgt is not None and hasattr(tgt, "alert_torpedo"):
-            tgt.alert_torpedo()  # W2: U-Boot hört den Torpedostart
         if (self.target.observed_x is not None
                 and self.target.observed_y is not None
                 and self._contact_range_fresh(self.target)):
@@ -2105,7 +2277,7 @@ class Game:
         self.flash(message("runtime.torpedo.launched", torpedo=self.torpedo_seq), 2.0)
         self.feed.add(self.world.format_time(), "waffen",
                       message("runtime.torpedo.feed", torpedo=self.torpedo_seq,
-                              contact=tgt.id))
+                              contact=self.target.id))
 
     # --- Update ---
 
@@ -2144,6 +2316,14 @@ class Game:
             self.audio.stop()
             self._sonar_audio_sequence = -1
             return
+        # Operator adjustments follow wall time; hull and weapon motion do not.
+        turn, _ = self.steering_input()
+        if not self.damage.station_down("bridge"):
+            self.ship.steer_input(dt, turn, 0)
+        if self.station is Station.WEAPONS:
+            depth_dir = int(pygame.K_UP in self.held) - int(pygame.K_DOWN in self.held)
+            self.torpedo_depth = config.clamp(
+                self.torpedo_depth + depth_dir * 20.0 * dt, 10.0, 300.0)
         sim_dt = dt * self.time_scale
         n = max(1, int(math.ceil(sim_dt / config.PHYS_SUBSTEP_S)))
         n = min(n, config.PHYS_SUBSTEP_MAX)
@@ -2152,6 +2332,10 @@ class Game:
             self._update_sim(step)
             if self.game_over:
                 break
+        self.map_view.set_rect(config.MAP_RECT)
+        if self.map_follow:
+            self.map_view.cx, self.map_view.cy = self.ship.x, self.ship.y
+            self.map_view.clamp_center()
         if not self.game_over:
             self._update_audio(dt)
         else:
@@ -2159,24 +2343,32 @@ class Game:
             self._sonar_audio_sequence = -1
 
     def _update_audio(self, dt: float) -> None:
-        """Audio nur in groben Bloecken aktualisieren, nie pro Frame synthetisieren."""
+        """Drain coherent 1x blocks; accelerated listening is a sampled preview."""
         listening = (self.station is Station.SONAR and self.sonar_audio_enabled
                      and not self.damage.station_down("sonar"))
         if not listening:
             self._stop_sonar_audio()
         self._audio_timer += dt
-        if self._audio_timer < config.AUDIO_UPDATE_S:
+        due = self._audio_timer >= config.AUDIO_UPDATE_S
+        preview = self.time_scale != 1
+        if listening and (not preview or due):
+            receiver = self.sonar.receiver
+            blocks = receiver.blocks_since(self._sonar_audio_sequence)
+            if preview:
+                blocks = blocks[-1:]
+            for sequence, samples in blocks:
+                if self._sonar_audio_sequence < 0 or sequence != self._sonar_audio_sequence + 1:
+                    self.audio.stop_sonar(immediate=True)
+                if not self.audio.play_sonar(
+                        self.sonar.listening_samples(samples),
+                        receiver.sample_rate, self.sonar_volume,
+                        bearing_deg=self.sonar.listen_bearing,
+                        listener_bearing_deg=self.ship.course):
+                    break
+                self._sonar_audio_sequence = sequence
+        if not due:
             return
         self._audio_timer %= config.AUDIO_UPDATE_S
-        if listening and self.sonar.receiver.sequence != self._sonar_audio_sequence:
-            contact = self.selected_contact
-            bearing = contact.bearing if contact is not None else \
-                self.sonar.listen_bearing
-            if self.audio.play_sonar(
-                    self.sonar.listening_samples(),
-                    self.sonar.receiver.sample_rate, self.sonar_volume,
-                    bearing_deg=bearing, listener_bearing_deg=self.ship.course):
-                self._sonar_audio_sequence = self.sonar.receiver.sequence
         cavitation = 0.8 if self.ship.cavitating else 0.0
         self.audio.update_engine(self.ship.rpm(), blade_count=5,
                                  cavitation=cavitation,
@@ -2184,24 +2376,10 @@ class Game:
 
     def _update_navigation(self, dt: float) -> None:
         """Wendet Steuerung, Brückenschaden und Telegraph auf die Fregatte an."""
-        turn, speed = self.steering_input()
         if self.damage.station_down("bridge"):
-            turn = 0
             self.ship.target_course = self.ship.course
         self.ship.turn_rate_scale = (
             0.5 if self.damage.station_degraded("bridge") else 1.0)
-        if self.station is Station.WEAPONS:
-            depth_dir = 0
-            if pygame.K_UP in self.held:
-                depth_dir += 1
-            if pygame.K_DOWN in self.held:
-                depth_dir -= 1
-            if depth_dir:
-                self.torpedo_depth = config.clamp(
-                    self.torpedo_depth + depth_dir * 20.0 * dt, 10.0, 300.0)
-            self.ship.steer_input(dt, 0, 0)
-        else:
-            self.ship.steer_input(dt, turn, 0)
         self.ship.speed_cap = self.damage.engine_speed_cap()
         self.world.update(dt)
         self.ship.update(dt, self.world)
@@ -2215,7 +2393,13 @@ class Game:
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""
         for sub in self.subs:
+            was_sunk = sub.sunk
             sub.update(dt, self.ship, self.world)
+            if sub.sunk and not was_sunk:
+                self.score += config.SCORE_SUNK
+                self.flash(message("runtime.sunk.sub"), 4.0)
+                self.feed.add(self.world.format_time(), "mission",
+                              message("runtime.sunk.sub_feed", contact=sub.id))
             if sub.sunk and self.roe != "FREE":
                 self.roe = "FREE"
                 self.hq_msg(message("runtime.roe_free_confirmed"))
@@ -2229,14 +2413,14 @@ class Game:
             while sub.pending_decoys:
                 dx, dy = sub.pending_decoys.pop(0)
                 self.decoys.append(Decoy(dx, dy, sub.depth, self.rng_asm))
-                self.flash(message("runtime.decoy_signal"), 2.5)
         for decoy in self.decoys:
             decoy.update(dt, self.world)
         self.decoys = [decoy for decoy in self.decoys if not decoy.dead]
 
     def _update_aviation(self, dt: float) -> None:
         """Aktualisiert HSP-5, Sonarbojen und Chaff-Kühlzeit."""
-        self.helo.update(dt, self.ship, self.world)
+        self.helo.update(dt, self.ship, self.world,
+                         recovery_available=not self.damage.station_down("flightdeck"))
         for buoy in self.buoys:
             buoy.update(dt)
         self.buoys = [buoy for buoy in self.buoys if buoy.active]
@@ -2247,32 +2431,51 @@ class Game:
         """Aktualisiert ASM-Wellen, CIWS und ESSM-Abfangflugkoerper."""
         self._drain_warship_asm()
         self._maybe_spawn_asm()
+        # One simulated-second burst cadence; probability uses the game rate.
+        self.ciws_cooldown_s = max(0.0, getattr(self, "ciws_cooldown_s", 0.0) - dt)
         for asm in self.asms:
-            asm.update(dt, self.ship)
+            asm.update(dt, self.ship, self.world)
             if asm.state == "TREFFER":
                 hit = self.damage.torpedo_hit()
                 self.flash(message("runtime.hit.asm", compartments=", ".join(
                     self.damage.compartments[k].name for k in hit)), 5.0)
-            elif (asm.state == "LAUF" and self.ciws_ammo > 0
+            elif (asm.state in ("LAUF", "CHAFF")
+                  and self.ciws_ammo >= config.CIWS_ROUNDS_PER_ATTEMPT
                   and asm.distance_nm(self.ship) <= config.CIWS_RANGE_NM
-                  and self.rng_asm.random() < config.CIWS_KILL_PPS * dt):
-                self.ciws_ammo = max(0, self.ciws_ammo
-                                     - config.CIWS_ROUNDS_PER_ATTEMPT)
-                asm.state = "ABGEFANGEN"
-                self.audio.play_alert("defense")
-                self.flash(message("runtime.ciws.intercepted"), 3.0)
+                  and self.ciws_cooldown_s <= 0.0
+                  and not self.damage.station_down("opz")
+                  and not self.world.land_blocks_line(
+                      self.ship.x, self.ship.y, asm.x, asm.y)):
+                self.ciws_ammo -= config.CIWS_ROUNDS_PER_ATTEMPT
+                self.ciws_cooldown_s = 1.0
+                if self.rng_asm.random() < 1.0 - math.exp(-config.CIWS_KILL_PPS):
+                    asm.state = "ABGEFANGEN"
+                    self.audio.play_alert("defense")
+                    self.flash(message("runtime.ciws.intercepted"), 3.0)
+        observed_asms = {track.target_id: track for track in self.asm_tracks()}
         for essm in self.essms:
-            essm.update(dt)
+            track = observed_asms.get(essm.target_id)
+            if (not essm.seeker_acquired and track is not None
+                    and track.x is not None and track.y is not None
+                    and track.position_seen is not None
+                    and self.sim_t - track.position_seen <= self.air_picture.stale_s):
+                essm.guidance_x, essm.guidance_y = track.x, track.y
+            essm.update(dt, candidates=self.asms, world=self.world)
         self.asms = [a for a in self.asms if a.state in ("LAUF", "CHAFF")]
         self.essms = [e for e in self.essms if e.state == "LAUF"]
         if publish_picture:
             self._update_air_picture()
+            observed_threat = bool(self.asm_tracks())
+            if observed_threat and not self.air_threat_reported:
+                self.flash(message("runtime.threat.air"), 4.0)
+                self.feed.add(self.world.format_time(), "waffen", message("runtime.threat.air"))
+            self.air_threat_reported = observed_threat
 
     def _update_enemy_torpedoes(self, dt: float) -> None:
         """Erzeugt und bewegt Feindtorpedos; Treffer werden als Schaden gebucht."""
         self._drain_enemy_torpedoes()
         for torpedo in self.enemy_torpedoes:
-            torpedo.update(dt, self.ship)
+            torpedo.update(dt, self.ship, world=self.world)
         for torpedo in self.enemy_torpedoes:
             if torpedo.state == "HIT":
                 hit = self.damage.torpedo_hit(self._incoming_hit_zone(torpedo))
@@ -2296,6 +2499,19 @@ class Game:
 
     def _update_player_torpedoes(self, dt: float) -> None:
         """Bewegt eigene Torpedos und verarbeitet Treffer/Fehlkontakte."""
+        for sub in self.subs:
+            if (sub.sunk or sub.state == "SINKING"
+                    or sub.memory["last_torpedo_age"] < config.SUB_EVADE_DURATION_S):
+                continue
+            for torpedo in self.torpedoes:
+                if (torpedo.state == "RUN"
+                        and math.hypot(torpedo.x - sub.x, torpedo.y - sub.y)
+                        <= config.TORP_HOME_RANGE_NM
+                        and not self.world.sonar_path_blocked(
+                            torpedo.x, torpedo.y, torpedo.depth,
+                            sub.x, sub.y, sub.depth)):
+                    sub.alert_torpedo()
+                    break
         for torpedo in self.torpedoes:
             target_id = getattr(torpedo.target, "id", None)
             contact = self.sonar.contacts.get(target_id)
@@ -2306,7 +2522,10 @@ class Game:
             torpedo.update(dt, seeker_candidates=(
                 [s for s in self.subs if not s.sunk]
                 + [d for d in self.decoys if not d.dead]
-                + [w for w in self.warships if not w.sunk]))
+                + [w for w in self.warships if not w.sunk]
+                + [a for a in self.animals if not a.dead]
+                + [c for c in self.civilians if not c.sunk]), world=self.world,
+                collision_candidates=self.civilians)
         alive = []
         for torpedo in self.torpedoes:
             if torpedo.state == "RUN":
@@ -2314,56 +2533,28 @@ class Game:
                 continue
             if torpedo.state != "HIT":
                 continue
-            if getattr(torpedo.target, "stype", None) is not None:
+            if torpedo.target in self.civilians:
+                torpedo.target.sunk = True
+                self.incident = True
+                self.audio.play_alert("danger")
+                self.flash(message("runtime.incident"), 6.0)
+                continue
+            contact = self.sonar.contacts.get(getattr(torpedo.target, "id", None))
+            if contact is not None and self.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S:
                 self.flash(message("runtime.hit.contact",
-                                   contact=torpedo.target.id), 3.0)
+                                   contact=contact.id), 3.0)
                 self.feed.add(self.world.format_time(), "waffen",
-                              message("runtime.hit.sub_feed", torpedo=torpedo.idx,
-                                      contact=torpedo.target.id))
-                if torpedo.target.sunk:
-                    self.score += config.SCORE_SUNK
-                    self.flash(message("runtime.sunk.sub"), 4.0)
-                    self.feed.add(self.world.format_time(), "mission",
-                                  message("runtime.sunk.sub_feed",
-                                          contact=torpedo.target.id))
-            elif getattr(torpedo.target, "hostile", False):
-                self.flash(message("runtime.hit.contact",
-                                   contact=torpedo.target.id), 3.0)
-                self.feed.add(self.world.format_time(), "waffen",
-                              message("runtime.hit.warship_feed",
-                                      torpedo=torpedo.idx,
-                                      contact=torpedo.target.id))
-                if torpedo.target.sunk:
+                              message("runtime.hit.contact", contact=contact.id))
+            if getattr(torpedo.target, "hostile", False):
+                if (torpedo.target.sunk
+                        and not torpedo.target.sunk_score_awarded):
+                    torpedo.target.sunk_score_awarded = True
                     self.score += config.SCORE_SUNK
                     self.flash(message("runtime.sunk.warship"), 4.0)
                     self.feed.add(self.world.format_time(), "mission",
                                   message("runtime.sunk.warship_feed",
                                           contact=torpedo.target.id))
-            else:
-                self.flash(message("runtime.hit.biological",
-                                   contact=torpedo.target.id), 4.0)
-                self.feed.add(self.world.format_time(), "sonar",
-                              message("runtime.hit.biological_feed",
-                                      contact=torpedo.target.id))
         self.torpedoes = alive
-
-        # Ein Torpedo in Zivilnaehe ist ein politischer Vorfall.
-        for torpedo in self.torpedoes:
-            if torpedo.state != "RUN":
-                continue
-            for civilian in self.civilians:
-                if civilian.sunk:
-                    continue
-                if math.hypot(torpedo.x - civilian.x,
-                              torpedo.y - civilian.y) <= config.CIVILIAN_HIT_RADIUS_NM:
-                    civilian.sunk = True
-                    torpedo.state = "SASE"
-                    self.incident = True
-                    self.audio.play_alert("danger")
-                    self.flash(message("runtime.incident"), 6.0)
-                    self.torpedoes = [t for t in self.torpedoes
-                                      if t is not torpedo]
-                    break
 
     def _update_sensors(self, dt: float) -> None:
         """Aktualisiert Sonar-Kontakte, TMA und Kontaktfeed."""
@@ -2450,7 +2641,9 @@ class Game:
     def _update_damage_and_mission(self, dt: float) -> None:
         """Fortschritt von Schaden, Flugverkehr und Missionszielen."""
         self.damage.update(dt)
-        self.flights.update(dt, self.ship)
+        self.flights.update(dt, self.ship, world=self.world,
+                            ship_emitting=(not self.damage.station_down("opz")
+                                           and (self.surface_radar_on or self.air_radar_on)))
         self._check_mission_end()
 
     def _update_sim(self, dt: float) -> None:
@@ -2562,20 +2755,34 @@ class Game:
 
     # --- M6: Speichern / Laden ---
 
+    MAX_SAVED_ASMS = 10_000  # Existing collection ceiling also bounds queued expansion.
+
     @staticmethod
     def _rng_state(r) -> list:
         st = r.getstate()
         return [st[0], list(st[1]), st[2]]
 
     def save_state(self) -> dict:
-        """v5: kompletter Simulationszustand mit physikalischer Echtzeitbewegung.
+        """v8: kompletter Simulationszustand mit physikalischer Echtzeitbewegung.
 
         Neu gegenüber v3: Kampfschiffe (warships), Feindtorpedo-IDs,
         Fingerprint-Daten, Flugzeug-Profilkeys, Zivil-Schadenszustand
         (sunk/damage statt hit).
         """
+        entity_groups = {
+            "sub": (Sub, self.subs), "animal": (Animal, self.animals),
+            "surface": (SurfaceShip, self.civilians + self.warships),
+            "decoy": (Decoy, self.decoys),
+            "enemy_torpedo": (EnemyTorpedo, self.enemy_torpedoes),
+        }
+        entity_ids = {entity.id for _, entities in entity_groups.values()
+                      for entity in entities}
+        asm_ids = {a.seq for a in self.asms}
         return {
             "version": 8,
+            "next_entity_ids": {
+                key: max(cls._next_id, max((e.id + 1 for e in entities), default=0))
+                for key, (cls, entities) in entity_groups.items()},
             "seed": self.seed,
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
@@ -2635,8 +2842,15 @@ class Game:
                            range_nm=self.opz_range_nm),
             "roe": self.roe,
             "asm_spawned": self.asm_spawned,
+            "air_threat_reported": self.air_threat_reported,
+            "asm_seq": max([self.asm_seq, self.asm_spawned] + list(asm_ids)
+                           + [e.target_id for e in self.essms if e.target_id is not None]
+                           + [t.target_id for t in self.air_picture._tracks.values()
+                              if t.kind == "ASM"]),
+            "warship_asm_seq": self.warship_asm_seq,
             "vls_cells": self.vls_cells,
             "ciws_ammo": self.ciws_ammo,
+            "ciws_cooldown_s": self.ciws_cooldown_s,
             "air_picture": self.air_picture.serialize(),
             "opz_affiliations": dict(self.opz_affiliations),
             "radio_picture": self.radio_picture.serialize(),
@@ -2652,6 +2866,7 @@ class Game:
             "hq_timer": self.hq_timer,
             "asm_sel": self.asm_sel,
             "dmg_cursor": self.dmg_cursor,
+            "dmg_team": self.dmg_team,
             "messages": [list(m) for m in self.messages],
             "helo": dict(state=self.helo.state, x=self.helo.x, y=self.helo.y,
                           course=self.helo.course, torps=self.helo.torps,
@@ -2674,7 +2889,12 @@ class Game:
                            target_depth=s.target_depth,
                            evade_offset=s.evade_offset,
                           sensor_seed=s.sensor_seed,
-                          memory=dict(s.memory),
+                           memory={key: (None if key in (
+                               "last_ping_age", "last_torpedo_age")
+                               and value == float("inf") else value)
+                               for key, value in s.memory.items()},
+                           pending_torpedoes=list(s.pending_torpedoes),
+                           pending_decoys=list(s.pending_decoys),
                           decision_reason=s.decision_reason)
                      for s in self.subs],
             "animals": [dict(id=a.id, x=a.x, y=a.y, depth=a.depth,
@@ -2692,6 +2912,10 @@ class Game:
                                  turn_left=c.turn_left, turn_delta=c.turn_delta,
                                  target_course=c.target_course,
                                  target_speed=c.target_speed,
+                                 orbit_direction=c.orbit_direction,
+                                 sensor_contact=c.sensor_contact,
+                                 sensor_contact_age=c.sensor_contact_age,
+                                 sunk_score_awarded=c.sunk_score_awarded,
                                 sensor_seed=c.sensor_seed,
                                 fingerprint=c.fingerprint.to_dict())
                           for c in self.civilians],
@@ -2705,6 +2929,10 @@ class Game:
                                 waypoint=(list(w.waypoint)
                                           if w.waypoint is not None else None),
                                 orbit_direction=w.orbit_direction,
+                                sensor_contact=w.sensor_contact,
+                                sensor_contact_age=w.sensor_contact_age,
+                                sunk_score_awarded=w.sunk_score_awarded,
+                                pending_asm=list(w.pending_asm),
                                sensor_seed=w.sensor_seed,
                                attack_left=w.attack_left,
                                anchor=(list(w.anchor)
@@ -2720,10 +2948,13 @@ class Game:
                 dict(x=t.x, y=t.y, course=t.course, depth=t.depth,
                      travel=t.travel, state=t.state, idx=t.idx,
                      target_depth=t.target_depth,
-                     target_id=t.target.id if t.target is not None else None,
-                     speed_kn=t.speed_kn,
+                      target_id=(t.target.id if t.target is not None
+                                 and t.target.id in entity_ids else None),
+                      speed_kn=t.speed_kn,
+                      range_nm=t.range_nm, terminal_active=t.terminal_active,
                      guidance_x=t.guidance_x, guidance_y=t.guidance_y,
-                     seeker_acquired=t.seeker_acquired,
+                      seeker_acquired=(t.seeker_acquired and t.target is not None
+                                       and t.target.id in entity_ids),
                      search_phase=t._search_phase, midcourse=t._midcourse,
                      midcourse_timer=t._midcourse_timer,
                      kill_dist_nm=t.kill_dist_nm, kill_depth_m=t.kill_depth_m)
@@ -2733,13 +2964,18 @@ class Game:
                      travel=t.travel, idx=t.idx)
                 for t in self.enemy_torpedoes],
             "asms": [dict(x=a.x, y=a.y, course=a.course, seq=a.seq,
-                          state=a.state, jammer=a.jammer,
+                           state=a.state, jammer=a.jammer,
+                           age_s=a.age_s, travel=a.travel,
                           chaff_left=a.chaff_left, broken=a.broken)
                      for a in self.asms],
             "essms": [dict(x=e.x, y=e.y, course=e.course, seq=e.seq,
-                           state=e.state, travel=e.travel,
-                           target_id=e.target.seq if e.target is not None
-                           else None)
+                            state=e.state, travel=e.travel,
+                            guidance_x=e.guidance_x, guidance_y=e.guidance_y,
+                            track_target_id=e.target_id,
+                            seeker_acquired=(e.seeker_acquired and e.target is not None
+                                             and e.target.seq in asm_ids),
+                            target_id=(e.target.seq if e.target is not None
+                                       and e.target.seq in asm_ids else None))
                       for e in self.essms],
             "buoys": [dict(x=b.x, y=b.y, seq=b.seq, battery_s=b.battery_s)
                       for b in self.buoys],
@@ -2752,6 +2988,8 @@ class Game:
                                  x=f.x, y=f.y, course=f.course,
                                  akey=f.akey,
                                   loiter_nm=f.loiter_nm,
+                                  radar_emitting=f.radar_emitting,
+                                  sensor_bearing=f.sensor_bearing, sensor_age=f.sensor_age,
                                  waypoints=getattr(f, "waypoints", None),
                                  waypoint_idx=getattr(f, "waypoint_idx", 0),
                                 total_dist=f.total_dist,
@@ -2787,7 +3025,8 @@ class Game:
                         fusion_delta_deg=c.fusion_delta_deg,
                         fused_quality=c.fused_quality,
                         tma_pos=c.tma_pos, tma_course=c.tma_course,
-                        tma_speed=c.tma_speed, tma_quality=c.tma_quality)
+                        tma_speed=c.tma_speed, tma_quality=c.tma_quality,
+                        tma_seen=c.tma_seen, buoy_fixes=list(c.buoy_fixes[-80:]))
                     for cid, c in self.sonar.contacts.items()},
                 "lofar": self.sonar.lofar_history,
                 "lofar_times": self.sonar.lofar_times,
@@ -2810,12 +3049,22 @@ class Game:
                 "tma_next": {
                     str(target_id): next_t
                     for target_id, next_t in self.sonar._tma_next.items()},
+                # Old in-memory queues (without a snapshot) freeze at save pose;
+                # normal runtime queues already carry their transmit measurement.
                 "pending_pings": [dict(target_id=p["target"].id,
                                         sent_at=p["sent_at"],
                                         ready_at=p["ready_at"],
                                         range_factor=p["range_factor"],
-                                        mode=p["mode"])
-                                  for p in self.sonar._pending_pings],
+                                        mode=p["mode"],
+                                        snapshot=(dict(p["snapshot"]) if "snapshot" in p else
+                                                  self.sonar._measure_ping(
+                                                      p["frigate"], p["target"], self.sim_t,
+                                                      p["target"].distance_nm(p["frigate"]),
+                                                      self.sonar._active_range_nm(
+                                                          p["target"], p["world"],
+                                                          p["range_factor"], p["mode"]))))
+                                  for p in self.sonar._pending_pings
+                                  if p["target"].id in entity_ids],
                 "towed_depth_m": self.sonar.towed_depth_m,
                 "towed_depth_target_m": self.sonar.towed_depth_target_m,
                 "tow_state": self.sonar.tow_state.value,
@@ -2869,7 +3118,7 @@ class Game:
         try:
             with tempfile.NamedTemporaryFile(mode="w", dir=parent, delete=False) as f:
                 temporary = f.name
-                json.dump(self.save_state(), f, indent=1)
+                json.dump(self.save_state(), f, indent=1, allow_nan=False)
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(temporary, path)
@@ -2884,7 +3133,19 @@ class Game:
             r.setstate((data[0], tuple(data[1]), data[2]))
 
     def load_state(self, data: dict) -> None:
+        """Restore transactionally, including direct in-memory callers."""
+        if not self._load_save_data(data):
+            raise ValueError("invalid save state")
+
+    def _restore_state(self, data: dict) -> None:
         import random
+
+        def restore_entity(cls, *args, **kwargs):
+            # Constructors allocate first. Account for these temporary IDs even
+            # if a later constructor/restoration step fails.
+            self._restore_id_allocations[cls] += 1
+            return cls(*args, **kwargs)
+
         seed = data["seed"]
         w = data.get("world")
         if data.get("version", 1) >= 6 and w and w.get("coast"):
@@ -2971,7 +3232,7 @@ class Game:
             self.damage.compartments[k].state = c["state"]
             self.damage.compartments[k].flood = c["flood"]
             self.damage.compartments[k].fire = c.get("fire", 0.0)
-        self.damage.teams = {int(k): v for k, v in dmg["teams"].items()}
+        self.damage.teams.update({int(k): v for k, v in dmg["teams"].items()})
         self.damage.total = sum(c.flood for c in self.damage.compartments.values())
         self.damage.ship_sunk = self.damage.total >= config.DMG_SHIP_SINK_TOTAL
         # M10–M16
@@ -3010,8 +3271,10 @@ class Game:
             self.opz_range_nm = config.RADAR_RANGE_DEFAULT_NM
         self.roe = data.get("roe", config.ROE_DEFAULT)
         self.asm_spawned = data.get("asm_spawned", 0)
+        self.air_threat_reported = data.get("air_threat_reported", False)
         self.vls_cells = data.get("vls_cells", config.VLS_CELLS)
         self.ciws_ammo = data.get("ciws_ammo", config.CIWS_AMMO_DEFAULT)
+        self.ciws_cooldown_s = data.get("ciws_cooldown_s", 0.0)
         self.air_picture = TrackPicture(config.RADAR_TRACK_STALE_S)
         self.air_picture.restore(data.get("air_picture", []))
         raw_affiliations = data.get("opz_affiliations", {})
@@ -3047,7 +3310,7 @@ class Game:
         self.essms = []
         self.chaff_cd = data.get("chaff_cd", 0.0)
         self.dmg_cursor = data.get("dmg_cursor", 0)
-        self.dmg_team = 1
+        self.dmg_team = data.get("dmg_team", 1)
         self.asm_sel = data.get("asm_sel", 0)
         self.hq_timer = data.get("hq_timer", 15.0)
         self.rng_asm = random.Random(seed + 31337)
@@ -3068,7 +3331,7 @@ class Game:
         # U-Boote (Phase 2: vollstaendiger KI-Zustand)
         self.subs = []
         for sd in data["subs"]:
-            s = Sub(sd["x"], sd["y"], depth_m=sd["depth"], course_deg=sd["course"],
+            s = restore_entity(Sub, sd["x"], sd["y"], depth_m=sd["depth"], course_deg=sd["course"],
                     stype_key=sd["stype"], rng=rng)
             s.id = sd["id"]
             s.start_pos = tuple(sd["start_pos"])
@@ -3098,13 +3361,17 @@ class Game:
                              fingerprint_mod.roll_from_seed(
                                  s.sensor_seed, s.stype.acoustic))
             s.memory.update(sd.get("memory", {}))
+            for age in ("last_ping_age", "last_torpedo_age"):
+                if s.memory[age] is None:
+                    s.memory[age] = float("inf")
+            s.pending_torpedoes = [tuple(row) for row in sd.get("pending_torpedoes", [])]
+            s.pending_decoys = [tuple(row) for row in sd.get("pending_decoys", [])]
             s.decision_reason = sd.get("decision_reason", "Patrouille")
             self.subs.append(s)
-        Sub._next_id = max([s.id for s in self.subs] + [Sub._next_id]) + 1
         # Tiere
         self.animals = []
         for ad in data["animals"]:
-            a = Animal(ad["x"], ad["y"], ad["atype"], rng=rng, depth_m=ad.get("depth"))
+            a = restore_entity(Animal, ad["x"], ad["y"], ad["atype"], rng=rng, depth_m=ad.get("depth"))
             a.id = ad["id"]
             a.course = ad["course"]
             a.speed = ad["speed"]
@@ -3115,12 +3382,11 @@ class Game:
             a.target_depth = ad.get("target_depth", a.depth)
             a.sensor_seed = ad.get("sensor_seed", a.sensor_seed)
             self.animals.append(a)
-        Animal._next_id = max([a.id for a in self.animals] + [Animal._next_id]) + 1
         # Zivile
         self.civilians = []
         for cd in data["civilians"]:
             prof = CATALOG.surfaces.get(cd.get("signature_key"))
-            c = CivilianShip(cd["x"], cd["y"], rng=rng, profile=prof)
+            c = restore_entity(SurfaceShip, cd["x"], cd["y"], rng=rng, profile=prof)
             if cd.get("id"):
                 c.id = cd["id"]
             c.course = cd["course"]
@@ -3135,6 +3401,10 @@ class Game:
             c.turn_delta = cd.get("turn_delta", 0.0)
             c.target_course = cd.get("target_course", c.course)
             c.target_speed = cd.get("target_speed", c.speed)
+            c.orbit_direction = cd.get("orbit_direction", c.orbit_direction)
+            c.sensor_contact = tuple(cd["sensor_contact"]) if cd.get("sensor_contact") is not None else None
+            c.sensor_contact_age = cd.get("sensor_contact_age", config.RADAR_TRACK_STALE_S)
+            c.sunk_score_awarded = cd.get("sunk_score_awarded", c.sunk)
             c.sensor_seed = cd.get("sensor_seed", c.sensor_seed)
             c.fingerprint = (fingerprint_mod.Fingerprint.from_dict(cd["fingerprint"])
                              if cd.get("fingerprint") else
@@ -3145,7 +3415,7 @@ class Game:
         self.warships = []
         for wd in data.get("warships", []):
             prof = CATALOG.surfaces.get(wd.get("signature_key"))
-            w = SurfaceShip(wd["x"], wd["y"], rng=rng, hostile=True,
+            w = restore_entity(SurfaceShip, wd["x"], wd["y"], rng=rng, hostile=True,
                             profile=prof)
             if wd.get("id"):
                 w.id = wd["id"]
@@ -3161,6 +3431,10 @@ class Game:
             w.target_speed = wd.get("target_speed", w.speed)
             w.waypoint = tuple(wd["waypoint"]) if wd.get("waypoint") else None
             w.orbit_direction = wd.get("orbit_direction", w.orbit_direction)
+            w.sensor_contact = tuple(wd["sensor_contact"]) if wd.get("sensor_contact") is not None else None
+            w.sensor_contact_age = wd.get("sensor_contact_age", config.RADAR_TRACK_STALE_S)
+            w.sunk_score_awarded = wd.get("sunk_score_awarded", w.sunk)
+            w.pending_asm = [tuple(row) for row in wd.get("pending_asm", [])]
             w.sensor_seed = wd.get("sensor_seed", w.sensor_seed)
             w.attack_left = wd.get("attack_left", 0.0)
             w.anchor = tuple(wd["anchor"]) if wd.get("anchor") else None
@@ -3169,14 +3443,10 @@ class Game:
                              fingerprint_mod.roll_from_seed(
                                  w.sensor_seed, w.profile.acoustic))
             self.warships.append(w)
-        SurfaceShip._next_id = max(
-            [c.id for c in self.civilians]
-            + [w.id for w in self.warships]
-            + [SurfaceShip._next_id]) + 1
         # W2: Dekoys
         self.decoys = []
         for dd in data.get("decoys", []):
-            d = Decoy(dd["x"], dd["y"], dd["depth"], rng)
+            d = restore_entity(Decoy, dd["x"], dd["y"], dd["depth"], rng)
             if dd.get("id"):
                 d.id = dd["id"]
             d.course = dd["course"]
@@ -3185,7 +3455,6 @@ class Game:
             d.dead = False
             d.sensor_seed = dd.get("sensor_seed", d.sensor_seed)
             self.decoys.append(d)
-        Decoy._next_id = max([d.id for d in self.decoys] + [Decoy._next_id]) + 1
         # Phase 2: laufende Entitaeten + Sensoren
         by_id = ({s.id: s for s in self.subs}
                   | {a.id: a for a in self.animals}
@@ -3200,23 +3469,31 @@ class Game:
                         kill_dist_nm=td.get("kill_dist_nm"),
                         kill_depth_m=td.get("kill_depth_m"),
                         speed_kn=td.get("speed_kn"),
-                        guidance_x=td.get("guidance_x"),
-                        guidance_y=td.get("guidance_y"))
+                         guidance_x=td.get("guidance_x"),
+                         guidance_y=td.get("guidance_y"), range_nm=td.get("range_nm"))
             t.depth = td.get("depth", 5.0)
             t.travel = td.get("travel", 0.0)
             t.seeker_acquired = td.get("seeker_acquired", False)
+            t.terminal_active = td.get("terminal_active", t.seeker_acquired)
+            t.state = td.get("state", "RUN")
             t._search_phase = td.get("search_phase", 0.0)
             t._midcourse = td.get("midcourse", t.course)
             t._midcourse_timer = td.get("midcourse_timer", 0.0)
             self.torpedoes.append(t)
         for ed in data.get("enemy_torpedoes", []):
             self.enemy_torpedoes.append(
-                EnemyTorpedo(ed["x"], ed["y"], ed["course"], ed["depth"],
+                restore_entity(EnemyTorpedo, ed["x"], ed["y"], ed["course"], ed["depth"],
                               ed.get("idx", 0)))
             self.enemy_torpedoes[-1].travel = ed.get("travel", 0.0)
             self.enemy_torpedoes[-1].id = ed.get("id", self.enemy_torpedoes[-1].id)
-        EnemyTorpedo._next_id = max(
-            [t.id for t in self.enemy_torpedoes] + [EnemyTorpedo._next_id]) + 1
+        by_id.update((t.id, t) for t in self.enemy_torpedoes)
+        for torpedo, td in zip(self.torpedoes, data.get("torpedoes_in_flight", [])):
+            torpedo.target = by_id.get(td.get("target_id"))
+            if "terminal_active" not in td and "range_nm" not in td and torpedo.target is None:
+                # Old serializers retained an acquired decoy ID after retirement.
+                # Keep terminal search, the commanded datum and wire age intact.
+                torpedo.seeker_acquired = False
+            torpedo._seeker_target = torpedo.target if torpedo.seeker_acquired else None
         self.asms = []
         for a in data.get("asms", []):
             asm = ASM(a["x"], a["y"], a["course"], a["seq"], self.rng_asm)
@@ -3224,16 +3501,32 @@ class Game:
             asm.jammer = a.get("jammer", False)
             asm.chaff_left = a.get("chaff_left", 0.0)
             asm.broken = a.get("broken", False)
+            asm.age_s = a.get("age_s", 0.0)
+            asm.travel = a.get("travel", 0.0)
             self.asms.append(asm)
-        self.warship_asm_seq = max(
-            (a.seq - 1000 for a in self.asms if a.seq >= 1000), default=0)
+        self.warship_asm_seq = data.get("warship_asm_seq", max(
+            (a.seq - 1000 for a in self.asms if a.seq >= 1000), default=0))
         self.essms = []
         for e in data.get("essms", []):
             tgt = next((a for a in self.asms if a.seq == e.get("target_id")),
                        None)
-            essm = ESSM(e["x"], e["y"], e["course"], tgt, e["seq"])
+            # Legacy ESSMs may outlive their ASM. Missing guidance follows the
+            # saved flight path, never a reconstructed hidden target position.
+            remaining = max(0.0, config.ESSM_RANGE_NM - e.get("travel", 0.0))
+            essm = ESSM(e["x"], e["y"], e["course"], tgt, e["seq"],
+                        guidance_x=e.get("guidance_x", e["x"] + remaining
+                                         * math.sin(math.radians(e["course"]))),
+                        guidance_y=e.get("guidance_y", e["y"] - remaining
+                                         * math.cos(math.radians(e["course"]))),
+                        target_id=e.get("track_target_id", e.get("target_id")))
             essm.travel = e.get("travel", 0.0)
+            essm.state = e.get("state", "LAUF")
+            essm.seeker_acquired = e.get("seeker_acquired", False)
             self.essms.append(essm)
+        self.asm_seq = data.get("asm_seq", max(
+            [self.asm_spawned] + [a.seq for a in self.asms]
+            + [e.target_id for e in self.essms if e.target_id is not None]
+            + [t.target_id for t in self.air_picture._tracks.values() if t.kind == "ASM"]))
         for bd in data.get("buoys", []):
             b = Sonobuoy(bd["x"], bd["y"], bd["seq"])
             b.battery_s = bd.get("battery_s", config.BUOY_BATTERY_S)
@@ -3256,6 +3549,9 @@ class Game:
                 flight.course = fd["course"]
                 flight.total_dist = fd.get("total_dist")
                 flight.traveled = fd.get("traveled", 0.0)
+                flight.radar_emitting = fd.get("radar_emitting", flight.radar_emitting)
+                flight.sensor_bearing = fd.get("sensor_bearing")
+                flight.sensor_age = fd.get("sensor_age", config.RADAR_TRACK_STALE_S)
                 flight.active = fd.get("active", True)
                 if flight.dest is None and fd.get("waypoints"):
                     flight.waypoints = [tuple(p) for p in fd["waypoints"]]
@@ -3307,6 +3603,8 @@ class Game:
                 c.tma_course = cd.get("tma_course")
                 c.tma_speed = cd.get("tma_speed")
                 c.tma_quality = cd.get("tma_quality", 0.0)
+                c.tma_seen = cd.get("tma_seen", c.range_seen if c.range_source == "tma" else None)
+                c.buoy_fixes = [tuple(row) for row in cd.get("buoy_fixes", [])]
                 c._fx = self.ship.x
                 c._fy = self.ship.y
                 if c.observed_x is None or c.observed_y is None:
@@ -3369,6 +3667,27 @@ class Game:
             for pd in sn.get("pending_pings", []):
                 target = by_id.get(pd.get("target_id"))
                 if target is not None:
+                    mode = pd.get("mode", "BOW")
+                    if "snapshot" in pd:
+                        snapshot = dict(pd["snapshot"])
+                    else:
+                        # v1-v8 legacy queues have no transmit pose. Freeze once
+                        # at the saved pose/time, conservatively rejecting a
+                        # currently undetectable target; keep the original deadline.
+                        # This uses seed/time noise, never shared RNG draws or AI warnings.
+                        from src.sonar.sonar import tgt_gone
+                        distance = target.distance_nm(self.ship)
+                        active_range = self.sonar._active_range_nm(
+                            target, self.world, pd.get("range_factor", 1.0), mode)
+                        source_depth = self.sonar.towed_depth_m if mode == "TOWED" else 5.0
+                        if (tgt_gone(target) or distance >= active_range
+                                or (mode == "TOWED" and not self.sonar._tow_available())
+                                or self.world.sonar_path_blocked(
+                                    self.ship.x, self.ship.y, source_depth,
+                                    target.x, target.y, target.depth)):
+                            continue
+                        snapshot = self.sonar._measure_ping(
+                            self.ship, target, self.sim_t, distance, active_range)
                     self.sonar._pending_pings.append({
                         "target": target,
                         "frigate": self.ship,
@@ -3376,7 +3695,8 @@ class Game:
                         "sent_at": pd.get("sent_at", self.sim_t),
                         "ready_at": pd.get("ready_at", self.sim_t),
                         "range_factor": pd.get("range_factor", 1.0),
-                        "mode": pd.get("mode", "BOW"),
+                        "mode": mode,
+                        "snapshot": snapshot,
                     })
         self._last_tow_state = self.sonar.tow_state
         self._observed_enemy_torpedoes.update(
@@ -3442,23 +3762,294 @@ class Game:
         try:
             with open(path) as f:
                 data = json.load(f)
-        except (OSError, ValueError):
-            return False
-        if not self._valid_save_document(data):
+        except (OSError, ValueError, RecursionError):
             return False
         return self._load_save_data(data)
 
     @staticmethod
     def _valid_save_document(data) -> bool:
         def finite_number(value) -> bool:
-            return (isinstance(value, (int, float))
-                    and not isinstance(value, bool) and math.isfinite(value))
+            try:
+                return (isinstance(value, (int, float))
+                        and not isinstance(value, bool) and math.isfinite(value))
+            except OverflowError:
+                return False
+
+        def finite_tree(value, path=()) -> bool:
+            if len(path) > 100:
+                return False
+            if value is None or isinstance(value, (str, bool)):
+                return True
+            if isinstance(value, (int, float)):
+                # Historical v1-v8 saves emitted these two explicit sentinels.
+                return finite_number(value) or (
+                    len(path) == 4 and path[0] == "subs"
+                    and type(path[1]) is int and path[2] == "memory"
+                    and path[3] in ("last_ping_age", "last_torpedo_age")
+                    and value == float("inf"))
+            if isinstance(value, dict):
+                return all(isinstance(key, str) and finite_tree(item, path + (key,))
+                           for key, item in value.items())
+            if isinstance(value, (list, tuple)):
+                return all(finite_tree(item, path + (index,))
+                           for index, item in enumerate(value))
+            return False
+
+        def bounded(value, low=0.0, high=1_000_000.0) -> bool:
+            return finite_number(value) and low <= value <= high
+
+        def identity(value) -> bool:
+            return type(value) is int and 1 <= value <= 2**63 - 1
 
         if not isinstance(data, dict):
             return False
         version = data.get("version")
         if type(version) is not int or not 1 <= version <= 8:
             return False
+        if not finite_tree(data):
+            return False
+        fixes = data.get("hfdf_fixes", {})
+        reports = data.get("hfdf_log", [])
+        if not isinstance(fixes, dict) or len(fixes) > 10000:
+            return False
+        if not isinstance(reports, list) or len(reports) > 20:
+            return False
+        for report in reports:
+            if (not isinstance(report, dict)
+                    or not isinstance(report.get("track_id"), str)
+                    or not isinstance(report.get("label"), str)
+                    or not bounded(report.get("t"))
+                    or not bounded(report.get("bearing"), 0, 360)
+                    or not all(bounded(report.get(key), -1_000_000, 1_000_000)
+                               for key in ("observer_x", "observer_y"))):
+                return False
+        for fix in fixes.values():
+            if (not isinstance(fix, dict) or not isinstance(fix.get("label"), str)
+                    or not bounded(fix.get("t")) or not bounded(fix.get("sigma_nm"))
+                    or not all(bounded(fix.get(key), -1_000_000, 1_000_000)
+                               for key in ("x", "y"))):
+                return False
+            covariance = fix.get("covariance_nm2")
+            if covariance is not None:
+                if (not isinstance(covariance, (list, tuple)) or len(covariance) != 3
+                        or not all(bounded(value, -1e12, 1e12) for value in covariance)):
+                    return False
+                xx, xy, yy = covariance
+                if xx < 0 or yy < 0 or xy * xy > xx * yy + 1e-9 * max(1., xx * yy):
+                    return False
+        ship = data.get("ship")
+        if not isinstance(ship, dict):
+            return False
+        order = ship.get("order_idx", config.TELEGRAPH_DEFAULT)
+        if type(order) is not int or not 0 <= order < len(config.TELEGRAPH_ORDERS):
+            return False
+        team = data.get("dmg_team", 1)
+        if type(team) is not int or not 1 <= team <= DamageModel.TEAM_COUNT:
+            return False
+        from src.ship.damage import COMPARTMENTS
+        compartment_keys = {key for key, _ in COMPARTMENTS}
+        damage = data.get("damage")
+        if not isinstance(damage, dict):
+            return False
+        teams = damage.get("teams")
+        compartments = damage.get("compartments")
+        if not isinstance(teams, dict) or not isinstance(compartments, dict):
+            return False
+        if any(key not in {str(i) for i in range(1, DamageModel.TEAM_COUNT + 1)}
+               or (room is not None and (not isinstance(room, str)
+                                         or room not in compartment_keys))
+               for key, room in teams.items()):
+            return False
+        if any(key not in compartment_keys or not isinstance(room, dict)
+               or room.get("state") not in ("OK", "FLUTEND", "BESCHAEDIGT", "ZERSTOERT")
+               or not bounded(room.get("flood"), 0, 1000)
+               or not bounded(room.get("fire", 0), 0, 1000)
+               for key, room in compartments.items()):
+            return False
+
+        groups = {"sub": ("subs",), "animal": ("animals",),
+                  "surface": ("civilians", "warships"), "decoy": ("decoys",),
+                  "enemy_torpedo": ("enemy_torpedoes",)}
+        max_ship_noise = Ship(0, 0, speed_kn=config.SHIP_SPEED_MAX_KN).noise_level()
+        max_salvo = max(profile.asm_salvo[1] for profile in CATALOG.surfaces.values())
+        pending_missiles = 0
+        entity_ids, group_ids = set(), {}
+        for key, names in groups.items():
+            group_ids[key] = set()
+            for name in names:
+                entries = data.get(name, [])
+                if not isinstance(entries, list) or len(entries) > 10000:
+                    return False
+                for entry in entries:
+                    if not isinstance(entry, dict):
+                        return False
+                    # Early civilian saves may not contain an ID.
+                    entity_id = entry.get("id")
+                    if entity_id is not None:
+                        if not identity(entity_id) or entity_id in entity_ids:
+                            return False
+                        entity_ids.add(entity_id)
+                        group_ids[key].add(entity_id)
+                    elif name not in ("civilians", "warships", "decoys", "enemy_torpedoes"):
+                        return False
+                    if any(not bounded(entry.get(axis), -1_000_000, 1_000_000)
+                           for axis in ("x", "y")):
+                        return False
+                    if name in ("civilians", "warships"):
+                        observed = entry.get("sensor_contact")
+                        if (observed is not None and (
+                                not isinstance(observed, (list, tuple)) or len(observed) != 2
+                                or any(not bounded(value, -1_000_000, 1_000_000) for value in observed))):
+                            return False
+                        if not bounded(entry.get("sensor_contact_age", config.RADAR_TRACK_STALE_S),
+                                       0, config.RADAR_TRACK_STALE_S):
+                            return False
+                        direction = entry.get("orbit_direction", 1)
+                        if type(direction) is not int or direction not in (-1, 1):
+                            return False
+                        awarded = entry.get("sunk_score_awarded", False)
+                        if type(awarded) is not bool or (awarded and not entry.get("sunk", False)):
+                            return False
+                    if name == "subs":
+                        memory = entry.get("memory", {})
+                        if not isinstance(memory, dict):
+                            return False
+                        for age in ("last_ping_age", "last_torpedo_age"):
+                            value = memory.get(age)
+                            if value is not None and value != float("inf") and not bounded(value, 0, 1e12):
+                                return False
+                        if not bounded(memory.get("contact_age", config.SUB_EVADE_DURATION_S),
+                                       0, config.SUB_EVADE_DURATION_S):
+                            return False
+                        bearing = memory.get("contact_bearing")
+                        if bearing is not None and (not bounded(bearing, 0, 360) or bearing == 360):
+                            return False
+                        observed = memory.get("contact")
+                        if observed is not None:
+                            if (not isinstance(observed, dict)
+                                    or set(observed) != {"x", "y", "speed", "course", "noise"}
+                                    or any(not bounded(observed[axis], -1_000_000, 1_000_000)
+                                           for axis in ("x", "y"))
+                                    or not bounded(observed["speed"], 0, 100)
+                                    or not bounded(observed["course"], 0, 360)
+                                    or not bounded(observed["noise"], 0, max_ship_noise)):
+                                return False
+                    for pending, width in (("pending_torpedoes", 4),
+                                           ("pending_decoys", 2), ("pending_asm", 3)):
+                        rows = entry.get(pending, [])
+                        if (not isinstance(rows, list) or len(rows) > 10000
+                                or any(not isinstance(row, (list, tuple)) or len(row) != width
+                                       or any(not bounded(v, -1_000_000, 1_000_000) for v in row)
+                                       or (pending == "pending_asm" and not identity(row[2]))
+                                       for row in rows)):
+                            return False
+                        if pending == "pending_asm" and rows:
+                            if name != "warships":
+                                return False
+                            profile_key = entry.get("signature_key")
+                            if profile_key is not None and not isinstance(profile_key, str):
+                                return False
+                            profile = CATALOG.surfaces.get(profile_key)
+                            low, high = profile.asm_salvo if profile is not None else (1, max_salvo)
+                            if any(not low <= row[2] <= high for row in rows):
+                                return False
+                            pending_missiles += sum(row[2] for row in rows)
+                            if pending_missiles > Game.MAX_SAVED_ASMS:
+                                return False
+        next_ids = data.get("next_entity_ids", {})
+        if (not isinstance(next_ids, dict) or not set(next_ids) <= set(groups)
+                or any(not identity(value) or value <= max(group_ids[key], default=0)
+                       for key, value in next_ids.items())):
+            return False
+        for key in ("asm_seq", "asm_spawned", "warship_asm_seq"):
+            value = data.get(key, 0)
+            if type(value) is not int or not 0 <= value <= 2**63 - 1:
+                return False
+        if not bounded(data.get("ciws_cooldown_s", 0), 0, 1):
+            return False
+        if type(data.get("air_threat_reported", False)) is not bool:
+            return False
+        flights = data.get("flights", {})
+        if not isinstance(flights, dict) or not isinstance(flights.get("items", []), list):
+            return False
+        for flight in flights.get("items", []):
+            if not isinstance(flight, dict):
+                return False
+            bearing = flight.get("sensor_bearing")
+            if (type(flight.get("radar_emitting", False)) is not bool
+                    or not bounded(flight.get("sensor_age", config.RADAR_TRACK_STALE_S),
+                                   0, config.RADAR_TRACK_STALE_S)
+                    or (bearing is not None and (not bounded(bearing, 0, 360) or bearing == 360))):
+                return False
+        asms = data.get("asms", [])
+        torpedoes = data.get("torpedoes_in_flight", [])
+        essms = data.get("essms", [])
+        if any(not isinstance(rows, list) or len(rows) > 10000
+               or any(not isinstance(row, dict) for row in rows)
+               for rows in (asms, torpedoes, essms)):
+            return False
+        if len(asms) + pending_missiles > Game.MAX_SAVED_ASMS:
+            return False
+        asm_ids = set()
+        for asm in asms:
+            seq = asm.get("seq")
+            if not identity(seq) or seq in asm_ids:
+                return False
+            asm_ids.add(seq)
+            if (asm.get("state", "LAUF") not in ("LAUF", "CHAFF", "ABGEFANGEN", "TREFFER", "VERLOREN")
+                    or not bounded(asm.get("age_s", 0), 0, ASM.LIFE_S)
+                    or not bounded(asm.get("travel", 0), 0, ASM.RANGE_NM)):
+                return False
+        if "asm_seq" in data and data["asm_seq"] < max(asm_ids, default=0):
+            return False
+        for weapon in torpedoes + essms:
+            if any(not bounded(weapon.get(axis), -1_000_000, 1_000_000)
+                   for axis in ("x", "y")):
+                return False
+            for flag in ("terminal_active", "seeker_acquired"):
+                if flag in weapon and type(weapon[flag]) is not bool:
+                    return False
+            if ("guidance_x" in weapon) != ("guidance_y" in weapon):
+                return False
+            gx, gy = weapon.get("guidance_x"), weapon.get("guidance_y")
+            if (gx is None) != (gy is None) or (gx is not None and (
+                    not bounded(gx, -1_000_000, 1_000_000)
+                    or not bounded(gy, -1_000_000, 1_000_000))):
+                return False
+        for torpedo in torpedoes:
+            target_id = torpedo.get("target_id")
+            legacy_target = "terminal_active" not in torpedo and "range_nm" not in torpedo
+            if target_id is not None and (not identity(target_id)
+                    or (target_id not in entity_ids and not legacy_target)):
+                return False
+            distance = torpedo.get("range_nm", Torpedo.RANGE_NM)
+            if (not bounded(distance, .001, 10000)
+                    or not identity(torpedo.get("idx"))
+                    or not bounded(torpedo.get("speed_kn", Torpedo.SPEED_KN), 0, 10000)
+                    or not bounded(torpedo.get("depth", 5), 0, 10000)
+                    or not bounded(torpedo.get("target_depth", 5), 0, 10000)
+                    or not bounded(torpedo.get("travel", 0), 0, distance)
+                    or not bounded(torpedo.get("midcourse_timer", 0), 0, Torpedo.WIRE_BREAK_S)
+                    or torpedo.get("state", "RUN") not in ("RUN", "HIT", "SASE")):
+                return False
+            if torpedo.get("seeker_acquired", False) and target_id is None and not legacy_target:
+                return False
+        for essm in essms:
+            target_id = essm.get("target_id")
+            track_id = essm.get("track_target_id")
+            legacy_target = not any(key in essm for key in (
+                "guidance_x", "guidance_y", "track_target_id", "seeker_acquired"))
+            if ((target_id is not None and (not identity(target_id)
+                                           or (target_id not in asm_ids and not legacy_target)))
+                    or not identity(essm.get("seq"))
+                    or (track_id is not None and not identity(track_id))
+                    or not bounded(essm.get("travel", 0), 0, config.ESSM_RANGE_NM)
+                    or essm.get("state", "LAUF") not in ("LAUF", "HIT", "SASE")
+                    or (essm.get("seeker_acquired", False) and target_id is None and not legacy_target)
+                    or ("guidance_x" in essm and essm["guidance_x"] is None)):
+                return False
+            if "asm_seq" in data and track_id is not None and track_id > data["asm_seq"]:
+                return False
         world = data.get("world")
         if world is not None and not isinstance(world, dict):
             return False
@@ -3495,6 +4086,30 @@ class Game:
             return False
         for contact in contacts.values():
             if not isinstance(contact, dict):
+                return False
+            reports = contact.get("array_observations", {})
+            if not isinstance(reports, dict) or not set(reports) <= {"BOW", "TOWED"}:
+                return False
+            for report in reports.values():
+                if (not isinstance(report, dict)
+                        or not {"bearing", "quality", "snr", "last_seen"} <= set(report)
+                        or not set(report) <= {"bearing", "quality", "snr", "last_seen", "uncertainty_deg"}
+                        or not bounded(report["bearing"], 0, 360) or report["bearing"] == 360
+                        or not bounded(report["quality"], 0, 1)
+                        or not bounded(report["snr"], -200, 200)
+                        or not bounded(report["last_seen"], 0, 1e12)
+                        or ("uncertainty_deg" in report
+                            and not bounded(report["uncertainty_deg"], .05, 180))):
+                    return False
+            tma_seen = contact.get("tma_seen")
+            if tma_seen is not None and not bounded(tma_seen, 0, 1e12):
+                return False
+            fixes = contact.get("buoy_fixes", [])
+            if (not isinstance(fixes, list) or len(fixes) > 80
+                    or any(not isinstance(row, (list, tuple)) or len(row) != 4
+                           or not bounded(row[0], 0, 1e12)
+                           or any(not bounded(v, -1_000_000, 1_000_000) for v in row[1:3])
+                           or not bounded(row[3], 0, 1) for row in fixes)):
                 return False
             history = contact.get("raw_bearings", [])
             if (not isinstance(history, list)
@@ -3604,14 +4219,30 @@ class Game:
                        and contact["bearing_filter_t"] > sim_t
                        for contact in contacts.values())):
             return False
-        if any(not isinstance(item, dict)
-               for item in sonar.get("pending_pings", [])):
+        pending_pings = sonar.get("pending_pings", [])
+        # 25000 s covers two-way propagation across the 10000 NM snapshot bound.
+        if len(pending_pings) > SonarSystem.MAX_PENDING_PINGS or any(not isinstance(item, dict)
+               or not set(item) <= {"target_id", "sent_at", "ready_at", "range_factor", "mode", "snapshot"}
+               or not identity(item.get("target_id"))
+               or ("snapshot" in item and item["target_id"] not in entity_ids)
+               or any(not bounded(item.get(key, 0), 0, 1e12)
+                      for key in ("sent_at", "ready_at"))
+               or not bounded(item.get("range_factor", 1), 0, 100)
+               or item.get("mode", "BOW") not in ("BOW", "TOWED")
+               or item.get("sent_at", sim_t) > sim_t
+               or not 0 <= item.get("ready_at", sim_t) - item.get("sent_at", sim_t) <= 25000
+               or ("snapshot" in item and (
+                   not SonarSystem.valid_ping_snapshot(item["snapshot"])
+                   or not item.get("sent_at", sim_t) <= item["snapshot"]["t"] <= sim_t))
+               for item in pending_pings):
             return False
         return True
 
     def _load_save_data(self, data: dict) -> bool:
         import copy
 
+        if not self._valid_save_document(data):
+            return False
         candidate = copy.copy(self)
         candidate.held = set(self.held)
         candidate.map_view = copy.copy(self.map_view)
@@ -3621,12 +4252,29 @@ class Game:
         candidate.audio.stop_sonar = lambda: None
         id_classes = (Sub, Animal, SurfaceShip, Decoy, EnemyTorpedo)
         next_ids = tuple(cls._next_id for cls in id_classes)
+        candidate._restore_id_allocations = dict.fromkeys(id_classes, 0)
+        restored = False
         try:
-            candidate.load_state(data)
+            candidate._restore_state(data)
+            restored = True
         except Exception:
-            for cls, next_id in zip(id_classes, next_ids):
-                cls._next_id = next_id
             return False
+        finally:
+            groups = (("sub", candidate.subs), ("animal", candidate.animals),
+                      ("surface", candidate.civilians + candidate.warships),
+                      ("decoy", candidate.decoys),
+                      ("enemy_torpedo", candidate.enemy_torpedoes))
+            for cls, baseline, (key, entities) in zip(id_classes, next_ids, groups):
+                current = cls._next_id
+                # Never rewind another instance's allocations. Remove only a
+                # contiguous run known to consist solely of restoration IDs.
+                if current == baseline + candidate._restore_id_allocations[cls]:
+                    current = baseline
+                if restored:
+                    current = max(current, data.get("next_entity_ids", {}).get(key, 1),
+                                  max((entity.id + 1 for entity in entities), default=1))
+                cls._next_id = current
+            del candidate._restore_id_allocations
         candidate.audio = self.audio
         self.__dict__.update(candidate.__dict__)
         self.in_menu = False
@@ -3653,9 +4301,7 @@ class Game:
         try:
             with open(path) as f:
                 data = json.load(f)
-        except (OSError, ValueError):
-            return False
-        if not self._valid_save_document(data):
+        except (OSError, ValueError, RecursionError):
             return False
         if not self._load_save_data(data):
             return False
@@ -3666,6 +4312,7 @@ class Game:
 
     def _reset_map_view(self) -> None:
         """Standard-Karte: Detail-Zoom, Kamera folgt der Fregatte."""
+        self.map_view.set_rect(config.MAP_RECT)
         self.map_view.scale = config.MAP_ZOOM_DEFAULT_PX_PER_NM
         self.map_view.cx = self.ship.x
         self.map_view.cy = self.ship.y
@@ -3685,6 +4332,27 @@ class Game:
         else:
             candidate = rng.randrange(1, upper)
         self.seed = candidate
+
+    def _start_menu_mission(self) -> None:
+        """Consume an exact pristine menu preparation, otherwise replace it."""
+        prepared = (self.seed, self.scenario_key, self.world_mode, self.level,
+                    id(self.world), id(self.sonar))
+        reuse = (self.in_menu and self._prepared_menu_mission == prepared
+                 and self.sim_t == 0.0 and self.mission_time == 0.0
+                 and self.custom_mission_definition is None
+                 and self.mission_result is None and not self.game_over
+                 and self.running and not self.paused)
+        self._prepared_menu_mission = None
+        self.in_menu = False
+        self.main_menu = False
+        if not reuse:
+            self.reset(self.seed, self.scenario_key)
+            return
+        self._clear_controls()
+        self.audio.stop()
+        self.msg = ""
+        self.msg_until = 0.0
+        self._t = 0.0
 
     def _handle_menu_key(self, key) -> None:
         if key == pygame.K_f:
@@ -3753,16 +4421,14 @@ class Game:
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
                 self.level = config.LEVEL_ORDER[self.menu_sel]
                 self.scenario_key = "s4_zufall"
-                self.in_menu = False
-                self.reset(self.seed, "s4_zufall")
+                self._start_menu_mission()
             elif key == pygame.K_ESCAPE:
                 self.menu_screen = "scenario"
                 self.menu_sel = 3
             return
         # briefing
         if key in (pygame.K_RETURN, pygame.K_SPACE):
-            self.in_menu = False
-            self.reset(self.seed, self.scenario_key)
+            self._start_menu_mission()
         elif key == pygame.K_ESCAPE:
             self.menu_screen = "scenario"
 
@@ -3855,6 +4521,7 @@ class Game:
 
     @localized
     def draw(self) -> None:
+        self._apply_text_size()
         s = self.screen
         s.fill(config.COLOR_BG)
         if self.splash_active:
@@ -3914,13 +4581,11 @@ class Game:
             self.draw_save_ui()
         elif self.options_open:
             self.draw_options_overlay()
+        elif self.commander_open:
+            self.commander.draw(self)
         if self.msg and self._t < self.msg_until:
-            message = localize(self.msg)
-            r = self.font_big.render(message, True, config.COLOR_WARN).get_rect(
-                center=(config.SCREEN_W // 2, 80))
-            s.blit(self.font_big.render(message, True, config.COLOR_BG),
-                   (r.x + 2, r.y + 2))
-            s.blit(self.font_big.render(message, True, config.COLOR_WARN), r)
+            layout.blit_block(s, localize(self.msg), 22, 62, config.SCREEN_W - 44, 76,
+                              config.COLOR_WARN, size=28, align="center")
         if (not self.in_menu and not self.splash_active and self.editor is None
                 and self.tooltips_enabled
                 and not self.administration_open and not self.game_over):
@@ -3952,6 +4617,7 @@ class Game:
 
     @localized
     def draw_top_bar(self) -> None:
+        layout.configure_for(self)
         s = self.screen
         pygame.draw.rect(s, (14, 24, 18), (0, 0, config.SCREEN_W, config.TOP_BAR_H))
         pygame.draw.line(s, config.COLOR_SONAR_RING,
@@ -3968,14 +4634,16 @@ class Game:
                       course=f"{self.ship.course:4.0f}")
         if self.paused:
             txt += "   || PAUSE"
-        s.blit(self.font.render(localize(txt), True, config.COLOR_TEXT), (10, 6))
-        x = 960
+        x = 920
+        layout.blit_line(s, txt, (10, 4, x - 24, config.TOP_BAR_H - 8),
+                         config.COLOR_TEXT, size=18)
         for i, ts in enumerate(config.TIME_SCALE_STEPS):
             col = config.COLOR_TEXT if i == self.time_scale_idx \
                 else config.COLOR_TEXT_DIM
-            s.blit(self.font.render(f"{ts}x", True, col), (x + i * 42, 6))
-        s.blit(self.font.render("[ ]", True, config.COLOR_TEXT_DIM),
-               (x + len(config.TIME_SCALE_STEPS) * 42, 6))
+            layout.blit_line(s, f"{ts}x", (x + i * 50, 4, 48, config.TOP_BAR_H - 8),
+                             col, size=16)
+        layout.blit_line(s, "control.help.time_keys", (x + len(config.TIME_SCALE_STEPS) * 50, 4,
+                                   40, config.TOP_BAR_H - 8), config.COLOR_TEXT_DIM, size=14)
 
     @localized
     def draw_bottom_feed(self) -> None:
@@ -4036,8 +4704,23 @@ class Game:
                                label_w=100, size=13)
             ly += 18
 
+    def _help_lines(self) -> tuple[list[str], int]:
+        """Wrap before scrolling so every line remains reachable at either size."""
+        layout.configure_for(self)
+        intro, keys, params, tactics = get_help(self.station, self.tr)
+        if self.help_page == 0:
+            title, bindings = get_global_help(self.tr)
+            text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
+        elif self.help_page == 1:
+            text = intro + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in keys)
+        else:
+            text = self.tr("help.sensors_tactics") + "\n\n" + "\n\n".join(params + tactics)
+        face = layout.font(17)
+        return layout.wrap_text(text, face, 960), max(1, 500 // layout._line_height(face))
+
     @localized
     def draw_help_overlay(self) -> None:
+        layout.configure_for(self)
         s = self.screen
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 170))
@@ -4049,23 +4732,19 @@ class Game:
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
         help_title = self.tr("help.title", station=display_value(
             "station", self.station.name, self.tr).upper())
-        s.blit(self.font_big.render(help_title, True, config.COLOR_TEXT),
-            (bx + 18, by + 12))
-        intro, keys, params, tactics = get_help(self.station, self.tr)
+        layout.blit_line(s, help_title, (bx + 18, by + 10, bw - 36, 40),
+                         config.COLOR_TEXT, size=28)
         x = bx + 20
         w = bw - 40
         y = by + 52
-        if self.help_page == 0:
-            title, bindings = get_global_help(self.tr)
-            text = title + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in bindings)
-        elif self.help_page == 1:
-            text = intro + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in keys)
-        else:
-            text = self.tr("help.sensors_tactics") + "\n\n" + "\n\n".join(params + tactics)
-        layout.blit_block(s, text, x, y, w, bh - 100,
-                          config.COLOR_TEXT, size=17, min_size=15)
-        layout.blit_line(s, self.tr("help.page_hint", page=self.help_page + 1, pages=3),
-                         (x, by + bh - 32, w, 24), config.COLOR_TEXT_DIM, size=16)
+        lines, visible = self._help_lines()
+        scroll = min(getattr(self, "help_scroll", 0), max(0, len(lines) - visible))
+        layout.blit_block(s, "\n".join(lines[scroll:scroll + visible]), x, y, w, 500,
+                          config.COLOR_TEXT, size=17, min_size=17)
+        layout.blit_block(s, self.tr("control.help.scroll_hint", page=self.help_page + 1,
+                                    pages=3, first=scroll + 1,
+                                    last=min(len(lines), scroll + visible), total=len(lines)),
+                          x, by + bh - 62, w, 54, config.COLOR_TEXT_DIM, size=14)
 
     @localized
     def draw_nations_overlay(self) -> None:
@@ -4175,13 +4854,17 @@ class Game:
             s.blit(f.render(text, True, c), r)
             ly += 36 if big else 26
 
+    @staticmethod
+    def _options_row_rects():
+        return tuple(pygame.Rect(292, 204 + index * 52, 696, 42) for index in range(6))
+
     @localized
     def draw_options_overlay(self) -> None:
-        rect = pygame.Rect(360, 190, 560, 390)
+        rect = pygame.Rect(260, 100, 760, 540)
         pygame.draw.rect(self.screen, (7, 18, 13), rect)
         pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
-        title = self.font_big.render(self.tr("option.title"), True, config.COLOR_WARN)
-        self.screen.blit(title, title.get_rect(center=(rect.centerx, rect.y + 42)))
+        layout.blit_line(self.screen, "option.title", (292, 126, 696, 44),
+                         config.COLOR_WARN, size=28, align="center")
         values = (
             self.tr("option.language") + ": " + self.tr("option.language." + self.preferences.language),
             self.tr("option.fullscreen") + ": " + self.tr("common.on" if self.preferences.fullscreen else "common.off"),
@@ -4189,16 +4872,16 @@ class Game:
             self.tr("option.large_text") + ": " + self.tr("common.on" if self.preferences.large_text else "common.off"),
             self.tr("option.tooltips") + ": "
             + self.tr("common.on" if self.tooltips_enabled else "common.off"),
+            self.tr("commander.local.option"),
         )
-        for index, value in enumerate(values):
+        for index, (value, row) in enumerate(zip(values, self._options_row_rects())):
             color = config.COLOR_TEXT if index == self.options_sel else config.COLOR_TEXT_DIM
             prefix = "> " if index == self.options_sel else "  "
-            rendered = self.font.render(prefix + value, True, color)
-            self.screen.blit(rendered, (rect.x + 70, rect.y + 105 + index * 50))
-        hint = self.font.render(localize(
-            "Up/Down: select | Enter/Left/Right: change | Esc: back"),
-                                True, config.COLOR_TEXT_DIM)
-        self.screen.blit(hint, hint.get_rect(center=(rect.centerx, rect.bottom - 35)))
+            layout.blit_line(self.screen, raw_text(prefix + value), row, color, size=18)
+        layout.blit_block(self.screen,
+                          "commander.local.options_hint",
+                          292, 560, 696, 58, config.COLOR_TEXT_DIM, size=16,
+                          align="center")
 
     @localized
     def draw_pause_overlay(self) -> None:
@@ -4258,9 +4941,13 @@ class Game:
                 self._t += dt
                 for e in pygame.event.get():
                     self.handle_event(e)
+                self.commander.pump(self)
                 self.update(dt)
                 self.draw()
                 self.compose_frame()
         finally:
-            self.audio.shutdown()
-            pygame.quit()
+            try:
+                self.commander.stop()
+            finally:
+                self.audio.shutdown()
+                pygame.quit()

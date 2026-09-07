@@ -46,7 +46,7 @@ class Fingerprint:
 
 
 def roll_fingerprint(rng, sig) -> Fingerprint:
-    """Zieht den Fingerprint aus `rng` (6 Draw: choice, 4x uniform, 1 uniform).
+    """Zieht den Fingerprint aus `rng`: choice + 5 uniform, bei Breitband +3.
 
     `sig` muss blade_counts, cavitation_tendency und broadband haben.
     """

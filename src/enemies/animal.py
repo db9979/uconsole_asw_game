@@ -8,6 +8,7 @@ import random
 
 from src.core import config
 from src.data.catalog import CATALOG
+from src.weapons.torpedo import underwater_path_blocked
 
 
 class AnimalType:
@@ -105,14 +106,19 @@ class Animal:
         self.course = (self.course + config.clamp(
             diff, -turn_rate * dt, turn_rate * dt)) % 360.0
         depth_rate = {"whale": 1.0, "fish_school": .2,
-                      "jellyfish": .03}.get(self.atype.key, .2)
+                       "jellyfish": .03}.get(self.atype.key, .2)
+        bottom = getattr(world, "depth_m", lambda x, y: 1000.0)(self.x, self.y)
+        self.target_depth = config.clamp(self.target_depth, 0.0,
+                                         min(self.atype.depth_max, max(0.0, bottom - 1.0)))
+        old_depth = self.depth
         self.depth += config.clamp(
-            self.target_depth - self.depth, -depth_rate, depth_rate) * dt
+            self.target_depth - self.depth, -depth_rate * dt, depth_rate * dt)
 
         v = config.kn_to_nm_per_s(self.speed) * dt
         nx = self.x + v * math.sin(math.radians(self.course))
         ny = self.y - v * math.cos(math.radians(self.course))
-        if world.on_land(nx, ny):
+        if (world.on_land(nx, ny) or underwater_path_blocked(
+                world, self.x, self.y, old_depth, nx, ny, self.depth)):
             self.target_course = (self.course + 120.0) % 360.0
         else:
             self.x, self.y = nx, ny

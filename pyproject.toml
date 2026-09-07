@@ -49,6 +49,7 @@ namespaces = true
 "data.coastlines" = ["*.json", "*.json.gz"]
 "data.editor_templates" = ["*.json"]
 "data.i18n" = ["*.json"]
+"data.commander" = ["*.html", "*.js", "*.css"]
 
 [tool.setuptools.dynamic]
 version = {attr = "src.core.version.APP_VERSION"}

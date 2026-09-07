@@ -27,7 +27,7 @@ def test_weapons_panel_has_fixed_solution_readiness_inventory_and_active_section
         torpedo_readiness=lambda: ("ROHRE BEREIT", config.COLOR_OK),
         torpedo_count=4, torpedo_total=4, torpedo_depth=50.0,
         torpedoes=[], roe="FREIGABE",
-        helo=NS(torps=2, buoys_left=6, airborne=False),
+        helo=NS(torps=2, buoys_left=6, airborne=False, state="HANGAR"),
     )
 
     weapons_view.draw_weapons_panel(game)
@@ -63,16 +63,17 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
     game = NS(
         screen=pygame.Surface((1280, 720)), target=contact, sim_t=100.0,
         torpedo_readiness=lambda: ("FEUER FREI", config.COLOR_OK),
+        _contact_range_fresh=lambda c: True,
         torpedo_count=4, torpedo_total=4, torpedo_depth=50.0,
         torpedoes=[], roe="STD",
-        helo=NS(torps=2, buoys_left=6, airborne=False),
+        helo=NS(torps=2, buoys_left=6, airborne=False, state="HANGAR"),
     )
     weapons_view.draw_weapons_panel(game)
-    assert any("TMA COURSE" in line and "SPEED" in line and "Q 72%" in line
+    assert any("TMA 145.0 deg / 7.0 kn Q72%" in line
                 for line in lines)
     assert "Target ASSIGNED" in lines
-    assert "Solution VALID" in lines
-    assert "Authorization AUTHORIZED" in lines
+    assert "Fix VALID" in lines
+    assert "ROE AUTHORIZED" in lines
     assert "Weapon READY" in lines
 
 

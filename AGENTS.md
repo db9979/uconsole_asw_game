@@ -2,10 +2,10 @@
 
 ## Authority and scope
 
-- This is U-Jagd 0.1.5 (`src/core/version.py`); current saves are v8. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 0.1.6 (`src/core/version.py`); current saves are v8. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
-- Known stale text: `src/core/game.py` mentions a 1280x800 canvas and labels `save_state()` v5; `docs/GDD.md` and `docs/implementation-plan.md` still call v7 current. Runtime constants/tests establish 1280x720 and the serializer writes v8. Older phase/milestone labels elsewhere are historical.
+- Older phase/milestone labels under `docs/GDD.md` and `docs/implementation-plan.md` are historical. Current resumable work is tracked in `docs/plan-0.1.6.md` and `docs/resume.md`.
 
 ## Architecture
 
@@ -59,6 +59,17 @@
 - Writes must stage beside the destination, flush and `fsync`, then atomically `os.replace`; failure leaves the prior file intact and save-and-quit quits only after success. Load into a candidate state and commit only after complete validation/restoration; failure must leave the live game and global ID counters unchanged.
 - Treat imported/editor JSON as hostile. Require finite typed/bounded values, strict schemas, `user.<lowercase/digit/_/->` keys, confined destinations, and no symlinked root/file. Never interpret a logical reference as a filesystem path.
 - Bundle import validates every item and collision before the first visible write, stages all files, rechecks confinement/symlinks, and rolls back the whole commit on failure. Preserve backups if rollback itself fails. JSON output must reject NaN/Infinity.
+
+## Commander LAN
+
+- Commander service is opt-in, off on every launch. `F10` Options or `F9` opens local administration. Bind only an explicitly selected loopback/private IPv4; HTTP is trusted-LAN-only, not Internet hosting.
+- `src/commander/server.py` must never reference Game/Pygame. It serves cached bytes and bounded request queues. `CommanderBridge.pump()` executes once per main-loop wall frame, not on HTTP threads or physics substeps.
+- Export only allowlisted observations and own-ship information, never a save/entity dump, seed, RNG, hidden platform identity or raw internal ID. Menu/editor/splash publish status-only data. Browser inspection never changes crew selection or sonar focus.
+- Classification/affiliation require pairing AND local grant; target proposals require explicit crew acceptance and fresh observation revalidation. Remote firing, steering, sensor operation, ROE, time, saves and editor controls are forbidden.
+- Pairing codes are three digits followed by three uppercase letters, valid five minutes, five failed attempts per rolling minute globally. Long bearer tokens remain independent. Never store or log codes/tokens; credentials, connections and pending proposals are not save fields.
+- Successful world replacement revokes pairing/grant on the next main-thread pump; failed candidate restoration must have no server/bridge side effects. Queue epochs invalidate stale actions across input-owner changes.
+- Bound connections, bodies, queues, chart geometry, events and retries. Exact Host/Origin validation and fixed static routes are required. Browser strings use root EN/DE catalogs and textContent, with no CDN or arbitrary HTML.
+- Stop after the Commander milestone and record the pause in `docs/resume.md`; do not start deferred sonar/fidelity work without renewed instruction.
 
 ## Coastline provenance
 

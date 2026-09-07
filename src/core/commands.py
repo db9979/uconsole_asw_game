@@ -1,6 +1,6 @@
 """Shared station command metadata used by input and contextual hints."""
 
-from src.core.i18n import message
+from src.core.i18n import Translator, message
 from src.core.station import Station
 
 
@@ -35,12 +35,12 @@ SONAR_PAGE_COUNT = len(STATION_PAGES[Station.SONAR])
 STATION_COMMAND_HINTS = {
     Station.BRIDGE: "Links/Rechts Kurs | Auf/Ab Telegraph | U/V Direkt | Q/E Zoom | K Follow",
     Station.SONAR: "Peilung Links/Rechts | Kontakt Auf/Ab | A Ping | Y TAS | M Ziel",
-    Station.WEAPONS: "Auf/Ab Tiefe | Links/Rechts Kontakt | M Ziel | Q/E Zoom | K Follow",
+    Station.WEAPONS: "control.hint.weapons",
     Station.DAMAGE: "Links/Rechts Raum | Auf/Ab Team | Enter Zuweisen",
-    Station.OPZ: "Links/Rechts ASM | Auf/Ab CIC | M Uebergabe | Bild Radarbereich",
+    Station.OPZ: "control.hint.opz",
     Station.RADIO: "Auf/Ab HFDF | Enter Protokoll",
     Station.ENGINE: "Auf/Ab Telegraph | A Leise | V Fahrt",
-    Station.HELICOPTER: "Links/Rechts Peilung | Auf/Ab Distanz | M Ziel | Q/E Zoom | K Follow",
+    Station.HELICOPTER: "control.hint.helicopter",
 }
 
 
@@ -85,6 +85,6 @@ def toggle_tas(game, tr=None) -> bool:
 
 
 def station_command_hint(station: Station, tr=None) -> str:
-    """Return a translatable station hint without changing existing metadata."""
+    """Translate command metadata, retaining the historical German default."""
     text = STATION_COMMAND_HINTS.get(station, "")
-    return (tr or (lambda value: value))(text)
+    return (tr or Translator("de").t)(text)

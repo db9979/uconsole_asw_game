@@ -6,10 +6,12 @@ Kavitation/Breitband-Level) – Details in docs/contacts-db.md.
 
 import math
 import random
+from types import SimpleNamespace
 
 from src.core import config
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
+from src.weapons.torpedo import underwater_path_blocked
 
 CATALOG = catalog.CATALOG
 DECOY_PROFILE = CATALOG.get_decoy("decoy")
@@ -94,6 +96,8 @@ class Sub:
             "last_ping_age": float("inf"),
             "last_torpedo_age": float("inf"),
             "contact_bearing": None,
+            "contact_age": config.SUB_EVADE_DURATION_S,
+            "contact": None,
         }
         self.decision_reason = "Patrouille"
 
@@ -101,7 +105,7 @@ class Sub:
 
     def hear_ping(self) -> None:
         """U-Boot hört einen aktiven Ping -> Ausweichen."""
-        if not self.sunk:
+        if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
             self.evac_left = config.SUB_EVADE_DURATION_S
             self.heard_ping = True
@@ -111,7 +115,7 @@ class Sub:
 
     def alert_torpedo(self) -> None:
         """W2: Feindtorpedo gehört -> harte Ausweichreaktion + ggf. Dekoy."""
-        if not self.sunk:
+        if not self.sunk and self.state != "SINKING":
             self.torpedo_alerted = True
             self.heard_ping = True
             self.state = "EVADE"
@@ -150,7 +154,7 @@ class Sub:
 
     def hit(self) -> None:
         """Torpedotreffer: Schaden; bei 100 % Sinkbeginn (Captain's Log §3)."""
-        if self.sunk:
+        if self.sunk or self.state == "SINKING":
             return
         self.damage = min(100.0, self.damage + self.rng.uniform(60.0, 100.0))
         if self.damage >= 100.0:
@@ -165,7 +169,8 @@ class Sub:
     def _launch_data(self, frigate) -> tuple[float, float, float, float]:
         """Abzugsdaten: Interzeptions-Kurs mit Vorlauf + Kursfehler."""
         dist = self.distance_nm(frigate)
-        enemy_speed = config.kn_to_nm_per_s(config.ENEMY_TORP_SPEED_KN)
+        enemy_speed = config.kn_to_nm_per_s(
+            CATALOG.get_torpedo("enemy_torp").speed_kn)
         lead_s = dist / max(enemy_speed, 0.001)
         fr_speed = config.kn_to_nm_per_s(frigate.speed)
         px = frigate.x + fr_speed * lead_s * math.sin(math.radians(frigate.course))
@@ -180,6 +185,8 @@ class Sub:
             return
         self.attack_left -= dt
         if self.attack_left > 0 or self.torpedoes_left <= 0:
+            return
+        if frigate is None:
             return
         dist = self.distance_nm(frigate)
         noise = frigate.noise_level()
@@ -212,16 +219,14 @@ class Sub:
             return
         depth_at = getattr(world, "depth_m", lambda x, y: 1000.0)
         bottom = depth_at(self.x, self.y)
-        safe_depth = max(12.0, bottom - 25.0)
-        self.target_depth = min(self.target_depth, safe_depth,
-                                self.stype.max_depth_m)
-        self.depth = min(self.depth, safe_depth, self.stype.max_depth_m)
+        safe_depth = min(self.stype.max_depth_m, max(0.0, bottom - 25.0))
+        self.target_depth = config.clamp(self.target_depth, 0.0, safe_depth)
+        old_depth = self.depth
         for key in ("last_ping_age", "last_torpedo_age"):
             if self.memory[key] != float("inf"):
                 self.memory[key] += dt
         thermo = world.thermocline_depth_m(self.x, self.y)
         world_size = world.size_nm
-        self._maybe_attack(dt, frigate)
         self._decoy_cd = max(0.0, self._decoy_cd - dt)
 
         # W2: Torpedo-Alarm -> einmalig Dekoy-Abwurf (Chance je Level-Faktor)
@@ -232,7 +237,7 @@ class Sub:
             self.torpedo_alerted = False
 
         if self.state == "SINKING":
-            self.sink_left -= dt
+            self.sink_left = max(0.0, self.sink_left - dt)
             self.depth += 3.0 * dt
             self.speed = 0.0
             if self.sink_left <= 0:
@@ -240,10 +245,35 @@ class Sub:
                 self.sunk = True
             return
 
+        # Retain only a bounded local acoustic observation, never a live ship
+        # reference. Ping memory does not continuously refresh hidden motion.
+        self.memory["contact_age"] = min(config.SUB_EVADE_DURATION_S,
+                                         self.memory["contact_age"] + dt)
+        distance = self.distance_nm(frigate)
+        noise = frigate.noise_level()
+        received_ping = self.memory["last_ping_age"] <= dt
+        if (distance < 20.0 and (received_ping or (noise >= 0.75 and distance < 18.0))
+                and not getattr(world, "sonar_path_blocked", lambda *args: False)(
+                    self.x, self.y, self.depth, frigate.x, frigate.y, 5.0)):
+            self.memory["contact"] = dict(x=frigate.x, y=frigate.y,
+                                           speed=frigate.speed, course=frigate.course,
+                                           noise=noise)
+            self.memory["contact_age"] = 0.0
+            self.memory["contact_bearing"] = math.degrees(math.atan2(
+                frigate.x - self.x, -(frigate.y - self.y))) % 360.0
+        if self.memory["contact_age"] >= config.SUB_EVADE_DURATION_S:
+            self.memory["contact"] = None
+            self.memory["contact_bearing"] = None
+        observed = self.memory["contact"]
+        contact = (SimpleNamespace(**observed, noise_level=lambda: observed["noise"])
+                   if observed is not None else None)
+        self._maybe_attack(dt, contact)
+
         if self.state == "SNOCKEL":
             # M13: Schnorcheltiefe ~8 m, HF-Sender aktiv, kein Vordringen
             self.evac_left -= dt
-            self.depth += config.clamp(8.0 - self.depth, -.8, .8) * dt
+            self.target_depth = min(8.0, safe_depth)
+            self.depth += config.clamp(self.target_depth - self.depth, -.8 * dt, .8 * dt)
             self.speed = 0.0
             if self.evac_left <= 0:
                 self.state = "PATROLLE"
@@ -256,7 +286,7 @@ class Sub:
             self.evac_left -= dt
             if self.evac_left <= 0:
                 # W2: In der Nähe der Fregatte -> still halten und lauschen
-                if self.distance_nm(frigate) < config.SUB_LUER_DIST_NM:
+                if contact is not None and self.distance_nm(contact) < config.SUB_LUER_DIST_NM:
                     self.state = "LAUER"
                     self.evac_left = self.rng.uniform(*config.SUB_LUER_DURATION_S)
                     self.heard_ping = False
@@ -265,16 +295,16 @@ class Sub:
                     self.state = "PATROLLE"
                     self.heard_ping = False
                     self.speed = min(6.0, self.speed_for_state())
-                    self.target_depth = self.rng.uniform(40.0, 80.0)
+                    self.target_depth = min(safe_depth, self.rng.uniform(40.0, 80.0))
                     self.turn_left = self.rng.uniform(300.0, 900.0)
                     self.turn_delta = 0.0
                 return
             # Tiefer unter die Thermokline + Kurs ab der Fregatte
-            target_depth = min(thermo + 40.0, self.stype.max_depth_m)
-            self.depth += config.clamp(target_depth - self.depth, -1.5, 1.5) * dt
-            bearing = math.degrees(math.atan2(
-                frigate.x - self.x, -(frigate.y - self.y))) % 360.0
-            target_course = (bearing + 180.0 + self.evade_offset) % 360.0
+            self.target_depth = min(thermo + 40.0, safe_depth)
+            self.depth += config.clamp(self.target_depth - self.depth, -1.5 * dt, 1.5 * dt)
+            bearing = self.memory["contact_bearing"]
+            target_course = (self.course if bearing is None else
+                             (bearing + 180.0 + self.evade_offset) % 360.0)
             diff = config.angle_diff_deg(target_course, self.course)
             self.course = (self.course + config.clamp(
                 diff, -1.5 * dt, 1.5 * dt)) % 360.0
@@ -283,8 +313,8 @@ class Sub:
         elif self.state == "LAUER":
             # W2: Stillhalten unter der Thermokline (sehr leise, lauschen)
             self.evac_left -= dt
-            target_depth = min(thermo + 15.0, self.stype.max_depth_m)
-            self.depth += config.clamp(target_depth - self.depth, -.5, .5) * dt
+            self.target_depth = min(thermo + 15.0, safe_depth)
+            self.depth += config.clamp(self.target_depth - self.depth, -.5 * dt, .5 * dt)
             self.speed = max(1.0, self.speed - .08 * dt)
             if self.evac_left <= 0:
                 self.state = "PATROLLE"
@@ -306,10 +336,11 @@ class Sub:
             diff = config.angle_diff_deg(self.target_course, self.course)
             self.course = (self.course + config.clamp(
                 diff, -.6 * dt, .6 * dt)) % 360.0
+            self.target_depth = config.clamp(self.target_depth, 0.0, safe_depth)
             self.depth += config.clamp(
-                self.target_depth - self.depth, -.5, .5) * dt
+                self.target_depth - self.depth, -.5 * dt, .5 * dt)
             # M13: Diesel/AIP: im Tiefebereich gelegentlich Schnorcheln (HF-Senden)
-            if (self.stype.key != "ssn" and self.depth > 55.0
+            if (self.stype.profile.requires_air and self.depth > 55.0
                     and self.rng.random() < config.SNOCKEL_TRIGGER_PPS * dt):
                 self.state = "SNOCKEL"
                 self.evac_left = config.SNOCKEL_DURATION_S
@@ -317,7 +348,9 @@ class Sub:
         v = config.kn_to_nm_per_s(self.speed) * dt
         nx = self.x + v * math.sin(math.radians(self.course))
         ny = self.y - v * math.cos(math.radians(self.course))
-        if world.on_land(nx, ny):
+        if (world.on_land(nx, ny) or underwater_path_blocked(
+                world, self.x, self.y, old_depth + 25.0 - 1e-6,
+                nx, ny, self.depth + 25.0 - 1e-6)):
             self.target_course = (self.course + 90.0) % 360.0
             self.course = self.target_course
         else:

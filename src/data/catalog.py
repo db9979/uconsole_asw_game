@@ -15,6 +15,7 @@ Blätterzahl, Takt-Skala und Linien-Offsets ein Fingerprint gerollt
 """
 
 import json
+import math
 import os
 from dataclasses import dataclass
 from importlib import resources
@@ -65,6 +66,16 @@ class SubProfile:
     aggression: float
     spawn_weight: float
     acoustic: TargetSignature
+
+    @property
+    def is_nuclear(self) -> bool:
+        """Capability metadata from the JSON propulsion label, not the profile ID."""
+        return self.acoustic.propulsion == "elektrisch/Kernantrieb"
+
+    @property
+    def requires_air(self) -> bool:
+        """Diesel and AIP profiles periodically require air; no endurance model."""
+        return not self.is_nuclear
 
 
 @dataclass(frozen=True)
@@ -223,12 +234,201 @@ def _weighted_pick(rng, pool):
 # JSON-Loader
 # ---------------------------------------------------------------------------
 
+CONTACT_FIELDS = {
+    "subs.json": {"key", "name", "speed_kn", "max_depth_m", "torpedoes",
+                  "quiet", "aggression", "spawn_weight", "acoustic"},
+    "warships.json": {"key", "name", "category", "hostile", "speed_kn",
+                      "callsigns", "esm_prob", "asm_salvo", "asm_cooldown_s",
+                      "loiter_nm", "spawn_weight", "acoustic"},
+    "aircraft.json": {"key", "name", "nation", "kind", "speed_kn", "esm",
+                      "esm_range_nm", "loiter_nm", "spawn_weight", "signature_text"},
+    "animals.json": {"key", "name", "depth_min", "depth_max", "speed_kn",
+                     "quiet", "size_nm", "spawn_weight", "lines", "signature_text"},
+    "torpedoes.json": {"key", "name", "used_by", "speed_kn", "range_nm", "hit_dist_nm"},
+    "decoys.json": {"key", "name", "life_s", "speed_kn", "cooldown_s",
+                    "chance", "lines", "signature_text"},
+    "acoustics.json": {"key", "label", "propulsion", "blades", "rpm_range",
+                       "tonal_band_hz", "cavitation_tendency", "category",
+                       "secondary_tonals", "broadband", "signature_text"},
+}
+CONTACT_FIELDS["civilians.json"] = CONTACT_FIELDS["warships.json"]
+ACOUSTIC_FIELDS = CONTACT_FIELDS["acoustics.json"] - {"key"}
+ACOUSTIC_CATEGORIES = (*CIVIL_CATEGORIES, "KAMPFSCHIFF", "U_BOOT", "FAHRZEUG", "BIOLOGISCH")
+
+
+def _schema_object(value, fields, where, optional=()):
+    if not isinstance(value, dict):
+        raise ValueError(f"{where}: object expected")
+    missing = fields - set(optional) - value.keys()
+    extra = value.keys() - fields
+    if missing or extra:
+        raise ValueError(f"{where}: missing fields {sorted(missing)}; unknown fields {sorted(extra)}")
+
+
+def _schema_number(value, where, low=0, high=None, positive=False, integer=False):
+    if type(value) not in (int, float) or (integer and type(value) is not int):
+        raise ValueError(f"{where}: {'integer' if integer else 'number'} expected")
+    # Comparing integers directly avoids overflowing float conversion on hostile JSON.
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{where}: finite number expected")
+    if value < low or (positive and value <= 0) or (high is not None and value > high):
+        raise ValueError(f"{where}: number outside allowed range")
+    if abs(value) > 1e100:
+        raise ValueError(f"{where}: number outside safe range")
+
+
+def _schema_text(value, where):
+    if not isinstance(value, str) or not value.strip() or len(value) > 500:
+        raise ValueError(f"{where}: non-empty string of at most 500 characters expected")
+    if any(ord(char) < 32 and char not in "\n\t" for char in value):
+        raise ValueError(f"{where}: control characters not allowed")
+
+
+def _schema_pair(value, where, high, equal=False, integer=False):
+    if not isinstance(value, list) or len(value) != 2:
+        raise ValueError(f"{where}: two-item array expected")
+    for item in value:
+        _schema_number(item, where, high=high, integer=integer)
+    if value[0] > value[1] or (not equal and value[0] == value[1]):
+        raise ValueError(f"{where}: range must be ordered")
+
+
+def _schema_lines(value, where):
+    if not isinstance(value, list) or len(value) > 256:
+        raise ValueError(f"{where}: array of at most 256 lines expected")
+    for line in value:
+        if not isinstance(line, list) or len(line) != 3:
+            raise ValueError(f"{where}: three-item array expected")
+        _schema_number(line[0], where, high=100000, positive=True)
+        _schema_number(line[1], where, high=1)
+        _schema_number(line[2], where, high=10000, positive=True)
+
+
+def _schema_acoustic(value, where, category=None):
+    _schema_object(value, ACOUSTIC_FIELDS, where)
+    for field in ("label", "propulsion", "signature_text"):
+        _schema_text(value[field], f"{where}.{field}")
+    blades = value["blades"]
+    if not isinstance(blades, list) or len(blades) > 20:
+        raise ValueError(f"{where}.blades: positive integer array expected")
+    for blade in blades:
+        _schema_number(blade, f"{where}.blades", low=1, high=20, integer=True)
+    if len(set(blades)) != len(blades):
+        raise ValueError(f"{where}.blades: duplicate value")
+    for field in ("rpm_range", "tonal_band_hz"):
+        band = value[field]
+        _schema_pair(band, f"{where}.{field}", 100000, equal=band == [0, 0])
+    _schema_number(value["cavitation_tendency"], f"{where}.cavitation_tendency", high=1)
+    if value["category"] not in ACOUSTIC_CATEGORIES or (
+            category is not None and value["category"] != category):
+        raise ValueError(f"{where}.category: invalid category")
+    _schema_lines(value["secondary_tonals"], f"{where}.secondary_tonals")
+    broadband = value["broadband"]
+    if broadband is not None:
+        if not isinstance(broadband, list) or len(broadband) != 3:
+            raise ValueError(f"{where}.broadband: null or three-item array expected")
+        _schema_number(broadband[0], f"{where}.broadband", high=1)
+        _schema_pair(broadband[1:], f"{where}.broadband", 100000)
+        _schema_number(broadband[1], f"{where}.broadband", positive=True)
+
+
+def validate_contact_entry(filename, entry, where="entry"):
+    """Strict JSON schema shared by the package loader and offline validator.
+
+    Bounds are defensive authoring limits, not real-platform performance claims.
+    Editor documents have their own versioned schema and are not runtime profiles.
+    """
+    optional = {"acoustic"} if filename == "torpedoes.json" else set()
+    _schema_object(entry, CONTACT_FIELDS[filename] | optional, where, optional)
+    _schema_text(entry["key"], f"{where}.key")
+    if filename == "acoustics.json":
+        _schema_acoustic({k: v for k, v in entry.items() if k != "key"}, where)
+        return
+    _schema_text(entry["name"], f"{where}.name")
+    for field in ("nation", "signature_text"):
+        if field in entry:
+            _schema_text(entry[field], f"{where}.{field}")
+    for field in ("hostile", "esm"):
+        if field in entry and type(entry[field]) is not bool:
+            raise ValueError(f"{where}.{field}: boolean expected")
+    for field, maximum in (("quiet", 1), ("aggression", 1), ("esm_prob", 1),
+                           ("chance", 1), ("spawn_weight", 100000),
+                           ("depth_min", 2000), ("depth_max", 2000),
+                           ("esm_range_nm", 5000)):
+        if field in entry:
+            _schema_number(entry[field], f"{where}.{field}", high=maximum)
+    for field, maximum in (("max_depth_m", 2000), ("range_nm", 5000),
+                           ("hit_dist_nm", 100), ("size_nm", 100),
+                           ("life_s", 604800), ("cooldown_s", 604800)):
+        if field in entry:
+            _schema_number(entry[field], f"{where}.{field}", high=maximum, positive=True)
+    if "lines" in entry:
+        _schema_lines(entry["lines"], f"{where}.lines")
+    if filename in ("subs.json", "warships.json", "civilians.json"):
+        _schema_pair(entry["speed_kn"], f"{where}.speed_kn", 1000)
+        category = "U_BOOT" if filename == "subs.json" else entry["category"]
+        _schema_acoustic(entry["acoustic"], f"{where}.acoustic", category)
+    else:
+        _schema_number(entry["speed_kn"], f"{where}.speed_kn", high=5000,
+                       positive=filename != "animals.json")
+    if filename == "subs.json":
+        _schema_number(entry["torpedoes"], f"{where}.torpedoes", high=100, integer=True)
+        if entry["acoustic"]["propulsion"] not in (
+                "Diesel-elektrisch", "elektrisch/AIP", "elektrisch/Kernantrieb"):
+            raise ValueError(f"{where}.acoustic.propulsion: invalid submarine propulsion")
+    elif filename in ("warships.json", "civilians.json"):
+        allowed = ("KAMPFSCHIFF",) if filename == "warships.json" else CIVIL_CATEGORIES
+        if entry["category"] not in allowed:
+            raise ValueError(f"{where}.category: invalid surface category")
+        if entry["hostile"] != (filename == "warships.json"):
+            raise ValueError(f"{where}.hostile: does not match surface catalog")
+        callsigns = entry["callsigns"]
+        if not isinstance(callsigns, list) or len(callsigns) > 256:
+            raise ValueError(f"{where}.callsigns: string array expected")
+        for callsign in callsigns:
+            _schema_text(callsign, f"{where}.callsigns")
+        _schema_pair(entry["asm_salvo"], f"{where}.asm_salvo", 100, equal=True, integer=True)
+        _schema_number(entry["asm_cooldown_s"], f"{where}.asm_cooldown_s", high=604800)
+        _schema_number(entry["loiter_nm"], f"{where}.loiter_nm", high=5000)
+    elif filename == "aircraft.json":
+        if entry["kind"] not in ("civil", "military"):
+            raise ValueError(f"{where}.kind: invalid aircraft kind")
+        _schema_pair(entry["loiter_nm"], f"{where}.loiter_nm", 5000, equal=True)
+    elif filename == "animals.json":
+        if entry["depth_min"] >= entry["depth_max"]:
+            raise ValueError(f"{where}: depth range must be ordered")
+    elif filename == "torpedoes.json":
+        if entry["used_by"] not in ("frigate", "helo", "enemy"):
+            raise ValueError(f"{where}.used_by: invalid torpedo owner")
+        if "acoustic" in entry:
+            _schema_acoustic(entry["acoustic"], f"{where}.acoustic", "FAHRZEUG")
+
+
+def _unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
 def _read_entries(path) -> list:
     with path.open("r", encoding="utf-8") as f:
-        data = json.load(f)
-    entries = data.get("entries")
+        data = json.load(f, object_pairs_hook=_unique_json_object)
+    _schema_object(data, {"version", "entries"}, path.name)
+    if type(data["version"]) is not int or data["version"] != 1:
+        raise ValueError(f"{path.name}.version: unsupported schema version")
+    entries = data["entries"]
     if not isinstance(entries, list) or not entries:
-        raise ValueError(f"{path.name}: 'entries' fehlt/leer")
+        raise ValueError(f"{path.name}.entries: non-empty array expected")
+    seen = set()
+    for index, entry in enumerate(entries):
+        where = f"{path.name}.entries[{index}]"
+        validate_contact_entry(path.name, entry, where)
+        if entry["key"] in seen:
+            raise ValueError(f"{where}: duplicate key {entry['key']!r}")
+        seen.add(entry["key"])
     return entries
 
 
@@ -403,17 +603,31 @@ def _validate(cat: ContactCatalog) -> None:
 
 
 def _load_catalog_from(base_dir) -> ContactCatalog:
-    cat = ContactCatalog(
+    groups = (
         _load_subs(base_dir / "subs.json"),
-        _load_surfaces(base_dir / "warships.json") |
+        _load_surfaces(base_dir / "warships.json"),
         _load_surfaces(base_dir / "civilians.json"),
         _load_aircraft(base_dir / "aircraft.json"),
         _load_animals(base_dir / "animals.json"),
         _load_torpedoes(base_dir / "torpedoes.json"),
         _load_decoys(base_dir / "decoys.json"),
+    )
+    seen = set()
+    for group in groups:
+        duplicates = seen.intersection(group)
+        if duplicates:
+            raise ValueError(f"duplicate profile ID: {sorted(duplicates)}")
+        seen.update(group)
+    library = _load_library_signatures(base_dir / "acoustics.json")
+    if {signature.key for signature in library} != {"animal", *groups[6]}:
+        raise ValueError("acoustics.json: must define animal and every decoy library signature")
+    # Decoy library aliases are intentional; no library entry may shadow a platform.
+    if any(signature.key in group for signature in library for group in groups[:6]):
+        raise ValueError("acoustics.json: duplicate platform/library key")
+    cat = ContactCatalog(
+        groups[0], groups[1] | groups[2], *groups[3:],
         db_source=base_dir.name or "data/contacts",
-        library_signatures=_load_library_signatures(
-            base_dir / "acoustics.json"))
+        library_signatures=library)
     _validate(cat)
     return cat
 

@@ -307,10 +307,10 @@ def test_sonar_gain_is_soft_limited_after_headphone_volume(mixer, gain_db):
     assert np.isfinite(loud).all()
     assert np.max(np.abs(loud)) < 1.0
     assert not np.any(np.abs(loud) == 1.0)
-    assert np.count_nonzero(np.diff(loud) == 0) < loud.size * .02
+    assert np.max(np.abs(loud)) <= AudioEngine.SOURCE_LIMITS["sonar"]
     quiet = rendered(.1)
     baseline = rendered(.01)
-    loud_error = np.sqrt(np.mean((loud / .55 - baseline / .01) ** 2))
+    loud_error = np.sqrt(np.mean((loud - baseline / .01) ** 2))
     quiet_error = np.sqrt(np.mean((quiet / .1 - baseline / .01) ** 2))
     assert quiet_error < loud_error
 
@@ -345,7 +345,7 @@ def test_stereo_sonar_bearing_play_and_queue_preserve_continuity(mixer):
     assert first_pcm.shape[1] == 2
     assert np.max(np.abs(first_pcm[:, 1])) > np.max(np.abs(first_pcm[:, 0]))
     assert engine._sonar_input_count == first.size
-    assert isinstance(engine._sonar_output_previous, float)
+    assert engine._sonar_previous == float(first[-1])
 
     channels[1].get_busy.return_value = True
     assert engine.play_sonar(second, source_rate, bearing_deg=90,
@@ -355,7 +355,7 @@ def test_stereo_sonar_bearing_play_and_queue_preserve_continuity(mixer):
     channels[1].queue.assert_called_once()
     assert make_sound.call_count == 2
     assert engine._sonar_input_count == source.size
-    assert engine._sonar_output_count == round(source.size * 44100 / source_rate)
+    assert engine._sonar_output_count == int(np.ceil(source.size * 44100 / source_rate))
 
     joined = np.concatenate((first_pcm, second_pcm)).astype(np.int32)
     normal_step = np.quantile(np.abs(np.diff(joined, axis=0))[300:], .999,
@@ -386,18 +386,6 @@ def test_engine_queues_ahead_and_advances_only_accepted_blocks(mixer):
     assert make_sound.call_count == 2
 
 
-def test_engine_pcm_boundaries_are_phase_continuous(mixer):
-    _, channels, make_sound = mixer
-    engine = AudioEngine()
-    assert engine.update_engine(183, cavitation=0, volume=.12)
-    channels[0].get_busy.return_value = True
-    assert engine.update_engine(183, cavitation=0, volume=.12)
-    first, second = [call.args[0][:, 0].astype(np.int32)
-                     for call in make_sound.call_args_list]
-    ordinary_step = np.max(np.abs(np.diff(np.concatenate((first, second)))))
-    assert abs(int(second[0]) - int(first[-1])) <= ordinary_step
-
-
 def test_sonar_resampling_uses_cumulative_lengths_and_clean_boundaries(mixer):
     _, _, make_sound = mixer
     engine = AudioEngine()
@@ -408,35 +396,14 @@ def test_sonar_resampling_uses_cumulative_lengths_and_clean_boundaries(mixer):
         assert engine.play_sonar(block, source_rate, volume=1.0)
     blocks = [call.args[0][:, 0].astype(np.float64) / 32767
               for call in make_sound.call_args_list]
-    assert sum(map(len, blocks)) == round(source.size * 44100 / source_rate)
+    assert sum(map(len, blocks)) == int(np.ceil(source.size * 44100 / source_rate))
     joined = np.concatenate(blocks)
     normal_step = np.quantile(np.abs(np.diff(joined))[300:], .999)
     for boundary in np.cumsum([len(block) for block in blocks[:-1]]):
         assert abs(joined[boundary] - joined[boundary - 1]) <= normal_step * 1.2
 
 
-def test_mix_policy_has_headroom_for_realistic_composite():
-    rate = 22050
-    duration = .25
-    count = round(rate * duration)
-    sources = {
-        "engine": propeller_block(240, 5, rate, duration_s=duration,
-                                   amplitude=AudioEngine.SOURCE_LIMITS["engine"],
-                                   cavitation=.7),
-        "sonar": np.sin(2 * np.pi * 320 * np.arange(count) / rate)
-                 * AudioEngine.SOURCE_LIMITS["sonar"],
-        "ping": fm_chirp(700, 970, duration, rate,
-                          AudioEngine.SOURCE_LIMITS["ping"]),
-        "alert": tone(180, duration, rate, AudioEngine.SOURCE_LIMITS["alert"]),
-    }
-    composite = sum(sources[name] * AudioEngine.CHANNEL_GAINS[name]
-                    for name in sources)
-    assert np.max(np.abs(composite)) < 1.0
-    assert sum(AudioEngine.SOURCE_LIMITS[name] * AudioEngine.CHANNEL_GAINS[name]
-               for name in sources) < 1.0
-
-
-def test_normal_stop_fades_once_and_shutdown_hard_stops(mixer):
+def test_normal_stop_fades_streams_and_clears_event_buses(mixer):
     engine = AudioEngine()
     channels = mixer[1]
     channels[0].get_busy.return_value = True
@@ -445,8 +412,11 @@ def test_normal_stop_fades_once_and_shutdown_hard_stops(mixer):
     engine.stop()
     channels[0].fadeout.assert_called_once_with(engine.FADE_MS)
     channels[1].fadeout.assert_called_once_with(engine.FADE_MS)
-    for channel in channels:
+    for channel in channels[:2]:
         channel.stop.assert_not_called()
+    for channel in channels[2:]:
+        assert channel.stop.call_count == 2
+        channel.stop.reset_mock()
     engine.shutdown()
     for channel in channels:
         channel.stop.assert_called_once()

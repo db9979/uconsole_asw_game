@@ -155,6 +155,34 @@ class DamageModel:
     def teams_on(self, key: str) -> list[int]:
         return [t for t, k in self.teams.items() if k == key]
 
+    def repair_rates(self, key: str) -> tuple[float, float]:
+        """Flood/fire removal per second with the current team assignment."""
+        count = len(self.teams_on(key))
+        factor = 0.0 if not count else 1.0 + .6 * (count - 1)
+        return (config.DMG_REPAIR_RATE * self.repair_mult * factor,
+                config.DMG_FIRE_REPAIR_RATE * count)
+
+    def compartment_trend(self, key: str) -> dict:
+        """Pure instantaneous net rates, excluding random spread/transitions.
+
+        Rates are percentage points per simulation second. Destroyed rooms and
+        a sunk ship cannot improve; zero-valued hazards cannot fall below zero.
+        """
+        c = self.compartments[key]
+        repairable = not self.ship_sunk and c.state != "ZERSTOERT"
+        flood_rate = fire_rate = 0.0
+        if repairable:
+            flood_repair, fire_repair = self.repair_rates(key)
+            flood_rate = (config.DMG_FLOOD_RATE if c.state == "FLUTEND" else
+                          config.DMG_LEAK_RATE if c.state == "BESCHAEDIGT" else 0.0)
+            flood_rate -= flood_repair
+            if c.flood <= 0.0:
+                flood_rate = max(0.0, flood_rate)
+            if c.fire > 0.0:
+                fire_rate = config.DMG_FIRE_RATE - fire_repair
+        return {"flood_rate": flood_rate, "fire_rate": fire_rate,
+                "repairable": repairable}
+
     # --- Abfragen ---
 
     def station_state(self, key: str) -> str:
@@ -182,12 +210,10 @@ class DamageModel:
     def update(self, dt: float) -> None:
         if self.ship_sunk:
             return
-        repair_rate = config.DMG_REPAIR_RATE * self.repair_mult
         for c in self.compartments.values():
             teams = self.teams_on(c.key)
-            # Mehrere Teams helfen, behindern sich im engen Kompartiment aber.
-            team_factor = 0.0 if not teams else 1.0 + .6 * (len(teams) - 1)
-            c.update(dt, bool(teams), repair_rate * team_factor,
+            flood_repair, _ = self.repair_rates(c.key)
+            c.update(dt, bool(teams), flood_repair,
                      fire_teams=len(teams))
         # M14: Brandausbreitung in benachbarte Kompartimente
         for c in list(self.compartments.values()):

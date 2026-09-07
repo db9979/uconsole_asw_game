@@ -3,6 +3,7 @@
 import math
 
 from src.core import config
+from src.core.i18n import localize, message
 from src.sensors.tracks import SensorTrack
 from src.ui import layout
 
@@ -82,9 +83,16 @@ def format_bearing(observation, observer=None) -> str:
     return f"{rounded:0{width}.{decimals}f}"
 
 
-def format_bearing_pair(observation, ship) -> str:
+def format_bearing_pair(observation, ship, *, compact=False) -> str:
     observed = bearing(observation, ship)
     decimals = bearing_decimals(observation, ship)
+    if compact:
+        true, relative = layout.bearing_pair(observed, getattr(ship, "course", 0.0))
+        width = 5 if decimals else 3
+        return localize(message(
+            "bearing.compact_pair",
+            true=f"{round(true, decimals) % 360:0{width}.{decimals}f}",
+            relative=f"{round(relative, decimals) % 360:0{width}.{decimals}f}"))
     return layout.format_bearing_pair(
         observed, getattr(ship, "course", 0.0), decimals=decimals)
 

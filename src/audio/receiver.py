@@ -6,11 +6,12 @@ applies to every source, and DEMON measures only the resulting mixed audio.
 
 Broadband: sources may carry a "broadband" dict {level, low_hz, high_hz}
 (target-internal band energy). Every source receives an independent,
-seed-derived and replayable noise stream. Existing call sites without
-broadband data keep producing bit-identical audio.
+seed-derived and replayable noise stream. Frequencies and levels are illustrative
+synthesis parameters, not recordings or claims about real platform spectra.
 """
 
 import math
+from collections import OrderedDict, deque
 
 import numpy as np
 
@@ -20,7 +21,6 @@ _BROADBAND_GAIN = 0.04      # rms-Skalierung der Bandrauschaudio
 _OWN_CAV_GAIN = 0.10        # rms-Skalierung der Eigen-Kavitation
 _OWN_CAV_LOW_HZ = 80.0
 _OWN_CAV_HIGH_HZ = 380.0
-_SCAN_BROADBAND_GAIN = 0.35  # BTR-Scan-Aufschlag fuer Breitband-Quellen
 OWN_NOISE_LOBE_WIDTH_DEG = 70.0
 
 
@@ -40,7 +40,7 @@ def smooth_limit(samples, knee: float = 0.75,
     excess = np.maximum(0.0, magnitude - knee)
     span = ceiling - knee
     limited = np.where(magnitude <= knee, magnitude,
-                       knee + span * excess / (span + excess))
+                       knee + span * (excess / (span + excess)))
     return np.copysign(limited, signal).astype(np.float32)
 
 
@@ -74,14 +74,27 @@ class AcousticReceiver:
     noise threshold. The two-second FFT has .5 Hz spacing; spectra during
     startup have poorer true resolution. Peaks and DEMON need one second.
     broadband is a 180-bin absolute-bearing scan of
-    relative received power with the same beam width and isotropic noise.
+    relative received power with the same beam width. It sums unsteered source
+    block mean-square energies times beam amplitude gain squared, with analytic
+    ambient/own-noise powers, all divided by .25**2 and clipped to 0..1. It is
+    not a coherent sum across sources or a calibrated physical power spectrum.
     DEMON RPM candidates are a tuple in blade-count order (3, 4, 5, 6, 7);
     tonal_hz is the strongest measured low-frequency peak, or None. Confidence
     and cavitation are bounded signal heuristics, not physical estimates.
+
+    Receiver state remains transient under the intentional save/load warm-up.
+    Exact continuation would additionally need seed, elapsed, sequence, RNG
+    state, _source_states, _shaft_state, _history, _write and _filled. Published
+    samples/analysis and _blocks are snapshots; FFT grids and _band_cache are
+    rebuildable, never playback- or simulation-dependent persistence inputs.
     """
 
     sample_rate = 4096
     block_s = 0.25
+    MAX_SOURCES = 128
+    MAX_LINES = 32
+    BAND_CACHE_SIZE = 64
+    AVAILABLE_BLOCKS = 2
 
     def __init__(self, seed=42):
         self.seed = int(_finite(seed, 42)) % (2**64)
@@ -95,7 +108,7 @@ class AcousticReceiver:
                             for i in range(config.LOFAR_BINS)])
         widths = np.where(centers < 40, 1, np.where(centers < 100, 2, 5))
         self._bin_starts = np.searchsorted(self._frequencies, centers - widths / 2)
-        self._band_cache = {}
+        self._band_cache = OrderedDict()
         self.reset()
 
     def reset(self):
@@ -106,6 +119,10 @@ class AcousticReceiver:
         explicit resets each increment it once.
         """
         self._rng = np.random.default_rng(self.seed)
+        self._source_states = {}
+        self._shaft_state = {}
+        self._blocks = deque(maxlen=self.AVAILABLE_BLOCKS)
+        self._band_cache.clear()
         self._history.fill(0)
         self._write = self._filled = 0
         self.elapsed = 0.0
@@ -119,11 +136,54 @@ class AcousticReceiver:
         self.own_noise_lobe = None
         self.sequence += 1
 
+    def blocks_since(self, sequence: int) -> tuple:
+        """Read-only (sequence, samples) pairs, oldest first, without consuming.
+
+        Retains current + one handoff block independently of devices/consumers.
+        A nonconsecutive first sequence signals overrun or reset, never silently
+        concatenate it. At 1x retry unaccepted blocks every frame; at >1x select
+        only the newest at wall-time cadence as an explicitly sampled preview.
+        Reset clears availability and advances sequence; no zero warm-up block
+        is published. Callers must not mutate the returned sample arrays.
+        """
+        return tuple(block for block in self._blocks if block[0] > sequence)
+
+    def _components(self, desired, previous):
+        """Integrate blockwise frequency; ramp amplitude changes over 5 ms.
+
+        Identity is source seed + duplicate occurrence, then fixed line index
+        and component name. Callers must keep line slots stable, including zero
+        amplitudes. Removed components release once, then forget their phase;
+        reappearing components start at the seeded phase with an attack.
+        """
+        audio = np.zeros(self._time.size)
+        state = {}
+        edge = round(.005 * self.sample_rate)
+        for key in dict.fromkeys((*desired, *previous)):
+            old = previous.get(key)
+            freq, amp, phase = desired.get(key, (old if old else (0, 0, 0)))
+            if key not in desired:
+                amp = 0.0
+            initial_amp = old[1] if old else 0.0
+            if old:
+                phase = old[2]
+            if initial_amp or amp:
+                envelope = amp
+                if initial_amp != amp:
+                    envelope = np.full(self._time.size, amp)
+                    envelope[:edge] = np.linspace(initial_amp, amp, edge)
+                audio += envelope * np.sin(2 * np.pi * freq * self._time + phase)
+            if key in desired:
+                state[key] = (freq, amp, (phase + 2 * np.pi * freq * self.block_s)
+                              % (2 * np.pi))
+        return audio, state
+
     def _band_mask(self, low_hz: float, high_hz: float) -> np.ndarray:
-        """Weiche 0..1-Maske ueber dem 2-Hz-FFT-Raster eines Audioterms."""
-        key = (round(low_hz), round(high_hz))
+        """Bounded LRU of soft masks on the block's 4 Hz FFT grid."""
+        key = (float(low_hz), float(high_hz))
         mask = self._band_cache.get(key)
         if mask is not None:
+            self._band_cache.move_to_end(key)
             return mask
         width = max(1.0, high_hz - low_hz)
         ramp = 0.25 * width
@@ -134,6 +194,8 @@ class AcousticReceiver:
                      * np.clip(((high_hz + ramp) - freqs[sel]) / ramp, 0, 1))
         mask[0] = 0.0
         self._band_cache[key] = mask
+        while len(self._band_cache) > self.BAND_CACHE_SIZE:
+            self._band_cache.popitem(last=False)
         return mask
 
     @staticmethod
@@ -152,7 +214,8 @@ class AcousticReceiver:
         """Mix all received sources and publish one block; returns None.
 
         Source dictionaries contain bearing, level, lines [(Hz, amp, width)],
-        and a stable integer seed used only for phase, never identity/ranking.
+        and a stable integer seed for synthesis identity, never classification.
+        At most MAX_SOURCES sources and MAX_LINES fixed line slots are used.
         An optional "broadband" dict {level, low_hz, high_hz} adds a band-
         limited noise layer for that source. own_cavitation (0..1) adds the
         ship's own cavitation noise isotropically. Call reset() when retuning
@@ -177,28 +240,32 @@ class AcousticReceiver:
             lobe_width = 360.0
             own_gain = 1.0
             self.own_noise_lobe = None
-        noise_rms = (0.002 + 0.035 * sea / 9
-                     + (0.04 * own + 0.025 * speed / 60) * own_gain)
-        t = self._time + self.elapsed
+        ambient_rms = 0.002 + 0.035 * sea / 9
+        own_rms = 0.04 * own + 0.025 * speed / 60
+        noise_rms = math.hypot(ambient_rms, own_rms * own_gain)
         audio = self._rng.normal(0, noise_rms, self._time.size)
         engine_amp = 0.08 * min(speed / 20, 1) * (0.25 + own)
         shaft_hz = 10 + 1.9 * speed
-        audio += engine_amp * np.sin(2 * np.pi * shaft_hz * t)
+        shaft, self._shaft_state = self._components(
+            {0: (shaft_hz, engine_amp, 0.0)}, self._shaft_state)
+        audio += shaft
         self.ownship_tonals = [{
             "label": "OWN SHAFT", "frequency_hz": shaft_hz,
             "rpm": speed * config.SHIP_RPM_PER_KN + config.SHIP_RPM_MIN,
         }] if speed > 0 else []
         # Shaft frequency is machinery/RPM evidence, not a bearing return.
-        scan = np.full(180, (0.002 + 0.035 * sea / 9)**2 / .25**2
-                       + (engine_amp / .25)**2 / 2)
+        scan = np.full(180, (ambient_rms**2 + np.mean(shaft**2)) / .25**2)
         if math.isfinite(lobe_bearing):
             lobe = directional_gain(self._angles, lobe_bearing, lobe_width)
             scan += (((0.04 * own + 0.025 * speed / 60) * lobe) / .25)**2
         else:
             scan += ((0.04 * own + 0.025 * speed / 60) / .25)**2
 
-        entries = []
+        entries = {}
+        occurrences = {}
         for source in sources:
+            if len(entries) >= self.MAX_SOURCES:
+                break
             if not isinstance(source, dict):
                 continue
             direction = _finite(source.get("bearing"), float("nan"))
@@ -206,14 +273,10 @@ class AcousticReceiver:
             if not math.isfinite(direction) or level <= 0:
                 continue
             direction %= 360
-            delta = (direction - bearing + 180) % 360 - 180
-            gain = level * math.exp(-4 * math.log(2) * (delta / width)**2)
-            offsets = (self._angles - direction + 180) % 360 - 180
-            scan += (level * np.exp(-4 * math.log(2) * (offsets / width)**2))**2
             phase = (int(_finite(source.get("seed"))) % 65536) * (2 * np.pi / 65536)
             lines = source.get("lines", ())
             if not isinstance(lines, (list, tuple)):
-                continue
+                lines = ()
             bb = source.get("broadband")
             bb_level, bb_low, bb_high = 0.0, 0.0, 0.0
             if isinstance(bb, dict):
@@ -223,49 +286,65 @@ class AcousticReceiver:
                 if not (bb_level > 0 and bb_high > bb_low):
                     bb_level = 0.0
             source_seed = int(_finite(source.get("seed"))) % (2**64)
-            entries.append((gain, direction, phase, lines,
-                            bb_level, bb_low, bb_high, source_seed))
+            occurrence = occurrences.get(source_seed, 0)
+            occurrences[source_seed] = occurrence + 1
+            entries[(source_seed, occurrence)] = (level, direction, phase, lines,
+                                                  bb_level, bb_low, bb_high)
 
         block_index = round(self.elapsed / self.block_s)
-        for gain, direction, phase, lines, bb_level, bb_low, bb_high, source_seed in entries:
-            for index, line in enumerate(lines):
+        next_states = {}
+        for key in dict.fromkeys((*entries, *self._source_states)):
+            old_direction, previous = self._source_states.get(key, (0, {}))
+            level, direction, phase, lines, bb_level, bb_low, bb_high = entries.get(
+                key, (0, old_direction, 0, (), 0, 0, 0))
+            desired = {}
+            for index, line in enumerate(lines[:self.MAX_LINES]):
                 if not isinstance(line, (list, tuple)) or len(line) != 3:
                     continue
                 freq, amp, spread = (_finite(value) for value in line)
                 amp = np.clip(amp, 0, 1)
                 spread = np.clip(spread, 0, 30)
-                if not 0 < freq <= 300 or amp <= 0:
+                if not 0 < freq <= 300:
                     continue
-                # Symmetric side tones give finite-width lines without keeping
-                # per-source phase state. Absolute audio time preserves phase.
-                partials = ((0, 1),) if spread == 0 else ((-spread / 2, .25),
-                                                          (0, .5), (spread / 2, .25))
-                for offset, weight in partials:
+                partials = (("low", -spread / 2, .25 if spread else 0),
+                            ("center", 0, .5 if spread else 1),
+                            ("high", spread / 2, .25 if spread else 0))
+                for name, offset, weight in partials:
                     if 0 < freq + offset <= 300:
-                        audio += .25 * gain * amp * weight * np.sin(
-                            2 * np.pi * (freq + offset) * t + phase)
+                        desired[index, name] = (freq + offset,
+                                                .25 * level * amp * weight, phase)
                 if index == 0 and 2 <= freq <= 80 and spread <= max(1, .15 * freq):
-                    envelope = 1 + .7 * np.sin(2 * np.pi * freq * t + phase)
-                    audio += .10 * gain * amp * envelope * np.sin(
-                        2 * np.pi * 700 * t + 3 * phase)
+                    # AM as carrier + sidebands, each with integrated phase.
+                    desired[index, "carrier"] = (700, .10 * level * amp, 3 * phase)
+                    desired[index, "am_low"] = (700 - freq, .035 * level * amp,
+                                                  2 * phase + np.pi / 2)
+                    desired[index, "am_high"] = (700 + freq, .035 * level * amp,
+                                                   4 * phase - np.pi / 2)
+            source_audio, state = self._components(desired, previous)
+            if key in entries:
+                next_states[key] = (direction, state)
             if bb_level > 0:
+                source_seed = key[0]
                 seed_words = (self.seed & 0xffffffff, self.seed >> 32,
                               source_seed & 0xffffffff, source_seed >> 32,
                               block_index)
                 band_noise = np.random.default_rng(
                     np.random.SeedSequence(seed_words)).normal(0, 1, self._time.size)
                 mask = self._band_mask(bb_low, bb_high)
-                audio += self._band_audio(band_noise, mask,
-                                          _BROADBAND_GAIN * gain * bb_level)
-                d2 = (self._angles - direction + 180) % 360 - 180
-                scan += (_SCAN_BROADBAND_GAIN * gain * bb_level
-                         * np.exp(-4 * math.log(2) * (d2 / width)**2))**2
+                source_audio += self._band_audio(band_noise, mask,
+                                                 _BROADBAND_GAIN * level * bb_level)
+            audio += source_audio * directional_gain(bearing, direction, width)
+            # Actual unsteered block energy, not source presence or current beam
+            # amplitude. Incoherent source powers add; normalize all terms alike.
+            scan += (np.mean(source_audio**2) / .25**2
+                     * directional_gain(self._angles, direction, width)**2)
+        self._source_states = next_states
         if own_cav > 0:
             band_noise = self._rng.normal(0, 1, self._time.size)
             mask = self._band_mask(_OWN_CAV_LOW_HZ, _OWN_CAV_HIGH_HZ)
             audio += self._band_audio(band_noise, mask,
                                       _OWN_CAV_GAIN * own_cav)
-            scan += (_SCAN_BROADBAND_GAIN * _OWN_CAV_GAIN * own_cav)**2
+            scan += (_OWN_CAV_GAIN * own_cav / .25)**2
 
         # Preserve normal mixture headroom for FFT/DEMON analysis. The high
         # soft ceiling only bounds hostile/pathological source collections;
@@ -282,6 +361,8 @@ class AcousticReceiver:
             data = np.concatenate((self._history[self._write:], self._history[:self._write]))
         self.elapsed += self.block_s
         self.sequence += 1
+        self.samples.setflags(write=False)
+        self._blocks.append((self.sequence, self.samples))
         self._analyze(data)
 
     def _analyze(self, data):

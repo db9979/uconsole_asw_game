@@ -5,7 +5,7 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between eight workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **0.1.5**
+Current release: **0.1.6**
 
 This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
@@ -28,6 +28,14 @@ Full-resolution workstations: [Bridge](docs/screenshots/station-bridge.png),
 [Engineering](docs/screenshots/station-engineering.png), and
 [Helicopter](docs/screenshots/station-helicopter.png).
 
+Damage-control example with authored flooding, fire, lost zones and repair teams:
+[F-217 damage schematic](docs/screenshots/damage-control-alert.png).
+
+Commander browser: [1920 x 1080](docs/screenshots/commander-overview.png) and
+[2560 x 1440](docs/screenshots/commander-wide.png).
+[Capture method and limits](docs/screenshots/commander-captures.md).
+[Local Commander options](docs/screenshots/commander-options.png).
+
 ## Highlights
 
 - Eight stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,
@@ -42,7 +50,9 @@ Full-resolution workstations: [Bridge](docs/screenshots/station-bridge.png),
   chaff.
 - Civilian shipping, hostile surface ships, aircraft, biological contacts, and
   acoustic decoys.
-- Flooding, fire, compartment damage, and three assignable repair teams.
+- Flooding, fire, nine selectable zones in a procedural F-217 system schematic,
+  and three assignable repair teams. The schematic is fictional, not a real
+  F123 compartment plan.
 - Five local save slots with deterministic world snapshots.
 - English and German interface catalogs, system-language detection, and an
   options screen.
@@ -51,6 +61,9 @@ Full-resolution workstations: [Bridge](docs/screenshots/station-bridge.png),
   opening the quit dialog.
 - A native 1280 x 720 interface, aspect-correctly letterboxed when necessary.
   Maps and symbols are drawn by Pygame; audio is synthesized at runtime.
+- Optional two-player trusted-LAN Commander station: browser operational picture,
+  shared classification/affiliation after local grant, crew-confirmed target
+  proposals, and gesture-enabled browser alarms. No remote firing or steering.
 
 ## Requirements
 
@@ -128,10 +141,12 @@ global controls are:
 | `P` | Pause / resume |
 | `F1` | Context-sensitive help |
 | `F10` | Options; while paused, `O` also opens options |
+| `F9` | Local Commander LAN administration |
 | `S` / `L` | Save / load using slots 1 to 5 |
 | `Z` / `X` or `[` / `]` | Slower / faster time acceleration |
 | `+` / `-` | Engine telegraph |
 | `Alt+Enter` | Toggle fullscreen |
+| `Ctrl+Enter` | Primary weapon action at Weapons, OPZ/CIC, or Helicopter; normal readiness checks apply |
 | `Q` / `E` or mouse wheel | Zoom visible maps on Bridge, Weapons, and Helicopter stations |
 | Mouse drag | Pan a visible map and disable camera follow |
 | `K` | Toggle camera follow on a visible map |
@@ -140,6 +155,15 @@ global controls are:
 Station keys are deliberately contextual. For example, `A` sends an active
 ping at Sonar but changes acoustic mode in Engineering. Use `F1` rather than
 assuming that a key has the same meaning at every station.
+
+In help, Left/Right switches category; Up/Down or Page Up/Page Down scrolls its
+contents. Existing station weapon shortcuts remain available. Held course and
+torpedo-depth adjustments use real time, not the selected simulation multiplier.
+
+At Damage Control, click a zone or its label to select it. With tooltips enabled,
+the click also pins its details; it never assigns a team. Up/Down selects a team,
+Enter assigns it, and Backspace withdraws it. Flood and fire trends show the
+model's net rate, including difficulty and multi-team effectiveness.
 
 ## Sonar Notes
 
@@ -151,6 +175,18 @@ they are retained on the `ACTIVE` page and fade with age. An active fix expires,
 and transmitting can alert submarines at a greater distance than the frigate
 can receive an echo. Coastline occlusion, sea state, thermocline geometry, own
 noise, and array selection affect results.
+
+TMA and sonobuoy fixes also expire independently of continued passive hearing.
+Historical plot tooltips inspect the displayed sample. Active returns retain
+frozen transmit-time geometry; the separate outbound wave and moving-receiver
+intercept are not simulated, and submarine ping warnings remain immediate.
+
+At 1x, sonar audition consumes the receiver's bounded block handoff in order and
+retries a full playback queue. An overrun restarts the stream rather than joining
+discontinuous samples. Above 1x, the station labels audition as **AUDIO PREVIEW**:
+it plays periodic samples, not every accelerated second. Analysis remains
+independent of playback availability and volume. DSP deliberately warms up again
+after loading a save; saved tactical observations are retained.
 
 Sonar controls include:
 
@@ -194,6 +230,35 @@ Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
 in v8 game saves for deterministic restoration of existing sessions.
 
+## Commander LAN Co-op
+
+Use **F10 > Commander LAN**, or **F9**, on the uConsole. Select an explicit
+private IPv4 while the service is off, then enable it. Open the displayed URL on
+the second PC. The default `127.0.0.1:8765` is local-only, not reachable from the
+other PC. No router forwarding is needed or supported.
+
+Pair using the six-character code: **three digits followed by three uppercase
+letters**, for example `482KMT`. Codes expire after five minutes; five wrong
+guesses in a rolling minute temporarily block further attempts. Lowercase browser
+input is normalized to uppercase. The example is not a functioning credential.
+
+After pairing, the crew explicitly grants changes in the local panel and closes
+the overlay. The Commander can inspect contacts independently, edit allowed
+annotations, and propose a target. The crew accepts or rejects it in F9. Acceptance
+never fires a weapon or changes the sonar listening selection. Communication is
+through target marking and external voice; no microphone or chat is included.
+
+The service starts **off on every launch**. Access and grants are not saved.
+World replacement revokes pairing on the next main-thread frame. Pause and
+administrative overlays lock browser changes; menu/editor/splash export status
+only. Browser sound requires clicking its sound button; reconnecting does not
+replay old alarms.
+
+**Security:** HTTP is unencrypted. Use only a trusted LAN. No Internet hosting,
+wildcard binding, CDN, remote sensor/weapon/ROE/time/save controls, or hidden entity
+data are exposed. See [Commander setup](docs/commander-coop.md) and
+[protocol/security](docs/commander-protocol.md).
+
 ## Editors and Current Limits
 
 The main menu exposes a Mission Editor and Unit Editor. They provide read-only
@@ -206,7 +271,7 @@ import. JSON templates under `data/editor_templates/` describe the accepted
 schemas; user files are stored under `~/.u-jagd/missions/` and
 `~/.u-jagd/units/`.
 
-Validated does not mean runtime-effective. In release 0.1.5:
+Validated does not mean runtime-effective. In release 0.1.6:
 
 - A user mission can be started with `F5` from the Mission Editor browser only
   when it uses the supported runtime subset.
@@ -228,7 +293,7 @@ Validated does not mean runtime-effective. In release 0.1.5:
 
 ## Saves and User Data
 
-Release 0.1.5 writes save format **v8** and loads formats **v1 through v8**.
+Release 0.1.6 writes save format **v8** and loads formats **v1 through v8**.
 Older v1-v7 saves are accepted with defaults for state that did not exist in
 their format. Malformed or unsupported saves are rejected without replacing the
 running game. Newer-format compatibility is not promised.
@@ -260,6 +325,12 @@ reference material; no text, images, layout, or data from that material is
 included or copied.
 
 ## Development and Tests
+
+The workstation/model review, delivered corrections, remaining modeling limits,
+and hardware acceptance checklist are documented in
+[`docs/workstation-review.md`](docs/workstation-review.md).
+Current resumable work and the mandatory post-Commander pause are tracked in
+[`docs/plan-0.1.6.md`](docs/plan-0.1.6.md) and [`docs/resume.md`](docs/resume.md).
 
 Install the project and development dependency, then run the test suite:
 

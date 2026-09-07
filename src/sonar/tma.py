@@ -52,8 +52,8 @@ class BearingTrack:
         """Beobachtbarkeit: Fregatten-Kursänderung über das Zeitfenster."""
         if len(self.pts) < 2:
             return 0.0
-        return abs(config.angle_diff_deg(
-            self.pts[-1].fcourse, self.pts[0].fcourse))
+        return max(abs(config.angle_diff_deg(a.fcourse, b.fcourse))
+                   for i, a in enumerate(self.pts) for b in self.pts[i + 1:])
 
 
 class TMASolution:
@@ -75,19 +75,13 @@ def _bearing_dir(brg_deg: float) -> tuple:
     return math.sin(r), -math.cos(r)
 
 
-def _line_position(pts, t0, vx, vy, robust_weights=None):
+def _line_position(geometry, vx, vy, robust_weights=None):
     """Weighted line intersection, optionally with robust residual weights."""
     m00 = m01 = m11 = 0.0
     b0 = b1 = 0.0
-    for index, p in enumerate(pts):
-        ux, uy = _bearing_dir(p.bearing)
-        a00 = 1.0 - ux * ux
-        a01 = -ux * uy
-        a11 = 1.0 - uy * uy
-        weight = 1.0 / (p.uncertainty_deg * p.uncertainty_deg)
+    for index, (p, tau, a00, a01, a11, weight) in enumerate(geometry):
         if robust_weights is not None:
             weight *= robust_weights[index]
-        tau = p.t - t0
         fx = p.fx - vx * tau
         fy = p.fy - vy * tau
         m00 += weight * a00
@@ -102,10 +96,9 @@ def _line_position(pts, t0, vx, vy, robust_weights=None):
             (b1 * m00 - b0 * m01) / det)
 
 
-def _candidate_errors(pts, t0, p0x, p0y, vx, vy):
+def _candidate_errors(geometry, p0x, p0y, vx, vy):
     errors = []
-    for p in pts:
-        tau = p.t - t0
+    for p, tau, _, _, _, _ in geometry:
         tx = p0x + vx * tau
         ty = p0y + vy * tau
         ddx, ddy = tx - p.fx, ty - p.fy
@@ -116,40 +109,40 @@ def _candidate_errors(pts, t0, p0x, p0y, vx, vy):
     return errors
 
 
-def _try_candidate(pts, t0, course_deg, speed_kn, max_range_nm):
+def _try_candidate(geometry, t0, course_deg, speed_kn, max_range_nm):
     """RMSE + Position für einen (Kurs, Geschw.)-Kandidaten."""
     vr = math.radians(course_deg)
     vmag = config.kn_to_nm_per_s(speed_kn)
     # Nautisches Koordinatensystem: 0° = Nord/-y, 90° = Ost/+x
     vx, vy = vmag * math.sin(vr), -vmag * math.cos(vr)
 
-    position = _line_position(pts, t0, vx, vy)
+    position = _line_position(geometry, vx, vy)
     if position is None:
         return None
     p0x, p0y = position
     # Two fixed IRLS passes suppress isolated bad bearings without consulting
     # target truth or introducing convergence/order nondeterminism.
     for _ in range(2):
-        errors = _candidate_errors(pts, t0, p0x, p0y, vx, vy)
+        errors = _candidate_errors(geometry, p0x, p0y, vx, vy)
         if errors is None:
             return None
-        robust = [min(1.0, config.TMA_ROBUST_SIGMA * p.uncertainty_deg
+        robust = [min(1.0, config.TMA_ROBUST_SIGMA * row[0].uncertainty_deg
                       / max(abs(error), 1e-9))
-                  for p, error in zip(pts, errors)]
-        position = _line_position(pts, t0, vx, vy, robust)
+                  for row, error in zip(geometry, errors)]
+        position = _line_position(geometry, vx, vy, robust)
         if position is None:
             return None
         p0x, p0y = position
-    errors = _candidate_errors(pts, t0, p0x, p0y, vx, vy)
+    errors = _candidate_errors(geometry, p0x, p0y, vx, vy)
     if errors is None:
         return None
-    weights = [1.0 / (p.uncertainty_deg * p.uncertainty_deg) for p in pts]
+    weights = [row[5] for row in geometry]
     rmse = math.sqrt(sum(weight * error * error
                          for weight, error in zip(weights, errors)) / sum(weights))
     if rmse > 25.0:
         return None
 
-    last = pts[-1]
+    last = geometry[-1][0]
     tau = last.t - t0
     last_x = p0x + vx * tau
     last_y = p0y + vy * tau
@@ -157,7 +150,7 @@ def _try_candidate(pts, t0, course_deg, speed_kn, max_range_nm):
     if range_nm > max_range_nm:
         return None
     quality = max(0.0, 1.0 - rmse / config.TMA_QUALITY_DB)
-    quality *= min(1.0, len(pts) / (config.TMA_MIN_PTS + 4.0))
+    quality *= min(1.0, len(geometry) / (config.TMA_MIN_PTS + 4.0))
     return (rmse, course_deg, speed_kn, (last_x, last_y), quality)
 
 
@@ -174,10 +167,18 @@ def solve_tma(track: BearingTrack,
     max_range_nm = max_range_nm or config.TMA_MAX_RANGE_NM
 
     t0 = pts[0].t
+    # These terms are invariant across candidates and both IRLS passes. Keep
+    # the original operation/reduction order in the fits to preserve ties.
+    geometry = []
+    for p in pts:
+        ux, uy = _bearing_dir(p.bearing)
+        geometry.append((p, p.t - t0, 1.0 - ux * ux, -ux * uy,
+                         1.0 - uy * uy,
+                         1.0 / (p.uncertainty_deg * p.uncertainty_deg)))
     best = None
     for course_deg in range(0, 360, 15):
         for speed_kn in (0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0):
-            cand = _try_candidate(pts, t0, course_deg, speed_kn, max_range_nm)
+            cand = _try_candidate(geometry, t0, course_deg, speed_kn, max_range_nm)
             if cand is not None and (best is None or cand[0] < best[0]):
                 best = cand
     if best is None:
@@ -192,9 +193,21 @@ def solve_tma(track: BearingTrack,
             s2 = b_speed + ds
             if s2 < 0.0:
                 continue
-            cand = _try_candidate(pts, t0, c2, s2, max_range_nm)
+            cand = _try_candidate(geometry, t0, c2, s2, max_range_nm)
             if cand is not None and cand[0] < best[0]:
                 best = cand
     rmse, course, speed, pos, quality = best
+    # Heading changes alone (including turns in place) do not resolve range.
+    # Scale confidence by the actual departure from constant ownship velocity,
+    # relative to angular measurement error at the solved range. This is an
+    # observability heuristic, not a covariance estimate.
+    first, last = pts[0], pts[-1]
+    deviation = max(math.hypot(
+        p.fx - (first.fx + (last.fx - first.fx) * (p.t - t0) / track.span_s()),
+        p.fy - (first.fy + (last.fy - first.fy) * (p.t - t0) / track.span_s()))
+        for p in pts)
+    distance = math.hypot(pos[0] - last.fx, pos[1] - last.fy)
+    angular_noise = math.radians(sum(p.uncertainty_deg for p in pts) / len(pts))
+    quality *= min(1.0, deviation / max(1e-6, distance * angular_noise))
     return TMASolution(pos=pos, course=course, speed=speed, quality=quality,
                        rmse_deg=rmse, n_pts=len(pts))

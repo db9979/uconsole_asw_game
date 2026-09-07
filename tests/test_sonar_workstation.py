@@ -141,14 +141,15 @@ def test_audio_stops_on_pause_administration_mute_and_station_change(game, monke
 
 def test_sonar_audio_uses_receiver_samples_and_only_new_blocks(game, monkeypatch):
     calls = []
-    game.sonar.receiver.samples[:] = .05
+    game.sonar.receiver.update([], 0, 12, .2, 2, 6)
+    expected = game.sonar.listening_samples().copy()
     monkeypatch.setattr(game.audio, "play_sonar", lambda samples, rate, volume, **kwargs:
                         calls.append((samples.copy(), rate, volume)) or True)
     monkeypatch.setattr(game.audio, "update_engine", lambda *args, **kwargs: None)
     game._update_audio(.25)
     game._update_audio(.25)
     assert len(calls) == 1
-    np.testing.assert_allclose(calls[0][0], .05)
+    np.testing.assert_allclose(calls[0][0], expected)
     assert calls[0][1] == game.sonar.receiver.sample_rate
     assert calls[0][2] == game.sonar_volume
 

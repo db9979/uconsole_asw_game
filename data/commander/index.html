@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>U-Jagd Commander</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div id="bootstrap" class="bootstrap"><span class="brand-mark" aria-hidden="true"></span><strong>U-Jagd Commander</strong><span class="loading" role="progressbar" data-i18n-aria="loading"></span></div>
+  <div id="shell" hidden>
+    <header class="masthead">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div><strong>U-Jagd <span>Commander</span></strong><p data-i18n="subtitle"></p></div></div>
+      <div class="preferences">
+        <label class="language"><span data-i18n="language"></span><select id="language"><option value="en" data-i18n="english"></option><option value="de" data-i18n="german"></option></select></label>
+        <button id="sound" type="button" aria-pressed="false" data-i18n="sound_off"></button>
+        <label class="volume"><span data-i18n="volume"></span><input id="volume" type="range" min="0" max="100" value="25"></label>
+        <button id="disconnect" type="button" class="quiet" data-i18n="disconnect" hidden></button>
+      </div>
+    </header>
+    <p id="connection" class="connection" role="status" aria-live="polite"></p>
+    <section id="pairing" class="pairing">
+      <div class="pair-intro"><p class="eyebrow" data-i18n="pair_eyebrow"></p><h1 data-i18n="pair_title"></h1><p data-i18n="pair_intro"></p><div class="scope-note"><span class="scope-line" aria-hidden="true"></span><p data-i18n="authority_note"></p></div></div>
+      <form id="pair-form" class="pair-card">
+        <h2 data-i18n="pair_heading"></h2><p id="pair-help" data-i18n="pair_help"></p>
+        <label for="code" data-i18n="pair_code"></label><input id="code" name="code" type="text" required maxlength="6" pattern="[0-9]{3}[A-Za-z]{3}" placeholder="482KMT" aria-describedby="pair-help" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <button id="pair-submit" class="primary" type="submit" data-i18n="pair_submit"></button><p id="pair-error" class="error" role="alert"></p>
+        <p class="fine" data-i18n="pair_security"></p>
+      </form>
+    </section>
+    <main id="operations" hidden>
+      <section class="mission-strip" data-i18n-aria="mission">
+        <div class="mission-name"><p class="eyebrow" data-i18n="mission"></p><h1 id="mission-name"></h1><p id="objective"></p></div>
+        <dl id="mission-metrics" class="metrics"></dl>
+        <div class="session"><span id="phase" class="badge"></span><p id="command-permission"></p></div>
+      </section>
+      <div class="workspace">
+        <section class="panel contacts-panel"><div class="panel-heading"><h2 data-i18n="contacts"></h2><span id="track-count" class="counter"></span></div><p class="panel-help" data-i18n="selection_note"></p><div id="track-list" class="track-list" data-i18n-aria="contacts"></div></section>
+        <section class="panel chart-panel">
+          <div class="panel-heading"><h2 data-i18n="picture"></h2><span class="north" data-i18n="north_up"></span></div>
+          <div class="chart-toolbar"><button id="zoom-in" type="button" data-i18n="zoom_in"></button><button id="zoom-out" type="button" data-i18n="zoom_out"></button><button id="fit" type="button" data-i18n="fit"></button><button id="follow" type="button" aria-pressed="false" data-i18n="follow"></button><output id="chart-scale"></output></div>
+          <canvas id="chart" tabindex="0" data-i18n-aria="chart_help"></canvas>
+          <p class="chart-help" data-i18n="chart_help"></p>
+          <div class="legend"><span class="selected-key" data-i18n="selected"></span><span class="crew-key" data-i18n="crew_target"></span><span class="proposal-key" data-i18n="proposal"></span><span class="bearing-key" data-i18n="bearing_only"></span></div>
+          <p id="chart-disclaimer" class="fine"></p>
+        </section>
+        <section class="panel details-panel"><div class="panel-heading"><h2 data-i18n="contact_detail"></h2><span class="local-tag" data-i18n="local"></span></div>
+          <p id="no-selection" class="empty" data-i18n="select_contact"></p>
+          <div id="track-detail" hidden><h3 id="detail-label"></h3><div id="detail-badges" class="badges"></div><dl id="detail-metrics" class="detail-metrics"></dl>
+            <form id="classification-form" class="annotation-form"><label for="classification" data-i18n="classification"></label><div class="setter"><select id="classification"><option value="" data-i18n="unknown"></option><option value="U_BOOT" data-i18n="class_submarine"></option><option value="KAMPFSCHIFF" data-i18n="class_warship"></option><option value="BIOLOGISCH" data-i18n="class_biological"></option><option value="FAHRZEUG" data-i18n="class_vehicle"></option></select><button id="apply-classification" type="submit" data-i18n="apply"></button></div></form>
+            <form id="affiliation-form" class="annotation-form"><label for="affiliation" data-i18n="affiliation"></label><div class="setter"><select id="affiliation"><option value="UNKNOWN" data-i18n="aff_unknown"></option><option value="FRIEND" data-i18n="aff_friend"></option><option value="NEUTRAL" data-i18n="aff_neutral"></option><option value="HOSTILE" data-i18n="aff_hostile"></option></select><button id="apply-affiliation" type="submit" data-i18n="apply"></button></div></form>
+            <p class="fine" data-i18n="annotation_note"></p><button id="propose" type="button" class="primary" data-i18n="propose"></button>
+          </div>
+          <div class="proposal-box"><h3 data-i18n="proposal"></h3><p id="proposal-status"></p><p class="fine" data-i18n="proposal_note"></p><button id="clear-proposal" type="button" data-i18n="clear_proposal"></button></div>
+          <div class="proposal-box"><h3 data-i18n="navigation"></h3>
+            <p id="navigation-status" role="status" aria-live="polite"></p>
+            <p id="navigation-note" class="fine" data-i18n="navigation_note"></p>
+            <form id="navigation-form" class="annotation-form" aria-describedby="navigation-note">
+              <label for="navigation-course" data-i18n="navigation_course"></label><input id="navigation-course" name="course" type="number" min="0" max="359.99999999999994" step="any" inputmode="decimal" autocomplete="off">
+              <label for="navigation-speed" data-i18n="navigation_speed"></label><input id="navigation-speed" name="speed_kn" type="number" min="0" max="25" step="any" inputmode="decimal" autocomplete="off">
+              <button id="propose-navigation" type="submit" class="primary" data-i18n="navigation_propose"></button>
+            </form>
+          </div>
+          <p id="command-status" class="command-status" role="status" aria-live="polite"></p>
+          <div id="command-reconcile" class="command-reconcile" hidden><p id="command-retry-note" class="fine" data-i18n="command_retry_note"></p><button id="retry-command" type="button" aria-describedby="command-retry-note" data-i18n="command_retry"></button></div>
+        </section>
+      </div>
+      <div class="support-grid">
+        <section class="panel own-panel"><div class="panel-heading"><h2 data-i18n="ownship"></h2><span class="own-key" aria-hidden="true"></span></div><dl id="own-metrics" class="metrics"></dl><h3 data-i18n="inventory"></h3><dl id="inventory" class="metrics"></dl><h3 data-i18n="helicopter"></h3><dl id="helo-metrics" class="metrics"></dl></section>
+        <section class="panel"><div class="panel-heading"><h2 data-i18n="damage"></h2><span id="alarm-count" class="counter"></span></div><div id="damage-list" class="damage-list"></div></section>
+        <section class="panel"><div class="panel-heading"><h2 data-i18n="events"></h2><span class="local-tag" data-i18n="live_feed"></span></div><ol id="event-list" class="event-list"></ol></section>
+      </div>
+      <footer><span data-i18n="observation_note"></span><span id="snapshot-meta"></span></footer>
+    </main>
+  </div>
+</body>
+</html>

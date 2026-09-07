@@ -26,6 +26,7 @@ class BathymetricCoast(EmptyCoast):
 def map_game(*, helo_airborne=False, coast=None):
     pygame.font.init()
     view = Viewport(500.0, 1.0, 14.0)
+    view.set_rect(config.MAP_RECT)
     view.scale = 1.0
     return SimpleNamespace(
         screen=pygame.Surface((config.SCREEN_W, config.SCREEN_H)),

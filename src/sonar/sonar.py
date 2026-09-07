@@ -94,6 +94,8 @@ class Contact:
         self.tma_course = None
         self.tma_speed = None
         self.tma_quality = 0.0
+        self.tma_seen = None
+        self.buoy_fixes = []  # raw (t, x, y, quality), not ownship passive bearings
         self.ping_pos = None
         self.observed_x = None
         self.observed_y = None
@@ -208,22 +210,77 @@ class Contact:
         self.observed_x, self.observed_y = self.ping_pos
 
     def expire_ping_fix(self, t: float) -> None:
-        """Expire active range/depth even when no passive report arrives."""
-        if (self.range_source == "ping" and self.range_seen is not None
-                and t - self.range_seen > config.SONAR_PING_FIX_MAX_AGE_S):
+        """Expire evidence even without detections (name retained for callers).
+
+        TMA/buoy positions and TMA motion are usable for at most
+        SONAR_CONTACT_LOST_S since their measurement, not last passive hearing.
+        The uncertainty fields for these estimates are heuristic, not covariance.
+        """
+        tma_seen = self.tma_seen
+        if tma_seen is None and self.range_source == "tma":
+            tma_seen = self.range_seen  # pre-evidence saves
+        if (self.tma_pos is not None or self.tma_course is not None
+                or self.tma_speed is not None) and (tma_seen is None or
+                t - tma_seen > config.SONAR_CONTACT_LOST_S):
+            self.tma_pos = self.tma_course = self.tma_speed = None
+            self.tma_quality = 0.0
+            self.tma_seen = None
+        max_age = (config.SONAR_PING_FIX_MAX_AGE_S
+                   if self.range_source == "ping" else config.SONAR_CONTACT_LOST_S)
+        if self.range_source is not None and (self.range_seen is None
+                or t - self.range_seen > max_age):
             self.range_est = None
             self.range_sigma_nm = None
             self.range_source = None
             self.depth_est = None
             self.depth_sigma_m = None
             self.observed_x = self.observed_y = None
+            self.ping_pos = None
             if self.passive_bearing is not None:
                 self.bearing = self.passive_bearing
                 self.bearing_uncertainty_deg = \
                     self._bearing_filter_uncertainty_deg
+        self.array_observations = {
+            key: value for key, value in self.array_observations.items()
+            if t - value["last_seen"] <= 4.0}
+        if len(self.array_observations) < 2:
+            self.fusion_status = ("NUR " + next(iter(self.array_observations))
+                                  if self.array_observations else "KEINE DATEN")
+            self.fusion_delta_deg = None
+            self.fused_quality = max((report["quality"] for report in
+                                      self.array_observations.values()), default=0.0)
+
+    def update_buoy(self, x: float, y: float, quality: float, t: float):
+        """Keep raw cross-fixes separate; smooth only the public position.
+
+        Fresh ping > fresh buoy > TMA avoids source flapping. The filter is a
+        bounded convex blend, with no velocity extrapolation or covariance claim.
+        """
+        self.expire_ping_fix(t)
+        if not self.buoy_fixes or int(t // 2) != int(self.buoy_fixes[-1][0] // 2):
+            self.buoy_fixes.append((t, x, y, quality))
+            del self.buoy_fixes[:-config.BEARING_TRACK_MAX_PTS]
+        if self.range_source == "ping":
+            return
+        if (self.range_source == "buoy" and self.observed_x is not None
+                and self.observed_y is not None and self.range_seen is not None):
+            alpha = 1.0 - math.exp(-max(0.0, t - self.range_seen)
+                                   / config.SONAR_BEARING_DISPLAY_TAU_S)
+            x = self.observed_x + alpha * (x - self.observed_x)
+            y = self.observed_y + alpha * (y - self.observed_y)
+        self.observed_x, self.observed_y = x, y
+        self.bearing = math.degrees(math.atan2(x - self._fx, -(y - self._fy))) % 360
+        self.range_est = math.hypot(x - self._fx, y - self._fy)
+        self.range_sigma_nm = max(.5, (1.0 - quality) * 8.0)
+        self.bearing_uncertainty_deg = None
+        self.depth_est = self.depth_sigma_m = None
+        self.range_source = "buoy"
+        self.range_seen = t
+        self.origin = "bojenkreuzpeilung"
 
     def update_tma(self, sol, t: float):
         """TMA-Estimate übernehmen (nur, solange kein frischerer Ping)."""
+        self.expire_ping_fix(t)
         if (self.tma_pos is not None
                 and self.tma_quality >= config.TMA_RANGE_MIN_QUALITY
                 and sol.quality < config.TMA_RANGE_MIN_QUALITY):
@@ -247,9 +304,8 @@ class Contact:
             else:
                 self.tma_speed += (sol.speed - self.tma_speed) * alpha
             self.tma_quality += (sol.quality - self.tma_quality) * alpha
-        ping_fresh = (self.range_source == "ping" and self.range_seen is not None
-                      and t - self.range_seen <= config.SONAR_PING_FIX_MAX_AGE_S)
-        if not ping_fresh and \
+        self.tma_seen = t
+        if self.range_source not in ("ping", "buoy") and \
                 sol.quality >= config.TMA_RANGE_MIN_QUALITY:
             self.observed_x, self.observed_y = self.tma_pos
             self.bearing = math.degrees(math.atan2(
@@ -259,11 +315,13 @@ class Contact:
             self.range_sigma_nm = max(0.1, (1.0 - sol.quality) * 12.0)
             self.range_source = "tma"
             self.range_seen = t
-            self.last_seen = t
+            self.bearing_uncertainty_deg = None
+            self.depth_est = self.depth_sigma_m = None
 
     def decay(self, dt: float, t: float) -> bool:
         """Konfidenz sinkt ohne neue Detektion; nach Zeit + niedriger
         Konfidenz gilt der Kontakt als verloren (False = entfernen)."""
+        self.expire_ping_fix(t)
         self.confidence = max(
             0.0, self.confidence - config.SONAR_CONF_DECAY_PER_S * dt)
         if (t - self.last_seen >= config.SONAR_CONTACT_LOST_S
@@ -281,6 +339,7 @@ class Contact:
 
 
 class SonarSystem:
+    MAX_PENDING_PINGS = 10000
     STOWED = TowState.STOWED
     DEPLOYING = TowState.DEPLOYING
     STREAMED = TowState.STREAMED
@@ -432,14 +491,19 @@ class SonarSystem:
         self.demon_analysis = None
         self.signature_candidates = []
 
-    def listening_samples(self):
+    def listening_samples(self, samples=None):
         """Return pre-playback beam audio with operator filtering and gain.
+
+        An explicit receiver block uses the current controls instead of reading
+        the latest samples. Always copy; playback must not mutate or consume
+        receiver blocks, analysis, or simulation state.
 
         The playback path applies headphone volume before its smooth limiter;
         keeping floating headroom here lets lower volume reduce compression.
         Instrument analysis continues to use the receiver's ungained samples.
         """
-        samples = self.receiver.samples.copy()
+        samples = np.array(self.receiver.samples if samples is None else samples,
+                           dtype=np.float32, copy=True)
         if self.listen_filtered:
             frequencies = np.fft.rfftfreq(len(samples), 1.0 / self.receiver.sample_rate)
             spectrum = np.fft.rfft(samples)
@@ -467,8 +531,13 @@ class SonarSystem:
         return True
 
     def queue_ping(self, frigate, targets, world, t_real: float,
-                   range_factor: float = 1.0, mode: str = "BOW") -> None:
-        """Plant Echoantworten; Warnung entsteht beim Aussenden, nicht beim Echo."""
+                    range_factor: float = 1.0, mode: str = "BOW") -> None:
+        """Freeze an instantaneous transmit/scatter measurement until its echo.
+
+        Immediate hear_ping is a simplified intercept warning, not a modeled
+        one-way propagation event. Only destruction can cancel a queued return;
+        subsequent motion, terrain or array handling cannot change its evidence.
+        """
         if mode == "TOWED" and not self.tow_status(frigate.speed)["available"]:
             return
         for target in targets:
@@ -486,9 +555,13 @@ class SonarSystem:
                                                  target.x, target.y,
                                                  getattr(target, "depth", 0.0))):
                 continue
+            snapshot = (self._measure_ping(frigate, target, t_real, distance, active_range)
+                        if distance < active_range else None)
             if distance <= config.SONAR_PING_HEAR_RANGE_NM \
                     and hasattr(target, "hear_ping"):
                 target.hear_ping()
+            if snapshot is None or len(self._pending_pings) >= self.MAX_PENDING_PINGS:
+                continue
             self._pending_pings.append({
                 "target": target,
                 "frigate": frigate,
@@ -497,6 +570,7 @@ class SonarSystem:
                 "ready_at": t_real + world.echo_delay_s(distance),
                 "range_factor": range_factor,
                 "mode": mode,
+                "snapshot": snapshot,
             })
 
     def passive_range_nm(self, tgt, dist_nm: float, frigate, world,
@@ -549,6 +623,8 @@ class SonarSystem:
         self.bt_cooldown = max(0.0, self.bt_cooldown - dt)
         self._update_tow(dt, frigate.speed, frigate.course)
         for contact in self.contacts.values():
+            if not self._tow_available():
+                contact.array_observations.pop("TOWED", None)
             contact.expire_ping_fix(t)
         if self.tow_state == TowState.STREAMED:
             depth_limit = max(config.SONAR_TOWED_DEPTH_MIN_M,
@@ -558,9 +634,6 @@ class SonarSystem:
             depth_step = config.SONAR_TOWED_DEPTH_RATE_M_S * dt
             self.towed_depth_m += config.clamp(
                 self.towed_depth_target_m - self.towed_depth_m, -depth_step, depth_step)
-        if not self._tow_available():
-            for contact in self.contacts.values():
-                contact.array_observations.pop("TOWED", None)
         self._process_pending_pings(t)
         if self._ping_anim_timer > 0:
             self._ping_anim_timer -= dt
@@ -577,6 +650,9 @@ class SonarSystem:
         """
         if advance_mechanics:
             self.advance_mechanics(dt, t, frigate)
+        else:
+            for contact in self.contacts.values():
+                contact.expire_ping_fix(t)
 
         detected_ids: set = set()
         self._lofar_timer += dt
@@ -681,7 +757,8 @@ class SonarSystem:
             listen_observation = observations.get(mode)
             if sample_due and listen_observation is not None:
                 broadband = getattr(tgt, "broadband", lambda: {})()
-                source = {"bearing": bearing, "level": quality,
+                source = {"bearing": listen_observation["bearing"],
+                          "level": listen_observation["quality"],
                           "lines": tgt.lofar_lines(t),
                           "seed": getattr(tgt, "sensor_seed", tgt.id)}
                 if isinstance(broadband, dict) and broadband.get("level", 0) > 0:
@@ -717,39 +794,27 @@ class SonarSystem:
                                 % 360.0, quality))
             if len(reports) < 2:
                 continue
-            pair = max(((a, b) for i, a in enumerate(reports)
-                        for b in reports[i + 1:]),
-                       key=lambda pair: math.hypot(pair[0][0].x - pair[1][0].x,
-                                                   pair[0][0].y - pair[1][0].y))
-            fix = self._bearing_fix(pair[0], pair[1])
-            if fix is None:
+            best = None
+            for i, first in enumerate(reports):
+                for second in reports[i + 1:]:
+                    fix = self._bearing_fix(first, second)
+                    if fix is None:
+                        continue
+                    quality = min(first[2], second[2]) * fix[2]
+                    if best is None or quality > best[0]:
+                        best = (quality, fix)
+            if best is None:
                 continue
+            quality, fix = best
             fx, fy, geometry = fix
             c = self._get_contact(tgt)
             c._fx, c._fy = frigate.x, frigate.y
-            ping_fresh = (c.range_source == "ping" and c.range_seen is not None
-                          and t - c.range_seen <= config.SONAR_PING_FIX_MAX_AGE_S)
-            if ping_fresh:
+            if tgt.id not in detected_ids:
                 c.confidence = min(1.0, c.confidence
                                    + config.SONAR_CONF_PASSIVE_PER_S * dt)
+                c.quality = quality
                 c.last_seen = t
-                detected_ids.add(tgt.id)
-                continue
-            bearing = math.degrees(math.atan2(fx - frigate.x,
-                                               -(fy - frigate.y))) % 360.0
-            quality = min(pair[0][2], pair[1][2]) * geometry
-            sig = tgt.acoustic_signature() \
-                if c.confidence >= config.CONTACT_SIG_CONF else ""
-            c.update_passive(
-                bearing=bearing,
-                confidence=c.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt,
-                quality=quality, signature=sig, t=t, snr=0.0)
-            c.range_est = math.hypot(fx - frigate.x, fy - frigate.y)
-            c.range_sigma_nm = max(.5, (1.0 - quality) * 8.0)
-            c.range_source = "buoy"
-            c.range_seen = t
-            c.origin = "bojenkreuzpeilung"
-            c.observed_x, c.observed_y = fx, fy
+            c.update_buoy(fx, fy, quality, t)
             detected_ids.add(tgt.id)
 
         # M9: Kontakte ohne neue Detektion verfallen
@@ -764,11 +829,12 @@ class SonarSystem:
 
         if self.focus_locked:
             contact = self.contacts.get(getattr(focus_tgt, "id", None))
-            if contact is not None and t - contact.last_seen <= 2.0:
+            report = contact.array_observations.get(mode) if contact is not None else None
+            if report is not None and t - report["last_seen"] <= 2.0:
                 if contact.target_id != self._listen_target_id:
                     self.reset_listening_history()
                     self._listen_target_id = contact.target_id
-                self.listen_bearing = contact.bearing
+                self.listen_bearing = report["bearing"]
             else:
                 # Lost tracks hold the last observed direction, not world truth.
                 self.focus_locked = False
@@ -811,7 +877,8 @@ class SonarSystem:
         qx, qy = b2.x - b1.x, b2.y - b1.y
         along_first = (qx * s[1] - qy * s[0]) / denom
         along_second = (qx * r[1] - qy * r[0]) / denom
-        if along_first < 0.0 or along_second < 0.0:
+        if not (0.0 <= along_first <= config.BUOY_RANGE_NM
+                and 0.0 <= along_second <= config.BUOY_RANGE_NM):
             return None
         return b1.x + along_first * r[0], b1.y + along_first * r[1], geometry
 
@@ -878,32 +945,92 @@ class SonarSystem:
                 result.append(0.0)
                 continue
             if self.notch_enabled and abs(freq - shaft) < 5.0:
-                result.append(value * 0.15)
+                result.append(min(1.0, value * gain * 0.15))
             else:
                 result.append(min(1.0, value * gain))
         return result
 
     def _process_pending_pings(self, t: float) -> None:
-        """Liefert faellige Echos einzeln aus, damit Mehrfachziele Laufzeit haben."""
+        """Deliver frozen evidence at the first tick meeting its deadline.
+
+        Preserve the historical sunk/dead/hit cancellation rule. Target identity
+        is internal association only; neither geometry nor propagation is read
+        again. Measurement timestamps never become reception timestamps.
+        """
         pending = []
         for ping in self._pending_pings:
             target = ping["target"]
             if tgt_gone(target):
                 continue
             if t >= ping["ready_at"]:
-                contacts = self.apply_ping(
-                    ping["frigate"], [target], ping["world"], t,
-                    ping["range_factor"], ping["mode"], notify_ping=False)
-                for contact in contacts:
-                    observation = dict(
-                        t=t, contact_id=contact.id, bearing=contact.bearing,
-                        range_nm=contact.range_est, range_sigma_nm=contact.range_sigma_nm,
-                        depth_m=contact.depth_est, depth_sigma_m=contact.depth_sigma_m,
-                        snr_db=contact.snr, mode=ping["mode"])
-                    self.echo_events.append(dict(observation))
+                contact = self._apply_ping_snapshot(target, ping["snapshot"], ping["mode"])
+                self.echo_events.append(dict(self.echo_history[-1]))
+                del self.echo_events[:-config.SONAR_ECHO_HISTORY_MAX]
+                contact.expire_ping_fix(t)
             else:
                 pending.append(ping)
         self._pending_pings = pending
+
+    @staticmethod
+    def valid_ping_snapshot(snapshot) -> bool:
+        """Strict measurement-only schema shared with transactional save loading."""
+        limits = {"t": (0, 1e12), "observer_x": (-1e6, 1e6),
+                  "observer_y": (-1e6, 1e6), "bearing": (0, 360),
+                  "range_nm": (0, 10000), "depth_m": (0, 10000),
+                  "range_sigma_nm": (1e-9, config.SONAR_PING_RANGE_ERROR_NM),
+                  "depth_sigma_m": (1e-9, config.SONAR_PING_DEPTH_ERROR_M),
+                  "snr_db": (-200, 200)}
+        if not isinstance(snapshot, dict) or set(snapshot) != set(limits):
+            return False
+        try:
+            return snapshot["bearing"] < 360 and all(
+                isinstance(snapshot[key], (int, float))
+                and not isinstance(snapshot[key], bool)
+                and math.isfinite(snapshot[key]) and low <= snapshot[key] <= high
+                for key, (low, high) in limits.items())
+        except (TypeError, OverflowError):
+            return False
+
+    @staticmethod
+    def _measure_ping(frigate, target, t: float, distance: float, active_range: float):
+        """Deterministic noisy snapshot; no shared RNG or contact allocation."""
+        signal = snr_db(active_range, distance)
+        error_scale = 1.0 / max(1.0, 1.0 + signal / 8.0)
+        seed = getattr(target, "sensor_seed", target.id)
+        snapshot = dict(
+            t=t, observer_x=frigate.x, observer_y=frigate.y,
+            bearing=(target.bearing_from_frigate(frigate) + 1.5 * error_scale
+                     * _correlated_uniform(seed, t, 1.0, 101)) % 360.0,
+            range_nm=max(0.0, distance + config.SONAR_PING_RANGE_ERROR_NM
+                         * error_scale * _correlated_uniform(seed, t, 1.0, 211)),
+            depth_m=max(0.0, target.depth + config.SONAR_PING_DEPTH_ERROR_M
+                        * error_scale * _correlated_uniform(seed, t, 1.0, 307)),
+            range_sigma_nm=config.SONAR_PING_RANGE_ERROR_NM * error_scale / math.sqrt(3),
+            depth_sigma_m=config.SONAR_PING_DEPTH_ERROR_M * error_scale / math.sqrt(3),
+            snr_db=signal)
+        if not SonarSystem.valid_ping_snapshot(snapshot):
+            raise ValueError("invalid active sonar measurement")
+        return snapshot
+
+    def _apply_ping_snapshot(self, target, snapshot, mode):
+        c = self._get_contact(target)
+        # A late return must not replace an already newer active measurement.
+        if c.range_source != "ping" or c.range_seen is None or snapshot["t"] >= c.range_seen:
+            last_seen = c.last_seen
+            c._fx, c._fy = snapshot["observer_x"], snapshot["observer_y"]
+            c.update_ping(
+                bearing=snapshot["bearing"], range_est=snapshot["range_nm"],
+                depth_est=snapshot["depth_m"],
+                confidence=c.confidence + config.SONAR_CONF_PING_BONUS,
+                t=snapshot["t"], snr=snapshot["snr_db"],
+                range_sigma_nm=snapshot["range_sigma_nm"],
+                depth_sigma_m=snapshot["depth_sigma_m"])
+            c.last_seen = max(last_seen, c.last_seen)
+        self.echo_history.append({
+            key: value for key, value in dict(snapshot, contact_id=c.id, mode=mode).items()
+            if key not in ("observer_x", "observer_y")})
+        del self.echo_history[:-config.SONAR_ECHO_HISTORY_MAX]
+        return c
 
     def _observed_bearing(self, tgt, true_bearing: float, frigate,
                           quality: float, mode: str, t: float) -> float:
@@ -921,6 +1048,8 @@ class SonarSystem:
         tr = self._tracks.get(tgt.id)
         if tr is None:
             return
+        if not tr.pts or t - tr.pts[-1].t > config.SONAR_CONTACT_LOST_S:
+            return
         if self._tma_versions.get(tgt.id) == tr.version:
             return
         if t < self._tma_next.get(tgt.id, 0.0):
@@ -930,7 +1059,7 @@ class SonarSystem:
             return
         sol = solve_tma(tr)
         if sol is not None:
-            c.update_tma(sol, t)
+            c.update_tma(sol, tr.pts[-1].t)
         self._tma_versions[tgt.id] = tr.version
         self._tma_next[tgt.id] = t + config.TMA_RESOLVE_EVERY_S
 
@@ -956,7 +1085,6 @@ class SonarSystem:
                                                  tgt.x, tgt.y,
                                                  getattr(tgt, "depth", 0.0))):
                 continue
-            bearing = tgt.bearing_from_frigate(frigate)
 
             # Hört das U-Boot den Ping?
             if can_hear:
@@ -964,36 +1092,8 @@ class SonarSystem:
 
             # Echo erhalten?
             if dist < active_range:
-                c = self._get_contact(tgt)
-                c._fx, c._fy = frigate.x, frigate.y
-                signal = snr_db(active_range, dist)
-                error_scale = 1.0 / max(1.0, 1.0 + signal / 8.0)
-                seed = getattr(tgt, "sensor_seed", tgt.id)
-                measured_bearing = (bearing + 1.5 * error_scale
-                    * _correlated_uniform(seed, t_real, 1.0, 101)) % 360.0
-                measured_range = max(0.0, dist + config.SONAR_PING_RANGE_ERROR_NM
-                    * error_scale * _correlated_uniform(seed, t_real, 1.0, 211))
-                measured_depth = max(0.0, tgt.depth + config.SONAR_PING_DEPTH_ERROR_M
-                    * error_scale * _correlated_uniform(seed, t_real, 1.0, 307))
-                c.update_ping(
-                    bearing=measured_bearing,
-                    range_est=measured_range,
-                    depth_est=measured_depth,
-                    confidence=c.confidence + config.SONAR_CONF_PING_BONUS,
-                    t=t_real,
-                    snr=signal,
-                    range_sigma_nm=(config.SONAR_PING_RANGE_ERROR_NM
-                                    * error_scale / math.sqrt(3)),
-                    depth_sigma_m=(config.SONAR_PING_DEPTH_ERROR_M
-                                   * error_scale / math.sqrt(3)))
-                self.echo_history.append({
-                    "t": t_real, "contact_id": c.id, "bearing": c.bearing,
-                    "range_nm": c.range_est, "range_sigma_nm": c.range_sigma_nm,
-                    "depth_m": c.depth_est, "depth_sigma_m": c.depth_sigma_m,
-                    "snr_db": c.snr, "mode": mode,
-                })
-                del self.echo_history[:-config.SONAR_ECHO_HISTORY_MAX]
-                contacts.append(c)
+                snapshot = self._measure_ping(frigate, tgt, t_real, dist, active_range)
+                contacts.append(self._apply_ping_snapshot(tgt, snapshot, mode))
         return contacts
 
     def _get_contact(self, tgt) -> Contact:

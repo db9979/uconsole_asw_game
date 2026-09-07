@@ -4,6 +4,7 @@ Zeigt: Land/Inseln, Airbases, Fregatte, Zivile (AIS), Flüge, Torpedos,
 ASMs, HSP-5, Peilstrich des ausgewählten Kontakts + Ziel-Kreuz (TMA/Ping).
 """
 
+import copy
 import math
 
 import pygame
@@ -53,7 +54,8 @@ def map_hit_target(game, pos):
     layout.configure_for(game)
     if pos is None or not pygame.Rect(config.MAP_RECT).collidepoint(pos):
         return None
-    view = game.map_view
+    view = copy.copy(game.map_view)
+    view.set_rect(config.MAP_RECT)
     x_nm, y_nm = view.screen_to_world(*pos)
     if not (0.0 <= x_nm <= game.world.size_nm and
             0.0 <= y_nm <= game.world.size_nm):
@@ -114,7 +116,7 @@ def map_hit_target(game, pos):
             message("map.tooltip.helo_fuel", fuel=f"{helo.fuel_s / 60:.0f}"),
             *chart_lines,
             target_id="map:helo")
-    contact = getattr(game, "target", None) or getattr(game, "selected_contact", None)
+    contact = getattr(game, "selected_contact", None) or getattr(game, "target", None)
     if contact is not None:
         bearing = observations.bearing(contact, game.ship)
         estimated_range = getattr(contact, "range_est", None)
@@ -178,14 +180,8 @@ def draw_map_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
     r = config.MAP_RECT
-    view = game.map_view
+    view = copy.copy(game.map_view)
     view.set_rect(r)
-    # W0: Kamera-Tracking: Fregatte bleibt in der Mitte (K oder Mausrad/
-    # Drag schaltet Follow aus, K schaltet wieder ein)
-    if getattr(game, "map_follow", True):
-        view.cx = game.ship.x
-        view.cy = game.ship.y
-        view.clamp_center()
     w = game.world
     coast = w.coast
 
@@ -194,6 +190,22 @@ def draw_map_view(game, tr=None) -> None:
     with layout.clip_to(s, r):
         # Seedbasierte Bathymetrie: dezente taktische Tiefenfaerbung.
         if coast.has_bathymetry:
+            # UI-only, one world/snapshot and at most 4096 chart cells. Compare
+            # the small depth grid too, so in-place snapshot edits invalidate.
+            bathymetry = getattr(coast, "_bathymetry", None)
+            colors = {}
+            if bathymetry is not None:
+                key = (w.size_nm, coast.world_size_nm,
+                       bathymetry["size"],
+                       tuple(tuple(row) for row in bathymetry["values"]),
+                       tuple(coast.landmasses),
+                       config.COLOR_SHALLOW, config.COLOR_DEEP)
+                cached = getattr(draw_map_view, "_bathymetry_cache", None)
+                if (cached is None or cached[0] is not w
+                        or cached[1] is not coast or cached[2] != key):
+                    cached = (w, coast, key, colors)
+                    draw_map_view._bathymetry_cache = cached
+                colors = cached[3]
             cell_nm = 10.0 if view.scale >= 4.0 else 25.0
             wl, wt = view.screen_to_world(r[0], r[1])
             wr, wb = view.screen_to_world(r[0] + r[2], r[1] + r[3])
@@ -205,14 +217,22 @@ def draw_map_view(game, tr=None) -> None:
             while y_nm < y1:
                 x_nm = x0
                 while x_nm < x1:
-                    depth = w.depth_m(x_nm + cell_nm * .5,
-                                      y_nm + cell_nm * .5)
-                    if depth > 0.0:
-                        deep = max(0.0, min(1.0, depth / 900.0))
-                        color = tuple(
-                            int(shallow + (deep_color - shallow) * deep)
-                            for shallow, deep_color in zip(
-                                config.COLOR_SHALLOW, config.COLOR_DEEP))
+                    cell = (cell_nm, x_nm, y_nm)
+                    if cell not in colors:
+                        depth = w.depth_m(x_nm + cell_nm * .5,
+                                          y_nm + cell_nm * .5)
+                        color = None
+                        if depth > 0.0:
+                            deep = max(0.0, min(1.0, depth / 900.0))
+                            color = tuple(
+                                int(shallow + (deep_color - shallow) * deep)
+                                for shallow, deep_color in zip(
+                                    config.COLOR_SHALLOW, config.COLOR_DEEP))
+                        if len(colors) >= 4096:
+                            colors.clear()
+                        colors[cell] = color
+                    color = colors[cell]
+                    if color is not None:
                         px, py = view.world_to_screen(x_nm, y_nm)
                         px2, py2 = view.world_to_screen(
                             x_nm + cell_nm, y_nm + cell_nm)
@@ -232,13 +252,13 @@ def draw_map_view(game, tr=None) -> None:
         gy1 = int(min(w.size_nm, max(wt, wb)) // step) * step
         for g in range(gx0, gx1 + 1, step):
             x, _ = view.world_to_screen(g, 0)
-            if _in_rect(x, 0, r, 0.0):
+            if r[0] <= x <= r[0] + r[2]:
                 pygame.draw.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
                 s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
                        (int(x) + 3, r[1] + r[3] - 18))
         for g in range(gy0, gy1 + 1, step):
             _, y = view.world_to_screen(0, g)
-            if _in_rect(0, y, r, 0.0):
+            if r[1] <= y <= r[1] + r[3]:
                 pygame.draw.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
                 s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
                        (r[0] + 3, int(y) + 3))
@@ -368,17 +388,38 @@ def draw_map_view(game, tr=None) -> None:
 
         # Manuell protokollierte HFDF-Messungen und daraus berechnete Fixes.
         for report in game.hfdf_log[-6:]:
+            if game.sim_t - report["t"] > 300.0:
+                continue
             ox, oy = view.world_to_screen(report["observer_x"], report["observer_y"])
             brg = math.radians(report["bearing"])
             ex, ey = ox + 260 * math.sin(brg), oy - 260 * math.cos(brg)
             pygame.draw.line(s, (140, 150, 220), (int(ox), int(oy)),
                              (int(ex), int(ey)), 1)
         for fix in game.hfdf_fixes.values():
+            age = max(0.0, game.sim_t - fix["t"])
+            if age > 300.0:
+                continue
             px, py = view.world_to_screen(fix["x"], fix["y"])
-            radius = max(4, int(fix["sigma_nm"] * view.scale))
-            pygame.draw.circle(s, (140, 150, 220), (int(px), int(py)), radius, 1)
-            s.blit(game.font.render(fix["label"] + " HFDF", True, (140, 150, 220)),
-                   (int(px) + 8, int(py) - 16))
+            covariance = fix.get("covariance_nm2")
+            if covariance is not None:
+                xx, xy, yy = covariance
+                spread = math.hypot(xx - yy, 2 * xy)
+                major = math.sqrt(max(0.0, (xx + yy + spread) / 2)) * view.scale
+                minor = math.sqrt(max(0.0, (xx + yy - spread) / 2)) * view.scale
+                angle = .5 * math.atan2(2 * xy, xx - yy)
+                ca, sa = math.cos(angle), math.sin(angle)
+                points = []
+                for index in range(32):
+                    phase = index * math.tau / 32
+                    a, b = major * math.cos(phase), minor * math.sin(phase)
+                    points.append((px + a * ca - b * sa, py + a * sa + b * ca))
+                pygame.draw.lines(s, (140, 150, 220), True, points, 1)
+            else:
+                radius = max(4, int(fix["sigma_nm"] * view.scale))
+                pygame.draw.circle(s, (140, 150, 220), (int(px), int(py)), radius, 1)
+            layout.blit_line(s, message("map.hfdf_fix", label=fix["label"], age=f"{age:.0f}"),
+                             (int(px) + 8, int(py) - 20, 350, 20),
+                             (140, 150, 220), size=14)
 
         # Fregatte: Pfeil in Kursrichtung
         px, py = view.world_to_screen(game.ship.x, game.ship.y)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import os
 import sys
 from pathlib import Path
@@ -91,6 +92,29 @@ def capture_all(output_dir: Path, seed: int = 1234) -> list[Path]:
         path = output_dir / f"stations-overview-{index}.png"
         _save(_montage(group), path)
         written.append(path)
+
+    # Authored own-ship damage demonstration, separate from the live screenshots.
+    game.damage = copy.deepcopy(game.damage)
+    for key, state, flood, fire in (
+            ("sonar", "FLUTEND", 48., 0.),
+            ("engine", "BESCHAEDIGT", 18., 37.),
+            ("flightdeck", "ZERSTOERT", 70., 0.)):
+        compartment = game.damage.compartments[key]
+        compartment.state, compartment.flood, compartment.fire = state, flood, fire
+    game.damage.total = sum(c.flood for c in game.damage.compartments.values())
+    game.damage.teams = {1: "sonar", 2: "engine", 3: "engine"}
+    game.dmg_cursor = list(game.damage.compartments).index("engine")
+    game.dmg_team = 2
+    game.station = Station.DAMAGE
+    path = output_dir / "damage-control-alert.png"
+    _save(_capture(game), path)
+    written.append(path)
+
+    # Listener remains off; no live pairing code is recorded in documentation.
+    game._open_administration("commander")
+    path = output_dir / "commander-options.png"
+    _save(_capture(game), path)
+    written.append(path)
 
     game.audio.shutdown()
     pygame.quit()

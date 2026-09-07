@@ -8,6 +8,7 @@ import random
 
 from src.core import config
 from src.data.catalog import CATALOG
+from src.weapons.torpedo import underwater_path_blocked
 
 
 class Decoy:
@@ -42,6 +43,7 @@ class Decoy:
         if self.life <= 0.0:
             self.dead = True
             return
+        ox, oy = self.x, self.y
         self.x += self.speed * dt * math.sin(math.radians(self.course))
         self.y -= self.speed * dt * math.cos(math.radians(self.course))
         world_size = world.size_nm
@@ -51,6 +53,9 @@ class Decoy:
         if self.y < 0 or self.y > world_size:
             self.course = (180.0 - self.course) % 360.0
             self.y = config.clamp(self.y, 0.0, world_size)
+        if underwater_path_blocked(world, ox, oy, self.depth, self.x, self.y, self.depth):
+            self.x, self.y = ox, oy
+            self.dead = True
 
     def quiet_factor(self) -> float:
         # Lautes, leichtes Rauschen: maskiert das U-Boot im LOFAR
@@ -70,7 +75,11 @@ class Decoy:
     def broadband(self) -> dict:
         if self.dead:
             return {}
-        return {"level": 0.8, "low_hz": 40.0, "high_hz": 300.0}
+        signature = CATALOG.acoustic_for("decoy")
+        if signature is None or signature.broadband is None:
+            return {}
+        level, low, high = signature.broadband
+        return {"level": level, "low_hz": low, "high_hz": high}
 
     def distance_nm(self, frigate) -> float:
         return math.hypot(self.x - frigate.x, self.y - frigate.y)

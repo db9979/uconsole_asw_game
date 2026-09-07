@@ -20,7 +20,9 @@ class AudioEngine:
     ALERT_CHANNEL = 3
     FADE_MS = 35
 
-    # Even full-scale source inputs remain below unity when all four buses mix.
+    # Post-limiter per-channel PCM ceilings, NOT input volume caps. Their
+    # weighted sum is .9155, including hard left/right pan and hostile input.
+    # This budgets our reserved buses only, not unrelated shared-mixer users.
     SOURCE_LIMITS = {"engine": .18, "sonar": .55, "ping": .40, "alert": .32}
     CHANNEL_GAINS = {"engine": .50, "sonar": .65, "ping": .65, "alert": .65}
 
@@ -37,6 +39,7 @@ class AudioEngine:
         self._ping_channel = None
         self._alert_channel = None
         self._engine_phase = 0.0
+        self._engine_shaft_phase = 0.0
         self._engine_blocks = 0
         self._engine_rng = np.random.default_rng(17)
         self._engine_filter_state = np.zeros(5, dtype=np.float64)
@@ -46,7 +49,6 @@ class AudioEngine:
         self._sonar_input_count = 0
         self._sonar_output_count = 0
         self._sonar_previous = None
-        self._sonar_output_previous = None
         self.engine_dropped_blocks = 0
         self.engine_underruns = 0
         self.sonar_dropped_blocks = 0
@@ -82,7 +84,9 @@ class AudioEngine:
         except (pygame.error, TypeError, ValueError, OverflowError):
             self.enabled = False
 
-    def _make_sound(self, samples: np.ndarray) -> pygame.mixer.Sound:
+    def _make_sound(self, samples: np.ndarray, bus: str) -> pygame.mixer.Sound:
+        ceiling = self.SOURCE_LIMITS[bus]
+        samples = smooth_limit(samples, knee=.75 * ceiling, ceiling=ceiling)
         pcm = (np.clip(samples, -1.0, 1.0) * 32767.0).astype(np.int16)
         if self.channels == 2 and pcm.ndim == 1:
             pcm = np.repeat(pcm[:, None], 2, axis=1)
@@ -96,7 +100,7 @@ class AudioEngine:
         if cached is not None:
             self._cache.move_to_end(key)
             return cached
-        sound = self._make_sound(synthesize())
+        sound = self._make_sound(synthesize(), key[0])
         self._cache[key] = sound
         while len(self._cache) > self._cache_size:
             self._cache.popitem(last=False)
@@ -178,8 +182,9 @@ class AudioEngine:
                 signal = propeller_block(
                     rpm, blade_count, self.sample_rate, amplitude=volume,
                     cavitation=cavitation, phase=self._engine_phase,
-                    rng=self._engine_rng, filter_state=next_filter)
-                sound = self._make_sound(signal)
+                    rng=self._engine_rng, filter_state=next_filter,
+                    shaft_phase=self._engine_shaft_phase)
+                sound = self._make_sound(signal, "engine")
                 if busy:
                     self._engine_channel.queue(sound)
                 else:
@@ -190,6 +195,9 @@ class AudioEngine:
             self._engine_filter_state = next_filter
             self._engine_phase = (self._engine_phase + 2 * np.pi * blade_hz
                                    * count / self.sample_rate) % (2 * np.pi)
+            self._engine_shaft_phase = (
+                self._engine_shaft_phase + 2 * np.pi * blade_hz / max(1, blade_count)
+                * count / self.sample_rate) % (2 * np.pi)
             self._engine_blocks += 1
             self._engine_fading = False
         except (pygame.error, TypeError, ValueError, OverflowError):
@@ -202,6 +210,12 @@ class AudioEngine:
         """Play a mono float32 block once; False means invalid or queue full.
 
         Only the current and one pending sound are retained, never cached.
+        Volume spans 0..1 before the bus limiter. Linear streaming resampling
+        delays by one source sample, so interpolation never predicts a future
+        sample or replaces the start of every block with a constant crossfade.
+        On a sequence gap/preview discontinuity call stop_sonar(immediate=True)
+        first. False never advances resampler state: retry the same block, not
+        its successor.
         """
         if not self.enabled or not self.available or self._sonar_channel is None:
             return False
@@ -231,44 +245,26 @@ class AudioEngine:
                 input_start = self._sonar_input_count
                 output_start = self._sonar_output_count
                 previous = self._sonar_previous
-            output_end = round((input_start + samples.size)
-                               * self.sample_rate / source_rate)
+            # Ceil chooses exactly the output instants before the input end;
+            # unlike round, it never needs a second prior sample at a join.
+            output_end = ((input_start + samples.size) * self.sample_rate
+                          + source_rate - 1) // source_rate
             count = output_end - output_start
             if count < 2:
                 return False
             positions = (np.arange(output_start, output_end, dtype=np.float64)
-                         * source_rate / self.sample_rate - input_start)
-            if previous is None:
-                signal = np.interp(positions, np.arange(samples.size), samples)
-            else:
-                values = np.concatenate(([previous], samples))
-                signal = np.interp(positions, np.arange(-1, samples.size), values)
-            # np.interp otherwise holds the final sample for the fractional
-            # tail, creating a plateau and a source-rate jump at every block.
-            tail = positions > samples.size - 1
-            if np.any(tail):
-                slope = float(samples[-1]) - float(samples[-2])
-                signal[tail] = (float(samples[-1])
-                                + (positions[tail] - (samples.size - 1)) * slope)
+                         * source_rate / self.sample_rate - input_start - 1)
+            values = np.concatenate(([0.0 if previous is None else previous], samples))
+            signal = np.interp(positions, np.arange(-1, samples.size), values)
             # Headphone volume precedes the soft limiter so turning it down
             # also reduces limiter compression, not only final loudness.
-            signal = smooth_limit(
-                signal * np.clip(volume, 0.0, self.SOURCE_LIMITS["sonar"]))
+            signal *= np.clip(volume, 0.0, 1.0)
             if previous is None:
                 fade_count = min(count, max(2, round(self.sample_rate * 0.005)))
                 signal[:fade_count] *= np.linspace(0.0, 1.0, fade_count)
-            elif self._sonar_output_previous is not None:
-                # The future sample needed to interpolate the prior block's
-                # fractional tail was unavailable then. Remove that small
-                # prediction mismatch over 5 ms instead of emitting a click.
-                blend_count = min(count, max(2, round(self.sample_rate * 0.005)))
-                blend = np.linspace(1.0, 0.0, blend_count)
-                signal[:blend_count] = (blend * self._sonar_output_previous
-                                        + (1.0 - blend) * signal[:blend_count])
-            output_previous = float(signal[-1])
             if self.channels == 2 and bearing_deg is not None:
                 signal = stereo_bearing(signal, bearing_deg, listener_bearing_deg)
-            sound = self._make_sound(signal)
+            sound = self._make_sound(signal, "sonar")
             if self._sonar_channel.get_busy():
                 self._sonar_channel.queue(sound)
             else:
@@ -277,15 +273,21 @@ class AudioEngine:
             self._sonar_input_count = input_start + samples.size
             self._sonar_output_count = output_end
             self._sonar_previous = float(samples[-1])
-            self._sonar_output_previous = output_previous
             self._sonar_fading = False
         except (pygame.error, TypeError, ValueError, OverflowError):
             return False
         return True
 
-    def stop_sonar(self) -> None:
-        """Clear current and pending sonar audio on pause or tuning changes."""
-        if self._sonar_channel is not None and not self._sonar_fading:
+    def stop_sonar(self, *, immediate: bool = False) -> None:
+        """Fade a normal stop; discard queued old-beam audio on discontinuity.
+
+        SDL can promote queued audio after a fade, so sequence gaps, retunes
+        and sampled previews must use immediate=True before restarting.
+        """
+        if immediate:
+            self._hard_stop(self._sonar_channel)
+            self._sonar_fading = True
+        elif self._sonar_channel is not None and not self._sonar_fading:
             try:
                 if self._sonar_channel.get_busy():
                     self._sonar_channel.fadeout(self.FADE_MS)
@@ -299,7 +301,6 @@ class AudioEngine:
         self._sonar_input_count = 0
         self._sonar_output_count = 0
         self._sonar_previous = None
-        self._sonar_output_previous = None
 
     def stop_engine(self) -> None:
         """Fade normal engine transitions without repeatedly restarting the fade."""
@@ -314,6 +315,8 @@ class AudioEngine:
     def stop(self) -> None:
         self.stop_sonar()
         self.stop_engine()
+        self._hard_stop(self._ping_channel)
+        self._hard_stop(self._alert_channel)
 
     @staticmethod
     def _hard_stop(channel) -> None:

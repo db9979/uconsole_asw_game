@@ -10,6 +10,7 @@ from typing import Any, Iterable, Mapping
 import pygame
 
 from src.core.i18n import display_value, raw_text, translation_scope
+from src.data.catalog import ACOUSTIC_FIELDS
 from src.data.user_content import ContentRecord, UserContentStore
 from src.data.validation import (ContentValidationError, ValidationIssue, enum,
                                  finite_number, integer, issue, pair, text,
@@ -117,6 +118,13 @@ def _validate_acoustic(value: Any, path: str = "acoustic") -> list[ValidationIss
     if not isinstance(value, Mapping):
         return [issue(path, "object", "must be an acoustic object")]
     problems = []
+    # Shipped dataclass clones retain the source signature key as descriptive data.
+    fields = tuple(sorted(ACOUSTIC_FIELDS | {"key"}))
+    for field in value:
+        if field not in fields:
+            problems += enum(field, f"{path}.{field}", fields)
+    if "key" in value:
+        problems += text(value["key"], f"{path}.key", maximum=80)
     problems += text(value.get("label"), f"{path}.label", maximum=80)
     problems += text(value.get("propulsion"), f"{path}.propulsion", maximum=100)
     blades = value.get("blades")
@@ -160,6 +168,12 @@ def validate_unit(data: Mapping[str, Any]) -> list[ValidationIssue]:
     problems += enum(data.get("profile_kind"), "profile_kind", PROFILE_KINDS)
     problems += text(data.get("name"), "name", maximum=80)
     kind = data.get("profile_kind")
+    fields = ("version", "key", "profile_kind", "name")
+    if isinstance(kind, str) and kind in _UNIT_KIND_FIELDS:
+        fields += _UNIT_KIND_FIELDS[kind]
+    for field in data:
+        if field not in fields:
+            problems += enum(field, str(field), fields)
     if kind == "sub":
         problems += pair(data.get("speed_kn"), "speed_kn", minimum=0, maximum=1000)
         problems += finite_number(data.get("max_depth_m"), "max_depth_m", minimum=0, maximum=2000)

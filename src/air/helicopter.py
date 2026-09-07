@@ -69,7 +69,7 @@ class Helicopter:
         if self.airborne:
             self.state = "ZURUECK"
 
-    def update(self, dt: float, frigate, world) -> None:
+    def update(self, dt: float, frigate, world, recovery_available: bool = True) -> None:
         """dt in Simulationssekunden. Haelt Patrouillen-Offset vor der
         Fregatte (AUF) bzw. fliegt zurück (ZURUECK)."""
         if not self.airborne:
@@ -85,7 +85,7 @@ class Helicopter:
             return
         if self.state == "ZURUECK":
             dist = math.hypot(frigate.x - self.x, frigate.y - self.y)
-            if dist <= config.HELO_RETURN_DIST_NM:
+            if dist <= config.HELO_RETURN_DIST_NM and recovery_available:
                 self.state = "HANGAR"
                 self.x, self.y = frigate.x, frigate.y
                 return
@@ -105,9 +105,18 @@ class Helicopter:
             self.x += step * math.sin(math.radians(self.course))
             self.y -= step * math.cos(math.radians(self.course))
 
-    def deploy_buoy(self, seq: int) -> Sonobuoy | None:
+    def water_entry_clear(self, world=None) -> bool:
+        """Require in-world water deep enough for the modeled 5 m entry."""
+        return (world is None or (
+            0 <= self.x <= world.size_nm and 0 <= self.y <= world.size_nm
+            and not world.on_land(self.x, self.y)
+            and getattr(world, "depth_m", lambda x, y: 1000.0)(self.x, self.y) > 5.0))
+
+    def deploy_buoy(self, seq: int, world=None) -> Sonobuoy | None:
         """Drop one buoy at the helicopter's measured current position."""
         if not self.airborne or self.buoys_left <= 0:
+            return None
+        if not self.water_entry_clear(world):
             return None
         self.buoys_left -= 1
         return Sonobuoy(self.x, self.y, seq)
@@ -115,7 +124,8 @@ class Helicopter:
     def release_datum_from_ship_observation(
             self, ship, observed_bearing_deg: float, observed_range_nm: float,
             bearing_uncertainty_deg: float = 0.0,
-            range_uncertainty_nm: float = 0.0) -> ReleaseDatum:
+            range_uncertainty_nm: float = 0.0,
+            datum_x: float = None, datum_y: float = None) -> ReleaseDatum:
         """Convert a ship-relative observation for a helicopter release.
 
         The observed bearing is world-referenced, as elsewhere in the sensor
@@ -123,8 +133,10 @@ class Helicopter:
         exact helicopter-relative measurement.
         """
         bearing_rad = math.radians(observed_bearing_deg)
-        x_nm = ship.x + observed_range_nm * math.sin(bearing_rad)
-        y_nm = ship.y - observed_range_nm * math.cos(bearing_rad)
+        x_nm = (ship.x + observed_range_nm * math.sin(bearing_rad)
+                if datum_x is None else datum_x)
+        y_nm = (ship.y - observed_range_nm * math.cos(bearing_rad)
+                if datum_y is None else datum_y)
         dx, dy = x_nm - self.x, y_nm - self.y
         return ReleaseDatum(
             x_nm=x_nm,
@@ -136,9 +148,9 @@ class Helicopter:
         )
 
     def drop_torpedo(self, target, target_depth_m: float, seq: int,
-                      kill_dist_nm: float = None, kill_depth_m: float = None,
-                      guidance_x: float = None,
-                      guidance_y: float = None) -> "Torpedo | None":
+                     kill_dist_nm: float = None, kill_depth_m: float = None,
+                     guidance_x: float = None,
+                     guidance_y: float = None, world=None) -> "Torpedo | None":
         """Drop a catalog torpedo with an optional absolute hit-envelope result.
 
         The catalog remains the default; callers may supply the intentionally
@@ -146,15 +158,19 @@ class Helicopter:
         """
         if not self.airborne or self.torps <= 0:
             return None
+        if not self.water_entry_clear(world):
+            return None
         self.torps -= 1
         aim_x = target.x if guidance_x is None else guidance_x
         aim_y = target.y if guidance_y is None else guidance_y
         course = math.degrees(math.atan2(aim_x - self.x,
                                          -(aim_y - self.y))) % 360.0
-        return Torpedo(self.x, self.y, course, target_depth_m, target, seq,
-                       kill_dist_nm=(HELO_TORPEDO_PROFILE.hit_dist_nm
-                                     if kill_dist_nm is None else kill_dist_nm),
-                       kill_depth_m=kill_depth_m,
-                       speed_kn=HELO_TORPEDO_PROFILE.speed_kn,
-                       guidance_x=aim_x, guidance_y=aim_y,
-                       range_nm=HELO_TORPEDO_PROFILE.range_nm)
+        torpedo = Torpedo(self.x, self.y, course, target_depth_m, target, seq,
+                          kill_dist_nm=(HELO_TORPEDO_PROFILE.hit_dist_nm
+                                        if kill_dist_nm is None else kill_dist_nm),
+                          kill_depth_m=kill_depth_m,
+                          speed_kn=HELO_TORPEDO_PROFILE.speed_kn,
+                          guidance_x=aim_x, guidance_y=aim_y,
+                          range_nm=HELO_TORPEDO_PROFILE.range_nm)
+        torpedo.break_wire()
+        return torpedo

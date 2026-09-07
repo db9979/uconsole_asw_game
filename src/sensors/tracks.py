@@ -91,6 +91,9 @@ class TrackPicture:
                             observer_y=observer_y, course=course,
                             bearing_uncertainty_deg=bearing_uncertainty_deg)
         track = self._tracks.get(track_id)
+        if track is not None and track.age(now) > self.stale_s:
+            # Reacquisition is simulation-owned, independent of intervening views.
+            track = None
         if track is None:
             track = SensorTrack(
                 track_id=track_id, kind=kind, target_id=target_id, source=source,
@@ -136,7 +139,7 @@ class TrackPicture:
                     track.x += (x - track.x) * alpha
                     track.y += (y - track.y) * alpha
                 track.position_seen = position_time if position_time is not None else now
-            elif (track.position_seen is None
+            elif (source == "SONAR-BRG" or track.position_seen is None
                   or now - track.position_seen > self.stale_s):
                 track.range_nm = track.x = track.y = None
                 track.position_seen = None
@@ -162,8 +165,8 @@ class TrackPicture:
                         if track.age(now) <= self.stale_s}
 
     def tracks(self, now: float, kinds: tuple[str, ...] | None = None) -> list[SensorTrack]:
-        self.expire(now)
-        result = list(self._tracks.values())
+        result = [track for track in self._tracks.values()
+                  if track.age(now) <= self.stale_s]
         if kinds is not None:
             result = [track for track in result if track.kind in kinds]
         return sorted(result, key=lambda track: track.track_id)

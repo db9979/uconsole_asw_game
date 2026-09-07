@@ -11,6 +11,12 @@ This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
 capabilities, data, or doctrine.
 
+<img width="1139" height="634" alt="U-Jagd tactical workstation" src="https://github.com/user-attachments/assets/df2501a0-f46e-4f0f-878c-2d0d9159c025" />
+
+<img width="1140" height="641" alt="U-Jagd sonar workstation" src="https://github.com/user-attachments/assets/2482d19c-f258-43b5-8a3e-4c38e4fdbfac" />
+
+<img width="1140" height="642" alt="U-Jagd operational picture" src="https://github.com/user-attachments/assets/9e8d9aad-be04-4b52-a162-ba74801f713d" />
+
 ## Highlights
 
 - Eight stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,

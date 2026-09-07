@@ -192,6 +192,17 @@ def test_tma_summary_reports_observed_rate_legs_and_clear_states():
     assert view.tma_observation_summary(useful, 211.)["state"] == "VERALTET"
 
 
+def test_tma_summary_downweights_uncertain_bearing_outlier():
+    points = [NS(t=t, bearing=90. + t / 60., fcourse=0., uncertainty_deg=1.)
+              for t in (0., 60., 120., 180.)]
+    points[2].bearing += 20.
+    points[2].uncertainty_deg = 20.
+
+    summary = view.tma_observation_summary(NS(pts=points), 180.)
+
+    assert summary["rate"] == pytest.approx(1., abs=.05)
+
+
 def test_contact_window_keeps_last_selection_visible(game, monkeypatch):
     contacts = [NS(id=i, bearing=i * 10) for i in range(1, 21)]
     game.sonar.active_contacts = lambda: contacts

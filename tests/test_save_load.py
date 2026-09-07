@@ -10,6 +10,8 @@ from src.core import config
 from src.core.game import Game
 from src.air.asm import ASM
 from src.air.sonobuoy import Sonobuoy
+from src.sonar.sonar import Contact
+from src.sonar.tma import BearingTrack
 from src.weapons.torpedo import Torpedo
 
 DT = 1.0 / 60.0
@@ -211,6 +213,144 @@ def test_v8_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     assert restored.tooltips_enabled is False
 
 
+def test_v8_split_run_preserves_scheduler_phase():
+    uninterrupted = Game(seed=189, start_menu=False, audio_enabled=False)
+    uninterrupted._sensor_acc = .13
+    uninterrupted._radio_acc = .31
+    uninterrupted._slow_acc = .41
+    restored = Game(seed=1, start_menu=False, audio_enabled=False)
+    restored.load_state(json.loads(json.dumps(uninterrupted.save_state())))
+
+    def isolate_scheduler(game, events):
+        game._update_navigation = lambda dt: None
+        game.sonar.advance_mechanics = lambda *args: None
+        game._update_underwater_entities = lambda dt: None
+        game._update_aviation = lambda dt: None
+        game._update_air_defense = lambda dt, publish_picture: None
+        game._update_enemy_torpedoes = lambda dt: None
+        game._update_player_torpedoes = lambda dt: None
+        game._update_sensors = lambda dt: events.append(
+            ("sensor", game.sim_t, dt))
+        game._update_radio_picture = lambda: events.append(
+            ("radio", game.sim_t, None))
+        game._update_damage_and_mission = lambda dt: events.append(
+            ("slow", game.sim_t, dt))
+
+    uninterrupted_events = []
+    restored_events = []
+    isolate_scheduler(uninterrupted, uninterrupted_events)
+    isolate_scheduler(restored, restored_events)
+    for dt in (.06, .10, .10, .20, .10):
+        uninterrupted._update_sim(dt)
+        restored._update_sim(dt)
+
+    assert restored_events == uninterrupted_events
+    assert (restored._sensor_acc, restored._radio_acc, restored._slow_acc) == \
+        pytest.approx((uninterrupted._sensor_acc, uninterrupted._radio_acc,
+                       uninterrupted._slow_acc))
+
+
+def test_v8_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
+    uninterrupted = Game(seed=190, start_menu=False, audio_enabled=False)
+    target = uninterrupted.subs[0]
+    contact = Contact(41, target.id, "passiv", "sub")
+    contact._fx, contact._fy = uninterrupted.ship.x, uninterrupted.ship.y
+    for t, bearing, uncertainty in ((0.0, 358.0, 1.0),
+                                    (1.0, 1.0, 1.5),
+                                    (2.0, 4.0, 2.0)):
+        contact.update_passive(
+            bearing, 1.0, .8, "", t,
+            bearing_uncertainty_deg=uncertainty)
+    uninterrupted.sonar.contacts[target.id] = contact
+    bearing_track = BearingTrack()
+    bearing_track.add(0.0, 358.0, uninterrupted.ship.x,
+                      uninterrupted.ship.y, uninterrupted.ship.course, 1.25)
+    bearing_track.add(4.0, 1.0, uninterrupted.ship.x,
+                      uninterrupted.ship.y, uninterrupted.ship.course, 2.5)
+    bearing_track.version = 205
+    uninterrupted.sonar._tracks[target.id] = bearing_track
+    uninterrupted.sonar._tma_versions[target.id] = bearing_track.version
+    uninterrupted.sim_t = 10.0
+    uninterrupted.sonar._tma_next[target.id] = 11.0
+    uninterrupted.air_picture.observe(
+        track_id="R-1", kind="SURFACE", target_id=1, source="RADAR-S",
+        bearing=80.0, range_nm=12.0, observer_x=0.0, observer_y=0.0,
+        course=20.0, quality=.8, now=8.0, label="R-1")
+    uninterrupted.radio_picture.observe(
+        track_id="H-1", kind="SUB", target_id=1, source="HFDF",
+        bearing=120.0, range_nm=None, observer_x=2.0, observer_y=3.0,
+        course=None, quality=.7, now=0.0, label="H-1")
+
+    restored = Game(seed=1, start_menu=False, audio_enabled=False)
+    restored.load_state(json.loads(json.dumps(uninterrupted.save_state())))
+    restored_target = next(sub for sub in restored.subs if sub.id == target.id)
+    restored_contact = restored.sonar.contacts[target.id]
+    restored_track = restored.sonar._tracks[target.id]
+
+    assert restored_contact.raw_bearings == contact.raw_bearings
+    assert restored_contact.passive_bearing == contact.passive_bearing
+    assert restored_contact.bearing_uncertainty_deg == \
+        contact.bearing_uncertainty_deg
+    assert restored_contact._bearing_filter_t == contact._bearing_filter_t
+    assert restored_contact._bearing_filter_rate_deg_s == \
+        contact._bearing_filter_rate_deg_s
+    assert restored_contact._bearing_filter_uncertainty_deg == \
+        contact._bearing_filter_uncertainty_deg
+    assert [point.uncertainty_deg for point in restored_track.pts] == [1.25, 2.5]
+    assert restored_track.version == bearing_track.version
+    assert restored.sonar._tma_versions == uninterrupted.sonar._tma_versions
+    assert restored.sonar._tma_next == uninterrupted.sonar._tma_next
+    assert restored.air_picture.serialize() == uninterrupted.air_picture.serialize()
+    assert restored.radio_picture.serialize() == \
+        uninterrupted.radio_picture.serialize()
+
+    for item in (contact, restored_contact):
+        item.update_passive(7.0, 1.0, .8, "", 3.0,
+                            bearing_uncertainty_deg=1.75)
+    for picture in (uninterrupted.air_picture, restored.air_picture):
+        picture.observe(
+            track_id="R-1", kind="SURFACE", target_id=1, source="RADAR-S",
+            bearing=84.0, range_nm=12.5, observer_x=.1, observer_y=.2,
+            course=22.0, quality=.85, now=10.0, label="R-1")
+    for picture in (uninterrupted.radio_picture, restored.radio_picture):
+        picture.observe(
+            track_id="H-1", kind="SUB", target_id=1, source="HFDF",
+            bearing=126.0, range_nm=None, observer_x=3.0, observer_y=3.0,
+            course=None, quality=.75, now=10.0, label="H-1")
+
+    calls = []
+    monkeypatch.setattr("src.sonar.sonar.solve_tma",
+                        lambda track: calls.append(track) or None)
+    for game, game_target in ((uninterrupted, target),
+                              (restored, restored_target)):
+        track = game.sonar._tracks[target.id]
+        track.add(10.0, 7.0, game.ship.x, game.ship.y,
+                  game.ship.course, 1.75)
+        game.sonar._update_tma(game_target, 10.5)
+    assert calls == []
+    uninterrupted.sonar._update_tma(target, 11.0)
+    restored.sonar._update_tma(restored_target, 11.0)
+    assert calls == [uninterrupted.sonar._tracks[target.id],
+                     restored.sonar._tracks[target.id]]
+    uninterrupted.sonar._update_tma(target, 20.0)
+    restored.sonar._update_tma(restored_target, 20.0)
+    assert len(calls) == 2
+
+    assert restored_contact.passive_bearing == contact.passive_bearing
+    assert restored_contact.bearing_uncertainty_deg == \
+        contact.bearing_uncertainty_deg
+    assert restored_contact._bearing_filter_t == contact._bearing_filter_t
+    assert restored_contact._bearing_filter_rate_deg_s == \
+        contact._bearing_filter_rate_deg_s
+    assert restored_contact._bearing_filter_uncertainty_deg == \
+        contact._bearing_filter_uncertainty_deg
+    assert restored.air_picture.serialize() == uninterrupted.air_picture.serialize()
+    assert restored.radio_picture.serialize() == \
+        uninterrupted.radio_picture.serialize()
+    assert restored.sonar._tma_versions == uninterrupted.sonar._tma_versions
+    assert restored.sonar._tma_next == uninterrupted.sonar._tma_next
+
+
 @pytest.mark.parametrize("version", range(1, 9))
 def test_historical_fixture_loads(version, tmp_saves):
     install_historical_save(tmp_saves, version)
@@ -330,6 +470,20 @@ def test_unsupported_or_non_integer_versions_are_rejected(version, tmp_saves):
     {"history_times": [None]},
     {"tracks": {"1": [None]}},
     {"tracks": {"1": [{"t": 1.0}]}},
+    {"tracks": {"1": [{"t": 1.0, "bearing": 2.0, "fx": 3.0,
+                         "fy": 4.0, "fcourse": 5.0,
+                         "uncertainty_deg": float("nan")}]}},
+    {"track_versions": {"1": 1}},
+    {"tma_next": {"1": 1.0}},
+    {"contacts": {"1": {"raw_bearings": [[1.0, 2.0,
+                                                 float("nan")]]}}},
+    {"contacts": {"1": {"bearing_filter_t": float("nan")}}},
+    {"contacts": {"1": {"bearing_filter_rate_deg_s": 999.0}}},
+    {"contacts": {"1": {"bearing_filter_uncertainty_deg": -1.0}}},
+    {"contacts": {"1": {"passive_bearing": "north"}}},
+    {"contacts": {"1": {"bearing_filter_t": 999999.0,
+                           "passive_bearing": 2.0,
+                           "bearing_filter_uncertainty_deg": 1.0}}},
     {"pending_pings": {}},
     {"pending_pings": [None]},
 ])
@@ -339,6 +493,24 @@ def test_malformed_sonar_history_is_rejected_transactionally(
     before = game.save_state()
     data = json.loads((SAVE_FIXTURES / "v8.json").read_text())
     data["sonar"].update(sonar_patch)
+    (tmp_saves / "slot1.json").write_text(json.dumps(data))
+
+    assert game.load_from_slot(1) is False
+    assert game.save_state() == before
+
+
+@pytest.mark.parametrize("schedulers", [
+    None,
+    {"sensor": float("nan")},
+    {"radio": .5},
+    {"slow": -1.0},
+])
+def test_malformed_scheduler_state_is_rejected_transactionally(
+        schedulers, tmp_saves):
+    game = Game(seed=9008, start_menu=False)
+    before = game.save_state()
+    data = json.loads((SAVE_FIXTURES / "v8.json").read_text())
+    data["schedulers"] = schedulers
     (tmp_saves / "slot1.json").write_text(json.dumps(data))
 
     assert game.load_from_slot(1) is False

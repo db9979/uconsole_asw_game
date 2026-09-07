@@ -98,6 +98,9 @@ class Contact:
         self.observed_x = None
         self.observed_y = None
         self._passive_epoch = None
+        self._bearing_filter_t = None
+        self._bearing_filter_rate_deg_s = 0.0
+        self._bearing_filter_uncertainty_deg = None
         self._fx = 0.0
         self._fy = 0.0
         self.array_observations = {}
@@ -115,22 +118,44 @@ class Contact:
         epoch = math.floor((t + 1e-9) / config.SONAR_BEARING_NOISE_EPOCH_S)
         uncertainty = (max(0.25, (1.0 - quality) * config.BEARING_ERR_BOW_DEG)
                        if bearing_uncertainty_deg is None
-                       else max(0.0, bearing_uncertainty_deg))
+                       else max(0.05, bearing_uncertainty_deg))
         if epoch != self._passive_epoch:
-            if self.passive_bearing is None:
-                self.passive_bearing = raw
-                self.bearing_uncertainty_deg = uncertainty
-            else:
-                alpha = 1.0 - math.exp(
-                    -config.SONAR_BEARING_NOISE_EPOCH_S
-                    / config.OBS_BEARING_SMOOTH_TAU_S)
-                self.passive_bearing = (self.passive_bearing
-                    + config.angle_diff_deg(raw, self.passive_bearing) * alpha) % 360.0
-                self.bearing_uncertainty_deg += (
-                    uncertainty - self.bearing_uncertainty_deg) * alpha
             self.raw_bearings.append((t, raw, uncertainty))
             del self.raw_bearings[:-config.BEARING_TRACK_MAX_PTS]
             self._passive_epoch = epoch
+        if self.passive_bearing is None:
+            self.passive_bearing = raw
+            self._bearing_filter_uncertainty_deg = uncertainty
+            self._bearing_filter_t = t
+            self._bearing_filter_rate_deg_s = 0.0
+        elif self._bearing_filter_t is None:
+            # Legacy saves have a presentation bearing but no causal rate state.
+            self._bearing_filter_t = t
+            self._bearing_filter_rate_deg_s = 0.0
+            if self._bearing_filter_uncertainty_deg is None:
+                self._bearing_filter_uncertainty_deg = (
+                    self.bearing_uncertainty_deg or uncertainty)
+        elif t > self._bearing_filter_t:
+            dt = t - self._bearing_filter_t
+            alpha = 1.0 - math.exp(-dt / config.SONAR_BEARING_DISPLAY_TAU_S)
+            beta = alpha * alpha / max(1e-6, 2.0 - alpha)
+            self._bearing_filter_rate_deg_s *= math.exp(
+                -dt / config.SONAR_BEARING_DISPLAY_TAU_S)
+            predicted = (self.passive_bearing
+                         + self._bearing_filter_rate_deg_s * dt) % 360.0
+            innovation = config.angle_diff_deg(raw, predicted)
+            self.passive_bearing = (predicted + alpha * innovation) % 360.0
+            self._bearing_filter_rate_deg_s = config.clamp(
+                self._bearing_filter_rate_deg_s + beta * innovation / dt,
+                -config.SONAR_BEARING_RATE_MAX_DEG_S,
+                config.SONAR_BEARING_RATE_MAX_DEG_S)
+            prior_uncertainty = max(
+                0.05, self._bearing_filter_uncertainty_deg or uncertainty)
+            self._bearing_filter_uncertainty_deg = math.sqrt(
+                (1.0 - alpha) * prior_uncertainty * prior_uncertainty
+                + alpha * (uncertainty * uncertainty
+                           + (1.0 - alpha) * innovation * innovation))
+            self._bearing_filter_t = t
         self.confidence = min(1.0, confidence)
         self.quality = min(1.0, quality)
         self.last_seen = t
@@ -153,6 +178,7 @@ class Contact:
                                         self.observed_y - self._fy)
         elif self.range_source not in ("ping", "tma", "buoy"):
             self.bearing = self.passive_bearing
+            self.bearing_uncertainty_deg = self._bearing_filter_uncertainty_deg
         if signature:
             self.signature = signature
 
@@ -193,9 +219,15 @@ class Contact:
             self.observed_x = self.observed_y = None
             if self.passive_bearing is not None:
                 self.bearing = self.passive_bearing
+                self.bearing_uncertainty_deg = \
+                    self._bearing_filter_uncertainty_deg
 
     def update_tma(self, sol, t: float):
         """TMA-Estimate übernehmen (nur, solange kein frischerer Ping)."""
+        if (self.tma_pos is not None
+                and self.tma_quality >= config.TMA_RANGE_MIN_QUALITY
+                and sol.quality < config.TMA_RANGE_MIN_QUALITY):
+            return
         alpha = config.TMA_PRESENTATION_ALPHA
         if self.tma_pos is None:
             self.tma_pos = tuple(sol.pos)
@@ -580,8 +612,11 @@ class SonarSystem:
                     s_db / config.SONAR_SNR_QUALITY_SPAN_DB, 0.0, 1.0)
                 bearing = self._observed_bearing(
                     tgt, true_bearing, frigate, quality, array_mode, t)
+                uncertainty = bearing_error_deg(
+                    array_mode, frigate.speed, quality) / math.sqrt(3.0)
                 observations[array_mode] = dict(
-                    bearing=bearing, quality=quality, snr=s_db, last_seen=t)
+                    bearing=bearing, quality=quality, snr=s_db, last_seen=t,
+                    uncertainty_deg=uncertainty)
             if not observations:
                 continue
             c = self._get_contact(tgt)
@@ -595,6 +630,7 @@ class SonarSystem:
             bearing = primary["bearing"]
             quality = primary["quality"]
             s_db = primary["snr"]
+            uncertainty = primary["uncertainty_deg"]
             bow = c.array_observations.get("BOW")
             towed = c.array_observations.get("TOWED")
             if bow is not None and towed is not None:
@@ -602,12 +638,19 @@ class SonarSystem:
                 c.fusion_delta_deg = delta
                 if delta <= config.SONAR_FUSION_CONFIRM_DEG:
                     c.fusion_status = "BESTAETIGT"
-                    x = (math.sin(math.radians(bow["bearing"])) * bow["quality"]
-                         + math.sin(math.radians(towed["bearing"])) * towed["quality"])
-                    y = (math.cos(math.radians(bow["bearing"])) * bow["quality"]
-                         + math.cos(math.radians(towed["bearing"])) * towed["quality"])
+                    bow_sigma = bow.get("uncertainty_deg",
+                                        config.TMA_DEFAULT_BEARING_SIGMA_DEG)
+                    towed_sigma = towed.get("uncertainty_deg",
+                                            config.TMA_DEFAULT_BEARING_SIGMA_DEG)
+                    bow_weight = 1.0 / bow_sigma ** 2
+                    towed_weight = 1.0 / towed_sigma ** 2
+                    x = (math.sin(math.radians(bow["bearing"])) * bow_weight
+                         + math.sin(math.radians(towed["bearing"])) * towed_weight)
+                    y = (math.cos(math.radians(bow["bearing"])) * bow_weight
+                         + math.cos(math.radians(towed["bearing"])) * towed_weight)
                     bearing = math.degrees(math.atan2(x, y)) % 360.0
                     quality = min(1.0, max(bow["quality"], towed["quality"]) + .1)
+                    uncertainty = math.sqrt(1.0 / (bow_weight + towed_weight))
                 elif delta >= config.SONAR_FUSION_DIVERGENT_DEG:
                     c.fusion_status = "DIVERGENT / GEISTERKONTAKT?"
                     quality *= .65
@@ -629,11 +672,11 @@ class SonarSystem:
                 signature=sig,
                 t=t,
                 snr=s_db,
-                bearing_uncertainty_deg=bearing_error_deg(
-                    mode, frigate.speed, quality) / math.sqrt(3.0))
+                bearing_uncertainty_deg=uncertainty)
             # W1: Peilungs-Track (TMA-Datenbasis)
             tr = self._tracks.setdefault(tgt.id, BearingTrack())
-            tr.add(t, bearing, frigate.x, frigate.y, frigate.course)
+            tr.add(t, bearing, frigate.x, frigate.y, frigate.course,
+                   uncertainty)
             detected_ids.add(tgt.id)
             listen_observation = observations.get(mode)
             if sample_due and listen_observation is not None:

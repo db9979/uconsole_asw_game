@@ -432,9 +432,12 @@ def bearing_pair(observed_bearing: float, own_course: float) -> tuple[float, flo
     return true_bearing, relative
 
 
-def format_bearing_pair(observed_bearing: float, own_course: float) -> str:
+def format_bearing_pair(observed_bearing: float, own_course: float,
+                        decimals: int = 1) -> str:
     """Describe an observed bearing without implying target ground truth."""
     true_bearing, relative = bearing_pair(observed_bearing, own_course)
-    return localize(message("bearing.observed_pair",
-                            true=f"{true_bearing:05.1f}",
-                            relative=f"{relative:05.1f}"))
+    width = 5 if decimals else 3
+    return localize(message(
+        "bearing.observed_pair",
+        true=f"{true_bearing:0{width}.{decimals}f}",
+        relative=f"{relative:0{width}.{decimals}f}"))

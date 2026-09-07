@@ -309,7 +309,7 @@ FLIGHT_ATTACK_RANGE_NM = 35.0   # Abschussentfernung für ASM
 # W1: TMA (Peilungs-Tracking -> Position + Geschwindigkeit)
 TMA_MIN_PTS = 4                 # minimal Peilungen
 TMA_MIN_SPAN_S = 180.0          # mehrere Minuten Peilungsbaseline
-TMA_RESOLVE_EVERY_S = 2.0       # max. TMA-Re-Solve-Rate pro Ziel (sim-s, CPU-Schutz)
+TMA_RESOLVE_EVERY_S = 4.0       # max. TMA-Re-Solve-Rate pro Ziel (sim-s, CPU-Schutz)
 TMA_MIN_COURSE_CHG_DEG = 6.0    # Fregatte muss manövrieren (Beobachtbarkeit)
 TMA_MAX_RANGE_NM = 45.0         # Lösungsraum
 TMA_SEARCH_STEP_S = 1.5         # Zeit-Schritt der Geschwindigkeits-Suche
@@ -318,13 +318,17 @@ TMA_RANGE_MIN_QUALITY = 0.35    # TMA-Range erst ab dieser Qualität nutzen
 TMA_FINE_COURSE_STEP_DEG = 3
 TMA_FINE_SPEED_STEP_KN = 0.5
 TMA_PRESENTATION_ALPHA = 0.35
-BEARING_TRACK_MAX_PTS = 60
-BEARING_TRACK_MIN_INTERVAL_S = 1.0  # sim-s zwischen Peilungen im Track
+TMA_DEFAULT_BEARING_SIGMA_DEG = 3.5
+TMA_ROBUST_SIGMA = 2.5          # Huber-Grenze in Mess-Standardabweichungen
+BEARING_TRACK_MAX_PTS = 80      # 4-s-Fenster umfasst gut fünf Minuten
+BEARING_TRACK_MIN_INTERVAL_S = 4.0  # unabhaengige TMA-Peilungen
 BEARING_ERR_BOW_DEG = 6.0           # Peilfehler Basis: Bug-Array (±)
 BEARING_ERR_TOWED_DEG = 2.0         # Peilfehler Basis: Schleppsonar (±)
 BEARING_ERR_SPEED_FACTOR = 0.12     # relativer Aufschlag pro kn Eigenfahrt
 BEARING_ERR_QUALITY_SPAN = 0.9      # Fehlerfaktor: 1.4 - SPAN*quality
 SONAR_BEARING_NOISE_EPOCH_S = 2.0
+SONAR_BEARING_DISPLAY_TAU_S = 7.0
+SONAR_BEARING_RATE_MAX_DEG_S = 8.0
 
 # M7: Schwierigkeitslevel (GDD §9)
 # quiet_mult: Faktor auf U-Boot-Stillheit (<1 = lauter/easier zu finden)

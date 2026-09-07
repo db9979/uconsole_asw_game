@@ -9,6 +9,7 @@ import pygame
 from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.ui import layout
+from src.ui import observations
 
 
 NAVY = (6, 13, 25)
@@ -29,10 +30,7 @@ def message(key, **values):
 
 
 def _observed_bearing(observation) -> float:
-    value = getattr(observation, "smoothed_bearing", None)
-    if value is None:
-        value = getattr(observation, "bearing", 0.0)
-    return float(value or 0.0) % 360.0
+    return observations.bearing(observation)
 
 
 def _bearing_line(game, bearing) -> str:
@@ -89,7 +87,10 @@ def sonar_hit_target(game, pos):
                                       getattr(contact, "player_class", None))
                 return layout.tooltip_payload(
                     message("sonar.tooltip.contact_title", contact=f"{contact.id:02d}"),
-                    _bearing_line(game, _observed_bearing(contact)),
+                    observations.format_bearing_pair(
+                        contact, getattr(game, "ship", None)),
+                    message("observation.bearing_uncertainty", uncertainty=f"{observations.bearing_uncertainty(contact):.1f}")
+                    if observations.bearing_uncertainty(contact) is not None else None,
                     message("sonar.tooltip.classification", classification=label),
                     message("sonar.tooltip.level_confidence", level=f"{getattr(contact, 'snr', -99):+.1f}", confidence=f"{getattr(contact, 'confidence', 0):.0%}"),
                     message("sonar.tooltip.track_age", age=f"{max(0, game.sim_t - getattr(contact, 'last_seen', 0)):.0f}"),
@@ -630,10 +631,16 @@ def tma_observation_summary(track, now, solution_quality=0.0):
     span = float(times[-1] - times[0]) if len(points) > 1 else 0.0
     rate = None
     if span > 0.0:
-        centered = times - float(np.mean(times))
-        denom = float(np.dot(centered, centered))
+        weights = np.asarray([
+            1.0 / max(0.05, float(getattr(point, "uncertainty_deg", 1.0))) ** 2
+            for point in points], dtype=float)
+        mean_time = float(np.average(times, weights=weights))
+        mean_bearing = float(np.average(bearings, weights=weights))
+        centered = times - mean_time
+        denom = float(np.dot(weights, centered * centered))
         if denom > 0.0:
-            rate = float(np.dot(centered, bearings - np.mean(bearings)) / denom * 60.0)
+            rate = float(np.dot(weights * centered,
+                                bearings - mean_bearing) / denom * 60.0)
 
     leg_courses = []
     for point in points:
@@ -954,11 +961,15 @@ def _draw_contacts(game, rect):
             label = display_value("classification",
                                   getattr(contact, "player_class", None))
             _text(screen, message("sonar.line.contact", contact=f"{contact.id:02d}", label=label), (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)
-            _text(screen, message("sonar.line.bearing_value", bearing=f"{_observed_bearing(contact):05.1f}"),
+            _text(screen, message("sonar.line.bearing_value",
+                                  bearing=observations.format_bearing(
+                                      contact, getattr(game, "ship", None))),
                   (rect.right - 94, y + 2, 82, 19), CYAN, 13, "right")
             age = max(0, getattr(game, "sim_t", 0) - getattr(contact, "last_seen", 0))
+            uncertainty = observations.bearing_uncertainty(contact)
             _text(screen, message("sonar.line.contact_quality", snr=f"{getattr(contact, 'snr', -99):+.1f}",
-                                  confidence=f"{getattr(contact, 'confidence', 0):.0%}", age=f"{age:.0f}"),
+                                  confidence=f"{getattr(contact, 'confidence', 0):.0%}", age=f"{age:.0f}",
+                                  uncertainty=f"{uncertainty:.1f}" if uncertainty is not None else "--"),
                    (rect.x + 14, y + 23, rect.w - 28, 17), DIM, 12)
 
 

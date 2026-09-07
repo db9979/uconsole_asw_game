@@ -14,6 +14,7 @@ from src.core.i18n import display_value, localized, localize, message as structu
 from src.core.station import Station
 from src.ui import layout
 from src.ui import nato_symbols
+from src.ui import observations
 
 
 def message(key, **values):
@@ -59,29 +60,16 @@ def _panel(game, x_off: int = 0, w: int = None, title: str = "") -> tuple:
     return r, y
 
 
-def _observation_value(observation, name, fallback=None):
-    if isinstance(observation, dict):
-        value = observation.get(name)
-        return observation.get(fallback) if value is None and fallback else value
-    value = getattr(observation, name, None)
-    return getattr(observation, fallback, None) if value is None and fallback else value
-
-
 def _observation_bearing(observation) -> float:
-    value = _observation_value(observation, "smoothed_bearing", "bearing")
-    return float(value or 0.0) % 360.0
+    return observations.bearing(observation)
 
 
 def _observation_position(observation):
-    return (_observation_value(observation, "observed_x", "x"),
-            _observation_value(observation, "observed_y", "y"))
+    return observations.position(observation)
 
 
 def _displayed_bearing(observation, ship) -> float:
-    x, y = _observation_position(observation)
-    if x is None or y is None:
-        return _observation_bearing(observation)
-    return math.degrees(math.atan2(x - ship.x, -(y - ship.y))) % 360.0
+    return observations.bearing(observation, ship)
 
 
 def _state_color(state: str) -> tuple:
@@ -112,19 +100,22 @@ def draw_bridge_view(game, tr=None) -> None:
     threats = []
     asm_tracks = game.asm_tracks()
     if asm_tracks:
-        nearest = min((t for t in asm_tracks if t.range_nm is not None),
-                      key=lambda t: t.range_nm, default=None)
+        ranged = [(t, observations.range_nm(t, game.ship)) for t in asm_tracks]
+        nearest, displayed_range = min(
+            ((track, distance) for track, distance in ranged
+             if distance is not None), key=lambda item: item[1],
+            default=(None, None))
         if nearest:
-            tti = nearest.range_nm / max(.001, config.kn_to_nm_per_s(
+            tti = displayed_range / max(.001, config.kn_to_nm_per_s(
                 config.ASM_SPEED_KN))
             threats.append(("ASM", localize(message("bridge.line.asm_threat",
-                            bearing=f"{nearest.bearing:03.0f}", range=f"{nearest.range_nm:.1f}",
+                            bearing=observations.format_bearing(nearest, game.ship), range=f"{displayed_range:.1f}",
                             tti=f"{tti:.0f}"))))
     torp_contacts = [c for c in game.sonar.active_contacts()
                      if c.kind == "torpedo"]
     if torp_contacts:
         threats.append(("TORPEDO", localize(message("bridge.line.torpedo_threat",
-                       bearing=f"{torp_contacts[0].bearing:03.0f}"))))
+                       bearing=observations.format_bearing(torp_contacts[0], game.ship)))))
     if game.damage.avg_flood() >= 25:
         threats.append((localize("station.damage"), localize(message(
             "station.tooltip.mean_flooding", flooding=f"{game.damage.avg_flood():.0f}"))))
@@ -220,25 +211,19 @@ OPZ_DOMAIN_COLORS = {
 def _track_tooltip(game, track):
     affiliation = game.opz_affiliation(track.track_id)
     domain = nato_symbols.domain_for_kind(track.kind)
-    observed_x, observed_y = _observation_position(track)
     ship = getattr(game, "ship", None)
-    if observed_x is not None and observed_y is not None and ship is not None:
-        dx, dy = observed_x - ship.x, observed_y - ship.y
-        distance = f"{math.hypot(dx, dy):.1f}"
-        bearing = _displayed_bearing(track, ship)
-    else:
-        distance = (f"{track.range_nm:.1f}" if track.range_nm is not None else "--")
-        bearing = _observation_bearing(track)
+    displayed_range = observations.range_nm(track, ship)
+    distance = f"{displayed_range:.1f}" if displayed_range is not None else "--"
     quality = track.display_quality(game.sim_t, game.air_picture.stale_s)
     return layout.tooltip_payload(
         message("opz.tooltip.track_title", track=track.track_id, label=track.label),
         message("opz.tooltip.domain_affiliation", domain=display_value('domain', domain),
                 affiliation=display_value('affiliation', affiliation)),
-        layout.format_bearing_pair(
-            bearing,
-            getattr(getattr(game, "ship", None), "course", 0.0)),
+        observations.format_bearing_pair(track, ship),
         message("opz.tooltip.range", range=distance),
         message("opz.tooltip.quality_age", quality=f"{quality:.0%}", age=f"{track.age(game.sim_t):.1f}"),
+        message("observation.fix_age", age=f"{observations.position_age(track, game.sim_t):.1f}")
+        if observations.position_age(track, game.sim_t) is not None else None,
         message("opz.tooltip.source", source=track.source),
         target_id=f"opz:track:{track.track_id}")
 
@@ -384,7 +369,7 @@ def station_hit_target(game, pos):
                 report = reports[min(game.radio_sel, len(reports) - 1)]
                 return layout.tooltip_payload(
                     message("radio.tooltip.hfdf_title", label=report.label),
-                    layout.format_bearing_pair(report.bearing, game.ship.course),
+                    observations.format_bearing_pair(report, game.ship),
                     message("radio.tooltip.error", error=f"{config.HFDF_BEARING_ERR_DEG:.0f}"),
                     message("radio.tooltip.age", age=f"{report.age(game.sim_t):.0f}"),
                     "control.radio_tooltip",
@@ -675,7 +660,7 @@ def draw_opz_view(game, tr=None) -> None:
         bx = cx + dx * px_per_nm
         by = cy + dy * px_per_nm
         if track["source"].startswith("RADAR"):
-            glow = _radar_glow(game, track["bearing"])
+            glow = _radar_glow(game, observations.bearing(track, game.ship))
             if glow > 0.0:
                 pygame.draw.circle(s, _scale_color((120, 255, 150), glow),
                                    (int(bx), int(by)), 3)
@@ -695,8 +680,9 @@ def draw_opz_view(game, tr=None) -> None:
             dx, dy = observed_x - game.ship.x, observed_y - game.ship.y
             dist = math.hypot(dx, dy)
             brg = math.degrees(math.atan2(dx, -dy)) % 360.0
-        elif track.range_nm is not None:
-            dist, brg = track.range_nm, _observation_bearing(track)
+        elif observations.range_nm(track, game.ship) is not None:
+            dist = observations.range_nm(track, game.ship)
+            brg = observations.bearing(track, game.ship)
         else:
             continue
         if dist > max_nm:
@@ -758,13 +744,17 @@ def draw_opz_view(game, tr=None) -> None:
         py += 19
         ledger = [
             message("opz.line.source", source=selected.source),
-            message("opz.line.bearing", bearing=f"{_displayed_bearing(selected, game.ship):05.1f}"),
-            (message("opz.line.range_available", range=f"{selected.range_nm:.1f}")
-             if selected.range_nm is not None else "opz.line.range_unavailable"),
+            message("opz.line.bearing", bearing=observations.format_bearing(selected, game.ship)),
+            (message("opz.line.range_available", range=f"{observations.range_nm(selected, game.ship):.1f}")
+             if observations.range_nm(selected, game.ship) is not None else "opz.line.range_unavailable"),
             (message("opz.line.course_available", course=f"{selected.course:03.0f}")
              if selected.course is not None else "opz.line.course_unavailable"),
-            message("opz.line.age_quality", age=f"{selected.age(game.sim_t):.0f}",
-                    quality=f"{selected.display_quality(game.sim_t, game.air_picture.stale_s):.0%}"),
+            (message("opz.line.ages_quality", observation_age=f"{selected.age(game.sim_t):.0f}",
+                     fix_age=f"{observations.position_age(selected, game.sim_t):.0f}",
+                     quality=f"{selected.display_quality(game.sim_t, game.air_picture.stale_s):.0%}")
+             if observations.position_age(selected, game.sim_t) is not None
+             else message("opz.line.age_quality", age=f"{selected.age(game.sim_t):.0f}",
+                          quality=f"{selected.display_quality(game.sim_t, game.air_picture.stale_s):.0%}")),
             message("opz.line.assignment", affiliation=label),
         ]
         for line in ledger:
@@ -786,13 +776,14 @@ def draw_opz_view(game, tr=None) -> None:
         domain = nato_symbols.domain_for_kind(track["kind"])
         color = nato_symbols.AFFILIATION_COLORS[affiliation]
         prefix = ">" if track["track_id"] == selected_id else " "
-        distance = f"{track['dist']:4.1f}" if track["dist"] is not None else " -- "
+        displayed_range = observations.range_nm(track, game.ship)
+        distance = f"{displayed_range:4.1f}" if displayed_range is not None else " -- "
         codes = {"UNKNOWN": "UNK", "FRIEND": "FRD",
                  "NEUTRAL": "NEU", "HOSTILE": "FEI"}
         pygame.draw.rect(s, OPZ_DOMAIN_COLORS[domain], (x, py + 4, 3, 11))
         text = message("opz.line.track", prefix=prefix, track=f"{track['track_id']:<7}",
                        affiliation=codes[affiliation], domain=OPZ_DOMAIN_CODES[domain],
-                       bearing=f"{_displayed_bearing(track, game.ship):03.0f}", distance=distance)
+                        bearing=observations.format_bearing(track, game.ship), distance=distance)
         layout.blit_line(s, text, (x + 6, py, w - 6, 19), color, size=13)
         py += 19
 
@@ -812,15 +803,16 @@ def draw_opz_view(game, tr=None) -> None:
         for i, track in enumerate(asm_tracks[:3]):
             sel = i == min(game.asm_sel, n - 1)
             col = config.COLOR_TEXT if sel else config.COLOR_TEXT_DIM
-            distance = (f"{track.range_nm:5.1f}NM" if track.range_nm is not None
+            displayed_range = observations.range_nm(track, game.ship)
+            distance = (f"{displayed_range:5.1f}NM" if displayed_range is not None
                         else "  --.-NM")
             jam = "JAMMER" if track.jamming else track.source
-            tti = (track.range_nm / max(.001, config.kn_to_nm_per_s(
-                config.ASM_SPEED_KN)) if track.range_nm is not None else None)
+            tti = (displayed_range / max(.001, config.kn_to_nm_per_s(
+                config.ASM_SPEED_KN)) if displayed_range is not None else None)
             tti_text = f" TTI {tti:.0f}s" if tti is not None else ""
             layout.blit_block(
                 s, message("opz.line.asm_track", prefix='>' if sel else ' ',
-                           label=track.label, bearing=f"{track.bearing:4.0f}",
+                            label=track.label, bearing=observations.format_bearing(track, game.ship),
                            distance=distance, source=jam,
                            quality=f"{track.display_quality(game.sim_t, game.air_picture.stale_s):.0%}",
                            tti=tti_text),
@@ -870,7 +862,7 @@ def draw_radio_view(game, tr=None) -> None:
             age = report.age(game.sim_t)
             layout.blit_line(
                 s, message("radio.line.signal", prefix='>' if selected else ' ',
-                           label=report.label, bearing=f"{report.bearing:5.1f}",
+                            label=report.label, bearing=observations.format_bearing(report, game.ship),
                            error=f"{config.HFDF_BEARING_ERR_DEG:.0f}", age=f"{age:.0f}"),
                 (lx, ly, lw, 24),
                 config.COLOR_WARN if selected else

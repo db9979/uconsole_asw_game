@@ -7,6 +7,7 @@ import pygame
 from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.ui import layout
+from src.ui import observations
 
 
 def message(key, **values):
@@ -14,16 +15,11 @@ def message(key, **values):
 
 
 def _observed_bearing(contact) -> float:
-    value = getattr(contact, "smoothed_bearing", None)
-    if value is None:
-        value = getattr(contact, "bearing", 0.0)
-    return float(value or 0.0) % 360.0
+    return observations.bearing(contact)
 
 
 def _observed_position(contact):
-    x = getattr(contact, "observed_x", None)
-    y = getattr(contact, "observed_y", None)
-    return x, y
+    return observations.position(contact)
 
 
 def _contact_position(contact, ship):
@@ -39,17 +35,11 @@ def _contact_position(contact, ship):
 
 
 def _display_range(contact, ship):
-    x, y = _observed_position(contact)
-    if x is not None and y is not None:
-        return math.hypot(x - ship.x, y - ship.y)
-    return getattr(contact, "range_est", None)
+    return observations.range_nm(contact, ship)
 
 
 def _display_bearing(contact, ship):
-    x, y = _observed_position(contact)
-    if x is None or y is None or ship is None:
-        return _observed_bearing(contact)
-    return math.degrees(math.atan2(x - ship.x, -(y - ship.y))) % 360.0
+    return observations.bearing(contact, ship)
 
 
 def _readiness_text(value):
@@ -101,11 +91,12 @@ def weapons_hit_target(game, pos):
         sigma = f"{target.range_sigma_nm:.2f}" if target.range_sigma_nm is not None else "--"
         return layout.tooltip_payload(
             message("weapons.tooltip.solution_title", contact=target.id),
-            layout.format_bearing_pair(_display_bearing(target, game.ship),
-                                       game.ship.course),
+            observations.format_bearing_pair(target, game.ship),
             message("weapons.tooltip.range_sigma", range=distance, sigma=sigma),
             message("map.tooltip.class_confidence", classification=display_value('classification', target.player_class), confidence=f"{target.confidence:.0%}"),
-            message("weapons.tooltip.source_age", source=target.range_source or localize("map.tooltip.passive_bearing"), age=f"{max(0, game.sim_t - target.last_seen):.0f}"),
+            message("weapons.tooltip.source_age", source=target.range_source or localize("map.tooltip.passive_bearing"), age=f"{observations.observation_age(target, game.sim_t):.0f}"),
+            message("observation.fix_age", age=f"{observations.position_age(target, game.sim_t):.0f}")
+            if observations.position_age(target, game.sim_t) is not None else None,
             target_id=f"weapons:contact:{target.id}")
     if stages.collidepoint(pos):
         return layout.tooltip_payload("weapons.tooltip.interlock_title", _readiness_text(readiness),
@@ -215,21 +206,23 @@ def draw_weapons_panel(game, tr=None) -> None:
         dist = f"{displayed_range:6.1f} NM" if displayed_range is not None else "     --"
         lines = [
             (message("weapons.line.contact", contact=c.id, label=c.display_label), config.COLOR_TEXT, 18),
-            (layout.format_bearing_pair(
-                _display_bearing(c, getattr(game, "ship", None)),
-                getattr(getattr(game, "ship", None), "course", 0.0)),
+            (observations.format_bearing_pair(c, getattr(game, "ship", None)),
              config.COLOR_TEXT, 15),
             (message("weapons.line.confidence", confidence=int(c.confidence * 100)), config.COLOR_TEXT_DIM, 14),
             ("", config.COLOR_TEXT_DIM, 14),
         ]
         source = ("TMA" if c.range_source == "tma" else
                   "PING" if c.range_est is not None else localize("ui.bearing_only"))
-        age = max(0.0, game.sim_t - c.last_seen)
+        age = observations.observation_age(c, game.sim_t)
         sigma = (f"+/- {c.range_sigma_nm:.2f} NM" if c.range_sigma_nm is not None
                  else localize("weapons.no_range_solution"))
         lines += [
             (message("weapons.line.solution", source=source, sigma=sigma), config.COLOR_OK if c.range_est is not None else config.COLOR_WARN, 14),
-            (message("weapons.line.age", age=f"{age:.0f}"), config.COLOR_TEXT_DIM, 14),
+            (message("weapons.line.ages", observation_age=f"{age:.0f}",
+                     fix_age=f"{observations.position_age(c, game.sim_t):.0f}")
+             if observations.position_age(c, game.sim_t) is not None
+             else message("weapons.line.age", age=f"{age:.0f}"),
+             config.COLOR_TEXT_DIM, 14),
         ]
         if c.tma_course is not None or c.tma_speed is not None:
             course = f"{c.tma_course % 360:05.1f} deg" if c.tma_course is not None else "--"

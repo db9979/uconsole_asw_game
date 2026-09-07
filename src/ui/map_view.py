@@ -12,6 +12,7 @@ from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.ui import layout
 from src.ui import nato_symbols
+from src.ui import observations
 
 
 def message(key, **values):
@@ -22,37 +23,26 @@ def _near(pos, point, radius=12):
     return (pos[0] - point[0]) ** 2 + (pos[1] - point[1]) ** 2 <= radius ** 2
 
 
-def _value(observation, name, fallback=None):
-    if isinstance(observation, dict):
-        value = observation.get(name)
-        return observation.get(fallback) if value is None and fallback else value
-    value = getattr(observation, name, None)
-    return getattr(observation, fallback, None) if value is None and fallback else value
-
-
 def observed_position(observation):
     """Read the public displayed position, with legacy field compatibility."""
-    return (_value(observation, "observed_x", "x"),
-            _value(observation, "observed_y", "y"))
+    return observations.position(observation)
 
 
 def observed_bearing(observation) -> float:
     """Read the public smoothed bearing, with legacy field compatibility."""
-    value = _value(observation, "smoothed_bearing", "bearing")
-    return float(value or 0.0) % 360.0
+    return observations.bearing(observation)
 
 
 def contact_position(contact, ship):
     """Prefer a fixed observation datum; derive only for legacy contacts."""
     # Sonar contacts must never fall through to similarly named entity truth.
-    x = getattr(contact, "observed_x", None)
-    y = getattr(contact, "observed_y", None)
+    x, y = observations.position(contact)
     if x is not None and y is not None:
         return x, y
     distance = getattr(contact, "range_est", None)
     if distance is None:
         return None, None
-    angle = math.radians(observed_bearing(contact))
+    angle = math.radians(observations.bearing(contact, ship))
     return (ship.x + float(distance) * math.sin(angle),
             ship.y - float(distance) * math.cos(angle))
 
@@ -91,15 +81,12 @@ def map_hit_target(game, pos):
         if _near(pos, view.world_to_screen(observed_x, observed_y), 14):
             affiliation = game.opz_affiliation(track["track_id"])
             domain = nato_symbols.domain_for_kind(track["kind"])
-            distance = math.hypot(observed_x - game.ship.x,
-                                  observed_y - game.ship.y)
-            bearing = math.degrees(math.atan2(
-                observed_x - game.ship.x, -(observed_y - game.ship.y))) % 360.0
+            distance = observations.range_nm(track, game.ship)
             return layout.tooltip_payload(
                 message("map.tooltip.track_title", track=track["track_id"], label=track["label"]),
                 message("map.tooltip.observed", domain=display_value('domain', domain),
                         affiliation=display_value('affiliation', affiliation)),
-                layout.format_bearing_pair(bearing, game.ship.course),
+                observations.format_bearing_pair(track, game.ship),
                 message("map.tooltip.range", range=f"{distance:.1f}"),
                 message("map.tooltip.source_quality_age", source=track["source"],
                         quality=f"{track.get('quality', 0):.0%}", age=f"{track.get('age', 0):.0f}"),
@@ -129,7 +116,7 @@ def map_hit_target(game, pos):
             target_id="map:helo")
     contact = getattr(game, "target", None) or getattr(game, "selected_contact", None)
     if contact is not None:
-        bearing = observed_bearing(contact)
+        bearing = observations.bearing(contact, game.ship)
         estimated_range = getattr(contact, "range_est", None)
         observed_x, observed_y = contact_position(contact, game.ship)
         if observed_x is not None and observed_y is not None:
@@ -146,21 +133,23 @@ def map_hit_target(game, pos):
             hit = 15 <= along <= 300 and perpendicular <= 7
         if hit:
             if observed_x is not None and observed_y is not None:
-                bearing = math.degrees(math.atan2(
-                    observed_x - game.ship.x, -(observed_y - game.ship.y))) % 360.0
-            displayed_range = (math.hypot(observed_x - game.ship.x,
-                                          observed_y - game.ship.y)
-                               if observed_x is not None else estimated_range)
+                bearing = observations.bearing(contact, game.ship)
+            displayed_range = observations.range_nm(contact, game.ship)
             distance = (message("map.tooltip.range_value", range=f"{float(displayed_range):.1f}")
                         if displayed_range is not None else "ui.bearing_only")
             sigma = getattr(contact, "range_sigma_nm", None)
             uncertainty = (f"+/-{float(sigma):.2f} NM" if sigma is not None else "--")
             return layout.tooltip_payload(
                 message("map.tooltip.sonar_title", contact=contact.id),
-                layout.format_bearing_pair(bearing, game.ship.course),
+                observations.format_bearing_pair(contact, game.ship),
                 message("map.tooltip.contact_range", range=localize(distance), uncertainty=uncertainty),
                 message("map.tooltip.class_confidence", classification=display_value('classification', getattr(contact, 'player_class', None)), confidence=f"{getattr(contact, 'confidence', 0):.0%}"),
                 message("map.tooltip.contact_source", source=getattr(contact, 'range_source', None) or localize("map.tooltip.passive_bearing")),
+                message("observation.bearing_uncertainty", uncertainty=f"{observations.bearing_uncertainty(contact):.1f}")
+                if observations.bearing_uncertainty(contact) is not None else None,
+                message("observation.ages", observation_age=f"{observations.observation_age(contact, game.sim_t):.0f}",
+                        fix_age=f"{observations.position_age(contact, game.sim_t):.0f}")
+                if observations.position_age(contact, game.sim_t) is not None else None,
                 *chart_lines,
                 target_id=f"map:sonar:{contact.id}")
     return layout.tooltip_payload("map.position", coordinate, terrain,
@@ -366,7 +355,7 @@ def draw_map_view(game, tr=None) -> None:
                        .get(contact.range_source, "FIX"))
                 s.blit(game.font.render(localize(message(
                     "map.line.contact_fix", contact=contact.id,
-                    range=f"{contact.range_est:4.1f}", source=src)),
+                    range=f"{observations.range_nm(contact, game.ship):4.1f}", source=src)),
                     True, line_col), (int(tx) + 11, int(ty) - 22))
             else:
                 ex = fx + 300 * math.sin(brg)

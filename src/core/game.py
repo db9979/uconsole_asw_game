@@ -1572,6 +1572,19 @@ class Game:
         elif self.station is Station.HELICOPTER:
             self._adjust_helo_waypoint(bearing_delta=float(delta * 15))
 
+    @staticmethod
+    def _smooth_sensor_noise(seed: int, now: float,
+                             period_s: float) -> float:
+        """Deterministic, smoothly correlated unit noise on simulation time."""
+        import random
+        scaled = now / period_s
+        epoch = math.floor(scaled)
+        fraction = scaled - epoch
+        blend = fraction * fraction * (3.0 - 2.0 * fraction)
+        first = random.Random(seed + epoch * 104729).uniform(-1.0, 1.0)
+        second = random.Random(seed + (epoch + 1) * 104729).uniform(-1.0, 1.0)
+        return first + (second - first) * blend
+
     def _update_air_picture(self) -> None:
         """Create noisy observations; consumers never receive world objects."""
         import random
@@ -1602,13 +1615,14 @@ class Game:
                     range_nm=measured, observer_x=self.ship.x, observer_y=self.ship.y,
                     course=c.course, quality=.95, now=self.sim_t, label=c.name)
             elif c.emitter and dist <= config.ESM_RANGE_NM:
-                rng = random.Random(c.sensor_seed * 1000 + int(self.sim_t // 5.0))
-                brg = (bearing + rng.uniform(-config.ESM_BEARING_ERR_DEG,
-                                             config.ESM_BEARING_ERR_DEG)) % 360.0
+                noise = self._smooth_sensor_noise(
+                    c.sensor_seed * 1000, self.sim_t, 5.0)
+                brg = (bearing + noise * config.ESM_BEARING_ERR_DEG) % 360.0
                 self.air_picture.observe(track_id=f"S-{c.id}", kind="SURFACE",
                     target_id=c.id, source="ESM", bearing=brg, range_nm=None,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                    quality=.4, now=self.sim_t, label=f"S-{c.id}")
+                    quality=.4, now=self.sim_t, label=f"S-{c.id}",
+                    bearing_uncertainty_deg=config.ESM_BEARING_ERR_DEG / math.sqrt(3.0))
         for w in self.warships:
             if w.sunk:
                 continue
@@ -1630,13 +1644,14 @@ class Game:
                     course=None, quality=.9, now=self.sim_t,
                     label=f"W-{w.id}")
             elif w.emitter and dist <= config.ESM_RANGE_NM:
-                rng = random.Random(w.sensor_seed * 1000 + int(self.sim_t // 5.0))
-                brg = (bearing + rng.uniform(-config.ESM_BEARING_ERR_DEG,
-                                             config.ESM_BEARING_ERR_DEG)) % 360.0
+                noise = self._smooth_sensor_noise(
+                    w.sensor_seed * 1000, self.sim_t, 5.0)
+                brg = (bearing + noise * config.ESM_BEARING_ERR_DEG) % 360.0
                 self.air_picture.observe(track_id=f"W-{w.id}", kind="SURFACE",
                     target_id=w.id, source="ESM", bearing=brg, range_nm=None,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                    quality=.5, now=self.sim_t, label=f"W-{w.id}")
+                    quality=.5, now=self.sim_t, label=f"W-{w.id}",
+                    bearing_uncertainty_deg=config.ESM_BEARING_ERR_DEG / math.sqrt(3.0))
         for f in self.flights.flights:
             dist = f.distance_nm(self.ship)
             bearing = f.bearing_to_frigate(self.ship)
@@ -1654,26 +1669,28 @@ class Game:
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.85, now=self.sim_t, label=f"A-{f.seq}")
             elif f.kind == "military" and f.esm and dist <= f.esm_range_nm:
-                rng = random.Random((f.seq + 20000) * 3571 + int(self.sim_t // 5.0))
-                brg = (bearing + rng.uniform(-config.ESM_BEARING_ERR_DEG,
-                                             config.ESM_BEARING_ERR_DEG)) % 360.0
+                noise = self._smooth_sensor_noise(
+                    (f.seq + 20000) * 3571, self.sim_t, 5.0)
+                brg = (bearing + noise * config.ESM_BEARING_ERR_DEG) % 360.0
                 self.air_picture.observe(track_id=f"A-{f.seq}", kind="FLG",
                     target_id=f.seq, source="ESM", bearing=brg, range_nm=None,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                    quality=.45, now=self.sim_t, label=f"E-{f.seq}")
+                    quality=.45, now=self.sim_t, label=f"E-{f.seq}",
+                    bearing_uncertainty_deg=config.ESM_BEARING_ERR_DEG / math.sqrt(3.0))
         for a in self.asms:
             if a.state not in ("LAUF", "CHAFF"):
                 continue
             dist = a.distance_nm(self.ship)
             if a.jamming(self.ship):
-                rng = random.Random(a.seq * 7919 + int(self._t // 5.0))  # nosec: seq ist pro-Mission deterministisch
+                noise = self._smooth_sensor_noise(
+                    a.seq * 7919, self.sim_t, 5.0)
                 brg = (a.bearing_to_frigate(self.ship)
-                       + rng.uniform(-5.0, 5.0)) % 360.0
+                       + noise * 5.0) % 360.0
                 self.air_picture.observe(track_id=f"M-{a.seq}", kind="ASM",
                     target_id=a.seq, source="HOJ", bearing=brg, range_nm=None,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.55, now=self.sim_t, label=f"A-{a.seq}",
-                    jamming=True)
+                    jamming=True, bearing_uncertainty_deg=5.0 / math.sqrt(3.0))
             elif (air_live and dist <= air_eff
                   and not self.world.land_blocks_line(
                       self.ship.x, self.ship.y, a.x, a.y)):
@@ -1697,7 +1714,8 @@ class Game:
                      x=t.x, y=t.y, course=t.course, quality=t.display_quality(
                          self.sim_t, self.air_picture.stale_s), label=t.label,
                      hostile=t.hostile, jamming=t.jamming,
-                     age=t.age(self.sim_t))
+                     age=t.age(self.sim_t), position_seen=t.position_seen,
+                     bearing_uncertainty_deg=t.bearing_uncertainty_deg)
                 for t in self.air_picture.tracks(self.sim_t)]
 
     def asm_tracks(self) -> list:
@@ -1761,7 +1779,6 @@ class Game:
 
     def _update_radio_picture(self) -> None:
         """Measure transmitting emitters without publishing their positions."""
-        import random
         if self.damage.station_down("radio"):
             self.radio_picture.expire(self.sim_t)
             return
@@ -1773,20 +1790,15 @@ class Game:
                 continue
             if self.world.land_blocks_line(self.ship.x, self.ship.y, sub.x, sub.y):
                 continue
-            scaled = self.sim_t / 10.0
-            epoch = math.floor(scaled)
-            fraction = scaled - epoch
-            blend = fraction * fraction * (3.0 - 2.0 * fraction)
             seed = getattr(sub, "sensor_seed", sub.id) * 777
-            first = random.Random(seed + epoch * 104729).uniform(-1.0, 1.0)
-            second = random.Random(seed + (epoch + 1) * 104729).uniform(-1.0, 1.0)
-            noise = first + (second - first) * blend
+            noise = self._smooth_sensor_noise(seed, self.sim_t, 10.0)
             brg = (sub.bearing_from_frigate(self.ship)
                    + noise * config.HFDF_BEARING_ERR_DEG) % 360.0
             self.radio_picture.observe(track_id=f"H-{sub.id}", kind="HF",
                 target_id=sub.id, source="HFDF", bearing=brg, range_nm=None,
                 observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                quality=.55, now=self.sim_t, label=f"SIG-{sub.id:02d}")
+                quality=.55, now=self.sim_t, label=f"SIG-{sub.id:02d}",
+                bearing_uncertainty_deg=config.HFDF_BEARING_ERR_DEG / math.sqrt(3.0))
         self.radio_picture.expire(self.sim_t)
 
     def _cycle_hfdf(self, delta: int) -> None:
@@ -1817,15 +1829,19 @@ class Game:
             self.flash(message("runtime.hfdf.none"))
             return
         report = reports[min(self.radio_sel, len(reports) - 1)]
+        measurement = (report.measurement_history[-1]
+                       if report.measurement_history else {})
         row = dict(track_id=report.track_id, label=report.label,
-                   bearing=report.bearing, observer_x=self.ship.x,
-                   observer_y=self.ship.y, t=self.sim_t)
+                   bearing=measurement.get("track_bearing", report.bearing),
+                   observer_x=measurement.get("observer_x", self.ship.x),
+                   observer_y=measurement.get("observer_y", self.ship.y),
+                   t=measurement.get("t", report.last_seen))
         self.hfdf_log.append(row)
         self.hfdf_log = self.hfdf_log[-20:]
         previous = next((item for item in reversed(self.hfdf_log[:-1])
                          if item["track_id"] == report.track_id
-                         and math.hypot(item["observer_x"] - self.ship.x,
-                                        item["observer_y"] - self.ship.y) >= 1.0), None)
+                         and math.hypot(item["observer_x"] - row["observer_x"],
+                                        item["observer_y"] - row["observer_y"]) >= 1.0), None)
         if previous is None:
             self.flash(message("runtime.hfdf.logged", label=report.label,
                                bearing=f"{report.bearing:05.1f}"))
@@ -1838,15 +1854,16 @@ class Game:
         self.hfdf_fixes[report.track_id] = dict(
             label=report.label, x=x, y=y,
             sigma_nm=max(1.0, config.HFDF_BEARING_ERR_DEG / geometry),
-            t=self.sim_t)
-        dist = math.hypot(x - self.ship.x, y - self.ship.y)
+            t=row["t"])
+        dist = math.hypot(x - row["observer_x"], y - row["observer_y"])
         bearing = math.degrees(math.atan2(
-            x - self.ship.x, -(y - self.ship.y))) % 360.0
+            x - row["observer_x"], -(y - row["observer_y"]))) % 360.0
         self.air_picture.observe(
             track_id=f"H-{report.target_id}", kind="SUB",
             target_id=report.target_id, source="HFDF-FIX", bearing=bearing,
-            range_nm=dist, observer_x=self.ship.x, observer_y=self.ship.y,
-            course=None, quality=max(.25, geometry), now=self.sim_t,
+            range_nm=dist, observer_x=row["observer_x"],
+            observer_y=row["observer_y"],
+            course=None, quality=max(.25, geometry), now=row["t"],
             label=report.label)
         self.flash(message("runtime.hfdf.fix", label=report.label), 3.0)
         self.feed.add(self.world.format_time(), "funk",
@@ -1978,29 +1995,26 @@ class Game:
 
     def esm_contacts(self) -> list:
         """M9: ESM-Peilungen von Radargeräten ziviler Schiffe (nur Richtung)."""
-        import random
         out = []
         for c in self.civilians:
             if c.sunk or not c.emitter:
                 continue
             if c.distance_nm(self.ship) > config.ESM_RANGE_NM:
                 continue
-            rng = random.Random(getattr(c, "sensor_seed", c.id) * 1000
-                                + int(self._t // 5.0))
+            noise = self._smooth_sensor_noise(
+                getattr(c, "sensor_seed", c.id) * 1000, self.sim_t, 5.0)
             bearing = (c.bearing_from_frigate(self.ship)
-                       + rng.uniform(-config.ESM_BEARING_ERR_DEG,
-                                     config.ESM_BEARING_ERR_DEG)) % 360.0
+                       + noise * config.ESM_BEARING_ERR_DEG) % 360.0
             out.append((c, bearing))
         for w in self.warships:
             if w.sunk or not w.emitter:
                 continue
             if w.distance_nm(self.ship) > config.ESM_RANGE_NM:
                 continue
-            rng = random.Random(getattr(w, "sensor_seed", w.id) * 1000
-                                + int(self._t // 5.0))
+            noise = self._smooth_sensor_noise(
+                getattr(w, "sensor_seed", w.id) * 1000, self.sim_t, 5.0)
             bearing = (w.bearing_from_frigate(self.ship)
-                       + rng.uniform(-config.ESM_BEARING_ERR_DEG,
-                                     config.ESM_BEARING_ERR_DEG)) % 360.0
+                       + noise * config.ESM_BEARING_ERR_DEG) % 360.0
             out.append((w, bearing))
         return out
 
@@ -2398,7 +2412,9 @@ class Game:
                 observer_x=self.ship.x, observer_y=self.ship.y,
                 course=contact.tma_course,
                 quality=max(contact.quality, contact.confidence),
-                now=self.sim_t, label=f"K{contact.id}")
+                now=contact.last_seen, label=f"K{contact.id}",
+                position_time=contact.range_seen,
+                bearing_uncertainty_deg=contact.bearing_uncertainty_deg)
         while self.sonar.echo_events:
             echo = self.sonar.echo_events.pop(0)
             self.feed.add(self.world.format_time(), "sonar",
@@ -2627,6 +2643,9 @@ class Game:
             "radio_sel": self.radio_sel,
             "hfdf_log": self.hfdf_log,
             "hfdf_fixes": self.hfdf_fixes,
+            "schedulers": dict(sensor=self._sensor_acc,
+                               radio=self._radio_acc,
+                               slow=self._slow_acc),
             "torpedo_seq": self.torpedo_seq,
             "buoy_seq": self.buoy_seq,
             "chaff_cd": self.chaff_cd,
@@ -2756,6 +2775,10 @@ class Game:
                         raw_bearing=c.raw_bearing,
                         raw_bearings=c.raw_bearings,
                         passive_epoch=c._passive_epoch,
+                        bearing_filter_t=c._bearing_filter_t,
+                        bearing_filter_rate_deg_s=c._bearing_filter_rate_deg_s,
+                        bearing_filter_uncertainty_deg=(
+                            c._bearing_filter_uncertainty_deg),
                         bearing_uncertainty_deg=c.bearing_uncertainty_deg,
                         ping_pos=c.ping_pos,
                         observed_x=c.observed_x, observed_y=c.observed_y,
@@ -2774,8 +2797,19 @@ class Game:
                 "tracks": {
                     str(target_id): [
                         dict(t=p.t, bearing=p.bearing, fx=p.fx, fy=p.fy,
-                             fcourse=p.fcourse) for p in track.pts]
+                             fcourse=p.fcourse,
+                             uncertainty_deg=p.uncertainty_deg)
+                        for p in track.pts]
                     for target_id, track in self.sonar._tracks.items()},
+                "track_versions": {
+                    str(target_id): track.version
+                    for target_id, track in self.sonar._tracks.items()},
+                "tma_versions": {
+                    str(target_id): version
+                    for target_id, version in self.sonar._tma_versions.items()},
+                "tma_next": {
+                    str(target_id): next_t
+                    for target_id, next_t in self.sonar._tma_next.items()},
                 "pending_pings": [dict(target_id=p["target"].id,
                                         sent_at=p["sent_at"],
                                         ready_at=p["ready_at"],
@@ -2991,6 +3025,20 @@ class Game:
         self.radio_sel = data.get("radio_sel", 0)
         self.hfdf_log = list(data.get("hfdf_log", []))
         self.hfdf_fixes = dict(data.get("hfdf_fixes", {}))
+        schedulers = data.get("schedulers", {})
+        if not isinstance(schedulers, dict):
+            raise ValueError("invalid scheduler state")
+
+        def scheduler_acc(name: str, limit: float) -> float:
+            value = schedulers.get(name, 0.0)
+            if (not isinstance(value, (int, float)) or isinstance(value, bool)
+                    or not math.isfinite(value) or not 0.0 <= value < limit):
+                raise ValueError("invalid scheduler accumulator")
+            return float(value)
+
+        self._sensor_acc = scheduler_acc("sensor", .25)
+        self._radio_acc = scheduler_acc("radio", .5)
+        self._slow_acc = scheduler_acc("slow", .5)
         self.torpedo_seq = data.get("torpedo_seq", 0)
         self.messages = [tuple(m) for m in data.get("messages", [])]
         self.buoys = []
@@ -3238,9 +3286,16 @@ class Game:
                 c.snr = cd.get("snr", -99.0)
                 c.passive_bearing = cd.get("passive_bearing")
                 c.raw_bearing = cd.get("raw_bearing")
-                c.raw_bearings = list(cd.get("raw_bearings", []))
+                c.raw_bearings = [tuple(row) for row in cd.get(
+                    "raw_bearings", [])[-config.BEARING_TRACK_MAX_PTS:]]
                 c._passive_epoch = cd.get("passive_epoch")
+                c._bearing_filter_t = cd.get("bearing_filter_t")
+                c._bearing_filter_rate_deg_s = cd.get(
+                    "bearing_filter_rate_deg_s", 0.0)
                 c.bearing_uncertainty_deg = cd.get("bearing_uncertainty_deg")
+                c._bearing_filter_uncertainty_deg = cd.get(
+                    "bearing_filter_uncertainty_deg",
+                    c.bearing_uncertainty_deg)
                 c.ping_pos = tuple(cd["ping_pos"]) if cd.get("ping_pos") else None
                 c.observed_x = cd.get("observed_x")
                 c.observed_y = cd.get("observed_y")
@@ -3292,13 +3347,25 @@ class Game:
             self.sonar.echo_history = list(sn.get("echo_history", []))[-config.SONAR_ECHO_HISTORY_MAX:]
             self.sonar.bt_profile = sn.get("bt_profile")
             self.sonar.bt_cooldown = sn.get("bt_cooldown", 0.0)
+            track_versions = sn.get("track_versions", {})
             for target_id, points in sn.get("tracks", {}).items():
                 track = BearingTrack()
                 track.pts = [BearingPoint(p["t"], p["bearing"], p["fx"],
-                                          p["fy"], p["fcourse"])
-                             for p in points]
-                track.version = len(track.pts)
+                                          p["fy"], p["fcourse"],
+                                          p.get("uncertainty_deg"))
+                             for p in points[-config.BEARING_TRACK_MAX_PTS:]]
+                track.version = track_versions.get(target_id, len(track.pts))
                 self.sonar._tracks[int(target_id)] = track
+            self.sonar._tma_versions = {
+                int(target_id): version
+                for target_id, version in sn.get("tma_versions", {}).items()
+                if int(target_id) in self.sonar._tracks
+            }
+            self.sonar._tma_next = {
+                int(target_id): float(next_t)
+                for target_id, next_t in sn.get("tma_next", {}).items()
+                if int(target_id) in self.sonar._tracks
+            }
             for pd in sn.get("pending_pings", []):
                 target = by_id.get(pd.get("target_id"))
                 if target is not None:
@@ -3392,6 +3459,13 @@ class Game:
         version = data.get("version")
         if type(version) is not int or not 1 <= version <= 8:
             return False
+        schedulers = data.get("schedulers", {})
+        if not isinstance(schedulers, dict):
+            return False
+        for key, limit in (("sensor", .25), ("radio", .5), ("slow", .5)):
+            value = schedulers.get(key, 0.0)
+            if not finite_number(value) or not 0.0 <= value < limit:
+                return False
         sonar = data.get("sonar")
         if sonar is None:
             return True
@@ -3410,6 +3484,53 @@ class Game:
         for key in ("lofar_times", "lofar_bearings", "history_times"):
             if any(not finite_number(value) for value in sonar.get(key, [])):
                 return False
+        contacts = sonar.get("contacts", {})
+        if not isinstance(contacts, dict):
+            return False
+        for contact in contacts.values():
+            if not isinstance(contact, dict):
+                return False
+            history = contact.get("raw_bearings", [])
+            if (not isinstance(history, list)
+                    or len(history) > config.BEARING_TRACK_MAX_PTS
+                    or any(not isinstance(row, (list, tuple)) or len(row) != 3
+                           or any(not finite_number(value) for value in row)
+                           or not 0.0 <= row[1] < 360.0
+                           or not 0.0 <= row[2] <= 180.0
+                           for row in history)):
+                return False
+            uncertainty = contact.get("bearing_uncertainty_deg")
+            if (uncertainty is not None
+                    and (not finite_number(uncertainty)
+                         or not 0.0 <= uncertainty <= 180.0)):
+                return False
+            passive_bearing = contact.get("passive_bearing")
+            if (passive_bearing is not None
+                    and (not finite_number(passive_bearing)
+                         or not 0.0 <= passive_bearing < 360.0)):
+                return False
+            epoch = contact.get("passive_epoch")
+            if epoch is not None and (not isinstance(epoch, int)
+                                      or isinstance(epoch, bool) or epoch < 0):
+                return False
+            filter_t = contact.get("bearing_filter_t")
+            if (filter_t is not None
+                    and (not finite_number(filter_t) or filter_t < 0.0)):
+                return False
+            filter_rate = contact.get("bearing_filter_rate_deg_s", 0.0)
+            if (not finite_number(filter_rate)
+                    or abs(filter_rate) > config.SONAR_BEARING_RATE_MAX_DEG_S):
+                return False
+            filter_uncertainty = contact.get("bearing_filter_uncertainty_deg")
+            if (filter_uncertainty is not None
+                    and (not finite_number(filter_uncertainty)
+                         or not 0.05 <= filter_uncertainty <= 180.0)):
+                return False
+            if (filter_t is None and filter_rate != 0.0) \
+                    or (filter_t is not None
+                        and (passive_bearing is None
+                             or filter_uncertainty is None)):
+                return False
         echoes = sonar.get("echo_history", [])
         if any(not isinstance(item, dict)
                or not finite_number(item.get("t"))
@@ -3423,12 +3544,59 @@ class Game:
         if not isinstance(tracks, dict):
             return False
         if any(not isinstance(points, list)
+               or len(points) > config.BEARING_TRACK_MAX_PTS
                or any(not isinstance(point, dict)
-                      or any(not finite_number(point.get(name))
-                             for name in ("t", "bearing", "fx", "fy",
-                                          "fcourse"))
-                      for point in points)
+                       or any(not finite_number(point.get(name))
+                              for name in ("t", "bearing", "fx", "fy",
+                                           "fcourse"))
+                       or ("uncertainty_deg" in point
+                           and (not finite_number(point["uncertainty_deg"])
+                                or not 0.05 <= point["uncertainty_deg"] <= 180.0))
+                       for point in points)
                for points in tracks.values()):
+            return False
+        track_versions = sonar.get("track_versions", {})
+        tma_versions = sonar.get("tma_versions", {})
+        tma_next = sonar.get("tma_next", {})
+        if any(not isinstance(values, dict)
+               for values in (track_versions, tma_versions, tma_next)):
+            return False
+        if any(not isinstance(value, int) or isinstance(value, bool)
+               or not 0 <= value <= 1_000_000_000
+               for values in (track_versions, tma_versions)
+               for value in values.values()):
+            return False
+        if any(not finite_number(value) or value < 0.0
+               for value in tma_next.values()):
+            return False
+        try:
+            all_keys = (set(tracks) | set(track_versions)
+                        | set(tma_versions) | set(tma_next))
+            if any(not isinstance(key, str) or str(int(key)) != key
+                   for key in all_keys):
+                return False
+            gate_keys = ({int(key) for key in track_versions}
+                         | {int(key) for key in tma_versions}
+                         | {int(key) for key in tma_next})
+            track_keys = {int(key) for key in tracks}
+        except (TypeError, ValueError):
+            return False
+        if any(key < 0 for key in gate_keys | track_keys) \
+                or not gate_keys <= track_keys:
+            return False
+        if any(track_versions.get(key, len(points)) < len(points)
+               for key, points in tracks.items()):
+            return False
+        if any(value > track_versions.get(key, len(tracks[key]))
+               for key, value in tma_versions.items()):
+            return False
+        sim_t = data.get("sim_t", 0.0)
+        if (not finite_number(sim_t) or sim_t < 0.0
+                or any(value > sim_t + config.TMA_RESOLVE_EVERY_S
+                       for value in tma_next.values())
+                or any(contact.get("bearing_filter_t") is not None
+                       and contact["bearing_filter_t"] > sim_t
+                       for contact in contacts.values())):
             return False
         if any(not isinstance(item, dict)
                for item in sonar.get("pending_pings", [])):

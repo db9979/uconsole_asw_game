@@ -29,7 +29,7 @@ def test_track_same_epoch_is_not_an_independent_filter_sample():
     track = observe(picture, 10.0, 0.0)
     observe(picture, 80.0, config.OBS_RADAR_EPOCH_S / 2.0)
     assert track.bearing == 10.0
-    assert track.raw_bearing == 80.0
+    assert track.raw_bearing == 10.0
     assert len(track.measurement_history) == 1
 
 

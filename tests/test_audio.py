@@ -152,11 +152,11 @@ def test_uses_actual_mixer_rate_and_shape(mixer, channels):
 
 def test_initializes_signed16_and_reserves_independent_channels(mixer):
     backend, channels, _ = mixer
-    backend.get_init.side_effect = [None, (22050, -16, 2)]
+    backend.get_init.side_effect = [None, (22050, -16, config.AUDIO_CHANNELS)]
     backend.get_num_channels.return_value = 1
     engine = AudioEngine()
     backend.init.assert_called_once_with(
-        frequency=22050, size=-16, channels=2,
+        frequency=22050, size=-16, channels=config.AUDIO_CHANNELS,
         buffer=config.AUDIO_MIXER_BUFFER_MS, allowedchanges=0)
     backend.set_num_channels.assert_called_once_with(4)
     backend.set_reserved.assert_called_once_with(4)
@@ -177,12 +177,14 @@ def test_audio_debug_log_is_opt_in_and_throttled(monkeypatch, tmp_path):
     monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
     debug = AudioEngine(enabled=False)
     debug.engine_dropped_blocks = 3
+    debug.sonar_holds = 4
     debug.debug_log(0.6)
     assert not (tmp_path / "audio_debug.log").exists()
     debug.debug_log(0.5)
     lines = (tmp_path / "audio_debug.log").read_text().splitlines()
     assert len(lines) == 1
     assert "engine_drops=3" in lines[0] and "underruns=0" in lines[0]
+    assert "sonar_holds=4" in lines[0]
     assert "evictions=0" in lines[0]
 
 
@@ -349,6 +351,70 @@ def test_sonar_queue_is_bounded_and_not_cached(mixer):
     assert make_sound.call_count == 2
     channels[1].play.assert_called_once()
     assert not engine._cache
+
+
+def test_sonar_hold_repeats_previous_block_on_idle_channel(mixer, monkeypatch):
+    _, channels, _ = mixer
+    made = []
+    monkeypatch.setattr(pygame.sndarray, "make_sound",
+                        lambda pcm: made.append(pcm) or pcm)
+    engine = AudioEngine()
+    blocks = [np.full(4096, 1.0 / 2 ** i, dtype=np.float32) for i in range(4)]
+    for samples in blocks:
+        assert engine.play_sonar(samples, 4096, hold=True)
+    played = [call.args[0] for call in channels[1].play.call_args_list]
+    queued = [call.args[0] for call in channels[1].queue.call_args_list]
+    # First block starts fresh; blocks 2 and 3 repeat the previous block and
+    # queue the new one; block 4 hits the hold bound and starts normally.
+    assert len(played) == 4 and len(queued) == 2
+    assert played[0] is made[0] and played[1] is made[0]
+    assert played[2] is made[1] and played[3] is made[3]
+    assert queued[0] is made[1] and queued[1] is made[2]
+    assert engine.sonar_holds == 2
+
+
+def test_sonar_hold_is_opt_in_and_reset_by_busy_channel(mixer):
+    _, channels, _ = mixer
+    engine = AudioEngine()
+    samples = np.ones(4096, dtype=np.float32)
+    assert engine.play_sonar(samples, 4096)
+    assert engine.play_sonar(samples * 0.5, 4096)
+    assert channels[1].play.call_count == 2
+    assert channels[1].queue.call_count == 0
+    assert engine.sonar_holds == 0
+    assert engine._sonar_hold_streak == 0
+    channels[1].get_busy.return_value = True
+    assert engine.play_sonar(samples * 0.25, 4096, hold=True)
+    assert engine._sonar_hold_streak == 0
+    assert channels[1].queue.call_count == 1
+
+
+def test_sonar_hold_state_clears_on_stop(mixer):
+    _, channels, _ = mixer
+    engine = AudioEngine()
+    samples = np.ones(4096, dtype=np.float32)
+    assert engine.play_sonar(samples, 4096)
+    assert engine.play_sonar(samples * 0.5, 4096, hold=True)
+    assert channels[1].queue.call_count == 1
+    engine.stop_sonar()
+    assert engine._sonar_last_sound is None
+    assert engine._sonar_hold_streak == 0
+    assert engine.play_sonar(samples, 4096, hold=True)
+    assert channels[1].queue.call_count == 1
+    engine.shutdown()
+
+
+def test_sonar_hold_does_not_change_resampler_state(mixer):
+    engine = AudioEngine()
+    source_rate = 4093
+    t = np.arange(3000, dtype=np.float64) / source_rate
+    source = np.sin(2 * np.pi * 173 * t).astype(np.float32)
+    for block in np.array_split(source, 3):
+        assert engine.play_sonar(block, source_rate, hold=True)
+    assert engine._sonar_input_count == source.size
+    assert engine._sonar_output_count == int(
+        np.ceil(source.size * 44100 / source_rate))
+    assert engine._sonar_previous == float(source[-1])
 
 
 def test_stereo_sonar_bearing_play_and_queue_preserve_continuity(mixer):

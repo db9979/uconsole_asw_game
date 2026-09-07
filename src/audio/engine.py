@@ -22,6 +22,7 @@ class AudioEngine:
     PING_CHANNEL = 2
     ALERT_CHANNEL = 3
     FADE_MS = 35
+    SONAR_HOLD_MAX = 2
 
     # Post-limiter per-channel PCM ceilings, NOT input volume caps. Their
     # weighted sum is .9155, including hard left/right pan and hostile input.
@@ -29,7 +30,8 @@ class AudioEngine:
     SOURCE_LIMITS = {"engine": .18, "sonar": .55, "ping": .40, "alert": .32}
     CHANNEL_GAINS = {"engine": .50, "sonar": .65, "ping": .65, "alert": .65}
 
-    def __init__(self, sample_rate: int = 22050, channels: int = 2,
+    def __init__(self, sample_rate: int = 22050,
+                 channels: int = config.AUDIO_CHANNELS,
                  enabled: bool = True, cache_size: int = 32):
         self.sample_rate = sample_rate
         self.channels = channels
@@ -52,6 +54,9 @@ class AudioEngine:
         self._sonar_input_count = 0
         self._sonar_output_count = 0
         self._sonar_previous = None
+        self._sonar_last_sound = None
+        self._sonar_hold_streak = 0
+        self.sonar_holds = 0
         self.engine_dropped_blocks = 0
         self.engine_underruns = 0
         self.sonar_dropped_blocks = 0
@@ -214,9 +219,13 @@ class AudioEngine:
 
     def play_sonar(self, samples: np.ndarray, sample_rate: int,
                    volume: float = 0.4, bearing_deg: float | None = None,
-                   listener_bearing_deg: float = 0.0) -> bool:
+                   listener_bearing_deg: float = 0.0,
+                   hold: bool = False) -> bool:
         """Play a mono float32 block once; False means invalid or queue full.
 
+        With hold=True an idle channel re-plays the previous block (bounded to
+        SONAR_HOLD_MAX consecutive holds) before the new one, so simulation
+        clock lag does not open a silent gap at the 4 Hz block boundary.
         Only the current and one pending sound are retained, never cached.
         Volume spans 0..1 before the bus limiter. Linear streaming resampling
         delays by one source sample, so interpolation never predicts a future
@@ -275,8 +284,18 @@ class AudioEngine:
             sound = self._make_sound(signal, "sonar")
             if self._sonar_channel.get_busy():
                 self._sonar_channel.queue(sound)
+                self._sonar_hold_streak = 0
+            elif (hold and self._sonar_last_sound is not None
+                    and self._sonar_hold_streak < self.SONAR_HOLD_MAX):
+                self._sonar_channel.play(self._sonar_last_sound,
+                                         fade_ms=self.FADE_MS)
+                self._sonar_channel.queue(sound)
+                self.sonar_holds += 1
+                self._sonar_hold_streak += 1
             else:
                 self._sonar_channel.play(sound, fade_ms=self.FADE_MS)
+                self._sonar_hold_streak = 0
+            self._sonar_last_sound = sound
             self._sonar_rate = source_rate
             self._sonar_input_count = input_start + samples.size
             self._sonar_output_count = output_end
@@ -309,6 +328,8 @@ class AudioEngine:
         self._sonar_input_count = 0
         self._sonar_output_count = 0
         self._sonar_previous = None
+        self._sonar_last_sound = None
+        self._sonar_hold_streak = 0
 
     def stop_engine(self) -> None:
         """Fade normal engine transitions without repeatedly restarting the fade."""
@@ -341,11 +362,11 @@ class AudioEngine:
         self._audio_debug_due = 0.0
         evictions = getattr(receiver, "evicted_blocks", 0)
         line = ("t={t:.1f} engine_drops={ed} underruns={u} "
-                "sonar_drops={sd} alert_drops={ad} evictions={ev} "
-                "rate={r} ch={c}\n").format(
+                "sonar_drops={sd} sonar_holds={sh} alert_drops={ad} "
+                "evictions={ev} rate={r} ch={c}\n").format(
             t=time.monotonic(), ed=self.engine_dropped_blocks,
             u=self.engine_underruns, sd=self.sonar_dropped_blocks,
-            ad=self.alert_dropped_events, ev=evictions,
+            sh=self.sonar_holds, ad=self.alert_dropped_events, ev=evictions,
             r=self.sample_rate, c=self.channels)
         try:
             path = os.path.join(config.SAVE_DIR, "audio_debug.log")

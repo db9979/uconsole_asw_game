@@ -96,7 +96,7 @@ class Game:
         self.translator = Translator(self.preferences.language)
         self.tr = self.translator.t
         pygame.mixer.pre_init(frequency=config.AUDIO_SAMPLE_RATE, size=-16,
-                              channels=2,
+                              channels=config.AUDIO_CHANNELS,
                               buffer=config.AUDIO_MIXER_BUFFER_MS)
         pygame.init()
         self._joysticks = {}
@@ -2305,10 +2305,12 @@ class Game:
                     EnemyTorpedo(x, y, course, depth,
                                  len(self.enemy_torpedoes) + 1))
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, audio_dt: float | None = None) -> None:
         """W0: Zeitraffer – sim_dt = dt * time_scale, Sub-Stepping gegen
         Tunneling (Torpedos/CIWS) bei hohen Faktoren. Kosmetische Timer
-        (Flash, Scanline) bleiben reele Zeit (self._t)."""
+        (Flash, Scanline) bleiben reele Zeit (self._t). Die Audio-Cadence
+        laeuft auf audio_dt (ungeklemmte Reelle Zeit aus dem Main-Loop);
+        ohne audio_dt gilt der geklemmte dt-Rahmen."""
         if self.splash_active:
             if self._t - self.splash_started_at >= self.splash_duration_s:
                 self.splash_active = False
@@ -2338,7 +2340,7 @@ class Game:
             self.map_view.cx, self.map_view.cy = self.ship.x, self.ship.y
             self.map_view.clamp_center()
         if not self.game_over:
-            self._update_audio(dt)
+            self._update_audio(audio_dt if audio_dt is not None else dt)
         else:
             self.audio.stop()
             self._sonar_audio_sequence = -1
@@ -2364,7 +2366,8 @@ class Game:
                         self.sonar.listening_samples(samples),
                         receiver.sample_rate, self.sonar_volume,
                         bearing_deg=self.sonar.listen_bearing,
-                        listener_bearing_deg=self.ship.course):
+                        listener_bearing_deg=self.ship.course,
+                        hold=self.time_scale == 1):
                     break
                 self._sonar_audio_sequence = sequence
         if not due:
@@ -4938,13 +4941,13 @@ class Game:
                     self.auto_quit -= 1
                     if self.auto_quit <= 0:
                         self.running = False
-                dt = self.clock.tick(config.FPS) / 1000.0
-                dt = min(dt, 0.1)
+                wall_dt = self.clock.tick(config.FPS) / 1000.0
+                dt = min(wall_dt, 0.1)
                 self._t += dt
                 for e in pygame.event.get():
                     self.handle_event(e)
                 self.commander.pump(self)
-                self.update(dt)
+                self.update(dt, audio_dt=wall_dt)
                 self.draw()
                 self.compose_frame()
         finally:

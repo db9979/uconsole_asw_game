@@ -66,7 +66,7 @@ erfolgreich. Das ist keine Verifikation der neuen Netzwerkfunktion.
 | E | Erweiterte synthetische Schallausbreitung | spaeter | begrenzte Strahlen/Reflexionen, Physik-/Akustik-API getrennt |
 | F | Grundberuehrung und lokalisierte Schaeden | spaeter | gesweepter Kielkontakt, Stranden, Pumpen/Lecks, Migration |
 | G | Crew-MessageBox: Vorschlaege annehmen/ablehnen, nicht blockierend | offen | Live-Box, Key-/Maus-Vertrag, i18n, keine Save-Aenderung |
-| H | uConsole-Audio knackt (Puffer/Last) | umgesetzt | Puffer 1024 ms, Diagnose-Log; uConsole-Dauerlauf abwarten |
+| H | uConsole-Audio knackt (Puffer/Last) | umgesetzt | Root-Cause-Fix: Sonar-Block-Hold, Wall-Time-Audio, Mono, Puffer 512 ms, Diagnose-Log; uConsole-Dauerlauf abwarten |
 | I | Bridge Lookout: 2D-Topdown im Commander-Browser | offen | Lookout-Tab in allen Groessen, nur Snapshot-Beobachtungen |
 | J | Eloka/ESM: neue 9. Station, Radartyp-Auswertung | offen | K_9, Katalog-Radarfelder, 9-Stationen-Tests/Doku, Save v8 |
 | K | Web: Ein-Bildschirm, Anleitung EN/DE, Kontakt-DB mit Bildern | offen | kein vertikales Scrollen 390-3840 px EN/DE, Asset-Tests |
@@ -207,9 +207,46 @@ K2/K3. Vorschlag: H, G, L, K1, K2, I, J, K3.
 - Tests: buffer-Assertions in test_game_integration.py und test_audio.py
   auf `config.AUDIO_MIXER_BUFFER_MS` aktualisiert; neuer Test
   `test_audio_debug_log_is_opt_in_and_throttled`.
-- Eskalation (falls uConsole immer noch knackt): Puffer auf 2048 ms,
-  float32-DSP im Receiver, Noise-Block-Cache bei Parameterwechsel,
-  Quellenbegrenzung (MAX_SOURCES < 128).
+- Eskalation (Puffer 2048 ms) wurde verworfen: ein groesserer Buffer deckt
+  keine leere Queue, er erhoert nur Start-Latenz. Statt dessen folgte der
+  Root-Cause-Fix unten.
+
+#### H Root-Cause-Fix (abgeschlossen 2026-09-07)
+
+- Root Cause: Produktion (Sim-Grid, 4 Hz), Auslieferung (Main-Loop,
+  frame-quantisiert) und Wiedergabe (0.25-s-Blöcke) laufen im selben Takt
+  ohne Headroom. Der Main-Loop klemmt Sim-dt auf 0.1 s; auf der uConsole
+  hinkt die Sim-Zeit der Echtzeit hinterher, daher ist der Sonar-Kanal bei
+  jedem Blockwechsel kurz idle: Underrun plus 35-ms-Fade-in = hoerbarer
+  Klick pro 0.25-s-Block (synchron zu Sonar-Zeit/Rows).
+- Massnahmen (ein Commit):
+  - Wall-Time-Audio-Clock: run() uebergibt den ungeklemmten wall_dt ueber
+    update(dt, audio_dt) an _update_audio(); die 4-Hz-Audio-Cadence laeuft
+    in echter Zeit, die Simulation bleibt geklemmt (PHYS_SUBSTEP-Grenzen
+    gelten weiter).
+  - Begrenzter 1-Block-Hold in AudioEngine.play_sonar(hold=...): ist der
+    Sonar-Kanal beim Ausliefern idle, wird der vorherige Block (maximal
+    SONAR_HOLD_MAX=2 in Folge) wieder abgespielt und der neue Block direkt
+    dahinter gequeued; keine Stille, kein Fade-Klick. Nur bei 1x aktiv
+    (hold=time_scale==1); Zeitraffer bleibt sampled preview. Hold-Zustand
+    wird bei stop_sonar/shutdown geleert; sonar_holds erscheint im
+    Debug-Log.
+  - Mono-Ausgabe (AUDIO_CHANNELS=1): halbiert Synthese/Resampling/
+    Mixer-Last; Stereo-Bearing-Panning entfaellt in Mono.
+  - Puffer 2048 auf 512 ms (AUDIO_MIXER_BUFFER_MS): Ping-/Alarm-Start-
+    latenz sinkt; die Lueckenabdeckung kommt vom Hold, nicht vom Buffer.
+- Keine Simulations-, RNG- oder Save-Änderung: die Blockproduktion bleibt
+  auf dem Sim-Zeit-Raster in SonarSystem.update() (gespeicherte LOFAR-
+  Spalten bleiben deterministisch); der Hold spielt nur bereits
+  synthetisierte PCM neu ab.
+- Tests: vier neue Hold-Tests in test_audio.py (Replay und Bound, opt-in,
+  Clear bei stop/shutdown, Resampler-Zustand unveraendert), Debug-Log-Test
+  prueft sonar_holds; test_game_integration.py: ungeklemmtes Wall-dt an
+  Audio und Hold-Flag folgt time_scale; test_commander_local.py: update-
+  Stub kennt audio_dt.
+- Restmassnahmen (float32-DSP im Receiver, Noise-Block-Cache bei
+  Parameterwechsel, Quellenbegrenzung) bleiben nur nach erneuter
+  uConsole-Messung mit dem Debug-Log.
 
 
 ### I Bridge Lookout (2D-Topdown)

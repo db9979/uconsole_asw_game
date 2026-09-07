@@ -415,7 +415,7 @@ def test_run_pumps_before_update_even_paused_and_always_stops(game, monkeypatch,
     monkeypatch.setattr(game, "draw", lambda: order.append("draw"))
     monkeypatch.setattr(game, "compose_frame", lambda: None)
 
-    def update(dt):
+    def update(dt, audio_dt=None):
         order.append("update")
         game.running = False
         if fail:

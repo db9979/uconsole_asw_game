@@ -3,7 +3,10 @@
 Stand 2026-09-07: Commander-Meilenstein A0-A5 abgeschlossen und committet
 (Commit 1a8e278), Version 0.1.6, Save v8 (v1-v8 ladbar). H (uConsole-Audio)
 abgeschlossen: Puffer 512→1024 ms, evicted_blocks-Counter, U_JAGD_AUDIO_DEBUG
-Diagnostics. Am selben Tag neue Anweisung: Pakete G-L
+Diagnostics; danach Root-Cause-Fix: Sonar-1-Block-Hold gegen Boundary-
+Underruns, Wall-Time-Audio-Clock (update(dt, audio_dt)), Mono-Ausgabe
+(AUDIO_CHANNELS=1), Puffer zurueck auf 512 ms. Am selben Tag neue Anweisung:
+Pakete G-L
 (Crew-MessageBox, uConsole-Audio-Defekt, Bridge Lookout, Eloka/ESM-Station,
 Webkonsole: Ein-Bildschirm/Anleitung/Kontakt-DB, Kontakt-Profile Real-Basis
 Schema v2). Details: docs/plan-0.1.6.md, Abschnitt "G-L Umsetzung".
@@ -13,7 +16,9 @@ Pakete B-F bleiben vertagt, starten nach G-L nur mit erneuter Anweisung.
 
 - Branch main; Commander-Meilenstein als Commit 1a8e278 (Add Commander LAN
   co-op web console (0.1.6)) ausgefuehrt; danach Commit H (uConsole-Audio:
-  1024-MS-Mixer-Puffer, evicted_blocks-Counter, U_JAGD_AUDIO_DEBUG-Diagnose).
+  1024-MS-Mixer-Puffer, evicted_blocks-Counter, U_JAGD_AUDIO_DEBUG-Diagnose)
+  und Commit H-Fix (Root-Cause: Sonar-Block-Hold, Wall-Time-Audio-Clock,
+  Mono, Puffer 512 ms).
 - Keine weiteren uncommitteten Kernbereiche. git diff --check sauber,
   Projektdateien auf GitHub-Tokenmuster geprueft. Vor Push Dateiauswahl und
   Gesamtdiff pruefen; Geheimnisse ausschliesslich ueber sichere lokale
@@ -23,7 +28,8 @@ Pakete B-F bleiben vertagt, starten nach G-L nur mit erneuter Anweisung.
 ## Abnahme
 
 - `.venv/bin/python -m pytest -q -p no:cacheprovider`: 1648 passed in 278.28s
-  (Stand vor H). Nach H: 1751 passed, 3 failed – die 3 Faehler sind
+  (Stand vor H). Nach H: 1751 passed, 3 failed. Nach H-Root-Cause-Fix:
+  1757 passed, 3 failed – die 3 Faehler sind
   vorbestehend (Chromium-Vertragstests test_commander_assets.py,
   1920/2560/3840: "selected contact details do not push ownship and alarm
   headings below the fold"); sie scheitern auch ohne H-Änderungen und
@@ -58,8 +64,9 @@ erbt keine alte Freigabe. Laden/Reset widerruft Kopplung am naechsten Pump.
 
 Bei Wiederaufnahme zuerst diesen Stand und docs/plan-0.1.6.md (Abschnitt
 "G-L Umsetzung vom 2026-09-07") lesen; falls gewuenscht Push-Freigabe
-erledigen und die reale Zwei-Geraete-Abnahme durchfuehren. H ist umgesetzt;
-uConsole-Endabnahme (Dauerlauf mit U_JAGD_AUDIO_DEBUG=1) ist noch offen.
+erledigen und die reale Zwei-Geraete-Abnahme durchfuehren. H ist mit
+Root-Cause-Fix umgesetzt; uConsole-Endabnahme (Dauerlauf mit
+U_JAGD_AUDIO_DEBUG=1, sonar_holds im Log pruefen) ist noch offen.
 Reihenfolge:
 
 1. G: Crew-MessageBox (nicht blockierend) fuer Ziel-/Navigationsvorschlaege

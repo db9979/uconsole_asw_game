@@ -20,10 +20,10 @@ def message(key, **values):
     return localize(structured_message(key, **values))
 
 STATE_LABEL = {
-    "OK": "OK",
-    "BESCHAEDIGT": "Beschädigt",
-    "FLUTEND": "FLUTEND",
-    "ZERSTOERT": "ZERSTÖRT",
+    "OK": "damage.ok",
+    "BESCHAEDIGT": "damage.damaged",
+    "FLUTEND": "damage.flooding",
+    "ZERSTOERT": "damage.destroyed",
 }
 
 MORSE = {
@@ -93,13 +93,20 @@ def _state_color(state: str) -> tuple:
     }[state]
 
 
+def _compartment_name(key: str, fallback: str) -> str:
+    """Localize fixed ship compartments without touching authored content."""
+    catalog_key = "compartment." + key
+    translated = localize(catalog_key)
+    return fallback if translated == catalog_key else translated
+
+
 # --- Brücke / Nautik -------------------------------------------------------
 
 @localized
 def draw_bridge_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
-    r, y = _panel(game, title="Brücke / Nautik")
+    r, y = _panel(game, title="station.bridge.title")
     x = r[0] + 14
     w = r[2] - 28
     threats = []
@@ -138,26 +145,26 @@ def draw_bridge_view(game, tr=None) -> None:
     y += alarm_h + 10
 
     half = (w - 10) // 2
-    nav = layout.box(s, (x, y, half, 142), "KURS / RUDER",
+    nav = layout.box(s, (x, y, half, 142), "panel.course_rudder",
                      border=config.COLOR_TEXT)
     nx, ny, nw, _ = nav
     layout.blit_line(s, message("bridge.line.course", course=f"{game.ship.course:05.1f}"),
                      (nx, ny, nw, 34), config.COLOR_TEXT, size=26)
-    layout.status_line(s, nx, ny + 36, nw, "Soll",
+    layout.status_line(s, nx, ny + 36, nw, "ui.target_value_short",
                        message("bridge.line.course", course=f"{game.ship.target_course:05.1f}"), size=16, label_w=70)
-    layout.status_line(s, nx, ny + 62, nw, "Ruder",
+    layout.status_line(s, nx, ny + 62, nw, "ui.rudder",
                        message("bridge.line.course", course=f"{game.ship.rudder_angle:+4.1f}"), size=16, label_w=70)
-    layout.status_line(s, nx, ny + 88, nw, "Wenderadius",
+    layout.status_line(s, nx, ny + 88, nw, "ui.turn_radius",
                        message("bridge.line.range", range=f"{game.ship.turn_radius_nm:.2f}"), size=15, label_w=120)
 
-    drive = layout.box(s, (x + half + 10, y, half, 142), "FAHRT / AKUSTIK",
+    drive = layout.box(s, (x + half + 10, y, half, 142), "panel.speed_acoustics",
                        border=config.COLOR_WARN if game.ship.cavitating else config.COLOR_TEXT)
     dx, dy, dw, _ = drive
     layout.blit_line(s, message("bridge.line.speed", speed=f"{game.ship.speed:04.1f}"),
                      (dx, dy, dw, 34), config.COLOR_TEXT, size=26)
-    layout.status_line(s, dx, dy + 36, dw, "Befehl", game.ship.telegraph,
+    layout.status_line(s, dx, dy + 36, dw, "ui.order", game.ship.telegraph,
                        size=16, label_w=82)
-    layout.status_line(s, dx, dy + 62, dw, "Soll",
+    layout.status_line(s, dx, dy + 62, dw, "ui.target_value_short",
                        message("bridge.line.speed", speed=f"{game.ship.target_speed:.1f}"), size=16, label_w=82)
     noise = "bridge.cavitation" if game.ship.cavitating else message(
         "bridge.line.own_noise", noise=f"{game.ship.noise_level() * 100:.0f}")
@@ -166,26 +173,26 @@ def draw_bridge_view(game, tr=None) -> None:
                      size=15)
     y += 154
 
-    mission = layout.box(s, (x, y, w, 100), "AUFTRAG")
+    mission = layout.box(s, (x, y, w, 100), "panel.mission")
     mx, my, mw, _ = mission
     layout.blit_line(s, game.mission_name_display(), (mx, my, mw, 22),
                      config.COLOR_TEXT, size=17)
     layout.blit_line(s, game.mission_objective_display(), (mx, my + 24, mw, 22),
                      config.COLOR_TEXT_DIM, size=14)
-    layout.status_line(s, mx, my + 50, mw, "Restzeit",
+    layout.status_line(s, mx, my + 50, mw, "ui.remaining",
                        game.mission.format_remaining(game.mission_time),
                        size=15, label_w=100)
     y += 112
 
-    systems = layout.box(s, (x, y, w, 82), "TAKTISCHE LAGE")
+    systems = layout.box(s, (x, y, w, 82), "panel.tactical")
     sx, sy, sw, _ = systems
     radar = localize(message("station.tooltip.radar_state",
         surface=localize("common.on" if game.surface_radar_on else "common.off"),
         air=localize("common.on" if game.air_radar_on else "common.off")))
-    layout.status_line(s, sx, sy, sw, "Sensoren",
+    layout.status_line(s, sx, sy, sw, "panel.sensors",
                        message("bridge.line.sensors", count=len(game.sonar.active_contacts()), radar=radar),
                        size=14, label_w=90)
-    layout.status_line(s, sx, sy + 25, sw, "Einsatzmittel",
+    layout.status_line(s, sx, sy + 25, sw, "panel.assets",
                         message("bridge.line.assets", vls=game.vls_cells,
                                 torpedoes=game.torpedo_count,
                                 helo=localize('enum.helo.' + game.helo.state)),
@@ -438,7 +445,7 @@ def station_hit_target(game, pos):
             if card.collidepoint(pos):
                 teams = game.damage.teams_on(key)
                 return layout.tooltip_payload(
-                    message("station.tooltip.authored", text=compartment.name.upper()),
+                    message("station.tooltip.authored", text=_compartment_name(key, compartment.name).upper()),
                     message("damage.tooltip.condition", state=localize(STATE_LABEL[compartment.state]), flooding=f"{compartment.flood:.0f}", fire=f"{compartment.fire:.0f}"),
                     message("damage.tooltip.teams", teams=", ".join(map(str, teams)) if teams else localize("common.none")),
                     "tooltip.compartment_controls",
@@ -447,7 +454,9 @@ def station_hit_target(game, pos):
             selected = items[game.dmg_cursor][1]
             assignment = game.damage.teams[game.dmg_team]
             return layout.tooltip_payload(
-                "tooltip.damage_actions", message("damage.tooltip.selection_team", selection=selected.name, team=game.dmg_team),
+                "tooltip.damage_actions", message("damage.tooltip.selection_team",
+                    selection=_compartment_name(items[game.dmg_cursor][0], selected.name),
+                    team=game.dmg_team),
                 message("damage.tooltip.assignment", assignment=assignment or localize("damage.free")),
                 "tooltip.team_controls",
                 target_id="damage:controls")
@@ -698,11 +707,11 @@ def draw_opz_view(game, tr=None) -> None:
         if i == min(game.asm_sel, len(asm_tracks) - 1):
             pygame.draw.circle(s, config.COLOR_DANGER, (int(bx), int(by)), 16, 1)
 
-    pr, py = _panel(game, scope_w, None, "OPZ / CIC")
+    pr, py = _panel(game, scope_w, None, "station.opz.title")
     x = pr[0] + 12
     w = pr[2] - 24
     if game.damage.station_down("opz"):
-        radar_state = "AUSFALL"
+        radar_state = localize("common.disabled")
     else:
         radar_state = localize(message("opz.line.radar_state",
             surface=localize("common.on" if game.surface_radar_on else "common.off"),
@@ -717,14 +726,14 @@ def draw_opz_view(game, tr=None) -> None:
     weather_key = ("opz.weather.clear" if severity <= 0.0 else
                    ("opz.weather.clutter" if severity < 1.0 else "opz.weather.heavy"))
     weather_color = config.COLOR_TEXT_DIM if severity <= 0.0 else config.COLOR_WARN
-    layout.status_line(s, x, py, w, "Scope:",
+    layout.status_line(s, x, py, w, "ui.scope",
                         message("opz.line.scope", range=f"{max_nm:.0f}", sea=game.world.sea_state,
                                 weather=localize(weather_key)),
                         label_w=70, size=13, color=weather_color)
     py += 23
     ais_count = sum(1 for t in cic_tracks if t["kind"] == "AIS")
     esm_count = sum(1 for t in cic_tracks if t["source"] in ("ESM", "HOJ"))
-    layout.status_line(s, x, py, w, "Lagebild:",
+    layout.status_line(s, x, py, w, "ui.picture",
                         message("opz.line.picture", ais=ais_count, esm=esm_count),
                         label_w=80, size=13)
     py += 23
@@ -735,7 +744,7 @@ def draw_opz_view(game, tr=None) -> None:
     py += 28
     selected = game.selected_opz_track()
     if selected is None:
-        layout.blit_block(s, "EVIDENZLEDGER: kein Track (Auf/Ab)", x, py, w, 18,
+        layout.blit_block(s, "panel.no_track", x, py, w, 18,
                           color=config.COLOR_TEXT_DIM, size=13)
         py += 22
     else:
@@ -764,7 +773,7 @@ def draw_opz_view(game, tr=None) -> None:
 
     pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
     py += 7
-    layout.blit_block(s, "CIC-TRACKS", x, py, w, 19,
+    layout.blit_block(s, "opz.tracks_heading", x, py, w, 19,
                        color=config.COLOR_TEXT, size=14)
     py += 21
     max_rows = 3
@@ -795,7 +804,7 @@ def draw_opz_view(game, tr=None) -> None:
                        size=14)
     py += 21
     if not asm_tracks:
-        layout.blit_block(s, "Keine ASM-Tracks.", x, py, w, 18,
+        layout.blit_block(s, "panel.no_asm", x, py, w, 18,
                            color=config.COLOR_TEXT_DIM, size=12)
         py += 18
     else:
@@ -810,14 +819,15 @@ def draw_opz_view(game, tr=None) -> None:
                 config.ASM_SPEED_KN)) if track.range_nm is not None else None)
             tti_text = f" TTI {tti:.0f}s" if tti is not None else ""
             layout.blit_block(
-                s, f"{'>' if sel else ' '}{track.label} Rtg "
-                   f"{track.bearing:4.0f}° {distance} {jam} "
-                   f"Q{track.display_quality(game.sim_t, game.air_picture.stale_s):.0%}{tti_text}",
+                s, message("opz.line.asm_track", prefix='>' if sel else ' ',
+                           label=track.label, bearing=f"{track.bearing:4.0f}",
+                           distance=distance, source=jam,
+                           quality=f"{track.display_quality(game.sim_t, game.air_picture.stale_s):.0%}",
+                           tti=tti_text),
                  x, py, w, 20, color=col, size=12)
             py += 19
     py += 4
-    for hint in ("Auf/Ab: Track | C: Zugehoerigkeit | E: ESSM",
-                  "Links/Rechts: ASM | G: Chaff | R/Shift+R: Radar"):
+    for hint in ("control.opz_track", "control.opz_asm"):
         layout.blit_block(s, hint, x, py, w, 18,
                           color=config.COLOR_TEXT_DIM, size=12)
         py += 18
@@ -838,16 +848,16 @@ def draw_opz_view(game, tr=None) -> None:
 def draw_radio_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
-    r, y = _panel(game, title="Funkraum / HFDF")
+    r, y = _panel(game, title="station.radio.title")
     x = r[0] + 14
     w = r[2] - 28
     gap = 18
     col_w = (w - gap) // 2
-    left = layout.box(s, (x, y, col_w, r[3] - 52), "HFDF-PEILUNGEN")
+    left = layout.box(s, (x, y, col_w, r[3] - 52), "panel.hfdf")
     lx, ly, lw, _ = left
     reports = game.hfdf_bearings()
     if not reports:
-        layout.blit_line(s, "Keine Sendung erfasst", (lx, ly, lw, 24),
+        layout.blit_line(s, "panel.no_transmission", (lx, ly, lw, 24),
                          config.COLOR_TEXT_DIM, size=16)
     else:
         selected_idx = min(game.radio_sel, len(reports) - 1)
@@ -871,11 +881,11 @@ def draw_radio_view(game, tr=None) -> None:
     if game.hfdf_log:
         layout.blit_line(s, message("radio.line.log_fix", log=len(game.hfdf_log), fixes=len(game.hfdf_fixes)),
                          (lx, ly, lw, 22), config.COLOR_OK, size=15)
-    layout.blit_line(s, "Auf/Ab: Signal | Enter: protokollieren",
+    layout.blit_line(s, "control.radio_log",
                      (lx, ly + 28, lw, 22), config.COLOR_TEXT_DIM, size=14)
 
     right = layout.box(s, (x + col_w + gap, y, col_w, r[3] - 52),
-                       "HQ / MELDUNGSVERKEHR")
+                        "panel.messages")
     rx, ry, rw, rh = right
     msgs = game.messages[-8:] if game.messages else [("--:--", message("ui.no_traffic"))]
     row_h = max(42, rh // max(1, min(8, len(msgs))))
@@ -896,12 +906,12 @@ def draw_engine_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
     ship = game.ship
-    r, y = _panel(game, title="Maschinenraum")
+    r, y = _panel(game, title="station.engine.title")
     x, w = r[0] + 14, r[2] - 28
     gap = 16
     col_w = (w - gap) // 2
     cap = game.damage.engine_speed_cap()
-    orders = layout.box(s, (x, y, col_w, r[3] - 54), "FAHRTBEFEHL")
+    orders = layout.box(s, (x, y, col_w, r[3] - 54), "panel.engine_order")
     ox, oy, ow, _ = orders
     layout.blit_line(s, ship.telegraph, (ox, oy, ow, 34), config.COLOR_TEXT, size=24)
     oy += 42
@@ -915,16 +925,16 @@ def draw_engine_view(game, tr=None) -> None:
                            color=col, label_w=190, size=15)
         oy += 27
     oy += 14
-    layout.blit_line(s, "Auf/Ab oder +/-: Telegraph", (ox, oy, ow, 22),
+    layout.blit_line(s, "view.engine.telegraph_hint", (ox, oy, ow, 22),
                      config.COLOR_TEXT_DIM, size=14)
-    layout.blit_line(s, "A: Akustikmodus LEISE/NORMAL", (ox, oy + 27, ow, 22),
+    layout.blit_line(s, "control.quiet_mode", (ox, oy + 27, ow, 22),
                      config.COLOR_TEXT_DIM, size=14)
 
     systems = layout.box(s, (x + col_w + gap, y, col_w, r[3] - 54),
-                         "ANTRIEB / AKUSTIK",
+                          "panel.propulsion",
                          border=config.COLOR_DANGER if ship.cavitating else config.COLOR_TEXT)
     px, py, pw, _ = systems
-    layout.status_line(s, px, py, pw, "Welle",
+    layout.status_line(s, px, py, pw, "panel.shaft",
                          message("engine.line.speed_target", speed=f"{ship.speed:4.1f}", target=f"{ship.target_speed:4.1f}"),
                         label_w=125, size=16)
     py += 32
@@ -943,10 +953,10 @@ def draw_engine_view(game, tr=None) -> None:
                      config.COLOR_TEXT_DIM, size=14)
     py += 34
     if ship.cavitating:
-        layout.blit_block(s, "KAVITATION / SIGNATUR ERHOEHT", px, py, pw, 24,
+        layout.blit_block(s, "engine.cavitation_warning", px, py, pw, 24,
                           color=config.COLOR_DANGER, size=16)
         py += 30
-    layout.status_line(s, px, py, pw, "Seegang",
+    layout.status_line(s, px, py, pw, "panel.sea_state",
                          message("engine.line.sea_motion", sea=game.world.sea_state,
                                  roll=f"{ship.roll:4.1f}", pitch=f"{ship.pitch:4.1f}"),
                          label_w=125, size=14)
@@ -963,10 +973,10 @@ def draw_engine_view(game, tr=None) -> None:
                               flooding=f"{masch.flood:.0f}", extra=extra)),
                            px, py, pw, 22, color=col, size=14)
         py += 28
-    layout.status_line(s, px, py, pw, "Fahrtgrenze", message("bridge.line.speed", speed=f"{cap:4.1f}"),
+    layout.status_line(s, px, py, pw, "view.engine.speed_limit", message("bridge.line.speed", speed=f"{cap:4.1f}"),
                        label_w=140, size=15)
     py += 28
-    layout.status_line(s, px, py, pw, "Akustikmodus",
+    layout.status_line(s, px, py, pw, "ui.acoustic_mode",
                          "engine.quiet_limit" if ship.quiet_mode else "station.normal",
                         color=config.COLOR_OK if ship.quiet_mode else config.COLOR_TEXT,
                         label_w=140, size=15)
@@ -975,7 +985,7 @@ def draw_engine_view(game, tr=None) -> None:
     if game.sonar_mode == "TOWED":
         sonar_range *= max(0.5, config.SONAR_ARRAY_TOWED_PASSIVE
                            - config.SONAR_TOWED_SPEED_PENALTY * ship.speed)
-    layout.status_line(s, px, py, pw, "Sonarwirkung",
+    layout.status_line(s, px, py, pw, "ui.sonar_effect",
                          message("engine.line.sonar_effect", range=f"{sonar_range:4.1f}",
                                  array=display_value("array", game.sonar_mode)),
                         color=config.COLOR_OK if sonar_range > 10 else config.COLOR_WARN,
@@ -984,7 +994,7 @@ def draw_engine_view(game, tr=None) -> None:
     cap_reason = ("engine.limit.down" if game.damage.station_down("engine") else
                   "engine.limit.damaged" if game.damage.station_degraded("engine") else
                   "engine.limit.none")
-    layout.status_line(s, px, py, pw, "Begrenzung", cap_reason,
+    layout.status_line(s, px, py, pw, "panel.limit", cap_reason,
                        label_w=140, size=14)
 
 
@@ -1002,7 +1012,8 @@ def helicopter_regions(game=None, station_rect=None) -> dict[str, pygame.Rect]:
     gap = 10
     line_h = layout.font(14).get_linesize()
     available = max(1, station.bottom - 12 - top)
-    status_h = max(132, line_h * 5 + 52)
+    row_h = max(line_h, layout.font(15).get_linesize()) + 2
+    status_h = 8 + layout.font(16, bold=True).get_linesize() + 8 + row_h * 5 + 8
     resource_cell_h = (layout.font(14).get_linesize()
                        + layout.font(16).get_linesize() + 8)
     resources_h = max(110, layout.font(16, bold=True).get_linesize() + 24
@@ -1027,22 +1038,22 @@ def draw_helicopter_view(game, tr=None) -> None:
     """Eigene Deckansicht fuer Status, Reichweite und Einsatzfreigaben."""
     layout.configure_for(game)
     s = game.screen
-    _panel(game, title="Helikopter-Deck / HSP-5")
+    _panel(game, title="station.helicopter.title")
     regions = helicopter_regions(game)
     helo = game.helo
     state_label = localize("enum.helo." + helo.state)
     state_color = (config.COLOR_DANGER if helo.state == "VERLOREN" else
                    config.COLOR_WARN if helo.state == "ZURUECK" else
                    config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
-    status = layout.box(s, regions["status"], "FLUGSTATUS", border=state_color)
+    status = layout.box(s, regions["status"], "panel.flight_status", border=state_color)
     sx, sy, sw, _ = status
-    layout.status_line(s, sx, sy, sw, "Zustand:", state_label,
+    layout.status_line(s, sx, sy, sw, "ui.condition", state_label,
                         color=state_color, label_w=110, size=15)
     fuel_color = (config.COLOR_DANGER if helo.airborne and helo.fuel_s <= config.HELO_FUEL_RESERVE_S else
                   config.COLOR_WARN if helo.airborne and helo.fuel_s <= config.HELO_FUEL_RESERVE_S * 1.5 else
                   config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM)
     row_h = max(22, layout.font(14).get_linesize() + 2)
-    layout.status_line(s, sx, sy + row_h, sw, "Treibstoff:",
+    layout.status_line(s, sx, sy + row_h, sw, "ui.fuel_colon",
                        message("helo.line.fuel", fuel=f"{helo.fuel_s / 60:4.0f}"), color=fuel_color,
                        label_w=110, size=15)
     distance = ((helo.x - game.ship.x) ** 2 +
@@ -1051,24 +1062,24 @@ def draw_helicopter_view(game, tr=None) -> None:
         helo.x - game.ship.x, -(helo.y - game.ship.y))) % 360.0
     true_bearing, relative_bearing = layout.bearing_pair(
         aircraft_bearing, game.ship.course)
-    layout.status_line(s, sx, sy + row_h * 2, sw, "Entfernung Schiff-HSP:",
+    layout.status_line(s, sx, sy + row_h * 2, sw, "ui.ship_helo_range",
                        message("bridge.line.range", range=f"{distance:4.1f}"), label_w=210, size=14)
-    layout.status_line(s, sx, sy + row_h * 3, sw, "Peilung Schiff-HSP:",
+    layout.status_line(s, sx, sy + row_h * 3, sw, "ui.ship_helo_bearing",
                        message("helo.line.bearing_pair", true=f"{true_bearing:05.1f}", relative=f"{relative_bearing:05.1f}"),
                        label_w=210, size=14)
-    layout.status_line(s, sx, sy + row_h * 4, sw, "Flugkurs TRUE/NORTH:",
+    layout.status_line(s, sx, sy + row_h * 4, sw, "ui.flight_course_true",
                        message("helo.line.course", course=f"{helo.course:05.1f}"), label_w=210, size=14)
 
-    resources = layout.box(s, regions["resources"], "EINSATZMITTEL / 2x2")
+    resources = layout.box(s, regions["resources"], "ui.resources_grid")
     rx, ry, rw, rh = resources
     cell_gap = 6
     cell_w = (rw - cell_gap) // 2
     cell_h = max(1, (rh - cell_gap) // 2)
     resource_values = (
-        ("LUFTTORPEDOS", str(helo.torps), config.COLOR_WARN),
-        ("SONARBOJEN BEREIT", str(helo.buoys_left), config.COLOR_TEXT),
-        ("SONARBOJEN AKTIV", str(len(game.buoys)), config.COLOR_TEXT),
-        ("DATALINK", "AKTIV" if helo.airborne else "STANDBY",
+        ("helo.air_torpedoes", str(helo.torps), config.COLOR_WARN),
+        ("helo.sonobuoys_ready", str(helo.buoys_left), config.COLOR_TEXT),
+        ("helo.sonobuoys_active", str(len(game.buoys)), config.COLOR_TEXT),
+        ("panel.datalink", "ui.active" if helo.airborne else "helo.standby",
          config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM),
     )
     for index, (label, value, color) in enumerate(resource_values):
@@ -1086,7 +1097,7 @@ def draw_helicopter_view(game, tr=None) -> None:
                           cell.w - 16, value_h), color, size=16,
                          align="right")
 
-    mission_box = layout.box(s, regions["rules"], "EINSATZREGELN")
+    mission_box = layout.box(s, regions["rules"], "panel.rules")
     mx, my, mw, _ = mission_box
     wp_brg, wp_dist = game._helo_waypoint_polar()
     return_s = distance / max(.001, config.kn_to_nm_per_s(config.HELO_SPEED_KN))
@@ -1119,7 +1130,7 @@ def draw_damage_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
     rect = pygame.Rect(config.STATION_RECT)
-    top = layout.panel(s, rect, "Schadensabwehr / Einsatzleitung")
+    top = layout.panel(s, rect, "station.damage.title")
     margin, gap = 16, 14
     detail_w = 356 if rect.w >= 1000 else 250
     grid_w = rect.w - margin * 2 - gap - detail_w
@@ -1144,7 +1155,8 @@ def draw_damage_view(game, tr=None) -> None:
                          (bx, by, bw, bh), 3 if selected_card else 1)
         if selected_card:
             pygame.draw.rect(s, sc, (bx + 5, by + 5, 4, bh - 10))
-        layout.blit_line(s, c.name, (bx + 14, by + 8, bw - 26, 20),
+        layout.blit_line(s, _compartment_name(key, c.name),
+                         (bx + 14, by + 8, bw - 26, 20),
                          config.COLOR_TEXT, size=15)
         layout.blit_line(s, STATE_LABEL[c.state], (bx + 14, by + 31, bw - 26, 20),
                          sc, size=15)
@@ -1176,48 +1188,50 @@ def draw_damage_view(game, tr=None) -> None:
     selected_key, selected = items[game.dmg_cursor]
     detail_x = x0 + grid_w + gap
     detail = layout.box(s, (detail_x, top, detail_w, grid_h),
-                        "AUSWAHL / MASSNAHMEN", border=_state_color(selected.state))
+                        "panel.selection_actions", border=_state_color(selected.state))
     dx, dy, dw, _ = detail
-    layout.blit_line(s, selected.name, (dx, dy, dw, 28), config.COLOR_TEXT, size=19)
+    layout.blit_line(s, _compartment_name(selected_key, selected.name),
+                     (dx, dy, dw, 28), config.COLOR_TEXT, size=19)
     dy += 34
-    layout.status_line(s, dx, dy, dw, "Zustand", STATE_LABEL[selected.state],
+    layout.status_line(s, dx, dy, dw, "ui.state", STATE_LABEL[selected.state],
                        color=_state_color(selected.state), label_w=118, size=15)
     dy += 28
-    layout.status_line(s, dx, dy, dw, "Flutung", f"{selected.flood:.0f}%",
+    layout.status_line(s, dx, dy, dw, "ui.flooding", f"{selected.flood:.0f}%",
                        color=config.COLOR_DANGER if selected.flood >= 50 else config.COLOR_TEXT,
                        label_w=118, size=15)
     dy += 28
-    layout.status_line(s, dx, dy, dw, "Feuer", f"{selected.fire:.0f}%",
+    layout.status_line(s, dx, dy, dw, "ui.fire", f"{selected.fire:.0f}%",
                        color=config.COLOR_DANGER if selected.fire else config.COLOR_TEXT_DIM,
                        label_w=118, size=15)
     dy += 38
     pygame.draw.line(s, config.COLOR_GRID, (dx, dy), (dx + dw, dy))
     dy += 12
     assignment = game.damage.teams[game.dmg_team]
-    assignment_text = (message("damage.line.assigned", compartment=game.damage.compartments[assignment].name)
+    assignment_text = (message("damage.line.assigned", compartment=_compartment_name(
+        assignment, game.damage.compartments[assignment].name))
                         if assignment is not None else "damage.line.unassigned")
     layout.status_line(s, dx, dy, dw, f"Team {game.dmg_team}", assignment_text,
                        color=config.COLOR_OK, label_w=96, size=14)
     dy += 34
     assigned = game.damage.teams_on(selected_key)
-    layout.status_line(s, dx, dy, dw, "Vor Ort",
+    layout.status_line(s, dx, dy, dw, "ui.on_scene",
                         message("damage.line.teams_on_scene", teams=", ".join(str(team) for team in assigned))
                         if assigned else "damage.line.no_team",
                        color=config.COLOR_OK if assigned else config.COLOR_WARN,
                        label_w=96, size=14)
     dy += 40
-    layout.blit_block(s, "Enter: Team zuweisen\nBackspace: Team rueckziehen",
+    layout.blit_block(s, "control.damage_team",
                       dx, dy, dw, 58, config.COLOR_TEXT, size=14)
 
     footer_y = rect.bottom - 52
     layout.status_line(
-        s, x0, footer_y, rect.w - margin * 2, "GESAMTFLUTUNG",
+        s, x0, footer_y, rect.w - margin * 2, "panel.total_flooding",
          message("damage.line.total", total=f"{game.damage.total:3.0f}",
                  maximum=len(game.damage.compartments) * 100,
                  average=f"{game.damage.avg_flood():.0f}"),
         color=config.COLOR_DANGER if game.damage.ship_sunk else config.COLOR_TEXT,
         label_w=170, size=15)
-    layout.blit_line(s, "Links/Rechts: Kompartiment   Auf/Ab: Team 1-3",
+    layout.blit_line(s, "control.damage_select",
                      (rect.centerx, footer_y, rect.w // 2 - margin, 21),
                      config.COLOR_TEXT_DIM, size=14, align="right")
 

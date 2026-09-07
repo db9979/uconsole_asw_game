@@ -361,8 +361,9 @@ def draw_map_view(game, tr=None) -> None:
                     pygame.draw.circle(s, line_col, (int(tx), int(ty)), sigma_px, 1)
                 pygame.draw.line(s, line_col, (int(tx) - 8, int(ty)), (int(tx) + 8, int(ty)), 2)
                 pygame.draw.line(s, line_col, (int(tx), int(ty) - 8), (int(tx), int(ty) + 8), 2)
-                src = {"tma": "TMA", "ping": "PING",
-                       "buoy": "BOJE"}.get(contact.range_source, "FIX")
+                src = ({"tma": "TMA", "ping": "PING",
+                        "buoy": localize("map.source.buoy")}
+                       .get(contact.range_source, "FIX"))
                 s.blit(game.font.render(localize(message(
                     "map.line.contact_fix", contact=contact.id,
                     range=f"{contact.range_est:4.1f}", source=src)),
@@ -431,11 +432,13 @@ def draw_map_view(game, tr=None) -> None:
     pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
     # Zoom-Stufenanzeige
     zoom_nm = r[3] / view.scale
-    follow = "K: Follow" if getattr(game, "map_follow", True) else "K: Follow AUS"
+    follow = localize("common.on" if getattr(game, "map_follow", True)
+                      else "common.off")
     metadata = getattr(coast, "metadata", None) or {}
     region = metadata.get("name")
     prefix = region if region else getattr(game, "world_mode", "fixed").upper()
     layout.blit_line(
-        s, f"{prefix} | Zoom {zoom_nm:3.0f} NM | Q/E Zoom | Drag Pan | {follow}",
+        s, message("map.line.footer", region=prefix, zoom=f"{zoom_nm:3.0f}",
+                   follow=follow),
         (r[0] + 4, r[1] + 4, r[2] - 8, 20), config.COLOR_TEXT_DIM,
         size=13)

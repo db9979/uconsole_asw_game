@@ -20,6 +20,7 @@ TOOLTIP_TITLE_SIZE = 16
 LARGE_TEXT_SCALE = 1.2
 _TEXT_SCALE = 1.0
 _GEOMETRY_TRACE = None
+_TEXT_TRACE = None
 
 
 def clear_font_cache() -> None:
@@ -67,6 +68,28 @@ def capture_geometry():
         yield captured
     finally:
         _GEOMETRY_TRACE = previous
+
+
+@contextmanager
+def capture_text():
+    """Collect localized text and its actual rendered rectangles."""
+    global _TEXT_TRACE
+    previous = _TEXT_TRACE
+    captured = []
+    _TEXT_TRACE = captured
+    try:
+        yield captured
+    finally:
+        _TEXT_TRACE = previous
+
+
+def record_text(text: str, rendered_rect, bounds) -> None:
+    if _TEXT_TRACE is not None and text:
+        _TEXT_TRACE.append({
+            "text": str(text),
+            "rect": pygame.Rect(rendered_rect).copy(),
+            "bounds": pygame.Rect(bounds).copy(),
+        })
 
 
 def record_geometry(kind: str, rect, title: str = "") -> None:
@@ -201,7 +224,10 @@ def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
                 px = x + max(0, (w - f.size(line)[0]) // 2)
             elif align == "right":
                 px = x + w - f.size(line)[0]
-            screen.blit(f.render(line, True, color), (px, y + i * lh))
+            image = f.render(line, True, color)
+            rendered = image.get_rect(topleft=(px, y + i * lh))
+            record_text(line, rendered, rect)
+            screen.blit(image, rendered)
 
 
 def box(screen, rect, title: str = "", border=None, fill=(14, 24, 18),
@@ -264,7 +290,10 @@ def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
     title = localize(title)
     if title:
         f, lines = fit_text(title, title_size, w - 28, 40, min_size=12)
-        screen.blit(f.render(lines[0], True, config.COLOR_TEXT), (x + 14, y + 8))
+        image = f.render(lines[0], True, config.COLOR_TEXT)
+        rendered = image.get_rect(topleft=(x + 14, y + 8))
+        record_text(lines[0], rendered, (x + 14, y + 8, w - 28, 40))
+        screen.blit(image, rendered)
         return y + 8 + _line_height(f) + 8
     return y + 12
 
@@ -282,8 +311,15 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
     rest = w - label_w - 4
     val = ellipsize(value, f, rest)
     with clip_to(screen, (x, y, w, f.get_linesize())):
-        screen.blit(f.render(lab, True, dcol), (x, y))
-        screen.blit(f.render(val, True, col), (x + label_w + 4, y))
+        label_image = f.render(lab, True, dcol)
+        value_image = f.render(val, True, col)
+        bounds = pygame.Rect(x, y, w, f.get_linesize())
+        label_rect = label_image.get_rect(topleft=(x, y))
+        value_rect = value_image.get_rect(topleft=(x + label_w + 4, y))
+        record_text(lab, label_rect, bounds)
+        record_text(val, value_rect, bounds)
+        screen.blit(label_image, label_rect)
+        screen.blit(value_image, value_rect)
 
 
 def tooltip_payload(title: str, *lines: str, target_id: str = "") -> dict:

@@ -11,11 +11,22 @@ This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
 capabilities, data, or doctrine.
 
-<img width="1139" height="634" alt="U-Jagd tactical workstation" src="https://github.com/user-attachments/assets/df2501a0-f46e-4f0f-878c-2d0d9159c025" />
+## Screenshots
 
-<img width="1140" height="641" alt="U-Jagd sonar workstation" src="https://github.com/user-attachments/assets/2482d19c-f258-43b5-8a3e-4c38e4fdbfac" />
+![U-Jagd main menu](docs/screenshots/main-menu.png)
 
-<img width="1140" height="642" alt="U-Jagd operational picture" src="https://github.com/user-attachments/assets/9e8d9aad-be04-4b52-a162-ba74801f713d" />
+![Bridge, Sonar, Weapons, and Damage Control](docs/screenshots/stations-overview-1.png)
+
+![OPZ/CIC, Radio, Engineering, and Helicopter](docs/screenshots/stations-overview-2.png)
+
+Full-resolution workstations: [Bridge](docs/screenshots/station-bridge.png),
+[Sonar](docs/screenshots/station-sonar.png),
+[Weapons](docs/screenshots/station-weapons.png),
+[Damage Control](docs/screenshots/station-damage-control.png),
+[OPZ/CIC](docs/screenshots/station-opz-cic.png),
+[Radio](docs/screenshots/station-radio.png),
+[Engineering](docs/screenshots/station-engineering.png), and
+[Helicopter](docs/screenshots/station-helicopter.png).
 
 ## Highlights
 

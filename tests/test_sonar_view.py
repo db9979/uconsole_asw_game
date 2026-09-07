@@ -218,7 +218,7 @@ def test_demon_requires_envelope_evidence_and_labels_hypotheses(game, monkeypatc
     texts.clear()
     view._draw_details(game, rect, 2)
     assert sum("Candidate" in text for text in texts) == 3
-    assert any("REFERENZ" in text for text in texts)
+    assert "sonar.catalog_reference" in texts
     assert any("OBSERVED" in text for text in texts)
     assert any("ALTERNATIVE" in text for text in texts)
     assert any("3: 400 RPM" in text for text in texts)
@@ -376,5 +376,5 @@ def test_sonar_view_accepts_optional_translator(game, monkeypatch):
                         texts.append(text))
     game.sonar_page = 5
     view.draw_sonar_view(game, lambda text: f"TR:{text}")
-    assert "TR:station.sonar / TR:enum.sonar_page.active" in texts
-    assert "TR:ACTIVE / ECHO-AUSWERTUNG" in texts
+    assert "TR:sonar.page_title" in texts
+    assert "TR:sonar.active_analysis" in texts

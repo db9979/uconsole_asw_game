@@ -128,13 +128,14 @@ def test_static_text_sent_to_ui_helpers_is_cataloged_or_technical():
     english = load_catalog("en")
     catalog_text = set(english) | set(english.values()) | set(load_catalog("de").values())
     proper_names = {"U-JAGD – FREGATTE F-217"}
+    technical = {"N", "PING", "U-JAGD / ASW", "RADAR", "VLS:", "ESM:",
+                 "HSP-5 DL", "ROE", "HSP-5"}
     text_arguments = {
         "tr": (0,), "translate": (0,), "center": (0,),
         "blit_line": (1,), "blit_block": (1,), "draw_text": (1,), "_text": (1,),
         "box": (2,), "panel": (2,), "status_line": (4, 5),
         "tooltip_payload": tuple(range(8)),
     }
-    technical = re.compile(r"[A-Z0-9+./<>|= :_\-\[\]]+")
     violations = []
     paths = [Path("src/core/game.py"), Path("src/core/help.py"),
              *sorted(Path("src/ui").glob("*.py"))]
@@ -153,9 +154,45 @@ def test_static_text_sent_to_ui_helpers_is_cataloged_or_technical():
                         or not isinstance(value.value, str) or not value.value):
                     continue
                 if (value.value not in catalog_text and value.value not in proper_names
-                        and technical.fullmatch(value.value) is None):
+                        and value.value not in technical):
                     violations.append(f"{path}:{node.lineno}: {value.value!r}")
     assert not violations, "uncataloged static UI text:\n" + "\n".join(violations)
+
+
+@pytest.mark.parametrize("language,opposite_words", [
+    ("en", {"HOERSTRAHL", "SCHMALBAND", "SEITE", "KONTAKT", "STRAHL",
+            "ZIEL", "TORPEDOTIEFE", "BOJE", "LUFTTORPEDO", "ZUGEHOERIGKEIT",
+            "SCHADENSABWEHR", "FLUTUNG", "TREIBSTOFF", "FAHRT", "LAERM",
+            "MASCHINERIE", "SONARBOJEN"}),
+    ("de", {"BEARING", "RANGE", "PAGE", "CONTACT", "BEAM", "TARGET",
+            "DAMAGE", "FLOODING", "FUEL", "SPEED", "NOISE", "MACHINERY",
+            "SONOBUOYS", "AFFILIATION", "ENGINE"}),
+])
+def test_every_station_and_sonar_page_excludes_opposite_language_operational_words(
+        language, opposite_words):
+    from src.core.game import Game
+    from src.ui import layout
+
+    game = Game(seed=41, fullscreen=False, window_size=(1280, 720),
+                audio_enabled=False)
+    translator = Translator(language)
+    game.translator = translator
+    game.tr = translator.t
+    captures = []
+    for station in Station:
+        game.station = station
+        pages = range(6) if station is Station.SONAR else range(1)
+        for page in pages:
+            game.sonar_page = page
+            with layout.capture_text() as rendered:
+                game.draw()
+            assert rendered, f"no instrumented text for {station.name} page {page}"
+            captures.extend(item["text"] for item in rendered)
+
+    visible = "\n".join(captures).upper()
+    leaked = sorted(word for word in opposite_words
+                    if re.search(rf"(?<![A-Z]){re.escape(word)}(?![A-Z])", visible))
+    assert not leaked, f"{language} rendering contains opposite-language words: {leaked}"
 
 
 def test_runtime_message_sinks_do_not_receive_composed_prose():

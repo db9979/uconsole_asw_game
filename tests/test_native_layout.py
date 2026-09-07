@@ -6,7 +6,7 @@ import random
 import pygame
 
 from src.core import config
-from src.core.i18n import localize
+from src.core.i18n import Translator, localize
 from src.ship.damage import DamageModel
 from src.ui import layout, stations_view, weapons_view
 
@@ -33,8 +33,8 @@ def test_weapons_panel_has_fixed_solution_readiness_inventory_and_active_section
     weapons_view.draw_weapons_panel(game)
 
     names = {title for title, _ in titles}
-    assert {"FEUERLEITLOESUNG", "EINSATZSTUFEN", "BESTAND",
-            "AKTIVE WAFFEN", "EINSATZ"} <= names
+    assert {"panel.fire_solution", "panel.engagement_stages", "panel.inventory",
+            "panel.active_weapons", "panel.engagement"} <= names
     assert all(rect.left >= 640 and rect.right <= 1280 for _, rect in titles)
     assert all(rect.top >= 30 and rect.bottom <= 540 for _, rect in titles)
 
@@ -100,8 +100,8 @@ def test_engine_native_layout_uses_two_equal_work_columns(monkeypatch):
     stations_view.draw_engine_view(game)
 
     columns = {title: rect for title, rect in boxes}
-    assert columns["FAHRTBEFEHL"].right < columns["ANTRIEB / AKUSTIK"].left
-    assert abs(columns["FAHRTBEFEHL"].w - columns["ANTRIEB / AKUSTIK"].w) <= 1
+    assert columns["panel.engine_order"].right < columns["panel.propulsion"].left
+    assert abs(columns["panel.engine_order"].w - columns["panel.propulsion"].w) <= 1
 
 
 def test_damage_native_layout_has_selected_detail_panel(monkeypatch):
@@ -124,7 +124,7 @@ def test_damage_native_layout_has_selected_detail_panel(monkeypatch):
 
     stations_view.draw_damage_view(game)
 
-    assert "AUSWAHL / MASSNAHMEN" in titles
+    assert "panel.selection_actions" in titles
 
 
 def test_helicopter_regions_are_shared_bounded_and_adapt_to_large_text(monkeypatch):
@@ -160,8 +160,9 @@ def test_large_text_helicopter_resource_lines_have_full_text_bounds(monkeypatch)
     original = layout.blit_line
 
     def record(screen, text, rect, color, size=14, align="left"):
-        if text in {"LUFTTORPEDOS", "SONARBOJEN BEREIT", "SONARBOJEN AKTIV", "DATALINK",
-                    "2", "6", "0", "STANDBY"}:
+        if text in {"helo.air_torpedoes", "helo.sonobuoys_ready",
+                    "helo.sonobuoys_active", "panel.datalink",
+                    "2", "6", "0", "helo.standby"}:
             calls.append((text, pygame.Rect(rect), size))
         return original(screen, text, rect, color, size=size, align=align)
 
@@ -172,4 +173,27 @@ def test_large_text_helicopter_resource_lines_have_full_text_bounds(monkeypatch)
         assert rect.h >= layout.font(size).get_linesize()
     for label, value in zip(calls[::2], calls[1::2]):
         assert label[1].bottom <= value[1].top
+    layout.configure_for(large_text=False)
+
+
+def test_helicopter_status_rendered_rows_are_inside_card(monkeypatch):
+    pygame.font.init()
+    monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
+    game = NS(
+        screen=pygame.Surface((1280, 720)), preferences=NS(large_text=True),
+        helo=NS(state="AUF", airborne=True, fuel_s=1200.0, x=3.0, y=-4.0,
+                course=275.0, torps=2, buoys_left=6),
+        ship=NS(x=0.0, y=0.0, course=25.0), buoys=[],
+        _helo_waypoint_polar=lambda: (80.0, 12.0),
+    )
+    status = stations_view.helicopter_regions(game)["status"]
+
+    with layout.capture_text() as rendered:
+        stations_view.draw_helicopter_view(game, tr=Translator("en").t)
+
+    flight_rows = [item for item in rendered
+                   if "Flight course" in item["text"] or "Flugkurs" in item["text"]]
+    assert flight_rows
+    assert all(status.contains(item["rect"]) for item in flight_rows)
+    assert stations_view.helicopter_regions(game)["rules"].h >= 100
     layout.configure_for(large_text=False)

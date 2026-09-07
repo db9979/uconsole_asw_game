@@ -165,15 +165,18 @@ def draw_weapons_overlay(game, tr=None) -> None:
             est_x, est_y = _contact_position(c, game.ship)
             if est_x is not None and est_y is not None:
                 tx, ty = view.world_to_screen(est_x, est_y)
-                src = {"tma": "TMA", "ping": "PING",
-                       "buoy": "BOJE"}.get(c.range_source, "FIX")
+                src = ({"tma": "TMA", "ping": "PING",
+                        "buoy": localize("map.source.buoy")}
+                       .get(c.range_source, "FIX"))
                 pygame.draw.line(s, config.COLOR_DANGER, (int(tx) - 10, int(ty)),
                                  (int(tx) + 10, int(ty)), 2)
                 pygame.draw.line(s, config.COLOR_DANGER, (int(tx), int(ty) - 10),
                                  (int(tx), int(ty) + 10), 2)
                 pygame.draw.circle(s, config.COLOR_DANGER, (int(tx), int(ty)), 8, 1)
-                s.blit(game.font.render(f"K{c.id} ({src})", True, config.COLOR_DANGER),
-                       (int(tx) + 12, int(ty) - 22))
+                layout.blit_line(s, message("weapons.overlay.fix", contact=c.id,
+                                            source=src),
+                                 (int(tx) + 12, int(ty) - 22, 130, 20),
+                                 config.COLOR_DANGER, size=14)
             else:
                 ex = px + 300 * math.sin(brg)
                 ey = py - 300 * math.cos(brg)
@@ -190,7 +193,7 @@ def draw_weapons_panel(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
     station = pygame.Rect(config.STATION_RECT)
-    top = layout.panel(s, station, "Waffenzentrale / Feuerleitung", title_size=20)
+    top = layout.panel(s, station, "station.weapons.title", title_size=20)
     x, w = station.x + 14, station.w - 28
     gap = 10
     right_w = min(224, max(200, round(w * .37)))
@@ -198,13 +201,13 @@ def draw_weapons_panel(game, tr=None) -> None:
     c = game.target
     readiness, readiness_color = game.torpedo_readiness()
 
-    solution = layout.box(s, (x, top, left_w, 238), "FEUERLEITLOESUNG",
+    solution = layout.box(s, (x, top, left_w, 238), "panel.fire_solution",
                           border=config.COLOR_DANGER if c else config.COLOR_WARN)
     sx, sy, sw, _ = solution
     if c is None:
-        layout.blit_line(s, "KEIN ZIEL ZUGEWIESEN", (sx, sy, sw, 28),
+        layout.blit_line(s, "ui.no_target", (sx, sy, sw, 28),
                          config.COLOR_WARN, size=18)
-        layout.blit_block(s, "M: beobachteten Sonarkontakt als Ziel uebernehmen",
+        layout.blit_block(s, "tooltip.target_contact",
                           sx, sy + 38, sw, 48, config.COLOR_TEXT_DIM, size=14)
     else:
         displayed_range = _display_range(c, getattr(game, "ship", None)) \
@@ -220,10 +223,10 @@ def draw_weapons_panel(game, tr=None) -> None:
             ("", config.COLOR_TEXT_DIM, 14),
         ]
         source = ("TMA" if c.range_source == "tma" else
-                  "PING" if c.range_est is not None else "NUR PEILUNG")
+                  "PING" if c.range_est is not None else localize("ui.bearing_only"))
         age = max(0.0, game.sim_t - c.last_seen)
         sigma = (f"+/- {c.range_sigma_nm:.2f} NM" if c.range_sigma_nm is not None
-                 else "KEINE DISTANZLOESUNG")
+                 else localize("weapons.no_range_solution"))
         lines += [
             (message("weapons.line.solution", source=source, sigma=sigma), config.COLOR_OK if c.range_est is not None else config.COLOR_WARN, 14),
             (message("weapons.line.age", age=f"{age:.0f}"), config.COLOR_TEXT_DIM, 14),
@@ -243,10 +246,10 @@ def draw_weapons_panel(game, tr=None) -> None:
                 layout.blit_line(s, text, (sx, sy, sw, 21), color, size=size)
             sy += 25
         if c.range_est is None:
-            layout.blit_block(s, "DISTANZ FEHLT: A-Ping auf Sonar oder TMA-Manoever erforderlich",
+            layout.blit_block(s, "tooltip.no_distance",
                               sx, sy, sw, 42, config.COLOR_WARN, size=13)
 
-    ready = layout.box(s, (x + left_w + gap, top, right_w, 130), "EINSATZSTUFEN",
+    ready = layout.box(s, (x + left_w + gap, top, right_w, 130), "panel.engagement_stages",
                         border=readiness_color)
     rx, ry, rw, _ = ready
     has_target = c is not None
@@ -262,25 +265,25 @@ def draw_weapons_panel(game, tr=None) -> None:
         layout.status_line(s, rx, ry + index * 20, rw, name, value,
                            color=config.COLOR_OK if ok else config.COLOR_WARN,
                            label_w=76, size=12)
-    layout.blit_line(s, "T: START", (rx, ry + 82, rw, 18), readiness_color, size=12)
+    layout.blit_line(s, "weapons.control.launch", (rx, ry + 82, rw, 18), readiness_color, size=12)
 
     inventory = layout.box(s, (x + left_w + gap, top + 140, right_w, 98),
-                           "BESTAND")
+                           "panel.inventory")
     ix, iy, iw, _ = inventory
-    layout.status_line(s, ix, iy, iw, "Rohre", message("weapons.line.inventory",
+    layout.status_line(s, ix, iy, iw, "ui.tubes", message("weapons.line.inventory",
                        count=game.torpedo_count, total=game.torpedo_total),
                        label_w=78, size=15)
-    layout.status_line(s, ix, iy + 24, iw, "HSP Torp", str(game.helo.torps),
+    layout.status_line(s, ix, iy + 24, iw, "ui.helo_torpedoes_short", str(game.helo.torps),
                        label_w=78, size=14)
-    layout.status_line(s, ix, iy + 48, iw, "Bojen", str(game.helo.buoys_left),
+    layout.status_line(s, ix, iy + 48, iw, "ui.buoys", str(game.helo.buoys_left),
                        label_w=78, size=14)
 
     lower = top + 248
     active = layout.box(s, (x, lower, left_w, station.bottom - lower - 12),
-                        "AKTIVE WAFFEN")
+                         "panel.active_weapons")
     ax, ay, aw, ah = active
     if not game.torpedoes:
-        layout.blit_line(s, "Keine Waffen im Wasser", (ax, ay, aw, 22),
+        layout.blit_line(s, "ui.no_weapons", (ax, ay, aw, 22),
                          config.COLOR_TEXT_DIM, size=14)
     for t in game.torpedoes[:5]:
         d = t.guidance_distance_nm()
@@ -298,18 +301,18 @@ def draw_weapons_panel(game, tr=None) -> None:
                          (ax, ay, aw, 19), config.COLOR_TEXT_DIM, size=12)
 
     controls = layout.box(s, (x + left_w + gap, lower, right_w,
-                              station.bottom - lower - 12), "EINSATZ")
+                              station.bottom - lower - 12), "panel.engagement")
     cx, cy, cw, _ = controls
-    layout.status_line(s, cx, cy, cw, "Tiefe", message("weapons.line.depth_value", depth=f"{game.torpedo_depth:.0f}"),
+    layout.status_line(s, cx, cy, cw, "ui.depth", message("weapons.line.depth_value", depth=f"{game.torpedo_depth:.0f}"),
                        label_w=66, size=15)
     layout.status_line(s, cx, cy + 24, cw, "ROE", game.roe,
                        label_w=66, size=14)
     helo = game.helo
-    hstate = "AIRBORNE" if helo.airborne else "HANGAR"
+    hstate = localize("enum.helo.AUF" if helo.airborne else "enum.helo.HANGAR")
     layout.status_line(s, cx, cy + 48, cw, "HSP-5", hstate,
                        color=config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM,
                        label_w=66, size=14)
-    for offset, text in enumerate(("Auf/Ab: Torpedotiefe", "H: HSP Start/RTB",
-                                   "B: Boje  D: Lufttorpedo")):
+    for offset, text in enumerate(("weapons.control.depth", "weapons.control.helo",
+                                   "weapons.control.air_weapons")):
         layout.blit_line(s, text, (cx, cy + 78 + offset * 22, cw, 20),
                          config.COLOR_TEXT_DIM, size=12)

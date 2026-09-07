@@ -1,11 +1,13 @@
 """Integrity, provenance, diversity, and playability of bundled sectors."""
 
 from collections import deque
+import hashlib
 import json
 
 from src.world.coastline import Coastline
 from src.world.projection import lonlat_to_nm
-from src.world.real_coast import SECTOR_COUNT, load_catalog
+from src.world.real_coast import (SECTOR_COUNT, SECTOR_ID_ORDER_SHA256,
+                                  load_catalog)
 
 
 def test_catalog_has_exactly_128_distinct_real_sectors():
@@ -23,6 +25,12 @@ def test_seed_mapping_is_stable_and_has_exactly_128_outcomes():
     ids = [Coastline.generate(seed).metadata["sector_id"] for seed in range(256)]
     assert len(set(ids)) == 128
     assert ids[:128] == ids[128:]
+
+
+def test_seed_mapping_order_matches_the_compatibility_fingerprint():
+    ids = [sector["id"] for sector in load_catalog()["sectors"]]
+    digest = hashlib.sha256("\n".join(ids).encode("utf-8")).hexdigest()
+    assert digest == SECTOR_ID_ORDER_SHA256
 
 
 def test_provenance_and_airbase_coordinates_are_truthful():

@@ -3459,6 +3459,12 @@ class Game:
         version = data.get("version")
         if type(version) is not int or not 1 <= version <= 8:
             return False
+        world = data.get("world")
+        if world is not None and not isinstance(world, dict):
+            return False
+        if isinstance(world, dict) and world.get("mode", "fixed") not in (
+                "fixed", "procedural"):
+            return False
         schedulers = data.get("schedulers", {})
         if not isinstance(schedulers, dict):
             return False
@@ -3666,19 +3672,34 @@ class Game:
         self.map_view.clamp_center()
         self.map_follow = True
 
+    def _reroll_menu_seed(self) -> None:
+        """Choose a menu seed uniformly without repeating the current value."""
+        import random
+
+        upper = 1_000_000_000
+        rng = random.SystemRandom()
+        if 1 <= self.seed < upper:
+            candidate = rng.randrange(1, upper - 1)
+            if candidate >= self.seed:
+                candidate += 1
+        else:
+            candidate = rng.randrange(1, upper)
+        self.seed = candidate
+
     def _handle_menu_key(self, key) -> None:
         if key == pygame.K_f:
             self.toggle_fullscreen()
             return
+        if key == pygame.K_w:
+            self.world_mode = ("fixed" if self.world_mode == "procedural"
+                               else "procedural")
+            return
+        if key == pygame.K_r:
+            self._reroll_menu_seed()
+            return
         if self.main_menu:
             entries = ("new", "load", "mission_editor", "unit_editor", "options", "quit")
-            if key == pygame.K_w:
-                self.world_mode = ("fixed" if self.world_mode == "procedural"
-                                   else "procedural")
-            elif key == pygame.K_r:
-                import random
-                self.seed = random.SystemRandom().randrange(1, 1_000_000_000)
-            elif key == pygame.K_UP:
+            if key == pygame.K_UP:
                 self.main_menu_sel = (self.main_menu_sel - 1) % len(entries)
             elif key == pygame.K_DOWN:
                 self.main_menu_sel = (self.main_menu_sel + 1) % len(entries)
@@ -3704,13 +3725,7 @@ class Game:
             return
         if self.menu_screen == "scenario":
             n = len(config.SCENARIO_ORDER)
-            if key == pygame.K_w:
-                self.world_mode = ("fixed" if self.world_mode == "procedural"
-                                   else "procedural")
-            elif key == pygame.K_r:
-                import random
-                self.seed = random.SystemRandom().randrange(1, 1_000_000_000)
-            elif key == pygame.K_UP:
+            if key == pygame.K_UP:
                 self.menu_sel = (self.menu_sel - 1) % n
             elif key == pygame.K_DOWN:
                 self.menu_sel = (self.menu_sel + 1) % n

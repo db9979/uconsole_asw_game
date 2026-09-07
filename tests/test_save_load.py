@@ -171,6 +171,18 @@ def test_malformed_supported_save_does_not_replace_live_game(tmp_saves):
             game.mission.type_key) == before
 
 
+def test_invalid_world_mode_is_rejected_without_replacing_live_game(tmp_saves):
+    game = Game(seed=102, start_menu=False)
+    before = (game.seed, game.world_mode, game.ship.x, game.ship.y)
+    data = game.save_state()
+    data["world"]["mode"] = "unknown"
+    path = tmp_saves / "slot2.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    assert game.load_from_slot(2) is False
+    assert (game.seed, game.world_mode, game.ship.x, game.ship.y) == before
+
+
 def test_v6_world_snapshot_remains_loadable(tmp_saves):
     import json
     import os

@@ -1,12 +1,14 @@
 """Validated loader for the committed real-world coastline sector catalog."""
 
 import gzip
+import hashlib
 import json
 import math
 import os
 
 
 SECTOR_COUNT = 128
+SECTOR_ID_ORDER_SHA256 = "3f061f22b0619cc25b86dc1f3fa8512e23cd257a383b545919ccb432c7dd5c99"
 CATALOG_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "data", "coastlines", "real_sectors.json.gz")
@@ -39,6 +41,9 @@ def _validate(catalog: dict) -> None:
         for base in sector.get("airbases", []):
             if not all(base.get(key) for key in ("id", "name", "nation", "wikidata")):
                 raise ValueError(f"real coastline sector {sector_id} has an unsourced airbase")
+    ordered_ids = "\n".join(sector["id"] for sector in sectors).encode("utf-8")
+    if hashlib.sha256(ordered_ids).hexdigest() != SECTOR_ID_ORDER_SHA256:
+        raise ValueError("real coastline sector order does not match the stable seed mapping")
 
 
 def load_catalog(path: str = CATALOG_PATH) -> dict:

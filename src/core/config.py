@@ -33,6 +33,9 @@ FILL_SCREEN = False
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 AUDIO_UPDATE_S = 0.25
+# uConsole target: wall frames can exceed the 0.25 s audio cadence; the
+# 1024 ms SDL buffer absorbs delivery delays without audible underruns.
+AUDIO_MIXER_BUFFER_MS = 1024
 
 # M8: CRT-Scanline-Overlay (subtiler Phosphor-Look)
 CRT_SCANLINES = False

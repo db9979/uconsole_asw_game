@@ -1,5 +1,7 @@
 """Nicht-blockierende Pygame-Audioausgabe mit NumPy-Synthese."""
 
+import os
+import time
 from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
@@ -9,6 +11,7 @@ import pygame
 
 from src.audio.receiver import smooth_limit
 from src.audio.synthesis import fm_chirp, propeller_block, stereo_bearing, tone
+from src.core import config
 
 
 class AudioEngine:
@@ -53,12 +56,17 @@ class AudioEngine:
         self.engine_underruns = 0
         self.sonar_dropped_blocks = 0
         self.alert_dropped_events = 0
+        self._audio_debug_enabled = (
+            os.environ.get("U_JAGD_AUDIO_DEBUG", "") not in ("", "0"))
+        self._audio_debug_due = 0.0
         if not self.enabled:
             return
         try:
             if not pygame.mixer.get_init():
                 pygame.mixer.init(frequency=sample_rate, size=-16,
-                                  channels=channels, buffer=512, allowedchanges=0)
+                                  channels=channels,
+                                  buffer=config.AUDIO_MIXER_BUFFER_MS,
+                                  allowedchanges=0)
             mixer_format = pygame.mixer.get_init()
             if mixer_format is None:
                 self.enabled = False
@@ -317,6 +325,34 @@ class AudioEngine:
         self.stop_engine()
         self._hard_stop(self._ping_channel)
         self._hard_stop(self._alert_channel)
+
+    def debug_log(self, dt: float, receiver=None) -> None:
+        """Optional 1 Hz diagnostics line, enabled via U_JAGD_AUDIO_DEBUG=1.
+
+        Appends one line per second of wall time to audio_debug.log inside the
+        save directory, reporting delivery counters and mixer shape for
+        on-device (uConsole) crackle diagnosis. No-op unless enabled.
+        """
+        if not self._audio_debug_enabled:
+            return
+        self._audio_debug_due += dt
+        if self._audio_debug_due < 1.0:
+            return
+        self._audio_debug_due = 0.0
+        evictions = getattr(receiver, "evicted_blocks", 0)
+        line = ("t={t:.1f} engine_drops={ed} underruns={u} "
+                "sonar_drops={sd} alert_drops={ad} evictions={ev} "
+                "rate={r} ch={c}\n").format(
+            t=time.monotonic(), ed=self.engine_dropped_blocks,
+            u=self.engine_underruns, sd=self.sonar_dropped_blocks,
+            ad=self.alert_dropped_events, ev=evictions,
+            r=self.sample_rate, c=self.channels)
+        try:
+            path = os.path.join(config.SAVE_DIR, "audio_debug.log")
+            with open(path, "a", encoding="utf-8") as handle:
+                handle.write(line)
+        except OSError:
+            pass
 
     @staticmethod
     def _hard_stop(channel) -> None:

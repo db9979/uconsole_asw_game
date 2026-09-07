@@ -66,7 +66,7 @@ erfolgreich. Das ist keine Verifikation der neuen Netzwerkfunktion.
 | E | Erweiterte synthetische Schallausbreitung | spaeter | begrenzte Strahlen/Reflexionen, Physik-/Akustik-API getrennt |
 | F | Grundberuehrung und lokalisierte Schaeden | spaeter | gesweepter Kielkontakt, Stranden, Pumpen/Lecks, Migration |
 | G | Crew-MessageBox: Vorschlaege annehmen/ablehnen, nicht blockierend | offen | Live-Box, Key-/Maus-Vertrag, i18n, keine Save-Aenderung |
-| H | uConsole-Audio knackt (Puffer/Last) | offen | kein Knacken bei Dauerton auf uConsole, Audio-Tests gruen |
+| H | uConsole-Audio knackt (Puffer/Last) | umgesetzt | Puffer 1024 ms, Diagnose-Log; uConsole-Dauerlauf abwarten |
 | I | Bridge Lookout: 2D-Topdown im Commander-Browser | offen | Lookout-Tab in allen Groessen, nur Snapshot-Beobachtungen |
 | J | Eloka/ESM: neue 9. Station, Radartyp-Auswertung | offen | K_9, Katalog-Radarfelder, 9-Stationen-Tests/Doku, Save v8 |
 | K | Web: Ein-Bildschirm, Anleitung EN/DE, Kontakt-DB mit Bildern | offen | kein vertikales Scrollen 390-3840 px EN/DE, Asset-Tests |
@@ -190,6 +190,27 @@ K2/K3. Vorschlag: H, G, L, K1, K2, I, J, K3.
   Assertions (test_audio.py).
 - Abnahme: kein Knacken bei dauerhaftem Motor, Sonar und Alarmton auf der
   uConsole (Dauerpruefung), headless-Suite gruen.
+
+#### H Implementierung (abgeschlossen 2026-09-07)
+
+- `AUDIO_MIXER_BUFFER_MS = 1024` in src/core/config.py; verwendet in
+  game.py (pre_init) und engine.py (Fallback-Init). 1024 ms Puffer plus
+  ein 0.25-s-Block ergeben ca. 1.27 s Gesamtpuffer – ausreichend Reserve
+  für uConsole-Framedauern über 0.25 s.
+- `evicted_blocks`-Counter in AcousticReceiver (receiver.py): zahlt Block-
+  Evidenzen (Deque-Vollstand) mit, sichtbar im Debug-Log.
+- `AudioEngine.debug_log(dt, receiver)`: opt-in über `U_JAGD_AUDIO_DEBUG=1`.
+  Schreibt ca. 1×/s (Wall-Time) eine Zeile nach `~/.u-jagd/audio_debug.log`:
+  engine_drops, underruns, sonar_drops, alert_drops, evictions, rate, ch.
+  Kein No-Op-Kosten ohne Env-Variable (ein Bool-Check pro Frame).
+- Keine Simulations- oder RNG-Änderung. Keine Save-Auswirkungen.
+- Tests: buffer-Assertions in test_game_integration.py und test_audio.py
+  auf `config.AUDIO_MIXER_BUFFER_MS` aktualisiert; neuer Test
+  `test_audio_debug_log_is_opt_in_and_throttled`.
+- Eskalation (falls uConsole immer noch knackt): Puffer auf 2048 ms,
+  float32-DSP im Receiver, Noise-Block-Cache bei Parameterwechsel,
+  Quellenbegrenzung (MAX_SOURCES < 128).
+
 
 ### I Bridge Lookout (2D-Topdown)
 

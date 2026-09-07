@@ -109,6 +109,7 @@ class AcousticReceiver:
         widths = np.where(centers < 40, 1, np.where(centers < 100, 2, 5))
         self._bin_starts = np.searchsorted(self._frequencies, centers - widths / 2)
         self._band_cache = OrderedDict()
+        self.evicted_blocks = 0
         self.reset()
 
     def reset(self):
@@ -362,6 +363,8 @@ class AcousticReceiver:
         self.elapsed += self.block_s
         self.sequence += 1
         self.samples.setflags(write=False)
+        if len(self._blocks) >= self.AVAILABLE_BLOCKS:
+            self.evicted_blocks += 1
         self._blocks.append((self.sequence, self.samples))
         self._analyze(data)
 

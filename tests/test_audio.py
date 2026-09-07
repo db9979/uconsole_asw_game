@@ -11,7 +11,8 @@ from src.audio.database import TARGET_DATABASE, rank_signatures
 from src.audio.demon import DemonAnalyzer
 from src.audio.engine import AudioEngine
 from src.audio.synthesis import (filtered_noise_event, fm_chirp,
-                                 propeller_block, stereo_bearing, tone)
+                                  propeller_block, stereo_bearing, tone)
+from src.core import config
 
 
 def test_synthesis_is_bounded_and_vectorized():
@@ -154,8 +155,9 @@ def test_initializes_signed16_and_reserves_independent_channels(mixer):
     backend.get_init.side_effect = [None, (22050, -16, 2)]
     backend.get_num_channels.return_value = 1
     engine = AudioEngine()
-    backend.init.assert_called_once_with(frequency=22050, size=-16,
-                                         channels=2, buffer=512, allowedchanges=0)
+    backend.init.assert_called_once_with(
+        frequency=22050, size=-16, channels=2,
+        buffer=config.AUDIO_MIXER_BUFFER_MS, allowedchanges=0)
     backend.set_num_channels.assert_called_once_with(4)
     backend.set_reserved.assert_called_once_with(4)
     assert engine._engine_channel is channels[0]
@@ -164,6 +166,24 @@ def test_initializes_signed16_and_reserves_independent_channels(mixer):
     assert engine._alert_channel is channels[3]
     for name, channel in zip(("engine", "sonar", "ping", "alert"), channels):
         channel.set_volume.assert_called_once_with(engine.CHANNEL_GAINS[name])
+
+
+def test_audio_debug_log_is_opt_in_and_throttled(monkeypatch, tmp_path):
+    monkeypatch.delenv("U_JAGD_AUDIO_DEBUG", raising=False)
+    engine = AudioEngine(enabled=False)
+    engine.debug_log(2.0)
+    assert not (tmp_path / "audio_debug.log").exists()
+    monkeypatch.setenv("U_JAGD_AUDIO_DEBUG", "1")
+    monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
+    debug = AudioEngine(enabled=False)
+    debug.engine_dropped_blocks = 3
+    debug.debug_log(0.6)
+    assert not (tmp_path / "audio_debug.log").exists()
+    debug.debug_log(0.5)
+    lines = (tmp_path / "audio_debug.log").read_text().splitlines()
+    assert len(lines) == 1
+    assert "engine_drops=3" in lines[0] and "underruns=0" in lines[0]
+    assert "evictions=0" in lines[0]
 
 
 def test_dedicated_channels_allow_overlap_and_ping_rejects_self_overlap(mixer):

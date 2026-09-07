@@ -96,7 +96,8 @@ class Game:
         self.translator = Translator(self.preferences.language)
         self.tr = self.translator.t
         pygame.mixer.pre_init(frequency=config.AUDIO_SAMPLE_RATE, size=-16,
-                              channels=2, buffer=512)
+                              channels=2,
+                              buffer=config.AUDIO_MIXER_BUFFER_MS)
         pygame.init()
         self._joysticks = {}
         if pygame.joystick.get_init():
@@ -2373,6 +2374,7 @@ class Game:
         self.audio.update_engine(self.ship.rpm(), blade_count=5,
                                  cavitation=cavitation,
                                  volume=0.0 if listening else 0.08 + 0.08 * self.ship.noise_level())
+        self.audio.debug_log(dt, receiver=self.sonar.receiver)
 
     def _update_navigation(self, dt: float) -> None:
         """Wendet Steuerung, Brückenschaden und Telegraph auf die Fregatte an."""

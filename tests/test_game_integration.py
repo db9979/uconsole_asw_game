@@ -29,7 +29,7 @@ def test_mixer_preinit_precedes_pygame_init(monkeypatch):
         "frequency": game_module.config.AUDIO_SAMPLE_RATE,
         "size": -16,
         "channels": 2,
-        "buffer": 512,
+        "buffer": game_module.config.AUDIO_MIXER_BUFFER_MS,
     }
     game.audio.shutdown()
 

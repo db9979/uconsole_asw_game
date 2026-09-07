@@ -1,7 +1,9 @@
 # Wiederaufnahme: neue Anweisung G-L (2026-09-07)
 
-Stand 2026-09-07: Commander-Meilenstein A0-A5 abgeschlossen, Version 0.1.6,
-Save v8 (v1-v8 ladbar). Am selben Tag neue Anweisung: Pakete G-L
+Stand 2026-09-07: Commander-Meilenstein A0-A5 abgeschlossen und committet
+(Commit 1a8e278), Version 0.1.6, Save v8 (v1-v8 ladbar). H (uConsole-Audio)
+abgeschlossen: Puffer 512→1024 ms, evicted_blocks-Counter, U_JAGD_AUDIO_DEBUG
+Diagnostics. Am selben Tag neue Anweisung: Pakete G-L
 (Crew-MessageBox, uConsole-Audio-Defekt, Bridge Lookout, Eloka/ESM-Station,
 Webkonsole: Ein-Bildschirm/Anleitung/Kontakt-DB, Kontakt-Profile Real-Basis
 Schema v2). Details: docs/plan-0.1.6.md, Abschnitt "G-L Umsetzung".
@@ -9,18 +11,23 @@ Pakete B-F bleiben vertagt, starten nach G-L nur mit erneuter Anweisung.
 
 ## Arbeitsbaum / Git
 
-- Branch main; letzter Commit 3bf30bf (Harden world seed selection).
-- Die vorausgehende Reviewarbeit UND Commander-Aenderungen sind uncommittet.
-  Keine vorhandenen Aenderungen verwerfen oder mit einem alten Stand ersetzen.
-- Neue Kernbereiche: src/commander/, data/commander/, Commander-Tests,
-  Paketressourcen, Game-Options-/F9-Integration, Versions-/Anleitungsupdates.
-- Kein Commit/Push ausgefuehrt. git diff --check sauber, Projektdateien auf
-  GitHub-Tokenmuster geprueft. Vor Push Dateiauswahl und Gesamtdiff pruefen;
-  Geheimnisse ausschliesslich ueber sichere lokale Anmeldung verwenden.
+- Branch main; Commander-Meilenstein als Commit 1a8e278 (Add Commander LAN
+  co-op web console (0.1.6)) ausgefuehrt; danach Commit H (uConsole-Audio:
+  1024-MS-Mixer-Puffer, evicted_blocks-Counter, U_JAGD_AUDIO_DEBUG-Diagnose).
+- Keine weiteren uncommitteten Kernbereiche. git diff --check sauber,
+  Projektdateien auf GitHub-Tokenmuster geprueft. Vor Push Dateiauswahl und
+  Gesamtdiff pruefen; Geheimnisse ausschliesslich ueber sichere lokale
+  Anmeldung verwenden. Git-Identitaet fehlt lokal; Commits mit
+  git -c user.name=... -c user.email=... ausfuehren.
 
 ## Abnahme
 
-- `.venv/bin/python -m pytest -q -p no:cacheprovider`: 1648 passed in 278.28s.
+- `.venv/bin/python -m pytest -q -p no:cacheprovider`: 1648 passed in 278.28s
+  (Stand vor H). Nach H: 1751 passed, 3 failed – die 3 Faehler sind
+  vorbestehend (Chromium-Vertragstests test_commander_assets.py,
+  1920/2560/3840: "selected contact details do not push ownship and alarm
+  headings below the fold"); sie scheitern auch ohne H-Änderungen und
+  zuehlen zu K1 (Ein-Bildschirm-Layout).
 - `tools/smoke_full.py`: SMOKE-OK mit SDL-Dummy-Treibern.
 - `tools/gen_contacts.py --check`: 106 Akustikprofile gueltig.
 - sdist und Wheel 0.1.6 gebaut. Installiertes Wheel unter
@@ -50,20 +57,19 @@ erbt keine alte Freigabe. Laden/Reset widerruft Kopplung am naechsten Pump.
 ## Naechster kleinster Schritt
 
 Bei Wiederaufnahme zuerst diesen Stand und docs/plan-0.1.6.md (Abschnitt
-"G-L Umsetzung vom 2026-09-07") lesen; falls gewuenscht Commit/Push-Freigabe
-erledigen und die reale Zwei-Geraete-Abnahme durchfuehren. Dann mit den neuen
-Anweisungen G-L beginnen, Reihenfolge:
+"G-L Umsetzung vom 2026-09-07") lesen; falls gewuenscht Push-Freigabe
+erledigen und die reale Zwei-Geraete-Abnahme durchfuehren. H ist umgesetzt;
+uConsole-Endabnahme (Dauerlauf mit U_JAGD_AUDIO_DEBUG=1) ist noch offen.
+Reihenfolge:
 
-1. H: uConsole-Audio knackt - Root-Cause messen (Framedauer um den
-   0.25-s-Tick, engine_dropped_blocks), danach Puffer/DSP-Massnahmen.
-2. G: Crew-MessageBox (nicht blockierend) fuer Ziel-/Navigationsvorschlaege
+1. G: Crew-MessageBox (nicht blockierend) fuer Ziel-/Navigationsvorschlaege
    an der uConsole; F9-Overlay bleibt bestehen.
-3. L: Kontakt-Profile auf Real-Basis (Schema v2, Keys stabil, v1+v2 valid);
+2. L: Kontakt-Profile auf Real-Basis (Schema v2, Keys stabil, v1+v2 valid);
    Datengrundlage fuer J und K3.
-4. K1: Webkonsole-Ein-Bildschirm-Layout (Tabs), K2: Anleitung EN/DE.
-5. I: Bridge Lookout (2D-Topdown) im Commander-Browser.
-6. J: Eloka (ESM-Zentrale) als 9. Station, K_9.
-7. K3: Kontakt-Datenbank mit Radar-/Sonar-Fingerprints und generierten
+3. K1: Webkonsole-Ein-Bildschirm-Layout (Tabs), K2: Anleitung EN/DE.
+4. I: Bridge Lookout (2D-Topdown) im Commander-Browser.
+5. J: Eloka (ESM-Zentrale) als 9. Station, K_9.
+6. K3: Kontakt-Datenbank mit Radar-/Sonar-Fingerprints und generierten
    Analyse-/Silhouetten-Bildern.
 
 Pakete B-F (Sonarhoerbild, Tastenkontrast/Maus/Stationenbilder, Batterie/AIP,

@@ -17,6 +17,7 @@ from src.core import config
 class AudioEngine:
     """Audioausgabe; bei fehlendem Audiogeraet wird lautlos weiter simuliert."""
 
+    DEBUG_LOG_MAX_BYTES = 1_000_000
     ENGINE_CHANNEL = 0
     SONAR_CHANNEL = 1
     PING_CHANNEL = 2
@@ -70,7 +71,7 @@ class AudioEngine:
             if not pygame.mixer.get_init():
                 pygame.mixer.init(frequency=sample_rate, size=-16,
                                   channels=channels,
-                                  buffer=config.AUDIO_MIXER_BUFFER_MS,
+                                  buffer=config.AUDIO_MIXER_BUFFER_SAMPLES,
                                   allowedchanges=0)
             mixer_format = pygame.mixer.get_init()
             if mixer_format is None:
@@ -323,6 +324,24 @@ class AudioEngine:
                 pass
         self._reset_sonar_stream()
 
+    def hold_sonar(self) -> bool:
+        """Replay one retained block when a 1x producer has no new block."""
+        if (not self.enabled or not self.available or self._sonar_channel is None
+                or self._sonar_last_sound is None
+                or self._sonar_hold_streak >= self.SONAR_HOLD_MAX):
+            return False
+        try:
+            if (self._sonar_channel.get_busy()
+                    or self._sonar_channel.get_queue() is not None):
+                return False
+            self._sonar_channel.play(self._sonar_last_sound,
+                                     fade_ms=self.FADE_MS)
+            self._sonar_hold_streak += 1
+            self.sonar_holds += 1
+            return True
+        except pygame.error:
+            return False
+
     def _reset_sonar_stream(self) -> None:
         self._sonar_rate = None
         self._sonar_input_count = 0
@@ -356,10 +375,16 @@ class AudioEngine:
         """
         if not self._audio_debug_enabled:
             return
-        self._audio_debug_due += dt
+        try:
+            wall_dt = float(dt)
+        except (TypeError, ValueError, OverflowError):
+            return
+        if not np.isfinite(wall_dt) or wall_dt <= 0.0:
+            return
+        self._audio_debug_due += wall_dt
         if self._audio_debug_due < 1.0:
             return
-        self._audio_debug_due = 0.0
+        self._audio_debug_due %= 1.0
         evictions = getattr(receiver, "evicted_blocks", 0)
         line = ("t={t:.1f} engine_drops={ed} underruns={u} "
                 "sonar_drops={sd} sonar_holds={sh} alert_drops={ad} "
@@ -369,9 +394,28 @@ class AudioEngine:
             sh=self.sonar_holds, ad=self.alert_dropped_events, ev=evictions,
             r=self.sample_rate, c=self.channels)
         try:
-            path = os.path.join(config.SAVE_DIR, "audio_debug.log")
-            with open(path, "a", encoding="utf-8") as handle:
-                handle.write(line)
+            root = os.path.abspath(os.path.expanduser(os.fspath(config.SAVE_DIR)))
+            if os.path.lexists(root) and os.path.islink(root):
+                return
+            os.makedirs(root, mode=0o700, exist_ok=True)
+            if os.path.islink(root) or not os.path.isdir(root):
+                return
+            path = os.path.join(root, "audio_debug.log")
+            directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+            directory_flags |= getattr(os, "O_NOFOLLOW", 0)
+            directory = os.open(root, directory_flags)
+            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+            flags |= getattr(os, "O_NOFOLLOW", 0)
+            try:
+                descriptor = os.open(os.path.basename(path), flags, 0o600,
+                                     dir_fd=directory)
+                with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
+                    if os.fstat(handle.fileno()).st_size >= self.DEBUG_LOG_MAX_BYTES:
+                        handle.seek(0)
+                        handle.truncate()
+                    handle.write(line)
+            finally:
+                os.close(directory)
         except OSError:
             pass
 

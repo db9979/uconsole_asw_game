@@ -48,6 +48,7 @@ def _readiness_text(value):
         "BLOCKIERT: KEINE ENTFERNUNG": "weapons.readiness.no_range",
         "BLOCKIERT: NICHT ALS U-BOOT/KAMPFSCHIFF KLASSIFIZIERT": "weapons.readiness.classification",
         "BLOCKIERT: KEINE TORPEDOS": "weapons.readiness.no_torpedoes",
+        "BLOCKIERT: KEIN ROHR BEREIT": "weapons.readiness.no_tube",
         "BLOCKIERT: SALVENLIMIT": "weapons.readiness.salvo_limit",
         "BLOCKIERT: WAFFENZENTRALE GESTOERT": "weapons.readiness.weapons_down",
         "FEUER FREI": "weapons.readiness.clear",
@@ -59,6 +60,16 @@ def _readiness_text(value):
             return localize(message("weapons.readiness.affiliation",
                                     affiliation=display_value("affiliation", affiliation)))
     return str(value)
+
+
+def _inventory_state(game):
+    battery = getattr(game, "player_torpedo_battery", None)
+    ready = battery.ready_count if battery is not None else game.torpedo_count
+    tubes = battery.mount_count if battery is not None else game.torpedo_total
+    reload_s = battery.next_reload_s if battery is not None else 0.0
+    store = getattr(game, "nixie_store", None)
+    nixies = store.remaining_total if store is not None else 0
+    return ready, tubes, reload_s, nixies
 
 
 def weapons_regions(game) -> dict:
@@ -118,8 +129,12 @@ def weapons_hit_target(game, pos):
                                       "tooltip.interlock",
                                       target_id="weapons:interlock")
     if inventory.collidepoint(pos):
+        ready, tubes, reload_s, nixies = _inventory_state(game)
         return layout.tooltip_payload(
             "panel.inventory", message("weapons.tooltip.ship_torpedoes", count=game.torpedo_count, total=game.torpedo_total),
+            message("weapons.tooltip.tubes", ready=ready,
+                    total=tubes, reload=f"{reload_s:.0f}"),
+            message("weapons.tooltip.nixie", count=nixies),
             message("weapons.tooltip.helo_assets", torpedoes=game.helo.torps, buoys=game.helo.buoys_left),
             "tooltip.inventory",
             target_id="weapons:inventory")
@@ -129,7 +144,7 @@ def weapons_hit_target(game, pos):
         capacity = max(0, min(5, (active.bottom - body_top - 30) // 23))
         if 0 <= row < len(game.torpedoes[:capacity]):
             weapon = game.torpedoes[row]
-            remaining = max(0.0, weapon.RANGE_NM - weapon.travel)
+            remaining = max(0.0, weapon.range_nm - weapon.travel)
             mode = display_value("weapon_mode",
                                  "SUCHER" if weapon.seeker_acquired else "DRAHT")
             return layout.tooltip_payload(
@@ -279,13 +294,20 @@ def draw_weapons_panel(game, tr=None) -> None:
     inventory = layout.box(s, regions["inventory"],
                            "panel.inventory")
     ix, iy, iw, _ = inventory
-    layout.status_line(s, ix, iy, iw, "ui.tubes", message("weapons.line.inventory",
+    layout.status_line(s, ix, iy, iw, "field.torpedoes", message("weapons.line.inventory",
                        count=game.torpedo_count, total=game.torpedo_total),
                        label_w=78, size=15)
-    layout.status_line(s, ix, iy + 24, iw, "ui.helo_torpedoes_short", str(game.helo.torps),
-                       label_w=96, size=15)
-    layout.status_line(s, ix, iy + 48, iw, "ui.buoys", str(game.helo.buoys_left),
-                       label_w=96, size=15)
+    tube_ready, tube_total, reload_s, nixies = _inventory_state(game)
+    tube_status = message("weapons.line.tubes", ready=tube_ready,
+                          total=tube_total, reload=f"{reload_s:.0f}")
+    layout.status_line(s, ix, iy + 24, iw, "weapons.tubes_short", tube_status,
+                       label_w=78, size=13)
+    layout.status_line(s, ix, iy + 48, iw, "weapons.nixie_short",
+                       str(nixies), label_w=78, size=14)
+    layout.status_line(s, ix, iy + 72, iw, "ui.helo_torpedoes_short", str(game.helo.torps),
+                        label_w=96, size=15)
+    layout.status_line(s, ix, iy + 96, iw, "ui.buoys", str(game.helo.buoys_left),
+                        label_w=96, size=15)
 
     active = layout.box(s, regions["active"],
                          "panel.active_weapons")
@@ -299,7 +321,7 @@ def draw_weapons_panel(game, tr=None) -> None:
         d_txt = f"{d:.1f} NM" if d != float("inf") else "--"
         mode = display_value("weapon_mode",
                              "SUCHER" if t.seeker_acquired else "DRAHT")
-        remaining = max(0.0, t.RANGE_NM - t.travel)
+        remaining = max(0.0, t.range_nm - t.travel)
         run_s = remaining / max(.001, t.speed_nm_per_s)
         layout.blit_line(s, message("weapons.line.active", weapon=t.idx, mode=mode,
                                    solution=d_txt, remaining=f"{remaining:.1f}", time=f"{run_s:.0f}"),
@@ -320,6 +342,6 @@ def draw_weapons_panel(game, tr=None) -> None:
                        config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM,
                        label_w=66, size=14)
     for offset, text in enumerate(("weapons.control.depth_compact", "weapons.control.helo",
-                                   "weapons.control.air_compact")):
+                                    "weapons.control.air_compact", "weapons.control.nixie")):
         layout.blit_line(s, text, (cx, cy + 44 + offset * 22, cw, 22),
                          config.COLOR_TEXT_DIM, size=14)

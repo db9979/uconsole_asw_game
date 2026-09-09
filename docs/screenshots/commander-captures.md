@@ -50,7 +50,7 @@ termination checked before the PNGs are copied to the output directory.
 
 ## Review And Limits
 
-Image review on 2026-09-07 checked both final PNGs for readable mission/connection
+Image review on 2026-09-08 regenerated and checked both PNGs for readable mission/connection
 status, contact selection/details, a correctly proportioned north-up chart,
 bearing-only rays, chart disclaimer/legend, and visible ownship/alarm/log headings.
 The initial 1080p image exposed a layout issue: long contact details stretched
@@ -65,10 +65,12 @@ overflow and no captured JavaScript errors. The selected ESM contact cannot be
 classified or proposed as a weapon target; those disabled buttons correctly
 reflect observation eligibility, not a missing local grant. Sound remains muted.
 
-Vertical scrolling is intentional: the complete compartment report and the
-lower parts of a long assessment need not fit on the first screen. Chromium may
-report a shorter CSS viewport during automation before its final screenshot
-resize; the tool verifies the actual PNG dimensions separately.
+The 0.1.7 fixed shell keeps the document within the viewport. The active tab and
+dense nested panels scroll internally so the complete compartment report and
+long assessments remain reachable without moving the masthead or tab strip.
+The captures show the Operations tab selected. Chromium may report a shorter CSS
+viewport during automation before its final screenshot resize; the tool verifies
+the actual PNG dimensions separately.
 
 This review does not establish real two-PC pairing, Wi-Fi reliability, physical
 display readability, touch input, WebAudio playback, or uConsole performance.

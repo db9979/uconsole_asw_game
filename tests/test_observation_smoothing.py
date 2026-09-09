@@ -45,14 +45,16 @@ def test_track_position_is_derived_only_from_measurements_and_is_deterministic()
     assert a.x != pytest.approx(11.0 * math.sin(math.radians(95.0)))
 
 
-def test_track_restore_accepts_legacy_rows_and_stale_track_holds_then_expires():
+def test_track_restore_requires_canonical_rows_and_stale_track_expires():
     picture = TrackPicture(stale_s=2.0)
     track = observe(picture, 45.0, 1.0)
     legacy = {key: value for key, value in picture.serialize()[0].items()
               if not key.startswith("raw_")
               and key not in ("measurement_epoch", "measurement_history")}
     restored = TrackPicture(stale_s=2.0)
-    restored.restore([legacy])
+    with pytest.raises(ValueError):
+        restored.restore([legacy])
+    restored.restore(picture.serialize())
     assert restored.tracks(2.9)[0].bearing == track.bearing
     assert restored.tracks(3.1) == []
 

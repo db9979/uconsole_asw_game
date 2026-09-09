@@ -54,9 +54,12 @@ class Torpedo:
 
     def __init__(self, x_nm: float, y_nm: float, course_deg: float,
                  target_depth_m: float, target_sub, idx: int,
-                  kill_dist_nm: float = None, kill_depth_m: float = None,
-                  speed_kn: float = None, guidance_x: float = None,
-                  guidance_y: float = None, range_nm: float = None):
+                   kill_dist_nm: float = None, kill_depth_m: float = None,
+                   speed_kn: float = None, guidance_x: float = None,
+                    guidance_y: float = None, range_nm: float = None,
+                    profile=None, launch_origin: str | None = None,
+                    launch_platform_id: int | None = None,
+                    launch_weapon_key: str | None = None):
         self.x = x_nm
         self.y = y_nm
         self.course = course_deg % 360.0
@@ -66,16 +69,23 @@ class Torpedo:
         self.idx = idx
         self.travel = 0.0
         self.state = "RUN"  # RUN, HIT, SASE
-        self.kill_dist_nm = self.KILL_DIST_NM if kill_dist_nm is None else kill_dist_nm
+        self.profile_key = profile.key if profile is not None else "frigate_torp"
+        self.launch_origin = launch_origin or (
+            profile.used_by if profile is not None else "frigate")
+        self.launch_platform_id = launch_platform_id
+        self.launch_weapon_key = launch_weapon_key
+        default_hit = profile.hit_dist_nm if profile is not None else self.KILL_DIST_NM
+        default_speed = profile.speed_kn if profile is not None else self.SPEED_KN
+        default_range = profile.range_nm if profile is not None else self.RANGE_NM
+        self.kill_dist_nm = default_hit if kill_dist_nm is None else kill_dist_nm
         self.kill_depth_m = self.KILL_DEPTH_M if kill_depth_m is None else kill_depth_m
-        self.speed_kn = self.SPEED_KN if speed_kn is None else speed_kn
-        self.range_nm = self.RANGE_NM if range_nm is None else range_nm
+        self.speed_kn = default_speed if speed_kn is None else speed_kn
+        self.range_nm = default_range if range_nm is None else range_nm
         # Keep RANGE_NM as the established public API for callers and saves.
         self.RANGE_NM = self.range_nm
         self._search_phase = 0.0     # M15: Serpentin-Phase
         self._midcourse = course_deg % 360.0  # M15: Draht-Mittelkurs
-        # This timer was already part of save files. It now also carries wire
-        # age, allowing old saves to load without a schema migration.
+        # The persisted timer also carries wire age.
         self._midcourse_timer = self.WIRE_UPDATE_CADENCE_S
         self.guidance_x = guidance_x
         self.guidance_y = guidance_y
@@ -177,12 +187,17 @@ class Torpedo:
         desired = None
         wobble = 0.0
         turn = self.TURN_DEG_PER_S
-        # Normal activation is based on the commanded datum, never the hidden
-        # target. Target range is retained only for legacy no-datum callers.
+        # Normal activation is based on the commanded datum, never hidden truth.
         seeker_active = self.guidance_distance_nm() <= config.TORP_HOME_RANGE_NM
         if self.guidance_x is None or self.guidance_y is None:
             seeker_active = self.distance_to_target_nm() <= config.TORP_HOME_RANGE_NM
         self.terminal_active = self.terminal_active or self.seeker_acquired or seeker_active
+        if self.terminal_active and seeker_candidates is not None:
+            candidate = self.evaluate_seeker_candidates(seeker_candidates, world)
+            if candidate is not None:
+                self._seeker_target = self.target = candidate
+                self.seeker_acquired = True
+                sub = candidate
         if not self.seeker_acquired and self.terminal_active:
             candidates = ([self.target] if seeker_candidates is None
                           else seeker_candidates)
@@ -319,7 +334,10 @@ class EnemyTorpedo:
     _next_id = 2000000
 
     def __init__(self, x_nm: float, y_nm: float, course_deg: float,
-                 depth_m: float, idx: int):
+                   depth_m: float, idx: int, profile=None,
+                   guidance_x: float = None, guidance_y: float = None, *,
+                   launch_platform_id: int | None = None,
+                   launch_weapon_key: str | None = None):
         self.id = EnemyTorpedo._next_id
         EnemyTorpedo._next_id += 1
         self.x = x_nm
@@ -330,10 +348,19 @@ class EnemyTorpedo:
         self.travel = 0.0
         self.state = "RUN"  # RUN, HIT, SASE
         self.torpedo_class = "enemy"
-        prof = _required_torpedo_profile("enemy_torp")
+        prof = profile or _required_torpedo_profile("enemy_torp")
+        self.profile = prof
+        self.profile_key = prof.key
         self.speed_kn = prof.speed_kn
         self.range_nm = prof.range_nm
         self.kill_dist_nm = prof.hit_dist_nm
+        self.guidance_x = guidance_x
+        self.guidance_y = guidance_y
+        self.launch_platform_id = launch_platform_id
+        self.launch_weapon_key = launch_weapon_key
+        self.terminal_active = False
+        self.seeker_acquired = False
+        self._seeker_target = None
 
     @property
     def dead(self) -> bool:
@@ -343,14 +370,44 @@ class EnemyTorpedo:
     def speed_nm_per_s(self) -> float:
         return config.kn_to_nm_per_s(self.speed_kn)
 
-    def update(self, dt: float, ship, world=None) -> None:
+    def _candidate(self, candidates, world=None):
+        viable = []
+        for index, candidate in enumerate(candidates):
+            if (candidate is None or getattr(candidate, "dead", False)
+                    or getattr(candidate, "sunk", False)):
+                continue
+            distance = math.hypot(candidate.x - self.x, candidate.y - self.y)
+            if distance > 3.0 or underwater_path_blocked(
+                    world, self.x, self.y, self.depth, candidate.x, candidate.y,
+                    getattr(candidate, "depth", 5.0)):
+                continue
+            stable = getattr(candidate, "seq", getattr(candidate, "id", index))
+            viable.append((distance, type(candidate).__name__, stable, candidate))
+        return min(viable, key=lambda item: item[:3])[3] if viable else None
+
+    def update(self, dt: float, ship, world=None, seeker_candidates=()) -> None:
         if self.state != "RUN":
             return
-        dist_before = math.hypot(ship.x - self.x, ship.y - self.y)
-        if dist_before <= 3.0 and not underwater_path_blocked(
-                world, self.x, self.y, self.depth, ship.x, ship.y, 5.0):
+        if self.seeker_acquired and (self._seeker_target is None
+                or getattr(self._seeker_target, "dead", False)
+                or getattr(self._seeker_target, "sunk", False)):
+            self.seeker_acquired = False
+            self._seeker_target = None
+        if self.guidance_x is None or self.guidance_y is None:
+            seeker_active = math.hypot(ship.x - self.x, ship.y - self.y) <= 3.0
+        else:
+            seeker_active = math.hypot(
+                self.guidance_x - self.x, self.guidance_y - self.y) <= 3.0
+        self.terminal_active = self.terminal_active or seeker_active
+        if self.terminal_active:
+            candidate = self._candidate([ship, *seeker_candidates], world)
+            if candidate is not None:
+                self._seeker_target = candidate
+                self.seeker_acquired = True
+        target = self._seeker_target
+        if target is not None:
             desired = math.degrees(math.atan2(
-                ship.x - self.x, -(ship.y - self.y))) % 360.0
+                target.x - self.x, -(target.y - self.y))) % 360.0
             diff = config.angle_diff_deg(desired, self.course)
             self.course = (self.course + config.clamp(
                 diff, -6.0 * dt, 6.0 * dt)) % 360.0
@@ -363,10 +420,18 @@ class EnemyTorpedo:
         if underwater_path_blocked(world, ox, oy, self.depth,
                                    self.x, self.y, self.depth):
             self.state = "SASE"
-        elif (Torpedo._swept_dist(self, ship, ox, oy) <= self.kill_dist_nm
+        elif (target is not None
+              and Torpedo._swept_dist(self, target, ox, oy) <= self.kill_dist_nm
               and not underwater_path_blocked(world, self.x, self.y, self.depth,
-                                               ship.x, ship.y, 5.0)):
-            self.state = "HIT"
+                                               target.x, target.y,
+                                               getattr(target, "depth", 5.0))):
+            if target is ship:
+                self.state = "HIT"
+            else:
+                self.state = "SASE"
+                if hasattr(target, "dead"):
+                    target.dead = True
+                    target.state = "SASE"
         elif self.travel >= self.range_nm:
             self.state = "SASE"
 
@@ -393,7 +458,7 @@ class EnemyTorpedo:
         return [(f * 0.5, 0.35, 5.0), (f, 0.90, 8.0)]
 
     def broadband(self) -> dict:
-        prof = CATALOG.get_torpedo("enemy_torp")
+        prof = self.profile
         if prof is not None and prof.acoustic is not None \
                 and prof.acoustic.broadband is not None \
                 and self.state == "RUN":
@@ -404,7 +469,7 @@ class EnemyTorpedo:
     def acoustic_signature(self) -> str:
         if self.state != "RUN":
             return ""
-        prof = CATALOG.get_torpedo("enemy_torp")
+        prof = self.profile
         text = prof.acoustic.signature_text if (prof and prof.acoustic) \
             else "hochfrequentes Kreischen"
         return f"mechanisch · {text} (Torpedo?)"

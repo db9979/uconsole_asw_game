@@ -1,7 +1,7 @@
 # Umsetzungsplan U-Jagd
 
-> Historische Roadmap. Aktueller Stand ist 0.1.6, Save v8. Der fortlaufende
-> Plan steht in `plan-0.1.6.md`, die Wiederaufnahme in `resume.md`.
+> Historische Roadmap. Aktueller Stand ist 0.1.7, Save v10-only. Der fortlaufende
+> Plan steht in `plan-0.1.7.md`, die Wiederaufnahme in `resume.md`.
 
 ## Aktueller Ausbau: strenge Simulation auf uConsole
 

@@ -245,6 +245,10 @@ def validate_unit(data: Mapping[str, Any]) -> list[ValidationIssue]:
 def _plain_builtin(profile: Any, kind: str) -> dict[str, Any]:
     source = asdict(profile) if is_dataclass(profile) else copy.deepcopy(dict(profile))
     source.pop("key", None)
+    if kind == "surface" and "hostile" not in source:
+        # Unit-editor v1 persists this legacy authoring field. Runtime side is
+        # mission-owned and does not come from the platform profile.
+        source["hostile"] = source.get("category") == "KAMPFSCHIFF"
     if kind == "aircraft" and "kind" in source:
         source["aircraft_kind"] = source.pop("kind")
     if "acoustic" in source and source["acoustic"] is not None:

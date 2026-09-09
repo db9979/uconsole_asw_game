@@ -122,7 +122,7 @@ class CommanderServer:
         if not (address.is_loopback or any(address in ipaddress.IPv4Network(network)
                 for network in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))):
             raise ValueError("explicit private or loopback IPv4 required")
-        if type(port) is not int or not 0 <= port <= 65535:
+        if type(port) is not int or (port != 0 and not 1024 <= port <= 65535):
             raise ValueError("invalid port")
         with self._lifecycle:
             with self._lock:

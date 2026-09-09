@@ -76,6 +76,19 @@ def test_weapon_solution_stage_uses_same_freshness_as_launch(game, monkeypatch):
     assert "CLEAR TO FIRE" in rendered
 
 
+def test_active_weapon_uses_profile_runtime_range(game, monkeypatch):
+    monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
+    game.torpedoes = [type("DisplayedWeapon", (), {
+        "idx": 4, "range_nm": 3.0, "travel": 1.0,
+        "speed_nm_per_s": 1.0,
+        "seeker_acquired": False, "guidance_distance_nm": lambda self: 4.0,
+    })()]
+    with layout.capture_text() as text:
+        weapons_view.draw_weapons_panel(game, tr=Translator("en").t)
+    rendered = "\n".join(item["text"] for item in text)
+    assert "REM 2.0NM" in rendered
+
+
 @pytest.mark.parametrize("language", ["en", "de"])
 def test_long_weapon_interlock_reason_is_fully_visible(game, monkeypatch, language):
     monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))

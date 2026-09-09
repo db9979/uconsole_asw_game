@@ -1,4 +1,4 @@
-"""Strict, transactional v8 continuation for runtime weapons and observations."""
+"""Strict, transactional v10 continuation for runtime weapons and observations."""
 
 import copy
 import json
@@ -10,6 +10,7 @@ import pytest
 from src.air.asm import ASM, ESSM
 from src.core import config
 from src.core.game import Game
+from src.core.version import SAVE_VERSION
 from src.enemies.animal import Animal
 from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
@@ -32,13 +33,29 @@ def preserve_process_counters(monkeypatch):
 def game():
     game = Game(seed=721, start_menu=False, audio_enabled=False)
     game.sim_t = 20.0
-    sub = game.subs[0]
+    previous = game.subs[0]
+    sub = Sub(previous.x, previous.y, previous.depth, previous.course,
+              "sub_03", game.rng_world, runtime_catalog=game.runtime_catalog,
+              asw_rng=game.rng_asw)
+    for controller in sub.sensor_suite.controllers.values():
+        controller.next_scan_s = game.sim_t
+    game.subs[0] = sub
     sub.memory.update(contact_age=3.0, contact_bearing=90.0,
                       contact=dict(x=game.ship.x, y=game.ship.y,
                                    speed=5.0, course=90.0, noise=.4))
+    weapon_key = game.player_torpedo_battery.fire()
+    weapon = next(row for row in game._ownship_loadout["weapons"]
+                  if row["key"] == weapon_key)
+    profile = game.runtime_catalog.torpedoes[weapon["runtime_profile_key"]]
+    game.torpedo_count = game.player_torpedo_battery.remaining_total
     game.torpedoes = [Torpedo(game.ship.x, game.ship.y, 90, 80, sub, 1,
-                              range_nm=5.5, guidance_x=game.ship.x + 8,
-                              guidance_y=game.ship.y)]
+                              guidance_x=game.ship.x + 8,
+                              guidance_y=game.ship.y, profile=profile,
+                              kill_dist_nm=weapon[
+                                  "kill_dist_nm_by_level"][game.level],
+                              kill_depth_m=weapon[
+                                  "kill_depth_m_by_level"][game.level])]
+    game.torpedo_seq = 1
     game.torpedoes[0].break_wire()
     game.torpedoes[0].terminal_active = True
     game.torpedoes[0].travel = .3
@@ -51,8 +68,25 @@ def game():
                        guidance_x=game.ship.x + 10, guidance_y=game.ship.y + 1,
                        target_id=21)]
     game.essms[0].travel = .2
-    game.decoys = [Decoy(game.ship.x + 2, game.ship.y, 50, game.rng_world)]
-    game.enemy_torpedoes = [EnemyTorpedo(game.ship.x + 8, game.ship.y, 270, 8, 1)]
+    assert sub.countermeasure_store.fire()
+    decoy_profile = game.runtime_catalog.decoys[
+        game.runtime_catalog.runtime_bindings["submarine_decoy"]]
+    game.decoys = [Decoy(
+        game.ship.x + 2, game.ship.y, 50, game.rng_world, decoy_profile,
+        game.runtime_catalog.acoustic_for(decoy_profile.key), source_id=sub.id)]
+    if sub.weapon_battery is not None:
+        enemy_weapon_key = sub.weapon_battery.fire()
+        assert enemy_weapon_key is not None
+        sub.torpedoes_left = sub.weapon_battery.remaining_total
+    else:
+        enemy_weapon_key = None
+        sub.torpedoes_left -= 1
+    game.enemy_torpedoes = [EnemyTorpedo(
+        game.ship.x + 8, game.ship.y, 270, 8, 1,
+        profile=game.runtime_catalog.torpedoes[
+            game.runtime_catalog.runtime_bindings["enemy_torpedo"]],
+        guidance_x=game.ship.x, guidance_y=game.ship.y,
+        launch_platform_id=sub.id, launch_weapon_key=enemy_weapon_key)]
     if not game.civilians:
         game.civilians = [SurfaceShip(game.ship.x + 30, game.ship.y, game.rng_world)]
     game.civilians[0].orbit_direction = -1
@@ -68,9 +102,10 @@ def game():
     contact.buoy_fixes = [(16, game.ship.x + 5, game.ship.y, .6),
                           (18, game.ship.x + 6, game.ship.y, .7)]
     game.sonar.contacts[sub.id] = contact
-    game.sonar._pending_pings = [dict(
-        target=game.enemy_torpedoes[0], frigate=game.ship, world=game.world,
-        sent_at=20, ready_at=25, range_factor=1.0, mode="BOW")]
+    game.sonar.queue_ping(
+        game.ship, [game.enemy_torpedoes[0]], game.world, game.sim_t)
+    assert game.sonar._pending_pings
+    game.sonar._pending_pings[0]["ready_at"] = 25
     return game
 
 
@@ -86,7 +121,7 @@ def test_normal_save_is_strict_json_and_restores_all_new_fields(game, tmp_path):
     path = tmp_path / "strict.json"
     game.save_game(str(path))
     state = json.loads(path.read_text(), parse_constant=reject_constant)
-    assert state["version"] == 8
+    assert state["version"] == SAVE_VERSION
     assert state["subs"][0]["memory"]["last_ping_age"] is None
     assert state["subs"][0]["memory"]["last_torpedo_age"] is None
     before_counters = counter_state()
@@ -94,7 +129,7 @@ def test_normal_save_is_strict_json_and_restores_all_new_fields(game, tmp_path):
     assert counter_state() == before_counters
     assert math.isinf(game.subs[0].memory["last_ping_age"])
     assert game.subs[0].memory["contact"]["noise"] == .4
-    assert game.torpedoes[0].range_nm == game.torpedoes[0].RANGE_NM == 5.5
+    assert game.torpedoes[0].range_nm == game.torpedoes[0].RANGE_NM == 12.0
     assert game.torpedoes[0].terminal_active
     assert game.torpedoes[0].wire_state == "BROKEN"
     assert (game.asms[0].age_s, game.asms[0].travel) == (5, .5)
@@ -125,13 +160,22 @@ def test_enemy_torpedo_pending_ping_reference_restored_after_all_entities(game):
 
 def test_pending_launch_queues_survive_save(game):
     sub = game.subs[0]
-    sub.pending_torpedoes = [(sub.x, sub.y, 123, 8)]
-    sub.pending_decoys = [(sub.x, sub.y)]
+    if sub.weapon_battery is not None:
+        weapon_key = sub.weapon_battery.fire()
+        assert weapon_key is not None
+        sub.torpedoes_left = sub.weapon_battery.remaining_total
+    else:
+        weapon_key = None
+        sub.torpedoes_left -= 1
+    sub.pending_torpedoes = [(
+        sub.x, sub.y, 123, 8, sub.x + 5, sub.y, "enemy_torp", sub.id,
+        weapon_key)]
     game.warships[0].pending_asm = [(300, 300, 2)]
     state = game.save_state()
     game.load_state(state)
-    assert game.subs[0].pending_torpedoes == [(sub.x, sub.y, 123, 8)]
-    assert game.subs[0].pending_decoys == [(sub.x, sub.y)]
+    assert game.subs[0].pending_torpedoes == [(
+        sub.x, sub.y, 123, 8, sub.x + 5, sub.y, "enemy_torp", sub.id,
+        weapon_key)]
     assert game.warships[0].pending_asm == [(300, 300, 2)]
     game._drain_enemy_torpedoes()
     assert game.enemy_torpedoes[-1].course == 123
@@ -175,19 +219,6 @@ def test_essm_lost_track_retains_observed_datum_without_live_object(game):
     assert restored.state == "LAUF"
 
 
-def test_legacy_essm_datum_uses_saved_course_not_hidden_target(game):
-    state = game.save_state()
-    weapon = state["essms"][0]
-    for key in ("guidance_x", "guidance_y", "track_target_id", "seeker_acquired"):
-        weapon.pop(key)
-    weapon["course"] = 0
-    game.load_state(state)
-    restored = game.essms[0]
-    assert restored.guidance_x == weapon["x"]
-    assert restored.guidance_y == weapon["y"] - (config.ESSM_RANGE_NM - weapon["travel"])
-    assert not restored.seeker_acquired
-
-
 def test_cleared_wave_counter_survives_reload_and_reset(game):
     game.asms.clear()
     game.essms.clear()
@@ -199,18 +230,6 @@ def test_cleared_wave_counter_survives_reload_and_reset(game):
     assert game.asms[0].seq == 40
     game.reset(721)
     assert game.asm_seq == 0 and game.ciws_cooldown_s == 0
-
-
-def test_legacy_asm_counter_accounts_for_retained_observations(game):
-    game.air_picture.observe(track_id="M-120", kind="ASM", target_id=120,
-                             source="RADAR-L", bearing=90, range_nm=10,
-                             observer_x=game.ship.x, observer_y=game.ship.y,
-                             course=None, quality=1, now=20, label="M120")
-    state = game.save_state()
-    state.pop("asm_seq")
-    game.load_state(state)
-    assert game.asm_seq == 120
-    assert game._next_asm_sequence() == 121
 
 
 def spawn_entities(game):
@@ -271,19 +290,15 @@ def test_load_does_not_rewind_an_allocation_made_during_restoration(game, monkey
     monkeypatch.setattr(Game, "_restore_rng", staticmethod(original))
 
 
-@pytest.mark.parametrize("version", range(1, 9))
-def test_only_known_legacy_infinite_ages_migrate_to_strict_json(game, tmp_path, version):
-    data = game.save_state()
-    data["version"] = version
-    memory = data["subs"][0]["memory"]
-    memory["last_ping_age"] = memory["last_torpedo_age"] = float("inf")
-    memory["unknown_optional"] = None
-    path = tmp_path / "legacy.json"
-    path.write_text(json.dumps(data))
-    assert game.load_game(str(path))
-    assert math.isinf(game.subs[0].memory["last_ping_age"])
-    assert game.subs[0].memory["unknown_optional"] is None
-    json.loads(json.dumps(game.save_state(), allow_nan=False), parse_constant=reject_constant)
+@pytest.mark.parametrize("field", ["last_ping_age", "last_torpedo_age"])
+def test_v10_rejects_nonfinite_age_sentinels_transactionally(game, field):
+    before, counters = game.save_state(), counter_state()
+    data = copy.deepcopy(before)
+    data["subs"][0]["memory"][field] = float("inf")
+
+    assert not game._load_save_data(data)
+    assert game.save_state() == before
+    assert counter_state() == counters
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
@@ -469,84 +484,6 @@ def test_manually_constructed_missile_ids_are_reconciled_at_save_load(game):
     assert game._next_asm_sequence() == 501
 
 
-@pytest.mark.parametrize("version", range(1, 9))
-@pytest.mark.parametrize("wire_age", [.5, 3.0, Torpedo.WIRE_BREAK_S])
-def test_legacy_retired_acquired_decoy_migrates_without_losing_datum_or_wire(
-        game, tmp_path, version, wire_age):
-    torpedo, decoy = game.torpedoes[0], game.decoys[0]
-    decoy.x, decoy.y, decoy.depth = torpedo.x + .5, torpedo.y, 50
-    torpedo.depth = torpedo.target_depth = 50
-    torpedo.guidance_x, torpedo.guidance_y = decoy.x, decoy.y
-    torpedo._midcourse_timer = wire_age
-    torpedo.update(.05, seeker_candidates=[decoy])
-    assert torpedo.seeker_acquired and torpedo.target is decoy
-    decoy.dead = True
-    game.decoys.clear()
-
-    state = game.save_state()
-    state["version"] = version
-    row = state["torpedoes_in_flight"][0]
-    # Reproduce the previous serializer's sticky acquired target after pruning.
-    row["target_id"], row["seeker_acquired"] = decoy.id, torpedo.seeker_acquired
-    row.pop("terminal_active")
-    row.pop("range_nm")
-    expected_datum = torpedo.guidance_x, torpedo.guidance_y
-    expected_timer = torpedo._midcourse_timer
-    expected_midcourse = torpedo._midcourse
-    path = tmp_path / "retired-decoy.json"
-    path.write_text(json.dumps(state))
-    assert game.load_game(str(path))
-    restored = game.torpedoes[0]
-    assert restored.target is None and restored._seeker_target is None
-    assert not restored.seeker_acquired and restored.terminal_active
-    assert (restored.guidance_x, restored.guidance_y) == expected_datum
-    assert restored._midcourse_timer == expected_timer
-    assert restored._midcourse == expected_midcourse
-    assert Game._valid_save_document(game.save_state())
-    candidate = game.subs[0]
-    candidate.x, candidate.y, candidate.depth = restored.x + .5, restored.y, 50
-    restored.update(.05, seeker_candidates=[candidate])
-    assert restored.seeker_acquired and restored.target is candidate
-
-
-@pytest.mark.parametrize("version", range(1, 9))
-def test_legacy_multiple_essms_outlive_intercepted_target_without_truth_reconstruction(
-        game, tmp_path, version):
-    target = game.asms[0]
-    target.x, target.y = game.ship.x + 2, game.ship.y
-    first = ESSM(target.x - .01, target.y, 90, target, 1,
-                 guidance_x=target.x, guidance_y=target.y)
-    survivors = [ESSM(game.ship.x, game.ship.y, 90, target, seq,
-                      guidance_x=target.x, guidance_y=target.y) for seq in (2, 3)]
-    first.update(.05)
-    assert first.state == "HIT" and target.state == "ABGEFANGEN"
-    for weapon in survivors:
-        weapon.update(.05)
-        assert weapon.state == "LAUF" and weapon.target is target
-    game.asms.clear()
-    game.essms = survivors
-    state = game.save_state()
-    state["version"] = version
-    state.pop("asm_seq")
-    for row, weapon in zip(state["essms"], survivors):
-        row["target_id"] = weapon.target.seq
-        for field in ("guidance_x", "guidance_y", "track_target_id", "seeker_acquired"):
-            row.pop(field)
-    path = tmp_path / "intercepted-asm.json"
-    path.write_text(json.dumps(state))
-    assert game.load_game(str(path))
-    assert not game.asms and len(game.essms) == 2
-    for restored, row in zip(game.essms, state["essms"]):
-        assert restored.target is None and not restored.seeker_acquired
-        assert restored.target_id == target.seq
-        remaining = config.ESSM_RANGE_NM - row["travel"]
-        assert restored.guidance_x == pytest.approx(row["x"] + remaining)
-        assert restored.guidance_y == pytest.approx(row["y"])
-        restored.update(.05, candidates=[])
-        assert restored.state == "LAUF"
-    assert Game._valid_save_document(game.save_state())
-
-
 @pytest.mark.parametrize("collection", ["torpedoes_in_flight", "essms"])
 def test_current_projectile_format_still_rejects_dangling_acquired_references(game, collection):
     before, counters = game.save_state(), counter_state()
@@ -558,7 +495,7 @@ def test_current_projectile_format_still_rejects_dangling_acquired_references(ga
 
 
 @pytest.mark.parametrize("collection", ["torpedoes_in_flight", "essms"])
-def test_partial_current_projectile_fields_do_not_enable_legacy_dangling_migration(game, collection):
+def test_incomplete_current_projectile_fields_are_rejected(game, collection):
     before = game.save_state()
     bad = copy.deepcopy(before)
     row = bad[collection][0]

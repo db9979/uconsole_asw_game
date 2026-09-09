@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "weapons": [
+    {
+      "key": "weapon.ownship.torpedo",
+      "runtime_profile_key": "frigate_torp",
+      "kill_dist_nm_by_level": {
+        "leicht": 0.2,
+        "normal": 0.135,
+        "harte": 0.135
+      },
+      "kill_depth_m_by_level": {
+        "leicht": 20.0,
+        "normal": 15.0,
+        "harte": 15.0
+      }
+    }
+  ],
+  "launcher": {
+    "key": "launcher.ownship.tubes",
+    "mount_count": 2,
+    "ready_count": 2,
+    "reload_s": 60.0,
+    "weapon_keys": [
+      "weapon.ownship.torpedo"
+    ]
+  },
+  "magazine": {
+    "key": "magazine.ownship.torpedoes",
+    "weapon_key": "weapon.ownship.torpedo",
+    "mission_count_by_level": {
+      "leicht": 6,
+      "normal": 6,
+      "harte": 4
+    }
+  },
+  "countermeasure": {
+    "key": "countermeasure.ownship.towed_acoustic",
+    "effect_type": "towed_acoustic",
+    "payload_key": "decoy",
+    "mission_count": 2,
+    "ready_count": 1,
+    "reload_s": 60.0,
+    "active_life_s": 600.0,
+    "tether_nm": 0.2,
+    "depth_m": 10.0
+  }
+}

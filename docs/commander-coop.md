@@ -1,4 +1,4 @@
-# Commander LAN Co-op (0.1.6)
+# Commander LAN Co-op (0.1.7)
 
 Two-player role split: the uConsole crew operates the ship and simulation; one
 Commander uses a browser on another PC. The service is optional, dependency-free
@@ -31,7 +31,8 @@ Never publish real pairing codes or tokens in screenshots, logs or issue reports
 
 ## Role Controls
 
-- Browser contact/list selection, pan, zoom and follow are browser-local.
+- Browser contact/list selection, Operations pan/zoom/follow and Lookout range
+  are browser-local and independent.
 - Classification and affiliation use explicit Apply buttons and require the crew
   grant. They are operator judgments, not discovered platform identity.
 - Neutral C-number labels identify observation lifetimes. A reacquired contact
@@ -39,6 +40,12 @@ Never publish real pairing codes or tokens in screenshots, logs or issue reports
 - Propose target sends a request, not a weapon command. The crew opens F9 and
   explicitly accepts or rejects. Accepted targets still need ordinary weapon
   readiness and local firing controls.
+- Propose navigation sends an ordered course, speed, or both for local review.
+  Only crew acceptance in F9 changes helm setpoints. The browser cannot steer the
+  ship directly. Course acceptance requires an operational bridge; speed-only
+  acceptance remains possible and cannot override propulsion or quiet-mode limits.
+- An unresolved proposal cannot be silently replaced by another proposal of the
+  same kind. A target proposal and a navigation proposal may wait together.
 - The local panel supports row selection by mouse and activation by a second
   click on the selected row or Enter. Clicking does not bypass readiness checks.
 - Voice coordination uses your existing external voice connection or conversation.
@@ -48,6 +55,17 @@ Never publish real pairing codes or tokens in screenshots, logs or issue reports
   them. Menu/editor/splash pages disclose no pregenerated tactical world.
 
 ## Display and Alarms
+
+After pairing, the fixed shell offers Operations, Lookout, Guide and Contacts
+tabs. Operations contains the current mission picture and controls. Lookout is a
+north-up, ship-centered view of the same published snapshot: it shows own course,
+range rings, sea state and day/night, plots positioned observations as points and
+shows bearing-only reports as edge marks. Its display range is neither visual nor
+sensor range, and a plotted symbol does not establish identity. It uses no chart
+geography and sends no command. Guide and Contacts remain reserved placeholders.
+Tab switching preserves contact selection, draft assessments, navigation drafts
+and both local view states. The authenticated shell fits the viewport; long
+Operations content scrolls only inside its tab or nested panels.
 
 The chart adapts to browser size and device pixel ratio, preserving equal map
 scales. Contact details show observation/fix age and nullable range/depth/motion.
@@ -85,5 +103,6 @@ audio stream. See commander-protocol.md for the exact boundary.
 Automated coverage uses real loopback HTTP and headless Chromium contracts at
 desktop and narrow viewport sizes. This does not establish two-physical-device
 network, firewall, headphone, uConsole thermal or readability acceptance.
-Follow docs/resume.md after this milestone; the planned sonar/filter/readability
-and physical-fidelity packages require renewed instruction before starting.
+Follow `docs/plan-0.1.7.md` and `docs/resume.md` after this milestone. The
+authorized sonar/filter/readability and physical-fidelity packages B-F follow
+that plan's dependency order and end at its mandatory documented pause.

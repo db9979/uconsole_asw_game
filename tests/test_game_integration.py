@@ -32,7 +32,7 @@ def test_mixer_preinit_precedes_pygame_init(monkeypatch):
         "frequency": game_module.config.AUDIO_SAMPLE_RATE,
         "size": -16,
         "channels": game_module.config.AUDIO_CHANNELS,
-        "buffer": game_module.config.AUDIO_MIXER_BUFFER_MS,
+        "buffer": game_module.config.AUDIO_MIXER_BUFFER_SAMPLES,
     }
     game.audio.shutdown()
 
@@ -41,29 +41,45 @@ def test_update_passes_unclamped_wall_dt_to_audio(monkeypatch):
     """Der Main-Loop klemmt Sim-dt auf 0.1 s; die Audio-Cadence darf nicht."""
     game = Game(seed=84, audio_enabled=False)
     seen = []
+    debug = Mock()
+    monkeypatch.setattr(game.audio, "debug_log", debug)
     monkeypatch.setattr(game, "_update_audio", seen.append)
     game.update(0.1, audio_dt=0.35)
     assert seen == [0.35]
     game.update(0.1)
     assert seen == [0.35, 0.1]
+    assert [call.args[0] for call in debug.call_args_list] == [0.35, 0.1]
     game.audio.shutdown()
 
 
-def test_audio_hold_flag_follows_time_scale(monkeypatch):
-    """Sonar-Block-Hold nur bei 1x; Zeitraffer bleibt sampled preview."""
+def test_sonar_audio_is_silent_and_drained_across_time_scale(monkeypatch):
     game = Game(seed=85, audio_enabled=False)
     game.station = Station.SONAR
     game.sonar_audio_enabled = True
-    blocks = [(1, np.ones(4096, dtype=np.float32))]
-    monkeypatch.setattr(game.sonar.receiver, "blocks_since", lambda seq: blocks)
-    monkeypatch.setattr(game.sonar, "listening_samples", lambda samples: samples)
+    receiver = game.sonar.receiver
+    receiver.update([], 0, 12, .2, 2, 6)
     spy = Mock(return_value=True)
     monkeypatch.setattr(game.audio, "play_sonar", spy)
-    game._update_audio(0.25)
-    assert spy.call_args.kwargs["hold"] is True
+    stop = Mock()
+    monkeypatch.setattr(game.audio, "stop_sonar", stop)
     game.time_scale_idx = config.TIME_SCALE_STEPS.index(5)
     game._update_audio(0.25)
-    assert spy.call_args.kwargs["hold"] is False
+    assert not spy.called
+    assert game._sonar_audio_sequence == receiver.sequence
+    stop.assert_called_once_with(immediate=True)
+    receiver.update([], 0, 12, .2, 2, 6)
+    game._update_audio(0.25)
+    assert not spy.called
+    assert game._sonar_audio_sequence == receiver.sequence
+    stop.assert_called_once()
+
+    game.time_scale_idx = config.TIME_SCALE_STEPS.index(1)
+    game._update_audio(0.25)
+    assert not spy.called
+    assert game._sonar_audio_sequence == receiver.sequence
+    receiver.update([], 0, 12, .2, 2, 6)
+    game._update_audio(0.25)
+    spy.assert_called_once()
     game.audio.shutdown()
 
 

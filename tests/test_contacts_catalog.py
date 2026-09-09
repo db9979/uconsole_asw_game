@@ -11,13 +11,14 @@ def test_catalog_completeness():
     assert len(CATALOG.subs) == 23
     for key in ("diesel_alt", "aip_modern", "ssn"):
         assert key in CATALOG.subs
-    assert len(CATALOG.hostile_surfaces) == 25
+    assert len(CATALOG.hostile_surfaces) == 28
+    assert len(CATALOG.legacy_hostile_surfaces) == 25
     assert len(CATALOG.civilian_surfaces) == 55
     assert set(CATALOG.aircraft) >= {"mil_patrol", "civil_transit"}
     assert set(CATALOG.animals) == {"whale", "fish_school", "jellyfish"}
     assert "enemy_torp" in CATALOG.torpedoes
     assert "decoy" in CATALOG.decoys
-    assert len(CATALOG.acoustic_profiles) == 106
+    assert len(CATALOG.acoustic_profiles) == 109
 
 
 def test_builtin_catalog_loads_from_package_resources():

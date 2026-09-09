@@ -1,6 +1,6 @@
 # Workstation and Model Review
 
-This implementation follows a source review of the eight workstations, six
+This implementation follows a code and behavior review of the eight workstations, six
 sonar pages, input ownership, persistence, catalogs, AI, weapons and synthesized
 audio. Specialist review roles were analytical perspectives, not naval
 certification. No real classified performance or authentic F123 room layout is
@@ -76,7 +76,7 @@ The subsequent Commander milestone is tracked in plan-0.1.6.md.
 - User-unit profiles remain authoring-only. Strict validation does not make every
   descriptive/library field effective. See contacts-db.md for field ownership.
 - DSP restarts after loading; exact uninterrupted PCM continuation is not claimed.
-  At accelerated time, audition is sampled preview rather than continuous replay.
+  At accelerated time, audition is muted and generated blocks are not replayed later.
 - Initial code-review suggestions such as physical grounding damage, detailed
   biological call/silence cycles and a mechanically complete propulsion-noise
   model remain separate fidelity extensions, not fabricated real data.

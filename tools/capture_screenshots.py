@@ -31,6 +31,7 @@ STATIONS = (
     (Station.RADIO, "radio"),
     (Station.ENGINE, "engineering"),
     (Station.HELICOPTER, "helicopter"),
+    (Station.ELOKA, "eloka"),
 )
 
 
@@ -50,9 +51,12 @@ def _save(surface: pygame.Surface, path: Path) -> None:
 
 def _montage(images: list[pygame.Surface]) -> pygame.Surface:
     width, height = config.SCREEN_W, config.SCREEN_H
-    result = pygame.Surface((width * 2, height * 2))
+    columns = 1 if len(images) == 1 else 2
+    rows = max(1, (len(images) + columns - 1) // columns)
+    result = pygame.Surface((width * columns, height * rows))
     for index, image in enumerate(images):
-        result.blit(image, ((index % 2) * width, (index // 2) * height))
+        result.blit(image, ((index % columns) * width,
+                            (index // columns) * height))
     return result
 
 
@@ -88,7 +92,8 @@ def capture_all(output_dir: Path, seed: int = 1234) -> list[Path]:
         written.append(path)
         station_images.append(image)
 
-    for index, group in enumerate((station_images[:4], station_images[4:]), 1):
+    groups = (station_images[:4], station_images[4:8], station_images[8:])
+    for index, group in enumerate(groups, 1):
         path = output_dir / f"stations-overview-{index}.png"
         _save(_montage(group), path)
         written.append(path)

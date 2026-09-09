@@ -92,6 +92,7 @@ def test_pinned_snapshot_is_json_safe_and_restores_without_object_refs(game):
     (Station.RADIO, (30, 120)),
     (Station.ENGINE, (30, 120)),
     (Station.HELICOPTER, (700, 120)),
+    (Station.ELOKA, (30, 120)),
 ])
 def test_every_station_has_meaningful_context(game, station, pos):
     game.station = station
@@ -109,6 +110,7 @@ def test_every_station_has_meaningful_context(game, station, pos):
     (Station.RADIO, (30, 120), "HFDF BEARINGS"),
     (Station.ENGINE, (30, 120), "ENGINE ORDER"),
     (Station.HELICOPTER, (700, 120), "FLIGHT STATUS HSP-5"),
+    (Station.ELOKA, (30, 120), "PASSIVE ESM PICTURE"),
 ])
 def test_every_station_tooltip_is_composed_in_english(game, station, pos, english):
     game.tr = Translator("en").translate

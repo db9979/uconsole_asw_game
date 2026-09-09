@@ -1,4 +1,4 @@
-"""Catalog-keyed, context-sensitive help for all eight stations."""
+"""Catalog-keyed, context-sensitive help for all nine stations."""
 
 from src.core.i18n import Translator
 from src.core.station import Station
@@ -10,6 +10,7 @@ _GLOBAL_HELP = (
         ("Tab / Shift+Tab", "help.next_station"),
         ("1 / 2 / 3 / 4", "help.global.stations_1"),
         ("5 / 6 / 7 / 8", "help.global.stations_2"),
+        ("9", "help.global.stations_3"),
         ("help.key.station_number", "help.repeat_station"),
         ("P", "help.pause"),
         ("help.key.time_scale", "help.time_scale"),
@@ -62,8 +63,9 @@ STATION_HELP = {
         "help.weapons.intro",
         [("M", "help.control.target_from_sonar"), ("help.key.up_down", "help.control.torp_depth"),
          ("<- / ->", "help.control.target_select"), ("T / Ctrl+Enter", "help.control.fire"),
-         ("H", "help.control.helo_toggle"), ("B", "help.control.buoy"),
-         ("D", "help.control.air_torp"), ("Q / E", "help.control.zoom"),
+          ("H", "help.control.helo_toggle"), ("B", "help.control.buoy"),
+          ("D", "help.control.air_torp"), ("V", "help.control.nixie"),
+          ("Q / E", "help.control.zoom"),
          ("K", "help.control.follow")],
         ["help.note.roe", "help.note.target_depth", "help.note.salvo"],
         "help.note.weapon_tactic"),
@@ -71,7 +73,7 @@ STATION_HELP = {
         "help.damage.intro",
         [("<- / ->", "help.control.compartment"), ("help.key.up_down", "help.control.team"),
          ("Enter", "help.control.assign"), ("Backspace", "help.control.withdraw"),
-         ("1-8", "help.control.station_only"), ("control.help.click", "control.help.compartment")],
+         ("1-9", "help.control.station_only"), ("control.help.click", "control.help.compartment")],
         ["help.note.damage_states", "help.note.destroyed", "help.note.sinking",
          "help.note.fire", "help.note.assignment"], "help.note.damage_tactic"),
     Station.OPZ: _station(
@@ -102,7 +104,14 @@ STATION_HELP = {
          ("D / Ctrl+Enter", "help.control.drop_torp"), ("Q / E", "help.control.zoom"),
          ("K", "help.control.follow")],
         ["help.note.helo_stores", "help.note.helo_fuel", "help.note.buoys",
-         "help.note.helo_roe", "help.note.shared_controls"], "help.note.helo_tactic"),
+          "help.note.helo_roe", "help.note.shared_controls"], "help.note.helo_tactic"),
+    Station.ELOKA: _station(
+        "help.eloka.intro",
+        [("help.key.up_down", "help.control.eloka_select"),
+         ("C", "help.control.eloka_annotation")],
+        ["help.note.eloka_passive", "help.note.eloka_candidates",
+         "help.note.eloka_correlation", "help.note.eloka_damage"],
+        "help.note.eloka_tactic"),
 }
 
 

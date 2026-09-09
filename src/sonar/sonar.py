@@ -346,8 +346,9 @@ class SonarSystem:
     RETRIEVING = TowState.RETRIEVING
     FAULT = TowState.FAULT
 
-    def __init__(self, seed: int = 42):
+    def __init__(self, seed: int = 42, acoustic_profiles=None):
         self.rng = random.Random(seed + 1000)
+        self.acoustic_profiles = acoustic_profiles
         self.contacts: dict[int, Contact] = {}
         self._tracks: dict[int, BearingTrack] = {}
         self._next_contact_id = 1
@@ -371,6 +372,9 @@ class SonarSystem:
         self.listen_bearing = 0.0
         self.beam_width_deg = 12.0
         self.listen_filtered = False
+        self._audition_ola_state = None
+        self._audition_cache_key = None
+        self._audition_ola_out = None
         self.receiver = AcousticReceiver(seed)
         self.broadband_history = []
         self.history_times = []
@@ -490,8 +494,15 @@ class SonarSystem:
         self.peak_spectrum = []
         self.demon_analysis = None
         self.signature_candidates = []
+        self.reset_audition_audio()
 
-    def listening_samples(self, samples=None):
+    def reset_audition_audio(self) -> None:
+        """Discard transient operator-filter and retry state."""
+        self._audition_ola_state = None
+        self._audition_cache_key = None
+        self._audition_ola_out = None
+
+    def listening_samples(self, samples=None, block_id=None):
         """Return pre-playback beam audio with operator filtering and gain.
 
         An explicit receiver block uses the current controls instead of reading
@@ -501,18 +512,60 @@ class SonarSystem:
         The playback path applies headphone volume before its smooth limiter;
         keeping floating headroom here lets lower volume reduce compression.
         Instrument analysis continues to use the receiver's ungained samples.
+
+        Band filtering uses a periodic-Hann 50% overlap-add stream. The result
+        lags by half a block, avoiding independent FFT-block edges. ``block_id``
+        makes processing idempotent when playback backpressure retries a block.
         """
-        samples = np.array(self.receiver.samples if samples is None else samples,
-                           dtype=np.float32, copy=True)
+        source = self.receiver.samples if samples is None else samples
+        controls = (self.listen_filtered, self.band_low_hz, self.band_high_hz,
+                    self.notch_enabled, self._own_line_hz, self.gain_db)
+        # A rejected playback block must retry byte-for-byte even if ship speed
+        # changes the own-line notch before the next frame. New controls take
+        # effect on the next receiver sequence.
+        cache_key = (("sequence", block_id) if block_id is not None
+                     else (("object", id(source)), controls))
+        if cache_key == self._audition_cache_key:
+            return self._audition_ola_out.copy()
+        samples = np.array(source, dtype=np.float32, copy=True)
         if self.listen_filtered:
-            frequencies = np.fft.rfftfreq(len(samples), 1.0 / self.receiver.sample_rate)
-            spectrum = np.fft.rfft(samples)
-            spectrum[(frequencies < self.band_low_hz) | (frequencies > self.band_high_hz)] = 0
+            n = samples.size
+            frequencies = np.fft.rfftfreq(n, 1.0 / self.receiver.sample_rate)
+            mask = ((frequencies >= self.band_low_hz)
+                    & (frequencies <= self.band_high_hz)).astype(float)
             if self.notch_enabled:
-                spectrum[abs(frequencies - self._own_line_hz) < 5] *= .15
-            samples = np.fft.irfft(spectrum, n=len(samples))
-        samples *= 10 ** (self.gain_db / 20)
-        return np.nan_to_num(samples, copy=False).astype(np.float32)
+                mask[abs(frequencies - self._own_line_hz) < 5] *= .15
+            if n >= 2 and n % 2 == 0:
+                half = n // 2
+                state = self._audition_ola_state
+                previous, overlap = state if state is not None else (None, None)
+                if (previous is None or overlap is None
+                        or previous.shape != (half,) or overlap.shape != (half,)):
+                    previous = np.zeros(half)
+                    overlap = np.zeros(half)
+                window = 0.5 * (1.0 - np.cos(
+                    2.0 * np.pi * np.arange(n) / n))
+                output = []
+                for current in (samples[:half], samples[half:]):
+                    frame = np.concatenate((previous, current))
+                    filtered = np.fft.irfft(
+                        np.fft.rfft(window * frame) * mask, n=n)
+                    output.append(overlap + filtered[:half])
+                    previous = current.copy()
+                    overlap = filtered[half:]
+                out = np.concatenate(output)
+                self._audition_ola_state = (previous, overlap)
+            else:
+                out = np.fft.irfft(np.fft.rfft(samples) * mask, n=n)
+                self._audition_ola_state = None
+        else:
+            out = samples
+            self._audition_ola_state = None
+        out = out * (10 ** (self.gain_db / 20))
+        result = np.nan_to_num(out, copy=False).astype(np.float32)
+        self._audition_cache_key = cache_key
+        self._audition_ola_out = result.copy()
+        return result
 
     @property
     def ping_ready(self) -> bool:
@@ -636,8 +689,8 @@ class SonarSystem:
                 self.towed_depth_target_m - self.towed_depth_m, -depth_step, depth_step)
         self._process_pending_pings(t)
         if self._ping_anim_timer > 0:
-            self._ping_anim_timer -= dt
-            if self._ping_anim_timer <= 0:
+            self._ping_anim_timer = max(0.0, self._ping_anim_timer - dt)
+            if self._ping_anim_timer == 0:
                 self.ping_active = False
 
     def update(self, dt: float, t: float, frigate, targets, world,
@@ -923,7 +976,8 @@ class SonarSystem:
             return
         data = self.demon_analysis
         self.signature_candidates = rank_signatures(
-            data["blade_rate_hz"], None, data["tonal_hz"], data["cavitation"])
+            data["blade_rate_hz"], None, data["tonal_hz"], data["cavitation"],
+            self.acoustic_profiles)
 
     @staticmethod
     def _active_range_nm(tgt, world, range_factor: float, mode: str) -> float:

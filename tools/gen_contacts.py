@@ -25,8 +25,20 @@ def _fail(where, message):
 
 
 def _read_documents(base_dir):
-    return {filename: {"version": 1, "entries": catalog._read_entries(base_dir / filename)}
+    return {filename: catalog._read_document(base_dir / filename)
             for filename in FILES}
+
+
+def _same_json(left, right):
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        return (left.keys() == right.keys()
+                and all(_same_json(left[key], right[key]) for key in left))
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            _same_json(a, b) for a, b in zip(left, right))
+    return left == right
 
 
 def _sig_dict(signature):
@@ -47,7 +59,8 @@ def _runtime_documents(cat, library_keys):
     def surface(profile):
         return {
             "key": profile.key, "name": profile.name, "category": profile.category,
-            "hostile": profile.hostile, "speed_kn": list(profile.speed_kn),
+            "hostile": profile.category == "KAMPFSCHIFF",
+            "speed_kn": list(profile.speed_kn),
             "callsigns": list(profile.callsigns), "esm_prob": profile.esm_prob,
             "asm_salvo": list(profile.asm_salvo),
             "asm_cooldown_s": profile.asm_cooldown_s, "loiter_nm": profile.loiter_nm,
@@ -96,6 +109,54 @@ def _runtime_documents(cat, library_keys):
             for name, values in entries.items()}
 
 
+def _validate_provenance_coverage(cat):
+    expected = set()
+    registries = {
+        "sensors": cat.sensors, "emitters": cat.emitters,
+        "launchers": cat.launchers, "magazines": cat.magazines,
+        "countermeasures": cat.countermeasures,
+    }
+    for profile_key, systems in cat.profile_systems.items():
+        resource = cat.profile_resources[profile_key]
+        for name, key, registry in (
+                ("reference", systems.reference_key, cat.references),
+                ("machine", systems.machine_key, cat.machines)):
+            if key is not None:
+                component = registry[key]
+                expected.update((resource, profile_key, f"/{name}/{field}")
+                                for field in component.__dataclass_fields__
+                                if field != "key")
+        for registry_name, keys in (
+                ("sensors", systems.sensor_keys),
+                ("emitters", systems.emitter_keys),
+                ("launchers", systems.launcher_keys),
+                ("magazines", systems.magazine_keys),
+                ("countermeasures", systems.countermeasure_keys)):
+            for key in keys:
+                component = registries[registry_name][key]
+                expected.update((resource, profile_key,
+                                 f"/{registry_name}/{key}/{field}")
+                                for field in component.__dataclass_fields__
+                                if field != "key")
+        weapon_keys = {
+            weapon for key in systems.launcher_keys
+            for weapon in cat.launchers[key].weapon_keys
+        } | {cat.magazines[key].weapon_key for key in systems.magazine_keys}
+        for key in weapon_keys:
+            expected.update((resource, profile_key, f"/weapons/{key}/{field}")
+                            for field in cat.weapons[key].__dataclass_fields__
+                            if field != "key")
+    actual = {
+        (claim.resource, claim.profile_key, field_path)
+        for claim in cat.provenance_claims for field_path in claim.field_paths
+    }
+    if actual != expected:
+        missing = sorted(expected - actual)
+        extra = sorted(actual - expected)
+        _fail(catalog.SOURCES_FILENAME,
+              f"incomplete field coverage (missing={missing[:8]}, extra={extra[:8]})")
+
+
 def validate(base_dir):
     base_dir = Path(base_dir)
     documents = _read_documents(base_dir)
@@ -104,14 +165,24 @@ def validate(base_dir):
     loaded = catalog._load_catalog_from(base_dir)
     runtime = _runtime_documents(loaded, library_keys)
     for filename, document in documents.items():
-        if runtime[filename] != document:
+        if runtime[filename]["entries"] != document["entries"]:
             _fail(filename, "runtime load parity mismatch")
+    reconstructed = loaded.reconstruct_documents()
+    for filename, document in documents.items():
+        if not _same_json(reconstructed[filename], document):
+            _fail(filename, "lossless document reconstruction mismatch")
+    source_path = base_dir / catalog.SOURCES_FILENAME
+    if source_path.is_file():
+        source_document = catalog._read_json(source_path)
+        if not _same_json(loaded.reconstruct_provenance(), source_document):
+            _fail(catalog.SOURCES_FILENAME, "lossless provenance reconstruction mismatch")
     return loaded
 
 
 def check(base_dir):
     try:
         loaded = validate(base_dir)
+        _validate_provenance_coverage(loaded)
     except (OSError, json.JSONDecodeError, TypeError, ValueError, KeyError) as exc:
         print(f"contact catalog invalid: {exc}", file=sys.stderr)
         return 1

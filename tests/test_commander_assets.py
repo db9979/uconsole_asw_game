@@ -49,6 +49,20 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert code["maxlength"] == "6" and code["pattern"] == "[0-9]{3}[A-Za-z]{3}"
     assert code["autocapitalize"] == "characters" and code["autocomplete"] == "off"
     assert code["placeholder"] == "482KMT" and code["aria-describedby"] in ids
+    tabs = [attrs for _, attrs in document.elements if attrs.get("role") == "tab"]
+    panels = [attrs for _, attrs in document.elements if attrs.get("role") == "tabpanel"]
+    assert len(tabs) == len(panels) == 4
+    assert sum(tab.get("aria-selected") == "true" and tab.get("tabindex") == "0"
+               for tab in tabs) == 1
+    assert all(tab.get("type") == "button" and tab["aria-controls"] in ids for tab in tabs)
+    assert all(panel["aria-labelledby"] in ids for panel in panels)
+    assert {tab["aria-controls"] for tab in tabs} == {panel["id"] for panel in panels}
+    assert sum("hidden" not in panel for panel in panels) == 1
+    lookout = next(attrs for _, attrs in document.elements
+                   if attrs.get("id") == "panel-lookout")
+    assert "pending-panel" not in lookout.get("class", "")
+    assert {"lookout", "lookout-zoom-in", "lookout-zoom-out", "lookout-reset",
+            "lookout-range", "lookout-sea", "lookout-light", "lookout-note"} <= set(ids)
     for tag, attrs in document.elements:
         assert not any(key.startswith("on") or key == "style" for key in attrs)
         assert tag not in {"iframe", "img", "object", "embed", "style"}
@@ -67,6 +81,10 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert 'request("/state")' in js and 'request("/chart")' in js
     assert 'request("/commands"' in js and 'expected: 202' in js
     assert "result.reasoncode" in js and not re.search(r"result\.reason\b", js)
+    lookout_renderer = js.split("function drawLookout()", 1)[1].split(
+        "function changeLookoutRange", 1)[0]
+    assert "chart" not in lookout_renderer and "sendCommand" not in lookout_renderer
+    assert "snapshot.tracks" in lookout_renderer and "snapshot.ownship" in lookout_renderer
 
 
 def test_commander_catalogs_cover_markup_and_script():
@@ -125,20 +143,32 @@ const statusFixture = __STATUS_STATE__;
 const fixture = structuredClone(statusFixture);
 const drawnFixes = new Map();
 let canvasFrame = {texts: [], translations: [], fills: 0};
+let lookoutFrame = {texts: [], translations: [], rotations: [], arcs: [], fills: 0};
 const nativeFillRect = CanvasRenderingContext2D.prototype.fillRect;
 CanvasRenderingContext2D.prototype.fillRect = function (...args) {
-  canvasFrame = {texts: [], translations: [], fills: 0};
+  if (this.canvas.id === "lookout") lookoutFrame = {texts: [], translations: [], rotations: [], arcs: [], fills: 0};
+  else canvasFrame = {texts: [], translations: [], fills: 0};
   return nativeFillRect.apply(this, args);
 };
 const nativeTranslate = CanvasRenderingContext2D.prototype.translate;
 CanvasRenderingContext2D.prototype.translate = function (x, y) {
-  canvasFrame.translations.push({x, y});
+  (this.canvas.id === "lookout" ? lookoutFrame : canvasFrame).translations.push({x, y});
   return nativeTranslate.call(this, x, y);
+};
+const nativeRotate = CanvasRenderingContext2D.prototype.rotate;
+CanvasRenderingContext2D.prototype.rotate = function (angle) {
+  if (this.canvas.id === "lookout") lookoutFrame.rotations.push(angle);
+  return nativeRotate.call(this, angle);
 };
 const nativeFill = CanvasRenderingContext2D.prototype.fill;
 CanvasRenderingContext2D.prototype.fill = function (...args) {
-  canvasFrame.fills++;
+  (this.canvas.id === "lookout" ? lookoutFrame : canvasFrame).fills++;
   return nativeFill.apply(this, args);
+};
+const nativeArc = CanvasRenderingContext2D.prototype.arc;
+CanvasRenderingContext2D.prototype.arc = function (x, y, radius, start, end, ...rest) {
+  if (this.canvas.id === "lookout") lookoutFrame.arcs.push({x, y, radius, start, end});
+  return nativeArc.call(this, x, y, radius, start, end, ...rest);
 };
 const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
 CanvasRenderingContext2D.prototype.fillText = function (text, x, y, ...rest) {
@@ -147,7 +177,7 @@ CanvasRenderingContext2D.prototype.fillText = function (text, x, y, ...rest) {
     assert(x >= 0 && x + this.measureText(text).width <= this.canvas.clientWidth &&
       y >= parseFloat(this.font) && y <= this.canvas.clientHeight, "numeric chart labels remain inside the canvas");
   }
-  canvasFrame.texts.push(text);
+  (this.canvas.id === "lookout" ? lookoutFrame : canvasFrame).texts.push(text);
   if (fixture.tracks.some((track) => track.label === text)) drawnFixes.set(text, {x, y});
   return nativeFillText.call(this, text, x, y, ...rest);
 };
@@ -279,6 +309,7 @@ async function runContract() {
   assert(innerWidth === __WIDTH__, "requested CSS viewport width: " + innerWidth);
   assert(bounds.width > 200 && bounds.height > 200, "responsive chart is visible");
   assert(document.documentElement.scrollWidth <= innerWidth + 1, "no horizontal page overflow");
+  assert(document.documentElement.scrollHeight <= innerHeight + 1, "authenticated shell fits the viewport");
   assert($test("chart").width >= bounds.width, "high DPI backing canvas");
   assert(!drawnFixes.has(fixture.tracks[0].label), "bearing-only contact has no invented position marker");
   const fix = drawnFixes.get(fixture.tracks[1].label), air = drawnFixes.get(fixture.tracks[2].label);
@@ -297,13 +328,26 @@ async function runContract() {
   first.focus(); first.click();
   assert($test("detail-label").textContent === fixture.tracks[0].label, "local selection details");
   if (innerWidth > 1250) {
-    const support = document.querySelector(".support-grid").getBoundingClientRect();
+    const supportGrid = document.querySelector(".support-grid");
+    const support = supportGrid.getBoundingClientRect();
     const panel = document.querySelector(".chart-panel").getBoundingClientRect();
     const plot = $test("chart").getBoundingClientRect();
-    assert(support.top < innerHeight - 70, "selected contact details do not push ownship and alarm headings below the fold");
+    assert(panel.bottom <= support.top, "support panels follow the workspace without overlap");
+    const operationsPanel = $test("panel-operations");
+    assert(support.bottom <= operationsPanel.scrollHeight + operationsPanel.getBoundingClientRect().top + 1, "support panels remain in the Operations scroller");
     assert(plot.height > 200 && plot.bottom <= panel.bottom, "bounded desktop chart retains a usable, contained plot");
     const details = document.querySelector(".details-panel");
     assert(getComputedStyle(details).overflowY === "auto", "long contact assessments scroll inside their panel");
+    $test("propose-navigation").scrollIntoView({block: "nearest"});
+    const action = $test("propose-navigation").getBoundingClientRect();
+    const detailBounds = details.getBoundingClientRect();
+    assert(action.top >= detailBounds.top && action.bottom <= detailBounds.bottom, "navigation action is reachable inside contact details");
+    supportGrid.scrollIntoView({block: "start"});
+    const reached = supportGrid.getBoundingClientRect();
+    const operationBounds = operationsPanel.getBoundingClientRect();
+    assert(reached.top >= operationBounds.top - 1 && reached.top < operationBounds.bottom, "Operations scrolling reaches support panels");
+    operationsPanel.scrollTop = 0;
+    details.scrollTop = 0;
   }
   $test("affiliation").value = "HOSTILE";
   $test("affiliation").dispatchEvent(new Event("change", {bubbles: true}));
@@ -311,6 +355,103 @@ async function runContract() {
   assert(commands.length === 0 && fixture.crew_target === "fix-2", "selection and drafts never send commands");
   assert(document.activeElement === first, "poll preserves keyboard focus");
   assert($test("affiliation").value === "HOSTILE", "poll preserves operator draft");
+  $test("navigation-course").value = "87.5";
+  const commandsBeforeTabs = commands.length;
+  const operationScale = $test("chart-scale").textContent;
+  const tab = (name) => $test(`tab-${name}`);
+  tab("lookout").click();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  assert(tab("lookout").getAttribute("aria-selected") === "true" && !$test("panel-lookout").hidden && $test("panel-operations").hidden, "click activates the Lookout tab");
+  const lookoutBounds = $test("lookout").getBoundingClientRect();
+  const requestedDpr = Math.min(devicePixelRatio || 1, 3);
+  const lookoutDpr = Math.min(requestedDpr, Math.sqrt(8000000 /
+    Math.max(1, $test("lookout").clientWidth * $test("lookout").clientHeight)));
+  assert(lookoutBounds.width > 100 && lookoutBounds.height > 50 &&
+    $test("lookout").width === Math.round($test("lookout").clientWidth * lookoutDpr) &&
+    $test("lookout").height === Math.round($test("lookout").clientHeight * lookoutDpr), "Lookout canvas has exact responsive backing dimensions");
+  assert($test("lookout-sea").textContent === "3" && $test("lookout-light").textContent === "Day" &&
+    $test("lookout-scope").dataset.light === "day", "snapshot environment drives Lookout status and palette");
+  assert(lookoutFrame.arcs.filter((arc) => Math.abs(arc.radius - 4) < .01).length === 1 &&
+    lookoutFrame.texts.includes(fixture.tracks[1].label) && !lookoutFrame.texts.includes(fixture.tracks[0].label),
+    "positioned observations are points while bearing-only reports have no invented point or label position");
+  const center = {x: lookoutBounds.width / 2, y: lookoutBounds.height / 2};
+  const rings = lookoutFrame.arcs.filter((arc) => Math.abs((arc.end - arc.start) - Math.PI * 2) < .001 &&
+    Math.abs(arc.x - center.x) < 1 && Math.abs(arc.y - center.y) < 1);
+  const lookoutRadius = Math.max(...rings.map((ring) => ring.radius));
+  const point = lookoutFrame.arcs.find((arc) => Math.abs(arc.radius - 4) < .01);
+  const expectedScale = lookoutRadius / 100;
+  assert(Math.abs(point.x - (center.x + 20 * expectedScale)) < 1 &&
+    Math.abs(point.y - (center.y - 50 * expectedScale)) < 1, "positioned Lookout point uses equal north-up snapshot scale");
+  const indicator = lookoutFrame.translations.find((entry) => Math.hypot(entry.x - center.x, entry.y - center.y) > 20);
+  assert(indicator && Math.abs(indicator.x - (center.x + Math.sin(35 * Math.PI / 180) * lookoutRadius)) < 1 &&
+    Math.abs(indicator.y - (center.y - Math.cos(35 * Math.PI / 180) * lookoutRadius)) < 1,
+    "bearing-only report is marked at the correct nautical display edge");
+  assert(lookoutFrame.rotations.some((angle) => Math.abs(angle - 15 * Math.PI / 180) < .001),
+    "own course vector uses the published nautical heading");
+  assert($test("lookout-observations").textContent.includes(fixture.tracks[0].label) &&
+    $test("lookout-observations").textContent.includes("bearing-only observation") &&
+    $test("lookout-own").textContent.includes("15"), "Lookout canvas has a current accessible text equivalent");
+  fixture.environment.is_night = true;
+  await until(() => $test("lookout-scope").dataset.light === "night" && $test("lookout-light").textContent === "Night", "night snapshot updates Lookout presentation");
+  fixture.environment.is_night = false;
+  await until(() => $test("lookout-scope").dataset.light === "day", "day snapshot restores Lookout presentation");
+  const lookoutRange = $test("lookout-range").textContent;
+  $test("lookout-zoom-in").click();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  assert($test("lookout-range").textContent !== lookoutRange && $test("chart-scale").textContent === operationScale,
+    "Lookout range is independent from Operations chart scale");
+  $test("lookout-reset").click();
+  $test("lookout").dispatchEvent(new WheelEvent("wheel", {deltaY: 1, bubbles: true, cancelable: true}));
+  $test("lookout").dispatchEvent(new KeyboardEvent("keydown", {key: "Home", bubbles: true, cancelable: true}));
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  assert($test("lookout-range").textContent === lookoutRange && commands.length === commandsBeforeTabs,
+    "Lookout controls remain browser-local and Home restores its default range");
+  $test("lookout").style.width = "300px";
+  $test("lookout").style.height = "180px";
+  const resizedDpr = Math.min(requestedDpr, Math.sqrt(8000000 / (300 * 180)));
+  await until(() => $test("lookout").clientWidth === 300 && $test("lookout").clientHeight === 180 &&
+    $test("lookout").width === Math.round(300 * resizedDpr) && $test("lookout").height === Math.round(180 * resizedDpr),
+    "active Lookout resize updates both backing dimensions");
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const resizedRings = lookoutFrame.arcs.filter((arc) => Math.abs((arc.end - arc.start) - Math.PI * 2) < .001 &&
+    Math.abs(arc.x - 150) < 1 && Math.abs(arc.y - 90) < 1);
+  assert(resizedRings.length === 4 && Math.max(...resizedRings.map((ring) => ring.radius)) < 90,
+    "Lookout geometry recenters after active resize");
+  $test("lookout").style.removeProperty("width");
+  $test("lookout").style.removeProperty("height");
+  await until(() => $test("lookout").clientWidth > 300 && $test("lookout").height ===
+    Math.round($test("lookout").clientHeight * Math.min(requestedDpr, Math.sqrt(8000000 /
+      Math.max(1, $test("lookout").clientWidth * $test("lookout").clientHeight)))),
+    "Lookout restores responsive backing dimensions after resize");
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const restoredRings = lookoutFrame.arcs.filter((arc) => Math.abs((arc.end - arc.start) - Math.PI * 2) < .001 &&
+    Math.abs(arc.x - $test("lookout").clientWidth / 2) < 1 && Math.abs(arc.y - $test("lookout").clientHeight / 2) < 1);
+  assert(Math.abs(Math.max(...restoredRings.map((ring) => ring.radius)) - lookoutRadius) < 1,
+    "Lookout geometry restores after responsive resize");
+  assert($test("chart").width === 1 && $test("chart").height === 1, "inactive Operations canvas releases its backing store");
+  tab("lookout").dispatchEvent(new KeyboardEvent("keydown", {key: "End", bubbles: true}));
+  assert(document.activeElement === tab("contacts") && tab("contacts").getAttribute("aria-selected") === "true", "End activates the final tab");
+  assert($test("lookout").width === 1 && $test("lookout").height === 1, "inactive Lookout canvas releases its backing store");
+  tab("contacts").dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
+  assert(document.activeElement === tab("operations") && tab("operations").getAttribute("aria-selected") === "true", "Right arrow wraps to Operations");
+  tab("operations").dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
+  assert(document.activeElement === tab("contacts"), "Left arrow wraps to Contacts");
+  tab("contacts").dispatchEvent(new KeyboardEvent("keydown", {key: "Home", bubbles: true}));
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  assert(document.activeElement === tab("operations") && !$test("panel-operations").hidden, "Home restores Operations");
+  assert(first.getAttribute("aria-pressed") === "true" && $test("detail-label").textContent === fixture.tracks[0].label && $test("affiliation").value === "HOSTILE" && $test("navigation-course").value === "87.5", "tab round trip preserves selection and drafts");
+  assert(commands.length === commandsBeforeTabs && $test("chart").width > 0 && $test("chart").height > 0, "tab switching sends no command and redraws Operations");
+  tab("guide").click();
+  await sleep(650);
+  assert(tab("guide").getAttribute("aria-selected") === "true", "poll preserves active tab");
+  $test("language").value = "de";
+  $test("language").dispatchEvent(new Event("change"));
+  await until(() => document.documentElement.lang === "de", "tab language switch");
+  assert(tab("guide").getAttribute("aria-selected") === "true", "language switch preserves active tab");
+  $test("language").value = "en";
+  $test("language").dispatchEvent(new Event("change"));
+  await until(() => document.documentElement.lang === "en", "restore language after tab check");
+  tab("operations").click();
   $test("apply-affiliation").click();
   await until(() => commands.length === 1, "explicit affiliation submit");
   await sleep(650);
@@ -457,14 +598,27 @@ async function runContract() {
   await sleep(50);
   assert(canvasFrame.texts.length > 0 && canvasFrame.translations.length === 0 && canvasFrame.fills === 0, "blocked geometry contains no previous or imaginary ownship");
   assert(!canvasFrame.texts.includes("Eigenes Schiff") && !canvasFrame.texts.includes("Eigener Hubschrauber"), "blocked geometry has no asset labels in German");
+  tab("lookout").click();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  assert($test("lookout-sea").textContent === "--" && $test("lookout-light").textContent === "--" &&
+    lookoutFrame.arcs.length === 0 && lookoutFrame.translations.length === 0,
+    "status-only redaction clears prior Lookout environment and geometry");
   assert($test("propose").disabled && $test("apply-classification").disabled && $test("apply-affiliation").disabled && $test("clear-proposal").disabled, "blocked status-only commands stay disabled");
   await sleep(650);
   assert($test("connection").dataset.state === "connected" && commands.length === 8, "blocked polling is healthy and sends no commands");
   assert(maxActive === 1, "at most one outstanding request");
   assert(!failures.length, "browser errors: " + failures.join("; "));
+  Object.assign(fixture, structuredClone(liveFixture), {
+    session: fixture.session, chart_revision: fixture.chart_revision,
+    epoch: fixture.epoch + 1, seq: fixture.seq,
+  });
+  await until(() => $test("lookout-sea").textContent === "3" && $test("lookout-observations").children.length === 3,
+    "live Lookout data returns before direct disconnect");
   $test("disconnect").click();
   assert($test("operations").hidden && !$test("pairing").hidden, "disconnect hides private data");
-  assert($test("track-list").children.length === 0, "disconnect clears private DOM");
+  assert($test("track-list").children.length === 0 && !$test("lookout-sea").textContent &&
+    !$test("lookout-light").textContent && !$test("lookout-observations").textContent &&
+    $test("lookout-scope").dataset.light === "unknown", "disconnect clears private DOM");
   document.documentElement.dataset.contract = "passed";
   if (parent !== window) parent.postMessage({contract: "passed"}, location.origin);
 }
@@ -487,8 +641,9 @@ def browser_state():
                            bearing_uncertainty_deg=5, range_uncertainty_nm=None,
                            can_classify=domain == "SUBSURFACE", can_propose=domain == "SUBSURFACE"))
     return dict(protocol=1, version=APP_VERSION, session="session-A", epoch=1, revision=12,
-                seq=1, phase="live", commands_allowed=True, language="en",
-                clock=dict(sim=90, mission=90, time_scale=1, world=12.5),
+                 seq=1, phase="live", commands_allowed=True, language="en",
+                 clock=dict(sim=90, mission=90, time_scale=1, world=12.5),
+                 environment=dict(sea_state=3, is_night=False),
                 mission=dict(name="Northern watch <img src=x onerror=alert(1)>", objective="Maintain the observation picture", remaining_s=900),
                 ownship=dict(x=250, y=250, course=15, speed=12, target_course=20, target_speed=15,
                              damage=[dict(key="bridge", name="Bridge", state="OK", flood=0, fire=0, teams=[1, 3]),
@@ -503,7 +658,8 @@ def browser_state():
 def browser_status_state():
     state = browser_state()
     state.update(phase="menu", commands_allowed=False,
-                 clock={key: None for key in state["clock"]},
+                  clock={key: None for key in state["clock"]},
+                  environment=dict(sea_state=None, is_night=None),
                  mission=dict(name="", objective="", remaining_s=None),
                  ownship=dict(x=None, y=None, course=None, speed=None,
                               target_course=None, target_speed=None, damage=[],

@@ -73,9 +73,9 @@ def test_correlated_bearing_sources_have_continuous_displayed_steps(monkeypatch)
     for now in (9.5, 10.0, 10.5):
         game.sim_t = now
         game._update_air_picture()
+        game._update_esm_picture()
         game._update_radio_picture()
-        displayed["ESM"].append(
-            game.air_picture._tracks[f"W-{warship.id}"].bearing)
+        displayed["ESM"].append(game.eloka_tracks()[0].bearing)
         displayed["HOJ"].append(game.air_picture._tracks["M-18"].bearing)
         displayed["HFDF"].append(
             game.radio_picture._tracks[f"H-{sub.id}"].bearing)
@@ -187,20 +187,16 @@ def test_esm_continuation_is_identical_after_save_load(isolated_saves):
     game.civilians = []
     game.flights.flights = []
     game.asms = []
-    game.air_picture._tracks.clear()
+    game.esm_picture._tracks.clear()
     game.sim_t = 2.0
-    game._update_air_picture()
+    game._update_esm_picture()
     game.save_to_slot(1)
 
     restored = Game(seed=1, audio_enabled=False)
     assert restored.load_from_slot(1)
     game.sim_t = restored.sim_t = 2.5
-    game._update_air_picture()
-    restored._update_air_picture()
+    game._update_esm_picture()
+    restored._update_esm_picture()
 
-    original = game.air_picture._tracks[f"W-{warship.id}"]
-    continued = restored.air_picture._tracks[f"W-{warship.id}"]
-    assert (continued.raw_bearing, continued.bearing,
-            continued.measurement_history) == (
-                original.raw_bearing, original.bearing,
-                original.measurement_history)
+    assert restored.esm_picture.serialize() == game.esm_picture.serialize()
+    assert restored.esm_picture.track_seq == game.esm_picture.track_seq

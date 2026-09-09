@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "key": "diesel_alt",
@@ -875,5 +875,188 @@
         "signature_text": "leise, elektrischer Antrieb"
       }
     }
+  ],
+  "profiles": [
+    {
+      "profile_key": "sub_03",
+      "reference_key": "reference.sub_03",
+      "machine_key": "machine.sub_03",
+      "sensor_keys": ["sensor.sub_03.sonar", "sensor.sub_03.esm"],
+      "emitter_keys": [],
+      "launcher_keys": ["launcher.sub_03.tubes"],
+      "magazine_keys": ["magazine.sub_03.torpedoes"],
+      "countermeasure_keys": ["countermeasure.sub_03.decoy"]
+    },
+    {
+      "profile_key": "sub_14",
+      "reference_key": "reference.sub_14",
+      "machine_key": "machine.sub_14",
+      "sensor_keys": ["sensor.sub_14.sonar", "sensor.sub_14.esm"],
+      "emitter_keys": [],
+      "launcher_keys": ["launcher.sub_14.tubes"],
+      "magazine_keys": ["magazine.sub_14.torpedoes"],
+      "countermeasure_keys": ["countermeasure.sub_14.decoy"]
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.sub_03",
+      "variant": "Virginia Block III",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": ["attack_submarine", "anti_submarine", "strike"],
+      "hull_type": "submarine",
+      "displacement_tonnes": 7925,
+      "displacement_basis": "submerged",
+      "length_m": 114.8,
+      "beam_waterline_m": null,
+      "beam_overall_m": 10.36,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": [145, 145],
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.sub_14",
+      "variant": "Project 885M Yasen-M",
+      "variant_year": 2021,
+      "refit_year": null,
+      "aliases": ["Severodvinsk-II class"],
+      "roles": ["attack_submarine", "strike"],
+      "hull_type": "submarine",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.sub_03",
+      "cruise_speed_kn": 12,
+      "maximum_speed_kn": 35,
+      "quiet_speed_kn": 12,
+      "propulsion_codes": ["nuclear_steam"],
+      "motor_rpm": null,
+      "shaft_rpm": [85, 240],
+      "propulsor_type": "pumpjet",
+      "blade_count": null,
+      "cruise_lines": [
+        [10, 1.0, 0.2],
+        [20, 0.75, 0.3],
+        [40, 0.653, 0.5],
+        [80, 0.582, 0.8]
+      ],
+      "high_speed_lines": [
+        [25, 1.0, 0.8],
+        [50, 0.596, 1.2],
+        [100, 0.355, 1.8],
+        [200, 0.257, 2.5]
+      ],
+      "cruise_broadband": [0.042, 10, 400],
+      "high_speed_broadband": [0.158, 10, 400]
+    },
+    {
+      "key": "machine.sub_14",
+      "cruise_speed_kn": 14,
+      "maximum_speed_kn": 30,
+      "quiet_speed_kn": 14,
+      "propulsion_codes": ["nuclear_steam"],
+      "motor_rpm": null,
+      "shaft_rpm": [90, 220],
+      "propulsor_type": "propeller",
+      "blade_count": 7,
+      "cruise_lines": [
+        [12, 1.0, 0.3],
+        [24, 0.708, 0.4],
+        [48, 0.55, 0.7],
+        [96, 0.451, 1.0]
+      ],
+      "high_speed_lines": [
+        [28, 1.0, 1.0],
+        [56, 0.501, 1.5],
+        [112, 0.299, 2.0],
+        [224, 0.182, 3.0]
+      ],
+      "cruise_broadband": [0.05, 10, 400],
+      "high_speed_broadband": [0.126, 10, 400]
+    }
+  ],
+  "sensors": [
+    {
+      "key": "sensor.sub_03.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 60,
+      "sensitivity_db": -112, "cadence_s": 0.5, "bearing_uncertainty_deg": 1.5,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_03.esm", "domain": "esm", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 100,
+      "sensitivity_db": -100, "cadence_s": 2, "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_14.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 55,
+      "sensitivity_db": -108, "cadence_s": 0.5, "bearing_uncertainty_deg": 1.8,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 18
+    },
+    {
+      "key": "sensor.sub_14.esm", "domain": "esm", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 90,
+      "sensitivity_db": -98, "cadence_s": 2, "bearing_uncertainty_deg": 2.5,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": null
+    }
+  ],
+  "emitters": [],
+  "weapons": [
+    {
+      "key": "weapon.sub_03.torpedo", "weapon_type": "torpedo",
+      "target_domains": ["subsurface", "surface"], "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50, "engagement_range_nm": [0, 25],
+      "seeker_type": "acoustic_active", "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_14.torpedo", "weapon_type": "torpedo",
+      "target_domains": ["subsurface", "surface"], "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50, "engagement_range_nm": [0, 25],
+      "seeker_type": "acoustic_active", "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    }
+  ],
+  "launchers": [
+    {
+      "key": "launcher.sub_03.tubes", "launcher_type": "torpedo_tube",
+      "mount_count": 4, "ready_count": 4, "reload_s": 60,
+      "arc_center_deg": 0, "arc_width_deg": 90, "vls_cells": null,
+      "weapon_keys": ["weapon.sub_03.torpedo"]
+    },
+    {
+      "key": "launcher.sub_14.tubes", "launcher_type": "torpedo_tube",
+      "mount_count": 8, "ready_count": 8, "reload_s": 60,
+      "arc_center_deg": 0, "arc_width_deg": 120, "vls_cells": null,
+      "weapon_keys": ["weapon.sub_14.torpedo"]
+    }
+  ],
+  "magazines": [
+    {"key": "magazine.sub_03.torpedoes", "weapon_key": "weapon.sub_03.torpedo",
+     "mission_count": 24},
+    {"key": "magazine.sub_14.torpedoes", "weapon_key": "weapon.sub_14.torpedo",
+     "mission_count": 32}
+  ],
+  "countermeasures": [
+    {"key": "countermeasure.sub_03.decoy", "effect_type": "acoustic_decoy",
+     "payload_key": "decoy", "mission_count": 12, "ready_count": 2,
+     "reload_s": 60},
+    {"key": "countermeasure.sub_14.decoy", "effect_type": "acoustic_decoy",
+     "payload_key": "decoy", "mission_count": 12, "ready_count": 2,
+     "reload_s": 60}
   ]
 }

@@ -1,13 +1,12 @@
-"""Save/Load-Roundtrip (Phase 2): kompletter Zustandsabgleich v3."""
+"""Save/load roundtrips and strict save-v10 rejection behavior."""
 
 import json
 from pathlib import Path
-import shutil
-
 import pytest
 
 from src.core import config
-from src.core.game import Game
+from src.core.game import Game, SAVE_ROOT_FIELDS
+from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.air.asm import ASM
 from src.air.sonobuoy import Sonobuoy
 from src.sonar.sonar import Contact
@@ -15,9 +14,6 @@ from src.sonar.tma import BearingTrack
 from src.weapons.torpedo import Torpedo
 
 DT = 1.0 / 60.0
-SAVE_FIXTURES = Path(__file__).parent / "fixtures" / "saves"
-
-
 def pump(g, frames):
     for _ in range(frames):
         g.update(DT)
@@ -27,12 +23,6 @@ def pump(g, frames):
 @pytest.fixture
 def tmp_saves(isolated_saves):
     return isolated_saves
-
-
-def install_historical_save(tmp_saves, version, slot=1):
-    path = tmp_saves / f"slot{slot}.json"
-    shutil.copyfile(SAVE_FIXTURES / f"v{version}.json", path)
-    return path
 
 
 def test_default_save_paths_are_isolated(tmp_path):
@@ -62,9 +52,21 @@ def test_roundtrip_preserves_state(tmp_saves):
     g.damage.compartments["sonar"].flood = 12.5
     g.damage.compartments["engine"].fire = 20.0
     tgt = g.subs[0]
-    g.torpedoes.append(Torpedo(g.ship.x, g.ship.y, 90.0, 60.0, tgt, 99))
+    weapon_key = g.player_torpedo_battery.fire()
+    weapon = next(row for row in g._ownship_loadout["weapons"]
+                  if row["key"] == weapon_key)
+    profile = g.runtime_catalog.torpedoes[weapon["runtime_profile_key"]]
+    g.torpedo_count = g.player_torpedo_battery.remaining_total
+    g.torpedoes.append(Torpedo(
+        g.ship.x, g.ship.y, 90.0, 60.0, tgt, 99, profile=profile,
+        kill_dist_nm=weapon["kill_dist_nm_by_level"][g.level],
+        kill_depth_m=weapon["kill_depth_m_by_level"][g.level],
+        guidance_x=tgt.x, guidance_y=tgt.y))
+    g.torpedo_seq = 99
     g.asms.append(ASM(g.ship.x + 10.0, g.ship.y, 0.0, 42, g.rng_asm))
     g.buoys.append(Sonobuoy(g.ship.x + 1.0, g.ship.y + 1.0, 7))
+    g.buoy_seq = 7
+    g.helo.buoys_left -= 1
     g.hq_msg("Testnachricht")
 
     before = dict(
@@ -133,27 +135,62 @@ def test_load_empty_slot(tmp_saves):
     assert g.load_from_slot(5) is False
 
 
-def test_legacy_version_accepted(tmp_saves):
-    """v2-Dateien ohne neue Felder bleiben laedbar (Default-Values)."""
+@pytest.mark.parametrize("version", range(1, SAVE_VERSION))
+def test_obsolete_save_versions_are_rejected(tmp_saves, version):
     g = Game(seed=99, start_menu=False)
-    g.save_to_slot(1)
-    import json
-    import os
-    path = os.path.join(config.SAVE_DIR, "slot1.json")
-    with open(path) as f:
-        data = json.load(f)
-    # Alte v2-Felder loeschend simulieren:
-    for key in ("world", "torpedoes_in_flight", "asms", "essms", "buoys",
-                "messages", "sonar", "rngs", "chaff_cd", "hq_timer",
-                "asm_sel", "dmg_cursor"):
-        data.pop(key, None)
-    data["version"] = 2
-    with open(path, "w") as f:
-        json.dump(data, f)
-    ok = g.load_from_slot(1)
-    assert ok
-    assert g.mission.type_key == "patrouille"
-    assert len(g.subs) >= 1
+    before = g.save_state()
+    data = json.loads(json.dumps(before))
+    data["version"] = version
+    (tmp_saves / "slot1.json").write_text(json.dumps(data))
+
+    assert not g.load_from_slot(1)
+    assert g.save_state() == before
+
+
+def test_v10_requires_exact_schema_and_every_root_field():
+    game = Game(seed=100, start_menu=False)
+    state = game.save_state()
+
+    for key in SAVE_ROOT_FIELDS:
+        malformed = json.loads(json.dumps(state))
+        del malformed[key]
+        assert not game._load_save_data(malformed), key
+
+    malformed = json.loads(json.dumps(state))
+    malformed["save_schema"] = "u-jagd-save-v9"
+    assert not game._load_save_data(malformed)
+
+    malformed = json.loads(json.dumps(state))
+    malformed["unknown"] = None
+    assert not game._load_save_data(malformed)
+
+
+@pytest.mark.parametrize("mutation", [
+    lambda state: state["ship"].pop("quiet_mode"),
+    lambda state: state["sonar"].pop("next_id"),
+    lambda state: state["subs"][0].pop("decision_reason"),
+    lambda state: state["sonar"].update(unknown=None),
+    lambda state: state["civilians"][0].pop("id"),
+])
+def test_v10_rejects_noncanonical_nested_shapes(mutation):
+    game = Game(seed=101, start_menu=False)
+    before = game.save_state()
+    malformed = json.loads(json.dumps(before))
+    mutation(malformed)
+
+    assert not game._load_save_data(malformed)
+    assert game.save_state() == before
+
+
+def test_v10_sonar_contact_sequence_must_exceed_existing_contacts():
+    game = Game(seed=102, start_menu=False)
+    target = game.subs[0]
+    game.sonar.contacts[target.id] = Contact(7, target.id, "passiv", "sub")
+    game.sonar._next_contact_id = 8
+    state = game.save_state()
+    state["sonar"]["next_id"] = 7
+
+    assert not game._load_save_data(state)
 
 
 def test_malformed_supported_save_does_not_replace_live_game(tmp_saves):
@@ -183,26 +220,7 @@ def test_invalid_world_mode_is_rejected_without_replacing_live_game(tmp_saves):
     assert (game.seed, game.world_mode, game.ship.x, game.ship.y) == before
 
 
-def test_v6_world_snapshot_remains_loadable(tmp_saves):
-    import json
-    import os
-
-    game = Game(seed=177, start_menu=False)
-    game.save_to_slot(3)
-    path = os.path.join(config.SAVE_DIR, "slot3.json")
-    with open(path) as handle:
-        data = json.load(handle)
-    expected_sector = data["world"]["coast"]["metadata"]["sector_id"]
-    data["version"] = 6
-    with open(path, "w") as handle:
-        json.dump(data, handle)
-
-    restored = Game(seed=1, start_menu=False)
-    assert restored.load_from_slot(3)
-    assert restored.world.coast.metadata["sector_id"] == expected_sector
-
-
-def test_v8_preserves_tas_ping_echo_and_operator_state(tmp_saves):
+def test_v10_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     game = Game(seed=188, start_menu=False)
     game.sonar.toggle_tow(6.0)
     game.sonar.tow_payout = .42
@@ -212,7 +230,8 @@ def test_v8_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     game.sonar_page = 5
     game.tooltips_enabled = False
     state = game.save_state()
-    assert state["version"] == 8
+    assert state["version"] == SAVE_VERSION
+    assert state["save_schema"] == SAVE_SCHEMA
 
     restored = Game(seed=1, start_menu=False)
     restored.load_state(state)
@@ -225,7 +244,7 @@ def test_v8_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     assert restored.tooltips_enabled is False
 
 
-def test_v8_split_run_preserves_scheduler_phase():
+def test_v10_split_run_preserves_scheduler_phase():
     uninterrupted = Game(seed=189, start_menu=False, audio_enabled=False)
     uninterrupted._sensor_acc = .13
     uninterrupted._radio_acc = .31
@@ -262,7 +281,7 @@ def test_v8_split_run_preserves_scheduler_phase():
                        uninterrupted._slow_acc))
 
 
-def test_v8_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
+def test_v10_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
     uninterrupted = Game(seed=190, start_menu=False, audio_enabled=False)
     target = uninterrupted.subs[0]
     contact = Contact(41, target.id, "passiv", "sub")
@@ -363,85 +382,6 @@ def test_v8_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
     assert restored.sonar._tma_next == uninterrupted.sonar._tma_next
 
 
-@pytest.mark.parametrize("version", range(1, 9))
-def test_historical_fixture_loads(version, tmp_saves):
-    install_historical_save(tmp_saves, version)
-    game = Game(seed=9000, start_menu=False)
-
-    assert game.load_from_slot(1)
-    assert game.seed == 1000 + version
-    assert game.score == 100 + version
-    assert game.ship.x == 200.0 + version * 10
-
-
-@pytest.mark.parametrize("version", range(1, 8))
-def test_pre_v8_fixtures_receive_tas_active_and_tooltip_defaults(
-        version, tmp_saves):
-    install_historical_save(tmp_saves, version)
-    game = Game(seed=9001, start_menu=False)
-
-    assert game.load_from_slot(1)
-    assert game.sonar.tow_state.value == "STOWED"
-    assert game.sonar.tow_payout == 0.0
-    assert game.sonar.ping_cooldown == 0.0
-    assert game.sonar.ping_active is False
-    assert game.sonar.echo_history == []
-    assert game.tooltips_enabled is True
-
-
-def test_historical_fixture_version_specific_fields_and_migrations(tmp_saves):
-    game = Game(seed=9002, start_menu=False)
-
-    install_historical_save(tmp_saves, 1)
-    assert game.load_from_slot(1)
-    assert game.time_scale_idx == 3
-    assert game.radar_range_nm == config.RADAR_RANGE_DEFAULT_NM
-
-    install_historical_save(tmp_saves, 2)
-    assert game.load_from_slot(1)
-    assert game.sonar_mode == "TOWED"
-    assert game.messages == [(22.0, "v2 fixture")]
-
-    install_historical_save(tmp_saves, 3)
-    assert game.load_from_slot(1)
-    assert game.sonar.gain_db == 4.5
-    assert game.sonar.tma_enabled is False
-    assert game.sonar.listen_bearing == 1.0
-    assert game.sonar.lofar_history == [[0.1, 0.2]]
-
-    install_historical_save(tmp_saves, 4)
-    assert game.load_from_slot(1)
-    assert game.surface_radar_on is False
-    assert game.air_radar_on is True
-    assert game.radar_range_nm == 80.0
-
-    install_historical_save(tmp_saves, 5)
-    assert game.load_from_slot(1)
-    assert game.ship.quiet_mode is True
-    assert game.ship.rudder_angle == 3.0
-    assert game.ship._clock == 5.5
-
-    install_historical_save(tmp_saves, 6)
-    assert game.load_from_slot(1)
-    assert game.world.coast.metadata["sector_id"] == "fixture-v6"
-
-    install_historical_save(tmp_saves, 7)
-    assert game.load_from_slot(1)
-    assert game.world.coast.metadata["sector_id"] == "fixture-v7"
-    assert game.world.coast.has_bathymetry
-    assert game.opz_affiliations == {"S-7": "HOSTILE"}
-
-    install_historical_save(tmp_saves, 8)
-    assert game.load_from_slot(1)
-    assert game.sonar.tow_state.value == "DEPLOYING"
-    assert game.sonar.tow_payout == pytest.approx(0.42)
-    assert game.sonar.ping_active is True
-    assert game.sonar.echo_history == [{"t": 80.0, "contact_id": 2}]
-    assert game.radar_range_nm == 120.0
-    assert game.sonar_page == 5
-    assert game.tooltips_enabled is False
-
-
 @pytest.mark.parametrize("slot", [True, False, 0, 6, -1, 1.0, "1", None])
 @pytest.mark.parametrize("method", ["save_to_slot", "load_from_slot"])
 def test_public_slot_methods_reject_invalid_slots_before_path_use(
@@ -462,11 +402,13 @@ def test_public_slot_methods_reject_invalid_slots_before_path_use(
     assert list(tmp_saves.iterdir()) == []
 
 
-@pytest.mark.parametrize("version", [None, True, 0, 9, -1, 1.0, "8"])
+@pytest.mark.parametrize("version", [None, True, 0, 11, -1, 1.0, "10"])
 def test_unsupported_or_non_integer_versions_are_rejected(version, tmp_saves):
     game = Game(seed=9004, start_menu=False)
     before = game.save_state()
-    (tmp_saves / "slot1.json").write_text(json.dumps({"version": version}))
+    data = json.loads(json.dumps(before))
+    data["version"] = version
+    (tmp_saves / "slot1.json").write_text(json.dumps(data))
 
     assert game.load_from_slot(1) is False
     assert game.save_state() == before
@@ -503,7 +445,7 @@ def test_malformed_sonar_history_is_rejected_transactionally(
         sonar_patch, tmp_saves):
     game = Game(seed=9005, start_menu=False)
     before = game.save_state()
-    data = json.loads((SAVE_FIXTURES / "v8.json").read_text())
+    data = json.loads(json.dumps(before))
     data["sonar"].update(sonar_patch)
     (tmp_saves / "slot1.json").write_text(json.dumps(data))
 
@@ -521,7 +463,7 @@ def test_malformed_scheduler_state_is_rejected_transactionally(
         schedulers, tmp_saves):
     game = Game(seed=9008, start_menu=False)
     before = game.save_state()
-    data = json.loads((SAVE_FIXTURES / "v8.json").read_text())
+    data = json.loads(json.dumps(before))
     data["schedulers"] = schedulers
     (tmp_saves / "slot1.json").write_text(json.dumps(data))
 
@@ -529,18 +471,17 @@ def test_malformed_scheduler_state_is_rejected_transactionally(
     assert game.save_state() == before
 
 
-def test_malformed_enums_are_safely_normalized(tmp_saves):
-    data = json.loads((SAVE_FIXTURES / "v8.json").read_text())
+def test_malformed_enums_are_rejected_transactionally(tmp_saves):
+    game = Game(seed=9006, start_menu=False)
+    before = game.save_state()
+    data = json.loads(json.dumps(before))
     data["sonar_mode"] = "SIDEWAYS"
     data["sonar"]["tow_state"] = "BROKEN_ENUM"
     data["ui"]["station"] = "NOT_A_STATION"
     (tmp_saves / "slot1.json").write_text(json.dumps(data))
 
-    game = Game(seed=9006, start_menu=False)
-    assert game.load_from_slot(1)
-    assert game.sonar_mode == "BOW"
-    assert game.sonar.tow_state.value == "STOWED"
-    assert game.station.name == "BRIDGE"
+    assert not game.load_from_slot(1)
+    assert game.save_state() == before
 
 
 @pytest.mark.parametrize("entrypoint", ["slot", "legacy"])
@@ -565,11 +506,15 @@ def test_every_failed_file_load_preserves_live_state(
     elif failure == "not-object":
         path.write_text("[]")
     elif failure == "unsupported":
-        path.write_text('{"version": 9}')
+        data = json.loads(json.dumps(before))
+        data["version"] = SAVE_VERSION + 1
+        path.write_text(json.dumps(data))
     elif failure == "early-state":
-        path.write_text('{"version": 8, "seed": 1, "ship": null}')
+        path.write_text(json.dumps({"version": SAVE_VERSION,
+                                    "save_schema": SAVE_SCHEMA,
+                                    "seed": 1, "ship": None}))
     elif failure == "late-state":
-        data = json.loads((SAVE_FIXTURES / "v8.json").read_text())
+        data = json.loads(json.dumps(before))
         data["ui"]["map_scale"] = "not-a-number"
         path.write_text(json.dumps(data))
 

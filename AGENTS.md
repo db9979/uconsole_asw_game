@@ -2,10 +2,10 @@
 
 ## Authority and scope
 
-- This is U-Jagd 0.1.6 (`src/core/version.py`); current saves are v8. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 0.1.7 (`src/core/version.py`); current saves are v10-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
-- Older phase/milestone labels under `docs/GDD.md` and `docs/implementation-plan.md` are historical. Current resumable work is tracked in `docs/plan-0.1.6.md` and `docs/resume.md`.
+- Older phase/milestone labels under `docs/GDD.md` and `docs/implementation-plan.md` are historical. Current resumable work is tracked in `docs/plan-0.1.6.md`, `docs/plan-0.1.7.md`, and `docs/resume.md`.
 
 ## Architecture
 
@@ -54,8 +54,8 @@
 ## Persistence and user content
 
 - Runtime root is `~/.u-jagd/`: `settings.json`; `slot1.json` through `slot5.json`; editor files in `missions/` and `units/`. Tests replace save paths with temporary directories; never write real user paths from tests. `.u-jagd/`, build products, caches, and egg metadata stay untracked.
-- Preferences persist language/fullscreen/audio/large text/tooltips in `settings.json`; v8 saves also retain the mission's tooltip state. CLI `--windowed` and `--no-audio` override saved values for one launch; no inverse fullscreen or CLI-language switch exists.
-- Save v8 and load v1-v8 only. Reject malformed, non-integer, older-than-v1, and newer-than-v8 versions. Historical fixtures in `tests/fixtures/saves/` are compatibility assets; do not casually rewrite/remove migrations.
+- Preferences persist language/fullscreen/audio/large text/tooltips in `settings.json`; v10 saves also retain the mission's tooltip state. CLI `--windowed` and `--no-audio` override saved values for one launch; no inverse fullscreen or CLI-language switch exists.
+- Write and load save v10 only. Require the exact `u-jagd-save-v10` schema and the complete current catalog, platform, ESM, ASW, and RNG state. Reject malformed, non-integer, older, newer, incomplete, or unknown schemas without migration.
 - Writes must stage beside the destination, flush and `fsync`, then atomically `os.replace`; failure leaves the prior file intact and save-and-quit quits only after success. Load into a candidate state and commit only after complete validation/restoration; failure must leave the live game and global ID counters unchanged.
 - Treat imported/editor JSON as hostile. Require finite typed/bounded values, strict schemas, `user.<lowercase/digit/_/->` keys, confined destinations, and no symlinked root/file. Never interpret a logical reference as a filesystem path.
 - Bundle import validates every item and collision before the first visible write, stages all files, rechecks confinement/symlinks, and rolls back the whole commit on failure. Preserve backups if rollback itself fails. JSON output must reject NaN/Infinity.
@@ -65,11 +65,11 @@
 - Commander service is opt-in, off on every launch. `F10` Options or `F9` opens local administration. Bind only an explicitly selected loopback/private IPv4; HTTP is trusted-LAN-only, not Internet hosting.
 - `src/commander/server.py` must never reference Game/Pygame. It serves cached bytes and bounded request queues. `CommanderBridge.pump()` executes once per main-loop wall frame, not on HTTP threads or physics substeps.
 - Export only allowlisted observations and own-ship information, never a save/entity dump, seed, RNG, hidden platform identity or raw internal ID. Menu/editor/splash publish status-only data. Browser inspection never changes crew selection or sonar focus.
-- Classification/affiliation require pairing AND local grant; target proposals require explicit crew acceptance and fresh observation revalidation. Remote firing, steering, sensor operation, ROE, time, saves and editor controls are forbidden.
+- Classification/affiliation require pairing AND local grant. Target and navigation proposals require explicit crew acceptance and fresh main-thread revalidation. An accepted navigation proposal changes local helm setpoints; direct remote steering, firing, sensor operation, ROE, time, saves and editor controls are forbidden.
 - Pairing codes are three digits followed by three uppercase letters, valid five minutes, five failed attempts per rolling minute globally. Long bearer tokens remain independent. Never store or log codes/tokens; credentials, connections and pending proposals are not save fields.
 - Successful world replacement revokes pairing/grant on the next main-thread pump; failed candidate restoration must have no server/bridge side effects. Queue epochs invalidate stale actions across input-owner changes.
 - Bound connections, bodies, queues, chart geometry, events and retries. Exact Host/Origin validation and fixed static routes are required. Browser strings use root EN/DE catalogs and textContent, with no CDN or arbitrary HTML.
-- Stop after the Commander milestone and record the pause in `docs/resume.md`; do not start deferred sonar/fidelity work without renewed instruction.
+- Authorized post-Commander work, including sonar/fidelity packages B-F, is tracked in `docs/plan-0.1.7.md`. Execute its dependency order, stop after its final acceptance milestone, and record the pause in `docs/resume.md`.
 
 ## Coastline provenance
 

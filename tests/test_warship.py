@@ -5,6 +5,7 @@ import random
 import pytest
 
 from src.core.game import Game
+from src.core.version import SAVE_VERSION
 from src.enemies.surface import SurfaceShip
 
 
@@ -98,7 +99,7 @@ def test_save_load_roundtrip_keeps_warships():
     old_id, old_x, old_y, old_course, old_damage = \
         ws.id, ws.x, ws.y, ws.course, ws.damage
     data = g.save_state()
-    assert data["version"] == 8
+    assert data["version"] == SAVE_VERSION
     g2 = Game(seed=0, start_menu=False)
     g2.load_state(data)
     loaded = {w.id: w for w in g2.warships}

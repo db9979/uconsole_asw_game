@@ -6,12 +6,19 @@ Kavitation/Breitband-Level) – Details in docs/contacts-db.md.
 
 import math
 import random
-from types import SimpleNamespace
 
 from src.core import config
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
+from src.sensors.platform import (
+    PlatformObservation,
+    PlatformSensorSuite,
+    machine_acoustics,
+    motion_limits,
+    snapshot_observation,
+)
 from src.weapons.torpedo import underwater_path_blocked
+from src.weapons.asw import ConsumableStore, WeaponBattery
 
 CATALOG = catalog.CATALOG
 DECOY_PROFILE = CATALOG.get_decoy("decoy")
@@ -51,14 +58,38 @@ class Sub:
     def __init__(self, x_nm: float, y_nm: float, depth_m: float,
                  course_deg: float, stype_key: str, rng: random.Random,
                  quiet_mult: float = 1.0, attack_mult: float = 1.0,
-                 attack_cooldown_s: float = None):
+                  attack_cooldown_s: float = None, profile=None,
+                  decoy_profile=None, enemy_torpedo_profile=None, *,
+                  side: str = "hostile", doctrine: str = "submarine",
+                   runtime_catalog=None, asw_rng=None):
         self.id = Sub._next_id
         Sub._next_id += 1
         self.rng = rng
-        self.stype = SUB_TYPES[stype_key]
+        self.asw_rng = asw_rng or rng
+        runtime_catalog = runtime_catalog or CATALOG
+        source = runtime_catalog.subs[stype_key] if profile is None else profile
+        self.side = side
+        self.doctrine = doctrine
+        self.stype = SubType(
+            source.key, source.name, source.max_depth_m, source.torpedoes,
+            source.quiet, source.speed_kn, source.aggression, source,
+            source.acoustic)
+        self.decoy_profile = decoy_profile or DECOY_PROFILE
+        self.enemy_torpedo_profile = (enemy_torpedo_profile
+                                      or CATALOG.get_torpedo("enemy_torp"))
         self.sensor_seed = int(rng.randint(0, 2**31 - 1))
         self.fingerprint = fingerprint_mod.roll_from_seed(
             self.sensor_seed, self.stype.acoustic)
+        self.motion = motion_limits(
+            runtime_catalog, source.key,
+            cruise_speed=min(source.speed_kn[1], 8.0),
+            maximum_speed=source.speed_kn[1], turn_rate=0.6,
+            acceleration=0.08, depth_rate=0.5)
+        self.sensor_suite = PlatformSensorSuite(
+            runtime_catalog, source.key, self.sensor_seed,
+            side=side, doctrine=doctrine,
+            datalink_group="blue" if side == "friendly" else None)
+        self.runtime_catalog = runtime_catalog
         self.quiet_mult = quiet_mult        # M7: Level-Faktor (leicht = lauter)
         self.attack_mult = attack_mult      # M7: Level-Faktor Gegenangriff
         self.attack_cooldown = (config.SUB_ATTACK_COOLDOWN_S
@@ -83,14 +114,20 @@ class Sub:
         self.damage = 0.0     # 0..100
         self.sink_left = 0.0  # Sekunden bis versenkt (Zustand SINKING)
         # M5: Gegenschlag
-        self.torpedoes_left = self.stype.torpedoes
+        self.weapon_battery = WeaponBattery.from_catalog(
+            runtime_catalog, source.key, "torpedo")
+        self.torpedoes_left = (self.weapon_battery.remaining_total
+                               if self.weapon_battery is not None
+                               else self.stype.torpedoes)
         self.attack_left = self.attack_cooldown
-        self.pending_torpedoes: list[tuple[float, float, float, float]] = []
-        # (x, y, course_deg, depth_m) – wird vom Game zu EnemyTorpedo aufgesammelt
+        self.pending_torpedoes: list[tuple] = []
+        # Position, course, depth, observed datum, and runtime profile key.
         # W2: Torpedo-Alarm + Dekoy
         self.torpedo_alerted = False   # eigener Torpedo gehört -> harte Reaktion
         self.pending_decoys: list[tuple[float, float]] = []
         self._decoy_cd = 0.0
+        self.countermeasure_store = ConsumableStore.from_catalog(
+            runtime_catalog, source.key, "acoustic_decoy")
         # Taktisches Gedaechtnis: nur Ereignisse, die das Boot wahrnimmt.
         self.memory = {
             "last_ping_age": float("inf"),
@@ -166,43 +203,95 @@ class Sub:
 
     # --- M5: Gegenschlag ---
 
-    def _launch_data(self, frigate) -> tuple[float, float, float, float]:
+    def _launch_data(self, observation: PlatformObservation, torpedo_profile=None
+                     ) -> tuple[float, float, float, float, float, float]:
         """Abzugsdaten: Interzeptions-Kurs mit Vorlauf + Kursfehler."""
-        dist = self.distance_nm(frigate)
-        enemy_speed = config.kn_to_nm_per_s(
-            CATALOG.get_torpedo("enemy_torp").speed_kn)
-        lead_s = dist / max(enemy_speed, 0.001)
-        fr_speed = config.kn_to_nm_per_s(frigate.speed)
-        px = frigate.x + fr_speed * lead_s * math.sin(math.radians(frigate.course))
-        py = frigate.y - fr_speed * lead_s * math.cos(math.radians(frigate.course))
-        course = math.degrees(math.atan2(px - self.x, -(py - self.y))) % 360.0
-        course = (course + self.rng.uniform(-3.0, 3.0)) % 360.0
-        return (self.x, self.y, course, self.rng.uniform(5.0, 12.0))
+        if not isinstance(observation, PlatformObservation):
+            observation = snapshot_observation(
+                self, observation, domain="sonar", positioned=True)
+        course = observation.bearing
+        if (observation.x is not None and observation.y is not None
+                and observation.range_nm is not None):
+            profile = torpedo_profile or self.enemy_torpedo_profile
+            enemy_speed = config.kn_to_nm_per_s(profile.speed_kn)
+            lead_s = observation.range_nm / max(enemy_speed, 0.001)
+            target_speed = config.kn_to_nm_per_s(observation.speed_kn or 0.0)
+            target_course = (observation.course if observation.course is not None
+                             else observation.bearing)
+            px = observation.x + target_speed * lead_s * math.sin(
+                math.radians(target_course))
+            py = observation.y - target_speed * lead_s * math.cos(
+                math.radians(target_course))
+            course = math.degrees(math.atan2(px - self.x, -(py - self.y))) % 360.0
+            datum_x, datum_y = px, py
+        observed_range = observation.range_nm
+        if (observation.x is not None and observation.y is not None
+                and observation.course is None):
+            datum_x, datum_y = observation.x, observation.y
+        elif observation.x is None or observation.y is None:
+            observed_range = 10.0 if observed_range is None else observed_range
+            datum_x = self.x + observed_range * math.sin(math.radians(observation.bearing))
+            datum_y = self.y - observed_range * math.cos(math.radians(observation.bearing))
+        course = (course + self.asw_rng.uniform(-3.0, 3.0)) % 360.0
+        return (self.x, self.y, course, self.asw_rng.uniform(5.0, 12.0),
+                datum_x, datum_y)
 
-    def _maybe_attack(self, dt: float, frigate) -> None:
+    def _maybe_attack(self, dt: float, observation: PlatformObservation | None) -> None:
         """Gegenschlag, wenn die Fregatte laut/pinged wurde (Captain's Log §2.2)."""
-        if self.sunk or self.state == "SINKING":
+        if self.side != "hostile" or self.sunk or self.state == "SINKING":
             return
         self.attack_left -= dt
-        if self.attack_left > 0 or self.torpedoes_left <= 0:
+        if (self.attack_left > 0 or self.torpedoes_left <= 0
+                or (self.weapon_battery is not None
+                    and self.weapon_battery.ready_count <= 0)):
             return
-        if frigate is None:
+        if observation is None:
             return
-        dist = self.distance_nm(frigate)
-        noise = frigate.noise_level()
+        if self.weapon_battery is not None:
+            launcher = self.runtime_catalog.launchers[
+                self.weapon_battery.launcher_key]
+            arc_center = (self.course + launcher.arc_center_deg) % 360.0
+            if abs(config.angle_diff_deg(observation.bearing, arc_center)) \
+                    > launcher.arc_width_deg / 2.0:
+                return
+        dist = observation.range_nm
+        noise = observation.signal
+        close_fix = dist is not None and dist < 20.0
         rate = 0.0
-        if self.state == "EVADE" and self.heard_ping and dist < 20.0:
+        bearing_counterfire = (dist is None and self.heard_ping
+                               and self.memory["last_ping_age"] <= 2.0)
+        if (self.state == "EVADE" and self.heard_ping
+                and (close_fix or bearing_counterfire)):
             rate = 0.006 * (0.5 + noise) * self.stype.aggression
-        elif noise >= 0.75 and dist < 18.0:
+        elif noise >= 0.75 and dist is not None and dist < 18.0:
             rate = 0.002 * self.stype.aggression
         rate *= self.attack_mult
-        if rate > 0 and self.rng.random() < rate * dt:
-            n = min(2 if dist < 12.0 and self.stype.aggression > .8 else 1,
-                    self.torpedoes_left)
+        if rate > 0 and self.asw_rng.random() < rate * dt:
+            n = min(2 if dist is not None and dist < 12.0
+                    and self.stype.aggression > .8 else 1,
+                    self.torpedoes_left, 2 - len(self.pending_torpedoes))
+            launched = 0
             for _ in range(n):
-                self.pending_torpedoes.append(self._launch_data(frigate))
-            self.torpedoes_left -= n
-            self.attack_left = self.attack_cooldown
+                profile = self.enemy_torpedo_profile
+                fired_key = None
+                if self.weapon_battery is not None:
+                    fired_key = self.weapon_battery.fire()
+                    if fired_key is None:
+                        break
+                    runtime_key = self.runtime_catalog.weapons[
+                        fired_key].runtime_profile_key
+                    if runtime_key is None:
+                        break
+                    profile = self.runtime_catalog.torpedoes[runtime_key]
+                self.pending_torpedoes.append(
+                    (*self._launch_data(observation, profile), profile.key,
+                     self.id, fired_key))
+                launched += 1
+            if launched:
+                self.torpedoes_left = (self.weapon_battery.remaining_total
+                                       if self.weapon_battery is not None
+                                       else self.torpedoes_left - launched)
+                self.attack_left = self.attack_cooldown
 
     # --- M13: Schnorcheln / Funk ---
 
@@ -213,7 +302,7 @@ class Sub:
 
     # --- Physik/KI ---
 
-    def update(self, dt: float, frigate, world) -> None:
+    def update(self, dt: float, observation, world) -> None:
         """dt in Simulationssekunden; bei 1x identisch zu Echtzeit."""
         if self.sunk:
             return
@@ -228,12 +317,32 @@ class Sub:
         thermo = world.thermocline_depth_m(self.x, self.y)
         world_size = world.size_nm
         self._decoy_cd = max(0.0, self._decoy_cd - dt)
+        if self.weapon_battery is not None:
+            self.weapon_battery.update(dt)
+            self.torpedoes_left = self.weapon_battery.remaining_total
+        if self.countermeasure_store is not None:
+            self.countermeasure_store.update(dt)
+        if observation is not None and not isinstance(observation, PlatformObservation):
+            target = observation
+            observation = None
+            distance = (self.distance_nm(target)
+                        if hasattr(target, "x") and hasattr(target, "y") else None)
+            received_ping = self.memory["last_ping_age"] <= dt
+            if (distance is not None and distance < 20.0
+                    and (received_ping
+                         or (target.noise_level() >= 0.75 and distance < 18.0))
+                    and not getattr(world, "sonar_path_blocked", lambda *args: False)(
+                        self.x, self.y, self.depth, target.x, target.y, 5.0)):
+                observation = snapshot_observation(
+                    self, target, domain="sonar", positioned=True)
 
         # W2: Torpedo-Alarm -> einmalig Dekoy-Abwurf (Chance je Level-Faktor)
         if self.torpedo_alerted and self._decoy_cd <= 0.0:
-            if self.rng.random() < DECOY_PROFILE.chance:
+            if (not self.pending_decoys and self.countermeasure_store is not None
+                    and self.asw_rng.random() < self.decoy_profile.chance
+                    and self.countermeasure_store.fire()):
                 self.pending_decoys.append((self.x, self.y))
-                self._decoy_cd = DECOY_PROFILE.cooldown_s
+                self._decoy_cd = self.decoy_profile.cooldown_s
             self.torpedo_alerted = False
 
         if self.state == "SINKING":
@@ -245,29 +354,48 @@ class Sub:
                 self.sunk = True
             return
 
+        self.speed = config.clamp(self.speed, 0.0, self.motion.maximum_speed_kn)
+
         # Retain only a bounded local acoustic observation, never a live ship
         # reference. Ping memory does not continuously refresh hidden motion.
         self.memory["contact_age"] = min(config.SUB_EVADE_DURATION_S,
                                          self.memory["contact_age"] + dt)
-        distance = self.distance_nm(frigate)
-        noise = frigate.noise_level()
-        received_ping = self.memory["last_ping_age"] <= dt
-        if (distance < 20.0 and (received_ping or (noise >= 0.75 and distance < 18.0))
-                and not getattr(world, "sonar_path_blocked", lambda *args: False)(
-                    self.x, self.y, self.depth, frigate.x, frigate.y, 5.0)):
-            self.memory["contact"] = dict(x=frigate.x, y=frigate.y,
-                                           speed=frigate.speed, course=frigate.course,
-                                           noise=noise)
+        fresh_observation = (observation is not None and (
+            observation.track_id in ("LEGACY", "MEMORY")
+            or observation.last_seen > self.sensor_suite.last_consumed_s))
+        if fresh_observation:
+            self.memory["contact"] = (
+                dict(x=observation.x, y=observation.y,
+                     speed=observation.speed_kn or 0.0,
+                     course=(observation.course if observation.course is not None
+                             else observation.bearing),
+                     noise=observation.signal)
+                if observation.x is not None and observation.y is not None else None)
             self.memory["contact_age"] = 0.0
-            self.memory["contact_bearing"] = math.degrees(math.atan2(
-                frigate.x - self.x, -(frigate.y - self.y))) % 360.0
+            self.memory["contact_bearing"] = observation.bearing
+            self.sensor_suite.last_consumed_s = max(
+                self.sensor_suite.last_consumed_s, observation.last_seen)
         if self.memory["contact_age"] >= config.SUB_EVADE_DURATION_S:
             self.memory["contact"] = None
             self.memory["contact_bearing"] = None
-        observed = self.memory["contact"]
-        contact = (SimpleNamespace(**observed, noise_level=lambda: observed["noise"])
-                   if observed is not None else None)
-        self._maybe_attack(dt, contact)
+        tactical_observation = observation
+        if tactical_observation is None and self.memory["contact"] is not None:
+            remembered = self.memory["contact"]
+            distance = math.hypot(remembered["x"] - self.x,
+                                  remembered["y"] - self.y)
+            tactical_observation = PlatformObservation(
+                track_id="MEMORY", domain="sonar", source="SONAR",
+                observer_x=self.x, observer_y=self.y,
+                bearing=self.memory["contact_bearing"], range_nm=distance,
+                x=remembered["x"], y=remembered["y"],
+                course=remembered["course"], speed_kn=remembered["speed"],
+                depth_m=5.0, quality=max(
+                    0.0, 1.0 - self.memory["contact_age"]
+                    / config.SUB_EVADE_DURATION_S),
+                signal=remembered["noise"], last_seen=0.0,
+                bearing_uncertainty_deg=None, range_uncertainty_nm=None,
+                depth_uncertainty_m=None, label=None)
+        self._maybe_attack(dt, tactical_observation)
 
         if self.state == "SNOCKEL":
             # M13: Schnorcheltiefe ~8 m, HF-Sender aktiv, kein Vordringen
@@ -286,7 +414,9 @@ class Sub:
             self.evac_left -= dt
             if self.evac_left <= 0:
                 # W2: In der Nähe der Fregatte -> still halten und lauschen
-                if contact is not None and self.distance_nm(contact) < config.SUB_LUER_DIST_NM:
+                if (tactical_observation is not None
+                        and tactical_observation.range_nm is not None
+                        and tactical_observation.range_nm < config.SUB_LUER_DIST_NM):
                     self.state = "LAUER"
                     self.evac_left = self.rng.uniform(*config.SUB_LUER_DURATION_S)
                     self.heard_ping = False
@@ -301,20 +431,25 @@ class Sub:
                 return
             # Tiefer unter die Thermokline + Kurs ab der Fregatte
             self.target_depth = min(thermo + 40.0, safe_depth)
-            self.depth += config.clamp(self.target_depth - self.depth, -1.5 * dt, 1.5 * dt)
+            rate = self.motion.depth_rate_m_s * 3.0
+            self.depth += config.clamp(self.target_depth - self.depth,
+                                       -rate * dt, rate * dt)
             bearing = self.memory["contact_bearing"]
             target_course = (self.course if bearing is None else
                              (bearing + 180.0 + self.evade_offset) % 360.0)
             diff = config.angle_diff_deg(target_course, self.course)
             self.course = (self.course + config.clamp(
-                diff, -1.5 * dt, 1.5 * dt)) % 360.0
+                diff, -self.motion.turn_rate_deg_s * 2.5 * dt,
+                self.motion.turn_rate_deg_s * 2.5 * dt)) % 360.0
             self.speed = max(self.speed, min(self.speed_for_state(),
                                              max(10.0, self.stype.speed_kn * .9)))
         elif self.state == "LAUER":
             # W2: Stillhalten unter der Thermokline (sehr leise, lauschen)
             self.evac_left -= dt
             self.target_depth = min(thermo + 15.0, safe_depth)
-            self.depth += config.clamp(self.target_depth - self.depth, -.5 * dt, .5 * dt)
+            self.depth += config.clamp(self.target_depth - self.depth,
+                                       -self.motion.depth_rate_m_s * dt,
+                                       self.motion.depth_rate_m_s * dt)
             self.speed = max(1.0, self.speed - .08 * dt)
             if self.evac_left <= 0:
                 self.state = "PATROLLE"
@@ -335,10 +470,13 @@ class Sub:
                     min(3.0, patrol_max), max(min(3.0, patrol_max), patrol_max))
             diff = config.angle_diff_deg(self.target_course, self.course)
             self.course = (self.course + config.clamp(
-                diff, -.6 * dt, .6 * dt)) % 360.0
+                diff, -self.motion.turn_rate_deg_s * dt,
+                self.motion.turn_rate_deg_s * dt)) % 360.0
             self.target_depth = config.clamp(self.target_depth, 0.0, safe_depth)
             self.depth += config.clamp(
-                self.target_depth - self.depth, -.5 * dt, .5 * dt)
+                self.target_depth - self.depth,
+                -self.motion.depth_rate_m_s * dt,
+                self.motion.depth_rate_m_s * dt)
             # M13: Diesel/AIP: im Tiefebereich gelegentlich Schnorcheln (HF-Senden)
             if (self.stype.profile.requires_air and self.depth > 55.0
                     and self.rng.random() < config.SNOCKEL_TRIGGER_PPS * dt):
@@ -377,6 +515,9 @@ class Sub:
             q += config.SNOCKEL_TRANSMIT_NOISE  # M13: Senden macht lauter
         return config.clamp(q, 0.0, 1.0)
 
+    def noise_level(self) -> float:
+        return 1.0 - self.quiet_factor()
+
     def acoustic_signature(self) -> str:
         """M9: Hörbare Geräusch-Signatur für manuelle Klassifizierung.
 
@@ -400,7 +541,7 @@ class Sub:
 
     def speed_for_state(self) -> float:
         """Fahrt bei Schaden: langsamer je nach Schadensgrad."""
-        return self.stype.speed_kn * (1.0 - 0.25 * self.damage / 100.0)
+        return self.motion.maximum_speed_kn * (1.0 - 0.25 * self.damage / 100.0)
 
     def distance_nm(self, frigate) -> float:
         return math.hypot(self.x - frigate.x, self.y - frigate.y)
@@ -410,6 +551,10 @@ class Sub:
         dx = self.x - frigate.x
         dy = self.y - frigate.y
         return math.degrees(math.atan2(dx, -dy)) % 360.0
+
+    @property
+    def sensor_domain(self) -> str:
+        return "subsurface" if self.depth > 5.0 else "surface"
 
     # --- M11/W1: LOFAR-Signatur + Breitband ---
 
@@ -422,6 +567,16 @@ class Sub:
         und Schadens-Grundrauschen bei hoher Schädigung."""
         if self.sunk:
             return []
+        profiled = machine_acoustics(
+            self.runtime_catalog, self.stype.key, self.speed)
+        if profiled is not None:
+            lines, _ = profiled
+            result = list(lines)
+            if self.transmitting:
+                result.extend(((20.0, 0.95, 2.0), (35.0, 0.70, 1.5)))
+            if self.damage > 30.0:
+                result.append((55.0, 0.25 + 0.45 * self.damage / 100.0, 4.0))
+            return result
         lines = []
         v = max(0.0, self.speed)
         sig = self.stype.acoustic
@@ -456,6 +611,19 @@ class Sub:
     def broadband(self) -> dict:
         """Breitbandige Rausch-Quelle (level 0..1 + Band) für Audio/BTR."""
         sig = self.stype.acoustic
+        profiled = machine_acoustics(
+            self.runtime_catalog, self.stype.key, self.speed)
+        if profiled is not None:
+            _, broadband = profiled
+            if self.sunk or broadband is None:
+                return {}
+            level = broadband[0]
+            if self.state == "EVADE":
+                level *= 1.6
+            if self.state == "LAUER":
+                level *= 0.5
+            return {"level": min(1.0, level + 0.10 * self.damage / 100.0),
+                    "low_hz": broadband[1], "high_hz": broadband[2]}
         if self.sunk or sig.broadband is None:
             return {}
         v = max(0.0, self.speed)

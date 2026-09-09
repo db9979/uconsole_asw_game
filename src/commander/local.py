@@ -36,6 +36,14 @@ class CommanderConsole:
         self._translations = None
         self._notice_seq = None
         self._last_notice = float("-inf")
+        self._confirm_signature = None
+        self._confirm_suppressed = None
+        self._confirm_requested = False
+        self._confirm_owned = False
+        self._confirm_identity = None
+        self.confirm_kind = None
+        self.confirm_selection = 0
+        self._confirm_mouse_selection = None
 
     def prepare(self):
         """Discover at most 64 Linux interface IPv4s, with no DNS or LAN probe."""
@@ -75,14 +83,83 @@ class CommanderConsole:
         self.pairing_code = None
         self.bridge.allowed = False
         self.invalidate_commands()
+        self._close_confirmation()
+
+    @staticmethod
+    def _pending(proposal):
+        return proposal is not None and proposal["status"] == "pending"
+
+    def _confirmation_state(self):
+        proposal = self.bridge.proposal
+        navigation = self.bridge.navigation_proposal
+        signature = (
+            self.bridge.proposal_sequence,
+            None if proposal is None else (
+                proposal["ref"], proposal["label"], proposal["status"]),
+            None if navigation is None else (
+                navigation["course"], navigation["speed_kn"], navigation["status"]),
+        )
+        kinds = tuple(kind for kind, value in (
+            ("target", proposal), ("navigation", navigation)) if self._pending(value))
+        return signature, kinds
+
+    def _close_confirmation(self):
+        self._confirm_requested = False
+        self._confirm_owned = False
+        self.confirm_kind = None
+        self._confirm_mouse_selection = None
+
+    def _sync_confirmation(self, game):
+        signature, kinds = self._confirmation_state()
+        changed = signature != self._confirm_signature
+        self._confirm_signature = signature
+        self._confirm_identity = (id(game.world), id(game.sonar))
+        if not kinds:
+            self._confirm_suppressed = None
+            self._close_confirmation()
+            return
+        if changed:
+            self._confirm_suppressed = None
+            self._confirm_requested = True
+            self.confirm_kind = kinds[0]
+            self.confirm_selection = 0
+            self._confirm_mouse_selection = None
+        elif self.confirm_kind not in kinds:
+            self.confirm_kind = kinds[0]
+            self.confirm_selection = 0
+            self._confirm_mouse_selection = None
+        if self._confirm_suppressed == signature:
+            self._confirm_requested = False
+        visible = self.confirm_visible(game)
+        if visible and not self._confirm_owned:
+            game._clear_controls()
+        self._confirm_owned = visible
+
+    def confirm_visible(self, game):
+        """Return whether the transient crew confirmation is currently visible."""
+        if not self._confirm_requested:
+            return False
+        if (self.address is None or self.server is None or not self.server.connected
+                or not self.bridge.allowed
+                or self._confirm_identity != (id(game.world), id(game.sonar))):
+            self._close_confirmation()
+            return False
+        if (not game.running or game.in_menu or game.main_menu
+                or game.editor is not None or game.splash_active or game.game_over
+                or game.administration_open):
+            return False
+        _, kinds = self._confirmation_state()
+        return self.confirm_kind in kinds
 
     def pump(self, game):
         if self.address is None:
+            self._close_confirmation()
             return
         now = time.monotonic()
         self.bridge.pump(game, self.server, now=now)
         self.connected = self.server.connected
         self.pairing_code = self.server.pairing_code
+        self._sync_confirmation(game)
         sequence = self.bridge.proposal_sequence
         proposal = self.bridge.proposal
         navigation = self.bridge.navigation_proposal
@@ -93,10 +170,115 @@ class CommanderConsole:
               and now - self._last_notice >= 2.0):
             self._notice_seq = sequence
             self._last_notice = now
-            game.flash(message("commander.local.navigation.notice" if navigation is not None
-                               and navigation["status"] == "pending"
-                               else "commander.local.notice"), 3.0)
+            game.flash(message("commander.local.notice" if self._pending(proposal)
+                               else "commander.local.navigation.notice"), 3.0)
             game.audio.play_alert("danger")
+
+    def cycle_confirmation(self):
+        """Cycle pending proposal types in deterministic target/navigation order."""
+        _, kinds = self._confirmation_state()
+        if len(kinds) < 2:
+            return
+        self.confirm_kind = kinds[(kinds.index(self.confirm_kind) + 1) % len(kinds)]
+        self.confirm_selection = 0
+        self._confirm_mouse_selection = None
+
+    def _decide_confirmation(self, game, accepted):
+        if not self.confirm_visible(game) or game.paused or game.input_mode is not None:
+            return
+        decide = ((self.bridge.accept_proposal if accepted else self.bridge.reject_proposal)
+                  if self.confirm_kind == "target" else
+                  (self.bridge.accept_navigation if accepted else self.bridge.reject_navigation))
+        if not decide(game):
+            self.error = (self.bridge.navigation_error if self.confirm_kind == "navigation"
+                          else "commander.local.error.proposal")
+        self._sync_confirmation(game)
+
+    def handle_confirm_key(self, game, key):
+        if key == pygame.K_ESCAPE:
+            self._confirm_suppressed = self._confirm_signature
+            self._confirm_requested = False
+            self._confirm_owned = False
+            return True
+        elif key == pygame.K_F8:
+            self.cycle_confirmation()
+            return True
+        elif key == pygame.K_F6:
+            self._decide_confirmation(game, True)
+            return True
+        elif key == pygame.K_F7:
+            self._decide_confirmation(game, False)
+            return True
+        return False
+
+    @staticmethod
+    def confirm_rect():
+        return pygame.Rect(250, 218, 780, 284)
+
+    @classmethod
+    def confirm_button_rects(cls):
+        panel = cls.confirm_rect()
+        return (pygame.Rect(panel.x + 34, panel.bottom - 84, 338, 42),
+                pygame.Rect(panel.x + 408, panel.bottom - 84, 338, 42))
+
+    def handle_confirm_click(self, game, canvas):
+        if not self.confirm_visible(game) or game.paused or game.input_mode is not None:
+            return False
+        if not self.confirm_rect().collidepoint(canvas):
+            return False
+        for index, rect in enumerate(self.confirm_button_rects()):
+            if rect.collidepoint(canvas):
+                self.confirm_selection = index
+                if self._confirm_mouse_selection == index:
+                    self._decide_confirmation(game, index == 0)
+                else:
+                    self._confirm_mouse_selection = index
+                return True
+        return True
+
+    def draw_confirm(self, game):
+        if not self.confirm_visible(game):
+            return
+        with translation_scope(game.tr):
+            screen, tr = game.screen, game.tr
+            panel = self.confirm_rect()
+            layout.panel(screen, panel)
+            layout.blit_line(screen, "commander.confirm.title",
+                             (panel.x + 24, panel.y + 16, panel.w - 48, 34),
+                             config.COLOR_WARN, size=24, align="center")
+            proposal = (self.bridge.proposal if self.confirm_kind == "target"
+                        else self.bridge.navigation_proposal)
+            if self.confirm_kind == "target":
+                detail = message("commander.confirm.target",
+                                 label=raw_text(proposal["label"]))
+            else:
+                unchanged = raw_text(tr("commander.confirm.unchanged"))
+                detail = message(
+                    "commander.confirm.navigation",
+                    course=(raw_text(f"{proposal['course']:.1f}")
+                            if proposal["course"] is not None else unchanged),
+                    speed=(raw_text(f"{proposal['speed_kn']:.1f}")
+                           if proposal["speed_kn"] is not None else unchanged),
+                )
+            layout.blit_block(screen, detail, panel.x + 34, panel.y + 62,
+                              panel.w - 68, 74, config.COLOR_TEXT, size=20,
+                              align="center", valign="center")
+            _, kinds = self._confirmation_state()
+            hint = ("commander.confirm.hint.multiple" if len(kinds) > 1
+                    else "commander.confirm.hint.single")
+            layout.blit_line(screen, hint,
+                             (panel.x + 34, panel.y + 142, panel.w - 68, 28),
+                             config.COLOR_TEXT_DIM, size=15, align="center")
+            for index, (rect, key) in enumerate(zip(
+                    self.confirm_button_rects(),
+                    ("commander.confirm.accept", "commander.confirm.reject"))):
+                selected = index == self.confirm_selection
+                pygame.draw.rect(screen, (10, 22, 16), rect)
+                pygame.draw.rect(screen, config.COLOR_WARN if selected
+                                 else config.COLOR_SONAR_RING, rect, 2 if selected else 1)
+                layout.blit_line(screen, key, rect,
+                                 config.COLOR_WARN if selected else config.COLOR_TEXT,
+                                 size=18, align="center")
 
     def activate(self, game, direction=1):
         """Perform the selected local row's explicit action, never a remote action."""
@@ -126,7 +308,7 @@ class CommanderConsole:
             self.prepare()
             self.host = self.hosts[(self.hosts.index(self.host) + direction) % len(self.hosts)]
         elif self.selection == 2 and self.address is None:
-            self.port = max(1, min(65535, self.port + direction))
+            self.port = max(1024, min(65535, self.port + direction))
         elif self.selection == 3 and self.address is not None and self.server.connected:
             self.bridge.allowed = not self.bridge.allowed
             self.invalidate_commands()

@@ -26,6 +26,7 @@ STATION_PAGES = {
     Station.RADIO: ("RADIO",),
     Station.ENGINE: ("ENGINE",),
     Station.HELICOPTER: ("HELICOPTER",),
+    Station.ELOKA: ("ELOKA",),
 }
 
 # Compatibility export for callers that have not moved to station metadata yet.
@@ -41,6 +42,7 @@ STATION_COMMAND_HINTS = {
     Station.RADIO: "Auf/Ab HFDF | Enter Protokoll",
     Station.ENGINE: "Auf/Ab Telegraph | A Leise | V Fahrt",
     Station.HELICOPTER: "control.hint.helicopter",
+    Station.ELOKA: "control.hint.eloka",
 }
 
 

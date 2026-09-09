@@ -146,7 +146,7 @@ def test_reject_non_explicit_lan_bind(host, assets):
     assert assets[1] == []
 
 
-@pytest.mark.parametrize("port", [-1, 65536, True, "8765", 1.5])
+@pytest.mark.parametrize("port", [-1, 80, 1023, 65536, True, "8765", 1.5])
 def test_reject_invalid_ports(port, assets):
     with pytest.raises(ValueError):
         CommanderServer().start("127.0.0.1", port)
@@ -237,7 +237,7 @@ def test_pair_one_use_revoke_and_bearer_only(server):
 
 
 def test_lease_generation_is_read_only_thread_safe_and_expires_before_read(server, monkeypatch):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     initial = server.lease_generation
     assert type(initial) is int
@@ -324,7 +324,7 @@ def test_pairing_is_exact_uppercase_and_bearer_stays_32_random_bytes(server, mon
 
 @pytest.mark.parametrize("expire_via", ["property", "request"])
 def test_unpaired_code_ttl_checked_before_exposure_and_pairing(server, monkeypatch, expire_via):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     server.revoke()
     code = server.pairing_code
@@ -340,7 +340,7 @@ def test_unpaired_code_ttl_checked_before_exposure_and_pairing(server, monkeypat
 
 
 def test_global_pairing_lockout_includes_correct_code_and_recovers_after_window(server, monkeypatch):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     code = server.pairing_code
     for index in range(5):
@@ -366,7 +366,7 @@ def test_global_pairing_lockout_includes_correct_code_and_recovers_after_window(
 
 
 def test_pairing_failure_window_is_rolling(server, monkeypatch):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     assert request(server, "/api/v1/pair", "POST", {"code": "wrong"})[0] == 403
     clock[0] += 30
@@ -381,7 +381,7 @@ def test_pairing_failure_window_is_rolling(server, monkeypatch):
 
 @pytest.mark.parametrize("rotation", ["code_ttl", "lease_expiry"])
 def test_automatic_rotation_preserves_pairing_failure_budget(server, monkeypatch, rotation):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     server.revoke()
     if rotation == "code_ttl":
@@ -425,7 +425,7 @@ def test_concurrent_pairing_failures_cannot_exceed_global_budget(server):
 
 
 def test_idle_lease_renewed_only_by_authenticated_get(server, monkeypatch):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     token = pair(server)
     clock[0] += 29
@@ -465,7 +465,7 @@ def test_publish_immutable_atomic_finite_json(server):
 
 
 def test_queue_envelopes_limits_ttl_and_no_enum_validation(server, monkeypatch):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     token = pair(server)
     for index in range(32):
@@ -740,7 +740,7 @@ def test_concurrent_pairing_grants_exactly_one_lease(server):
 
 
 def test_expired_commands_observable_when_uploads_finish_out_of_order(server, monkeypatch):
-    clock = [time.monotonic()]
+    clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     token = pair(server)
     waiting, release = threading.Event(), threading.Event()

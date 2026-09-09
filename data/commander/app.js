@@ -14,7 +14,8 @@
     stale_session: "reason_stale_session", stale_epoch: "reason_stale_epoch",
     commands_blocked: "reason_commands_blocked", duplicate_id: "reason_duplicate_id",
     revision_conflict: "reason_revision_conflict", unknown_track: "reason_unknown_track",
-    ineligible_track: "reason_ineligible_track", ok: "reason_ok",
+    ineligible_track: "reason_ineligible_track", proposal_pending: "reason_proposal_pending",
+    ok: "reason_ok",
   };
   const colors = { UNKNOWN: "#f3cf79", FRIEND: "#81c5ff", NEUTRAL: "#8fdfab", HOSTILE: "#ff9090" };
   let language = (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en";
@@ -50,6 +51,14 @@
   let drawQueued = false;
   let chartHits = [];
   let drag = null;
+  const lookoutCanvas = $("lookout");
+  const lookoutCtx = lookoutCanvas.getContext("2d");
+  const lookoutRanges = [5, 10, 25, 50, 100, 200];
+  const lookoutView = { rangeNm: 100 };
+  let lookoutDrawQueued = false;
+  const maxCanvasPixels = 8000000;
+  const tabNames = ["operations", "lookout", "guide", "contacts"];
+  let activeTab = "operations";
 
   const t = (key, values = {}) => (catalog[prefix + key] || "").replace(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, name) => String(values[name] ?? ""));
   const finite = (value) => typeof value === "number" && Number.isFinite(value);
@@ -78,6 +87,26 @@
       group.append(node("dt", t(key)), node("dd", value));
       return group;
     }));
+  }
+
+  function activateTab(name, focus = true) {
+    if (!tabNames.includes(name)) return;
+    activeTab = name;
+    for (const candidate of tabNames) {
+      const selectedTab = candidate === name;
+      const tab = $(`tab-${candidate}`);
+      tab.setAttribute("aria-selected", String(selectedTab));
+      tab.tabIndex = selectedTab ? 0 : -1;
+      $(`panel-${candidate}`).hidden = !selectedTab;
+    }
+    if (name !== "operations") releaseCanvas(canvas);
+    if (name !== "lookout") {
+      releaseCanvas(lookoutCanvas);
+      $("lookout-observations").replaceChildren();
+    }
+    if (focus) $(`tab-${name}`).focus();
+    if (name === "operations") queueDraw();
+    if (name === "lookout") { renderLookoutStatus(); queueLookoutDraw(); }
   }
 
   // All requests, including commands and language changes, share one lane. The
@@ -172,6 +201,7 @@
     pending = null;
     commandMessage = null;
     view.initialized = false;
+    lookoutView.rangeNm = 100;
     eventHistory = [];
     seenEvents.clear();
     eventHighWater = -1;
@@ -185,8 +215,11 @@
     $("code").value = "";
     $("navigation-form").reset();
     $("navigation-status").textContent = "";
-    for (const id of ["track-list", "detail-label", "detail-badges", "detail-metrics", "mission-name", "objective", "mission-metrics", "own-metrics", "inventory", "helo-metrics", "damage-list", "event-list", "chart-disclaimer", "proposal-status", "command-status", "snapshot-meta"]) $(id).replaceChildren();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    activateTab("operations", false);
+    for (const id of ["track-list", "detail-label", "detail-badges", "detail-metrics", "mission-name", "objective", "mission-metrics", "own-metrics", "inventory", "helo-metrics", "damage-list", "event-list", "chart-disclaimer", "proposal-status", "command-status", "snapshot-meta", "lookout-sea", "lookout-light", "lookout-own", "lookout-observations"]) $(id).replaceChildren();
+    $("lookout-scope").dataset.light = "unknown";
+    releaseCanvas(canvas);
+    releaseCanvas(lookoutCanvas);
     setConnection("unpaired");
     $("connection").textContent = t(message);
   }
@@ -199,6 +232,11 @@
         !state.clock || !state.mission || !Array.isArray(state.tracks) || !Array.isArray(state.events) || !Array.isArray(state.results) ||
         state.tracks.some((track) => !track || typeof track.ref !== "string" || !track.ref)) throw new Error("protocol");
     if (new Set(state.tracks.map((track) => track.ref)).size !== state.tracks.length) throw new Error("protocol");
+    const environment = state.environment;
+    if (environment != null && (typeof environment !== "object" || Array.isArray(environment) ||
+        Object.keys(environment).sort().join(",") !== "is_night,sea_state" ||
+        (environment.sea_state !== null && (!Number.isInteger(environment.sea_state) || environment.sea_state < 0 || environment.sea_state > 9)) ||
+        (environment.is_night !== null && typeof environment.is_night !== "boolean"))) throw new Error("protocol");
     const navigation = state.navigation_proposal;
     if (navigation != null && (typeof navigation !== "object" || Array.isArray(navigation) ||
         Object.keys(navigation).sort().join(",") !== "course,speed_kn,status" ||
@@ -253,6 +291,7 @@
         seenEvents.clear();
         eventHighWater = -1;
         view.initialized = false;
+        lookoutView.rangeNm = 100;
       }
       snapshot = next;
       if (!view.initialized) fitChart();
@@ -431,6 +470,8 @@
     renderDetail();
     renderEvents();
     queueDraw();
+    renderLookoutStatus();
+    queueLookoutDraw();
   }
 
   function secureId() {
@@ -581,18 +622,34 @@
     requestAnimationFrame(() => { drawQueued = false; drawChart(); });
   }
 
+  function releaseCanvas(element) {
+    if (element.width !== 1 || element.height !== 1) {
+      element.width = 1;
+      element.height = 1;
+    }
+  }
+
+  function resizeCanvas(element, context, width, height) {
+    const requested = Math.min(window.devicePixelRatio || 1, 3);
+    const dpr = Math.min(requested, Math.sqrt(maxCanvasPixels / Math.max(1, width * height)));
+    const pixelWidth = Math.max(1, Math.round(width * dpr));
+    const pixelHeight = Math.max(1, Math.round(height * dpr));
+    if (element.width !== pixelWidth || element.height !== pixelHeight) {
+      element.width = pixelWidth;
+      element.height = pixelHeight;
+    }
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return dpr;
+  }
+
   function drawChart() {
-    if (!snapshot || !chartMatches(snapshot) || $("operations").hidden) return;
+    if (!snapshot || !chartMatches(snapshot) || $("panel-operations").hidden) return;
     const own = snapshot.ownship;
     const ownPosition = hasPosition(own);
     if (view.follow && ownPosition) { view.x = own.x; view.y = own.y; }
     const { width, height, scale, point } = chartGeometry();
     if (!width || !height) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    const pixelWidth = Math.round(width * dpr);
-    const pixelHeight = Math.round(height * dpr);
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) { canvas.width = pixelWidth; canvas.height = pixelHeight; }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    resizeCanvas(canvas, ctx, width, height);
     ctx.fillStyle = "#0c1c26";
     ctx.fillRect(0, 0, width, height);
     const fontSize = Math.max(12, parseFloat(getComputedStyle(document.documentElement).fontSize) * .74);
@@ -719,6 +776,138 @@
     ctx.stroke();
   }
 
+  function renderLookoutStatus() {
+    const environment = snapshot?.environment;
+    $("lookout-sea").textContent = finite(environment?.sea_state) ? number(environment.sea_state, 0) : t("unavailable");
+    $("lookout-light").textContent = typeof environment?.is_night === "boolean" ? t(environment.is_night ? "night" : "day") : t("unavailable");
+    $("lookout-range").textContent = t("lookout_range", { distance: number(lookoutView.rangeNm, 0) });
+    $("lookout-scope").dataset.light = environment?.is_night === true ? "night" : environment?.is_night === false ? "day" : "unknown";
+    $("lookout-own").textContent = t("lookout_own_course", { course: unit(snapshot?.ownship?.course, "\u00b0", 0) });
+    if (!$("panel-lookout").hidden) {
+      $("lookout-observations").replaceChildren(...(snapshot?.tracks || []).map((track) => node(
+        "li", `${String(track.label ?? "")}: ${t(hasPosition(track) ? "lookout_positioned" : "lookout_bearing_report")} / ${unit(track.bearing, "\u00b0", 0)} / ${unit(track.range_nm, "NM")}`)));
+    }
+  }
+
+  function queueLookoutDraw() {
+    if (lookoutDrawQueued) return;
+    lookoutDrawQueued = true;
+    requestAnimationFrame(() => { lookoutDrawQueued = false; drawLookout(); });
+  }
+
+  function drawLookout() {
+    if (!snapshot || $("panel-lookout").hidden) return;
+    const width = lookoutCanvas.clientWidth;
+    const height = lookoutCanvas.clientHeight;
+    if (!width || !height) return;
+    resizeCanvas(lookoutCanvas, lookoutCtx, width, height);
+    const environment = snapshot.environment;
+    lookoutCtx.fillStyle = environment?.is_night === true ? "#071117" : environment?.is_night === false ? "#102833" : "#0b151c";
+    lookoutCtx.fillRect(0, 0, width, height);
+    const own = snapshot.ownship;
+    if (!hasPosition(own)) return;
+    const fontSize = Math.max(11, parseFloat(getComputedStyle(document.documentElement).fontSize) * .7);
+    lookoutCtx.font = `${fontSize}px ui-monospace, monospace`;
+    lookoutCtx.lineWidth = 1;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const compact = height < 120;
+    const radius = Math.max(8, Math.min(width, height) / 2 - (compact ? 3 : Math.max(24, fontSize * 2.4)));
+    const scale = radius / lookoutView.rangeNm;
+    lookoutCtx.strokeStyle = environment?.is_night === true ? "#294452" : "#496976";
+    lookoutCtx.fillStyle = environment?.is_night === true ? "#7895a0" : "#adc3c9";
+    for (const fraction of compact ? [.5, 1] : [.25, .5, .75, 1]) {
+      const ringRadius = radius * fraction;
+      lookoutCtx.beginPath();
+      lookoutCtx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+      lookoutCtx.stroke();
+      if (!compact) {
+        const label = `${number(lookoutView.rangeNm * fraction, lookoutView.rangeNm < 10 ? 1 : 0)} NM`;
+        const labelWidth = lookoutCtx.measureText(label).width;
+        lookoutCtx.fillText(label, Math.max(2, centerX - labelWidth / 2), Math.max(fontSize, centerY - ringRadius + fontSize));
+      }
+    }
+    // All geometry below is derived from the current detached snapshot only.
+    for (const track of snapshot.tracks) {
+      const color = colors[track.affiliation] || colors.UNKNOWN;
+      lookoutCtx.strokeStyle = color;
+      lookoutCtx.fillStyle = color;
+      if (finite(track.x) && finite(track.y)) {
+        const dx = track.x - own.x;
+        const dy = track.y - own.y;
+        if (Math.hypot(dx, dy) > lookoutView.rangeNm) continue;
+        const x = centerX + dx * scale;
+        const y = centerY + dy * scale;
+        lookoutCtx.beginPath();
+        lookoutCtx.arc(x, y, compact ? 2 : 4, 0, Math.PI * 2);
+        lookoutCtx.fill();
+        const label = String(track.label ?? "");
+        if (!compact && label && x + 9 < width - 2) lookoutCtx.fillText(label, x + 8, Math.max(fontSize, Math.min(height - 3, y - 7)), Math.max(0, width - x - 11));
+        continue;
+      }
+      if (!finite(track.bearing)) continue;
+      const angle = track.bearing * Math.PI / 180 - Math.PI / 2;
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+      const uncertainty = finite(track.bearing_uncertainty_deg) ? Math.min(180, Math.max(0, track.bearing_uncertainty_deg)) * Math.PI / 180 : 0;
+      if (uncertainty) {
+        lookoutCtx.globalAlpha = .35;
+        lookoutCtx.beginPath();
+        lookoutCtx.arc(centerX, centerY, radius, angle - uncertainty, angle + uncertainty);
+        lookoutCtx.stroke();
+        lookoutCtx.globalAlpha = 1;
+      }
+      lookoutCtx.save();
+      lookoutCtx.translate(x, y);
+      lookoutCtx.rotate(angle + Math.PI / 2);
+      lookoutCtx.beginPath();
+      const marker = compact ? 4 : 9;
+      lookoutCtx.moveTo(0, marker);
+      lookoutCtx.lineTo(-marker * .67, -marker / 3);
+      lookoutCtx.lineTo(marker * .67, -marker / 3);
+      lookoutCtx.closePath();
+      lookoutCtx.fill();
+      lookoutCtx.restore();
+    }
+    lookoutCtx.save();
+    lookoutCtx.translate(centerX, centerY);
+    lookoutCtx.strokeStyle = "#a1e7cc";
+    lookoutCtx.fillStyle = "#183e3c";
+    lookoutCtx.lineWidth = 2;
+    if (finite(own.course)) {
+      lookoutCtx.rotate(own.course * Math.PI / 180);
+      lookoutCtx.beginPath();
+      const shipSize = compact ? 4 : 12;
+      lookoutCtx.moveTo(0, -shipSize);
+      lookoutCtx.lineTo(shipSize * .58, shipSize * .67);
+      lookoutCtx.lineTo(-shipSize * .58, shipSize * .67);
+      lookoutCtx.closePath();
+      lookoutCtx.fill();
+      lookoutCtx.stroke();
+      lookoutCtx.beginPath();
+      lookoutCtx.moveTo(0, -(compact ? 5 : 15));
+      lookoutCtx.lineTo(0, -Math.min(compact ? 12 : 48, radius * .55));
+      lookoutCtx.stroke();
+    } else {
+      lookoutCtx.beginPath();
+      lookoutCtx.arc(0, 0, compact ? 3 : 8, 0, Math.PI * 2);
+      lookoutCtx.stroke();
+    }
+    lookoutCtx.restore();
+    if (!compact) {
+      lookoutCtx.fillStyle = "#c6d6d9";
+      lookoutCtx.fillText(t("north"), width - Math.max(18, lookoutCtx.measureText(t("north")).width + 6), fontSize + 5);
+    }
+  }
+
+  function changeLookoutRange(direction) {
+    const current = lookoutRanges.indexOf(lookoutView.rangeNm);
+    const index = Math.max(0, Math.min(lookoutRanges.length - 1, current + direction));
+    lookoutView.rangeNm = lookoutRanges[index];
+    renderLookoutStatus();
+    queueLookoutDraw();
+  }
+
   function zoom(factor, px = canvas.clientWidth / 2, py = canvas.clientHeight / 2) {
     if (!chart || !snapshot) return;
     const before = chartGeometry();
@@ -766,6 +955,20 @@
     // Reconciliation never reconstructs an envelope from the current selection.
     transmitCommand(pending);
   });
+  for (const name of tabNames) {
+    const tab = $(`tab-${name}`);
+    tab.addEventListener("click", () => activateTab(name));
+    tab.addEventListener("keydown", (event) => {
+      let index = tabNames.indexOf(name);
+      if (event.key === "ArrowRight") index = (index + 1) % tabNames.length;
+      else if (event.key === "ArrowLeft") index = (index - 1 + tabNames.length) % tabNames.length;
+      else if (event.key === "Home") index = 0;
+      else if (event.key === "End") index = tabNames.length - 1;
+      else return;
+      event.preventDefault();
+      activateTab(tabNames[index]);
+    });
+  }
   $("track-list").addEventListener("keydown", (event) => {
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
     const buttons = [...$("track-list").querySelectorAll("button")];
@@ -798,6 +1001,28 @@
     view.follow = !view.follow;
     $("follow").setAttribute("aria-pressed", String(view.follow));
     queueDraw();
+  });
+  $("lookout-zoom-in").addEventListener("click", () => changeLookoutRange(-1));
+  $("lookout-zoom-out").addEventListener("click", () => changeLookoutRange(1));
+  $("lookout-reset").addEventListener("click", () => {
+    lookoutView.rangeNm = 100;
+    renderLookoutStatus();
+    queueLookoutDraw();
+  });
+  lookoutCanvas.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    changeLookoutRange(event.deltaY < 0 ? -1 : 1);
+  }, { passive: false });
+  lookoutCanvas.addEventListener("keydown", (event) => {
+    if (!["+", "=", "-", "Home"].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === "+" || event.key === "=") changeLookoutRange(-1);
+    else if (event.key === "-") changeLookoutRange(1);
+    else {
+      lookoutView.rangeNm = 100;
+      renderLookoutStatus();
+      queueLookoutDraw();
+    }
   });
   canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
@@ -855,7 +1080,8 @@
     }
   });
   new ResizeObserver(queueDraw).observe(canvas);
-  window.addEventListener("resize", queueDraw);
+  new ResizeObserver(queueLookoutDraw).observe(lookoutCanvas);
+  window.addEventListener("resize", () => { queueDraw(); queueLookoutDraw(); });
   document.addEventListener("visibilitychange", () => {
     // A background tab's event batch is not a new audible alarm on return.
     suppressNextEvents = true;

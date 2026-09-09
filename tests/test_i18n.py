@@ -52,6 +52,19 @@ def test_pseudolocale_preserves_keys_and_placeholders():
     validate_catalog(pseudo, source)
 
 
+def test_commander_confirmation_catalog_contract():
+    required = {
+        "commander.confirm.title", "commander.confirm.target",
+        "commander.confirm.navigation", "commander.confirm.unchanged",
+        "commander.confirm.accept", "commander.confirm.reject",
+        "commander.confirm.hint.single", "commander.confirm.hint.multiple",
+    }
+    for catalog in (load_catalog("en"), load_catalog("de"),
+                    pseudolocale(load_catalog("en"))):
+        assert required <= catalog.keys()
+        validate_catalog(catalog, load_catalog("en"))
+
+
 def test_exact_legacy_literals_work_but_composed_text_is_not_parsed():
     english = Translator("en")
     german = Translator("de")

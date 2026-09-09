@@ -32,6 +32,14 @@
       </form>
     </section>
     <main id="operations" hidden>
+      <div class="tablist" role="tablist" data-i18n-aria="tabs">
+        <button id="tab-operations" type="button" role="tab" aria-selected="true" aria-controls="panel-operations" tabindex="0" data-i18n="tab_operations"></button>
+        <button id="tab-lookout" type="button" role="tab" aria-selected="false" aria-controls="panel-lookout" tabindex="-1" data-i18n="tab_lookout"></button>
+        <button id="tab-guide" type="button" role="tab" aria-selected="false" aria-controls="panel-guide" tabindex="-1" data-i18n="tab_guide"></button>
+        <button id="tab-contacts" type="button" role="tab" aria-selected="false" aria-controls="panel-contacts" tabindex="-1" data-i18n="tab_contacts"></button>
+      </div>
+      <div class="tab-deck">
+        <section id="panel-operations" class="tab-panel operations-panel" role="tabpanel" aria-labelledby="tab-operations" tabindex="0">
       <section class="mission-strip" data-i18n-aria="mission">
         <div class="mission-name"><p class="eyebrow" data-i18n="mission"></p><h1 id="mission-name"></h1><p id="objective"></p></div>
         <dl id="mission-metrics" class="metrics"></dl>
@@ -74,6 +82,20 @@
         <section class="panel"><div class="panel-heading"><h2 data-i18n="events"></h2><span class="local-tag" data-i18n="live_feed"></span></div><ol id="event-list" class="event-list"></ol></section>
       </div>
       <footer><span data-i18n="observation_note"></span><span id="snapshot-meta"></span></footer>
+        </section>
+        <section id="panel-lookout" class="tab-panel lookout-panel" role="tabpanel" aria-labelledby="tab-lookout" tabindex="0" hidden>
+          <header class="lookout-bar">
+            <div class="lookout-title"><p class="eyebrow" data-i18n="lookout_eyebrow"></p><h1 data-i18n="lookout_title"></h1></div>
+            <div class="lookout-environment" aria-live="polite"><span><span data-i18n="sea_state"></span> <strong id="lookout-sea"></strong></span><span id="lookout-light"></span></div>
+            <div class="lookout-toolbar"><button id="lookout-zoom-in" type="button" data-i18n="zoom_in"></button><button id="lookout-zoom-out" type="button" data-i18n="zoom_out"></button><button id="lookout-reset" type="button" data-i18n="lookout_default_short" data-i18n-aria="lookout_reset"></button><output id="lookout-range"></output></div>
+          </header>
+          <div id="lookout-scope" class="lookout-scope"><canvas id="lookout" tabindex="0" aria-describedby="lookout-note lookout-own" data-i18n-aria="lookout_help"></canvas></div>
+          <p id="lookout-note" class="lookout-note" data-i18n="lookout_note"></p>
+          <section class="visually-hidden"><h2 data-i18n="lookout_observations"></h2><p id="lookout-own"></p><ul id="lookout-observations"></ul></section>
+        </section>
+        <section id="panel-guide" class="tab-panel pending-panel" role="tabpanel" aria-labelledby="tab-guide" tabindex="0" hidden><p data-i18n="section_pending"></p></section>
+        <section id="panel-contacts" class="tab-panel pending-panel" role="tabpanel" aria-labelledby="tab-contacts" tabindex="0" hidden><p data-i18n="section_pending"></p></section>
+      </div>
     </main>
   </div>
 </body>

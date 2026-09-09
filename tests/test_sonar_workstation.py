@@ -115,7 +115,9 @@ def test_audition_band_removes_carrier_without_changing_receiver():
     sonar.receiver.samples = (.1 * np.sin(2 * np.pi * 700 * t)).astype(np.float32)
     original = sonar.receiver.samples.copy()
     sonar.listen_filtered = True
-    assert np.max(np.abs(sonar.listening_samples())) < .001
+    sonar.listening_samples(sonar.receiver.samples, block_id=1)
+    filtered = sonar.listening_samples(sonar.receiver.samples.copy(), block_id=2)
+    assert np.max(np.abs(filtered)) < .001
     np.testing.assert_array_equal(sonar.receiver.samples, original)
 
 

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "key": "tanker_01",
@@ -3121,5 +3121,92 @@
         "signature_text": "Arbeitsmaschine, unregelmäßig"
       }
     }
-  ]
+  ],
+  "profiles": [
+    {
+      "profile_key": "cargo_05",
+      "reference_key": "reference.cargo_05",
+      "machine_key": "machine.cargo_05",
+      "sensor_keys": ["sensor.cargo_05.radar", "sensor.cargo_05.ais"],
+      "emitter_keys": ["emitter.cargo_05.radar"],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.cargo_05",
+      "variant": "Generic Panamax container-ship archetype",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": ["Panamax container ship"],
+      "roles": ["cargo"],
+      "hull_type": "container_ship",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.cargo_05",
+      "cruise_speed_kn": 16,
+      "maximum_speed_kn": 22,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["diesel"],
+      "motor_rpm": [80, 110],
+      "shaft_rpm": [80, 110],
+      "propulsor_type": "propeller",
+      "blade_count": 6,
+      "cruise_lines": [
+        [8.5, 1.0, 0.8],
+        [17, 0.501, 1.1],
+        [34, 0.237, 1.5],
+        [51, 0.126, 2.0],
+        [102, 0.071, 2.8]
+      ],
+      "high_speed_lines": [
+        [10.5, 1.0, 1.4],
+        [21, 0.501, 1.9],
+        [42, 0.224, 2.5],
+        [63, 0.112, 3.2],
+        [126, 0.056, 4.5]
+      ],
+      "cruise_broadband": [0.032, 5, 300],
+      "high_speed_broadband": [0.067, 5, 350]
+    }
+  ],
+  "sensors": [
+    {
+      "key": "sensor.cargo_05.radar", "domain": "radar", "modes": ["active"],
+      "emits": true, "emitter_key": "emitter.cargo_05.radar",
+      "synthetic_range_nm": 48, "sensitivity_db": -75, "cadence_s": 5,
+      "bearing_uncertainty_deg": 2, "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_05.ais", "domain": "ais", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 40,
+      "sensitivity_db": null, "cadence_s": 10, "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": null
+    }
+  ],
+  "emitters": [
+    {
+      "key": "emitter.cargo_05.radar", "domain": "radar",
+      "frequency_band_hz": [9000000000, 9500000000],
+      "prf_band_hz": [500, 2000], "modulation_codes": ["pulse"]
+    }
+  ],
+  "weapons": [],
+  "launchers": [],
+  "magazines": [],
+  "countermeasures": []
 }

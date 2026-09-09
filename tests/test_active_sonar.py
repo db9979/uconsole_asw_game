@@ -53,6 +53,15 @@ def test_ping_cooldown_state_is_public():
     assert sonar.ping_cooldown_remaining == config.SONAR_PING_COOLDOWN_S
 
 
+def test_ping_animation_timer_stops_at_canonical_zero():
+    sonar = SonarSystem()
+    ship = Ship(250, 250, speed_kn=4)
+    assert sonar.fire_ping()
+    sonar.advance_mechanics(2.0, 2.0, ship)
+    assert sonar._ping_anim_timer == 0.0
+    assert not sonar.ping_active
+
+
 def test_stowed_towed_array_cannot_ping_or_notify_target():
     world = World(seed=10)
     ship = Ship(250, 250, speed_kn=4)

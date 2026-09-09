@@ -1,0 +1,417 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "usn.ddg51.2026",
+      "kind": "public_source",
+      "title": "Destroyers (DDG 51)",
+      "publisher": "U.S. Navy",
+      "url": "https://www.navy.mil/Resources/Fact-Files/Display-FactFiles/Article/2169871/destroyers-ddg-51/",
+      "reference": "Last updated 2026-07-07",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "fas.aegis.1998",
+      "kind": "public_source",
+      "title": "AEGIS Weapon System MK-7",
+      "publisher": "Federation of American Scientists",
+      "url": "https://man.fas.org/dod-101/sys/ship/weaps/aegis.htm",
+      "reference": "Updated 1998-12-31",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "usn.ticonderoga",
+      "kind": "public_source",
+      "title": "Ticonderoga Class Cruiser (CG) Info Page",
+      "publisher": "U.S. Naval Surface Force Atlantic",
+      "url": "https://www.surflant.usff.navy.mil/Organization/Operational-Forces/Cruisers/Ticonderoga-Class-Cruiser-CG-Info-Page/",
+      "reference": "Class information page; update date not displayed",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "usn.attack-subs",
+      "kind": "public_source",
+      "title": "Attack Submarines - SSN",
+      "publisher": "U.S. Navy",
+      "url": "https://www.navy.mil/Resources/Fact-Files/Display-FactFiles/Article/2169558/attack-submarines-ssn/",
+      "reference": "Fact file; update date not displayed",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "navalnews.type055-type052d.2020",
+      "kind": "public_source",
+      "title": "Shipyard in China Launched The 25th Type 052D and 8th Type 055 Destroyers For PLAN",
+      "publisher": "Naval News",
+      "url": "https://www.navalnews.com/naval-news/2020/08/shipyard-in-china-launched-the-25th-type-052d-and-8th-type-055-destroyers-for-plan/",
+      "reference": "Published 2020-08-30",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "navalnews.type055-roles.2023",
+      "kind": "public_source",
+      "title": "China Now has 8 Type 055 Destroyers in Active Service",
+      "publisher": "Naval News",
+      "url": "https://www.navalnews.com/naval-news/2023/04/china-now-has-8-type-055-destroyers-in-active-service/",
+      "reference": "Published 2023-04-27",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "navalnews.type052d.2022",
+      "kind": "public_source",
+      "title": "Five Type 052D Destroyers Under Construction in China",
+      "publisher": "Naval News",
+      "url": "https://www.navalnews.com/naval-news/2022/08/five-type-052d-destroyers-under-construction-in-china/",
+      "reference": "Published 2022-08-21",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "navalnews.yasenm-launch.2020",
+      "kind": "public_source",
+      "title": "Yasen-M class SSGN Novosibirsk launched by Sevmash Shipyard",
+      "publisher": "Naval News",
+      "url": "https://www.navalnews.com/naval-news/2020/01/yasen-m-class-ssgn-novosibirsk-launched-by-sevmash-shipyard/",
+      "reference": "Published 2020-01-03",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "navalnews.yasenm-commission.2021",
+      "kind": "public_source",
+      "title": "Russia's New SSGN Submarine Kazan Commissioned into Northern Fleet",
+      "publisher": "Naval News",
+      "url": "https://www.navalnews.com/naval-news/2021/05/russias-new-ssgn-submarine-kazan-commissioned-into-northern-fleet/",
+      "reference": "Published 2021-05-07",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "navalnews.yasenm-analysis.2021",
+      "kind": "public_source",
+      "title": "How Russia's Yasen-M Submarine Compares To The U.S. Navy's Block-V Virginia",
+      "publisher": "Naval News",
+      "url": "https://www.navalnews.com/naval-news/2021/08/how-russias-yasen-m-submarine-compares-to-the-u-s-navys-block-v-virginia/",
+      "reference": "Published 2021-08-04",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "navaltechnology.type901.2022",
+      "kind": "public_source",
+      "title": "Type 901 Class Fleet Replenishment Ship",
+      "publisher": "Naval Technology",
+      "url": "https://www.naval-technology.com/projects/type-901-class-fleet-replenishment-ship/",
+      "reference": "Published 2017-11-29; modified 2022-01-21",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "usn.cvn.2025",
+      "kind": "public_source",
+      "title": "Aircraft Carriers - CVN",
+      "publisher": "U.S. Navy",
+      "url": "https://www.navy.mil/Resources/Fact-Files/Display-FactFiles/Article/2169795/aircraft-carriers-cvn/",
+      "reference": "Last updated 2025-02-27",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "usn.nimitz.about",
+      "kind": "public_source",
+      "title": "USS Nimitz (CVN 68): About Us",
+      "publisher": "Naval Air Force, U.S. Pacific Fleet",
+      "url": "https://www.airpac.navy.mil/Organization/USS-Nimitz-CVN-68/About-Us/",
+      "reference": "Public command page; update date not displayed",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "usn.nimitz.history",
+      "kind": "public_source",
+      "title": "USS Nimitz: History",
+      "publisher": "Naval Air Force, U.S. Pacific Fleet",
+      "url": "https://www.airpac.navy.mil/Organization/USS-Nimitz-CVN-68/About-Us/History/",
+      "reference": "Public command history page; update date not displayed",
+      "retrieved": "2026-09-08",
+      "license": null
+    },
+    {
+      "id": "u-jagd.game-model",
+      "kind": "game_assumption",
+      "title": "U-Jagd synthetic gameplay model",
+      "publisher": null,
+      "url": null,
+      "reference": "0.1.7 pilot normalization",
+      "retrieved": null,
+      "license": "MIT"
+    }
+  ],
+  "claims": [
+    {
+      "resource": "warships.json", "profile_key": "warship_01",
+      "field_paths": ["/reference/variant", "/reference/hull_type", "/reference/length_m", "/reference/ship_crew", "/machine/propulsion_codes"],
+      "status": "published", "source_ids": ["usn.ddg51.2026"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_01",
+      "field_paths": ["/reference/variant_year", "/reference/roles", "/reference/beam_waterline_m"],
+      "status": "derived", "source_ids": ["usn.ddg51.2026", "fas.aegis.1998"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_01",
+      "field_paths": ["/reference/aliases", "/reference/displacement_basis", "/machine/cruise_speed_kn", "/machine/maximum_speed_kn", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_01",
+      "field_paths": ["/reference/refit_year", "/reference/displacement_tonnes", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/draft_m", "/reference/air_group_crew", "/machine/quiet_speed_kn", "/machine/motor_rpm"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_02",
+      "field_paths": ["/reference/variant", "/reference/aliases", "/reference/hull_type", "/reference/displacement_tonnes", "/reference/displacement_basis", "/machine/propulsion_codes"],
+      "status": "published", "source_ids": ["fas.aegis.1998", "usn.ticonderoga"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_02",
+      "field_paths": ["/reference/roles", "/reference/length_m", "/reference/beam_waterline_m", "/reference/ship_crew"],
+      "status": "derived", "source_ids": ["usn.ticonderoga"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_02",
+      "field_paths": ["/machine/cruise_speed_kn", "/machine/maximum_speed_kn", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_02",
+      "field_paths": ["/reference/variant_year", "/reference/refit_year", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/draft_m", "/reference/air_group_crew", "/machine/quiet_speed_kn", "/machine/motor_rpm"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_25",
+      "field_paths": ["/reference/variant", "/reference/variant_year", "/reference/aliases", "/reference/hull_type", "/reference/displacement_tonnes", "/reference/displacement_basis", "/reference/length_m", "/reference/draft_m"],
+      "status": "published", "source_ids": ["navalnews.type055-type052d.2020"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_25",
+      "field_paths": ["/reference/roles", "/reference/beam_waterline_m", "/machine/propulsion_codes"],
+      "status": "derived", "source_ids": ["navalnews.type055-type052d.2020", "navalnews.type055-roles.2023"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_25",
+      "field_paths": ["/machine/cruise_speed_kn", "/machine/maximum_speed_kn", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_25",
+      "field_paths": ["/reference/refit_year", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/ship_crew", "/reference/air_group_crew", "/machine/quiet_speed_kn", "/machine/motor_rpm"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_26",
+      "field_paths": ["/reference/variant", "/reference/variant_year", "/reference/aliases", "/reference/hull_type", "/reference/displacement_tonnes", "/reference/displacement_basis", "/reference/length_m", "/reference/draft_m", "/reference/ship_crew"],
+      "status": "published", "source_ids": ["navalnews.type052d.2022"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_26",
+      "field_paths": ["/reference/roles", "/reference/beam_waterline_m"],
+      "status": "derived", "source_ids": ["navalnews.type052d.2022"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_26",
+      "field_paths": ["/machine/cruise_speed_kn", "/machine/maximum_speed_kn", "/machine/propulsion_codes", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_26",
+      "field_paths": ["/reference/refit_year", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/air_group_crew", "/machine/quiet_speed_kn", "/machine/motor_rpm"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_27",
+      "field_paths": ["/reference/variant", "/reference/variant_year", "/reference/roles", "/reference/hull_type", "/machine/propulsion_codes"],
+      "status": "published", "source_ids": ["navaltechnology.type901.2022"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_27",
+      "field_paths": ["/reference/length_m", "/reference/beam_waterline_m", "/reference/draft_m", "/machine/maximum_speed_kn"],
+      "status": "derived", "source_ids": ["navaltechnology.type901.2022"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_27",
+      "field_paths": ["/reference/aliases", "/reference/displacement_basis", "/machine/cruise_speed_kn", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_27",
+      "field_paths": ["/reference/refit_year", "/reference/displacement_tonnes", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/ship_crew", "/reference/air_group_crew", "/machine/quiet_speed_kn", "/machine/motor_rpm"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_28",
+      "field_paths": ["/reference/variant", "/reference/hull_type", "/machine/propulsion_codes"],
+      "status": "published", "source_ids": ["usn.cvn.2025", "usn.nimitz.about"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_28",
+      "field_paths": ["/reference/variant_year", "/reference/aliases", "/reference/roles"],
+      "status": "derived", "source_ids": ["usn.cvn.2025", "usn.nimitz.history"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_28",
+      "field_paths": ["/reference/displacement_basis", "/machine/cruise_speed_kn", "/machine/maximum_speed_kn", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_28",
+      "field_paths": ["/reference/refit_year", "/reference/displacement_tonnes", "/reference/length_m", "/reference/beam_waterline_m", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/draft_m", "/reference/ship_crew", "/reference/air_group_crew", "/machine/quiet_speed_kn", "/machine/motor_rpm"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_03",
+      "field_paths": ["/reference/variant", "/reference/hull_type", "/machine/propulsion_codes"],
+      "status": "published", "source_ids": ["usn.attack-subs"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_03",
+      "field_paths": ["/reference/roles", "/reference/displacement_tonnes", "/reference/displacement_basis", "/reference/length_m", "/reference/beam_overall_m", "/reference/ship_crew"],
+      "status": "derived", "source_ids": ["usn.attack-subs"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_03",
+      "field_paths": ["/reference/aliases", "/machine/cruise_speed_kn", "/machine/maximum_speed_kn", "/machine/quiet_speed_kn", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_03",
+      "field_paths": ["/reference/variant_year", "/reference/refit_year", "/reference/beam_waterline_m", "/reference/flight_deck_width_m", "/reference/draft_m", "/reference/air_group_crew", "/machine/motor_rpm", "/machine/blade_count"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_14",
+      "field_paths": ["/reference/variant", "/reference/variant_year", "/reference/hull_type", "/machine/maximum_speed_kn"],
+      "status": "published", "source_ids": ["navalnews.yasenm-launch.2020", "navalnews.yasenm-commission.2021"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_14",
+      "field_paths": ["/reference/aliases", "/reference/roles", "/machine/propulsion_codes"],
+      "status": "derived", "source_ids": ["navalnews.yasenm-analysis.2021"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_14",
+      "field_paths": ["/reference/displacement_basis", "/machine/cruise_speed_kn", "/machine/quiet_speed_kn", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_14",
+      "field_paths": ["/reference/refit_year", "/reference/displacement_tonnes", "/reference/length_m", "/reference/beam_waterline_m", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/draft_m", "/reference/ship_crew", "/reference/air_group_crew", "/machine/motor_rpm"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "civilians.json", "profile_key": "cargo_05",
+      "field_paths": ["/reference/variant", "/reference/aliases", "/reference/roles", "/reference/hull_type", "/reference/displacement_basis", "/machine/cruise_speed_kn", "/machine/maximum_speed_kn", "/machine/propulsion_codes", "/machine/motor_rpm", "/machine/shaft_rpm", "/machine/propulsor_type", "/machine/blade_count", "/machine/cruise_lines", "/machine/high_speed_lines", "/machine/cruise_broadband", "/machine/high_speed_broadband"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "civilians.json", "profile_key": "cargo_05",
+      "field_paths": ["/reference/variant_year", "/reference/refit_year", "/reference/displacement_tonnes", "/reference/length_m", "/reference/beam_waterline_m", "/reference/beam_overall_m", "/reference/flight_deck_width_m", "/reference/draft_m", "/reference/ship_crew", "/reference/air_group_crew", "/machine/quiet_speed_kn"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_01",
+      "field_paths": ["/sensors/sensor.warship_01.radar/domain", "/sensors/sensor.warship_01.radar/modes", "/sensors/sensor.warship_01.radar/emits", "/sensors/sensor.warship_01.radar/emitter_key", "/sensors/sensor.warship_01.radar/synthetic_range_nm", "/sensors/sensor.warship_01.radar/sensitivity_db", "/sensors/sensor.warship_01.radar/cadence_s", "/sensors/sensor.warship_01.radar/bearing_uncertainty_deg", "/sensors/sensor.warship_01.radar/range_uncertainty_nm", "/sensors/sensor.warship_01.sonar/domain", "/sensors/sensor.warship_01.sonar/modes", "/sensors/sensor.warship_01.sonar/emits", "/sensors/sensor.warship_01.sonar/synthetic_range_nm", "/sensors/sensor.warship_01.sonar/sensitivity_db", "/sensors/sensor.warship_01.sonar/cadence_s", "/sensors/sensor.warship_01.sonar/bearing_uncertainty_deg", "/sensors/sensor.warship_01.sonar/depth_uncertainty_m", "/emitters/emitter.warship_01.radar/domain", "/emitters/emitter.warship_01.radar/frequency_band_hz", "/emitters/emitter.warship_01.radar/prf_band_hz", "/emitters/emitter.warship_01.radar/modulation_codes", "/weapons/weapon.warship_01.asroc/weapon_type", "/weapons/weapon.warship_01.asroc/target_domains", "/weapons/weapon.warship_01.asroc/maximum_speed_kn", "/weapons/weapon.warship_01.asroc/engagement_range_nm", "/weapons/weapon.warship_01.asroc/seeker_type", "/weapons/weapon.warship_01.asroc/guidance_type", "/weapons/weapon.warship_01.asroc/payload_type", "/launchers/launcher.warship_01.vls/launcher_type", "/launchers/launcher.warship_01.vls/mount_count", "/launchers/launcher.warship_01.vls/ready_count", "/launchers/launcher.warship_01.vls/reload_s", "/launchers/launcher.warship_01.vls/arc_center_deg", "/launchers/launcher.warship_01.vls/arc_width_deg", "/launchers/launcher.warship_01.vls/vls_cells", "/launchers/launcher.warship_01.vls/weapon_keys", "/magazines/magazine.warship_01.asroc/weapon_key", "/magazines/magazine.warship_01.asroc/mission_count", "/countermeasures/countermeasure.warship_01.softkill/effect_type", "/countermeasures/countermeasure.warship_01.softkill/mission_count", "/countermeasures/countermeasure.warship_01.softkill/ready_count", "/countermeasures/countermeasure.warship_01.softkill/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_01",
+      "field_paths": ["/sensors/sensor.warship_01.radar/depth_uncertainty_m", "/sensors/sensor.warship_01.sonar/emitter_key", "/sensors/sensor.warship_01.sonar/range_uncertainty_nm", "/weapons/weapon.warship_01.asroc/runtime_profile_key", "/countermeasures/countermeasure.warship_01.softkill/payload_key"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_02",
+      "field_paths": ["/sensors/sensor.warship_02.radar/domain", "/sensors/sensor.warship_02.radar/modes", "/sensors/sensor.warship_02.radar/emits", "/sensors/sensor.warship_02.radar/emitter_key", "/sensors/sensor.warship_02.radar/synthetic_range_nm", "/sensors/sensor.warship_02.radar/sensitivity_db", "/sensors/sensor.warship_02.radar/cadence_s", "/sensors/sensor.warship_02.radar/bearing_uncertainty_deg", "/sensors/sensor.warship_02.radar/range_uncertainty_nm", "/sensors/sensor.warship_02.sonar/domain", "/sensors/sensor.warship_02.sonar/modes", "/sensors/sensor.warship_02.sonar/emits", "/sensors/sensor.warship_02.sonar/synthetic_range_nm", "/sensors/sensor.warship_02.sonar/sensitivity_db", "/sensors/sensor.warship_02.sonar/cadence_s", "/sensors/sensor.warship_02.sonar/bearing_uncertainty_deg", "/sensors/sensor.warship_02.sonar/depth_uncertainty_m", "/emitters/emitter.warship_02.radar/domain", "/emitters/emitter.warship_02.radar/frequency_band_hz", "/emitters/emitter.warship_02.radar/prf_band_hz", "/emitters/emitter.warship_02.radar/modulation_codes", "/weapons/weapon.warship_02.asroc/weapon_type", "/weapons/weapon.warship_02.asroc/target_domains", "/weapons/weapon.warship_02.asroc/maximum_speed_kn", "/weapons/weapon.warship_02.asroc/engagement_range_nm", "/weapons/weapon.warship_02.asroc/seeker_type", "/weapons/weapon.warship_02.asroc/guidance_type", "/weapons/weapon.warship_02.asroc/payload_type", "/launchers/launcher.warship_02.vls/launcher_type", "/launchers/launcher.warship_02.vls/mount_count", "/launchers/launcher.warship_02.vls/ready_count", "/launchers/launcher.warship_02.vls/reload_s", "/launchers/launcher.warship_02.vls/arc_center_deg", "/launchers/launcher.warship_02.vls/arc_width_deg", "/launchers/launcher.warship_02.vls/vls_cells", "/launchers/launcher.warship_02.vls/weapon_keys", "/magazines/magazine.warship_02.asroc/weapon_key", "/magazines/magazine.warship_02.asroc/mission_count", "/countermeasures/countermeasure.warship_02.softkill/effect_type", "/countermeasures/countermeasure.warship_02.softkill/mission_count", "/countermeasures/countermeasure.warship_02.softkill/ready_count", "/countermeasures/countermeasure.warship_02.softkill/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_02",
+      "field_paths": ["/sensors/sensor.warship_02.radar/depth_uncertainty_m", "/sensors/sensor.warship_02.sonar/emitter_key", "/sensors/sensor.warship_02.sonar/range_uncertainty_nm", "/weapons/weapon.warship_02.asroc/runtime_profile_key", "/countermeasures/countermeasure.warship_02.softkill/payload_key"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_25",
+      "field_paths": ["/sensors/sensor.warship_25.radar/domain", "/sensors/sensor.warship_25.radar/modes", "/sensors/sensor.warship_25.radar/emits", "/sensors/sensor.warship_25.radar/emitter_key", "/sensors/sensor.warship_25.radar/synthetic_range_nm", "/sensors/sensor.warship_25.radar/sensitivity_db", "/sensors/sensor.warship_25.radar/cadence_s", "/sensors/sensor.warship_25.radar/bearing_uncertainty_deg", "/sensors/sensor.warship_25.radar/range_uncertainty_nm", "/sensors/sensor.warship_25.sonar/domain", "/sensors/sensor.warship_25.sonar/modes", "/sensors/sensor.warship_25.sonar/emits", "/sensors/sensor.warship_25.sonar/synthetic_range_nm", "/sensors/sensor.warship_25.sonar/sensitivity_db", "/sensors/sensor.warship_25.sonar/cadence_s", "/sensors/sensor.warship_25.sonar/bearing_uncertainty_deg", "/sensors/sensor.warship_25.sonar/depth_uncertainty_m", "/emitters/emitter.warship_25.radar/domain", "/emitters/emitter.warship_25.radar/frequency_band_hz", "/emitters/emitter.warship_25.radar/prf_band_hz", "/emitters/emitter.warship_25.radar/modulation_codes", "/weapons/weapon.warship_25.asroc/weapon_type", "/weapons/weapon.warship_25.asroc/target_domains", "/weapons/weapon.warship_25.asroc/maximum_speed_kn", "/weapons/weapon.warship_25.asroc/engagement_range_nm", "/weapons/weapon.warship_25.asroc/seeker_type", "/weapons/weapon.warship_25.asroc/guidance_type", "/weapons/weapon.warship_25.asroc/payload_type", "/launchers/launcher.warship_25.vls/launcher_type", "/launchers/launcher.warship_25.vls/mount_count", "/launchers/launcher.warship_25.vls/ready_count", "/launchers/launcher.warship_25.vls/reload_s", "/launchers/launcher.warship_25.vls/arc_center_deg", "/launchers/launcher.warship_25.vls/arc_width_deg", "/launchers/launcher.warship_25.vls/vls_cells", "/launchers/launcher.warship_25.vls/weapon_keys", "/magazines/magazine.warship_25.asroc/weapon_key", "/magazines/magazine.warship_25.asroc/mission_count", "/countermeasures/countermeasure.warship_25.softkill/effect_type", "/countermeasures/countermeasure.warship_25.softkill/mission_count", "/countermeasures/countermeasure.warship_25.softkill/ready_count", "/countermeasures/countermeasure.warship_25.softkill/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_25",
+      "field_paths": ["/sensors/sensor.warship_25.radar/depth_uncertainty_m", "/sensors/sensor.warship_25.sonar/emitter_key", "/sensors/sensor.warship_25.sonar/range_uncertainty_nm", "/weapons/weapon.warship_25.asroc/runtime_profile_key", "/countermeasures/countermeasure.warship_25.softkill/payload_key"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_26",
+      "field_paths": ["/sensors/sensor.warship_26.radar/domain", "/sensors/sensor.warship_26.radar/modes", "/sensors/sensor.warship_26.radar/emits", "/sensors/sensor.warship_26.radar/emitter_key", "/sensors/sensor.warship_26.radar/synthetic_range_nm", "/sensors/sensor.warship_26.radar/sensitivity_db", "/sensors/sensor.warship_26.radar/cadence_s", "/sensors/sensor.warship_26.radar/bearing_uncertainty_deg", "/sensors/sensor.warship_26.radar/range_uncertainty_nm", "/sensors/sensor.warship_26.sonar/domain", "/sensors/sensor.warship_26.sonar/modes", "/sensors/sensor.warship_26.sonar/emits", "/sensors/sensor.warship_26.sonar/synthetic_range_nm", "/sensors/sensor.warship_26.sonar/sensitivity_db", "/sensors/sensor.warship_26.sonar/cadence_s", "/sensors/sensor.warship_26.sonar/bearing_uncertainty_deg", "/sensors/sensor.warship_26.sonar/depth_uncertainty_m", "/emitters/emitter.warship_26.radar/domain", "/emitters/emitter.warship_26.radar/frequency_band_hz", "/emitters/emitter.warship_26.radar/prf_band_hz", "/emitters/emitter.warship_26.radar/modulation_codes", "/weapons/weapon.warship_26.asroc/weapon_type", "/weapons/weapon.warship_26.asroc/target_domains", "/weapons/weapon.warship_26.asroc/maximum_speed_kn", "/weapons/weapon.warship_26.asroc/engagement_range_nm", "/weapons/weapon.warship_26.asroc/seeker_type", "/weapons/weapon.warship_26.asroc/guidance_type", "/weapons/weapon.warship_26.asroc/payload_type", "/launchers/launcher.warship_26.vls/launcher_type", "/launchers/launcher.warship_26.vls/mount_count", "/launchers/launcher.warship_26.vls/ready_count", "/launchers/launcher.warship_26.vls/reload_s", "/launchers/launcher.warship_26.vls/arc_center_deg", "/launchers/launcher.warship_26.vls/arc_width_deg", "/launchers/launcher.warship_26.vls/vls_cells", "/launchers/launcher.warship_26.vls/weapon_keys", "/magazines/magazine.warship_26.asroc/weapon_key", "/magazines/magazine.warship_26.asroc/mission_count", "/countermeasures/countermeasure.warship_26.softkill/effect_type", "/countermeasures/countermeasure.warship_26.softkill/mission_count", "/countermeasures/countermeasure.warship_26.softkill/ready_count", "/countermeasures/countermeasure.warship_26.softkill/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_26",
+      "field_paths": ["/sensors/sensor.warship_26.radar/depth_uncertainty_m", "/sensors/sensor.warship_26.sonar/emitter_key", "/sensors/sensor.warship_26.sonar/range_uncertainty_nm", "/weapons/weapon.warship_26.asroc/runtime_profile_key", "/countermeasures/countermeasure.warship_26.softkill/payload_key"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_27",
+      "field_paths": ["/sensors/sensor.warship_27.radar/domain", "/sensors/sensor.warship_27.radar/modes", "/sensors/sensor.warship_27.radar/emits", "/sensors/sensor.warship_27.radar/emitter_key", "/sensors/sensor.warship_27.radar/synthetic_range_nm", "/sensors/sensor.warship_27.radar/sensitivity_db", "/sensors/sensor.warship_27.radar/cadence_s", "/sensors/sensor.warship_27.radar/bearing_uncertainty_deg", "/sensors/sensor.warship_27.radar/range_uncertainty_nm", "/sensors/sensor.warship_27.sonar/domain", "/sensors/sensor.warship_27.sonar/modes", "/sensors/sensor.warship_27.sonar/emits", "/sensors/sensor.warship_27.sonar/synthetic_range_nm", "/sensors/sensor.warship_27.sonar/sensitivity_db", "/sensors/sensor.warship_27.sonar/cadence_s", "/sensors/sensor.warship_27.sonar/bearing_uncertainty_deg", "/sensors/sensor.warship_27.sonar/depth_uncertainty_m", "/emitters/emitter.warship_27.radar/domain", "/emitters/emitter.warship_27.radar/frequency_band_hz", "/emitters/emitter.warship_27.radar/prf_band_hz", "/emitters/emitter.warship_27.radar/modulation_codes", "/weapons/weapon.warship_27.ciws/weapon_type", "/weapons/weapon.warship_27.ciws/target_domains", "/weapons/weapon.warship_27.ciws/maximum_speed_kn", "/weapons/weapon.warship_27.ciws/engagement_range_nm", "/weapons/weapon.warship_27.ciws/seeker_type", "/weapons/weapon.warship_27.ciws/guidance_type", "/weapons/weapon.warship_27.ciws/payload_type", "/launchers/launcher.warship_27.ciws/launcher_type", "/launchers/launcher.warship_27.ciws/mount_count", "/launchers/launcher.warship_27.ciws/ready_count", "/launchers/launcher.warship_27.ciws/reload_s", "/launchers/launcher.warship_27.ciws/arc_center_deg", "/launchers/launcher.warship_27.ciws/arc_width_deg", "/launchers/launcher.warship_27.ciws/weapon_keys", "/magazines/magazine.warship_27.ciws/weapon_key", "/magazines/magazine.warship_27.ciws/mission_count", "/countermeasures/countermeasure.warship_27.softkill/effect_type", "/countermeasures/countermeasure.warship_27.softkill/mission_count", "/countermeasures/countermeasure.warship_27.softkill/ready_count", "/countermeasures/countermeasure.warship_27.softkill/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_27",
+      "field_paths": ["/sensors/sensor.warship_27.radar/depth_uncertainty_m", "/sensors/sensor.warship_27.sonar/emitter_key", "/sensors/sensor.warship_27.sonar/range_uncertainty_nm", "/weapons/weapon.warship_27.ciws/runtime_profile_key", "/launchers/launcher.warship_27.ciws/vls_cells", "/countermeasures/countermeasure.warship_27.softkill/payload_key"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_28",
+      "field_paths": ["/sensors/sensor.warship_28.radar/domain", "/sensors/sensor.warship_28.radar/modes", "/sensors/sensor.warship_28.radar/emits", "/sensors/sensor.warship_28.radar/emitter_key", "/sensors/sensor.warship_28.radar/synthetic_range_nm", "/sensors/sensor.warship_28.radar/sensitivity_db", "/sensors/sensor.warship_28.radar/cadence_s", "/sensors/sensor.warship_28.radar/bearing_uncertainty_deg", "/sensors/sensor.warship_28.radar/range_uncertainty_nm", "/sensors/sensor.warship_28.sonar/domain", "/sensors/sensor.warship_28.sonar/modes", "/sensors/sensor.warship_28.sonar/emits", "/sensors/sensor.warship_28.sonar/synthetic_range_nm", "/sensors/sensor.warship_28.sonar/sensitivity_db", "/sensors/sensor.warship_28.sonar/cadence_s", "/sensors/sensor.warship_28.sonar/bearing_uncertainty_deg", "/sensors/sensor.warship_28.sonar/depth_uncertainty_m", "/emitters/emitter.warship_28.radar/domain", "/emitters/emitter.warship_28.radar/frequency_band_hz", "/emitters/emitter.warship_28.radar/prf_band_hz", "/emitters/emitter.warship_28.radar/modulation_codes", "/weapons/weapon.warship_28.sam/weapon_type", "/weapons/weapon.warship_28.sam/target_domains", "/weapons/weapon.warship_28.sam/maximum_speed_kn", "/weapons/weapon.warship_28.sam/engagement_range_nm", "/weapons/weapon.warship_28.sam/seeker_type", "/weapons/weapon.warship_28.sam/guidance_type", "/weapons/weapon.warship_28.sam/payload_type", "/launchers/launcher.warship_28.sam/launcher_type", "/launchers/launcher.warship_28.sam/mount_count", "/launchers/launcher.warship_28.sam/ready_count", "/launchers/launcher.warship_28.sam/reload_s", "/launchers/launcher.warship_28.sam/arc_center_deg", "/launchers/launcher.warship_28.sam/arc_width_deg", "/launchers/launcher.warship_28.sam/weapon_keys", "/magazines/magazine.warship_28.sam/weapon_key", "/magazines/magazine.warship_28.sam/mission_count", "/countermeasures/countermeasure.warship_28.softkill/effect_type", "/countermeasures/countermeasure.warship_28.softkill/mission_count", "/countermeasures/countermeasure.warship_28.softkill/ready_count", "/countermeasures/countermeasure.warship_28.softkill/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "warships.json", "profile_key": "warship_28",
+      "field_paths": ["/sensors/sensor.warship_28.radar/depth_uncertainty_m", "/sensors/sensor.warship_28.sonar/emitter_key", "/sensors/sensor.warship_28.sonar/range_uncertainty_nm", "/weapons/weapon.warship_28.sam/runtime_profile_key", "/launchers/launcher.warship_28.sam/vls_cells", "/countermeasures/countermeasure.warship_28.softkill/payload_key"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_03",
+      "field_paths": ["/sensors/sensor.sub_03.sonar/domain", "/sensors/sensor.sub_03.sonar/modes", "/sensors/sensor.sub_03.sonar/emits", "/sensors/sensor.sub_03.sonar/synthetic_range_nm", "/sensors/sensor.sub_03.sonar/sensitivity_db", "/sensors/sensor.sub_03.sonar/cadence_s", "/sensors/sensor.sub_03.sonar/bearing_uncertainty_deg", "/sensors/sensor.sub_03.sonar/depth_uncertainty_m", "/sensors/sensor.sub_03.esm/domain", "/sensors/sensor.sub_03.esm/modes", "/sensors/sensor.sub_03.esm/emits", "/sensors/sensor.sub_03.esm/synthetic_range_nm", "/sensors/sensor.sub_03.esm/sensitivity_db", "/sensors/sensor.sub_03.esm/cadence_s", "/sensors/sensor.sub_03.esm/bearing_uncertainty_deg", "/weapons/weapon.sub_03.torpedo/weapon_type", "/weapons/weapon.sub_03.torpedo/target_domains", "/weapons/weapon.sub_03.torpedo/runtime_profile_key", "/weapons/weapon.sub_03.torpedo/maximum_speed_kn", "/weapons/weapon.sub_03.torpedo/engagement_range_nm", "/weapons/weapon.sub_03.torpedo/seeker_type", "/weapons/weapon.sub_03.torpedo/guidance_type", "/weapons/weapon.sub_03.torpedo/payload_type", "/launchers/launcher.sub_03.tubes/launcher_type", "/launchers/launcher.sub_03.tubes/mount_count", "/launchers/launcher.sub_03.tubes/ready_count", "/launchers/launcher.sub_03.tubes/reload_s", "/launchers/launcher.sub_03.tubes/arc_center_deg", "/launchers/launcher.sub_03.tubes/arc_width_deg", "/launchers/launcher.sub_03.tubes/weapon_keys", "/magazines/magazine.sub_03.torpedoes/weapon_key", "/magazines/magazine.sub_03.torpedoes/mission_count", "/countermeasures/countermeasure.sub_03.decoy/effect_type", "/countermeasures/countermeasure.sub_03.decoy/payload_key", "/countermeasures/countermeasure.sub_03.decoy/mission_count", "/countermeasures/countermeasure.sub_03.decoy/ready_count", "/countermeasures/countermeasure.sub_03.decoy/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_03",
+      "field_paths": ["/sensors/sensor.sub_03.sonar/emitter_key", "/sensors/sensor.sub_03.sonar/range_uncertainty_nm", "/sensors/sensor.sub_03.esm/emitter_key", "/sensors/sensor.sub_03.esm/range_uncertainty_nm", "/sensors/sensor.sub_03.esm/depth_uncertainty_m", "/launchers/launcher.sub_03.tubes/vls_cells"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_14",
+      "field_paths": ["/sensors/sensor.sub_14.sonar/domain", "/sensors/sensor.sub_14.sonar/modes", "/sensors/sensor.sub_14.sonar/emits", "/sensors/sensor.sub_14.sonar/synthetic_range_nm", "/sensors/sensor.sub_14.sonar/sensitivity_db", "/sensors/sensor.sub_14.sonar/cadence_s", "/sensors/sensor.sub_14.sonar/bearing_uncertainty_deg", "/sensors/sensor.sub_14.sonar/depth_uncertainty_m", "/sensors/sensor.sub_14.esm/domain", "/sensors/sensor.sub_14.esm/modes", "/sensors/sensor.sub_14.esm/emits", "/sensors/sensor.sub_14.esm/synthetic_range_nm", "/sensors/sensor.sub_14.esm/sensitivity_db", "/sensors/sensor.sub_14.esm/cadence_s", "/sensors/sensor.sub_14.esm/bearing_uncertainty_deg", "/weapons/weapon.sub_14.torpedo/weapon_type", "/weapons/weapon.sub_14.torpedo/target_domains", "/weapons/weapon.sub_14.torpedo/runtime_profile_key", "/weapons/weapon.sub_14.torpedo/maximum_speed_kn", "/weapons/weapon.sub_14.torpedo/engagement_range_nm", "/weapons/weapon.sub_14.torpedo/seeker_type", "/weapons/weapon.sub_14.torpedo/guidance_type", "/weapons/weapon.sub_14.torpedo/payload_type", "/launchers/launcher.sub_14.tubes/launcher_type", "/launchers/launcher.sub_14.tubes/mount_count", "/launchers/launcher.sub_14.tubes/ready_count", "/launchers/launcher.sub_14.tubes/reload_s", "/launchers/launcher.sub_14.tubes/arc_center_deg", "/launchers/launcher.sub_14.tubes/arc_width_deg", "/launchers/launcher.sub_14.tubes/weapon_keys", "/magazines/magazine.sub_14.torpedoes/weapon_key", "/magazines/magazine.sub_14.torpedoes/mission_count", "/countermeasures/countermeasure.sub_14.decoy/effect_type", "/countermeasures/countermeasure.sub_14.decoy/payload_key", "/countermeasures/countermeasure.sub_14.decoy/mission_count", "/countermeasures/countermeasure.sub_14.decoy/ready_count", "/countermeasures/countermeasure.sub_14.decoy/reload_s"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "subs.json", "profile_key": "sub_14",
+      "field_paths": ["/sensors/sensor.sub_14.sonar/emitter_key", "/sensors/sensor.sub_14.sonar/range_uncertainty_nm", "/sensors/sensor.sub_14.esm/emitter_key", "/sensors/sensor.sub_14.esm/range_uncertainty_nm", "/sensors/sensor.sub_14.esm/depth_uncertainty_m", "/launchers/launcher.sub_14.tubes/vls_cells"],
+      "status": "unknown", "source_ids": []
+    },
+    {
+      "resource": "civilians.json", "profile_key": "cargo_05",
+      "field_paths": ["/sensors/sensor.cargo_05.radar/domain", "/sensors/sensor.cargo_05.radar/modes", "/sensors/sensor.cargo_05.radar/emits", "/sensors/sensor.cargo_05.radar/emitter_key", "/sensors/sensor.cargo_05.radar/synthetic_range_nm", "/sensors/sensor.cargo_05.radar/sensitivity_db", "/sensors/sensor.cargo_05.radar/cadence_s", "/sensors/sensor.cargo_05.radar/bearing_uncertainty_deg", "/sensors/sensor.cargo_05.radar/range_uncertainty_nm", "/sensors/sensor.cargo_05.ais/domain", "/sensors/sensor.cargo_05.ais/modes", "/sensors/sensor.cargo_05.ais/emits", "/sensors/sensor.cargo_05.ais/synthetic_range_nm", "/sensors/sensor.cargo_05.ais/cadence_s", "/emitters/emitter.cargo_05.radar/domain", "/emitters/emitter.cargo_05.radar/frequency_band_hz", "/emitters/emitter.cargo_05.radar/prf_band_hz", "/emitters/emitter.cargo_05.radar/modulation_codes"],
+      "status": "game_assumption", "source_ids": ["u-jagd.game-model"]
+    },
+    {
+      "resource": "civilians.json", "profile_key": "cargo_05",
+      "field_paths": ["/sensors/sensor.cargo_05.radar/depth_uncertainty_m", "/sensors/sensor.cargo_05.ais/emitter_key", "/sensors/sensor.cargo_05.ais/sensitivity_db", "/sensors/sensor.cargo_05.ais/bearing_uncertainty_deg", "/sensors/sensor.cargo_05.ais/range_uncertainty_nm", "/sensors/sensor.cargo_05.ais/depth_uncertainty_m"],
+      "status": "unknown", "source_ids": []
+    }
+  ]
+}

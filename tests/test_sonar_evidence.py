@@ -315,7 +315,9 @@ def test_notch_gain_matches_scalar_vector_and_audition_controls():
     assert scalar[index] == pytest.approx(.2 * 10 ** (12 / 20) * .15)
     t = np.arange(sonar.receiver.sample_rate) / sonar.receiver.sample_rate
     sonar.receiver.samples = (.2 * np.sin(2 * np.pi * 10 * t)).astype(np.float32)
-    assert np.max(sonar.listening_samples()) == pytest.approx(scalar[index], rel=.01)
+    sonar.listening_samples(sonar.receiver.samples, block_id=1)
+    samples = sonar.listening_samples(sonar.receiver.samples.copy(), block_id=2)
+    assert np.max(samples) == pytest.approx(scalar[index], rel=.01)
 
 
 @pytest.mark.parametrize("gain_db", [-6, 0, 12, 24])
@@ -353,17 +355,39 @@ def test_listening_samples_processes_each_receiver_block_without_mutation(filter
     history = receiver._history.copy()
     state = (receiver.sequence, receiver.elapsed, receiver._rng.bit_generator.state,
              sonar.rng.getstate())
-    outputs = [sonar.listening_samples(samples) for _, samples in blocks]
+    outputs = [sonar.listening_samples(samples, block_id=sequence)
+               for sequence, samples in blocks]
     assert not np.array_equal(outputs[0], outputs[1])
-    np.testing.assert_array_equal(outputs[-1], sonar.listening_samples())
+    retry_state = tuple(part.copy() for part in sonar._audition_ola_state) \
+        if sonar._audition_ola_state is not None else None
+    np.testing.assert_array_equal(
+        outputs[-1], sonar.listening_samples(blocks[-1][1],
+                                             block_id=blocks[-1][0]))
+    if retry_state is not None:
+        for before, after in zip(retry_state, sonar._audition_ola_state):
+            np.testing.assert_array_equal(before, after)
+    previous = overlap = None
     for output, (sequence, samples), original in zip(outputs, blocks, snapshots):
         expected = original.copy()
         if filtered:
-            frequencies = np.fft.rfftfreq(len(expected), 1 / receiver.sample_rate)
-            spectrum = np.fft.rfft(expected)
-            spectrum[(frequencies < sonar.band_low_hz) | (frequencies > sonar.band_high_hz)] = 0
-            spectrum[abs(frequencies - sonar._own_line_hz) < 5] *= .15
-            expected = np.fft.irfft(spectrum, n=len(expected))
+            n = len(expected)
+            half = n // 2
+            window = 0.5 * (1.0 - np.cos(2.0 * np.pi * np.arange(n) / n))
+            frequencies = np.fft.rfftfreq(n, 1 / receiver.sample_rate)
+            mask = ((frequencies >= sonar.band_low_hz)
+                    & (frequencies <= sonar.band_high_hz)).astype(float)
+            mask[abs(frequencies - sonar._own_line_hz) < 5] *= .15
+            if previous is None:
+                previous = np.zeros(half)
+                overlap = np.zeros(half)
+            parts = []
+            for current in (expected[:half], expected[half:]):
+                block = np.fft.irfft(
+                    np.fft.rfft(window * np.concatenate((previous, current)))
+                    * mask, n=n)
+                parts.append(overlap + block[:half])
+                previous, overlap = current.copy(), block[half:]
+            expected = np.concatenate(parts)
         expected *= 10 ** (sonar.gain_db / 20)
         np.testing.assert_array_equal(output, expected.astype(np.float32))
         assert output.dtype == np.float32 and not np.shares_memory(output, samples)
@@ -374,3 +398,18 @@ def test_listening_samples_processes_each_receiver_block_without_mutation(filter
     np.testing.assert_array_equal(receiver._history, history)
     assert state == (receiver.sequence, receiver.elapsed, receiver._rng.bit_generator.state,
                      sonar.rng.getstate())
+
+
+def test_filtered_receiver_sequence_retry_ignores_intervening_own_line_change():
+    sonar = SonarSystem()
+    sonar.listen_filtered = True
+    samples = np.linspace(-1.0, 1.0, sonar.receiver.samples.size, dtype=np.float32)
+    first = sonar.listening_samples(samples, block_id=7)
+    state = tuple(part.copy() for part in sonar._audition_ola_state)
+
+    sonar._own_line_hz += 17.0
+    retry = sonar.listening_samples(samples, block_id=7)
+
+    np.testing.assert_array_equal(retry, first)
+    for before, after in zip(state, sonar._audition_ola_state):
+        np.testing.assert_array_equal(after, before)

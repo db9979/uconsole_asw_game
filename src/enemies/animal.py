@@ -35,13 +35,17 @@ class Animal:
     _next_id = 1000
 
     def __init__(self, x_nm: float, y_nm: float, atype_key: str,
-                 rng: random.Random, depth_m: float = None):
+                 rng: random.Random, depth_m: float = None, profile=None):
         self.id = Animal._next_id
         Animal._next_id += 1
         self.kind = "animal"
         self.rng = rng
         self.sensor_seed = int(rng.randint(0, 2**31 - 1))
-        self.atype = ANIMAL_TYPES[atype_key]
+        source = CATALOG.animals[atype_key] if profile is None else profile
+        self.profile = source
+        self.atype = AnimalType(
+            source.key, source.name, source.depth_min, source.depth_max,
+            source.speed_kn, source.quiet, source.size_nm)
         self.x = x_nm
         self.y = y_nm
         self.depth = depth_m if depth_m is not None \
@@ -73,17 +77,13 @@ class Animal:
         """W1: Biologische LOFAR-Signatur (Frequenz, Amplitude, Breite)."""
         if self.dead:
             return []
-        profile = CATALOG.animals.get(self.atype.key)
-        if profile is None:
-            return []
-        return [tuple(v) for v in profile.lines]
+        return [tuple(v) for v in self.profile.lines]
 
     def acoustic_signature(self) -> str:
         """M9: Hörbare Geräusch-Signatur (biologischer Kontakt)."""
         if self.dead:
             return ""
-        profile = CATALOG.animals.get(self.atype.key)
-        sig = profile.signature_text if profile else "unbekannt"
+        sig = self.profile.signature_text
         return f"biologisch · {sig}"
 
     def update(self, dt: float, world) -> None:

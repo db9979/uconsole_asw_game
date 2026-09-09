@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "key": "warship_01",
@@ -1275,6 +1275,565 @@
         ],
         "signature_text": "kräftige Gasturbinen-Tonals"
       }
+    },
+    {
+      "key": "warship_26",
+      "name": "Type-052D-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [15.0, 30.0],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [2, 4],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Type-052D-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [5],
+        "rpm_range": [115.0, 180.0],
+        "tonal_band_hz": [18.0, 320.0],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [18.0, 0.32, 0.5],
+          [36.0, 0.14, 0.8],
+          [72.0, 0.08, 1.2],
+          [144.0, 0.04, 1.6]
+        ],
+        "broadband": [0.55, 18.0, 320.0],
+        "signature_text": "synthetisches CODOG-Muster"
+      }
+    },
+    {
+      "key": "warship_27",
+      "name": "Type-901-Flottenversorger",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [18.0, 25.0],
+      "callsigns": [],
+      "esm_prob": 0.8,
+      "asm_salvo": [0, 0],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Type-901-Flottenversorger",
+        "propulsion": "Gasturbine",
+        "blades": [5],
+        "rpm_range": [120.0, 180.0],
+        "tonal_band_hz": [20.0, 600.0],
+        "cavitation_tendency": 0.68,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [20.0, 0.4, 0.6],
+          [40.0, 0.2, 0.8],
+          [80.0, 0.12, 1.1],
+          [120.0, 0.08, 1.4],
+          [300.0, 0.05, 2.0]
+        ],
+        "broadband": [0.7, 20.0, 350.0],
+        "signature_text": "synthetisches Versorger- und Pumpenmuster"
+      }
+    },
+    {
+      "key": "warship_28",
+      "name": "Nimitz-Klasse",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [22.0, 31.5],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [0, 0],
+      "asm_cooldown_s": 0.0,
+      "loiter_nm": 30.0,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Nimitz-Klasse",
+        "propulsion": "Kernantrieb/Dampfturbine",
+        "blades": [5],
+        "rpm_range": [110.0, 165.0],
+        "tonal_band_hz": [15.0, 420.0],
+        "cavitation_tendency": 0.72,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [15.0, 0.45, 0.5],
+          [30.0, 0.25, 0.8],
+          [60.0, 0.16, 1.2],
+          [120.0, 0.1, 1.8],
+          [180.0, 0.06, 2.2]
+        ],
+        "broadband": [0.75, 15.0, 350.0],
+        "signature_text": "synthetisches Mehrwellen- und Hilfsmaschinenmuster"
+      }
     }
+  ],
+  "profiles": [
+    {
+      "profile_key": "warship_01",
+      "reference_key": "reference.warship_01",
+      "machine_key": "machine.warship_01",
+      "sensor_keys": ["sensor.warship_01.radar", "sensor.warship_01.sonar"],
+      "emitter_keys": ["emitter.warship_01.radar"],
+      "launcher_keys": ["launcher.warship_01.vls"],
+      "magazine_keys": ["magazine.warship_01.asroc"],
+      "countermeasure_keys": ["countermeasure.warship_01.softkill"]
+    },
+    {
+      "profile_key": "warship_02",
+      "reference_key": "reference.warship_02",
+      "machine_key": "machine.warship_02",
+      "sensor_keys": ["sensor.warship_02.radar", "sensor.warship_02.sonar"],
+      "emitter_keys": ["emitter.warship_02.radar"],
+      "launcher_keys": ["launcher.warship_02.vls"],
+      "magazine_keys": ["magazine.warship_02.asroc"],
+      "countermeasure_keys": ["countermeasure.warship_02.softkill"]
+    },
+    {
+      "profile_key": "warship_25",
+      "reference_key": "reference.warship_25",
+      "machine_key": "machine.warship_25",
+      "sensor_keys": ["sensor.warship_25.radar", "sensor.warship_25.sonar"],
+      "emitter_keys": ["emitter.warship_25.radar"],
+      "launcher_keys": ["launcher.warship_25.vls"],
+      "magazine_keys": ["magazine.warship_25.asroc"],
+      "countermeasure_keys": ["countermeasure.warship_25.softkill"]
+    },
+    {
+      "profile_key": "warship_26",
+      "reference_key": "reference.warship_26",
+      "machine_key": "machine.warship_26",
+      "sensor_keys": ["sensor.warship_26.radar", "sensor.warship_26.sonar"],
+      "emitter_keys": ["emitter.warship_26.radar"],
+      "launcher_keys": ["launcher.warship_26.vls"],
+      "magazine_keys": ["magazine.warship_26.asroc"],
+      "countermeasure_keys": ["countermeasure.warship_26.softkill"]
+    },
+    {
+      "profile_key": "warship_27",
+      "reference_key": "reference.warship_27",
+      "machine_key": "machine.warship_27",
+      "sensor_keys": ["sensor.warship_27.radar", "sensor.warship_27.sonar"],
+      "emitter_keys": ["emitter.warship_27.radar"],
+      "launcher_keys": ["launcher.warship_27.ciws"],
+      "magazine_keys": ["magazine.warship_27.ciws"],
+      "countermeasure_keys": ["countermeasure.warship_27.softkill"]
+    },
+    {
+      "profile_key": "warship_28",
+      "reference_key": "reference.warship_28",
+      "machine_key": "machine.warship_28",
+      "sensor_keys": ["sensor.warship_28.radar", "sensor.warship_28.sonar"],
+      "emitter_keys": ["emitter.warship_28.radar"],
+      "launcher_keys": ["launcher.warship_28.sam"],
+      "magazine_keys": ["magazine.warship_28.sam"],
+      "countermeasure_keys": ["countermeasure.warship_28.softkill"]
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.warship_01",
+      "variant": "Arleigh Burke Flight IIA",
+      "variant_year": 1994,
+      "refit_year": null,
+      "aliases": [],
+      "roles": ["air_defense", "anti_submarine", "strike"],
+      "hull_type": "destroyer",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": 155.29,
+      "beam_waterline_m": 18,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": [329, 329],
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.warship_02",
+      "variant": "Aegis Baseline 2 (CG 52-58)",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": ["Ticonderoga class"],
+      "roles": ["air_defense", "anti_submarine", "strike"],
+      "hull_type": "cruiser",
+      "displacement_tonnes": 9754.06,
+      "displacement_basis": "full_load",
+      "length_m": 172.8216,
+      "beam_waterline_m": 16.764,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": [364, 364],
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.warship_25",
+      "variant": "Type 055 first batch",
+      "variant_year": 2020,
+      "refit_year": null,
+      "aliases": ["Renhai class"],
+      "roles": ["air_defense", "escort"],
+      "hull_type": "destroyer",
+      "displacement_tonnes": 13000,
+      "displacement_basis": "full_load",
+      "length_m": 180,
+      "beam_waterline_m": 20,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": 6.6,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.warship_26",
+      "variant": "Type 052D",
+      "variant_year": 2014,
+      "refit_year": null,
+      "aliases": ["Kunming class", "Luyang III"],
+      "roles": ["air_defense", "anti_submarine", "strike"],
+      "hull_type": "destroyer",
+      "displacement_tonnes": 7500,
+      "displacement_basis": "full_load",
+      "length_m": 157,
+      "beam_waterline_m": 17.2,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": 6.2,
+      "ship_crew": [280, 280],
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.warship_27",
+      "variant": "Type 901",
+      "variant_year": 2017,
+      "refit_year": null,
+      "aliases": ["Fuyu class"],
+      "roles": ["replenishment"],
+      "hull_type": "replenishment_ship",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": 240,
+      "beam_waterline_m": 32,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": 10.8,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.warship_28",
+      "variant": "Nimitz class",
+      "variant_year": 1975,
+      "refit_year": null,
+      "aliases": ["CVN-68 class"],
+      "roles": ["carrier", "strike"],
+      "hull_type": "aircraft_carrier",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.warship_01",
+      "cruise_speed_kn": 20,
+      "maximum_speed_kn": 31,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["gas_turbine"],
+      "motor_rpm": null,
+      "shaft_rpm": [125, 190],
+      "propulsor_type": "propeller",
+      "blade_count": 5,
+      "cruise_lines": [
+        [24, 1.0, 0.4], [48, 0.562, 0.6], [96, 0.376, 0.9], [192, 0.251, 1.3]
+      ],
+      "high_speed_lines": [
+        [48, 1.0, 1.2], [96, 0.473, 1.7], [210, 0.237, 2.4], [420, 0.141, 3.6]
+      ],
+      "cruise_broadband": [0.05, 10, 400],
+      "high_speed_broadband": [0.119, 10, 400]
+    },
+    {
+      "key": "machine.warship_02",
+      "cruise_speed_kn": 20,
+      "maximum_speed_kn": 32.5,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["gas_turbine"],
+      "motor_rpm": null,
+      "shaft_rpm": [125, 190],
+      "propulsor_type": "propeller",
+      "blade_count": 5,
+      "cruise_lines": [
+        [25, 1.0, 0.4], [50, 0.596, 0.7], [100, 0.355, 1.0], [200, 0.237, 1.5]
+      ],
+      "high_speed_lines": [
+        [50, 1.0, 1.1], [100, 0.501, 1.6], [225, 0.237, 2.5], [450, 0.141, 3.8]
+      ],
+      "cruise_broadband": [0.05, 10, 400],
+      "high_speed_broadband": [0.1, 10, 400]
+    },
+    {
+      "key": "machine.warship_25",
+      "cruise_speed_kn": 18,
+      "maximum_speed_kn": 30,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["gas_turbine"],
+      "motor_rpm": null,
+      "shaft_rpm": [120, 185],
+      "propulsor_type": "propeller",
+      "blade_count": 5,
+      "cruise_lines": [
+        [22, 1.0, 0.3], [44, 0.668, 0.5], [88, 0.447, 0.8], [176, 0.32, 1.2]
+      ],
+      "high_speed_lines": [
+        [45, 1.0, 1.0], [90, 0.501, 1.5], [180, 0.266, 2.2], [360, 0.158, 3.5]
+      ],
+      "cruise_broadband": [0.05, 10, 400],
+      "high_speed_broadband": [0.112, 10, 400]
+    },
+    {
+      "key": "machine.warship_26",
+      "cruise_speed_kn": 15,
+      "maximum_speed_kn": 30,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["diesel", "gas_turbine"],
+      "motor_rpm": null,
+      "shaft_rpm": [115, 180],
+      "propulsor_type": "propeller",
+      "blade_count": 5,
+      "cruise_lines": [
+        [18, 1.0, 0.5], [36, 0.436, 0.8], [72, 0.279, 1.2], [144, 0.219, 1.6]
+      ],
+      "high_speed_lines": [
+        [40, 1.0, 1.5], [80, 0.335, 2.0], [160, 0.178, 2.8], [320, 0.112, 4.0]
+      ],
+      "cruise_broadband": [0.044, 10, 400],
+      "high_speed_broadband": [0.106, 10, 400]
+    },
+    {
+      "key": "machine.warship_27",
+      "cruise_speed_kn": 18,
+      "maximum_speed_kn": 25,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["gas_turbine"],
+      "motor_rpm": null,
+      "shaft_rpm": [120, 180],
+      "propulsor_type": "propeller",
+      "blade_count": 5,
+      "cruise_lines": [
+        [20, 1.0, 0.6], [40, 0.473, 0.8], [80, 0.316, 1.1],
+        [120, 0.237, 1.4], [300, 0.172, 2.0]
+      ],
+      "high_speed_lines": [
+        [30, 1.0, 1.2], [60, 0.596, 1.8], [150, 0.224, 2.2],
+        [300, 0.168, 3.0], [600, 0.1, 4.5]
+      ],
+      "cruise_broadband": [0.047, 10, 400],
+      "high_speed_broadband": [0.106, 10, 400]
+    },
+    {
+      "key": "machine.warship_28",
+      "cruise_speed_kn": 22,
+      "maximum_speed_kn": 31.5,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["nuclear_steam"],
+      "motor_rpm": null,
+      "shaft_rpm": [110, 165],
+      "propulsor_type": "propeller",
+      "blade_count": 5,
+      "cruise_lines": [
+        [15, 1.0, 0.5], [30, 0.562, 0.8], [60, 0.355, 1.2],
+        [120, 0.237, 1.8], [180, 0.158, 2.2]
+      ],
+      "high_speed_lines": [
+        [35, 1.0, 1.5], [70, 0.447, 2.0], [140, 0.224, 2.8],
+        [280, 0.141, 3.5], [420, 0.084, 5.0]
+      ],
+      "cruise_broadband": [0.05, 10, 400],
+      "high_speed_broadband": [0.112, 10, 400]
+    }
+  ],
+  "sensors": [
+    {
+      "key": "sensor.warship_01.radar", "domain": "radar", "modes": ["active"],
+      "emits": true, "emitter_key": "emitter.warship_01.radar",
+      "synthetic_range_nm": 250, "sensitivity_db": -90, "cadence_s": 2,
+      "bearing_uncertainty_deg": 1, "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_01.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 40,
+      "sensitivity_db": -100, "cadence_s": 1, "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 25
+    },
+    {
+      "key": "sensor.warship_02.radar", "domain": "radar", "modes": ["active"],
+      "emits": true, "emitter_key": "emitter.warship_02.radar",
+      "synthetic_range_nm": 250, "sensitivity_db": -90, "cadence_s": 2,
+      "bearing_uncertainty_deg": 1, "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_02.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 40,
+      "sensitivity_db": -100, "cadence_s": 1, "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 25
+    },
+    {
+      "key": "sensor.warship_25.radar", "domain": "radar", "modes": ["active"],
+      "emits": true, "emitter_key": "emitter.warship_25.radar",
+      "synthetic_range_nm": 280, "sensitivity_db": -92, "cadence_s": 2,
+      "bearing_uncertainty_deg": 0.8, "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_25.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 45,
+      "sensitivity_db": -102, "cadence_s": 1, "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 25
+    },
+    {
+      "key": "sensor.warship_26.radar", "domain": "radar", "modes": ["active"],
+      "emits": true, "emitter_key": "emitter.warship_26.radar",
+      "synthetic_range_nm": 220, "sensitivity_db": -90, "cadence_s": 2,
+      "bearing_uncertainty_deg": 1, "range_uncertainty_nm": 0.25,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_26.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 40,
+      "sensitivity_db": -100, "cadence_s": 1, "bearing_uncertainty_deg": 2.5,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 30
+    },
+    {
+      "key": "sensor.warship_27.radar", "domain": "radar", "modes": ["active"],
+      "emits": true, "emitter_key": "emitter.warship_27.radar",
+      "synthetic_range_nm": 120, "sensitivity_db": -85, "cadence_s": 3,
+      "bearing_uncertainty_deg": 1.5, "range_uncertainty_nm": 0.4,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_27.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 25,
+      "sensitivity_db": -90, "cadence_s": 2, "bearing_uncertainty_deg": 4,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 50
+    },
+    {
+      "key": "sensor.warship_28.radar", "domain": "radar", "modes": ["active"],
+      "emits": true, "emitter_key": "emitter.warship_28.radar",
+      "synthetic_range_nm": 300, "sensitivity_db": -92, "cadence_s": 2,
+      "bearing_uncertainty_deg": 0.8, "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_28.sonar", "domain": "sonar", "modes": ["passive"],
+      "emits": false, "emitter_key": null, "synthetic_range_nm": 35,
+      "sensitivity_db": -96, "cadence_s": 1.5, "bearing_uncertainty_deg": 3,
+      "range_uncertainty_nm": null, "depth_uncertainty_m": 40
+    }
+  ],
+  "emitters": [
+    {"key": "emitter.warship_01.radar", "domain": "radar",
+     "frequency_band_hz": [2000000000, 12000000000], "prf_band_hz": [300, 1200],
+     "modulation_codes": ["frequency_agile", "pulse_doppler"]},
+    {"key": "emitter.warship_02.radar", "domain": "radar",
+     "frequency_band_hz": [2000000000, 12000000000], "prf_band_hz": [300, 1200],
+     "modulation_codes": ["frequency_agile", "pulse_doppler"]},
+    {"key": "emitter.warship_25.radar", "domain": "radar",
+     "frequency_band_hz": [2000000000, 12000000000], "prf_band_hz": [300, 1500],
+     "modulation_codes": ["frequency_agile", "pulse_doppler"]},
+    {"key": "emitter.warship_26.radar", "domain": "radar",
+     "frequency_band_hz": [2000000000, 12000000000], "prf_band_hz": [300, 1200],
+     "modulation_codes": ["frequency_agile", "pulse_doppler"]},
+    {"key": "emitter.warship_27.radar", "domain": "radar",
+     "frequency_band_hz": [2000000000, 12000000000], "prf_band_hz": [200, 1000],
+     "modulation_codes": ["frequency_agile", "pulse"]},
+    {"key": "emitter.warship_28.radar", "domain": "radar",
+     "frequency_band_hz": [2000000000, 12000000000], "prf_band_hz": [300, 1500],
+     "modulation_codes": ["frequency_agile", "pulse_doppler"]}
+  ],
+  "weapons": [
+    {"key": "weapon.warship_01.asroc", "weapon_type": "asroc",
+     "target_domains": ["subsurface"], "runtime_profile_key": null,
+     "maximum_speed_kn": 500, "engagement_range_nm": [1, 12],
+     "seeker_type": "none", "guidance_type": "datum", "payload_type": "torpedo"},
+    {"key": "weapon.warship_02.asroc", "weapon_type": "asroc",
+     "target_domains": ["subsurface"], "runtime_profile_key": null,
+     "maximum_speed_kn": 500, "engagement_range_nm": [1, 12],
+     "seeker_type": "none", "guidance_type": "datum", "payload_type": "torpedo"},
+    {"key": "weapon.warship_25.asroc", "weapon_type": "asroc",
+     "target_domains": ["subsurface"], "runtime_profile_key": null,
+     "maximum_speed_kn": 500, "engagement_range_nm": [1, 12],
+     "seeker_type": "none", "guidance_type": "datum", "payload_type": "torpedo"},
+    {"key": "weapon.warship_26.asroc", "weapon_type": "asroc",
+     "target_domains": ["subsurface"], "runtime_profile_key": null,
+     "maximum_speed_kn": 500, "engagement_range_nm": [1, 12],
+     "seeker_type": "none", "guidance_type": "datum", "payload_type": "torpedo"},
+    {"key": "weapon.warship_27.ciws", "weapon_type": "ciws",
+     "target_domains": ["air", "surface"], "runtime_profile_key": null,
+     "maximum_speed_kn": 3000, "engagement_range_nm": [0, 2],
+     "seeker_type": "radar_active", "guidance_type": "homing", "payload_type": "kinetic"},
+    {"key": "weapon.warship_28.sam", "weapon_type": "sam",
+     "target_domains": ["air"], "runtime_profile_key": null,
+     "maximum_speed_kn": 2500, "engagement_range_nm": [1, 30],
+     "seeker_type": "radar_active", "guidance_type": "homing",
+     "payload_type": "high_explosive"}
+  ],
+  "launchers": [
+    {"key": "launcher.warship_01.vls", "launcher_type": "vls", "mount_count": 1,
+     "ready_count": 1, "reload_s": 0, "arc_center_deg": 0, "arc_width_deg": 360,
+     "vls_cells": 96, "weapon_keys": ["weapon.warship_01.asroc"]},
+    {"key": "launcher.warship_02.vls", "launcher_type": "vls", "mount_count": 1,
+     "ready_count": 1, "reload_s": 0, "arc_center_deg": 0, "arc_width_deg": 360,
+     "vls_cells": 122, "weapon_keys": ["weapon.warship_02.asroc"]},
+    {"key": "launcher.warship_25.vls", "launcher_type": "vls", "mount_count": 1,
+     "ready_count": 1, "reload_s": 0, "arc_center_deg": 0, "arc_width_deg": 360,
+     "vls_cells": 112, "weapon_keys": ["weapon.warship_25.asroc"]},
+    {"key": "launcher.warship_26.vls", "launcher_type": "vls", "mount_count": 1,
+     "ready_count": 1, "reload_s": 0, "arc_center_deg": 0, "arc_width_deg": 360,
+     "vls_cells": 64, "weapon_keys": ["weapon.warship_26.asroc"]},
+    {"key": "launcher.warship_27.ciws", "launcher_type": "ciws", "mount_count": 2,
+     "ready_count": 2, "reload_s": 30, "arc_center_deg": 0, "arc_width_deg": 360,
+     "vls_cells": null, "weapon_keys": ["weapon.warship_27.ciws"]},
+    {"key": "launcher.warship_28.sam", "launcher_type": "rail", "mount_count": 2,
+     "ready_count": 2, "reload_s": 20, "arc_center_deg": 0, "arc_width_deg": 360,
+     "vls_cells": null, "weapon_keys": ["weapon.warship_28.sam"]}
+  ],
+  "magazines": [
+    {"key": "magazine.warship_01.asroc", "weapon_key": "weapon.warship_01.asroc",
+     "mission_count": 8},
+    {"key": "magazine.warship_02.asroc", "weapon_key": "weapon.warship_02.asroc",
+     "mission_count": 8},
+    {"key": "magazine.warship_25.asroc", "weapon_key": "weapon.warship_25.asroc",
+     "mission_count": 8},
+    {"key": "magazine.warship_26.asroc", "weapon_key": "weapon.warship_26.asroc",
+     "mission_count": 8},
+    {"key": "magazine.warship_27.ciws", "weapon_key": "weapon.warship_27.ciws",
+     "mission_count": 2000},
+    {"key": "magazine.warship_28.sam", "weapon_key": "weapon.warship_28.sam",
+     "mission_count": 16}
+  ],
+  "countermeasures": [
+    {"key": "countermeasure.warship_01.softkill", "effect_type": "rf_softkill",
+     "payload_key": null, "mission_count": 12, "ready_count": 4, "reload_s": 30},
+    {"key": "countermeasure.warship_02.softkill", "effect_type": "rf_softkill",
+     "payload_key": null, "mission_count": 12, "ready_count": 4, "reload_s": 30},
+    {"key": "countermeasure.warship_25.softkill", "effect_type": "rf_softkill",
+     "payload_key": null, "mission_count": 12, "ready_count": 4, "reload_s": 30},
+    {"key": "countermeasure.warship_26.softkill", "effect_type": "rf_softkill",
+     "payload_key": null, "mission_count": 12, "ready_count": 4, "reload_s": 30},
+    {"key": "countermeasure.warship_27.softkill", "effect_type": "rf_softkill",
+     "payload_key": null, "mission_count": 8, "ready_count": 2, "reload_s": 45},
+    {"key": "countermeasure.warship_28.softkill", "effect_type": "rf_softkill",
+     "payload_key": null, "mission_count": 12, "ready_count": 4, "reload_s": 30}
   ]
 }

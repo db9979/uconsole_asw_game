@@ -160,7 +160,7 @@ def test_opz_focus_and_affiliations_survive_save_load():
     game = opz_game()
     observe(game, "S-1", "AIS")
     game.opz_selected_track_id = "S-1"
-    game.opz_affiliations = {"S-1": "NEUTRAL", "bad": "INVALID"}
+    game.opz_affiliations = {"S-1": "NEUTRAL"}
     game.surface_radar_on = False
     game.air_radar_on = True
     game.opz_range_nm = 10.0
@@ -170,12 +170,11 @@ def test_opz_focus_and_affiliations_survive_save_load():
     loaded.load_state(data)
     assert loaded.opz_selected_track_id == "S-1"
     assert loaded.opz_affiliation("S-1") == "NEUTRAL"
-    assert "bad" not in loaded.opz_affiliations
     assert not loaded.surface_radar_on and loaded.air_radar_on
     assert loaded.opz_range_nm == 10.0
 
 
-def test_old_save_defaults_to_unknown_without_opz_fields():
+def test_v10_without_opz_fields_is_rejected_transactionally():
     game = opz_game()
     data = game.save_state()
     data.pop("opz_affiliations")
@@ -183,11 +182,19 @@ def test_old_save_defaults_to_unknown_without_opz_fields():
     data["ui"].pop("opz_selected_track_id")
 
     loaded = Game(seed=1, start_menu=False)
-    loaded.load_state(data)
-    assert loaded.opz_selected_track_id is None
-    assert loaded.opz_affiliations == {}
-    assert loaded.surface_radar_on == data["radar_on"]
-    assert loaded.air_radar_on == data["radar_on"]
+    before = loaded.save_state()
+    assert not loaded._load_save_data(data)
+    assert loaded.save_state() == before
+
+
+def test_v10_rejects_invalid_opz_affiliation_transactionally():
+    game = opz_game()
+    before = game.save_state()
+    data = game.save_state()
+    data["opz_affiliations"]["bad"] = "INVALID"
+
+    assert not game._load_save_data(data)
+    assert game.save_state() == before
 
 
 def test_opz_draws_positioned_and_bearing_only_tracks():

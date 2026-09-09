@@ -10,6 +10,11 @@ import random
 
 from src.core import config
 from src.data.catalog import CATALOG
+from src.sensors.platform import (
+    PlatformObservation,
+    PlatformSensorSuite,
+    snapshot_observation,
+)
 
 
 class Flight:
@@ -18,8 +23,9 @@ class Flight:
     Kontakt-Katalog."""
 
     def __init__(self, kind: str, base: dict, dest: dict = None,
-                 loiter_nm: float = None, rng: random.Random = None,
-                 seq: int = 1, akey: str = None):
+                  loiter_nm: float = None, rng: random.Random = None,
+                  seq: int = 1, akey: str = None, catalog=None, *,
+                  side: str = None, doctrine: str = None):
         self.kind = kind
         self.seq = seq
         self.rng = rng or random.Random()
@@ -27,15 +33,25 @@ class Flight:
         self.nation = base.get("nation", "ZIVIL")
         self.base = base
         self.dest = dest
+        catalog = catalog or CATALOG
         if akey is None:
-            akey = "civil_transit" if kind == "civil" else "mil_patrol"
+            binding = "civil_flight" if kind == "civil" else "military_flight"
+            akey = catalog.runtime_bindings[binding]
         self.akey = akey
-        profile = CATALOG.aircraft.get(akey)
+        profile = catalog.aircraft.get(akey)
         if profile is None:
-            profile = CATALOG.pick_aircraft(self.rng, kind)
+            profile = catalog.pick_aircraft(self.rng, kind)
             akey = profile.key
             self.akey = akey
         self.profile = profile
+        self.side = side or ("neutral" if kind == "civil" else "hostile")
+        self.doctrine = doctrine or (
+            "civil_flight" if kind == "civil" else "military_patrol")
+        self.sensor_seed = int(seq)
+        self.sensor_suite = PlatformSensorSuite(
+            catalog, self.akey, self.sensor_seed, side=self.side,
+            doctrine=self.doctrine,
+            datalink_group="blue" if self.side == "friendly" else None)
         self.speed = profile.speed_kn
         self.esm = profile.esm
         self.esm_range_nm = profile.esm_range_nm
@@ -81,7 +97,8 @@ class Flight:
             self.waypoint_idx = 0
         self.active = True
 
-    def update(self, dt: float, ship=None, *, ship_emitting=False, world=None) -> None:
+    def update(self, dt: float, observation=None, *, ship_emitting=False,
+               world=None) -> None:
         if not self.active:
             return
         step = config.kn_to_nm_per_s(self.speed) * dt
@@ -93,13 +110,22 @@ class Flight:
             target = math.degrees(math.atan2(wx - self.x,
                                              -(wy - self.y))) % 360.0
             self.sensor_age = min(config.RADAR_TRACK_STALE_S, self.sensor_age + dt)
-            if (ship is not None and ship_emitting and self.esm
-                    and self.distance_nm(ship) <= self.esm_range_nm
+            if (observation is not None and not isinstance(
+                    observation, PlatformObservation)):
+                observation = (snapshot_observation(
+                    self, observation, domain="esm", positioned=False)
+                    if ship_emitting and self.esm
+                    and self.distance_nm(observation) <= self.esm_range_nm
                     and not getattr(world, "land_blocks_line", lambda *args: False)(
-                        self.x, self.y, ship.x, ship.y)):
-                self.sensor_bearing = math.degrees(math.atan2(
-                    ship.x - self.x, -(ship.y - self.y))) % 360.0
+                        self.x, self.y, observation.x, observation.y) else None)
+            fresh_observation = (observation is not None and (
+                observation.track_id == "LEGACY"
+                or observation.last_seen > self.sensor_suite.last_consumed_s))
+            if fresh_observation and self.esm:
+                self.sensor_bearing = observation.bearing
                 self.sensor_age = 0.0
+                self.sensor_suite.last_consumed_s = max(
+                    self.sensor_suite.last_consumed_s, observation.last_seen)
             if self.sensor_age >= config.RADAR_TRACK_STALE_S:
                 self.sensor_bearing = None
             if self.sensor_bearing is not None:
@@ -122,15 +148,24 @@ class Flight:
         dy = self.y - ship.y
         return math.degrees(math.atan2(dx, -dy)) % 360.0
 
+    @property
+    def ais_transmitting(self) -> bool:
+        return False
+
+    @property
+    def sensor_domain(self) -> str:
+        return "air"
+
 
 class FlightManager:
     """Verwaltet die Fluginformationen (W3)."""
 
     MAX_FLIGHTS = 4
 
-    def __init__(self, coast, rng: random.Random):
+    def __init__(self, coast, rng: random.Random, catalog=None):
         self.coast = coast
         self.rng = rng
+        self.catalog = catalog or CATALOG
         self.flights: list[Flight] = []
         self._seq = 0
         self._spawn_cd = 600.0
@@ -139,7 +174,7 @@ class FlightManager:
     def _spawn_flight(self, kind: str, base: dict, dest: dict = None) -> None:
         self._seq += 1
         self.flights.append(Flight(kind, base, dest=dest, rng=self.rng,
-                                   seq=self._seq))
+                                   seq=self._seq, catalog=self.catalog))
 
     def _spawn_initial(self) -> None:
         friendly = self.coast.friendly_bases()
@@ -154,7 +189,9 @@ class FlightManager:
 
     def update(self, dt: float, ship=None, *, ship_emitting=False, world=None) -> None:
         for f in self.flights:
-            f.update(dt, ship, ship_emitting=ship_emitting, world=world)
+            observation = (ship if ship is not None else
+                           getattr(f, "_tactical_observation", None))
+            f.update(dt, observation, ship_emitting=ship_emitting, world=world)
         self.flights = [f for f in self.flights if f.active]
         self._spawn_cd -= dt
         if self._spawn_cd <= 0.0 and len(self.flights) < self.MAX_FLIGHTS:

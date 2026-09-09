@@ -21,6 +21,8 @@ from tools.gen_contacts import validate
 def contact_dir(tmp_path):
     for filename in catalog.CONTACT_FIELDS:
         shutil.copyfile(resources.files("data.contacts") / filename, tmp_path / filename)
+    shutil.copyfile(resources.files("data.contacts") / catalog.SOURCES_FILENAME,
+                    tmp_path / catalog.SOURCES_FILENAME)
     return tmp_path
 
 
@@ -31,7 +33,7 @@ def _edit(directory, filename, mutate):
     path.write_text(json.dumps(document, allow_nan=True), encoding="utf-8")
 
 
-@pytest.mark.parametrize("version", [None, True, False, "1", 1.0, 0, -1, 2])
+@pytest.mark.parametrize("version", [None, True, False, "1", 1.0, 0, -1, 3])
 def test_runtime_and_tool_reject_invalid_versions(contact_dir, version):
     _edit(contact_dir, "subs.json", lambda d: d.update(version=version))
     for loader in (catalog._load_catalog_from, validate):

@@ -17,7 +17,20 @@ def _copy_catalog(destination):
 def test_validator_accepts_packaged_catalog():
     with resources.as_file(resources.files("data.contacts")) as contact_dir:
         loaded = validate(contact_dir)
+        assert check(contact_dir) == 0
     assert loaded.db_source == "contacts"
+
+
+def test_cli_check_rejects_incomplete_provenance_coverage(tmp_path, capsys):
+    _copy_catalog(tmp_path)
+    path = tmp_path / "sources.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["claims"].pop()
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    validate(tmp_path)
+    assert check(tmp_path) == 1
+    assert "incomplete field coverage" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize(

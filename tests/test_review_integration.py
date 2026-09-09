@@ -115,7 +115,7 @@ def test_audio_drains_two_blocks_in_order_and_retries_queue_backpressure(monkeyp
     np.testing.assert_array_equal(calls[1], calls[2])
 
 
-def test_accelerated_audio_is_bounded_preview_and_pans_the_listening_beam(monkeypatch):
+def test_accelerated_audio_discards_blocks_without_playback(monkeypatch):
     game = Game(seed=10, audio_enabled=False)
     game.station = Station.SONAR
     game.time_scale_idx = config.TIME_SCALE_STEPS.index(5)
@@ -131,7 +131,8 @@ def test_accelerated_audio_is_bounded_preview_and_pans_the_listening_beam(monkey
     game._update_audio(.1)
     assert not calls
     game._update_audio(.15)
-    assert len(calls) == 1 and calls[0]["bearing_deg"] == 75.
+    assert not calls
+    assert game._sonar_audio_sequence == game.sonar.receiver.sequence
     assert stops == [{"immediate": True}]
     monkeypatch.setattr(sonar_view, "_text", lambda screen, value, *a, **kw: text.append(value))
     sonar_view.draw_sonar_view(game)

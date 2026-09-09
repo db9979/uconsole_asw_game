@@ -113,11 +113,13 @@ def test_exact_snapshot_shape_and_own_truth(game):
     assert set(state) == {"protocol", "version", "session", "epoch", "revision", "seq",
                           "phase", "commands_allowed", "language", "clock", "mission",
                           "ownship", "tracks", "crew_target", "proposal", "events",
-                          "results", "chart_revision"}
+                          "results", "chart_revision", "environment"}
     assert state["protocol"] == 1 and state["version"] == APP_VERSION
     assert state["commands_allowed"] is True and state["phase"] == "live"
     assert state["language"] == "en"
     assert set(state["clock"]) == {"sim", "mission", "time_scale", "world"}
+    assert state["environment"] == {
+        "sea_state": game.world.sea_state, "is_night": game.world.is_night()}
     assert set(state["mission"]) == {"name", "objective", "remaining_s"}
     assert set(state["ownship"]) == {"x", "y", "course", "speed", "target_course",
                                    "target_speed", "damage", "inventory", "helo"}
@@ -161,6 +163,16 @@ def test_wall_cadence_no_catchup_and_immediate_transitions(game):
     bridge.allowed = False
     bridge.pump(game, server, now=500.03)
     assert len(server.publications) == 5
+
+
+@pytest.mark.parametrize(("hour", "night"), [
+    (5.49, True), (5.5, False), (19.49, False), (19.5, True),
+])
+def test_environment_uses_authoritative_day_night_boundary(game, hour, night):
+    game.world.hour = hour
+    bridge, server = start(game)
+    assert server.state["environment"] == {
+        "sea_state": game.world.sea_state, "is_night": night}
 
 
 @pytest.mark.parametrize(("field", "value", "phase"), [
@@ -464,6 +476,51 @@ def test_reject_clear_and_omitted_unused_command_fields(game):
     assert server.state["results"][-1]["status"] == "applied"
 
 
+def test_fresh_target_proposal_cannot_replace_pending_and_duplicate_replays(game):
+    first = contact(game)
+    second = Contact(8, 7654322, "passiv", "sub")
+    second.update_passive(120.0, .8, .8, "", game.sim_t)
+    game.sonar.contacts[second.target_id] = second
+    observe(game, "U-7654322")
+    bridge, server = start(game)
+    original = command(server, "propose", None)
+    server.send(original)
+    bridge.pump(game, server, now=100.1)
+    pending = bridge.proposal
+    revision = server.state["revision"]
+
+    server.send(original)
+    bridge.pump(game, server, now=100.2)
+    assert server.state["results"][-1] == dict(id="one", status="applied", reasoncode="ok")
+    assert bridge.proposal == pending and server.state["revision"] == revision
+
+    second_ref = next(row["ref"] for row in server.state["tracks"]
+                      if row["ref"] != pending["ref"])
+    server.send(command(server, "propose", None, command_id="two", ref=second_ref))
+    bridge.pump(game, server, now=100.3)
+    assert server.state["results"][-1] == dict(
+        id="two", status="rejected", reasoncode="proposal_pending")
+    assert bridge.proposal == pending and bridge._proposal_contact is first
+
+
+def test_same_batch_target_replacement_reports_pending_not_revision(game):
+    first = contact(game)
+    second = Contact(8, 7654322, "passiv", "sub")
+    second.update_passive(120.0, .8, .8, "", game.sim_t)
+    game.sonar.contacts[second.target_id] = second
+    observe(game, "U-7654322")
+    bridge, server = start(game)
+    refs = [row["ref"] for row in server.state["tracks"] if row["can_propose"]]
+
+    server.send(command(server, "propose", None, command_id="first", ref=refs[0]))
+    server.send(command(server, "propose", None, command_id="second", ref=refs[1]))
+    bridge.pump(game, server, now=100.1)
+
+    assert [result["reasoncode"] for result in server.state["results"][-2:]] == [
+        "ok", "proposal_pending"]
+    assert bridge._proposal_contact in (first, second)
+
+
 @pytest.mark.parametrize("revoke", ["grant", "connection"])
 def test_local_decisions_recheck_revocation_before_next_pump(game, revoke):
     contact(game)
@@ -586,7 +643,7 @@ def test_public_events_baseline_bounds_and_locale_change(game):
         bridge.pump(game, server, now=100.1 + i / 100)
     assert len(server.state["events"]) == 128
     last = server.state["events"][-1]["seq"]
-    observe(game, "M-1", "ASM", "RADAR-L")
+    observe(game, "M-1", "ASM", "HOJ")
     bridge.pump(game, server, now=102)
     event = server.state["events"][-1]
     assert set(event) == {"seq", "kind", "severity", "message"}
@@ -598,6 +655,19 @@ def test_public_events_baseline_bounds_and_locale_change(game):
     bridge.pump(game, server, now=103.01)
     assert server.state["language"] == "de"
     assert server.state["ownship"]["damage"][0]["name"] == game.tr("compartment.bridge")
+
+
+@pytest.mark.parametrize("kind", ["ASM", "TORP"])
+def test_hidden_weapon_kind_cannot_raise_threat_without_public_evidence(game, kind):
+    bridge, server = start(game)
+    observe(game, "M-1", kind, "RADAR-L")
+    bridge.pump(game, server, now=100.1)
+    assert server.state["events"] == []
+    assert '"kind"' not in json.dumps(server.state["tracks"])
+
+    server.send(command(server, "affiliate", "HOSTILE"))
+    bridge.pump(game, server, now=100.2)
+    assert server.state["events"][-1]["kind"] == "threat"
 
 
 def test_polling_hidden_truth_traps_and_detached_publications(game, monkeypatch):
@@ -614,7 +684,7 @@ def test_polling_hidden_truth_traps_and_detached_publications(game, monkeypatch)
         for name in ("subs", "animals", "civilians", "warships", "asms", "flights",
                      "enemy_torpedoes", "feed", "messages"):
             patch.setattr(game, name, Trap())
-        for name in ("save_state", "_find_target", "esm_contacts", "designate_opz_track",
+        for name in ("save_state", "_find_target", "designate_opz_track",
                      "set_target", "_cycle_classification", "_cycle_opz_affiliation"):
             patch.setattr(game, name, forbidden)
         patch.setattr(Contact, "expire_ping_fix", forbidden)
@@ -726,7 +796,7 @@ def test_status_only_schema_never_reads_tactical_or_pregenerated_data(game, monk
         patch.setattr(game, field, object() if field == "editor" else True)
         for name in ("ship", "helo", "mission", "damage", "sim_t", "mission_time", "mission_result"):
             patch.setattr(game, name, Trap())
-        for name in ("coast", "hour", "size_nm"):
+        for name in ("coast", "hour", "size_nm", "sea_state", "is_night"):
             patch.setattr(game.world, name, Trap())
         patch.setattr(game.sonar, "contacts", Trap())
         for name in ("opz_tracks", "hfdf_bearings", "mission_name_display", "mission_objective_display"):
@@ -742,6 +812,7 @@ def test_status_only_schema_never_reads_tactical_or_pregenerated_data(game, monk
             phase="menu" if field in ("in_menu", "main_menu") else "blocked",
             commands_allowed=False, language="en",
             clock=dict(sim=None, mission=None, time_scale=None, world=None),
+            environment=dict(sea_state=None, is_night=None),
             mission=dict(name="", objective="", remaining_s=None),
             ownship=dict(x=None, y=None, course=None, speed=None, target_course=None, target_speed=None,
                          damage=[], inventory=dict(torpedoes=None, vls=None, ciws=None, chaff_ready=None),
@@ -774,7 +845,7 @@ def test_pause_and_administration_keep_read_only_observed_picture(game, field, v
     bridge.pump(game, server, now=100.1)
     assert game.save_state() == before
     assert not server.state["commands_allowed"]
-    for key in ("tracks", "ownship", "clock", "mission"):
+    for key in ("tracks", "ownship", "clock", "environment", "mission"):
         assert server.state[key] == previous[key]
     assert server.chart == chart
 

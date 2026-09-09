@@ -1,4 +1,4 @@
-"""Frozen active evidence, legacy queue migration and transactional validation."""
+"""Frozen active evidence and transactional save-v10 validation."""
 
 import copy
 import json
@@ -17,7 +17,6 @@ from src.enemies.surface import SurfaceShip
 from src.ship.ship import Ship
 from src.sonar.sonar import SonarSystem
 from src.weapons.torpedo import EnemyTorpedo
-from src.world.world import World
 
 
 def counters():
@@ -31,19 +30,6 @@ def scene():
                sonar_path_blocked=lambda *args: False,
                echo_delay_s=lambda distance: distance * 1852 * 2 / config.SOUND_SPEED_M_S)
     return ship, target, world
-
-
-@pytest.mark.parametrize("version", range(1, 9))
-def test_legacy_pending_return_from_retired_entity_is_discarded(version):
-    game = Game(seed=7, audio_enabled=False)
-    state = game.save_state()
-    state["version"] = version
-    state["sonar"]["pending_pings"] = [dict(
-        target_id=987654321, sent_at=0., ready_at=2., range_factor=1., mode="BOW")]
-    restored = Game(seed=8, audio_enabled=False)
-    restored.load_state(state)
-    assert restored.seed == 7
-    assert restored.sonar._pending_pings == []
 
 
 def test_moving_geometry_and_later_terrain_cannot_remeasure_echo(monkeypatch):
@@ -190,55 +176,6 @@ def test_save_midflight_matches_uninterrupted_frozen_delivery(flight_game):
     assert contact.range_seen == restored.sonar.echo_history[0]["t"] == snapshot["t"]
 
 
-@pytest.mark.parametrize("version", range(1, 9))
-def test_legacy_queue_freezes_once_at_restore_without_rng_or_warning(flight_game, monkeypatch, version):
-    game = flight_game
-    state = copy.deepcopy(game.save_state())
-    state["version"] = version
-    pending = state["sonar"]["pending_pings"][0]
-    del pending["snapshot"]
-    monkeypatch.setattr(World, "sonar_path_blocked", lambda *args: False)
-    monkeypatch.setattr(World, "thermocline_depth_m", lambda *args: 100)
-
-    def no_warning(*args):
-        pytest.fail("Restoring a pending echo repeated the intercept warning")
-
-    monkeypatch.setattr(Sub, "hear_ping", no_warning)
-    random_state = random.getstate()
-    game.load_state(state)
-    migrated = game.sonar._pending_pings[0]
-    assert migrated["ready_at"] == pending["ready_at"]
-    assert migrated["snapshot"]["t"] == state["sim_t"]
-    assert migrated["snapshot"]["observer_x"] == state["ship"]["x"]
-    assert game.save_state()["rngs"] == state["rngs"]
-    assert random.getstate() == random_state
-    snapshot = dict(migrated["snapshot"])
-    game.ship.x += 10
-    game.subs[0].x += 30
-    resaved = game.save_state()
-    monkeypatch.setattr(SonarSystem, "_measure_ping", no_warning)
-    game.load_state(resaved)
-    assert game.sonar._pending_pings[0]["snapshot"] == snapshot
-    game.sonar._process_pending_pings(pending["ready_at"])
-    assert game.sonar.echo_history[-1]["t"] == state["sim_t"]
-
-
-@pytest.mark.parametrize("reason", ["range", "terrain", "stowed", "destroyed"])
-def test_legacy_undetectable_return_is_conservatively_discarded(flight_game, monkeypatch, reason):
-    state = copy.deepcopy(flight_game.save_state())
-    pending = state["sonar"]["pending_pings"][0]
-    del pending["snapshot"]
-    monkeypatch.setattr(World, "sonar_path_blocked", lambda *args: reason == "terrain")
-    if reason == "range":
-        state["subs"][0]["x"] = 499
-    elif reason == "stowed":
-        pending["mode"] = "TOWED"
-    elif reason == "destroyed":
-        state["subs"][0]["state"] = "SUNK"
-    flight_game.load_state(state)
-    assert not flight_game.sonar._pending_pings
-
-
 @pytest.mark.parametrize("key,value", [
     ("t", -1), ("t", 3), ("t", True), ("t", float("nan")),
     ("observer_x", float("inf")), ("observer_y", 1e7), ("observer_x", "250"),
@@ -286,33 +223,12 @@ def test_nested_array_report_validation_is_transactional(flight_game, patch):
     assert flight_game.save_state() == before and counters() == ids
 
 
-def test_legacy_array_report_without_uncertainty_remains_supported(flight_game):
-    contact = flight_game.sonar._get_contact(flight_game.subs[0])
-    contact.array_observations = {"BOW": dict(bearing=90, quality=.5, snr=4, last_seen=1)}
-    flight_game.load_state(flight_game.save_state())
-    assert flight_game.sonar.contacts[contact.target_id].array_observations == contact.array_observations
-
-
 @pytest.mark.parametrize("reports", [[], {"OTHER": {}}, {"BOW": None}, {"BOW": {"quality": .5}}])
 def test_malformed_array_report_structure_is_transactional(flight_game, reports):
     contact = flight_game.sonar._get_contact(flight_game.subs[0])
     before, ids = flight_game.save_state(), counters()
     state = copy.deepcopy(before)
     state["sonar"]["contacts"][str(contact.target_id)]["array_observations"] = reports
-    assert not flight_game._load_save_data(state)
-    assert flight_game.save_state() == before and counters() == ids
-
-
-def test_failed_legacy_snapshot_derivation_rolls_back_candidate_and_ids(flight_game, monkeypatch):
-    before, ids = flight_game.save_state(), counters()
-    state = copy.deepcopy(before)
-    del state["sonar"]["pending_pings"][0]["snapshot"]
-    monkeypatch.setattr(World, "sonar_path_blocked", lambda *args: False)
-
-    def invalid_measurement(*args):
-        raise ValueError("invalid reconstructed measurement")
-
-    monkeypatch.setattr(SonarSystem, "_measure_ping", invalid_measurement)
     assert not flight_game._load_save_data(state)
     assert flight_game.save_state() == before and counters() == ids
 

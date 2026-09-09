@@ -34,8 +34,9 @@ class ReleaseDatum:
 class Helicopter:
     SPEED_KN = config.HELO_SPEED_KN
 
-    def __init__(self, rng):
+    def __init__(self, rng, torpedo_profile=None):
         self.rng = rng
+        self.torpedo_profile = torpedo_profile or HELO_TORPEDO_PROFILE
         self.state = "HANGAR"
         self.x = 0.0
         self.y = 0.0
@@ -166,11 +167,12 @@ class Helicopter:
         course = math.degrees(math.atan2(aim_x - self.x,
                                          -(aim_y - self.y))) % 360.0
         torpedo = Torpedo(self.x, self.y, course, target_depth_m, target, seq,
-                          kill_dist_nm=(HELO_TORPEDO_PROFILE.hit_dist_nm
+                          kill_dist_nm=(self.torpedo_profile.hit_dist_nm
                                         if kill_dist_nm is None else kill_dist_nm),
                           kill_depth_m=kill_depth_m,
-                          speed_kn=HELO_TORPEDO_PROFILE.speed_kn,
+                          speed_kn=self.torpedo_profile.speed_kn,
                           guidance_x=aim_x, guidance_y=aim_y,
-                          range_nm=HELO_TORPEDO_PROFILE.range_nm)
+                          range_nm=self.torpedo_profile.range_nm,
+                          profile=self.torpedo_profile)
         torpedo.break_wire()
         return torpedo

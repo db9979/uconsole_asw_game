@@ -2,10 +2,10 @@
 
 U-Jagd is a real-time anti-submarine warfare tactics game for Linux, designed
 around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
-frigate and move between eight workstations to navigate, search, classify,
+frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **0.1.6**
+Current release: **0.1.7**
 
 This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
@@ -19,14 +19,17 @@ capabilities, data, or doctrine.
 
 ![OPZ/CIC, Radio, Engineering, and Helicopter](docs/screenshots/stations-overview-2.png)
 
+![Electronic Warfare / ESM](docs/screenshots/stations-overview-3.png)
+
 Full-resolution workstations: [Bridge](docs/screenshots/station-bridge.png),
 [Sonar](docs/screenshots/station-sonar.png),
 [Weapons](docs/screenshots/station-weapons.png),
 [Damage Control](docs/screenshots/station-damage-control.png),
 [OPZ/CIC](docs/screenshots/station-opz-cic.png),
 [Radio](docs/screenshots/station-radio.png),
-[Engineering](docs/screenshots/station-engineering.png), and
-[Helicopter](docs/screenshots/station-helicopter.png).
+[Engineering](docs/screenshots/station-engineering.png),
+[Helicopter](docs/screenshots/station-helicopter.png), and
+[Electronic Warfare/ESM](docs/screenshots/station-eloka.png).
 
 Damage-control example with authored flooding, fire, lost zones and repair teams:
 [F-217 damage schematic](docs/screenshots/damage-control-alert.png).
@@ -38,8 +41,8 @@ Commander browser: [1920 x 1080](docs/screenshots/commander-overview.png) and
 
 ## Highlights
 
-- Eight stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,
-  Engineering, and Helicopter Deck.
+- Nine stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,
+  Engineering, Helicopter Deck, and Electronic Warfare/ESM.
 - Four built-in scenarios, three difficulty levels, pause, and 1x, 5x, 15x,
   30x, 60x, and 120x time acceleration.
 - Passive HMS and towed-array sonar, active sonar, broadband and LOFAR
@@ -56,14 +59,15 @@ Commander browser: [1920 x 1080](docs/screenshots/commander-overview.png) and
 - Five local save slots with deterministic world snapshots.
 - English and German interface catalogs, system-language detection, and an
   options screen.
-- Context tooltips on all eight stations: hover for a temporary explanation,
+- Context tooltips on all nine stations: hover for a temporary explanation,
   or left-click a displayed item to pin its tooltip. `Esc` clears a pin before
   opening the quit dialog.
 - A native 1280 x 720 interface, aspect-correctly letterboxed when necessary.
   Maps and symbols are drawn by Pygame; audio is synthesized at runtime.
 - Optional two-player trusted-LAN Commander station: browser operational picture,
-  shared classification/affiliation after local grant, crew-confirmed target
-  proposals, and gesture-enabled browser alarms. No remote firing or steering.
+  shared classification/affiliation after local grant, crew-confirmed target and
+  navigation proposals, and gesture-enabled browser alarms. No remote firing or
+  direct steering.
 
 ## Requirements
 
@@ -136,7 +140,7 @@ global controls are:
 
 | Input | Action |
 |---|---|
-| `1` to `8` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter; press the active station number again to advance its page when available |
+| `1` to `9` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter, Electronic Warfare/ESM; press the active station number again to advance its page when available |
 | `Tab` / `Shift+Tab` | Next / previous station |
 | `P` | Pause / resume |
 | `F1` | Context-sensitive help |
@@ -182,11 +186,12 @@ frozen transmit-time geometry; the separate outbound wave and moving-receiver
 intercept are not simulated, and submarine ping warnings remain immediate.
 
 At 1x, sonar audition consumes the receiver's bounded block handoff in order and
-retries a full playback queue. An overrun restarts the stream rather than joining
-discontinuous samples. Above 1x, the station labels audition as **AUDIO PREVIEW**:
-it plays periodic samples, not every accelerated second. Analysis remains
-independent of playback availability and volume. DSP deliberately warms up again
-after loading a save; saved tactical observations are retained.
+retries an unaccepted block when the playback queue is full. An overrun restarts
+the stream rather than joining discontinuous samples. Above 1x, sonar audition is
+muted and receiver blocks are
+discarded rather than replayed later. Analysis remains independent of playback
+availability and volume. DSP deliberately warms up again after loading a save;
+saved tactical observations are retained.
 
 Sonar controls include:
 
@@ -228,7 +233,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v8 game saves for deterministic restoration of existing sessions.
+in v10 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -244,9 +249,13 @@ input is normalized to uppercase. The example is not a functioning credential.
 
 After pairing, the crew explicitly grants changes in the local panel and closes
 the overlay. The Commander can inspect contacts independently, edit allowed
-annotations, and propose a target. The crew accepts or rejects it in F9. Acceptance
-never fires a weapon or changes the sonar listening selection. Communication is
-through target marking and external voice; no microphone or chat is included.
+annotations, propose a target, and propose ordered course and speed. The crew
+accepts or rejects proposals in F9. Target acceptance never fires a weapon or
+changes the sonar listening selection. Navigation acceptance changes local helm
+setpoints only; it does not move the ship directly. Course acceptance requires an
+operational bridge; propulsion and quiet-mode limits still govern speed.
+Communication is through proposals and external voice; no microphone or
+chat is included.
 
 The service starts **off on every launch**. Access and grants are not saved.
 World replacement revokes pairing on the next main-thread frame. Pause and
@@ -271,7 +280,7 @@ import. JSON templates under `data/editor_templates/` describe the accepted
 schemas; user files are stored under `~/.u-jagd/missions/` and
 `~/.u-jagd/units/`.
 
-Validated does not mean runtime-effective. In release 0.1.6:
+Validated does not mean runtime-effective. In release 0.1.7:
 
 - A user mission can be started with `F5` from the Mission Editor browser only
   when it uses the supported runtime subset.
@@ -293,10 +302,10 @@ Validated does not mean runtime-effective. In release 0.1.6:
 
 ## Saves and User Data
 
-Release 0.1.6 writes save format **v8** and loads formats **v1 through v8**.
-Older v1-v7 saves are accepted with defaults for state that did not exist in
-their format. Malformed or unsupported saves are rejected without replacing the
-running game. Newer-format compatibility is not promised.
+Release 0.1.7 writes and loads save format **v10** only. V10 requires the exact
+`u-jagd-save-v10` schema, including the current runtime catalog snapshot and all
+deterministic continuation state. Older, newer, malformed, or incomplete saves
+are rejected without replacing the running game.
 
 The five slots are `~/.u-jagd/slot1.json` through `slot5.json`. Saves include a
 snapshot of coastline geometry and synthetic bathymetry so an existing game is
@@ -319,18 +328,18 @@ by Natural Earth, Wikidata, their contributors, any platform manufacturer,
 military organization, government, or source rights holder.
 
 Exact provenance, versions, hashes, transformation notes, and licenses are in
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). High-level workstation and
-incomplete-information workflows drew limited design inspiration from private
-reference material; no text, images, layout, or data from that material is
-included or copied.
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). Private WaveOps/MNW material
+is not a repository source. No text, images, layouts, data, imitation,
+transcription, or derived material from it is used.
 
 ## Development and Tests
 
 The workstation/model review, delivered corrections, remaining modeling limits,
 and hardware acceptance checklist are documented in
 [`docs/workstation-review.md`](docs/workstation-review.md).
-Current resumable work and the mandatory post-Commander pause are tracked in
-[`docs/plan-0.1.6.md`](docs/plan-0.1.6.md) and [`docs/resume.md`](docs/resume.md).
+Current work is tracked in [`docs/plan-0.1.7.md`](docs/plan-0.1.7.md) and
+[`docs/resume.md`](docs/resume.md). The completed 0.1.6 stabilization plan remains
+available in [`docs/plan-0.1.6.md`](docs/plan-0.1.6.md).
 
 Install the project and development dependency, then run the test suite:
 

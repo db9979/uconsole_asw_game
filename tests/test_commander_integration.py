@@ -118,6 +118,7 @@ def test_menu_http_snapshot_does_not_expose_the_pregenerated_world():
         _, chart = request(console.server, "/api/v1/chart", token=paired["token"])
         assert state["phase"] == "menu" and state["tracks"] == []
         assert state["ownship"]["x"] is None and state["clock"]["sim"] is None
+        assert state["environment"] == {"sea_state": None, "is_night": None}
         assert chart["landmasses"] == []
         assert all(key not in json.dumps(state) for key in ("target_id", "sensor_seed", "rng"))
     finally:

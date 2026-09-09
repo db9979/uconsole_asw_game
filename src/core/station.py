@@ -13,6 +13,7 @@ class Station(Enum):
     RADIO = "Funk"
     ENGINE = "Maschinenraum"
     HELICOPTER = "Helikopter-Deck"
+    ELOKA = "EloKa"
 
     @property
     def label(self) -> str:

@@ -24,9 +24,13 @@ Der CLI-Validator meldet externe Fehler mit Exitcode 1, ohne Fallback.
 
 ## Struktur
 
-Jede Datei: `{"version": 1, "entries": [...]}` (Version für spätere
-Migrationen). Nur die Integer-Version 1 wird akzeptiert, nicht `true`, `1.0`
-oder `"1"`. Runtime-Loader und CLI teilen `validate_contact_entry()` und die
+Jede Profildatei verwendet Version 1 oder 2. Version 1 besteht aus
+`{"version": 1, "entries": [...]}`. Version 2 behaelt dieselben streng
+validierten Runtime-Eintraege und ergaenzt normalisierte Register sowie
+`profiles`-Verknuepfungen. Dadurch koennen einzelne Profile migriert werden,
+ohne die bestehenden Runtime-Dataclasses oder v1-Eintraege umzudeuten. Nur
+echte Integer-Versionen werden akzeptiert, nicht `true`, `1.0` oder `"1"`.
+Runtime-Loader und CLI teilen `validate_contact_entry()` und die
 Dokumentpruefung in `src/data/catalog.py`:
 - exakte Objektfelder, erforderliche Werte und Typen; keine String-/Bool-Zahlkonvertierung
 - keine doppelten JSON-Objektfelder, auch nicht in verschachtelten Akustik-Bloecken
@@ -41,11 +45,58 @@ Dokumentpruefung in `src/data/catalog.py`:
 - Sub-Profile: `torpedoes` Integer von 0 bis 100
 - mindestens 100 Akustik-Profile außerhalb `BIOLOGISCH`
 
+Der R4-Paketstand verwendet Version 2 fuer `subs.json`, `warships.json` und
+`civilians.json`; die anderen fuenf Profildateien bleiben Version 1. Gemischte
+externe v1/v2-Gesamtkataloge sind zulaessig. Sobald mindestens eine
+Profildatei Version 2 verwendet, ist `sources.json` erforderlich. Der Loader
+behaelt jede Dokumentversion und kann alle akzeptierten Felder einschliesslich
+JSON-Zahltypen als abgetrennte Dokumentkopie rekonstruieren. Die unveraenderlichen
+v2-Datentypen und schreibgeschuetzten Register umfassen:
+
+- Referenzdaten mit Variante, Jahren, Rollen, Rumpftyp, Abmessungen,
+  Verdraengungsbasis sowie getrennten Schiffs-/Luftgruppen-Crewbereichen,
+- Maschinen mit Cruise-/Maximal-/Leisefahrt, getrennten Motor-/Wellen-RPM,
+  Propulsortyp und Cruise-/Hochfahrt-Akustikzustaenden,
+- Sensoren und Radar-Emitter mit kontrollierten Domains, Modi, Baendern,
+  Kadenz und synthetischen Unsicherheiten,
+- Waffen mit Ziel-Domains, optionaler Legacy-Runtimebruecke, Fahrleistung,
+  Einsatzbereich, Sucher, Guidance und Payloadtyp,
+- Waffen, Launcher, VLS-Zellzahl, Missionsmagazine und Gegenmassnahmen als
+  getrennte Register mit vollstaendig validierten Querverweisen. Das optionale
+  `runtime_profile_key` einer v2-Torpedowaffe darf nur auf ein vorhandenes
+  Legacy-Torpedoprofil zeigen; andere Waffentypen besitzen keine solche Bruecke.
+
+R5 aktiviert fuer die neun Pilotprofile Maschinenfahrt-/Akustikwerte,
+Manovriergrenzen und die getrennten Radar-, ESM-, Sonar- und AIS-Controller. R8
+aktiviert die ausdruecklich getesteten ASW-Waffen, Launcher, Magazine und
+Gegenmassnahmen der Pilotprofile. Flugkoerperabwehrkomponenten bleiben bis R9
+inaktiv; erfolgreiche Validierung allein aendert das bestehende Gameplay nicht.
+
+V2-Komponentenschluessel sind logische Kleinbuchstaben-IDs; Pfadtrenner und
+Dateipfade sind ungueltig. Referenz-, Maschinen-, Sensor-, Emitter-, Waffen-,
+Launcher-, Magazin- und Gegenmassnahmenschluessel verwenden jeweils ihren
+kontrollierten Namespace. Der Loader begrenzt Dokumentgroesse, Eintragszahl und
+JSON-Verschachtelung, oeffnet ausschliesslich die fest benannten Katalogdateien
+und ruft keine Quellen-URLs ab. Nicht referenzierte Komponenten, falsche
+Namespaces, unaufgeloeste Referenzen und inkompatible Launcher-/Waffentypen
+werden abgewiesen.
+
+## Quellenmanifest
+
+`sources.json` enthaelt nur Quellenmetadaten und Zuordnungen von
+Profil/Feldpfad zu `published`, `derived`, `game_assumption` oder `unknown`.
+Profilwerte werden dort nicht dupliziert. R4 deckt alle Referenz-, Maschinen- und
+groben Komponentenfelder seiner neun Pilotprofile ab. Der genaue
+Rechte-, Status- und Pflegevertrag steht in
+[`platform-data-sources.md`](platform-data-sources.md).
+
 Defensive Obergrenzen (z.B. 2000 m Tiefe, 100000 Hz Frequenz, 256 Tonallinien,
 500 Zeichen Text) begrenzen die akzeptierten Daten; sie sind keine Aussagen ueber
-reale Plattformleistung. Oberflaechen-Hostilitaet und Akustik-Kategorie muessen zur
-Datei bzw. Plattform passen. Der CLI-Validator prueft zusaetzlich jedes geladene
-Feld gegen das JSON. Korrektes Laden allein beweist noch keine Simulationswirkung.
+reale Plattformleistung. Das historische JSON-Feld `hostile` muss weiterhin zur
+Ressourcendatei passen, waehlt aber nur den stabilen Legacy-Spawnpool. Die
+Runtime-Seite kommt aus Mission und Doktrin; ein Plattformprofil ist neutral.
+Der CLI-Validator prueft zusaetzlich jedes geladene Feld gegen das JSON. Korrektes
+Laden allein beweist noch keine Simulationswirkung.
 
 ## Akustik-Block (U-Boote, Schiffe, optional Torpedos)
 
@@ -76,7 +127,7 @@ Feld gegen das JSON. Korrektes Laden allein beweist noch keine Simulationswirkun
 | `spawn_weight` | float |
 | `acoustic` | Akustik-Block |
 
-## `warships.json` (25 Profile) / `civilians.json` (55 Profile)
+## `warships.json` (28 Profile) / `civilians.json` (55 Profile)
 
 | Feld | Typ |
 |---|---|
@@ -118,6 +169,31 @@ Blattfrequenz.
 `key`, `name`, `life_s`, `speed_kn`, `cooldown_s`, `chance`, `lines`,
 `signature_text`.
 
+## Save-v10-Runtime-Snapshot
+
+V10-Saves tragen zwingend eine streng validierte `catalog_snapshot`-Version 2. Sie
+enthaelt die vollstaendigen runtimewirksamen `entries`, die validierten
+v2-Komponentendokumente der acht Profilressourcen und feste Bindungen fuer
+Fregatten-, Hubschrauber- und Feindtorpedo, U-Boot-Dekoy sowie
+zivile/militaerische Standardfluege. Quellen- und Provenienzmetadaten werden
+nicht in den Save kopiert.
+
+Beim Laden wird ein instanzlokaler Katalog aufgebaut. Wiederhergestellte und
+spaeter in derselben Mission erzeugte U-Boote, Oberflaechenschiffe, Tiere,
+Fluege, Torpedos und Dekoys verwenden diesen Snapshot; Sonarklassifikation nutzt
+dieselbe gespeicherte Akustikbibliothek. Geaenderte Paketdefaults koennen eine
+laufende Mission dadurch nicht umdeuten. Snapshotlose Saves, Snapshot v1 und
+andere aeussere Saveversionen werden abgelehnt; es gibt keinen stillen Rueckfall
+auf Paketwerte und keine Saveformatmigration.
+
+R5 speichert zusaetzlich je U-Boot, Oberflaechenschiff und Flug die explizite
+Seite/Doktrin, aktivierte Sensorcontroller, naechste Scanphase, Scanindex sowie
+auf jeweils 64 Beobachtungen begrenzte lokale und Datalink-Bilder. Diese Bilder
+enthalten weder Entity-IDs noch Profilkeys oder Objektverweise. Peilungen tragen
+ihren Messursprung; der Friendly Datalink uebertraegt nur abgeloeste
+Beobachtungen. Nicht migrierte Profile verwenden bis R10 einen expliziten
+Legacyadapter, dessen KI ebenfalls nur eine abgeloeste Beobachtung erhaelt.
+
 ## Modellannahmen
 
 Alle akustischen Zahlen (RPM-Bänder, Tonal-Bänder, Kavitation, Breitband-
@@ -138,9 +214,11 @@ nur die Klassen-Referenzwerte.
 
 `CIVIL_CATEGORIES = ("TANKER", "PASSAGIER", "FRACHT", "SONSTIGES")` – diese
 Profile zählen zu den zivilen Signaturen (`CIVILIAN_SIGNATURES`). `BIOLOGISCH`
-ist ein Fangnetz-Profil (kein Spawn, nur Kandidaten-Liste). Die 100
-Kernplattformen (20 U-Boote + 25 Kriegsschiffe + 55 Zivile) plus 3
-Legacy-Archetypen bilden den Spawn-Pool; Tiere und Dekoys zählen nicht dazu.
+ist ein Fangnetz-Profil (kein Spawn, nur Kandidaten-Liste). Der Katalog enthaelt
+20 benannte U-Boote, 28 Kriegsschiffe und 55 zivile Schiffe plus 3
+Legacy-U-Boot-Archetypen. Die neuen `warship_26` bis `warship_28` besitzen
+`spawn_weight: 0`; die feindliche Legacy-Zufallsauswahl bleibt explizit auf
+`warship_01` bis `warship_25` begrenzt. Tiere und Dekoys zählen nicht dazu.
 
 ## Runtime-Grenzen und Metadaten
 

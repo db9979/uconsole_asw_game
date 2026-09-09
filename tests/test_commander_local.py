@@ -66,8 +66,9 @@ class Transport:
     def send(self, action="propose", identity="one", **values):
         state = self.state
         command = dict(id=identity, session=state["session"], epoch=state["epoch"],
-                       revision=state["revision"], action=action,
-                       track=state["tracks"][0]["ref"], **values)
+                       revision=state["revision"], action=action, **values)
+        if action != "propose_navigation":
+            command["track"] = state["tracks"][0]["ref"]
         self.queue.append(dict(command=command, lease=self.lease_generation,
                                received_at=time.monotonic()))
 
@@ -298,6 +299,12 @@ def test_port_host_and_grant_are_transient_local_controls(game):
     assert console.port == 8766
     console.handle_key(game, pygame.K_MINUS)
     assert console.port == 8765
+    console.port = 1024
+    console.handle_key(game, pygame.K_MINUS)
+    assert console.port == 1024
+    console.port = 65535
+    console.handle_key(game, pygame.K_PLUS)
+    assert console.port == 65535
     console.selection = 3
     console.activate(game)
     assert not console.bridge.allowed
@@ -352,6 +359,164 @@ def test_pending_decision_requires_local_confirmation_preserves_focus(game, acce
     assert not game.torpedoes and game.commander_open
 
 
+@pytest.mark.parametrize("kind,accept", [
+    ("target", True), ("target", False), ("navigation", True), ("navigation", False),
+])
+def test_crew_message_box_single_proposal_decisions_are_local_and_non_pausing(
+        game, kind, accept):
+    console, server, contact = session(game)
+    before_t = game.sim_t
+    if kind == "target":
+        server.send()
+    else:
+        server.send("propose_navigation", course=123.5, speed_kn=17.0)
+    console.pump(game)
+
+    assert console.confirm_visible(game) and console.confirm_kind == kind
+    assert not game.paused and not game.administration_open
+    game.update(.1)
+    assert game.sim_t > before_t
+    key(game, pygame.K_F6 if accept else pygame.K_F7)
+
+    proposal = (console.bridge.proposal if kind == "target"
+                else console.bridge.navigation_proposal)
+    assert proposal["status"] == ("accepted" if accept else "rejected")
+    assert not console.confirm_visible(game)
+    assert game.target is (contact if kind == "target" and accept else None)
+    if kind == "navigation" and accept:
+        assert (game.ship.target_course, game.ship.target_speed) == (123.5, 17.0)
+
+
+def test_crew_message_box_target_first_cycles_and_esc_suppresses_only_sequence(game):
+    console, server, _ = session(game)
+    server.send(identity="target")
+    console.pump(game)
+    server.send("propose_navigation", identity="navigation", course=222.0)
+    console.pump(game)
+
+    assert console.confirm_visible(game) and console.confirm_kind == "target"
+    key(game, pygame.K_F8)
+    assert console.confirm_kind == "navigation"
+    key(game, pygame.K_F8)
+    assert console.confirm_kind == "target"
+    sequence = console.bridge.proposal_sequence
+    key(game, pygame.K_ESCAPE)
+    assert not console.confirm_visible(game)
+    assert console.bridge.proposal["status"] == "pending"
+    console.pump(game)
+    assert not console.confirm_visible(game)
+
+    game._open_administration("commander")
+    assert console.bridge.reject_proposal(game)
+    console.pump(game)
+    game._open_administration("")
+    console.pump(game)
+    assert console.bridge.proposal_sequence == sequence
+    assert console.confirm_visible(game) and console.confirm_kind == "navigation"
+
+
+def test_crew_message_box_open_clears_controls_once_and_pause_blocks_decisions(
+        game, monkeypatch):
+    console, server, _ = session(game)
+    clear = Mock(wraps=game._clear_controls)
+    monkeypatch.setattr(game, "_clear_controls", clear)
+    game.held.add(pygame.K_LEFT)
+    game._joy_turn = 1
+    game._map_drag = (10, 20)
+    server.send()
+    console.pump(game)
+    console.pump(game)
+    assert clear.call_count == 1
+    assert not game.held and game._joy_turn == 0 and game._map_drag is None
+
+    key(game, pygame.K_p)
+    assert game.paused and console.confirm_visible(game)
+    key(game, pygame.K_F6)
+    assert console.bridge.proposal["status"] == "pending"
+    key(game, pygame.K_p)
+    key(game, pygame.K_F6)
+    assert not game.paused and console.bridge.proposal["status"] == "accepted"
+
+
+@pytest.mark.parametrize("owner,value", [
+    ("in_menu", True), ("main_menu", True), ("editor", NS()),
+    ("splash_active", True), ("game_over", True), ("help_open", True),
+    ("commander_open", True),
+])
+def test_crew_message_box_hidden_behind_non_live_views(game, owner, value):
+    console, server, _ = session(game)
+    server.send()
+    console.pump(game)
+    assert console.confirm_visible(game)
+    setattr(game, owner, value)
+    assert not console.confirm_visible(game)
+
+
+@pytest.mark.parametrize("change", [
+    "grant", "revoke", "lease", "disconnect", "world", "expiry",
+])
+def test_crew_message_box_closes_on_authority_or_world_loss(game, change):
+    console, server, _ = session(game)
+    server.send()
+    console.pump(game)
+    assert console.confirm_visible(game)
+    if change == "grant":
+        console.bridge.allowed = False
+    elif change == "revoke":
+        server.revoke()
+    elif change == "lease":
+        server.lease_generation += 1
+    elif change == "disconnect":
+        server.connected = False
+    elif change == "world":
+        game.reset(32)
+    else:
+        game.sonar.contacts.clear()
+        console.pump(game)
+    assert not console.confirm_visible(game)
+    console.pump(game)
+    assert not console.confirm_visible(game)
+
+
+def test_crew_message_box_same_sequence_does_not_return_after_local_regrant(game):
+    console, server, _ = session(game)
+    server.send()
+    console.pump(game)
+    assert console.confirm_visible(game)
+    console.bridge.allowed = False
+    assert not console.confirm_visible(game)
+    console.bridge.allowed = True
+    console.pump(game)
+    assert not console.confirm_visible(game)
+
+
+def test_crew_message_box_mouse_select_then_confirm_and_letterbox_rejection(game, monkeypatch):
+    console, server, contact = session(game)
+    server.send()
+    console.pump(game)
+    monkeypatch.setattr(pygame.display, "get_window_size", lambda: (1280, 1000))
+    accept = console.confirm_button_rects()[0]
+
+    game.handle_event(pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN, button=1, pos=(accept.centerx, 20)))
+    assert game.target is None
+    event = pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN, button=1, pos=(accept.centerx, accept.centery + 140))
+    game.handle_event(event)
+    assert game.target is None and console.confirm_visible(game)
+    game.handle_event(event)
+    assert game.target is contact and not console.confirm_visible(game)
+
+
+def test_crew_message_box_only_consumes_clicks_inside_panel(game):
+    console, server, _ = session(game)
+    server.send()
+    console.pump(game)
+
+    assert not console.handle_confirm_click(game, (10, 10))
+    assert console.handle_confirm_click(game, console.confirm_rect().center)
+
+
 def test_notice_once_per_new_pending_with_wall_rate_limit(game, monkeypatch):
     now = [100.0]
     monkeypatch.setattr(local.time, "monotonic", lambda: now[0])
@@ -367,6 +532,15 @@ def test_notice_once_per_new_pending_with_wall_rate_limit(game, monkeypatch):
     assert flash.call_count == alert.call_count == 1
     now[0] = 100.1
     server.send(identity="two")
+    console.pump(game)
+    assert flash.call_count == 1
+    assert server.state["results"][-1]["reasoncode"] == "proposal_pending"
+    game.commander_open = True
+    assert console.bridge.reject_proposal(game)
+    console.pump(game)
+    game.commander_open = False
+    console.pump(game)
+    server.send(identity="three")
     console.pump(game)
     assert flash.call_count == 1
     now[0] = 102.0

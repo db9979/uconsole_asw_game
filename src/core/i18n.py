@@ -31,6 +31,7 @@ DISPLAY_KEYS = {
         "WEAPONS": "station.weapons", "DAMAGE": "station.damage",
         "OPZ": "station.opz", "RADIO": "station.radio",
         "ENGINE": "station.engine", "HELICOPTER": "station.helicopter",
+        "ELOKA": "station.ew",
     },
     "classification": {
         None: "class.unknown", "UNKNOWN": "class.unknown",

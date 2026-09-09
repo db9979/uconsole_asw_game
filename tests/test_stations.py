@@ -16,10 +16,11 @@ def key(game, value):
 def test_all_stations_are_selectable():
     game = Game(seed=31415, start_menu=False)
     keys = [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4,
-            pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8]
+            pygame.K_5, pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9]
     expected_stations = [Station.BRIDGE, Station.SONAR, Station.WEAPONS,
                          Station.DAMAGE, Station.OPZ,
-                         Station.RADIO, Station.ENGINE, Station.HELICOPTER]
+                         Station.RADIO, Station.ENGINE, Station.HELICOPTER,
+                         Station.ELOKA]
     for expected, input_key in zip(expected_stations, keys):
         key(game, input_key)
         assert game.station is expected
@@ -220,7 +221,19 @@ def test_unknown_opz_affiliation_keeps_existing_ship_launch_policy():
 def test_enemy_launch_is_hidden_until_first_sonar_observation(monkeypatch):
     game = Game(seed=2720, start_menu=False)
     sub = game.subs[0]
-    sub.pending_torpedoes.append((sub.x, sub.y, 180.0, sub.depth))
+    profile = sub.enemy_torpedo_profile
+    if sub.weapon_battery is not None:
+        weapon_key = sub.weapon_battery.fire()
+        assert weapon_key is not None
+        sub.torpedoes_left = sub.weapon_battery.remaining_total
+        profile = game.runtime_catalog.torpedoes[
+            game.runtime_catalog.weapons[weapon_key].runtime_profile_key]
+    else:
+        weapon_key = None
+        sub.torpedoes_left -= 1
+    sub.pending_torpedoes.append((
+        sub.x, sub.y, 180.0, sub.depth, game.ship.x, game.ship.y,
+        profile.key, sub.id, weapon_key))
     game.msg = "unrelated"
     game._drain_enemy_torpedoes()
     assert game.msg == "unrelated"

@@ -208,6 +208,45 @@ def test_target_proposal_separate_reject_and_revision_conflict(game):
     assert game.ship.__dict__ == before
 
 
+def test_fresh_navigation_proposal_cannot_replace_pending_and_duplicate_replays(game):
+    bridge, server = start(game)
+    original = navigation(server.state, course=123)
+    server.send(original)
+    bridge.pump(game, server, now=100.1)
+    pending = bridge.navigation_proposal
+    revision = server.state["revision"]
+
+    server.send(original)
+    bridge.pump(game, server, now=100.2)
+    assert server.state["results"][-1] == dict(
+        id="navigation", status="applied", reasoncode="ok")
+    assert bridge.navigation_proposal == pending and server.state["revision"] == revision
+
+    replacement = navigation(server.state, course=124)
+    replacement["id"] = "replacement"
+    server.send(replacement)
+    bridge.pump(game, server, now=100.3)
+    assert server.state["results"][-1] == dict(
+        id="replacement", status="rejected", reasoncode="proposal_pending")
+    assert bridge.navigation_proposal == pending
+
+
+def test_same_batch_navigation_replacement_reports_pending_not_revision(game):
+    bridge, server = start(game)
+    first = navigation(server.state, course=123)
+    second = navigation(server.state, speed_kn=19)
+    first["id"], second["id"] = "first", "second"
+    server.send(first)
+    server.send(second)
+
+    bridge.pump(game, server, now=100.1)
+
+    assert [result["reasoncode"] for result in server.state["results"][-2:]] == [
+        "ok", "proposal_pending"]
+    assert bridge.navigation_proposal == dict(course=123, speed_kn=None,
+                                               status="pending")
+
+
 def test_real_http_only_queues_navigation_and_denies_direct_actions(game):
     server = CommanderServer()
     server.start("127.0.0.1", 0)

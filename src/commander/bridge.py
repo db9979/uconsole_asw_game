@@ -38,9 +38,10 @@ Damage events mark state/onset/resolution changes, not every percentage tick.
 Event seq stays monotonic across sessions for the local alarm's last-seq check.
 Chart geometry is copied once per world (20,000 vertices / 1,024 polygons max).
 An invalid/oversized chart is omitted in its entirety, never partially drawn.
-Menu/editor/splash publish status only: clock values null, mission name/objective
-empty and remaining_s null, ownship numeric fields null, damage [], inventory
-values null, every helo value null, tracks/events [], crew_target/proposal null.
+Menu/editor/splash publish status only: clock/environment values null, mission
+name/objective empty and remaining_s null, ownship numeric fields null, damage
+[], inventory values null, every helo value null, tracks/events [],
+crew_target/proposal null.
 Results retain {id, status, reasoncode}; no legacy reason alias is published.
 The redacted chart is {revision: session, size_nm: 500, landmasses: [],
 disclaimer: ""}. Its revision stays session; redaction and return both republish
@@ -331,7 +332,7 @@ class CommanderBridge:
                 if contact is None:
                     row["course"] = None
             rows.append(row)
-            bindings[ref] = (key, source, contact, track.kind in ("ASM", "TORP"))
+            bindings[ref] = (key, source, contact)
         self._refs = refs
         return rows, bindings
 
@@ -424,6 +425,12 @@ class CommanderBridge:
                     self._dirty = True
                     return
                 reason = "duplicate_id"
+            elif (action == "propose" and self._proposal is not None
+                  and self._proposal["status"] == "pending"):
+                reason = "proposal_pending"
+            elif (action == "propose_navigation" and self._navigation_proposal is not None
+                  and self._navigation_proposal["status"] == "pending"):
+                reason = "proposal_pending"
             elif command["revision"] != self._revision:
                 reason = "revision_conflict"
             elif action not in ("clear_proposal", "propose_navigation") and ref not in bindings:
@@ -566,8 +573,8 @@ class CommanderBridge:
             if self._damage is not None and damage_state != self._damage:
                 self._event("damage", "warning", "commander.event.damage")
             self._damage = damage_state
-            threats = {r["ref"] for r in rows if bindings[r["ref"]][3] or r["source"] == "HOJ"
-                       or r["affiliation"] == "HOSTILE"}
+            threats = {r["ref"] for r in rows
+                       if r["source"] == "HOJ" or r["affiliation"] == "HOSTILE"}
             if self._threats is not None and threats - self._threats:
                 self._event("threat", "warning", "commander.event.threat")
             self._threats = threats
@@ -601,6 +608,7 @@ class CommanderBridge:
             ("torpedoes", "vls", "ciws", "chaff_ready")), helo=dict.fromkeys(
                 ("state", "x", "y", "course", "fuel_s", "torpedoes", "buoys")))
         clock = dict.fromkeys(("sim", "mission", "time_scale", "world"))
+        environment = dict.fromkeys(("sea_state", "is_night"))
         mission = dict(name="", objective="", remaining_s=None)
         chart = dict(revision=self._session, size_nm=500, landmasses=[], disclaimer="")
         if not redacted:
@@ -618,6 +626,8 @@ class CommanderBridge:
                     fuel_s=helo.fuel_s, torpedoes=helo.torps, buoys=helo.buoys_left))
             clock = dict(sim=game.sim_t, mission=game.mission_time,
                          time_scale=game.time_scale, world=game.world.hour)
+            environment = dict(sea_state=_number(game.world.sea_state),
+                               is_night=bool(game.world.is_night()))
             mission = dict(name=localize(game.mission_name_display(), game.tr),
                            objective=localize(game.mission_objective_display(), game.tr),
                            remaining_s=remaining)
@@ -626,9 +636,9 @@ class CommanderBridge:
         self._status["seq"] = self._seq
         state = dict(protocol=1, version=APP_VERSION, session=self._session,
                      epoch=self._epoch, revision=self._revision, seq=self._seq,
-                     phase=phase, commands_allowed=self._status["commands_allowed"],
-                     language=game.preferences.language,
-                      clock=clock, mission=mission,
+                      phase=phase, commands_allowed=self._status["commands_allowed"],
+                      language=game.preferences.language,
+                      clock=clock, environment=environment, mission=mission,
                      ownship=ownship, tracks=rows, crew_target=target,
                      proposal=self.proposal,
                      events=[dict(e, message=game.tr(e["message"])) for e in self._events],

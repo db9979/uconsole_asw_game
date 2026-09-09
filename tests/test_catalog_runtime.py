@@ -50,7 +50,7 @@ def test_helicopter_torpedo_applies_supplied_difficulty_hit_envelope():
 
 def test_submarine_decoy_behavior_matches_packaged_json():
     profile = _packaged_entry("decoys.json", "decoy")
-    submarine = Sub(10.0, 10.0, 50.0, 0.0, "diesel_alt",
+    submarine = Sub(10.0, 10.0, 50.0, 0.0, "sub_03",
                     random.Random(2))
     submarine.state = "SINKING"
     submarine.sink_left = 10.0
@@ -63,6 +63,7 @@ def test_submarine_decoy_behavior_matches_packaged_json():
     )
     submarine.update(0.1, SimpleNamespace(), world)
     assert submarine.pending_decoys == [(10.0, 10.0)]
+    assert submarine.countermeasure_store.remaining_total == 11
     assert submarine._decoy_cd == profile["cooldown_s"]
     assert config.SUB_DECOY_CHANCE == profile["chance"]
     assert config.SUB_DECOY_COOLDOWN_S == profile["cooldown_s"]

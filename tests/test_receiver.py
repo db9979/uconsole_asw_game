@@ -272,3 +272,22 @@ def test_broadband_sources_have_independent_deterministic_noise():
                                atol=3e-8)
     assert not np.array_equal(first.samples, second.samples)
     np.testing.assert_array_equal(mixed.samples, run([b, a], blocks=1).samples)
+
+
+@pytest.mark.parametrize("kind", ["broadband", "cavitation"])
+def test_first_broadband_and_cavitation_block_is_finite_and_nonzero(kind):
+    receiver, background = AcousticReceiver(17), AcousticReceiver(17)
+    item = source(seed=11, lines=[])
+    if kind == "broadband":
+        item["broadband"] = {"level": .8, "low_hz": 100, "high_hz": 700}
+    sources = [item] if kind == "broadband" else []
+    cavitation = .7 if kind == "cavitation" else 0.0
+    receiver.update(sources, 0, 24, 0, 0, 0,
+                    own_cavitation=cavitation)
+    background.update([], 0, 24, 0, 0, 0)
+    assert np.isfinite(receiver.samples).all()
+    assert np.any(receiver.samples - background.samples)
+    if kind == "broadband":
+        assert receiver._source_states[(11, 0)][2] is not None
+    else:
+        assert receiver._cav_ola is not None

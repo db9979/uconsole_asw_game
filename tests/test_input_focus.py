@@ -91,7 +91,7 @@ def test_every_station_reachable_from_every_station(game):
             assert game.station is destination
     game.station = Station.BRIDGE
     press(game, pygame.K_TAB, mod=pygame.KMOD_SHIFT)
-    assert game.station is Station.HELICOPTER
+    assert game.station is Station.ELOKA
 
 
 def test_active_station_number_cycles_only_its_real_pages(game):
@@ -119,6 +119,10 @@ def test_numeric_entry_owns_station_digits(game):
     press(game, pygame.K_2)
     assert game.station is Station.BRIDGE
     assert game.input_mode == "course" and game.input_buffer == "2"
+
+    press(game, pygame.K_9)
+    assert game.station is Station.BRIDGE
+    assert game.input_buffer == "29"
 
 
 def test_team_assignment_allows_teams_to_share_selected_room(game):

@@ -313,6 +313,36 @@ def station_hit_target(game, pos):
         return None
     x, width = rect.x + 14, rect.w - 28
     top = rect.y + 6 + 8 + layout.font(20).get_linesize() + 8
+    if game.station is Station.ELOKA:
+        if game.damage.station_down("opz"):
+            return layout.tooltip_payload(
+                "eloka.tooltip.picture_title", "eloka.state.disabled",
+                target_id="eloka:disabled")
+        hovered = eloka_track_at(game, pos)
+        selected = game.selected_eloka_track()
+        inspected = (hovered if hovered is not None else selected
+                     if selected is not None
+                     and eloka_regions()["evidence"].collidepoint(pos) else None)
+        if inspected is not None:
+            annotation = game.eloka_annotation(inspected.track_key)
+            return layout.tooltip_payload(
+                message("eloka.tooltip.track_title", track=inspected.track_key),
+                message("eloka.tooltip.bearing", bearing=f"{inspected.bearing:05.1f}",
+                        error=f"{inspected.bearing_uncertainty_deg:.1f}"),
+                message("eloka.tooltip.fingerprint",
+                        frequency=f"{inspected.frequency_hz / 1e9:.3f}",
+                        prf=(f"{inspected.prf_hz:.0f}" if inspected.prf_hz is not None else "--"),
+                        modulation=localize("eloka.modulation." + inspected.modulation_code)),
+                message("eloka.tooltip.annotation",
+                        assignment=annotation or localize("common.unknown")),
+                "control.eloka",
+                target_id=f"eloka:{inspected.track_key}")
+        return layout.tooltip_payload(
+            "eloka.tooltip.picture_title",
+            message("eloka.tooltip.track_count", count=len(game.eloka_tracks())),
+            "eloka.tooltip.observation_limit",
+            "control.eloka",
+            target_id="eloka:picture")
     if game.station is Station.BRIDGE:
         alarm_h = 54 if len(game.asm_tracks()) + bool(game.damage.avg_flood() >= 25) > 1 else 38
         if pygame.Rect(x, top, width, alarm_h).collidepoint(pos):
@@ -450,6 +480,152 @@ def station_hit_target(game, pos):
 def _near_point(pos, point, radius):
     return ((pos[0] - point[0]) ** 2 + (pos[1] - point[1]) ** 2
             <= radius ** 2)
+
+
+def eloka_regions(station_rect=None) -> dict[str, pygame.Rect]:
+    """Shared full-station geometry for ELOKA drawing and hit testing."""
+    station = pygame.Rect(station_rect or config.STATION_RECT)
+    inner = pygame.Rect(station.x + 14, station.y + 6,
+                        station.w - 28, station.h - 12)
+    top = (inner.y + 8 + layout.font(20).get_linesize() + 8)
+    gap = 18
+    left_w = int((inner.w - gap) * .43)
+    height = max(1, inner.bottom - top - 8)
+    return {
+        "picture": pygame.Rect(inner.x, top, left_w, height),
+        "evidence": pygame.Rect(inner.x + left_w + gap, top,
+                                inner.w - left_w - gap, height),
+    }
+
+
+def _eloka_visible_tracks(game) -> tuple:
+    tracks = game.eloka_tracks()
+    selected = next((index for index, track in enumerate(tracks)
+                     if track.track_key == game.eloka_selected_track_key), 0)
+    start = max(0, min(selected - 5, max(0, len(tracks) - 11)))
+    return tracks[start:start + 11]
+
+
+def eloka_track_at(game, pos, station_rect=None):
+    """Return the displayed passive intercept at a canvas position."""
+    if pos is None or game.damage.station_down("opz"):
+        return None
+    regions = eloka_regions(station_rect)
+    if not regions["picture"].collidepoint(pos):
+        return None
+    row_y = regions["picture"].y + layout.font(16).get_linesize() + 16
+    row_height = 30
+    tracks = _eloka_visible_tracks(game)
+    for index, track in enumerate(tracks):
+        if pygame.Rect(regions["picture"].x, row_y + index * row_height,
+                       regions["picture"].w, 25).collidepoint(pos):
+            return track
+    return None
+
+
+@localized
+def draw_eloka_view(game, tr=None) -> None:
+    """Render only the detached passive ESM picture and operator annotations."""
+    layout.configure_for(game)
+    surface = game.screen
+    station = pygame.Rect(config.STATION_RECT)
+    layout.panel(surface, _srect(), "station.eloka.title")
+    regions = eloka_regions()
+    left = layout.box(surface, regions["picture"], "eloka.panel.intercepts")
+    lx, ly, lw, _ = left
+    tracks = _eloka_visible_tracks(game)
+    if game.damage.station_down("opz"):
+        layout.blit_block(surface, "eloka.state.disabled", lx, ly, lw, 48,
+                          color=config.COLOR_DANGER, size=17)
+    elif not tracks:
+        layout.blit_block(surface, "eloka.state.empty", lx, ly, lw, 48,
+                          color=config.COLOR_TEXT_DIM, size=16)
+    else:
+        for track in tracks:
+            selected = track.track_key == game.eloka_selected_track_key
+            if selected:
+                pygame.draw.rect(surface, (30, 44, 30),
+                                 (lx - 5, ly - 2, lw + 10, 27))
+                pygame.draw.rect(surface, config.COLOR_WARN,
+                                 (lx - 5, ly - 2, 3, 27))
+            age = track.age(game.sim_t)
+            layout.blit_line(
+                surface,
+                message("eloka.line.intercept",
+                        prefix=">" if selected else " ",
+                        track=track.track_key[-5:].upper(),
+                        bearing=f"{track.bearing:05.1f}",
+                        frequency=f"{track.frequency_hz / 1e9:.3f}",
+                        quality=f"{track.display_quality(game.sim_t):.0%}",
+                        age=f"{age:.0f}"),
+                (lx, ly, lw, 25),
+                config.COLOR_WARN if selected else
+                config.COLOR_TEXT if age < game.esm_picture.stale_s / 2
+                else config.COLOR_TEXT_DIM,
+                size=14)
+            ly += 30
+
+    right = layout.box(surface, regions["evidence"], "eloka.panel.evidence")
+    rx, ry, rw, rh = right
+    selected = (None if game.damage.station_down("opz")
+                else game.selected_eloka_track())
+    if selected is None:
+        layout.blit_block(surface, "eloka.state.no_selection", rx, ry, rw, 42,
+                          color=config.COLOR_TEXT_DIM, size=16)
+    else:
+        modulation = localize("eloka.modulation." + selected.modulation_code)
+        prf = f"{selected.prf_hz:.0f} Hz" if selected.prf_hz is not None else "--"
+        values = (
+            ("eloka.field.intercept", selected.track_key),
+            ("eloka.field.bearing", message("eloka.value.bearing",
+                                             bearing=f"{selected.bearing:05.1f}",
+                                             error=f"{selected.bearing_uncertainty_deg:.1f}")),
+            ("eloka.field.frequency", message("eloka.value.frequency",
+                                               frequency=f"{selected.frequency_hz / 1e9:.3f}")),
+            ("eloka.field.prf", prf),
+            ("eloka.field.modulation", modulation),
+            ("eloka.field.quality_age", message(
+                "eloka.value.quality_age",
+                quality=f"{selected.display_quality(game.sim_t):.0%}",
+                age=f"{selected.age(game.sim_t):.1f}")),
+            ("eloka.field.annotation",
+             game.eloka_annotation(selected.track_key) or localize("common.unknown")),
+        )
+        for label, value in values:
+            layout.status_line(surface, rx, ry, rw, label, value,
+                               label_w=155, size=14)
+            ry += 24
+        ry += 5
+        layout.blit_line(surface, "eloka.heading.candidates", (rx, ry, rw, 22),
+                         config.COLOR_TEXT, size=15)
+        ry += 23
+        for candidate in game.eloka_candidates(selected)[:4]:
+            layout.blit_line(surface, message(
+                "eloka.line.candidate", emitter=candidate.emitter_key,
+                score=f"{candidate.score:.0%}"), (rx, ry, rw, 21),
+                config.COLOR_TEXT_DIM, size=13)
+            ry += 21
+        ry += 4
+        layout.blit_line(surface, "eloka.heading.correlations", (rx, ry, rw, 22),
+                         config.COLOR_TEXT, size=15)
+        ry += 23
+        correlations = game.eloka_correlations(selected)
+        if not correlations:
+            layout.blit_line(surface, "eloka.correlation.none", (rx, ry, rw, 21),
+                             config.COLOR_TEXT_DIM, size=13)
+            ry += 21
+        else:
+            for correlation in correlations[:3]:
+                layout.blit_line(surface, message(
+                    "eloka.line.correlation", source=correlation.source,
+                    track=correlation.track_id, score=f"{correlation.score:.0%}",
+                    ambiguity=localize("eloka.correlation.ambiguous")
+                    if correlation.ambiguous else ""),
+                    (rx, ry, rw, 21), config.COLOR_OK, size=13)
+                ry += 21
+    footer_y = right[1] + right[3] - 25
+    layout.blit_line(surface, "control.eloka", (rx, footer_y, rw, 22),
+                     config.COLOR_TEXT_DIM, size=13)
 
 
 def opz_ppi_rect(station_rect=None) -> pygame.Rect:
@@ -717,9 +893,9 @@ def draw_opz_view(game, tr=None) -> None:
                         label_w=70, size=13, color=weather_color)
     py += 23
     ais_count = sum(1 for t in cic_tracks if t["kind"] == "AIS")
-    esm_count = sum(1 for t in cic_tracks if t["source"] in ("ESM", "HOJ"))
+    hoj_count = sum(1 for t in cic_tracks if t["source"] == "HOJ")
     layout.status_line(s, x, py, w, "ui.picture",
-                        message("opz.line.picture", ais=ais_count, esm=esm_count),
+                        message("opz.line.picture", ais=ais_count, hoj=hoj_count),
                         label_w=80, size=13)
     py += 23
     layout.status_line(s, x, py, w, "VLS:",
@@ -1337,99 +1513,3 @@ def draw_damage_view(game, tr=None) -> None:
     layout.blit_line(s, "control.damage_select",
                      (rect.x + 16, footer_y + 26, rect.w - 32, 21),
                      config.COLOR_TEXT_DIM, size=14, align="right")
-
-
-# --- Radar (M4, M12) -------------------------------------------------------
-
-@localized
-def draw_radar_view(game, tr=None) -> None:
-    layout.configure_for(game)
-    s = game.screen
-    cx, cy, r = 840, 300, 200
-    pygame.draw.rect(s, (14, 24, 18), (655, 44, 370, 470))
-    pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), r, 2)
-    for rr in (r // 3, (2 * r) // 3):
-        pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), rr, 1)
-    pygame.draw.line(s, config.COLOR_SONAR_RING, (cx - r, cy), (cx + r, cy), 1)
-    pygame.draw.line(s, config.COLOR_SONAR_RING, (cx, cy - r), (cx, cy + r), 1)
-
-    ang = math.radians((game._t * 120.0) % 360.0)
-    if game.radar_on:
-        pygame.draw.line(s, config.COLOR_TEXT, (cx, cy),
-                         (int(cx + r * math.cos(ang)), int(cy - r * math.sin(ang))), 2)
-
-    # Fregatten-Kurs (nautisch: 0°=Norden/-y – wie Karte & Sonar-PPI)
-    hang = math.radians(game.ship.course - 90.0)
-    pygame.draw.line(s, config.COLOR_TEXT, (cx, cy),
-                     (int(cx + 18 * math.cos(hang)),
-                      int(cy + 18 * math.sin(hang))), 3)
-    pygame.draw.circle(s, config.COLOR_TEXT, (cx, cy), 4)
-
-    px_per_nm = r / config.RADAR_RANGE_NM
-    for tr in game.radar_tracks():
-        kind, dist, brg = tr["kind"], tr["dist"], tr["bearing"]
-        rad = math.radians(brg)
-        if kind == "HOJ":
-            ex, ey = cx + r * math.sin(rad), cy - r * math.cos(rad)
-            pygame.draw.line(s, config.COLOR_DANGER, (cx, cy), (int(ex), int(ey)), 2)
-            s.blit(game.font.render("HOJ", True, config.COLOR_DANGER),
-                   (int(ex) - 10, int(ey) - 18))
-        else:
-            d = min(dist, config.RADAR_RANGE_NM)
-            bx, by = (cx + d * px_per_nm * math.sin(rad),
-                      cy - d * px_per_nm * math.cos(rad))
-            if kind == "AIS":
-                if tr["hostile"]:
-                    col = config.COLOR_CONTACT_WARSHIP
-                else:
-                    col = config.COLOR_CONTACT_ZIVIL
-                pygame.draw.rect(s, col, (int(bx) - 3, int(by) - 3, 6, 6))
-                s.blit(game.font.render(tr["label"], True, col),
-                       (int(bx) + 6, int(by) - 8))
-            else:  # ASM
-                pygame.draw.rect(s, config.COLOR_DANGER,
-                                 (int(bx) - 4, int(by) - 4, 8, 8), 2)
-                s.blit(game.font.render("ASM", True, config.COLOR_DANGER),
-                       (int(bx) + 6, int(by) - 8))
-
-    if not game.radar_on:
-        txt = game.font_big.render(localize("RADAR AUS – EMCON (R)"),
-                                   True, config.COLOR_WARN)
-        s.blit(txt, (cx - txt.get_width() // 2, cy - txt.get_height() // 2))
-
-    for civ, brg in game.esm_contacts():
-        rad = math.radians(brg)
-        ex = cx + r * math.sin(rad)
-        ey = cy - r * math.cos(rad)
-        pygame.draw.line(s, (140, 150, 220), (cx, cy), (int(ex), int(ey)), 1)
-        s.blit(game.font.render("ESM", True, (140, 150, 220)),
-               (int(ex) + 4, int(ey) - 14))
-
-    pr, py = _panel(game, 385, None, "Radar / Oberfläche")
-    x = pr[0] + 12
-    w = pr[2] - 24
-    tracks = game.radar_tracks()
-    n_aism = sum(1 for t in tracks if t["kind"] in ("ASM", "HOJ"))
-    n_ais = sum(1 for t in tracks if t["kind"] == "AIS")
-    layout.status_line(s, x, py, w, "Radar:",
-                       "AN" if game.radar_on else "AUS", label_w=80, size=14)
-    py += 21
-    layout.status_line(s, x, py, w, "ESM:", str(len(game.esm_contacts())),
-                       label_w=80, size=14)
-    py += 21
-    layout.status_line(s, x, py, w, "Tracks:", f"ASM {n_aism} | AIS {n_ais}",
-                       label_w=80, size=14)
-    py += 21
-    layout.status_line(s, x, py, w, "VLS:",
-                       f"{game.vls_cells}/{config.VLS_CELLS}  Chaff {game.chaff_cd:.0f}s",
-                       label_w=80, size=14)
-    py += 26
-    layout.blit_block(s, "E: ESSM   G: Chaff   ←/→: Track", x, py, w, 18,
-                      color=config.COLOR_TEXT_DIM, size=13)
-    py += 20
-    layout.blit_block(s, "CIWS: automatisch < 1.5 NM", x, py, w, 18,
-                      color=config.COLOR_OK, size=13)
-    py += 20
-    if game.incident:
-        layout.blit_block(s, "!! POLITISCHER VORFALL !!", x, py, w, 20,
-                          color=config.COLOR_DANGER, size=14)

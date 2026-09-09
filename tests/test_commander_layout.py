@@ -4,10 +4,17 @@ import json
 import shutil
 import subprocess
 import threading
+from dataclasses import replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from unittest.mock import Mock
 
+import pygame
 import pytest
 
+from src.commander import local
+from src.core.game import Game
+from src.core.i18n import Translator, load_catalog, pseudolocale
+from src.ui import layout
 from test_commander_assets import ASSETS, PREFIX, Document, browser_state, catalogs
 
 
@@ -19,10 +26,16 @@ window.addEventListener("unhandledrejection", (event) => failures.push(String(ev
 window.requestAnimationFrame = (callback) => setTimeout(() => callback(performance.now()), 16);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let sector;
+let lookoutArcs = [];
 const strokeRect = CanvasRenderingContext2D.prototype.strokeRect;
 CanvasRenderingContext2D.prototype.strokeRect = function (x, y, width, height) {
   if (this.getLineDash().length) sector = {x, y, width, height};
   return strokeRect.call(this, x, y, width, height);
+};
+const arc = CanvasRenderingContext2D.prototype.arc;
+CanvasRenderingContext2D.prototype.arc = function (x, y, radius, start, end, ...rest) {
+  if (this.canvas.id === "lookout") lookoutArcs.push({x, y, radius, start, end});
+  return arc.call(this, x, y, radius, start, end, ...rest);
 };
 async function run() {
   for (let i = 0; $("shell").hidden && i < 300; i++) await sleep(20);
@@ -35,15 +48,27 @@ async function run() {
     const r = element.getBoundingClientRect();
     return {x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom, right: r.right};
   };
+  const overlap = (a, b) => Math.min(a.right, b.right) - Math.max(a.x, b.x) > 1 &&
+    Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y) > 1;
   const selectors = [".workspace", ".contacts-panel", ".chart-panel", "#chart", ".details-panel", ".support-grid"];
   const boxes = Object.fromEntries(selectors.map((selector) => [selector, rect(document.querySelector(selector))]));
   const panels = [...document.querySelectorAll(".workspace > .panel, .support-grid > .panel")];
   const intersections = [];
   panels.forEach((a, i) => panels.slice(i + 1).forEach((b) => {
     const x = rect(a), y = rect(b);
-    if (Math.min(x.right, y.right) - Math.max(x.x, y.x) > 1 &&
-        Math.min(x.bottom, y.bottom) - Math.max(x.y, y.y) > 1) intersections.push([a.className, b.className]);
+    if (overlap(x, y)) intersections.push([a.className, b.className]);
   }));
+  const navigationControls = [...$("navigation-form").querySelectorAll("label, input, button")];
+  const navigationIntersections = [];
+  navigationControls.forEach((a, i) => navigationControls.slice(i + 1).forEach((b) => {
+    if (overlap(rect(a), rect(b))) navigationIntersections.push([a.id || a.htmlFor, b.id || b.htmlFor]);
+  }));
+  const navigationLabels = ["navigation-course", "navigation-speed"].every((id) =>
+    document.querySelector(`label[for="${id}"]`)?.control === $(id));
+  const navigationControlSize = ["navigation-course", "navigation-speed", "propose-navigation"].every((id) => {
+    const bounds = rect($(id));
+    return bounds.width > 50 && bounds.height >= parseFloat(getComputedStyle(document.documentElement).fontSize) * 2.5;
+  });
   const scrolls = {};
   for (const selector of ["#track-list", ".details-panel", "#damage-list", "#event-list"]) {
     const element = document.querySelector(selector);
@@ -63,12 +88,83 @@ async function run() {
   const visible = Math.min(rect(last).bottom, rect($("track-list")).bottom) - Math.max(rect(last).y, rect($("track-list")).y);
   const keyboardReachable = document.activeElement === last && visible > 50;
   $("track-list").scrollTop = 0;
-  window.scrollTo(0, 0);
+  $("propose-navigation").scrollIntoView({block: "nearest"});
+  $("propose-navigation").focus();
+  const navigationAction = rect($("propose-navigation"));
+  const detailBounds = rect(document.querySelector(".details-panel"));
+  const navigationReachable = document.activeElement === $("propose-navigation") &&
+    navigationAction.y >= detailBounds.y - 1 && navigationAction.bottom <= detailBounds.bottom + 1;
+  document.querySelector(".details-panel").scrollTop = 0;
+  const operationsPanel = $("panel-operations");
+  const supportReachable = [...document.querySelectorAll(".support-grid > .panel")].every((panel) => {
+    panel.scrollIntoView({block: "start"});
+    const bounds = rect(panel);
+    const owner = rect(operationsPanel);
+    return bounds.y >= owner.y - 1 && bounds.y < owner.bottom - 40;
+  });
+  document.querySelector("footer").scrollIntoView({block: "end"});
+  const footerBounds = rect(document.querySelector("footer"));
+  const panelBounds = rect(operationsPanel);
+  const footerReachable = footerBounds.y < panelBounds.bottom && footerBounds.bottom > panelBounds.y;
+  operationsPanel.scrollTop = Math.min(123, operationsPanel.scrollHeight - operationsPanel.clientHeight);
+  const operationScroll = operationsPanel.scrollTop;
+  $("tab-lookout").click();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const inactiveHidden = operationsPanel.hidden && !$("panel-lookout").hidden;
+  const lookoutPanel = $("panel-lookout");
+  const lookoutCanvas = $("lookout");
+  const lookoutChildren = [document.querySelector(".lookout-bar"), $("lookout-scope"), $("lookout-note")];
+  const lookoutIntersections = [];
+  lookoutChildren.forEach((a, i) => lookoutChildren.slice(i + 1).forEach((b) => {
+    if (overlap(rect(a), rect(b))) lookoutIntersections.push([a.className, b.className]);
+  }));
+  const lookoutBounds = rect(lookoutPanel);
+  const lookoutPlot = rect(lookoutCanvas);
+  const lookoutControls = [$("lookout-zoom-in"), $("lookout-zoom-out"), $("lookout-reset")];
+  $("lookout-reset").focus();
+  const lookout = {
+    panel: lookoutBounds, plot: lookoutPlot,
+    contained: lookoutChildren.every((element) => {
+      const bounds = rect(element);
+      return bounds.x >= lookoutBounds.x - 1 && bounds.right <= lookoutBounds.right + 1 &&
+        bounds.y >= lookoutBounds.y - 1 && bounds.bottom <= lookoutBounds.bottom + 1;
+    }),
+    intersections: lookoutIntersections,
+    controls: lookoutControls.every((control) => {
+      const bounds = rect(control);
+      return bounds.width > 20 && bounds.height >= 24 && !control.disabled;
+    }),
+    focus: document.activeElement === $("lookout-reset"),
+    backing: [lookoutCanvas.width, lookoutCanvas.height],
+    client: [lookoutCanvas.clientWidth, lookoutCanvas.clientHeight],
+    overflow: getComputedStyle(lookoutPanel).overflowY,
+    panelScroll: lookoutPanel.scrollHeight - lookoutPanel.clientHeight,
+    pageHeight: document.documentElement.scrollHeight,
+    pageWidth: document.documentElement.scrollWidth,
+    pageScroll: window.scrollY,
+    rings: lookoutArcs.filter((entry) => Math.abs(entry.x - lookoutCanvas.clientWidth / 2) < 1 &&
+      Math.abs(entry.y - lookoutCanvas.clientHeight / 2) < 1).map((entry) => entry.radius),
+  };
+  $("tab-operations").click();
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+  const panelScrollPreserved = operationsPanel.scrollTop === operationScroll;
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const tabIntersections = [];
+  tabs.forEach((a, i) => tabs.slice(i + 1).forEach((b) => {
+    if (overlap(rect(a), rect(b))) tabIntersections.push([a.id, b.id]);
+  }));
+  const pageHeight = document.documentElement.scrollHeight;
+  const pageScroll = window.scrollY;
+  operationsPanel.scrollTop = 0;
   parent.scrollTo(0, 0);
   const frozen = $("chart").toDataURL();
   await sleep(700);
   const report = {
     width: innerWidth, height: innerHeight, boxes, sector, intersections, scrolls, keyboardReachable,
+    navigationIntersections, navigationLabels, navigationControlSize, navigationReachable,
+    supportReachable, footerReachable, pageHeight, pageScroll, operationScroll,
+    panelHeight: operationsPanel.clientHeight, panelOverflow: getComputedStyle(operationsPanel).overflowY,
+    panelScrollPreserved, inactiveHidden, tabIntersections, lookout,
     pageWidth: document.documentElement.scrollWidth, contacts: $("track-list").children.length,
     damage: $("damage-list").children.length, errors: failures,
     stable: frozen === $("chart").toDataURL(),
@@ -182,7 +278,31 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
     assert report["width"] == css_width and report["height"] == css_height
     assert report["pageWidth"] <= css_width + 1
     assert not report["intersections"]
-    assert report["keyboardReachable"] and report["stable"]
+    assert not report["navigationIntersections"]
+    assert report["navigationLabels"] and report["navigationControlSize"]
+    assert report["keyboardReachable"] and report["navigationReachable"]
+    assert report["supportReachable"] and report["footerReachable"]
+    assert report["pageHeight"] <= css_height + 1
+    assert report["pageScroll"] == 0
+    assert report["panelHeight"] > 50 and report["panelOverflow"] == "auto"
+    assert report["operationScroll"] > 0 and report["panelScrollPreserved"]
+    assert report["inactiveHidden"] and not report["tabIntersections"]
+    lookout = report["lookout"]
+    assert lookout["contained"] and not lookout["intersections"]
+    assert lookout["controls"] and lookout["focus"]
+    assert lookout["plot"]["width"] > 50 and lookout["plot"]["height"] > 30
+    assert lookout["backing"] == lookout["client"]
+    assert lookout["overflow"] == "hidden" and lookout["panelScroll"] <= 1
+    assert lookout["pageWidth"] <= css_width + 1 and lookout["pageHeight"] <= css_height + 1
+    assert lookout["pageScroll"] == 0
+    rings = sorted(set(round(radius, 3) for radius in lookout["rings"]))
+    if lookout["client"][1] < 120:
+        assert len(rings) >= 2 and rings[-1] > 15
+        assert rings[-1] - rings[-2] > 7
+    else:
+        assert len(rings) >= 4
+    assert max(rings) <= min(lookout["client"]) / 2 + 1
+    assert report["stable"]
     for selector, scroll in report["scrolls"].items():
         assert scroll["height"] > 50, selector
         assert scroll["contained"] and scroll["overflow"] == "auto", (selector, scroll)
@@ -200,3 +320,59 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
     else:
         assert boxes[".chart-panel"]["bottom"] <= boxes[".contacts-panel"]["y"]
         assert boxes[".chart-panel"]["bottom"] <= boxes[".details-panel"]["y"]
+
+
+@pytest.mark.parametrize(("width", "height", "zoom"), [
+    (844, 390, 1), (844, 390, 2), (1280, 1024, 4),
+])
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_short_landscape_and_400_percent_lookout_layout(
+        tmp_path, width, height, zoom, language):
+    test_dense_commander_layout(tmp_path, width, height, zoom, language)
+
+
+@pytest.mark.parametrize("language", ["en", "de", "pseudo"])
+@pytest.mark.parametrize("large", [False, True])
+@pytest.mark.parametrize("kind", ["target", "navigation"])
+def test_native_crew_confirmation_layout_is_bounded(language, large, kind, monkeypatch):
+    game = Game(seed=73, audio_enabled=False, language="en")
+    try:
+        game.preferences = replace(game.preferences, large_text=large)
+        game.translator = Translator("en")
+        if language == "pseudo":
+            game.translator.catalog = pseudolocale(load_catalog("en"))
+        elif language == "de":
+            game.translator = Translator("de")
+        game.tr = game.translator.t
+        game._apply_text_size()
+        console = game.commander
+        console.address = ("192.168.100.200", 65535)
+        console.server = type("Server", (), {
+            "connected": True, "stop": lambda self: None,
+        })()
+        console.bridge._allowed = True
+        console.bridge._proposal = dict(
+            ref="ref", label="{authored} " + "K" * 256, status="pending")
+        console.bridge._navigation_proposal = dict(
+            course=359.999, speed_kn=25.0, status="pending")
+        console.bridge._pending_seq = 9
+        console._confirm_signature, _ = console._confirmation_state()
+        console._confirm_identity = (id(game.world), id(game.sonar))
+        console._confirm_requested = True
+        console.confirm_kind = kind
+        monkeypatch.setattr(local, "load_catalog", Mock(
+            side_effect=AssertionError("draw I/O")))
+        with layout.capture_text() as text:
+            console.draw_confirm(game)
+        canvas = pygame.Rect(0, 0, 1280, 720)
+        assert text
+        assert canvas.contains(console.confirm_rect())
+        assert all(canvas.contains(rect) for rect in console.confirm_button_rects())
+        for entry in text:
+            assert canvas.contains(entry["bounds"]), entry
+            assert entry["bounds"].contains(entry["rect"]), entry
+            assert "commander.confirm" not in entry["text"], entry
+    finally:
+        game.commander.stop()
+        game.audio.shutdown()
+        layout.configure_for(large_text=False)

@@ -10,9 +10,13 @@ from src.core.version import SPLASH_TEXT
 from src.ui import layout
 
 
+SPLASH_PING_SPEED_PX_S = 85.0
+SPLASH_PING_PERIOD_S = 180.0 / SPLASH_PING_SPEED_PX_S
+
+
 @localized
 def draw_splash(surface: pygame.Surface, elapsed_s: float,
-                 duration_s: float = 4.5, tr=None) -> None:
+                 tr=None) -> None:
     """Draw an original radar/sonar/ASW splash without external assets."""
     surface.fill((3, 10, 16))
     width, height = surface.get_size()
@@ -70,19 +74,21 @@ def draw_splash(surface: pygame.Surface, elapsed_s: float,
     pygame.draw.rect(surface, (15, 43, 52), (635, sub_y - 29, 55, 34))
     pygame.draw.line(surface, (56, 167, 164), (520, sub_y + 27),
                      (810, sub_y + 27), 2)
-    phase = (elapsed_s * 85.0) % 180.0
+    # The frigate's hull sonar sends a pulse down towards the submarine.
+    sonar_origin = (470, horizon + 56)
+    phase = (elapsed_s * SPLASH_PING_SPEED_PX_S) % 180.0
     for offset in (0, 58, 116):
         sonar_r = int(phase + offset)
-        if sonar_r < 190:
+        if sonar_r < 300:
             pygame.draw.arc(surface, (38, 123, 126),
-                            (655 - sonar_r, sub_y + 27 - sonar_r,
-                             sonar_r * 2, sonar_r * 2),
-                            math.radians(195), math.radians(345), 2)
+                             (sonar_origin[0] - sonar_r,
+                              sonar_origin[1] - sonar_r,
+                              sonar_r * 2, sonar_r * 2),
+                            math.radians(285), math.radians(345), 2)
 
     # Fade only affects text; geometry stays visible during skip debounce.
     fade_in = min(1.0, elapsed_s / .8)
-    fade_out = min(1.0, max(0.0, duration_s - elapsed_s) / .7)
-    intensity = max(.15, min(fade_in, fade_out))
+    intensity = max(.15, fade_in)
     title_color = tuple(int(c * intensity) for c in (145, 255, 198))
     layout.blit_line(surface, "U-JAGD / ASW", (70, 68, 650, 62),
                      title_color, size=42)

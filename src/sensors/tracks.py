@@ -42,8 +42,10 @@ class SensorTrack:
 class TrackPicture:
     """Merge current measurements and retain them briefly after contact loss."""
 
-    def __init__(self, stale_s: float = 8.0):
+    def __init__(self, stale_s: float = 8.0,
+                 maximum: int | None = None):
         self.stale_s = stale_s
+        self.maximum = maximum
         self._tracks: dict[str, SensorTrack] = {}
 
     @staticmethod
@@ -158,6 +160,10 @@ class TrackPicture:
             track.measurement_history.append(measurement)
             del track.measurement_history[:-config.OBS_HISTORY_MAX]
             track.measurement_epoch = epoch
+        if self.maximum is not None and len(self._tracks) > self.maximum:
+            evicted = min(self._tracks.values(), key=lambda item: (
+                item.last_seen, item.quality, item.track_id))
+            del self._tracks[evicted.track_id]
         return track
 
     def expire(self, now: float) -> None:
@@ -175,19 +181,12 @@ class TrackPicture:
         return [asdict(track) for track in self._tracks.values()]
 
     def restore(self, rows: list[dict]) -> None:
+        if self.maximum is not None and len(rows) > self.maximum:
+            raise ValueError("track picture exceeds limit")
         self._tracks = {}
         names = {field.name for field in fields(SensorTrack)}
         for row in rows:
-            values = {key: value for key, value in row.items() if key in names}
-            track = SensorTrack(**values)
-            if track.raw_bearing is None:
-                track.raw_bearing = track.bearing
-                track.raw_range_nm = track.range_nm
-                track.raw_x, track.raw_y = track.x, track.y
-                track.raw_course = track.course
-            if track.measurement_history is None:
-                track.measurement_history = []
-            if (track.position_seen is None
-                    and track.x is not None and track.y is not None):
-                track.position_seen = track.last_seen
+            if not isinstance(row, dict) or set(row) != names:
+                raise ValueError("invalid track fields")
+            track = SensorTrack(**row)
             self._tracks[track.track_id] = track

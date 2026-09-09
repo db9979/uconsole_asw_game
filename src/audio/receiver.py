@@ -6,7 +6,9 @@ applies to every source, and DEMON measures only the resulting mixed audio.
 
 Broadband: sources may carry a "broadband" dict {level, low_hz, high_hz}
 (target-internal band energy). Every source receives an independent,
-seed-derived and replayable noise stream. Frequencies and levels are illustrative
+seed-derived, replayable and block-continuous noise stream (the band limit is
+applied with 50% overlap-add, so consecutive 250 ms blocks stay sample-
+continuous at their boundary). Frequencies and levels are illustrative
 synthesis parameters, not recordings or claims about real platform spectra.
 """
 
@@ -104,6 +106,9 @@ class AcousticReceiver:
         self._angles = np.arange(180) * 2.0
         self._frequencies = np.fft.rfftfreq(self._history.size, 1 / self.sample_rate)
         self._block_freqs = np.fft.rfftfreq(self._time.size, 1 / self.sample_rate)
+        self._ola_window = 0.5 * (1.0
+                                  - np.cos(2.0 * np.pi * np.arange(self._time.size)
+                                           / self._time.size))
         centers = np.array([config.lofar_bin_freq(i)
                             for i in range(config.LOFAR_BINS)])
         widths = np.where(centers < 40, 1, np.where(centers < 100, 2, 5))
@@ -122,6 +127,8 @@ class AcousticReceiver:
         self._rng = np.random.default_rng(self.seed)
         self._source_states = {}
         self._shaft_state = {}
+        self._cav_ola = None
+        self._cav_rms = 0.0
         self._blocks = deque(maxlen=self.AVAILABLE_BLOCKS)
         self._band_cache.clear()
         self._history.fill(0)
@@ -142,8 +149,8 @@ class AcousticReceiver:
 
         Retains current + one handoff block independently of devices/consumers.
         A nonconsecutive first sequence signals overrun or reset, never silently
-        concatenate it. At 1x retry unaccepted blocks every frame; at >1x select
-        only the newest at wall-time cadence as an explicitly sampled preview.
+        concatenate it. At 1x retry unaccepted blocks every frame; at time
+        scales above one listening is silent, so callers discard availability.
         Reset clears availability and advances sequence; no zero warm-up block
         is published. Callers must not mutate the returned sample arrays.
         """
@@ -199,14 +206,44 @@ class AcousticReceiver:
             self._band_cache.popitem(last=False)
         return mask
 
-    @staticmethod
-    def _band_audio(noise: np.ndarray, mask: np.ndarray, rms: float) -> np.ndarray:
-        spectrum = np.fft.rfft(noise) * mask
-        signal = np.fft.irfft(spectrum, n=noise.size)
-        actual = float(np.sqrt(np.mean(signal**2)))
-        if actual > 1e-12:
-            signal *= rms / actual
-        return signal
+    def _frame_audio(self, frame: np.ndarray, mask: np.ndarray,
+                     window: np.ndarray) -> np.ndarray:
+        return np.fft.irfft(np.fft.rfft(window * frame) * mask, n=frame.size)
+
+    def _band_audio(self, noise: np.ndarray, mask: np.ndarray, rms: float,
+                    state: tuple | None):
+        """Streaming 50% overlap-add band limit; returns (block, next state).
+
+        Two half-overlapped analysis frames per block keep the FFT band limit
+        continuous at the 250 ms boundary. The emitted block is the complete
+        overlap-add sum and therefore lags its input by half a block. ``state``
+        is ``(previous input half, filtered overlap)``; a missing or mismatched
+        state starts from zero padding. A fixed transfer gain targets ``rms``
+        without independently normalizing blocks and introducing gain steps.
+        """
+        n = noise.size
+        half = n // 2
+        if n < 2 or n % 2:
+            return np.zeros(n), None
+        window = (self._ola_window if n == self._ola_window.size
+                  else 0.5 * (1.0 - np.cos(2.0 * np.pi * np.arange(n) / n)))
+        weighted_power = (mask[0] ** 2 + mask[-1] ** 2
+                          + 2.0 * np.sum(mask[1:-1] ** 2)) / n
+        scaled_mask = mask * (rms / math.sqrt(weighted_power)) \
+            if weighted_power > 1e-24 else mask
+        previous, overlap = state if state is not None else (None, None)
+        if (previous is None or overlap is None
+                or previous.shape != (half,) or overlap.shape != (half,)):
+            previous = np.zeros(half)
+            overlap = np.zeros(half)
+        output = []
+        for current in (noise[:half], noise[half:]):
+            filtered = self._frame_audio(
+                np.concatenate((previous, current)), scaled_mask, window)
+            output.append(overlap + filtered[:half])
+            previous = current.copy()
+            overlap = filtered[half:]
+        return np.concatenate(output), (previous, overlap)
 
     def update(self, sources, bearing_deg, beam_width_deg, own_noise,
                sea_state, own_speed, own_cavitation=0.0,
@@ -295,7 +332,8 @@ class AcousticReceiver:
         block_index = round(self.elapsed / self.block_s)
         next_states = {}
         for key in dict.fromkeys((*entries, *self._source_states)):
-            old_direction, previous = self._source_states.get(key, (0, {}))
+            old_direction, previous, bb_ola, old_bb = self._source_states.get(
+                key, (0, {}, None, None))
             level, direction, phase, lines, bb_level, bb_low, bb_high = entries.get(
                 key, (0, old_direction, 0, (), 0, 0, 0))
             desired = {}
@@ -322,18 +360,34 @@ class AcousticReceiver:
                     desired[index, "am_high"] = (700 + freq, .035 * level * amp,
                                                    4 * phase - np.pi / 2)
             source_audio, state = self._components(desired, previous)
-            if key in entries:
-                next_states[key] = (direction, state)
             if bb_level > 0:
                 source_seed = key[0]
                 seed_words = (self.seed & 0xffffffff, self.seed >> 32,
                               source_seed & 0xffffffff, source_seed >> 32,
                               block_index)
                 band_noise = np.random.default_rng(
-                    np.random.SeedSequence(seed_words)).normal(0, 1, self._time.size)
+                    np.random.SeedSequence(seed_words)).normal(0, 1,
+                                                               self._time.size)
                 mask = self._band_mask(bb_low, bb_high)
-                source_audio += self._band_audio(band_noise, mask,
-                                                 _BROADBAND_GAIN * level * bb_level)
+                broadband, bb_ola = self._band_audio(
+                    band_noise, mask,
+                    _BROADBAND_GAIN * level * bb_level, bb_ola)
+                source_audio = source_audio + broadband
+                bb_params = (bb_low, bb_high,
+                             _BROADBAND_GAIN * level * bb_level)
+            elif bb_ola is not None and old_bb is not None:
+                old_low, old_high, old_rms = old_bb
+                broadband, _ = self._band_audio(
+                    np.zeros(self._time.size),
+                    self._band_mask(old_low, old_high), old_rms, bb_ola)
+                source_audio = source_audio + broadband
+                bb_ola = None
+                bb_params = None
+            else:
+                bb_ola = None
+                bb_params = None
+            if key in entries:
+                next_states[key] = (direction, state, bb_ola, bb_params)
             audio += source_audio * directional_gain(bearing, direction, width)
             # Actual unsteered block energy, not source presence or current beam
             # amplitude. Incoherent source powers add; normalize all terms alike.
@@ -343,9 +397,23 @@ class AcousticReceiver:
         if own_cav > 0:
             band_noise = self._rng.normal(0, 1, self._time.size)
             mask = self._band_mask(_OWN_CAV_LOW_HZ, _OWN_CAV_HIGH_HZ)
-            audio += self._band_audio(band_noise, mask,
-                                      _OWN_CAV_GAIN * own_cav)
+            cavitation, self._cav_ola = self._band_audio(
+                band_noise, mask, _OWN_CAV_GAIN * own_cav, self._cav_ola)
+            audio += cavitation
             scan += (_OWN_CAV_GAIN * own_cav / .25)**2
+            self._cav_rms = _OWN_CAV_GAIN * own_cav
+        elif self._cav_ola is not None:
+            cavitation, _ = self._band_audio(
+                np.zeros(self._time.size),
+                self._band_mask(_OWN_CAV_LOW_HZ, _OWN_CAV_HIGH_HZ),
+                self._cav_rms, self._cav_ola)
+            audio += cavitation
+            scan += np.mean(cavitation**2) / .25**2
+            self._cav_ola = None
+            self._cav_rms = 0.0
+        else:
+            self._cav_ola = None
+            self._cav_rms = 0.0
 
         # Preserve normal mixture headroom for FFT/DEMON analysis. The high
         # soft ceiling only bounds hostile/pathological source collections;

@@ -33,10 +33,9 @@ FILL_SCREEN = False
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 AUDIO_UPDATE_S = 0.25
-# uConsole target: 512 ms keeps ping/alert start latency low; gap coverage
-# between 0.25 s sonar blocks comes from the engine's bounded one-block hold,
-# not from a large pull-ahead buffer.
-AUDIO_MIXER_BUFFER_MS = 512
+# Pygame specifies its mixer buffer in samples. 512 samples are about 23 ms at
+# 22050 Hz; longer scheduling gaps use the engine's bounded last-block hold.
+AUDIO_MIXER_BUFFER_SAMPLES = 512
 # Mono output: halves per-block synthesis, resampling and mixer workload on
 # the low-power uConsole; stereo bearing panning is skipped in mono.
 AUDIO_CHANNELS = 1

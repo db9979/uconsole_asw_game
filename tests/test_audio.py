@@ -157,7 +157,7 @@ def test_initializes_signed16_and_reserves_independent_channels(mixer):
     engine = AudioEngine()
     backend.init.assert_called_once_with(
         frequency=22050, size=-16, channels=config.AUDIO_CHANNELS,
-        buffer=config.AUDIO_MIXER_BUFFER_MS, allowedchanges=0)
+        buffer=config.AUDIO_MIXER_BUFFER_SAMPLES, allowedchanges=0)
     backend.set_num_channels.assert_called_once_with(4)
     backend.set_reserved.assert_called_once_with(4)
     assert engine._engine_channel is channels[0]
@@ -170,22 +170,64 @@ def test_initializes_signed16_and_reserves_independent_channels(mixer):
 
 def test_audio_debug_log_is_opt_in_and_throttled(monkeypatch, tmp_path):
     monkeypatch.delenv("U_JAGD_AUDIO_DEBUG", raising=False)
+    disabled_root = tmp_path / "disabled"
+    monkeypatch.setattr(config, "SAVE_DIR", str(disabled_root))
     engine = AudioEngine(enabled=False)
     engine.debug_log(2.0)
-    assert not (tmp_path / "audio_debug.log").exists()
+    assert not disabled_root.exists()
     monkeypatch.setenv("U_JAGD_AUDIO_DEBUG", "1")
-    monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
+    debug_root = tmp_path / "debug"
+    monkeypatch.setattr(config, "SAVE_DIR", str(debug_root))
     debug = AudioEngine(enabled=False)
     debug.engine_dropped_blocks = 3
     debug.sonar_holds = 4
     debug.debug_log(0.6)
-    assert not (tmp_path / "audio_debug.log").exists()
+    assert not debug_root.exists()
     debug.debug_log(0.5)
-    lines = (tmp_path / "audio_debug.log").read_text().splitlines()
+    lines = (debug_root / "audio_debug.log").read_text().splitlines()
     assert len(lines) == 1
     assert "engine_drops=3" in lines[0] and "underruns=0" in lines[0]
     assert "sonar_holds=4" in lines[0]
     assert "evictions=0" in lines[0]
+    debug.debug_log(0.8)
+    assert len((debug_root / "audio_debug.log").read_text().splitlines()) == 1
+    debug.debug_log(0.1)
+    assert len((debug_root / "audio_debug.log").read_text().splitlines()) == 2
+
+
+def test_audio_debug_log_truncates_at_bounded_size(monkeypatch, tmp_path):
+    monkeypatch.setenv("U_JAGD_AUDIO_DEBUG", "1")
+    monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
+    path = tmp_path / "audio_debug.log"
+    path.write_text("x" * 300, encoding="utf-8")
+    debug = AudioEngine(enabled=False)
+    monkeypatch.setattr(debug, "DEBUG_LOG_MAX_BYTES", 256)
+
+    debug.debug_log(1.0)
+
+    content = path.read_text(encoding="utf-8")
+    assert len(content) < 256
+    assert content.startswith("t=") and "engine_drops=" in content
+
+
+def test_audio_debug_rejects_symlinked_root_and_file(monkeypatch, tmp_path):
+    monkeypatch.setenv("U_JAGD_AUDIO_DEBUG", "1")
+    target = tmp_path / "target"
+    target.mkdir()
+    root_link = tmp_path / "root-link"
+    root_link.symlink_to(target, target_is_directory=True)
+    monkeypatch.setattr(config, "SAVE_DIR", str(root_link))
+    AudioEngine(enabled=False).debug_log(1.0)
+    assert not (target / "audio_debug.log").exists()
+
+    safe_root = tmp_path / "safe"
+    safe_root.mkdir()
+    protected = tmp_path / "protected"
+    protected.write_text("unchanged", encoding="utf-8")
+    (safe_root / "audio_debug.log").symlink_to(protected)
+    monkeypatch.setattr(config, "SAVE_DIR", str(safe_root))
+    AudioEngine(enabled=False).debug_log(1.0)
+    assert protected.read_text(encoding="utf-8") == "unchanged"
 
 
 def test_dedicated_channels_allow_overlap_and_ping_rejects_self_overlap(mixer):
@@ -373,6 +415,21 @@ def test_sonar_hold_repeats_previous_block_on_idle_channel(mixer, monkeypatch):
     assert engine.sonar_holds == 2
 
 
+def test_sonar_hold_fills_no_new_block_gap_without_stream_advance(mixer):
+    _, channels, _ = mixer
+    engine = AudioEngine()
+    samples = np.linspace(-.2, .2, 1024, dtype=np.float32)
+    assert engine.play_sonar(samples, 4096)
+    before = (engine._sonar_input_count, engine._sonar_output_count,
+              engine._sonar_previous)
+    assert engine.hold_sonar()
+    assert engine.hold_sonar()
+    assert not engine.hold_sonar()
+    assert before == (engine._sonar_input_count, engine._sonar_output_count,
+                      engine._sonar_previous)
+    assert channels[1].play.call_args_list[1].args[0] is engine._sonar_last_sound
+
+
 def test_sonar_hold_is_opt_in_and_reset_by_busy_channel(mixer):
     _, channels, _ = mixer
     engine = AudioEngine()
@@ -470,6 +527,35 @@ def test_engine_queues_ahead_and_advances_only_accepted_blocks(mixer):
     assert repr(engine._engine_rng.bit_generator.state) == accepted_rng_state
     assert repr(engine._engine_rng.bit_generator.state) != rng_state
     assert make_sound.call_count == 2
+
+
+def test_engine_cavitation_filter_and_rng_are_retryable_after_failure(
+        mixer, monkeypatch):
+    engine = AudioEngine()
+    before_filter = engine._engine_filter_state.copy()
+    before_rng = repr(engine._engine_rng.bit_generator.state)
+    original = engine._make_sound
+    failed = True
+
+    def fail_once(samples, bus):
+        nonlocal failed
+        if failed:
+            failed = False
+            raise pygame.error("device lost")
+        return original(samples, bus)
+
+    monkeypatch.setattr(engine, "_make_sound", fail_once)
+    assert not engine.update_engine(183, cavitation=.7)
+    np.testing.assert_array_equal(engine._engine_filter_state, before_filter)
+    assert repr(engine._engine_rng.bit_generator.state) == before_rng
+    assert engine.update_engine(183, cavitation=.7)
+
+    reference = AudioEngine()
+    assert reference.update_engine(183, cavitation=.7)
+    np.testing.assert_array_equal(engine._engine_filter_state,
+                                  reference._engine_filter_state)
+    assert repr(engine._engine_rng.bit_generator.state) == \
+        repr(reference._engine_rng.bit_generator.state)
 
 
 def test_sonar_resampling_uses_cumulative_lengths_and_clean_boundaries(mixer):

@@ -241,13 +241,15 @@ def test_aircraft_receiver_capability_does_not_make_it_an_emitter(game):
     flight.radar_emitting = False
     flight.esm = True
     game._update_air_picture()
+    game._update_esm_picture()
     assert not game.air_picture.tracks(game.sim_t)
+    assert not game.eloka_tracks()
     flight.radar_emitting = True
     flight.esm = False
     flight.esm_range_nm = 1  # Its receiver range is not the player's receiver range.
-    game._update_air_picture()
-    tracks = game.air_picture.tracks(game.sim_t)
-    assert len(tracks) == 1 and tracks[0].source == "ESM"
+    game._update_esm_picture()
+    assert len(game.eloka_tracks()) == 1
+    assert not game.air_picture.tracks(game.sim_t)
 
 
 @pytest.mark.parametrize("state,rate", [("PATROLLE", .5), ("EVADE", 1.5),

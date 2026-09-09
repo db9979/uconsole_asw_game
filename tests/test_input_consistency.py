@@ -237,6 +237,43 @@ def test_primary_weapon_hints_translate_and_do_not_expose_catalog_keys():
         assert "Strg+Enter" in station_command_hint(station)
 
 
+def test_commander_confirmation_input_precedence_and_station_isolation(game, monkeypatch):
+    console = game.commander
+    console.address = ("127.0.0.1", 8765)
+    console.server = NS(connected=True)
+    console.bridge._allowed = True
+    console.bridge._proposal = dict(ref="ref", label="C001", status="pending")
+    console.bridge._pending_seq = 7
+    console._confirm_signature = (7, ("ref", "C001", "pending"), None)
+    console._confirm_identity = (id(game.world), id(game.sonar))
+    console._confirm_requested = True
+    console.confirm_kind = "target"
+    decisions = []
+    monkeypatch.setattr(console, "_decide_confirmation",
+                        lambda current, accepted: decisions.append(accepted))
+
+    game.pinned_tooltip = {"title": "pinned", "lines": []}
+    press(game, pygame.K_ESCAPE)
+    assert game.pinned_tooltip is None and console.confirm_visible(game)
+    press(game, pygame.K_F6, repeat=True)
+    assert not decisions
+    fullscreen = []
+    monkeypatch.setattr(game, "toggle_fullscreen", lambda: fullscreen.append(True))
+    press(game, pygame.K_RETURN, mod=pygame.KMOD_ALT)
+    assert fullscreen == [True]
+    game.input_mode = "course"
+    press(game, pygame.K_F6)
+    assert not decisions and game.input_mode == "course"
+    game.input_mode = None
+    press(game, pygame.K_2)
+    assert game.station is Station.SONAR
+    assert console.confirm_visible(game)
+    press(game, pygame.K_F6)
+    assert decisions == [True]
+    press(game, pygame.K_F9)
+    assert game.commander_open
+
+
 def test_font_scale_is_shared_and_draw_restores_current_game_preference(game):
     game.preferences = replace(game.preferences, large_text=True)
     game._apply_text_size()

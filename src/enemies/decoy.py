@@ -17,13 +17,17 @@ class Decoy:
     _next_id = 1000000  # Separate from surface contacts (which start at 5000).
 
     def __init__(self, x_nm: float, y_nm: float, depth_m: float,
-                 rng: random.Random):
+                 rng: random.Random, profile=None, acoustic=None,
+                 source_id: int | None = None):
         self.id = Decoy._next_id
         Decoy._next_id += 1
         self.kind = "decoy"
         self.rng = rng
         self.sensor_seed = int(rng.randint(0, 2**31 - 1))
-        profile = CATALOG.get_decoy("decoy")
+        self.source_id = source_id
+        profile = profile or CATALOG.get_decoy("decoy")
+        self.profile = profile
+        self.acoustic = acoustic or CATALOG.acoustic_for(profile.key)
         self.x = x_nm
         self.y = y_nm
         self.depth = depth_m
@@ -64,18 +68,18 @@ class Decoy:
     def acoustic_signature(self) -> str:
         if self.dead:
             return ""
-        text = CATALOG.get_decoy("decoy").signature_text
+        text = self.profile.signature_text
         return f"mechanisch · {text} (Dekoy?)"
 
     def lofar_lines(self, t_sim: float = 0.0) -> list:
         if self.dead:
             return []
-        return [tuple(v) for v in CATALOG.get_decoy("decoy").lines]
+        return [tuple(v) for v in self.profile.lines]
 
     def broadband(self) -> dict:
         if self.dead:
             return {}
-        signature = CATALOG.acoustic_for("decoy")
+        signature = self.acoustic
         if signature is None or signature.broadband is None:
             return {}
         level, low, high = signature.broadband

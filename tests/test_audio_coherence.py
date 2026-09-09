@@ -177,7 +177,7 @@ def test_source_state_is_bounded_released_and_zero_slots_keep_identity():
         update(receiver, items)
         assert len(receiver._source_states) == receiver.MAX_SOURCES
         assert all(len(state) <= receiver.MAX_LINES * 3 + 3
-                   for _, state in receiver._source_states.values())
+                   for _, state, _, _ in receiver._source_states.values())
     update(receiver)
     assert receiver._source_states == {}
 
@@ -205,6 +205,23 @@ def test_sequence_handoff_is_bounded_nonconsuming_and_device_independent(playbac
     assert receiver.blocks_since(-1) == ()
     update(receiver)
     assert receiver.blocks_since(-1)[0][0] == 11
+
+
+def test_band_filter_ola_is_a_bounded_half_block_delayed_stream():
+    receiver = AcousticReceiver()
+    rng = np.random.default_rng(12)
+    inputs = [rng.normal(size=1024) for _ in range(3)]
+    mask = np.ones(513)
+    state = None
+    outputs = []
+    for block in inputs:
+        output, state = receiver._band_audio(block, mask, 1.0, state)
+        outputs.append(output)
+        assert len(state) == 2
+        assert all(part.shape == (512,) for part in state)
+    source = np.concatenate(inputs)
+    expected = np.concatenate((np.zeros(512), source[:-512]))
+    np.testing.assert_allclose(np.concatenate(outputs), expected, atol=1e-12)
 
 
 def test_two_due_blocks_can_be_retried_then_played_without_losing_1x_audio(playback):

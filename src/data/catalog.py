@@ -81,7 +81,7 @@ class SubProfile:
 
     @property
     def requires_air(self) -> bool:
-        """Diesel and AIP profiles periodically require air; no endurance model."""
+        """Diesel and AIP profiles require an endurance component."""
         return not self.is_nuclear
 
 
@@ -193,6 +193,22 @@ class MachineProfile:
     high_speed_lines: tuple[AcousticLine, ...]
     cruise_broadband: tuple[float, float, float] | None
     high_speed_broadband: tuple[float, float, float] | None
+
+
+@dataclass(frozen=True, slots=True)
+class EnduranceProfile:
+    key: str
+    battery_capacity_kwh: float
+    hotel_load_kw: float
+    propulsion_max_kw: float
+    propulsion_exponent: float
+    generator_power_kw: float
+    aip_power_kw: float | None
+    aip_energy_kwh: float | None
+    reserve_start_fraction: float
+    reserve_stop_fraction: float
+    snorkel_depth_m: float
+    radio_duration_s: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -310,7 +326,7 @@ class ContactCatalog:
     def __init__(self, subs, surfaces, aircraft, animals, torpedoes, decoys,
                  db_source: str = "data/contacts", library_signatures=(),
                  document_versions=None, documents=None, references=(), machines=(),
-                 sensors=(), emitters=(), weapons=(), launchers=(), magazines=(),
+                  sensors=(), emitters=(), endurances=(), weapons=(), launchers=(), magazines=(),
                  countermeasures=(), profile_systems=(), profile_resources=None,
                  sources=(), provenance_claims=(), provenance_document=None,
                  runtime_bindings=None):
@@ -346,6 +362,7 @@ class ContactCatalog:
         self.document_versions = MappingProxyType(dict(document_versions or {}))
         self.references = MappingProxyType(dict(references))
         self.machines = MappingProxyType(dict(machines))
+        self.endurances = MappingProxyType(dict(endurances))
         self.sensors = MappingProxyType(dict(sensors))
         self.emitters = MappingProxyType(dict(emitters))
         self.weapons = MappingProxyType(dict(weapons))
@@ -366,7 +383,7 @@ class ContactCatalog:
         self._v2_layout = {
             name: {
                 field: tuple(item["profile_key"] if field == "profiles" else item["key"]
-                             for item in document[field])
+                             for item in document.get(field, []))
                 for field, _ in V2_REGISTRIES
             }
             for name, document in documents.items() if document["version"] == 2
@@ -410,6 +427,7 @@ class ContactCatalog:
         registries = {
             "profiles": self.profile_systems, "references": self.references,
             "machines": self.machines, "sensors": self.sensors,
+            "endurances": self.endurances,
             "emitters": self.emitters, "weapons": self.weapons,
             "launchers": self.launchers, "magazines": self.magazines,
             "countermeasures": self.countermeasures,
@@ -420,6 +438,9 @@ class ContactCatalog:
                         "entries": copy.deepcopy(self._document_entries[name])}
             if version == 2:
                 for field, _ in V2_REGISTRIES:
+                    if field not in self._v2_layout[name] or (
+                            field == "endurances" and not self._v2_layout[name][field]):
+                        continue
                     document[field] = [
                         _v2_to_dict(registries[field][key])
                         for key in self._v2_layout[name][field]
@@ -505,6 +526,7 @@ V2_DOCUMENT_FIELDS = {
     "version", "entries", "profiles", "references", "machines", "sensors",
     "emitters", "weapons", "launchers", "magazines", "countermeasures",
 }
+V2_OPTIONAL_DOCUMENT_FIELDS = {"endurances"}
 PROFILE_SYSTEM_FIELDS = {
     "profile_key", "reference_key", "machine_key", "sensor_keys", "emitter_keys",
     "launcher_keys", "magazine_keys", "countermeasure_keys",
@@ -518,6 +540,12 @@ MACHINE_FIELDS = {
     "key", "cruise_speed_kn", "maximum_speed_kn", "quiet_speed_kn",
     "propulsion_codes", "motor_rpm", "shaft_rpm", "propulsor_type", "blade_count",
     "cruise_lines", "high_speed_lines", "cruise_broadband", "high_speed_broadband",
+}
+ENDURANCE_FIELDS = {
+    "key", "battery_capacity_kwh", "hotel_load_kw", "propulsion_max_kw",
+    "propulsion_exponent", "generator_power_kw", "aip_power_kw",
+    "aip_energy_kwh", "reserve_start_fraction", "reserve_stop_fraction",
+    "snorkel_depth_m", "radio_duration_s",
 }
 SENSOR_FIELDS = {
     "key", "domain", "modes", "emits", "emitter_key", "synthetic_range_nm",
@@ -542,15 +570,17 @@ CLAIM_FIELDS = {"resource", "profile_key", "field_paths", "status", "source_ids"
 
 REFERENCE_ROLES = {
     "air_defense", "anti_submarine", "attack_submarine", "carrier", "cargo",
-    "escort", "replenishment", "strike", "training",
+    "escort", "maritime_patrol", "passenger_transport", "replenishment", "strike",
+    "training",
 }
 HULL_TYPES = {
     "aircraft_carrier", "container_ship", "cruiser", "destroyer", "frigate",
-    "replenishment_ship", "submarine", "support_ship", "unknown",
+    "fixed_wing_aircraft", "replenishment_ship", "submarine", "support_ship", "unknown",
 }
 DISPLACEMENT_BASES = {"deadweight", "full_load", "light", "standard", "submerged", "unknown"}
 PROPULSION_CODES = {
-    "diesel", "electric", "gas_turbine", "integrated_electric", "nuclear_steam", "steam",
+    "biological", "diesel", "electric", "gas_turbine", "integrated_electric",
+    "nuclear_steam", "other", "steam",
 }
 PROPULSOR_TYPES = {"propeller", "pumpjet", "waterjet", "other", "unknown"}
 SENSOR_DOMAINS = {"ais", "esm", "hfdf", "radar", "sonar", "visual"}
@@ -861,7 +891,31 @@ def _machine_from_dict(value, where):
         cruise_broadband=_nullable_broadband(value["cruise_broadband"],
                                              f"{where}.cruise_broadband"),
         high_speed_broadband=_nullable_broadband(value["high_speed_broadband"],
-                                                 f"{where}.high_speed_broadband"))
+                                                  f"{where}.high_speed_broadband"))
+
+
+def _endurance_from_dict(value, where):
+    _schema_object(value, ENDURANCE_FIELDS, where)
+    _schema_key(value["key"], f"{where}.key", "endurance.")
+    for field, high in (
+            ("battery_capacity_kwh", 1_000_000), ("hotel_load_kw", 100_000),
+            ("propulsion_max_kw", 1_000_000), ("generator_power_kw", 1_000_000),
+            ("snorkel_depth_m", 50), ("radio_duration_s", 3600)):
+        _schema_number(value[field], f"{where}.{field}", high=high, positive=True)
+    _schema_number(value["propulsion_exponent"], f"{where}.propulsion_exponent",
+                   low=1, high=5)
+    for field in ("reserve_start_fraction", "reserve_stop_fraction"):
+        _schema_number(value[field], f"{where}.{field}", high=1, positive=True)
+    if value["reserve_start_fraction"] >= value["reserve_stop_fraction"]:
+        raise ValueError(f"{where}: reserve hysteresis must be ordered")
+    for field in ("aip_power_kw", "aip_energy_kwh"):
+        _schema_nullable_number(value[field], f"{where}.{field}",
+                                high=1_000_000, positive=True)
+    if (value["aip_power_kw"] is None) != (value["aip_energy_kwh"] is None):
+        raise ValueError(f"{where}: AIP power and energy must both be present or null")
+    if value["generator_power_kw"] <= value["hotel_load_kw"]:
+        raise ValueError(f"{where}: generator must exceed hotel load")
+    return EnduranceProfile(**value)
 
 
 def _sensor_from_dict(value, where):
@@ -1060,6 +1114,8 @@ def _v2_to_dict(value):
             "high_speed_broadband": (None if value.high_speed_broadband is None
                                       else list(value.high_speed_broadband)),
         }
+    if isinstance(value, EnduranceProfile):
+        return {field: getattr(value, field) for field in value.__dataclass_fields__}
     if isinstance(value, SensorProfile):
         return {
             "key": value.key, "domain": value.domain, "modes": list(value.modes),
@@ -1164,6 +1220,7 @@ V2_REGISTRIES = (
     ("profiles", _profile_systems_from_dict),
     ("references", _reference_from_dict),
     ("machines", _machine_from_dict),
+    ("endurances", _endurance_from_dict),
     ("sensors", _sensor_from_dict),
     ("emitters", _emitter_from_dict),
     ("weapons", _weapon_from_dict),
@@ -1181,7 +1238,8 @@ def _read_document(path) -> dict:
     if version == 1:
         _schema_object(data, {"version", "entries"}, path.name)
     elif version == 2:
-        _schema_object(data, V2_DOCUMENT_FIELDS, path.name)
+        _schema_object(data, V2_DOCUMENT_FIELDS | V2_OPTIONAL_DOCUMENT_FIELDS,
+                       path.name, V2_OPTIONAL_DOCUMENT_FIELDS)
     else:
         raise ValueError(f"{path.name}.version: unsupported schema version")
     entries = data["entries"]
@@ -1199,7 +1257,7 @@ def _read_document(path) -> dict:
         seen.add(entry["key"])
     if version == 2:
         for field, factory in V2_REGISTRIES:
-            _schema_object_array(data[field], f"{path.name}.{field}", factory)
+            _schema_object_array(data.get(field, []), f"{path.name}.{field}", factory)
     return data
 
 
@@ -1482,7 +1540,7 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
         if document["version"] != 2:
             continue
         for field, _ in V2_REGISTRIES:
-            for index, raw in enumerate(document[field]):
+            for index, raw in enumerate(document.get(field, [])):
                 parsed = factories[field](raw, f"{filename}.{field}[{index}]")
                 key = parsed.profile_key if field == "profiles" else parsed.key
                 if field == "profiles":
@@ -1498,6 +1556,10 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
                     component_keys.add(key)
                     registries[field][key] = parsed
 
+        if filename == "acoustics.json" and any(
+                document.get(field, []) for field, _ in V2_REGISTRIES):
+            raise ValueError("acoustics.json: library signatures cannot attach platform components")
+
     references = registries["references"]
     machines = registries["machines"]
     sensors = registries["sensors"]
@@ -1506,6 +1568,7 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
     launchers = registries["launchers"]
     magazines = registries["magazines"]
     countermeasures = registries["countermeasures"]
+    endurances = registries["endurances"]
     referenced = {field: set() for field in registries}
 
     for sensor in sensors.values():
@@ -1542,6 +1605,11 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
             raise ValueError(f"countermeasure {countermeasure.key!r}: unknown payload key")
 
     for profile_key, profile in systems.items():
+        resource = profile_resources[profile_key]
+        if resource in ("animals.json", "torpedoes.json", "decoys.json") and any((
+                profile.sensor_keys, profile.emitter_keys, profile.launcher_keys,
+                profile.magazine_keys, profile.countermeasure_keys)):
+            raise ValueError(f"profile {profile_key!r}: {resource} permits reference and machine only")
         scalar_links = (("references", profile.reference_key), ("machines", profile.machine_key))
         list_links = (
             ("sensors", profile.sensor_keys), ("emitters", profile.emitter_keys),
@@ -1573,6 +1641,19 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
         if any(magazines[key].weapon_key not in compatible for key in profile.magazine_keys):
             raise ValueError(f"profile {profile_key!r}: magazine weapon has no compatible launcher")
 
+    sub_entries = {entry["key"]: entry for entry in documents["subs.json"]["entries"]}
+    if documents["subs.json"]["version"] == 2:
+        for profile_key, entry in sub_entries.items():
+            endurance_key = f"endurance.{profile_key}"
+            has_endurance = endurance_key in endurances
+            nuclear = entry["acoustic"]["propulsion"] == "elektrisch/Kernantrieb"
+            if nuclear == has_endurance:
+                requirement = "must not have" if nuclear else "requires"
+                raise ValueError(f"submarine profile {profile_key!r} {requirement} endurance")
+    if any(key.removeprefix("endurance.") not in sub_entries for key in endurances):
+        raise ValueError("endurance component attached outside submarine catalog")
+    referenced["endurances"].update(endurances)
+
     for field, values in registries.items():
         orphaned = values.keys() - referenced[field]
         if orphaned:
@@ -1596,7 +1677,10 @@ def _claim_value(claim, systems, registries):
               "weapons": ("weapons", weapon_keys),
               "launchers": ("launchers", profile.launcher_keys),
               "magazines": ("magazines", profile.magazine_keys),
-              "countermeasures": ("countermeasures", profile.countermeasure_keys)}
+              "countermeasures": ("countermeasures", profile.countermeasure_keys),
+              "endurances": ("endurances", (
+                  f"endurance.{profile.profile_key}",)
+                  if f"endurance.{profile.profile_key}" in registries["endurances"] else ())}
     for field_path in claim.field_paths:
         parts = field_path[1:].split("/")
         if parts[0] in singular and len(parts) == 2:
@@ -1618,8 +1702,13 @@ def _claim_value(claim, systems, registries):
     return values
 
 
-def _validate_provenance(sources, claims, systems, profile_resources, registries):
+def _validate_provenance(sources, claims, systems, profile_resources, registries,
+                         allow_empty=False):
     source_map = {source.id: source for source in sources}
+    # Runtime snapshots intentionally exclude provenance prose and URLs while
+    # retaining the complete component graph they already validated on import.
+    if allow_empty and not sources and not claims:
+        return source_map
     coordinates = set()
     for claim in claims:
         if profile_resources.get(claim.profile_key) != claim.resource:
@@ -1647,11 +1736,57 @@ def _validate_provenance(sources, claims, systems, profile_resources, registries
                 raise ValueError(f"sources.json: unknown claim {field_path!r} must reference null")
             if claim.status != "unknown" and value is None:
                 raise ValueError(f"sources.json: sourced claim {field_path!r} cannot reference null")
+    expected = set()
+    for profile_key, profile in systems.items():
+        resource = profile_resources[profile_key]
+        for name, key, registry_name in (
+                ("reference", profile.reference_key, "references"),
+                ("machine", profile.machine_key, "machines")):
+            if key is not None:
+                component = registries[registry_name][key]
+                expected.update((resource, profile_key, f"/{name}/{field}")
+                                for field in component.__dataclass_fields__
+                                if field != "key")
+        plural = (
+            ("endurances", ((f"endurance.{profile_key}",)
+                            if f"endurance.{profile_key}" in registries["endurances"] else ())),
+            ("sensors", profile.sensor_keys),
+            ("emitters", profile.emitter_keys),
+            ("launchers", profile.launcher_keys),
+            ("magazines", profile.magazine_keys),
+            ("countermeasures", profile.countermeasure_keys),
+        )
+        for registry_name, keys in plural:
+            for key in keys:
+                component = registries[registry_name][key]
+                expected.update((resource, profile_key,
+                                 f"/{registry_name}/{key}/{field}")
+                                for field in component.__dataclass_fields__
+                                if field != "key")
+        weapon_keys = {
+            weapon_key for launcher_key in profile.launcher_keys
+            for weapon_key in registries["launchers"][launcher_key].weapon_keys
+        } | {
+            registries["magazines"][key].weapon_key
+            for key in profile.magazine_keys
+        }
+        for key in weapon_keys:
+            component = registries["weapons"][key]
+            expected.update((resource, profile_key, f"/weapons/{key}/{field}")
+                            for field in component.__dataclass_fields__
+                            if field != "key")
+    if coordinates != expected:
+        missing = sorted(expected - coordinates)
+        extra = sorted(coordinates - expected)
+        raise ValueError(
+            "sources.json: incomplete field coverage "
+            f"(missing={missing[:8]}, extra={extra[:8]})")
     return source_map
 
 
 def _catalog_from_documents(documents, db_source, provenance_document=None,
-                            sources=(), claims=(), runtime_bindings=None):
+                            sources=(), claims=(), runtime_bindings=None,
+                            allow_empty_provenance=False):
     entries = {filename: document["entries"] for filename, document in documents.items()}
     groups = (
         _load_subs(entries["subs.json"]),
@@ -1681,7 +1816,8 @@ def _catalog_from_documents(documents, db_source, provenance_document=None,
     registries, systems, profile_resources = _collect_v2(
         documents, profile_keys_by_resource, set(groups[5]), set(groups[6]))
     source_map = _validate_provenance(
-        sources, claims, systems, profile_resources, registries)
+        sources, claims, systems, profile_resources, registries,
+        allow_empty=allow_empty_provenance)
     cat = ContactCatalog(
         groups[0], groups[1] | groups[2], *groups[3:],
         db_source=db_source,
@@ -1689,6 +1825,7 @@ def _catalog_from_documents(documents, db_source, provenance_document=None,
         document_versions={name: document["version"] for name, document in documents.items()},
         documents=documents, references=registries["references"].items(),
         machines=registries["machines"].items(), sensors=registries["sensors"].items(),
+        endurances=registries["endurances"].items(),
         emitters=registries["emitters"].items(), weapons=registries["weapons"].items(),
         launchers=registries["launchers"].items(),
         magazines=registries["magazines"].items(),
@@ -1762,8 +1899,9 @@ def catalog_from_runtime_snapshot(snapshot) -> ContactCatalog:
             "entries": copy.deepcopy(entries[filename]),
             **{field: copy.deepcopy(component[field]) for field, _ in V2_REGISTRIES},
         }
-    cat = _catalog_from_documents(documents, "save-snapshot",
-                                  runtime_bindings=bindings)
+    cat = _catalog_from_documents(
+        documents, "save-snapshot", runtime_bindings=bindings,
+        allow_empty_provenance=True)
     expected_torpedoes = {
         "frigate_torpedo": "frigate", "helicopter_torpedo": "helo",
         "enemy_torpedo": "enemy",

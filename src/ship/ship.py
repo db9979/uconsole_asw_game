@@ -3,6 +3,7 @@
 import math
 
 from src.core import config
+from src.world.grounding import DEFAULT_HULL_SPEC, HullSpec
 
 
 class Ship:
@@ -18,9 +19,14 @@ class Ship:
         self.rudder_angle = 0.0
         self.yaw_rate = 0.0
         self.order_idx = config.TELEGRAPH_DEFAULT  # M10: Motorenbefehl
+        self.hull_spec = DEFAULT_HULL_SPEC
+        self.astern = False
         self.speed_cap = config.SHIP_SPEED_MAX_KN
         self.quiet_mode = False
-        self.grounded = False
+        self.grounding_latched = False
+        self.grounding_contact = None
+        self.last_safe_pose = (self.x, self.y, self.course)
+        self.last_impact_speed_kn = 0.0
         self.roll = 0.0
         self.pitch = 0.0
         self._clock = 0.0
@@ -42,13 +48,29 @@ class Ship:
     @property
     def telegraph(self) -> str:
         """Name des aktuellen Motorenbefehls (STOP/SLOW/HALF/FULL/FLANK)."""
+        if self.astern:
+            return "ASTERN"
         return config.TELEGRAPH_ORDERS[self.order_idx][0]
 
     def cycle_telegraph(self, delta: int) -> None:
         """Motorenbefehl umschalten, ohne von STOP auf FLANK zu springen."""
+        if self.astern:
+            if delta > 0:
+                self.astern = False
+                self.order_idx = 0
+                self.target_speed = 0.0
+            return
+        if self.order_idx == 0 and delta < 0:
+            self.astern = True
+            self.target_speed = config.ASTERN_SPEED_KN
+            return
         self.order_idx = config.clamp(self.order_idx + delta, 0,
-                                      len(config.TELEGRAPH_ORDERS) - 1)
+                                       len(config.TELEGRAPH_ORDERS) - 1)
         self.target_speed = config.TELEGRAPH_ORDERS[self.order_idx][1]
+
+    @property
+    def grounded(self) -> bool:
+        return self.grounding_latched
 
     @property
     def cavitating(self) -> bool:
@@ -61,9 +83,10 @@ class Ship:
 
     # --- Physik ---
 
-    def update(self, dt: float, world=None) -> None:
+    def update(self, dt: float, world=None):
         """dt in Simulationssekunden; bei 1x identisch zu Echtzeit."""
 
+        start_pose = (self.x, self.y, self.course)
         # Kurs: Ruder, Giergeschwindigkeit und Kurs bauen sich nacheinander auf.
         diff = config.angle_diff_deg(self.target_course, self.course)
         desired_rudder = config.clamp(
@@ -84,6 +107,8 @@ class Ship:
         # Geschwindigkeit: Trägheit
         effective_target = min(self.target_speed, self.speed_cap,
                                12.0 if self.quiet_mode else self.speed_cap)
+        if self.grounding_latched and not self.astern:
+            effective_target = 0.0
         target_delta = effective_target - self.speed
         if abs(target_delta) <= 0.2:
             self.speed = effective_target
@@ -95,32 +120,41 @@ class Ship:
 
         # Physikalische Bewegung (W3: Land-Rueckstoss)
         # Nautisch: 0° = Nord/-y, 90° = Ost/+x (konsistent zu Peilungen)
-        step = config.kn_to_nm_per_s(self.speed) * dt
+        step = config.kn_to_nm_per_s(self.speed) * dt * (-1.0 if self.astern else 1.0)
         nx = self.x + step * math.sin(math.radians(self.course))
         ny = self.y - step * math.cos(math.radians(self.course))
-        self._advance(nx, ny, world)
+        contact = self._advance(start_pose, nx, ny, world)
         self._update_roll_pitch(dt, world)
+        return contact
 
-    def _advance(self, nx: float, ny: float, world) -> None:
-        """Position aktualisieren; bei Welt-Rand/Land Kurs spiegeln."""
+    def _advance(self, start_pose, nx: float, ny: float, world):
+        """Advance to the first safe swept pose and latch physical contact."""
         if world is None:
             self.x, self.y = nx, ny
-            return
-        s = world.size_nm
-        blocked = (nx < 0.0 or ny < 0.0 or nx > s or ny > s) \
-            or world.on_land(nx, ny)
-        if not blocked:
-            self.grounded = False
-            self.x, self.y = nx, ny
-            return
-        if abs(nx - self.x) >= abs(ny - self.y):
-            self.course = (360.0 - self.course) % 360.0
-        else:
-            self.course = (180.0 - self.course) % 360.0
-        self.target_course = self.course
-        self.speed *= 0.4
-        self.target_speed = min(self.target_speed, 6.0)
-        self.grounded = True
+            self.last_safe_pose = (self.x, self.y, self.course)
+            return None
+        if self.grounding_latched and not self.astern:
+            self.x, self.y, self.course = self.last_safe_pose
+            self.speed = 0.0
+            return None
+        result = world.swept_grounding(
+            start_pose, (nx, ny, self.course), self.hull_spec)
+        self.x, self.y, self.course = (result.safe_x_nm, result.safe_y_nm,
+                                       result.safe_course_deg)
+        self.last_safe_pose = (self.x, self.y, self.course)
+        if not result.contacted:
+            if self.grounding_latched and self.astern:
+                self.grounding_latched = False
+                self.grounding_contact = None
+            return None
+        if self.grounding_latched:
+            self.speed = 0.0
+            return None
+        self.grounding_latched = True
+        self.grounding_contact = result.contact
+        self.last_impact_speed_kn = self.speed
+        self.speed = 0.0
+        return result.contact
 
     # --- M10: Roll/Pitch aus Seegang + Fahrt (Anzeige) ---
 

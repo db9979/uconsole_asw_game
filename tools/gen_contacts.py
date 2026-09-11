@@ -112,6 +112,7 @@ def _runtime_documents(cat, library_keys):
 def _validate_provenance_coverage(cat):
     expected = set()
     registries = {
+        "endurances": cat.endurances,
         "sensors": cat.sensors, "emitters": cat.emitters,
         "launchers": cat.launchers, "magazines": cat.magazines,
         "countermeasures": cat.countermeasures,
@@ -127,6 +128,8 @@ def _validate_provenance_coverage(cat):
                                 for field in component.__dataclass_fields__
                                 if field != "key")
         for registry_name, keys in (
+                ("endurances", ((f"endurance.{profile_key}",)
+                                if f"endurance.{profile_key}" in cat.endurances else ())),
                 ("sensors", systems.sensor_keys),
                 ("emitters", systems.emitter_keys),
                 ("launchers", systems.launcher_keys),

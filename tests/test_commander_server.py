@@ -192,6 +192,44 @@ def test_only_fixed_routes(server, path):
     assert request(server, path)[0] == 404
 
 
+def test_prebuilt_contact_routes_are_exact_and_keep_json_png_mime(assets):
+    projection = b'{"version":1,"profiles":[]}'
+    png = b"\x89PNG\r\n\x1a\nfixture"
+    server = CommanderServer(contact_analysis_assets={
+        "/api/v1/contacts": ("application/json; charset=utf-8", projection),
+        "/contact-analysis/unit-cruise.png": ("image/png", png),
+    })
+    server.start("127.0.0.1", 0)
+    try:
+        status, headers, body = request(server, "/api/v1/contacts")
+        assert status == 200
+        assert headers["Content-Type"] == "application/json; charset=utf-8"
+        assert body == {"version": 1, "profiles": []}
+        status, headers, body = request(server, "/contact-analysis/unit-cruise.png")
+        assert status == 200 and headers["Content-Type"] == "image/png" and body == png
+        for path in ("/api/v1/Contacts", "/api/v1/contacts?x=1",
+                     "/contact-analysis/UNIT-cruise.png",
+                     "/contact-analysis/unit-cruise.png?x=1",
+                     "/contact-analysis/../unit-cruise.png",
+                     "/contact-analysis/%2e%2e/unit-cruise.png"):
+            assert request(server, path)[0] == 404
+    finally:
+        server.stop()
+
+
+@pytest.mark.parametrize("prebuilt", [
+    [],
+    {"/contact-analysis/unit.png": ("image/png", b"png")},
+    {"/contact-analysis/unit-silhouette.png": ("image/png", b"png")},
+    {"/api/v1/contacts?x=1": ("application/json; charset=utf-8", b"{}")},
+    {"/api/v1/contacts": ("image/png", b"{}")},
+    {"/api/v1/contacts": ("application/json; charset=utf-8", bytearray(b"{}"))},
+])
+def test_prebuilt_contact_route_map_is_strict(prebuilt):
+    with pytest.raises(ValueError):
+        CommanderServer(contact_analysis_assets=prebuilt)
+
+
 def test_public_translations_are_filtered_and_copied(assets):
     translations = {"en": {"commander.web.title": "Title", "commander.secret": "private",
                             "commander.web.invalid": 1}, "de": {"commander.web.title": "Titel"}}

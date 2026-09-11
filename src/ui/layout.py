@@ -21,6 +21,8 @@ LARGE_TEXT_SCALE = 1.2
 _TEXT_SCALE = 1.0
 _GEOMETRY_TRACE = None
 _TEXT_TRACE = None
+COMMAND_KEY_COLOR = (142, 232, 255)
+COMMAND_DESCRIPTION_COLOR = (205, 216, 222)
 
 
 def clear_font_cache() -> None:
@@ -320,6 +322,33 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
         record_text(val, value_rect, bounds)
         screen.blit(label_image, label_rect)
         screen.blit(value_image, value_rect)
+
+
+def command_segment(screen, rect, key: str, description: str,
+                    label: str = "", value: str = "", size: int = 12) -> None:
+    """Draw one bounded command/status segment with stable semantic colors."""
+    rect = pygame.Rect(rect)
+    face = font(size)
+    parts = (
+        (localize(key), COMMAND_KEY_COLOR),
+        (localize(description), COMMAND_DESCRIPTION_COLOR),
+        (localize(label), config.COLOR_TEXT_DIM),
+        (localize(value), config.COLOR_TEXT),
+    )
+    x = rect.x + 6
+    with clip_to(screen, rect):
+        for index, (text, color) in enumerate(parts):
+            if not text or x >= rect.right - 4:
+                continue
+            if index and x > rect.x + 6:
+                x += face.size(" ")[0]
+            shown = ellipsize(text, face, rect.right - 4 - x)
+            image = face.render(shown, True, color)
+            rendered = image.get_rect(topleft=(x, rect.y + max(
+                0, (rect.h - face.get_linesize()) // 2)))
+            record_text(shown, rendered, rect)
+            screen.blit(image, rendered)
+            x = rendered.right
 
 
 def tooltip_payload(title: str, *lines: str, target_id: str = "") -> dict:

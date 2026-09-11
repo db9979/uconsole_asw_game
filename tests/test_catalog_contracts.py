@@ -197,6 +197,17 @@ def test_descriptive_and_library_fields_do_not_drive_fingerprint():
     assert fingerprint.roll_from_seed(25, signature) == fingerprint.roll_from_seed(25, changed)
 
 
+def test_r10_batch5_library_fingerprints_remain_entry_backed_and_deterministic():
+    enemy = catalog.CATALOG.torpedoes["enemy_torp"].acoustic
+    decoy = catalog.CATALOG.acoustic_for("decoy")
+    assert (enemy.blade_counts, enemy.cavitation_tendency, enemy.broadband) == \
+        ((), 0.9, (0.5, 80.0, 300.0))
+    assert (decoy.blade_counts, decoy.cavitation_tendency, decoy.broadband) == \
+        ((), 0.9, (0.8, 40.0, 300.0))
+    assert fingerprint.roll_from_seed(725, enemy) == fingerprint.roll_from_seed(725, enemy)
+    assert fingerprint.roll_from_seed(726, decoy) == fingerprint.roll_from_seed(726, decoy)
+
+
 def test_rpm_reference_affects_classification_score(monkeypatch):
     signature = catalog.CATALOG.subs["diesel_alt"].acoustic
     rpm = sum(signature.rpm_range) / 2

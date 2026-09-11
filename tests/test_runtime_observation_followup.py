@@ -10,6 +10,7 @@ from src.air.asm import ASM
 from src.air.flights import Flight
 from src.core import config
 from src.core.game import Game
+from src.data.catalog import CATALOG
 from src.enemies.animal import Animal
 from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
@@ -138,6 +139,18 @@ def test_biological_candidate_can_be_acquired_without_revealing_hidden_identity(
     assert game.msg == "unchanged" and len(game.feed.entries) == before
 
 
+def test_r10_batch5_profiles_add_no_hidden_observation_or_weapon_capabilities():
+    for key in (*CATALOG.animals, *CATALOG.decoys):
+        systems = CATALOG.profile_systems[key]
+        assert systems.sensor_keys == systems.emitter_keys == ()
+        assert systems.launcher_keys == systems.magazine_keys == \
+            systems.countermeasure_keys == ()
+    animal = Animal(100, 100, "whale", random.Random(81), depth_m=50)
+    decoy = Decoy(100, 100, 50, random.Random(82))
+    assert not hasattr(animal, "sensor_suite")
+    assert not hasattr(decoy, "sensor_suite")
+
+
 def test_decoy_and_salvo_spawn_callbacks_do_not_publish_hidden_notifications(game):
     sub = Sub(100, 100, 50, 0, "diesel_alt", random.Random(1))
     sub.pending_decoys = [(100, 100)]
@@ -253,7 +266,7 @@ def test_aircraft_receiver_capability_does_not_make_it_an_emitter(game):
 
 
 @pytest.mark.parametrize("state,rate", [("PATROLLE", .5), ("EVADE", 1.5),
-                                        ("LAUER", .5), ("SNOCKEL", .8)])
+                                         ("LAUER", .5)])
 def test_submarine_safe_command_never_teleports_depth(state, rate):
     sub = Sub(100, 100, 70, 0, "diesel_alt", random.Random(1))
     sub.state, sub.evac_left, sub.target_depth = state, 100, 1000

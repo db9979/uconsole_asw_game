@@ -14,6 +14,7 @@ from string import Formatter
 import pytest
 
 from src.core.version import APP_VERSION
+from src.data.contact_analysis import project_contact_catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,10 +69,12 @@ def test_commander_resources_are_self_contained_and_csp_safe():
         assert tag not in {"iframe", "img", "object", "embed", "style"}
         for key in ("src", "href"):
             if key in attrs:
-                assert attrs[key] in {"./app.js", "./style.css"}
+                assert (attrs[key] in {"./app.js", "./style.css"}
+                        or key == "href" and attrs[key].startswith("#guide-"))
     csp = next(attrs["content"] for _, attrs in document.elements if attrs.get("http-equiv") == "Content-Security-Policy")
     assert "default-src 'none'" in csp
     assert "connect-src 'self'" in csp
+    assert "img-src 'self'" in csp
     assert "unsafe-inline" not in csp and "unsafe-eval" not in csp
     for forbidden in ("innerHTML", "outerHTML", "insertAdjacentHTML", "localStorage", "sessionStorage", "indexedDB", "document.cookie", "Math.random", "getUserMedia", "eval(", "new Function", "WebSocket", "https://", "http://"):
         assert forbidden not in js
@@ -85,6 +88,69 @@ def test_commander_resources_are_self_contained_and_csp_safe():
         "function changeLookoutRange", 1)[0]
     assert "chart" not in lookout_renderer and "sendCommand" not in lookout_renderer
     assert "snapshot.tracks" in lookout_renderer and "snapshot.ownship" in lookout_renderer
+    analyzer_renderer = js.split("function renderContactAnalysis()", 1)[1].split(
+        "function renderConnection", 1)[0]
+    assert "sendCommand" not in analyzer_renderer and 'request("/commands"' not in analyzer_renderer
+    assert "analysisSelected" in analyzer_renderer and "textContent" in analyzer_renderer
+    assert 'request("/contacts", { auth: false })' in js
+    assert js.count('request("/contacts", { auth: false })') == 1
+    assert "innerHTML" not in analyzer_renderer
+    assert 'image.alt = descriptions.join(" ")' in analyzer_renderer
+    assert "machine.cruise_lines" in analyzer_renderer
+    assert "machine.cruise_broadband" in analyzer_renderer
+    assert "analyzer_spectrum_legend" in html
+    assert "analyzer_hypothesis_legend" in html
+
+
+def test_guide_is_complete_static_content_with_panel_local_navigation():
+    html = ASSETS.joinpath("index.html").read_text()
+    js = ASSETS.joinpath("app.js").read_text()
+    css = ASSETS.joinpath("style.css").read_text()
+    document = Document(html)
+    guide = next(attrs for _, attrs in document.elements
+                 if attrs.get("id") == "panel-guide")
+    assert "pending-panel" not in guide["class"]
+    links = [attrs for tag, attrs in document.elements
+             if tag == "a" and attrs.get("href", "").startswith("#guide-")]
+    expected = {"guide-access", "guide-operations", "guide-observations",
+                "guide-proposals", "guide-eloka", "guide-analyzer",
+                "guide-connection", "guide-authority"}
+    ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
+    assert {link["href"][1:] for link in links} == expected <= ids
+    assert all("data-i18n" in link for link in links)
+    guide_handler = js.split(
+        'for (const link of document.querySelectorAll("#guide-nav a"))', 1
+    )[1].split('$("track-list").addEventListener', 1)[0]
+    assert "event.preventDefault()" in guide_handler
+    assert 'const panel = $("panel-guide")' in guide_handler
+    assert "panel.scrollTop" in guide_handler and "window.scroll" not in guide_handler
+    assert "sendCommand" not in guide_handler and 'request("/commands"' not in guide_handler
+    assert re.search(r"\.guide-panel:not\(\[hidden\]\).*display: block", css)
+    assert re.search(r"\.tab-panel \{[^}]*overflow-y: auto", css)
+
+
+def test_contacts_panel_owns_bounded_browser_and_detail_scrolling():
+    html = ASSETS.joinpath("index.html").read_text()
+    css = ASSETS.joinpath("style.css").read_text()
+    document = Document(html)
+    contacts = next(attrs for _, attrs in document.elements
+                    if attrs.get("id") == "panel-contacts")
+    assert "pending-panel" not in contacts["class"]
+    ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
+    assert {"analysis-filter", "analysis-category", "analysis-list",
+            "analysis-profile", "analysis-images"} <= ids
+    assert 'maxlength="96"' in html
+    assert re.search(r"\.analyzer-panel:not\(\[hidden\]\).*overflow: hidden", css)
+    assert re.search(r"\.analysis-list \{[^}]*overflow-y: auto", css)
+    assert re.search(r"\.analyzer-detail \{[^}]*overflow-y: auto", css)
+    assert "silhouette" not in ASSETS.joinpath("app.js").read_text().lower()
+    for catalog in catalogs():
+        spectrum = catalog[PREFIX + "analyzer_spectrum_legend"]
+        hypothesis = catalog[PREFIX + "analyzer_hypothesis_legend"]
+        assert "5 Hz-10 kHz" in spectrum
+        assert "0-80" in hypothesis
+        assert "DEMON" in hypothesis
+        assert any(word in hypothesis.lower() for word in ("measurement", "messung"))
 
 
 def test_commander_catalogs_cover_markup_and_script():
@@ -142,6 +208,7 @@ const liveFixture = __STATE__;
 const statusFixture = __STATUS_STATE__;
 const fixture = structuredClone(statusFixture);
 const drawnFixes = new Map();
+const drawnSonarFixes = new Map();
 let canvasFrame = {texts: [], translations: [], fills: 0};
 let lookoutFrame = {texts: [], translations: [], rotations: [], arcs: [], fills: 0};
 const nativeFillRect = CanvasRenderingContext2D.prototype.fillRect;
@@ -179,6 +246,7 @@ CanvasRenderingContext2D.prototype.fillText = function (text, x, y, ...rest) {
   }
   (this.canvas.id === "lookout" ? lookoutFrame : canvasFrame).texts.push(text);
   if (fixture.tracks.some((track) => track.label === text)) drawnFixes.set(text, {x, y});
+  if (/ (PING|TMA|SONOBUOY)$/.test(text)) drawnSonarFixes.set(text, {x, y});
   return nativeFillText.call(this, text, x, y, ...rest);
 };
 const chartFixture = {revision: "chart-A", size_nm: 500, landmasses: [{points: [[20, 20], [160, 40], [90, 160], [20, 20]]}], disclaimer: "Synthetic test geography <script>not markup</script>"};
@@ -200,8 +268,8 @@ window.fetch = async (url, options = {}) => {
     assert(options.signal instanceof AbortSignal, "every request has an abort deadline");
     assert(!String(url).includes("test-secret"), "token absent from URL");
     const path = new URL(url, location.href).pathname;
-    if (path === "/api/v1/ui") {
-      assert(!options.headers.Authorization, "public UI has no bearer token");
+    if (path === "/api/v1/ui" || path === "/api/v1/contacts") {
+      assert(!options.headers.Authorization, "public static data has no bearer token");
       return await nativeFetch(url, options);
     }
     if (path === "/api/v1/pair") return await nativeFetch(url, options);
@@ -327,6 +395,23 @@ async function runContract() {
   const first = $test("track-list").querySelector("button");
   first.focus(); first.click();
   assert($test("detail-label").textContent === fixture.tracks[0].label, "local selection details");
+  const sonarLabel = `${fixture.tracks[1].label} PING`;
+  const sonarFix = drawnSonarFixes.get(sonarLabel);
+  assert(sonarFix, "nested sonar fix is rendered under its opaque parent");
+  fixture.tracks[1].fixes = [];
+  await until(() => !canvasFrame.texts.includes(sonarLabel), "expired nested fix leaves draw geometry");
+  const staleX = bounds.left + sonarFix.x - 9, staleY = bounds.top + sonarFix.y + 8;
+  const oldSetCapture = $test("chart").setPointerCapture, oldReleaseCapture = $test("chart").releasePointerCapture;
+  $test("chart").setPointerCapture = () => {};
+  $test("chart").releasePointerCapture = () => {};
+  for (const type of ["pointerdown", "pointerup"]) $test("chart").dispatchEvent(new PointerEvent(type, {
+    bubbles: true, pointerId: 77, isPrimary: true, button: 0, clientX: staleX, clientY: staleY,
+  }));
+  $test("chart").setPointerCapture = oldSetCapture;
+  $test("chart").releasePointerCapture = oldReleaseCapture;
+  assert($test("detail-label").textContent === fixture.tracks[0].label,
+    "removed sonar fix is no longer clickable");
+  first.focus();
   if (innerWidth > 1250) {
     const supportGrid = document.querySelector(".support-grid");
     const support = supportGrid.getBoundingClientRect();
@@ -432,6 +517,19 @@ async function runContract() {
   tab("lookout").dispatchEvent(new KeyboardEvent("keydown", {key: "End", bubbles: true}));
   assert(document.activeElement === tab("contacts") && tab("contacts").getAttribute("aria-selected") === "true", "End activates the final tab");
   assert($test("lookout").width === 1 && $test("lookout").height === 1, "inactive Lookout canvas releases its backing store");
+  await until(() => $test("analysis-list").querySelector("button"), "static contact analysis loads once");
+  const operationSelection = $test("detail-label").textContent;
+  const commandsBeforeAnalysis = commands.length;
+  $test("analysis-list").querySelector("button").click();
+  assert($test("analysis-name").textContent === "Reference Unit <inert>" &&
+    $test("detail-label").textContent === operationSelection && first.getAttribute("aria-pressed") === "true",
+    "analyzer selection is independent and uses inert text");
+  $test("analysis-filter").value = "no-match";
+  $test("analysis-filter").dispatchEvent(new Event("input"));
+  assert(!$test("analysis-list").querySelector("button") && commands.length === commandsBeforeAnalysis,
+    "analyzer filtering is bounded and never calls a command path");
+  $test("analysis-filter").value = "";
+  $test("analysis-filter").dispatchEvent(new Event("input"));
   tab("contacts").dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowRight", bubbles: true}));
   assert(document.activeElement === tab("operations") && tab("operations").getAttribute("aria-selected") === "true", "Right arrow wraps to Operations");
   tab("operations").dispatchEvent(new KeyboardEvent("keydown", {key: "ArrowLeft", bubbles: true}));
@@ -444,10 +542,19 @@ async function runContract() {
   tab("guide").click();
   await sleep(650);
   assert(tab("guide").getAttribute("aria-selected") === "true", "poll preserves active tab");
+  const guidePanel = $test("panel-guide");
+  guidePanel.scrollTop = 0;
+  const commandsBeforeGuide = commands.length;
+  $test("guide-nav").querySelector('a[href="#guide-authority"]').click();
+  assert(guidePanel.scrollTop > 0 && document.activeElement === $test("guide-authority") &&
+    window.scrollY === 0 && location.hash === "", "guide navigation scrolls and focuses only inside the Guide panel");
+  assert(commands.length === commandsBeforeGuide, "guide navigation has no command coupling");
   $test("language").value = "de";
   $test("language").dispatchEvent(new Event("change"));
   await until(() => document.documentElement.lang === "de", "tab language switch");
-  assert(tab("guide").getAttribute("aria-selected") === "true", "language switch preserves active tab");
+  assert(tab("guide").getAttribute("aria-selected") === "true" &&
+    $test("guide-authority").textContent.includes("niemals direkt steuern"),
+    "language switch preserves and retranslates the active guide");
   $test("language").value = "en";
   $test("language").dispatchEvent(new Event("change"));
   await until(() => document.documentElement.lang === "en", "restore language after tab check");
@@ -637,9 +744,13 @@ def browser_state():
                            source="PASSIVE" if x is None else "RADAR", affiliation="UNKNOWN",
                            classification=None, bearing=35, range_nm=None if x is None else 50,
                            x=x, y=y, depth_m=None, course=None, speed_kn=None,
-                           quality=.65, age_s=2, fix_age_s=None if x is None else 2,
-                           bearing_uncertainty_deg=5, range_uncertainty_nm=None,
-                           can_classify=domain == "SUBSURFACE", can_propose=domain == "SUBSURFACE"))
+                            quality=.65, age_s=2, fix_age_s=None if x is None else 2,
+                            bearing_uncertainty_deg=5, range_uncertainty_nm=None,
+                            fixes=[],
+                            can_classify=domain == "SUBSURFACE", can_propose=domain == "SUBSURFACE"))
+    tracks[1]["fixes"] = [dict(source="PING", x=290, y=220,
+        measured_at=80, fixed_at=82, measurement_age_s=10, fix_age_s=8,
+        uncertainty_nm=1.5, depth_m=70, depth_uncertainty_m=2, quality=.9)]
     return dict(protocol=1, version=APP_VERSION, session="session-A", epoch=1, revision=12,
                  seq=1, phase="live", commands_allowed=True, language="en",
                  clock=dict(sim=90, mission=90, time_scale=1, world=12.5),
@@ -667,6 +778,26 @@ def browser_status_state():
                               helo={key: None for key in state["ownship"]["helo"]}),
                  tracks=[], crew_target=None, proposal=None, events=[], results=[])
     return state
+
+
+def browser_contact_analysis():
+    return dict(version=1, profiles=[dict(
+        key="reference_unit", name="Reference Unit <inert>", resource="subs.json",
+        reference=dict(variant="Test", variant_year=None, refit_year=None,
+                       aliases=["Sample"], roles=["reference"], hull_type="single",
+                       displacement_tonnes=2000, displacement_basis="submerged",
+                       length_m=80, beam_waterline_m=None, beam_overall_m=9,
+                       flight_deck_width_m=None, draft_m=7, ship_crew=None,
+                       air_group_crew=None),
+        machine=dict(cruise_speed_kn=8, maximum_speed_kn=18,
+                      quiet_speed_kn=5, propulsion_codes=["DE"], motor_rpm=None,
+                      shaft_rpm=None, propulsor_type="propeller", blade_count=None,
+                      cruise_lines=[], high_speed_lines=[], cruise_broadband=None,
+                      high_speed_broadband=None),
+        components={key: [] for key in ("sensors", "emitters", "weapons", "launchers",
+                                        "magazines", "countermeasures")},
+        assets={},
+    )])
 
 
 @pytest.mark.parametrize("width,height", [(1920, 1080), (2560, 1440), (3840, 2160), (390, 844)])
@@ -716,6 +847,8 @@ def test_commander_browser_contract_when_chromium_available(tmp_path, width, hei
             elif self.path in ("/api/v1/ui?lang=en", "/api/v1/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply(200, json.dumps({key: value for key, value in source.items() if key.startswith(PREFIX)}), "application/json")
+            elif self.path == "/api/v1/contacts":
+                self.reply(200, json.dumps(browser_contact_analysis()), "application/json")
             else:
                 self.reply(404, "", "text/plain")
 
@@ -761,3 +894,76 @@ def test_commander_browser_contract_when_chromium_available(tmp_path, width, hei
     assert not problems
     assert [body for path, body in requests if path == "/api/v1/pair"] == [{"code": "123ABC"}, {"code": "123ABC"}]
     assert len([path for path, _ in requests if path == "/api/v1/commands"]) == 6
+
+
+def test_contact_analyzer_rejects_schema_error_when_chromium_available(tmp_path):
+    chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
+    if not chromium:
+        pytest.skip("Optional browser contract: no installed Chromium")
+    html = ASSETS.joinpath("index.html").read_text().replace(
+        '<script src="./app.js" defer>',
+        '<script src="./schema-test.js" defer></script><script src="./app.js" defer>')
+    en = catalogs()[0]
+    requests = []
+    malformed_analysis = project_contact_catalog()
+    malformed_analysis["profiles"][0]["reference"] = None
+    probe = r"""
+window.addEventListener("DOMContentLoaded", async () => {
+  for (let i = 0; !document.getElementById("analysis-status").textContent.includes("unavailable or invalid") && i < 300; i++)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  const status = document.getElementById("analysis-status");
+  document.documentElement.dataset.schema = status.textContent.includes("unavailable or invalid") &&
+    !document.getElementById("analysis-list").children.length ? "rejected" : "failed";
+});
+"""
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *_args):
+            pass
+
+        def reply(self, content, mime="application/json"):
+            body = content.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            requests.append(self.path)
+            if self.path == "/":
+                self.reply(html, "text/html")
+            elif self.path == "/schema-test.js":
+                self.reply(probe, "text/javascript")
+            elif self.path in ("/app.js", "/style.css"):
+                mime = "text/javascript" if self.path.endswith("js") else "text/css"
+                self.reply(ASSETS.joinpath(self.path[1:]).read_text(), mime)
+            elif self.path == "/api/v1/ui?lang=en":
+                self.reply(json.dumps({key: value for key, value in en.items()
+                                       if key.startswith(PREFIX)}))
+            elif self.path == "/api/v1/contacts":
+                self.reply(json.dumps(malformed_analysis))
+            else:
+                self.send_error(404)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        result = subprocess.run(
+            [chromium, "--headless", "--no-sandbox", "--disable-gpu",
+             "--disable-background-networking", "--no-first-run",
+             "--no-default-browser-check", "--disable-dev-shm-usage",
+             f"--user-data-dir={tmp_path / 'browser'}", "--virtual-time-budget=10000",
+             "--dump-dom", f"http://127.0.0.1:{server.server_port}/"],
+            capture_output=True, text=True, timeout=30,
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+    assert result.returncode == 0, result.stderr
+    root = next(attrs for tag, attrs in Document(result.stdout).elements if tag == "html")
+    assert root.get("data-schema") == "rejected"
+    assert requests.count("/api/v1/contacts") == 1
+    assert not any(path == "/api/v1/commands" for path in requests)

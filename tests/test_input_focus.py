@@ -227,11 +227,12 @@ def test_random_scenario_accepts_default_difficulty(game):
     assert not game.in_menu and game.scenario_key == "s4_zufall"
 
 
-def test_global_telegraph_does_not_wrap_at_stop_or_flank(game):
+def test_global_telegraph_reaches_astern_without_wrapping_at_flank(game):
     game.station = Station.SONAR
     for _ in range(10):
         press(game, pygame.K_MINUS)
-    assert game.ship.target_speed == 0.0
+    assert game.ship.telegraph == "ASTERN"
+    assert game.ship.target_speed == config.ASTERN_SPEED_KN
     for _ in range(10):
         press(game, pygame.K_PLUS)
     assert game.ship.target_speed == config.SHIP_SPEED_MAX_KN

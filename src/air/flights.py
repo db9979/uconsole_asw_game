@@ -52,6 +52,9 @@ class Flight:
             catalog, self.akey, self.sensor_seed, side=self.side,
             doctrine=self.doctrine,
             datalink_group="blue" if self.side == "friendly" else None)
+        # Component scans are recorded, while the established flight doctrine
+        # continues to steer only from its legacy detached ESM observation.
+        self.legacy_observation_model = True
         self.speed = profile.speed_kn
         self.esm = profile.esm
         self.esm_range_nm = profile.esm_range_nm

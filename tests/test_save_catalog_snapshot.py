@@ -7,6 +7,7 @@ import random
 import pytest
 
 import src.core.game as game_module
+from src.air.flights import Flight
 from src.core.game import Game
 from src.data import catalog
 from src.enemies.decoy import Decoy
@@ -69,7 +70,8 @@ def test_v10_snapshot_is_canonical_runtime_only_json():
                for entries in snapshot["entries"].values())
     assert all(set(component) == {
         "version", "profiles", "references", "machines", "sensors",
-        "emitters", "weapons", "launchers", "magazines", "countermeasures",
+        "endurances", "emitters", "weapons", "launchers", "magazines",
+        "countermeasures",
     } for component in snapshot["components"].values())
 
     restored = catalog.catalog_from_runtime_snapshot(
@@ -288,3 +290,115 @@ def test_changed_package_split_run_keeps_snapshot_continuation(monkeypatch):
         }
 
     assert continuation(restored) == continuation(control)
+
+
+def test_r10_all_submarine_components_roundtrip_from_catalog_snapshot():
+    game = Game(seed=2413, start_menu=False)
+    game.subs = [
+        Sub(game.ship.x + index / 10.0, game.ship.y + 1.0, 50.0, 0.0, key,
+            random.Random(5000 + index), runtime_catalog=game.runtime_catalog,
+            asw_rng=game.rng_asw)
+        for index, key in enumerate(game.runtime_catalog.subs)
+    ]
+    expected = [(
+        sub.stype.key,
+        sub.weapon_battery.serialize(),
+        sub.countermeasure_store.serialize(),
+        sub.sensor_suite.serialize(),
+    ) for sub in game.subs]
+    state = game.save_state()
+
+    restored = Game(seed=1, start_menu=False)
+    assert restored._load_save_data(copy.deepcopy(state))
+    assert [(
+        sub.stype.key,
+        sub.weapon_battery.serialize(),
+        sub.countermeasure_store.serialize(),
+        sub.sensor_suite.serialize(),
+    ) for sub in restored.subs] == expected
+    assert restored.runtime_catalog.runtime_snapshot() == state["catalog_snapshot"]
+
+
+def test_r10_all_warship_components_roundtrip_from_catalog_snapshot():
+    game = Game(seed=2414, start_menu=False)
+    game.warships = [
+        SurfaceShip(
+            game.ship.x + index / 10.0, game.ship.y + 2.0,
+            random.Random(6000 + index), side="hostile",
+            doctrine="surface_combatant",
+            profile=game.runtime_catalog.surfaces[key],
+            runtime_catalog=game.runtime_catalog)
+        for index, key in enumerate(
+            f"warship_{number:02d}" for number in range(1, 29))
+    ]
+    expected = [(
+        ship.signature_key,
+        ship.asroc_battery.serialize() if ship.asroc_battery is not None else None,
+        ship.sensor_suite.serialize(),
+    ) for ship in game.warships]
+    state = game.save_state()
+
+    restored = Game(seed=1, start_menu=False)
+    assert restored._load_save_data(copy.deepcopy(state))
+    assert [(
+        ship.signature_key,
+        ship.asroc_battery.serialize() if ship.asroc_battery is not None else None,
+        ship.sensor_suite.serialize(),
+    ) for ship in restored.warships] == expected
+    assert restored.runtime_catalog.runtime_snapshot() == state["catalog_snapshot"]
+
+
+def test_r10_all_civilian_components_roundtrip_from_catalog_snapshot():
+    game = Game(seed=2415, start_menu=False)
+    game.civilians = [
+        SurfaceShip(
+            game.ship.x + index / 10.0, game.ship.y + 3.0,
+            random.Random(7000 + index), side="neutral",
+            doctrine="surface_transit", profile=profile,
+            runtime_catalog=game.runtime_catalog)
+        for index, profile in enumerate(game.runtime_catalog.civilian_surfaces)
+    ]
+    expected = [(ship.signature_key, ship.sensor_suite.serialize())
+                for ship in game.civilians]
+    state = game.save_state()
+
+    restored = Game(seed=1, start_menu=False)
+    assert restored._load_save_data(copy.deepcopy(state))
+    assert [(ship.signature_key, ship.sensor_suite.serialize())
+            for ship in restored.civilians] == expected
+    assert restored.runtime_catalog.runtime_snapshot() == state["catalog_snapshot"]
+
+
+def test_r10_all_aircraft_components_roundtrip_from_catalog_snapshot():
+    game = Game(seed=2416, start_menu=False)
+    bases = game.world.coast.airbases
+    game.flights.flights = [
+        Flight(
+            profile.kind, bases[0],
+            dest=(bases[1] if profile.kind == "civil" else None),
+            rng=random.Random(8000 + index), seq=index + 1, akey=profile.key,
+            catalog=game.runtime_catalog)
+        for index, profile in enumerate(game.runtime_catalog.aircraft.values())
+    ]
+    expected = [(flight.akey, flight.sensor_suite.serialize())
+                for flight in game.flights.flights]
+    state = game.save_state()
+
+    restored = Game(seed=1, start_menu=False)
+    assert restored._load_save_data(copy.deepcopy(state))
+    assert [(flight.akey, flight.sensor_suite.serialize())
+            for flight in restored.flights.flights] == expected
+    assert restored.runtime_catalog.runtime_snapshot() == state["catalog_snapshot"]
+
+
+def test_r10_batch5_components_and_library_roundtrip_from_catalog_snapshot():
+    snapshot = catalog.CATALOG.runtime_snapshot()
+    restored = catalog.catalog_from_runtime_snapshot(
+        json.loads(json.dumps(snapshot, allow_nan=False)))
+    roundtrip = restored.runtime_snapshot()
+    for filename in ("animals.json", "torpedoes.json", "decoys.json", "acoustics.json"):
+        assert roundtrip["components"][filename] == snapshot["components"][filename]
+    assert restored.acoustic_profiles == catalog.CATALOG.acoustic_profiles
+    assert tuple(restored.animals) == tuple(catalog.CATALOG.animals)
+    assert tuple(restored.torpedoes) == tuple(catalog.CATALOG.torpedoes)
+    assert tuple(restored.decoys) == tuple(catalog.CATALOG.decoys)

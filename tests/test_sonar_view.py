@@ -265,9 +265,11 @@ def test_station_header_uses_divided_status_groups_without_microtext(game, monke
 
     view.draw_sonar_view(game)
 
-    groups = [item for item in drawn if item[0].startswith(("ARRAY", "LISTENING", "FILTER"))]
-    assert [item[0].split()[0] for item in groups] == ["ARRAY", "LISTENING", "FILTER"]
-    assert len({item[1].x for item in groups}) == 3
+    groups = [item for item in drawn if item[0].startswith(
+        ("ARRAY", "BEARING", "BROADBAND", "G "))]
+    assert [item[0].split()[0] for item in groups] == [
+        "ARRAY", "BEARING", "BROADBAND", "G"]
+    assert len({item[1].x for item in groups}) == 4
     assert min(size for _, _, size in drawn) >= 12
 
 

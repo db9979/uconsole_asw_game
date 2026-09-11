@@ -17,6 +17,7 @@ from src.commander.bridge import CommanderBridge
 from src.commander.server import CommanderServer
 from src.core import config
 from src.core.i18n import load_catalog, message, raw_text, translation_scope
+from src.data.contact_analysis import load_contact_analysis_assets
 from src.ui import layout
 
 
@@ -34,6 +35,7 @@ class CommanderConsole:
         self.pairing_code = None
         self._prepared = False
         self._translations = None
+        self._contact_analysis_assets = None
         self._notice_seq = None
         self._last_notice = float("-inf")
         self._confirm_signature = None
@@ -294,8 +296,12 @@ class CommanderConsole:
                         lang: {key: value for key, value in load_catalog(lang).items()
                                if key.startswith("commander.web.")}
                         for lang in ("en", "de")}
+                if self._contact_analysis_assets is None:
+                    self._contact_analysis_assets = load_contact_analysis_assets()
                 if self.server is None:
-                    self.server = CommanderServer(translations=self._translations)
+                    self.server = CommanderServer(
+                        translations=self._translations,
+                        contact_analysis_assets=self._contact_analysis_assets)
                 self.server.start(self.host, self.port)
                 self.address = self.server.address
                 self.pairing_code = self.server.pairing_code

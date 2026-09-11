@@ -12,6 +12,7 @@ from enum import Enum
 import numpy as np
 
 from src.core import config
+from src.sonar import propagation
 from src.sonar.tma import BearingTrack, solve_tma
 from src.audio.database import rank_signatures
 from src.audio.receiver import AcousticReceiver, directional_gain
@@ -96,6 +97,7 @@ class Contact:
         self.tma_quality = 0.0
         self.tma_seen = None
         self.buoy_fixes = []  # raw (t, x, y, quality), not ownship passive bearings
+        self.fixes = {}
         self.ping_pos = None
         self.observed_x = None
         self.observed_y = None
@@ -184,9 +186,33 @@ class Contact:
         if signature:
             self.signature = signature
 
+    def _publish_fix(self, source: str, measured_at: float, fixed_at: float,
+                     x: float, y: float, uncertainty_nm: float,
+                     quality: float, depth_m=None, depth_uncertainty_m=None):
+        """Retain one detached, measurement-dated fix per independent source."""
+        self.fixes[source] = dict(
+            source=source, measured_at=float(measured_at), fixed_at=float(fixed_at),
+            x=float(x), y=float(y), uncertainty_nm=float(uncertainty_nm),
+            depth_m=None if depth_m is None else float(depth_m),
+            depth_uncertainty_m=(None if depth_uncertainty_m is None
+                                 else float(depth_uncertainty_m)),
+            quality=float(config.clamp(quality, 0.0, 1.0)))
+
+    def active_fixes(self, now: float) -> tuple:
+        """Return stable detached fix copies whose measurements remain current."""
+        result = []
+        for source in ("PING", "TMA", "SONOBUOY"):
+            fix = self.fixes.get(source)
+            lifetime = (config.SONAR_PING_FIX_MAX_AGE_S if source == "PING"
+                        else config.SONAR_CONTACT_LOST_S)
+            if (fix is not None and 0.0 <= now - fix["measured_at"] <= lifetime):
+                result.append(dict(fix))
+        return tuple(result)
+
     def update_ping(self, bearing: float, range_est: float, depth_est: float,
-                    confidence: float, t: float, snr: float = 0.0,
-                    range_sigma_nm: float = None, depth_sigma_m: float = None):
+                     confidence: float, t: float, snr: float = 0.0,
+                     range_sigma_nm: float = None, depth_sigma_m: float = None,
+                     fixed_at: float = None):
         """Aktiver Ping: liefert Position + Tiefe (maßstabsgenau)."""
         self.bearing = bearing % 360.0
         self.raw_bearing = self.bearing
@@ -208,6 +234,9 @@ class Contact:
             self._fx + range_est * math.sin(math.radians(self.bearing)),
             self._fy - range_est * math.cos(math.radians(self.bearing)))
         self.observed_x, self.observed_y = self.ping_pos
+        self._publish_fix(
+            "PING", t, t if fixed_at is None else fixed_at, *self.ping_pos,
+            self.range_sigma_nm, self.quality, self.depth_est, self.depth_sigma_m)
 
     def expire_ping_fix(self, t: float) -> None:
         """Expire evidence even without detections (name retained for callers).
@@ -216,6 +245,12 @@ class Contact:
         SONAR_CONTACT_LOST_S since their measurement, not last passive hearing.
         The uncertainty fields for these estimates are heuristic, not covariance.
         """
+        for source in tuple(self.fixes):
+            lifetime = (config.SONAR_PING_FIX_MAX_AGE_S if source == "PING"
+                        else config.SONAR_CONTACT_LOST_S)
+            measured_at = self.fixes[source].get("measured_at")
+            if measured_at is None or t - measured_at > lifetime:
+                del self.fixes[source]
         tma_seen = self.tma_seen
         if tma_seen is None and self.range_source == "tma":
             tma_seen = self.range_seen  # pre-evidence saves
@@ -260,6 +295,8 @@ class Contact:
         if not self.buoy_fixes or int(t // 2) != int(self.buoy_fixes[-1][0] // 2):
             self.buoy_fixes.append((t, x, y, quality))
             del self.buoy_fixes[:-config.BEARING_TRACK_MAX_PTS]
+        buoy_uncertainty = max(.5, (1.0 - quality) * 8.0)
+        self._publish_fix("SONOBUOY", t, t, x, y, buoy_uncertainty, quality)
         if self.range_source == "ping":
             return
         if (self.range_source == "buoy" and self.observed_x is not None
@@ -271,14 +308,14 @@ class Contact:
         self.observed_x, self.observed_y = x, y
         self.bearing = math.degrees(math.atan2(x - self._fx, -(y - self._fy))) % 360
         self.range_est = math.hypot(x - self._fx, y - self._fy)
-        self.range_sigma_nm = max(.5, (1.0 - quality) * 8.0)
+        self.range_sigma_nm = buoy_uncertainty
         self.bearing_uncertainty_deg = None
         self.depth_est = self.depth_sigma_m = None
         self.range_source = "buoy"
         self.range_seen = t
         self.origin = "bojenkreuzpeilung"
 
-    def update_tma(self, sol, t: float):
+    def update_tma(self, sol, t: float, fixed_at: float = None):
         """TMA-Estimate übernehmen (nur, solange kein frischerer Ping)."""
         self.expire_ping_fix(t)
         if (self.tma_pos is not None
@@ -305,6 +342,11 @@ class Contact:
                 self.tma_speed += (sol.speed - self.tma_speed) * alpha
             self.tma_quality += (sol.quality - self.tma_quality) * alpha
         self.tma_seen = t
+        if sol.quality >= config.TMA_RANGE_MIN_QUALITY:
+            self._publish_fix("TMA", t, t if fixed_at is None else fixed_at,
+                              self.tma_pos[0], self.tma_pos[1],
+                              max(0.1, (1.0 - sol.quality) * 12.0),
+                              self.tma_quality)
         if self.range_source not in ("ping", "buoy") and \
                 sol.quality >= config.TMA_RANGE_MIN_QUALITY:
             self.observed_x, self.observed_y = self.tma_pos
@@ -371,10 +413,13 @@ class SonarSystem:
         self.tma_enabled = True
         self.listen_bearing = 0.0
         self.beam_width_deg = 12.0
-        self.listen_filtered = False
+        self.audition_mode = "BROADBAND"
+        self._audition_states = {}
+        self._audition_previous_controls = None
         self._audition_ola_state = None
         self._audition_cache_key = None
         self._audition_ola_out = None
+        self._audition_previous_source = None
         self.receiver = AcousticReceiver(seed)
         self.broadband_history = []
         self.history_times = []
@@ -464,10 +509,7 @@ class SonarSystem:
         depths = np.linspace(0.0, max_depth, 21)
         speeds = []
         for depth in depths:
-            # Synthetic game profile: cooling dominates above the layer,
-            # pressure dominates below it. Values are model evidence, not charts.
-            speed = (1504.0 - .018 * min(depth, measured_thermo)
-                     + .012 * max(0.0, depth - measured_thermo))
+            speed = propagation.synthetic_sound_speed_m_s(depth, measured_thermo)
             speeds.append(speed + self.rng.uniform(-.15, .15))
         self.bt_profile = dict(t=t, x=frigate.x, y=frigate.y,
                                thermocline_m=measured_thermo,
@@ -498,9 +540,61 @@ class SonarSystem:
 
     def reset_audition_audio(self) -> None:
         """Discard transient operator-filter and retry state."""
+        self._audition_states = {}
+        self._audition_previous_controls = None
         self._audition_ola_state = None
         self._audition_cache_key = None
         self._audition_ola_out = None
+        self._audition_previous_source = None
+
+    @property
+    def listen_filtered(self) -> bool:
+        """Compatibility view for callers predating the explicit audition modes."""
+        return self.audition_mode == "FILTERED"
+
+    @listen_filtered.setter
+    def listen_filtered(self, value: bool) -> None:
+        self.audition_mode = "FILTERED" if value else "BROADBAND"
+
+    def set_audition_mode(self, mode: str) -> bool:
+        if mode not in ("BROADBAND", "FILTERED", "HETERODYNE"):
+            return False
+        self.audition_mode = mode
+        return True
+
+    def _audition_process(self, samples, controls):
+        mode, low_hz, high_hz, notch, own_line_hz, gain_db = controls
+        out = np.array(samples, copy=True)
+        if mode != "BROADBAND":
+            n = out.size
+            frequencies = np.fft.rfftfreq(n, 1.0 / self.receiver.sample_rate)
+            mask = ((frequencies >= low_hz) & (frequencies <= high_hz)).astype(float)
+            if notch:
+                mask[abs(frequencies - own_line_hz) < 5] *= .15
+            if n >= 2 and n % 2 == 0:
+                half = n // 2
+                previous, overlap = self._audition_states.get(
+                    controls, (np.zeros(half), np.zeros(half)))
+                window = .5 * (1.0 - np.cos(2.0 * np.pi * np.arange(n) / n))
+                output = []
+                for current in (out[:half], out[half:]):
+                    filtered = np.fft.irfft(
+                        np.fft.rfft(window * np.concatenate((previous, current)))
+                        * mask, n=n)
+                    output.append(overlap + filtered[:half])
+                    previous, overlap = current.copy(), filtered[half:]
+                out = np.concatenate(output)
+                self._audition_states[controls] = (previous, overlap)
+                self._audition_ola_state = self._audition_states[controls]
+            else:
+                out = np.fft.irfft(np.fft.rfft(out) * mask, n=n)
+                self._audition_ola_state = None
+            if mode == "HETERODYNE":
+                # Translate the selected low-frequency beam band around 700 Hz.
+                phase = np.arange(out.size) * (2.0 * np.pi * 700.0
+                                                / self.receiver.sample_rate)
+                out = 2.0 * out * np.cos(phase)
+        return out * (10 ** (gain_db / 20))
 
     def listening_samples(self, samples=None, block_id=None):
         """Return pre-playback beam audio with operator filtering and gain.
@@ -518,8 +612,12 @@ class SonarSystem:
         makes processing idempotent when playback backpressure retries a block.
         """
         source = self.receiver.samples if samples is None else samples
-        controls = (self.listen_filtered, self.band_low_hz, self.band_high_hz,
-                    self.notch_enabled, self._own_line_hz, self.gain_db)
+        if (not isinstance(source, np.ndarray) or source.ndim != 1
+                or source.size != self.receiver.samples.size
+                or not np.all(np.isfinite(source))):
+            raise ValueError("audition requires one complete mixed receiver block")
+        controls = (self.audition_mode, self.band_low_hz, self.band_high_hz,
+                     self.notch_enabled, self._own_line_hz, self.gain_db)
         # A rejected playback block must retry byte-for-byte even if ship speed
         # changes the own-line notch before the next frame. New controls take
         # effect on the next receiver sequence.
@@ -528,40 +626,22 @@ class SonarSystem:
         if cache_key == self._audition_cache_key:
             return self._audition_ola_out.copy()
         samples = np.array(source, dtype=np.float32, copy=True)
-        if self.listen_filtered:
-            n = samples.size
-            frequencies = np.fft.rfftfreq(n, 1.0 / self.receiver.sample_rate)
-            mask = ((frequencies >= self.band_low_hz)
-                    & (frequencies <= self.band_high_hz)).astype(float)
-            if self.notch_enabled:
-                mask[abs(frequencies - self._own_line_hz) < 5] *= .15
-            if n >= 2 and n % 2 == 0:
-                half = n // 2
-                state = self._audition_ola_state
-                previous, overlap = state if state is not None else (None, None)
-                if (previous is None or overlap is None
-                        or previous.shape != (half,) or overlap.shape != (half,)):
-                    previous = np.zeros(half)
-                    overlap = np.zeros(half)
-                window = 0.5 * (1.0 - np.cos(
-                    2.0 * np.pi * np.arange(n) / n))
-                output = []
-                for current in (samples[:half], samples[half:]):
-                    frame = np.concatenate((previous, current))
-                    filtered = np.fft.irfft(
-                        np.fft.rfft(window * frame) * mask, n=n)
-                    output.append(overlap + filtered[:half])
-                    previous = current.copy()
-                    overlap = filtered[half:]
-                out = np.concatenate(output)
-                self._audition_ola_state = (previous, overlap)
-            else:
-                out = np.fft.irfft(np.fft.rfft(samples) * mask, n=n)
-                self._audition_ola_state = None
-        else:
-            out = samples
-            self._audition_ola_state = None
-        out = out * (10 ** (self.gain_db / 20))
+        previous_controls = self._audition_previous_controls
+        if (controls[0] != "BROADBAND" and controls not in self._audition_states
+                and self._audition_previous_source is not None):
+            # Prime a changed Hann OLA path from the preceding complete beam.
+            self._audition_process(self._audition_previous_source, controls)
+        out = self._audition_process(samples, controls)
+        if previous_controls is not None and previous_controls != controls:
+            old = self._audition_process(samples, previous_controls)
+            edge = min(samples.size, max(2, round(.02 * self.receiver.sample_rate)))
+            blend = np.linspace(0.0, 1.0, edge)
+            out[:edge] = old[:edge] * (1.0 - blend) + out[:edge] * blend
+        self._audition_states = ({controls: self._audition_states[controls]}
+                                 if controls in self._audition_states else {})
+        self._audition_ola_state = self._audition_states.get(controls)
+        self._audition_previous_controls = controls
+        self._audition_previous_source = samples.copy()
         result = np.nan_to_num(out, copy=False).astype(np.float32)
         self._audition_cache_key = cache_key
         self._audition_ola_out = result.copy()
@@ -636,15 +716,15 @@ class SonarSystem:
             tgt.bearing_from_frigate(frigate), tow_available)
 
     def _passive_range_nm(self, tgt, dist_nm: float, frigate, world,
-                          range_factor: float, mode: str, true_bearing: float,
-                          tow_available: bool) -> float:
+                           range_factor: float, mode: str, true_bearing: float,
+                           tow_available: bool,
+                           apply_propagation: bool = True,
+                           spectral_out: list | None = None) -> float:
         passive_range = frigate.passive_sonar_range_nm(
             tgt.quiet_factor(), world.sea_state)
         thermo = world.thermocline_depth_m(tgt.x, tgt.y)
         sensor_depth = self.towed_depth_m if mode == "TOWED" else 5.0
         same_layer = (sensor_depth < thermo) == (tgt.depth < thermo)
-        passive_range *= (config.SONAR_THERMO_PASSIVE_ABOVE if same_layer
-                          else config.SONAR_THERMO_PASSIVE_BELOW)
         if mode == "TOWED":
             if not tow_available:
                 return 0.0
@@ -664,10 +744,24 @@ class SonarSystem:
                                self._own_noise_bearing(mode, frigate.course))
         passive_range *= directional_penalty / isotropic_penalty
         passive_range *= range_factor
-        for lo, hi in config.CZ_BANDS:
-            if lo <= dist_nm <= hi:
-                passive_range += config.CZ_BONUS_NM
-                break
+        if apply_propagation:
+            midpoint_x = (frigate.x + tgt.x) * .5
+            midpoint_y = (frigate.y + tgt.y) * .5
+            midpoint_thermo = world.thermocline_depth_m(midpoint_x, midpoint_y)
+            depth_query = getattr(world, "depth_m", None)
+            water_depth = (depth_query(midpoint_x, midpoint_y)
+                           if depth_query is not None else 1000.0)
+            water_depth = max(float(water_depth), sensor_depth,
+                              float(getattr(tgt, "depth", 0.0)), midpoint_thermo)
+            result = propagation.propagate(
+                frigate.x, frigate.y, sensor_depth, tgt.x, tgt.y,
+                getattr(tgt, "depth", 0.0),
+                propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
+                midpoint_thermo, water_depth, sea_state=world.sea_state,
+                terrain_blocked=getattr(world, "sonar_path_blocked", None))
+            passive_range *= propagation.passive_range_factor(result, dist_nm)
+            if spectral_out is not None:
+                spectral_out.append(result.spectral_gains)
         return passive_range
 
     def advance_mechanics(self, dt: float, t: float, frigate) -> None:
@@ -724,17 +818,18 @@ class SonarSystem:
             dist = tgt.distance_nm(frigate)
             true_bearing = tgt.bearing_from_frigate(frigate)
             observations = {}
+            spectral_by_mode = {}
             for array_mode in array_modes:
+                preliminary_range = self._passive_range_nm(
+                    tgt, dist, frigate, world, range_factor, array_mode,
+                    true_bearing, tow_available, apply_propagation=False)
+                if dist >= preliminary_range:
+                    continue
+                spectral = []
                 r_eff = self._passive_range_nm(
                     tgt, dist, frigate, world, range_factor, array_mode,
-                    true_bearing, tow_available)
+                    true_bearing, tow_available, spectral_out=spectral)
                 if dist >= r_eff:
-                    continue
-                source_depth = self.towed_depth_m if array_mode == "TOWED" else 5.0
-                if (hasattr(world, "sonar_path_blocked")
-                        and world.sonar_path_blocked(
-                             frigate.x, frigate.y, source_depth, tgt.x, tgt.y,
-                             getattr(tgt, "depth", 0.0))):
                     continue
                 s_db = snr_db(r_eff, dist)
                 quality = config.clamp(
@@ -746,6 +841,8 @@ class SonarSystem:
                 observations[array_mode] = dict(
                     bearing=bearing, quality=quality, snr=s_db, last_seen=t,
                     uncertainty_deg=uncertainty)
+                if spectral:
+                    spectral_by_mode[array_mode] = spectral[0]
             if not observations:
                 continue
             c = self._get_contact(tgt)
@@ -813,7 +910,9 @@ class SonarSystem:
                 source = {"bearing": listen_observation["bearing"],
                           "level": listen_observation["quality"],
                           "lines": tgt.lofar_lines(t),
-                          "seed": getattr(tgt, "sensor_seed", tgt.id)}
+                          "seed": getattr(tgt, "sensor_seed", tgt.id),
+                          "spectral_gains": spectral_by_mode.get(
+                              mode, ((100.0, 1.0),))}
                 if isinstance(broadband, dict) and broadband.get("level", 0) > 0:
                     source["broadband"] = broadband
                 sources.append(source)
@@ -1017,7 +1116,8 @@ class SonarSystem:
             if tgt_gone(target):
                 continue
             if t >= ping["ready_at"]:
-                contact = self._apply_ping_snapshot(target, ping["snapshot"], ping["mode"])
+                contact = self._apply_ping_snapshot(
+                    target, ping["snapshot"], ping["mode"], fixed_at=t)
                 self.echo_events.append(dict(self.echo_history[-1]))
                 del self.echo_events[:-config.SONAR_ECHO_HISTORY_MAX]
                 contact.expire_ping_fix(t)
@@ -1066,7 +1166,7 @@ class SonarSystem:
             raise ValueError("invalid active sonar measurement")
         return snapshot
 
-    def _apply_ping_snapshot(self, target, snapshot, mode):
+    def _apply_ping_snapshot(self, target, snapshot, mode, fixed_at=None):
         c = self._get_contact(target)
         # A late return must not replace an already newer active measurement.
         if c.range_source != "ping" or c.range_seen is None or snapshot["t"] >= c.range_seen:
@@ -1078,7 +1178,7 @@ class SonarSystem:
                 confidence=c.confidence + config.SONAR_CONF_PING_BONUS,
                 t=snapshot["t"], snr=snapshot["snr_db"],
                 range_sigma_nm=snapshot["range_sigma_nm"],
-                depth_sigma_m=snapshot["depth_sigma_m"])
+                depth_sigma_m=snapshot["depth_sigma_m"], fixed_at=fixed_at)
             c.last_seen = max(last_seen, c.last_seen)
         self.echo_history.append({
             key: value for key, value in dict(snapshot, contact_id=c.id, mode=mode).items()
@@ -1113,7 +1213,7 @@ class SonarSystem:
             return
         sol = solve_tma(tr)
         if sol is not None:
-            c.update_tma(sol, tr.pts[-1].t)
+            c.update_tma(sol, tr.pts[-1].t, fixed_at=t)
         self._tma_versions[tgt.id] = tr.version
         self._tma_next[tgt.id] = t + config.TMA_RESOLVE_EVERY_S
 

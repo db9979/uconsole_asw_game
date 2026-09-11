@@ -103,6 +103,11 @@ DISPLAY_KEYS = {
         "DEMON": "enum.sonar_page.demon", "TMA": "enum.sonar_page.tma",
         "UMWELT/FUSION": "sonar.environment", "ACTIVE": "enum.sonar_page.active",
     },
+    "audition_mode": {
+        "BROADBAND": "enum.audition_mode.broadband",
+        "FILTERED": "enum.audition_mode.filtered",
+        "HETERODYNE": "enum.audition_mode.heterodyne",
+    },
 }
 
 

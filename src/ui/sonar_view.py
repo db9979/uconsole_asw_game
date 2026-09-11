@@ -45,18 +45,108 @@ def _panels(game, page):
     rail_w = min(350, max(240, round(body.w * .28)))
     main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
     rail = pygame.Rect(main.right + 12, body.y, rail_w, body.h)
-    height = 20 + sum(layout.font(size).get_height() + 1
-                      for _, _, size in _detail_rows(game, page))
-    height = max(254 if page in (2, 5) else 216, height)
-    details = pygame.Rect(rail.x, rail.y, rail.w, min(height, rail.h - 84))
+    # Reserve three full contact rows on every page. Long interpretation notes
+    # belong in the bounded tooltip rather than displacing operational data.
+    contact_min_h = 33 + 3 * 43
+    details = pygame.Rect(rail.x, rail.y, rail.w,
+                          max(1, rail.h - contact_min_h - 8))
     contacts = pygame.Rect(rail.x, details.bottom + 8, rail.w,
                            rail.bottom - details.bottom - 8)
     return main, details, contacts
 
 
 def _waterfall_plot(panel, page):
-    return pygame.Rect(panel.x + 57, panel.y + 61 + (66 if page == 1 else 0),
-                       panel.w - 83, panel.h - 108 - (66 if page == 1 else 0))
+    top = panel.y + (105 if page == 1 else 61)
+    return pygame.Rect(panel.x + 57, top, panel.w - 83,
+                       panel.bottom - 47 - top)
+
+
+def _visible_contacts(game, rect):
+    contacts = sorted(game.sonar.active_contacts(), key=lambda item: item.id)
+    capacity = max(1, (rect.h - 33) // 43)
+    selected = getattr(game, "selected_contact", None)
+    index = next((i for i, item in enumerate(contacts) if item is selected), 0)
+    start = max(0, min(index - capacity // 2, len(contacts) - capacity))
+    return contacts, start, contacts[start:start + capacity]
+
+
+def _visible_echoes(game, rect):
+    latest = {}
+    for echo in active_echoes(game.sonar, getattr(game, "sim_t", 0.0)):
+        latest[echo.get("contact_id")] = echo
+    capacity = max(1, (rect.h - 33) // 43)
+    return list(reversed(list(latest.values())[-capacity:])), len(latest)
+
+
+def _list_rows(game, rect, page):
+    """Return the exact visible row payloads and painted hit rectangles."""
+    if page == 5:
+        rows, total = _visible_echoes(game, rect)
+    else:
+        _, _, rows = _visible_contacts(game, rect)
+        total = None
+    return [(item, pygame.Rect(rect.x + 5, rect.y + 32 + index * 43,
+                               rect.w - 10, 41))
+            for index, item in enumerate(rows)], total
+
+
+def sonar_geometry(game, page=None):
+    """Return the canonical rectangles used by both sonar draw and hit paths."""
+    layout.configure_for(game)
+    station = pygame.Rect(config.STATION_RECT)
+    page = int(getattr(game, "sonar_page", 0) if page is None else page) % len(PAGES)
+    tab_x = station.x + 348
+    tab_w = max(50, (station.w - 362) // len(PAGES))
+    tabs = [pygame.Rect(tab_x + i * tab_w, station.y + 9, tab_w - 5, 27)
+            for i in range(len(PAGES))]
+    main, details, contacts = _panels(game, page)
+    footer_specs = (
+        (("PAGEUP/DN", "sonar.footer.page", "", display_value("sonar_page", PAGES[page])),
+         ("SHIFT+B", "sonar.footer.array", "", display_value("array", getattr(game, "sonar_mode", "BOW"))),
+         ("I/O", "sonar.footer.gain", "", f"{getattr(game.sonar, 'gain_db', 0):+.0f} dB"),
+         ("F/D", "sonar.footer.band_filter", "", f"{getattr(game.sonar, 'band_low_hz', 0):.0f}-{getattr(game.sonar, 'band_high_hz', 300):.0f} Hz")),
+        (("K", "sonar.footer.harmonic", "", (f"{_selected_harmonic(game):.1f} Hz"
+                                                if _selected_harmonic(game) is not None
+                                                else localize("ui.off"))),
+         ("N", "sonar.footer.notch", "", localize("ui.on" if getattr(game.sonar, "notch_enabled", False) else "ui.off")),
+         ("SPACE", "sonar.footer.peak", "", localize("ui.on" if getattr(game.sonar, "peak_hold", False) else "ui.off")),
+         ("J", "sonar.footer.audio", "", localize("ui.on" if getattr(game, "sonar_audio_enabled", False) else "ui.off"))),
+    )
+    actions = (("page", "array", "gain", "band_filter"),
+               ("harmonic", "notch", "peak", "audio"))
+    footer = []
+    for row, specs in enumerate(footer_specs):
+        width = (station.w - 28) // len(specs)
+        for index, (spec, action) in enumerate(zip(specs, actions[row])):
+            rect = pygame.Rect(station.x + 14 + index * width,
+                               station.bottom - 42 + row * 21,
+                               width - 6, 19)
+            footer.append(dict(rect=rect, action=action, text=spec, safe=True))
+    return dict(station=station, tabs=tabs, main=main, details=details,
+                contacts=contacts, footer=footer)
+
+
+def sonar_click_target(game, pos):
+    """Resolve only explicitly safe sonar actions; return no simulation object."""
+    if pos is None:
+        return None
+    geometry = sonar_geometry(game)
+    if not geometry["station"].collidepoint(pos):
+        return None
+    for page, rect in enumerate(geometry["tabs"]):
+        if rect.collidepoint(pos):
+            return {"action": "page_set", "value": page, "safe": True}
+    if geometry["contacts"].collidepoint(pos):
+        page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
+        for item, rect in _list_rows(game, geometry["contacts"], page)[0]:
+            if rect.collidepoint(pos):
+                action = "echo" if page == 5 else "contact"
+                value = item.get("contact_id") if page == 5 else item.id
+                return {"action": action, "value": value, "safe": True}
+    for segment in geometry["footer"]:
+        if segment["rect"].collidepoint(pos):
+            return {key: segment[key] for key in ("action", "safe")}
+    return None
 
 
 @localized
@@ -68,18 +158,28 @@ def sonar_hit_target(game, pos):
         return None
     page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
     sonar = game.sonar
-    main, details, contacts_rect = _panels(game, page)
+    geometry = sonar_geometry(game, page)
+    main, details, contacts_rect = (geometry["main"], geometry["details"],
+                                    geometry["contacts"])
+    for index, tab in enumerate(geometry["tabs"]):
+        if tab.collidepoint(pos):
+            return layout.tooltip_payload(
+                message("sonar.tooltip.page", page=display_value("sonar_page", PAGES[index])),
+                "sonar.tooltip.safe_page", target_id=f"sonar:tab:{index}")
+    for segment in geometry["footer"]:
+        if segment["rect"].collidepoint(pos):
+            return layout.tooltip_payload(
+                segment["text"][1], "sonar.tooltip.safe_control",
+                target_id=f"sonar:action:{segment['action']}")
     if contacts_rect.collidepoint(pos):
+        rows = _list_rows(game, contacts_rect, page)[0]
         if page == 5:
-            echoes = active_echoes(sonar, getattr(game, "sim_t", 0.0))
-            latest = {}
-            for echo in echoes:
-                latest[echo.get("contact_id")] = echo
-            rows = list(reversed(list(latest.values())[-max(
-                1, (contacts_rect.h - 33) // 43):]))
-            row = (int(pos[1]) - contacts_rect.y - 32) // 43
-            if 0 <= row < len(rows):
-                echo = rows[row]
+            for echo, rect in rows:
+                if rect.collidepoint(pos):
+                    break
+            else:
+                echo = None
+            if echo is not None:
                 return layout.tooltip_payload(
                     message("sonar.tooltip.echo_title", contact=echo.get('contact_id', '--')),
                     _bearing_line(game, echo["bearing"]),
@@ -88,15 +188,12 @@ def sonar_hit_target(game, pos):
                     message("sonar.tooltip.active_source", mode=echo.get('mode', '--')),
                     target_id=f"sonar:echo:{echo.get('contact_id', '')}")
         else:
-            contacts = sorted(sonar.active_contacts(), key=lambda item: item.id)
-            capacity = max(1, (contacts_rect.h - 33) // 43)
-            selected = getattr(game, "selected_contact", None)
-            index = next((i for i, item in enumerate(contacts) if item is selected), 0)
-            start = max(0, min(index - capacity // 2, len(contacts) - capacity))
-            visible = contacts[start:start + capacity]
-            row = (int(pos[1]) - contacts_rect.y - 32) // 43
-            if 0 <= row < len(visible):
-                contact = visible[row]
+            for contact, rect in rows:
+                if rect.collidepoint(pos):
+                    break
+            else:
+                contact = None
+            if contact is not None:
                 label = display_value("classification",
                                       getattr(contact, "player_class", None))
                 return layout.tooltip_payload(
@@ -605,7 +702,7 @@ def _draw_waterfall(game, panel, page):
         _text(screen, "sonar.intensity",
               (plot.x, plot.bottom + 24, plot.w - 160, 18), DIM, 12)
     else:
-        spectrum_rect = pygame.Rect(plot.x, panel.y + 65, plot.w, 48)
+        spectrum_rect = pygame.Rect(plot.x, panel.y + 56, plot.w, 42)
         pygame.draw.rect(screen, NAVY, spectrum_rect)
         receiver = getattr(sonar, "receiver", None)
         current = getattr(receiver, "spectrum", [])
@@ -636,6 +733,38 @@ def _draw_waterfall(game, panel, page):
                 if len(bearings) else message("sonar.line.history_bearing"))
         _text(screen, note, (plot.x, plot.bottom + 24, plot.w - 160, 18), DIM, 12)
 
+        base = _selected_harmonic(game)
+        if base is not None:
+            with layout.clip_to(screen, pygame.Rect(spectrum_rect.x, spectrum_rect.y,
+                                                    spectrum_rect.w, plot.bottom - spectrum_rect.y)):
+                for multiple in (1, 2, 3):
+                    frequency = base * multiple
+                    if frequency > config.LOFAR_FMAX_HZ:
+                        continue
+                    x = plot.x + round(frequency / config.LOFAR_FMAX_HZ * (plot.w - 1))
+                    pygame.draw.line(screen, AMBER, (x, spectrum_rect.y),
+                                     (x, plot.bottom - 1), 1)
+                    _text(screen, f"{multiple if multiple > 1 else ''}f",
+                          (x + 3, spectrum_rect.y + 2, 24, 16), AMBER, 11)
+
+
+def _harmonic_candidates(sonar):
+    """Expose bounded receiver peaks as operator-selectable hypotheses."""
+    peaks = getattr(getattr(sonar, "receiver", None), "peaks", [])
+    return sorted({float(hz) for hz, _ in list(peaks)[:6]
+                   if np.isfinite(hz) and 0 < float(hz) <= config.LOFAR_FMAX_HZ})
+
+
+def _selected_harmonic(game):
+    selected = getattr(game, "sonar_harmonic_hz", None)
+    if selected is None:
+        return None
+    matched = next((hz for hz in _harmonic_candidates(game.sonar)
+                    if abs(hz - selected) < 1e-6), None)
+    if matched is None:
+        game.sonar_harmonic_hz = None
+    return matched
+
 
 def _demon_evidence(sonar):
     spectrum = np.asarray(getattr(getattr(sonar, "receiver", None), "demon_spectrum", []))
@@ -657,7 +786,7 @@ def _draw_demon(game, panel):
           (panel.x + 16, panel.y + 37, panel.w - 32, 20), DIM, 13)
     plot = pygame.Rect(panel.x + 57, panel.y + 68, panel.w - 83, panel.h - 115)
     pygame.draw.rect(screen, NAVY, plot)
-    _grid(screen, plot, 80, "Hz / Huellkurve")
+    _grid(screen, plot, 80, localize("sonar.demon_axis"))
     for value in (0, .25, .5, .75, 1):
         y = plot.bottom - 1 - round(value * (plot.h - 1))
         pygame.draw.line(screen, GRID, (plot.x, y), (plot.right - 1, y))
@@ -866,6 +995,49 @@ def _draw_environment(game, panel):
               (panel.x + 20, y, panel.w - 40, 19), DIM, 13)
 
 
+def _detail_evidence(game, page):
+    """Return page-specific public evidence provenance, age, and freshness."""
+    sonar = game.sonar
+    now = float(getattr(game, "sim_t", 0.0))
+    stamp = None
+    if page in (0, 1, 2):
+        source = localize("sonar.source.receiver")
+        times = getattr(sonar, "history_times" if page == 0 else "lofar_times", [])
+        if len(times):
+            stamp = float(times[-1])
+    elif page == 3:
+        source = localize("sonar.source.tma_track")
+        contact = getattr(game, "selected_contact", None)
+        track = getattr(sonar, "_tracks", {}).get(getattr(contact, "target_id", None))
+        points = getattr(track, "pts", [])
+        stamps = ([float(points[-1].t)] if points else [])
+        tma_seen = getattr(contact, "tma_seen", None)
+        if tma_seen is not None:
+            stamps.append(float(tma_seen))
+        if stamps:
+            stamp = max(stamps)
+    elif page == 4:
+        source = localize("sonar.source.bt_profile")
+        profile = getattr(sonar, "bt_profile", None)
+        if profile is not None and profile.get("t") is not None:
+            stamp = float(profile["t"])
+    else:
+        echoes = active_echoes(sonar, now)
+        if echoes:
+            source = localize("sonar.source.active_echo")
+            stamp = float(echoes[-1]["t"])
+        else:
+            source = localize("sonar.source.active_ping")
+            pending = getattr(sonar, "_pending_pings", [])
+            if pending:
+                stamp = max(float(item["sent_at"]) for item in pending)
+    if stamp is None:
+        return source, None, localize("sonar.evidence.absent")
+    age = max(0.0, now - stamp)
+    state = "sonar.evidence.stale" if age > 30.0 else "sonar.evidence.current"
+    return source, age, localize(state)
+
+
 def _detail_rows(game, page):
     """One content list supplies both detail height and drawing."""
     sonar = game.sonar
@@ -874,12 +1046,21 @@ def _detail_rows(game, page):
              "sonar.environment_model" if page == 4 else
              "sonar.active_echoes" if page == 5 else "sonar.listening_post")
     rows = [(title, CYAN, 15)]
+    source, evidence_age, evidence_state = _detail_evidence(game, page)
+    rows.extend((line, color, 12) for line, color in (
+        (message("sonar.line.evidence_source", source=source), TEXT),
+        (message("sonar.line.evidence_age_state",
+                 age=f"{evidence_age:.1f}s" if evidence_age is not None else "--",
+                 state=evidence_state), TEXT),
+        (message("sonar.line.operating", array=display_value(
+            "array", getattr(game, "sonar_mode", "BOW")), state=localize(
+            "sonar.track" if getattr(sonar, "focus_locked", False) else "ui.manual")), DIM),
+    ))
     if page == 2:
         _, analysis, evidence = _demon_evidence(sonar)
         if evidence:
             rate = analysis["blade_rate_hz"]
             lines = [message("sonar.line.observed_tonal", rate=f"{rate:.1f}", confidence=f"{analysis['confidence']:.0%}"),
-                     "sonar.derivation_rpm",
                      message("sonar.line.rpm_pair", first=3, first_rpm=f"{rate * 20:.0f}", second=4, second_rpm=f"{rate * 15:.0f}"),
                      message("sonar.line.rpm_pair", first=5, first_rpm=f"{rate * 12:.0f}", second=6, second_rpm=f"{rate * 10:.0f}"),
                      message("sonar.line.rpm_last", blades=7, rpm=f"{rate * 60 / 7:.0f}")]
@@ -903,25 +1084,25 @@ def _detail_rows(game, page):
         tow = _tow_status(sonar, getattr(getattr(game, "ship", None), "speed", 0.0))
         actual = float(tow.get("depth_m", config.SONAR_TOWED_DEPTH_M))
         target = float(tow.get("depth_target_m", actual))
-        lines = [message("sonar.line.tow_short", state=display_value('tow', tow['state']), payout=f"{tow['payout_percent']:.0f}"),
-                 localize(message("sonar.stability_ready",
-                                  stability=f"{tow['performance']:.0%}",
-                                  ready=localize("ui.ready" if tow["available"]
-                                                 else "ui.not_ready"))),
-                 localize(message("sonar.depth_target", actual=f"{actual:.0f}",
-                                  target=f"{target:.0f}"))]
+        lines = [message("sonar.line.tow_status", state=display_value('tow', tow['state']),
+                         payout=f"{tow['payout_percent']:.0f}",
+                         stability=f"{tow['performance']:.0%}",
+                         ready=localize("ui.ready" if tow["available"] else "ui.not_ready")),
+                 message("sonar.line.depth_bt_ready", actual=f"{actual:.0f}",
+                         target=f"{target:.0f}",
+                         seconds=f"{getattr(sonar, 'bt_cooldown', 0):.0f}")]
         if profile:
             age = max(0.0, getattr(game, "sim_t", 0.0) - profile.get("t", 0.0))
             bands = profile.get("cz_bands_nm", [])
             band_text = ", ".join(f"{lo:.0f}-{hi:.0f}" for lo, hi in bands)
-            lines += [message("sonar.line.bt_age", age=f"{age:.0f}", sea=profile.get('sea_state', '--')),
-                      message("sonar.line.thermocline", depth=f"{profile.get('thermocline_m', 0):.0f}"),
-                      message("sonar.line.water_depth", depth=f"{profile.get('water_depth_m', 0):.0f}"),
+            lines += [message("sonar.line.bt_summary", age=f"{age:.0f}",
+                              sea=profile.get('sea_state', '--'),
+                              thermocline=f"{profile.get('thermocline_m', 0):.0f}",
+                              depth=f"{profile.get('water_depth_m', 0):.0f}"),
                       message("sonar.line.cz", bands=band_text or '--')]
         else:
             lines += ["sonar.bt_not_measured", "sonar.measure_profile"]
-        lines += [message("sonar.line.bt_ready", seconds=f"{getattr(sonar, 'bt_cooldown', 0):.0f}"),
-                  "sonar.tas_depth_control"]
+        lines += ["sonar.tas_depth_control"]
         if contact is not None:
             lines += [display_value("fusion", getattr(contact, "fusion_status", "KEINE FUSION"))]
             contact_range = getattr(contact, "range_est", None)
@@ -966,27 +1147,35 @@ def _detail_rows(game, page):
         rate = (f"{summary['rate']:+.2f} deg/min"
                 if summary["rate"] is not None else "-- deg/min")
         age = f"{summary['age']:.0f}s" if summary["age"] is not None else "--"
-        lines += [message("sonar.line.status", status=display_value('tma', summary['state'])),
-                  localize(message("sonar.bearing_rate_age", rate=rate, age=age)),
-                  message("sonar.line.geometry", legs=summary['legs'],
-                          geometry=display_value("tma", summary['geometry'])),
-                  message("sonar.line.tma_quality", quality=f"{quality:.0%}"),
-                  message("sonar.line.tma_course", course=f"{course % 360:05.1f}" if course is not None else "--"),
-                  message("sonar.line.tma_speed", speed=f"{speed:.1f}" if speed is not None else "--"),
+        lines += [message("sonar.line.tma_state_rate", status=display_value('tma', summary['state']),
+                          rate=rate, age=age),
+                  message("sonar.line.tma_geometry_quality", legs=summary['legs'],
+                          geometry=display_value("tma", summary['geometry']),
+                          quality=f"{quality:.0%}"),
+                  message("sonar.line.tma_motion",
+                          course=f"{course % 360:05.1f}" if course is not None else "--",
+                          speed=f"{speed:.1f}" if speed is not None else "--"),
                   "sonar.depth_not_tma"]
         seen = getattr(contact, "tma_seen", None)
         if seen is not None:
             lines += [message("observation.fix_age", age=f"{max(0, game.sim_t - seen):.0f}")]
     elif page == 1:
         peaks = getattr(getattr(sonar, "receiver", None), "peaks", [])
-        lines += ["sonar.received_lines"]
-        lines += [f"{hz:6.1f} Hz : {level:.2f}" for hz, level in peaks[:4]]
+        lines += [message("sonar.line.beam_filter", width=f"{getattr(sonar, 'beam_width_deg', 12):.1f}",
+                          low=f"{getattr(sonar, 'band_low_hz', 0):.0f}",
+                          high=f"{getattr(sonar, 'band_high_hz', 300):.0f}",
+                          notch=localize("ui.on" if getattr(sonar, "notch_enabled", False) else "ui.off"))]
+        if len(peaks):
+            peak_text = " | ".join(f"{hz:.1f} Hz {level:.2f}" for hz, level in peaks[:3])
+            lines += [message("sonar.line.received_peaks", peaks=peak_text)]
         if not len(peaks):
             lines += ["sonar.no_stable_lines"]
-        elif len(peaks) >= 2:
-            frequencies = sorted(hz for hz, _ in peaks[:6])
-            spacing = float(np.median(np.diff(frequencies)))
-            lines += [message("sonar.line.spacing", spacing=f"{spacing:.1f}")]
+        base = _selected_harmonic(game)
+        if base is not None:
+            lines += [message("sonar.line.harmonics", fundamental=f"{base:.1f}",
+                              second=f"{base * 2:.1f}", third=f"{base * 3:.1f}")]
+        else:
+            lines += ["sonar.harmonic_not_selected"]
         lines += ["sonar.lines_not_identification"]
     else:
         lines += ["sonar.passive_360", "sonar.noise_visible",
@@ -997,8 +1186,17 @@ def _detail_rows(game, page):
 
 
 def _draw_details(game, rect, page):
+    rows = _detail_rows(game, page)
+    reduction = 0
+    while reduction < 5 and sum(
+            layout.font(max(12, size - reduction)).get_height() + 1
+            for _, _, size in rows) > rect.h - 20:
+        reduction += 1
     y = rect.y + 10
-    for text, color, size in _detail_rows(game, page):
+    for text, color, size in rows:
+        size = max(12, size - reduction)
+        while size > 12 and layout.font(size).size(localize(text))[0] > rect.w - 26:
+            size -= 1
         height = layout.font(size).get_height() + 1
         _text(game.screen, text, (rect.x + 13, y, rect.w - 26, height), color, size)
         y += height
@@ -1006,12 +1204,9 @@ def _draw_details(game, rect, page):
 
 def _draw_contacts(game, rect):
     screen = game.screen
-    contacts = sorted(game.sonar.active_contacts(), key=lambda c: c.id)
+    contacts, start, visible = _visible_contacts(game, rect)
     selected = getattr(game, "selected_contact", None)
-    capacity = max(1, (rect.h - 33) // 43)
-    index = next((i for i, c in enumerate(contacts) if c is selected), 0)
-    start = max(0, min(index - capacity // 2, len(contacts) - capacity))
-    end = min(len(contacts), start + capacity)
+    end = start + len(visible)
     _text(screen, localize(message("sonar.contacts_heading",
                                    first=start + 1 if contacts else 0,
                                    last=end, total=len(contacts))),
@@ -1019,11 +1214,13 @@ def _draw_contacts(game, rect):
     if not contacts:
         _text(screen, "ui.no_observed_contacts", (rect.x + 12, rect.y + 36, rect.w - 24, 20), DIM, 13)
     with layout.clip_to(screen, rect):
-        for row, contact in enumerate(contacts[start:end]):
-            y = rect.y + 32 + row * 43
+        for contact, row_rect in _list_rows(game, rect, 0)[0]:
+            y = row_rect.y
+            layout.record_geometry("sonar-contact", row_rect,
+                                   f"sonar:contact:{contact.id}")
             if contact is selected:
-                pygame.draw.rect(screen, (21, 55, 68), (rect.x + 5, y, rect.w - 10, 41))
-                pygame.draw.rect(screen, CYAN, (rect.x + 5, y, 3, 41))
+                pygame.draw.rect(screen, (21, 55, 68), row_rect)
+                pygame.draw.rect(screen, CYAN, (row_rect.x, y, 3, row_rect.h))
             label = display_value("classification",
                                   getattr(contact, "player_class", None))
             _text(screen, message("sonar.line.contact", contact=f"{contact.id:02d}", label=label), (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)
@@ -1042,22 +1239,19 @@ def _draw_contacts(game, rect):
 def _draw_echo_list(game, rect):
     """ACTIVE side rail, deliberately independent of live contact objects."""
     screen = game.screen
-    echoes = active_echoes(game.sonar, getattr(game, "sim_t", 0.0))
-    latest = {}
-    for echo in echoes:
-        latest[echo.get("contact_id")] = echo
-    rows = list(latest.values())
-    capacity = max(1, (rect.h - 33) // 43)
-    rows = rows[-capacity:]
-    _text(screen, message("sonar.line.echo_returns", count=len(rows), total=len(latest)),
+    row_geometry, total = _list_rows(game, rect, 5)
+    rows = [item for item, _ in row_geometry]
+    _text(screen, message("sonar.line.echo_returns", count=len(rows), total=total),
           (rect.x + 12, rect.y + 8, rect.w - 24, 20), CYAN, 13)
     if not rows:
         _text(screen, "ui.no_echoes",
               (rect.x + 12, rect.y + 36, rect.w - 24, 20), DIM, 13)
         return
     with layout.clip_to(screen, rect):
-        for row, echo in enumerate(reversed(rows)):
-            y = rect.y + 32 + row * 43
+        for echo, row_rect in row_geometry:
+            y = row_rect.y
+            layout.record_geometry("sonar-echo", row_rect,
+                                   f"sonar:echo:{echo.get('contact_id', '')}")
             color = _echo_color(float(echo["age_s"]))
             _text(screen, message("sonar.line.echo_bearing", contact=echo.get('contact_id', '--'),
                                   bearing=f"{float(echo['bearing']) % 360:05.1f}"),
@@ -1073,8 +1267,9 @@ def draw_sonar_view(game, tr=None) -> None:
     layout.configure_for(game)
     screen = game.screen
     translate = _translator(game, tr)
-    station = pygame.Rect(config.STATION_RECT)
     page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
+    geometry = sonar_geometry(game, page)
+    station = geometry["station"]
     sonar = game.sonar
     with layout.clip_to(screen, station):
         screen.fill(NAVY, station)
@@ -1082,10 +1277,8 @@ def draw_sonar_view(game, tr=None) -> None:
         _text(screen, message("sonar.page_title", station=translate("station.sonar"),
                               page=display_value("sonar_page", PAGES[page], translate)),
               (station.x + 14, station.y + 9, 315, 29), TEXT, 21)
-        tab_x = station.x + 348
-        tab_w = max(50, (station.w - 362) // len(PAGES))
-        for i, name in enumerate(PAGES):
-            tab = pygame.Rect(tab_x + i * tab_w, station.y + 9, tab_w - 5, 27)
+        for i, (name, tab) in enumerate(zip(PAGES, geometry["tabs"])):
+            layout.record_geometry("sonar-tab", tab, f"sonar:tab:{i}")
             if i == page:
                 pygame.draw.rect(screen, (21, 55, 68), tab)
                 pygame.draw.line(screen, CYAN, tab.bottomleft, (tab.right - 1, tab.bottom), 2)
@@ -1102,30 +1295,52 @@ def draw_sonar_view(game, tr=None) -> None:
                                       value=f"{tow['performance']:.0%}")))
         ping = (localize(message("sonar.ping_echo")) if getattr(sonar, "ping_active", False) else
                 localize(message("sonar.ping_ready")) if getattr(sonar, "ping_ready", True) else
-                localize(message("sonar.ping_cooldown", seconds=
-                                 f"{getattr(sonar, 'ping_cooldown_remaining', 0):.0f}")))
+                 localize(message("sonar.ping_cooldown", seconds=
+                                  f"{getattr(sonar, 'ping_cooldown_remaining', 0):.0f}")))
+        audio_status = getattr(game, "sonar_audio_status", None)
+        audio = (audio_status() if audio_status is not None else dict(
+            global_enabled=bool(getattr(getattr(game, "audio", None), "enabled", False)),
+            device_available=bool(getattr(getattr(game, "audio", None), "available", False)),
+            local_enabled=bool(getattr(game, "sonar_audio_enabled", False)),
+            mode=getattr(sonar, "audition_mode", "BROADBAND"),
+            volume=float(getattr(game, "sonar_volume", 0.0)),
+            muted_above_1x=getattr(game, "time_scale", 1) != 1,
+            audible=False))
         statuses = (
             localize(message("sonar.status.array", array=display_value("array", mode),
                              state=display_value("tow", tow["state"]),
                              payout=f"{tow['payout_percent']:.0f}", ready=tow_ready,
                              pause=tow_pause)),
             localize(message("sonar.status.listen",
-                             bearing=f"{getattr(sonar, 'listen_bearing', 0) % 360:05.1f}",
-                             gain=f"{getattr(sonar, 'gain_db', 0):+.0f}")),
+                              bearing=f"{getattr(sonar, 'listen_bearing', 0) % 360:05.1f}",
+                              gain=f"{getattr(sonar, 'gain_db', 0):+.0f}", ping=ping)),
             localize(message("sonar.status.filter",
+                             mode=display_value("audition_mode", audio["mode"]),
                              low=f"{getattr(sonar, 'band_low_hz', 0):.0f}",
                              high=f"{getattr(sonar, 'band_high_hz', 300):.0f}",
                              notch=localize("ui.on" if getattr(sonar, "notch_enabled", False)
-                                            else "ui.off"), ping=ping)),
+                                             else "ui.off"))),
+            localize(message("sonar.status.audio",
+                             global_state=localize("ui.on" if audio["global_enabled"] else "ui.off"),
+                             device=localize("ui.on" if audio["device_available"] else "ui.off"),
+                             local_state=localize("ui.on" if audio["local_enabled"] else "ui.off"),
+                             volume=f"{audio['volume']:.0%}",
+                              state=localize(message(
+                                  "sonar.audio.muted_accelerated",
+                                  scale=f"{getattr(game, 'time_scale', 1):g}"))
+                              if audio["muted_above_1x"] else localize(
+                                  "sonar.audio.audible" if audio["audible"]
+                                  else "sonar.audio.silent"))),
         )
-        status_w = (station.w - 28) // 3
+        status_w = (station.w - 28) // len(statuses)
         for i, status in enumerate(statuses):
             status_rect = pygame.Rect(station.x + 14 + i * status_w,
                                       station.y + 43, status_w - 8, 23)
             pygame.draw.rect(screen, PANEL, status_rect)
             _text(screen, status, status_rect.move(7, 3).inflate(-14, 0),
                   CYAN if i == 0 else DIM, 13)
-        main, details, contacts = _panels(game, page)
+        main, details, contacts = (geometry["main"], geometry["details"],
+                                   geometry["contacts"])
         for role, rect in (("sonar-main", main), ("sonar-details", details),
                            ("sonar-contacts", contacts)):
             layout.record_geometry("region", rect, role)
@@ -1148,11 +1363,10 @@ def draw_sonar_view(game, tr=None) -> None:
             _draw_echo_list(game, contacts)
         else:
             _draw_contacts(game, contacts)
-        footer = ("sonar.page_controls", "sonar.controls_footer")
-        for i, line in enumerate(footer):
-            text = (message("sonar.preview_controls", scale=f"{game.time_scale:g}")
-                    if i == 0 and getattr(game, "time_scale", 1) != 1
-                    else translate(line))
-            _text(screen, text,
-                  (station.x + 14, station.bottom - 42 + i * 21,
-                   station.w - 28, 19), DIM, 13)
+        for segment in geometry["footer"]:
+            rect = segment["rect"]
+            layout.record_geometry("sonar-action", rect,
+                                   f"sonar:action:{segment['action']}")
+            pygame.draw.rect(screen, PANEL, rect)
+            pygame.draw.line(screen, GRID, rect.topright, rect.bottomright)
+            layout.command_segment(screen, rect, *segment["text"], size=11)

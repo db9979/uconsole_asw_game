@@ -8,6 +8,7 @@ import random
 from dataclasses import asdict, dataclass
 
 from src.core import config
+from src.sonar import propagation
 
 
 SIDES = ("friendly", "neutral", "hostile")
@@ -215,10 +216,32 @@ class PlatformSensorSuite:
         if profile.domain == "ais" and not getattr(candidate, "ais_transmitting", False):
             return
         if profile.domain == "sonar":
-            blocked = getattr(world, "sonar_path_blocked", lambda *args: False)
-            if blocked(owner.x, owner.y, getattr(owner, "depth", 5.0),
-                       candidate.x, candidate.y, getattr(candidate, "depth", 5.0)):
-                return
+            active_sonar = "active" in profile.modes
+            if active_sonar:
+                blocked = getattr(world, "sonar_path_blocked", lambda *args: False)
+                if blocked(owner.x, owner.y, getattr(owner, "depth", 5.0),
+                           candidate.x, candidate.y,
+                           getattr(candidate, "depth", 5.0)):
+                    return
+            elif "passive" in profile.modes:
+                mx, my = (owner.x + candidate.x) * .5, (owner.y + candidate.y) * .5
+                source_depth = getattr(owner, "depth", 5.0)
+                target_depth = getattr(candidate, "depth", 5.0)
+                water_depth = max(float(world.depth_m(mx, my)), source_depth,
+                                  target_depth, 1.0)
+                thermo_at = getattr(world, "thermocline_depth_m", None)
+                thermo = (float(thermo_at(mx, my)) if thermo_at is not None
+                          else min(100.0, water_depth))
+                water_depth = max(water_depth, thermo)
+                result = propagation.propagate(
+                    owner.x, owner.y, source_depth,
+                    candidate.x, candidate.y, target_depth,
+                    propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
+                    thermo, water_depth, sea_state=getattr(world, "sea_state", 0),
+                    terrain_blocked=getattr(world, "sonar_path_blocked", None))
+                maximum *= propagation.passive_range_factor(result, distance)
+                if maximum <= 0.0 or distance > maximum:
+                    return
             source_noise = (candidate.noise_level()
                             if hasattr(candidate, "noise_level") else
                             1.0 - getattr(candidate, "quiet_factor", lambda: 0.0)())
@@ -387,6 +410,10 @@ def machine_acoustics(catalog, profile_key: str, speed_kn: float):
     if systems is None or systems.machine_key is None:
         return None
     machine = catalog.machines[systems.machine_key]
+    # An unknown propulsor does not justify replacing the established,
+    # fingerprinted entry acoustics with normalized component metadata.
+    if machine.propulsor_type == "unknown":
+        return None
     span = max(0.01, machine.maximum_speed_kn - machine.cruise_speed_kn)
     blend = config.clamp((speed_kn - machine.cruise_speed_kn) / span, 0.0, 1.0)
     count = min(len(machine.cruise_lines), len(machine.high_speed_lines))
@@ -489,8 +516,7 @@ def _validate_suite_state(state: dict, catalog, profile_key: str, now: float) ->
                 or type(controller["scan_index"]) is not int
                 or not 0 <= controller["scan_index"] <= 2**63 - 1
                 or not _finite_between(controller["next_scan_s"], 0.0,
-                                       now + cadence)
-                or controller["next_scan_s"] < max(0.0, now - cadence)):
+                                       now + cadence)):
             raise ValueError("invalid sensor controller state")
         if controller["next_scan_s"] <= now + 1e-9:
             due = int(math.floor(

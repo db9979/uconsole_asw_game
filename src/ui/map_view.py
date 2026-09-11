@@ -48,6 +48,24 @@ def contact_position(contact, ship):
             ship.y - float(distance) * math.cos(angle))
 
 
+def active_fix_markers(game, view):
+    """Shared draw/hit geometry for every current detached sonar fix."""
+    markers = []
+    sonar = getattr(game, "sonar", None)
+    contacts = sorted(getattr(sonar, "contacts", {}).values(),
+                      key=lambda contact: contact.id)
+    for contact in contacts:
+        active = getattr(contact, "active_fixes", lambda now: ())(game.sim_t)
+        for fix in active:
+            px, py = view.world_to_screen(fix["x"], fix["y"])
+            markers.append((contact, fix, (int(px), int(py))))
+    return markers
+
+
+def _fix_marker_radius(fix, view):
+    return max(3, int(fix["uncertainty_nm"] * view.scale))
+
+
 @localized
 def map_hit_target(game, pos):
     """Describe the chart item under *pos* using chart and displayed data only."""
@@ -75,6 +93,23 @@ def map_hit_target(game, pos):
     terrain = "map.land" if depth <= 0.0 else message(
         "map.tooltip.water_depth", depth=f"{depth:.0f}")
     chart_lines = (coordinate, terrain)
+    for contact, fix, point in reversed(active_fix_markers(game, view)):
+        if not _near(pos, point, max(15, _fix_marker_radius(fix, view) + 3)):
+            continue
+        measurement_age = max(0.0, game.sim_t - fix["measured_at"])
+        fix_age = max(0.0, game.sim_t - fix["fixed_at"])
+        depth = (message("map.tooltip.fix_depth", depth=f"{fix['depth_m']:.0f}",
+                         uncertainty=f"{fix['depth_uncertainty_m']:.0f}")
+                 if fix["depth_m"] is not None else None)
+        return layout.tooltip_payload(
+            message("map.tooltip.fix_title", contact=contact.id,
+                    source=fix["source"]),
+            message("map.tooltip.fix_ages", measurement_age=f"{measurement_age:.0f}",
+                    fix_age=f"{fix_age:.0f}"),
+            message("map.tooltip.fix_uncertainty",
+                    uncertainty=f"{fix['uncertainty_nm']:.2f}"), depth,
+            *chart_lines,
+            target_id=f"map:sonar:{contact.id}:fix:{fix['source'].lower()}")
     tracks = game.radar_tracks()
     for track in reversed(tracks):
         observed_x, observed_y = observed_position(track)
@@ -355,6 +390,18 @@ def draw_map_view(game, tr=None) -> None:
             pygame.draw.circle(s, (220, 200, 90), (int(px), int(py)), 3)
 
         # Peilstrich + Ziel-Kreuz (ausgewählter Kontakt / Ziel)
+        for contact, fix, (px, py) in active_fix_markers(game, view):
+            color = {"PING": (90, 220, 220), "TMA": config.COLOR_WARN,
+                     "SONOBUOY": config.COLOR_CONTACT_ZIVIL}[fix["source"]]
+            radius = _fix_marker_radius(fix, view)
+            pygame.draw.circle(s, color, (px, py), radius, 1)
+            pygame.draw.line(s, color, (px - 6, py), (px + 6, py), 1)
+            pygame.draw.line(s, color, (px, py - 6), (px, py + 6), 1)
+            layout.blit_line(
+                s, message("map.line.sonar_fix", contact=contact.id,
+                           source=fix["source"]),
+                (px + 9, py - 19, 180, 18), color, size=12)
+
         contact = game.selected_contact or game.target
         if contact is not None:
             fx, fy = view.world_to_screen(game.ship.x, game.ship.y)

@@ -45,8 +45,14 @@ Dokumentpruefung in `src/data/catalog.py`:
 - Sub-Profile: `torpedoes` Integer von 0 bis 100
 - mindestens 100 Akustik-Profile außerhalb `BIOLOGISCH`
 
-Der R4-Paketstand verwendet Version 2 fuer `subs.json`, `warships.json` und
-`civilians.json`; die anderen fuenf Profildateien bleiben Version 1. Gemischte
+Der R10-Batch-5-Paketstand verwendet Version 2 fuer alle acht Profildateien.
+Alle 23
+U-Boot-Eintraege, einschliesslich der drei generischen Szenarioarchetypen
+`diesel_alt`, `aip_modern` und `ssn`, sowie alle 28 Kriegsschiffe besitzen
+vollstaendige v2-Verknuepfungen. Das gilt nun auch fuer alle 55 zivilen Profile;
+der bestehende `cargo_05`-Panamax-Datensatz bleibt ausdruecklich ein generischer
+Archetyp.
+Gemischte
 externe v1/v2-Gesamtkataloge sind zulaessig. Sobald mindestens eine
 Profildatei Version 2 verwendet, ist `sources.json` erforderlich. Der Loader
 behaelt jede Dokumentversion und kann alle akzeptierten Felder einschliesslich
@@ -69,8 +75,43 @@ v2-Datentypen und schreibgeschuetzten Register umfassen:
 R5 aktiviert fuer die neun Pilotprofile Maschinenfahrt-/Akustikwerte,
 Manovriergrenzen und die getrennten Radar-, ESM-, Sonar- und AIS-Controller. R8
 aktiviert die ausdruecklich getesteten ASW-Waffen, Launcher, Magazine und
-Gegenmassnahmen der Pilotprofile. Flugkoerperabwehrkomponenten bleiben bis R9
-inaktiv; erfolgreiche Validierung allein aendert das bestehende Gameplay nicht.
+Gegenmassnahmen der Pilotprofile; R9 aktiviert die Flugkoerperabwehr. R10 Batch 1
+ergaenzt alle uebrigen U-Boote. Ihre Maschinen-Maximalfahrt,
+Torpedomunition und Spawnwerte entsprechen den unveraenderten Legacy-Eintraegen;
+unbekannte Propulsoren behalten die etablierte fingerprintbasierte Akustik und
+den abgeloesten Legacy-Beobachtungsgate. Die R8-Decoy-Komponente wird in R10 auf
+die restliche Familie ausgerollt: Jedes migrierte Boot besitzt nun einen
+endlichen, synthetischen Decoy-Bestand statt keiner kataloggebundenen
+Gegenmassnahme. Dieser beabsichtigte Gameplayunterschied nutzt den gespeicherten
+`rng_asw` und ist deterministisch getestet. R10 Batch 2 ergaenzt entsprechend die
+22 noch nicht migrierten Kriegsschiffe. Ihre unbekannten Propulsoren behalten
+ebenfalls Legacy-Akustik und -Beobachtung; die ASM-Komponenten spiegeln nur die
+vorhandene Modellbewaffnung und aktivieren keine neue ASW-Faehigkeit. Die neuen
+Sensorcontroller und Komponenten werden dennoch streng validiert und im
+Save-v10-Snapshot gespeichert. R10 Batch 3 ergaenzt Radar, AIS und
+Maschinenmetadaten fuer die 54 zuvor nicht migrierten zivilen Profile. Sie
+besitzen keine Waffen-, Launcher-, Magazin- oder Gegenmassnahmenkomponenten.
+Unbekannte Propulsoren und Abmessungen erhalten keine erfundenen Werte; dadurch
+bleiben Legacy-Akustik, Bewegungsgrenzen, Spawnreihenfolge und RNG-Zugfolge
+unveraendert. Radar/AIS erzeugen nur komponentenlokalen, stabil gehashten
+Sensorzustand und aendern die zivile Transitdoktrin nicht.
+R10 Batch 4 ergaenzt beide Flugzeugprofile mit Referenz-/Maschinenmetadaten und
+getrennten Sensorcontrollern: die militaerische Patrouille besitzt Radar und ESM,
+der zivile Transit Radar und AIS. Beide Radarprofile besitzen Emitter. Die
+Komponenten verwenden nur stabile lokale Sensorhashes; die bestehende abgeloeste
+ESM-Entscheidungsbruecke bleibt fuer die Patrouillensteuerung massgeblich. Beide
+Profile bleiben unbewaffnet, und es entstehen weder eine Nimitz-Luftgruppe noch
+neue Flugzeugoperationen.
+R10 Batch 5 ergaenzt Referenz- und Maschinenkomponenten fuer Tiere, Torpedos und
+Dekoys. Diese Komponenten spiegeln ausschliesslich bestehende Geschwindigkeiten,
+Tonallinien und Breitbandwerte; `propulsor_type: "unknown"` haelt den bisherigen
+Entry-/Bibliotheks-Akustikpfad ausdruecklich massgeblich. Tiere und Dekoys erhalten
+keine Sensoren oder Waffen. Auch die Torpedoprofile erhalten keine zusaetzlichen
+Sucher-, Waffen- oder Launcherfunktionen; vorhandene Plattformwaffen verweisen
+weiterhin ueber `runtime_profile_key` auf die unveraenderten Torpedo-Entries.
+`acoustics.json` ist ein v2-Bibliotheksdokument mit leeren Plattformregistern,
+weil `animal` ein Klassifikations-Fangnetz und `decoy` ein beabsichtigter Alias
+des Dekoyprofils ist, keine zwei weiteren Spawnprofile.
 
 V2-Komponentenschluessel sind logische Kleinbuchstaben-IDs; Pfadtrenner und
 Dateipfade sind ungueltig. Referenz-, Maschinen-, Sensor-, Emitter-, Waffen-,
@@ -150,10 +191,19 @@ Laden allein beweist noch keine Simulationswirkung.
 `"military"`/`"civil"`), `speed_kn`, `esm` (bool), `esm_range_nm`,
 `loiter_nm` [min,max], `spawn_weight`, `signature_text`.
 
+Beide Eintraege besitzen vollstaendige v2-Verknuepfungen. Ihre synthetischen
+Referenz-, Maschinen-, Radar-, ESM-/AIS- und Emitterwerte sind
+`game_assumption`; nicht belegte Jahre, Abmessungen, Crew-, RPM- und nullable
+Sensordetails sind `unknown`. Waffen-, Launcher-, Magazin- und
+Gegenmassnahmenregister sind leer.
+
 ## `animals.json` (3 Profile)
 
 `key`, `name`, `depth_min`, `depth_max`, `speed_kn`, `quiet`, `size_nm`,
 `spawn_weight`, `lines` ([[hz,amp,width],…]), `signature_text`.
+
+Alle drei Eintraege besitzen Referenz- und Maschinenverknuepfungen. Sensor-,
+Emitter-, Waffen-, Launcher-, Magazin- und Gegenmassnahmenregister sind leer.
 
 ## `torpedoes.json` (3 Profile)
 
@@ -164,10 +214,18 @@ Profilen weggelassen; im Kontakt-JSON ist explizites `null` nicht gueltig).
 90–150 Hz (Kreischen); die Subharmonische 45–75 Hz erzeugt die DEMON-
 Blattfrequenz.
 
+Alle drei Eintraege besitzen Referenz- und Maschinenverknuepfungen. Ihre
+Runtimewerte und Auswahl ueber die festen Bindungen bleiben aus den Legacy-
+Entries gespeist; das v2-Dokument fuegt keine neuen Sucher oder Launcher hinzu.
+
 ## `decoys.json` (1 Profil)
 
 `key`, `name`, `life_s`, `speed_kn`, `cooldown_s`, `chance`, `lines`,
 `signature_text`.
+
+Das Profil besitzt Referenz- und Maschinenverknuepfungen, aber weder Sensoren
+noch Waffen. Lebensdauer, Geschwindigkeit, Cooldown, Ablenkwahrscheinlichkeit,
+Tonallinien und Bibliotheks-Breitband bleiben unveraendert runtimewirksam.
 
 ## Save-v10-Runtime-Snapshot
 
@@ -175,8 +233,8 @@ V10-Saves tragen zwingend eine streng validierte `catalog_snapshot`-Version 2. S
 enthaelt die vollstaendigen runtimewirksamen `entries`, die validierten
 v2-Komponentendokumente der acht Profilressourcen und feste Bindungen fuer
 Fregatten-, Hubschrauber- und Feindtorpedo, U-Boot-Dekoy sowie
-zivile/militaerische Standardfluege. Quellen- und Provenienzmetadaten werden
-nicht in den Save kopiert.
+zivile/militaerische Standardfluege und deren v2-Komponenten. Quellen- und
+Provenienzmetadaten werden nicht in den Save kopiert.
 
 Beim Laden wird ein instanzlokaler Katalog aufgebaut. Wiederhergestellte und
 spaeter in derselben Mission erzeugte U-Boote, Oberflaechenschiffe, Tiere,
@@ -191,8 +249,10 @@ Seite/Doktrin, aktivierte Sensorcontroller, naechste Scanphase, Scanindex sowie
 auf jeweils 64 Beobachtungen begrenzte lokale und Datalink-Bilder. Diese Bilder
 enthalten weder Entity-IDs noch Profilkeys oder Objektverweise. Peilungen tragen
 ihren Messursprung; der Friendly Datalink uebertraegt nur abgeloeste
-Beobachtungen. Nicht migrierte Profile verwenden bis R10 einen expliziten
-Legacyadapter, dessen KI ebenfalls nur eine abgeloeste Beobachtung erhaelt.
+Beobachtungen. Noch nicht migrierte Profilfamilien sowie R10-U-Boote und
+-Kriegsschiffe mit nur synthetischen, unbekannten Propulsordetails und
+R10-Flugzeuge mit bewusst beibehaltener Legacy-Doktrin verwenden einen
+expliziten Adapter, dessen KI ebenfalls nur eine abgeloeste Beobachtung erhaelt.
 
 ## Modellannahmen
 
@@ -235,19 +295,26 @@ unterschiedliche Vertraege:
 | `tonal_band_hz`, `secondary_tonals` | Klassifikation bzw. plattformspezifische LOFAR-Synthese. Nicht jeder Signaturtyp verarbeitet jedes Feld gleich. |
 | `label`, `signature_text` | Beschreibende Bibliotheks-/Diagnosetexte, keine physikalischen Parameter. `AircraftProfile.signature_text` hat derzeit keinen Simulationsverbraucher. |
 | `propulsion` | Ausserhalb der Sub-Capability-Metadaten beschreibender Text, kein allgemeines Antriebsmodell. |
+| `endurances` | Nur in `subs.json`: streng typisierte fiktive Batterie-/AIP-Komponenten. Der Schluessel ist exakt `endurance.<profile_key>`; jedes nichtnukleare v2-U-Boot braucht genau eine, nukleare Profile duerfen keine besitzen. |
 | `AircraftProfile.nation` | Katalog-/Editor-Metadatum. `Flight.nation` kommt von der Startbasis, nicht aus diesem Feld. |
 | `AnimalProfile.size_nm` | Wird in `AnimalType` uebernommen, derzeit aber nicht als Sonar-Ausdehnung oder Trefferhuelle ausgewertet. |
 | `TorpedoProfile.used_by` | Validiertes Zuordnungsmetadatum; Waffen werden ueber explizite Profil-IDs ausgewaehlt, nicht automatisch anhand dieses Feldes. |
-| `acoustics.json` | Zusaetzliche Bibliothekssignaturen: `animal` ist ein Klassifikations-Fangnetz, kein Tier-Spawnprofil. `decoy` liefert auch Breitbanddaten fuer die Dekoy-Runtime; die Dekoy-Tonallinien kommen aus `decoys.json`. |
+| `acoustics.json` | Zusaetzliche Bibliothekssignaturen: `animal` ist ein Klassifikations-Fangnetz, kein Tier-Spawnprofil. `decoy` liefert auch Breitbanddaten fuer die Dekoy-Runtime; die Dekoy-Tonallinien kommen aus `decoys.json`. Als v2-Bibliotheksdokument besitzt die Datei bewusst keine Plattformkomponenten. |
 
 `SubProfile.is_nuclear` und `SubProfile.requires_air` sind abgeleitete, nicht
 serialisierte Properties. Sie verwenden den vorhandenen JSON-Wert
 `acoustic.propulsion`, nicht den Legacy-Schluessel `ssn`: Kernantrieb ergibt
 `True`/`False`, Diesel und AIP `False`/`True`. Das API erlaubt der Einheiten-Runtime,
-Luftbedarf konsistent fuer benannte Profile zu behandeln. Es definiert weder
-Batterie-/AIP-Ausdauer noch Schnorchelintervalle; solche Regeln bleiben Aufgabe
-der Runtime und ihrer Determinismus-/Save-Tests. Die Properties werden nicht als
-neue JSON-Felder akzeptiert.
+Luftbedarf konsistent fuer benannte Profile zu behandeln. Die zugeordnete
+`EnduranceProfile`-Komponente definiert `battery_capacity_kwh`, `hotel_load_kw`,
+`propulsion_max_kw` mit `propulsion_exponent`, `generator_power_kw`, die gemeinsam
+optionalen `aip_power_kw`/`aip_energy_kwh`, geordnete
+`reserve_start_fraction`/`reserve_stop_fraction`, `snorkel_depth_m` und
+`radio_duration_s`. Alle Zahlen sind endlich, positiv und defensiv begrenzt;
+Startreserve muss echt unter Stopreserve liegen, AIP-Felder sind gemeinsam Zahl
+oder `null`, und Generatorleistung muss die Hotellast uebersteigen. Diese Werte
+sind ausschliesslich fiktive Spielannahmen. Die Properties selbst werden nicht
+als neue JSON-Felder akzeptiert.
 
 ## Unit Editor
 

@@ -110,7 +110,11 @@ class TrackPicture:
             measurement["track_bearing"] = track.bearing
             self._tracks[track_id] = track
         else:
-            if epoch == track.measurement_epoch or now <= track.last_seen:
+            local_radar_upgrade = (
+                now == track.last_seen and track.source == "DATALINK"
+                and source.startswith("RADAR"))
+            if (epoch == track.measurement_epoch or now < track.last_seen
+                    or (now == track.last_seen and not local_radar_upgrade)):
                 return track
             previous_source = track.source
             track.kind = kind

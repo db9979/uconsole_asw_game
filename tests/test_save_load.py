@@ -440,6 +440,21 @@ def test_unsupported_or_non_integer_versions_are_rejected(version, tmp_saves):
                            "bearing_filter_uncertainty_deg": 1.0}}},
     {"pending_pings": {}},
     {"pending_pings": [None]},
+    {"bt_cooldown": "forever"},
+    {"bt_cooldown": config.SONAR_BT_COOLDOWN_S + 1.0},
+    {"bt_profile": {"foo": 1.0}},
+    {"bt_profile": {"t": 0.0, "x": 0.0, "y": 0.0,
+                     "thermocline_m": 80.0, "water_depth_m": 300.0,
+                     "sea_state": 2,
+                     "depths_m": [float(index * 15) for index in range(21)],
+                     "speeds_m_s": [1500.0] * 21,
+                     "cz_bands_nm": [[41.0, 70.0]]}},
+    {"bt_profile": {"t": 0.0, "x": 0.0, "y": 0.0,
+                     "thermocline_m": 80.0, "water_depth_m": 300.0,
+                     "sea_state": 2,
+                     "depths_m": [0.0] * 20 + [300.0],
+                     "speeds_m_s": [1400.0] * 21,
+                     "cz_bands_nm": [list(band) for band in config.CZ_BANDS]}},
 ])
 def test_malformed_sonar_history_is_rejected_transactionally(
         sonar_patch, tmp_saves):

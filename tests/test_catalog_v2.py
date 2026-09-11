@@ -1,6 +1,7 @@
 """Mixed catalog-v2 registries, provenance, and strict reconstruction contracts."""
 
 import copy
+import hashlib
 import json
 import random
 import shutil
@@ -11,6 +12,22 @@ import pytest
 
 from src.data import catalog
 from tools.gen_contacts import _same_json, validate
+
+
+GENERIC_SUBMARINE_KEYS = ("diesel_alt", "aip_modern", "ssn")
+NAMED_SUBMARINE_KEYS = tuple(f"sub_{index:02d}" for index in range(1, 21))
+ALL_SUBMARINE_KEYS = GENERIC_SUBMARINE_KEYS + NAMED_SUBMARINE_KEYS
+ALL_WARSHIP_KEYS = tuple(f"warship_{index:02d}" for index in range(1, 29))
+ALL_CIVILIAN_KEYS = (
+    *(f"tanker_{index:02d}" for index in range(1, 16)),
+    *(f"passenger_{index:02d}" for index in range(1, 16)),
+    *(f"cargo_{index:02d}" for index in range(1, 16)),
+    *(f"aux_{index:02d}" for index in range(1, 11)),
+)
+ALL_AIRCRAFT_KEYS = ("mil_patrol", "civil_transit")
+ALL_ANIMAL_KEYS = ("whale", "fish_school", "jellyfish")
+ALL_TORPEDO_KEYS = ("frigate_torp", "helo_torp", "enemy_torp")
+ALL_DECOY_KEYS = ("decoy",)
 
 
 def _copy_catalog(destination):
@@ -131,27 +148,52 @@ def _v2_documents(directory):
              "source_ids": []},
         ],
     }
+    claimed = {path for claim in source_document["claims"]
+               for path in claim["field_paths"]}
+    components = [
+        ("reference", document["references"][0]),
+        ("machine", document["machines"][0]),
+    ]
+    for registry in ("sensors", "emitters", "weapons", "launchers",
+                     "magazines", "countermeasures"):
+        components.extend((f"{registry}/{component['key']}", component)
+                          for component in document[registry])
+    missing = {"game_assumption": [], "unknown": []}
+    for prefix, component in components:
+        for field, value in component.items():
+            field_path = f"/{prefix}/{field}"
+            if field != "key" and field_path not in claimed:
+                missing["unknown" if value is None else "game_assumption"].append(
+                    field_path)
+    for status, field_paths in missing.items():
+        if field_paths:
+            source_document["claims"].append({
+                "resource": "warships.json", "profile_key": profile_key,
+                "field_paths": field_paths, "status": status,
+                "source_ids": ([] if status == "unknown"
+                               else ["u-jagd.game-model"]),
+            })
     (directory / "sources.json").write_text(
         json.dumps(source_document, indent=2) + "\n", encoding="utf-8")
     return document, source_document, profile_key
 
 
-def test_packaged_r4_pilot_versions_counts_and_provenance():
+def test_packaged_migration_versions_counts_and_provenance():
     assert {name for name, version in catalog.CATALOG.document_versions.items()
-            if version == 2} == {"subs.json", "warships.json", "civilians.json"}
-    assert set(catalog.CATALOG.profile_systems) == {
-        "warship_01", "warship_02", "warship_25", "warship_26", "warship_27",
-        "warship_28", "sub_03", "sub_14", "cargo_05",
-    }
-    assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 9
-    assert len(catalog.CATALOG.sensors) == 18
-    assert len(catalog.CATALOG.emitters) == 7
-    assert len(catalog.CATALOG.weapons) == 8
-    assert len(catalog.CATALOG.launchers) == 8
-    assert len(catalog.CATALOG.magazines) == 8
-    assert len(catalog.CATALOG.countermeasures) == 8
+            if version == 2} == set(catalog.CONTACT_FILENAMES)
+    assert set(catalog.CATALOG.profile_systems) == set(
+        ALL_SUBMARINE_KEYS) | set(ALL_WARSHIP_KEYS) | set(ALL_CIVILIAN_KEYS) \
+        | set(ALL_AIRCRAFT_KEYS) | set(ALL_ANIMAL_KEYS) \
+        | set(ALL_TORPEDO_KEYS) | set(ALL_DECOY_KEYS)
+    assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 115
+    assert len(catalog.CATALOG.sensors) == 216
+    assert len(catalog.CATALOG.emitters) == 85
+    assert len(catalog.CATALOG.weapons) == 51
+    assert len(catalog.CATALOG.launchers) == 51
+    assert len(catalog.CATALOG.magazines) == 51
+    assert len(catalog.CATALOG.countermeasures) == 51
     assert len(catalog.CATALOG.sources) == 15
-    assert len(catalog.CATALOG.provenance_claims) == 52
+    assert len(catalog.CATALOG.provenance_claims) == 366
     assert len(catalog.CATALOG.subs) + len(catalog.CATALOG.surfaces) \
         + len(catalog.CATALOG.aircraft) + len(catalog.CATALOG.animals) \
         + len(catalog.CATALOG.torpedoes) + len(catalog.CATALOG.decoys) == 115
@@ -162,9 +204,200 @@ def test_packaged_r4_pilot_versions_counts_and_provenance():
         assert _same_json(reconstructed[filename], catalog._read_json(source / filename))
 
 
-def test_r4_pilot_claims_cover_every_component_field():
+def test_r10_batch1_migrates_every_submarine_in_legacy_order():
+    assert tuple(catalog.CATALOG.subs) == ALL_SUBMARINE_KEYS
+    assert tuple(key for key in catalog.CATALOG.profile_systems
+                 if key in catalog.CATALOG.subs) == ALL_SUBMARINE_KEYS
+    assert tuple(key for key in catalog.CATALOG.subs
+                 if not key.startswith("sub_")) == GENERIC_SUBMARINE_KEYS
+
+    for key in ALL_SUBMARINE_KEYS:
+        systems = catalog.CATALOG.profile_systems[key]
+        assert systems.reference_key == f"reference.{key}"
+        assert systems.machine_key == f"machine.{key}"
+        assert systems.sensor_keys == (f"sensor.{key}.sonar", f"sensor.{key}.esm")
+        assert systems.emitter_keys == ()
+        assert systems.launcher_keys == (f"launcher.{key}.tubes",)
+        assert systems.magazine_keys == (f"magazine.{key}.torpedoes",)
+        assert systems.countermeasure_keys == (f"countermeasure.{key}.decoy",)
+
+
+def test_r10_batch1_keeps_legacy_entries_and_spawn_selection_stable():
+    entries = catalog.CATALOG.reconstruct_documents()["subs.json"]["entries"]
+    assert tuple(entry["key"] for entry in entries) == ALL_SUBMARINE_KEYS
+    encoded = json.dumps(
+        entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert hashlib.sha256(encoded).hexdigest() == \
+        "25a51032dcba8956ede1ff4d09cba539ec14c84a226033b2e9165f59f166f5d9"
+    assert [catalog.CATALOG.pick_sub(random.Random(seed)).key for seed in range(20)] == [
+        "sub_17", "aip_modern", "sub_19", "sub_01", "sub_01", "sub_11",
+        "sub_15", "sub_03", "sub_01", "sub_07", "sub_10", "sub_06",
+        "sub_07", "sub_02", "aip_modern", "sub_20", "sub_04", "sub_08",
+        "ssn", "sub_12",
+    ]
+
+
+def test_r10_batch2_migrates_every_warship_in_legacy_order():
+    assert tuple(profile.key for profile in catalog.CATALOG.hostile_surfaces) == \
+        ALL_WARSHIP_KEYS
+    assert tuple(key for key in catalog.CATALOG.profile_systems
+                 if key in ALL_WARSHIP_KEYS) == ALL_WARSHIP_KEYS
+
+    for key in ALL_WARSHIP_KEYS:
+        systems = catalog.CATALOG.profile_systems[key]
+        assert systems.reference_key == f"reference.{key}"
+        assert systems.machine_key == f"machine.{key}"
+        assert systems.sensor_keys == (f"sensor.{key}.radar", f"sensor.{key}.sonar")
+        assert systems.emitter_keys == (f"emitter.{key}.radar",)
+        assert systems.countermeasure_keys == (f"countermeasure.{key}.softkill",)
+    for key in ALL_WARSHIP_KEYS[2:24]:
+        systems = catalog.CATALOG.profile_systems[key]
+        assert systems.launcher_keys == (f"launcher.{key}.asm",)
+        assert systems.magazine_keys == (f"magazine.{key}.asm",)
+
+
+def test_r10_batch2_keeps_warship_entries_and_spawn_selection_stable():
+    entries = catalog.CATALOG.reconstruct_documents()["warships.json"]["entries"]
+    assert tuple(entry["key"] for entry in entries) == ALL_WARSHIP_KEYS
+    encoded = json.dumps(
+        entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert hashlib.sha256(encoded).hexdigest() == \
+        "21c4f75329d1afd209bf1b79c0f59d32cc58847910fca408f7e8d0570e8bfd0d"
+    assert [catalog.CATALOG.pick_surface(random.Random(seed), hostile=True).key
+            for seed in range(10)] == [
+        "warship_22", "warship_04", "warship_24", "warship_06", "warship_06",
+        "warship_16", "warship_20", "warship_09", "warship_06", "warship_12",
+    ]
+
+
+def test_r10_batch3_migrates_every_civilian_in_legacy_order_without_armament():
+    assert tuple(profile.key for profile in catalog.CATALOG.civilian_surfaces) == \
+        ALL_CIVILIAN_KEYS
+    assert tuple(key for key in catalog.CATALOG.profile_systems
+                 if key in ALL_CIVILIAN_KEYS) == ALL_CIVILIAN_KEYS
+
+    for key in ALL_CIVILIAN_KEYS:
+        systems = catalog.CATALOG.profile_systems[key]
+        assert systems.reference_key == f"reference.{key}"
+        assert systems.machine_key == f"machine.{key}"
+        assert systems.sensor_keys == (f"sensor.{key}.radar", f"sensor.{key}.ais")
+        assert systems.emitter_keys == (f"emitter.{key}.radar",)
+        assert systems.launcher_keys == systems.magazine_keys == \
+            systems.countermeasure_keys == ()
+    document = catalog.CATALOG.reconstruct_documents()["civilians.json"]
+    assert document["weapons"] == document["launchers"] == \
+        document["magazines"] == document["countermeasures"] == []
+
+
+def test_r10_batch3_keeps_civilian_entries_and_spawn_selection_stable():
+    entries = catalog.CATALOG.reconstruct_documents()["civilians.json"]["entries"]
+    assert tuple(entry["key"] for entry in entries) == ALL_CIVILIAN_KEYS
+    encoded = json.dumps(
+        entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert hashlib.sha256(encoded).hexdigest() == \
+        "5ac1e45fd372942f2979472f89fdb51dd6d6729bfe85b11110a07b3df8d9ca1d"
+    assert [catalog.CATALOG.pick_surface(random.Random(seed)).key
+            for seed in range(20)] == [
+        "aux_02", "tanker_08", "aux_08", "tanker_14", "tanker_13",
+        "cargo_05", "cargo_14", "passenger_03", "tanker_13", "passenger_11",
+        "cargo_02", "passenger_10", "passenger_12", "tanker_15", "tanker_06",
+        "aux_09", "passenger_05", "passenger_14", "tanker_10", "cargo_08",
+    ]
+
+
+def test_r10_batch3_preserves_explicitly_generic_panamax_archetype():
+    reference = catalog.CATALOG.references["reference.cargo_05"]
+    assert reference.variant == "Generic Panamax container-ship archetype"
+    assert reference.aliases == ("Panamax container ship",)
+    assert reference.hull_type == "container_ship"
+
+
+def test_r10_batch4_migrates_every_aircraft_in_legacy_order_without_armament():
+    assert tuple(catalog.CATALOG.aircraft) == ALL_AIRCRAFT_KEYS
+    assert tuple(key for key in catalog.CATALOG.profile_systems
+                 if key in catalog.CATALOG.aircraft) == ALL_AIRCRAFT_KEYS
+    expected_sensors = {
+        "mil_patrol": ("sensor.mil_patrol.radar", "sensor.mil_patrol.esm"),
+        "civil_transit": (
+            "sensor.civil_transit.radar", "sensor.civil_transit.ais"),
+    }
+    for key in ALL_AIRCRAFT_KEYS:
+        systems = catalog.CATALOG.profile_systems[key]
+        assert systems.reference_key == f"reference.{key}"
+        assert systems.machine_key == f"machine.{key}"
+        assert systems.sensor_keys == expected_sensors[key]
+        assert systems.emitter_keys == (f"emitter.{key}.radar",)
+        assert systems.launcher_keys == systems.magazine_keys == \
+            systems.countermeasure_keys == ()
+    document = catalog.CATALOG.reconstruct_documents()["aircraft.json"]
+    assert document["weapons"] == document["launchers"] == \
+        document["magazines"] == document["countermeasures"] == []
+
+
+def test_r10_batch4_keeps_aircraft_entries_and_spawn_selection_stable():
+    entries = catalog.CATALOG.reconstruct_documents()["aircraft.json"]["entries"]
+    assert tuple(entry["key"] for entry in entries) == ALL_AIRCRAFT_KEYS
+    encoded = json.dumps(
+        entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert hashlib.sha256(encoded).hexdigest() == \
+        "ec0d82921231f2535cdf8be96286026804f8cb504472cb8ec818a9693eccfc38"
+    assert [catalog.CATALOG.pick_aircraft(random.Random(seed), "military").key
+            for seed in range(10)] == ["mil_patrol"] * 10
+    assert [catalog.CATALOG.pick_aircraft(random.Random(seed), "civil").key
+            for seed in range(10)] == ["civil_transit"] * 10
+
+
+def test_r10_batch5_migrates_only_applicable_components_in_legacy_order():
+    families = {
+        "animals.json": ALL_ANIMAL_KEYS,
+        "torpedoes.json": ALL_TORPEDO_KEYS,
+        "decoys.json": ALL_DECOY_KEYS,
+    }
+    documents = catalog.CATALOG.reconstruct_documents()
+    for filename, keys in families.items():
+        assert tuple(item["key"] for item in documents[filename]["entries"]) == keys
+        assert tuple(item["profile_key"] for item in documents[filename]["profiles"]) == keys
+        assert documents[filename]["sensors"] == documents[filename]["emitters"] == []
+        assert documents[filename]["weapons"] == documents[filename]["launchers"] == []
+        assert documents[filename]["magazines"] == documents[filename]["countermeasures"] == []
+        for key in keys:
+            systems = catalog.CATALOG.profile_systems[key]
+            assert systems.reference_key == f"reference.{key}"
+            assert systems.machine_key == f"machine.{key}"
+            assert systems.sensor_keys == systems.emitter_keys == ()
+            assert systems.launcher_keys == systems.magazine_keys == \
+                systems.countermeasure_keys == ()
+            assert catalog.CATALOG.machines[systems.machine_key].propulsor_type == "unknown"
+
+    library = documents["acoustics.json"]
+    assert tuple(item["key"] for item in library["entries"]) == ("animal", "decoy")
+    assert all(library.get(field, []) == [] for field, _ in catalog.V2_REGISTRIES)
+
+
+def test_r10_batch5_keeps_entries_and_animal_selection_stable():
+    expected_hashes = {
+        "animals.json": "cadf35eb577b40c7c8423d34efe1508649af243dace298db692b745fb6b2f013",
+        "torpedoes.json": "5cc7e61090a804829a847eaae19e04710ec4faac4275c6b0cac6f46b33b29874",
+        "decoys.json": "ff0670aca47965e350a64a3b41a9912316e20bb73888888a58b4fe59e8b04c9a",
+        "acoustics.json": "7ce16f23502f8ddf140e96d6b105117a1ac83eccd2a5e2a2f5c33fc3f947eb01",
+    }
+    documents = catalog.CATALOG.reconstruct_documents()
+    for filename, expected in expected_hashes.items():
+        encoded = json.dumps(
+            documents[filename]["entries"], ensure_ascii=False,
+            separators=(",", ":")).encode("utf-8")
+        assert hashlib.sha256(encoded).hexdigest() == expected
+    assert [catalog.CATALOG.pick_animal(random.Random(seed)).key
+            for seed in range(10)] == [
+                "jellyfish", "whale", "jellyfish", "whale", "whale",
+                "fish_school", "jellyfish", "whale", "whale", "fish_school",
+            ]
+
+
+def test_migrated_claims_cover_every_component_field():
     expected = set()
     registries = {
+        "endurances": catalog.CATALOG.endurances,
         "sensors": catalog.CATALOG.sensors,
         "emitters": catalog.CATALOG.emitters,
         "launchers": catalog.CATALOG.launchers,
@@ -180,6 +413,9 @@ def test_r4_pilot_claims_cover_every_component_field():
         expected.update((resource, profile_key, f"/machine/{field.name}")
                         for field in fields(machine) if field.name != "key")
         for registry_name, keys in (
+                ("endurances", ((f"endurance.{profile_key}",)
+                                if f"endurance.{profile_key}" in
+                                catalog.CATALOG.endurances else ())),
                 ("sensors", systems.sensor_keys),
                 ("emitters", systems.emitter_keys),
                 ("launchers", systems.launcher_keys),
@@ -200,8 +436,9 @@ def test_r4_pilot_claims_cover_every_component_field():
             component = catalog.CATALOG.weapons[key]
             expected.update((resource, profile_key, f"/weapons/{key}/{field.name}")
                             for field in fields(component) if field.name != "key")
-        assert max(line.relative_level for line in machine.cruise_lines) == 1.0
-        assert max(line.relative_level for line in machine.high_speed_lines) == 1.0
+        if resource not in ("animals.json", "torpedoes.json", "decoys.json"):
+            assert max(line.relative_level for line in machine.cruise_lines) == 1.0
+            assert max(line.relative_level for line in machine.high_speed_lines) == 1.0
         assert all(0 <= line.relative_level <= 1 for line in (
             *machine.cruise_lines, *machine.high_speed_lines))
     claimed = {
@@ -291,7 +528,8 @@ def test_mixed_v1_v2_catalog_loads_immutable_registries_and_reconstructs_exactly
     assert loaded.launchers[systems.launcher_keys[0]].weapon_keys == ("weapon.lightweight_torpedo",)
     assert loaded.magazines[systems.magazine_keys[0]].mission_count == 8
     assert loaded.countermeasures[systems.countermeasure_keys[0]].payload_key == "decoy"
-    assert len(loaded.sources) == 3 and len(loaded.provenance_claims) == 4
+    assert len(loaded.sources) == 3
+    assert len(loaded.provenance_claims) == len(expected_sources["claims"])
     reconstructed = loaded.reconstruct_documents()["warships.json"]
     assert _same_json(reconstructed, expected)
     assert type(reconstructed["references"][0]["length_m"]) is int
@@ -351,6 +589,72 @@ def test_v2_rejects_unknown_typed_unresolved_and_hostile_values(
     with pytest.raises(ValueError, match=message):
         catalog._load_catalog_from(tmp_path)
     assert catalog.load_catalog(tmp_path, quiet=True).subs == catalog.CATALOG.subs
+
+
+def test_batch5_rejects_platform_components_for_library_animals_and_decoys(tmp_path):
+    _copy_catalog(tmp_path)
+    animal_path = tmp_path / "animals.json"
+    document = json.loads(animal_path.read_text(encoding="utf-8"))
+    document["sensors"] = [{
+        "key": "sensor.whale.sonar", "domain": "sonar", "modes": ["passive"],
+        "emits": False, "emitter_key": None, "synthetic_range_nm": 1,
+        "sensitivity_db": 0, "cadence_s": 1, "bearing_uncertainty_deg": 1,
+        "range_uncertainty_nm": None, "depth_uncertainty_m": None,
+    }]
+    document["profiles"][0]["sensor_keys"] = ["sensor.whale.sonar"]
+    animal_path.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match="reference and machine only"):
+        catalog._load_catalog_from(tmp_path)
+
+    _copy_catalog(tmp_path)
+    library_path = tmp_path / "acoustics.json"
+    document = json.loads(library_path.read_text(encoding="utf-8"))
+    document["profiles"] = [copy.deepcopy(
+        json.loads((tmp_path / "decoys.json").read_text(encoding="utf-8"))["profiles"][0])]
+    document["profiles"][0]["profile_key"] = "animal"
+    library_path.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match="library signatures"):
+        catalog._load_catalog_from(tmp_path)
+
+
+def test_batch5_rejects_operational_components_for_torpedoes(tmp_path):
+    _copy_catalog(tmp_path)
+    path = tmp_path / "torpedoes.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["sensors"] = [{
+        "key": "sensor.torpedo.radar", "domain": "sonar", "modes": ["passive"],
+        "emits": False, "emitter_key": None, "synthetic_range_nm": 1,
+        "sensitivity_db": 0, "cadence_s": 1, "bearing_uncertainty_deg": 1,
+        "range_uncertainty_nm": 1, "depth_uncertainty_m": None,
+    }]
+    document["profiles"][0]["sensor_keys"] = ["sensor.torpedo.radar"]
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="reference and machine only"):
+        catalog._load_catalog_from(tmp_path)
+
+
+def test_shared_loader_rejects_incomplete_provenance_coverage(tmp_path):
+    _copy_catalog(tmp_path)
+    path = tmp_path / "sources.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["claims"][0]["field_paths"].pop()
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="incomplete field coverage"):
+        catalog._load_catalog_from(tmp_path)
+
+
+def test_shared_loader_rejects_empty_provenance_for_v2_catalog(tmp_path):
+    _copy_catalog(tmp_path)
+    path = tmp_path / "sources.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["sources"] = []
+    document["claims"] = []
+    path.write_text(json.dumps(document), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="incomplete field coverage"):
+        catalog._load_catalog_from(tmp_path)
 
 
 def test_v2_duplicate_members_are_rejected_at_nested_levels(tmp_path):

@@ -59,6 +59,10 @@
   const maxCanvasPixels = 8000000;
   const tabNames = ["operations", "lookout", "guide", "contacts"];
   let activeTab = "operations";
+  let contactAnalysis = null;
+  let analysisSelected = null;
+  let analysisImageKey = null;
+  let analysisError = false;
 
   const t = (key, values = {}) => (catalog[prefix + key] || "").replace(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, name) => String(values[name] ?? ""));
   const finite = (value) => typeof value === "number" && Number.isFinite(value);
@@ -107,6 +111,155 @@
     if (focus) $(`tab-${name}`).focus();
     if (name === "operations") queueDraw();
     if (name === "lookout") { renderLookoutStatus(); queueLookoutDraw(); }
+    if (name === "contacts") renderContactAnalysis();
+  }
+
+  function validateContactAnalysis(data) {
+    const scalar = (value) => value === null || typeof value === "string" || typeof value === "boolean" || finite(value);
+    const record = (value, fields) => value && typeof value === "object" && !Array.isArray(value) &&
+      Object.keys(value).sort().join(",") === [...fields].sort().join(",");
+    const textList = (value) => Array.isArray(value) && value.length <= 128 &&
+      value.every((item) => typeof item === "string" && item.length <= 128);
+    const numberList = (value) => value === null || (Array.isArray(value) && value.length <= 128 && value.every(finite));
+    const boundedObject = (value, depth = 0) => {
+      if (depth > 5) return false;
+      if (scalar(value)) return typeof value !== "string" || value.length <= 512;
+      if (Array.isArray(value)) return value.length <= 128 && value.every((item) => boundedObject(item, depth + 1));
+      return value && typeof value === "object" && Object.keys(value).length <= 32 &&
+        Object.entries(value).every(([key, item]) => key.length <= 64 && boundedObject(item, depth + 1));
+    };
+    if (!data || typeof data !== "object" || Array.isArray(data) ||
+        Object.keys(data).sort().join(",") !== "profiles,version" || data.version !== 1 ||
+        !Array.isArray(data.profiles) || data.profiles.length > 4096) throw new Error("analysis_schema");
+    const keys = new Set();
+    for (const profile of data.profiles) {
+      const referenceFields = ["variant", "variant_year", "refit_year", "aliases", "roles", "hull_type", "displacement_tonnes", "displacement_basis", "length_m", "beam_waterline_m", "beam_overall_m", "flight_deck_width_m", "draft_m", "ship_crew", "air_group_crew"];
+      const machineFields = ["cruise_speed_kn", "maximum_speed_kn", "quiet_speed_kn", "propulsion_codes", "motor_rpm", "shaft_rpm", "propulsor_type", "blade_count", "cruise_lines", "high_speed_lines", "cruise_broadband", "high_speed_broadband"];
+      if (!profile || typeof profile !== "object" || Array.isArray(profile) ||
+          Object.keys(profile).sort().join(",") !== "assets,components,key,machine,name,reference,resource" ||
+          typeof profile.key !== "string" || !/^[a-z0-9][a-z0-9_.-]{0,95}$/.test(profile.key) || keys.has(profile.key) ||
+          typeof profile.name !== "string" || !profile.name || profile.name.length > 256 ||
+          typeof profile.resource !== "string" || !["subs.json", "warships.json", "civilians.json", "aircraft.json", "animals.json", "torpedoes.json", "decoys.json"].includes(profile.resource) ||
+          !profile.assets || typeof profile.assets !== "object" || Array.isArray(profile.assets) ||
+          Object.keys(profile.assets).some((kind) => !["acoustic_cruise", "acoustic_high"].includes(kind)) ||
+          Object.entries(profile.assets).some(([kind, route]) => {
+            const suffix = { acoustic_cruise: "cruise", acoustic_high: "high" }[kind];
+            return typeof route !== "string" || route !== `/contact-analysis/${profile.key}-${suffix}.png`;
+          }) ||
+          !profile.components || typeof profile.components !== "object" || Array.isArray(profile.components) ||
+          Object.keys(profile.components).sort().join(",") !== "countermeasures,emitters,launchers,magazines,sensors,weapons" ||
+          Object.values(profile.components).some((items) => !Array.isArray(items) || items.length > 128 || items.some((item) => !boundedObject(item))) ||
+          !record(profile.reference, referenceFields) || !record(profile.machine, machineFields) ||
+          typeof profile.reference.variant !== "string" || profile.reference.variant.length > 256 ||
+          !textList(profile.reference.aliases) || !textList(profile.reference.roles) ||
+          !referenceFields.slice(1).every((field) => ["aliases", "roles", "ship_crew", "air_group_crew"].includes(field) || scalar(profile.reference[field])) ||
+          !numberList(profile.reference.ship_crew) || !numberList(profile.reference.air_group_crew) ||
+          !textList(profile.machine.propulsion_codes) || !numberList(profile.machine.motor_rpm) || !numberList(profile.machine.shaft_rpm) ||
+          !["cruise_lines", "high_speed_lines"].every((field) => Array.isArray(profile.machine[field]) && profile.machine[field].length <= 128 && profile.machine[field].every((line) => Array.isArray(line) && line.length === 3 && line.every(finite))) ||
+          !["cruise_broadband", "high_speed_broadband"].every((field) => profile.machine[field] === null || (Array.isArray(profile.machine[field]) && profile.machine[field].length === 3 && profile.machine[field].every(finite))) ||
+          !machineFields.filter((field) => !["propulsion_codes", "motor_rpm", "shaft_rpm", "cruise_lines", "high_speed_lines", "cruise_broadband", "high_speed_broadband"].includes(field)).every((field) => scalar(profile.machine[field])) ||
+          !boundedObject(profile.components)) throw new Error("analysis_schema");
+      keys.add(profile.key);
+    }
+  }
+
+  async function loadContactAnalysis() {
+    try {
+      const data = await request("/contacts", { auth: false });
+      validateContactAnalysis(data);
+      contactAnalysis = data;
+      analysisError = false;
+    } catch (_) {
+      contactAnalysis = null;
+      analysisError = true;
+    }
+    renderContactAnalysis();
+  }
+
+  function analysisProfile() {
+    return contactAnalysis?.profiles.find((profile) => profile.key === analysisSelected) || null;
+  }
+
+  function renderContactAnalysis() {
+    const status = $("analysis-status");
+    const detail = $("analysis-profile");
+    const list = $("analysis-list");
+    if (!contactAnalysis) {
+      analysisImageKey = null;
+      list.replaceChildren();
+      detail.hidden = true;
+      status.hidden = false;
+      status.textContent = t(analysisError ? "analyzer_error" : "analyzer_loading");
+      $("analysis-count").textContent = "";
+      return;
+    }
+    const term = $("analysis-filter").value.trim().toLocaleLowerCase(language).slice(0, 96);
+    const category = $("analysis-category").value;
+    const visible = contactAnalysis.profiles.filter((profile) => (!category || profile.resource === category) &&
+      (!term || `${profile.name} ${profile.key} ${profile.reference.variant || ""} ${(profile.reference.aliases || []).join(" ")} ${(profile.reference.roles || []).join(" ")}`.toLocaleLowerCase(language).includes(term)));
+    list.replaceChildren(...visible.map((profile) => {
+      const button = node("button", undefined, "analysis-item");
+      button.type = "button";
+      button.dataset.key = profile.key;
+      button.setAttribute("aria-pressed", String(profile.key === analysisSelected));
+      button.append(node("span", profile.name), node("small", `${profile.key} / ${t(`analyzer_${profile.resource.slice(0, -5)}`)}`));
+      button.addEventListener("click", () => { analysisSelected = profile.key; renderContactAnalysis(); });
+      return button;
+    }));
+    if (!visible.length) list.append(node("p", t("analyzer_no_results"), "empty"));
+    $("analysis-count").textContent = t("analyzer_count", { count: number(visible.length, 0), total: number(contactAnalysis.profiles.length, 0) });
+    const profile = analysisProfile();
+    status.hidden = Boolean(profile);
+    detail.hidden = !profile;
+    if (!profile) { status.textContent = t("analyzer_select"); return; }
+    $("analysis-key").textContent = profile.key;
+    $("analysis-name").textContent = profile.name;
+    $("analysis-resource").textContent = t(`analyzer_${profile.resource.slice(0, -5)}`);
+    const reference = profile.reference;
+    const machine = profile.machine;
+    const joined = (items) => Array.isArray(items) && items.length ? items.join(", ") : t("unavailable");
+    metrics($("analysis-metrics"), [
+      ["analyzer_variant", reference.variant || t("unavailable")],
+      ["analyzer_roles", joined(reference.roles)],
+      ["analyzer_hull", reference.hull_type || t("unavailable")],
+      ["analyzer_length", unit(reference.length_m, "m")],
+      ["analyzer_beam", unit(reference.beam_overall_m ?? reference.beam_waterline_m, "m")],
+      ["analyzer_draft", unit(reference.draft_m, "m")],
+      ["analyzer_displacement", unit(reference.displacement_tonnes, "t", 0)],
+      ["analyzer_speed_band", `${unit(machine.cruise_speed_kn, "kn")} / ${unit(machine.maximum_speed_kn, "kn")}`],
+      ["analyzer_propulsion", joined(machine.propulsion_codes)],
+      ["analyzer_propulsor", machine.propulsor_type || t("unavailable")],
+    ]);
+    metrics($("analysis-systems"), Object.entries(profile.components).map(([kind, items]) =>
+      [`analyzer_${kind}`, number(items.length, 0)]));
+    const imageLabels = { acoustic_cruise: "analyzer_acoustic_cruise", acoustic_high: "analyzer_acoustic_high" };
+    const imageKey = `${language}:${profile.key}`;
+    if (analysisImageKey !== imageKey) {
+      $("analysis-images").replaceChildren(...Object.entries(profile.assets).map(([kind, route]) => {
+        const figure = node("figure", undefined, "analysis-image");
+        const image = node("img");
+        const cruise = kind === "acoustic_cruise";
+        const lines = cruise ? machine.cruise_lines : machine.high_speed_lines;
+        const broadband = cruise ? machine.cruise_broadband : machine.high_speed_broadband;
+        const descriptions = [t("analyzer_image_alt_base", { speed: t(imageLabels[kind]) })];
+        if (Array.isArray(lines) && lines.length) descriptions.push(t("analyzer_image_alt_tonals"));
+        if (Array.isArray(broadband)) descriptions.push(t("analyzer_image_alt_broadband"));
+        if (cruise && Array.isArray(machine.shaft_rpm)) {
+          descriptions.push(t(machine.blade_count == null ? "analyzer_image_alt_shaft" : "analyzer_image_alt_shaft_bpf"));
+        } else if (!Array.isArray(machine.shaft_rpm)) {
+          descriptions.push(t("analyzer_image_alt_no_hypothesis"));
+        } else {
+          descriptions.push(t("analyzer_image_alt_not_repeated"));
+        }
+        image.src = route;
+        image.alt = descriptions.join(" ");
+        image.loading = "lazy";
+        image.decoding = "async";
+        figure.append(image, node("figcaption", t(imageLabels[kind])));
+        return figure;
+      }));
+      analysisImageKey = imageKey;
+    }
   }
 
   // All requests, including commands and language changes, share one lane. The
@@ -165,6 +318,7 @@
       renderConnection();
       renderSound();
       if (snapshot && chartMatches(snapshot)) renderSnapshot();
+      renderContactAnalysis();
       return true;
     } catch (_) {
       $("language").value = language;
@@ -230,8 +384,21 @@
         state.chart_revision == null || typeof state.commands_allowed !== "boolean" ||
         !state.ownship || ["x", "y"].some((key) => state.ownship[key] !== null && !finite(state.ownship[key])) ||
         !state.clock || !state.mission || !Array.isArray(state.tracks) || !Array.isArray(state.events) || !Array.isArray(state.results) ||
-        state.tracks.some((track) => !track || typeof track.ref !== "string" || !track.ref)) throw new Error("protocol");
+        state.tracks.some((track) => !track || typeof track.ref !== "string" || !track.ref ||
+          !Array.isArray(track.fixes) || track.fixes.length > 3 || track.fixes.some((fix) => !fix ||
+            !["PING", "TMA", "SONOBUOY"].includes(fix.source) ||
+            ![fix.x, fix.y, fix.measured_at, fix.fixed_at, fix.measurement_age_s,
+              fix.fix_age_s, fix.uncertainty_nm, fix.quality].every(finite) ||
+            fix.fixed_at < fix.measured_at || fix.measurement_age_s < 0 || fix.fix_age_s < 0 ||
+            fix.uncertainty_nm <= 0 || fix.uncertainty_nm > 100 ||
+            Math.abs(fix.x) > 1000000 || Math.abs(fix.y) > 1000000 ||
+            fix.measured_at < 0 || fix.measured_at > 1000000000000 ||
+            fix.fixed_at > 1000000000000 || fix.quality < 0 || fix.quality > 1 ||
+            ((fix.depth_m === null) !== (fix.depth_uncertainty_m === null)) ||
+            (fix.depth_m !== null && (!finite(fix.depth_m) || !finite(fix.depth_uncertainty_m) ||
+              fix.depth_m < 0 || fix.depth_uncertainty_m <= 0))))) throw new Error("protocol");
     if (new Set(state.tracks.map((track) => track.ref)).size !== state.tracks.length) throw new Error("protocol");
+    if (state.tracks.some((track) => new Set(track.fixes.map((fix) => fix.source)).size !== track.fixes.length)) throw new Error("protocol");
     const environment = state.environment;
     if (environment != null && (typeof environment !== "object" || Array.isArray(environment) ||
         Object.keys(environment).sort().join(",") !== "is_night,sea_state" ||
@@ -372,14 +539,19 @@
     if (track) {
       $("detail-label").textContent = track.label;
       $("detail-badges").replaceChildren(node("span", enumText(domains, track.domain), "badge"), node("span", enumText(affiliations, track.affiliation), `badge ${affClass(track.affiliation)}`), node("span", enumText(classes, track.classification), "badge"));
-      metrics($("detail-metrics"), [
+      const detailEntries = [
         ["source", track.source], ["quality", number(track.quality, 2)],
         ["bearing", unit(track.bearing, "\u00b0", 0)], ["range", unit(track.range_nm, "NM")],
         ["depth", unit(track.depth_m, "m", 0)], ["course", unit(track.course, "\u00b0", 0)],
         ["speed", unit(track.speed_kn, "kn")], ["age", unit(track.age_s, "s", 0)],
         ["fix_age", unit(track.fix_age_s, "s", 0)], ["bearing_uncertainty", unit(track.bearing_uncertainty_deg, "\u00b0")],
         ["range_uncertainty", unit(track.range_uncertainty_nm, "NM")],
-      ]);
+      ];
+      for (const fix of track.fixes) {
+        detailEntries.push([`fix_${fix.source.toLowerCase()}`,
+          `${t("measurement_age")} ${unit(fix.measurement_age_s, "s", 0)} / ${t("fix_age")} ${unit(fix.fix_age_s, "s", 0)} / +/-${unit(fix.uncertainty_nm, "NM")}`]);
+      }
+      metrics($("detail-metrics"), detailEntries);
       if (resetDraft) {
         $("classification").value = Object.hasOwn(classes, track.classification) ? track.classification : "";
         $("affiliation").value = Object.hasOwn(affiliations, track.affiliation) ? track.affiliation : "UNKNOWN";
@@ -738,6 +910,22 @@
       ctx.fillText(String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
       chartHits.push({ ref: track.ref, x, y });
     }
+    // Independent sonar fixes share their parent track identity and are rebuilt
+    // from the current snapshot on every draw, so stale markers cannot be hit.
+    for (const track of snapshot.tracks) {
+      for (const fix of track.fixes) {
+        const [x, y] = point(fix.x, fix.y);
+        const radius = Math.max(2, fix.uncertainty_nm * scale);
+        if (x + radius < -60 || y + radius < -60 || x - radius > width + 60 || y - radius > height + 60) continue;
+        ctx.strokeStyle = fix.source === "PING" ? "#59d8dc" : fix.source === "TMA" ? "#f3c577" : "#83c99a";
+        ctx.lineWidth = track.ref === selected ? 2 : 1;
+        ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.fillText(`${String(track.label ?? "")} ${fix.source}`, x + 9, y - 8, Math.max(50, width - x - 13));
+        chartHits.push({ ref: track.ref, x, y });
+      }
+    }
     if (ownPosition) {
       ctx.save();
       ctx.translate(ox, oy);
@@ -944,6 +1132,8 @@
     } finally { $("pair-submit").disabled = false; }
   });
   $("language").addEventListener("change", () => loadLanguage($("language").value === "de" ? "de" : "en"));
+  $("analysis-filter").addEventListener("input", renderContactAnalysis);
+  $("analysis-category").addEventListener("change", renderContactAnalysis);
   $("disconnect").addEventListener("click", () => { forgetSession(); $("code").focus(); });
   $("classification-form").addEventListener("submit", (event) => { event.preventDefault(); sendCommand("classify", $("classification").value || null); });
   $("affiliation-form").addEventListener("submit", (event) => { event.preventDefault(); sendCommand("affiliate", $("affiliation").value); });
@@ -967,6 +1157,16 @@
       else return;
       event.preventDefault();
       activateTab(tabNames[index]);
+    });
+  }
+  for (const link of document.querySelectorAll("#guide-nav a")) {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      const target = $(link.hash.slice(1));
+      const panel = $("panel-guide");
+      if (!target || panel.hidden) return;
+      panel.scrollTop += target.getBoundingClientRect().top - panel.getBoundingClientRect().top - 12;
+      target.focus({ preventScroll: true });
     });
   }
   $("track-list").addEventListener("keydown", (event) => {
@@ -1105,6 +1305,7 @@
       await new Promise((resolve) => setTimeout(resolve, delay));
       delay = Math.min(8000, delay * 2);
     }
+    loadContactAnalysis();
   }
   bootstrap();
 })();

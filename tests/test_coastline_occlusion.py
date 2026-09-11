@@ -6,6 +6,7 @@ import pytest
 
 from src.world.coastline import Coastline
 from src.world.world import World
+from src.sonar import propagation
 
 
 def test_land_blocks_crossing_but_not_open_water_or_tangent():
@@ -98,3 +99,12 @@ def test_generated_sector_query_budget_is_practical():
     # A deliberately loose guard catches accidental unbounded algorithms while
     # remaining portable to the lower-power uConsole target.
     assert elapsed < 2.0
+
+
+def test_physical_straight_ray_does_not_call_acoustic_propagation(monkeypatch):
+    world = World(seed=4)
+    monkeypatch.setattr(propagation, "propagate",
+                        lambda *_args, **_kwargs: pytest.fail(
+                            "physical terrain query called propagation"))
+    result = world.sonar_path_blocked(10, 10, 20, 90, 90, 20)
+    assert isinstance(result, bool)

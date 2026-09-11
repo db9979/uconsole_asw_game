@@ -22,6 +22,20 @@ def _snap(g: Game):
                for c in g.sonar.contacts.values()),
         [(round(s.x, 4), round(s.y, 4), s.state, round(s.depth, 3),
           s.torpedoes_left) for s in g.subs],
+        [(a.atype.key, round(a.x, 4), round(a.y, 4), round(a.depth, 3),
+          round(a.course, 3), round(a.speed, 3), a.rng.getstate())
+         for a in g.animals],
+        [(c.signature_key, round(c.x, 4), round(c.y, 4), round(c.course, 3),
+          round(c.speed, 3), tuple(
+              (key, controller.enabled, round(controller.next_scan_s, 6),
+               controller.scan_index)
+              for key, controller in sorted(c.sensor_suite.controllers.items())))
+         for c in g.civilians],
+        [(f.akey, round(f.x, 4), round(f.y, 4), round(f.course, 3),
+          tuple((key, controller.enabled, round(controller.next_scan_s, 6),
+                 controller.scan_index)
+                for key, controller in sorted(f.sensor_suite.controllers.items())))
+         for f in g.flights.flights],
         len(g.asms),
     )
 

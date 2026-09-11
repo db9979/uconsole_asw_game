@@ -51,6 +51,7 @@ namespaces = true
 "data.editor_templates" = ["*.json"]
 "data.i18n" = ["*.json"]
 "data.commander" = ["*.html", "*.js", "*.css"]
+"data.contact_analysis" = ["manifest.json", "*.png"]
 
 [tool.setuptools.dynamic]
 version = {attr = "src.core.version.APP_VERSION"}

@@ -15,11 +15,17 @@ import secrets
 import socket
 import threading
 import time
+import re
 
 from src.core.config import SHIP_SPEED_MAX_KN
 
 
 _CONNECTION_DEADLINE_S = 3.0
+_CONTACT_ASSET_ROUTE = re.compile(
+    r"/contact-analysis/[a-z0-9][a-z0-9_.-]{0,95}-(?:cruise|high)\.png").fullmatch
+_MAX_PREBUILT_ROUTES = 227
+_MAX_PREBUILT_FILE_BYTES = 4 * 1024 * 1024
+_MAX_PREBUILT_BYTES = 32 * 1024 * 1024
 
 
 def _json_bytes(value):
@@ -91,7 +97,7 @@ class CommanderServer:
     Starting requires the three packaged ``data.commander`` assets.
     """
 
-    def __init__(self, translations=None):
+    def __init__(self, translations=None, contact_analysis_assets=None):
         self._lock = threading.RLock()
         self._lifecycle = threading.Lock()
         self._http = None
@@ -106,6 +112,31 @@ class CommanderServer:
         self._commands = deque()
         self._snapshot = b"{}"
         self._chart = b"{}"
+        supplied = {} if contact_analysis_assets is None else contact_analysis_assets
+        if not isinstance(supplied, dict) or len(supplied) > _MAX_PREBUILT_ROUTES:
+            raise ValueError("invalid prebuilt Commander assets")
+        prebuilt = {}
+        total = 0
+        for route, value in supplied.items():
+            if (not isinstance(route, str) or not isinstance(value, tuple)
+                    or len(value) != 2):
+                raise ValueError("invalid prebuilt Commander asset")
+            content_type, body = value
+            valid_route = (route == "/api/v1/contacts"
+                           and content_type == "application/json; charset=utf-8") or (
+                               _CONTACT_ASSET_ROUTE(route) is not None
+                               and ".." not in route
+                               and content_type == "image/png")
+            if (not valid_route or type(body) is not bytes
+                    or not body or len(body) > _MAX_PREBUILT_FILE_BYTES):
+                raise ValueError("invalid prebuilt Commander asset")
+            total += len(body)
+            if total > _MAX_PREBUILT_BYTES:
+                raise ValueError("prebuilt Commander asset size limit exceeded")
+            prebuilt[route] = (content_type, body)
+        if prebuilt and "/api/v1/contacts" not in prebuilt:
+            raise ValueError("contact projection route required")
+        self._prebuilt_assets = prebuilt
         translations = translations or {}
         self._translations = {
             lang: _json_bytes({key: value for key, value in translations.get(lang, {}).items()
@@ -137,6 +168,9 @@ class CommanderServer:
                     ("/style.css", "style.css", "text/css; charset=utf-8"),
                 )
             }
+            if assets.keys() & self._prebuilt_assets.keys():
+                raise ValueError("duplicate Commander asset route")
+            assets.update(self._prebuilt_assets)
             http = _HTTPServer((str(address), port), self, assets)
             thread = threading.Thread(target=http.serve_forever,
                                       kwargs={"poll_interval": 0.05},

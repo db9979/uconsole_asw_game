@@ -7,6 +7,7 @@ import pytest
 from src.air.asm import ASM
 from src.core.game import Game
 from src.enemies.surface import SurfaceShip
+from src.enemies.sub import Sub
 from src.sensors.tracks import TrackPicture
 from src.sonar.sonar import Contact
 
@@ -64,8 +65,10 @@ def test_correlated_bearing_sources_have_continuous_displayed_steps(monkeypatch)
     asm = ASM(game.ship.x + 4.0, game.ship.y, 0.0, 18, game.rng_asm)
     asm.jamming = Mock(return_value=True)
     game.asms = [asm]
-    sub = game.subs[0]
-    sub.state = "SNOCKEL"
+    sub = Sub(game.ship.x + 4.0, game.ship.y, 8.0, 0.0, "diesel_alt",
+              random.Random(908), runtime_catalog=game.runtime_catalog)
+    sub.endurance.phase = "RADIO"
+    sub.endurance.radio_left_s = 10.0
     sub.x, sub.y = game.ship.x + 4.0, game.ship.y
     game.subs = [sub]
 
@@ -137,8 +140,10 @@ def test_stale_sonar_republication_keeps_measurement_age(monkeypatch):
 
 def test_hfdf_capture_uses_persisted_measurement_pose_and_time(monkeypatch):
     game = Game(seed=906, audio_enabled=False)
-    sub = game.subs[0]
-    sub.state = "SNOCKEL"
+    sub = Sub(game.ship.x + 4.0, game.ship.y, 8.0, 0.0, "diesel_alt",
+              random.Random(906), runtime_catalog=game.runtime_catalog)
+    sub.endurance.phase = "RADIO"
+    sub.endurance.radio_left_s = 10.0
     sub.x, sub.y = game.ship.x + 4.0, game.ship.y
     game.subs = [sub]
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)

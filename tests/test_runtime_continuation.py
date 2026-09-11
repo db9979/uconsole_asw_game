@@ -67,6 +67,8 @@ def game():
     game.essms = [ESSM(game.ship.x, game.ship.y, 90, missile, 1,
                        guidance_x=game.ship.x + 10, guidance_y=game.ship.y + 1,
                        target_id=21)]
+    game.essm_seq = 1
+    game.vls_cells -= 1
     game.essms[0].travel = .2
     assert sub.countermeasure_store.fire()
     decoy_profile = game.runtime_catalog.decoys[

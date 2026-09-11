@@ -1,9 +1,12 @@
 """Welt: Meer, Küsten (W3), Thermokline, Wetter, Tag/Nacht, Schallfeld (W2)."""
 
+import math
 import random
 
 from src.core import config
 from src.world.coastline import Coastline
+from src.world.grounding import (DEFAULT_HULL_SPEC, grounding_contact,
+                                 hull_is_safe, swept_grounding)
 
 
 class World:
@@ -17,9 +20,11 @@ class World:
     def __init__(self, seed: int = 42, size_nm: float = config.WORLD_SIZE_NM,
                  coast: "Coastline | None" = None):
         self.rng = random.Random(seed)
-        self.size_nm = size_nm
         if coast is None:
             coast = Coastline.generate(seed, size_nm=size_nm)
+        else:
+            size_nm = coast.world_size_nm
+        self.size_nm = size_nm
         self.coast = coast
         # Grobe Rausch-Felder (12 x 12 Zellen für ~40 NM Blöcke)
         grid_n = 12
@@ -57,6 +62,39 @@ class World:
         if self.coast.has_bathymetry:
             return self.coast.depth_m(x_nm, y_nm)
         return self._cell(x_nm, y_nm, self._depth)
+
+    def physical_depth_m(self, x_nm: float, y_nm: float) -> float:
+        if self.coast.has_bathymetry:
+            return self.coast.physical_depth_m(x_nm, y_nm)
+        return self._cell(x_nm, y_nm, self._depth)
+
+    def grounding_contact(self, x_nm, y_nm, course_deg,
+                          hull=DEFAULT_HULL_SPEC):
+        return grounding_contact(self, x_nm, y_nm, course_deg, hull)
+
+    def hull_is_safe(self, x_nm, y_nm, course_deg, hull=DEFAULT_HULL_SPEC):
+        return hull_is_safe(self, x_nm, y_nm, course_deg, hull)
+
+    def swept_grounding(self, start, end, hull=DEFAULT_HULL_SPEC):
+        return swept_grounding(self, start, end, hull)
+
+    def nearest_safe_hull(self, x_nm: float, y_nm: float, course_deg: float,
+                          hull=DEFAULT_HULL_SPEC,
+                          max_radius_nm: float | None = None) -> tuple[float, float]:
+        """Deterministically locate a footprint-safe start without randomness."""
+        if self.hull_is_safe(x_nm, y_nm, course_deg, hull):
+            return x_nm, y_nm
+        maximum = self.size_nm if max_radius_nm is None else max_radius_nm
+        radius = 1.0
+        while radius <= maximum:
+            for index in range(64):
+                angle = math.radians(index * 137.50776405003785)
+                px = x_nm + radius * math.cos(angle)
+                py = y_nm + radius * math.sin(angle)
+                if self.hull_is_safe(px, py, course_deg, hull):
+                    return px, py
+            radius += 1.0
+        raise ValueError("no hull-safe start found")
 
     def thermocline_depth_m(self, x_nm: float, y_nm: float) -> float:
         measured = self._cell(x_nm, y_nm, self._thermo)

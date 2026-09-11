@@ -15,7 +15,8 @@ from src.commander import local
 from src.core.game import Game
 from src.core.i18n import Translator, load_catalog, pseudolocale
 from src.ui import layout
-from test_commander_assets import ASSETS, PREFIX, Document, browser_state, catalogs
+from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
+                                   browser_state, catalogs)
 
 
 LAYOUT_SCENARIO = r"""
@@ -145,6 +146,45 @@ async function run() {
     rings: lookoutArcs.filter((entry) => Math.abs(entry.x - lookoutCanvas.clientWidth / 2) < 1 &&
       Math.abs(entry.y - lookoutCanvas.clientHeight / 2) < 1).map((entry) => entry.radius),
   };
+  $("tab-guide").click();
+  const guidePanel = $("panel-guide");
+  guidePanel.scrollTop = 0;
+  $("guide-nav").querySelector('a[href="#guide-authority"]').click();
+  const guideBounds = rect(guidePanel);
+  const guide = {
+    overflow: getComputedStyle(guidePanel).overflowY,
+    moved: guidePanel.scrollTop > 0,
+    focus: document.activeElement === $("guide-authority"),
+    contained: [...guidePanel.querySelectorAll(".guide-nav, .guide-copy section")].every((element) => {
+      const bounds = rect(element);
+      return bounds.x >= guideBounds.x - 1 && bounds.right <= guideBounds.right + 1;
+    }),
+    links: [...$("guide-nav").querySelectorAll("a")].every((link) => {
+      const bounds = rect(link);
+      return bounds.width > 30 && bounds.height > 20;
+    }),
+    pageHeight: document.documentElement.scrollHeight,
+    pageWidth: document.documentElement.scrollWidth,
+    pageScroll: window.scrollY,
+  };
+  $("tab-contacts").click();
+  for (let i = 0; !$('analysis-list').querySelector('button') && i < 300; i++) await sleep(20);
+  $('analysis-list').querySelector('button')?.click();
+  const analyzerPanel = $('panel-contacts');
+  const analyzerList = $('analysis-list');
+  const analyzerDetail = document.querySelector('.analyzer-detail');
+  analyzerList.scrollTop = analyzerList.scrollHeight;
+  analyzerDetail.scrollTop = analyzerDetail.scrollHeight;
+  const analyzer = {
+    panelOverflow: getComputedStyle(analyzerPanel).overflowY,
+    panelScroll: analyzerPanel.scrollHeight - analyzerPanel.clientHeight,
+    listOverflow: getComputedStyle(analyzerList).overflowY,
+    listMoved: analyzerList.scrollTop > 0,
+    detailOverflow: getComputedStyle(analyzerDetail).overflowY,
+    detailMoved: analyzerDetail.scrollTop > 0,
+    pageHeight: document.documentElement.scrollHeight,
+    pageWidth: document.documentElement.scrollWidth,
+  };
   $("tab-operations").click();
   await new Promise((resolve) => requestAnimationFrame(resolve));
   const panelScrollPreserved = operationsPanel.scrollTop === operationScroll;
@@ -167,7 +207,7 @@ async function run() {
     panelScrollPreserved, inactiveHidden, tabIntersections, lookout,
     pageWidth: document.documentElement.scrollWidth, contacts: $("track-list").children.length,
     damage: $("damage-list").children.length, errors: failures,
-    stable: frozen === $("chart").toDataURL(),
+    stable: frozen === $("chart").toDataURL(), guide, analyzer,
   };
   parent.postMessage({layout: report}, location.origin);
 }
@@ -202,6 +242,11 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
                  landmasses=[dict(points=[[20, 20], [160, 40], [90, 160]])],
                  disclaimer="Synthetic test geography, not real bathymetry. " * 4)
     catalog = catalogs()[language == "de"]
+    analysis = browser_contact_analysis()
+    prototype = analysis["profiles"][0]
+    prototype["reference"]["roles"] = ["LongReferenceRole" * 7 for _ in range(64)]
+    analysis["profiles"] = [dict(prototype, key=f"reference_{index}",
+                                 name=f"Reference profile {index}") for index in range(160)]
     html = ASSETS.joinpath("index.html").read_text().replace(
         '<script src="./app.js" defer>', '<script src="./layout.js" defer></script><script src="./app.js" defer>')
 
@@ -239,6 +284,8 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
                 self.reply(json.dumps(state))
             elif self.path == "/api/v1/chart":
                 self.reply(json.dumps(chart))
+            elif self.path == "/api/v1/contacts":
+                self.reply(json.dumps(analysis))
             else:
                 self.send_error(404)
 
@@ -303,6 +350,16 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
         assert len(rings) >= 4
     assert max(rings) <= min(lookout["client"]) / 2 + 1
     assert report["stable"]
+    guide = report["guide"]
+    assert guide["overflow"] == "auto" and guide["moved"] and guide["focus"]
+    assert guide["contained"] and guide["links"]
+    assert guide["pageWidth"] <= css_width + 1 and guide["pageHeight"] <= css_height + 1
+    assert guide["pageScroll"] == 0
+    analyzer = report["analyzer"]
+    assert analyzer["panelOverflow"] == "hidden" and analyzer["panelScroll"] <= 1
+    assert analyzer["listOverflow"] == analyzer["detailOverflow"] == "auto"
+    assert analyzer["listMoved"] and analyzer["detailMoved"]
+    assert analyzer["pageWidth"] <= css_width + 1 and analyzer["pageHeight"] <= css_height + 1
     for selector, scroll in report["scrolls"].items():
         assert scroll["height"] > 50, selector
         assert scroll["contained"] and scroll["overflow"] == "auto", (selector, scroll)

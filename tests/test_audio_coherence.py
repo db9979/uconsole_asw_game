@@ -224,6 +224,31 @@ def test_band_filter_ola_is_a_bounded_half_block_delayed_stream():
     np.testing.assert_allclose(np.concatenate(outputs), expected, atol=1e-12)
 
 
+def test_broadband_curve_keeps_unity_reference_and_relative_hf_gains():
+    curve = ((100.0, 1.0), (400.0, .5), (1600.0, .25))
+    base = source(seed=37, broadband=dict(level=.8, low_hz=80, high_hz=1800))
+    flat = AcousticReceiver(5)
+    colored = AcousticReceiver(5)
+    background = AcousticReceiver(5)
+    flat_blocks, colored_blocks, background_blocks = [], [], []
+    for _ in range(12):
+        update(flat, [base])
+        update(colored, [{**base, "spectral_gains": curve}])
+        update(background)
+        flat_blocks.append(flat.samples.copy())
+        colored_blocks.append(colored.samples.copy())
+        background_blocks.append(background.samples.copy())
+    background_pcm = np.concatenate(background_blocks[4:])
+    flat_pcm = np.concatenate(flat_blocks[4:]) - background_pcm
+    colored_pcm = np.concatenate(colored_blocks[4:]) - background_pcm
+    frequencies = np.fft.rfftfreq(flat_pcm.size, 1 / flat.sample_rate)
+    flat_fft = abs(np.fft.rfft(flat_pcm))
+    colored_fft = abs(np.fft.rfft(colored_pcm))
+    for frequency, expected in curve:
+        index = np.argmin(abs(frequencies - frequency))
+        assert colored_fft[index] / flat_fft[index] == pytest.approx(expected, rel=.08)
+
+
 def test_two_due_blocks_can_be_retried_then_played_without_losing_1x_audio(playback):
     engine, channels, capture = playback
     receiver = AcousticReceiver(21)

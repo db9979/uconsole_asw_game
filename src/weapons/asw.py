@@ -479,7 +479,8 @@ def valid_consumable_state(value) -> bool:
         _object(value, {"key", "effect_type", "payload_key", "capacity", "ready",
                         "stowed", "reload_s", "loading"}, "consumable")
         _key(value["key"], "countermeasure.", "consumable.key")
-        if value["effect_type"] not in ("acoustic_decoy", "towed_acoustic"):
+        if value["effect_type"] not in (
+                "acoustic_decoy", "towed_acoustic", "chaff", "rf_softkill"):
             return False
         if value["payload_key"] is not None:
             _key(value["payload_key"], "", "consumable.payload_key")

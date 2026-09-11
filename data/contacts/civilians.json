@@ -3124,11 +3124,826 @@
   ],
   "profiles": [
     {
+      "profile_key": "tanker_01",
+      "reference_key": "reference.tanker_01",
+      "machine_key": "machine.tanker_01",
+      "sensor_keys": [
+        "sensor.tanker_01.radar",
+        "sensor.tanker_01.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_01.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_02",
+      "reference_key": "reference.tanker_02",
+      "machine_key": "machine.tanker_02",
+      "sensor_keys": [
+        "sensor.tanker_02.radar",
+        "sensor.tanker_02.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_02.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_03",
+      "reference_key": "reference.tanker_03",
+      "machine_key": "machine.tanker_03",
+      "sensor_keys": [
+        "sensor.tanker_03.radar",
+        "sensor.tanker_03.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_03.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_04",
+      "reference_key": "reference.tanker_04",
+      "machine_key": "machine.tanker_04",
+      "sensor_keys": [
+        "sensor.tanker_04.radar",
+        "sensor.tanker_04.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_04.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_05",
+      "reference_key": "reference.tanker_05",
+      "machine_key": "machine.tanker_05",
+      "sensor_keys": [
+        "sensor.tanker_05.radar",
+        "sensor.tanker_05.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_05.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_06",
+      "reference_key": "reference.tanker_06",
+      "machine_key": "machine.tanker_06",
+      "sensor_keys": [
+        "sensor.tanker_06.radar",
+        "sensor.tanker_06.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_06.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_07",
+      "reference_key": "reference.tanker_07",
+      "machine_key": "machine.tanker_07",
+      "sensor_keys": [
+        "sensor.tanker_07.radar",
+        "sensor.tanker_07.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_07.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_08",
+      "reference_key": "reference.tanker_08",
+      "machine_key": "machine.tanker_08",
+      "sensor_keys": [
+        "sensor.tanker_08.radar",
+        "sensor.tanker_08.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_08.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_09",
+      "reference_key": "reference.tanker_09",
+      "machine_key": "machine.tanker_09",
+      "sensor_keys": [
+        "sensor.tanker_09.radar",
+        "sensor.tanker_09.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_09.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_10",
+      "reference_key": "reference.tanker_10",
+      "machine_key": "machine.tanker_10",
+      "sensor_keys": [
+        "sensor.tanker_10.radar",
+        "sensor.tanker_10.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_10.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_11",
+      "reference_key": "reference.tanker_11",
+      "machine_key": "machine.tanker_11",
+      "sensor_keys": [
+        "sensor.tanker_11.radar",
+        "sensor.tanker_11.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_11.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_12",
+      "reference_key": "reference.tanker_12",
+      "machine_key": "machine.tanker_12",
+      "sensor_keys": [
+        "sensor.tanker_12.radar",
+        "sensor.tanker_12.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_12.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_13",
+      "reference_key": "reference.tanker_13",
+      "machine_key": "machine.tanker_13",
+      "sensor_keys": [
+        "sensor.tanker_13.radar",
+        "sensor.tanker_13.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_13.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_14",
+      "reference_key": "reference.tanker_14",
+      "machine_key": "machine.tanker_14",
+      "sensor_keys": [
+        "sensor.tanker_14.radar",
+        "sensor.tanker_14.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_14.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "tanker_15",
+      "reference_key": "reference.tanker_15",
+      "machine_key": "machine.tanker_15",
+      "sensor_keys": [
+        "sensor.tanker_15.radar",
+        "sensor.tanker_15.ais"
+      ],
+      "emitter_keys": [
+        "emitter.tanker_15.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_01",
+      "reference_key": "reference.passenger_01",
+      "machine_key": "machine.passenger_01",
+      "sensor_keys": [
+        "sensor.passenger_01.radar",
+        "sensor.passenger_01.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_01.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_02",
+      "reference_key": "reference.passenger_02",
+      "machine_key": "machine.passenger_02",
+      "sensor_keys": [
+        "sensor.passenger_02.radar",
+        "sensor.passenger_02.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_02.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_03",
+      "reference_key": "reference.passenger_03",
+      "machine_key": "machine.passenger_03",
+      "sensor_keys": [
+        "sensor.passenger_03.radar",
+        "sensor.passenger_03.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_03.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_04",
+      "reference_key": "reference.passenger_04",
+      "machine_key": "machine.passenger_04",
+      "sensor_keys": [
+        "sensor.passenger_04.radar",
+        "sensor.passenger_04.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_04.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_05",
+      "reference_key": "reference.passenger_05",
+      "machine_key": "machine.passenger_05",
+      "sensor_keys": [
+        "sensor.passenger_05.radar",
+        "sensor.passenger_05.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_05.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_06",
+      "reference_key": "reference.passenger_06",
+      "machine_key": "machine.passenger_06",
+      "sensor_keys": [
+        "sensor.passenger_06.radar",
+        "sensor.passenger_06.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_06.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_07",
+      "reference_key": "reference.passenger_07",
+      "machine_key": "machine.passenger_07",
+      "sensor_keys": [
+        "sensor.passenger_07.radar",
+        "sensor.passenger_07.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_07.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_08",
+      "reference_key": "reference.passenger_08",
+      "machine_key": "machine.passenger_08",
+      "sensor_keys": [
+        "sensor.passenger_08.radar",
+        "sensor.passenger_08.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_08.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_09",
+      "reference_key": "reference.passenger_09",
+      "machine_key": "machine.passenger_09",
+      "sensor_keys": [
+        "sensor.passenger_09.radar",
+        "sensor.passenger_09.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_09.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_10",
+      "reference_key": "reference.passenger_10",
+      "machine_key": "machine.passenger_10",
+      "sensor_keys": [
+        "sensor.passenger_10.radar",
+        "sensor.passenger_10.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_10.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_11",
+      "reference_key": "reference.passenger_11",
+      "machine_key": "machine.passenger_11",
+      "sensor_keys": [
+        "sensor.passenger_11.radar",
+        "sensor.passenger_11.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_11.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_12",
+      "reference_key": "reference.passenger_12",
+      "machine_key": "machine.passenger_12",
+      "sensor_keys": [
+        "sensor.passenger_12.radar",
+        "sensor.passenger_12.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_12.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_13",
+      "reference_key": "reference.passenger_13",
+      "machine_key": "machine.passenger_13",
+      "sensor_keys": [
+        "sensor.passenger_13.radar",
+        "sensor.passenger_13.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_13.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_14",
+      "reference_key": "reference.passenger_14",
+      "machine_key": "machine.passenger_14",
+      "sensor_keys": [
+        "sensor.passenger_14.radar",
+        "sensor.passenger_14.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_14.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "passenger_15",
+      "reference_key": "reference.passenger_15",
+      "machine_key": "machine.passenger_15",
+      "sensor_keys": [
+        "sensor.passenger_15.radar",
+        "sensor.passenger_15.ais"
+      ],
+      "emitter_keys": [
+        "emitter.passenger_15.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_01",
+      "reference_key": "reference.cargo_01",
+      "machine_key": "machine.cargo_01",
+      "sensor_keys": [
+        "sensor.cargo_01.radar",
+        "sensor.cargo_01.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_01.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_02",
+      "reference_key": "reference.cargo_02",
+      "machine_key": "machine.cargo_02",
+      "sensor_keys": [
+        "sensor.cargo_02.radar",
+        "sensor.cargo_02.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_02.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_03",
+      "reference_key": "reference.cargo_03",
+      "machine_key": "machine.cargo_03",
+      "sensor_keys": [
+        "sensor.cargo_03.radar",
+        "sensor.cargo_03.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_03.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_04",
+      "reference_key": "reference.cargo_04",
+      "machine_key": "machine.cargo_04",
+      "sensor_keys": [
+        "sensor.cargo_04.radar",
+        "sensor.cargo_04.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_04.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
       "profile_key": "cargo_05",
       "reference_key": "reference.cargo_05",
       "machine_key": "machine.cargo_05",
-      "sensor_keys": ["sensor.cargo_05.radar", "sensor.cargo_05.ais"],
-      "emitter_keys": ["emitter.cargo_05.radar"],
+      "sensor_keys": [
+        "sensor.cargo_05.radar",
+        "sensor.cargo_05.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_05.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_06",
+      "reference_key": "reference.cargo_06",
+      "machine_key": "machine.cargo_06",
+      "sensor_keys": [
+        "sensor.cargo_06.radar",
+        "sensor.cargo_06.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_06.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_07",
+      "reference_key": "reference.cargo_07",
+      "machine_key": "machine.cargo_07",
+      "sensor_keys": [
+        "sensor.cargo_07.radar",
+        "sensor.cargo_07.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_07.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_08",
+      "reference_key": "reference.cargo_08",
+      "machine_key": "machine.cargo_08",
+      "sensor_keys": [
+        "sensor.cargo_08.radar",
+        "sensor.cargo_08.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_08.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_09",
+      "reference_key": "reference.cargo_09",
+      "machine_key": "machine.cargo_09",
+      "sensor_keys": [
+        "sensor.cargo_09.radar",
+        "sensor.cargo_09.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_09.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_10",
+      "reference_key": "reference.cargo_10",
+      "machine_key": "machine.cargo_10",
+      "sensor_keys": [
+        "sensor.cargo_10.radar",
+        "sensor.cargo_10.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_10.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_11",
+      "reference_key": "reference.cargo_11",
+      "machine_key": "machine.cargo_11",
+      "sensor_keys": [
+        "sensor.cargo_11.radar",
+        "sensor.cargo_11.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_11.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_12",
+      "reference_key": "reference.cargo_12",
+      "machine_key": "machine.cargo_12",
+      "sensor_keys": [
+        "sensor.cargo_12.radar",
+        "sensor.cargo_12.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_12.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_13",
+      "reference_key": "reference.cargo_13",
+      "machine_key": "machine.cargo_13",
+      "sensor_keys": [
+        "sensor.cargo_13.radar",
+        "sensor.cargo_13.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_13.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_14",
+      "reference_key": "reference.cargo_14",
+      "machine_key": "machine.cargo_14",
+      "sensor_keys": [
+        "sensor.cargo_14.radar",
+        "sensor.cargo_14.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_14.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "cargo_15",
+      "reference_key": "reference.cargo_15",
+      "machine_key": "machine.cargo_15",
+      "sensor_keys": [
+        "sensor.cargo_15.radar",
+        "sensor.cargo_15.ais"
+      ],
+      "emitter_keys": [
+        "emitter.cargo_15.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_01",
+      "reference_key": "reference.aux_01",
+      "machine_key": "machine.aux_01",
+      "sensor_keys": [
+        "sensor.aux_01.radar",
+        "sensor.aux_01.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_01.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_02",
+      "reference_key": "reference.aux_02",
+      "machine_key": "machine.aux_02",
+      "sensor_keys": [
+        "sensor.aux_02.radar",
+        "sensor.aux_02.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_02.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_03",
+      "reference_key": "reference.aux_03",
+      "machine_key": "machine.aux_03",
+      "sensor_keys": [
+        "sensor.aux_03.radar",
+        "sensor.aux_03.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_03.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_04",
+      "reference_key": "reference.aux_04",
+      "machine_key": "machine.aux_04",
+      "sensor_keys": [
+        "sensor.aux_04.radar",
+        "sensor.aux_04.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_04.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_05",
+      "reference_key": "reference.aux_05",
+      "machine_key": "machine.aux_05",
+      "sensor_keys": [
+        "sensor.aux_05.radar",
+        "sensor.aux_05.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_05.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_06",
+      "reference_key": "reference.aux_06",
+      "machine_key": "machine.aux_06",
+      "sensor_keys": [
+        "sensor.aux_06.radar",
+        "sensor.aux_06.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_06.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_07",
+      "reference_key": "reference.aux_07",
+      "machine_key": "machine.aux_07",
+      "sensor_keys": [
+        "sensor.aux_07.radar",
+        "sensor.aux_07.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_07.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_08",
+      "reference_key": "reference.aux_08",
+      "machine_key": "machine.aux_08",
+      "sensor_keys": [
+        "sensor.aux_08.radar",
+        "sensor.aux_08.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_08.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_09",
+      "reference_key": "reference.aux_09",
+      "machine_key": "machine.aux_09",
+      "sensor_keys": [
+        "sensor.aux_09.radar",
+        "sensor.aux_09.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_09.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "aux_10",
+      "reference_key": "reference.aux_10",
+      "machine_key": "machine.aux_10",
+      "sensor_keys": [
+        "sensor.aux_10.radar",
+        "sensor.aux_10.ais"
+      ],
+      "emitter_keys": [
+        "emitter.aux_10.radar"
+      ],
       "launcher_keys": [],
       "magazine_keys": [],
       "countermeasure_keys": []
@@ -3136,13 +3951,1047 @@
   ],
   "references": [
     {
+      "key": "reference.tanker_01",
+      "variant": "Lewis-and-Clark-Versorger",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_02",
+      "variant": "John-Lewis-Tanker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_03",
+      "variant": "Tide-Klasse",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_04",
+      "variant": "Berlin-Klasse-Versorger",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_05",
+      "variant": "Wave-Klasse-Tanker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_06",
+      "variant": "Aegir-Klasse",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_07",
+      "variant": "Vulcano-Versorger",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_08",
+      "variant": "Etna-Versorger",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_09",
+      "variant": "Supply-Klasse",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_10",
+      "variant": "Maersk-Triple-E",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_11",
+      "variant": "VLCC-Tanker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_12",
+      "variant": "Aframax-Tanker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_13",
+      "variant": "Suezmax-Tanker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_14",
+      "variant": "Q-Max-LNG-Tanker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.tanker_15",
+      "variant": "Shuttle-Tanker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_01",
+      "variant": "Queen-Mary-2",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_02",
+      "variant": "Oasis-Kreuzfahrer",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_03",
+      "variant": "Icon-Kreuzfahrer",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_04",
+      "variant": "Disney-Wish",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_05",
+      "variant": "AIDAnova",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_06",
+      "variant": "MSC-Seashore",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_07",
+      "variant": "Mein-Schiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_08",
+      "variant": "Color-Magic-Faehre",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_09",
+      "variant": "Stena-Britannica",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_10",
+      "variant": "DFDS-RoPax",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_11",
+      "variant": "Hurtigruten-Expedition",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_12",
+      "variant": "Arctic-Expedition-Schiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_13",
+      "variant": "River-Cruise-Schiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_14",
+      "variant": "Schnellfaehre",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.passenger_15",
+      "variant": "Nachtfaehre",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_01",
+      "variant": "Emma-Maersk",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_02",
+      "variant": "Ever-Given-Klasse",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_03",
+      "variant": "Hapag-Lloyd-Containerschiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_04",
+      "variant": "Feeder-Containerschiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
       "key": "reference.cargo_05",
       "variant": "Generic Panamax container-ship archetype",
       "variant_year": null,
       "refit_year": null,
-      "aliases": ["Panamax container ship"],
-      "roles": ["cargo"],
+      "aliases": [
+        "Panamax container ship"
+      ],
+      "roles": [
+        "cargo"
+      ],
       "hull_type": "container_ship",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_06",
+      "variant": "Handymax-Bulker",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_07",
+      "variant": "RoRo-Frachter",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_08",
+      "variant": "Autotransporter",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_09",
+      "variant": "Kuehlfrachter",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_10",
+      "variant": "Bulk-Carrier",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_11",
+      "variant": "Heavy-Lift-Schiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_12",
+      "variant": "General-Cargo-Schiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_13",
+      "variant": "Container-Feeder",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_14",
+      "variant": "Mehrzweckfrachter",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.cargo_15",
+      "variant": "Kuestenfrachter",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "cargo"
+      ],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_01",
+      "variant": "Minenabwehrfahrzeug",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_02",
+      "variant": "Hafenschlepper",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_03",
+      "variant": "Seenotrettungskreuzer",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_04",
+      "variant": "Forschungsschiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_05",
+      "variant": "Kabelleger",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_06",
+      "variant": "Offshore-Versorger",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_07",
+      "variant": "Fischtrawler",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_08",
+      "variant": "Vermessungsschiff",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_09",
+      "variant": "Bergungsschlepper",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.aux_10",
+      "variant": "Lotsenboot",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [],
+      "hull_type": "unknown",
       "displacement_tonnes": null,
       "displacement_basis": "unknown",
       "length_m": null,
@@ -3156,53 +5005,4564 @@
   ],
   "machines": [
     {
+      "key": "machine.tanker_01",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          9.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          127.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_02",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          11.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          129.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_03",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          130.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_04",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          132.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_05",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          9.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          127.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_06",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          11.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          129.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_07",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          130.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_08",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          132.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_09",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          9.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          127.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_10",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          11.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          129.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_11",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          130.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_12",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          132.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_13",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          9.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          127.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_14",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          11.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          129.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.tanker_15",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          130.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ],
+      "high_speed_broadband": [
+        0.45,
+        30.0,
+        250.0
+      ]
+    },
+    {
+      "key": "machine.passenger_01",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          172.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_02",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          174.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_03",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          15.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          175.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_04",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          17.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          177.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_05",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          172.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_06",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          174.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_07",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          15.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          175.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_08",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          17.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          177.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_09",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          172.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_10",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          174.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_11",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          15.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          175.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_12",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          17.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          177.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_13",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          172.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_14",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          174.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.passenger_15",
+      "cruise_speed_kn": 25.0,
+      "maximum_speed_kn": 25.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          15.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          175.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_01",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          11.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          157.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_02",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          13.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          159.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_03",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          160.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_04",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          16.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          162.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
       "key": "machine.cargo_05",
       "cruise_speed_kn": 16,
       "maximum_speed_kn": 22,
       "quiet_speed_kn": null,
-      "propulsion_codes": ["diesel"],
-      "motor_rpm": [80, 110],
-      "shaft_rpm": [80, 110],
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": [
+        80,
+        110
+      ],
+      "shaft_rpm": [
+        80,
+        110
+      ],
       "propulsor_type": "propeller",
       "blade_count": 6,
       "cruise_lines": [
-        [8.5, 1.0, 0.8],
-        [17, 0.501, 1.1],
-        [34, 0.237, 1.5],
-        [51, 0.126, 2.0],
-        [102, 0.071, 2.8]
+        [
+          8.5,
+          1.0,
+          0.8
+        ],
+        [
+          17,
+          0.501,
+          1.1
+        ],
+        [
+          34,
+          0.237,
+          1.5
+        ],
+        [
+          51,
+          0.126,
+          2.0
+        ],
+        [
+          102,
+          0.071,
+          2.8
+        ]
       ],
       "high_speed_lines": [
-        [10.5, 1.0, 1.4],
-        [21, 0.501, 1.9],
-        [42, 0.224, 2.5],
-        [63, 0.112, 3.2],
-        [126, 0.056, 4.5]
+        [
+          10.5,
+          1.0,
+          1.4
+        ],
+        [
+          21,
+          0.501,
+          1.9
+        ],
+        [
+          42,
+          0.224,
+          2.5
+        ],
+        [
+          63,
+          0.112,
+          3.2
+        ],
+        [
+          126,
+          0.056,
+          4.5
+        ]
       ],
-      "cruise_broadband": [0.032, 5, 300],
-      "high_speed_broadband": [0.067, 5, 350]
+      "cruise_broadband": [
+        0.032,
+        5,
+        300
+      ],
+      "high_speed_broadband": [
+        0.067,
+        5,
+        350
+      ]
+    },
+    {
+      "key": "machine.cargo_06",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          13.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          159.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_07",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          160.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_08",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          16.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          162.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_09",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          11.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          157.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_10",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          13.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          159.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_11",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          160.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_12",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          16.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          162.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_13",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          11.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          157.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_14",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          13.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          159.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.cargo_15",
+      "cruise_speed_kn": 20.0,
+      "maximum_speed_kn": 20.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          14.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          160.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40.0,
+        300.0
+      ]
+    },
+    {
+      "key": "machine.aux_01",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          17.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          237.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_02",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          19.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          239.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_03",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          20.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          240.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_04",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          22.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          242.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_05",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          17.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          237.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_06",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          19.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          239.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_07",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          20.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          240.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_08",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          22.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          242.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_09",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          17.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          237.75,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
+    },
+    {
+      "key": "machine.aux_10",
+      "cruise_speed_kn": 16.0,
+      "maximum_speed_kn": 16.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          19.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          239.25,
+          1.0,
+          2.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        50.0,
+        320.0
+      ]
     }
   ],
   "sensors": [
     {
-      "key": "sensor.cargo_05.radar", "domain": "radar", "modes": ["active"],
-      "emits": true, "emitter_key": "emitter.cargo_05.radar",
-      "synthetic_range_nm": 48, "sensitivity_db": -75, "cadence_s": 5,
-      "bearing_uncertainty_deg": 2, "range_uncertainty_nm": 0.5,
+      "key": "sensor.tanker_01.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_01.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
       "depth_uncertainty_m": null
     },
     {
-      "key": "sensor.cargo_05.ais", "domain": "ais", "modes": ["passive"],
-      "emits": false, "emitter_key": null, "synthetic_range_nm": 40,
-      "sensitivity_db": null, "cadence_s": 10, "bearing_uncertainty_deg": null,
-      "range_uncertainty_nm": null, "depth_uncertainty_m": null
+      "key": "sensor.tanker_01.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_02.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_02.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_02.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_03.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_03.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_03.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_04.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_04.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_04.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_05.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_05.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_05.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_06.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_06.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_06.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_07.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_07.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_07.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_08.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_08.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_08.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_09.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_09.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_09.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_10.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_10.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_10.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_11.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_11.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_11.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_12.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_12.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_12.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_13.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_13.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_13.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_14.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_14.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_14.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_15.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.tanker_15.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.tanker_15.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_01.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_01.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_01.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_02.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_02.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_02.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_03.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_03.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_03.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_04.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_04.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_04.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_05.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_05.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_05.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_06.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_06.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_06.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_07.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_07.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_07.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_08.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_08.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_08.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_09.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_09.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_09.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_10.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_10.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_10.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_11.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_11.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_11.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_12.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_12.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_12.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_13.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_13.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_13.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_14.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_14.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_14.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_15.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.passenger_15.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.passenger_15.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_01.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_01.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_01.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_02.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_02.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_02.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_03.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_03.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_03.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_04.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_04.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_04.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_05.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_05.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_05.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_06.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_06.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_06.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_07.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_07.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_07.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_08.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_08.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_08.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_09.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_09.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_09.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_10.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_10.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_10.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_11.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_11.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_11.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_12.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_12.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_12.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_13.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_13.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_13.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_14.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_14.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_14.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_15.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.cargo_15.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.cargo_15.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_01.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_01.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_01.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_02.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_02.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_02.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_03.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_03.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_03.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_04.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_04.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_04.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_05.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_05.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_05.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_06.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_06.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_06.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_07.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_07.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_07.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_08.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_08.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_08.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_09.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_09.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_09.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_10.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.aux_10.radar",
+      "synthetic_range_nm": 48,
+      "sensitivity_db": -75,
+      "cadence_s": 5,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aux_10.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": null,
+      "cadence_s": 10,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
     }
   ],
   "emitters": [
     {
-      "key": "emitter.cargo_05.radar", "domain": "radar",
-      "frequency_band_hz": [9000000000, 9500000000],
-      "prf_band_hz": [500, 2000], "modulation_codes": ["pulse"]
+      "key": "emitter.tanker_01.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_02.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_03.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_04.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_05.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_06.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_07.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_08.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_09.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_10.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_11.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_12.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_13.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_14.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.tanker_15.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_01.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_02.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_03.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_04.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_05.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_06.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_07.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_08.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_09.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_10.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_11.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_12.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_13.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_14.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.passenger_15.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_01.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_02.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_03.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_04.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_05.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_06.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_07.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_08.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_09.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_10.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_11.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_12.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_13.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_14.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.cargo_15.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_01.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_02.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_03.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_04.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_05.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_06.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_07.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_08.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_09.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
+    },
+    {
+      "key": "emitter.aux_10.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000,
+        9500000000
+      ],
+      "prf_band_hz": [
+        500,
+        2000
+      ],
+      "modulation_codes": [
+        "pulse"
+      ]
     }
   ],
   "weapons": [],

@@ -130,7 +130,7 @@ def test_exact_snapshot_shape_and_own_truth(game):
     assert set(state["tracks"][0]) == {"ref", "label", "domain", "source", "affiliation",
         "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn",
         "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
-        "can_classify", "can_propose"}
+        "fixes", "can_classify", "can_propose"}
     assert state["tracks"][0]["domain"] == "UNKNOWN"
     assert state["tracks"][0]["label"] == "C001"
     assert state["tracks"][0]["x"] is None
@@ -143,6 +143,24 @@ def test_exact_snapshot_shape_and_own_truth(game):
     status = bridge.status
     status["epoch"] = -100
     assert bridge.status["epoch"] == state["epoch"]
+
+
+def test_all_current_sonar_fixes_are_nested_detached_under_one_opaque_track(game):
+    c = contact(game)
+    c._publish_fix("PING", game.sim_t, game.sim_t, 10, 20, .2, .9, 80, 2)
+    c._publish_fix("TMA", game.sim_t, game.sim_t, 11, 21, 2, .7)
+    c._publish_fix("SONOBUOY", game.sim_t, game.sim_t, 12, 22, 1, .8)
+    _, server = start(game)
+    row = server.state["tracks"][0]
+    assert [fix["source"] for fix in row["fixes"]] == [
+        "PING", "TMA", "SONOBUOY"]
+    assert all(set(fix) == {"source", "x", "y", "measured_at", "fixed_at",
+                           "measurement_age_s", "fix_age_s", "uncertainty_nm",
+                           "depth_m", "depth_uncertainty_m", "quality"}
+               for fix in row["fixes"])
+    assert "target_id" not in repr(row["fixes"])
+    row["fixes"][0]["x"] = -1
+    assert c.fixes["PING"]["x"] == 10
 
 
 def test_wall_cadence_no_catchup_and_immediate_transitions(game):

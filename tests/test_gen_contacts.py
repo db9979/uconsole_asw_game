@@ -28,7 +28,8 @@ def test_cli_check_rejects_incomplete_provenance_coverage(tmp_path, capsys):
     data["claims"].pop()
     path.write_text(json.dumps(data), encoding="utf-8")
 
-    validate(tmp_path)
+    with pytest.raises(ValueError, match="incomplete field coverage"):
+        validate(tmp_path)
     assert check(tmp_path) == 1
     assert "incomplete field coverage" in capsys.readouterr().err
 

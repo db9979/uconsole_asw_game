@@ -803,11 +803,11 @@ def test_active_decoys_cannot_exceed_source_store_spend():
     assert not game._load_save_data(state)
 
 
-def test_decoy_cannot_be_attributed_to_submarine_without_store():
+def test_r10_migrated_submarine_decoy_requires_store_spend():
     game = Game(seed=204, start_menu=False, audio_enabled=False)
     sub = Sub(100, 100, 80, 90, "diesel_alt", random.Random(33),
               runtime_catalog=game.runtime_catalog, asw_rng=game.rng_asw)
-    assert sub.countermeasure_store is None
+    assert sub.countermeasure_store is not None
     profile = game.runtime_catalog.decoys[
         game.runtime_catalog.runtime_bindings["submarine_decoy"]]
     game.subs = [sub]
@@ -816,6 +816,8 @@ def test_decoy_cannot_be_attributed_to_submarine_without_store():
         game.runtime_catalog.acoustic_for(profile.key), source_id=sub.id)]
 
     assert not game._load_save_data(game.save_state())
+    assert sub.countermeasure_store.fire()
+    assert game._load_save_data(game.save_state())
 
 
 def test_helicopter_torpedo_cannot_claim_frigate_provenance():

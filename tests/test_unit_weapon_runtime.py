@@ -192,15 +192,11 @@ def test_decoy_broadband_consumes_catalog(monkeypatch):
 
 
 @pytest.mark.parametrize("key", list(CATALOG.subs))
-def test_snorkel_eligibility_uses_explicit_propulsion(key, monkeypatch):
+def test_endurance_eligibility_uses_explicit_propulsion(key):
     sub = Sub(100, 100, 100, 0, key, random.Random(7))
-    monkeypatch.setattr(config, "SNOCKEL_TRIGGER_PPS", 1.0)
-    sub.rng.random = lambda: 0.0
-    ship = SimpleNamespace(x=400, y=400, noise_level=lambda: 0.0)
-    sub.update(0.1, ship, ocean())
     eligible = CATALOG.subs[key].acoustic.propulsion in (
         "Diesel-elektrisch", "elektrisch/AIP")
-    assert (sub.state == "SNOCKEL") is eligible
+    assert (sub.endurance is not None) is eligible
 
 
 def test_sub_observed_memory_does_not_follow_silent_hidden_ship_and_expires():
@@ -429,7 +425,8 @@ def test_broken_chaff_run_does_not_fly_past_its_expiry():
     missile.state, missile.chaff_left, missile.broken = "CHAFF", 2, True
     missile.update(8, SimpleNamespace(x=101, y=100))
     assert missile.state == "VERLOREN"
-    assert missile.travel == pytest.approx(config.kn_to_nm_per_s(config.ASM_SPEED_KN) * 2)
+    assert missile.travel == pytest.approx(config.kn_to_nm_per_s(
+        missile.profile["speed_kn"]) * 2)
 
 
 @pytest.mark.parametrize("limit", ["range", "age", "world"])
@@ -475,17 +472,22 @@ def test_scheduled_and_surface_salvos_share_monotonic_asm_sequence(game):
 
 def test_ciws_failure_spends_ammo_with_one_second_cadence(game, monkeypatch):
     missile = ASM(game.ship.x + 1, game.ship.y, 0, 1, game.rng_asm)
+    missile.speed_kn = 0
     game.asms = [missile]
-    monkeypatch.setattr(config, "ASM_SPEED_KN", 0)
+    game.air_picture.observe(track_id="M-1", kind="ASM", target_id=1,
+                             source="RADAR-L", bearing=90, range_nm=1,
+                             observer_x=game.ship.x, observer_y=game.ship.y,
+                             course=None, quality=1, now=game.sim_t, label="ASM")
     game.rng_asm.random = lambda: 1.0
     ammo = game.ciws_ammo
     game._update_air_defense(0.1, publish_picture=False)
-    assert game.ciws_ammo == ammo - config.CIWS_ROUNDS_PER_ATTEMPT
+    burst = game._air_defense_loadout["ciws"]["rounds_per_attempt"]
+    assert game.ciws_ammo == ammo - burst
     assert missile.state == "LAUF"
     game._update_air_defense(0.5, publish_picture=False)
-    assert game.ciws_ammo == ammo - config.CIWS_ROUNDS_PER_ATTEMPT
+    assert game.ciws_ammo == ammo - burst
     game._update_air_defense(0.5, publish_picture=False)
-    assert game.ciws_ammo == ammo - 2 * config.CIWS_ROUNDS_PER_ATTEMPT
+    assert game.ciws_ammo == ammo - 2 * burst
 
 
 @pytest.mark.parametrize("level", list(config.LEVELS))

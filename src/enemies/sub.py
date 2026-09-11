@@ -19,6 +19,7 @@ from src.sensors.platform import (
 )
 from src.weapons.torpedo import underwater_path_blocked
 from src.weapons.asw import ConsumableStore, WeaponBattery
+from src.enemies.endurance import SubmarineEndurance
 
 CATALOG = catalog.CATALOG
 DECOY_PROFILE = CATALOG.get_decoy("decoy")
@@ -90,6 +91,14 @@ class Sub:
             side=side, doctrine=doctrine,
             datalink_group="blue" if side == "friendly" else None)
         self.runtime_catalog = runtime_catalog
+        endurance_profile = runtime_catalog.endurances.get(f"endurance.{source.key}")
+        self.endurance = (SubmarineEndurance(endurance_profile)
+                          if endurance_profile is not None else None)
+        systems = runtime_catalog.profile_systems.get(source.key)
+        self.legacy_observation_model = bool(
+            systems is not None and systems.machine_key is not None
+            and runtime_catalog.machines[
+                systems.machine_key].propulsor_type == "unknown")
         self.quiet_mult = quiet_mult        # M7: Level-Faktor (leicht = lauter)
         self.attack_mult = attack_mult      # M7: Level-Faktor Gegenangriff
         self.attack_cooldown = (config.SUB_ATTACK_COOLDOWN_S
@@ -297,8 +306,8 @@ class Sub:
 
     @property
     def transmitting(self) -> bool:
-        """SNOCKEL mit aktivem HF-Sender -> peilbar per HFDF."""
-        return self.state == "SNOCKEL"
+        """Only the explicit radio phase is detectable by HFDF."""
+        return self.endurance is not None and self.endurance.transmitting
 
     # --- Physik/KI ---
 
@@ -397,18 +406,13 @@ class Sub:
                 depth_uncertainty_m=None, label=None)
         self._maybe_attack(dt, tactical_observation)
 
-        if self.state == "SNOCKEL":
-            # M13: Schnorcheltiefe ~8 m, HF-Sender aktiv, kein Vordringen
-            self.evac_left -= dt
-            self.target_depth = min(8.0, safe_depth)
-            self.depth += config.clamp(self.target_depth - self.depth, -.8 * dt, .8 * dt)
-            self.speed = 0.0
-            if self.evac_left <= 0:
-                self.state = "PATROLLE"
-                self.speed = min(6.0, self.speed_for_state())
-                self.turn_left = self.rng.uniform(300.0, 900.0)
-                self.turn_delta = 0.0
-            return
+        surface_steps = 0
+        if self.endurance is not None and self.endurance.surface_operation:
+            dt, surface_steps = self._update_surface_cycle(
+                dt, safe_depth, SubmarineEndurance.MAX_SUBSTEPS)
+            if dt <= 0.0:
+                return
+            old_depth = self.depth
 
         if self.state == "EVADE":
             self.evac_left -= dt
@@ -428,6 +432,9 @@ class Sub:
                     self.target_depth = min(safe_depth, self.rng.uniform(40.0, 80.0))
                     self.turn_left = self.rng.uniform(300.0, 900.0)
                     self.turn_delta = 0.0
+                if self.endurance is not None:
+                    self.endurance.update(
+                        dt, self.speed, self.motion.maximum_speed_kn, self.depth)
                 return
             # Tiefer unter die Thermokline + Kurs ab der Fregatte
             self.target_depth = min(thermo + 40.0, safe_depth)
@@ -477,13 +484,18 @@ class Sub:
                 self.target_depth - self.depth,
                 -self.motion.depth_rate_m_s * dt,
                 self.motion.depth_rate_m_s * dt)
-            # M13: Diesel/AIP: im Tiefebereich gelegentlich Schnorcheln (HF-Senden)
-            if (self.stype.profile.requires_air and self.depth > 55.0
-                    and self.rng.random() < config.SNOCKEL_TRIGGER_PPS * dt):
-                self.state = "SNOCKEL"
-                self.evac_left = config.SNOCKEL_DURATION_S
+            # R15 consumed this patrol snorkel-trigger draw. Preserve the shared
+            # world stream while endurance now decides when air is required.
+            if self.stype.profile.requires_air and self.depth > 55.0:
+                self.rng.random()
 
-        v = config.kn_to_nm_per_s(self.speed) * dt
+        motion_dt = dt
+        if self.endurance is not None:
+            motion_dt = self.endurance.time_until_surface_operation(
+                dt, self.speed, self.motion.maximum_speed_kn, self.depth)
+            self.speed = self.endurance.supported_speed(
+                motion_dt, self.speed, self.motion.maximum_speed_kn, self.depth)
+        v = config.kn_to_nm_per_s(self.speed) * motion_dt
         nx = self.x + v * math.sin(math.radians(self.course))
         ny = self.y - v * math.cos(math.radians(self.course))
         if (world.on_land(nx, ny) or underwater_path_blocked(
@@ -501,6 +513,69 @@ class Sub:
         if self.y < 0 or self.y > world_size:
             self.course = (180.0 - self.course) % 360.0
             self.y = config.clamp(self.y, 0.0, world_size)
+
+        if self.endurance is not None:
+            self.endurance.update(motion_dt, self.speed, self.motion.maximum_speed_kn,
+                                  self.depth)
+            remaining_steps = (SubmarineEndurance.MAX_SUBSTEPS
+                               - surface_steps - 1)
+            if motion_dt < dt and remaining_steps > 0:
+                self._update_surface_cycle(
+                    dt - motion_dt, safe_depth, remaining_steps)
+
+    def _update_surface_cycle(self, dt: float, safe_depth: float,
+                              max_steps: int) -> tuple[float, int]:
+        self.speed = 0.0
+        remaining = dt
+        max_step = max(SubmarineEndurance.MAX_STEP_S,
+                       dt / max_steps)
+        steps = 0
+        for index in range(max_steps):
+            if remaining <= 0.0:
+                break
+            step = (remaining if index == max_steps - 1
+                    else min(max_step, remaining))
+            if self.endurance.phase == "DESCENDING":
+                self.target_depth = min(safe_depth,
+                                        self.endurance.return_depth_m)
+            else:
+                self.target_depth = min(
+                    safe_depth, self.endurance.profile.snorkel_depth_m)
+            depth_rate = self.motion.depth_rate_m_s
+            event_depth = self.target_depth
+            if self.endurance.phase == "ASCENDING":
+                event_depth = (self.endurance.profile.snorkel_depth_m
+                               + self.endurance.DEPTH_TOLERANCE_M)
+            elif self.endurance.phase == "DESCENDING":
+                event_depth = (self.endurance.return_depth_m
+                               - self.endurance.DEPTH_TOLERANCE_M)
+            depth_event = (abs(event_depth - self.depth) / depth_rate
+                           if depth_rate > 0.0 else 0.0)
+            if index < max_steps - 1 and depth_event > 0.0:
+                step = min(step, depth_event)
+            start_depth = self.depth
+            next_depth = self.depth + config.clamp(
+                self.target_depth - self.depth,
+                -depth_rate * step,
+                depth_rate * step)
+            self.endurance.update(
+                step, self.speed, self.motion.maximum_speed_kn, start_depth)
+            steps += 1
+            self.depth = next_depth
+            self.endurance._advance_instantaneous(self.depth)
+            remaining = max(0.0, remaining - step)
+            if not self.endurance.surface_operation:
+                break
+        if self.endurance.surface_operation:
+            return 0.0, steps
+        if self.state == "EVADE":
+            self.speed = min(self.speed_for_state(),
+                             max(10.0, self.stype.speed_kn * .9))
+        elif self.state == "LAUER":
+            self.speed = 1.0
+        else:
+            self.speed = min(6.0, self.speed_for_state())
+        return remaining, steps
 
     # --- Akustik ---
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; font-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <title>U-Jagd Commander</title>
   <link rel="stylesheet" href="./style.css">
   <script src="./app.js" defer></script>
@@ -93,8 +93,41 @@
           <p id="lookout-note" class="lookout-note" data-i18n="lookout_note"></p>
           <section class="visually-hidden"><h2 data-i18n="lookout_observations"></h2><p id="lookout-own"></p><ul id="lookout-observations"></ul></section>
         </section>
-        <section id="panel-guide" class="tab-panel pending-panel" role="tabpanel" aria-labelledby="tab-guide" tabindex="0" hidden><p data-i18n="section_pending"></p></section>
-        <section id="panel-contacts" class="tab-panel pending-panel" role="tabpanel" aria-labelledby="tab-contacts" tabindex="0" hidden><p data-i18n="section_pending"></p></section>
+        <section id="panel-guide" class="tab-panel guide-panel" role="tabpanel" aria-labelledby="tab-guide" tabindex="0" hidden>
+          <header class="guide-header"><p class="eyebrow" data-i18n="guide_eyebrow"></p><h1 data-i18n="guide_title"></h1><p data-i18n="guide_intro"></p></header>
+          <div class="guide-layout">
+            <nav id="guide-nav" class="guide-nav panel" data-i18n-aria="guide_navigation">
+              <h2 data-i18n="guide_navigation"></h2>
+              <ol>
+                <li><a href="#guide-access" data-i18n="guide_nav_access"></a></li>
+                <li><a href="#guide-operations" data-i18n="guide_nav_operations"></a></li>
+                <li><a href="#guide-observations" data-i18n="guide_nav_observations"></a></li>
+                <li><a href="#guide-proposals" data-i18n="guide_nav_proposals"></a></li>
+                <li><a href="#guide-eloka" data-i18n="guide_nav_eloka"></a></li>
+                <li><a href="#guide-analyzer" data-i18n="guide_nav_analyzer"></a></li>
+                <li><a href="#guide-connection" data-i18n="guide_nav_connection"></a></li>
+                <li><a href="#guide-authority" data-i18n="guide_nav_authority"></a></li>
+              </ol>
+            </nav>
+            <article class="guide-copy">
+              <section id="guide-access" tabindex="-1"><h2 data-i18n="guide_access_title"></h2><p data-i18n="guide_access_pairing"></p><p data-i18n="guide_access_grant"></p><p data-i18n="guide_access_revoke"></p></section>
+              <section id="guide-operations" tabindex="-1"><h2 data-i18n="guide_operations_title"></h2><p data-i18n="guide_operations_picture"></p><p data-i18n="guide_operations_local"></p><p data-i18n="guide_lookout"></p></section>
+              <section id="guide-observations" tabindex="-1"><h2 data-i18n="guide_observations_title"></h2><p data-i18n="guide_observations_age"></p><p data-i18n="guide_observations_quality"></p><p data-i18n="guide_observations_annotations"></p></section>
+              <section id="guide-proposals" tabindex="-1"><h2 data-i18n="guide_proposals_title"></h2><p data-i18n="guide_target_proposal"></p><p data-i18n="guide_navigation_proposal"></p><p data-i18n="guide_message_box"></p><p data-i18n="guide_reconciliation"></p></section>
+              <section id="guide-eloka" tabindex="-1"><h2 data-i18n="guide_eloka_title"></h2><p data-i18n="guide_eloka_esm"></p><p data-i18n="guide_eloka_correlation"></p><p data-i18n="guide_emcon"></p></section>
+              <section id="guide-analyzer" tabindex="-1"><h2 data-i18n="guide_analyzer_title"></h2><p data-i18n="guide_analyzer_contacts"></p><p data-i18n="guide_analyzer_limits"></p></section>
+              <section id="guide-connection" tabindex="-1"><h2 data-i18n="guide_connection_title"></h2><p data-i18n="guide_security"></p><p data-i18n="guide_reconnect"></p></section>
+              <section id="guide-authority" class="guide-warning" tabindex="-1"><h2 data-i18n="guide_authority_title"></h2><p data-i18n="guide_authority_forbidden"></p><p data-i18n="guide_authority_summary"></p></section>
+            </article>
+          </div>
+        </section>
+        <section id="panel-contacts" class="tab-panel analyzer-panel" role="tabpanel" aria-labelledby="tab-contacts" tabindex="0" hidden>
+          <header class="analyzer-header"><div><p class="eyebrow" data-i18n="analyzer_eyebrow"></p><h1 data-i18n="analyzer_title"></h1><p class="panel-help" data-i18n="analyzer_note"></p></div><span id="analysis-count" class="counter"></span></header>
+          <div class="analyzer-workspace">
+            <section class="panel analyzer-browser"><div class="analyzer-filters"><label for="analysis-filter" data-i18n="analyzer_filter"></label><input id="analysis-filter" type="search" maxlength="96" autocomplete="off"><label for="analysis-category" data-i18n="analyzer_category"></label><select id="analysis-category"><option value="" data-i18n="analyzer_all"></option><option value="subs.json" data-i18n="analyzer_submarines"></option><option value="warships.json" data-i18n="analyzer_warships"></option><option value="civilians.json" data-i18n="analyzer_civilians"></option><option value="aircraft.json" data-i18n="analyzer_aircraft"></option><option value="animals.json" data-i18n="analyzer_animals"></option><option value="torpedoes.json" data-i18n="analyzer_torpedoes"></option><option value="decoys.json" data-i18n="analyzer_decoys"></option></select></div><div id="analysis-list" class="analysis-list" data-i18n-aria="analyzer_results"></div></section>
+            <section class="panel analyzer-detail"><p id="analysis-status" class="empty" role="status" aria-live="polite"></p><article id="analysis-profile" hidden><div class="panel-heading"><div><p id="analysis-key" class="eyebrow"></p><h2 id="analysis-name"></h2></div><span id="analysis-resource" class="local-tag"></span></div><div class="analysis-legend"><p data-i18n="analyzer_spectrum_legend"></p><p data-i18n="analyzer_hypothesis_legend"></p></div><div id="analysis-images" class="analysis-images"></div><dl id="analysis-metrics" class="detail-metrics analyzer-metrics"></dl><section class="analysis-components"><h3 data-i18n="analyzer_systems"></h3><dl id="analysis-systems" class="detail-metrics"></dl></section></article></section>
+          </div>
+        </section>
       </div>
     </main>
   </div>

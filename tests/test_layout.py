@@ -255,6 +255,7 @@ def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale(t
     from src.data.user_content import UserContentStore
     from src.ui.mission_editor import MissionEditor
     from src.ui.unit_editor import UnitEditor
+    from src.ui.contact_analyzer import ContactAnalyzer
 
     game = Game(seed=31, fullscreen=False, window_size=(1280, 720),
                 audio_enabled=False)
@@ -291,7 +292,8 @@ def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale(t
             store = UserContentStore(tmp_path / translator.language)
             mission = MissionEditor(store=store, tr=translator.t)
             unit = UnitEditor(store=store, tr=translator.t)
-            for editor in (mission, unit):
+            analyzer = ContactAnalyzer(tr=translator.t)
+            for editor in (mission, unit, analyzer):
                 editor.draw(game.screen)
             mission.new()
             for tab in range(len(mission.tabs)):

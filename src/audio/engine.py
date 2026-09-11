@@ -36,8 +36,10 @@ class AudioEngine:
                  enabled: bool = True, cache_size: int = 32):
         self.sample_rate = sample_rate
         self.channels = channels
-        self.enabled = bool(enabled)
+        self.configured_enabled = bool(enabled)
+        self.enabled = self.configured_enabled
         self.available = False
+        self.fatal_error = False
         self._cache_size = max(0, cache_size)
         self._cache: OrderedDict[tuple, pygame.mixer.Sound] = OrderedDict()
         self._engine_channel = None
@@ -96,7 +98,26 @@ class AudioEngine:
                 channel.set_volume(self.CHANNEL_GAINS[name])
             self.available = True
         except (pygame.error, TypeError, ValueError, OverflowError):
+            self.fatal_error = True
             self.enabled = False
+
+    def availability_status(self) -> dict:
+        """Detached durable status; queue pressure is not device failure."""
+        return {
+            "global_enabled": self.configured_enabled,
+            "device_available": bool(self.available),
+            "fatal_error": bool(self.fatal_error),
+        }
+
+    def _latch_device_error(self) -> None:
+        """Latch only confirmed mixer loss, not a transient channel failure."""
+        try:
+            lost = pygame.mixer.get_init() is None
+        except pygame.error:
+            lost = True
+        if lost:
+            self.fatal_error = True
+            self.available = False
 
     def _make_sound(self, samples: np.ndarray, bus: str) -> pygame.mixer.Sound:
         ceiling = self.SOURCE_LIMITS[bus]
@@ -135,7 +156,10 @@ class AudioEngine:
             if sound is None:
                 return False
             self._ping_channel.play(sound)
-        except (pygame.error, TypeError, ValueError, OverflowError):
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
             return False
         return True
 
@@ -165,7 +189,10 @@ class AudioEngine:
                 self._alert_channel.queue(sound)
             else:
                 self._alert_channel.play(sound)
-        except (pygame.error, TypeError, ValueError, OverflowError):
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
             return False
         return True
 
@@ -214,7 +241,10 @@ class AudioEngine:
                 * count / self.sample_rate) % (2 * np.pi)
             self._engine_blocks += 1
             self._engine_fading = False
-        except (pygame.error, TypeError, ValueError, OverflowError):
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
             return False
         return True
 
@@ -302,7 +332,10 @@ class AudioEngine:
             self._sonar_output_count = output_end
             self._sonar_previous = float(samples[-1])
             self._sonar_fading = False
-        except (pygame.error, TypeError, ValueError, OverflowError):
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
             return False
         return True
 

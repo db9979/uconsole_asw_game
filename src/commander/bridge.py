@@ -252,7 +252,11 @@ class CommanderBridge:
             key, source = track.track_id, track.source
             if key in refs:
                 continue
-            lifetime = 300.0 if source == "HFDF" else config.RADAR_TRACK_STALE_S
+            lifetime = (300.0 if source == "HFDF" else
+                        max(config.SONAR_CONTACT_LOST_S,
+                            config.SONAR_PING_FIX_MAX_AGE_S)
+                        if source.startswith("SONAR-") else
+                        config.RADAR_TRACK_STALE_S)
             if not _fresh(game.sim_t, track.last_seen, lifetime):
                 continue
             associated = self._contact(game, key, source)
@@ -274,7 +278,8 @@ class CommanderBridge:
                        and _fresh(game.sim_t, associated.last_seen,
                                   config.SONAR_CONTACT_LOST_S)
                        and game.sim_t - associated.last_seen < config.SONAR_CONTACT_LOST_S
-                       else None)
+                        else None)
+            fix_contact = associated
             fix_age = _age(game.sim_t, track.position_seen)
             positioned = (source not in ("HFDF", "SONAR-BRG")
                           and _fresh(game.sim_t, track.position_seen, lifetime))
@@ -291,7 +296,7 @@ class CommanderBridge:
                        speed_kn=None, quality=_number(track.display_quality(game.sim_t, lifetime)),
                        age_s=_age(game.sim_t, track.last_seen), fix_age_s=fix_age,
                        bearing_uncertainty_deg=_number(track.bearing_uncertainty_deg),
-                       range_uncertainty_nm=None, can_classify=contact is not None,
+                        range_uncertainty_nm=None, fixes=[], can_classify=contact is not None,
                        can_propose=contact is not None)
             if key.startswith("U-") or source.startswith("SONAR-"):
                 # Never trust a mirrored sonar fix after its source evidence dies.
@@ -307,6 +312,19 @@ class CommanderBridge:
                 row["age_s"] = _age(game.sim_t, contact.last_seen)
                 row["quality"] = _number(max(contact.quality, contact.confidence))
                 row["bearing_uncertainty_deg"] = _number(contact.bearing_uncertainty_deg)
+            if fix_contact is not None:
+                row["fixes"] = [dict(
+                    source=fix["source"], x=_number(fix["x"]), y=_number(fix["y"]),
+                    measured_at=_number(fix["measured_at"]),
+                    fixed_at=_number(fix["fixed_at"]),
+                    measurement_age_s=_age(game.sim_t, fix["measured_at"]),
+                    fix_age_s=_age(game.sim_t, fix["fixed_at"]),
+                    uncertainty_nm=_number(fix["uncertainty_nm"]),
+                    depth_m=_number(fix["depth_m"]),
+                    depth_uncertainty_m=_number(fix["depth_uncertainty_m"]),
+                    quality=_number(fix["quality"]))
+                    for fix in fix_contact.active_fixes(game.sim_t)]
+            if contact is not None:
                 fix_lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
                                 if contact.range_source == "ping"
                                 else config.SONAR_CONTACT_LOST_S)
@@ -709,6 +727,7 @@ class CommanderBridge:
                 game.ship.target_course = course
             if speed is not None:
                 game.ship.target_speed = speed
+                game.ship.astern = False
                 game.ship.order_idx = min(range(len(config.TELEGRAPH_ORDERS)),
                     key=lambda i: abs(config.TELEGRAPH_ORDERS[i][1] - speed))
         self._proposal_status("accepted" if accepted else "rejected", navigation=True)

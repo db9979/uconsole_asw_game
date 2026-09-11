@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "key": "frigate_torp",
@@ -47,5 +47,146 @@
         "signature_text": "aggressives, hochfrequentes Kreischen"
       }
     }
-  ]
+  ],
+  "profiles": [
+    {
+      "profile_key": "frigate_torp",
+      "reference_key": "reference.frigate_torp",
+      "machine_key": "machine.frigate_torp",
+      "sensor_keys": [],
+      "emitter_keys": [],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "helo_torp",
+      "reference_key": "reference.helo_torp",
+      "machine_key": "machine.helo_torp",
+      "sensor_keys": [],
+      "emitter_keys": [],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "enemy_torp",
+      "reference_key": "reference.enemy_torp",
+      "machine_key": "machine.enemy_torp",
+      "sensor_keys": [],
+      "emitter_keys": [],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.frigate_torp",
+      "variant": "Synthetic frigate torpedo gameplay archetype",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": ["anti_submarine"],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.helo_torp",
+      "variant": "Synthetic helicopter torpedo gameplay archetype",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": ["anti_submarine"],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.enemy_torp",
+      "variant": "Synthetic hostile torpedo gameplay archetype",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": ["anti_submarine"],
+      "hull_type": "unknown",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.frigate_torp",
+      "cruise_speed_kn": 45.0,
+      "maximum_speed_kn": 45.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["other"],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [],
+      "high_speed_lines": [],
+      "cruise_broadband": null,
+      "high_speed_broadband": null
+    },
+    {
+      "key": "machine.helo_torp",
+      "cruise_speed_kn": 55.0,
+      "maximum_speed_kn": 55.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["other"],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [],
+      "high_speed_lines": [],
+      "cruise_broadband": null,
+      "high_speed_broadband": null
+    },
+    {
+      "key": "machine.enemy_torp",
+      "cruise_speed_kn": 28.0,
+      "maximum_speed_kn": 28.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": ["other"],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [],
+      "high_speed_lines": [],
+      "cruise_broadband": [0.5, 80.0, 300.0],
+      "high_speed_broadband": [0.5, 80.0, 300.0]
+    }
+  ],
+  "sensors": [],
+  "emitters": [],
+  "weapons": [],
+  "launchers": [],
+  "magazines": [],
+  "countermeasures": []
 }

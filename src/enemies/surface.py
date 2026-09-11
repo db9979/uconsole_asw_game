@@ -57,6 +57,11 @@ class SurfaceShip:
             cruise_speed=self.profile.speed_kn[1],
             maximum_speed=self.profile.speed_kn[1], turn_rate=1.0,
             acceleration=0.03)
+        systems = runtime_catalog.profile_systems.get(self.signature_key)
+        self.legacy_observation_model = bool(
+            systems is not None and systems.machine_key is not None
+            and runtime_catalog.machines[
+                systems.machine_key].propulsor_type == "unknown")
         self.sensor_suite = PlatformSensorSuite(
             runtime_catalog, self.signature_key, self.sensor_seed,
             side=self.side, doctrine=self.doctrine,

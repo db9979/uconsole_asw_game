@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "key": "animal",
@@ -27,5 +27,14 @@
       "broadband": [0.8, 40.0, 300.0],
       "signature_text": "kurzes lautes Rauschen"
     }
-  ]
+  ],
+  "profiles": [],
+  "references": [],
+  "machines": [],
+  "sensors": [],
+  "emitters": [],
+  "weapons": [],
+  "launchers": [],
+  "magazines": [],
+  "countermeasures": []
 }

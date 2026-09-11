@@ -109,7 +109,8 @@ def test_unavailable_towed_ping_has_no_side_effects(monkeypatch):
         AssertionError("unavailable TOWED ping notified a target")))
     monkeypatch.setattr(game, "_sonar_targets", lambda: [target])
 
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_a))
+    game.handle_event(pygame.event.Event(
+        pygame.KEYDOWN, key=pygame.K_a, mod=pygame.KMOD_SHIFT))
 
     assert game.sonar.ping_cooldown == 0.0
     assert not game.sonar.ping_active

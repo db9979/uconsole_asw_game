@@ -185,6 +185,7 @@ TELEGRAPH_ORDERS = (
     ("FLANK", 25.0),
 )
 TELEGRAPH_DEFAULT = 2           # Index (HALF)
+ASTERN_SPEED_KN = 3.0           # Fiktive Bergungsfahrt; separater Zustand
 SHIP_RPM_MIN = 20.0             # Leerlauf-RPM
 SHIP_RPM_PER_KN = 2.4
 SHIP_MAX_RUDDER_DEG = 30.0
@@ -251,8 +252,6 @@ OBS_BEARING_SMOOTH_TAU_S = 4.0
 OBS_HISTORY_MAX = 12
 
 # M13: Funkraum / HFDF
-SNOCKEL_DURATION_S = 30.0       # Sendezeit beim Schnorcheln
-SNOCKEL_TRIGGER_PPS = 0.003     # Tröge-Wahrscheinlichkeit pro s (nur Diesel/AIP)
 SNOCKEL_TRANSMIT_NOISE = -0.20  # Lärmänderung beim Senden (negativ = lauter)
 HFDF_RANGE_NM = 120.0
 HFDF_BEARING_ERR_DEG = 8.0
@@ -286,22 +285,8 @@ HELO_TORP_SPEED_KN = _HELO_TORP_PROFILE.speed_kn
 
 # M16: Fliegerabwehr (physikalische Geschwindigkeiten)
 ASM_SPAWN_DIST_NM = (30.0, 40.0)
-ASM_SPEED_KN = 500.0
-ASM_JAM_PROB = 0.4
-ASM_JAM_BREAK_NM = 20.0         # darunter: Durchstoß, Track wird sichtbar
 ASM_SPAWN_FIRST_S = 600.0
 ASM_SPAWN_INTERVAL_S = 1200.0
-ESSM_SPEED_KN = 2200.0
-ESSM_KILL_DIST_NM = 0.12
-ESSM_RANGE_NM = 30.0
-VLS_CELLS = 6
-CIWS_RANGE_NM = 1.5
-CIWS_KILL_PPS = 0.35
-CIWS_AMMO_DEFAULT = 180
-CIWS_ROUNDS_PER_ATTEMPT = 6
-CHAFF_COOLDOWN_S = 8.0
-CHAFF_RANGE_NM = 8.0
-CHAFF_BREAK_P = 0.4
 
 # M15: HSP-5 (Sea Lynx)
 HELO_SPEED_KN = 120.0

@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from src.air.flights import Flight
 from src.core.game import Game
 from src.core.mission_definition import default_mission
 from src.data.catalog import CATALOG
@@ -67,22 +68,34 @@ def observation(track_id, seen):
 
 
 @pytest.mark.parametrize("profile_key", [
-    "warship_01", "warship_02", "warship_25", "warship_26", "warship_27",
-    "warship_28", "cargo_05", "sub_03", "sub_14",
+    *(f"warship_{index:02d}" for index in range(1, 29)),
+    *(profile.key for profile in CATALOG.civilian_surfaces), *CATALOG.subs,
+    *CATALOG.aircraft,
 ])
-def test_all_pilots_use_attached_machine_and_sensor_components(profile_key):
+def test_all_migrated_profiles_use_attached_machine_and_sensor_components(profile_key):
     systems = CATALOG.profile_systems[profile_key]
     machine = CATALOG.machines[systems.machine_key]
-    if profile_key.startswith("sub_"):
+    if profile_key in CATALOG.subs:
         actor = Sub(0, 0, 50, 0, profile_key, random.Random(20),
                     profile=CATALOG.subs[profile_key], runtime_catalog=CATALOG)
-    else:
+    elif profile_key in CATALOG.surfaces:
         actor = SurfaceShip(
             0, 0, random.Random(20), profile=CATALOG.surfaces[profile_key],
-            side="neutral" if profile_key == "cargo_05" else "hostile",
+            side=("hostile" if CATALOG.surfaces[profile_key].category == "KAMPFSCHIFF"
+                  else "neutral"),
             runtime_catalog=CATALOG)
-    assert actor.motion.maximum_speed_kn == machine.maximum_speed_kn
-    assert actor.motion.cruise_speed_kn == machine.cruise_speed_kn
+    else:
+        kind = CATALOG.aircraft[profile_key].kind
+        base = {"id": "base", "x": 0.0, "y": 0.0, "nation": "BOREN"}
+        destination = ({"id": "dest", "x": 10.0, "y": 0.0}
+                       if kind == "civil" else None)
+        actor = Flight(kind, base, dest=destination, rng=random.Random(20),
+                       akey=profile_key, catalog=CATALOG)
+    if hasattr(actor, "motion"):
+        assert actor.motion.maximum_speed_kn == machine.maximum_speed_kn
+        assert actor.motion.cruise_speed_kn == machine.cruise_speed_kn
+    else:
+        assert actor.speed == machine.maximum_speed_kn == machine.cruise_speed_kn
     assert set(actor.sensor_suite.controllers) == set(systems.sensor_keys)
     assert all(controller.enabled
                for controller in actor.sensor_suite.controllers.values())
@@ -127,6 +140,27 @@ def test_radar_esm_sonar_and_ais_controllers_are_independent():
     assert domains[0] == {"sonar"}
     assert domains[1] == {"sonar", "esm"}
     assert domains[2] == {"ais"}
+
+
+def test_aircraft_component_sensors_observe_only_their_modeled_domains():
+    world = OpenWorld()
+    owner = target(id=1, x=0.0, sensor_domain="air")
+    detected = target()
+    military = PlatformSensorSuite(
+        CATALOG, "mil_patrol", 4, side="hostile", doctrine="military_patrol")
+    civil = PlatformSensorSuite(
+        CATALOG, "civil_transit", 5, side="neutral", doctrine="civil_flight")
+    for suite in (military, civil):
+        for controller in suite.controllers.values():
+            controller.next_scan_s = 0.0
+
+    military.update(1.0, owner, [detected], world, CATALOG,
+                    emcon={"radar": False})
+    civil.update(1.0, owner, [detected], world, CATALOG,
+                 emcon={"radar": False})
+
+    assert {track.domain for track in military.tactical_tracks(1.0)} == {"esm"}
+    assert {track.domain for track in civil.tactical_tracks(1.0)} == {"ais"}
 
 
 def test_sensor_domains_reject_impossible_targets():
@@ -349,6 +383,16 @@ def test_sensor_state_rejects_scan_sequence_overflow():
     state["controllers"][key]["scan_index"] = 2**63 - 1
 
     assert not validate_suite_state(state, CATALOG, "warship_01", 1.0)
+
+
+def test_sensor_state_accepts_bounded_overdue_phase_for_newly_migrated_profiles():
+    suite = PlatformSensorSuite(
+        CATALOG, "diesel_alt", 46, side="hostile", doctrine="submarine")
+    state = suite.serialize()
+    for controller in state["controllers"].values():
+        controller["next_scan_s"] = 0.0
+
+    assert validate_suite_state(state, CATALOG, "diesel_alt", 10.0)
 
 
 def test_pilot_submarine_broadband_uses_machine_component():

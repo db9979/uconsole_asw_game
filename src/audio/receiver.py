@@ -14,9 +14,12 @@ synthesis parameters, not recordings or claims about real platform spectra.
 
 import math
 from collections import OrderedDict, deque
+from itertools import islice
+from typing import NamedTuple
 
 import numpy as np
 
+from src.audio.hydroacoustics import analytic_envelope
 from src.core import config
 
 _BROADBAND_GAIN = 0.04      # rms-Skalierung der Bandrauschaudio
@@ -24,6 +27,12 @@ _OWN_CAV_GAIN = 0.10        # rms-Skalierung der Eigen-Kavitation
 _OWN_CAV_LOW_HZ = 80.0
 _OWN_CAV_HIGH_HZ = 380.0
 OWN_NOISE_LOBE_WIDTH_DEG = 70.0
+
+
+class RPMHypothesis(NamedTuple):
+    blade_count: int
+    harmonic_order: int
+    rpm: float
 
 
 def smooth_limit(samples, knee: float = 0.75,
@@ -80,9 +89,11 @@ class AcousticReceiver:
     block mean-square energies times beam amplitude gain squared, with analytic
     ambient/own-noise powers, all divided by .25**2 and clipped to 0..1. It is
     not a coherent sum across sources or a calibrated physical power spectrum.
-    DEMON RPM candidates are a tuple in blade-count order (3, 4, 5, 6, 7);
-    tonal_hz is the strongest measured low-frequency peak, or None. Confidence
-    and cavitation are bounded signal heuristics, not physical estimates.
+    DEMON publishes the measured modulation peak plus typed blade-count,
+    harmonic-order, and RPM hypotheses. Compatibility fields retain the old
+    first-order view. Detection confidence and cavitation are bounded signal
+    heuristics, not identity or physical estimates; tonal_hz is the strongest
+    measured low-frequency peak, or None.
 
     Receiver state remains transient under the intentional save/load warm-up.
     Exact continuation would additionally need seed, elapsed, sequence, RNG
@@ -126,6 +137,7 @@ class AcousticReceiver:
         """
         self._rng = np.random.default_rng(self.seed)
         self._source_states = {}
+        self._spectral_states = {}
         self._shaft_state = {}
         self._cav_ola = None
         self._cav_rms = 0.0
@@ -206,12 +218,38 @@ class AcousticReceiver:
             self._band_cache.popitem(last=False)
         return mask
 
+    def _spectral_curve(self, value) -> tuple[tuple[float, float], ...]:
+        """Detach a bounded relative gain curve from a source descriptor."""
+        if not isinstance(value, (list, tuple)) or not 1 <= len(value) <= 8:
+            return ((100.0, 1.0),)
+        points = []
+        for point in value:
+            if (not isinstance(point, (list, tuple)) or len(point) != 2
+                    or isinstance(point[0], bool) or isinstance(point[1], bool)):
+                return ((100.0, 1.0),)
+            frequency, gain = _finite(point[0], float("nan")), _finite(
+                point[1], float("nan"))
+            if not (0.0 <= frequency <= 3000.0 and 0.0 <= gain <= 4.0):
+                return ((100.0, 1.0),)
+            points.append((frequency, gain))
+        if any(points[index][0] <= points[index - 1][0]
+               for index in range(1, len(points))):
+            return ((100.0, 1.0),)
+        return tuple(points)
+
+    @staticmethod
+    def _curve_gain(curve: tuple[tuple[float, float], ...], frequencies):
+        x = np.asarray([point[0] for point in curve])
+        y = np.asarray([point[1] for point in curve])
+        return np.interp(frequencies, x, y, left=y[0], right=y[-1])
+
     def _frame_audio(self, frame: np.ndarray, mask: np.ndarray,
                      window: np.ndarray) -> np.ndarray:
         return np.fft.irfft(np.fft.rfft(window * frame) * mask, n=frame.size)
 
     def _band_audio(self, noise: np.ndarray, mask: np.ndarray, rms: float,
-                    state: tuple | None):
+                    state: tuple | None,
+                    normalization_mask: np.ndarray | None = None):
         """Streaming 50% overlap-add band limit; returns (block, next state).
 
         Two half-overlapped analysis frames per block keep the FFT band limit
@@ -227,8 +265,9 @@ class AcousticReceiver:
             return np.zeros(n), None
         window = (self._ola_window if n == self._ola_window.size
                   else 0.5 * (1.0 - np.cos(2.0 * np.pi * np.arange(n) / n)))
-        weighted_power = (mask[0] ** 2 + mask[-1] ** 2
-                          + 2.0 * np.sum(mask[1:-1] ** 2)) / n
+        reference = mask if normalization_mask is None else normalization_mask
+        weighted_power = (reference[0] ** 2 + reference[-1] ** 2
+                          + 2.0 * np.sum(reference[1:-1] ** 2)) / n
         scaled_mask = mask * (rms / math.sqrt(weighted_power)) \
             if weighted_power > 1e-24 else mask
         previous, overlap = state if state is not None else (None, None)
@@ -301,9 +340,7 @@ class AcousticReceiver:
 
         entries = {}
         occurrences = {}
-        for source in sources:
-            if len(entries) >= self.MAX_SOURCES:
-                break
+        for source in islice(iter(sources), self.MAX_SOURCES):
             if not isinstance(source, dict):
                 continue
             direction = _finite(source.get("bearing"), float("nan"))
@@ -326,16 +363,19 @@ class AcousticReceiver:
             source_seed = int(_finite(source.get("seed"))) % (2**64)
             occurrence = occurrences.get(source_seed, 0)
             occurrences[source_seed] = occurrence + 1
+            curve = self._spectral_curve(source.get("spectral_gains"))
             entries[(source_seed, occurrence)] = (level, direction, phase, lines,
-                                                  bb_level, bb_low, bb_high)
+                                                   bb_level, bb_low, bb_high, curve)
 
         block_index = round(self.elapsed / self.block_s)
         next_states = {}
+        next_spectral_states = {}
         for key in dict.fromkeys((*entries, *self._source_states)):
             old_direction, previous, bb_ola, old_bb = self._source_states.get(
                 key, (0, {}, None, None))
-            level, direction, phase, lines, bb_level, bb_low, bb_high = entries.get(
-                key, (0, old_direction, 0, (), 0, 0, 0))
+            old_curve = self._spectral_states.get(key, ((100.0, 1.0),))
+            level, direction, phase, lines, bb_level, bb_low, bb_high, curve = entries.get(
+                key, (0, old_direction, 0, (), 0, 0, 0, old_curve))
             desired = {}
             for index, line in enumerate(lines[:self.MAX_LINES]):
                 if not isinstance(line, (list, tuple)) or len(line) != 3:
@@ -350,28 +390,38 @@ class AcousticReceiver:
                             ("high", spread / 2, .25 if spread else 0))
                 for name, offset, weight in partials:
                     if 0 < freq + offset <= 300:
+                        spectral_gain = float(self._curve_gain(curve, freq + offset))
                         desired[index, name] = (freq + offset,
-                                                .25 * level * amp * weight, phase)
+                                                .25 * level * amp * weight
+                                                * spectral_gain, phase)
                 if index == 0 and 2 <= freq <= 80 and spread <= max(1, .15 * freq):
                     # AM as carrier + sidebands, each with integrated phase.
-                    desired[index, "carrier"] = (700, .10 * level * amp, 3 * phase)
-                    desired[index, "am_low"] = (700 - freq, .035 * level * amp,
+                    carrier_gain = float(self._curve_gain(curve, 700.0))
+                    desired[index, "carrier"] = (700, .10 * level * amp * carrier_gain, 3 * phase)
+                    desired[index, "am_low"] = (700 - freq, .035 * level * amp * carrier_gain,
                                                   2 * phase + np.pi / 2)
-                    desired[index, "am_high"] = (700 + freq, .035 * level * amp,
+                    desired[index, "am_high"] = (700 + freq, .035 * level * amp * carrier_gain,
                                                    4 * phase - np.pi / 2)
             source_audio, state = self._components(desired, previous)
             if bb_level > 0:
                 source_seed = key[0]
                 seed_words = (self.seed & 0xffffffff, self.seed >> 32,
-                              source_seed & 0xffffffff, source_seed >> 32,
-                              block_index)
+                               source_seed & 0xffffffff, source_seed >> 32,
+                               key[1], block_index)
                 band_noise = np.random.default_rng(
                     np.random.SeedSequence(seed_words)).normal(0, 1,
                                                                self._time.size)
-                mask = self._band_mask(bb_low, bb_high)
+                # OLA preserves the boundary while this bounded per-frame blend
+                # prevents abrupt spectral coloration as path geometry changes.
+                frequencies = self._block_freqs
+                target_mask = self._curve_gain(curve, frequencies)
+                previous_mask = self._curve_gain(old_curve, frequencies)
+                base_mask = self._band_mask(bb_low, bb_high)
+                mask = base_mask * (
+                    .5 * previous_mask + .5 * target_mask)
                 broadband, bb_ola = self._band_audio(
                     band_noise, mask,
-                    _BROADBAND_GAIN * level * bb_level, bb_ola)
+                    _BROADBAND_GAIN * level * bb_level, bb_ola, base_mask)
                 source_audio = source_audio + broadband
                 bb_params = (bb_low, bb_high,
                              _BROADBAND_GAIN * level * bb_level)
@@ -388,12 +438,14 @@ class AcousticReceiver:
                 bb_params = None
             if key in entries:
                 next_states[key] = (direction, state, bb_ola, bb_params)
+                next_spectral_states[key] = curve
             audio += source_audio * directional_gain(bearing, direction, width)
             # Actual unsteered block energy, not source presence or current beam
             # amplitude. Incoherent source powers add; normalize all terms alike.
             scan += (np.mean(source_audio**2) / .25**2
                      * directional_gain(self._angles, direction, width)**2)
         self._source_states = next_states
+        self._spectral_states = next_spectral_states
         if own_cav > 0:
             band_noise = self._rng.normal(0, 1, self._time.size)
             mask = self._band_mask(_OWN_CAV_LOW_HZ, _OWN_CAV_HIGH_HZ)
@@ -466,12 +518,8 @@ class AcousticReceiver:
                 if len(self.peaks) == 5:
                     break
 
-        # Analytic high-passed signal (FFT Hilbert transform, no SciPy).
         # A low-frequency tone alone must not be mistaken for modulation.
-        frequencies = np.fft.fftfreq(data.size, 1 / self.sample_rate)
-        carrier_fft = np.fft.fft(data)
-        carrier_fft *= 2 * ((frequencies >= 400) & (frequencies <= 1400))
-        envelope = np.abs(np.fft.ifft(carrier_fft))
+        envelope = analytic_envelope(data, self.sample_rate, 400.0, 1400.0)
         carrier_rms = float(np.sqrt(np.mean(envelope**2) / 2))
         envelope_mean = float(envelope.mean())
         modulation = np.abs(np.fft.rfft((envelope - envelope_mean) * window,
@@ -488,12 +536,22 @@ class AcousticReceiver:
         if (carrier_rms < .012 or peak < .008 or peak < 6 * noise_floor
                 or peak < .12 * envelope_mean or concentration < .35):
             return
-        blade_rate = float(self._frequencies[band_indices[index]])
+        modulation_peak = float(self._frequencies[band_indices[index]])
+        hypotheses = tuple(
+            RPMHypothesis(blades, order,
+                          round(modulation_peak * 60 / (blades * order), 1))
+            for blades in (3, 4, 5, 6, 7) for order in range(1, 5))
+        detection_confidence = float(np.clip(
+            concentration * (1 - 6 * noise_floor / peak), 0, 1))
         self.demon_analysis = {
-            "blade_rate_hz": blade_rate,
-            "rpm_candidates": tuple(round(blade_rate * 60 / blades, 1)
+            "modulation_peak_hz": modulation_peak,
+            "harmonic_rpm_hypotheses": hypotheses,
+            "detection_confidence": detection_confidence,
+            # Compatibility keys for existing displays and classification code.
+            "blade_rate_hz": modulation_peak,
+            "rpm_candidates": tuple(round(modulation_peak * 60 / blades, 1)
                                     for blades in (3, 4, 5, 6, 7)),
-            "confidence": float(np.clip(concentration * (1 - 6 * noise_floor / peak), 0, 1)),
+            "confidence": detection_confidence,
             "cavitation": float(np.clip(carrier_rms / .15, 0, 1)),
             "tonal_hz": self.peaks[0][0] if self.peaks else None,
         }

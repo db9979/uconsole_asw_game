@@ -4,6 +4,7 @@ from src.core import config
 from src.enemies.sub import Sub
 from src.ship.ship import Ship
 from src.sonar.sonar import SonarSystem
+from src.sonar import propagation
 from src.world.world import World
 
 
@@ -104,3 +105,18 @@ def test_active_range_reject_precedes_expensive_occlusion_query(monkeypatch):
     sonar.queue_ping(ship, [far], world, 0)
     assert sonar._pending_pings == []
     assert calls == []
+
+
+def test_active_queue_apply_and_return_never_use_passive_propagation(monkeypatch):
+    world = World(seed=13)
+    ship = Ship(250, 250, speed_kn=4)
+    sub = Sub(252, 250, 60, 0, "diesel_alt", random.Random(13))
+    sonar = SonarSystem(13)
+    monkeypatch.setattr(propagation, "propagate",
+                        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                            AssertionError("active sonar called propagation")))
+
+    assert sonar.apply_ping(ship, [sub], world, 0)
+    sonar.queue_ping(ship, [sub], world, 1)
+    sonar.update(30, 31, ship, [], world)
+    assert sonar.echo_history

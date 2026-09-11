@@ -1,5 +1,60 @@
 # Entwicklungsplan 0.1.7
 
+## Arbeitsstand
+
+Diese Checkliste ist der persistente Wiederaufnahmepunkt. Ein Paket wird erst
+abgehakt, wenn Implementierung, fokussierte Abnahme, Vollsuite und Handoff
+abgeschlossen sind. Physische Abnahmen bleiben offen, bis sie tatsaechlich auf
+der Zielhardware erfolgt sind.
+
+- [x] R0-R8: Baseline, Commander, Katalogpilot, Sensorik, ELOKA, ASW und Save v10.
+- [x] R9 Flugkoerperabwehr.
+  - [x] Profilbasierter Runtime-/Save-/Testpatch erstellt.
+  - [x] Unabhaengige Code- und Observation-Boundary-Pruefung.
+  - [x] Fokussierte und vollstaendige Softwareabnahme.
+  - [x] Handoff und Verifikationsledger aktualisiert.
+- [x] R10 Gesamtkatalogmigration.
+  - [x] U-Boote und generische Szenarioarchetypen.
+  - [x] Kriegsschiffe und Hilfsschiffe.
+  - [x] Zivile Schiffe.
+  - [x] Flugzeuge.
+  - [x] Tiere, Torpedos, Decoys und Akustikbibliothek.
+  - [x] Gesamtprovenienz, Runtimeparitaet und Save-/Determinismusabnahme.
+- [x] R11 Kontakt-DB und Tactical Unit Analyzer.
+  - [x] Reine begrenzte Katalogprojektion fuer Spiel und Commander.
+  - [x] Deterministische Bildgenerierung und Hashmanifest.
+  - [x] Feste sichere Serverrouten und paketierte Ressourcen.
+  - [x] EN/DE-, Browser-, Traversal- und Reproduzierbarkeitsabnahme.
+- [x] R12 vollstaendige Commander-Webanleitung.
+  - [x] Inhalte und EN/DE-Katalogparitaet.
+  - [x] Sichere DOM-Einsetzung, Navigation und Layoutabnahme.
+- [x] R13 Integrationscheckpoint.
+  - [x] Vollsuite, Katalog-, Bild-, Smoke- und Buildpruefung.
+  - [x] Isolierte Artefaktinstallation und Save-v10-Abnahme.
+  - [x] Browser-/Loopbackmatrix und Quellen-/Lizenzscan.
+  - [x] Physische uConsole-/Zwei-Geraete-Abnahme oder als offen dokumentiert.
+- [x] R14 Sonarhoerbild und Fixpublikation.
+  - [x] Audiozustand, A/B, Heterodyn und Filteruebergaenge.
+  - [x] Ping-/TMA-/Sonobuoyfixe auf Bruecke und Commander.
+  - [x] Softwareabnahme; physische Audioabnahme offen dokumentiert.
+- [x] R15 Sonarlayout, Kontrast, Maus und Stationsabnahme.
+  - [x] Sechs verdichtete Sonarseiten und gemeinsame Draw-/Hit-Geometrie.
+  - [x] EN/DE-, Grossschrift-, Pseudolocale- und Letterboxmatrix.
+  - [x] Physischer 1280x720-Kontrast-/Trackballtest offen dokumentiert.
+- [x] R16 Batterie-/AIP-Endurance.
+  - [x] Strikter fiktiver Katalog- und Runtimezustand.
+  - [x] Energie-, Schnorchel-, Funk- und Save-Fortsetzungsabnahme.
+- [x] R17 erweiterte synthetische Schallausbreitung.
+  - [x] Begrenzte gemeinsame Propagations-/BT-API.
+  - [x] Pfad-, Terrain- und Determinismusabnahme; physische Performance offen.
+- [x] R18 Grundberuehrung und lokalisierte Schaeden.
+  - [x] Swept-Kontakt, Aufprall-Latch, Bergung und Schadensverteilung.
+  - [x] Save-, Substep- und Akustik-/Physiktrennungsabnahme.
+- [x] R19 Gesamtabnahme und Pause.
+  - [x] R13-Softwarematrix nach B-F wiederholt.
+  - [x] Hardware-/Performancegrenzen abgenommen oder ehrlich dokumentiert.
+  - [x] Finaler Handoff erstellt und verpflichtender Pausenpunkt erreicht.
+
 ## Ziel und Freigabe
 
 0.1.7 erweitert den ausgelieferten Commander-Meilenstein um eine Crew-MessageBox
@@ -296,9 +351,10 @@ reale Namen machen synthetische Leistungswerte nicht zu Fakten.
 - Reine, begrenzte Katalogprojektion in einem Game-/Pygame-freien Modul.
 - Server erhaelt vorgebaute Bytes und feste allowlist-basierte JSON-/Bildrouten;
   keine Pfadinterpretation aus Requests oder Profilen.
-- Profile mit Dimensionen erhalten eine generische dimensionsbasierte
-  Silhouette. Profile mit Akustik erhalten deterministische Cruise-/High-
-  Analysebilder. Nicht anwendbare Bilder werden nicht erfunden.
+- Superseded by the analyzer follow-up: the earlier R11 silhouette sentence is
+  no longer active. No silhouette assets or routes exist. Acoustic profiles
+  receive deterministic Cruise/High diagrams only; inapplicable data is not
+  invented.
 - Generator ist fontfrei/reproduzierbar, schreibt feste PNGs plus Hashmanifest
   und besitzt einen strikt lesenden `--check`-Modus.
 - Wheel/sdist enthalten exakt Manifest und allowlistete Assets.
@@ -411,6 +467,13 @@ Abnahme: numerisch geschlossene Energiebilanz, Last-/Reservegrenzen,
 Schnorchel-/Funktrennung, strikte Schemaablehnung und identische v10-Fortsetzung
 mit/ohne Save.
 
+Softwareabnahme abgeschlossen: alle 12 relevanten nichtnuklearen Profile besitzen
+streng validierte `game_assumption`-Endurancewerte; Energiebilanz, exakte
+Schwellenereignisse, Subsekundenpartitionierung, Schnorchel-/Funk-/Abtauchphasen,
+1024er-Schrittgrenze, Legacy-RNG-Reihenfolge und die eng erkannte praezise
+prae-R16-v10-Dateiform sind regressionsgeprueft. Physischer uConsole-Langlauf
+bleibt bis R19 offen.
+
 ### R17 Erweiterte synthetische Schallausbreitung (E)
 
 - Eine reine begrenzte `sonar/propagation.py`-API liefert ein gemeinsames
@@ -428,6 +491,13 @@ Abnahme: Profil-/BT-Konsistenz, monotone Frequenzdaempfung, Terrainfaelle,
 deterministische Pfade, keine globale RNG-/Renderabhaengigkeit und gemessene
 uConsole-Sensorkadenz. Mehrere aktive Echos brauchen einen ausdruecklichen
 Zwischencheckpoint vor Semantikaenderung.
+
+Softwareabnahme abgeschlossen: Die reine API ist auf vier stabile Pfade, drei
+Segmente je Pfad, vier Frequenzbaender und 500 NM begrenzt. BT und passive
+Sensoren teilen das synthetische Profil; Terrain, CZ-Fokussierung,
+Frequenzdaempfung, Laufzeit und Nachhall sind deterministisch getestet. Aktive
+Echo-Snapshots, physische Terrainkollision und Saveform bleiben unveraendert.
+Die physische uConsole-Sensorkadenzmessung bleibt bis R19 offen.
 
 ### R18 Grundberuehrung und lokalisierte Schaeden (F)
 
@@ -449,6 +519,13 @@ Abnahme: Substep-invarianter Swept-Kontakt, stabile erste Kontaktposition,
 einmaliger Aufprall, definierte Rueckwaertsbergung, unpassierbares Land,
 getrennte Akustik-/Physiktests und identische Savefortsetzung im Grundzustand.
 
+Softwareabnahme abgeschlossen: Neue Welten besitzen kontrollierte synthetische
+Untiefen und hullsichere Starts; alte Bathymetriesnapshots bleiben abgeloest und
+wertgleich. Der begrenzte physische Hull-Sweep behandelt Translation und Drehung,
+Land, Weltrand und bilineare Mindesttiefe getrennt von Sonar. ASTERN-Bergung,
+Einmal-Latch, lokalisierter Nicht-RNG-Schaden und strikter v10-Zustand sind
+fortsetzungs- und partitionsgeprueft. Physische uConsole-Abnahme bleibt R19.
+
 ### R19 Gesamtabnahme und Pause
 
 Alle Befehle aus R13 werden nach B-F erneut ausgefuehrt. Hinzu kommen die
@@ -456,6 +533,14 @@ Hardware-/Performance-Abnahmen fuer Sonarhoeren, neun Stationen,
 Endurance-Langlauf, Ausbreitungskosten und Grundberuehrung. Danach wird
 `docs/resume.md` mit Commit, Teststand, Hardwaregrenzen und naechstem kleinen
 Schritt aktualisiert und die Arbeit verpflichtend gestoppt.
+
+Softwareabnahme abgeschlossen: 2363 Tests, beide Generatorchecks, Smoke, Build,
+isolierte Artefaktinstallationen, Save-v10-, Browser-, Loopback-, Stations-,
+Layout-, Audio-/DSP-, Performance-, Quellen-, Lizenz- und Sicherheitstests sind
+gruen. Der akzeptierte Kandidat ist uncommittiert auf Basis `7d52faf`; ohne
+ausdrueckliche Git-Freigabe wurde weder committed noch gepusht. Physische
+uConsole-, Zwei-Geraete-LAN-, Firewall-, Hoer-, Thermal-, Endurance- und
+Groundingabnahmen bleiben offen, der Release daher auf HOLD. Pausenpunkt erreicht.
 
 Nicht freigegeben bleibt Tier 4: Nimitz-Luftgruppe, Type-901-Nachversorgung,
 LACM, allgemeiner Geschuetzkrieg und Verbandsoperationen.

@@ -143,6 +143,20 @@ def test_demon_measures_known_am_audio_without_source_descriptors(rate):
     assert abs(np.argmax(receiver.demon_spectrum) + 1 - rate) <= 1
 
 
+def test_demon_peak_keeps_second_harmonic_rpm_ambiguity_explicit():
+    receiver = AcousticReceiver()
+    t = np.arange(receiver.sample_rate * 2) / receiver.sample_rate
+    envelope = 1 + .15 * np.sin(2 * np.pi * 14 * t) \
+        + .65 * np.sin(2 * np.pi * 28 * t)
+    receiver._analyze(.12 * envelope * np.sin(2 * np.pi * 700 * t))
+    result = receiver.demon_analysis
+    assert result["modulation_peak_hz"] == pytest.approx(28, abs=.5)
+    assert result["detection_confidence"] == result["confidence"]
+    assert any(item.blade_count == 7 and item.harmonic_order == 2
+               and item.rpm == pytest.approx(120, abs=3)
+               for item in result["harmonic_rpm_hypotheses"])
+
+
 def test_synthesized_modulation_is_illustrative_first_line_not_strongest():
     receiver = run([source(lines=[(12, .5, 0), (47, .9, 0)])])
     assert receiver.demon_analysis["blade_rate_hz"] == 12
@@ -272,6 +286,33 @@ def test_broadband_sources_have_independent_deterministic_noise():
                                atol=3e-8)
     assert not np.array_equal(first.samples, second.samples)
     np.testing.assert_array_equal(mixed.samples, run([b, a], blocks=1).samples)
+
+
+def test_duplicate_source_seeds_get_independent_deterministic_noise():
+    item = source(seed=11, lines=[])
+    item["broadband"] = {"level": .8, "low_hz": 100, "high_hz": 700}
+    mixed = run([item, item], blocks=1)
+    single = run([item], blocks=1)
+    background = run([], blocks=1)
+    duplicate_contribution = mixed.samples - single.samples
+    first_contribution = single.samples - background.samples
+    assert not np.array_equal(duplicate_contribution, first_contribution)
+    np.testing.assert_array_equal(mixed.samples, run([item, item], blocks=1).samples)
+
+
+def test_source_descriptor_inspection_is_hard_bounded():
+    class HostileIterable:
+        def __init__(self):
+            self.inspected = 0
+
+        def __iter__(self):
+            for _ in range(1_000_000):
+                self.inspected += 1
+                yield None
+
+    sources = HostileIterable()
+    AcousticReceiver().update(sources, 0, 24, 0, 0, 0)
+    assert sources.inspected == AcousticReceiver.MAX_SOURCES
 
 
 @pytest.mark.parametrize("kind", ["broadband", "cavitation"])

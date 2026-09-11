@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "key": "mil_patrol",
@@ -31,5 +31,247 @@
       "spawn_weight": 1.0,
       "signature_text": "ziviler Transport, nur Radar"
     }
-  ]
+  ],
+  "profiles": [
+    {
+      "profile_key": "mil_patrol",
+      "reference_key": "reference.mil_patrol",
+      "machine_key": "machine.mil_patrol",
+      "sensor_keys": [
+        "sensor.mil_patrol.radar",
+        "sensor.mil_patrol.esm"
+      ],
+      "emitter_keys": [
+        "emitter.mil_patrol.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "civil_transit",
+      "reference_key": "reference.civil_transit",
+      "machine_key": "machine.civil_transit",
+      "sensor_keys": [
+        "sensor.civil_transit.radar",
+        "sensor.civil_transit.ais"
+      ],
+      "emitter_keys": [
+        "emitter.civil_transit.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.mil_patrol",
+      "variant": "BOREN maritime-patrol archetype",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "maritime_patrol"
+      ],
+      "hull_type": "fixed_wing_aircraft",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    },
+    {
+      "key": "reference.civil_transit",
+      "variant": "HANSE civil-transit archetype",
+      "variant_year": null,
+      "refit_year": null,
+      "aliases": [],
+      "roles": [
+        "passenger_transport"
+      ],
+      "hull_type": "fixed_wing_aircraft",
+      "displacement_tonnes": null,
+      "displacement_basis": "unknown",
+      "length_m": null,
+      "beam_waterline_m": null,
+      "beam_overall_m": null,
+      "flight_deck_width_m": null,
+      "draft_m": null,
+      "ship_crew": null,
+      "air_group_crew": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.mil_patrol",
+      "cruise_speed_kn": 200.0,
+      "maximum_speed_kn": 200.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "other",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          90.0,
+          1.0,
+          4.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          180.0,
+          1.0,
+          6.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ]
+    },
+    {
+      "key": "machine.civil_transit",
+      "cruise_speed_kn": 450.0,
+      "maximum_speed_kn": 450.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "other",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          110.0,
+          1.0,
+          5.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          220.0,
+          1.0,
+          8.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.65,
+        100.0,
+        2500.0
+      ],
+      "high_speed_broadband": [
+        0.65,
+        100.0,
+        2500.0
+      ]
+    }
+  ],
+  "sensors": [
+    {
+      "key": "sensor.mil_patrol.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.mil_patrol.radar",
+      "synthetic_range_nm": 80.0,
+      "sensitivity_db": -80.0,
+      "cadence_s": 2.0,
+      "bearing_uncertainty_deg": 1.0,
+      "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.mil_patrol.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 60.0,
+      "sensitivity_db": -90.0,
+      "cadence_s": 1.0,
+      "bearing_uncertainty_deg": 2.0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.civil_transit.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.civil_transit.radar",
+      "synthetic_range_nm": 40.0,
+      "sensitivity_db": -75.0,
+      "cadence_s": 5.0,
+      "bearing_uncertainty_deg": 2.0,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.civil_transit.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 200.0,
+      "sensitivity_db": null,
+      "cadence_s": 5.0,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    }
+  ],
+  "emitters": [
+    {
+      "key": "emitter.mil_patrol.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": null,
+      "modulation_codes": [
+        "unknown"
+      ]
+    },
+    {
+      "key": "emitter.civil_transit.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": null,
+      "modulation_codes": [
+        "unknown"
+      ]
+    }
+  ],
+  "weapons": [],
+  "launchers": [],
+  "magazines": [],
+  "countermeasures": []
 }

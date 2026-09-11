@@ -231,6 +231,48 @@ def test_all_detail_rows_fit_actual_panel_and_font(display_game, language, large
     assert all(a["rect"].bottom <= b["rect"].top for a, b in zip(rendered, rendered[1:]))
 
 
+def test_detail_evidence_age_uses_each_page_source(display_game):
+    game = display_game
+    game.sonar.history_times = [99]
+    game.sonar.lofar_times = [98]
+    track = BearingTrack()
+    track.add(70, 45, 0, 0, 0)
+    game.sonar._tracks[game.selected_contact.target_id] = track
+    game.selected_contact.tma_seen = 75
+
+    with translation_scope(game.tr):
+        assert view._detail_evidence(game, 0)[:2] == ("RECEIVER", 1)
+        assert view._detail_evidence(game, 1)[:2] == ("RECEIVER", 2)
+        assert view._detail_evidence(game, 2)[:2] == ("RECEIVER", 2)
+        assert view._detail_evidence(game, 3)[:2] == ("SELECTED TMA TRACK", 25)
+        assert view._detail_evidence(game, 4)[:2] == ("BT PROFILE", 10)
+        assert view._detail_evidence(game, 5)[:2] == ("ACTIVE ECHO", 1)
+        game.sonar.lofar_times = [60]
+        assert view._detail_evidence(game, 1)[2] == "STALE"
+
+        game.selected_contact = None
+        game.sonar.bt_profile = None
+        game.sonar.echo_history = []
+        game.sonar._pending_pings = []
+        for page in (3, 4, 5):
+            source, age, state = view._detail_evidence(game, page)
+            assert source != "RECEIVER" and age is None and state == "ABSENT"
+
+
+def test_lofar_harmonics_require_current_operator_selection(display_game):
+    game = display_game
+    game.sonar_page = 1
+    assert view._selected_harmonic(game) is None
+    assert not any("2f" in str(row[0]) for row in view._detail_rows(game, 1))
+    game.sonar_harmonic_hz = 20.0
+    assert view._selected_harmonic(game) == 20.0
+    assert any("2f" in str(row[0]) for row in view._detail_rows(game, 1))
+    game.sonar.receiver.peaks = [(30.0, .8)]
+    assert view._selected_harmonic(game) is None
+    game.sonar.receiver.peaks = [(20.0, .8)]
+    assert view._selected_harmonic(game) is None
+
+
 @pytest.mark.parametrize("page", [0, 1])
 def test_waterfall_tooltips_use_drawn_history_not_live_or_padding(display_game, page):
     game = display_game

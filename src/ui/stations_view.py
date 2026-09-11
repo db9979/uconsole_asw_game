@@ -108,7 +108,7 @@ def draw_bridge_view(game, tr=None) -> None:
             default=(None, None))
         if nearest:
             tti = displayed_range / max(.001, config.kn_to_nm_per_s(
-                config.ASM_SPEED_KN))
+                getattr(game, "asm_speed_kn", 1.0)))
             threats.append(("ASM", localize(message("bridge.line.asm_threat",
                             bearing=observations.format_bearing(nearest, game.ship), range=f"{displayed_range:.1f}",
                             tti=f"{tti:.0f}"))))
@@ -384,8 +384,10 @@ def station_hit_target(game, pos):
         if pygame.Rect(x, top, col_w, rect.h - 54).collidepoint(pos):
             row = (int(pos[1]) - top - 72) // 27
             action = message("station.tooltip.select_telegraph")
-            if 0 <= row < len(config.TELEGRAPH_ORDERS):
-                name, speed = config.TELEGRAPH_ORDERS[row]
+            displayed_orders = (("ASTERN", config.ASTERN_SPEED_KN),
+                                *config.TELEGRAPH_ORDERS)
+            if 0 <= row < len(displayed_orders):
+                name, speed = displayed_orders[row]
                 action = message("station.tooltip.telegraph_order", order=name, speed=f"{speed:.1f}")
             return layout.tooltip_payload(
                 "panel.engine_order", message("station.tooltip.current_target_speed", current=game.ship.telegraph, target=f"{game.ship.target_speed:.1f}"),
@@ -899,7 +901,9 @@ def draw_opz_view(game, tr=None) -> None:
                         label_w=80, size=13)
     py += 23
     layout.status_line(s, x, py, w, "VLS:",
-                        message("opz.line.vls_chaff", count=game.vls_cells, total=config.VLS_CELLS,
+                        message("opz.line.vls_chaff", count=game.vls_cells,
+                                total=getattr(game, "vls_loadout_total",
+                                              game.vls_cells),
                                 chaff=f"{game.chaff_cd:.0f}"),
                         label_w=80, size=14)
     py += 28
@@ -984,7 +988,8 @@ def draw_opz_view(game, tr=None) -> None:
                         else "  --.-NM")
             jam = "JAMMER" if track.jamming else track.source
             tti = (displayed_range / max(.001, config.kn_to_nm_per_s(
-                config.ASM_SPEED_KN)) if displayed_range is not None else None)
+                getattr(game, "asm_speed_kn", 1.0)))
+                if displayed_range is not None else None)
             tti_text = f" TTI {tti:.0f}s" if tti is not None else ""
             layout.blit_block(
                 s, message("opz.line.asm_track", prefix='>' if sel else ' ',
@@ -1083,16 +1088,20 @@ def draw_engine_view(game, tr=None) -> None:
     ox, oy, ow, _ = orders
     layout.blit_line(s, ship.telegraph, (ox, oy, ow, 34), config.COLOR_TEXT, size=24)
     oy += 42
-    for i, (name, sp) in enumerate(config.TELEGRAPH_ORDERS):
-        mark = ">" if i == ship.order_idx else " "
-        col = config.COLOR_OK if i == ship.order_idx else config.COLOR_TEXT_DIM
-        if i == ship.order_idx:
+    displayed_orders = (("ASTERN", config.ASTERN_SPEED_KN),
+                        *config.TELEGRAPH_ORDERS)
+    for i, (name, sp) in enumerate(displayed_orders):
+        astern = getattr(ship, "astern", False)
+        selected = astern if i == 0 else not astern and i - 1 == ship.order_idx
+        mark = ">" if selected else " "
+        col = config.COLOR_OK if selected else config.COLOR_TEXT_DIM
+        if selected:
             pygame.draw.rect(s, (20, 43, 29), (ox - 4, oy - 2, ow + 8, 25))
         layout.status_line(s, ox, oy, ow, message("engine.line.order", mark=mark, order=name),
                            message("bridge.line.speed", speed=f"{sp:4.1f}"),
                            color=col, label_w=190, size=15)
-        oy += 27
-    oy += 14
+        oy += 25
+    oy += 8
     layout.blit_line(s, "view.engine.telegraph_hint", (ox, oy, ow, 22),
                      config.COLOR_TEXT_DIM, size=14)
     layout.blit_line(s, "control.quiet_mode", (ox, oy + 27, ow, 22),

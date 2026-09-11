@@ -65,6 +65,30 @@ def test_commander_confirmation_catalog_contract():
         validate_catalog(catalog, load_catalog("en"))
 
 
+def test_commander_guide_catalog_contract():
+    topics = {
+        "access", "operations", "observations", "proposals", "eloka",
+        "analyzer", "connection", "authority",
+    }
+    required = {
+        "commander.web.guide_title", "commander.web.guide_intro",
+        "commander.web.guide_navigation", "commander.web.guide_lookout",
+        "commander.web.guide_target_proposal",
+        "commander.web.guide_navigation_proposal",
+        "commander.web.guide_message_box",
+        "commander.web.guide_reconciliation", "commander.web.guide_emcon",
+        "commander.web.guide_security", "commander.web.guide_reconnect",
+        "commander.web.guide_authority_forbidden",
+    }
+    required |= {f"commander.web.guide_nav_{topic}" for topic in topics}
+    required |= {f"commander.web.guide_{topic}_title" for topic in topics}
+    english = load_catalog("en")
+    for catalog in (english, load_catalog("de"), pseudolocale(english)):
+        assert required <= catalog.keys()
+        assert all(catalog[key] for key in required)
+        validate_catalog(catalog, english)
+
+
 def test_exact_legacy_literals_work_but_composed_text_is_not_parsed():
     english = Translator("en")
     german = Translator("de")

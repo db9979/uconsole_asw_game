@@ -5,6 +5,7 @@ Koordinaten in NM, y nach Sueden. 0° = Nord (oben).
 """
 
 from collections import OrderedDict
+import copy
 import json
 import math
 import os
@@ -17,6 +18,10 @@ _DEFAULT_PATH = os.path.join(os.path.dirname(os.path.dirname(
     "region.json")
 _OCCLUSION_CACHE_LIMIT = 1024
 _GEOMETRY_EPSILON = 1e-9
+_MAX_SNAPSHOT_LANDMASSES = 4096
+_MAX_SNAPSHOT_POINTS = 200_000
+_MAX_SNAPSHOT_AIRBASES = 4096
+_MAX_BATHYMETRY_GRID = 257
 
 
 def _point_in_poly(x: float, y: float, pts: list) -> bool:
@@ -76,6 +81,49 @@ def _segment_intersection_parameters(first: tuple, second: tuple,
     return values
 
 
+def _valid_provenance(value, text) -> bool:
+    if (not isinstance(value, dict)
+            or set(value) != {"airbases", "natural_earth", "projection"}
+            or not text(value["projection"], 512)):
+        return False
+    airbases = value["airbases"]
+    natural_earth = value["natural_earth"]
+    if (not isinstance(airbases, dict)
+            or set(airbases) != {"dataset", "license", "query", "retrieved", "sha256"}
+            or any(not text(item, 1024) for item in airbases.values())):
+        return False
+    if (not isinstance(natural_earth, dict)
+            or set(natural_earth) != {
+                "commit", "dataset", "license", "sha256", "url"}
+            or any(not text(item, 1024) for item in natural_earth.values())):
+        return False
+    return True
+
+
+def _clip_polygon_axis(points: list[tuple[float, float]], axis: int,
+                       boundary: float, keep_greater: bool) -> list[tuple[float, float]]:
+    if not points:
+        return []
+    output = []
+    previous = points[-1]
+    previous_inside = (previous[axis] >= boundary if keep_greater
+                       else previous[axis] <= boundary)
+    for current in points:
+        current_inside = (current[axis] >= boundary if keep_greater
+                          else current[axis] <= boundary)
+        if current_inside != previous_inside:
+            delta = current[axis] - previous[axis]
+            t = 0.0 if abs(delta) <= _GEOMETRY_EPSILON else \
+                (boundary - previous[axis]) / delta
+            crossing = (previous[0] + (current[0] - previous[0]) * t,
+                        previous[1] + (current[1] - previous[1]) * t)
+            output.append(crossing)
+        if current_inside:
+            output.append(current)
+        previous, previous_inside = current, current_inside
+    return output
+
+
 class Landmass:
     def __init__(self, name: str, nation: str, points: list):
         self.name = name
@@ -108,11 +156,12 @@ class Coastline:
     def __init__(self, data: dict, world_size_nm: float = config.WORLD_SIZE_NM):
         self.world_size_nm = world_size_nm
         self.landmasses = [
-            Landmass(m["name"], m.get("nation", "ZIVIL"), m["points"])
+            Landmass(m["name"], m.get("nation", "ZIVIL"),
+                     [tuple(point) for point in m["points"]])
             for m in data.get("landmasses", [])]
-        self.airbases = data.get("airbases", [])
-        self._bathymetry = data.get("bathymetry")
-        self.metadata = data.get("metadata")
+        self.airbases = copy.deepcopy(data.get("airbases", []))
+        self._bathymetry = copy.deepcopy(data.get("bathymetry"))
+        self.metadata = copy.deepcopy(data.get("metadata"))
         self._occlusion_cache = OrderedDict()
 
     @classmethod
@@ -131,6 +180,110 @@ class Coastline:
         """Restore a canonical snapshot produced by :meth:`to_dict`."""
         return cls(data, world_size_nm=float(
             data.get("world_nm", config.WORLD_SIZE_NM)))
+
+    @staticmethod
+    def valid_snapshot(data) -> bool:
+        """Validate the complete bounded shape emitted by :meth:`to_dict`."""
+        def number(value, low, high, *, exact_float=False):
+            expected = float if exact_float else (int, float)
+            try:
+                return (type(value) is expected if exact_float
+                        else type(value) in expected) \
+                    and math.isfinite(value) and low <= value <= high
+            except OverflowError:
+                return False
+
+        def text(value, maximum=512):
+            return isinstance(value, str) and 1 <= len(value) <= maximum
+
+        if not isinstance(data, dict) or set(data) not in (
+                {"world_nm", "landmasses", "airbases", "bathymetry"},
+                {"world_nm", "landmasses", "airbases", "bathymetry", "metadata"}):
+            return False
+        size = data["world_nm"]
+        if not number(size, 0.001, 10_000.0, exact_float=True):
+            return False
+        landmasses = data["landmasses"]
+        if (not isinstance(landmasses, list)
+                or len(landmasses) > _MAX_SNAPSHOT_LANDMASSES):
+            return False
+        point_count = 0
+        for land in landmasses:
+            if (not isinstance(land, dict)
+                    or set(land) != {"name", "nation", "points"}
+                    or not text(land["name"]) or not text(land["nation"], 128)
+                    or not isinstance(land["points"], list)
+                    or len(land["points"]) < 3):
+                return False
+            point_count += len(land["points"])
+            if point_count > _MAX_SNAPSHOT_POINTS:
+                return False
+            for point in land["points"]:
+                if (not isinstance(point, list) or len(point) != 2
+                        or any(not number(value, 0.0, size) for value in point)):
+                    return False
+
+        airbases = data["airbases"]
+        fixed_fields = {"id", "name", "nation", "x", "y"}
+        generated_fields = fixed_fields | {
+            "wikidata", "latitude", "longitude", "gameplay_role"}
+        if not isinstance(airbases, list) or len(airbases) > _MAX_SNAPSHOT_AIRBASES:
+            return False
+        for base in airbases:
+            if not isinstance(base, dict) or set(base) not in (fixed_fields, generated_fields):
+                return False
+            if (any(not text(base[key], 512) for key in ("id", "name", "nation"))
+                    or not number(base["x"], 0.0, size)
+                    or not number(base["y"], 0.0, size)):
+                return False
+            if set(base) == generated_fields and (
+                    not text(base["wikidata"], 64)
+                    or base["gameplay_role"] not in (
+                        "friendly", "hostile", "neutral", "civil")
+                    or not number(base["latitude"], -90.0, 90.0)
+                    or not number(base["longitude"], -180.0, 180.0)):
+                return False
+
+        bathymetry = data["bathymetry"]
+        if bathymetry is not None:
+            if (not isinstance(bathymetry, dict)
+                    or set(bathymetry) not in (
+                        {"size", "values"},
+                        {"size", "values", "synthetic_shallows"})):
+                return False
+            grid_size = bathymetry["size"]
+            values = bathymetry["values"]
+            if (type(grid_size) is not int
+                    or not 2 <= grid_size <= _MAX_BATHYMETRY_GRID
+                    or not isinstance(values, list) or len(values) != grid_size
+                    or any(not isinstance(row, list) or len(row) != grid_size
+                           or any(not number(depth, 0.0, 10_000.0) for depth in row)
+                           for row in values)
+                    or ("synthetic_shallows" in bathymetry
+                        and type(bathymetry["synthetic_shallows"]) is not int)
+                    or bathymetry.get("synthetic_shallows", 1) != 1):
+                return False
+
+        if "metadata" in data:
+            metadata = data["metadata"]
+            metadata_fields = {"sector_id", "name", "center", "countries",
+                               "land_ratio", "provenance"}
+            if not isinstance(metadata, dict) or set(metadata) != metadata_fields:
+                return False
+            center = metadata["center"]
+            provenance = metadata["provenance"]
+            if (not text(metadata["sector_id"], 64) or not text(metadata["name"])
+                    or not isinstance(center, dict)
+                    or set(center) != {"latitude", "longitude"}
+                    or not number(center["latitude"], -90.0, 90.0)
+                    or not number(center["longitude"], -180.0, 180.0)
+                    or not isinstance(metadata["countries"], list)
+                    or len(metadata["countries"]) > 256
+                    or any(not text(country, 128) for country in metadata["countries"])
+                    or not number(metadata["land_ratio"], 0.0, 1.0)
+                    or not _valid_provenance(provenance, text)):
+                return False
+        return True
 
     @classmethod
     def generate(cls, seed: int, size_nm: float = 500.0) -> "Coastline":
@@ -158,7 +311,36 @@ class Coastline:
         coast = cls(data, size)
         sector_number = int(sector["id"].rsplit("-", 1)[-1])
         coast._bathymetry = coast._generate_bathymetry(random.Random(sector_number))
+        coast._add_synthetic_shallows(random.Random(sector_number + 180_018))
         return coast
+
+    def _add_synthetic_shallows(self, rng: random.Random) -> None:
+        """Embed bounded fictional hazards only in a newly generated snapshot."""
+        grid = self._bathymetry["values"]
+        size = self._bathymetry["size"]
+        protected = [(250.0, 250.0)]
+        protected.extend(scenario["ship_start"] for scenario in config.SCENARIOS.values()
+                         if scenario["ship_start"] is not None)
+        candidates = [(row, column) for row in range(2, size - 2)
+                      for column in range(2, size - 2)
+                      if grid[row][column] > 40.0
+                      and all(math.hypot(
+                          column * self.world_size_nm / (size - 1) - px,
+                          row * self.world_size_nm / (size - 1) - py) > 75.0
+                              for px, py in protected)]
+        rng.shuffle(candidates)
+        chosen = []
+        for row, column in candidates:
+            if any(abs(row - r) + abs(column - c) < 5 for r, c in chosen):
+                continue
+            chosen.append((row, column))
+            grid[row][column] = 5.0 + rng.uniform(0.0, 2.0)
+            for dr, dc in ((-1, 0), (0, -1), (0, 1), (1, 0)):
+                grid[row + dr][column + dc] = min(
+                    grid[row + dr][column + dc], 14.0 + rng.uniform(0.0, 4.0))
+            if len(chosen) == 3:
+                break
+        self._bathymetry["synthetic_shallows"] = 1
 
     def _distance_to_coast(self, x: float, y: float) -> float:
         nearest = self.world_size_nm
@@ -208,6 +390,135 @@ class Coastline:
         top = grid[y0][x0] * (1.0 - tx) + grid[y0][x1] * tx
         bottom = grid[y1][x0] * (1.0 - tx) + grid[y1][x1] * tx
         return max(35.0, top * (1.0 - ty) + bottom * ty)
+
+    def physical_depth_m(self, x: float, y: float) -> float:
+        """Raw synthetic bathymetry for physical grounding, zero on land."""
+        if self.on_land(x, y):
+            return 0.0
+        if not self._bathymetry:
+            raise ValueError("this coastline has no bathymetry")
+        grid = self._bathymetry["values"]
+        grid_size = int(self._bathymetry["size"])
+        scale = (grid_size - 1) / self.world_size_nm
+        fx = max(0.0, min(grid_size - 1.0, x * scale))
+        fy = max(0.0, min(grid_size - 1.0, y * scale))
+        x0, y0 = int(fx), int(fy)
+        x1, y1 = min(x0 + 1, grid_size - 1), min(y0 + 1, grid_size - 1)
+        tx, ty = fx - x0, fy - y0
+        top = grid[y0][x0] * (1.0 - tx) + grid[y0][x1] * tx
+        bottom = grid[y1][x0] * (1.0 - tx) + grid[y1][x1] * tx
+        return max(0.0, top * (1.0 - ty) + bottom * ty)
+
+    def minimum_physical_depth_in_polygon(
+            self, polygon: tuple[tuple[float, float], ...]
+    ) -> tuple[float, float, float]:
+        """Return the exact bilinear minimum under a bounded convex footprint."""
+        if not self._bathymetry or len(polygon) < 3:
+            raise ValueError("bathymetry and a polygon are required")
+        grid = self._bathymetry["values"]
+        grid_size = int(self._bathymetry["size"])
+        spacing = self.world_size_nm / (grid_size - 1)
+        left = max(0.0, min(point[0] for point in polygon))
+        right = min(self.world_size_nm, max(point[0] for point in polygon))
+        top = max(0.0, min(point[1] for point in polygon))
+        bottom = min(self.world_size_nm, max(point[1] for point in polygon))
+        first_column = max(0, min(grid_size - 2, int(math.floor(left / spacing))))
+        last_column = max(0, min(grid_size - 2, int(math.floor(right / spacing))))
+        first_row = max(0, min(grid_size - 2, int(math.floor(top / spacing))))
+        last_row = max(0, min(grid_size - 2, int(math.floor(bottom / spacing))))
+        best = (float("inf"), polygon[0][0], polygon[0][1])
+
+        for row in range(first_row, last_row + 1):
+            y0, y1 = row * spacing, (row + 1) * spacing
+            for column in range(first_column, last_column + 1):
+                x0, x1 = column * spacing, (column + 1) * spacing
+                clipped = list(polygon)
+                for axis, boundary, greater in (
+                        (0, x0, True), (0, x1, False),
+                        (1, y0, True), (1, y1, False)):
+                    clipped = _clip_polygon_axis(clipped, axis, boundary, greater)
+                if not clipped:
+                    continue
+
+                def depth(point):
+                    tx = max(0.0, min(1.0, (point[0] - x0) / spacing))
+                    ty = max(0.0, min(1.0, (point[1] - y0) / spacing))
+                    upper = grid[row][column] * (1.0 - tx) \
+                        + grid[row][column + 1] * tx
+                    lower = grid[row + 1][column] * (1.0 - tx) \
+                        + grid[row + 1][column + 1] * tx
+                    return upper * (1.0 - ty) + lower * ty
+
+                candidates = list(clipped)
+                for index, start in enumerate(clipped):
+                    end = clipped[(index + 1) % len(clipped)]
+                    middle = ((start[0] + end[0]) * 0.5,
+                              (start[1] + end[1]) * 0.5)
+                    f0, fm, f1 = depth(start), depth(middle), depth(end)
+                    quadratic = 2.0 * (f0 + f1 - 2.0 * fm)
+                    linear = f1 - f0 - quadratic
+                    if quadratic > _GEOMETRY_EPSILON:
+                        t = -linear / (2.0 * quadratic)
+                        if 0.0 < t < 1.0:
+                            candidates.append((
+                                start[0] + (end[0] - start[0]) * t,
+                                start[1] + (end[1] - start[1]) * t))
+                for point in candidates:
+                    value = depth(point)
+                    if value < best[0]:
+                        best = value, point[0], point[1]
+        return best
+
+    def first_physical_land_intersection(
+            self, first: tuple[float, float], second: tuple[float, float]
+    ) -> tuple[float, float, float, float, float] | None:
+        """Return the first exact entry into mapped land along a physical path."""
+        dx, dy = second[0] - first[0], second[1] - first[1]
+        path_bounds = (min(first[0], second[0]), min(first[1], second[1]),
+                       max(first[0], second[0]), max(first[1], second[1]))
+        best = None
+        for landmass in self.landmasses:
+            left, top, right, bottom = landmass.bounds
+            if (right < path_bounds[0] or bottom < path_bounds[1]
+                    or left > path_bounds[2] or top > path_bounds[3]):
+                continue
+            cuts = [(0.0, None), (1.0, None)]
+            for index, edge_first in enumerate(landmass.points):
+                edge_second = landmass.points[(index + 1) % len(landmass.points)]
+                for t in _segment_intersection_parameters(
+                        first, second, edge_first, edge_second):
+                    cuts.append((t, (edge_first, edge_second)))
+            cuts.sort(key=lambda item: item[0])
+            distinct = []
+            for item in cuts:
+                if not distinct or item[0] - distinct[-1][0] > _GEOMETRY_EPSILON:
+                    distinct.append(item)
+                elif distinct[-1][1] is None and item[1] is not None:
+                    distinct[-1] = item
+            for start, end in zip(distinct, distinct[1:]):
+                if end[0] - start[0] <= _GEOMETRY_EPSILON:
+                    continue
+                middle = (start[0] + end[0]) * 0.5
+                if not landmass.contains_strict(
+                        first[0] + dx * middle, first[1] + dy * middle):
+                    continue
+                edge = start[1]
+                nx = ny = 0.0
+                if edge is not None:
+                    ex = edge[1][0] - edge[0][0]
+                    ey = edge[1][1] - edge[0][1]
+                    nx, ny = -ey, ex
+                    length = math.hypot(nx, ny)
+                    if length:
+                        nx, ny = nx / length, ny / length
+                    if nx * dx + ny * dy > 0.0:
+                        nx, ny = -nx, -ny
+                candidate = (start[0], first[0] + dx * start[0],
+                             first[1] + dy * start[0], nx, ny)
+                if best is None or candidate[0] < best[0]:
+                    best = candidate
+                break
+        return best
 
     def _memoized_occlusion(self, key: tuple, calculate) -> bool:
         try:
@@ -379,9 +690,10 @@ class Coastline:
                  "points": [[x, y] for x, y in land.points]}
                 for land in self.landmasses
             ],
-            "airbases": [dict(base) for base in self.airbases],
-            "bathymetry": self._bathymetry,
-            **({"metadata": self.metadata} if self.metadata is not None else {}),
+            "airbases": copy.deepcopy(self.airbases),
+            "bathymetry": copy.deepcopy(self._bathymetry),
+            **({"metadata": copy.deepcopy(self.metadata)}
+               if self.metadata is not None else {}),
         }
 
     # --- Abfragen ---

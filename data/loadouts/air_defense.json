@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "asm": {
+    "key": "weapon.air_defense.asm",
+    "speed_kn": 500.0,
+    "range_nm": 80.0,
+    "turn_rate_deg_s": 8.0,
+    "jam_probability": 0.4,
+    "jam_break_nm": 20.0,
+    "hit_distance_nm": 0.15
+  },
+  "sam": {
+    "key": "weapon.ownship.essm",
+    "speed_kn": 2200.0,
+    "range_nm": 30.0,
+    "turn_rate_deg_s": 30.0,
+    "seeker_range_nm": 3.0,
+    "kill_distance_nm": 0.12,
+    "observation_max_age_s": 5.0
+  },
+  "vls": {
+    "key": "launcher.ownship.vls",
+    "capacity": 16,
+    "sam_loadout": 6,
+    "fire_channels": 2
+  },
+  "ciws": {
+    "key": "weapon.ownship.ciws",
+    "ammo": 180,
+    "range_nm": 1.5,
+    "rounds_per_attempt": 6,
+    "cycle_s": 1.0,
+    "kill_probability": 0.29531191028128656,
+    "observation_max_age_s": 2.0
+  },
+  "softkill": {
+    "key": "countermeasure.ownship.chaff",
+    "effect_type": "chaff",
+    "mission_count": 6,
+    "ready_count": 1,
+    "reload_s": 8.0,
+    "range_nm": 8.0,
+    "effect_duration_s": [2.0, 4.0],
+    "defeat_probability": 0.4
+  }
+}

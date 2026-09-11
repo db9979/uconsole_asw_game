@@ -46,7 +46,7 @@ def test_essm_requires_sensor_track_not_live_asm_object():
 
 def test_essm_rejects_track_outside_engagement_envelope():
     game = Game(seed=457, start_menu=False)
-    game.asms = [ASM(game.ship.x + config.ESSM_RANGE_NM + 5.0,
+    game.asms = [ASM(game.ship.x + game._air_defense_loadout["sam"]["range_nm"] + 5.0,
                      game.ship.y, 0.0, 9, game.rng_asm)]
     game._update_air_picture()
     before = game.vls_cells

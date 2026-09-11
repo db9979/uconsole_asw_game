@@ -163,6 +163,41 @@ def test_prepare_failure_keeps_explicit_loopback(monkeypatch):
     assert console.hosts == ("127.0.0.1",) and console.error is None
 
 
+def test_activation_prebuilds_contact_assets_once_on_calling_thread(monkeypatch):
+    calls = []
+    payload = {"/api/v1/contacts": ("application/json; charset=utf-8", b"{}")}
+
+    def load_assets():
+        calls.append(threading.get_ident())
+        return payload
+
+    class Server:
+        connected = False
+        pairing_code = "123ABC"
+
+        def __init__(self, **kwargs):
+            assert kwargs["contact_analysis_assets"] is payload
+            self.address = None
+
+        def start(self, host, port):
+            self.address = (host, port)
+
+        def stop(self):
+            pass
+
+    console = CommanderConsole()
+    console._prepared = True
+    console._translations = {"en": {}, "de": {}}
+    monkeypatch.setattr(local, "load_contact_analysis_assets", load_assets)
+    monkeypatch.setattr(local, "CommanderServer", Server)
+    game = NS()
+    console.activate(game)
+    console.activate(game)
+    console.activate(game)
+    assert calls == [threading.get_ident()]
+    assert console._contact_analysis_assets is payload
+
+
 def test_options_six_and_f9_live_menu_ownership(game, monkeypatch):
     monkeypatch.setattr(game.commander, "prepare", Mock())
     key(game, pygame.K_F10)

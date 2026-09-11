@@ -1,5 +1,6 @@
 """Schadensmodell: Stationsräume, Flutung, Feuer und Reparaturteams."""
 
+import math
 import random
 
 from src.core import config
@@ -122,6 +123,38 @@ class DamageModel:
             self.compartments[k].hit(self.rng)
         return chosen
 
+    def grounding_impact(self, energy_j: float, longitudinal: float,
+                         lateral: float) -> dict[str, float]:
+        """Apply deterministic localized flooding without consuming RNG state."""
+        energy = max(0.0, float(energy_j))
+        severity = min(100.0, math.sqrt(energy / 1_000_000.0) * 1.8)
+        side = "hull_right" if lateral >= 0.0 else "hull_left"
+        if longitudinal > 0.35:
+            local = "sonar" if abs(lateral) < 0.5 else "bridge"
+        elif longitudinal < -0.35:
+            local = "engine" if abs(lateral) < 0.5 else "flightdeck"
+        else:
+            local = "weapons" if abs(lateral) < 0.5 else side
+        allocations = {side: severity, local: severity * 0.55}
+        applied = {}
+        for key, amount in allocations.items():
+            compartment = self.compartments[key]
+            old = compartment.flood
+            compartment.flood = min(config.DMG_DESTROY_FLOOD,
+                                    compartment.flood + amount)
+            if compartment.state != "ZERSTOERT" and amount > 0.0:
+                compartment.state = ("ZERSTOERT"
+                                     if compartment.flood >= config.DMG_DESTROY_FLOOD
+                                     else "FLUTEND")
+            applied[key] = compartment.flood - old
+        self._recompute_totals()
+        return applied
+
+    def _recompute_totals(self) -> None:
+        self.total = sum(c.flood for c in self.compartments.values())
+        if self.total >= config.DMG_SHIP_SINK_TOTAL:
+            self.ship_sunk = True
+
     # --- Steuerung ---
 
     def repair_candidates(self) -> list[str]:
@@ -230,6 +263,4 @@ class DamageModel:
             c = self.compartments[key] if key is not None else None
             if c is not None and c.state == "OK" and c.fire <= 0.0:
                 self.teams[team] = None
-        self.total = sum(c.flood for c in self.compartments.values())
-        if self.total >= config.DMG_SHIP_SINK_TOTAL:
-            self.ship_sunk = True
+        self._recompute_totals()

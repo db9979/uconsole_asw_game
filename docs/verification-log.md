@@ -428,3 +428,16 @@ composite spectral/DEMON diagrams (113 cruise and 113 high).
   sustained frame/thermal/endurance/propagation/grounding load, and two-device
   LAN/private-bind/firewall behavior.
 - Mandatory post-R19 pause reached.
+
+## 2026-09-11 0.1.7 R9-R19 Authorized Candidate Commit
+
+- Revision: `e42a678` (`Complete 0.1.7 fidelity milestones`).
+- Scope: the complete previously accepted R9-R19 candidate, including runtime,
+  tests, catalogs, documentation and all 226 analyzer PNGs; 326 files changed.
+- Pre-commit staged-tree checks: `git diff --cached --check` passed and the
+  staged file inventory contained no build products, local saves or credentials.
+- Post-commit state: clean working tree; no push or release upload performed.
+- Verification remains the immediately preceding R19 acceptance because the
+  commit records that exact accepted content without subsequent production,
+  data, asset or test changes.
+- Release status remains HOLD for the listed physical hardware checks.

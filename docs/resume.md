@@ -2,19 +2,18 @@
 
 ## Stand
 
-Stand 2026-09-11 auf Branch `main`, Basis-HEAD `7d52faf`. Die vier letzten
-Projektcommits sind:
+Stand 2026-09-11 auf Branch `main`. Der vollstaendig softwareabgenommene
+R9-R19-Kandidat ist Commit `e42a678`. Die vier letzten inhaltlichen
+Projektcommits bis zu diesem Kandidaten sind:
 
-- `1a8e278` Commander LAN co-op web console, Version 0.1.6,
-- `fb7a6ce` Audio-Pufferdiagnose,
+- `e42a678` 0.1.7-Fidelity-Meilensteine R9-R19,
+- `7d52faf` 0.1.7 Sensor- und ASW-Systeme,
 - `1aae70d` begrenzter Sonar-Hold und Wall-Time-Audioauslieferung,
-- `7d52faf` 0.1.7 Sensor- und ASW-Systeme.
+- `fb7a6ce` Audio-Pufferdiagnose.
 
-Der Arbeitsbaum enthaelt den vollstaendig softwareabgenommenen, noch
-uncommittierten R9-R19-Kandidaten samt Hydroakustik-/Analyzer-Follow-up.
-Vorhandene Aenderungen wurden nicht
-verworfen. Fuer diese uncommittierten Aenderungen ist kein Push oder
-Release-Upload erfolgt.
+Der Kandidat samt Hydroakustik-/Analyzer-Follow-up wurde nach ausdruecklicher
+Freigabe vollstaendig committed. Der nachfolgende reine Dokumentationsschritt
+aktualisiert diesen Handoff. Es ist kein Push oder Release-Upload erfolgt.
 Vor einer Veroeffentlichung sind Status, Gesamtdiff, Dateiauswahl und sichere
 lokale GitHub-Authentifizierung erneut zu pruefen.
 
@@ -486,12 +485,10 @@ R18-Verifikation:
 - Physische uConsole-Groundingkosten, Trackball-ASTERN und Lesbarkeit bleiben
   fuer R19 offen.
 
-R19-Softwareabnahme und verpflichtender Pausenpunkt sind erreicht. Es existiert
-kein neuer Commit; der Kandidat liegt als grosser absichtlich uncommittierter
-Arbeitsbaum auf Basis `7d52faf`. Ohne ausdrueckliche Git-Freigabe wurde nichts
-gestaged, committed oder gepusht. Ein Build nur aus Basis-HEAD reproduziert den
-Kandidaten nicht; ungetrackte Runtime-, Test- und 226 Analyzerdateien muessen bei
-einer spaeter autorisierten Commitvorbereitung bewusst einbezogen werden.
+R19-Softwareabnahme und verpflichtender Pausenpunkt sind erreicht. Nach
+ausdruecklicher Git-Freigabe wurde der vollstaendige Kandidat einschliesslich
+Runtime, Tests und 226 Analyzerdateien als `e42a678` committed. Der Arbeitsbaum
+war unmittelbar danach sauber; es wurde nicht gepusht.
 
 R19-Verifikation:
 
@@ -557,10 +554,8 @@ Verifikation der 0.1.6-Softwarebasis:
 ## Naechster Schritt
 
 1. Verpflichtend pausieren.
-2. Erst nach ausdruecklicher Freigabe Status/Gesamtdiff pruefen, den kompletten
-   Kandidaten gezielt stagen und einen reproduzierbaren Commit vorbereiten.
-3. Vor einem Release die oben aufgefuehrten physischen Abnahmen durchfuehren.
-4. Nicht ohne ausdrueckliche Freigabe committen oder pushen.
+2. Vor einem Release die oben aufgefuehrten physischen Abnahmen durchfuehren.
+3. Nicht ohne ausdrueckliche Freigabe pushen oder einen Release hochladen.
 
 ## 0.1.7 Entscheidungen
 

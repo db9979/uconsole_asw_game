@@ -537,8 +537,8 @@ Schritt aktualisiert und die Arbeit verpflichtend gestoppt.
 Softwareabnahme abgeschlossen: 2363 Tests, beide Generatorchecks, Smoke, Build,
 isolierte Artefaktinstallationen, Save-v10-, Browser-, Loopback-, Stations-,
 Layout-, Audio-/DSP-, Performance-, Quellen-, Lizenz- und Sicherheitstests sind
-gruen. Der akzeptierte Kandidat ist uncommittiert auf Basis `7d52faf`; ohne
-ausdrueckliche Git-Freigabe wurde weder committed noch gepusht. Physische
+gruen. Der akzeptierte Kandidat wurde nach ausdruecklicher Freigabe vollstaendig
+als `e42a678` committed; er wurde nicht gepusht. Physische
 uConsole-, Zwei-Geraete-LAN-, Firewall-, Hoer-, Thermal-, Endurance- und
 Groundingabnahmen bleiben offen, der Release daher auf HOLD. Pausenpunkt erreicht.
 

@@ -391,7 +391,8 @@ def draw_map_view(game, tr=None) -> None:
 
         # Peilstrich + Ziel-Kreuz (ausgewählter Kontakt / Ziel)
         for contact, fix, (px, py) in active_fix_markers(game, view):
-            color = {"PING": (90, 220, 220), "TMA": config.COLOR_WARN,
+            color = {"PING": (90, 220, 220), "DIPPING": (120, 220, 190),
+                     "TMA": config.COLOR_WARN,
                      "SONOBUOY": config.COLOR_CONTACT_ZIVIL}[fix["source"]]
             radius = _fix_marker_radius(fix, view)
             pygame.draw.circle(s, color, (px, py), radius, 1)
@@ -404,7 +405,9 @@ def draw_map_view(game, tr=None) -> None:
 
         contact = game.selected_contact or game.target
         if contact is not None:
-            fx, fy = view.world_to_screen(game.ship.x, game.ship.y)
+            observer_x = getattr(contact, "observer_x", game.ship.x)
+            observer_y = getattr(contact, "observer_y", game.ship.y)
+            fx, fy = view.world_to_screen(observer_x, observer_y)
             brg = math.radians(observed_bearing(contact))
             ex_w, ey_w = contact_position(contact, game.ship)
             if ex_w is not None and ey_w is not None:

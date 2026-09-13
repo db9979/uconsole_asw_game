@@ -136,8 +136,12 @@ def sonar_click_target(game, pos):
     for page, rect in enumerate(geometry["tabs"]):
         if rect.collidepoint(pos):
             return {"action": "page_set", "value": page, "safe": True}
+    page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
+    plot = _waterfall_plot(geometry["main"], page)
+    if page == 0 and plot.collidepoint(pos):
+        bearing = (pos[0] - plot.x) / max(1, plot.w - 1) * 360.0
+        return {"action": "listen_bearing", "value": bearing % 360.0, "safe": True}
     if geometry["contacts"].collidepoint(pos):
-        page = int(getattr(game, "sonar_page", 0)) % len(PAGES)
         for item, rect in _list_rows(game, geometry["contacts"], page)[0]:
             if rect.collidepoint(pos):
                 action = "echo" if page == 5 else "contact"
@@ -203,6 +207,10 @@ def sonar_hit_target(game, pos):
                     message("observation.bearing_uncertainty", uncertainty=f"{observations.bearing_uncertainty(contact):.1f}")
                     if observations.bearing_uncertainty(contact) is not None else None,
                     message("sonar.tooltip.classification", classification=label),
+                    message("sonar.tooltip.opz_release",
+                            state=localize("sonar.release.released"
+                                           if getattr(contact, "released_to_opz", False)
+                                           else "sonar.release.private")),
                     message("sonar.tooltip.level_confidence", level=f"{getattr(contact, 'snr', -99):+.1f}", confidence=f"{getattr(contact, 'confidence', 0):.0%}"),
                     message("sonar.tooltip.track_age", age=f"{max(0, game.sim_t - getattr(contact, 'last_seen', 0)):.0f}"),
                     message("observation.fix_age", age=f"{max(0, game.sim_t - contact.range_seen):.0f}")
@@ -1223,7 +1231,13 @@ def _draw_contacts(game, rect):
                 pygame.draw.rect(screen, CYAN, (row_rect.x, y, 3, row_rect.h))
             label = display_value("classification",
                                   getattr(contact, "player_class", None))
-            _text(screen, message("sonar.line.contact", contact=f"{contact.id:02d}", label=label), (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)
+            release = localize("sonar.release.short_released"
+                               if getattr(contact, "released_to_opz", False)
+                               else "sonar.release.short_private")
+            contact_line = (message("sonar.line.contact", contact=f"{contact.id:02d}",
+                                    label=label) + " " + release)
+            _text(screen, contact_line,
+                  (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)
             _text(screen, message("sonar.line.bearing_value",
                                   bearing=observations.format_bearing(
                                       contact, getattr(game, "ship", None))),

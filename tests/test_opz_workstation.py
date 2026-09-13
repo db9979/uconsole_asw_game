@@ -30,6 +30,12 @@ def opz_game():
     return game
 
 
+def opz_id(game, source_id):
+    game.opz_source_observations()
+    return next(key for key, source in game._opz_source_bindings.items()
+                if getattr(source, "track_id", None) == source_id)
+
+
 def test_up_down_selects_all_cic_domains_without_changing_asm_target():
     game = opz_game()
     observe(game, "S-1", "AIS")
@@ -38,9 +44,10 @@ def test_up_down_selects_all_cic_domains_without_changing_asm_target():
     game.asm_sel = 2
 
     press(game, pygame.K_DOWN)
-    assert game.opz_selected_track_id == "A-2"
+    first = game.opz_selected_track_id
+    assert first in {track.track_id for track in game.opz_tracks()}
     press(game, pygame.K_DOWN)
-    assert game.opz_selected_track_id == "M-3"
+    assert game.opz_selected_track_id != first
     assert game.asm_sel == 2
     assert not game.held
 
@@ -51,19 +58,22 @@ def test_opz_joystick_step_uses_cic_focus_not_asm_target():
     observe(game, "M-3", "ASM")
     game.asm_sel = 1
     game._joy_step(1)
-    assert game.opz_selected_track_id == "M-3"
+    assert game.opz_selected_track_id in {track.track_id for track in game.opz_tracks()}
     assert game.asm_sel == 1
 
 
-def test_c_cycles_selected_track_affiliation():
+def test_f_cycles_selected_track_affiliation_and_c_classifies():
     game = opz_game()
     observe(game, "S-1", "AIS")
     press(game, pygame.K_DOWN)
     assert game.opz_affiliation("S-1") == "UNKNOWN"
+    selected = game.opz_selected_track_id
+    press(game, pygame.K_f)
+    assert game.opz_affiliation(selected) == "FRIEND"
+    press(game, pygame.K_f)
+    assert game.opz_affiliation(selected) == "NEUTRAL"
     press(game, pygame.K_c)
-    assert game.opz_affiliation("S-1") == "FRIEND"
-    press(game, pygame.K_c)
-    assert game.opz_affiliation("S-1") == "NEUTRAL"
+    assert game.opz_source_classification(selected) == "U_BOOT"
 
 
 def test_surface_and_air_radars_toggle_independently():
@@ -136,12 +146,14 @@ def test_separate_radars_publish_only_their_domains(monkeypatch):
 
     game.surface_radar_on, game.air_radar_on = True, False
     game._update_air_picture()
-    assert {track.kind for track in game.opz_tracks()} == {"AIS"}
+    assert {track.kind for track in game.opz_tracks()
+            if track.source.startswith("RADAR")} == {"AIS"}
 
     game.air_picture._tracks.clear()
     game.surface_radar_on, game.air_radar_on = False, True
     game._update_air_picture()
-    assert {track.kind for track in game.opz_tracks()} == {"FLG"}
+    assert {track.kind for track in game.opz_tracks()
+            if track.source.startswith("RADAR")} == {"FLG"}
 
 
 def test_annotation_survives_track_expiry_and_reacquisition():
@@ -159,8 +171,8 @@ def test_annotation_survives_track_expiry_and_reacquisition():
 def test_opz_focus_and_affiliations_survive_save_load():
     game = opz_game()
     observe(game, "S-1", "AIS")
-    game.opz_selected_track_id = "S-1"
-    game.opz_affiliations = {"S-1": "NEUTRAL"}
+    game.opz_selected_track_id = opz_id(game, "S-1")
+    game.opz_affiliations = {game.opz_selected_track_id: "NEUTRAL"}
     game.surface_radar_on = False
     game.air_radar_on = True
     game.opz_range_nm = 10.0
@@ -168,8 +180,8 @@ def test_opz_focus_and_affiliations_survive_save_load():
 
     loaded = Game(seed=1, start_menu=False)
     loaded.load_state(data)
-    assert loaded.opz_selected_track_id == "S-1"
-    assert loaded.opz_affiliation("S-1") == "NEUTRAL"
+    assert loaded.opz_selected_track_id == game.opz_selected_track_id
+    assert loaded.opz_affiliation(game.opz_selected_track_id) == "NEUTRAL"
     assert not loaded.surface_radar_on and loaded.air_radar_on
     assert loaded.opz_range_nm == 10.0
 
@@ -203,16 +215,17 @@ def test_opz_draws_positioned_and_bearing_only_tracks():
     observe(game, "A-2", "FLG")
     observe(game, "M-3", "ASM")
     observe(game, "M-4", "ASM", source="HOJ", range_nm=None)
-    game.opz_selected_track_id = "A-2"
-    game.opz_affiliations.update({"A-2": "FRIEND", "M-3": "HOSTILE"})
+    game.opz_selected_track_id = opz_id(game, "A-2")
+    game.opz_affiliations.update({opz_id(game, "A-2"): "FRIEND",
+                                  opz_id(game, "M-3"): "HOSTILE"})
     game.draw()
 
 
 def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     game = opz_game()
     observe(game, "S-1", "AIS")
-    game.opz_selected_track_id = "S-1"
-    game.opz_affiliations["S-1"] = "NEUTRAL"
+    game.opz_selected_track_id = opz_id(game, "S-1")
+    game.opz_affiliations[game.opz_selected_track_id] = "NEUTRAL"
     lines = []
     original = stations_view.layout.blit_line
 
@@ -230,7 +243,7 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     assert any("Affiliation" in line and "Neutral" in line for line in lines)
 
 
-def test_coast_reflections_are_requested_only_with_surface_radar(monkeypatch):
+def test_known_coastline_is_requested_even_without_surface_radar(monkeypatch):
     game = opz_game()
     calls = []
 
@@ -247,7 +260,7 @@ def test_coast_reflections_are_requested_only_with_surface_radar(monkeypatch):
     calls.clear()
     game.surface_radar_on = False
     game.draw()
-    assert calls == []
+    assert calls and calls[-1][2] == game.opz_range_nm
 
 
 def test_scope_hides_positioned_tracks_outside_selected_range(monkeypatch):
@@ -300,9 +313,38 @@ def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypat
 
 def test_opz_ppi_hit_rect_is_bounded_at_1280x720(monkeypatch):
     monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
-    ppi = stations_view.opz_ppi_rect()
+    regions = stations_view.opz_regions()
+    ppi = regions["chart"]
     assert pygame.Rect(0, 0, 1280, 720).contains(ppi)
-    assert ppi.right <= int(config.STATION_RECT[2] * .66)
+    assert ppi.right <= int(config.STATION_RECT[2] * .75)
+    assert regions["map"].contains(ppi)
+    assert regions["map"].w > ppi.w
+    assert all(not regions["map"].colliderect(regions[action])
+               for action in ("classify", "affiliate", "mark", "fusion"))
+
+
+def test_opz_draws_recognizable_chart_beneath_disabled_radar(monkeypatch):
+    game = opz_game()
+    monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
+    ship_x, ship_y = game.ship.x, game.ship.y
+    game.world.coast.landmasses = [NS(
+        name="Chart land", bounds=(ship_x + 2, ship_y + 2,
+                                    ship_x + 6, ship_y + 6),
+        points=[(ship_x + 2, ship_y + 2), (ship_x + 6, ship_y + 2),
+                (ship_x + 6, ship_y + 6), (ship_x + 2, ship_y + 6)])]
+    game.world.coast._bathymetry = None
+    game.surface_radar_on = game.air_radar_on = False
+    game.screen.fill((201, 12, 93))
+
+    stations_view.draw_opz_view(game)
+
+    regions = stations_view.opz_regions()
+    ppi, chart = regions["chart"], regions["map"]
+    scale = (ppi.w / 2.0) / game.opz_range_nm
+    land_pixel = (int(ppi.centerx + 4 * scale),
+                  int(ppi.centery + 4 * scale))
+    assert game.screen.get_at(land_pixel)[:3] == config.COLOR_LAND
+    assert game.screen.get_at((chart.left + 4, chart.centery))[:3] != (201, 12, 93)
 
 
 def test_contact_scale_tracks_selected_range(monkeypatch):
@@ -327,7 +369,7 @@ def test_contact_scale_tracks_selected_range(monkeypatch):
     assert near_displacement == 2 * far_displacement
 
 
-def test_underwater_tracks_have_table_codes_and_affiliation_colors(monkeypatch):
+def test_unreleased_legacy_sonar_mirrors_are_not_opz_rows(monkeypatch):
     game = opz_game()
     observe(game, "U-1", "SUB", source="SONAR-PING")
     observe(game, "T-2", "TORP", source="SONAR")
@@ -343,12 +385,7 @@ def test_underwater_tracks_have_table_codes_and_affiliation_colors(monkeypatch):
     monkeypatch.setattr(stations_view.layout, "blit_line", record)
     stations_view.draw_opz_view(game)
 
-    assert [code for code in (" UBT ", " TOR ")
-            if any(code in text for text, _ in rows)] == [" UBT ", " TOR "]
-    assert {color for _, color in rows} == {
-        nato_symbols.AFFILIATION_COLORS["FRIEND"],
-        nato_symbols.AFFILIATION_COLORS["HOSTILE"],
-    }
+    assert rows == []
     assert (stations_view.OPZ_DOMAIN_COLORS["SUBSURFACE"] ==
             config.COLOR_CONTACT_UBOOT)
     assert (stations_view.OPZ_DOMAIN_COLORS["UNDERWATER_WEAPON"] ==

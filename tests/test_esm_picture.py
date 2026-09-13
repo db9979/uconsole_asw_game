@@ -5,9 +5,11 @@ from types import SimpleNamespace
 import pygame
 import pytest
 
+from src.air.flights import Flight
 from src.core.game import Game
 from src.core.station import Station
 from src.data.catalog import CATALOG
+from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
 from src.sensors.esm import (
     ESM_MAX_TRACKS,
@@ -190,6 +192,67 @@ def test_radar_off_esm_on_and_parallel_evidence(monkeypatch):
     assert game.eloka_tracks()
 
 
+def test_submarine_truth_cannot_emit_or_supply_eloka_correlation(monkeypatch):
+    game, _ = emitting_game(monkeypatch, radar=False)
+    game.sim_t = 1.0
+    game._update_esm_picture()
+    track = game.eloka_tracks()[0]
+    submerged = Sub(game.ship.x + 4.0, game.ship.y, 100.0, 0.0,
+                    "diesel_alt", random.Random(991),
+                    runtime_catalog=game.runtime_catalog)
+    submerged.emitter = submerged.radar_emitting = True
+    game.subs = [submerged]
+    game.air_picture.observe(
+        track_id="U-991", kind="SUB", target_id=submerged.id,
+        source="SONAR-PING", bearing=track.bearing, range_nm=4.0,
+        observer_x=game.ship.x, observer_y=game.ship.y, course=None,
+        quality=1.0, now=game.sim_t, label="U-991",
+        bearing_uncertainty_deg=1.0)
+
+    assert not game.eloka_correlations(track)
+    game.civilians = game.warships = []
+    game.flights.flights = []
+    game.esm_picture._tracks.clear()
+    game._update_esm_picture()
+    assert not game.eloka_tracks()
+
+
+def test_military_patrol_and_transit_emit_without_own_radar_and_continue_after_save(
+        monkeypatch):
+    game = Game(seed=711, audio_enabled=False)
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+    base, dest = game.world.coast.airbases[:2]
+    patrol = Flight("military", base, rng=random.Random(21), seq=101,
+                    catalog=game.runtime_catalog)
+    transit = Flight("military", base, dest=dest, rng=random.Random(22), seq=102,
+                     catalog=game.runtime_catalog)
+    civil = Flight("civil", base, dest=dest, rng=random.Random(23), seq=103,
+                   catalog=game.runtime_catalog)
+    patrol.x, patrol.y = game.ship.x + 20.0, game.ship.y
+    transit.x, transit.y = game.ship.x - 20.0, game.ship.y
+    civil.x, civil.y = game.ship.x, game.ship.y + 20.0
+    game.subs = game.civilians = game.warships = []
+    game.flights.flights = [patrol, transit, civil]
+    game.flights._seq = 103
+    game.radar_on = False
+    game.sim_t = 1.0
+    game._update_esm_picture()
+
+    assert len(game.eloka_tracks()) == 2
+    state = game.save_state()
+    restored = Game(seed=1, audio_enabled=False)
+    restored.load_state(state)
+    monkeypatch.setattr(restored.world, "land_blocks_line", lambda *args: False)
+    assert [flight.radar_emitting for flight in restored.flights.flights] == [
+        True, True, False]
+
+    game.sim_t = restored.sim_t = 1.5
+    game._update_esm_picture()
+    restored._update_esm_picture()
+    assert restored.esm_picture.serialize() == game.esm_picture.serialize()
+    assert restored.esm_picture.track_seq == game.esm_picture.track_seq
+
+
 def test_shared_correlation_picture_is_bounded():
     game = Game(seed=710, audio_enabled=False)
     for index in range(600):
@@ -330,3 +393,54 @@ def test_invalid_bearings_are_rejected(bad):
     picture = ESMPicture(maximum=ESM_MAX_TRACKS)
     with pytest.raises(ValueError):
         picture.observe_batch([measurement(bearing=bad)], 1.0)
+
+
+def test_catalog_emitter_names_resolve_to_owning_platforms():
+    assert (CATALOG.emitter_name("emitter.warship_01.radar")
+            == CATALOG.surfaces["warship_01"].name)
+    assert (CATALOG.emitter_name("emitter.mil_patrol.radar")
+            == CATALOG.aircraft["mil_patrol"].name)
+    assert CATALOG.emitter_name("emitter.aux_01.radar") is not None
+    assert CATALOG.emitter_name("emitter.unknown_99.radar") is None
+    assert CATALOG.emitter_name(None) is None
+    assert CATALOG.emitter_name(42) is None
+    for key, emitter in CATALOG.emitters.items():
+        if emitter.domain == "radar":
+            assert CATALOG.emitter_name(key)
+
+
+def test_eloka_accessors_resolve_annotations_to_platform_names(monkeypatch):
+    game, _ = emitting_game(monkeypatch)
+    game.sim_t = .5
+    game._update_esm_picture()
+    track = game.eloka_tracks()[0]
+    key = "emitter.warship_01.radar"
+    name = CATALOG.emitter_name(key)
+    assert name
+    game.eloka_annotations[track.track_key] = key
+    assert game.eloka_emitter_name(key) == name
+    assert game.eloka_annotation_name(track.track_key) == name
+    assert game.eloka_annotation_name(track.track_key + "-x") is None
+    assert game.eloka_emitter_name(None) is None
+    # Cycling the annotation flashes the resolved name, never the raw key.
+    game.eloka_selected_track_key = track.track_key
+    game._cycle_eloka_annotation()
+    assert "emitter." not in game.msg
+
+
+def test_eloka_view_renders_platform_names_not_emitter_keys(monkeypatch):
+    from src.ui import layout, stations_view
+
+    game, _ = emitting_game(monkeypatch)
+    game.sim_t = .5
+    game._update_esm_picture()
+    track = game.eloka_tracks()[0]
+    game.eloka_selected_track_key = track.track_key
+    name = CATALOG.emitter_name("emitter.warship_01.radar")
+    assert name
+    game.eloka_annotations[track.track_key] = "emitter.warship_01.radar"
+    with layout.capture_text() as rendered:
+        stations_view.draw_eloka_view(game)
+    text = "\n".join(item["text"] for item in rendered)
+    assert "emitter." not in text
+    assert name[:7] in text

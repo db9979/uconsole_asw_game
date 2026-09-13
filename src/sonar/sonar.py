@@ -88,6 +88,10 @@ class Contact:
         self.depth_est = None
         self.depth_sigma_m = None  # 1-sigma Unsicherheit der Tiefe
         self.player_class = None  # None|U_BOOT|KAMPFSCHIFF|BIOLOGISCH|FAHRZEUG
+        self.released_to_opz = False
+        self.passive_source = "SONAR-BRG"
+        self.observer_x = 0.0
+        self.observer_y = 0.0
         self.signature = ""       # zuletzt gehörte Geräusch-Signatur
         # W1: SNR + TMA
         self.snr = -99.0          # dB, -99 = gerade nicht detektiert
@@ -201,9 +205,10 @@ class Contact:
     def active_fixes(self, now: float) -> tuple:
         """Return stable detached fix copies whose measurements remain current."""
         result = []
-        for source in ("PING", "TMA", "SONOBUOY"):
+        for source in ("PING", "DIPPING", "TMA", "SONOBUOY"):
             fix = self.fixes.get(source)
-            lifetime = (config.SONAR_PING_FIX_MAX_AGE_S if source == "PING"
+            lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
+                        if source in ("PING", "DIPPING")
                         else config.SONAR_CONTACT_LOST_S)
             if (fix is not None and 0.0 <= now - fix["measured_at"] <= lifetime):
                 result.append(dict(fix))
@@ -212,7 +217,7 @@ class Contact:
     def update_ping(self, bearing: float, range_est: float, depth_est: float,
                      confidence: float, t: float, snr: float = 0.0,
                      range_sigma_nm: float = None, depth_sigma_m: float = None,
-                     fixed_at: float = None):
+                     fixed_at: float = None, fix_source: str = "PING"):
         """Aktiver Ping: liefert Position + Tiefe (maßstabsgenau)."""
         self.bearing = bearing % 360.0
         self.raw_bearing = self.bearing
@@ -235,7 +240,7 @@ class Contact:
             self._fy - range_est * math.cos(math.radians(self.bearing)))
         self.observed_x, self.observed_y = self.ping_pos
         self._publish_fix(
-            "PING", t, t if fixed_at is None else fixed_at, *self.ping_pos,
+            fix_source, t, t if fixed_at is None else fixed_at, *self.ping_pos,
             self.range_sigma_nm, self.quality, self.depth_est, self.depth_sigma_m)
 
     def expire_ping_fix(self, t: float) -> None:
@@ -246,7 +251,8 @@ class Contact:
         The uncertainty fields for these estimates are heuristic, not covariance.
         """
         for source in tuple(self.fixes):
-            lifetime = (config.SONAR_PING_FIX_MAX_AGE_S if source == "PING"
+            lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
+                        if source in ("PING", "DIPPING")
                         else config.SONAR_CONTACT_LOST_S)
             measured_at = self.fixes[source].get("measured_at")
             if measured_at is None or t - measured_at > lifetime:
@@ -682,7 +688,9 @@ class SonarSystem:
             if (distance >= active_range
                     and distance > config.SONAR_PING_HEAR_RANGE_NM):
                 continue
-            source_depth = self.towed_depth_m if mode == "TOWED" else 5.0
+            source_depth = (self.towed_depth_m if mode == "TOWED" else
+                            getattr(frigate, "dip_depth_m", 5.0)
+                            if mode == "DIPPING" else 5.0)
             if (hasattr(world, "sonar_path_blocked")
                     and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
                                                  target.x, target.y,
@@ -763,6 +771,60 @@ class SonarSystem:
             if spectral_out is not None:
                 spectral_out.append(result.spectral_gains)
         return passive_range
+
+    def update_dipping_passive(self, dt: float, t: float, helicopter,
+                               targets, world, range_factor: float = 1.0) -> None:
+        """Publish deterministic bearing-only measurements from a dipped sensor."""
+        if not getattr(helicopter, "dip_available", False):
+            return
+        sensor_depth = helicopter.dip_depth_m
+        for tgt in targets:
+            if tgt_gone(tgt):
+                continue
+            dx, dy = tgt.x - helicopter.x, tgt.y - helicopter.y
+            distance = math.hypot(dx, dy)
+            target_bonus = 1.0 + 0.8 * (1.0 - tgt.quiet_factor())
+            sea = 1.0 - config.SEA_STATE_SONAR_FACTOR * max(0, world.sea_state - 1)
+            effective_range = (config.HELO_DIP_PASSIVE_RANGE_NM * target_bonus
+                               * sea * range_factor)
+            midpoint_x = (helicopter.x + tgt.x) * .5
+            midpoint_y = (helicopter.y + tgt.y) * .5
+            thermocline = world.thermocline_depth_m(midpoint_x, midpoint_y)
+            water_depth = max(float(world.depth_m(midpoint_x, midpoint_y)),
+                              sensor_depth, float(getattr(tgt, "depth", 0.0)),
+                              thermocline)
+            result = propagation.propagate(
+                helicopter.x, helicopter.y, sensor_depth, tgt.x, tgt.y,
+                getattr(tgt, "depth", 0.0),
+                propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
+                thermocline, water_depth, sea_state=world.sea_state,
+                terrain_blocked=getattr(world, "sonar_path_blocked", None))
+            effective_range *= propagation.passive_range_factor(result, distance)
+            if distance >= effective_range:
+                continue
+            signal = snr_db(effective_range, distance)
+            quality = config.clamp(
+                signal / config.SONAR_SNR_QUALITY_SPAN_DB, 0.0, 1.0)
+            true_bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+            seed = getattr(tgt, "sensor_seed", tgt.id)
+            error = config.HELO_DIP_BEARING_ERR_DEG * (1.4 - .8 * quality)
+            bearing = (true_bearing + error * _correlated_uniform(
+                seed, t, config.SONAR_BEARING_NOISE_EPOCH_S, 43)) % 360.0
+            uncertainty = error / math.sqrt(3.0)
+            contact = self._get_contact(tgt)
+            contact._fx, contact._fy = helicopter.x, helicopter.y
+            contact.observer_x, contact.observer_y = helicopter.x, helicopter.y
+            contact.passive_source = "SONAR-DIP-BRG"
+            contact.origin = "dipping-passiv"
+            signature = (tgt.acoustic_signature()
+                         if contact.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt
+                         >= config.CONTACT_SIG_CONF else "")
+            contact.update_passive(
+                bearing, contact.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt,
+                quality, signature, t, signal, uncertainty)
+            track = self._tracks.setdefault(tgt.id, BearingTrack())
+            track.add(t, bearing, helicopter.x, helicopter.y,
+                      helicopter.course, uncertainty)
 
     def advance_mechanics(self, dt: float, t: float, frigate) -> None:
         """Advance cooldown, tow handling and queued-echo clocks each sim tick."""
@@ -847,6 +909,8 @@ class SonarSystem:
                 continue
             c = self._get_contact(tgt)
             c._fx, c._fy = frigate.x, frigate.y
+            c.observer_x, c.observer_y = frigate.x, frigate.y
+            c.passive_source = "SONAR-BRG"
             c.array_observations.update(observations)
             c.array_observations = {
                 key: value for key, value in c.array_observations.items()
@@ -961,6 +1025,7 @@ class SonarSystem:
             fx, fy, geometry = fix
             c = self._get_contact(tgt)
             c._fx, c._fy = frigate.x, frigate.y
+            c.observer_x, c.observer_y = frigate.x, frigate.y
             if tgt.id not in detected_ids:
                 c.confidence = min(1.0, c.confidence
                                    + config.SONAR_CONF_PASSIVE_PER_S * dt)
@@ -1082,7 +1147,8 @@ class SonarSystem:
     def _active_range_nm(tgt, world, range_factor: float, mode: str) -> float:
         ping_mult = (config.SONAR_ARRAY_TOWED_PING if mode == "TOWED"
                      else config.SONAR_ARRAY_BOW_PING)
-        active_range = config.SONAR_ACTIVE_BASE_NM * ping_mult
+        active_range = (config.HELO_DIP_ACTIVE_RANGE_NM if mode == "DIPPING"
+                        else config.SONAR_ACTIVE_BASE_NM * ping_mult)
         if getattr(tgt, "depth", 0.0) >= world.thermocline_depth_m(tgt.x, tgt.y):
             active_range *= config.SONAR_THERMO_ACTIVE_BELOW
         return active_range * (1.0 - 0.03 * world.sea_state) * range_factor
@@ -1172,13 +1238,15 @@ class SonarSystem:
         if c.range_source != "ping" or c.range_seen is None or snapshot["t"] >= c.range_seen:
             last_seen = c.last_seen
             c._fx, c._fy = snapshot["observer_x"], snapshot["observer_y"]
+            c.observer_x, c.observer_y = c._fx, c._fy
             c.update_ping(
                 bearing=snapshot["bearing"], range_est=snapshot["range_nm"],
                 depth_est=snapshot["depth_m"],
                 confidence=c.confidence + config.SONAR_CONF_PING_BONUS,
                 t=snapshot["t"], snr=snapshot["snr_db"],
                 range_sigma_nm=snapshot["range_sigma_nm"],
-                depth_sigma_m=snapshot["depth_sigma_m"], fixed_at=fixed_at)
+                depth_sigma_m=snapshot["depth_sigma_m"], fixed_at=fixed_at,
+                fix_source="DIPPING" if mode == "DIPPING" else "PING")
             c.last_seen = max(last_seen, c.last_seen)
         self.echo_history.append({
             key: value for key, value in dict(snapshot, contact_id=c.id, mode=mode).items()

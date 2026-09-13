@@ -5,7 +5,7 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **0.1.7**
+Current release: **0.2.0**
 
 This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
@@ -64,10 +64,9 @@ Commander browser: [1920 x 1080](docs/screenshots/commander-overview.png) and
   opening the quit dialog.
 - A native 1280 x 720 interface, aspect-correctly letterboxed when necessary.
   Maps and symbols are drawn by Pygame; audio is synthesized at runtime.
-- Optional two-player trusted-LAN Commander station: browser operational picture,
-  shared classification/affiliation after local grant, crew-confirmed target and
-  navigation proposals, and gesture-enabled browser alarms. No remote firing or
-  direct steering.
+- Optional trusted-LAN Remote Crew: multiple authenticated browser clients can
+  hold exclusive station roles, switch among their retained roles, operate the
+  same observation-led controls, and use separately granted direct fire.
 
 ## Requirements
 
@@ -239,33 +238,36 @@ in v10 game saves for deterministic restoration of existing sessions.
 
 Use **F10 > Commander LAN**, or **F9**, on the uConsole. Select an explicit
 private IPv4 while the service is off, then enable it. Open the displayed URL on
-the second PC. The default `127.0.0.1:8765` is local-only, not reachable from the
-other PC. No router forwarding is needed or supported.
+each crew device. The default `127.0.0.1:8765` is local-only, not reachable from
+another device. No router forwarding is needed or supported.
 
 Pair using the six-character code: **three digits followed by three uppercase
 letters**, for example `482KMT`. Codes expire after five minutes; five wrong
 guesses in a rolling minute temporarily block further attempts. Lowercase browser
 input is normalized to uppercase. The example is not a functioning credential.
 
-After pairing, the crew explicitly grants changes in the local panel and closes
-the overlay. The Commander can inspect contacts independently, edit allowed
-annotations, propose a target, and propose ordered course and speed. The crew
-accepts or rejects proposals in F9. Target acceptance never fires a weapon or
-changes the sonar listening selection. Navigation acceptance changes local helm
-setpoints only; it does not move the ship directly. Course acceptance requires an
-operational bridge; propulsion and quiet-mode limits still govern speed.
-Communication is through proposals and external voice; no microphone or
-chat is included.
+After pairing, each browser requests one or more stations. The host grants each
+station exclusively; ordinary station operation is enabled on approval, while
+sonar audio and direct fire remain separate grants. A browser displays one active
+station at a time, requests another through **Add station**, and retains its other
+leases for quick switching. An approved added station opens automatically. Every
+command is revalidated on the main
+simulation thread against station damage, observation freshness, inventory,
+readiness, ROE, and the current world generation. Communication still relies on
+external voice; no microphone or chat is included.
 
 The service starts **off on every launch**. Access and grants are not saved.
-World replacement revokes pairing on the next main-thread frame. Pause and
-administrative overlays lock browser changes; menu/editor/splash export status
-only. Browser sound requires clicking its sound button; reconnecting does not
-replay old alarms.
+World replacement revokes active authority on the next main-thread frame. Manual
+pause, focus loss, save/load, quit, nations, real editors, menus and splash lock
+browser changes. With an active crew station, F1 help, the in-game F8 analyzer,
+F9 crew administration and F10 options keep simulation and browser stations live.
+Browser sonar sound requires an explicit host grant and a local user gesture;
+reconnecting does not replay old audio. Clicking or tapping the Broadband
+waterfall sets Sonar's manual listening bearing; LOFAR does not.
 
 **Security:** HTTP is unencrypted. Use only a trusted LAN. No Internet hosting,
-wildcard binding, CDN, remote sensor/weapon/ROE/time/save controls, or hidden entity
-data are exposed. See [Commander setup](docs/commander-coop.md) and
+wildcard binding, CDN, remote ROE/time/save controls, or hidden entity data are
+exposed. See [Remote Crew setup](docs/commander-coop.md) and
 [protocol/security](docs/commander-protocol.md).
 
 ## Editors and Current Limits
@@ -280,7 +282,7 @@ import. JSON templates under `data/editor_templates/` describe the accepted
 schemas; user files are stored under `~/.u-jagd/missions/` and
 `~/.u-jagd/units/`.
 
-Validated does not mean runtime-effective. In release 0.1.7:
+Validated does not mean runtime-effective. In release 0.2.0:
 
 - A user mission can be started with `F5` from the Mission Editor browser only
   when it uses the supported runtime subset.
@@ -302,7 +304,7 @@ Validated does not mean runtime-effective. In release 0.1.7:
 
 ## Saves and User Data
 
-Release 0.1.7 writes and loads save format **v10** only. V10 requires the exact
+Release 0.2.0 writes and loads save format **v10** only. V10 requires the exact
 `u-jagd-save-v10` schema, including the current runtime catalog snapshot and all
 deterministic continuation state. Older, newer, malformed, or incomplete saves
 are rejected without replacing the running game.
@@ -337,7 +339,7 @@ transcription, or derived material from it is used.
 The workstation/model review, delivered corrections, remaining modeling limits,
 and hardware acceptance checklist are documented in
 [`docs/workstation-review.md`](docs/workstation-review.md).
-Current work is tracked in [`docs/plan-0.1.7.md`](docs/plan-0.1.7.md) and
+Current work is tracked in [`docs/plan-0.1.8.md`](docs/plan-0.1.8.md) and
 [`docs/resume.md`](docs/resume.md). The completed 0.1.6 stabilization plan remains
 available in [`docs/plan-0.1.6.md`](docs/plan-0.1.6.md).
 

@@ -551,11 +551,288 @@ Verifikation der 0.1.6-Softwarebasis:
 - `git diff --check` ist sauber. Code-/Daten-/Testpatch auf Basis `1aae70d`:
   SHA-256 `4f52d9dea37b97a3208ec729f9edbe6492f6f213286c9c000020e51bb11d64aa`.
 
+## Post-R19-Arbeit (2026-09-11, noch nicht committed)
+
+R20 Luftangriff: Feindliche Angriffsflugzeuge greifen die Fregatte in
+Wellen an. `src/air/raid.py` liefert `RaidPhase` (APPROACH/ATTACK/RETREAT)
+und `Raider` (Wendegrenze, tangentiale Stand-off-Orbit am
+Waffenbereichsrand, ASM-Salven im Cooldown-Takt, 180-Grad-Retreat,
+Despawn bei Rausradius/Weltende). Wellen spawnen ausserhalb der
+Luft-Radarreichweite (110-140 NM), begrenzt auf `RAID_MAX_CONCURRENT`,
+gated durch den Missions-ASM-Druck; Custom Missions ohne ASM bleiben
+raid-frei. Salven werden als bestehende ASM-Objekte abgelaesen
+(`_drain_raider_asm`). Raider erscheinen im Air Picture als anonyme
+FLG-Tracks (`R-{seq}`, hostile bleibt false). Der neue Loadout-Block
+`aa_gun` (240 Schuss, 60 NM, 8 Schuss/Gruppe, 1.5 s Zyklus, 50 % Treffer
+nach Evasion-Korrektur) feuert nur gegen frische FLG-Beobachtungen und
+senkt `hp`; bei hp <= 0 ist der Raider abgeschossen. Loadout v2 faegt
+`raider` und `aa_gun` hinzu; der Save-`air_defense`-Zustandsblock ist
+v2 (AA-Munition/-Zyklus, Raider, `raider_seq`, `waves_spawned`) und
+`rngs` traegt den neunten Stream `raid` (seed+40424). Das exakte
+pra-R20-Layout wird eng durch `_upgrade_pre_r20_v10` angehoben (R9-
+Rueckfuellung entsprechend). i18n: `runtime.raid.incoming`/`downed`,
+OPZ-Kopfzeile zeigt FLAK-Munition; das Missionsziel kündigt Luftangriffe
+an. 30 neue Tests in `tests/test_air_raid.py`.
+
+SimLog: Options-Toggle (`Preferences.simlog`, default aus, Zeile 6 des
+F10-Menüs, Commander-Zeile rückt auf 7) zeichnet ein session-only
+begrenztes Protokoll auf (`SIMLOG_MAX_ENTRIES` = 256, monotoner seq):
+alle Feed-Ereignisse (Rohtext, lokalisiert erst beim Publish) plus alle
+`SIMLOG_INTERVAL_S` = 10 Simulationssekunden ein vollstaendiger,
+rein lesender Zustandssnapshot (`Game._simlog_state_data()`: Schiffs-
+Pose/Schaden/Stationen, Waffenbestaende, alle Einheiten mit
+Position/Kurs/Zustand, alle Projektile, Flug-/Raid-Tracks, Welt).
+Aufnahme laeuft nur im Simulationsfortschritt. Die Bridge publiziert
+den gefingerabdruck-geprueften, bytebegrenzten und bei redacted Phasen
+leeren JSON-Array ueber die neue authentifizierte Commander-Route
+`/api/v1/simlog`. Die versteckte Read-only-Web-Ansicht `#simlog` rendert
+Ereignisse und (neueste 25) Snapshots als JSON-Details und ist nicht aus
+der UI verlinkt. 21 Tests in `tests/test_simlog.py`.
+
+Weitere Batch-Arbeiten: Zivile Luftfahrt (role-basierte Airbase-Klassen,
+geometrische Via-Routen 30 NM an der Fregatte vorbei, verkuerfter
+Spawn-Cooldown, 10 Tests), ELOKA-Radarart zeigt Katalog-Plattformnamen
+statt `emitter.*`-Platzhalter (4 Stellen, 3 Tests), Audio-Hoerprobe im
+Kontakt-Analysator (Space/Button, deterministische 3-s-Synthese aus
+Katalogprofil, 6 Tests), Sonar-Seiten-Hotkeys trennen Seitenwechsel
+innerhalb einer Station vom Stationstausch und koerzen den
+Audio-Stream nicht (1 Regressionstest), Space im Kontakt-Analysator
+slaegt die zugehoerige TEXTINPUT-Verarbeitung, sobald die Hoerprobe
+abgespielt wurde (kein Leerzeichen mehr im Suchfilter).
+
+Verifikation: Vollsuite 2440 bestanden; `tools/gen_contacts.py --check`:
+109 Akustikprofile gueltig; `tools/smoke_full.py`: SMOKE-OK;
+`git diff --check`: sauber. Der Arbeitsbaum ist nicht committed;
+Hardwareabnahme bleibt wie oben offen.
+
+## Remote Crew M4 (2026-09-12, noch nicht committed)
+
+Der deterministische Protocol-v2-Command-Gateway ist umgesetzt. Die exakte
+generische Envelope bindet Request-ID und monotonen Client-Seq an Station,
+Lease-Generation, Weltsession, Weltepoch und Ressourcenrevision. Der Transport
+verwendet Cookie, exakten Origin und CSRF, nimmt nur registrierte Actions an und
+haelt abgeloeste FIFO-Envelopes bei 64 global, acht je Client sowie 64
+Dedup-Eintraegen je Client. Main-Thread-Drain erfolgt in kanonischer
+Stationsreihenfolge, dann Client-Ordinal und FIFO. Direkt vor Ausfuehrung werden
+Session, Rolle, Generation, Grants, Alter, Live-Phase und Weltkontext atomar
+erneut geprueft. Ergebnisse sind terminal, begrenzt und nur in der erzeugenden
+Session ueber `/api/v2/results` sichtbar.
+
+Zum M4-Abnahmestand war als einzige Action das nebenwirkungsfreie `acknowledge`
+registriert; der nachfolgende M6.1-Abschnitt ergaenzt die Bridge-Actions.
+Administrative Wechsel, Pause/Fokusverlust, Rollenfreigabe/-entzug, Disconnect
+und Weltersatz verwerfen unsichere Queues und leeren den vorbereiteten
+Held-Control-Zustand. Protocol v1 und Save v10 bleiben unveraendert.
+
+M4-Verifikation:
+
+- Finaler M4-/v1-Server-/v2-Session-/Bridge-Lauf: 357 bestanden.
+- Loop-/Save-v10-/Browser-/Projection-/Continuation-Lauf: 291 bestanden.
+- `python -m compileall -q src tests/test_commander_commands_v2.py`: sauber.
+- `tools/smoke_full.py`: `SMOKE-OK`.
+- `git diff --check`: sauber.
+
+## Remote Crew M6.1 Bridge (2026-09-12, noch nicht committed)
+
+Nur der erste M6-Stationsschnitt ist umgesetzt; M6 insgesamt bleibt offen.
+Protocol v2 registriert die geschlossenen, ausschliesslich der Bridge-Rolle
+erlaubten Actions `bridge_set_course` mit exakt `{course}` (0 bis unter 360)
+und `bridge_set_speed` mit exakt `{speed_kn}` (0 bis 25 kn). Beide laufen im
+Main Thread ueber dieselben ergebnisliefernden `Game`-Order-Helper wie die
+lokale Zahleneingabe. Kursausfall der Bruecke sowie Vorausfahrt-, Telegraph-
+und Asternverhalten bleiben lokal und remote identisch; Remote-Befehle wechseln
+weder Station, Auswahl, Eingabemodus, gehaltene Tasten noch Fokus.
+
+Die v2-Bridge-Webansicht besitzt ein eigenes lokalisiertes Direct-Order-Panel
+mit Ist-/Sollwerten und strikten Zahleneingaben. Grant, Lease, Live-Phase,
+veraltete Verbindung und Brueckenausfall sperren die passenden Controls.
+Session-Metadaten liefern den naechsten monotonen Command-Seq fuer Reloads.
+Eine kryptographische ID, genau ein ausstehender Befehl, isoliertes
+`/api/v2/results`-Polling und kein automatisches Wiederholen bei unklarem HTTP-
+Ergebnis begrenzen die Ausfuehrung. Legacy-Vorschlag/Klassifikation/Affiliation
+bleiben fuer alle v2-Rollen deaktiviert. Protocol v1 und Save v10 sind
+unveraendert.
+
+M6.1-Verifikation:
+
+- Commander-Server/Bridge/v1/v2/Browser-Fokus: 460 bestanden.
+- M6.1-Command/Projection/Assets/Browser/Layout-Gesamtlauf: 125 bestanden.
+- Finaler Command/Session/Projection-Nachlauf: 68 bestanden; finaler
+  Asset/Browser/EN-DE-Pseudolocale-Layout/i18n-Nachlauf: 36 bestanden.
+- Save-v10-/Katalogsnapshot-/Determinismus-/Continuation-Fokus: 187 bestanden.
+- i18n-Paritaet und Pseudolocale: 17 bestanden.
+- `tools/gen_contacts.py --check`: 109 Akustikprofile gueltig.
+- `tools/smoke_full.py`: `SMOKE-OK`.
+- `compileall` und `git diff --check`: sauber.
+
+## Remote Crew F9 Host-Menue und stabiler Beitrittscode (2026-09-12, noch nicht committed)
+
+Das native F9-Hauptmenue enthaelt nur noch Dienst Start/Stopp, Bindeadresse,
+Port und den Zugang zur geraeumigen Host-Besatzungsliste. Doppelte Legacy-
+Freigabe-, Widerruf-, Zielvorschlags- und Navigationszeilen samt Zusammenfassungen
+wurden entfernt. Die bestehende lokale F6/F7-Bestaetigungsbox bleibt fuer
+Protocol v1 unveraendert zustaendig. URL und Status sind groesser; der explizit
+lokalisierte, gruppierte Beitrittscode `DDD LLL` ist der visuelle Fokus und wird
+in EN, DE, Pseudolokalisierung und Grossschrift begrenzt dargestellt.
+
+Der intern ungruppierte Code bleibt waehrend der Lebensdauer desselben
+`CommanderServer`-/`CommanderConsole`-Spielobjekts konstant: erfolgreiche v1-
+und v2-Kopplungen, mehrere Clients, reine Lesezugriffe, Logout, Client-/Rollen-
+Widerruf, Lease-Ablauf sowie Dienst Stopp/Start rotieren ihn nicht. Der fuenfte
+Fehlversuch innerhalb des bestehenden rollenden Minutenlimits rotiert ihn als
+Security-Lockout. `server.revoke()` markiert weiterhin den bewussten neuen
+Server-/Spielkontext; der vorhandene Bridge-Weltersatzpfad widerruft damit alle
+Sitzungen und rotiert den Code. Der Code bleibt fluechtig und erscheint weder
+in Save v10 noch in Einstellungen.
+
+## OPZ-Beobachtungs-Follow-up (2026-09-12)
+
+ELOKA gibt eine Auffassung erst nach gueltiger Bedienerannotation als reine
+`ESM`-Peilung an das gemeinsame OPZ-Bild frei. Die Freigabe besitzt eine von
+Simulations-Entities und anderen Sensordomaenen getrennte opake Kennung, keine
+Position, Entfernung, Kurs- oder Zugehoerigkeitswahrheit. Loeschen oder Wechsel
+der Annotation beendet die Aktualisierung der vorherigen Freigabe; sie altert
+mit dem vorhandenen 30-s-Bildvertrag aus.
+
+Der Brueckenausguck erzeugt unabhaengige `LOOKOUT`-Positionsbeobachtungen fuer
+aktive Oberflaechenfahrzeuge, U-Boote bis einschliesslich 2 m Tiefe sowie aktive
+zivile/militaerische Flugzeuge und Raider. Explizite Grundreichweiten sind 12,
+5 und 20 NM; Nachtfaktor 0,35, Seegangsverlust 0,08 je Stufe,
+Peilfehler +/-0,6 Grad und Entfernungsfehler +/-6 %. Land sperrt die Sichtlinie.
+Messungen laufen in stabiler Reihenfolge auf 0,5-s-Epochen mit lokalen,
+deterministischen Seeds und veraendern keinen globalen RNG. LOOKOUT und Radar
+bleiben getrennte Beobachtungen. Protocol-v2-Bruecke erhaelt LOOKOUT, OPZ beide
+neuen Quellen; andere Rollen erhalten sie nicht.
+
+Verifikation dieses Follow-ups:
+
+- Sensor-/ESM-/OPZ-/Commander-Projektion-/Save-/Determinismus-/i18n-Fokus:
+  518 bestanden.
+- Abschliessender ESM-/OPZ-/Projection-Nachlauf: 77 bestanden.
+- Air-Picture-/Runtime-/Air-Defense-Querschnitt: 178 bestanden.
+- `tools/gen_contacts.py --check`: 109 Akustikprofile gueltig.
+- `tools/smoke_full.py`: `SMOKE-OK`.
+- `compileall` und `git diff --check`: sauber.
+
+## Native OPZ-Fusion (2026-09-12)
+
+Sonarkontakte bleiben bis zu einer gueltigen expliziten Sonar-Klassifizierung
+privat. Die Freigabe erzeugt eine unabhaengige opake OPZ-Beobachtung ohne
+Entity-/Kontaktkennung und ohne aus `Contact.kind` abgeleitete Domaene. Ohne
+aktuellen Ping-, TMA- oder Bojenfix bleibt sie eine reine Peilung; Ruecksetzen auf
+unbekannt zieht sie sofort zurueck. Die private Sonar-v2-Projektion behaelt alle
+frischen Hoerkontakte.
+
+Die OPZ kann 2 bis 8 markierte aktuelle Meldungen manuell fusionieren, maximal
+32 Fusionen. Es gibt keine automatische Korrelation. Fusionen, Markierungen,
+Klassifizierungen und lokale Unterdrueckung sind fluechtig, werden nicht in Save
+v10 geschrieben und koennen weder Zielzuweisung noch Luftbild, Waffen oder KI
+beeinflussen. Native Tastatur- und Mausbedienung verwenden eine gemeinsame
+`opz_regions`-Geometrie; die bekannte Kueste bleibt auch bei ausgeschaltetem
+Radar gedimmt sichtbar.
+
+Der Browser-Schnitt fuer Sonar-Klassifizierung/Freigabe und OPZ-Lagebild/Fusion
+ist umgesetzt. Exakte v2-Actions werden nach Rolle, Lease, Weltkontext, Revision,
+Alter, Stationsschaden, aktueller opaker Referenz und Quellenhoheit erneut auf dem
+Main Thread geprueft. Der OPZ-Browser verarbeitet exakt `observations`, `fusions`,
+`radar`, `source_classifications` und `own_assets`, zeigt bekannte Kueste sowie
+rein kosmetische Radarbereiche und bietet lokale Markierung/Unterdrueckung.
+Legacy-v2-Vorschlaege bleiben deaktiviert. Protocol v1 und Save v10 sind
+unveraendert.
+
+## Remote-Crew-Stationsparitaet (2026-09-13)
+
+Alle neun v2-Rollen besitzen eigene responsive Webstationen. Die Projektionen
+liefern ausschliesslich detached, rollenbezogene Daten. Bruecke, Waffen, OPZ,
+Funk und Hubschrauber zeigen ihre jeweils freigegebenen Karten; Sonar zeigt
+Broadband- und LOFAR-Wasserfall, DEMON, TMA, BT/Umwelt und aktive Echos. Schaden,
+Maschine und ELOKA besitzen eigene Schemata, Instrumente und Diagramme. Leere,
+veraltete, beschaedigte, pausierte und widerrufene Zustaende werden getrennt
+dargestellt.
+
+M6 ist in Software vollstaendig bedienbar. M7 erlaubt genau Schiffstorpedo,
+Hubschraubertorpedo, Nixie, ESSM und Chaff ueber aktuelle rollenbezogene opake
+Referenzen. Direkte Wirkung verlangt `command`, `direct_fire`, Presence unter
+zwei Sekunden und Befehlsalter unter einer Sekunde. Lokale und entfernte Eingaben
+verwenden dieselben Main-Thread-Helper. ASROC, CIWS und AA bleiben automatisch
+beziehungsweise ausserhalb der Websteuerung.
+
+Sonar-Liveaudio ist ein eigener Host-Grant. Der Main Thread publiziert maximal
+zwei immutable 250-ms-Bloecke des bereits modellierten gemischten Receivers als
+Mono-PCM mit 4096 Hz. HTTP-Threads sehen keine NumPy-, Kontakt- oder
+Simulationsobjekte; Rollen-/Grantverlust, Blockade, Beschleunigung, Sonarschaden
+und Weltwechsel leeren den Stream.
+
+Aktuelle Softwareverifikation: Vollsuite 2659 bestanden in 1055,02 Sekunden,
+Katalogpruefung 109 Profile, `SMOKE-OK`, Sdist/Wheel erfolgreich und
+`git diff --check` sauber. Offen bleibt die physische Mehrgeraete-, Audio-,
+Latenz-, Last- und Thermalabnahme auf der 1280x720-uConsole.
+
+## Web-Arbeitsplaetze und Stationsanfragen (2026-09-13)
+
+Die fruehere Aussage vollstaendiger Darstellungsparitaet war durch die damaligen
+Tests nicht belegt. Der bisherige Kartenstapel wurde nach Betreiberfeedback
+ueberarbeitet: Hauptinstrument links, separat scrollbar angeordnete Bedienung
+rechts, kompakter Kopfbereich und einklappbare Zusatzinformationen. Mobile
+Ansichten ordnen Instrument und Bedienung untereinander an. Alle neun Rollen
+verwenden diesen Arbeitsplatzaufbau. Die alten allgemeinen Reiter sind in v2
+durch Stationsnavigation und ein Nebenmenue fuer Stationshilfe, Referenzbibliothek,
+Bruecken-Sichtausguck und Stationsfreigabe ersetzt. V1 behaelt seine Navigation.
+
+Korrekturen: Karten-Y-Achse und Pan-Richtung entsprechen nun der nativen Karte;
+bekannte Orts-/Flugplatznamen, Tiefenraster und Kursvektoren werden angezeigt.
+Sonar uebertraegt 80 historische Zeilen und alle 180 Broadband-Bins, verarbeitet
+Gain/Filter wie lokal und zeigt Zeit-/Frequenzachsen, LOFAR-Spektrum sowie eine
+gemeinsame TMA-Zeitachse. Diagramme verwenden tatsaechliche Messwerte; eine
+pixelgleiche Darstellung wird nicht behauptet.
+
+Webaudio: normale Session-Erneuerungen verwerfen keine gueltigen Audiobloecke
+mehr. Timeouts und temporaere Serverfehler lassen die Abrufkette weiterlaufen;
+ein begrenzter Startpuffer faengt Jitter ab. PCM-Socketwrites erfolgen ausserhalb
+des Serverlocks. Regressionstests fuehren den echten JavaScript-Audiolifecycle
+mit Session-Race, Timeout, temporaerem Fehler und Widerruf aus.
+
+Neue Stationsanfragen oeffnen am Host einen administrativen Dialog mit Spieler,
+Station und den Rechten Bedienung, direkte Waffenfreigabe und Sonaraudio.
+Freigeben uebernimmt Station und Rechte atomar; belegte Stationen werden nicht
+uebernommen. Ablehnen und Spaeter sind moeglich. Andere Eingabe-/Dialogbesitzer
+werden nicht verdraengt, wiederholtes Polling oeffnet keine weiteren Popups,
+zurueckgezogene Anfragen verschwinden. Alle Anfragen/Rechte bleiben transient.
+
+Verifikation: 2665 Tests bestanden in 1180,99 Sekunden; der echte Chromiumlauf
+prueft zusaetzlich Instrumentbreite, Anordnung und Sichtbarkeit bei 1280x720.
+Katalogvalidator: 109 Profile; Smoke: SMOKE-OK. Die praktische Abnahme auf den
+Browsergeraeten (Lesbarkeit, Bedienfluss und Audio ueber reales WLAN) bleibt
+ausdruecklich offen.
+
+## Remote-Crew-Laufzeit und Bedienfluss (2026-09-13)
+
+Bei mindestens einer aktiven Remote-Station halten F1-Hilfe, der laufende
+F8-Kontaktanalysator, F9-Crewverwaltung und F10-Optionen die autoritative
+Simulation sowie Browserstationen live. Ohne aktive Crew bleibt das bisherige
+Pausenverhalten erhalten. Manuelle Pause, Fokusverlust, Nationen, Save/Load,
+Quit, echte Editoren, Menues und Splash blockieren weiterhin. Dieselbe
+Entscheidung steuert Simulation, v2-Phase, Commands, Projektion und Sonaraudio;
+Owner-Wechsel invalidieren weiterhin bereits wartende Commands.
+
+Der Browser trennt jetzt den Wechsel zwischen gehaltenen Leases von der Aktion
+`Station hinzufuegen`. Eine genehmigte Anfrage erhaelt normale Bedienrechte und
+oeffnet die neue Station automatisch; direkte Waffenfreigabe und Sonaraudio
+bleiben separate Host-Rechte. Im Broadband-Wasserfall setzt ein Klick oder Tap
+die manuelle Horchpeilung und loest Kontaktfokus. LOFAR bleibt reine Analyse.
+
+Softwareverifikation: 2699 Tests bestanden in 1150,57 Sekunden, inklusive echter
+Chromiumlaeufe fuer Desktop und Mobil. Katalogvalidator: 109 Profile; Smoke:
+`SMOKE-OK`; Sdist und Wheel fuer 0.2.0 erfolgreich gebaut; `git diff --check`
+sauber. Physische Mehrgeraete-, Audio-, WLAN-, Last- und Thermalabnahme auf der
+uConsole bleibt offen.
+
 ## Naechster Schritt
 
-1. Verpflichtend pausieren.
-2. Vor einem Release die oben aufgefuehrten physischen Abnahmen durchfuehren.
-3. Nicht ohne ausdrueckliche Freigabe pushen oder einen Release hochladen.
+1. Den vollstaendig verifizierten 0.2.0-Arbeitsbaum lokal committen; kein Push
+   ohne ausdrueckliche Freigabe.
+2. Vor einem Release die oben aufgefuehrten physischen Abnahmen
+   durchfuehren.
 
 ## 0.1.7 Entscheidungen
 

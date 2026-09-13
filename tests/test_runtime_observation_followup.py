@@ -230,6 +230,22 @@ def patrol():
     return flight
 
 
+def test_aircraft_emission_doctrine_covers_patrol_and_transit():
+    base = dict(id="base", x=100, y=100, nation="BOREN")
+    dest = dict(id="dest", x=200, y=100, nation="BOREN")
+    military_patrol = Flight("military", base, rng=random.Random(1))
+    military_transit = Flight("military", base, dest=dest, rng=random.Random(2))
+    civil_transit = Flight("civil", base, dest=dest, rng=random.Random(3))
+
+    assert military_patrol.radar_emitting
+    assert military_transit.radar_emitting
+    assert not civil_transit.radar_emitting
+    civil_transit.esm = True
+    military_transit.esm = False
+    assert not civil_transit.radar_emitting
+    assert military_transit.radar_emitting
+
+
 def test_aircraft_esm_requires_emission_and_keeps_only_aged_bearing():
     flight = patrol()
     player = SimpleNamespace(x=110, y=100)
@@ -247,19 +263,23 @@ def test_aircraft_esm_requires_emission_and_keeps_only_aged_bearing():
 
 
 def test_aircraft_receiver_capability_does_not_make_it_an_emitter(game):
-    flight = patrol()
-    flight.x, flight.y = game.ship.x + 50, game.ship.y
-    game.flights.flights = [flight]
+    base = dict(id="base", x=100, y=100, nation="HANSE")
+    dest = dict(id="dest", x=200, y=100, nation="HANSE")
+    civil = Flight("civil", base, dest=dest, rng=random.Random(1))
+    civil.x, civil.y = game.ship.x + 50, game.ship.y
+    civil.esm = True
+    game.flights.flights = [civil]
     game.radar_on = False
-    flight.radar_emitting = False
-    flight.esm = True
     game._update_air_picture()
     game._update_esm_picture()
     assert not game.air_picture.tracks(game.sim_t)
     assert not game.eloka_tracks()
-    flight.radar_emitting = True
-    flight.esm = False
-    flight.esm_range_nm = 1  # Its receiver range is not the player's receiver range.
+
+    military = Flight("military", base, dest=dest, rng=random.Random(2))
+    military.x, military.y = game.ship.x + 50, game.ship.y
+    military.esm = False
+    military.esm_range_nm = 1  # Its receiver range is not the player's receiver range.
+    game.flights.flights = [military]
     game._update_esm_picture()
     assert len(game.eloka_tracks()) == 1
     assert not game.air_picture.tracks(game.sim_t)
@@ -313,13 +333,13 @@ def test_new_ai_observations_and_alert_state_roundtrip(game):
     game.warships = [warship]
     flight = patrol()
     flight.base_id = game.world.coast.airbases[0]["id"]
-    flight.radar_emitting, flight.sensor_bearing, flight.sensor_age = False, 123, 4
+    flight.sensor_bearing, flight.sensor_age = 123, 4
     game.flights.flights = [flight]
     game.air_threat_reported = True
     game.load_state(game.save_state())
     assert game.warships[0].sensor_contact == (110, 105)
     assert game.warships[0].sensor_contact_age == 2
-    assert not game.flights.flights[0].radar_emitting
+    assert game.flights.flights[0].radar_emitting
     assert game.flights.flights[0].sensor_bearing == 123
     assert game.flights.flights[0].sensor_age == 4
     assert game.air_threat_reported

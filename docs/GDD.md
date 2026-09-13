@@ -1,8 +1,8 @@
 # GDD – U-Jagd (Game Design Document)
 
-> Historisches Design-/Entwicklungsdokument. Aktueller Stand: Version 0.1.7,
+> Historisches Design-/Entwicklungsdokument. Aktueller Stand: Version 0.2.0,
 > Save v10 als einziges Schreib- und Ladeformat. Verbindliche laufende Arbeit:
-> `plan-0.1.7.md` und
+> `plan-0.1.8.md` und
 > `resume.md`. Alte Phasen- und Save-v7-Aussagen unten sind keine aktuellen APIs.
 
 **Projekt:** u-jagd | **Plattform:** ClockworkPi uConsole (Debian 13, RPi CM5)

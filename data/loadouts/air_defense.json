@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "asm": {
     "key": "weapon.air_defense.asm",
     "speed_kn": 500.0,
@@ -42,5 +42,25 @@
     "range_nm": 8.0,
     "effect_duration_s": [2.0, 4.0],
     "defeat_probability": 0.4
+  },
+  "raider": {
+    "key": "aircraft.hostile.striker",
+    "speed_kn": 400.0,
+    "altitude_m": 60.0,
+    "hp": 8,
+    "evasion": 0.35,
+    "weapon_range_nm": 45.0,
+    "salvo": [1, 2],
+    "weapon_cooldown_s": 45.0,
+    "retreat_radius_nm": 150.0
+  },
+  "aa_gun": {
+    "key": "weapon.ownship.aa_gun",
+    "ammo": 240,
+    "range_nm": 60.0,
+    "rounds_per_attempt": 8,
+    "cycle_s": 1.5,
+    "hit_probability": 0.5,
+    "observation_max_age_s": 5.0
   }
 }

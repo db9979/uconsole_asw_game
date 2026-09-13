@@ -1,9 +1,10 @@
-# Commander LAN Co-op (0.1.7)
+# Commander LAN Co-op (0.2.0)
 
-Two-player role split: the uConsole crew operates the ship and simulation; one
-Commander uses a browser on another PC. The service is optional, dependency-free
-beyond the game's existing runtime, and intended only for a trusted local IPv4
-network. HTTP does not protect traffic from someone who can observe the LAN.
+Remote Crew keeps the uConsole process authoritative while authenticated crew
+members operate exclusive station roles from browsers. A client may retain
+multiple leases but displays only one active station at a time. The optional
+service has no extra runtime dependency and is intended only for a trusted local
+IPv4 network. HTTP does not protect traffic from someone who can observe the LAN.
 
 ## Setup
 
@@ -14,63 +15,72 @@ network. HTTP does not protect traffic from someone who can observe the LAN.
    check the device's network connection; discovery does not perform DNS or
    Internet probes.
 4. Choose a port if the default 8765 is occupied. Enable the service with Enter.
-5. Open the actual displayed URL in the other PC's browser. Permit incoming
+5. Open the actual displayed URL in each crew browser. Permit incoming
    connections on the host firewall only from the trusted LAN if needed.
 6. Type the local pairing code: three digits plus three uppercase letters.
    Browser lowercase input is normalized. Codes are one-use and expire after
    five minutes. Five wrong guesses per rolling minute block further attempts
    temporarily; the fifth failure rotates the code. Explicit local revocation
    creates a new code and clears the lockout.
-7. Once paired, the crew enables the separate changes grant. Close the panel
-   with Esc to resume simulation and enable browser mutations.
+7. Once paired, request a station in the browser. The host grants or rejects the
+   exact request. Approval enables normal station operation; sonar audio and
+   direct fire remain separate grants. When a crew station is active, the
+   simulation continues behind F9 and F9 may remain open for crew administration.
 
-The secret long bearer token is kept only in browser memory. Refreshing or
-closing the browser loses it. Use local Revoke to reconnect immediately; otherwise
-the old connection lease expires after 30 seconds without authenticated polling.
-Never publish real pairing codes or tokens in screenshots, logs or issue reports.
+The secret session credential is held in an HttpOnly SameSite cookie scoped to
+the v2 API. JavaScript, URLs, the DOM, settings, saves, and logs never receive it.
+A reload may recover the same session, but station authority expires quickly if
+presence polling stops. Never publish real pairing codes, cookies, or CSRF tokens
+in screenshots, logs, or issue reports.
 
 ## Role Controls
 
-- Browser contact/list selection, Operations pan/zoom/follow and Lookout range
-  are browser-local and independent.
-- Classification and affiliation use explicit Apply buttons and require the crew
-  grant. They are operator judgments, not discovered platform identity.
-- Neutral C-number labels identify observation lifetimes. A reacquired contact
-  may receive a new label. Only explicitly modeled AIS reports preserve names.
-- Propose target sends a request, not a weapon command. The crew opens F9 and
-  explicitly accepts or rejects. Accepted targets still need ordinary weapon
-  readiness and local firing controls.
-- Propose navigation sends an ordered course, speed, or both for local review.
-  Only crew acceptance in F9 changes helm setpoints. The browser cannot steer the
-  ship directly. Course acceptance requires an operational bridge; speed-only
-  acceptance remains possible and cannot override propulsion or quiet-mode limits.
-- An unresolved proposal cannot be silently replaced by another proposal of the
-  same kind. A target proposal and a navigation proposal may wait together.
-- The local panel supports row selection by mouse and activation by a second
-  click on the selected row or Enter. Clicking does not bypass readiness checks.
+- The host grants one exclusive owner per station. One client may retain several
+  station leases and switch between them without releasing the inactive leases.
+  Use Add station for another request; an approved station opens automatically.
+- Browser contact selection, map pan/zoom/follow, workstation pages, drafts, and
+  analyzer selection remain local to that browser.
+- Each station exposes only its allowlisted observation-led projection and
+  controls. Classification and affiliation remain operator judgments.
+- Visible labels match the corresponding uConsole station: Sonar/OPZ use K labels,
+  HFDF uses public H labels, and ELOKA uses its public track key. Transport refs
+  remain opaque and are not displayed. Only modeled AIS reports preserve names.
+- A command grant permits direct operation of that station. Weapons additionally
+  require the host's direct-fire grant. Every action is revalidated immediately
+  before application against lease generation, world context, freshness,
+  readiness, damage, inventory, ROE, and engagement envelope.
+- Sonar contacts are released to OPZ explicitly; classification alone does not
+  publish them. Sonar audio needs its own host grant and remains live-only at 1x.
+- The local panel supports independent per-station request decisions, grants,
+  revocation, takeover, and host control. Clicking never bypasses readiness.
 - Voice coordination uses your existing external voice connection or conversation.
   There is no built-in chat, microphone capture or general command execution.
-- Pause, focus loss, editors and administration lock remote changes. Unknown or
-  stale observations never gain information merely because the Commander selects
-  them. Menu/editor/splash pages disclose no pregenerated tactical world.
+- Manual pause, focus loss, save/load, quit, nations, true editors, menus and the
+  splash lock remote changes. With an active crew station, F1 help, the in-game F8
+  analyzer, F9 crew administration and F10 options leave simulation and remote
+  stations live; without active crew they retain the normal pause behavior.
+  Unknown or stale observations never gain information merely because the
+  Commander selects them. Menu/editor/splash pages disclose no pregenerated
+  tactical world.
 
 ## Display and Alarms
 
-After pairing, the fixed shell offers Operations, Lookout, Guide and Contacts
-tabs. Operations contains the current mission picture and controls. Lookout is a
-north-up, ship-centered view of the same published snapshot: it shows own course,
-range rings, sea state and day/night, plots positioned observations as points and
-shows bearing-only reports as edge marks. Its display range is neither visual nor
-sensor range, and a plotted symbol does not establish identity. It uses no chart
-geography and sends no command. Guide and Contacts remain reserved placeholders.
-Tab switching preserves contact selection, draft assessments, navigation drafts
-and both local view states. The authenticated shell fits the viewport; long
-Operations content scrolls only inside its tab or nested panels.
+After pairing, the shell becomes a role-specific workstation. Bridge, Sonar,
+Weapons, Damage Control, OPZ, Radio, Engineering, Helicopter, and ELOKA each have
+a dedicated instrument and bounded controls. OPZ overlays radar range and sweep
+on known chart geography; bearing-only reports remain rays rather than invented
+positions. Switching a retained station clears unsafe role-local state while
+keeping the other lease. The guide and contact-reference library remain available
+without exposing another station's tactical picture.
 
 The chart adapts to browser size and device pixel ratio, preserving equal map
 scales. Contact details show observation/fix age and nullable range/depth/motion.
 Peilung-only observations appear as rays, not invented range fixes. Local selection,
 Commander proposal and crew target have distinct outlines.
+
+On Sonar, clicking or tapping inside the Broadband waterfall sets the manual
+listening bearing and clears contact-follow focus. The yellow line marks that
+bearing. LOFAR and the other analysis plots do not steer the listening beam.
 
 Damage status and team count, available own weapons and airborne helicopter
 position are displayed. A hangared or lost helicopter is not plotted as a current
@@ -92,17 +102,14 @@ Successful load/reset replaces the network session at the next main-thread pump;
 pair and grant again. Failed candidate restoration leaves the live network session
 unchanged. A new connection never inherits the previous connection's grant.
 
-One Commander is supported. Snapshots normally publish twice per real second,
-with immediate important transitions. Four HTTP workers, absolute request
-deadlines and bounded queues protect the game from slow or excessive clients.
-This is not an Internet-facing service, VPN product, remote desktop or sonar
-audio stream. See commander-protocol.md for the exact boundary.
+Clients, workers, histories, projections, and command queues are hard-bounded.
+Snapshots normally publish twice per real second, with immediate important
+transitions. This is not an Internet-facing service, VPN product, or remote
+desktop. See commander-protocol.md for the exact boundary.
 
 ## Abnahme / Pause
 
 Automated coverage uses real loopback HTTP and headless Chromium contracts at
 desktop and narrow viewport sizes. This does not establish two-physical-device
 network, firewall, headphone, uConsole thermal or readability acceptance.
-Follow `docs/plan-0.1.7.md` and `docs/resume.md` after this milestone. The
-authorized sonar/filter/readability and physical-fidelity packages B-F follow
-that plan's dependency order and end at its mandatory documented pause.
+Follow `docs/plan-0.1.8.md` and `docs/resume.md` for current resumable work.

@@ -58,6 +58,28 @@ def assign_contact(game, target_id=9001):
     return contact
 
 
+def test_explicit_torpedo_helper_uses_depth_and_observation_without_ui_mutation(game):
+    contact = assign_contact(game)
+    other = Contact(18, 9002, "passiv", "sub")
+    other.update_passive(20.0, .7, .7, "", game.sim_t)
+    game.selected_contact = other
+    game.torpedo_depth = 40.0
+    ui = (game.target, game.selected_contact, game.torpedo_depth, game.asm_sel)
+    assert game.launch_torpedo_at(contact, 137.0) is True
+    assert game.torpedoes[-1].target_depth == 137.0
+    assert (game.target, game.selected_contact, game.torpedo_depth, game.asm_sel) == ui
+
+
+@pytest.mark.parametrize("depth", [9.9, 300.1, float("nan")])
+def test_explicit_torpedo_rejection_preserves_inventory_sequence_and_rng(game, depth):
+    contact = assign_contact(game)
+    before = (game.player_torpedo_battery.serialize(), game.torpedo_count,
+              game.torpedo_seq, list(game.torpedoes), game.rng_asw.getstate())
+    assert game.launch_torpedo_at(contact, depth) == "invalid_target"
+    assert (game.player_torpedo_battery.serialize(), game.torpedo_count,
+            game.torpedo_seq, list(game.torpedoes), game.rng_asw.getstate()) == before
+
+
 def test_sinking_is_monotonic_and_delayed_score_is_awarded_once(game):
     sub = Sub(100, 100, 990, 0, "diesel_alt", random.Random(2))
     game.subs = [sub]

@@ -59,6 +59,8 @@ class AudioEngine:
         self._sonar_previous = None
         self._sonar_last_sound = None
         self._sonar_hold_streak = 0
+        self._preview_sound = None
+        self._preview_channel = None
         self.sonar_holds = 0
         self.engine_dropped_blocks = 0
         self.engine_underruns = 0
@@ -344,9 +346,12 @@ class AudioEngine:
 
         SDL can promote queued audio after a fade, so sequence gaps, retunes
         and sampled previews must use immediate=True before restarting.
+        The immediate hard stop is latched: repeat calls while the channel is
+        already idle only reset the stream state, they never re-issue stop().
         """
         if immediate:
-            self._hard_stop(self._sonar_channel)
+            if not self._sonar_fading:
+                self._hard_stop(self._sonar_channel)
             self._sonar_fading = True
         elif self._sonar_channel is not None and not self._sonar_fading:
             try:
@@ -398,6 +403,64 @@ class AudioEngine:
         self.stop_engine()
         self._hard_stop(self._ping_channel)
         self._hard_stop(self._alert_channel)
+
+    def play_unit_preview(self, synth: Callable[[], np.ndarray], key: tuple,
+                          volume: float = 0.9, loops: int = -1) -> bool:
+        """Reference clip on a free, non-reserved channel; loops by default.
+
+        ``synth`` returns a float32 mono array at the active mixer rate; the
+        resulting sound is LRU-cached under ``key`` (first element selects
+        the bus limiter). Replaces any earlier preview. Deliberately not reached
+        by stop(), so the editor's per-frame stop() never cuts a sample.
+        """
+        if not self.enabled or not self.available:
+            return False
+        try:
+            volume = float(volume)
+            if not np.isfinite(volume):
+                return False
+            if not isinstance(loops, int) or isinstance(loops, bool):
+                return False
+            self.stop_preview()
+            sound = self._sound(synth, key)
+            if sound is None:
+                return False
+            sound.set_volume(float(np.clip(volume, 0.0, 1.0)))
+            channel = sound.play(loops)
+            if channel is None:
+                return False
+            self._preview_sound = sound
+            self._preview_channel = channel
+            return True
+        except pygame.error:
+            self._latch_device_error()
+            self._preview_sound = None
+            self._preview_channel = None
+            return False
+        except (TypeError, ValueError, OverflowError):
+            return False
+
+    def stop_preview(self) -> None:
+        """Stop the unit-preview clip; deliberately not part of stop(), so the
+        editor's per-frame stop() never cuts a reference sample."""
+        channel = self._preview_channel
+        self._preview_channel = None
+        self._preview_sound = None
+        if channel is not None:
+            try:
+                channel.stop()
+            except pygame.error:
+                self._latch_device_error()
+
+    def preview_playing(self) -> bool:
+        """True while a unit-preview clip is on its channel."""
+        channel = self._preview_channel
+        if channel is None:
+            return False
+        try:
+            return bool(channel.get_busy())
+        except pygame.error:
+            return False
 
     def debug_log(self, dt: float, receiver=None) -> None:
         """Optional 1 Hz diagnostics line, enabled via U_JAGD_AUDIO_DEBUG=1.
@@ -469,6 +532,7 @@ class AudioEngine:
         for channel in (self._engine_channel, self._sonar_channel,
                         self._ping_channel, self._alert_channel):
             self._hard_stop(channel)
+        self.stop_preview()
         self._reset_sonar_stream()
         self._cache.clear()
         self.available = False

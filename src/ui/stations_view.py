@@ -222,7 +222,9 @@ def _track_tooltip(game, track):
     distance = f"{displayed_range:.1f}" if displayed_range is not None else "--"
     quality = track.display_quality(game.sim_t, game.air_picture.stale_s)
     return layout.tooltip_payload(
-        message("opz.tooltip.track_title", track=track.track_id, label=track.label),
+        message("opz.tooltip.track_title", track=track.label,
+                label=display_value("classification",
+                                    getattr(track, "classification", None))),
         message("opz.tooltip.domain_affiliation", domain=localize("domain.unknown") if domain == "UNKNOWN" else display_value('domain', domain),
                 affiliation=display_value('affiliation', affiliation)),
         observations.format_bearing_pair(track, ship),
@@ -238,7 +240,7 @@ def _track_tooltip(game, track):
 def opz_hit_target(game, pos):
     """Hit-test the PPI against the displayed observation picture only."""
     layout.configure_for(game)
-    ppi = opz_ppi_rect()
+    ppi = opz_regions()["chart"]
     if pos is None or not pygame.Rect(config.STATION_RECT).collidepoint(pos):
         return None
     tracks = game.opz_tracks()
@@ -289,8 +291,7 @@ def opz_hit_target(game, pos):
                 "tooltip.own_navigation",
                 target_id="opz:ownship")
         return None
-    scope_w = int(pygame.Rect(config.STATION_RECT).w * .66)
-    if pos[0] >= pygame.Rect(config.STATION_RECT).x + scope_w:
+    if opz_regions()["sidebar"].collidepoint(pos):
         selected = game.selected_opz_track()
         if selected is not None:
             return _track_tooltip(game, selected)
@@ -324,7 +325,7 @@ def station_hit_target(game, pos):
                      if selected is not None
                      and eloka_regions()["evidence"].collidepoint(pos) else None)
         if inspected is not None:
-            annotation = game.eloka_annotation(inspected.track_key)
+            annotation = game.eloka_annotation_name(inspected.track_key)
             return layout.tooltip_payload(
                 message("eloka.tooltip.track_title", track=inspected.track_key),
                 message("eloka.tooltip.bearing", bearing=f"{inspected.bearing:05.1f}",
@@ -406,12 +407,13 @@ def station_hit_target(game, pos):
             if reports:
                 report = reports[min(game.radio_sel, len(reports) - 1)]
                 return layout.tooltip_payload(
-                    message("radio.tooltip.hfdf_title", label=report.label),
+                    message("radio.tooltip.hfdf_title",
+                            label=game.hfdf_display_id(report)),
                     observations.format_bearing_pair(report, game.ship),
                     message("radio.tooltip.error", error=f"{config.HFDF_BEARING_ERR_DEG:.0f}"),
                     message("radio.tooltip.age", age=f"{report.age(game.sim_t):.0f}"),
                     "control.radio_tooltip",
-                    target_id=f"radio:{report.label}")
+                    target_id=f"radio:{game.hfdf_display_id(report)}")
             return layout.tooltip_payload("panel.hfdf", "tooltip.radio_none",
                                           "tooltip.log_select",
                                           target_id="radio:hfdf")
@@ -555,7 +557,7 @@ def draw_eloka_view(game, tr=None) -> None:
                 surface,
                 message("eloka.line.intercept",
                         prefix=">" if selected else " ",
-                        track=track.track_key[-5:].upper(),
+                        track=track.track_key,
                         bearing=f"{track.bearing:05.1f}",
                         frequency=f"{track.frequency_hz / 1e9:.3f}",
                         quality=f"{track.display_quality(game.sim_t):.0%}",
@@ -591,7 +593,7 @@ def draw_eloka_view(game, tr=None) -> None:
                 quality=f"{selected.display_quality(game.sim_t):.0%}",
                 age=f"{selected.age(game.sim_t):.1f}")),
             ("eloka.field.annotation",
-             game.eloka_annotation(selected.track_key) or localize("common.unknown")),
+             game.eloka_annotation_name(selected.track_key) or localize("common.unknown")),
         )
         for label, value in values:
             layout.status_line(surface, rx, ry, rw, label, value,
@@ -603,7 +605,9 @@ def draw_eloka_view(game, tr=None) -> None:
         ry += 23
         for candidate in game.eloka_candidates(selected)[:4]:
             layout.blit_line(surface, message(
-                "eloka.line.candidate", emitter=candidate.emitter_key,
+                "eloka.line.candidate",
+                emitter=game.eloka_emitter_name(candidate.emitter_key)
+                or candidate.emitter_key,
                 score=f"{candidate.score:.0%}"), (rx, ry, rw, 21),
                 config.COLOR_TEXT_DIM, size=13)
             ry += 21
@@ -630,14 +634,89 @@ def draw_eloka_view(game, tr=None) -> None:
                      config.COLOR_TEXT_DIM, size=13)
 
 
-def opz_ppi_rect(station_rect=None) -> pygame.Rect:
-    """Bounding rectangle of the OPZ PPI in virtual-canvas coordinates."""
+def opz_regions(station_rect=None) -> dict[str, pygame.Rect]:
+    """Single OPZ geometry source for drawing and pointer ownership."""
     station = pygame.Rect(station_rect or config.STATION_RECT)
-    scope_w = int(station.w * 0.66)
-    radius = min(scope_w // 2 - 28, station.h // 2 - 28)
-    center = (station.x + scope_w // 2, station.y + station.h // 2)
-    return pygame.Rect(center[0] - radius, center[1] - radius,
-                       radius * 2, radius * 2)
+    scope_w = int(station.w * .75)
+    map_rect = pygame.Rect(station.x + 8, station.y + 8,
+                           scope_w - 16, station.h - 38)
+    radius = min(map_rect.w // 2 - 8, map_rect.h // 2 - 8)
+    center = map_rect.center
+    chart = pygame.Rect(center[0] - radius, center[1] - radius,
+                        radius * 2, radius * 2)
+    sidebar = pygame.Rect(station.x + scope_w, station.y,
+                          station.right - station.x - scope_w, station.h)
+    button_y = sidebar.bottom - 80
+    button_w = max(1, (sidebar.w - 24) // 2)
+    return {"map": map_rect, "chart": chart, "sidebar": sidebar,
+            "classify": pygame.Rect(sidebar.x + 8, button_y, button_w, 28),
+            "affiliate": pygame.Rect(sidebar.x + 16 + button_w, button_y,
+                                     button_w, 28),
+            "mark": pygame.Rect(sidebar.x + 8, button_y + 34, button_w, 28),
+            "fusion": pygame.Rect(sidebar.x + 16 + button_w, button_y + 34,
+                                  button_w, 28)}
+
+
+def opz_ppi_rect(station_rect=None) -> pygame.Rect:
+    return opz_regions(station_rect)["chart"]
+
+
+def _opz_bearing_ray(game, track, ppi, max_nm):
+    """Return the visible bearing segment from its public sensor origin."""
+    radius = ppi.w / 2 - 13
+    scale = radius / max_nm
+    if (getattr(track, "source", "") == "SONAR-DIP-BRG"
+            and getattr(track, "observer_x", None) is not None
+            and getattr(track, "observer_y", None) is not None):
+        ox = (track.observer_x - game.ship.x) * scale
+        oy = (track.observer_y - game.ship.y) * scale
+    else:
+        ox = oy = 0.0
+    angle = math.radians(_observation_bearing(track))
+    dx, dy = math.sin(angle), -math.cos(angle)
+    dot = ox * dx + oy * dy
+    discriminant = dot * dot + radius * radius - ox * ox - oy * oy
+    if discriminant < 0.0:
+        return None
+    root = math.sqrt(discriminant)
+    near, far = -dot - root, -dot + root
+    if far < 0.0:
+        return None
+    start_t = max(0.0, near)
+    return ((ppi.centerx + ox + dx * start_t,
+             ppi.centery + oy + dy * start_t),
+            (ppi.centerx + ox + dx * far,
+             ppi.centery + oy + dy * far))
+
+
+def opz_action_at(game, pos, station_rect=None):
+    """Return a closed native OPZ action from the same geometry used to draw."""
+    if pos is None:
+        return None
+    regions = opz_regions(station_rect)
+    for action in ("classify", "affiliate", "mark", "fusion"):
+        if regions[action].collidepoint(pos):
+            return action
+    ppi = regions["chart"]
+    if not ppi.collidepoint(pos):
+        return None
+    radius, max_nm = ppi.w // 2, _opz_radar_range_nm(game)
+    for track in reversed(game.opz_tracks()):
+        observed_x, observed_y = _observation_position(track)
+        if observed_x is not None and observed_y is not None:
+            dx, dy = observed_x - game.ship.x, observed_y - game.ship.y
+            if math.hypot(dx, dy) > max_nm:
+                continue
+            point = (ppi.centerx + dx / max_nm * radius,
+                     ppi.centery + dy / max_nm * radius)
+        else:
+            ray = _opz_bearing_ray(game, track, ppi, max_nm)
+            if ray is None:
+                continue
+            point = ray[1]
+        if _near_point(pos, point, 15):
+            return ("select", track.observation_id)
+    return None
 
 
 def _opz_radar_range_nm(game) -> float:
@@ -745,18 +824,120 @@ def _contour_segments_in_circle(coast, cx: float, cy: float,
     return out
 
 
+def _opz_basemap_surface(game, map_rect: pygame.Rect, ppi: pygame.Rect,
+                         max_nm: float) -> pygame.Surface:
+    """Build a bounded cached chart layer beneath the live OPZ radar picture."""
+    world = game.world
+    coast = getattr(world, "coast", None)
+    world_size_nm = float(getattr(world, "size_nm", config.WORLD_SIZE_NM))
+    bucket_x = round(game.ship.x * 10.0) / 10.0
+    bucket_y = round(game.ship.y * 10.0) / 10.0
+    key = (world, coast, map_rect.size, ppi.size,
+           round(max_nm, 6), bucket_x, bucket_y,
+           config.COLOR_GEO_BG, config.COLOR_GEO_GRID,
+           config.COLOR_LAND, config.COLOR_LAND_EDGE,
+           config.COLOR_SHALLOW, config.COLOR_DEEP)
+    cached = getattr(_opz_basemap_surface, "_cache", None)
+    if cached is not None and cached[0] == key:
+        return cached[1]
+
+    layer = pygame.Surface(map_rect.size)
+    layer.fill(config.COLOR_GEO_BG)
+    center_x = ppi.centerx - map_rect.x
+    center_y = ppi.centery - map_rect.y
+    scale = (ppi.w / 2.0) / max_nm
+
+    depth_query = getattr(world, "depth_m", None)
+    if (coast is not None and getattr(coast, "has_bathymetry", False)
+            and callable(depth_query)):
+        cell_px = 20
+        for py in range(0, map_rect.h, cell_px):
+            for px in range(0, map_rect.w, cell_px):
+                wx = bucket_x + (px + cell_px * .5 - center_x) / scale
+                wy = bucket_y + (py + cell_px * .5 - center_y) / scale
+                if not (0.0 <= wx <= world_size_nm and 0.0 <= wy <= world_size_nm):
+                    continue
+                depth = depth_query(wx, wy)
+                if depth <= 0.0:
+                    continue
+                deep = max(0.0, min(1.0, depth / 900.0))
+                color = tuple(int(shallow + (deep_color - shallow) * deep)
+                              for shallow, deep_color in zip(
+                                  config.COLOR_SHALLOW, config.COLOR_DEEP))
+                pygame.draw.rect(layer, color, (px, py, cell_px + 1, cell_px + 1))
+
+    step = 5 if max_nm <= 20 else (10 if max_nm <= 40 else
+                                   (20 if max_nm <= 80 else 40))
+    half_w_nm = map_rect.w / (2.0 * scale)
+    half_h_nm = map_rect.h / (2.0 * scale)
+    first_x = math.ceil((bucket_x - half_w_nm) / step) * step
+    first_y = math.ceil((bucket_y - half_h_nm) / step) * step
+    value = first_x
+    while value <= bucket_x + half_w_nm:
+        px = int(center_x + (value - bucket_x) * scale)
+        pygame.draw.line(layer, config.COLOR_GEO_GRID,
+                         (px, 0), (px, map_rect.h), 1)
+        value += step
+    value = first_y
+    while value <= bucket_y + half_h_nm:
+        py = int(center_y + (value - bucket_y) * scale)
+        pygame.draw.line(layer, config.COLOR_GEO_GRID,
+                         (0, py), (map_rect.w, py), 1)
+        value += step
+
+    if coast is not None and hasattr(coast, "landmasses"):
+        visible_bounds = (bucket_x - half_w_nm, bucket_y - half_h_nm,
+                          bucket_x + half_w_nm, bucket_y + half_h_nm)
+        for landmass in coast.landmasses[:1024]:
+            left, top, right, bottom = landmass.bounds
+            if (right < visible_bounds[0] or left > visible_bounds[2]
+                    or bottom < visible_bounds[1] or top > visible_bounds[3]):
+                continue
+            polygon = [
+                (int(center_x + (x - bucket_x) * scale),
+                 int(center_y + (y - bucket_y) * scale))
+                for x, y in landmass.points[:20000]
+            ]
+            if len(polygon) >= 3:
+                pygame.draw.polygon(layer, config.COLOR_LAND, polygon)
+                pygame.draw.polygon(layer, config.COLOR_LAND_EDGE, polygon, 2)
+
+        for base in getattr(coast, "airbases", ())[:128]:
+            bx, by = base.get("x"), base.get("y")
+            if not isinstance(bx, (int, float)) or not isinstance(by, (int, float)):
+                continue
+            px = int(center_x + (bx - bucket_x) * scale)
+            py = int(center_y + (by - bucket_y) * scale)
+            if 0 <= px < map_rect.w and 0 <= py < map_rect.h:
+                color = (config.COLOR_DANGER
+                         if base.get("gameplay_role") == "hostile"
+                         else config.COLOR_FLIGHT)
+                pygame.draw.rect(layer, color, (px - 3, py - 3, 7, 7), 1)
+
+    world_left = int(center_x - bucket_x * scale)
+    world_top = int(center_y - bucket_y * scale)
+    world_size_px = int(world_size_nm * scale)
+    pygame.draw.rect(layer, config.COLOR_LAND_EDGE,
+                     (world_left, world_top, world_size_px, world_size_px), 1)
+    _opz_basemap_surface._cache = (key, layer)
+    return layer
+
+
 @localized
 def draw_opz_view(game, tr=None) -> None:
     layout.configure_for(game)
     s = game.screen
     station = pygame.Rect(config.STATION_RECT)
-    scope_w = int(station[2] * 0.66)
-    ppi = opz_ppi_rect()
+    regions = opz_regions()
+    scope_w = regions["sidebar"].x - station.x
+    map_rect = regions["map"]
+    ppi = regions["chart"]
     cx, cy = ppi.center
     r = ppi.w // 2
     max_nm = _opz_radar_range_nm(game)
-    scope_bg = config.COLOR_GEO_BG
-    pygame.draw.circle(s, scope_bg, (cx, cy), r + 12)
+    s.blit(_opz_basemap_surface(game, map_rect, ppi, max_nm), map_rect)
+    pygame.draw.rect(s, config.COLOR_LAND_EDGE, map_rect, 1)
+    pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), r + 7, 1)
     for ring_index, rr in enumerate((r // 4, r // 2, (3 * r) // 4, r), 1):
         pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), rr, 1)
         ring_nm = max_nm * ring_index / 4.0
@@ -769,10 +950,22 @@ def draw_opz_view(game, tr=None) -> None:
     radar_live = station_live and (game.surface_radar_on or game.air_radar_on)
     px_per_nm = r / max_nm
 
+    coast = getattr(game.world, "coast", None)
+    coast_segments = (_contour_segments_in_circle(
+        coast, game.ship.x, game.ship.y, max_nm) if coast is not None else [])
+    for first, second in coast_segments:
+        p1 = (int(cx + (first[0] - game.ship.x) * px_per_nm),
+              int(cy + (first[1] - game.ship.y) * px_per_nm))
+        p2 = (int(cx + (second[0] - game.ship.x) * px_per_nm),
+              int(cy + (second[1] - game.ship.y) * px_per_nm))
+        pygame.draw.line(s, _scale_color(config.COLOR_GRID, .55), p1, p2, 1)
+
     if station_live and game.surface_radar_on:
         coast_range = min(max_nm, game.radar_effective_range("surface"))
-        for first, second in _contour_segments_in_circle(
-                game.world.coast, game.ship.x, game.ship.y, coast_range):
+        for first, second in coast_segments:
+            if max(math.hypot(first[0] - game.ship.x, first[1] - game.ship.y),
+                   math.hypot(second[0] - game.ship.x, second[1] - game.ship.y)) > coast_range:
+                continue
             mx = (first[0] + second[0]) * .5
             my = (first[1] + second[1]) * .5
             bearing = math.degrees(math.atan2(mx - game.ship.x,
@@ -812,20 +1005,24 @@ def draw_opz_view(game, tr=None) -> None:
             hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "AIR", 17)
             layout.blit_line(s, "HSP-5 DL",
                              (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
-    cic_tracks = game.radar_tracks()
+    cic_tracks = (game.opz_tracks() if hasattr(game, "opz_tracks")
+                  else game.radar_tracks())
     selected_id = game.opz_selected_track_id
+    plotted = {}
     for track in (t for t in cic_tracks if _observation_position(t)[0] is None):
-        rad = math.radians(_observation_bearing(track))
-        ex, ey = cx + r * math.sin(rad), cy - r * math.cos(rad)
+        ray = _opz_bearing_ray(game, track, ppi, max_nm)
+        if ray is None:
+            continue
+        start, (sx, sy) = ray
         affiliation = game.opz_affiliation(track["track_id"])
         domain = nato_symbols.domain_for_kind(track["kind"])
         col = nato_symbols.AFFILIATION_COLORS[affiliation]
-        pygame.draw.line(s, col, (cx, cy), (int(ex), int(ey)), 1)
-        sx, sy = cx + (r - 13) * math.sin(rad), cy - (r - 13) * math.cos(rad)
+        pygame.draw.line(s, col, start, (sx, sy), 1)
+        plotted[track.track_id] = (sx, sy)
         nato_symbols.draw_symbol(s, (sx, sy), affiliation, domain, 14,
                                  track["track_id"] == selected_id)
         layout.blit_line(s, track["source"],
-                          (int(ex) - 22, int(ey) - 21, 66, 18), col, size=12)
+                         (int(sx) - 22, int(sy) - 21, 66, 18), col, size=12)
 
     # Gemeinsames Lagebild: Oberflaeche, Luft und Flugkoerper im selben Scope.
     for track in (t for t in cic_tracks if _observation_position(t)[0] is not None):
@@ -836,6 +1033,7 @@ def draw_opz_view(game, tr=None) -> None:
             continue
         bx = cx + dx * px_per_nm
         by = cy + dy * px_per_nm
+        plotted[track.track_id] = (bx, by)
         if track["source"].startswith("RADAR"):
             glow = _radar_glow(game, observations.bearing(track, game.ship))
             if glow > 0.0:
@@ -848,6 +1046,14 @@ def draw_opz_view(game, tr=None) -> None:
             track["track_id"] == selected_id)
         layout.blit_line(s, track["label"],
                           (int(bx) + 12, int(by) - 10, 118, 19), col, size=12)
+
+    for fusion in (track for track in cic_tracks if track.source == "FUSION"):
+        if fusion.track_id not in plotted:
+            continue
+        for member in fusion.members:
+            if member in plotted:
+                pygame.draw.line(s, config.COLOR_WARN, plotted[fusion.track_id],
+                                 plotted[member], 1)
 
     # Die ESSM-Auswahl bleibt bewusst von der allgemeinen CIC-Auswahl getrennt.
     asm_tracks = game.asm_tracks()
@@ -918,7 +1124,7 @@ def draw_opz_view(game, tr=None) -> None:
         color = nato_symbols.AFFILIATION_COLORS[affiliation]
         nato_symbols.draw_symbol(s, (x + 9, py + 9), affiliation, domain, 14)
         label = display_value("affiliation", affiliation)
-        layout.blit_line(s, f"{selected.track_id} {selected.label}",
+        layout.blit_line(s, selected.label,
                          (x + 24, py, w - 24, 18), color, size=13)
         py += 19
         ledger = [
@@ -935,6 +1141,8 @@ def draw_opz_view(game, tr=None) -> None:
              else message("opz.line.age_quality", age=f"{selected.age(game.sim_t):.0f}",
                           quality=f"{selected.display_quality(game.sim_t, game.air_picture.stale_s):.0%}")),
             message("opz.line.assignment", affiliation=label),
+            message("opz.line.classification", classification=display_value(
+                "classification", getattr(selected, "classification", None))),
         ]
         for line in ledger:
             layout.blit_line(s, line, (x, py, w, 17), config.COLOR_TEXT_DIM, size=12)
@@ -945,7 +1153,7 @@ def draw_opz_view(game, tr=None) -> None:
     layout.blit_block(s, "opz.tracks_heading", x, py, w, 19,
                        color=config.COLOR_TEXT, size=14)
     py += 21
-    max_rows = 3
+    max_rows = 2 if selected is not None else 3
     selected_index = next((i for i, track in enumerate(cic_tracks)
                            if track["track_id"] == selected_id), 0)
     start = max(0, min(selected_index - max_rows // 2,
@@ -955,12 +1163,14 @@ def draw_opz_view(game, tr=None) -> None:
         domain = nato_symbols.domain_for_kind(track["kind"])
         color = nato_symbols.AFFILIATION_COLORS[affiliation]
         prefix = ">" if track["track_id"] == selected_id else " "
+        if track["track_id"] in game.opz_fusion.marked:
+            prefix = "*"
         displayed_range = observations.range_nm(track, game.ship)
         distance = f"{displayed_range:4.1f}" if displayed_range is not None else " -- "
         codes = {"UNKNOWN": "UNK", "FRIEND": "FRD",
                  "NEUTRAL": "NEU", "HOSTILE": "FEI"}
         pygame.draw.rect(s, OPZ_DOMAIN_COLORS[domain], (x, py + 4, 3, 11))
-        text = message("opz.line.track", prefix=prefix, track=f"{track['track_id']:<7}",
+        text = message("opz.line.track", prefix=prefix, track=f"{track['label']:<7}",
                        affiliation=codes[affiliation], domain=OPZ_DOMAIN_CODES[domain],
                         bearing=observations.format_bearing(track, game.ship), distance=distance)
         layout.blit_line(s, text, (x + 6, py, w - 6, 19), color, size=13)
@@ -969,18 +1179,24 @@ def draw_opz_view(game, tr=None) -> None:
     py += 5
     pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
     py += 7
-    layout.blit_block(s, message("opz.line.asm_defense", ammo=game.ciws_ammo), x, py, w, 19,
-                       color=config.COLOR_DANGER if asm_tracks else config.COLOR_TEXT_DIM,
+    layout.blit_block(s, message("opz.line.asm_defense", ammo=game.ciws_ammo,
+                                  aa_ammo=getattr(game, "aa_ammo", 0)),
+                       x, py, w, 19,
+                       color=(config.COLOR_DANGER
+                              if asm_tracks or getattr(game, "raiders", None)
+                              else config.COLOR_TEXT_DIM),
                        size=14)
     py += 21
+    content_bottom = regions["classify"].top - 7
     if not asm_tracks:
-        layout.blit_block(s, "panel.no_asm", x, py, w, 18,
-                           color=config.COLOR_TEXT_DIM, size=12)
-        py += 18
+        if py + 18 <= content_bottom:
+            layout.blit_block(s, "panel.no_asm", x, py, w, 18,
+                              color=config.COLOR_TEXT_DIM, size=12)
     else:
         n = len(asm_tracks)
-        start = max(0, min(game.asm_sel - 1, n - 3))
-        for i, track in enumerate(asm_tracks[start:start + 3], start):
+        visible_rows = max(0, min(2, (content_bottom - py) // 19))
+        start = max(0, min(game.asm_sel - 1, n - visible_rows))
+        for i, track in enumerate(asm_tracks[start:start + visible_rows], start):
             sel = i == min(game.asm_sel, n - 1)
             col = config.COLOR_TEXT if sel else config.COLOR_TEXT_DIM
             displayed_range = observations.range_nm(track, game.ship)
@@ -999,11 +1215,14 @@ def draw_opz_view(game, tr=None) -> None:
                            tti=tti_text),
                  x, py, w, 20, color=col, size=12)
             py += 19
-    py += 4
-    for hint in ("control.opz_track", "control.opz_asm"):
-        layout.blit_block(s, hint, x, py, w, 18,
-                          color=config.COLOR_TEXT_DIM, size=12)
-        py += 18
+    for action, key in (("classify", "opz.button.classify"),
+                        ("affiliate", "opz.button.affiliation"),
+                        ("mark", "opz.button.mark"),
+                        ("fusion", "opz.button.fusion")):
+        rect = regions[action]
+        pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
+        layout.blit_line(s, key, rect, config.COLOR_TEXT_DIM, size=11,
+                         align="center")
 
     scales = " ".join(
         f"[{scale:g}]" if scale == max_nm else f"{scale:g}"
@@ -1043,7 +1262,8 @@ def draw_radio_view(game, tr=None) -> None:
             age = report.age(game.sim_t)
             layout.blit_line(
                 s, message("radio.line.signal", prefix='>' if selected else ' ',
-                            label=report.label, bearing=observations.format_bearing(report, game.ship),
+                            label=game.hfdf_display_id(report),
+                            bearing=observations.format_bearing(report, game.ship),
                            error=f"{config.HFDF_BEARING_ERR_DEG:.0f}", age=f"{age:.0f}"),
                 (lx, ly, lw, 24),
                 config.COLOR_WARN if selected else
@@ -1192,7 +1412,7 @@ def helicopter_regions(game=None, station_rect=None) -> dict[str, pygame.Rect]:
     line_h = layout.font(14).get_linesize()
     available = max(1, station.bottom - 12 - top)
     row_h = max(22, line_h + 2, layout.font(15).get_linesize() + 2)
-    status_h = 8 + layout.font(16, bold=True).get_linesize() + 8 + row_h * 5 + 8
+    status_h = 8 + layout.font(16, bold=True).get_linesize() + 8 + row_h * 6 + 8
     resource_cell_h = (layout.font(14).get_linesize()
                        + layout.font(16).get_linesize() + 8)
     resources_h = max(110, layout.font(16, bold=True).get_linesize() + 24
@@ -1249,6 +1469,21 @@ def draw_helicopter_view(game, tr=None) -> None:
                        label_w=210, size=14)
     layout.status_line(s, sx, sy + row_h * 4, sw, "ui.flight_course_true",
                        message("helo.line.course", course=f"{helo.course:05.1f}") if helo.airborne else "--", label_w=210, size=14)
+    dip_state = getattr(helo, "dip_state", "STOWED")
+    dip_depth = getattr(helo, "dip_depth_m", 0.0)
+    dip_target = getattr(helo, "dip_depth_target_m",
+                         config.HELO_DIP_DEPTH_DEFAULT_M)
+    dip_water = getattr(helo, "dip_water_depth_m", 0.0)
+    dip_cooldown = getattr(helo, "dip_ping_cooldown", 0.0)
+    layout.status_line(
+        s, sx, sy + row_h * 5, sw, "helo.dip_sonar",
+        message("helo.line.dip_status",
+                state=localize("enum.helo_dip." + dip_state),
+                depth=f"{dip_depth:.0f}/{dip_target:.0f}",
+                water=f"{dip_water:.0f}", cooldown=f"{dip_cooldown:.0f}"),
+        color=(config.COLOR_OK if dip_state == "DEPLOYED" else
+               config.COLOR_WARN if dip_state != "STOWED" else
+               config.COLOR_TEXT_DIM), label_w=150, size=14)
 
     resources = layout.box(s, regions["resources"], "ui.resources_grid")
     rx, ry, rw, rh = resources
@@ -1288,10 +1523,11 @@ def draw_helicopter_view(game, tr=None) -> None:
     rules = (localize(message("helo.waypoint_rule", bearing=f"{wp_brg:03.0f}",
                               range=f"{wp_dist:.0f}")),
              localize(message("helo.rtb_margin", margin=f"{margin_s / 60:+.0f}")) if helo.airborne else localize("helo.rtb_unavailable"),
-             localize("helo.launch_rule"), localize("helo.weapon_controls"),
-             localize("view.helo.roe"))
+              localize("helo.launch_rule"), localize("helo.dip_controls"),
+              localize("helo.weapon_controls"),
+              localize("view.helo.roe"))
     colors = (config.COLOR_TEXT, margin_color, config.COLOR_TEXT_DIM,
-              config.COLOR_WARN, config.COLOR_WARN)
+              config.COLOR_OK, config.COLOR_WARN, config.COLOR_WARN)
     line_y = my
     line_h = max(21, layout.font(14).get_linesize() + 2)
     for text, color in zip(rules, colors):

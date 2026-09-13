@@ -8,14 +8,30 @@ import random
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace as NS
 
+import numpy as np
 import pytest
 
-from src.commander.bridge import CommanderBridge
+from src.commander.bridge import CommanderBridge, sonar_pcm_s16le
 from src.core import config
 from src.core.game import Game
 from src.core.i18n import Translator
 from src.core.version import APP_VERSION
 from src.sonar.sonar import Contact, SonarSystem
+
+
+def test_sonar_pcm_conversion_is_exact_deterministic_and_does_not_mutate():
+    samples = np.zeros(1024, dtype=np.float32)
+    samples[:8] = [0.0, 0.5, -0.5, 0.75, 1.0, -1.0, np.nan, np.inf]
+    original = samples.copy()
+    first = sonar_pcm_s16le(samples)
+    second = sonar_pcm_s16le(samples)
+    assert first == second and len(first) == 2048
+    assert np.array_equal(samples, original, equal_nan=True)
+    decoded = np.frombuffer(first, dtype="<i2")
+    assert decoded[:6].tolist() == [0, 16384, -16384, 24575, 28500, -28500]
+    assert decoded[6:8].tolist() == [0, 32112]
+    with pytest.raises(ValueError):
+        sonar_pcm_s16le(np.zeros(1023, dtype=np.float32))
 
 
 class Server:
@@ -25,7 +41,10 @@ class Server:
         self.queue = []
         self.publications = []
         self.chart = None
+        self.simlog = b"[]"
+        self.simlog_publications = 0
         self.revocations = 0
+        self.v2_states = self.v2_charts = None
 
     @property
     def lease_generation(self):
@@ -38,6 +57,17 @@ class Server:
             self.chart = chart
         self.state = state
         self.publications.append((state, chart))
+
+    def publish_simlog(self, payload):
+        assert type(payload) is bytes
+        json.loads(payload.decode("utf-8"))
+        self.simlog = payload
+        self.simlog_publications += 1
+
+    def publish_v2(self, states, charts):
+        json.dumps(states, allow_nan=False)
+        json.dumps(charts, allow_nan=False)
+        self.v2_states, self.v2_charts = deepcopy(states), deepcopy(charts)
 
     def drain_commands(self, limit=4):
         assert limit == 4
@@ -214,6 +244,16 @@ def test_phase_transition_rejects_pretransition_commands(game, field, value, pha
     assert server.state["epoch"] > old["epoch"]
     assert server.state["results"][-1]["reasoncode"] == "stale_epoch"
     assert c.player_class is None
+
+
+@pytest.mark.parametrize("field", ["help_open", "options_open", "commander_open"])
+def test_active_remote_crew_keeps_selected_overlay_phase_live(game, field):
+    bridge, server = start(game)
+    game.commander.active_crew = True
+    setattr(game, field, True)
+    bridge.pump(game, server, now=100.1)
+    assert server.state["phase"] == "live"
+    assert server.state["commands_allowed"]
 
 
 def test_blocked_owner_switch_and_resume_both_invalidate(game):
@@ -579,9 +619,6 @@ def test_sonar_fix_evidence_never_falls_back_to_last_seen_or_mirrored_fix(game, 
     c.range_seen = {"fresh": 299, "missing": None, "future": 301,
                     "expired": 300 - lifetime - .01}[evidence]
     c.tma_seen = 299 if evidence == "fresh" else None
-    mirrored = game.opz_tracks()[0]
-    mirrored.source, mirrored.range_nm = "SONAR-" + source.upper(), 999.0
-    mirrored.x, mirrored.y, mirrored.course, mirrored.position_seen = 999.0, 999.0, 999.0, 300.0
     before = deepcopy(c.__dict__)
     bridge, server = start(game)
     row = server.state["tracks"][0]
@@ -602,8 +639,7 @@ def test_missing_sonar_association_does_not_use_public_mirror_fix(game):
     observed = observe(game, source="SONAR-PING")
     observed.range_nm, observed.x, observed.y, observed.position_seen = 12, 30, 40, 0
     bridge, server = start(game)
-    row = server.state["tracks"][0]
-    assert row["x"] is None and row["range_nm"] is None and not row["can_propose"]
+    assert server.state["tracks"] == []
 
 
 def test_public_radar_position_timestamp_and_hfdf_bearing_only(game):
@@ -700,7 +736,7 @@ def test_polling_hidden_truth_traps_and_detached_publications(game, monkeypatch)
 
     with monkeypatch.context() as patch:
         for name in ("subs", "animals", "civilians", "warships", "asms", "flights",
-                     "enemy_torpedoes", "feed", "messages"):
+                     "enemy_torpedoes", "feed"):
             patch.setattr(game, name, Trap())
         for name in ("save_state", "_find_target", "designate_opz_track",
                      "set_target", "_cycle_classification", "_cycle_opz_affiliation"):
@@ -746,8 +782,7 @@ def test_only_main_thread_may_access_game(game):
                 executor.submit(method, *args).result()
 
 
-@pytest.mark.parametrize("replacement", ["track", "contact"])
-def test_reincarnation_between_pumps_rotates_reference_and_expires_proposal(game, replacement):
+def test_contact_reincarnation_between_pumps_rotates_reference_and_expires_proposal(game):
     c = contact(game)
     bridge, server = start(game)
     propose(game, bridge, server)
@@ -755,13 +790,8 @@ def test_reincarnation_between_pumps_rotates_reference_and_expires_proposal(game
     old_label = bridge.proposal["label"]
     old_revision = server.state["revision"]
     request = command(server, command_id="before-replacement")
-    original = game.opz_tracks()[0]
-    if replacement == "track":
-        new = deepcopy(original)
-        assert new == original and new is not original
-        game.air_picture._tracks[original.track_id] = new
-    else:
-        game.sonar.contacts[c.target_id] = deepcopy(c)
+    observation_id = game.private_sonar_observations()[0].observation_id
+    game.sonar.contacts[c.target_id] = deepcopy(c)
     server.send(request)
     bridge.pump(game, server, now=100.2)
     row = server.state["tracks"][0]
@@ -776,17 +806,16 @@ def test_reincarnation_between_pumps_rotates_reference_and_expires_proposal(game
     assert server.state["results"][-1]["reasoncode"] == "unknown_track"
     assert game.target is None and c.player_class is None
     assert game.sonar.contacts[c.target_id].player_class is None
-    assert bridge._refs[original.track_id][0] is game.opz_tracks()[0]
-    assert bridge._refs[original.track_id][1] is game.sonar.contacts[c.target_id]
+    assert bridge._refs[observation_id][0] is game.sonar.contacts[c.target_id]
+    assert bridge._refs[observation_id][1] is game.sonar.contacts[c.target_id]
     assert json.loads(json.dumps(server.state)) == server.state
 
 
-def test_replaced_track_invalidates_local_accept_without_pump(game):
-    contact(game)
+def test_replaced_contact_invalidates_local_accept_without_pump(game):
+    c = contact(game)
     bridge, server = start(game)
     propose(game, bridge, server)
-    old = game.opz_tracks()[0]
-    game.air_picture._tracks[old.track_id] = deepcopy(old)
+    game.sonar.contacts[c.target_id] = deepcopy(c)
     assert not bridge.accept_proposal(game)
     assert bridge.proposal["status"] == "expired" and game.target is None
 
@@ -882,7 +911,7 @@ def test_position_uses_current_ship_and_late_ping_source_without_stale_motion(ga
         c.update_ping(90, 10, 60, 1, game.sim_t)
         c.tma_course, c.tma_speed, c.tma_quality = 222, 9, 1
         c.tma_seen = None
-        assert game.opz_tracks()[0].source == "SONAR-BRG"
+        assert game.private_sonar_observations()[0].source == "SONAR-PING"
     else:
         t.x, t.y, t.position_seen = 110, 100, game.sim_t
         t.bearing, t.range_nm, t.course = 90, 10, 222
@@ -1243,7 +1272,7 @@ def test_generic_labels_never_forward_producer_ids_or_namespace(game, key, kind,
     assert server.state["revision"] == revision
 
 
-def test_generic_and_sonar_projection_never_even_read_producer_label_or_contact_number(game, monkeypatch):
+def test_generic_projection_never_reads_producer_labels_or_target_ids(game, monkeypatch):
     c = contact(game)
     for key, kind, source in (("S-1", "SURFACE", "ESM"), ("W-2", "SURFACE", "RADAR-S"),
                               ("H-3", "HF", "HFDF"), ("M-4", "ASM", "RADAR-L")):
@@ -1252,10 +1281,12 @@ def test_generic_and_sonar_projection_never_even_read_producer_label_or_contact_
     def forbidden(*args):
         raise AssertionError("producer identity read for a neutral label")
 
-    monkeypatch.setattr(type(game.opz_tracks()[0]), "label", property(forbidden), raising=False)
-    monkeypatch.setattr(Contact, "id", property(forbidden), raising=False)
+    monkeypatch.setattr(type(next(iter(game.air_picture._tracks.values()))),
+                        "label", property(forbidden), raising=False)
     bridge, server = start(game)
     assert [t["label"] for t in server.state["tracks"]] == [f"C{i:03d}" for i in range(1, 6)]
+    sonar_v2 = server.v2_states["sonar"]["sonar"]["observations"]
+    assert next(row for row in sonar_v2 if row["source"].startswith("SONAR"))["label"] == f"K{c.id:02d}"
     sonar = next(t for t in server.state["tracks"] if t["can_propose"])
     server.send(command(server, "propose", ref=sonar["ref"]))
     bridge.pump(game, server, now=100.1)
@@ -1268,8 +1299,7 @@ def test_only_modeled_ais_names_are_preserved_with_bounded_string_values(game, n
     t = observe(game, "S-987654321", "AIS", "RADAR-S/AIS")
     t.label = name
     bridge, server = start(game)
-    expected = name[:128] if type(name) is str and name.strip() else "C001"
-    assert server.state["tracks"][0]["label"] == expected
+    assert server.state["tracks"][0]["label"] == "C001"
     assert "987654321" not in json.dumps(server.state)
 
 
@@ -1286,12 +1316,12 @@ def test_losing_ais_source_does_not_carry_forward_observed_name(game):
     t.source = "RADAR-S/AIS"
     t.label = "MV Newly Observed Name"
     bridge.pump(game, server, now=100.2)
-    assert server.state["tracks"][0]["label"] == t.label
+    assert server.state["tracks"][0]["label"] == "C001"
     revision = server.state["revision"]
     t.label = "MV Changed Observation"
     bridge.pump(game, server, now=100.3)
-    assert server.state["tracks"][0]["label"] == t.label
-    assert server.state["revision"] > revision
+    assert server.state["tracks"][0]["label"] == "C001"
+    assert server.state["revision"] == revision
 
 
 def test_label_counter_is_bounded_never_wraps_and_resets_only_with_session(game):

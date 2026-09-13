@@ -441,3 +441,17 @@ composite spectral/DEMON diagrams (113 cruise and 113 high).
   commit records that exact accepted content without subsequent production,
   data, asset or test changes.
 - Release status remains HOLD for the listed physical hardware checks.
+
+## 2026-09-13 0.2.0 Software Acceptance
+
+- Revision: complete uncommitted 0.2.0 candidate; no push or release upload.
+- Full suite: 2699 passed in 1150.57 seconds, including real Chromium desktop
+  and mobile Remote Crew contracts.
+- Focused follow-up: input/bridge 237, station/session/sonar 378, and responsive
+  layout/audio/assets 70 passed.
+- Catalog: 109 acoustic profiles valid.
+- Smoke: `SMOKE-OK`, including save/load and all nine stations.
+- Packaging: 0.2.0 sdist and wheel built successfully.
+- `git diff --check`: passed.
+- Release status: HOLD only for physical multi-device, WLAN, audio, sustained
+  load and thermal acceptance on the target uConsole hardware.

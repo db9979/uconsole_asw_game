@@ -5,6 +5,7 @@ import math
 from src.core import config
 from src.core.i18n import localize, message
 from src.sensors.tracks import SensorTrack
+from src.sensors.fusion import OPZObservation
 from src.ui import layout
 
 
@@ -25,7 +26,7 @@ def position(observation):
     # SensorTrack and its compatibility dictionaries expose x/y as observed
     # state. Sonar Contact uses observed_x/y so similarly named entity fields
     # can never become a UI fallback.
-    if isinstance(observation, (dict, SensorTrack)):
+    if isinstance(observation, (dict, SensorTrack, OPZObservation)):
         x = value(observation, "x")
         y = value(observation, "y")
         if x is not None and y is not None:

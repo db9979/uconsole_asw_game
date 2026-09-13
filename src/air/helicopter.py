@@ -46,6 +46,11 @@ class Helicopter:
         self.fuel_s = 0.0
         self.waypoint_x = None
         self.waypoint_y = None
+        self.dip_state = "STOWED"
+        self.dip_depth_m = 0.0
+        self.dip_depth_target_m = config.HELO_DIP_DEPTH_DEFAULT_M
+        self.dip_water_depth_m = 0.0
+        self.dip_ping_cooldown = 0.0
 
     @property
     def airborne(self) -> bool:
@@ -58,6 +63,9 @@ class Helicopter:
         self.y = frigate.y
         self.course = frigate.course
         self.fuel_s = config.HELO_FUEL_S
+        self.dip_state = "STOWED"
+        self.dip_depth_m = 0.0
+        self.dip_water_depth_m = 0.0
         if self.waypoint_x is None or self.waypoint_y is None:
             self.set_waypoint(frigate.x + 2.0 * math.sin(math.radians(frigate.course)),
                               frigate.y - 2.0 * math.cos(math.radians(frigate.course)))
@@ -69,20 +77,106 @@ class Helicopter:
     def order_return(self) -> None:
         if self.airborne:
             self.state = "ZURUECK"
+            if self.dip_state != "STOWED":
+                self.dip_state = "RETRIEVING"
+
+    @property
+    def hovering(self) -> bool:
+        return self.airborne and self.dip_state != "STOWED"
+
+    @property
+    def dip_available(self) -> bool:
+        return self.state == "AUF" and self.dip_state == "DEPLOYED"
+
+    @property
+    def dip_ping_ready(self) -> bool:
+        return self.dip_available and self.dip_ping_cooldown <= 0.0
+
+    def dip_depth_limit(self, world) -> float:
+        if not self.water_entry_clear(world):
+            return 0.0
+        water_depth = float(world.depth_m(self.x, self.y))
+        return min(config.HELO_DIP_DEPTH_MAX_M,
+                   max(0.0, water_depth - config.HELO_DIP_BOTTOM_CLEARANCE_M))
+
+    def set_dip_depth(self, depth_m: float, world) -> bool:
+        limit = self.dip_depth_limit(world)
+        if limit < config.HELO_DIP_DEPTH_MIN_M:
+            return False
+        self.dip_depth_target_m = config.clamp(
+            depth_m, config.HELO_DIP_DEPTH_MIN_M, limit)
+        if (self.dip_state == "DEPLOYED"
+                and abs(self.dip_depth_m - self.dip_depth_target_m) > 1e-9):
+            self.dip_state = "DEPLOYING"
+        return True
+
+    def set_dipping(self, deployed: bool, world) -> bool:
+        if not self.airborne or self.state != "AUF":
+            return False
+        if deployed:
+            if self.dip_state in ("DEPLOYING", "DEPLOYED"):
+                return True
+            if not self.set_dip_depth(self.dip_depth_target_m, world):
+                return False
+            self.dip_water_depth_m = float(world.depth_m(self.x, self.y))
+            self.dip_state = "DEPLOYING"
+        else:
+            if self.dip_state == "STOWED":
+                return True
+            self.dip_state = "RETRIEVING"
+        return True
+
+    def fire_dipping_ping(self) -> bool:
+        if not self.dip_ping_ready:
+            return False
+        self.dip_ping_cooldown = config.HELO_DIP_PING_COOLDOWN_S
+        return True
+
+    def _update_dipping(self, dt: float, world) -> None:
+        if self.dip_state == "STOWED":
+            self.dip_depth_m = 0.0
+            return
+        if self.dip_state == "RETRIEVING":
+            self.dip_depth_m = max(
+                0.0, self.dip_depth_m - config.HELO_DIP_DEPTH_RATE_M_S * dt)
+            if self.dip_depth_m <= 0.0:
+                self.dip_state = "STOWED"
+                self.dip_water_depth_m = 0.0
+            return
+        limit = self.dip_depth_limit(world)
+        if limit < config.HELO_DIP_DEPTH_MIN_M:
+            self.dip_state = "RETRIEVING"
+            return
+        self.dip_water_depth_m = float(world.depth_m(self.x, self.y))
+        self.dip_depth_target_m = min(self.dip_depth_target_m, limit)
+        step = config.HELO_DIP_DEPTH_RATE_M_S * dt
+        self.dip_depth_m += config.clamp(
+            self.dip_depth_target_m - self.dip_depth_m, -step, step)
+        if abs(self.dip_depth_m - self.dip_depth_target_m) <= 1e-9:
+            self.dip_state = "DEPLOYED"
 
     def update(self, dt: float, frigate, world, recovery_available: bool = True) -> None:
         """dt in Simulationssekunden. Haelt Patrouillen-Offset vor der
         Fregatte (AUF) bzw. fliegt zurück (ZURUECK)."""
+        self.dip_ping_cooldown = max(0.0, self.dip_ping_cooldown - dt)
         if not self.airborne:
             return
         self.fuel_s = max(0.0, self.fuel_s - dt)
+        self._update_dipping(dt, world)
         home_dist = math.hypot(frigate.x - self.x, frigate.y - self.y)
         return_time = home_dist / config.kn_to_nm_per_s(self.SPEED_KN)
         if (self.state == "AUF"
                 and self.fuel_s <= return_time + config.HELO_FUEL_RESERVE_S):
             self.state = "ZURUECK"
+            if self.dip_state != "STOWED":
+                self.dip_state = "RETRIEVING"
         if self.fuel_s <= 0.0:
             self.state = "VERLOREN"
+            self.dip_state = "STOWED"
+            self.dip_depth_m = 0.0
+            self.dip_water_depth_m = 0.0
+            return
+        if self.hovering:
             return
         if self.state == "ZURUECK":
             dist = math.hypot(frigate.x - self.x, frigate.y - self.y)

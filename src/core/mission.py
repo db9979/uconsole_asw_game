@@ -51,7 +51,7 @@ class Mission:
         else:
             base = "Alle U-Boote versenken"
         if self.asm_count:
-            base += f" | {self.asm_count}× ASM!"
+            base += f" | {self.asm_count}× ASM! | Luftangriffe!"
         if self.warship_count:
             base += f" | {self.warship_count}× feindliches Oberflächenschiff!"
         return base

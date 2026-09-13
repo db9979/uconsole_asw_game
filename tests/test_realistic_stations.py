@@ -226,7 +226,8 @@ def test_trackball_axes_match_opz_asm_and_cic_selection():
     for _ in range(2):
         game.handle_event(pygame.event.Event(
             pygame.JOYAXISMOTION, axis=1, value=1.0))
-    assert game.opz_selected_track_id == "M-2"
+    assert game.opz_selected_track_id in {
+        track.track_id for track in game.opz_tracks()}
 
 
 def test_procedural_world_snapshot_survives_save_load():
@@ -243,13 +244,15 @@ def test_opz_designation_hands_sonar_solution_to_weapons():
     target = game.subs[0]
     contact = Contact(77, target.id, "passiv", "sub")
     contact.update_passive(90.0, 1.0, .8, "", game.sim_t)
+    contact.player_class = "U_BOOT"
+    contact.released_to_opz = True
     game.sonar.contacts[target.id] = contact
     game.air_picture.observe(
         track_id=f"U-{target.id}", kind="SUB", target_id=target.id,
         source="SONAR-BRG", bearing=90.0, range_nm=None,
         observer_x=game.ship.x, observer_y=game.ship.y, course=None,
         quality=.8, now=game.sim_t, label="K77")
-    game.opz_selected_track_id = f"U-{target.id}"
+    game.opz_selected_track_id = game.opz_tracks()[0].track_id
 
     game.designate_opz_track()
 

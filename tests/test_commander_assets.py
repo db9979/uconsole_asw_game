@@ -47,11 +47,16 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert len(ids) == len(set(ids))
     assert set(re.findall(r'\$\("([\w-]+)"\)', js)) <= set(ids)
     code = next(attrs for _, attrs in document.elements if attrs.get("id") == "code")
+    name = next(attrs for _, attrs in document.elements if attrs.get("id") == "name")
     assert code["maxlength"] == "6" and code["pattern"] == "[0-9]{3}[A-Za-z]{3}"
     assert code["autocapitalize"] == "characters" and code["autocomplete"] == "off"
     assert code["placeholder"] == "482KMT" and code["aria-describedby"] in ids
-    tabs = [attrs for _, attrs in document.elements if attrs.get("role") == "tab"]
-    panels = [attrs for _, attrs in document.elements if attrs.get("role") == "tabpanel"]
+    assert name["minlength"] == "1" and name["maxlength"] == "32"
+    assert "required" in name and name["data-i18n-placeholder"] == "pair_name_default"
+    tabs = [attrs for _, attrs in document.elements
+            if attrs.get("role") == "tab" and attrs.get("id", "").startswith("tab-")]
+    panels = [attrs for _, attrs in document.elements
+              if attrs.get("role") == "tabpanel" and attrs.get("id", "").startswith("panel-")]
     assert len(tabs) == len(panels) == 4
     assert sum(tab.get("aria-selected") == "true" and tab.get("tabindex") == "0"
                for tab in tabs) == 1
@@ -75,14 +80,29 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert "default-src 'none'" in csp
     assert "connect-src 'self'" in csp
     assert "img-src 'self'" in csp
+    assert "media-src 'none'" in csp
     assert "unsafe-inline" not in csp and "unsafe-eval" not in csp
     for forbidden in ("innerHTML", "outerHTML", "insertAdjacentHTML", "localStorage", "sessionStorage", "indexedDB", "document.cookie", "Math.random", "getUserMedia", "eval(", "new Function", "WebSocket", "https://", "http://"):
         assert forbidden not in js
     assert "@import" not in css and "url(" not in css
     assert "AbortController" in js and 'headers.Authorization = `Bearer ${credential}`' in js
+    assert 'credentials: "same-origin"' in js and 'request("/session", { auth: false, version: 2 })' in js
+    assert 'headers["X-U-Jagd-CSRF"] = csrf' in js
+    assert 'mutateStation("/stations/request", { station })' in js
+    assert 'mutateStation("/stations/activate"' in js
+    assert 'mutateStation("/stations/release"' in js
+    assert "active_generation: session.active_generation" in js
+    assert 'started - lastSessionFetch >= 1000' in js
+    assert 'window.addEventListener("pagehide"' not in js
     assert "crypto.randomUUID" in js and "crypto.getRandomValues" in js
     assert 'request("/state")' in js and 'request("/chart")' in js
     assert 'request("/commands"' in js and 'expected: 202' in js
+    assert 'request("/results"' in js and "next_command_seq" in js
+    assert "`bridge_set_${kind}`" in js
+    bridge_sender = js.split("async function sendBridgeOrder", 1)[1].split(
+        "async function pollV2Result", 1)[0]
+    assert "setTimeout" not in bridge_sender and "transmitCommand" not in bridge_sender
+    assert "secureId()" in bridge_sender and "station_generation" in bridge_sender
     assert "result.reasoncode" in js and not re.search(r"result\.reason\b", js)
     lookout_renderer = js.split("function drawLookout()", 1)[1].split(
         "function changeLookoutRange", 1)[0]
@@ -96,10 +116,230 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert js.count('request("/contacts", { auth: false })') == 1
     assert "innerHTML" not in analyzer_renderer
     assert 'image.alt = descriptions.join(" ")' in analyzer_renderer
+    sonar_toggle = next(attrs for _, attrs in document.elements
+                        if attrs.get("id") == "sonar-live-toggle")
+    assert sonar_toggle["type"] == "button" and sonar_toggle["aria-pressed"] == "false"
+    assert js.count('fetch("/api/v2/sonar/audio"') == 1
+    assert "if (!sonarAudioEnabled || sonarAudioController) return" in js
+    assert "sonarAudioSources.length >= sonarAudioMaxSources" in js
+    assert "queuedAhead >= sonarAudioTargetAhead" in js
+    assert "start > audio.currentTime + 1.0" in js
+    assert 'response.headers.get("content-length") !== "2048"' in js
+    assert 'response.headers.get("x-u-jagd-pcm") !== "s16le"' in js
+    assert "sonarAudioController?.abort()" in js and "flushSonarAudioQueue()" in js
+    toggle_handler = js.split('$("sonar-live-toggle").addEventListener("click"', 1)[1]
+    assert "new Audio()" in toggle_handler and "scheduleSonarAudioPoll()" in toggle_handler
     assert "machine.cruise_lines" in analyzer_renderer
     assert "machine.cruise_broadband" in analyzer_renderer
     assert "analyzer_spectrum_legend" in html
     assert "analyzer_hypothesis_legend" in html
+
+
+def test_v2_roles_have_dedicated_payload_renderers():
+    html = ASSETS.joinpath("index.html").read_text()
+    js = ASSETS.joinpath("app.js").read_text()
+    document = Document(html)
+    roles = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
+             "engine", "helicopter", "eloka")
+    sections = {attrs.get("data-station-role"): attrs for _, attrs in document.elements
+                if attrs.get("data-station-role")}
+    renderers = js[js.index("  function tacticalEntries"):js.index("  function visualContext")]
+    labels = set(re.findall(r'\["([a-z][a-z_]+)",', renderers))
+    en, de = catalogs()
+    assert not {key for key in labels if PREFIX + key not in en or PREFIX + key not in de}
+    assert set(sections) == set(roles)
+    assert all(sections[role]["id"] == f"station-{role}" and
+               sections[role]["aria-labelledby"] == f"station-{role}-title"
+               for role in roles)
+    distinctive = {
+        "Bridge": ("navigation", "orders", "tactical_summary", "rudder_angle", "yaw_rate"),
+        "Sonar": ("observations", "settings", "harmonic_hz", "audio_enabled", "quiet_mode"),
+        "Weapons": ("inventory", "readiness", "designated_target", "own_weapons", "chaff_ready"),
+        "Damage": ("compartments", "teams", "total", "sunk"),
+        "Opz": ("observations", "fusions", "radar", "source_classifications", "own_assets"),
+        "Radio": ("observations", "logged_fixes", "logged_bearings", "messages", "observer_x"),
+        "Engine": ("propulsion", "machinery", "environment_effects", "telegraph", "cavitating"),
+        "Helicopter": ("asset", "waypoint", "buoys", "battery_s", "airborne"),
+        "Eloka": ("intercepts", "frequency_hz", "prf_hz", "modulation", "annotation", "candidates", "correlations"),
+    }
+    for index, (name, fields) in enumerate(distinctive.items()):
+        start = js.index(f"function render{name}Station(payload)")
+        next_names = list(distinctive)[index + 1:index + 2]
+        end = js.index(f"function render{next_names[0]}Station(payload)", start) if next_names else js.index("function renderStationView()", start)
+        renderer = js[start:end]
+        assert "innerHTML" not in renderer
+        assert all(field in renderer for field in fields), (name, fields, renderer)
+    station_dispatch = js.split("function renderStationView()", 1)[1].split("function clearRoleState()", 1)[0]
+    assert "v2State[active]" in station_dispatch
+    assert 'section.querySelectorAll("dl, .station-list")' in station_dispatch
+    assert '!["sonar", "opz"].includes(active)' in station_dispatch
+    assert "innerHTML" not in station_dispatch
+
+
+def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
+    html = ASSETS.joinpath("index.html").read_text()
+    js = ASSETS.joinpath("app.js").read_text()
+    document = Document(html)
+    ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
+    canvases = {attrs["id"] for tag, attrs in document.elements
+                if tag == "canvas" and "id" in attrs}
+    expected = {"role-map", "sonar-broadband", "sonar-lofar", "sonar-demon",
+                "sonar-tma-plot", "sonar-environment", "sonar-active",
+                "damage-schematic", "engine-instruments", "eloka-scope",
+                "weapons-system"}
+    assert expected <= canvases
+    assert {f"{name}-text" for name in (
+        "role-map", "sonar-broadband", "sonar-lofar", "sonar-demon",
+        "sonar-tma", "sonar-environment", "sonar-active",
+        "damage-schematic", "engine-instruments", "eloka-scope",
+        "weapons-system")} <= ids
+    for function, fields in {
+        "drawSonarVisuals": ("broadband", "lofar", "demon", "tma", "bt",
+                             "active_echoes", "receiver"),
+        "drawRoleMap": ("landmasses", "range_uncertainty_nm", "bearingLogs",
+                        "fixes", "assets", "members", "sweep_bearing"),
+        "drawDamageVisual": ("compartments", "flood", "fire", "trend", "teams"),
+        "drawEngineVisual": ("telegraph", "rpm", "speed", "noise",
+                             "effective_speed_cap", "roll", "pitch"),
+        "drawElokaVisual": ("bearing", "frequency_hz", "prf_hz",
+                            "modulation", "candidates", "correlations"),
+        "drawWeaponsVisual": ("readiness", "interlock", "tubes", "nixies",
+                              "active_assets"),
+    }.items():
+        body = js.split(f"function {function}", 1)[1].split("\n  function ", 1)[0]
+        assert "getContext" in js
+        assert all(field in body for field in fields), (function, fields)
+    assert all(field in js.split("function mapPayload", 1)[1].split(
+        "function drawRoleMap", 1)[0] for field in
+        ("logged_bearings", "logged_fixes", "waypoint", "buoys", "active_assets"))
+    validator = js.split("function validateV2State", 1)[1].split(
+        "function adaptV2State", 1)[0]
+    for field in ("visualization", "threat", "active_assets", "trend",
+                  "asm_observations", "covariance_nm2", "tas_performance",
+                  "rtb_margin_s", "position_available"):
+        assert field in validator
+    assert 'const forbidden = new Set(["target_id", "track_id", "kind", "signature", "emitter_key", "seed", "rng"])' in validator
+    clearer = js.split("function clearRoleState", 1)[1].split(
+        "function renderLobby", 1)[0]
+    assert "clearVisuals()" in clearer and "releaseCanvas" in js.split(
+        "function clearVisuals", 1)[1].split("function tacticalEntries", 1)[0]
+    assert "roleMapViews[role]" in js and '("role-map").addEventListener("wheel"' in js
+    assert '("role-map").addEventListener("pointerdown"' in js
+    assert '("role-map").addEventListener("keydown"' in js
+
+
+def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
+    html = ASSETS.joinpath("index.html").read_text()
+    js = ASSETS.joinpath("app.js").read_text()
+    ids = {attrs["id"] for _, attrs in Document(html).elements if "id" in attrs}
+    assert {"damage-team", "analysis-sensors", "analysis-emitters"} <= ids
+    assert "const maxRoleMapHits = 512" in js
+    assert "roleMapHits.length < maxRoleMapHits" in js
+    role_pointer = js.split('$("role-map").addEventListener("pointerdown"', 1)[1].split(
+        '$("role-map").addEventListener("keydown"', 1)[0]
+    assert "Math.hypot(dx, dy) > 5" in role_pointer
+    assert "selectTrack(contact.ref)" in role_pointer
+    assert 'sendStationAction("helicopter_set_waypoint", {x: worldX, y: worldY})' in role_pointer
+    assert "stationActionAvailable()" in role_pointer
+    damage_pointer = js.split('$("damage-schematic").addEventListener("click"', 1)[1].split(
+        '$("follow").addEventListener', 1)[0]
+    assert '"damage_unassign_team" : "damage_assign_team"' in damage_pointer
+    assert "stationActionAvailable()" in damage_pointer
+    animation = js.split("function currentOpzSweepBearing", 1)[1].split(
+        "function roleMapGeometry", 1)[0]
+    assert "requestAnimationFrame(animate)" in animation
+    assert "cancelAnimationFrame(opzSweepFrame)" in animation
+    assert "document.hidden" in animation and 'v2State?.phase === "live"' in animation
+    assert "radar.surface || radar.air" in animation
+    assert "radar.sweep_rate_deg_s" in animation and ": 90" in animation
+    validator = js.split("function validateV2State", 1)[1].split("function adaptV2State", 1)[0]
+    assert '"sweep_rate_deg_s"' in validator
+    assert '"speed_kn", "observer_x", "observer_y"' in validator
+    assert '["speed", unit(row.speed_kn, "kn")]' in js
+
+
+def test_reference_catalog_renders_existing_sensor_and_emitter_details():
+    js = ASSETS.joinpath("app.js").read_text()
+    css = ASSETS.joinpath("style.css").read_text()
+    renderer = js.split("function renderContactAnalysis", 1)[1].split(
+        "function request", 1)[0]
+    for field in ("modes", "emits", "synthetic_range_nm", "sensitivity_db",
+                  "cadence_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
+                  "depth_uncertainty_m", "frequency_band_hz", "prf_band_hz",
+                  "modulation_codes"):
+        assert field in renderer
+    assert '$("analysis-sensors")' in renderer
+    assert '$("analysis-emitters")' in renderer
+    assert "innerHTML" not in renderer
+    assert re.search(r"\.analyzer-detail \{[^}]*overflow-y: auto", css)
+    assert not re.search(r"\.analysis-component-list \{[^}]*overflow:", css)
+
+
+def test_v2_nonlethal_station_controls_are_native_and_exactly_wired():
+    html = ASSETS.joinpath("index.html").read_text()
+    js = ASSETS.joinpath("app.js").read_text()
+    document = Document(html)
+    ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
+    assert {
+        "sonar-control-page", "sonar-bearing", "sonar-clear-focus",
+        "sonar-array-mode", "sonar-tas", "sonar-depth", "sonar-bt",
+        "sonar-ping", "sonar-tma", "sonar-gain", "sonar-band",
+        "sonar-notch", "sonar-peak", "sonar-harmonic-input",
+        "opz-designate", "engine-telegraph", "engine-speed", "engine-quiet",
+        "helicopter-launch", "helicopter-return", "helicopter-x",
+        "helicopter-y", "helicopter-buoy", "station-command-status",
+    } <= ids
+    actions = {
+        "engine_set_telegraph", "engine_set_speed", "engine_set_quiet_mode",
+        "damage_assign_team", "damage_unassign_team", "radio_capture_hfdf",
+        "eloka_annotate", "eloka_clear_annotation",
+        "sonar_set_listen_bearing", "sonar_set_focus", "sonar_clear_focus",
+        "sonar_set_array_mode", "sonar_set_tas", "sonar_set_tow_depth",
+        "sonar_measure_bt", "sonar_active_ping", "sonar_set_tma_enabled",
+        "sonar_set_gain", "sonar_set_band_preset", "sonar_set_notch",
+        "sonar_set_peak_hold", "sonar_set_harmonic",
+        "sonar_designate_target", "opz_designate_target",
+        "helicopter_launch", "helicopter_return", "helicopter_set_waypoint",
+        "helicopter_deploy_buoy",
+    }
+    assert all(f'"{action}"' in js for action in actions)
+    assert "sendStationAction(action, params)" in js
+    assert "data-station-action" not in html  # Row actions are built from opaque projected refs.
+    assert "sonar audio" not in html.lower()
+    assert 'control.id === "sonar-control-page"' in js
+    assert 'stationDrafts.clear()' in js and 'protocolMode === "v2" && epochChanged' in js
+    assert 'control.closest("[data-station-role]")' in js
+
+
+def test_v2_direct_fire_controls_use_opaque_projections_and_exact_actions():
+    html = ASSETS.joinpath("index.html").read_text()
+    js = ASSETS.joinpath("app.js").read_text()
+    document = Document(html)
+    ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
+    assert {
+        "weapons-fire-target", "weapons-fire-depth", "weapons-fire-torpedo",
+        "weapons-fire-helicopter", "weapons-fire-nixie", "weapons-fire-status",
+        "opz-fire-target", "opz-fire-essm", "opz-fire-chaff", "opz-fire-status",
+        "helicopter-fire-target", "helicopter-fire-depth",
+        "helicopter-fire-torpedo", "helicopter-fire-status",
+    } <= ids
+    actions = {"weapons_launch_torpedo", "helicopter_launch_torpedo",
+               "weapons_deploy_nixie", "opz_launch_essm", "opz_launch_chaff"}
+    assert all(f'data-fire-action="{action}"' in html for action in actions)
+    direct = js.split("function directFireSpec", 1)[1].split(
+        "function renderStationControls", 1)[0]
+    assert all(f'"{action}"' in direct for action in actions)
+    assert "target_choices" in direct and "asm_observations" in direct
+    assert "selectedTrack" not in direct and "selected =" not in direct
+    assert "target_id" not in direct and "track_id" not in direct
+    assert "session?.grants.direct_fire === true" in direct
+    assert "chartMatches(snapshot)" in direct and "!pending" in js.split(
+        "function stationActionAvailable", 1)[1].split("function renderOpzControls", 1)[0]
+    assert "performance.now() + 5000" in direct
+    assert "station_generation" in direct and "v2State?.epoch" in direct
+    assert "sendStationAction(action, spec.params)" in direct
+    assert "transmitCommand" not in direct
+    assert all(term not in html for term in ("target_id", "track_id", "profile_key"))
 
 
 def test_guide_is_complete_static_content_with_panel_local_navigation():
@@ -169,9 +409,20 @@ def test_commander_catalogs_cover_markup_and_script():
     markup_keys = set(re.findall(r'data-i18n(?:-aria)?="([\w]+)"', html))
     literal_keys = set(re.findall(r'\bt\("([\w]+)"', js))
     metric_keys = set(re.findall(r'\["([a-z_]+)", (?:unit\(|number\(|t\(|`|track\.|item\.|helo\.|typeof |finite\()', js))
+    metric_keys -= {"synthetic_range_nm", "sensitivity_db", "cadence_s", "depth_uncertainty_m",
+                    "bearing_uncertainty_deg", "range_uncertainty_nm"}
     dynamic_keys = set(re.findall(r'"((?:aff_|class_|domain_|command_|proposal_|connection_|sound_|phase_|damage_|helo_|reason_)[a-z_]+)"', js))
+    dynamic_keys -= {"damage_assign_team", "damage_unassign_team"}
     dynamic_keys |= {"connection_syncing", "connection_connected", "connection_stale", "connection_unpaired"}
-    assert {PREFIX + key for key in markup_keys | literal_keys | metric_keys | dynamic_keys} <= english.keys()
+    dynamic_keys |= {"connection_lobby", "lobby_pending", "lobby_waiting", "lobby_request_cleared",
+                     "station_mutation_failed", "station_request", "station_requested",
+                     "occupancy_available", "occupancy_occupied", "occupancy_mine",
+                     "role_assigned", "role_release", "role_commands", "role_read_only", "role_revoked"}
+    dynamic_keys |= {f"station_{station}" for station in
+                     ("bridge", "sonar", "weapons", "damage", "opz", "radio",
+                      "engine", "helicopter", "eloka")}
+    required = {PREFIX + key for key in markup_keys | literal_keys | metric_keys | dynamic_keys}
+    assert required <= english.keys(), sorted(required - english.keys())
     for reason in ("invalid_schema", "unauthorized", "stale_session", "stale_epoch", "commands_blocked",
                    "duplicate_id", "revision_conflict", "unknown_track", "ineligible_track", "ok"):
         assert f'{reason}: "reason_{reason}"' in js
@@ -207,13 +458,27 @@ let lastSignal = null;
 const liveFixture = __STATE__;
 const statusFixture = __STATUS_STATE__;
 const fixture = structuredClone(statusFixture);
+const simlogFixture = [{seq: 1, t: 10, stamp: "00:10", cat: "state", text: "", data: {
+  mission_t: 10, timescale: 1, result: null,
+  ship: {x: 250, y: 250, course: 15, speed: 12, damage: 0, sunk: false, stations: {}},
+  world: {hour: 12, sea_state: 3, night: false}, weapons: {},
+  subs: [{id: 1, x: 100, y: 100}], surfaces: [{id: 2, x: 150, y: 150}],
+  animals: [{id: 3, x: 200, y: 200}], torpedoes: [{id: 4, x: 220, y: 220}],
+  enemy_torpedoes: [{id: 5, x: 230, y: 230}], decoys: [{id: 6, x: 240, y: 240}],
+  asms: [{seq: 7, x: 260, y: 260}], essms: [{seq: 8, x: 270, y: 270}],
+  asrocs: [{seq: 9, x: 280, y: 280}], nixies: [{seq: 10, x: 290, y: 290}],
+  buoys: [{seq: 11, x: 300, y: 300}], flights: [{seq: 12, x: 310, y: 310}],
+  raiders: [{seq: 13, x: 320, y: 320}], helo: {x: 330, y: 330, airborne: true}
+}}];
 const drawnFixes = new Map();
 const drawnSonarFixes = new Map();
 let canvasFrame = {texts: [], translations: [], fills: 0};
 let lookoutFrame = {texts: [], translations: [], rotations: [], arcs: [], fills: 0};
+let simlogMapTexts = [];
 const nativeFillRect = CanvasRenderingContext2D.prototype.fillRect;
 CanvasRenderingContext2D.prototype.fillRect = function (...args) {
   if (this.canvas.id === "lookout") lookoutFrame = {texts: [], translations: [], rotations: [], arcs: [], fills: 0};
+  else if (this.canvas.id === "simlog-map") simlogMapTexts = [];
   else canvasFrame = {texts: [], translations: [], fills: 0};
   return nativeFillRect.apply(this, args);
 };
@@ -244,6 +509,10 @@ CanvasRenderingContext2D.prototype.fillText = function (text, x, y, ...rest) {
     assert(x >= 0 && x + this.measureText(text).width <= this.canvas.clientWidth &&
       y >= parseFloat(this.font) && y <= this.canvas.clientHeight, "numeric chart labels remain inside the canvas");
   }
+  if (this.canvas.id === "simlog-map") {
+    const height = parseFloat(this.font);
+    simlogMapTexts.push({text, x, y: y - height, right: x + this.measureText(text).width, bottom: y + 3});
+  }
   (this.canvas.id === "lookout" ? lookoutFrame : canvasFrame).texts.push(text);
   if (fixture.tracks.some((track) => track.label === text)) drawnFixes.set(text, {x, y});
   if (/ (PING|TMA|SONOBUOY)$/.test(text)) drawnSonarFixes.set(text, {x, y});
@@ -268,6 +537,7 @@ window.fetch = async (url, options = {}) => {
     assert(options.signal instanceof AbortSignal, "every request has an abort deadline");
     assert(!String(url).includes("test-secret"), "token absent from URL");
     const path = new URL(url, location.href).pathname;
+    if (path === "/api/v2/session") return new Response("{}", {status: 404});
     if (path === "/api/v1/ui" || path === "/api/v1/contacts") {
       assert(!options.headers.Authorization, "public static data has no bearer token");
       return await nativeFetch(url, options);
@@ -315,6 +585,7 @@ window.fetch = async (url, options = {}) => {
       const picture = fixture.ownship.x === null ? {size_nm: 500, landmasses: [], disclaimer: ""} : chartFixture;
       return new Response(JSON.stringify({...picture, revision: mismatch ? "wrong-chart" : fixture.chart_revision}), {status: 200});
     }
+    if (path === "/api/v1/simlog") return new Response(JSON.stringify(simlogFixture), {status: 200});
     throw new Error("unexpected request " + path);
   } finally { active--; }
 };
@@ -322,7 +593,7 @@ window.fetch = async (url, options = {}) => {
 async function runContract() {
   await until(() => !$test("shell").hidden, "translations bootstrap");
   assert($test("operations").hidden, "no data before pairing");
-  assert(issued[0].url.includes("/api/v1/ui?lang="), "translations fetched first");
+  assert(issued[0].url.includes("/api/v2/session"), "v2 session resume attempted first");
   assert($test("sound").getAttribute("aria-pressed") === "false" && tones === 0, "muted by default");
   assert($test("code").maxLength === 6 && $test("code").autocapitalize === "characters", "six-character code input with capitalization hint");
   for (const invalid of ["123456", "ABC123", "12ABCD", "123AB", "123ABCD", "123A!C"]) {
@@ -524,6 +795,13 @@ async function runContract() {
   assert($test("analysis-name").textContent === "Reference Unit <inert>" &&
     $test("detail-label").textContent === operationSelection && first.getAttribute("aria-pressed") === "true",
     "analyzer selection is independent and uses inert text");
+  assert($test("analysis-sensors").textContent.includes("active") &&
+    $test("analysis-sensors").textContent.includes("2.0 s") &&
+    $test("analysis-sensors").textContent.includes("Sensor 1") &&
+    $test("analysis-emitters").textContent.includes("8,000,000,000") &&
+    $test("analysis-emitters").textContent.includes("1,200") &&
+    $test("analysis-emitters").textContent.includes("Emitter 1"),
+    "reference catalog renders sensor modes, cadence, uncertainty, radar frequency and PRF");
   $test("analysis-filter").value = "no-match";
   $test("analysis-filter").dispatchEvent(new Event("input"));
   assert(!$test("analysis-list").querySelector("button") && commands.length === commandsBeforeAnalysis,
@@ -539,6 +817,17 @@ async function runContract() {
   assert(document.activeElement === tab("operations") && !$test("panel-operations").hidden, "Home restores Operations");
   assert(first.getAttribute("aria-pressed") === "true" && $test("detail-label").textContent === fixture.tracks[0].label && $test("affiliation").value === "HOSTILE" && $test("navigation-course").value === "87.5", "tab round trip preserves selection and drafts");
   assert(commands.length === commandsBeforeTabs && $test("chart").width > 0 && $test("chart").height > 0, "tab switching sends no command and redraws Operations");
+  const shellBeforeEpoch = $test("shell"), chartsBeforeVisualEpoch = charts;
+  fixture.epoch += 1;
+  await until(() => charts > chartsBeforeVisualEpoch && $test("detail-label").textContent === fixture.tracks[0].label &&
+    $test("affiliation").value === "UNKNOWN" && $test("navigation-course").value === "",
+    "same-session epoch resynchronizes without losing selection");
+  assert($test("shell") === shellBeforeEpoch && first.getAttribute("aria-pressed") === "true",
+    "uConsole context change does not reload or replace the browser view");
+  assert($test("affiliation").value === "UNKNOWN" && $test("navigation-course").value === "",
+    "uConsole context change invalidates command drafts");
+  $test("affiliation").value = "HOSTILE";
+  $test("navigation-course").value = "87.5";
   tab("guide").click();
   await sleep(650);
   assert(tab("guide").getAttribute("aria-selected") === "true", "poll preserves active tab");
@@ -721,6 +1010,33 @@ async function runContract() {
   });
   await until(() => $test("lookout-sea").textContent === "3" && $test("lookout-observations").children.length === 3,
     "live Lookout data returns before direct disconnect");
+  location.hash = "#simlog";
+  await until(() => !$test("simlog-view").hidden && !$test("simlog-current-map").disabled,
+    "hidden simlog view loads its current state");
+  const simlogTables = [...$test("simlog-current").querySelectorAll(".simlog-table-wrap")];
+  const surfaceBounds = simlogTables[1].getBoundingClientRect();
+  const biologicalBounds = simlogTables[2].getBoundingClientRect();
+  assert(surfaceBounds.bottom <= biologicalBounds.top + 1 || biologicalBounds.bottom <= surfaceBounds.top + 1,
+    "wide surface table does not overlap the biological section");
+  $test("simlog-current-map").click();
+  await until(() => $test("simlog-map-dialog").open && $test("simlog-map").width > 1,
+    "current snapshot opens the responsive map dialog");
+  assert($test("simlog-map-units").children.length === 15,
+    "map lists own ship and every finite-position snapshot category");
+  assert($test("simlog-map-units").firstElementChild.textContent.includes("15") &&
+    $test("simlog-map-units").firstElementChild.textContent.includes("12"),
+    "map unit listing includes available course and speed");
+  const mapLabels = simlogMapTexts.filter((entry) => entry.text !== "N");
+  assert(mapLabels.every((entry, index) => mapLabels.slice(index + 1).every((other) =>
+    entry.right < other.x || entry.x > other.right || entry.bottom < other.y || entry.y > other.bottom)),
+    "map labels never overlap each other");
+  const mapBounds = $test("simlog-map-dialog").getBoundingClientRect();
+  assert(mapBounds.left >= -1 && mapBounds.top >= -1 && mapBounds.right <= innerWidth + 1 && mapBounds.bottom <= innerHeight + 1,
+    "simlog map dialog remains inside the viewport");
+  $test("simlog-map-units-fit").click();
+  $test("simlog-map-close").click();
+  location.hash = "";
+  await until(() => !$test("operations").hidden, "operations return without a page reload");
   $test("disconnect").click();
   assert($test("operations").hidden && !$test("pairing").hidden, "disconnect hides private data");
   assert($test("track-list").children.length === 0 && !$test("lookout-sea").textContent &&
@@ -794,8 +1110,14 @@ def browser_contact_analysis():
                       shaft_rpm=None, propulsor_type="propeller", blade_count=None,
                       cruise_lines=[], high_speed_lines=[], cruise_broadband=None,
                       high_speed_broadband=None),
-        components={key: [] for key in ("sensors", "emitters", "weapons", "launchers",
-                                        "magazines", "countermeasures")},
+        components=dict(
+            sensors=[dict(domain="radar", modes=["active", "track"], emits=True,
+                          synthetic_range_nm=80, sensitivity_db=-80, cadence_s=2,
+                          bearing_uncertainty_deg=1, range_uncertainty_nm=.2,
+                          depth_uncertainty_m=None)],
+            emitters=[dict(domain="radar", frequency_band_hz=[8e9, 12e9],
+                           prf_band_hz=[800, 1200], modulation_codes=["pulse"])],
+            weapons=[], launchers=[], magazines=[], countermeasures=[]),
         assets={},
     )])
 

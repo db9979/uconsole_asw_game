@@ -2,10 +2,10 @@
 
 ## Authority and scope
 
-- This is U-Jagd 0.1.7 (`src/core/version.py`); current saves are v10-only. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 0.2.0 (`src/core/version.py`); current saves are v10-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
-- Older phase/milestone labels under `docs/GDD.md` and `docs/implementation-plan.md` are historical. Current resumable work is tracked in `docs/plan-0.1.6.md`, `docs/plan-0.1.7.md`, and `docs/resume.md`.
+- Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-0.1.8.md` and `docs/resume.md`.
 
 ## Architecture
 
@@ -60,16 +60,18 @@
 - Treat imported/editor JSON as hostile. Require finite typed/bounded values, strict schemas, `user.<lowercase/digit/_/->` keys, confined destinations, and no symlinked root/file. Never interpret a logical reference as a filesystem path.
 - Bundle import validates every item and collision before the first visible write, stages all files, rechecks confinement/symlinks, and rolls back the whole commit on failure. Preserve backups if rollback itself fails. JSON output must reject NaN/Infinity.
 
-## Commander LAN
+## Remote Crew multiplayer
 
-- Commander service is opt-in, off on every launch. `F10` Options or `F9` opens local administration. Bind only an explicitly selected loopback/private IPv4; HTTP is trusted-LAN-only, not Internet hosting.
-- `src/commander/server.py` must never reference Game/Pygame. It serves cached bytes and bounded request queues. `CommanderBridge.pump()` executes once per main-loop wall frame, not on HTTP threads or physics substeps.
-- Export only allowlisted observations and own-ship information, never a save/entity dump, seed, RNG, hidden platform identity or raw internal ID. Menu/editor/splash publish status-only data. Browser inspection never changes crew selection or sonar focus.
-- Classification/affiliation require pairing AND local grant. Target and navigation proposals require explicit crew acceptance and fresh main-thread revalidation. An accepted navigation proposal changes local helm setpoints; direct remote steering, firing, sensor operation, ROE, time, saves and editor controls are forbidden.
-- Pairing codes are three digits followed by three uppercase letters, valid five minutes, five failed attempts per rolling minute globally. Long bearer tokens remain independent. Never store or log codes/tokens; credentials, connections and pending proposals are not save fields.
-- Successful world replacement revokes pairing/grant on the next main-thread pump; failed candidate restoration must have no server/bridge side effects. Queue epochs invalidate stale actions across input-owner changes.
-- Bound connections, bodies, queues, chart geometry, events and retries. Exact Host/Origin validation and fixed static routes are required. Browser strings use root EN/DE catalogs and textContent, with no CDN or arbitrary HTML.
-- Authorized post-Commander work, including sonar/fidelity packages B-F, is tracked in `docs/plan-0.1.7.md`. Execute its dependency order, stop after its final acceptance milestone, and record the pause in `docs/resume.md`.
+- Remote Crew is authoritative-host multiplayer for multiple authenticated browser clients. The uConsole process remains the sole simulation authority. Browsers never run simulation, advance time, resolve physics, read live entities, or mutate game state from transport threads.
+- Multiplayer protocol versions are independent of application and save versions. New behavior uses protocol v2 rather than silently broadening Commander v1. Saves remain exact v10; credentials, clients, station leases, network queues, drafts, and unaccepted commands are transient and never enter saves or settings.
+- Support a hard-bounded client count. Each client has an independent cryptographic session, expiry, request namespace, and revocation state. The host explicitly grants one exclusive station role per client and can revoke or take over any role. Reconnect never inherits another client's authority.
+- Role capabilities are allowlisted. A granted browser may directly operate its station, including weapons when the host separately enables direct fire, but every action must pass the same observation freshness, damage, inventory, ROE, envelope, and readiness checks as local input. Save/load, reset, editors, options, quit, network administration, and credentials remain host-only.
+- Transport handlers accept only strict, finite, size-bounded, versioned messages and enqueue detached envelopes. The main thread revalidates client, role, lease generation, world epoch, resource revision, freshness, and readiness immediately before applying each command. Never synthesize Pygame events or dispatch arbitrary method names from network data.
+- Apply accepted remote commands exactly once in deterministic station order and per-client FIFO order before `Game.update()`. Wall clock, packet scheduling, polling frequency, browser rendering, and hash iteration must not affect simulation results. Administrative transitions, pause, focus loss, role loss, disconnect, save/load, and world replacement reject unsafe queued commands and clear held remote controls.
+- Each role receives only an allowlisted detached projection of own ship and commanded assets, published observations, annotations, and known geography. Never export simulation objects, hidden IDs, undiscovered positions, true hostile identity, RNG state, or save dumps. Omniscient diagnostics and full-truth SimLog data are host-local; remote SimLog must obey the requesting role's observation boundary.
+- Browser sessions may use host-only HttpOnly SameSite cookies for reload recovery. Credentials never enter JavaScript, URLs, DOM, logs, settings, or saves. State-changing requests also require exact Origin and a separate CSRF token. Plain HTTP remains trusted-LAN-only; Internet-capable deployment requires a separately reviewed encrypted endpoint or reverse proxy.
+- Keep clients, histories, queues, projections, polling, and render work bounded for the uConsole. Cache immutable projections shared by clients with identical visibility, apply backpressure, and verify maximum-client CPU, memory, bandwidth, frame time, reconnect, and thermal behavior on real hardware.
+- New multiplayer prose uses exact EN/DE catalog parity and safe DOM insertion. Browser controls require keyboard and touch access, bounded responsive layouts, explicit stale/revoked states, and tests at desktop, mobile, large zoom, and pseudolocale where applicable.
 
 ## Coastline provenance
 

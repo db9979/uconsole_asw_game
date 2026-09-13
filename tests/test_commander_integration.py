@@ -51,12 +51,11 @@ def test_real_http_pair_classify_propose_crew_accept_and_world_replace():
         assert console.address is not None
         console.pump(game)
         assert re.fullmatch(r"[0-9]{3}[A-Z]{3}", console.pairing_code)
+        join_code = console.pairing_code
         status, paired = request(console.server, "/api/v1/pair",
                                  body={"code": console.pairing_code})
         assert status == 200
         token = paired["token"]
-        console.selection = 3
-        console.activate(game)
         console.pump(game)
         status, state = request(console.server, "/api/v1/state", token=token)
         assert status == 200 and state["commands_allowed"]
@@ -79,16 +78,15 @@ def test_real_http_pair_classify_propose_crew_accept_and_world_replace():
         assert game.target is None
         assert state["proposal"]["status"] == "pending"
         assert game.selected_contact is contact and game.sonar.listen_bearing == 123.
-        game._open_administration("commander")
-        console.selection = 5
-        console.activate(game)
+        assert console.confirm_visible(game)
+        console.handle_confirm_key(game, pygame.K_F6)
         assert game.target is contact
         assert game.selected_contact is contact and game.sonar.listen_bearing == 123.
         console.pump(game)
         assert request(console.server, "/api/v1/state", token=token)[1]["proposal"]["status"] == "accepted"
         state = game.save_state()
         encoded = json.dumps(state, allow_nan=False)
-        assert token not in encoded and "commander" not in state
+        assert token not in encoded and join_code not in encoded and "commander" not in state
         session = console.bridge.status["session"]
         malformed = copy.deepcopy(state)
         malformed["ship"]["order_idx"] = 999
@@ -99,6 +97,7 @@ def test_real_http_pair_classify_propose_crew_accept_and_world_replace():
         assert console.server.connected  # No network side effects inside candidate restoration.
         console.pump(game)
         assert console.bridge.status["session"] != session
+        assert console.pairing_code != join_code
         assert not console.bridge.allowed
         assert request(console.server, "/api/v1/state", token=token)[0] == 401
     finally:

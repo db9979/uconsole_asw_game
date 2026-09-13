@@ -1,6 +1,7 @@
 """Dense Commander layout regression, using optional installed Chromium only."""
 
 import json
+import re
 import shutil
 import subprocess
 import threading
@@ -17,6 +18,282 @@ from src.core.i18n import Translator, load_catalog, pseudolocale
 from src.ui import layout
 from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
                                    browser_state, catalogs)
+
+
+LOBBY_LAYOUT = r"""
+const $ = (id) => document.getElementById(id);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function run() {
+  for (let i = 0; $("shell").hidden && i < 300; i++) await sleep(20);
+  $("name").value = "Layout Lobby";
+  $("code").value = "123ABC";
+  $("pair-form").requestSubmit();
+  for (let i = 0; $("lobby").hidden && i < 300; i++) await sleep(20);
+  const cards = [...$("station-cards").children];
+  const root = document.documentElement;
+  const lobby = $("lobby").getBoundingClientRect();
+  const lobbyControls = cards.every((card) => {
+    const button = card.querySelector("button");
+    const bounds = button.getBoundingClientRect();
+    return button.type === "button" && bounds.width >= 44 && bounds.height >= 40;
+  });
+  $("lobby").hidden = true;
+  document.body.dataset.remoteRole = "assigned";
+  $("role-rail").hidden = false;
+  $("operations").hidden = false;
+  $("bridge-orders").hidden = false;
+  $("station-view").hidden = false;
+  $("station-sonar").hidden = false;
+  $("station-sonar").querySelectorAll("[data-sonar-page]").forEach((page) => { page.hidden = false; });
+  const bridgeBounds = $("bridge-orders").getBoundingClientRect();
+  const bridgeControls = [...$("bridge-orders").querySelectorAll("input, button")];
+  const bridge = {
+    bounds: [bridgeBounds.left, bridgeBounds.top, bridgeBounds.right, bridgeBounds.bottom],
+    controls: bridgeControls.every((control) => {
+      const bounds = control.getBoundingClientRect();
+      return bounds.width >= 44 && bounds.height >= 40;
+    }),
+    labels: ["bridge-course", "bridge-speed"].every((id) =>
+      document.querySelector(`label[for="${id}"]`)?.control === $(id)),
+  };
+  const sonarBounds = $("station-sonar").getBoundingClientRect();
+  const sonarControls = [...$("station-sonar").querySelectorAll("input, select, button")]
+    .filter((control) => control.type !== "checkbox");
+  const sonarToggles = [...$("station-sonar").querySelectorAll("label.toggle")];
+  const sonar = {
+    bounds: [sonarBounds.left, sonarBounds.top, sonarBounds.right, sonarBounds.bottom],
+    controls: sonarControls.length >= 16 && [...sonarControls, ...sonarToggles].every((control) => {
+      const bounds = control.getBoundingClientRect();
+      return bounds.width >= 44 && bounds.height >= 40;
+    }),
+    labels: ["sonar-control-page", "sonar-bearing", "sonar-array-mode", "sonar-depth",
+      "sonar-gain", "sonar-band", "sonar-harmonic-input"].every((id) =>
+      document.querySelector(`label[for="${id}"]`)?.control === $(id)),
+  };
+  $("station-sonar").hidden = true;
+  $("station-weapons").hidden = false;
+  const weaponsBounds = $("station-weapons").getBoundingClientRect();
+  const fireControls = [...$("station-weapons").querySelectorAll(".direct-fire-controls input, .direct-fire-controls select, .direct-fire-controls button")];
+  const weapons = {
+    bounds: [weaponsBounds.left, weaponsBounds.top, weaponsBounds.right, weaponsBounds.bottom],
+    controls: fireControls.length === 5 && fireControls.every((control) => {
+      const bounds = control.getBoundingClientRect();
+      return bounds.width >= 44 && bounds.height >= 40;
+    }),
+    labels: ["weapons-fire-target", "weapons-fire-depth"].every((id) =>
+      document.querySelector(`label[for="${id}"]`)?.control === $(id)),
+  };
+  const workstationBounds = (role) => {
+    const section = $(`station-${role}`), grid = section.querySelector(".station-grid");
+    for (const candidate of document.querySelectorAll("[data-station-role]")) candidate.hidden = candidate !== section;
+    section.hidden = false;
+    section.insertBefore($("role-visuals"), grid);
+    $("role-visuals").hidden = false;
+    const visualFor = {bridge: "map-visual", sonar: "sonar-visual", weapons: "weapons-visual",
+      damage: "damage-visual", opz: "map-visual", radio: "map-visual", engine: "engine-visual",
+      helicopter: "map-visual", eloka: "eloka-visual"};
+    for (const panel of document.querySelectorAll("#role-visuals > .visual-panel")) {
+      panel.hidden = panel.id !== visualFor[role];
+    }
+    if (["sonar", "opz"].includes(role) && $("operations-workspace").parentElement !== grid) {
+      grid.prepend($("operations-workspace"));
+    }
+    $("operations-workspace").hidden = !["sonar", "opz"].includes(role);
+    $("bridge-orders").hidden = role !== "bridge";
+    $("opz-controls").hidden = role !== "opz";
+    $("helicopter-dipping-controls").hidden = role !== "helicopter";
+    if (role === "bridge") grid.prepend($("bridge-orders"));
+    if (role === "opz") grid.prepend($("opz-controls"));
+    if (role === "helicopter") grid.prepend($("helicopter-dipping-controls"));
+    const outer = section.getBoundingClientRect(), visual = $("role-visuals").getBoundingClientRect();
+    const controls = grid.getBoundingClientRect();
+    const intersects = Math.min(visual.right, controls.right) - Math.max(visual.left, controls.left) > 1 &&
+      Math.min(visual.bottom, controls.bottom) - Math.max(visual.top, controls.top) > 1;
+    const children = [...grid.children].filter((element) =>
+      !element.hidden && getComputedStyle(element).display !== "none");
+    const childBounds = children.map((element) => element.getBoundingClientRect());
+    const childIntersections = [];
+    childBounds.forEach((first, index) => childBounds.slice(index + 1).forEach((second) => {
+      if (Math.min(first.right, second.right) - Math.max(first.left, second.left) > 1 &&
+          Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top) > 1) {
+        childIntersections.push(index);
+      }
+    }));
+    const textOverflow = [...section.querySelectorAll("h2, h3, h4, p, dt, dd, label, button, summary, output")]
+      .filter((element) => !element.hidden && getComputedStyle(element).display !== "none" && element.clientWidth > 0)
+      .some((element) => element.scrollWidth > element.clientWidth + 2);
+    return {intersects, outer: [outer.left, outer.top, outer.right, outer.bottom],
+      visual: [visual.left, visual.top, visual.right, visual.bottom],
+      controls: [controls.left, controls.top, controls.right, controls.bottom],
+      controlsOverflow: getComputedStyle(grid).overflowY,
+      childIntersections: childIntersections.length, textOverflow,
+      childrenContained: childBounds.every((bounds) =>
+        bounds.left >= controls.left - 1 && bounds.right <= controls.right + 1)};
+  };
+  document.body.classList.add("workstation-mode");
+  const roles = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka"];
+  const workstations = Object.fromEntries(roles.map((role) => [role, workstationBounds(role)]));
+  const report = {
+    cards: cards.length,
+    order: cards.map((card) => card.dataset.station),
+    pageWidth: root.scrollWidth,
+    pageHeight: root.scrollHeight,
+    viewport: [innerWidth, innerHeight],
+    lobby: [lobby.left, lobby.top, lobby.right, lobby.bottom],
+    controls: lobbyControls,
+    bridge, sonar, weapons, workstations,
+  };
+  parent.postMessage({lobbyLayout: report}, location.origin);
+}
+window.addEventListener("DOMContentLoaded", () => run().catch((error) => {
+  parent.postMessage({lobbyLayout: {error: String(error.stack || error)}}, location.origin);
+}));
+"""
+
+
+def test_station_dashboards_have_bounded_responsive_layout_rules():
+    css = ASSETS.joinpath("style.css").read_text()
+    assert re.search(r"\.station-grid \{[^}]*grid-template-columns:[^}]*auto-fit", css)
+    assert re.search(r"\.station-list \{[^}]*max-height:[^}]*overflow: auto", css)
+    mobile = css.split("@media (max-width: 700px)", 1)[1]
+    assert ".station-section" in mobile and ".station-list" in mobile
+    assert re.search(r"\.station-controls \{[^}]*auto-fit", css)
+    assert re.search(r"\.station-row-actions \{[^}]*flex-wrap: wrap", css)
+    assert ".station-controls, .control-page" in mobile
+    assert ".fire-grid { grid-template-columns: minmax(0, 1fr); }" in mobile
+    assert re.search(r"\.role-canvas \{[^}]*width: 100%[^}]*height: clamp", css)
+    assert re.search(r"\.visual-equivalent \{[^}]*max-height:[^}]*overflow: auto", css)
+    assert re.search(r"\.visual-tabs \{[^}]*grid-template-columns: repeat\(6", css)
+    assert ".visual-tabs { grid-template-columns: repeat(2" in mobile
+    assert ".role-canvas { height: min(54svh, 22rem); }" in mobile
+    assert re.search(r"body\.workstation-mode \.operations-panel \{[^}]*overflow: hidden", css)
+    assert re.search(r"body\.workstation-mode \.station-view \{[^}]*min-height: 0[^}]*overflow: hidden", css)
+    assert re.search(r"body\.workstation-mode \.station-section \{[^}]*grid-template-rows: auto minmax\(0, 1fr\)[^}]*overflow: hidden", css)
+    assert re.search(r"body\.workstation-mode \.station-grid \{[^}]*min-height: 0[^}]*overflow-y: auto", css)
+
+
+@pytest.mark.parametrize("width,height,zoom", [(1280, 720, 1), (390, 844, 1), (1280, 1024, 4)])
+@pytest.mark.parametrize("language", ["en", "de", "pseudo"])
+def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
+    chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
+    if not chromium:
+        pytest.skip("Optional lobby layout regression: no installed Chromium")
+    css_width, css_height = width // zoom, height // zoom
+    source = catalogs()[language == "de"]
+    catalog = pseudolocale(source) if language == "pseudo" else source
+    html = ASSETS.joinpath("index.html").read_text().replace(
+        '<script src="./app.js" defer>',
+        '<script src="./lobby-layout.js" defer></script><script src="./app.js" defer>')
+    stations = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
+                "engine", "helicopter", "eloka")
+    empty_grants = {"command": False, "direct_fire": False, "sonar_audio": False}
+    session = {"protocol": 2, "client_id": "layout-client", "name": "Layout Lobby",
+               "csrf": "layout-csrf", "ordinal": 0, "presence": 1.0,
+                "next_command_seq": 0, "active_station": None,
+                "active_generation": 0, "simlog": False,
+                "station": None, "requested_station": None, "station_generation": 0,
+                "stations": {
+                    station: {
+                        "status": "occupied" if station == "sonar" else "available",
+                        "requested": False,
+                        "request_generation": 0,
+                        "station_generation": None,
+                        "grants": dict(empty_grants),
+                    } for station in stations
+                },
+                "grants": {"command": False, "direct_fire": False, "simlog": False,
+                           "sonar_audio": False}}
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *_args):
+            pass
+
+        def reply(self, content, mime="application/json", status=200, cookie=None):
+            body = content if isinstance(content, bytes) else content.encode() if isinstance(content, str) else json.dumps(content).encode()
+            self.send_response(status)
+            self.send_header("Content-Type", mime)
+            if cookie:
+                self.send_header("Set-Cookie", cookie)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            if self.path == "/viewport":
+                self.reply(f'<!doctype html><html><head><script src="/viewport.js" defer></script></head>'
+                           f'<body style="margin:0"><iframe src="/" width="{css_width}" height="{css_height}" '
+                           f'style="border:0;transform:scale({zoom});transform-origin:top left"></iframe></body></html>', "text/html")
+            elif self.path == "/viewport.js":
+                self.reply('window.addEventListener("message", (event) => {'
+                           'if (event.origin === location.origin && event.data?.lobbyLayout) '
+                           'document.documentElement.dataset.lobbyLayout = JSON.stringify(event.data.lobbyLayout);});', "text/javascript")
+            elif self.path == "/":
+                self.reply(html, "text/html")
+            elif self.path == "/lobby-layout.js":
+                self.reply(LOBBY_LAYOUT, "text/javascript")
+            elif self.path in ("/app.js", "/style.css"):
+                self.reply(ASSETS.joinpath(self.path[1:]).read_bytes(),
+                           "text/javascript" if self.path.endswith("js") else "text/css")
+            elif self.path.startswith("/api/v1/ui?"):
+                self.reply({key: value for key, value in catalog.items() if key.startswith(PREFIX)})
+            elif self.path == "/api/v1/contacts":
+                self.reply(browser_contact_analysis())
+            elif self.path == "/api/v2/session":
+                self.reply({"error": "unauthorized"}, status=401)
+            else:
+                self.reply({"error": "not_found"}, status=404)
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
+            if self.path == "/api/v2/pair" and body == {"code": "123ABC", "name": "Layout Lobby"}:
+                self.reply(session, cookie="ujagd_remote_v2=lobby; Path=/api/v2; HttpOnly; SameSite=Strict")
+            else:
+                self.reply({"error": "not_found"}, status=404)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        result = subprocess.run(
+            [chromium, "--headless", "--no-sandbox", "--disable-gpu", "--disable-background-networking",
+             "--no-first-run", "--no-default-browser-check", "--disable-dev-shm-usage",
+             f"--user-data-dir={tmp_path / 'lobby-browser'}", f"--window-size={width},{height}",
+             "--force-device-scale-factor=1", "--virtual-time-budget=5000", "--dump-dom",
+             f"http://127.0.0.1:{server.server_port}/viewport"],
+            capture_output=True, text=True, timeout=45)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+    assert result.returncode == 0, result.stderr
+    root = next(attrs for tag, attrs in Document(result.stdout).elements if tag == "html")
+    report = json.loads(root["data-lobby-layout"])
+    assert "error" not in report, report
+    assert report["cards"] == 9 and report["order"] == list(stations)
+    assert report["viewport"] == [css_width, css_height]
+    assert report["pageWidth"] <= css_width + 1 and report["pageHeight"] <= css_height + 1
+    assert report["controls"]
+    assert report["bridge"]["controls"] and report["bridge"]["labels"]
+    assert report["bridge"]["bounds"][0] >= -1
+    assert report["bridge"]["bounds"][2] <= css_width + 1
+    assert report["sonar"]["controls"] and report["sonar"]["labels"]
+    assert report["sonar"]["bounds"][0] >= -1
+    assert report["sonar"]["bounds"][2] <= css_width + 1
+    assert report["weapons"]["controls"] and report["weapons"]["labels"]
+    assert report["weapons"]["bounds"][0] >= -1
+    assert report["weapons"]["bounds"][2] <= css_width + 1
+    assert report["lobby"][0] >= -1 and report["lobby"][2] <= css_width + 1
+    assert set(report["workstations"]) == set(stations)
+    for role, dashboard in report["workstations"].items():
+        assert not dashboard["intersects"], (role, dashboard)
+        assert dashboard["childIntersections"] == 0, (role, dashboard)
+        assert dashboard["childrenContained"], (role, dashboard)
+        assert not dashboard["textOverflow"], (role, dashboard)
+        assert dashboard["outer"][0] >= -1 and dashboard["outer"][2] <= css_width + 1
+        assert dashboard["visual"][0] >= dashboard["outer"][0] - 1
+        assert dashboard["visual"][2] <= dashboard["outer"][2] + 1
+        assert dashboard["controls"][0] >= dashboard["outer"][0] - 1
+        assert dashboard["controls"][2] <= dashboard["outer"][2] + 1
 
 
 LAYOUT_SCENARIO = r"""
@@ -40,6 +317,7 @@ CanvasRenderingContext2D.prototype.arc = function (x, y, radius, start, end, ...
 };
 async function run() {
   for (let i = 0; $("shell").hidden && i < 300; i++) await sleep(20);
+  $("name").value = "Layout Watch";
   $("code").value = "123ABC";
   $("pair-form").requestSubmit();
   for (let i = 0; $("operations").hidden && i < 300; i++) await sleep(20);
@@ -386,6 +664,40 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
 def test_short_landscape_and_400_percent_lookout_layout(
         tmp_path, width, height, zoom, language):
     test_dense_commander_layout(tmp_path, width, height, zoom, language)
+
+
+@pytest.mark.parametrize("language", ["en", "de", "pseudo"])
+@pytest.mark.parametrize("large", [False, True])
+def test_native_host_menu_join_code_is_focal_and_bounded(language, large):
+    game = Game(seed=74, audio_enabled=False, language="en")
+    try:
+        game.preferences = replace(game.preferences, large_text=large)
+        game.translator = Translator("en")
+        if language == "pseudo":
+            game.translator.catalog = pseudolocale(load_catalog("en"))
+        elif language == "de":
+            game.translator = Translator("de")
+        game.tr = game.translator.t
+        game._apply_text_size()
+        console = game.commander
+        console.address = ("192.168.100.200", 65535)
+        console.pairing_code = "123ABC"
+        console.connected = True
+        console.bridge._proposal = dict(ref="ref", label="REMOVED-SUMMARY", status="pending")
+        with layout.capture_text() as text:
+            console.draw(game)
+        canvas = pygame.Rect(0, 0, 1280, 720)
+        assert len(console.row_rects()) == 4
+        assert all(canvas.contains(entry["bounds"]) for entry in text)
+        assert all(entry["bounds"].contains(entry["rect"]) for entry in text)
+        assert game.tr("commander.local.join_code") in {entry["text"] for entry in text}
+        code = next(entry for entry in text if entry["text"] == "123 ABC")
+        assert code["rect"].height >= 60
+        assert all("REMOVED-SUMMARY" not in entry["text"] for entry in text)
+    finally:
+        game.commander.stop()
+        game.audio.shutdown()
+        layout.configure_for(large_text=False)
 
 
 @pytest.mark.parametrize("language", ["en", "de", "pseudo"])

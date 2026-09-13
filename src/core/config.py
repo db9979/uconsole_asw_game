@@ -157,6 +157,17 @@ SUB_ATTACK_COOLDOWN_S = 90.0
 ESM_RANGE_NM = 150.0            # ESM-"Reichweite" (Peilung von Radargeräten)
 ESM_BEARING_ERR_DEG = 3.0       # ESM-Peilungsfehler (± Grad)
 ESM_EMITTER_PROB = 0.6          # Anteil ziviler Schiffe mit aktivem Radargerät
+# Bridge lookout: explicit horizon/recognition assumptions. A submarine is
+# visually surfaced only at or above 2 m; snorkel-depth operation is excluded.
+LOOKOUT_SURFACE_RANGE_NM = 12.0
+LOOKOUT_SUB_RANGE_NM = 5.0
+LOOKOUT_AIR_RANGE_NM = 20.0
+LOOKOUT_SUB_SURFACED_MAX_DEPTH_M = 2.0
+LOOKOUT_NIGHT_FACTOR = 0.35
+LOOKOUT_SEA_STATE_LOSS = 0.08
+LOOKOUT_BEARING_ERR_DEG = 0.6
+LOOKOUT_RANGE_ERR_FRAC = 0.06
+LOOKOUT_EPOCH_S = 0.5
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
 PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG")
 PLAYER_CLASS_LABELS = {
@@ -175,6 +186,9 @@ NATO_AFFILIATION_LABELS = {
     "NEUTRAL": "Neutral",
     "HOSTILE": "Feind",
 }
+OPZ_FUSION_MAX = 32
+OPZ_FUSION_MEMBER_MIN = 2
+OPZ_FUSION_MEMBER_MAX = 8
 
 # M10: Telegraph & Maschinenraum (diskrete Motorenbefehle)
 TELEGRAPH_ORDERS = (
@@ -277,6 +291,15 @@ HELO_FUEL_S = 7200.0
 HELO_FUEL_RESERVE_S = 1200.0
 HELO_RETURN_DIST_NM = 0.3
 HELO_TORPS = 2                  # Leichttorpedos pro Start
+HELO_DIP_DEPTH_MIN_M = 15.0
+HELO_DIP_DEPTH_DEFAULT_M = 75.0
+HELO_DIP_DEPTH_MAX_M = 300.0
+HELO_DIP_DEPTH_RATE_M_S = 2.5
+HELO_DIP_BOTTOM_CLEARANCE_M = 10.0
+HELO_DIP_PASSIVE_RANGE_NM = 18.0
+HELO_DIP_ACTIVE_RANGE_NM = 14.0
+HELO_DIP_PING_COOLDOWN_S = 30.0
+HELO_DIP_BEARING_ERR_DEG = 2.0
 BUOY_COUNT = 5
 BUOY_SPACING_NM = 3.0
 BUOY_RANGE_NM = 8.0
@@ -288,6 +311,15 @@ ASM_SPAWN_DIST_NM = (30.0, 40.0)
 ASM_SPAWN_FIRST_S = 600.0
 ASM_SPAWN_INTERVAL_S = 1200.0
 
+# R20: Luftangriffs-Wellen (feindliche Jagdbomber vs. Fregatte)
+RAID_FIRST_WAVE_S = 1500.0
+RAID_WAVE_INTERVAL_S = 900.0
+RAID_WAVE_SIZE = (1, 2)
+RAID_SPAWN_DIST_NM = (110.0, 140.0)
+RAID_MAX_CONCURRENT = 3
+RAIDER_ATTACK_WINDOW_S = 90.0
+RAIDER_TURN_DEG_S = 4.0
+
 # M15: HSP-5 (Sea Lynx)
 HELO_SPEED_KN = 120.0
 
@@ -296,6 +328,12 @@ FLIGHT_SPEED_KN = 200.0
 FLIGHT_CIVIL_SPEED_KN = 450.0
 FLIGHT_LOITER_NM = (15.0, 30.0) # Patrouillen-Kreis um Airbase
 FLIGHT_ATTACK_RANGE_NM = 35.0   # Abschussentfernung für ASM
+# Zivile Routen werden geometrisch an die Fregatte angebunden, damit sie
+# radar-einsehbar bleiben: liegt die Gerade Basis->Ziel innerhalb von
+# FLIGHT_CIVIL_PASS_NM an ihr, bleibt die Route direkt; sonst lenkt ein
+# Weichpunkt sie auf FLIGHT_CIVIL_VIA_NM an (reine Geometrie, keine RNG).
+FLIGHT_CIVIL_PASS_NM = 60.0
+FLIGHT_CIVIL_VIA_NM = 30.0
 
 # W1: TMA (Peilungs-Tracking -> Position + Geschwindigkeit)
 TMA_MIN_PTS = 4                 # minimal Peilungen
@@ -477,6 +515,12 @@ FEED_CATEGORIES = {
     "welt": (COLOR_TEXT_DIM, "WET"),
 }
 FEED_MAX_ENTRIES = 200
+
+# Simulationsprotokoll (Option, versteckte Commander-Ansicht):
+# Feed-Events plus alle SIMLOG_INTERVAL_S Simulationssekunden ein vollstaendiger
+# Zustandssnapshot aller Einheiten/Waffen/Welt für Monitoring und Verifikation.
+SIMLOG_MAX_ENTRIES = 256
+SIMLOG_INTERVAL_S = 10.0
 
 
 def aspect_rcs_factor(course_target: float, bearing_from_frigate: float) -> float:

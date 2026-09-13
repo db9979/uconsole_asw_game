@@ -6,11 +6,13 @@ import hashlib
 import json
 import math
 import os
+from collections import deque
 from types import SimpleNamespace
 
 import pygame
 
 from src.audio.engine import AudioEngine
+from src.audio.preview import unit_sonar_preview
 from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
@@ -33,6 +35,7 @@ from src.enemies.endurance import SubmarineEndurance
 from src.enemies.surface import SurfaceShip
 from src.nations.nations import NATIONS, get_nation
 from src.sensors.tracks import TrackPicture
+from src.sensors.fusion import OPZFusionPicture, OPZObservation, source_classification
 from src.sensors.esm import (
     ESM_MAX_ANNOTATIONS,
     ESM_STATE_VERSION,
@@ -64,16 +67,18 @@ from src.ui.stations_view import (draw_bridge_view, draw_damage_view,
                                   draw_radio_view,
                                    draw_helicopter_view, station_hit_target)
 from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
-                                  opz_ppi_rect)
+                                   opz_action_at, opz_ppi_rect)
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 from src.ui.contact_analyzer import ContactAnalyzer
+from src.ui.simlog_view import draw_simlog_view
 from src.ui.viewport import Viewport
 from src.ui.weapons_view import (draw_weapons_overlay, draw_weapons_panel,
                                  weapons_hit_target)
 from src.air.asm import ASM, ESSM
 from src.air.helicopter import Helicopter
 from src.air.flights import Flight, FlightManager
+from src.air.raid import RaidPhase, Raider
 from src.air.sonobuoy import Sonobuoy
 from src.world.world import World
 from src.world.coastline import Coastline
@@ -106,6 +111,12 @@ MAX_AIR_PICTURE_TRACKS = 512
 MAX_SAVED_ENTITIES = 512
 MAX_ENEMY_TORPEDOES = 128
 MAX_DECOYS = 128
+SONAR_BAND_PRESETS = {
+    "FULL": (0.0, 300.0),
+    "LOW": (4.0, 80.0),
+    "SHAFT": (8.0, 55.0),
+    "MID": (20.0, 120.0),
+}
 SAVE_ROOT_FIELDS = {
     "version", "save_schema", "platform_state_version", "catalog_snapshot",
     "seed", "level", "mission_type", "scenario_key", "mission_name",
@@ -243,6 +254,8 @@ class Game:
         self.main_menu = bool(start_menu)
         self.main_menu_sel = 0
         self.editor = None
+        self.simlog_view_open = False
+        self.simlog_view_scroll = 0
         self.options_open = False
         self.options_sel = 0
         self.commander = CommanderConsole()
@@ -315,7 +328,10 @@ class Game:
         self._radio_acc = 0.0
         self._slow_acc = 0.0
         self.time_scale_idx = config.TIME_SCALE_DEFAULT
-        self.feed = EventFeed()
+        self.simlog = deque(maxlen=config.SIMLOG_MAX_ENTRIES)
+        self._simlog_seq = 0
+        self._simlog_acc = 0.0
+        self.feed = EventFeed(sink=self._record_simlog)
 
         # M6: Mission (W4: Szenario kann den Typ fixieren)
         self.mission = Mission(seed, type_key=sc["mission_type"])
@@ -411,6 +427,8 @@ class Game:
         self.station = Station.BRIDGE
         self.paused = False
         self.running = True
+        self.simlog_view_open = False
+        self.simlog_view_scroll = 0
         self.held = set()
         self._map_drag = None
         self._map_drag_moved = False
@@ -481,6 +499,9 @@ class Game:
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
         self.opz_selected_track_id = None
         self.opz_affiliations = {}
+        self.opz_fusion = OPZFusionPicture()
+        self._opz_source_bindings = {}
+        self._opz_world_identity = id(self.world)
         self.esm_picture = ESMPicture()
         self.eloka_selected_track_key = None
         self.eloka_annotations = {}
@@ -490,6 +511,13 @@ class Game:
         self.hfdf_fixes = {}
         self.ciws_ammo = self._air_defense_loadout["ciws"]["ammo"]
         self.ciws_cooldown_s = 0.0
+        self.aa_ammo = self._air_defense_loadout["aa_gun"]["ammo"]
+        self.aa_cooldown_s = 0.0
+        self.raiders = []
+        self.raid_seq = 0
+        self.raid_waves_spawned = 0
+        self._raider_visible_last = False
+        self.rng_raid = random.Random(seed + 40424)
         self.hq_timer = 15.0
         self._mission_warnings = set()
         self.tooltips_enabled = self.preferences.tooltips
@@ -510,7 +538,8 @@ class Game:
         self._joy_turn = 0
         # W3: Luftfahrt (Airbases + Flüge) und W0: Karten-Viewport
         self.flights = FlightManager(
-            self.world.coast, random.Random(seed + 2024), self.runtime_catalog)
+            self.world.coast, random.Random(seed + 2024), self.runtime_catalog,
+            near=(self.ship.x, self.ship.y))
         self.map_view = Viewport(self.world.size_nm,
                                  config.MAP_ZOOM_MIN_PX_PER_NM,
                                  config.MAP_ZOOM_MAX_PX_PER_NM)
@@ -724,7 +753,316 @@ class Game:
             prompt = message("runtime.input.speed",
                              current=f"{self.ship.target_speed:.1f}")
         self.flash(message("runtime.input.pending", prompt=localize(prompt, self.tr),
-                           value=self.input_buffer), 60.0)
+                            value=self.input_buffer), 60.0)
+
+    def _navigation_order_live(self) -> bool:
+        overlay_blocked = ((self.administration_open or self.editor is not None)
+                           and not self.crew_overlay_allows_simulation())
+        return (self.running and not self.game_over and not self.paused
+                and not self.in_menu and not self.main_menu
+                and not self.splash_active and not overlay_blocked
+                and self.input_mode in (None, "course", "speed"))
+
+    def order_course(self, course: float) -> str:
+        """Apply a validated helm course order and return a stable result code."""
+        if type(course) not in (int, float):
+            return "invalid_value"
+        try:
+            valid = math.isfinite(course) and 0.0 <= course < 360.0
+        except OverflowError:
+            valid = False
+        if not valid:
+            return "invalid_value"
+        if not self._navigation_order_live():
+            return "phase_blocked"
+        if self.damage.station_down("bridge"):
+            return "bridge_down"
+        self.ship.target_course = course
+        self.feed.add(self.world.format_time(), "navigation",
+                      message("runtime.numeric.course_feed", course=f"{course:03.0f}"))
+        return "ok"
+
+    def order_speed(self, speed_kn: float) -> str:
+        """Apply a validated ahead-speed order and return a stable result code."""
+        if type(speed_kn) not in (int, float):
+            return "invalid_value"
+        try:
+            valid = (math.isfinite(speed_kn)
+                     and 0.0 <= speed_kn <= config.SHIP_SPEED_MAX_KN)
+        except OverflowError:
+            valid = False
+        if not valid:
+            return "invalid_value"
+        if not self._navigation_order_live():
+            return "phase_blocked"
+        self.ship.target_speed = speed_kn
+        self.ship.astern = False
+        self.ship.order_idx = min(range(len(config.TELEGRAPH_ORDERS)),
+                                  key=lambda i: abs(config.TELEGRAPH_ORDERS[i][1]
+                                                    - speed_kn))
+        self.feed.add(self.world.format_time(), "navigation",
+                      message("runtime.numeric.speed_feed", speed=f"{speed_kn:.1f}"))
+        return "ok"
+
+    def set_engine_telegraph(self, order: str):
+        if type(order) is not str:
+            return "invalid_value"
+        if self.damage.station_down("engine"):
+            return "engine_down"
+        if order == "ASTERN":
+            self.ship.astern = True
+            self.ship.order_idx = 0
+            self.ship.target_speed = config.ASTERN_SPEED_KN
+        else:
+            index = next((i for i, item in enumerate(config.TELEGRAPH_ORDERS)
+                          if item[0] == order), None)
+            if index is None:
+                return "invalid_value"
+            self.ship.astern = False
+            self.ship.order_idx = index
+            self.ship.target_speed = config.TELEGRAPH_ORDERS[index][1]
+        return True
+
+    def _cycle_engine_telegraph(self, delta: int):
+        orders = ("ASTERN", *(item[0] for item in config.TELEGRAPH_ORDERS))
+        index = orders.index(self.ship.telegraph)
+        return self.set_engine_telegraph(
+            orders[config.clamp(index + delta, 0, len(orders) - 1)])
+
+    def set_engine_speed(self, speed_kn: float):
+        if self.damage.station_down("engine"):
+            return "engine_down"
+        return self.order_speed(speed_kn)
+
+    def set_quiet_mode(self, enabled: bool):
+        if type(enabled) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("engine"):
+            return "engine_down"
+        self.ship.quiet_mode = enabled
+        return True
+
+    def assign_damage_team(self, team: int, compartment: str):
+        if type(team) is not int or type(compartment) is not str:
+            return "invalid_value"
+        if team not in self.damage.teams or compartment not in self.damage.compartments:
+            return "invalid_value"
+        if self.damage.ship_sunk:
+            return "not_ready"
+        if not self.damage.assign_team(team, compartment):
+            return "not_ready"
+        return True
+
+    def unassign_damage_team(self, team: int, compartment: str):
+        if (type(team) is not int or type(compartment) is not str
+                or team not in self.damage.teams
+                or compartment not in self.damage.compartments):
+            return "invalid_value"
+        if self.damage.teams[team] != compartment:
+            return "stale_ref"
+        self.damage.unassign_team(team)
+        return True
+
+    def set_sonar_listen_bearing(self, bearing: float):
+        if (type(bearing) not in (int, float) or not 0 <= bearing < 360
+                or not math.isfinite(bearing)):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.set_listen_bearing(bearing)
+        self._stop_sonar_audio()
+        return True
+
+    def set_sonar_focus(self, contact):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if (not isinstance(contact, Contact)
+                or self.sonar.contacts.get(contact.target_id) is not contact):
+            return "stale_ref"
+        if not 0 <= self.sim_t - contact.last_seen <= 2.0:
+            return "stale_ref"
+        self.selected_contact = contact
+        self.sonar.set_listen_bearing(contact.bearing)
+        self.sonar.focus_locked = True
+        self.sonar._listen_target_id = contact.target_id
+        self._stop_sonar_audio()
+        return True
+
+    def clear_sonar_focus(self):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.focus_locked = False
+        self.sonar._listen_target_id = None
+        self._stop_sonar_audio()
+        return True
+
+    def set_sonar_array_mode(self, mode: str):
+        if mode not in ("BOW", "TOWED") or type(mode) is not str:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar_mode = mode
+        return True
+
+    def set_sonar_tas(self, deployed: bool):
+        if type(deployed) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        state = self.sonar.tow_status(self.ship.speed)["state"]
+        if state == "FAULT":
+            return "tas_fault"
+        is_deploying = state in ("DEPLOYING", "STREAMED")
+        if deployed == is_deploying:
+            return True
+        return True if self.sonar.toggle_tow(self.ship.speed) else "tas_fault"
+
+    def set_sonar_tow_depth(self, depth_m: float):
+        if (type(depth_m) not in (int, float)
+                or not config.SONAR_TOWED_DEPTH_MIN_M <= depth_m
+                <= config.SONAR_TOWED_DEPTH_MAX_M or not math.isfinite(depth_m)):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if self.sonar.tow_state != TowState.STREAMED:
+            return "not_ready"
+        limit = max(config.SONAR_TOWED_DEPTH_MIN_M,
+                    config.SONAR_TOWED_DEPTH_MAX_M
+                    - self.ship.speed * config.SONAR_TOWED_SPEED_SHALLOW_M_PER_KN)
+        if depth_m > limit:
+            return "not_ready"
+        self.sonar.towed_depth_target_m = depth_m
+        return True
+
+    def measure_sonar_bt(self):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        return (True if self.sonar.measure_environment(
+            self.world, self.ship, self.sim_t) else "not_ready")
+
+    def send_active_ping(self):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if (self.sonar_mode == "TOWED"
+                and not self.sonar.tow_status(self.ship.speed)["available"]):
+            return "not_ready"
+        if not self.sonar.fire_ping():
+            return "not_ready"
+        self.audio.play_ping()
+        self.sonar.queue_ping(self.ship, self._sonar_targets(), self.world,
+                              self.sim_t, self._sonar_range_factor(),
+                              mode=self.sonar_mode)
+        return True
+
+    def set_helicopter_dipping(self, deployed: bool):
+        if type(deployed) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("flightdeck"):
+            return "flightdeck_down"
+        if not self.helo.airborne:
+            return "not_ready"
+        if not self.helo.set_dipping(deployed, self.world):
+            return "water_required" if deployed else "not_ready"
+        return True
+
+    def set_helicopter_dip_depth(self, depth_m: float):
+        if (type(depth_m) not in (int, float) or isinstance(depth_m, bool)
+                or not math.isfinite(depth_m)
+                or not config.HELO_DIP_DEPTH_MIN_M <= depth_m
+                <= config.HELO_DIP_DEPTH_MAX_M):
+            return "invalid_value"
+        if (not self.helo.airborne
+                or self.helo.dip_state not in ("DEPLOYING", "DEPLOYED")):
+            return "not_ready"
+        return (True if self.helo.set_dip_depth(depth_m, self.world)
+                else "water_required")
+
+    def send_helicopter_dipping_ping(self):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if not self.helo.fire_dipping_ping():
+            return "not_ready"
+        self.audio.play_ping()
+        self.sonar.queue_ping(self.helo, self._sonar_targets(), self.world,
+                              self.sim_t, self._sonar_range_factor(),
+                              mode="DIPPING")
+        return True
+
+    def set_sonar_tma_enabled(self, enabled: bool):
+        if type(enabled) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.tma_enabled = enabled
+        return True
+
+    def set_sonar_gain(self, gain_db: float):
+        if (type(gain_db) not in (int, float) or not -12 <= gain_db <= 24
+                or not math.isfinite(gain_db)):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.gain_db = gain_db
+        return True
+
+    def set_sonar_band_preset(self, preset: str):
+        band = SONAR_BAND_PRESETS.get(preset) if type(preset) is str else None
+        if band is None:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.band_low_hz, self.sonar.band_high_hz = band
+        return True
+
+    def set_sonar_notch(self, enabled: bool):
+        if type(enabled) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.notch_enabled = enabled
+        return True
+
+    def set_sonar_peak_hold(self, enabled: bool):
+        if type(enabled) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.peak_hold = enabled
+        return True
+
+    def sonar_harmonic_candidates(self):
+        return tuple(sorted({float(hz) for hz, _ in list(
+            getattr(self.sonar.receiver, "peaks", []))[:6]
+            if type(hz) in (int, float) and math.isfinite(hz)
+            and 0 < float(hz) <= config.LOFAR_FMAX_HZ}))
+
+    def set_sonar_harmonic(self, frequency_hz):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if frequency_hz is None:
+            self.sonar_harmonic_hz = None
+            return True
+        if (type(frequency_hz) not in (int, float)
+                or not 0 < frequency_hz <= config.LOFAR_FMAX_HZ
+                or not math.isfinite(frequency_hz)):
+            return "invalid_value"
+        candidate = next((hz for hz in self.sonar_harmonic_candidates()
+                          if abs(hz - frequency_hz) < 1e-6), None)
+        if candidate is None:
+            return "not_ready"
+        self.sonar_harmonic_hz = candidate
+        return True
+
+    def designate_sonar_target(self, contact):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if (not isinstance(contact, Contact)
+                or self.sonar.contacts.get(contact.target_id) is not contact
+                or not 0 <= self.sim_t - contact.last_seen
+                < config.SONAR_CONTACT_LOST_S):
+            return "stale_ref"
+        self.target = contact
+        return True
 
     def _finish_numeric_input(self) -> None:
         """Validate and apply a pending course or speed order."""
@@ -740,34 +1078,32 @@ class Game:
                 self.flash(message("runtime.numeric.angle"), 2.0)
                 return
             if mode == "bearing":
-                self.sonar.set_listen_bearing(number)
-                self._stop_sonar_audio()
+                if self.set_sonar_listen_bearing(number) is not True:
+                    self.flash(message("event.invalid_input"), 2.0)
+                    return
                 self.flash(message("runtime.numeric.true_bearing", bearing=f"{number:05.1f}"), 2.0)
             else:
-                if self.damage.station_down("bridge"):
+                result = self.order_course(number)
+                if result == "bridge_down":
                     self.flash(message("event.bridge_down"))
                     self.input_mode = None
                     self.input_buffer = ""
                     return
-                self.ship.target_course = number
+                if result != "ok":
+                    self.flash(message("event.invalid_input"), 2.0)
+                    return
                 self.flash(message("runtime.numeric.course", course=f"{number:03.0f}"), 2.0)
-                self.feed.add(self.world.format_time(), "navigation",
-                              message("runtime.numeric.course_feed",
-                                      course=f"{number:03.0f}"))
         else:
             if not 0.0 <= number <= config.SHIP_SPEED_MAX_KN:
                 self.flash(message("runtime.numeric.speed",
                                    maximum=f"{config.SHIP_SPEED_MAX_KN:.0f}"), 2.0)
                 return
-            self.ship.target_speed = number
-            self.ship.astern = False
-            self.ship.order_idx = min(range(len(config.TELEGRAPH_ORDERS)),
-                                      key=lambda i: abs(config.TELEGRAPH_ORDERS[i][1]
-                                                        - number))
+            result = (self.set_engine_speed(number) if self.station is Station.ENGINE
+                      else self.order_speed(number))
+            if result not in (True, "ok"):
+                self.flash(message("event.invalid_input"), 2.0)
+                return
             self.flash(message("runtime.numeric.speed_set", speed=f"{number:.1f}"), 2.0)
-            self.feed.add(self.world.format_time(), "navigation",
-                          message("runtime.numeric.speed_feed",
-                                  speed=f"{number:.1f}"))
         self.input_mode = None
         self.input_buffer = ""
 
@@ -864,6 +1200,131 @@ class Game:
         except OSError:
             self.flash(message("status.preferences_error"), 3.0)
 
+    def _record_simlog(self, stamp: str, category: str, text) -> None:
+        """Simulationsprotokoll: alle Feed-Ereignisse, optionsgesteuert, begrenzt.
+
+        Speichert das Rohtext (message-/RawText-Objekt); die Lokalisierung
+        erfolgt erst beim Commander-Publish (Sprache kann wechseln).
+        """
+        if not self.preferences.simlog:
+            return
+        self._simlog_seq += 1
+        self.simlog.append({
+            "seq": self._simlog_seq,
+            "t": self.sim_t,
+            "stamp": stamp,
+            "cat": category,
+            "text": text,
+        })
+
+    def _record_simlog_state(self, dt: float) -> None:
+        """Periodischer Zustandssnapshot des kompletten Simulationshintergrunds.
+
+        Rein lesend (kein RNG, keine Zustandsaenderung); Laeuft nur im
+        Simulationsfortschritt, nicht in Pause/Menue/Editor.
+        """
+        if not self.preferences.simlog:
+            self._simlog_acc = 0.0
+            return
+        self._simlog_acc += dt
+        if self._simlog_acc < config.SIMLOG_INTERVAL_S:
+            return
+        self._simlog_acc = 0.0
+        self._simlog_seq += 1
+        self.simlog.append({
+            "seq": self._simlog_seq,
+            "t": self.sim_t,
+            "stamp": self.world.format_time(),
+            "cat": "state",
+            "text": "",
+            "data": self._simlog_state_data(),
+        })
+
+    def _simlog_state_data(self) -> dict:
+        """Kompakter, JSON-faechiger Zustand aller Einheiten, Waffen und Welt."""
+        def r2(v):
+            return None if v is None else round(float(v), 2)
+
+        def r1(v):
+            return None if v is None else round(float(v), 1)
+
+        ship = self.ship
+        snap = {
+            "mission_t": r2(self.mission_time),
+            "timescale": self.time_scale_idx,
+            "result": self.mission_result,
+            "world": {"hour": r1(self.world.hour),
+                      "sea_state": self.world.sea_state,
+                      "night": self.world.is_night()},
+            "ship": {"x": r2(ship.x), "y": r2(ship.y),
+                     "course": r1(ship.course), "speed": r1(ship.speed),
+                     "damage": r1(self.damage.total),
+                     "sunk": self.damage.ship_sunk,
+                     "stations": {k: self.damage.station_down(k)
+                                  for k in ("bridge", "sonar", "weapons", "opz",
+                                            "radio", "engine", "flightdeck")}},
+            "weapons": {"torpedoes": self.torpedo_count,
+                        "vls": self.vls_cells, "ciws": self.ciws_ammo,
+                        "aa": self.aa_ammo, "chaff_cd": r2(self.chaff_cd)},
+            "subs": [{"id": s.id, "x": r2(s.x), "y": r2(s.y),
+                      "depth": r1(s.depth), "course": r1(s.course),
+                      "speed": r1(s.speed), "state": s.state,
+                      "torps": s.torpedoes_left, "sunk": s.sunk}
+                     for s in self.subs],
+            "surfaces": ([{"id": w.id, "kind": "warship", "x": r2(w.x),
+                           "y": r2(w.y), "course": r1(w.course),
+                           "speed": r1(w.speed), "sunk": w.sunk,
+                           "damage": r1(w.damage)}
+                          for w in self.warships]
+                         + [{"id": c.id, "kind": "civilian", "x": r2(c.x),
+                             "y": r2(c.y), "course": r1(c.course),
+                             "speed": r1(c.speed), "sunk": c.sunk,
+                             "damage": r1(c.damage)}
+                            for c in self.civilians]),
+            "animals": [{"id": a.id, "x": r2(a.x), "y": r2(a.y),
+                         "dead": a.dead} for a in self.animals],
+            "torpedoes": [{"id": t.id, "x": r2(t.x), "y": r2(t.y),
+                           "depth": r1(t.depth), "course": r1(t.course),
+                           "state": t.state,
+                           "target": (t.target.id if t.target is not None
+                                      else None)}
+                          for t in self.torpedoes],
+            "enemy_torpedoes": [{"id": t.id, "x": r2(t.x), "y": r2(t.y),
+                                 "depth": r1(t.depth), "course": r1(t.course),
+                                 "state": t.state}
+                                for t in self.enemy_torpedoes],
+            "decoys": [{"id": d.id, "x": r2(d.x), "y": r2(d.y),
+                        "depth": r1(d.depth), "life": r1(d.life),
+                        "dead": d.dead} for d in self.decoys],
+            "asms": [{"seq": a.seq, "x": r2(a.x), "y": r2(a.y),
+                      "course": r1(a.course), "state": a.state,
+                      "jammer": a.jammer} for a in self.asms],
+            "essms": [{"seq": e.seq, "x": r2(e.x), "y": r2(e.y),
+                       "course": r1(e.course), "state": e.state}
+                      for e in self.essms],
+            "asrocs": [{"seq": a.seq, "x": r2(a.x), "y": r2(a.y),
+                        "course": r1(a.course), "state": a.state}
+                       for a in self.asrocs],
+            "nixies": [{"seq": n.seq, "x": r2(n.x), "y": r2(n.y),
+                        "depth": r1(n.depth), "dead": n.dead}
+                       for n in self.nixies],
+            "buoys": [{"seq": b.seq, "x": r2(b.x), "y": r2(b.y),
+                       "battery_s": r1(b.battery_s), "active": b.active}
+                      for b in self.buoys],
+            "helo": {"state": self.helo.state, "x": r2(self.helo.x),
+                     "y": r2(self.helo.y), "airborne": self.helo.airborne},
+            "flights": [{"seq": f.seq, "kind": f.kind, "x": r2(f.x),
+                         "y": r2(f.y), "course": r1(f.course)}
+                        for f in self.flights.flights],
+            "raiders": [{"seq": r.seq, "x": r2(r.x), "y": r2(r.y),
+                         "course": r1(r.course), "phase": r.phase.value,
+                         "hp": r.hp, "pending_asm": r.pending_asm}
+                        for r in self.raiders],
+            "radars": {"surface": self.surface_radar_on,
+                       "air": self.air_radar_on},
+        }
+        return snap
+
     def compose_frame(self) -> None:
         """Virtuellen 1280x720-Canvas aufs Display bringen (M8/M9).
 
@@ -901,17 +1362,29 @@ class Game:
         return (self.help_open or self.nations_open or self.quit_confirm
                 or self.save_ui is not None or self.options_open or self.commander_open)
 
-    def _clear_controls(self) -> None:
+    def crew_overlay_allows_simulation(self) -> bool:
+        """Keep tactical crew stations live behind selected local overlays."""
+        if not getattr(self.commander, "active_crew", False):
+            return False
+        if self.editor is not None:
+            return (isinstance(self.editor, ContactAnalyzer)
+                    and not self.in_menu and not self.main_menu)
+        return self.help_open or self.options_open or self.commander_open
+
+    def _clear_station_input(self) -> None:
         self.held.clear()
         self._joy_turn = 0
         self._joy_acc = 0.0
         self._joy_x_acc = 0.0
         self._map_drag = None
         self._map_drag_moved = False
+
+    def _clear_controls(self) -> None:
+        self._clear_station_input()
         self._stop_sonar_audio()
 
     def _stop_sonar_audio(self) -> None:
-        self.audio.stop_sonar()
+        self.audio.stop_sonar(immediate=True)
         self.sonar.reset_audition_audio()
         self._sonar_audio_sequence = -1
         self._sonar_audio_suspended = False
@@ -960,13 +1433,13 @@ class Game:
             if key == pygame.K_ESCAPE:
                 self.options_open = False
             elif key in (pygame.K_UP, pygame.K_DOWN):
-                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 6
+                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 7
             elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
-                if self.options_sel == 5:
+                if self.options_sel == 6:
                     self._open_administration("commander")
                     return
                 names = ("language", "fullscreen", "audio", "large_text",
-                         "tooltips")
+                         "tooltips", "simlog")
                 name = names[self.options_sel]
                 value = ("de" if self.preferences.language == "en" else "en") \
                     if name == "language" else not getattr(self.preferences, name)
@@ -1097,7 +1570,8 @@ class Game:
         # changes within one wall frame must still invalidate queued commands.
         fields = ("paused", "in_menu", "main_menu", "splash_active", "input_mode",
                   "help_open", "nations_open", "quit_confirm", "save_ui",
-                  "options_open", "commander_open", "running", "game_over")
+                  "options_open", "commander_open", "simlog_view_open",
+                  "running", "game_over")
         before = tuple(getattr(self, field) for field in fields), id(self.editor)
         try:
             self._handle_owned_event(e)
@@ -1142,6 +1616,7 @@ class Game:
         if self.editor is not None:
             if e.type == pygame.QUIT:
                 self.editor = None
+                self.audio.stop_preview()
                 self._open_administration("quit")
                 return
             if (e.type == pygame.KEYDOWN and e.key == pygame.K_F5
@@ -1151,13 +1626,16 @@ class Game:
                 if selected is not None and not selected.builtin:
                     if self.start_custom_mission(selected.data):
                         self.editor = None
+                        self.audio.stop_preview()
                     else:
                         self.editor.status = self.tr("editor.runtime_unsupported")
                 return
             if (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE
                     and getattr(self.editor, "mode", "browser") == "browser"):
                 self.editor = None
-                self.main_menu = True
+                self.audio.stop_preview()
+                if self.in_menu:
+                    self.main_menu = True
                 return
             if e.type in (pygame.JOYAXISMOTION, pygame.JOYBUTTONDOWN):
                 return
@@ -1175,9 +1653,57 @@ class Game:
                 e = pygame.event.Event(e.type, attrs)
             self.editor.handle_event(e)
             return
+        if self.simlog_view_open:
+            if e.type == pygame.QUIT:
+                self._close_simlog_view()
+                self._open_administration("quit")
+                return
+            if e.type == pygame.JOYHATMOTION:
+                _, y = e.value
+                if y:
+                    self._scroll_simlog_view(6 if y < 0 else -6)
+                return
+            if e.type == pygame.MOUSEWHEEL:
+                self._scroll_simlog_view(-e.y * 3)
+                return
+            if e.type == pygame.KEYDOWN:
+                if e.key in (pygame.K_F4, pygame.K_ESCAPE):
+                    self._close_simlog_view()
+                    return
+                if e.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP,
+                             pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
+                    amount = {pygame.K_UP: -1, pygame.K_DOWN: 1,
+                              pygame.K_PAGEUP: -15, pygame.K_PAGEDOWN: 15,
+                              pygame.K_HOME: -10000, pygame.K_END: 10000}[e.key]
+                    self._scroll_simlog_view(amount)
+                    return
+                return
+            return
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
             if self._map_drag is not None and not self._map_drag_moved:
-                self._pin_tooltip_at(getattr(e, "pos", None))
+                canvas = self._window_to_canvas(getattr(e, "pos", None))
+                hit = map_hit_target(self, canvas) if canvas is not None else None
+                hit_id = hit.get("id", "") if isinstance(hit, dict) else ""
+                parts = hit_id.split(":")
+                if len(parts) >= 3 and parts[:2] == ["map", "sonar"] \
+                        and parts[2].isascii() and parts[2].isdigit():
+                    contact_id = int(parts[2])
+                    contact = next((item for item in self.sonar.active_contacts()
+                                    if item.id == contact_id), None)
+                    if contact is not None:
+                        self.selected_contact = contact
+                        self._pin_tooltip_at(getattr(e, "pos", None))
+                elif (self.station is Station.HELICOPTER and canvas is not None
+                      and hit_id.startswith("chart:")):
+                    self.map_view.set_rect(config.MAP_RECT)
+                    x_nm, y_nm = self.map_view.screen_to_world(*canvas)
+                    if self.set_helicopter_waypoint(x_nm, y_nm) is True:
+                        bearing, distance = self._helo_waypoint_polar()
+                        self.flash(message("runtime.helo.waypoint",
+                                           bearing=f"{bearing:03.0f}",
+                                           range=f"{distance:.0f}"), 1.5)
+                else:
+                    self._pin_tooltip_at(getattr(e, "pos", None))
             self._map_drag = None
             self._map_drag_moved = False
             return
@@ -1202,7 +1728,7 @@ class Game:
                         for index, rect in enumerate(self._options_row_rects()):
                             if rect.collidepoint(canvas):
                                 self.options_sel = index
-                                if index == 5:
+                                if index == 6:
                                     self._open_administration("commander")
                                 break
             return
@@ -1250,10 +1776,17 @@ class Game:
             if e.key == pygame.K_F10 or (e.key == pygame.K_o and self.paused):
                 self._open_administration("options")
                 return
+            if e.key == pygame.K_F8:
+                self._open_analyzer_in_game()
+                return
+            if e.key == pygame.K_F4:
+                self._open_simlog_view()
+                return
             if e.key == pygame.K_n and self.station is not Station.SONAR:
                 self._open_administration("nations")
                 return
-            if e.key in (pygame.K_s, pygame.K_l):
+            if e.key in (pygame.K_s, pygame.K_l) and not (
+                    e.key == pygame.K_l and self.station is Station.OPZ):
                 self._open_administration("save" if e.key == pygame.K_s else "load")
                 return
             if e.key == pygame.K_p and not self.game_over:
@@ -1262,15 +1795,18 @@ class Game:
                 self.flash(message("status.paused" if self.paused else "status.resumed"))
                 return
             if pygame.K_1 <= e.key <= pygame.K_9:
-                self._clear_controls()
+                destination = list(Station)[e.key - pygame.K_1]
                 self.pinned_tooltip = None
                 self._tooltip_anchor = None
-                destination = list(Station)[e.key - pygame.K_1]
                 if destination is self.station:
+                    # Page cycle: clear held controls, but keep the station's
+                    # audio stream continuous (no stop/restart blip).
+                    self._clear_station_input()
                     if len(STATION_PAGES[self.station]) > 1:
                         self.sonar_page = station_page_step(
                             self.station, self.sonar_page, 1)
                 else:
+                    self._clear_controls()
                     self.station = destination
                 return
             if e.key == pygame.K_TAB:
@@ -1305,8 +1841,7 @@ class Game:
                         self.sonar_page, 1 if e.key == pygame.K_PAGEDOWN else -1)
                     return
                 if e.key == pygame.K_e:
-                    if self.sonar.measure_environment(self.world, self.ship,
-                                                      self.sim_t):
+                    if self.measure_sonar_bt() is True:
                         depth = self.sonar.bt_profile["thermocline_m"]
                         self.flash(message("runtime.bt.measured", depth=f"{depth:.0f}"))
                         self.feed.add(self.world.format_time(), "sonar",
@@ -1316,9 +1851,13 @@ class Game:
                                            seconds=f"{self.sonar.bt_cooldown:.0f}"))
                     return
                 if e.key in (pygame.K_u, pygame.K_v):
-                    depth = self.sonar.adjust_towed_depth(
-                        -10.0 if e.key == pygame.K_u else 10.0,
-                        self.ship.speed)
+                    requested = config.clamp(
+                        self.sonar.towed_depth_target_m
+                        + (-10.0 if e.key == pygame.K_u else 10.0),
+                        config.SONAR_TOWED_DEPTH_MIN_M,
+                        config.SONAR_TOWED_DEPTH_MAX_M)
+                    self.set_sonar_tow_depth(requested)
+                    depth = self.sonar.towed_depth_target_m
                     self.flash(message("runtime.tas.depth", depth=f"{depth:.0f}"))
                     return
                 if e.key == pygame.K_r:
@@ -1353,9 +1892,8 @@ class Game:
                 if e.key in (pygame.K_LEFT, pygame.K_RIGHT):
                     mods = getattr(e, "mod", 0)
                     step = .1 if mods & pygame.KMOD_CTRL else (5.0 if mods & pygame.KMOD_SHIFT else .5)
-                    self.sonar.set_listen_bearing(self.sonar.listen_bearing +
-                                                 (step if e.key == pygame.K_RIGHT else -step))
-                    self._stop_sonar_audio()
+                    self.set_sonar_listen_bearing((self.sonar.listen_bearing +
+                        (step if e.key == pygame.K_RIGHT else -step)) % 360.0)
                     return
                 if e.key in (pygame.K_UP, pygame.K_DOWN):
                     self._cycle_selected_contact(1 if e.key == pygame.K_DOWN else -1)
@@ -1363,15 +1901,12 @@ class Game:
                 if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     contact = self.selected_contact
                     if self.sonar.focus_locked:
-                        self.sonar.focus_locked = False
-                        self.flash(message("runtime.listen.manual"))
-                    elif contact is not None and self.sim_t - contact.last_seen <= 2.0:
-                        self.sonar.set_listen_bearing(contact.bearing)
-                        self.sonar.focus_locked = True
+                        if self.clear_sonar_focus() is True:
+                            self.flash(message("runtime.listen.manual"))
+                    elif contact is not None and self.set_sonar_focus(contact) is True:
                         self.flash(message("runtime.listen.follow", contact=contact.id))
                     else:
                         self.flash(message("runtime.listen.no_contact"))
-                    self._stop_sonar_audio()
                     return
             if self.station in (Station.OPZ, Station.RADAR) and \
                     e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
@@ -1389,7 +1924,7 @@ class Game:
                         1 if e.key == pygame.K_UP else -1)
                     self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
                 elif self.station is Station.ENGINE:
-                    self.ship.cycle_telegraph(
+                    self._cycle_engine_telegraph(
                         1 if e.key == pygame.K_UP else -1)
                     self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
                 elif self.station is Station.HELICOPTER:
@@ -1404,7 +1939,9 @@ class Game:
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_BACKSPACE) and self.station is Station.DAMAGE:
                 if e.key == pygame.K_BACKSPACE:
-                    self.damage.unassign_team(self.dmg_team)
+                    destination = self.damage.teams[self.dmg_team]
+                    if destination is not None:
+                        self.unassign_damage_team(self.dmg_team, destination)
                     self.flash(message("runtime.team.withdrawn", team=self.dmg_team))
                 else:
                     self._assign_selected_team()
@@ -1419,15 +1956,26 @@ class Game:
                 self.cycle_time_scale(1)
             elif e.key == pygame.K_n:
                 if self.station is Station.SONAR:
-                    self.sonar.notch_enabled = not self.sonar.notch_enabled
+                    self.set_sonar_notch(not self.sonar.notch_enabled)
                     self.flash(message("runtime.notch.on" if self.sonar.notch_enabled
                                        else "runtime.notch.off"), 1.5)
                 else:
                     self.nations_open = not self.nations_open
             elif e.key == pygame.K_SPACE and self.station is Station.SONAR:
-                self.sonar.peak_hold = not self.sonar.peak_hold
+                self.set_sonar_peak_hold(not self.sonar.peak_hold)
                 self.flash(message("runtime.peak_hold.on" if self.sonar.peak_hold
                                    else "runtime.peak_hold.off"), 1.5)
+            elif e.key == pygame.K_SPACE and self.station is Station.OPZ:
+                self._toggle_opz_mark()
+            elif e.key == pygame.K_l and self.station is Station.OPZ:
+                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    self._dissolve_opz_fusion()
+                else:
+                    self._create_opz_fusion()
+            elif e.key == pygame.K_BACKSPACE and self.station is Station.OPZ:
+                self.opz_fusion.marked.clear()
+            elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
+                self._toggle_opz_suppression()
             elif e.key in (pygame.K_EQUALS, pygame.K_PLUS, pygame.K_KP_PLUS):
                 self.ship.cycle_telegraph(1)
                 self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
@@ -1439,22 +1987,19 @@ class Game:
             elif e.key == pygame.K_a and (self.station is not Station.SONAR
                                            or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
                 if self.station is Station.SONAR:
-                    if self.damage.station_down("sonar"):
+                    result = self.send_active_ping()
+                    if result == "sonar_down":
                         self.flash(message("runtime.sonar.down"), 3.0)
-                    elif (self.sonar_mode == "TOWED"
-                          and not self.sonar.tow_status(self.ship.speed)["available"]):
-                        pass
-                    elif self.sonar.fire_ping():
+                    elif result is True:
                         self.flash(message("runtime.ping.sent"), 1.5)
-                        self.audio.play_ping()
-                        factor = self._sonar_range_factor()
-                        self.sonar.queue_ping(self.ship, self._sonar_targets(),
-                                              self.world, self.sim_t, factor,
-                                              mode=self.sonar_mode)
                 elif self.station is Station.ENGINE:
-                    self.ship.quiet_mode = not self.ship.quiet_mode
-                    self.flash(message("runtime.quiet.on" if self.ship.quiet_mode
-                                       else "runtime.quiet.off"))
+                    if self.set_quiet_mode(not self.ship.quiet_mode) is True:
+                        self.flash(message("runtime.quiet.on" if self.ship.quiet_mode
+                                           else "runtime.quiet.off"))
+                elif self.station is Station.HELICOPTER:
+                    result = self.send_helicopter_dipping_ping()
+                    self.flash(message("runtime.helo.dip_ping_sent" if result is True
+                                       else "runtime.helo.dip_ping_unavailable"))
             elif e.key == pygame.K_r:
                 if self.game_over:
                     self.reset(self.seed)
@@ -1498,7 +2043,7 @@ class Game:
                 if self.station is Station.SONAR:
                     self._cycle_classification()
                 elif self.station in (Station.OPZ, Station.RADAR):
-                    self._cycle_opz_affiliation()
+                    self._cycle_opz_classification()
                 elif self.station is Station.ELOKA:
                     self._cycle_eloka_annotation()
             elif e.key == pygame.K_b and (self.station is not Station.SONAR
@@ -1509,15 +2054,38 @@ class Game:
                     self.deploy_buoys()
             elif e.key == pygame.K_y:
                 if self.station is Station.SONAR:
-                    toggle_tas(self, self.tr)
+                    if self.damage.station_down("sonar"):
+                        self.flash(message("runtime.sonar.down"), 3.0)
+                    else:
+                        toggle_tas(self, self.tr)
+                elif self.station is Station.HELICOPTER:
+                    deploy = self.helo.dip_state in ("STOWED", "RETRIEVING")
+                    result = self.set_helicopter_dipping(deploy)
+                    if result is True:
+                        self.flash(message("runtime.helo.dip_deploy" if deploy
+                                           else "runtime.helo.dip_retrieve"))
+                    else:
+                        self.flash(message("runtime.helo.dip_unavailable"))
             elif e.key == pygame.K_h and self.station in (Station.WEAPONS,
-                                                          Station.HELICOPTER):
+                                                           Station.HELICOPTER):
                 self.toggle_helo()
+            elif e.key == pygame.K_h and self.station is Station.OPZ:
+                self.opz_fusion.show_suppressed = not self.opz_fusion.show_suppressed
+                self.opz_selected_track_id = None
             elif e.key == pygame.K_d:
                 if self.station in (Station.WEAPONS, Station.HELICOPTER):
                     self.launch_helo_torpedo()
             elif e.key == pygame.K_v and self.station is Station.WEAPONS:
                 self.deploy_nixie()
+            elif e.key in (pygame.K_u, pygame.K_v) \
+                    and self.station is Station.HELICOPTER:
+                requested = config.clamp(
+                    self.helo.dip_depth_target_m
+                    + (-10.0 if e.key == pygame.K_u else 10.0),
+                    config.HELO_DIP_DEPTH_MIN_M, config.HELO_DIP_DEPTH_MAX_M)
+                if self.set_helicopter_dip_depth(requested) is True:
+                    self.flash(message("runtime.helo.dip_depth",
+                                       depth=f"{self.helo.dip_depth_target_m:.0f}"))
             elif e.key == pygame.K_e:
                 if self.station in (Station.OPZ, Station.RADAR):
                     self.launch_essm()
@@ -1525,18 +2093,22 @@ class Game:
                     self.map_view.set_rect(config.MAP_RECT)
                     self.map_view.zoom(config.MAP_ZOOM_WHEEL_FACTOR)
             elif e.key == pygame.K_g and self.station in (Station.OPZ,
-                                                          Station.RADAR):
+                                                           Station.RADAR):
                 self.launch_chaff()
+            elif e.key == pygame.K_g and self.station is Station.SONAR:
+                self._toggle_sonar_release()
             elif e.key == pygame.K_t:
                 if self.station is Station.WEAPONS:
                     self.launch_torpedo()
                 elif self.station is Station.SONAR:
-                    self.sonar.tma_enabled = not self.sonar.tma_enabled
+                    self.set_sonar_tma_enabled(not self.sonar.tma_enabled)
                     self.flash(message("runtime.tma.on" if self.sonar.tma_enabled
                                        else "runtime.tma.off"), 1.5)
             elif e.key == pygame.K_f:
                 if self.station is Station.SONAR:
                     self._cycle_sonar_band()
+                elif self.station is Station.OPZ:
+                    self._cycle_opz_affiliation()
             elif e.key == pygame.K_k:
                 if self.station in MAP_STATIONS:
                     self.map_follow = not self.map_follow
@@ -1612,6 +2184,7 @@ class Game:
                         config.STATION_RECT = previous
                     if compartment is not None:
                         self.dmg_cursor = list(self.damage.compartments).index(compartment)
+                        self._assign_selected_team()
                         self._pin_tooltip_at(getattr(e, "pos", None))
                         return
                 if self.station is Station.ELOKA:
@@ -1622,6 +2195,25 @@ class Game:
                         self.pinned_tooltip = None
                         self._tooltip_anchor = None
                         self._pin_tooltip_at(getattr(e, "pos", None))
+                        return
+                if self.station is Station.OPZ:
+                    canvas = self._window_to_canvas(getattr(e, "pos", None))
+                    action = opz_action_at(self, canvas, config.FULL_STATION_RECT)
+                    if isinstance(action, tuple) and action[0] == "select":
+                        self.opz_selected_track_id = action[1]
+                    elif action == "classify":
+                        self._cycle_opz_classification()
+                    elif action == "affiliate":
+                        self._cycle_opz_affiliation()
+                    elif action == "mark":
+                        self._toggle_opz_mark()
+                    elif action == "fusion":
+                        self._create_opz_fusion()
+                    else:
+                        action = None
+                    if action is not None:
+                        self.pinned_tooltip = None
+                        self._tooltip_anchor = None
                         return
                 pointer = self._map_pointer(getattr(e, "pos", None))
                 if pointer is not None:
@@ -1648,7 +2240,7 @@ class Game:
 
     def _assign_selected_team(self) -> None:
         destination = list(self.damage.compartments)[self.dmg_cursor]
-        if self.damage.assign_team(self.dmg_team, destination):
+        if self.assign_damage_team(self.dmg_team, destination) is True:
             self.flash(message("runtime.team.assigned", team=self.dmg_team,
                                compartment=message("compartment." + destination)))
         else:
@@ -1671,7 +2263,7 @@ class Game:
     # --- M10–M16: Neue Stationen & Waffensysteme ---
 
     def _cycle_sonar_mode(self) -> None:
-        self.sonar_mode = "TOWED" if self.sonar_mode == "BOW" else "BOW"
+        self.set_sonar_array_mode("TOWED" if self.sonar_mode == "BOW" else "BOW")
         self.flash(message("runtime.sonar_array.towed" if self.sonar_mode == "TOWED"
                            else "runtime.sonar_array.bow"), 1.5)
 
@@ -1694,6 +2286,14 @@ class Game:
             if contact is None:
                 return False
             self.selected_contact = contact
+        elif action == "listen_bearing":
+            value = target.get("value")
+            if (type(value) not in (int, float) or not math.isfinite(value)
+                    or not 0 <= value < 360):
+                return False
+            self.set_sonar_listen_bearing(value)
+            self.flash(message("runtime.numeric.true_bearing",
+                               bearing=f"{value:05.1f}"), 2.0)
         elif action == "array":
             self._cycle_sonar_mode()
         elif action == "gain":
@@ -1701,13 +2301,13 @@ class Game:
         elif action == "band_filter":
             self._cycle_sonar_band()
         elif action == "notch":
-            self.sonar.notch_enabled = not self.sonar.notch_enabled
+            self.set_sonar_notch(not self.sonar.notch_enabled)
             self.flash(message("runtime.notch.on" if self.sonar.notch_enabled
                                else "runtime.notch.off"), 1.5)
         elif action == "harmonic":
             self._cycle_sonar_harmonic()
         elif action == "peak":
-            self.sonar.peak_hold = not self.sonar.peak_hold
+            self.set_sonar_peak_hold(not self.sonar.peak_hold)
             self.flash(message("runtime.peak_hold.on" if self.sonar.peak_hold
                                else "runtime.peak_hold.off"), 1.5)
         elif action == "audio":
@@ -1720,15 +2320,12 @@ class Game:
         return True
 
     def _cycle_sonar_harmonic(self) -> None:
-        peaks = getattr(self.sonar.receiver, "peaks", [])
-        candidates = sorted({float(hz) for hz, _ in list(peaks)[:6]
-                             if math.isfinite(hz)
-                             and 0 < float(hz) <= config.LOFAR_FMAX_HZ})
+        candidates = self.sonar_harmonic_candidates()
         current = self.sonar_harmonic_hz
         index = next((i for i, hz in enumerate(candidates)
                       if current is not None and abs(hz - current) < 1e-6), -1)
-        self.sonar_harmonic_hz = (candidates[index + 1]
-                                  if index + 1 < len(candidates) else None)
+        self.set_sonar_harmonic(candidates[index + 1]
+                                if index + 1 < len(candidates) else None)
         if self.sonar_harmonic_hz is None:
             self.flash(message("runtime.harmonic.cleared"), 1.5)
         else:
@@ -1736,7 +2333,7 @@ class Game:
                                frequency=f"{self.sonar_harmonic_hz:.1f}"), 1.5)
 
     def _adjust_sonar_gain(self, delta: float) -> None:
-        self.sonar.gain_db = config.clamp(self.sonar.gain_db + delta, -12.0, 24.0)
+        self.set_sonar_gain(config.clamp(self.sonar.gain_db + delta, -12.0, 24.0))
         self.flash(message("runtime.sonar_gain", gain=f"{self.sonar.gain_db:+.0f}"), 1.2)
 
     def _set_sonar_audition_mode(self, mode: str) -> None:
@@ -1761,14 +2358,16 @@ class Game:
                                  and not muted_above_1x))
 
     def _cycle_sonar_band(self) -> None:
-        bands = ((0.0, 300.0), (4.0, 80.0), (8.0, 55.0), (20.0, 120.0))
+        bands = tuple(SONAR_BAND_PRESETS.values())
         current = (self.sonar.band_low_hz, self.sonar.band_high_hz)
         try:
             index = bands.index(current)
         except ValueError:
             index = 0
         low, high = bands[(index + 1) % len(bands)]
-        self.sonar.band_low_hz, self.sonar.band_high_hz = low, high
+        preset = next(key for key, value in SONAR_BAND_PRESETS.items()
+                      if value == (low, high))
+        self.set_sonar_band_preset(preset)
         self.flash(message("runtime.sonar_band", low=f"{low:.0f}",
                            high=f"{high:.0f}"), 1.5)
 
@@ -1783,18 +2382,35 @@ class Game:
         self.air_radar_on = bool(value)
 
     def toggle_radar(self, domain: str = "surface") -> None:
-        if self.damage.station_down("opz"):
+        enabled = not (self.air_radar_on if domain == "air"
+                       else self.surface_radar_on)
+        if self.set_opz_radar(domain, enabled) is not True:
             self.flash(message("runtime.opz.disabled"))
             return
         if domain == "air":
-            self.air_radar_on = not self.air_radar_on
             radar, active = "air", self.air_radar_on
         else:
-            self.surface_radar_on = not self.surface_radar_on
             radar, active = "surface", self.surface_radar_on
         suffix = "on" if active else "off"
         self.hq_msg(message(f"runtime.emcon.{radar}.{suffix}.hq"))
         self.flash(message(f"runtime.emcon.{radar}.{suffix}"), 2.0)
+
+    def set_opz_radar(self, domain: str, enabled: bool):
+        """Set one OPZ radar from a validated local or remote station action."""
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if domain not in ("surface", "air") or type(enabled) is not bool:
+            return "invalid_value"
+        setattr(self, f"{domain}_radar_on", enabled)
+        return True
+
+    def set_opz_range(self, range_nm: float):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if type(range_nm) not in (int, float) or range_nm not in config.RADAR_RANGE_SCALES_NM:
+            return "invalid_value"
+        self.opz_range_nm = float(range_nm)
+        return True
 
     def _cycle_radar_range(self, delta: int) -> None:
         scales = config.RADAR_RANGE_SCALES_NM
@@ -1803,7 +2419,8 @@ class Game:
         except ValueError:
             index = len(scales) - 1
         index = max(0, min(len(scales) - 1, index + delta))
-        self.opz_range_nm = scales[index]
+        if self.set_opz_range(scales[index]) is not True:
+            return
         self.flash(message("runtime.radar.range", range=f"{self.opz_range_nm:.0f}"), 1.5)
 
     def radar_weather_severity(self) -> float:
@@ -1825,18 +2442,43 @@ class Game:
 
     def toggle_helo(self) -> None:
         if self.helo.airborne:
-            self.helo.order_return()
-            self.flash(message("runtime.helo.return"))
+            if self.return_helicopter() is True:
+                self.flash(message("runtime.helo.return"))
         else:
-            if self.damage.station_down("flightdeck"):
+            result = self.launch_helicopter()
+            if result == "flightdeck_down":
                 self.flash(message("runtime.helo.deck_down"))
                 return
-            if self.helo.state == "VERLOREN":
+            if result is not True:
                 self.flash(message("runtime.helo.lost"))
                 return
-            self.helo.launch(self.ship)
             self.flash(message("runtime.helo.launch", torpedoes=self.helo.torps,
                                buoys=self.helo.buoys_left), 3.0)
+
+    def launch_helicopter(self):
+        if self.damage.station_down("flightdeck"):
+            return "flightdeck_down"
+        if self.helo.state != "HANGAR":
+            return "not_ready"
+        self.helo.launch(self.ship)
+        return True
+
+    def return_helicopter(self):
+        if not self.helo.airborne:
+            return "not_ready"
+        self.helo.order_return()
+        return True
+
+    def set_helicopter_waypoint(self, x: float, y: float):
+        if (type(x) not in (int, float) or type(y) not in (int, float)
+                or not 0 <= x <= self.world.size_nm
+                or not 0 <= y <= self.world.size_nm
+                or not math.isfinite(x) or not math.isfinite(y)):
+            return "invalid_value"
+        if self.helo.state == "VERLOREN":
+            return "not_ready"
+        self.helo.set_waypoint(x, y)
+        return True
 
     def _helo_waypoint_polar(self) -> tuple[float, float]:
         if self.helo.waypoint_x is None or self.helo.waypoint_y is None:
@@ -1857,21 +2499,35 @@ class Game:
                            range=f"{distance:.0f}"), 1.5)
 
     def deploy_buoys(self) -> None:
-        if not self.helo.airborne:
+        result = self.deploy_helicopter_buoy()
+        if result == "not_ready":
             self.flash(message("runtime.helo.not_airborne"))
             return
-        if not self.helo.water_entry_clear(self.world):
+        if result == "water_required":
             self.flash(message("runtime.helo.water_required"))
             return
-        self.buoy_seq += 1
-        buoy = self.helo.deploy_buoy(self.buoy_seq, world=self.world)
-        if buoy is not None:
-            self.buoys.append(buoy)
+        if result is True:
+            buoy = self.buoys[-1]
             self.flash(message("runtime.buoy.deployed", buoy=buoy.seq))
             self.feed.add(self.world.format_time(), "sonar",
                           message("runtime.buoy.active", buoy=buoy.seq))
         else:
             self.flash(message("event.no_buoys"))
+
+    def deploy_helicopter_buoy(self):
+        if not self.helo.airborne:
+            return "not_ready"
+        if not self.helo.water_entry_clear(self.world):
+            return "water_required"
+        if self.helo.buoys_left <= 0:
+            return "no_buoys"
+        next_sequence = self.buoy_seq + 1
+        buoy = self.helo.deploy_buoy(next_sequence, world=self.world)
+        if buoy is None:
+            return "not_ready"
+        self.buoy_seq = next_sequence
+        self.buoys.append(buoy)
+        return True
 
     def launch_helo_torpedo(self) -> None:
         """Leichttorpedo vom HSP-5 (eigene Munition, nicht Fregatten-Rohre)."""
@@ -1880,52 +2536,62 @@ class Game:
             self.target = None
             self.flash(message("runtime.target.invalid"))
             return
-        blocked = self._target_affiliation_interlock()
+        self.launch_helicopter_torpedo_at(self.target, self.torpedo_depth)
+
+    def launch_helicopter_torpedo_at(self, contact, depth_m: float):
+        """Release a helicopter torpedo against one explicit sonar observation."""
+        if (contact is None or type(depth_m) not in (int, float)
+                or not math.isfinite(depth_m) or not 10 <= depth_m <= 300
+                or self.sim_t - contact.last_seen >= config.SONAR_CONTACT_LOST_S):
+            self.flash(message("runtime.target.invalid"))
+            return "invalid_target"
+        blocked = self._target_affiliation_interlock(contact)
         if blocked is not None:
             self.flash(message("runtime.roe.blocked",
                                affiliation=display_value("affiliation", blocked, self.tr)))
-            return
-        if self.roe == "STD" and not self._contact_range_fresh(self.target):
+            return "roe_blocked"
+        if self.roe == "STD" and not self._contact_range_fresh(contact):
             self.flash(message("runtime.target.not_located"))
-            return
-        if self.target.player_class != "U_BOOT":
+            return "not_located"
+        if contact.player_class != "U_BOOT":
             self.flash(message("runtime.target.air_class"))
-            return
+            return "not_classified"
         if not self.helo.airborne:
             self.flash(message("runtime.helo.not_airborne"))
-            return
+            return "not_ready"
         if self.helo.torps <= 0:
             self.flash(message("runtime.helo_no_torpedoes"))
-            return
+            return "empty"
         if not self.helo.water_entry_clear(self.world):
             self.flash(message("runtime.helo.water_required"))
-            return
-        tgt = self._find_target(self.target.target_id)
+            return "water_required"
+        tgt = self._find_target(contact.target_id)
         lv = config.LEVELS[self.level]
-        range_nm = (self.target.range_est if self.target.range_est is not None
+        range_nm = (contact.range_est if contact.range_est is not None
                     else config.ROE_FREE_LAUNCH_RANGE_NM)
-        use_fix = (self._contact_range_fresh(self.target)
-                   and self.target.observed_x is not None
-                   and self.target.observed_y is not None)
+        use_fix = (self._contact_range_fresh(contact)
+                   and contact.observed_x is not None
+                   and contact.observed_y is not None)
         datum = self.helo.release_datum_from_ship_observation(
-            self.ship, self.target.bearing, range_nm,
-            bearing_uncertainty_deg=max(0.0, (1.0 - self.target.quality) * 8.0),
-            range_uncertainty_nm=self.target.range_sigma_nm or 0.0,
-            datum_x=self.target.observed_x if use_fix else None,
-            datum_y=self.target.observed_y if use_fix else None)
+            self.ship, contact.bearing, range_nm,
+            bearing_uncertainty_deg=max(0.0, (1.0 - contact.quality) * 8.0),
+            range_uncertainty_nm=contact.range_sigma_nm or 0.0,
+            datum_x=contact.observed_x if use_fix else None,
+            datum_y=contact.observed_y if use_fix else None)
         torp = self.helo.drop_torpedo(
-            tgt, self.torpedo_depth, self.torpedo_seq + 1,
+            tgt, depth_m, self.torpedo_seq + 1,
             kill_dist_nm=lv["kill_dist_nm"], kill_depth_m=lv["kill_depth_m"],
             guidance_x=datum.x_nm, guidance_y=datum.y_nm, world=self.world)
         if torp is None:
-            return
+            return "not_ready"
         self.torpedo_seq += 1
         self.torpedoes.append(torp)
         self.flash(message("runtime.helo_torpedo.launched",
                            torpedo=self.torpedo_seq), 2.0)
         self.feed.add(self.world.format_time(), "waffen",
                       message("runtime.helo_torpedo.feed",
-                              torpedo=self.torpedo_seq, contact=self.target.id))
+                              torpedo=self.torpedo_seq, contact=contact.id))
+        return True
 
     def _cycle_asm_track(self, delta: int) -> None:
         n = len(self.asm_tracks())
@@ -1935,30 +2601,34 @@ class Game:
         self.asm_sel = (self.asm_sel + delta) % n
 
     def launch_essm(self) -> None:
+        tracks = self.asm_tracks()
+        track = tracks[min(self.asm_sel, len(tracks) - 1)] if tracks else None
+        self.launch_essm_at(track)
+
+    def launch_essm_at(self, track):
+        """Launch against an explicit current positioned ASM observation."""
         profiles = self._air_defense_loadout
         if self.damage.station_down("opz") or self.damage.station_degraded("opz"):
             self.flash(message("runtime.opz.degraded"))
-            return
+            return "opz_degraded"
         if self.vls_cells <= 0:
             self.flash(message("runtime.vls.empty"))
-            return
+            return "empty"
         if len(self.essms) >= profiles["vls"]["fire_channels"]:
             self.flash(message("runtime.vls.empty"))
-            return
-        tracks = self.asm_tracks()
-        if not tracks:
+            return "active_limit"
+        if not any(item is track for item in self.asm_tracks()):
             self.flash(message("runtime.asm.none"))
-            return
-        track = tracks[min(self.asm_sel, len(tracks) - 1)]
+            return "invalid_target"
         sam = profiles["sam"]
         if track.range_nm is None or track.range_nm > sam["range_nm"]:
             self.flash(message("runtime.asm.range", range=f"{sam['range_nm']:.0f}"))
-            return
+            return "out_of_range"
         if (track.x is None or track.y is None or track.position_seen is None
                 or self.sim_t - track.position_seen
                 > sam["observation_max_age_s"]):
             self.flash(message("runtime.asm.stale"))
-            return
+            return "stale_ref"
         tgt = next((a for a in self.asms if a.seq == track.target_id), None)
         course = math.degrees(math.atan2(track.x - self.ship.x,
                                         -(track.y - self.ship.y))) % 360.0
@@ -1969,21 +2639,26 @@ class Game:
                                target_id=track.target_id, profile=sam))
         self.vls_cells -= 1
         self.flash(message("runtime.essm.launched", cells=self.vls_cells), 2.0)
+        return True
 
     def launch_chaff(self) -> None:
+        tracks = self.asm_tracks()
+        track = tracks[min(self.asm_sel, len(tracks) - 1)] if tracks else None
+        self.launch_chaff_at(track)
+
+    def launch_chaff_at(self, track):
+        """Deploy one softkill round against an explicit ASM observation."""
         if self.damage.station_down("opz"):
             self.flash(message("runtime.chaff.disabled"))
-            return
+            return "opz_down"
         if self.softkill_store.ready <= 0:
             self.flash(message("runtime.chaff.cooldown", seconds=f"{self.chaff_cd:.0f}"))
-            return
-        tracks = self.asm_tracks()
-        if tracks:
-            track = tracks[min(self.asm_sel, len(tracks) - 1)]
-            a = next((item for item in self.asms
-                      if item.seq == track.target_id and item.state == "LAUF"), None)
-        else:
-            a = None
+            return "not_ready"
+        if track is None or not any(item is track for item in self.asm_tracks()):
+            self.flash(message("runtime.chaff.none"))
+            return "invalid_target"
+        a = next((item for item in self.asms
+                  if item.seq == track.target_id and item.state == "LAUF"), None)
         profile = self._air_defense_loadout["softkill"]
         if (a is not None and track.range_nm is not None
                 and track.position_seen is not None
@@ -1995,23 +2670,29 @@ class Game:
             self.chaff_cd = min(self.softkill_store.loading, default=0.0)
             self.flash(message("runtime.chaff.decoyed" if broke
                                else "runtime.chaff.jammed"))
+            return True
         else:
             self.flash(message("runtime.chaff.none"))
+            return "stale_ref"
 
     def deploy_nixie(self) -> None:
         """Deploy one finite towed acoustic countermeasure from own ship."""
+        self.deploy_nixie_result()
+
+    def deploy_nixie_result(self):
         if len(self.nixies) >= MAX_TOWED_DECOYS:
             self.flash(message("runtime.nixie.active"))
-            return
+            return "active_limit"
         if not self.nixie_store.fire():
             self.flash(message("runtime.nixie.empty"))
-            return
+            return "empty"
         definition = self._ownship_loadout["countermeasure"]
         self.nixie_seq += 1
         self.nixies.append(TowedAcousticDecoy(
             self.nixie_seq, self.ship, life_s=definition["active_life_s"],
             tether_nm=definition["tether_nm"], depth_m=definition["depth_m"]))
         self.flash(message("runtime.nixie.deployed", count=self.nixie_store.remaining_total))
+        return True
 
     def _joy_step(self, delta: int) -> None:
         """uConsole-Trackball Y-Achse: stationsabhängiger Schritt."""
@@ -2032,8 +2713,11 @@ class Game:
             self._cycle_hfdf(delta)
         elif self.station is Station.HELICOPTER:
             self._adjust_helo_waypoint(range_delta=float(-delta))
-        elif self.station in (Station.BRIDGE, Station.ENGINE):
+        elif self.station is Station.BRIDGE:
             self.ship.cycle_telegraph(-delta)
+            self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
+        elif self.station is Station.ENGINE:
+            self._cycle_engine_telegraph(-delta)
             self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
 
     def _joy_horizontal_step(self, delta: int) -> None:
@@ -2065,6 +2749,68 @@ class Game:
         first = random.Random(seed + epoch * 104729).uniform(-1.0, 1.0)
         second = random.Random(seed + (epoch + 1) * 104729).uniform(-1.0, 1.0)
         return first + (second - first) * blend
+
+    def _observation_key(self, namespace: str, identity: object) -> str:
+        value = f"{self.seed}:{namespace}:{identity}".encode("utf-8")
+        return hashlib.blake2b(value, digest_size=8).hexdigest().upper()
+
+    def _lookout_observe(self, actor, namespace: str, kind: str,
+                         base_range_nm: float, seed: int) -> None:
+        import random
+
+        if self.world.is_night():
+            base_range_nm *= config.LOOKOUT_NIGHT_FACTOR
+        base_range_nm *= max(0.0, 1.0 - self.world.sea_state
+                             * config.LOOKOUT_SEA_STATE_LOSS)
+        dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
+        distance = math.hypot(dx, dy)
+        if (distance > base_range_nm or self.world.land_blocks_line(
+                self.ship.x, self.ship.y, actor.x, actor.y)):
+            return
+        bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+        epoch = math.floor((self.sim_t + 1e-9) / config.LOOKOUT_EPOCH_S)
+        rng = random.Random(seed * 65537 + epoch * 104729 + 0x4C4F4F4B)
+        measured_bearing = (bearing + rng.uniform(
+            -config.LOOKOUT_BEARING_ERR_DEG,
+            config.LOOKOUT_BEARING_ERR_DEG)) % 360.0
+        measured_range = max(0.0, distance * (1.0 + rng.uniform(
+            -config.LOOKOUT_RANGE_ERR_FRAC, config.LOOKOUT_RANGE_ERR_FRAC)))
+        quality = config.clamp(.95 - .45 * distance / max(base_range_nm, .01),
+                               .5, .95)
+        identity = getattr(actor, "id", getattr(actor, "seq", 0))
+        self.air_picture.observe(
+            track_id="L-" + self._observation_key(namespace, identity),
+            kind=kind, target_id=0, source="LOOKOUT",
+            bearing=measured_bearing, range_nm=measured_range,
+            observer_x=self.ship.x, observer_y=self.ship.y, course=None,
+            quality=quality, now=self.sim_t, label="VISUAL",
+            bearing_uncertainty_deg=(config.LOOKOUT_BEARING_ERR_DEG
+                                     / math.sqrt(3.0)))
+
+    def _update_lookout_picture(self) -> None:
+        """Publish bounded visual fixes without correlating sensor identities."""
+        for actor in sorted(self.civilians + self.warships,
+                            key=lambda item: item.id):
+            if not actor.sunk:
+                self._lookout_observe(
+                    actor, "surface", "SURFACE",
+                    config.LOOKOUT_SURFACE_RANGE_NM, actor.sensor_seed)
+        for actor in sorted(self.subs, key=lambda item: item.id):
+            if (not actor.sunk and actor.state != "SINKING"
+                    and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):
+                self._lookout_observe(
+                    actor, "sub", "SUB", config.LOOKOUT_SUB_RANGE_NM,
+                    actor.sensor_seed)
+        for actor in sorted(self.flights.flights, key=lambda item: item.seq):
+            if actor.active:
+                self._lookout_observe(
+                    actor, "flight", "FLG", config.LOOKOUT_AIR_RANGE_NM,
+                    actor.sensor_seed + 200_000)
+        for actor in sorted(self.raiders, key=lambda item: item.seq):
+            if not actor.despawned and actor.hp > 0:
+                self._lookout_observe(
+                    actor, "raider", "FLG", config.LOOKOUT_AIR_RANGE_NM,
+                    actor.seq + 400_000)
 
     def _update_air_picture(self) -> None:
         """Create noisy observations; consumers never receive world objects."""
@@ -2137,6 +2883,25 @@ class Game:
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.85, now=self.sim_t, label=f"A-{f.seq}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+        for r in self.raiders:
+            dist = r.distance_nm(self.ship)
+            bearing = r.bearing_from_frigate(self.ship)
+            radar_eligible = air_live and dist <= air_eff
+            radar_clear = radar_eligible and not self.world.land_blocks_line(
+                self.ship.x, self.ship.y, r.x, r.y)
+            if radar_eligible and radar_clear:
+                rng = random.Random((r.seq + 60000) * 3571 + int(self.sim_t * 2.0))
+                bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
+                brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
+                range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
+                measured = max(0.0, dist * (1.0 + rng.uniform(
+                    -range_error, range_error)))
+                self.air_picture.observe(track_id=f"R-{r.seq}", kind="FLG",
+                    target_id=r.seq, source="RADAR-L", bearing=brg,
+                    range_nm=measured,
+                    observer_x=self.ship.x, observer_y=self.ship.y, course=None,
+                    quality=.85, now=self.sim_t, label=f"A-{r.seq}",
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
         for a in self.asms:
             if a.state not in ("LAUF", "CHAFF"):
                 continue
@@ -2168,6 +2933,7 @@ class Game:
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.9, now=self.sim_t, label=f"A-{a.seq}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+        self._update_lookout_picture()
         self.air_picture.expire(self.sim_t)
 
     def radar_tracks(self) -> list:
@@ -2181,13 +2947,109 @@ class Game:
                      bearing_uncertainty_deg=t.bearing_uncertainty_deg)
                 for t in self.air_picture.tracks(self.sim_t)]
 
+    def _opz_observation_id(self, namespace: str, identity: object) -> str:
+        return "O-" + self._observation_key("opz-" + namespace, identity)
+
+    def _detached_air_observations(self) -> list[OPZObservation]:
+        observations = []
+        bindings = {}
+        for track in self.air_picture.tracks(self.sim_t):
+            # Sonar owns its release policy and detached report identity. Legacy
+            # save-backed mirrors are never consumed as OPZ source reports.
+            if track.source.startswith("SONAR"):
+                continue
+            observation_id = self._opz_observation_id("picture", track.track_id)
+            classification = (self.opz_fusion.classifications.get(observation_id)
+                              if track.source.startswith("RADAR") or track.source == "HOJ"
+                              else self.released_esm_labels().get(track.track_id)
+                              if track.source == "ESM" else None)
+            kind = "UNKNOWN" if track.source == "ESM" else track.kind
+            observation = OPZObservation(
+                observation_id, track.source, kind, track.bearing, track.range_nm,
+                track.x, track.y, track.course, track.quality, track.last_seen,
+                observation_id[-6:], classification,
+                track.bearing_uncertainty_deg, track.position_seen, track.jamming)
+            observations.append(observation)
+            bindings[observation_id] = track
+        self._opz_source_bindings = bindings
+        return observations
+
+    def _sonar_opz_observations(self, released_only: bool) -> list[OPZObservation]:
+        """Return detached Sonar reports without carrying contact identity."""
+        observations = []
+        for _, contact in sorted(self.sonar.contacts.items()):
+            if ((released_only and not contact.released_to_opz)
+                    or not 0.0 <= self.sim_t - contact.last_seen
+                    < config.SONAR_CONTACT_LOST_S):
+                continue
+            observation_id = self._opz_observation_id("sonar", contact.target_id)
+            fixes = contact.active_fixes(self.sim_t)
+            fix_by_source = {item["source"]: item for item in fixes}
+            fix = max(fixes, key=lambda item: (item["fixed_at"], item["source"])) \
+                if fixes else None
+            x = fix["x"] if fix is not None else None
+            y = fix["y"] if fix is not None else None
+            if x is not None and y is not None:
+                dx, dy = x - self.ship.x, y - self.ship.y
+                bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+                range_nm = math.hypot(dx, dy)
+            else:
+                bearing = (contact.passive_bearing if contact.passive_bearing is not None
+                           else contact.bearing)
+                range_nm = None
+            source = contact.passive_source if fix is None else "SONAR-" + fix["source"]
+            course = contact.tma_course if "TMA" in fix_by_source else None
+            speed = contact.tma_speed if "TMA" in fix_by_source else None
+            depth = (contact.depth_est
+                     if "PING" in fix_by_source or "DIPPING" in fix_by_source
+                     else None)
+            observation = OPZObservation(
+                observation_id, source, "UNKNOWN", bearing, range_nm, x, y, course,
+                max(contact.quality, contact.confidence), contact.last_seen,
+                f"K{contact.id:02d}", (contact.player_class
+                                      if contact.player_class in config.PLAYER_CLASSES
+                                      else None),
+                contact.bearing_uncertainty_deg,
+                fix["measured_at"] if fix is not None else None,
+                depth_m=depth, speed_kn=speed,
+                observer_x=contact.observer_x, observer_y=contact.observer_y,
+                released_to_opz=contact.released_to_opz)
+            observations.append(observation)
+            self._opz_source_bindings[observation_id] = contact
+        return observations
+
+    def private_sonar_observations(self) -> tuple[OPZObservation, ...]:
+        """All fresh hearing contacts for the private Sonar role projection."""
+        return tuple(self._sonar_opz_observations(False))
+
+    def opz_source_observations(self) -> tuple[OPZObservation, ...]:
+        if id(self.world) != self._opz_world_identity:
+            self.opz_fusion.clear()
+            self.opz_selected_track_id = None
+            self._opz_world_identity = id(self.world)
+        observations = self._detached_air_observations()
+        observations.extend(self._sonar_opz_observations(True))
+        return tuple(sorted(observations, key=lambda item: item.observation_id))
+
+    def opz_published_observations(self) -> tuple[OPZObservation, ...]:
+        """Shared OPZ picture, unaffected by host-local suppression."""
+        observations = self.opz_source_observations()
+        self.opz_fusion.prune(observations)
+        fused = [self.opz_fusion.computed(item, observations, self.sim_t,
+                                          self.air_picture.stale_s)
+                 for item in self.opz_fusion.fusions.values()]
+        return tuple(sorted((*observations, *(item for item in fused if item is not None)),
+                            key=lambda item: item.observation_id))
+
     def asm_tracks(self) -> list:
         return [t for t in self.air_picture.tracks(self.sim_t, ("ASM",))
                 if t.source in ("RADAR", "RADAR-L", "HOJ", "DATALINK")]
 
     def opz_tracks(self) -> list:
-        """Aktuelle beobachtete CIC-Tracks, stabil nach Track-ID sortiert."""
-        return self.air_picture.tracks(self.sim_t)
+        """Host-visible OPZ reports, with local suppression applied."""
+        observations = self.opz_source_observations()
+        return list(self.opz_fusion.visible(observations, self.sim_t,
+                                            self.air_picture.stale_s))
 
     def selected_opz_track(self):
         return next((track for track in self.opz_tracks()
@@ -2199,18 +3061,145 @@ class Game:
         if track is None:
             self.flash(message("runtime.cic.none"))
             return
-        contact = next((c for c in self.sonar.contacts.values()
-                        if c.target_id == track.target_id), None)
-        if contact is None:
+        result = self.designate_opz_observation(track.observation_id)
+        if result == "source_owned":
+            self.flash(message("runtime.cic.fusion_display_only"))
+            return
+        if result is not True:
             self.flash(message("runtime.cic.no_solution"))
             return
-        self.selected_contact = contact
-        self.target = contact
+        self.selected_contact = self.target
         self.flash(message("runtime.cic.designated", track=track.track_id))
 
+    def designate_opz_observation(self, observation_id: str):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        track = next((item for item in self.opz_published_observations()
+                      if item.observation_id == observation_id), None)
+        if track is None:
+            return "stale_ref"
+        if track.source == "FUSION":
+            return "source_owned"
+        bound = self._opz_source_bindings.get(track.observation_id)
+        contact = (bound if isinstance(bound, Contact) else
+                   next((c for c in self.sonar.contacts.values()
+                         if getattr(bound, "target_id", None) == c.target_id), None))
+        if (contact is None or self.sonar.contacts.get(contact.target_id) is not contact
+                or not 0 <= self.sim_t - contact.last_seen
+                < config.SONAR_CONTACT_LOST_S):
+            return "no_solution"
+        self.target = contact
+        return True
+
     def opz_affiliation(self, track_id: str) -> str:
-        value = self.opz_affiliations.get(track_id, "UNKNOWN")
+        if track_id not in self.opz_affiliations:
+            source_key = getattr(self._opz_source_bindings.get(track_id),
+                                 "track_id", None)
+            bound = self._opz_source_bindings.get(track_id)
+            if isinstance(bound, Contact):
+                legacy_key = f"U-{bound.target_id}"
+                if legacy_key in self.opz_affiliations:
+                    track_id = legacy_key
+            if source_key in self.opz_affiliations:
+                track_id = source_key
+            else:
+                opaque = next((key for key, source in self._opz_source_bindings.items()
+                               if getattr(source, "track_id", None) == track_id), None)
+                if opaque is not None:
+                    track_id = opaque
+        value = self.opz_fusion.fusion_affiliations.get(
+            track_id, self.opz_affiliations.get(track_id, "UNKNOWN"))
         return value if value in config.NATO_AFFILIATIONS else "UNKNOWN"
+
+    def opz_source_classification(self, observation_id: str) -> str | None:
+        return source_classification(observation_id,
+                                     self.opz_published_observations())
+
+    def classify_sonar_contact(self, contact, classification):
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if classification is not None and classification not in config.PLAYER_CLASSES:
+            return "invalid_value"
+        if (not isinstance(contact, Contact)
+                or self.sonar.contacts.get(contact.target_id) is not contact):
+            return "stale_ref"
+        if not 0 <= self.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S:
+            return "stale_ref"
+        contact.player_class = classification
+        return True
+
+    def release_sonar_contact(self, contact, released: bool):
+        if type(released) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if (not isinstance(contact, Contact)
+                or self.sonar.contacts.get(contact.target_id) is not contact
+                or not 0 <= self.sim_t - contact.last_seen
+                < config.SONAR_CONTACT_LOST_S):
+            return "stale_ref"
+        contact.released_to_opz = released
+        return True
+
+    def classify_opz_observation(self, observation_id: str, classification):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if classification is not None and classification not in config.PLAYER_CLASSES:
+            return "invalid_value"
+        track = next((item for item in self.opz_published_observations()
+                      if item.observation_id == observation_id), None)
+        if track is None:
+            return "stale_ref"
+        if not (track.source.startswith("RADAR") or track.source in ("HOJ", "FUSION")):
+            return "source_owned"
+        if classification is None:
+            self.opz_fusion.classifications.pop(observation_id, None)
+        else:
+            self.opz_fusion.classifications[observation_id] = classification
+        return True
+
+    def affiliate_opz_observation(self, observation_id: str, affiliation: str):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if affiliation not in config.NATO_AFFILIATIONS:
+            return "invalid_value"
+        track = next((item for item in self.opz_published_observations()
+                      if item.observation_id == observation_id), None)
+        if track is None:
+            return "stale_ref"
+        destination = (self.opz_fusion.fusion_affiliations
+                       if track.source == "FUSION" else self.opz_affiliations)
+        destination[observation_id] = affiliation
+        return True
+
+    def create_opz_fusion(self, observation_ids):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if (type(observation_ids) not in (list, tuple)
+                or not config.OPZ_FUSION_MEMBER_MIN <= len(observation_ids)
+                <= config.OPZ_FUSION_MEMBER_MAX
+                or len(set(observation_ids)) != len(observation_ids)):
+            return "invalid_value"
+        sources = self.opz_source_observations()
+        current = {item.observation_id for item in sources}
+        if any(key not in current for key in observation_ids):
+            return "stale_ref"
+        self.opz_fusion.marked = set(observation_ids)
+        fusion = self.opz_fusion.create(sources)
+        if fusion is None:
+            return "fusion_rejected"
+        self.opz_selected_track_id = fusion.fusion_id
+        return True
+
+    def dissolve_opz_fusion(self, observation_id: str):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if observation_id not in self.opz_fusion.fusions:
+            return "stale_ref"
+        self.opz_fusion.dissolve(observation_id)
+        if self.opz_selected_track_id == observation_id:
+            self.opz_selected_track_id = None
+        return True
 
     def _cycle_opz_track(self, delta: int) -> None:
         tracks = self.opz_tracks()
@@ -2232,9 +3221,51 @@ class Game:
         current = self.opz_affiliation(track.track_id)
         order = config.NATO_AFFILIATIONS
         value = order[(order.index(current) + 1) % len(order)]
-        self.opz_affiliations[track.track_id] = value
+        if self.affiliate_opz_observation(track.track_id, value) is not True:
+            return
         self.flash(message("runtime.cic.affiliation", track=track.track_id,
                            affiliation=display_value("affiliation", value, self.tr)), 2.0)
+
+    def _cycle_opz_classification(self) -> None:
+        track = self.selected_opz_track()
+        if track is None:
+            self.flash(message("runtime.cic.none_select"))
+            return
+        if not (track.source.startswith("RADAR") or track.source in ("HOJ", "FUSION")):
+            self.flash(message("runtime.cic.source_owned"))
+            return
+        order = (None, *config.PLAYER_CLASSES)
+        current = self.opz_fusion.classifications.get(track.observation_id)
+        value = order[(order.index(current) + 1) % len(order)]
+        self.classify_opz_observation(track.observation_id, value)
+
+    def _toggle_opz_mark(self) -> None:
+        track = self.selected_opz_track()
+        if track is None or track.source == "FUSION":
+            return
+        if track.observation_id in self.opz_fusion.marked:
+            self.opz_fusion.marked.remove(track.observation_id)
+        else:
+            self.opz_fusion.marked.add(track.observation_id)
+
+    def _create_opz_fusion(self) -> None:
+        result = self.create_opz_fusion(tuple(self.opz_fusion.marked))
+        if result is not True:
+            self.flash(message("runtime.cic.fusion_rejected"))
+
+    def _dissolve_opz_fusion(self) -> None:
+        if self.opz_selected_track_id:
+            self.dissolve_opz_fusion(self.opz_selected_track_id)
+
+    def _toggle_opz_suppression(self) -> None:
+        track = self.selected_opz_track()
+        if track is None:
+            return
+        key = track.observation_id
+        if key in self.opz_fusion.suppressed:
+            self.opz_fusion.suppressed.remove(key)
+        else:
+            self.opz_fusion.suppressed.add(key)
 
     def eloka_tracks(self) -> tuple:
         """Return detached passive intercepts in stable picture order."""
@@ -2270,6 +3301,52 @@ class Game:
         emitter = self.runtime_catalog.emitters.get(emitter_key)
         return emitter_key if emitter is not None and emitter.domain == "radar" else None
 
+    def eloka_emitter_name(self, emitter_key: str | None) -> str | None:
+        """Display name of the platform owning an ESM emitter, or None."""
+        if not isinstance(emitter_key, str):
+            return None
+        return self.runtime_catalog.emitter_name(emitter_key)
+
+    def eloka_annotation_name(self, track_key: str) -> str | None:
+        """Operator annotation resolved to the owning platform's name."""
+        return self.eloka_emitter_name(self.eloka_annotation(track_key))
+
+    def annotate_eloka_intercept(self, track, emitter_key: str):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if not any(item is track for item in self.eloka_tracks()):
+            return "stale_ref"
+        candidates = {item.emitter_key for item in rank_emitters(
+            track, self.runtime_catalog.emitters,
+            maximum=len(self.runtime_catalog.emitters))}
+        if type(emitter_key) is not str or emitter_key not in candidates:
+            return "stale_ref"
+        previous = self.eloka_annotation(track.track_key)
+        if previous is not None and previous != emitter_key:
+            self._remove_released_esm(track.track_key, previous)
+        self.eloka_annotations[track.track_key] = emitter_key
+        while len(self.eloka_annotations) > ESM_MAX_ANNOTATIONS:
+            del self.eloka_annotations[min(self.eloka_annotations)]
+        self._publish_released_esm()
+        return True
+
+    def clear_eloka_annotation(self, track):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if not any(item is track for item in self.eloka_tracks()):
+            return "stale_ref"
+        previous = self.eloka_annotation(track.track_key)
+        self.eloka_annotations.pop(track.track_key, None)
+        if previous is not None:
+            self._remove_released_esm(track.track_key, previous)
+        self._publish_released_esm()
+        return True
+
+    def _remove_released_esm(self, track_key: str, emitter_key: str) -> None:
+        identity = self._observation_key(
+            "esm-release", f"{track_key}:{emitter_key}")
+        self.air_picture._tracks.pop(f"E-{identity}", None)
+
     def _cycle_eloka_annotation(self) -> None:
         if self.damage.station_down("opz"):
             self.flash(message("runtime.eloka.disabled"))
@@ -2284,18 +3361,46 @@ class Game:
         current = self.eloka_annotation(track.track_key)
         index = choices.index(current) if current in choices else -1
         if index + 1 >= len(choices):
-            self.eloka_annotations.pop(track.track_key, None)
+            self.clear_eloka_annotation(track)
             assignment = self.tr("common.unknown")
         else:
-            assignment = choices[index + 1]
-            self.eloka_annotations[track.track_key] = assignment
-            while len(self.eloka_annotations) > ESM_MAX_ANNOTATIONS:
-                del self.eloka_annotations[min(self.eloka_annotations)]
+            key = choices[index + 1]
+            self.annotate_eloka_intercept(track, key)
+            assignment = self.eloka_emitter_name(key) or key
         self.flash(message("runtime.eloka.annotation",
                            track=track.track_key, assignment=assignment), 2.0)
 
+    def _publish_released_esm(self) -> None:
+        """Release only operator-classified, bearing-only ESM observations."""
+        for track in self.eloka_tracks():
+            emitter_key = self.eloka_annotation(track.track_key)
+            label = self.eloka_emitter_name(emitter_key)
+            if emitter_key is None or label is None:
+                continue
+            identity = self._observation_key(
+                "esm-release", f"{track.track_key}:{emitter_key}")
+            self.air_picture.observe(
+                track_id=f"E-{identity}", kind="UNKNOWN", target_id=0,
+                source="ESM", bearing=track.bearing, range_nm=None,
+                observer_x=track.observer_x, observer_y=track.observer_y,
+                course=None, quality=track.quality, now=track.last_seen,
+                label=label, hostile=False,
+                bearing_uncertainty_deg=track.bearing_uncertainty_deg)
+
+    def released_esm_labels(self) -> dict[str, str]:
+        """Return detached operator-approved labels keyed by public track ID."""
+        released = {}
+        for track in self.eloka_tracks():
+            emitter_key = self.eloka_annotation(track.track_key)
+            label = self.eloka_emitter_name(emitter_key)
+            if emitter_key is not None and label is not None:
+                identity = self._observation_key(
+                    "esm-release", f"{track.track_key}:{emitter_key}")
+                released[f"E-{identity}"] = label
+        return released
+
     def eloka_correlations(self, track=None) -> tuple:
-        """Compare ESM and public radar/sonar evidence without target identity."""
+        """Compare ESM and public radar evidence without target identity."""
         if self.damage.station_down("opz"):
             return ()
         track = track or self.selected_eloka_track()
@@ -2304,8 +3409,7 @@ class Game:
         raw_evidence = []
         for observed in self.air_picture._tracks.values():
             if (not isinstance(observed.source, str)
-                    or not (observed.source.startswith("RADAR")
-                            or observed.source.startswith("SONAR"))):
+                    or not observed.source.startswith("RADAR")):
                 continue
             values = (observed.bearing, observed.last_seen)
             optional = (observed.bearing_uncertainty_deg, observed.x,
@@ -2409,7 +3513,7 @@ class Game:
                         actor, actor.bearing_from_frigate(self.ship), distance,
                         self._emitter_profile(actor.signature_key), 100_000)
                 for flight in self.flights.flights:
-                    if not flight.radar_emitting:
+                    if flight.kind != "military" or not flight.radar_emitting:
                         continue
                     distance = flight.distance_nm(self.ship)
                     if (distance > config.ESM_RANGE_NM
@@ -2421,6 +3525,7 @@ class Game:
                         self._emitter_profile(flight.akey), 200_000)
 
             self.esm_picture.observe_batch(measurements(), self.sim_t)
+            self._publish_released_esm()
         if self.eloka_selected_track_key not in {
                 track.track_key for track in self.eloka_tracks()}:
             self.eloka_selected_track_key = None
@@ -2428,6 +3533,11 @@ class Game:
     def hfdf_bearings(self) -> list:
         """Current and recently retained HFDF observations."""
         return self.radio_picture.tracks(self.sim_t, ("HF",))
+
+    def hfdf_display_id(self, report) -> str:
+        """Return the stable public identifier for an HFDF observation."""
+        track_id = report if isinstance(report, str) else report.track_id
+        return "H-" + self._observation_key("hfdf-display", track_id)[-6:]
 
     def _update_radio_picture(self) -> None:
         """Measure transmitting emitters without publishing their positions."""
@@ -2481,12 +3591,20 @@ class Game:
             self.flash(message("runtime.hfdf.none"))
             return
         report = reports[min(self.radio_sel, len(reports) - 1)]
+        self.capture_hfdf_report(report)
+
+    def capture_hfdf_report(self, report):
+        if self.damage.station_down("radio"):
+            return "radio_down"
+        if not any(item is report for item in self.hfdf_bearings()):
+            return "stale_ref"
         if report.age(self.sim_t) > config.RADAR_TRACK_STALE_S:
             self.flash(message("runtime.hfdf.stale"))
-            return
+            return "stale_ref"
         measurement = (report.measurement_history[-1]
                        if report.measurement_history else {})
-        row = dict(track_id=report.track_id, label=report.label,
+        display_id = self.hfdf_display_id(report)
+        row = dict(track_id=report.track_id, label=display_id,
                    bearing=measurement.get("bearing", report.bearing),
                    observer_x=measurement.get("observer_x", self.ship.x),
                    observer_y=measurement.get("observer_y", self.ship.y),
@@ -2499,13 +3617,13 @@ class Game:
                          and math.hypot(item["observer_x"] - row["observer_x"],
                                         item["observer_y"] - row["observer_y"]) >= 1.0), None)
         if previous is None:
-            self.flash(message("runtime.hfdf.logged", label=report.label,
+            self.flash(message("runtime.hfdf.logged", label=display_id,
                                bearing=f"{report.bearing:05.1f}"))
-            return
+            return True
         fix = self._bearing_intersection(previous, row)
         if fix is None:
             self.flash(message("runtime.hfdf.geometry"))
-            return
+            return True
         x, y, geometry = fix
         # Angular errors projected at the two measurement origins. This assumes
         # a stationary emitter throughout the bounded observation span.
@@ -2520,7 +3638,7 @@ class Game:
         xy = -(math.sin(b2) * math.cos(b2) * v1
                + math.sin(b1) * math.cos(b1) * v2) / geometry ** 2
         self.hfdf_fixes[report.track_id] = dict(
-            label=report.label, x=x, y=y,
+            label=display_id, x=x, y=y,
             sigma_nm=math.sqrt(max(0.0, (xx + yy + math.hypot(xx - yy, 2 * xy)) / 2)),
             covariance_nm2=(xx, xy, yy),
             t=row["t"])
@@ -2533,10 +3651,11 @@ class Game:
             range_nm=dist, observer_x=row["observer_x"],
             observer_y=row["observer_y"],
             course=None, quality=max(.25, geometry), now=row["t"],
-            label=report.label)
-        self.flash(message("runtime.hfdf.fix", label=report.label), 3.0)
+            label=display_id)
+        self.flash(message("runtime.hfdf.fix", label=display_id), 3.0)
         self.feed.add(self.world.format_time(), "funk",
-                      message("runtime.hfdf.feed", label=report.label))
+                      message("runtime.hfdf.feed", label=display_id))
+        return True
 
     def _drain_warship_asm(self) -> None:
         """Kampfschiff-Salven aus pending_asm werden zu ASM-Objekten."""
@@ -2576,7 +3695,88 @@ class Game:
                          0.0, self.world.size_nm)
         course = math.degrees(math.atan2(self.ship.x - x, -(self.ship.y - y))) % 360.0
         self.asms.append(ASM(x, y, course, self._next_asm_sequence(), self.rng_asm,
-                             self._air_defense_loadout["asm"]))
+                              self._air_defense_loadout["asm"]))
+
+    # --- R20: Luftangriff (feindliche Angriffsflugzeug-Wellen) ---
+
+    def _spawn_raid_wave(self, profile: dict) -> None:
+        """Eine Welle Angriffsflugzeuge außerhalb der Radarreichweite spawnen."""
+        size = self.rng_raid.randint(*config.RAID_WAVE_SIZE)
+        for _ in range(size):
+            d = self.rng_raid.uniform(*config.RAID_SPAWN_DIST_NM)
+            ang = self.rng_raid.uniform(0.0, 360.0)
+            x = config.clamp(self.ship.x + d * math.cos(math.radians(ang)),
+                             0.0, self.world.size_nm)
+            y = config.clamp(self.ship.y + d * math.sin(math.radians(ang)),
+                             0.0, self.world.size_nm)
+            course = (math.degrees(math.atan2(self.ship.x - x,
+                                              -(self.ship.y - y))) % 360.0)
+            self.raid_seq += 1
+            self.raiders.append(Raider(x, y, course, self.raid_seq,
+                                       self.rng_raid, profile))
+        self.raid_waves_spawned += 1
+
+    def _update_raiders(self, dt: float, publish_picture: bool = True) -> None:
+        """R20: Raid-Wellen, Bewegung/Phasen, Salven-Ablöse und Flak-Einsatz."""
+        profiles = self._air_defense_loadout
+        if (self.mission.asm_count > 0
+                and len(self.raiders) < config.RAID_MAX_CONCURRENT
+                and self.mission_time >= config.RAID_FIRST_WAVE_S
+                + self.raid_waves_spawned * config.RAID_WAVE_INTERVAL_S):
+            self._spawn_raid_wave(profiles["raider"])
+        for raider in self.raiders:
+            raider.update(dt, self.ship, world=self.world)
+        self.aa_cooldown_s = max(0.0, self.aa_cooldown_s - dt)
+        aa = profiles["aa_gun"]
+        observed = {}
+        for track in self.air_picture.tracks(self.sim_t, ("FLG",)):
+            if track.track_id.startswith("R-"):
+                observed[track.track_id] = track
+        for raider in self.raiders:
+            if raider.hp <= 0:
+                continue
+            track = observed.get(f"R-{raider.seq}")
+            if (track is not None and track.x is not None and track.y is not None
+                    and track.position_seen is not None
+                    and self.sim_t - track.position_seen
+                    <= aa["observation_max_age_s"]
+                    and track.range_nm is not None
+                    and track.range_nm <= aa["range_nm"]
+                    and self.aa_ammo >= aa["rounds_per_attempt"]
+                    and self.aa_cooldown_s <= 0.0
+                    and not self.damage.station_down("weapons")
+                    and not self.world.land_blocks_line(
+                        self.ship.x, self.ship.y, track.x, track.y)):
+                self.aa_ammo -= aa["rounds_per_attempt"]
+                self.aa_cooldown_s = aa["cycle_s"]
+                if (self.rng_raid.random()
+                        < aa["hit_probability"] * (1.0 - raider.evasion)):
+                    raider.hp -= 1
+                    if raider.hp <= 0:
+                        raider.despawned = True
+                        self.audio.play_alert("defense")
+                        self.flash(message("runtime.raid.downed"), 3.0)
+                        self.feed.add(self.world.format_time(), "waffen",
+                                      message("runtime.raid.downed"))
+        self.raiders = [r for r in self.raiders if not r.despawned]
+        if publish_picture:
+            visible = bool(observed)
+            if visible and not self._raider_visible_last:
+                self.audio.play_alert("danger")
+                self.flash(message("runtime.raid.incoming"), 4.0)
+                self.feed.add(self.world.format_time(), "opz",
+                              message("runtime.raid.incoming"))
+            self._raider_visible_last = visible
+
+    def _drain_raider_asm(self) -> None:
+        """R20: Raid-Salven werden zu ASM-Objekten gegen die Fregatte."""
+        for raider in self.raiders:
+            pending, raider.pending_asm = raider.pending_asm, 0
+            for _ in range(pending):
+                course = raider.course_to_frigate(self.ship)
+                self.asms.append(ASM(
+                    raider.x, raider.y, course, self._next_asm_sequence(),
+                    self.rng_asm, self._air_defense_loadout["asm"]))
 
     # --- Waffenzentrale ---
 
@@ -2591,7 +3791,8 @@ class Game:
             best = self.selected_contact
         else:
             best = max(contacts, key=lambda c: c.confidence)
-        self.target = best
+        if self.designate_sonar_target(best) is not True:
+            return
         self.flash(message("runtime.target.set", contact=best.id), 2.0)
 
     def torpedo_readiness(self) -> tuple[str, tuple]:
@@ -2620,14 +3821,24 @@ class Game:
             return "BLOCKIERT: WAFFENZENTRALE GESTOERT", config.COLOR_DANGER
         return "FEUER FREI", config.COLOR_OK
 
-    def _target_affiliation_interlock(self):
+    def _target_affiliation_interlock(self, contact=None):
         """Return a protected OPZ affiliation for the assigned sonar target."""
-        if self.target is None:
+        contact = self.target if contact is None else contact
+        if contact is None:
             return None
         # Operator annotations outlive measurements. Aircraft/missile sequence
         # IDs are a separate namespace and must not annotate a sonar target.
-        affiliations = [self.opz_affiliation(f"{prefix}-{self.target.target_id}")
-                        for prefix in ("U", "S", "W")]
+        affiliations = [self.opz_affiliations.get(
+            f"{prefix}-{contact.target_id}", "UNKNOWN")
+            for prefix in ("U", "S", "W")]
+        self.opz_source_observations()
+        affiliations.extend(
+            self.opz_affiliation(observation_id)
+            for observation_id, source in self._opz_source_bindings.items()
+            if (source is contact or getattr(source, "target_id", None)
+                == contact.target_id and str(
+                    getattr(source, "track_id", "")).split("-", 1)[0]
+                in ("U", "S", "W")))
         return next((value for value in ("FRIEND", "NEUTRAL")
                      if value in affiliations), None)
 
@@ -2665,10 +3876,24 @@ class Game:
             return
         c = self.selected_contact
         order = [None] + list(config.PLAYER_CLASSES)
-        c.player_class = order[(order.index(c.player_class) + 1) % len(order)]
+        value = order[(order.index(c.player_class) + 1) % len(order)]
+        if self.classify_sonar_contact(c, value) is not True:
+            return
         self.flash(message("runtime.contact.classified", contact=c.id,
                            classification=display_value("classification",
                                                         c.player_class, self.tr)), 2.0)
+
+    def _toggle_sonar_release(self) -> None:
+        contact = self.selected_contact
+        if contact is None:
+            self.flash(message("runtime.contact.none_selected"))
+            return
+        released = not contact.released_to_opz
+        if self.release_sonar_contact(contact, released) is not True:
+            return
+        self.flash(message("runtime.sonar.release" if released
+                           else "runtime.sonar.withdraw",
+                           contact=contact.id), 2.0)
 
     def _find_target(self, target_id: int):
         for s in self.subs:
@@ -2697,56 +3922,65 @@ class Game:
             self.target = None
             self.flash(message("runtime.target.invalid"))
             return
-        blocked = self._target_affiliation_interlock()
+        self.launch_torpedo_at(self.target, self.torpedo_depth)
+
+    def launch_torpedo_at(self, contact, depth_m: float):
+        """Launch from ownship against one explicit sonar observation."""
+        if (contact is None or type(depth_m) not in (int, float)
+                or not math.isfinite(depth_m) or not 10 <= depth_m <= 300
+                or self.sim_t - contact.last_seen >= config.SONAR_CONTACT_LOST_S):
+            self.flash(message("runtime.target.invalid"))
+            return "invalid_target"
+        blocked = self._target_affiliation_interlock(contact)
         if blocked is not None:
             self.flash(message("runtime.roe.blocked",
                                affiliation=display_value("affiliation", blocked, self.tr)))
-            return
+            return "roe_blocked"
         if self.roe == "STD":
-            if not self._contact_range_fresh(self.target):
+            if not self._contact_range_fresh(contact):
                 self.flash(message("runtime.target.not_located"))
-                return
-            if self.target.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
+                return "not_located"
+            if contact.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
                 self.flash(message("runtime.target.not_classified"))
-                return
+                return "not_classified"
         else:
-            if self.target.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
+            if contact.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
                 self.flash(message("runtime.target.not_classified"))
-                return
+                return "not_classified"
         active_torpedoes = len([t for t in self.torpedoes if t.state == "RUN"])
         salvo_limit = config.TORP_MAX_IN_AIR[config.TORP_DOCTRINE]
         if active_torpedoes >= salvo_limit:
             self.flash(message("runtime.salvo.limit", limit=salvo_limit))
-            return
+            return "salvo_limit"
         if self.torpedo_count <= 0:
             self.flash(message("event.no_torpedoes"))
-            return
+            return "empty"
         if self.player_torpedo_battery.ready_count <= 0:
             self.flash(message("runtime.torpedo.no_tube"))
-            return
+            return "no_tube"
         if self.damage.station_down("weapons"):
             self.flash(message("runtime.weapons.down"))
-            return
+            return "weapons_down"
         if self.damage.station_degraded("weapons"):
             self.flash(message("runtime.weapons.degraded"))
-            return
-        tgt = self._find_target(self.target.target_id)
-        self.torpedo_seq += 1
-        if (self.target.observed_x is not None
-                and self.target.observed_y is not None
-                and self._contact_range_fresh(self.target)):
-            est_x, est_y = self.target.observed_x, self.target.observed_y
+            return "weapons_degraded"
+        tgt = self._find_target(contact.target_id)
+        if (contact.observed_x is not None
+                and contact.observed_y is not None
+                and self._contact_range_fresh(contact)):
+            est_x, est_y = contact.observed_x, contact.observed_y
         else:
-            range_nm = (self.target.range_est if self.target.range_est is not None
+            range_nm = (contact.range_est if contact.range_est is not None
                         else config.ROE_FREE_LAUNCH_RANGE_NM)
-            est_x = self.ship.x + range_nm * math.sin(math.radians(self.target.bearing))
-            est_y = self.ship.y - range_nm * math.cos(math.radians(self.target.bearing))
+            est_x = self.ship.x + range_nm * math.sin(math.radians(contact.bearing))
+            est_y = self.ship.y - range_nm * math.cos(math.radians(contact.bearing))
         course = math.degrees(math.atan2(est_x - self.ship.x,
                                          -(est_y - self.ship.y))) % 360.0
         weapon_key = self.player_torpedo_battery.fire()
         if weapon_key is None:
             self.flash(message("runtime.torpedo.no_tube"))
-            return
+            return "no_tube"
+        self.torpedo_seq += 1
         weapon_definition = next(
             item
             for item in self._ownship_loadout["weapons"]
@@ -2754,7 +3988,7 @@ class Game:
         profile_key = weapon_definition["runtime_profile_key"]
         profile = self.runtime_catalog.torpedoes[profile_key]
         self.torpedoes.append(Torpedo(self.ship.x, self.ship.y, course,
-                                      self.torpedo_depth, tgt, self.torpedo_seq,
+                                      depth_m, tgt, self.torpedo_seq,
                                       kill_dist_nm=weapon_definition[
                                           "kill_dist_nm_by_level"][self.level],
                                       kill_depth_m=weapon_definition[
@@ -2766,7 +4000,8 @@ class Game:
         self.flash(message("runtime.torpedo.launched", torpedo=self.torpedo_seq), 2.0)
         self.feed.add(self.world.format_time(), "waffen",
                       message("runtime.torpedo.feed", torpedo=self.torpedo_seq,
-                              contact=self.target.id))
+                              contact=contact.id))
+        return True
 
     # --- Update ---
 
@@ -2816,8 +4051,10 @@ class Game:
                 self._splash_ping_cycle = ping_cycle
                 self.audio.play_ping()
             return
+        overlay_blocked = ((self.administration_open or self.editor is not None)
+                           and not self.crew_overlay_allows_simulation())
         if (not self.running or self.in_menu or self.paused or self.game_over
-                or self.administration_open or self.editor is not None):
+                or overlay_blocked):
             self.audio.stop()
             self._sonar_audio_sequence = -1
             return
@@ -2890,8 +4127,44 @@ class Game:
         self._audio_timer %= config.AUDIO_UPDATE_S
         cavitation = 0.8 if self.ship.cavitating else 0.0
         self.audio.update_engine(self.ship.rpm(), blade_count=5,
-                                 cavitation=cavitation,
-                                 volume=0.0 if listening else 0.08 + 0.08 * self.ship.noise_level())
+                                  cavitation=cavitation,
+                                  volume=0.0 if listening else 0.08 + 0.08 * self.ship.noise_level())
+
+    def _play_unit_audio(self, profile_key: str, mode: str, machine) -> None:
+        """Kontakt-Katalog-Hörprobe: deterministisches Einheiten-Sample abspielen."""
+        rate = self.audio.sample_rate
+        key = ("sonar", "unit_preview", profile_key, mode, rate)
+        self.audio.play_unit_preview(
+            lambda: unit_sonar_preview(profile_key, machine, mode, rate), key)
+
+    def _make_analyzer(self) -> ContactAnalyzer:
+        """Read-only Kontakt-Katalog-Browser (Menue und In-Game, F8)."""
+        return ContactAnalyzer(
+            tr=self.tr, on_play_sample=self._play_unit_audio,
+            on_stop_sample=self.audio.stop_preview,
+            preview_active=self.audio.preview_playing)
+
+    def _open_analyzer_in_game(self) -> None:
+        """TUA im laufenden Spiel: Simulation steht, Esc kehrt ins Spiel zurueck."""
+        self._clear_controls()
+        self.editor = self._make_analyzer()
+
+    def _open_simlog_view(self) -> None:
+        """F4: Live-Protokoll-Ansicht; nur bei aktiver simlog-Option."""
+        if not self.preferences.simlog:
+            self.flash(message("simlog.view_disabled"), 2.0)
+            return
+        self._clear_station_input()
+        self.simlog_view_open = True
+        self.simlog_view_scroll = 0
+
+    def _close_simlog_view(self) -> None:
+        self.simlog_view_open = False
+        self.simlog_view_scroll = 0
+        self._clear_station_input()
+
+    def _scroll_simlog_view(self, amount: int) -> None:
+        self.simlog_view_scroll = max(0, self.simlog_view_scroll + amount)
 
     def _update_navigation(self, dt: float) -> None:
         """Wendet Steuerung, Brückenschaden und Telegraph auf die Fregatte an."""
@@ -3078,9 +4351,10 @@ class Game:
         self.nixies = [decoy for decoy in self.nixies if not decoy.dead]
 
     def _update_air_defense(self, dt: float, publish_picture: bool = True) -> None:
-        """Aktualisiert ASM-Wellen, CIWS und ESSM-Abfangflugkoerper."""
+        """Aktualisiert ASM-Wellen, CIWS und ESSM-Abfangflugkorper."""
         profiles = self._air_defense_loadout
         self._drain_warship_asm()
+        self._drain_raider_asm()
         self._maybe_spawn_asm()
         # Softkill state is resolved by ASM.update before layered hardkill.
         self.ciws_cooldown_s = max(0.0, getattr(self, "ciws_cooldown_s", 0.0) - dt)
@@ -3280,10 +4554,14 @@ class Game:
                            focus_tgt=focus,
                            own_cavitation=1.0 if self.ship.cavitating else 0.0,
                            advance_mechanics=False)
+        self.sonar.update_dipping_passive(
+            dt, self.sim_t, self.helo, targets, self.world,
+            range_factor=self._sonar_range_factor())
         for contact in self.sonar.active_contacts():
             bearing = (contact.passive_bearing
                        if contact.passive_bearing is not None else contact.bearing)
             range_nm = None
+            active_fixes = contact.active_fixes(self.sim_t)
             if contact.observed_x is not None and contact.observed_y is not None:
                 dx = contact.observed_x - self.ship.x
                 dy = contact.observed_y - self.ship.y
@@ -3298,8 +4576,9 @@ class Game:
                 track_id=f"U-{contact.target_id}",
                 kind=observed_kind,
                 target_id=contact.target_id,
-                source=(f"SONAR-{contact.range_source.upper()}"
-                        if contact.range_source else "SONAR-BRG"),
+                source=(f"SONAR-{max(active_fixes, key=lambda fix: (fix['fixed_at'], fix['source']))['source']}"
+                        if active_fixes
+                        else contact.passive_source),
                 bearing=bearing, range_nm=range_nm,
                 observer_x=self.ship.x, observer_y=self.ship.y,
                 course=contact.tma_course,
@@ -3342,7 +4621,8 @@ class Game:
     def _update_damage_and_mission(self, dt: float) -> None:
         """Fortschritt von Schaden, Flugverkehr und Missionszielen."""
         self.damage.update(dt)
-        self.flights.update(dt, world=self.world)
+        self.flights.update(dt, world=self.world,
+                            near=(self.ship.x, self.ship.y))
         self._check_mission_end()
 
     def _update_sim(self, dt: float) -> None:
@@ -3371,6 +4651,7 @@ class Game:
         self._esm_acc += dt
         self._radio_acc += dt
         self._slow_acc += dt
+        self._update_raiders(dt, publish_picture=publish_picture)
         self._update_air_defense(dt, publish_picture=publish_picture)
         # M13: Wetter-Hinweise per Teletype
         self.hq_timer -= dt
@@ -3397,6 +4678,7 @@ class Game:
             slow_dt = self._slow_acc
             self._slow_acc = 0.0
             self._update_damage_and_mission(slow_dt)
+        self._record_simlog_state(dt)
 
     def _mission_time_warning(self) -> None:
         """Warn before a deadline so the player can react instead of guessing."""
@@ -3543,6 +4825,16 @@ class Game:
                 "sam_remaining": self.vls_cells,
                 "essm_seq": max([self.essm_seq] + [item.seq for item in self.essms]),
                 "softkill": self.softkill_store.serialize(),
+                "aa_ammo": self.aa_ammo,
+                "aa_cooldown_s": self.aa_cooldown_s,
+                "raiders": [dict(x=r.x, y=r.y, course=r.course, seq=r.seq,
+                                  phase=r.phase.value, hp=r.hp,
+                                  salvo_cd=r.salto_cd,
+                                  pending_asm=r.pending_asm,
+                                  attack_t=r.attack_t)
+                             for r in self.raiders],
+                "raider_seq": self.raid_seq,
+                "waves_spawned": self.raid_waves_spawned,
             },
             "level": self.level,
             "mission_name": self.mission.name,
@@ -3622,11 +4914,16 @@ class Game:
             "dmg_team": self.dmg_team,
             "messages": [list(m) for m in self.messages],
             "helo": dict(state=self.helo.state, x=self.helo.x, y=self.helo.y,
-                          torpedo_profile_key=self.helo.torpedo_profile.key,
-                          course=self.helo.course, torps=self.helo.torps,
-                          buoys_left=self.helo.buoys_left, fuel_s=self.helo.fuel_s,
-                          waypoint_x=self.helo.waypoint_x,
-                          waypoint_y=self.helo.waypoint_y),
+                           torpedo_profile_key=self.helo.torpedo_profile.key,
+                           course=self.helo.course, torps=self.helo.torps,
+                           buoys_left=self.helo.buoys_left, fuel_s=self.helo.fuel_s,
+                           waypoint_x=self.helo.waypoint_x,
+                           waypoint_y=self.helo.waypoint_y,
+                           dip_state=self.helo.dip_state,
+                           dip_depth_m=self.helo.dip_depth_m,
+                           dip_depth_target_m=self.helo.dip_depth_target_m,
+                           dip_water_depth_m=self.helo.dip_water_depth_m,
+                           dip_ping_cooldown=self.helo.dip_ping_cooldown),
             "subs": [dict(id=s.id, x=s.x, y=s.y, depth=s.depth, course=s.course,
                            state=s.state, speed=s.speed, damage=s.damage,
                            torpedoes_left=s.torpedoes_left, heard_ping=s.heard_ping,
@@ -3795,6 +5092,9 @@ class Game:
                         quality=c.quality, last_seen=c.last_seen,
                         depth_est=c.depth_est, depth_sigma_m=c.depth_sigma_m,
                         player_class=c.player_class,
+                        released_to_opz=c.released_to_opz,
+                        passive_source=c.passive_source,
+                        observer_x=c.observer_x, observer_y=c.observer_y,
                         signature=c.signature, snr=c.snr,
                         passive_bearing=c.passive_bearing,
                         raw_bearing=c.raw_bearing,
@@ -3867,7 +5167,9 @@ class Game:
                 target_id=self.target.target_id if self.target else None,
                 selected_contact_id=(self.selected_contact.id
                                      if self.selected_contact else None),
-                opz_selected_track_id=self.opz_selected_track_id,
+                opz_selected_track_id=(None if self.opz_selected_track_id
+                                       in self.opz_fusion.fusions
+                                       else self.opz_selected_track_id),
                 map_cx=self.map_view.cx, map_cy=self.map_view.cy,
                 map_scale=self.map_view.scale,
                 map_follow=self.map_follow,
@@ -3887,6 +5189,7 @@ class Game:
                 "sonar": self._rng_state(self.sonar.rng),
                 "flight": self._rng_state(self.flights.rng),
                 "asw": self._rng_state(self.rng_asw),
+                "raid": self._rng_state(self.rng_raid),
             },
         }
 
@@ -3954,9 +5257,10 @@ class Game:
         self.sonar_harmonic_hz = None
         rng = random.Random(seed + 99999)
         self.rng_world = rng
-        self.flights = FlightManager(
-            self.world.coast, random.Random(seed + 2024), self.runtime_catalog)
         ship = data["ship"]
+        self.flights = FlightManager(
+            self.world.coast, random.Random(seed + 2024), self.runtime_catalog,
+            near=(ship["x"], ship["y"]))
         self.ship = Ship(x_nm=ship["x"], y_nm=ship["y"],
                          course_deg=ship["course"])
         self.ship.target_course = ship["target_course"]
@@ -4018,6 +5322,21 @@ class Game:
         self.vls_loadout_total = self._air_defense_loadout["vls"]["sam_loadout"]
         self.softkill_store = ConsumableStore.restore(air_defense["softkill"])
         self.essm_seq = air_defense["essm_seq"]
+        self.aa_ammo = air_defense["aa_ammo"]
+        self.aa_cooldown_s = air_defense["aa_cooldown_s"]
+        self.raid_seq = air_defense["raider_seq"]
+        self.raid_waves_spawned = air_defense["waves_spawned"]
+        self.raiders = []
+        for row in air_defense["raiders"]:
+            raider = Raider(row["x"], row["y"], row["course"], row["seq"],
+                            self.rng_raid,
+                            self._air_defense_loadout["raider"])
+            raider.phase = RaidPhase.parse(row["phase"])
+            raider.hp = row["hp"]
+            raider.salto_cd = row["salvo_cd"]
+            raider.pending_asm = row["pending_asm"]
+            raider.attack_t = row["attack_t"]
+            self.raiders.append(raider)
         self.target = None
         self.selected_contact = None
         self.torpedoes = []
@@ -4067,8 +5386,13 @@ class Game:
         self.air_picture = TrackPicture(
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
         self.air_picture.restore(data["air_picture"])
+        self._raider_visible_last = any(
+            track.track_id.startswith("R-")
+            for track in self.air_picture.tracks(self.sim_t, ("FLG",)))
         self.opz_affiliations = dict(data["opz_affiliations"])
         self.opz_selected_track_id = None
+        self.opz_fusion.clear()
+        self._opz_source_bindings = {}
         self.esm_picture = ESMPicture()
         self.eloka_selected_track_key = None
         self.eloka_annotations = {}
@@ -4118,6 +5442,11 @@ class Game:
         self.helo.fuel_s = hd["fuel_s"]
         self.helo.waypoint_x = hd["waypoint_x"]
         self.helo.waypoint_y = hd["waypoint_y"]
+        self.helo.dip_state = hd["dip_state"]
+        self.helo.dip_depth_m = hd["dip_depth_m"]
+        self.helo.dip_depth_target_m = hd["dip_depth_target_m"]
+        self.helo.dip_water_depth_m = hd["dip_water_depth_m"]
+        self.helo.dip_ping_cooldown = hd["dip_ping_cooldown"]
         # U-Boote (Phase 2: vollstaendiger KI-Zustand)
         self.subs = []
         for sd in data["subs"]:
@@ -4384,7 +5713,7 @@ class Game:
                 flight.sensor_age = fd["sensor_age"]
                 flight.active = fd["active"]
                 restore_platform(flight, fd, flight.akey)
-                if flight.dest is None and fd["waypoints"]:
+                if fd["waypoints"]:
                     flight.waypoints = [tuple(p) for p in fd["waypoints"]]
                     flight.waypoint_idx = fd["waypoint_idx"]
                 restored.append(flight)
@@ -4409,6 +5738,9 @@ class Game:
                 c.depth_est = cd.get("depth_est")
                 c.depth_sigma_m = cd.get("depth_sigma_m")
                 c.player_class = cd.get("player_class")
+                c.released_to_opz = cd["released_to_opz"]
+                c.passive_source = cd["passive_source"]
+                c.observer_x, c.observer_y = cd["observer_x"], cd["observer_y"]
                 c.signature = cd.get("signature", "")
                 c.snr = cd.get("snr", -99.0)
                 c.passive_bearing = cd.get("passive_bearing")
@@ -4437,8 +5769,8 @@ class Game:
                 c.tma_seen = cd.get("tma_seen", c.range_seen if c.range_source == "tma" else None)
                 c.buoy_fixes = [tuple(row) for row in cd.get("buoy_fixes", [])]
                 c.fixes = {fix["source"]: dict(fix) for fix in cd["fixes"]}
-                c._fx = self.ship.x
-                c._fy = self.ship.y
+                c._fx = c.observer_x
+                c._fy = c.observer_y
                 if c.observed_x is None or c.observed_y is None:
                     if c.range_source == "tma" and c.tma_pos is not None:
                         c.observed_x, c.observed_y = c.tma_pos
@@ -4524,6 +5856,7 @@ class Game:
         self._restore_rng(self.sonar.rng, rg["sonar"])
         self._restore_rng(self.flights.rng, rg["flight"])
         self._restore_rng(self.rng_asw, rg["asw"])
+        self._restore_rng(self.rng_raid, rg["raid"])
         # Zustand und sichtbarer Bedienfokus
         ui = data.get("ui", {})
         self.station = Station[ui["station"]]
@@ -4619,11 +5952,19 @@ class Game:
             "sam_remaining": upgraded.get("vls_cells"),
             "essm_seq": spent,
             "softkill": store.serialize(),
+            "aa_ammo": loadout["aa_gun"]["ammo"],
+            "aa_cooldown_s": 0.0,
+            "raiders": [],
+            "raider_seq": 0,
+            "waves_spawned": 0,
         }
         for row in upgraded["asms"]:
             row["profile_key"] = loadout["asm"]["key"]
         for row in upgraded["essms"]:
             row["profile_key"] = loadout["sam"]["key"]
+        import random
+        upgraded["rngs"]["raid"] = Game._rng_state(
+            random.Random(upgraded.get("seed", 0) + 40424))
         return upgraded
 
     @staticmethod
@@ -4733,6 +6074,92 @@ class Game:
         return upgraded
 
     @staticmethod
+    def _upgrade_pre_r20_v10(data):
+        """Upgrade only the exact canonical same-v10 pre-raid shape.
+
+        Pre-raid saves hold an air_defense state version 1 whose embedded
+        loadout is version 1 (no raider/aa_gun) and an rngs map without the
+        raid stream. Everything else stays untouched.
+        """
+        if not isinstance(data, dict):
+            return data
+        air = data.get("air_defense")
+        loadout = air.get("loadout") if isinstance(air, dict) else None
+        old_state_fields = {"version", "loadout", "sam_remaining",
+                            "essm_seq", "softkill"}
+        old_loadout_fields = {"version", "asm", "sam", "vls", "ciws",
+                              "softkill"}
+        if (not isinstance(air, dict) or set(air) != old_state_fields
+                or air.get("version") != 1
+                or not isinstance(loadout, dict)
+                or set(loadout) != old_loadout_fields
+                or loadout.get("version") != 1):
+            return data
+        rngs = data.get("rngs")
+        if (not isinstance(rngs, dict) or "raid" in rngs
+                or set(rngs) != {"world", "world_weather", "asm", "damage",
+                                 "helo", "sonar", "flight", "asw"}):
+            return data
+        import random
+        current = air_defense_loadout()
+        upgraded = copy.deepcopy(data)
+        upgraded["air_defense"]["loadout"].update(
+            raider=copy.deepcopy(current["raider"]),
+            aa_gun=copy.deepcopy(current["aa_gun"]))
+        upgraded["air_defense"]["loadout"]["version"] = 2
+        upgraded["air_defense"].update(
+            version=AIR_DEFENSE_STATE_VERSION,
+            aa_ammo=current["aa_gun"]["ammo"], aa_cooldown_s=0.0,
+            raiders=[], raider_seq=0, waves_spawned=0)
+        upgraded["rngs"]["raid"] = Game._rng_state(
+            random.Random(upgraded.get("seed", 0) + 40424))
+        return upgraded
+
+    @staticmethod
+    def _upgrade_pre_dipping_v10(data):
+        """Upgrade only the exact pre-dipping/release canonical v10 sub-shapes."""
+        if not isinstance(data, dict) or set(data) != SAVE_ROOT_FIELDS:
+            return data
+        old_helo_fields = {
+            "state", "x", "y", "torpedo_profile_key", "course", "torps",
+            "buoys_left", "fuel_s", "waypoint_x", "waypoint_y",
+        }
+        old_contact_fields = {
+            "contact_id", "target_id", "origin", "kind", "bearing",
+            "range_est", "range_sigma_nm", "range_source", "range_seen",
+            "confidence", "quality", "last_seen", "depth_est",
+            "depth_sigma_m", "player_class", "signature", "snr",
+            "passive_bearing", "raw_bearing", "raw_bearings", "passive_epoch",
+            "bearing_filter_t", "bearing_filter_rate_deg_s",
+            "bearing_filter_uncertainty_deg", "bearing_uncertainty_deg",
+            "ping_pos", "observed_x", "observed_y", "array_observations",
+            "fusion_status", "fusion_delta_deg", "fused_quality", "tma_pos",
+            "tma_course", "tma_speed", "tma_quality", "tma_seen",
+            "buoy_fixes", "fixes",
+        }
+        helo = data.get("helo")
+        sonar = data.get("sonar")
+        contacts = sonar.get("contacts") if isinstance(sonar, dict) else None
+        if (not isinstance(helo, dict) or set(helo) != old_helo_fields
+                or not isinstance(contacts, dict)
+                or any(not isinstance(row, dict) or set(row) != old_contact_fields
+                       for row in contacts.values())):
+            return data
+        upgraded = copy.deepcopy(data)
+        upgraded["helo"].update(
+            dip_state="STOWED", dip_depth_m=0.0,
+            dip_depth_target_m=config.HELO_DIP_DEPTH_DEFAULT_M,
+            dip_water_depth_m=0.0, dip_ping_cooldown=0.0)
+        observer_x = upgraded["ship"]["x"]
+        observer_y = upgraded["ship"]["y"]
+        for contact in upgraded["sonar"]["contacts"].values():
+            contact.update(
+                released_to_opz=contact.get("player_class") in config.PLAYER_CLASSES,
+                passive_source="SONAR-BRG", observer_x=observer_x,
+                observer_y=observer_y)
+        return upgraded
+
+    @staticmethod
     def _valid_save_document(data, runtime_catalog=None) -> bool:
         def finite_number(value) -> bool:
             try:
@@ -4837,7 +6264,7 @@ class Game:
         rng_data = data.get("rngs")
         rng_keys = {
             "world", "world_weather", "asm", "damage", "helo", "sonar",
-            "flight", "asw",
+            "flight", "asw", "raid",
         }
         if not isinstance(rng_data, dict) or set(rng_data) != rng_keys:
             return False
@@ -4866,6 +6293,11 @@ class Game:
         if (not isinstance(air_rows, list)
                 or len(air_rows) > MAX_AIR_PICTURE_TRACKS):
             return False
+        approved_esm_names = {
+            runtime_catalog.emitter_name(key)
+            for key, emitter in runtime_catalog.emitters.items()
+            if emitter.domain == "radar"
+        }
         for row in air_rows:
             if (not isinstance(row, dict)
                     or not required_track_fields <= set(row)
@@ -4876,6 +6308,38 @@ class Game:
                     or row["bearing"] == 360
                     or not bounded(row["quality"], 0, 1)
                     or not bounded(row["last_seen"], 0, save_sim_t)):
+                return False
+            if row["source"] == "ESM" and (
+                    not row["track_id"].startswith("E-")
+                    or len(row["track_id"]) != 18
+                    or any(char not in "0123456789ABCDEF"
+                           for char in row["track_id"][2:])
+                    or row["kind"] != "UNKNOWN" or row["target_id"] != 0
+                    or row["range_nm"] is not None or row["x"] is not None
+                    or row["y"] is not None or row["course"] is not None
+                    or row.get("raw_range_nm") is not None
+                    or row.get("raw_x") is not None or row.get("raw_y") is not None
+                    or row.get("raw_course") is not None
+                    or row.get("position_seen") is not None
+                    or row["label"] not in approved_esm_names
+                    or row.get("hostile") is not False
+                    or row.get("jamming") is not False):
+                return False
+            if row["source"] == "LOOKOUT" and (
+                    not row["track_id"].startswith("L-")
+                    or len(row["track_id"]) != 18
+                    or any(char not in "0123456789ABCDEF"
+                           for char in row["track_id"][2:])
+                    or row["kind"] not in ("SURFACE", "SUB", "FLG")
+                    or row["target_id"] != 0 or row["range_nm"] is None
+                    or row["range_nm"] > config.LOOKOUT_AIR_RANGE_NM * (
+                        1.0 + config.LOOKOUT_RANGE_ERR_FRAC)
+                    or row["x"] is None or row["y"] is None
+                    or row["course"] is not None
+                    or row.get("raw_course") is not None
+                    or row["label"] != "VISUAL"
+                    or row.get("hostile") is not False
+                    or row.get("jamming") is not False):
                 return False
             if ((row["x"] is None) != (row["y"] is None)
                     or any(value is not None and not bounded(
@@ -5447,13 +6911,16 @@ class Game:
             if not isinstance(flight, dict):
                 return False
             bearing = flight.get("sensor_bearing")
-            if (type(flight.get("radar_emitting", False)) is not bool
+            radar_emitting = flight.get("radar_emitting", False)
+            if (type(radar_emitting) is not bool
                     or not bounded(flight.get("sensor_age", config.RADAR_TRACK_STALE_S),
                                    0, config.RADAR_TRACK_STALE_S)
                     or (bearing is not None and (not bounded(bearing, 0, 360) or bearing == 360))):
                 return False
             profile = runtime_catalog.aircraft.get(flight.get("akey"))
             if profile is None or profile.kind != flight.get("kind"):
+                return False
+            if radar_emitting != (profile.kind == "military"):
                 return False
             platform = flight.get("platform")
             if (platform_state_version == 1 and platform is None) \
@@ -5465,9 +6932,13 @@ class Game:
         if not isinstance(helo, dict):
             return False
         if isinstance(helo, dict):
-            required_helo = {"state", "x", "y", "course", "torps",
-                             "buoys_left", "fuel_s", "waypoint_x", "waypoint_y"}
-            if not required_helo <= set(helo):
+            required_helo = {
+                "state", "x", "y", "course", "torps", "torpedo_profile_key",
+                "buoys_left", "fuel_s", "waypoint_x", "waypoint_y",
+                "dip_state", "dip_depth_m", "dip_depth_target_m",
+                "dip_water_depth_m", "dip_ping_cooldown",
+            }
+            if set(helo) != required_helo:
                 return False
             if (helo.get("state") not in ("HANGAR", "AUF", "ZURUECK", "VERLOREN")
                     or not bounded(helo.get("x"), -1_000_000, 1_000_000)
@@ -5478,7 +6949,34 @@ class Game:
                     or not 0 <= helo["torps"] <= config.HELO_TORPS
                     or type(helo.get("buoys_left")) is not int
                     or not 0 <= helo["buoys_left"] <= config.BUOY_COUNT
-                    or not bounded(helo.get("fuel_s"), 0, config.HELO_FUEL_S)):
+                    or not bounded(helo.get("fuel_s"), 0, config.HELO_FUEL_S)
+                    or helo.get("dip_state") not in (
+                        "STOWED", "DEPLOYING", "DEPLOYED", "RETRIEVING")
+                    or not bounded(helo.get("dip_depth_m"), 0,
+                                   config.HELO_DIP_DEPTH_MAX_M)
+                    or not bounded(helo.get("dip_depth_target_m"),
+                                   config.HELO_DIP_DEPTH_MIN_M,
+                                   config.HELO_DIP_DEPTH_MAX_M)
+                    or not bounded(helo.get("dip_water_depth_m"), 0, 10000)
+                    or not bounded(helo.get("dip_ping_cooldown"), 0,
+                                   config.HELO_DIP_PING_COOLDOWN_S)
+                    or (helo["dip_state"] == "STOWED"
+                        and (helo["dip_depth_m"] != 0
+                             or helo["dip_water_depth_m"] != 0))
+                    or (helo["dip_state"] in ("DEPLOYING", "DEPLOYED")
+                        and helo["state"] != "AUF")
+                    or (helo["dip_state"] != "STOWED"
+                        and (helo["dip_water_depth_m"]
+                             <= config.HELO_DIP_BOTTOM_CLEARANCE_M
+                             or helo["dip_depth_m"] > helo["dip_water_depth_m"]
+                             - config.HELO_DIP_BOTTOM_CLEARANCE_M
+                             or helo["dip_depth_target_m"]
+                             > helo["dip_water_depth_m"]
+                             - config.HELO_DIP_BOTTOM_CLEARANCE_M))
+                    or (helo["dip_state"] == "DEPLOYED"
+                        and helo["dip_depth_m"] != helo["dip_depth_target_m"])
+                    or (helo["state"] in ("HANGAR", "VERLOREN")
+                        and helo["dip_state"] != "STOWED")):
                 return False
             wx, wy = helo.get("waypoint_x"), helo.get("waypoint_y")
             if ((wx is None) != (wy is None)
@@ -5787,6 +7285,12 @@ class Game:
         for contact in contacts.values():
             if not isinstance(contact, dict):
                 return False
+            if (type(contact.get("released_to_opz")) is not bool
+                    or contact.get("passive_source") not in (
+                        "SONAR-BRG", "SONAR-DIP-BRG")
+                    or not bounded(contact.get("observer_x"), -1_000_000, 1_000_000)
+                    or not bounded(contact.get("observer_y"), -1_000_000, 1_000_000)):
+                return False
             reports = contact.get("array_observations", {})
             if not isinstance(reports, dict) or not set(reports) <= {"BOW", "TOWED"}:
                 return False
@@ -5805,7 +7309,7 @@ class Game:
             if tma_seen is not None and not bounded(tma_seen, 0, 1e12):
                 return False
             published_fixes = contact.get("fixes")
-            if (not isinstance(published_fixes, list) or len(published_fixes) > 3
+            if (not isinstance(published_fixes, list) or len(published_fixes) > 4
                     or len({fix.get("source") for fix in published_fixes
                             if isinstance(fix, dict)}) != len(published_fixes)):
                 return False
@@ -5814,7 +7318,8 @@ class Game:
                           "uncertainty_nm", "depth_m", "depth_uncertainty_m",
                           "quality"}
                 if (not isinstance(fix, dict) or set(fix) != fields
-                        or fix["source"] not in ("PING", "TMA", "SONOBUOY")
+                        or fix["source"] not in (
+                            "PING", "DIPPING", "TMA", "SONOBUOY")
                         or not bounded(fix["measured_at"], 0, save_sim_t)
                         or not bounded(fix["fixed_at"], fix["measured_at"], save_sim_t)
                         or not bounded(fix["x"], -1_000_000, 1_000_000)
@@ -5952,7 +7457,7 @@ class Game:
                or any(not bounded(item.get(key, 0), 0, 1e12)
                       for key in ("sent_at", "ready_at"))
                or not bounded(item.get("range_factor", 1), 0, 100)
-               or item.get("mode", "BOW") not in ("BOW", "TOWED")
+                or item.get("mode", "BOW") not in ("BOW", "TOWED", "DIPPING")
                or item.get("sent_at", sim_t) > sim_t
                or not 0 <= item.get("ready_at", sim_t) - item.get("sent_at", sim_t) <= 25000
                or not SonarSystem.valid_ping_snapshot(item["snapshot"])
@@ -5968,6 +7473,8 @@ class Game:
                 data = self._upgrade_pre_r14_v10(data)
                 data = self._upgrade_pre_r16_v10(data)
                 data = self._upgrade_pre_r18_v10(data)
+                data = self._upgrade_pre_r20_v10(data)
+                data = self._upgrade_pre_dipping_v10(data)
             runtime_catalog = self._catalog_for_save(data)
         except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
             return False
@@ -5980,7 +7487,7 @@ class Game:
         candidate._observed_enemy_torpedoes = set(
             self._observed_enemy_torpedoes)
         candidate.audio = copy.copy(self.audio)
-        candidate.audio.stop_sonar = lambda: None
+        candidate.audio.stop_sonar = lambda immediate=False: None
         id_classes = (Sub, Animal, SurfaceShip, Decoy, EnemyTorpedo)
         next_ids = tuple(cls._next_id for cls in id_classes)
         candidate._restore_id_allocations = dict.fromkeys(id_classes, 0)
@@ -6016,6 +7523,7 @@ class Game:
         self.__dict__.update(candidate.__dict__)
         self.in_menu = False
         self.main_menu = False
+        self.feed.clear()
         return True
 
     # --- W4: Save-Slots 1-5 ---
@@ -6122,7 +7630,7 @@ class Game:
                 elif action == "unit_editor":
                     self.editor = UnitEditor(catalog_builtins(CATALOG), tr=self.tr)
                 elif action == "contact_analyzer":
-                    self.editor = ContactAnalyzer(tr=self.tr)
+                    self.editor = self._make_analyzer()
                 elif action == "options":
                     self._open_administration("options")
                 else:
@@ -6273,45 +7781,50 @@ class Game:
                                         True, config.COLOR_OK)
                 s.blit(hint, (config.SCREEN_W - hint.get_width() - 20,
                               config.SCREEN_H - 68))
+        elif self.simlog_view_open:
+            draw_simlog_view(self)
         elif self.in_menu:
             self.draw_menu()
         else:
             self.draw_top_bar()
             map_station = self.station in (Station.BRIDGE, Station.WEAPONS,
                                            Station.HELICOPTER)
-            config.STATION_RECT = (config.STATION_PANEL_RECT if map_station
-                                   else config.FULL_STATION_RECT)
-            if map_station:
-                draw_map_view(self)
-                if self.station is Station.WEAPONS:
-                    draw_weapons_overlay(self)
-            with layout.clip_to(s, config.STATION_RECT):
-                if self.station is Station.SONAR:
-                    draw_sonar_view(self)
-                elif self.station is Station.WEAPONS:
-                    draw_weapons_panel(self)
-                elif self.station is Station.DAMAGE:
-                    draw_damage_view(self)
-                elif self.station is Station.OPZ:
-                    draw_opz_view(self)
-                elif self.station is Station.RADIO:
-                    draw_radio_view(self)
-                elif self.station is Station.ENGINE:
-                    draw_engine_view(self)
-                elif self.station is Station.HELICOPTER:
-                    draw_helicopter_view(self)
-                elif self.station is Station.ELOKA:
-                    draw_eloka_view(self)
-                else:
-                    draw_bridge_view(self)
-            self.draw_bottom_feed()
-            self.draw_bottom_telemetry()
-            self.draw_navigation_input()
-            if self.game_over:
-                self.draw_end_panel()
-            if self.paused and not self.administration_open:
-                self.draw_pause_overlay()
-            config.STATION_RECT = config.STATION_PANEL_RECT
+            previous_rect = config.STATION_RECT
+            try:
+                config.STATION_RECT = (config.STATION_PANEL_RECT if map_station
+                                       else config.FULL_STATION_RECT)
+                if map_station:
+                    draw_map_view(self)
+                    if self.station is Station.WEAPONS:
+                        draw_weapons_overlay(self)
+                with layout.clip_to(s, config.STATION_RECT):
+                    if self.station is Station.SONAR:
+                        draw_sonar_view(self)
+                    elif self.station is Station.WEAPONS:
+                        draw_weapons_panel(self)
+                    elif self.station is Station.DAMAGE:
+                        draw_damage_view(self)
+                    elif self.station is Station.OPZ:
+                        draw_opz_view(self)
+                    elif self.station is Station.RADIO:
+                        draw_radio_view(self)
+                    elif self.station is Station.ENGINE:
+                        draw_engine_view(self)
+                    elif self.station is Station.HELICOPTER:
+                        draw_helicopter_view(self)
+                    elif self.station is Station.ELOKA:
+                        draw_eloka_view(self)
+                    else:
+                        draw_bridge_view(self)
+                self.draw_bottom_feed()
+                self.draw_bottom_telemetry()
+                self.draw_navigation_input()
+                if self.game_over:
+                    self.draw_end_panel()
+                if self.paused and not self.administration_open:
+                    self.draw_pause_overlay()
+            finally:
+                config.STATION_RECT = previous_rect
         if self.quit_confirm:
             self.draw_quit_overlay()
         elif self.help_open:
@@ -6329,7 +7842,7 @@ class Game:
             layout.blit_block(s, localize(self.msg), 22, 62, config.SCREEN_W - 44, 76,
                               config.COLOR_WARN, size=28, align="center")
         if (not self.in_menu and not self.splash_active and self.editor is None
-                and self.tooltips_enabled
+                and not self.simlog_view_open and self.tooltips_enabled
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
             payload = self.pinned_tooltip or self.tooltip_at(canvas)
@@ -6599,7 +8112,7 @@ class Game:
 
     @staticmethod
     def _options_row_rects():
-        return tuple(pygame.Rect(292, 204 + index * 52, 696, 42) for index in range(6))
+        return tuple(pygame.Rect(292, 204 + index * 52, 696, 42) for index in range(7))
 
     @localized
     def draw_options_overlay(self) -> None:
@@ -6615,6 +8128,8 @@ class Game:
             self.tr("option.large_text") + ": " + self.tr("common.on" if self.preferences.large_text else "common.off"),
             self.tr("option.tooltips") + ": "
             + self.tr("common.on" if self.tooltips_enabled else "common.off"),
+            self.tr("option.simlog") + ": "
+            + self.tr("common.on" if self.preferences.simlog else "common.off"),
             self.tr("commander.local.option"),
         )
         for index, (value, row) in enumerate(zip(values, self._options_row_rects())):

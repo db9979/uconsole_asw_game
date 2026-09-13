@@ -25,14 +25,20 @@ class FeedEntry:
 
 
 class EventFeed:
-    def __init__(self, cap: int = config.FEED_MAX_ENTRIES):
+    def __init__(self, cap: int = config.FEED_MAX_ENTRIES, sink=None):
         self.cap = cap
         self.entries: list[FeedEntry] = []
+        self._sink = sink
 
     def add(self, stamp: str, category: str, text: str) -> None:
         self.entries.append(FeedEntry(stamp, category, text))
         if len(self.entries) > self.cap:
             self.entries.pop(0)
+        if self._sink is not None:
+            self._sink(stamp, category, text)
 
     def recent(self, n: int) -> list[FeedEntry]:
         return self.entries[-n:]
+
+    def clear(self) -> None:
+        self.entries = []

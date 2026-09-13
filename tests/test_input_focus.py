@@ -47,6 +47,28 @@ def test_administration_blocks_time_and_all_background_devices(game, dialog):
     assert not game.administration_open
 
 
+@pytest.mark.parametrize("overlay", ["help", "options", "commander", "analyzer"])
+def test_selected_overlays_keep_active_remote_crew_simulation_live(game, overlay):
+    game.commander.active_crew = True
+    if overlay == "analyzer":
+        game._open_analyzer_in_game()
+    else:
+        game._open_administration(overlay)
+    before = game.sim_t
+    game.update(.25)
+    assert game.sim_t > before
+    assert game.order_course(123) == "ok"
+
+
+@pytest.mark.parametrize("overlay", ["nations", "save", "load", "quit"])
+def test_sensitive_overlays_block_even_with_active_remote_crew(game, overlay):
+    game.commander.active_crew = True
+    game._open_administration(overlay)
+    before = game.sim_t
+    game.update(.25)
+    assert game.sim_t == before
+
+
 def test_help_preserves_manual_pause_and_does_not_open_quit(game):
     press(game, pygame.K_p)
     press(game, pygame.K_F1)

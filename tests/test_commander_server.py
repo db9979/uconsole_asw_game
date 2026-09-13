@@ -123,6 +123,7 @@ def test_constructor_is_passive_and_lifecycle_is_explicit(assets):
     assert re.fullmatch(r"[0-9]{3}[A-Z]{3}", server.pairing_code)
     with pytest.raises(RuntimeError):
         _ = server.address
+    code = server.pairing_code
     server.stop()
     server.start("127.0.0.1", 0)
     try:
@@ -135,6 +136,7 @@ def test_constructor_is_passive_and_lifecycle_is_explicit(assets):
     server.stop()
     assert not server.connected
     server.start("127.0.0.1", 0)
+    assert server.pairing_code == code
     server.stop()
 
 
@@ -244,13 +246,13 @@ def test_public_translations_are_filtered_and_copied(assets):
         server.stop()
 
 
-def test_pair_one_use_revoke_and_bearer_only(server):
+def test_v1_pair_preserves_session_code_revoke_rotates_and_bearer_only(server):
     code = server.pairing_code
     assert request(server, "/api/v1/pair", "POST", {"code": "wrong"})[0] == 403
     assert request(server, "/api/v1/pair", "POST", {"code": "\ud800"})[0] == 403
     token = pair(server)
     assert server.connected
-    assert server.pairing_code != code
+    assert server.pairing_code == code
     assert request(server, "/api/v1/pair", "POST", {"code": code})[0] == 409
     assert request(server, "/api/v1/pair", "POST", {"code": server.pairing_code})[0] == 409
     for route in ("/api/v1/state", "/api/v1/chart"):
@@ -354,27 +356,22 @@ def test_pairing_is_exact_uppercase_and_bearer_stays_32_random_bytes(server, mon
     assert request(server, "/api/v1/pair", "POST", {"code": " " + code})[0] == 403
     token = pair(server)
     assert sizes == [32]
-    assert server.pairing_code != code
+    assert server.pairing_code == code
     assert re.fullmatch(r"[0-9]{3}[A-Z]{3}", server.pairing_code)
     assert request(server, "/api/v1/pair", "POST", {"code": server.pairing_code})[0] == 409
     assert request(server, "/api/v1/state", token=token)[0] == 200
 
 
-@pytest.mark.parametrize("expire_via", ["property", "request"])
-def test_unpaired_code_ttl_checked_before_exposure_and_pairing(server, monkeypatch, expire_via):
+def test_unpaired_code_has_no_time_or_read_rotation(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     server.revoke()
     code = server.pairing_code
-    clock[0] += 299
+    clock[0] += 24 * 60 * 60
     assert server.pairing_code == code
-    clock[0] += 1
-    if expire_via == "property":
-        assert server.pairing_code != code
-    assert request(server, "/api/v1/pair", "POST", {"code": code})[0] == 403
-    assert server.pairing_code != code
-    assert re.fullmatch(r"[0-9]{3}[A-Z]{3}", server.pairing_code)
-    pair(server)
+    assert server.pairing_code == code
+    assert request(server, "/api/v1/pair", "POST", {"code": code})[0] == 200
+    assert server.pairing_code == code
 
 
 def test_global_pairing_lockout_includes_correct_code_and_recovers_after_window(server, monkeypatch):
@@ -417,24 +414,19 @@ def test_pairing_failure_window_is_rolling(server, monkeypatch):
     pair(server)
 
 
-@pytest.mark.parametrize("rotation", ["code_ttl", "lease_expiry"])
-def test_automatic_rotation_preserves_pairing_failure_budget(server, monkeypatch, rotation):
+def test_v1_lease_expiry_preserves_code_and_pairing_failure_budget(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     server.revoke()
-    if rotation == "code_ttl":
-        clock[0] += 299
     for _ in range(4):
         assert request(server, "/api/v1/pair", "POST", {"code": "wrong"})[0] == 403
-    if rotation == "lease_expiry":
-        pair(server)
+    pair(server)
     code = server.pairing_code
-    clock[0] += 1 if rotation == "code_ttl" else 30
-    assert server.pairing_code != code
+    clock[0] += 30
+    assert server.pairing_code == code
     assert not server.connected
-    code = server.pairing_code
     assert request(server, "/api/v1/pair", "POST", {"code": "wrong"})[0] == 403
-    assert server.pairing_code != code
+    assert server.pairing_code != code  # Fifth miss is the security rotation.
     assert request(server, "/api/v1/pair", "POST", {"code": server.pairing_code})[0] == 429
     code = server.pairing_code
     server.revoke()
@@ -843,7 +835,7 @@ def test_stop_invalidates_drained_envelopes_and_restart_tokens(server):
     code = server.pairing_code
     server.stop()
     assert not server.is_current(envelope)
-    assert server.pairing_code != code
+    assert server.pairing_code == code
     server.start("127.0.0.1", 0)
     assert request(server, "/api/v1/state", token=token)[0] == 401
     pair(server)

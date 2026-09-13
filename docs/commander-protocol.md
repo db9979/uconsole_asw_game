@@ -1,6 +1,6 @@
 # Commander Protocol and Security
 
-Application 0.1.7, API protocol 1, save format v10-only. These versions are independent.
+Application 0.2.0, API protocols 1 and 2, save format v10-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
 persistence.
@@ -13,7 +13,7 @@ reads public observations and own assets, validates commands and publishes
 detached JSON. HTTP handlers never import Game/Pygame, access simulation objects,
 or trigger sensor/TMA work. Candidate-load methods have no network side effects.
 
-## Endpoints
+## Legacy Protocol v1 Endpoints
 
 | Method / route | Contract |
 |---|---|
@@ -31,7 +31,43 @@ loopback). No wildcard CORS, arbitrary routes/files, redirects, external assets,
 or HTML interpolation of authored text. Responses use no-store, CSP, nosniff and
 anti-framing headers. Access logs contain no credentials because they are disabled.
 
-## Pairing and Bounds
+## Remote Crew Protocol v2
+
+Protocol v2 is the current role-oriented interface. Pairing creates an
+independent cryptographic session in an HttpOnly SameSite cookie and returns a
+separate CSRF token in the exact session response. State-changing requests
+require both the cookie, exact Origin, and CSRF token.
+
+The session advertises all nine stations as nested records. A client may retain
+multiple leases, each with its own monotonic station generation and command,
+direct-fire, and sonar-audio grants. Exactly one retained lease is active and
+identified by a separate monotonic active generation. Station requests are
+additive; activation does not release another lease. Release, revocation,
+takeover, expiry, pause, focus loss, and world replacement invalidate authority
+at their defined scope.
+
+Role state is an exact allowlisted projection under `/api/v2/state`. The active
+role receives own-asset truth, known geography, and published observations only.
+It never receives simulation objects, hidden IDs, undiscovered positions, RNG
+state, credentials, or save data. OPZ receives only explicitly released sonar
+observations; classification is independent. Browser labels are opaque
+observation-lifetime references.
+
+Commands use strict envelopes containing protocol, cryptographic request ID,
+per-client sequence, station generation, active generation, world
+session/epoch, resource revision, action, and exact bounded parameters. HTTP
+threads only enqueue detached envelopes. The main thread revalidates and applies
+accepted commands once in deterministic station and per-client FIFO order.
+Direct-fire actions additionally require the station's direct-fire grant and
+ordinary observation, readiness, inventory, ROE, and envelope checks. A queued
+response is never reported as successful before its terminal result.
+
+V2 sessions, clients, leases, histories, queues, polling, and projection sizes
+are hard-bounded. Sonar audio is live-only, separately granted, and bound to the
+active sonar generation. Protocol v1 remains exact for compatibility and is not
+silently broadened by v2 fields.
+
+## Protocol v1 Pairing and Bounds
 
 - Explicit RFC1918 or loopback IPv4 bind; no wildcard/public IPv4.
 - Cryptographic code: [0-9]{3}[A-Z]{3}, five-minute validity, one use. Rotation
@@ -53,7 +89,7 @@ anti-framing headers. Access logs contain no credentials because they are disabl
 HTTP remains plaintext. Pairing, Origin checks and limits do not provide network
 confidentiality. Trusted LAN only; no port forwarding or public hosting.
 
-## Snapshot and Commands
+## Protocol v1 Snapshot and Commands
 
 State includes protocol/version/session/epoch/revision/sequence, phase and command
 availability, clocks, known mission information, own readiness, public tracks,
@@ -101,6 +137,12 @@ Epoch changes reject queued actions across administrative/input/grant/connection
 transitions. World replacement revokes pairing and generates a new session at the
 next pump. The browser requires matching session/chart context before revealing
 the new picture. Old event backlog does not retrigger audio after reconnect.
+
+An active crew station keeps protocol phase `live` behind local F1 help, the
+in-game F8 contact analyzer, F9 crew administration, and F10 options. Opening or
+closing one of these owners still invalidates commands queued across the
+transition. Manual pause, focus loss, save/load, quit, nations, real editors,
+menus, and splash remain blocked.
 
 The Lookout consumes only the current state snapshot, never chart geography or
 simulation objects. It is north-up and ship-centered: positioned observations

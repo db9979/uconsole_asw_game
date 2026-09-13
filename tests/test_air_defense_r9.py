@@ -96,6 +96,20 @@ def test_bearing_only_refresh_does_not_refresh_hardkill_position(game):
     assert ciws["observation_max_age_s"] < 10.0
 
 
+def test_explicit_air_defense_rejection_preserves_store_sequence_and_rng(game):
+    missile = ASM(game.ship.x + 2, game.ship.y, 270, 44, game.rng_asm)
+    game.asms = [missile]
+    track = observe_asm(game, missile, distance=2)
+    track.position_seen = game.sim_t - game._air_defense_loadout[
+        "sam"]["observation_max_age_s"] - .001
+    before = (game.vls_cells, game.essm_seq, list(game.essms),
+              game.softkill_store.serialize(), game.rng_asm.getstate())
+    assert game.launch_essm_at(track) == "stale_ref"
+    assert game.launch_chaff_at(track) == "stale_ref"
+    assert (game.vls_cells, game.essm_seq, list(game.essms),
+            game.softkill_store.serialize(), game.rng_asm.getstate()) == before
+
+
 def test_friendly_platform_datalink_publishes_runtime_air_fix(game, monkeypatch):
     missile = ASM(game.ship.x + 1, game.ship.y, 0, 1, game.rng_asm)
     missile.speed_kn = 0
@@ -286,7 +300,7 @@ def test_profiled_midflight_save_continuation_is_canonical(game):
 
 
 @pytest.mark.parametrize("mutate", [
-    lambda state: state["air_defense"].update(version=2),
+    lambda state: state["air_defense"].update(version=3),
     lambda state: state["air_defense"]["loadout"]["sam"].update(extra=1),
     lambda state: state["air_defense"]["softkill"].update(effect_type="towed_acoustic"),
     lambda state: state["air_defense"].update(sam_remaining=True),

@@ -50,9 +50,6 @@ def paired_menu(game):
     status, paired = request(console.server, "/api/v1/pair",
                              body={"code": console.pairing_code})
     assert status == 200
-    for _ in range(3):
-        key(game, pygame.K_DOWN)
-    key(game, pygame.K_RETURN)
     key(game, pygame.K_ESCAPE)
     console.pump(game)
     assert game.in_menu and game.main_menu and console.bridge.allowed
@@ -100,6 +97,7 @@ def test_real_replacements_still_revoke_on_next_pump(game, paired_menu, change):
     server, token = paired_menu
     world, sonar = game.world, game.sonar
     session = game.commander.bridge.status["session"]
+    join_code = server.pairing_code
     if change == "reset":
         game.reset(game.seed)  # Even an identical explicit reset is a replacement.
     elif change == "load":
@@ -122,6 +120,7 @@ def test_real_replacements_still_revoke_on_next_pump(game, paired_menu, change):
     assert server.connected and game.commander.bridge.allowed
     assert request(server, "/api/v1/state", token=token)[0] == 200
     game.commander.pump(game)
+    assert server.pairing_code != join_code
     assert game.commander.server is server
     assert not server.connected and not game.commander.bridge.allowed
     assert game.commander.bridge.status["session"] != session

@@ -35,13 +35,19 @@ SONAR_PAGE_COUNT = len(STATION_PAGES[Station.SONAR])
 
 STATION_COMMAND_HINTS = {
     Station.BRIDGE: "Links/Rechts Kurs | Auf/Ab Telegraph | U/V Direkt | Q/E Zoom | K Follow",
-    Station.SONAR: "Peilung Links/Rechts | Kontakt Auf/Ab | A Ping | Y TAS | M Ziel",
+    Station.SONAR: (
+        "Peilung Links/Rechts | Kontakt Auf/Ab | A Ping | Y TAS | M Ziel",
+        "control.hint.sonar_release",
+    ),
     Station.WEAPONS: "control.hint.weapons",
     Station.DAMAGE: "Links/Rechts Raum | Auf/Ab Team | Enter Zuweisen",
     Station.OPZ: "control.hint.opz",
     Station.RADIO: "Auf/Ab HFDF | Enter Protokoll",
     Station.ENGINE: "Auf/Ab Telegraph | A Leise | V Fahrt",
-    Station.HELICOPTER: "control.hint.helicopter",
+    Station.HELICOPTER: (
+        "control.hint.helicopter",
+        "control.hint.helicopter_dipping",
+    ),
     Station.ELOKA: "control.hint.eloka",
 }
 
@@ -89,4 +95,7 @@ def toggle_tas(game, tr=None) -> bool:
 def station_command_hint(station: Station, tr=None) -> str:
     """Translate command metadata, retaining the historical German default."""
     text = STATION_COMMAND_HINTS.get(station, "")
-    return (tr or Translator("de").t)(text)
+    translate = tr or Translator("de").t
+    if isinstance(text, tuple):
+        return " | ".join(translate(part) for part in text)
+    return translate(text)

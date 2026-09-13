@@ -273,11 +273,12 @@ def test_real_http_only_queues_navigation_and_denies_direct_actions(game):
 
 @pytest.mark.parametrize("language", ["en", "de", "pseudo"])
 @pytest.mark.parametrize("large", [False, True])
-def test_native_nine_rows_nonoverlap_and_local_confirmation(game, monkeypatch, language, large):
+def test_native_four_rows_nonoverlap_and_roomy_join_code(game, monkeypatch, language, large):
     console = game.commander
     bridge, server = start(game)
     console.bridge = bridge
     console.address = ("127.0.0.1", 8765)
+    console.pairing_code = "123ABC"
     server.send(navigation(server.state, course=359.999, speed_kn=25))
     bridge.pump(game, server, now=100.1)
     game.tr = (Translator("en", pseudolocale()) if language == "pseudo" else Translator(language)).t
@@ -285,28 +286,26 @@ def test_native_nine_rows_nonoverlap_and_local_confirmation(game, monkeypatch, l
     console.error = "commander.local.navigation.bridge_down"
     with layout.capture_text() as text:
         console.draw(game)
-    assert len(console.row_rects()) == 9
+    assert len(console.row_rects()) == 4
     for entry in text:
         assert entry["bounds"].contains(entry["rect"])
         assert pygame.Rect(0, 0, 1280, 720).contains(entry["bounds"])
         assert "commander." not in entry["text"]
     assert all(not a["rect"].colliderect(b["rect"]) for a, b in combinations(text, 2))
+    join = next(entry for entry in text if entry["text"] == "123 ABC")
+    assert join["rect"].height >= 60
     game.commander_open = True
-    console.selection = 6
+    console.selection = 0
     console.handle_key(game, pygame.K_DOWN)
-    assert console.selection == 7
-    console.handle_key(game, pygame.K_RETURN)
-    assert game.ship.target_course == 359.999 and game.ship.target_speed == 25
+    assert console.selection == 1
     console.handle_key(game, pygame.K_DOWN)
-    assert console.selection == 8
+    assert console.selection == 2
+    console.handle_key(game, pygame.K_DOWN)
+    assert console.selection == 3
     console.handle_key(game, pygame.K_DOWN)
     assert console.selection == 0
     console.handle_key(game, pygame.K_UP)
-    assert console.selection == 8
-    reject = Mock(return_value=True)
-    monkeypatch.setattr(bridge, "reject_navigation", reject)
-    console.handle_key(game, pygame.K_RETURN)
-    reject.assert_called_once_with(game)
+    assert console.selection == 3
 
 
 NAVIGATION_BROWSER = r"""
@@ -328,6 +327,7 @@ window.fetch = async (url, options) => {
   active++; maxActive = Math.max(active, maxActive);
   try {
     await sleep(5);
+    if (url.endsWith("/api/v2/session")) return new Response("{}", {status: 404});
     if (url.includes("/ui?")) return Response.json(translations);
     if (url.endsWith("/pair")) return Response.json({token: "test-only-token"});
     assert(options.headers.Authorization === "Bearer test-only-token", "authenticated navigation");

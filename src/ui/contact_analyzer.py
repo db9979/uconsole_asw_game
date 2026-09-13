@@ -27,8 +27,13 @@ class ContactAnalyzer:
     mode = "browser"
 
     def __init__(self, tr=widgets.IDENTITY_TR, *, projection=None,
-                 packaged_assets: Mapping[str, tuple[str, bytes]] | None = None):
+                 packaged_assets: Mapping[str, tuple[str, bytes]] | None = None,
+                 on_play_sample=None, on_stop_sample=None, preview_active=None):
         self.tr = tr
+        self.on_play_sample = on_play_sample
+        self.on_stop_sample = on_stop_sample
+        self.preview_active = preview_active
+        self._playing_sample = None
         detached = project_contact_catalog() if projection is None else projection
         self.profiles = list(detached["profiles"])
         assets = load_contact_analysis_assets() if packaged_assets is None else packaged_assets
@@ -69,6 +74,7 @@ class ContactAnalyzer:
         self.listbox.selected = 0
         self.listbox.scroll = 0
         self.listbox.set_items(self._list_labels())
+        self._stop_sample()
         self.detail_scroll = 0
         self.asset_index = 0
         self._prepare_selected_image()
@@ -103,9 +109,44 @@ class ContactAnalyzer:
         self._decode_surface(profile["assets"][kinds[self.asset_index]])
 
     def _selection_changed(self) -> None:
+        self._stop_sample()
         self.detail_scroll = 0
         self.asset_index = 0
         self._prepare_selected_image()
+
+    def _current_sample(self):
+        """Aktuelle Hörprobe (Einheit, Modus) oder None ohne verfügbares Asset."""
+        profile = self.selected_profile
+        if profile is None:
+            return None
+        kinds = self._asset_kinds()
+        if not kinds:
+            return None
+        return (profile["key"], kinds[self.asset_index])
+
+    def _sample_available(self) -> bool:
+        return (self._current_sample() is not None
+                and self.on_play_sample is not None)
+
+    def _stop_sample(self) -> None:
+        if self._playing_sample is None:
+            return
+        self._playing_sample = None
+        if self.on_stop_sample is not None:
+            self.on_stop_sample()
+
+    def _play_sample(self) -> bool:
+        """Toggle: startet die gelesene Hörprobe (Endlos-Loop) oder stoppt sie."""
+        sample = self._current_sample()
+        if sample is None or self.on_play_sample is None:
+            return False
+        if self._playing_sample == sample:
+            self._stop_sample()
+            return True
+        profile = self.selected_profile
+        self.on_play_sample(profile["key"], sample[1], profile["machine"])
+        self._playing_sample = sample
+        return True
 
     def _shown(self, value) -> str:
         if value is None:
@@ -150,6 +191,28 @@ class ContactAnalyzer:
         for kind in ("sensors", "emitters", "weapons", "launchers",
                      "magazines", "countermeasures"):
             rows.append((f"analyzer.{kind}", len(profile["components"][kind])))
+        for index, sensor in enumerate(profile["components"]["sensors"], 1):
+            rows.extend((
+                ("analyzer.sensor", index),
+                ("analyzer.domain", sensor["domain"]),
+                ("analyzer.modes", sensor["modes"]),
+                ("analyzer.emits", sensor["emits"]),
+                ("analyzer.synthetic_range", sensor["synthetic_range_nm"]),
+                ("analyzer.sensitivity", sensor["sensitivity_db"]),
+                ("analyzer.cadence", sensor["cadence_s"]),
+                ("analyzer.bearing_uncertainty",
+                 sensor["bearing_uncertainty_deg"]),
+                ("analyzer.range_uncertainty", sensor["range_uncertainty_nm"]),
+                ("analyzer.depth_uncertainty", sensor["depth_uncertainty_m"]),
+            ))
+        for index, emitter in enumerate(profile["components"]["emitters"], 1):
+            rows.extend((
+                ("analyzer.emitter", index),
+                ("analyzer.domain", emitter["domain"]),
+                ("analyzer.frequency_band", emitter["frequency_band_hz"]),
+                ("analyzer.prf_band", emitter["prf_band_hz"]),
+                ("analyzer.modulation", emitter["modulation_codes"]),
+            ))
         lines = []
         for label, value in rows:
             shown = self._shown(value)
@@ -182,10 +245,18 @@ class ContactAnalyzer:
             if event.key == pygame.K_TAB:
                 self.focus = "detail" if self.focus == "list" else "list"
                 return True
+            if event.key == pygame.K_SPACE:
+                if self._play_sample():
+                    # Schluecke das zugehoerige TEXTINPUT, damit kein
+                    # Leerzeichen in den Suchfilter gelangt.
+                    self._key_text = " "
+                    return True
+                return False
             if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
                 kinds = self._asset_kinds()
                 if kinds:
                     self.asset_index = (self.asset_index + (-1 if event.key == pygame.K_LEFT else 1)) % len(kinds)
+                    self._stop_sample()
                     self._prepare_selected_image()
                 return True
             if event.key == pygame.K_BACKSPACE:
@@ -233,9 +304,13 @@ class ContactAnalyzer:
                 self._selection_changed()
             return changed
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and position:
+            audio_rect = self._rects.get("audio_sample")
+            if audio_rect is not None and audio_rect.collidepoint(position):
+                return self._play_sample()
             for index, tab in enumerate(self._rects.get("asset_tabs", ())):
                 if tab.collidepoint(position):
                     self.asset_index = index
+                    self._stop_sample()
                     self._prepare_selected_image()
                     return True
             if detail_rect.collidepoint(position):
@@ -263,6 +338,24 @@ class ContactAnalyzer:
         surface.fill(widgets.PALETTE.background)
         widgets.draw_text(surface, self.tr("analyzer.title"),
                           (20, 15, bounds.width - 40, 42), size=24, bold=True)
+        audio_rect = pygame.Rect(bounds.width - 522, 18, 84, 34)
+        playing = bool(self.preview_active()) if callable(self.preview_active) else False
+        if self._sample_available():
+            self._rects["audio_sample"] = audio_rect
+            pygame.draw.rect(surface, widgets.PALETTE.focus if playing
+                             else widgets.PALETTE.raised, audio_rect)
+            pygame.draw.rect(surface, widgets.PALETTE.text if playing
+                             else widgets.PALETTE.focus, audio_rect, 1)
+            widgets.draw_text(surface, self.tr("analyzer.audio_sample"),
+                              audio_rect,
+                              color=(widgets.PALETTE.focus if playing
+                                     else widgets.PALETTE.text),
+                              size=12, align="center")
+        else:
+            self._rects["audio_sample"] = None
+            widgets.draw_text(surface, self.tr("analyzer.audio_sample"),
+                              audio_rect, color=widgets.PALETTE.dim,
+                              size=12, align="center")
         widgets.draw_text(surface, self.tr("analyzer.read_only"),
                           (bounds.width - 430, 18, 410, 34), color=widgets.PALETTE.focus,
                           size=13, bold=True, align="right")
@@ -357,5 +450,5 @@ class ContactAnalyzer:
                                        detail_rect.width - 14, line_height), size=13)
         widgets.draw_footer(surface, footer,
                             ("analyzer.filter_hint", "analyzer.select_hint",
-                             "analyzer.image_hint", "analyzer.scroll_hint",
-                             "analyzer.exit_hint"), tr=self.tr)
+                             "analyzer.image_hint", "analyzer.audio_hint",
+                             "analyzer.scroll_hint", "analyzer.exit_hint"), tr=self.tr)

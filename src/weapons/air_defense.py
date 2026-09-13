@@ -11,9 +11,10 @@ from importlib import resources
 from src.weapons.asw import ConsumableStore, valid_consumable_state
 
 
-AIR_DEFENSE_STATE_VERSION = 1
+AIR_DEFENSE_STATE_VERSION = 2
 MAX_VLS_CELLS = 1024
 MAX_FIRE_CHANNELS = 64
+MAX_RAIDERS = 16
 
 
 def _object(value, fields, where):
@@ -44,9 +45,9 @@ def air_defense_loadout():
 
 
 def validate_air_defense_loadout(value):
-    _object(value, {"version", "asm", "sam", "vls", "ciws", "softkill"},
-            "air_defense")
-    if value["version"] != 1:
+    _object(value, {"version", "asm", "sam", "vls", "ciws", "softkill",
+                    "raider", "aa_gun"}, "air_defense")
+    if value["version"] != 2:
         raise ValueError("air_defense.version: unsupported version")
     asm = _object(value["asm"], {
         "key", "speed_kn", "range_nm", "turn_rate_deg_s", "jam_probability",
@@ -105,6 +106,36 @@ def validate_air_defense_loadout(value):
     high = _number(duration[1], low, 3600, "air_defense.softkill.duration")
     if softkill["effect_type"] not in ("chaff", "rf_softkill"):
         raise ValueError("air_defense.softkill.effect_type: invalid type")
+    raider = _object(value["raider"], {
+        "key", "speed_kn", "altitude_m", "hp", "evasion", "weapon_range_nm",
+        "salvo", "weapon_cooldown_s", "retreat_radius_nm"},
+        "air_defense.raider")
+    aa_gun = _object(value["aa_gun"], {
+        "key", "ammo", "range_nm", "rounds_per_attempt", "cycle_s",
+        "hit_probability", "observation_max_age_s"}, "air_defense.aa_gun")
+    _key(raider["key"], "aircraft.", "air_defense.raider.key")
+    _key(aa_gun["key"], "weapon.", "air_defense.aa_gun.key")
+    for profile, fields in ((raider, ("speed_kn", "weapon_range_nm",
+                                      "weapon_cooldown_s",
+                                      "retreat_radius_nm")),
+                            (aa_gun, ("range_nm", "cycle_s",
+                                      "observation_max_age_s"))):
+        for field in fields:
+            _number(profile[field], .000001, 100000, f"air_defense.{field}")
+    _number(raider["altitude_m"], 0, 20000, "air_defense.altitude_m")
+    _number(raider["hp"], 1, 100000, "air_defense.hp", integer=True)
+    _number(raider["evasion"], 0, 1, "air_defense.evasion")
+    salvo = raider["salvo"]
+    if not isinstance(salvo, list) or len(salvo) != 2:
+        raise ValueError("air_defense.raider.salvo: pair expected")
+    salvo_min = _number(salvo[0], 1, 1000, "air_defense.salvo", integer=True)
+    _number(salvo[1], salvo_min, 1000, "air_defense.salvo", integer=True)
+    _number(aa_gun["ammo"], 0, 100000, "air_defense.ammo", integer=True)
+    aa_rounds = _number(aa_gun["rounds_per_attempt"], 1, 10000,
+                        "air_defense.rounds_per_attempt", integer=True)
+    if aa_rounds > aa_gun["ammo"]:
+        raise ValueError("air_defense.aa_gun: burst exceeds ammunition")
+    _number(aa_gun["hit_probability"], 0, 1, "air_defense.hit_probability")
     return copy.deepcopy(value)
 
 
@@ -115,11 +146,57 @@ def make_softkill_store(loadout):
                            profile["reload_s"])
 
 
+def _valid_raider_row(row, loadout):
+    profile = loadout["raider"]
+    if (not isinstance(row, dict)
+            or set(row) != {"x", "y", "course", "seq", "phase", "hp",
+                            "salvo_cd", "pending_asm", "attack_t"}):
+        return False
+    if (not _is_finite(row["x"]) or not _is_finite(row["y"])
+            or not bounded_range(row["x"], -1_000_000, 1_000_000)
+            or not bounded_range(row["y"], -1_000_000, 1_000_000)):
+        return False
+    course = row["course"]
+    if (type(course) not in (int, float) or not math.isfinite(course)
+            or not 0 <= course < 360):
+        return False
+    if (type(row["seq"]) is not int or row["seq"] < 1
+            or row["seq"] > 2**63 - 1):
+        return False
+    if row["phase"] not in ("APPROACH", "ATTACK", "RETREAT"):
+        return False
+    hp = row["hp"]
+    if (type(hp) is not int or not 1 <= hp <= profile["hp"]):
+        return False
+    salvo_cd = row["salvo_cd"]
+    if (type(salvo_cd) not in (int, float) or not math.isfinite(salvo_cd)
+            or not -3600 <= salvo_cd <= 3600):
+        return False
+    pending = row["pending_asm"]
+    if (type(pending) is not int or not 0 <= pending <= profile["salvo"][1] * 8):
+        return False
+    attack_t = row["attack_t"]
+    if (type(attack_t) not in (int, float) or not math.isfinite(attack_t)
+            or not 0 <= attack_t <= 3600):
+        return False
+    return True
+
+
+def _is_finite(value):
+    return type(value) in (int, float) and not isinstance(value, bool) \
+        and math.isfinite(value)
+
+
+def bounded_range(value, low, high):
+    return _is_finite(value) and low <= value <= high
+
+
 def valid_air_defense_state(value, *, vls_cells, ciws_ammo, ciws_cooldown_s,
-                            chaff_cd):
+                             chaff_cd):
     try:
         _object(value, {"version", "loadout", "sam_remaining", "essm_seq",
-                        "softkill"}, "air_defense_state")
+                        "softkill", "aa_ammo", "aa_cooldown_s", "raiders",
+                        "raider_seq", "waves_spawned"}, "air_defense_state")
         if value["version"] != AIR_DEFENSE_STATE_VERSION:
             return False
         loadout = validate_air_defense_loadout(value["loadout"])
@@ -142,6 +219,20 @@ def valid_air_defense_state(value, *, vls_cells, ciws_ammo, ciws_cooldown_s,
                 or store["ready"] + len(store["loading"]) > profile["ready_count"]):
             return False
         expected_cd = min(store["loading"], default=0.0)
+        aa_profile = loadout["aa_gun"]
+        aa_ammo = _number(value["aa_ammo"], 0, aa_profile["ammo"],
+                          "air_defense_state.aa_ammo", integer=True)
+        aa_cd = _number(value["aa_cooldown_s"], 0, aa_profile["cycle_s"],
+                        "air_defense_state.aa_cooldown_s")
+        raiders = value["raiders"]
+        if (not isinstance(raiders, list) or len(raiders) > MAX_RAIDERS
+                or not all(_valid_raider_row(row, loadout) for row in raiders)
+                or any(row["seq"] > value["raider_seq"] for row in raiders)):
+            return False
+        _number(value["raider_seq"], 0, 2**63 - 1,
+                "air_defense_state.raider_seq", integer=True)
+        _number(value["waves_spawned"], 0, 2**63 - 1,
+                "air_defense_state.waves_spawned", integer=True)
         return (type(vls_cells) is int and vls_cells == remaining
                 and type(ciws_ammo) is int and 0 <= ciws_ammo <= loadout["ciws"]["ammo"]
                 and type(ciws_cooldown_s) in (int, float)

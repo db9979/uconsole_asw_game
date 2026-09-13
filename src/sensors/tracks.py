@@ -57,6 +57,8 @@ class TrackPicture:
             return 0.5, 2.0
         if source == "ESM":
             return 0.5, 2.0
+        if source == "LOOKOUT":
+            return config.LOOKOUT_EPOCH_S, 1.0
         if source == "HOJ":
             return 0.5, 1.0
         if source.startswith("SONAR"):

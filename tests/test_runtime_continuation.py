@@ -197,6 +197,27 @@ def test_weapon_midcourse_split_run_matches_uninterrupted(game):
         assert second[key] == first[key], key
 
 
+def test_observation_parameterized_chaff_launch_continues_deterministically(game):
+    missile = game.asms[0]
+    game.air_picture.observe(
+        track_id=f"M-{missile.seq}", kind="ASM", target_id=missile.seq,
+        source="RADAR-L", bearing=90, range_nm=2,
+        observer_x=game.ship.x, observer_y=game.ship.y, course=None,
+        quality=1, now=game.sim_t, label="ASM")
+    snapshot = json.loads(json.dumps(game.save_state(), allow_nan=False))
+    track = game.asm_tracks()[0]
+    first_result = game.launch_chaff_at(track)
+    first = game.save_state()
+
+    restored = Game(seed=722, start_menu=False, audio_enabled=False)
+    restored.load_state(snapshot)
+    second_result = restored.launch_chaff_at(restored.asm_tracks()[0])
+    second = restored.save_state()
+    assert second_result == first_result is True
+    for key in ("asms", "air_defense", "rngs"):
+        assert second[key] == first[key], key
+
+
 def test_terminal_seekers_restore_actual_target_and_command_identity(game):
     game.torpedoes[0].seeker_acquired = True
     game.torpedoes[0]._seeker_target = game.subs[0]

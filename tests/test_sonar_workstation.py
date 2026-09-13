@@ -15,6 +15,7 @@ from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
 from src.ship.ship import Ship
 from src.sonar.sonar import SonarSystem
+from src.ui.sonar_view import _waterfall_plot, sonar_click_target, sonar_geometry
 
 
 def press(game, key, **kwargs):
@@ -84,6 +85,24 @@ def test_contact_selection_does_not_silently_repoint_manual_beam(game):
     assert not game.sonar.focus_locked
 
 
+def test_broadband_waterfall_click_sets_manual_listen_bearing(game):
+    game.sonar_page = 0
+    game.sonar.focus_locked = True
+    plot = _waterfall_plot(sonar_geometry(game)["main"], 0)
+    target = (plot.x + (plot.w - 1) * .75, plot.centery)
+    assert game._handle_sonar_click(sonar_click_target(game, target))
+    assert game.sonar.listen_bearing == pytest.approx(270.0)
+    assert not game.sonar.focus_locked
+
+
+def test_lofar_waterfall_click_does_not_set_listen_bearing(game):
+    game.sonar_page = 1
+    game.sonar.set_listen_bearing(42)
+    plot = _waterfall_plot(sonar_geometry(game)["main"], 1)
+    assert sonar_click_target(game, plot.center) is None
+    assert game.sonar.listen_bearing == 42
+
+
 def test_lost_track_holds_last_observation_not_target_position():
     ship = Ship(250, 250, speed_kn=0)
     world = SimpleNamespace(sea_state=0, thermocline_depth_m=lambda x, y: 100)
@@ -136,9 +155,24 @@ def test_audition_gain_retains_float_headroom_for_playback(gain_db):
 @pytest.mark.parametrize("action", [pygame.K_p, pygame.K_F1, pygame.K_j, pygame.K_1])
 def test_audio_stops_on_pause_administration_mute_and_station_change(game, monkeypatch, action):
     calls = []
-    monkeypatch.setattr(game.audio, "stop_sonar", lambda: calls.append("stop"))
+    monkeypatch.setattr(game.audio, "stop_sonar", lambda *a, **kw: calls.append(kw))
     press(game, action)
     assert calls
+    if action in (pygame.K_F1, pygame.K_j, pygame.K_1):
+        assert calls[-1] == {"immediate": True}
+
+
+def test_sonar_page_cycle_via_hotkey_keeps_audio_stream(game, monkeypatch):
+    stops = []
+    monkeypatch.setattr(game.audio, "stop_sonar",
+                        lambda *args, **kwargs: stops.append(kwargs))
+    game.sonar_page = 0
+    game._sonar_audio_sequence = 42
+    press(game, pygame.K_2)
+    assert game.station is Station.SONAR
+    assert game.sonar_page == 1
+    assert stops == []
+    assert game._sonar_audio_sequence == 42
 
 
 def test_sonar_audio_uses_receiver_samples_and_only_new_blocks(game, monkeypatch):

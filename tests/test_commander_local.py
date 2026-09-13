@@ -1,6 +1,7 @@
 """Local Commander ownership, passive lifecycle, and native-canvas integration."""
 
 from contextlib import closing
+from copy import deepcopy
 from dataclasses import asdict, replace
 import http.client
 import json
@@ -48,6 +49,9 @@ class Transport:
     def publish(self, state, chart=None):
         self.state = state
 
+    def publish_simlog(self, payload):
+        self.simlog = payload
+
     def drain_commands(self, limit=4):
         batch, self.queue = self.queue[:limit], self.queue[limit:]
         return batch
@@ -73,6 +77,133 @@ class Transport:
                                received_at=time.monotonic()))
 
 
+class RosterTransport:
+    """Small detached host API fixture for local roster interaction tests."""
+    connected = True
+
+    def __init__(self, statuses=()):
+        self.statuses = deepcopy(list(statuses))
+        self.calls = []
+
+    def client_statuses(self):
+        return deepcopy(self.statuses)
+
+    def stop(self):
+        pass
+
+    def _client(self, client_id):
+        return next((status for status in self.statuses
+                     if status["client_id"] == client_id), None)
+
+    def grant_station(self, client_id, station):
+        self.calls.append(("grant_station", client_id, station))
+        selected = self._client(client_id)
+        if selected is None:
+            return False
+        for status in self.statuses:
+            if status is not selected and status["stations"][station]["leased"]:
+                status["stations"][station] = station_detail()
+                if status["active_station"] == station:
+                    status["active_station"] = next((item for item in local.STATIONS
+                        if status["stations"][item]["leased"]), None)
+        selected["stations"][station] = station_detail(leased=True)
+        if selected["active_station"] is None:
+            selected["active_station"] = station
+        return True
+
+    def resolve_station_request(self, client_id, station, generation, grants=None):
+        self.calls.append(("resolve_station_request", client_id, station, generation, grants))
+        selected = self._client(client_id)
+        detail = selected["stations"][station] if selected is not None else None
+        if (detail is None or not detail["requested"]
+                or detail["request_generation"] != generation):
+            return False
+        if grants is None:
+            detail["requested"] = False
+            return True
+        selected["stations"][station] = station_detail(leased=True, **grants)
+        selected["active_station"] = station
+        return True
+
+    def reject_station_request(self, client_id, station, generation):
+        self.calls.append(("reject_station_request", client_id, station, generation))
+        selected = self._client(client_id)
+        if (selected is None or not selected["stations"][station]["requested"]
+                or selected["stations"][station]["request_generation"] != generation):
+            return False
+        selected["stations"][station]["requested"] = False
+        return True
+
+    def set_client_grant(self, client_id, *args):
+        station, capability, enabled = ((None, *args) if len(args) == 2 else args)
+        self.calls.append(("set_client_grant", client_id, station, capability, enabled))
+        selected = self._client(client_id)
+        if selected is None:
+            return False
+        if capability == "simlog":
+            selected["simlog"] = enabled
+            return True
+        detail = selected["stations"][station]
+        if not detail["leased"]:
+            return False
+        if capability == "direct_fire" and enabled and (
+                not detail["grants"]["command"]
+                or station not in ("weapons", "helicopter", "opz")):
+            return False
+        detail["grants"][capability] = enabled
+        if capability == "command" and not enabled:
+            detail["grants"]["direct_fire"] = False
+        return True
+
+    def revoke_station(self, station):
+        self.calls.append(("revoke_station", station))
+        holder = next((status for status in self.statuses
+                       if status["stations"][station]["leased"]), None)
+        if holder is None:
+            return False
+        holder["stations"][station] = station_detail()
+        if holder["active_station"] == station:
+            holder["active_station"] = next((item for item in local.STATIONS
+                if holder["stations"][item]["leased"]), None)
+        return True
+
+    def revoke_client(self, client_id):
+        self.calls.append(("revoke_client", client_id))
+        selected = self._client(client_id)
+        if selected is None:
+            return False
+        self.statuses.remove(selected)
+        return True
+
+    def revoke_all(self):
+        self.calls.append(("revoke_all",))
+        for status in self.statuses:
+            status["active_station"] = None
+            status["simlog"] = False
+            status["stations"] = {station: station_detail() for station in local.STATIONS}
+
+
+def station_detail(*, leased=False, requested=False, request_generation=0, **grants):
+    return dict(leased=leased, requested=requested,
+                station_generation=1 if leased else None,
+                request_generation=request_generation,
+                grants=dict(command=False, direct_fire=False, sonar_audio=False) | grants)
+
+
+def roster_client(client_id, name, ordinal, station=None, request=None, **grants):
+    simlog = grants.pop("simlog", False)
+    stations = {item: station_detail() for item in local.STATIONS}
+    if station:
+        stations[station] = station_detail(leased=True, **grants)
+    if request:
+        stations[request]["requested"] = True
+        stations[request]["request_generation"] = 1
+    return dict(client_id=client_id, name=name, ordinal=ordinal,
+                active_station=station, active_generation=1, simlog=simlog,
+                stations=stations,
+                presence=100.0)
+
+
 def session(game):
     contact = Contact(7, 7654321, "passiv", "sub")
     contact.update_passive(90.0, .8, .8, "", game.sim_t)
@@ -91,19 +222,14 @@ def session(game):
     return console, console.server, contact
 
 
-@pytest.mark.parametrize("explicit_regrant", [False, True])
-def test_local_grant_toggle_binds_repaired_client_before_next_pump(game, explicit_regrant):
+def test_legacy_pair_permission_binds_during_main_thread_pump(game):
     console, server, _ = session(game)
     assert console.bridge.allowed
     server.lease_generation += 1
     assert server.connected and not console.bridge.allowed
-    if explicit_regrant:
-        console.selection = 3
-        console.activate(game)
-        assert console.bridge.allowed
     console.pump(game)
-    assert console.bridge.allowed is explicit_regrant
-    assert server.state["commands_allowed"] is explicit_regrant
+    assert console.bridge.allowed
+    assert server.state["commands_allowed"] is True
 
 
 def test_default_off_has_no_network_or_server_resources(monkeypatch):
@@ -198,13 +324,13 @@ def test_activation_prebuilds_contact_assets_once_on_calling_thread(monkeypatch)
     assert console._contact_analysis_assets is payload
 
 
-def test_options_six_and_f9_live_menu_ownership(game, monkeypatch):
+def test_options_seven_and_f9_live_menu_ownership(game, monkeypatch):
     monkeypatch.setattr(game.commander, "prepare", Mock())
     key(game, pygame.K_F10)
     assert game.options_open
-    for _ in range(5):
+    for _ in range(6):
         key(game, pygame.K_DOWN)
-    assert game.options_sel == 5
+    assert game.options_sel == 6
     key(game, pygame.K_RETURN)
     assert game.commander_open and game.administration_open and not game.options_open
     key(game, pygame.K_ESCAPE)
@@ -248,7 +374,7 @@ def test_admin_blocks_held_mouse_joystick_weapons_and_simulation(game):
         game.handle_event(event)
     key(game, pygame.K_3)
     key(game, pygame.K_LEFT)
-    game.commander.selection = 5
+    game.commander.selection = 3
     key(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL)
     # Enter remains a local proposal decision, never station weapon input.
     assert game.commander.server is None
@@ -261,7 +387,7 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     game.commander._prepared = True
     game._open_administration("options")
     monkeypatch.setattr(pygame.display, "get_window_size", lambda: (1280, 1000))
-    rect = game._options_row_rects()[5]
+    rect = game._options_row_rects()[6]
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                         pos=(rect.centerx, 20)))
     assert game.options_open
@@ -270,11 +396,11 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     assert game.commander_open
     activate = Mock()
     monkeypatch.setattr(game.commander, "activate", activate)
-    rect = game.commander.row_rects()[5]
+    rect = game.commander.row_rects()[3]
     event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                               pos=(rect.centerx, rect.centery + 140))
     game.handle_event(event)
-    assert game.commander.selection == 5 and not activate.called
+    assert game.commander.selection == 3 and not activate.called
     game.handle_event(event)
     activate.assert_called_once_with(game)
 
@@ -293,6 +419,11 @@ def test_loopback_start_bind_failure_disable_and_translation_cache(game, monkeyp
     console.activate(game)
     assert console.error is None and console.address[0] == "127.0.0.1"
     assert console.address[1] > 0 and console.pairing_code
+    session_code = console.pairing_code
+    game._open_administration("commander")
+    game._open_administration("")
+    game._open_administration("commander")
+    assert console.pairing_code == session_code
     with closing(http.client.HTTPConnection(*console.address, timeout=2)) as client:
         client.request("GET", "/api/v1/ui?lang=de")
         response = client.getresponse()
@@ -320,9 +451,10 @@ def test_loopback_start_bind_failure_disable_and_translation_cache(game, monkeyp
     calls.clear()
     console.activate(game)
     assert not calls and console.address is not None
+    assert console.pairing_code == session_code
 
 
-def test_port_host_and_grant_are_transient_local_controls(game):
+def test_port_and_host_are_transient_local_controls(game):
     console = game.commander
     console._prepared = True
     console.hosts = ("127.0.0.1", "192.168.1.2")
@@ -340,12 +472,170 @@ def test_port_host_and_grant_are_transient_local_controls(game):
     console.port = 65535
     console.handle_key(game, pygame.K_PLUS)
     assert console.port == 65535
-    console.selection = 3
-    console.activate(game)
-    assert not console.bridge.allowed
     saved = json.dumps(game.save_state())
     prefs = json.dumps(asdict(game.preferences))
     assert all(value not in saved + prefs for value in ("192.168.1.2", '"8765"', '"commander"'))
+
+
+def test_fourth_row_opens_roster_and_escape_f9_preserve_admin_ownership(game):
+    console = game.commander
+    console._prepared = True
+    console.server = RosterTransport()
+    key(game, pygame.K_F9)
+    console.selection = 3
+    key(game, pygame.K_RETURN)
+    assert game.commander_open and console.roster_open
+    key(game, pygame.K_ESCAPE)
+    assert game.commander_open and not console.roster_open
+    console.activate(game)
+    key(game, pygame.K_F9)
+    assert not game.administration_open and not console.roster_open
+
+
+def test_roster_keyboard_actions_grant_requests_assign_and_revoke(game):
+    alpha = roster_client("alpha", "Alpha", 0, station="bridge", command=True)
+    bravo = roster_client("bravo", "Bravo", 1, request="sonar")
+    server = RosterTransport((alpha, bravo))
+    console = game.commander
+    console.server = server
+    console.roster_open = True
+    console.roster_client_id = "bravo"
+
+    console.handle_key(game, pygame.K_RETURN)
+    assert server._client("alpha")["stations"]["bridge"]["leased"]
+    assert server._client("bravo")["active_station"] == "sonar"
+    assert server._client("bravo")["stations"]["sonar"]["grants"] == {
+        "command": True, "direct_fire": False, "sonar_audio": False}
+    console.handle_key(game, pygame.K_c)
+    assert not server._client("bravo")["stations"]["sonar"]["grants"]["command"]
+    before = server.client_statuses()
+    console.handle_key(game, pygame.K_d)
+    assert server.client_statuses() == before
+    assert console.roster_status == "commander.roster.error.grant"
+    console.handle_key(game, pygame.K_l)
+    assert server._client("bravo")["simlog"]
+
+    console.roster_station = local.STATIONS.index("weapons")
+    console.handle_key(game, pygame.K_a)
+    console.handle_key(game, pygame.K_c)
+    console.handle_key(game, pygame.K_d)
+    assert server._client("bravo")["stations"]["weapons"]["leased"]
+    assert server._client("bravo")["stations"]["weapons"]["grants"]["direct_fire"]
+    server._client("bravo")["stations"]["bridge"].update(
+        requested=True, request_generation=2)
+    console.handle_key(game, pygame.K_r)
+    assert not server._client("bravo")["stations"]["bridge"]["requested"]
+    console.handle_key(game, pygame.K_x)
+    assert not server._client("bravo")["stations"]["weapons"]["leased"]
+    console.handle_key(game, pygame.K_DELETE)
+    assert server._client("bravo") is None and server._client("alpha") is not None
+
+    server._client("alpha")["active_station"] = "engine"
+    server._client("alpha")["stations"]["engine"] = station_detail(
+        leased=True, command=True)
+    console.handle_key(game, pygame.K_BACKSPACE)
+    assert len(server.statuses) == 1
+    assert server._client("alpha")["active_station"] is None
+    assert not any(detail["leased"] for detail in server._client("alpha")["stations"].values())
+
+
+def test_roster_selection_empty_errors_and_invalid_actions_do_not_mutate(game):
+    server = RosterTransport((roster_client("b", "Bravo", 1),
+                              roster_client("a", "Alpha", 0)))
+    console = game.commander
+    console.server = server
+    console.roster_open = True
+    assert console._roster()[0]["client_id"] == "b"
+    console.handle_key(game, pygame.K_DOWN)
+    assert console.roster_client_id == "a"
+    console.handle_key(game, pygame.K_UP)
+    assert console.roster_client_id == "b"
+    before = server.client_statuses()
+    console.handle_key(game, pygame.K_RETURN)
+    assert server.client_statuses() == before
+    assert console.roster_status == "commander.roster.error.no_request"
+    for action, error in (("approve", "commander.roster.error.no_request"),
+                          ("reject", "commander.roster.error.no_request"),
+                          ("revoke_station", "commander.roster.error.no_station")):
+        console._roster_action(action)
+        assert server.client_statuses() == before
+        assert console.roster_status == error
+
+    console.server = RosterTransport()
+    console.roster_client_id = None
+    console._roster_action("revoke_all")
+    assert console.roster_status == "commander.roster.error.empty"
+    console.draw(game)
+
+
+def test_roster_mouse_selects_client_cycles_station_and_assigns(game):
+    server = RosterTransport((roster_client("alpha", "Alpha", 0),
+                              roster_client("bravo", "Bravo", 1)))
+    console = game.commander
+    console.server = server
+    console.roster_open = True
+    console._roster()
+    console.handle_click(game, console.roster_client_rects()[1].center)
+    assert console.roster_client_id == "bravo"
+    before = console.roster_station
+    console.handle_click(game, console.roster_station_cycle_rects()[1].center)
+    assert console.roster_station == (before + 1) % len(local.STATIONS)
+    assign = console.roster_action_rects()[2]
+    console.handle_click(game, assign.center)
+    assert server._client("bravo")["stations"][local.STATIONS[
+        console.roster_station]]["leased"]
+
+
+def test_roster_approves_selected_additive_request_and_keeps_other_request(game):
+    client = roster_client("multi", "Multi", 0, request="bridge")
+    client["stations"]["sonar"].update(requested=True, request_generation=2)
+    server = RosterTransport((client,))
+    console = game.commander
+    console.server = server
+    console.roster_open = True
+    console.roster_client_id = "multi"
+    console.roster_station = local.STATIONS.index("sonar")
+
+    console._roster_action("approve")
+
+    selected = server._client("multi")
+    assert selected["stations"]["sonar"]["leased"]
+    assert selected["stations"]["bridge"]["requested"]
+
+
+@pytest.mark.parametrize("action_index", [8, 9])
+def test_roster_mouse_destructive_actions_require_same_target_double_click(game, action_index):
+    server = RosterTransport((roster_client("alpha", "Alpha", 0, station="bridge"),
+                              roster_client("bravo", "Bravo", 1, station="sonar")))
+    console = game.commander
+    console.server = server
+    console.roster_open = True
+    console._roster()
+    point = console.roster_action_rects()[action_index].center
+    console.handle_click(game, point)
+    assert len(server.statuses) == 2 and not server.calls
+    if action_index == 8:
+        console.handle_click(game, console.roster_client_rects()[1].center)
+        console.handle_click(game, point)
+        assert len(server.statuses) == 2
+    else:
+        server.statuses.append(roster_client("charlie", "Charlie", 2))
+        console.handle_click(game, point)
+        assert len(server.statuses) == 3
+    console.handle_click(game, point)
+    assert (len(server.statuses) == 1 if action_index == 8 else
+            all(status["active_station"] is None for status in server.statuses))
+
+
+def test_roster_and_join_code_are_never_persisted(game):
+    console = game.commander
+    console.server = RosterTransport((roster_client("secret-client", "Secret Crew", 0,
+                                                    station="radio", command=True),))
+    console.roster_open = True
+    console.roster_client_id = "secret-client"
+    console.pairing_code = "987XYZ"
+    persisted = json.dumps(game.save_state()) + json.dumps(asdict(game.preferences))
+    assert all(value not in persisted for value in ("secret-client", "Secret Crew", "987XYZ"))
 
 
 def test_owner_roundtrip_invalidates_queue_without_revoking_pair(game):
@@ -360,14 +650,7 @@ def test_owner_roundtrip_invalidates_queue_without_revoking_pair(game):
     assert contact.player_class is None
     assert server.state["results"][-1]["reasoncode"] == "stale_epoch"
     assert server.connected and server.revocations == 0
-    console.selection = 3
-    console.activate(game)
-    assert not console.bridge.allowed and server.connected
-    console.activate(game)
-    assert console.bridge.allowed
-    console.selection = 4
-    console.activate(game)
-    assert not console.bridge.allowed and not server.connected and server.revocations == 1
+    assert console.bridge.allowed and server.connected and server.revocations == 0
 
 
 @pytest.mark.parametrize("accept", [True, False])
@@ -382,16 +665,13 @@ def test_pending_decision_requires_local_confirmation_preserves_focus(game, acce
     server.send()
     console.pump(game)
     assert game.target is None
-    key(game, pygame.K_F9)
-    console.pump(game)
-    console.selection = 5 if accept else 6
-    key(game, pygame.K_RETURN)
+    key(game, pygame.K_F6 if accept else pygame.K_F7)
     assert game.target is (contact if accept else None)
     assert console.bridge.proposal["status"] == ("accepted" if accept else "rejected")
     assert game.station is Station.SONAR and game.selected_contact is selected
     assert game.sonar.focus_locked and game.sonar._listen_target_id == selected.target_id
     assert game.opz_selected_track_id == "selected-observation"
-    assert not game.torpedoes and game.commander_open
+    assert not game.torpedoes and not game.commander_open
 
 
 @pytest.mark.parametrize("kind,accept", [
@@ -440,6 +720,11 @@ def test_crew_message_box_target_first_cycles_and_esc_suppresses_only_sequence(g
     assert console.bridge.proposal["status"] == "pending"
     console.pump(game)
     assert not console.confirm_visible(game)
+
+    key(game, pygame.K_F9)
+    key(game, pygame.K_ESCAPE)
+    assert console.confirm_visible(game) and console.confirm_kind == "target"
+    key(game, pygame.K_ESCAPE)
 
     game._open_administration("commander")
     assert console.bridge.reject_proposal(game)
@@ -650,7 +935,7 @@ def test_options_and_commander_layout_bounds_no_draw_io(game, monkeypatch, langu
     game._apply_text_size()
     console = game.commander
     console.address = ("192.168.100.200", 65535)
-    console.pairing_code = "A" * 22
+    console.pairing_code = "123ABC"
     console.bridge._proposal = dict(ref="ref", label="{authored} " + "K" * 128, status="pending")
     console.error = "commander.local.error.proposal"
     monkeypatch.setattr(local, "load_catalog", Mock(side_effect=AssertionError("draw I/O")))
@@ -658,16 +943,29 @@ def test_options_and_commander_layout_bounds_no_draw_io(game, monkeypatch, langu
     with layout.capture_text() as text:
         game.draw_options_overlay()
         console.draw(game)
+        console.server = RosterTransport(tuple(
+            roster_client(f"client-{index}", f"Crew member {index} " + "N" * 40, index,
+                          station=(local.STATIONS[index] if index < len(local.STATIONS) else None),
+                          command=index % 2 == 0, simlog=index % 3 == 0)
+            for index in range(12)))
+        console.roster_open = True
+        console.roster_status = "commander.roster.error.grant"
+        console.draw(game)
     canvas = pygame.Rect(0, 0, 1280, 720)
     assert text
     for entry in text:
         assert canvas.contains(entry["bounds"]), entry
         assert entry["bounds"].contains(entry["rect"]), entry
         assert "commander.local." not in entry["text"], entry
+    assert not any("{authored}" in entry["text"] or "K" * 32 in entry["text"]
+                   for entry in text)
     for rows in (game._options_row_rects(), console.row_rects()):
         assert all(canvas.contains(row) for row in rows)
         assert all(a.bottom < b.top for a, b in zip(rows, rows[1:]))
-    assert any(console.pairing_code in item["text"] for item in text)
+    for rows in (console.roster_client_rects(), console.roster_action_rects()):
+        assert all(canvas.contains(row) for row in rows)
+        assert all(a.bottom < b.top for a, b in zip(rows, rows[1:]))
+    assert any(item["text"] == "123 ABC" for item in text)
     console.address = None
 
 

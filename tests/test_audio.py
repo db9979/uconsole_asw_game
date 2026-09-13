@@ -670,3 +670,72 @@ def test_dummy_mixer_reservations_and_sonar_stop(monkeypatch, channels):
             assert not pygame.mixer.Channel(index).get_busy()
     finally:
         pygame.mixer.quit()
+
+
+def test_unit_preview_plays_on_real_mixer_channel(monkeypatch):
+    """Regression: the real SDL Sound.play() signature takes no volume
+    keyword; previews must still obtain a free non-reserved channel."""
+    pygame.mixer.quit()
+    monkeypatch.setenv("SDL_AUDIODRIVER", "dummy")
+    try:
+        pygame.mixer.init(frequency=44100, size=-16, channels=2,
+                          allowedchanges=0)
+        engine = AudioEngine(sample_rate=22050)
+        assert engine.available
+        assert engine.play_unit_preview(
+            lambda: np.ones(4410, dtype=np.float32) * 0.1,
+            ("sonar", "unit_preview", "diesel_alt", "acoustic_cruise", 44100))
+        assert engine._preview_channel is not None
+        # The editor's per-frame stop() must not cut the reference sample.
+        engine.stop()
+        assert engine._preview_channel is not None
+        engine.stop_preview()
+        assert engine._preview_channel is None
+        engine.shutdown()
+    finally:
+        pygame.mixer.quit()
+
+
+def test_unit_preview_plays_on_free_channel_and_stops_explicitly(mixer):
+    backend, channels, make_sound = mixer
+    engine = AudioEngine(sample_rate=22050)
+    synth = lambda: np.ones(2205, dtype=np.float32) * 0.1
+    key = ("sonar", "unit_preview", "diesel_alt", "acoustic_cruise", 44100)
+    assert engine.play_unit_preview(synth, key)
+    assert engine._preview_sound is not None
+    first_channel = engine._preview_channel
+    assert first_channel is not None
+    # The editor's per-frame stop() must not cut a reference sample.
+    engine.stop()
+    assert engine._preview_channel is first_channel
+    # A new preview replaces the previous one.
+    assert engine.play_unit_preview(synth, key)
+    # An explicit stop_preview halts the channel and clears the state.
+    engine.stop_preview()
+    assert engine._preview_channel is None
+    assert engine._preview_sound is None
+    first_channel.stop.assert_called()
+    engine.shutdown()
+
+
+def test_unit_preview_is_lru_cached_per_key(mixer):
+    _, _, make_sound = mixer
+    engine = AudioEngine(sample_rate=22050)
+    calls = []
+    synth = lambda: (calls.append(1), np.ones(2205, dtype=np.float32))[1]
+    key = ("sonar", "unit_preview", "diesel_alt", "acoustic_cruise", 44100)
+    assert engine.play_unit_preview(synth, key)
+    assert engine.play_unit_preview(synth, key)
+    assert calls == [1]
+    engine.stop_preview()
+    engine.shutdown()
+
+
+def test_unit_preview_is_safe_without_audio(mixer):
+    engine = AudioEngine(sample_rate=22050, enabled=False)
+    synth_calls = []
+    assert engine.play_unit_preview(
+        lambda: (synth_calls.append(1), np.ones(10, dtype=np.float32))[1],
+        ("sonar", "unit_preview", "x", "acoustic_cruise", 44100)) is False
+    assert synth_calls == []
+    engine.stop_preview()

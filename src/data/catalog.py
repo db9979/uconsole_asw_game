@@ -389,6 +389,27 @@ class ContactCatalog:
             for name, document in documents.items() if document["version"] == 2
         }
         self._has_provenance = provenance_document is not None
+        emitter_names = {}
+        for profile_key, resource in self.profile_resources.items():
+            name = None
+            for entry in self._document_entries.get(resource, ()):
+                if entry.get("key") == profile_key:
+                    name = entry.get("name")
+                    break
+            if not name:
+                continue
+            systems = self.profile_systems.get(profile_key)
+            if systems is None:
+                continue
+            for emitter_key in systems.emitter_keys:
+                emitter_names[emitter_key] = name
+        self.emitter_names = MappingProxyType(emitter_names)
+
+    def emitter_name(self, emitter_key: str) -> str | None:
+        """Display name of the platform owning an emitter, or None."""
+        if not isinstance(emitter_key, str):
+            return None
+        return self.emitter_names.get(emitter_key)
 
     # --- Auswahl-Hilfen (deterministisch über übergebene rng) ---
 

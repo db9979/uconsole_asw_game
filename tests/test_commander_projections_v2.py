@@ -91,7 +91,11 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
     sonar = server.v2_states["sonar"]["sonar"]["settings"]
     assert sonar["listen_bearing"] == game.sonar.listen_bearing
     assert set(sonar["tow"]) == {"state", "payout", "available", "handling_ok",
+                                  "speed_kn", "speed_min_kn", "speed_max_kn",
                                   "depth_m", "depth_target_m"}
+    assert sonar["tow"]["speed_kn"] == game.ship.speed
+    assert sonar["tow"]["speed_min_kn"] == config.SONAR_TOWED_HANDLING_MIN_KN
+    assert sonar["tow"]["speed_max_kn"] == config.SONAR_TOWED_HANDLING_MAX_KN
     assert set(sonar["bt"]) == {"ready", "cooldown_s", "thermocline_m"}
     assert set(sonar["ping"]) == {"ready", "cooldown_s"}
     assert sonar["harmonic_candidates_hz"] == [12.5, 25.0]
@@ -368,6 +372,7 @@ def test_own_asset_refs_are_opaque_stable_and_rotate_for_replacements(published)
                for row in weapons)
     encoded = json.dumps({"weapons": weapons, "buoys": buoys}, sort_keys=True)
     assert all(str(internal) not in encoded for internal in (71001, 72001, 73001))
+    assert buoys[0]["label"] == "SB01"
     first_weapon_refs = [row["ref"] for row in weapons]
     first_buoy_ref = buoys[0]["ref"]
 
@@ -390,6 +395,24 @@ def test_own_asset_refs_are_opaque_stable_and_rotate_for_replacements(published)
     assert all(current != previous for current, previous in
                zip(replacement_refs, first_weapon_refs))
     assert replacement_buoy_ref != first_buoy_ref
+
+
+def test_sonobuoy_labels_do_not_change_when_an_older_buoy_expires(published):
+    game, bridge, server = published
+    first = Sonobuoy(game.ship.x, game.ship.y, 70001)
+    second = Sonobuoy(game.ship.x + 1, game.ship.y + 1, 70002)
+    game.buoys = [first]
+    bridge.pump(game, server, now=10.5)
+    projected = server.v2_states["helicopter"]["helicopter"]["buoys"]
+    assert [row["label"] for row in projected] == ["SB01"]
+    game.buoys.append(second)
+    bridge.pump(game, server, now=11.0)
+    projected = server.v2_states["helicopter"]["helicopter"]["buoys"]
+    assert [row["label"] for row in projected] == ["SB01", "SB02"]
+    game.buoys.remove(first)
+    bridge.pump(game, server, now=11.5)
+    projected = server.v2_states["helicopter"]["helicopter"]["buoys"]
+    assert [row["label"] for row in projected] == ["SB02"]
 
 
 def test_own_asset_refs_rotate_after_world_change(published):

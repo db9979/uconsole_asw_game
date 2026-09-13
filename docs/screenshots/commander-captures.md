@@ -1,14 +1,44 @@
 # Commander Browser Captures
 
-These are seeded demonstration screenshots of the actual packaged browser assets,
-served by the production `CommanderServer` and projected by `CommanderBridge` from
-a real `Game`. They are not mocked API responses, station screenshots stretched
-to browser dimensions, or evidence of two-computer LAN/hardware acceptance.
+These seeded demonstration screenshots use the packaged browser assets, the
+production `CommanderServer`, `CommanderBridge`, and a real `Game`. They do not
+use mocked API responses or stretched native-station images, and they are not
+evidence of two-computer LAN or hardware acceptance.
 
-| Image | PNG Dimensions | Capture |
+## Desktop Workstations
+
+All desktop captures are 1920 x 1080, use seed 1234, complete a real protocol-v2
+pairing, receive their station lease from the host, and display that station's
+allowlisted projection.
+
+| Workstation | English | German |
 | --- | --- | --- |
-| [Commander overview](commander-overview.png) | 1920 x 1080 | English, seed 1234, Patrol |
-| [Commander wide](commander-wide.png) | 2560 x 1440 | English, seed 1234, Patrol |
+| Bridge | [PNG](commander-v2-en-bridge-desktop.png) | [PNG](commander-v2-de-bridge-desktop.png) |
+| Sonar | [PNG](commander-v2-en-sonar-desktop.png) | [PNG](commander-v2-de-sonar-desktop.png) |
+| Weapons | [PNG](commander-v2-en-weapons-desktop.png) | [PNG](commander-v2-de-weapons-desktop.png) |
+| Damage Control | [PNG](commander-v2-en-damage-desktop.png) | [PNG](commander-v2-de-damage-desktop.png) |
+| OPZ/CIC | [PNG](commander-v2-en-opz-desktop.png) | [PNG](commander-v2-de-opz-desktop.png) |
+| Radio | [PNG](commander-v2-en-radio-desktop.png) | [PNG](commander-v2-de-radio-desktop.png) |
+| Engineering | [PNG](commander-v2-en-engine-desktop.png) | [PNG](commander-v2-de-engine-desktop.png) |
+| Helicopter | [PNG](commander-v2-en-helicopter-desktop.png) | [PNG](commander-v2-de-helicopter-desktop.png) |
+| Electronic Warfare/ESM | [PNG](commander-v2-en-eloka-desktop.png) | [PNG](commander-v2-de-eloka-desktop.png) |
+
+`commander-overview.png` is an alias of the English OPZ/CIC capture for existing
+README links. `commander-wide.png` is a separate 2560 x 1440 English Sonar
+capture.
+
+## Mobile Views
+
+The 500 x 844 captures exercise the responsive single-column layout. Chromium's
+headless mode enforces a 500-CSS-pixel minimum viewport; narrower physical
+devices use the same mobile breakpoint.
+
+| Scene | Image |
+| --- | --- |
+| English station-request lobby | [PNG](commander-v2-en-lobby-mobile.png) |
+| English Sonar filters | [PNG](commander-v2-en-sonar-mobile.png) |
+| German Radio messages | [PNG](commander-v2-de-radio-mobile.png) |
+| German multi-station selector | [PNG](commander-v2-de-multi-station-mobile.png) |
 
 ## Reproduction
 
@@ -19,61 +49,36 @@ python tools/capture_commander.py
 python tools/capture_commander.py --output /tmp/commander-review --seed 1234
 ```
 
-The optional tool does not download a browser or require Node/Playwright. It warms
-the game with 360 normal 1/60-second updates, then continues the simulation and
-pumps the bridge on the main thread while Chromium runs. Consequently the seed
-and setup are repeatable, but sensor ages, bearings, damage repair and elapsed
-time can vary slightly with browser timing. These PNGs are not pixel-golden tests.
-`--budget-ms` changes Chromium's virtual-time budget (default 3000); process and
-server shutdown have separate bounded wall-time handling.
+The optional tool does not download a browser and does not require Node or
+Playwright. It advances the game through 360 normal 1/60-second updates, freezes
+the simulation, and then pumps only the main-thread projection on a deterministic
+capture clock. The Sonar examples use the real filtered audition state. Authored
+own-ship damage demonstrates the Damage Control interface; contacts and mission
+intelligence still come only from game observations.
 
-Only own-ship damage is authored for illustration: the sonar compartment starts
-damaged with 12% flooding, and the engine compartment starts damaged with 7%
-flooding and 9% fire. Team 1 is assigned to sonar; teams 2 and 3 to engineering.
-Normal simulation continues repairing these demonstration conditions. Enemy
-contacts, bearings, quality, positions and ranges come only from sensor outputs.
-The two contacts in the reviewed captures are bearing-only observations; absent
-range/depth/course remains unavailable, not an invented position.
-
-The script binds only `127.0.0.1` on an ephemeral port. It appends automation only
-to the server's in-memory cached JavaScript: enter the current pairing code,
-submit the real pairing form, and select the first published contact locally.
-No command is sent after pairing. The main thread explicitly grants permission
-once the browser is paired. No HTTP thread accesses `Game`.
+The script binds only `127.0.0.1` on an ephemeral port. Its in-memory-only browser
+automation performs real v2 pairing and cookie recovery. The host grants and
+activates the requested station after pairing; the multi-station scene receives
+three independent leases. It sends no simulation command. No HTTP thread accesses
+`Game`.
 
 An isolated temporary HOME and incognito Chromium profile avoid real user data.
-Credentials are neither printed nor placed in a URL or intentionally persisted;
-the injected script is never written to source files. Browser DOM output is
-examined only in memory. Both images are staged before publication. The service
-is stopped, pairing revoked, injected cached assets cleared, and listener/worker
-termination checked before the PNGs are copied to the output directory.
+Credentials are not printed, placed in a URL, written into a source file, left in
+the DOM, or intentionally persisted. All images are staged before publication.
+The service is stopped, pairing is revoked, injected cached assets are cleared,
+and listener and worker termination are checked before the PNGs are copied.
 
 ## Review And Limits
 
-Image review on 2026-09-08 regenerated and checked both PNGs for readable mission/connection
-status, contact selection/details, a correctly proportioned north-up chart,
-bearing-only rays, chart disclaimer/legend, and visible ownship/alarm/log headings.
-The initial 1080p image exposed a layout issue: long contact details stretched
-the workspace and pushed all support panels below the first screen. The desktop
-workspace is now bounded with internally scrolling contact assessments. Numeric
-grid labels are also culled before they clip against the canvas edges.
+The 2026-09-13 regeneration verified, for every image, the expected language and
+role, healthy connection state, rendered workstation instrument, required Sonar,
+Radio, or multi-station content, hidden credential, inaccessible HttpOnly session
+cookie, exact PNG dimensions, no horizontal overflow, no captured JavaScript
+error, and clean server shutdown. The complete desktop and mobile contact sheets
+were also inspected for readable, unclipped content.
 
-The capture checks verified `phase=live`, `connected=true`,
-`commands_allowed=true`, two published contacts, first-contact selection,
-enabled affiliation Apply, English UI, a rendered canvas, no horizontal page
-overflow and no captured JavaScript errors. The selected ESM contact cannot be
-classified or proposed as a weapon target; those disabled buttons correctly
-reflect observation eligibility, not a missing local grant. Sound remains muted.
-
-The 0.1.7 fixed shell keeps the document within the viewport. The active tab and
-dense nested panels scroll internally so the complete compartment report and
-long assessments remain reachable without moving the masthead or tab strip.
-The captures show the Operations tab selected. Chromium may report a shorter CSS
-viewport during automation before its final screenshot resize; the tool verifies
-the actual PNG dimensions separately.
-
-This review does not establish real two-PC pairing, Wi-Fi reliability, physical
-display readability, touch input, WebAudio playback, or uConsole performance.
-Command execution/reconciliation is covered by separate contract tests, not by
-this non-commanding screenshot automation. Mobile and German layout contract
-tests remain distinct from this English desktop image review.
+The captures preserve the observation boundary: unknown hostile range, depth,
+course, identity, and position are not invented for display. They do not establish
+real two-PC pairing, Wi-Fi reliability, physical touch ergonomics, WebAudio output,
+or uConsole performance. Command execution, authorization, responsive layouts,
+and browser interactions have separate automated contract tests.

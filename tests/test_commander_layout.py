@@ -95,13 +95,28 @@ async function run() {
     for (const panel of document.querySelectorAll("#role-visuals > .visual-panel")) {
       panel.hidden = panel.id !== visualFor[role];
     }
-    if (["sonar", "opz"].includes(role) && $("operations-workspace").parentElement !== grid) {
-      grid.prepend($("operations-workspace"));
+    const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
+    section.classList.toggle("track-workstation", trackRoles.has(role));
+    if (trackRoles.has(role) && $("operations-workspace").parentElement !== section) {
+      section.insertBefore($("operations-workspace"), grid);
     }
-    $("operations-workspace").hidden = !["sonar", "opz"].includes(role);
+    $("operations-workspace").hidden = !trackRoles.has(role);
     $("bridge-orders").hidden = role !== "bridge";
     $("opz-controls").hidden = role !== "opz";
     $("helicopter-dipping-controls").hidden = role !== "helicopter";
+    for (const container of section.querySelectorAll("dl, .station-list")) {
+      if (container.children.length) continue;
+      if (container.tagName === "DL") {
+        container.append(Object.assign(document.createElement("div"), {
+          innerHTML: "<dt>Sehr lange lokalisierte Statusbezeichnung</dt><dd>Vollstaendige Einsatzinformation ohne Ueberdeckung</dd>",
+        }));
+      } else {
+        const row = document.createElement("div");
+        row.className = "station-row";
+        row.textContent = "Ausgefuellte Einsatzinformation mit langem deutschem Text fuer die Layoutpruefung";
+        container.append(row);
+      }
+    }
     if (role === "bridge") grid.prepend($("bridge-orders"));
     if (role === "opz") grid.prepend($("opz-controls"));
     if (role === "helicopter") grid.prepend($("helicopter-dipping-controls"));
@@ -170,6 +185,7 @@ def test_station_dashboards_have_bounded_responsive_layout_rules():
     assert re.search(r"body\.workstation-mode \.station-view \{[^}]*min-height: 0[^}]*overflow: hidden", css)
     assert re.search(r"body\.workstation-mode \.station-section \{[^}]*grid-template-rows: auto minmax\(0, 1fr\)[^}]*overflow: hidden", css)
     assert re.search(r"body\.workstation-mode \.station-grid \{[^}]*min-height: 0[^}]*overflow-y: auto", css)
+    assert re.search(r"body\.workstation-mode #operations-workspace \{[^}]*grid-column: 2[^}]*grid-template-columns: repeat\(2", css)
 
 
 @pytest.mark.parametrize("width,height,zoom", [(1280, 720, 1), (390, 844, 1), (1280, 1024, 4)])

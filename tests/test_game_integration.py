@@ -175,6 +175,28 @@ def test_runtime_language_switch_retranslates_feeds_and_keeps_legacy_strings(mon
     assert game.messages[-1] == ("12:01", "Saved")
 
 
+def test_initial_threat_intel_is_coarse_static_and_visible_to_radio():
+    game = Game(seed=87, audio_enabled=False,
+                preferences=Preferences(language="en"))
+    report = game.messages[-1][1]
+    params = report["params"]
+    target = min(game.subs, key=lambda item: np.hypot(
+        item.x - game.ship.x, item.y - game.ship.y))
+    exact_range = np.hypot(target.x - game.ship.x, target.y - game.ship.y)
+
+    assert report["__u_jagd_i18n__"] == "runtime.hq.threat_underwater"
+    assert int(params["bearing"]) % 45 == 0
+    assert params["range"] % 5 == 0
+    assert abs(params["range"] - exact_range) <= 2.5
+    assert set(params) == {"bearing", "range"}
+    assert game.feed.entries[-1].category == "funk"
+    assert game.feed.entries[-1].text is report
+    initial = json.dumps(report, sort_keys=True)
+    target.x += 100
+    game.update(.1)
+    assert json.dumps(game.messages[2][1], sort_keys=True) == initial
+
+
 def test_custom_runtime_mission_text_is_opaque():
     game = Game(seed=88, audio_enabled=False,
                 preferences=Preferences(language="de"))
@@ -205,7 +227,8 @@ def test_custom_objective_and_start_feed_ignore_random_mission_type(
     assert game.start_custom_mission(definition)
     game.mission.type_key = retained_type
     objective = game.mission_objective_display()
-    started = game.feed.entries[-1].text
+    started = next(entry.text for entry in reversed(game.feed.entries)
+                   if entry.category == "mission")
     json.dumps(started)
 
     assert localize(objective, Translator("en").t) == english
@@ -214,6 +237,7 @@ def test_custom_objective_and_start_feed_ignore_random_mission_type(
         f"Mission: Saved (Normal) - {english}"
     assert localize(started, Translator("de").t) == \
         f"Mission: Saved (Normal) - {german}"
+    assert game.messages[-1][1]["__u_jagd_i18n__"] == "runtime.hq.threat_unknown"
 
 
 def test_sensor_picture_uses_generic_evidence_not_platform_truth(monkeypatch):

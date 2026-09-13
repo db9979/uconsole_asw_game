@@ -234,6 +234,8 @@ V2_ACTION_REGISTRY = {
                                       _bool_params("enabled")),
     "sonar_set_gain": V2Action(frozenset({"sonar"}),
         _bounded_number_params("gain_db", -12, 24)),
+    "sonar_set_audition_mode": V2Action(frozenset({"sonar"}),
+        _enum_params("mode", ("BROADBAND", "FILTERED", "HETERODYNE"))),
     "sonar_set_band_preset": V2Action(frozenset({"sonar"}),
         _enum_params("preset", ("FULL", "LOW", "SHAFT", "MID"))),
     "sonar_set_notch": V2Action(frozenset({"sonar"}), _bool_params("enabled")),
@@ -555,8 +557,12 @@ class CommanderServer:
         self._sonar_audio_sequence = 0
 
     @staticmethod
-    def _station_grants():
-        return {capability: False for capability in _V2_STATION_CAPABILITIES}
+    def _station_grants(station=None):
+        return {
+            "command": station in STATIONS,
+            "direct_fire": False,
+            "sonar_audio": False,
+        }
 
     def _set_active_station_locked(self, session, station, reason="active_station_changed"):
         if station is not None and station not in session["leases"]:
@@ -708,6 +714,15 @@ class CommanderServer:
                 "presence": session["presence"],
             } for session in sessions]
 
+    def station_leased(self, station: str) -> bool:
+        """Return whether a v2 client currently owns this station."""
+        if station not in STATIONS:
+            raise ValueError("invalid station")
+        with self._lock:
+            self._expire_locked()
+            return any(station in session["leases"]
+                       for session in self._sessions_v2.values())
+
     def grant_station(self, client_id, station) -> bool:
         if not isinstance(client_id, str) or station not in STATIONS:
             raise ValueError("invalid client or station")
@@ -720,7 +735,7 @@ class CommanderServer:
                            if station in candidate["leases"]), None)
             if holder is session:
                 self._reject_station_commands_locked(session, station, "role_revoked")
-                session["leases"][station]["grants"] = self._station_grants()
+                session["leases"][station]["grants"] = self._station_grants(station)
                 session["requests"].pop(station, None)
                 return True
             if holder is not None:
@@ -729,7 +744,7 @@ class CommanderServer:
                 self._station_generations[station] += 1
             session["leases"][station] = {
                 "generation": self._station_generations[station],
-                "grants": self._station_grants(),
+                "grants": self._station_grants(station),
             }
             session["requests"].pop(station, None)
             if session["active_station"] is None:
@@ -746,8 +761,8 @@ class CommanderServer:
                     or any(type(value) is not bool for value in grants.values()))):
             return False
         if grants is not None and (
-                grants["direct_fire"] and (not grants["command"]
-                    or station not in ("weapons", "helicopter", "opz"))
+                not grants["command"]
+                or grants["direct_fire"] and station not in ("weapons", "helicopter", "opz")
                 or grants["sonar_audio"] and station != "sonar"):
             return False
         with self._lock:
@@ -1596,8 +1611,6 @@ class _Handler(BaseHTTPRequestHandler):
                           or type(body["active_generation"]) is not int
                           or not 0 <= body["active_generation"] <= _SAFE_INTEGER_MAX):
                         status, response = 400, {"error": "invalid_request"}
-                    elif body["active_generation"] != session["active_generation"]:
-                        status, response = 409, {"error": "stale_active_generation"}
                     elif (body["station"] not in session["leases"]
                           or session["leases"][body["station"]]["generation"]
                           != body["station_generation"]):
@@ -1606,7 +1619,8 @@ class _Handler(BaseHTTPRequestHandler):
                         owner._set_active_station_locked(session, body["station"])
                         status = 200
                         response = self._session_v2_body(session, owner._sessions_v2)
-                    elif body["station"] != session["active_station"]:
+                    elif (body["active_generation"] != session["active_generation"]
+                          or body["station"] != session["active_station"]):
                         status, response = 409, {"error": "stale_active_generation"}
                     else:
                         owner._release_station_locked(session, body["station"])

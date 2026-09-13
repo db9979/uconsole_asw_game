@@ -73,6 +73,7 @@ import time
 import numpy as np
 
 from src.audio.receiver import smooth_limit
+from src.sonar.sonar import SonarSystem
 from src.core import config
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
@@ -252,6 +253,10 @@ def _sonar_set_gain(game, params, _bindings):
     return game.set_sonar_gain(params["gain_db"])
 
 
+def _sonar_set_audition_mode(game, params, _bindings):
+    return game.set_sonar_audition_mode(params["mode"])
+
+
 def _sonar_set_band_preset(game, params, _bindings):
     return game.set_sonar_band_preset(params["preset"])
 
@@ -376,6 +381,7 @@ _V2_ACTION_HANDLERS = {
     "sonar_active_ping": _sonar_active_ping,
     "sonar_set_tma_enabled": _sonar_set_tma_enabled,
     "sonar_set_gain": _sonar_set_gain,
+    "sonar_set_audition_mode": _sonar_set_audition_mode,
     "sonar_set_band_preset": _sonar_set_band_preset,
     "sonar_set_notch": _sonar_set_notch,
     "sonar_set_peak_hold": _sonar_set_peak_hold,
@@ -440,6 +446,8 @@ class CommanderBridge:
         self._esm_refs = {}
         self._esm_candidate_refs = {}
         self._asset_refs = {}
+        self._buoy_labels = {}
+        self._buoy_label_seq = 0
         self._direct_fire_refs = {}
         self._label_seq = 0
         self._proposal = None
@@ -465,6 +473,7 @@ class CommanderBridge:
         self._last_publish = None
         self._audio_context = None
         self._audio_receiver_sequence = None
+        self._audio_filter = None
         self._dirty = True
         self._status = dict(phase="blocked", connected=False,
                             commands_allowed=False, session=self._session,
@@ -958,6 +967,8 @@ class CommanderBridge:
                 self._esm_refs.clear()
                 self._esm_candidate_refs.clear()
                 self._asset_refs.clear()
+                self._buoy_labels.clear()
+                self._buoy_label_seq = 0
                 self._direct_fire_refs.clear()
                 self._label_seq = 0
                 self._ids.clear()
@@ -1159,6 +1170,7 @@ class CommanderBridge:
                         current_candidates[key] = (track, ref)
                 self._esm_candidate_refs = current_candidates
                 current_assets = {}
+                current_buoy_labels = {}
                 bounded_assets = (
                     ("torpedo", sorted(game.torpedoes,
                                        key=lambda item: item.idx)[:64]),
@@ -1176,7 +1188,16 @@ class CommanderBridge:
                         ref = (previous[1] if previous is not None
                                and previous[0] is asset else secrets.token_urlsafe(18))
                         current_assets[key] = (asset, ref)
+                        if namespace == "buoy":
+                            previous_label = self._buoy_labels.get(key)
+                            if previous_label is not None and previous_label[0] is asset:
+                                label = previous_label[1]
+                            else:
+                                self._buoy_label_seq += 1
+                                label = f"SB{self._buoy_label_seq:02d}"
+                            current_buoy_labels[key] = (asset, label)
                 self._asset_refs = current_assets
+                self._buoy_labels = current_buoy_labels
                 ref_by_track = {key: binding[2] for key, binding in self._refs.items()}
                 focus_ref = next((binding[2] for binding in self._refs.values()
                                   if binding[1] is game.selected_contact), None)
@@ -1187,6 +1208,7 @@ class CommanderBridge:
                     game, self._status, rows, target, focus_ref, ref_by_track,
                     {key: value[1] for key, value in current_esm.items()},
                     {key: value[1] for key, value in current_assets.items()},
+                    {key: value[1] for key, value in current_buoy_labels.items()},
                     {key: value[1] for key, value in current_candidates.items()},
                     sonar_refs, direct_fire_refs))
                 known_v2_chart = known_chart(self._status, dict(
@@ -1211,6 +1233,7 @@ class CommanderBridge:
                 server.clear_sonar_audio()
             self._audio_context = None
             self._audio_receiver_sequence = receiver.sequence
+            self._audio_filter = None
             return
         generation = server.prepare_sonar_audio(
             world_session=self._session, world_epoch=self._epoch)
@@ -1218,13 +1241,24 @@ class CommanderBridge:
         if generation is None:
             self._audio_context = None
             self._audio_receiver_sequence = receiver.sequence
+            self._audio_filter = None
             return
         if context != self._audio_context:
             self._audio_context = context
             self._audio_receiver_sequence = receiver.sequence
+            self._audio_filter = SonarSystem(seed=0, acoustic_profiles=())
             return
         for sequence, samples in receiver.blocks_since(self._audio_receiver_sequence):
-            pcm = sonar_pcm_s16le(samples)
+            if sequence != self._audio_receiver_sequence + 1:
+                self._audio_filter.reset_audition_audio()
+            self._audio_filter.audition_mode = game.sonar.audition_mode
+            self._audio_filter.band_low_hz = game.sonar.band_low_hz
+            self._audio_filter.band_high_hz = game.sonar.band_high_hz
+            self._audio_filter.notch_enabled = game.sonar.notch_enabled
+            self._audio_filter._own_line_hz = game.sonar._own_line_hz
+            self._audio_filter.gain_db = game.sonar.gain_db
+            pcm = sonar_pcm_s16le(
+                self._audio_filter.listening_samples(samples, block_id=sequence))
             server.publish_sonar_audio(
                 pcm, world_session=self._session, world_epoch=self._epoch,
                 station_generation=generation)

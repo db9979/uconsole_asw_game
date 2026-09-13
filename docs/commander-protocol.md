@@ -1,5 +1,7 @@
 # Commander Protocol and Security
 
+[Deutsch](commander-protocol.de.md)
+
 Application 0.2.0, API protocols 1 and 2, save format v10-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
@@ -39,12 +41,19 @@ separate CSRF token in the exact session response. State-changing requests
 require both the cookie, exact Origin, and CSRF token.
 
 The session advertises all nine stations as nested records. A client may retain
-multiple leases, each with its own monotonic station generation and command,
-direct-fire, and sonar-audio grants. Exactly one retained lease is active and
+multiple leases, each with its own monotonic station generation. Assignment
+enables the lease's ordinary command grant immediately; direct-fire and
+sonar-audio grants remain separate. Exactly one retained lease is active and
 identified by a separate monotonic active generation. Station requests are
 additive; activation does not release another lease. Release, revocation,
 takeover, expiry, pause, focus loss, and world replacement invalidate authority
 at their defined scope.
+
+Activation validates the target lease and its station generation but does not
+compare an older active generation; this lets a client select any still-retained
+lease after a concurrent host activation. Release and simulation commands retain
+their active-generation checks. A v2 lease blocks matching local uConsole station
+input without blocking host administration or the remote main-thread command path.
 
 Role state is an exact allowlisted projection under `/api/v2/state`. The active
 role receives own-asset truth, known geography, and published observations only.
@@ -63,9 +72,15 @@ ordinary observation, readiness, inventory, ROE, and envelope checks. A queued
 response is never reported as successful before its terminal result.
 
 V2 sessions, clients, leases, histories, queues, polling, and projection sizes
-are hard-bounded. Sonar audio is live-only, separately granted, and bound to the
-active sonar generation. Protocol v1 remains exact for compatibility and is not
-silently broadened by v2 fields.
+are hard-bounded. Sonar audio is live-only, separately granted, bound to the
+active sonar generation, and filtered on the main thread using the projected
+Sonar audition mode, band, notch, and gain. Bridge cavitation noise is synthesized
+locally in the browser after sound opt-in from the already allowlisted own-ship
+cavitation boolean; it adds no endpoint, grant, command, or host-audio control.
+The Sonar role receives only bounded own-ship speed and TAS handling limits needed
+to explain a disabled array control; hover reasons never inspect hidden entities.
+Protocol v1 remains exact for compatibility and is not silently broadened by v2
+fields.
 
 ## Protocol v1 Pairing and Bounds
 

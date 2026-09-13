@@ -288,7 +288,7 @@ class Game:
     def radar_range_nm(self, value: float) -> None:
         self.opz_range_nm = value
 
-    def reset(self, seed: int, scenario_key: str = None) -> None:
+    def reset(self, seed: int, scenario_key: str = None, *, publish_intel: bool = True) -> None:
         """Spielzustand neu aufbauen (Start/Neustart).
 
         W4: Szenario (config.SCENARIOS) legt Level, Missionstyp und
@@ -548,6 +548,8 @@ class Game:
         self.hq_msg(message("runtime.hq.weather", sea_state=self.world.sea_state))
         self.feed.add(self.world.format_time(), "mission",
                       self._mission_started_notice())
+        if publish_intel:
+            self.hq_msg(self._initial_threat_notice())
         # Menu input cannot operate the simulation. Only this unstarted world
         # may be consumed by menu start; loads replace its world/sonar identity.
         self._prepared_menu_mission = (
@@ -593,7 +595,7 @@ class Game:
         if (definition["objective"]["type"] == "sink"
                 and set(definition["objective"]["target_ids"]) != expected_targets):
             return False
-        self.reset(int(definition["seed"]), "s4_zufall")
+        self.reset(int(definition["seed"]), "s4_zufall", publish_intel=False)
         self.subs, self.civilians, self.warships = [], [], []
         self.animals, self.asms = [], []
         player = definition["player"]
@@ -659,6 +661,7 @@ class Game:
         self.mission.asm_count = self.mission.warship_count = 0
         self.custom_mission_definition = json.loads(json.dumps(definition))
         self.feed.entries[-1].text = self._mission_started_notice()
+        self.hq_msg(self._initial_threat_notice())
         self.in_menu = False
         self.main_menu = False
         self._reset_map_view()
@@ -716,6 +719,25 @@ class Game:
                        name=self.mission_name_display(),
                        level=self.mission_level_display(),
                        objective=self.mission_objective_display())
+
+    def _initial_threat_notice(self):
+        """Return one coarse, static intelligence cue for the mission start."""
+        candidates = [target for target in self.subs if target.side == "hostile"]
+        domain = "underwater"
+        if not candidates:
+            candidates = [target for target in self.warships
+                          if target.side == "hostile"]
+            domain = "surface"
+        if not candidates:
+            return message("runtime.hq.threat_unknown")
+        target = min(candidates, key=lambda item: math.hypot(
+            item.x - self.ship.x, item.y - self.ship.y))
+        dx, dy = target.x - self.ship.x, target.y - self.ship.y
+        bearing = int(((math.degrees(math.atan2(dx, -dy)) % 360.0 + 22.5)
+                       // 45.0) * 45.0) % 360
+        distance = max(5, int((math.hypot(dx, dy) + 2.5) // 5.0) * 5)
+        return message(f"runtime.hq.threat_{domain}", bearing=f"{bearing:03d}",
+                       range=distance)
 
     @property
     def time_scale(self) -> int:
@@ -1003,6 +1025,14 @@ class Game:
         if self.damage.station_down("sonar"):
             return "sonar_down"
         self.sonar.gain_db = gain_db
+        return True
+
+    def set_sonar_audition_mode(self, mode: str):
+        if type(mode) is not str or mode not in ("BROADBAND", "FILTERED", "HETERODYNE"):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.set_audition_mode(mode)
         return True
 
     def set_sonar_band_preset(self, preset: str):
@@ -1383,6 +1413,14 @@ class Game:
         self._clear_station_input()
         self._stop_sonar_audio()
 
+    def _local_station_input_locked(self) -> bool:
+        if not self.commander.station_leased(self.station):
+            return False
+        self._clear_station_input()
+        self.input_mode = None
+        self.input_buffer = ""
+        return True
+
     def _stop_sonar_audio(self) -> None:
         self.audio.stop_sonar(immediate=True)
         self.sonar.reset_audition_audio()
@@ -1680,6 +1718,8 @@ class Game:
                 return
             return
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
+            if self._local_station_input_locked():
+                return
             if self._map_drag is not None and not self._map_drag_moved:
                 canvas = self._window_to_canvas(getattr(e, "pos", None))
                 hit = map_hit_target(self, canvas) if canvas is not None else None
@@ -1741,6 +1781,8 @@ class Game:
                     if (canvas is not None
                             and self.commander.handle_confirm_click(self, canvas)):
                         return
+            if self._local_station_input_locked():
+                return
         if e.type == pygame.KEYDOWN:
             if self.in_menu:
                 if e.key == pygame.K_F1:
@@ -1750,7 +1792,9 @@ class Game:
                 else:
                     self._handle_menu_key(e.key)
                 return
-            if self.input_mode is not None:
+            if self.input_mode is not None and self._local_station_input_locked():
+                pass
+            elif self.input_mode is not None:
                 if e.key == pygame.K_ESCAPE or not self.paused:
                     self._handle_numeric_input(e.key)
                 elif e.key == pygame.K_p:
@@ -1822,6 +1866,8 @@ class Game:
                     self.reset(self.seed)
                 return
             if self.paused:
+                return
+            if self._local_station_input_locked():
                 return
             if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                     and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
@@ -2337,7 +2383,8 @@ class Game:
         self.flash(message("runtime.sonar_gain", gain=f"{self.sonar.gain_db:+.0f}"), 1.2)
 
     def _set_sonar_audition_mode(self, mode: str) -> None:
-        self.sonar.set_audition_mode(mode)
+        if self.set_sonar_audition_mode(mode) is not True:
+            return
         key = {"BROADBAND": "runtime.listen.broadband",
                "FILTERED": "runtime.listen.filtered",
                "HETERODYNE": "runtime.listen.heterodyne"}[mode]

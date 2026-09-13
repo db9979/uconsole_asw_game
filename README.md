@@ -1,3 +1,5 @@
+[Deutsche README](README.de.md)
+
 # U-Jagd
 
 U-Jagd is a real-time anti-submarine warfare tactics game for Linux, designed
@@ -34,9 +36,9 @@ Full-resolution workstations: [Bridge](docs/screenshots/station-bridge.png),
 Damage-control example with authored flooding, fire, lost zones and repair teams:
 [F-217 damage schematic](docs/screenshots/damage-control-alert.png).
 
-Commander browser: [1920 x 1080](docs/screenshots/commander-overview.png) and
-[2560 x 1440](docs/screenshots/commander-wide.png).
-[Capture method and limits](docs/screenshots/commander-captures.md).
+Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.png),
+[Sonar at 2560 x 1440](docs/screenshots/commander-wide.png), and the
+[complete English/German desktop and mobile matrix](docs/screenshots/commander-captures.md).
 [Local Commander options](docs/screenshots/commander-options.png).
 
 ## Highlights
@@ -91,7 +93,7 @@ python main.py
 ```
 
 For ClockworkPi uConsole system packages, updates, and troubleshooting, see
-[`docs/install-uconsole.md`](docs/install-uconsole.md).
+[`docs/install-uconsole.en.md`](docs/install-uconsole.en.md).
 
 ## Command Line
 
@@ -131,6 +133,12 @@ random scenario, difficulty selection.
 A seed selects one of 128 real-data-derived 500 NM coastal sectors and produces
 the same generated world for the same world mode. The fixed legacy map remains
 available as a separate stylized option.
+
+At mission start, Radio receives coarse, static intelligence about possible
+underwater or hostile surface activity. Bearing and range are deliberately
+rounded, the position is explicitly unconfirmed, and the report is not a sensor
+fix. If no useful initial position exists, HQ directs the crew to develop the
+picture with onboard sensors.
 
 ## Controls
 
@@ -250,11 +258,16 @@ After pairing, each browser requests one or more stations. The host grants each
 station exclusively; ordinary station operation is enabled on approval, while
 sonar audio and direct fire remain separate grants. A browser displays one active
 station at a time, requests another through **Add station**, and retains its other
-leases for quick switching. An approved added station opens automatically. Every
+leases for quick switching through the station selector. An approved added station
+opens automatically. Every
 command is revalidated on the main
 simulation thread against station damage, observation freshness, inventory,
 readiness, ROE, and the current world generation. Communication still relies on
 external voice; no microphone or chat is included.
+
+While a browser owns a station lease, matching station input on the uConsole is
+read-only. Host administration, pause, and switching to another station remain
+available; revoking the lease restores local operation immediately.
 
 The service starts **off on every launch**. Access and grants are not saved.
 World replacement revokes active authority on the next main-thread frame. Manual
@@ -262,8 +275,15 @@ pause, focus loss, save/load, quit, nations, real editors, menus and splash lock
 browser changes. With an active crew station, F1 help, the in-game F8 analyzer,
 F9 crew administration and F10 options keep simulation and browser stations live.
 Browser sonar sound requires an explicit host grant and a local user gesture;
-reconnecting does not replay old audio. Clicking or tapping the Broadband
-waterfall sets Sonar's manual listening bearing; LOFAR does not.
+reconnecting does not replay old audio. Its Broadband, Filtered, and Heterodyne
+listening modes use the selected band, notch, and gain controls. Clicking or
+tapping the Broadband waterfall sets Sonar's manual listening bearing; LOFAR
+does not. The same local sound toggle also enables synthesized own-ship cavitation
+noise on the Bridge; it uses only the projected cavitation warning and never
+controls host audio.
+Hover over an unavailable browser control to see its current localized reason,
+such as a missing grant, damaged station, cooldown, empty inventory, pending
+order, or the TAS handling-speed limit.
 
 **Security:** HTTP is unencrypted. Use only a trusted LAN. No Internet hosting,
 wildcard binding, CDN, remote ROE/time/save controls, or hidden entity data are

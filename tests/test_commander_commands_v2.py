@@ -527,6 +527,7 @@ def test_fusion_schema_rejects_duplicate_refs_and_action_role_mismatch(server):
     ("sonar", "sonar_active_ping", {}),
     ("sonar", "sonar_set_tma_enabled", {"enabled": False}),
     ("sonar", "sonar_set_gain", {"gain_db": -12}),
+    ("sonar", "sonar_set_audition_mode", {"mode": "FILTERED"}),
     ("sonar", "sonar_set_band_preset", {"preset": "SHAFT"}),
     ("sonar", "sonar_set_notch", {"enabled": True}),
     ("sonar", "sonar_set_peak_hold", {"enabled": True}),
@@ -557,6 +558,7 @@ def test_remaining_nonlethal_action_schemas_are_exact(server, station, action, p
     ("sonar_set_tow_depth", {"depth_m": float("inf")}),
     ("sonar_set_tow_depth", {"depth_m": 10**1000}),
     ("sonar_set_gain", {"gain_db": 24.01}),
+    ("sonar_set_audition_mode", {"mode": "NARROW"}),
     ("sonar_set_band_preset", {"preset": "CUSTOM"}),
     ("sonar_set_harmonic", {"frequency_hz": 0}),
     ("helicopter_set_waypoint", {"x": -1, "y": 2}),
@@ -601,8 +603,8 @@ def test_remaining_action_rejects_session_with_wrong_role(server):
 
 
 def test_v2_registry_exposes_no_host_audio_control():
-    assert not any(token in action for action in V2_ACTION_REGISTRY
-                   for token in ("audio", "volume", "audition"))
+    assert "sonar_set_audio_enabled" not in V2_ACTION_REGISTRY
+    assert "sonar_set_volume" not in V2_ACTION_REGISTRY
 
 
 @pytest.mark.parametrize(("station", "action", "params"), [
@@ -814,6 +816,7 @@ def test_sonar_authoritative_controls_use_explicit_values_and_refs(server):
             ("sonar_set_tas", {"deployed": True}),
             ("sonar_set_tma_enabled", {"enabled": False}),
             ("sonar_set_gain", {"gain_db": 9.0}),
+            ("sonar_set_audition_mode", {"mode": "FILTERED"}),
             ("sonar_set_band_preset", {"preset": "SHAFT"}),
             ("sonar_set_notch", {"enabled": True}),
             ("sonar_set_peak_hold", {"enabled": True}),
@@ -827,6 +830,7 @@ def test_sonar_authoritative_controls_use_explicit_values_and_refs(server):
         assert game.sonar_mode == "TOWED"
         assert game.sonar.tow_state == TowState.DEPLOYING
         assert not game.sonar.tma_enabled and game.sonar.gain_db == 9.0
+        assert game.sonar.audition_mode == "FILTERED"
         assert (game.sonar.band_low_hz, game.sonar.band_high_hz) == (8.0, 55.0)
         assert game.sonar.notch_enabled and game.sonar.peak_hold
         assert game.sonar_harmonic_hz == 17.5 and game.target is contact

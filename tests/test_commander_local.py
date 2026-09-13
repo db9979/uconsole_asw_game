@@ -80,6 +80,7 @@ class Transport:
 class RosterTransport:
     """Small detached host API fixture for local roster interaction tests."""
     connected = True
+    pairing_code = "123ABC"
 
     def __init__(self, statuses=()):
         self.statuses = deepcopy(list(statuses))
@@ -87,6 +88,10 @@ class RosterTransport:
 
     def client_statuses(self):
         return deepcopy(self.statuses)
+
+    def station_leased(self, station):
+        return any(status["stations"][station]["leased"]
+                   for status in self.statuses)
 
     def stop(self):
         pass
@@ -106,7 +111,7 @@ class RosterTransport:
                 if status["active_station"] == station:
                     status["active_station"] = next((item for item in local.STATIONS
                         if status["stations"][item]["leased"]), None)
-        selected["stations"][station] = station_detail(leased=True)
+        selected["stations"][station] = station_detail(leased=True, command=True)
         if selected["active_station"] is None:
             selected["active_station"] = station
         return True
@@ -121,7 +126,8 @@ class RosterTransport:
         if grants is None:
             detail["requested"] = False
             return True
-        selected["stations"][station] = station_detail(leased=True, **grants)
+        selected["stations"][station] = station_detail(
+            leased=True, **(dict(grants) | {"command": True}))
         selected["active_station"] = station
         return True
 
@@ -383,6 +389,51 @@ def test_admin_blocks_held_mouse_joystick_weapons_and_simulation(game):
     assert not game.torpedoes and not game.held
 
 
+def test_remote_lease_locks_matching_uconsole_station_but_preserves_host_keys(game):
+    server = RosterTransport((roster_client(
+        "crew", "Crew", 0, station="bridge", command=True),))
+    game.commander.server = server
+    game.station = Station.BRIDGE
+    telegraph = game.ship.telegraph
+
+    key(game, pygame.K_UP)
+    key(game, pygame.K_LEFT)
+    assert game.ship.telegraph == telegraph and not game.held
+
+    key(game, pygame.K_2)
+    assert game.station is Station.SONAR
+    key(game, pygame.K_n)
+    assert game.sonar.notch_enabled
+
+    key(game, pygame.K_1)
+    key(game, pygame.K_F9)
+    assert game.commander_open
+
+
+def test_new_remote_lease_clears_latched_and_numeric_uconsole_input(game):
+    server = RosterTransport()
+    game.commander.server = server
+    game.commander.address = ("127.0.0.1", 8765)
+    game.commander.bridge.pump = Mock()
+    game.station = Station.BRIDGE
+    game._begin_numeric_input("course")
+    game.input_buffer = "120"
+    game.held.add(pygame.K_LEFT)
+    game._joy_turn = 1
+    game._joy_acc = .7
+    game._joy_x_acc = -.7
+    game._map_drag = (10, 10)
+    server.statuses.append(roster_client(
+        "crew", "Crew", 0, station="bridge", command=True))
+
+    game.commander.pump(game)
+
+    assert game.input_mode is None and game.input_buffer == ""
+    assert not game.held and game._joy_turn == 0
+    assert game._joy_acc == game._joy_x_acc == 0
+    assert game._map_drag is None
+
+
 def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     game.commander._prepared = True
     game._open_administration("options")
@@ -517,7 +568,7 @@ def test_roster_keyboard_actions_grant_requests_assign_and_revoke(game):
 
     console.roster_station = local.STATIONS.index("weapons")
     console.handle_key(game, pygame.K_a)
-    console.handle_key(game, pygame.K_c)
+    assert server._client("bravo")["stations"]["weapons"]["grants"]["command"]
     console.handle_key(game, pygame.K_d)
     assert server._client("bravo")["stations"]["weapons"]["leased"]
     assert server._client("bravo")["stations"]["weapons"]["grants"]["direct_fire"]

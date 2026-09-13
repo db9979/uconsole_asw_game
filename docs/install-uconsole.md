@@ -1,5 +1,7 @@
 # Installation auf der ClockworkPi uConsole
 
+[English version](install-uconsole.en.md)
+
 Diese Anleitung beschreibt Installation, Start und Aktualisierung von U-Jagd
 aus dem Repository <https://github.com/db9979/uconsole_asw_game>. Zielsystem ist
 eine uConsole mit Debian-basierter ClockworkPi-Distribution, insbesondere ein
@@ -93,6 +95,16 @@ Fenster.
 Die Arbeitsoberfläche rendert nativ auf einem 1280 x 720 Pixel großen Canvas.
 Sie wird im Vollbild auf die verfügbare Displayfläche skaliert; im Fenstermodus
 ist 1280 x 720 die native Größe.
+
+Optionales Remote Crew wird auf der uConsole mit `F9` oder über **F10 >
+Commander LAN** eingerichtet. Der Dienst startet bei jedem Programmstart
+ausgeschaltet.
+
+**Sicherheit:** HTTP ist unverschlüsselt. Nur in einem vertrauenswürdigen LAN
+verwenden. Internet-Hosting, Wildcard-Bindung, CDN, entfernte
+ROE-/Zeit-/Speichersteuerung oder verborgene Entitätsdaten werden nicht
+angeboten. Siehe [Remote-Crew-Einrichtung](commander-coop.md) und
+[Protokoll/Sicherheit](commander-protocol.md).
 
 ## 5. Optional als Paket installieren
 

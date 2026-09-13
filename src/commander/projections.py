@@ -267,11 +267,14 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                               focus_ref=focus_ref if game.sonar.focus_locked else None,
                               target_ref=target_ref,
                               station_down=game.damage.station_down("sonar"),
-                              tow=dict(state=str(tow["state"])[:32],
-                                       payout=_number(tow["payout"]),
-                                       available=bool(tow["available"]),
-                                       handling_ok=bool(tow["handling_ok"]),
-                                       depth_m=_number(tow["depth_m"]),
+                               tow=dict(state=str(tow["state"])[:32],
+                                        payout=_number(tow["payout"]),
+                                        available=bool(tow["available"]),
+                                        handling_ok=bool(tow["handling_ok"]),
+                                        speed_kn=_number(game.ship.speed),
+                                        speed_min_kn=config.SONAR_TOWED_HANDLING_MIN_KN,
+                                        speed_max_kn=config.SONAR_TOWED_HANDLING_MAX_KN,
+                                        depth_m=_number(tow["depth_m"]),
                                        depth_target_m=_number(
                                            tow["depth_target_m"])),
                               bt=dict(ready=game.sonar.bt_cooldown <= 0,
@@ -391,7 +394,7 @@ def _radio(game, rows, ref_by_track):
                             if row["source"] == "HFDF"][:_MAP_ROWS_MAX])
 
 
-def _helicopter(game, rows, asset_refs, direct_refs=None):
+def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None):
     helo = game.helo
     airborne = bool(helo.airborne)
     asset = dict(state=helo.state, airborne=airborne,
@@ -408,8 +411,10 @@ def _helicopter(game, rows, asset_refs, direct_refs=None):
     waypoint = (dict(x=_number(helo.waypoint_x), y=_number(helo.waypoint_y))
                  if helo.waypoint_x is not None
                  and helo.waypoint_y is not None else None)
-    buoys = [dict(ref=asset_refs[("buoy", id(buoy))], x=_number(buoy.x), y=_number(buoy.y),
-                  battery_s=_number(buoy.battery_s), active=bool(buoy.active))
+    buoys = [dict(ref=asset_refs[("buoy", id(buoy))],
+                   label=buoy_labels[("buoy", id(buoy))],
+                   x=_number(buoy.x), y=_number(buoy.y),
+                   battery_s=_number(buoy.battery_s), active=bool(buoy.active))
              for buoy in sorted(game.buoys, key=lambda item: item.seq)[:64]]
     distance = (math.hypot(helo.x - game.ship.x, helo.y - game.ship.y)
                 if airborne else None)
@@ -500,7 +505,7 @@ def _eloka(game, rows, esm_refs, candidate_refs):
 
 
 def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
-                       esm_refs, asset_refs, candidate_refs, sonar_refs,
+                       esm_refs, asset_refs, buoy_labels, candidate_refs, sonar_refs,
                        direct_fire_refs):
     """Build all canonical assigned views from current published observations."""
     common = _common(game, status, None)
@@ -581,8 +586,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                           row.get("_opz") and row["ref"] == target_ref
                           for row in rows) else None),
                       own_assets=dict(ship=_own_navigation(game),
-                                      helicopter=_helicopter(
-                                          game, rows, asset_refs)["asset"])),
+                                       helicopter=_helicopter(
+                                           game, rows, asset_refs, buoy_labels)["asset"])),
         "radio": _radio(game, rows, ref_by_track),
         "engine": dict(propulsion=dict(speed=_number(game.ship.speed),
                     target_speed=_number(game.ship.target_speed), telegraph=game.ship.telegraph,
@@ -609,8 +614,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                                   or game.sonar._tow_available()),
                                               tas_performance=_number(
                                                   game.sonar.tow_performance))),
-        "helicopter": _helicopter(game, rows, asset_refs,
-                                  direct_fire_refs["helicopter"]),
+        "helicopter": _helicopter(game, rows, asset_refs, buoy_labels,
+                                   direct_fire_refs["helicopter"]),
         "eloka": _eloka(game, rows, esm_refs, candidate_refs),
     }
     result = {}

@@ -1,5 +1,7 @@
 # Commander LAN Co-op (0.2.0)
 
+[Deutsch](commander-coop.de.md)
+
 Remote Crew keeps the uConsole process authoritative while authenticated crew
 members operate exclusive station roles from browsers. A client may retain
 multiple leases but displays only one active station at a time. The optional
@@ -38,21 +40,31 @@ in screenshots, logs, or issue reports.
 - The host grants one exclusive owner per station. One client may retain several
   station leases and switch between them without releasing the inactive leases.
   Use Add station for another request; an approved station opens automatically.
+  Afterwards, choose any retained lease from the stable station selector.
+- A leased station is read-only on the uConsole until the host revokes its lease.
+  F9 administration, pause, and switching the local display to another station
+  remain available, and retained inactive browser leases stay exclusive.
 - Browser contact selection, map pan/zoom/follow, workstation pages, drafts, and
   analyzer selection remain local to that browser.
+- Hover over a disabled control to read the current localized reason. Reasons are
+  derived only from published state and include grants, phase, damage, cooldown,
+  inventory, selection, and handling limits. For TAS, the browser reports whether
+  own-ship speed is below 3 kn or above 12 kn.
 - Each station exposes only its allowlisted observation-led projection and
   controls. Classification and affiliation remain operator judgments.
 - Visible labels match the corresponding uConsole station: Sonar/OPZ use K labels,
   HFDF uses public H labels, and ELOKA uses its public track key. Transport refs
   remain opaque and are not displayed. Only modeled AIS reports preserve names.
-- A command grant permits direct operation of that station. Weapons additionally
-  require the host's direct-fire grant. Every action is revalidated immediately
-  before application against lease generation, world context, freshness,
+- Assignment immediately enables normal operation of that station. Weapons
+  additionally require the host's direct-fire grant. Every action is revalidated
+  immediately before application against lease generation, world context, freshness,
   readiness, damage, inventory, ROE, and engagement envelope.
 - Sonar contacts are released to OPZ explicitly; classification alone does not
   publish them. Sonar audio needs its own host grant and remains live-only at 1x.
-- The local panel supports independent per-station request decisions, grants,
-  revocation, takeover, and host control. Clicking never bypasses readiness.
+  Its Broadband, Filtered, and Heterodyne modes share the authoritative band,
+  notch, and gain settings with the Sonar workstation.
+- The local panel supports independent per-station request decisions, additional
+  grants, revocation, takeover, and host control. Clicking never bypasses readiness.
 - Voice coordination uses your existing external voice connection or conversation.
   There is no built-in chat, microphone capture or general command execution.
 - Manual pause, focus loss, save/load, quit, nations, true editors, menus and the
@@ -77,6 +89,8 @@ The chart adapts to browser size and device pixel ratio, preserving equal map
 scales. Contact details show observation/fix age and nullable range/depth/motion.
 Peilung-only observations appear as rays, not invented range fixes. Local selection,
 Commander proposal and crew target have distinct outlines.
+The Helicopter chart follows the airborne helicopter rather than the ship and
+labels its projected Sonobuoys `SB01`, `SB02`, and so on.
 
 On Sonar, clicking or tapping inside the Broadband waterfall sets the manual
 listening bearing and clears contact-follow focus. The yellow line marks that
@@ -85,7 +99,10 @@ bearing. LOFAR and the other analysis plots do not steer the listening beam.
 Damage status and team count, available own weapons and airborne helicopter
 position are displayed. A hangared or lost helicopter is not plotted as a current
 aircraft. Mission/threat/damage alerts are observation-led. Select the sound button
-to enable browser tones; volume and mute are independent of uConsole audio.
+to enable browser tones and the Bridge's synthesized own-ship cavitation noise;
+volume and mute are independent of uConsole audio. Cavitation sound uses only the
+Bridge projection and stops on quiet propulsion, stale connection, role change,
+pause, hidden page, or mute.
 Autoplay may be blocked by the browser until this gesture. Visual alarms always
 remain available. Reconnection establishes a new sound baseline, not alarm replay.
 

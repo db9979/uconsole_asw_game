@@ -172,7 +172,8 @@ def test_v2_roles_have_dedicated_payload_renderers():
     station_dispatch = js.split("function renderStationView()", 1)[1].split("function clearRoleState()", 1)[0]
     assert "v2State[active]" in station_dispatch
     assert 'section.querySelectorAll("dl, .station-list")' in station_dispatch
-    assert '!["sonar", "opz"].includes(active)' in station_dispatch
+    assert "!trackRoles.has(active)" in station_dispatch
+    assert 'const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"])' in js
     assert "innerHTML" not in station_dispatch
 
 
@@ -256,6 +257,72 @@ def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
     assert '"sweep_rate_deg_s"' in validator
     assert '"speed_kn", "observer_x", "observer_y"' in validator
     assert '["speed", unit(row.speed_kn, "kn")]' in js
+    role_map = js.split("function drawRoleMap", 1)[1].split("function gauge", 1)[0]
+    assert 'plot.context.textAlign = "left"' in role_map
+    assert 'plot.context.strokeText(text, 4, baseline)' in role_map
+    assert 'plot.context.save(); plot.context.textAlign = "right"' in role_map
+    assert 'const followTarget = role === "helicopter"' in role_map
+    assert 'payload.asset : data.own' in role_map
+    assert '"follow_helicopter" : "follow"' in role_map
+    assert 'item.display || item.ref || t("helicopter")' in role_map
+    lobby = js.split("function renderLobby", 1)[1].split("function acceptSession", 1)[0]
+    assert 'if (select.dataset.options !== signature)' in lobby
+    assert "document.activeElement !== select || stationMutation" in lobby
+    helicopter = js.split("function renderHelicopterStation", 1)[1].split(
+        "function renderElokaStation", 1)[0]
+    assert '["reference", row.label]' in helicopter
+    assert '["reference", row.ref]' not in helicopter
+
+
+def test_bridge_cavitation_audio_is_local_bounded_and_lifecycle_guarded():
+    js = ASSETS.joinpath("app.js").read_text()
+    audio = js.split("const bridgeCavitationAuthorized", 1)[1].split(
+        "function renderSonarAudio", 1)[0]
+    assert 'session?.station === "bridge"' in audio
+    assert 'v2State?.role === "bridge"' in audio
+    assert 'v2State.phase === "live"' in audio
+    assert 'v2State.bridge?.orders?.cavitating === true' in audio
+    assert 'protocolMode === "v2" && connected' in audio
+    assert "!document.hidden && navigator.onLine !== false" in audio
+    assert "Math.min(192000" in audio
+    assert "source.loop = true" in audio
+    assert "if (bridgeCavitationSource)" in audio
+    assert "stopBridgeCavitationAudio()" in js.split(
+        "function clearRoleState", 1)[1].split("function renderLobby", 1)[0]
+    assert "syncBridgeCavitationAudio();" in js.split(
+        "function setConnection", 1)[1].split("function forgetSession", 1)[0]
+    assert "/sonar/audio" not in audio and "/commands" not in audio
+
+
+def test_disabled_web_controls_publish_specific_localized_reasons():
+    js = ASSETS.joinpath("app.js").read_text()
+    resolver = js.split("const unavailable =", 1)[1].split(
+        "function renderOpzControls", 1)[0]
+    assert 'document.querySelectorAll("button, input, select")' in resolver
+    assert 'control.title = text' in resolver
+    assert 'control.dataset.disabledReason = text' in resolver
+    assert 'control.setAttribute("aria-disabled", "true")' in resolver
+    assert '$("disabled-control-explain").hidden = visibleReasons.length === 0' in resolver
+    assert '$("disabled-control-help").textContent = reasons.join(" ")' in js
+    for key in (
+        "reason_tas_too_fast", "reason_tas_too_slow", "reason_tas_not_streamed",
+        "reason_cooldown", "reason_no_focus", "reason_no_target",
+        "reason_invalid_depth", "reason_no_inventory", "reason_no_ready_tube",
+        "reason_not_airborne", "reason_position_unavailable",
+        "reason_direct_fire_grant", "reason_sonar_audio_grant",
+        "reason_station_request_pending", "reason_station_change_pending",
+        "reason_station_occupied", "reason_station_already_leased",
+    ):
+        assert f'"{key}"' in resolver
+
+
+def test_commander_capture_keeps_pairing_code_out_of_public_assets():
+    source = (ROOT / "tools" / "capture_commander.py").read_text()
+    capture = source.split("def _capture_one", 1)[1].split("def capture_all", 1)[0]
+    assert 'server._http.assets["/app.js"] =' not in capture
+    assert 'script_path = f"/.capture-{nonce}.js"' in capture
+    assert 'row["name"] == capture_name' in capture
+    assert "server._rotate_code_locked()" in capture
 
 
 def test_reference_catalog_renders_existing_sensor_and_emitter_details():
@@ -285,6 +352,7 @@ def test_v2_nonlethal_station_controls_are_native_and_exactly_wired():
         "sonar-array-mode", "sonar-tas", "sonar-depth", "sonar-bt",
         "sonar-ping", "sonar-tma", "sonar-gain", "sonar-band",
         "sonar-notch", "sonar-peak", "sonar-harmonic-input",
+        "sonar-audition-mode", "sonar-listen-band", "sonar-listen-notch",
         "opz-designate", "engine-telegraph", "engine-speed", "engine-quiet",
         "helicopter-launch", "helicopter-return", "helicopter-x",
         "helicopter-y", "helicopter-buoy", "station-command-status",
@@ -296,7 +364,7 @@ def test_v2_nonlethal_station_controls_are_native_and_exactly_wired():
         "sonar_set_listen_bearing", "sonar_set_focus", "sonar_clear_focus",
         "sonar_set_array_mode", "sonar_set_tas", "sonar_set_tow_depth",
         "sonar_measure_bt", "sonar_active_ping", "sonar_set_tma_enabled",
-        "sonar_set_gain", "sonar_set_band_preset", "sonar_set_notch",
+        "sonar_set_gain", "sonar_set_audition_mode", "sonar_set_band_preset", "sonar_set_notch",
         "sonar_set_peak_hold", "sonar_set_harmonic",
         "sonar_designate_target", "opz_designate_target",
         "helicopter_launch", "helicopter_return", "helicopter_set_waypoint",
@@ -842,7 +910,7 @@ async function runContract() {
   $test("language").dispatchEvent(new Event("change"));
   await until(() => document.documentElement.lang === "de", "tab language switch");
   assert(tab("guide").getAttribute("aria-selected") === "true" &&
-    $test("guide-authority").textContent.includes("niemals direkt steuern"),
+    $test("guide-authority").textContent.includes("Einsatzregeln"),
     "language switch preserves and retranslates the active guide");
   $test("language").value = "en";
   $test("language").dispatchEvent(new Event("change"));

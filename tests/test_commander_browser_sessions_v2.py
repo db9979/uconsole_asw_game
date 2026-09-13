@@ -232,6 +232,7 @@ async function run() {
   const visualRendered = new Set();
   const layoutChecked = new Set();
   const sonarPages = new Set();
+  let tasReasonChecked = false;
   const clearedCanvases = new Set();
   let previousRole = null;
   const visualFor = {bridge: "role-map", sonar: "sonar-broadband", opz: "role-map",
@@ -253,10 +254,26 @@ async function run() {
       const station = document.getElementById(`station-${latestRole}`);
       const visualBounds = document.getElementById("role-visuals").getBoundingClientRect();
       const controlBounds = station.querySelector(".station-grid").getBoundingClientRect();
+      const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
+      const workspace = document.getElementById("operations-workspace");
       if (innerWidth >= 1000) {
         assert(visualBounds.width >= innerWidth * .45, `instrument too narrow: ${latestRole}`);
         assert(visualBounds.top < innerHeight * .5, `instrument below fold: ${latestRole}`);
         assert(controlBounds.left >= visualBounds.right - 2, `controls not beside instrument: ${latestRole}`);
+        if (trackRoles.has(latestRole)) {
+          const workspaceBounds = workspace.getBoundingClientRect();
+          const contactsBounds = workspace.querySelector(".contacts-panel").getBoundingClientRect();
+          const detailsBounds = workspace.querySelector(".details-panel").getBoundingClientRect();
+          assert(workspace.parentElement === station && workspaceBounds.left >= visualBounds.right - 2 &&
+            workspaceBounds.top >= controlBounds.bottom - 2,
+            `track workspace is not beside the full-height instrument: ${latestRole}`);
+          assert(contactsBounds.right <= detailsBounds.left + 2,
+            `contacts and details are not side by side: ${latestRole}`);
+          assert(workspaceBounds.bottom <= station.getBoundingClientRect().bottom + 1,
+            `track workspace exceeds station: ${latestRole} workspace=${workspaceBounds.bottom} station=${station.getBoundingClientRect().bottom}`);
+          assert(visualBounds.bottom >= workspaceBounds.bottom - 2,
+            `instrument does not use the full station height: ${latestRole}`);
+        }
       }
       const stationBounds = station.getBoundingClientRect();
       assert(visualBounds.left >= stationBounds.left - 1 && visualBounds.right <= stationBounds.right + 1,
@@ -270,6 +287,14 @@ async function run() {
       const cardBounds = cards.map((element) => element.getBoundingClientRect());
       assert(cardBounds.every((bounds) => bounds.left >= controlBounds.left - 1 && bounds.right <= controlBounds.right + 1),
         `control card exceeds column: ${latestRole}`);
+      assert(cards.every((card) => {
+        const bounds = card.getBoundingClientRect();
+        return [...card.children].filter((element) => !element.hidden && getComputedStyle(element).display !== "none")
+          .every((element) => {
+            const child = element.getBoundingClientRect();
+            return child.top >= bounds.top - 1 && child.bottom <= bounds.bottom + 1;
+          });
+      }), `control content exceeds its card: ${latestRole}`);
       assert(cardBounds.every((first, index) => cardBounds.slice(index + 1).every((second) =>
         Math.min(first.right, second.right) - Math.max(first.left, second.left) <= 1 ||
         Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top) <= 1)),
@@ -282,10 +307,17 @@ async function run() {
         .filter((element) => !element.hidden && getComputedStyle(element).display !== "none" && element.clientWidth > 0)
         .some((element) => element.scrollWidth > element.clientWidth + 2);
       assert(!textOverflow, `station text overflows horizontally: ${latestRole}`);
+      const unexplained = [...station.querySelectorAll("button:disabled")]
+        .filter((button) => !button.hidden && getComputedStyle(button).display !== "none" && !button.title);
+      assert(unexplained.length === 0, `disabled controls lack reasons: ${latestRole} / ${unexplained.map((button) => button.id || button.textContent).join(",")}`);
       layoutChecked.add(latestRole);
       assert(["lookout", "guide", "contacts"].every((name) => document.getElementById(`tab-${name}`).hidden), "legacy tabs still visible");
       const canvas = document.getElementById(visualFor[latestRole]);
       const equivalent = document.getElementById(equivalentFor[latestRole]);
+      if (innerWidth >= 1000 && visualFor[latestRole] === "role-map") {
+        assert(canvas.getBoundingClientRect().height >= 120,
+          `role map is not large enough: ${latestRole}`);
+      }
       if (canvas.width > 1 && canvas.height > 1 && equivalent.textContent.trim() && visualDraws.has(canvas.id) &&
           !document.getElementById("role-visuals").hidden) visualRendered.add(latestRole);
       if (previousRole && previousRole !== latestRole) {
@@ -295,6 +327,12 @@ async function run() {
       }
       previousRole = latestRole;
       if (latestRole === "sonar") {
+        const tas = document.getElementById("sonar-tas");
+        const explain = document.getElementById("disabled-control-explain");
+        if (tas.disabled && tas.title.includes("12") && tas.dataset.disabledReason === tas.title && !explain.hidden) {
+          explain.click();
+          tasReasonChecked = document.getElementById("disabled-control-help").textContent.includes(tas.title);
+        }
         const bearingSubmit = document.getElementById("sonar-bearing-submit");
         if (!stationActions.includes("sonar_set_listen_bearing") && !bearingSubmit.disabled) {
           document.getElementById("sonar-tab-broadband").click();
@@ -337,10 +375,14 @@ async function run() {
       document.getElementById("classification").value = "U_BOOT";
       if (!stationSubmit.disabled) document.getElementById("classification-form").requestSubmit();
     } else if (latestRole === "sonar" && sonarReleases < 2) {
+      const release = document.getElementById("sonar-release");
+      if (release.disabled) { await sleep(20); continue; }
       const contacts = document.getElementById("track-list").querySelectorAll("button");
       contacts[sonarReleases]?.click();
-      const release = document.getElementById("sonar-release");
-      if (!release.disabled) release.click();
+      await until(() => stationActions.filter((action) => action === "sonar_set_focus").length >= 3 + sonarReleases,
+        "Sonar focus did not follow release-contact selection");
+      await until(() => !release.disabled, "Sonar release stayed disabled after focus");
+      release.click();
     }
     if (latestRole === "opz" && !fusionSent) {
       const reports = document.getElementById("track-list").querySelectorAll("button");
@@ -371,6 +413,7 @@ async function run() {
   }
   assert(events.includes("state:null"), `unpublished/redacted state was not exercised: ${events.join(",")}`);
   assert(sonarPages.size === 6, `sonar pages not rendered with text equivalents: ${[...sonarPages].join(",")}`);
+  assert(tasReasonChecked, "TAS speed lock has no specific localized explanation");
   assert(["sonar", "eloka", "engine", "damage"].every((role) => clearedCanvases.has(role)),
     `role-switch canvas clearing missing: ${[...clearedCanvases].join(",")}`);
   assert(resultPolls > 0, `result polling missing: ${events.join(",")}`);
@@ -380,6 +423,8 @@ async function run() {
     `Sonar releases missing: ${stationActions.join(",")}`);
   assert(stationActions.filter((action) => action === "sonar_set_listen_bearing").length === 1,
     `Broadband bearing click missing: ${stationActions.join(",")}`);
+  assert(stationActions.filter((action) => action === "sonar_set_focus").length === 4,
+    `Sonar track selection did not follow the listening focus: ${stationActions.join(",")}`);
   assert(stationActions.includes("opz_create_fusion"),
     `OPZ fusion missing: ${stationActions.join(",")}`);
   assert(sessionPolls >= 12, `session presence polling stopped: ${sessionPolls}`);
@@ -410,6 +455,34 @@ const session = __SESSION__;
 const states = __STATES__;
 const chart = __CHART__;
 const commands = [];
+const stationActivations = [];
+let cavitationStarts = 0;
+let cavitationStops = 0;
+class TestAudio {
+  constructor() { this.state = "suspended"; this.currentTime = 0; this.sampleRate = 8000; this.destination = {}; }
+  async resume() { this.state = "running"; }
+  async suspend() { this.state = "suspended"; }
+  createBuffer(_channels, frames) { const data = new Float32Array(frames); return {getChannelData: () => data}; }
+  createBufferSource() {
+    return {loop: false, connect() {}, disconnect() {}, start() { cavitationStarts++; },
+      stop() { cavitationStops++; }, onended: null};
+  }
+  createGain() { return {gain: {value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}}, connect() {}, disconnect() {}}; }
+  createOscillator() { return {frequency: {setValueAtTime() {}}, connect() {}, disconnect() {}, start() {}, stop() {}}; }
+}
+window.AudioContext = TestAudio;
+let roleMapLeftLabels = 0;
+const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
+CanvasRenderingContext2D.prototype.fillText = function(text, x, y, ...rest) {
+  if (this.canvas.id === "role-map" && /^\d+$/.test(text) && x <= 4) {
+    assert(this.textAlign === "left", "left map coordinate is not left aligned");
+    const bounds = this.measureText(text);
+    assert(x >= 0 && x + bounds.width <= this.canvas.clientWidth && y >= 0 && y <= this.canvas.clientHeight,
+      "left map coordinate is clipped");
+    roleMapLeftLabels++;
+  }
+  return nativeFillText.call(this, text, x, y, ...rest);
+};
 let results = [];
 let failNext = false;
 let currentRef = "weapon-ref-a";
@@ -442,6 +515,16 @@ window.fetch = async (url, options = {}) => {
   if (path === "/api/v2/pair") return new Response(JSON.stringify(session), {status: 200});
   if (path === "/api/v2/state") return new Response(JSON.stringify(state()), {status: 200});
   if (path === "/api/v2/chart") return new Response(JSON.stringify(chart), {status: 200});
+  if (path === "/api/v2/stations/activate") {
+    const body = JSON.parse(options.body);
+    stationActivations.push(body);
+    await sleep(100);
+    if (body.station_generation !== session.stations[body.station]?.station_generation) {
+      return new Response("", {status: 409});
+    }
+    switchRole(body.station);
+    return new Response(JSON.stringify(session), {status: 200});
+  }
   if (path === "/api/v2/results") {
     const value = results;
     results = [];
@@ -480,9 +563,27 @@ async function terminal() {
     !$test("station-command-status").textContent.includes("Ausstehend") &&
     $test("station-command-status").textContent, "terminal result missing");
 }
+async function selectStation(id, role) {
+  const select = $test(id);
+  const previousGeneration = session.active_generation;
+  select.value = role;
+  select.dispatchEvent(new Event("change", {bubbles: true}));
+  assert($test("workstation-station").value === role && $test("mobile-station").value === role,
+    `${id} did not retain the requested station while activation was pending`);
+  await until(() => session.station === role && !$test(`station-${role}`).hidden,
+    `${id} did not activate ${role}`);
+  const activation = stationActivations.at(-1);
+  assert(JSON.stringify(activation) === JSON.stringify({station: role,
+    station_generation: session.stations[role].station_generation,
+    active_generation: previousGeneration}), `${id} activation envelope`);
+}
 async function run() {
   await until(() => !$test("shell").hidden, "translations missing");
   await until(() => !$test("station-weapons").hidden, "Weapons role missing");
+  const stableOption = $test("workstation-station").options[0];
+  await sleep(1200);
+  assert($test("workstation-station").options[0] === stableOption,
+    "station polling rebuilt an open selector");
   assert($test("weapons-fire-torpedo").disabled && $test("weapons-fire-status").textContent.includes(__REVOKED__), "direct-fire grant is not explicit");
   session.grants.direct_fire = true;
   session.stations.weapons.grants.direct_fire = true;
@@ -516,7 +617,7 @@ async function run() {
   exact(commands[2], "weapons_deploy_nixie", {}, "weapons");
   await sleep(1600);
   assert(commands.length === 3, "uncertain direct-fire command was retried");
-  switchRole("opz");
+  await selectStation("workstation-station", "opz");
   await until(() => !$test("station-opz").hidden && $test("station-weapons").hidden, "wrong-role controls survived role switch");
   assert($test("weapons-fire-target").value === "" && $test("weapons-fire-depth").value === "", "Weapons fire draft survived role switch");
   const roleMap = $test("role-map"), mapRect = roleMap.getBoundingClientRect();
@@ -564,8 +665,16 @@ async function run() {
   await fire("opz-fire-chaff", 4);
   exact(commands[4], "opz_launch_chaff", {ref: "asm-ref"}, "opz");
   await until(() => $test("station-command-status").textContent.includes(__NOT_READY__), "localized terminal reason missing");
-  switchRole("helicopter");
+  await selectStation("mobile-station", "helicopter");
   await until(() => !$test("station-helicopter").hidden && !$test("helicopter-fire-target").disabled, "Helicopter release view missing");
+  assert($test("role-map-follow").textContent.includes("helicopter") ||
+    $test("role-map-follow").textContent.includes("Hubschrauber"),
+    "Helicopter map does not identify its follow target");
+  const buoyNames = [...$test("helicopter-buoys").querySelectorAll("h4")].map((item) => item.textContent);
+  assert(JSON.stringify(buoyNames) === JSON.stringify(["SB01", "SB02"]),
+    `Sonobuoy names are not short and sequential: ${buoyNames.join(",")}`);
+  assert(!$test("helicopter-buoys").textContent.includes("opaque-buoy"),
+    "opaque Sonobuoy reference is visible");
   assert($test("opz-fire-target").value === "", "OPZ fire draft survived role switch");
   const heloMap = $test("role-map"), heloRect = heloMap.getBoundingClientRect();
   const emptyX = heloRect.left + heloRect.width * .75, emptyY = heloRect.top + heloRect.height * .75;
@@ -586,7 +695,7 @@ async function run() {
   heloMap.setPointerCapture = heloCapture; heloMap.releasePointerCapture = heloRelease;
   await sleep(80);
   assert(commands.length === 6, "role-map drag above five pixels issued a waypoint");
-  switchRole("damage");
+  await selectStation("workstation-station", "damage");
   await until(() => !$test("station-damage").hidden && !$test("damage-team").disabled &&
     $test("damage-schematic").width > 1, "actionable damage schematic missing");
   const damageMap = $test("damage-schematic"), damageRect = damageMap.getBoundingClientRect();
@@ -601,6 +710,27 @@ async function run() {
     clientX: damageRect.left + damageRect.width * .2, clientY: damageRect.top + damageRect.height * .5}));
   await until(() => commands.length === 8, "damage schematic did not unassign selected team");
   exact(commands[7], "damage_unassign_team", {team: 2, compartment: "engine"}, "damage");
+  states.bridge.bridge.orders.cavitating = true;
+  await selectStation("mobile-station", "bridge");
+  assert(cavitationStarts === 0, "Bridge cavitation started before sound opt-in");
+  $test("sound").click();
+  await until(() => cavitationStarts === 1, "Bridge cavitation did not start after sound opt-in");
+  await sleep(1200);
+  assert(cavitationStarts === 1, "repeated Bridge snapshots duplicated cavitation audio");
+  states.bridge.bridge.orders.cavitating = false;
+  await until(() => cavitationStops === 1, "cavitation audio survived quiet propulsion");
+  states.bridge.bridge.orders.cavitating = true;
+  await until(() => cavitationStarts === 2, "cavitation audio did not follow fresh Bridge state");
+  $test("volume").value = "0";
+  $test("volume").dispatchEvent(new Event("input", {bubbles: true}));
+  assert(cavitationStops === 2, "zero local volume did not stop cavitation audio");
+  $test("volume").value = "50";
+  $test("volume").dispatchEvent(new Event("input", {bubbles: true}));
+  assert(cavitationStarts === 3, "restored local volume did not restart cavitation audio");
+  await selectStation("workstation-station", "damage");
+  assert(cavitationStops === 3, "role switch did not stop Bridge cavitation audio");
+  assert(roleMapLeftLabels > 0, "left role-map coordinates were not drawn");
+  assert(stationActivations.length === 5, "station selectors did not issue exactly one activation each");
   document.documentElement.dataset.directFire = "passed";
 }
 window.addEventListener("DOMContentLoaded", () => run().catch((error) => {
@@ -655,7 +785,11 @@ def _direct_fire_browser_states():
         source_classifications=[], designated_target_ref=None,
         own_assets=dict(ship=navigation, helicopter=helicopter_asset)))
     helicopter = dict(common, role="helicopter", helicopter=dict(
-        asset=helicopter_asset, waypoint=None, buoys=[], navigation=navigation,
+        asset=helicopter_asset, waypoint=None,
+        buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,
+                    battery_s=500.0, active=True),
+               dict(ref="opaque-buoy-reference-two", label="SB02", x=253.0, y=247.0,
+                    battery_s=400.0, active=False)], navigation=navigation,
         tactical=[], target_choices=[weapon_row],
         readiness=dict(flightdeck_down=False, deck_state="OK", can_launch=False,
                         can_return=True, can_set_waypoint=True, can_deploy_buoy=True,
@@ -668,8 +802,14 @@ def _direct_fire_browser_states():
                            trend=dict(flood_rate=.1, fire_rate=-.2, repairable=True))],
         teams=[dict(team=1, compartment=None), dict(team=2, compartment="engine")],
         total=15.0, sunk=False))
+    bridge = dict(common, role="bridge", bridge=dict(
+        navigation=navigation, tactical_summary=[],
+        orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
+                    noise=.8, cavitating=False),
+        threat=dict(observations=[], count=0, average_flood=0.0),
+        systems=[dict(key="bridge", state="OK", down=False)]))
     return {"weapons": weapons, "opz": opz, "helicopter": helicopter,
-            "damage": damage}
+            "damage": damage, "bridge": bridge}
 
 
 def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromium(tmp_path):
@@ -679,7 +819,8 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
     en, de = catalogs()
     stations = {station: _station_record() for station in STATIONS}
     for station, generation in (("weapons", 1), ("opz", 2),
-                                ("helicopter", 3), ("damage", 4)):
+                                ("helicopter", 3), ("damage", 4),
+                                ("bridge", 5)):
         stations[station] = _station_record(
             "mine", station_generation=generation, command=True,
             direct_fire=station in {"opz", "helicopter"})
@@ -802,8 +943,10 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 "settings": {"mode": "BOW", "page": 0, "listen_bearing": 25.0,
                              "focus_ref": None, "target_ref": None,
                              "station_down": False,
-                             "tow": {"state": "STOWED", "payout": 0.0,
+                              "tow": {"state": "STOWED", "payout": 0.0,
                                      "available": False, "handling_ok": True,
+                                     "speed_kn": 10.0, "speed_min_kn": 3.0,
+                                     "speed_max_kn": 12.0,
                                      "depth_m": 20.0, "depth_target_m": 20.0},
                              "bt": {"ready": True, "cooldown_s": 0.0,
                                     "thermocline_m": None},
@@ -826,9 +969,9 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                               "frequency_max_hz": 80.0, "bin_step_hz": 1.0,
                               "spectrum": [], "analysis": None},
                     "tma": [], "bt": None, "active_echoes": [],
-                    "receiver": {"array": "BOW", "listen_bearing": 25.0,
-                                 "beam_width_deg": 30.0, "listen_mode": "RAW",
-                                 "focus_locked": False, "audio_enabled": False}}}
+                        "receiver": {"array": "BOW", "listen_bearing": 25.0,
+                                     "beam_width_deg": 30.0, "listen_mode": "BROADBAND",
+                                     "focus_locked": False, "audio_enabled": False}}}
         return common
     chart = {"protocol": 2, "revision": legacy["chart_revision"], "size_nm": 500,
              "landmasses": [], "disclaimer": "Synthetic test chart"}
@@ -992,6 +1135,7 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
         pytest.skip("Optional real role browser contract: no installed Chromium")
     en, de = catalogs()
     game = Game(seed=913, start_menu=False, audio_enabled=False, language="en")
+    game.ship.speed = 15.0
     game.sonar.contacts.clear()
     for target_id, bearing in ((99001, 28.0), (99002, 52.0)):
         contact = Contact(target_id - 99000, target_id, "passiv", "sub")

@@ -21,14 +21,17 @@ def ask(server, station="sonar"):
 
 def test_host_decision_is_atomic_and_cannot_take_over(server):
     row = ask(server)
-    grants = dict(command=True, direct_fire=False, sonar_audio=True)
-    assert server.resolve_station_request(*StationAdmission.key(row), grants)
+    requested_grants = dict(command=False, direct_fire=False, sonar_audio=True)
+    assert not server.resolve_station_request(*StationAdmission.key(row), requested_grants)
+    requested_grants["command"] = True
+    assert server.resolve_station_request(*StationAdmission.key(row), requested_grants)
     state = server.client_statuses()[0]
     assert state["active_station"] == "sonar"
     assert not state["stations"]["sonar"]["requested"]
-    assert state["stations"]["sonar"]["grants"] == grants
+    assert state["stations"]["sonar"]["grants"] == {
+        "command": True, "direct_fire": False, "sonar_audio": True}
     assert state["simlog"] is False
-    assert not server.resolve_station_request(*StationAdmission.key(row), grants)
+    assert not server.resolve_station_request(*StationAdmission.key(row), requested_grants)
 
 
 def test_arriving_request_defaults_to_normal_station_operation():

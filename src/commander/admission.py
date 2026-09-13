@@ -12,7 +12,7 @@ class StationAdmission:
         self.request = None
         self.deferred = set()
         self.identity = None
-        self.selection = 5
+        self.selection = 4
         self.grants = {}
         self.error = False
 
@@ -55,32 +55,29 @@ class StationAdmission:
             return
         self.request = pending[0]
         self.grants = dict(command=True, direct_fire=False, sonar_audio=False)
-        self.selection = 5  # Enter never silently grants an arriving request.
+        self.selection = 4  # Enter never silently grants an arriving request.
         self.error = False
         game._open_administration("commander")
 
     @staticmethod
     def rects():
-        return [pygame.Rect(244, 232 + index * 57, 792, 48) for index in range(6)]
+        return [pygame.Rect(244, 232 + index * 57, 792, 48) for index in range(5)]
 
     def activate(self, game, console, index):
-        if index < 3:
-            capability = ("command", "direct_fire", "sonar_audio")[index]
+        if index < 2:
+            capability = ("direct_fire", "sonar_audio")[index]
             station = self.request["requested_station"]
-            if capability == "direct_fire" and (station not in ("weapons", "opz", "helicopter")
-                                                or not self.grants["command"]):
+            if capability == "direct_fire" and station not in ("weapons", "opz", "helicopter"):
                 return
             if capability == "sonar_audio" and station != "sonar":
                 return
             self.grants[capability] = not self.grants[capability]
-            if not self.grants["command"]:
-                self.grants["direct_fire"] = False
-        elif index == 5:
+        elif index == 4:
             self.close(game, defer=True)
         else:
             row = self.request
             if console.server.resolve_station_request(*self.key(row),
-                    grants=dict(self.grants) if index == 3 else None):
+                    grants=dict(self.grants) if index == 2 else None):
                 self.close(game)
             else:
                 self.error = True
@@ -89,7 +86,7 @@ class StationAdmission:
         if key == pygame.K_ESCAPE:
             self.close(game, defer=True)
         elif key in (pygame.K_UP, pygame.K_DOWN, pygame.K_TAB):
-            self.selection = (self.selection + (-1 if key == pygame.K_UP else 1)) % 6
+            self.selection = (self.selection + (-1 if key == pygame.K_UP else 1)) % 5
         elif key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
             self.activate(game, console, self.selection)
 
@@ -111,8 +108,9 @@ class StationAdmission:
                 name=raw_text(self.request["name"]), station=message(key)),
                 244, 159, 792, 64, config.COLOR_TEXT, size=22)
             labels = [message("commander.admission." + capability,
-                              state=message("common.on" if value else "common.off"))
-                      for capability, value in self.grants.items()]
+                               state=message("common.on" if self.grants[capability]
+                                             else "common.off"))
+                      for capability in ("direct_fire", "sonar_audio")]
             labels += [message("commander.admission.approve"),
                        message("commander.admission.reject"), message("commander.admission.later")]
             for index, (rect, text) in enumerate(zip(self.rects(), labels)):

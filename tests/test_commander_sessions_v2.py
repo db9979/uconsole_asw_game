@@ -307,13 +307,15 @@ def test_multi_station_activation_and_station_specific_release_are_exact(server)
     client_id = paired["client_id"]
     assert server.grant_station(client_id, "bridge")
     assert server.grant_station(client_id, "sonar")
-    assert server.set_client_grant(client_id, "bridge", "command", True)
-    assert server.set_client_grant(client_id, "sonar", "command", True)
+    assert server.grant_station(client_id, "weapons")
     assigned = request(server, "/api/v2/session", cookie=cookie)[2]
     assert assigned["active_station"] == "bridge" and assigned["active_generation"] == 1
     assert assigned["stations"]["bridge"]["status"] == "mine"
     assert assigned["stations"]["sonar"]["status"] == "mine"
+    assert assigned["stations"]["bridge"]["grants"]["command"]
+    assert assigned["stations"]["sonar"]["grants"]["command"]
     sonar_generation = assigned["stations"]["sonar"]["station_generation"]
+    weapons_generation = assigned["stations"]["weapons"]["station_generation"]
 
     activate = "/api/v2/stations/activate"
     exact = {"station": "sonar", "station_generation": sonar_generation,
@@ -327,9 +329,10 @@ def test_multi_station_activation_and_station_specific_release_are_exact(server)
         "station": "weapons", "station_generation": 0,
         "active_generation": assigned["active_generation"],
     }, cookie, paired["csrf"])[0] == 409
+    assert server.activate_station(client_id, "weapons", weapons_generation)
     activated = request(server, activate, "POST", exact, cookie, paired["csrf"])[2]
     assert activated["active_station"] == "sonar"
-    assert activated["active_generation"] == 2
+    assert activated["active_generation"] == 3
     assert activated["grants"]["command"]
 
     release = "/api/v2/stations/release"
@@ -337,7 +340,7 @@ def test_multi_station_activation_and_station_specific_release_are_exact(server)
             "active_generation": activated["active_generation"]}
     assert request(server, release, "POST", {}, cookie, paired["csrf"])[0] == 400
     released = request(server, release, "POST", body, cookie, paired["csrf"])[2]
-    assert released["active_station"] == "bridge" and released["active_generation"] == 3
+    assert released["active_station"] == "bridge" and released["active_generation"] == 4
     assert released["stations"]["bridge"]["status"] == "mine"
     assert released["stations"]["sonar"]["status"] == "available"
     assert request(server, release, "POST", body, cookie, paired["csrf"])[0] == 409
@@ -391,8 +394,27 @@ def test_exclusive_grant_takeover_generation_and_occupancy(server):
                                        "sonar_audio": False}
     assert bravo_assigned["station"] == "bridge"
     assert bravo_assigned["station_generation"] == 2
-    assert bravo_assigned["grants"] == {"command": False, "direct_fire": False, "simlog": False,
+    assert bravo_assigned["grants"] == {"command": True, "direct_fire": False, "simlog": False,
                                         "sonar_audio": False}
+
+
+def test_host_station_lease_query_tracks_exclusive_ownership(server):
+    _, alpha_cookie, _, alpha = pair_v2(server, "Alpha lock")
+    _, _, _, bravo = pair_v2(server, "Bravo lock")
+    assert not server.station_leased("bridge")
+    assert request(server, "/api/v2/stations/request", "POST",
+                   {"station": "bridge"}, alpha_cookie, alpha["csrf"])[0] == 200
+    assert not server.station_leased("bridge")
+    assert server.grant_station(alpha["client_id"], "bridge")
+    assert server.station_leased("bridge")
+    assert server.set_client_grant(alpha["client_id"], "command", False)
+    assert server.station_leased("bridge")
+    assert server.grant_station(bravo["client_id"], "bridge")
+    assert server.station_leased("bridge")
+    assert server.revoke_station("bridge")
+    assert not server.station_leased("bridge")
+    with pytest.raises(ValueError):
+        server.station_leased("radar")
 
 
 def test_state_and_chart_selection_follows_current_role_atomically(server):
@@ -435,8 +457,7 @@ def test_capability_invariants_and_release(server):
     assert server.set_client_grant(client_id, "simlog", True)
     assert server.grant_station(client_id, "sonar")
     assert server.set_client_grant(client_id, "sonar_audio", True)
-    assert request(server, "/api/v2/session", cookie=cookie)[2]["grants"]["command"] is False
-    assert server.set_client_grant(client_id, "command", True)
+    assert request(server, "/api/v2/session", cookie=cookie)[2]["grants"]["command"] is True
     assert not server.set_client_grant(client_id, "direct_fire", True)
     assert server.grant_station(client_id, "weapons")
     assert not server.set_client_grant(client_id, "weapons", "sonar_audio", True)

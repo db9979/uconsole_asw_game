@@ -18,10 +18,12 @@
         <label class="language"><span data-i18n="language"></span><select id="language"><option value="en" data-i18n="english"></option><option value="de" data-i18n="german"></option></select></label>
         <button id="sound" type="button" aria-pressed="false" data-i18n="sound_off"></button>
         <label class="volume"><span data-i18n="volume"></span><input id="volume" type="range" min="0" max="100" value="25"></label>
+        <button id="disabled-control-explain" type="button" aria-expanded="false" aria-controls="disabled-control-help" data-i18n-aria="disabled_control_explain" hidden>?</button>
         <button id="disconnect" type="button" class="quiet" data-i18n="disconnect" hidden></button>
       </div>
     </header>
     <p id="connection" class="connection" role="status" aria-live="polite"></p>
+    <p id="disabled-control-help" class="disabled-control-help" role="status" aria-live="polite" hidden></p>
     <section id="pairing" class="pairing">
       <div class="pair-intro"><p class="eyebrow" data-i18n="pair_eyebrow"></p><h1 data-i18n="pair_title"></h1><p data-i18n="pair_intro"></p><div class="scope-note"><span class="scope-line" aria-hidden="true"></span><p data-i18n="authority_note"></p></div></div>
       <form id="pair-form" class="pair-card">
@@ -79,6 +81,11 @@
           </section>
           <section id="sonar-visual" class="visual-panel sonar-visual" hidden>
             <div class="sonar-live-audio"><button id="sonar-live-toggle" type="button" aria-pressed="false" data-i18n="sonar_live_start"></button><p id="sonar-live-status" role="status" aria-live="polite" data-i18n="sonar_live_off"></p></div>
+            <div class="sonar-audition-controls">
+              <label for="sonar-audition-mode" data-i18n="sonar_audition_mode"></label><select id="sonar-audition-mode"><option value="BROADBAND" data-i18n="sonar_audition_broadband"></option><option value="FILTERED" data-i18n="sonar_audition_filtered"></option><option value="HETERODYNE" data-i18n="sonar_audition_heterodyne"></option></select>
+              <label for="sonar-listen-band" data-i18n="sonar_band"></label><select id="sonar-listen-band"><option value="FULL">0-300 Hz</option><option value="LOW">4-80 Hz</option><option value="SHAFT">8-55 Hz</option><option value="MID">20-120 Hz</option></select>
+              <label class="check"><input id="sonar-listen-notch" type="checkbox"><span data-i18n="sonar_notch"></span></label>
+            </div>
             <div id="sonar-page-tabs" class="visual-tabs" role="tablist" data-i18n-aria="sonar_visual_pages">
               <button id="sonar-tab-broadband" type="button" role="tab" aria-controls="sonar-plot-broadband" aria-selected="true" data-sonar-visual="broadband" data-i18n="sonar_visual_broadband"></button><button id="sonar-tab-lofar" type="button" role="tab" aria-controls="sonar-plot-lofar" aria-selected="false" tabindex="-1" data-sonar-visual="lofar" data-i18n="sonar_visual_lofar"></button><button id="sonar-tab-demon" type="button" role="tab" aria-controls="sonar-plot-demon" aria-selected="false" tabindex="-1" data-sonar-visual="demon" data-i18n="sonar_visual_demon"></button><button id="sonar-tab-tma" type="button" role="tab" aria-controls="sonar-plot-tma" aria-selected="false" tabindex="-1" data-sonar-visual="tma" data-i18n="sonar_visual_tma"></button><button id="sonar-tab-environment" type="button" role="tab" aria-controls="sonar-plot-environment" aria-selected="false" tabindex="-1" data-sonar-visual="environment" data-i18n="sonar_visual_environment"></button><button id="sonar-tab-active" type="button" role="tab" aria-controls="sonar-plot-active" aria-selected="false" tabindex="-1" data-sonar-visual="active" data-i18n="sonar_visual_active"></button>
             </div>

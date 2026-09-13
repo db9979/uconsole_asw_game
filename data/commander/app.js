@@ -58,6 +58,8 @@
   let stationRenderSignature = null;
   let nextCommandSeq = 0;
   let stationMutation = false;
+  let activatingStation = null;
+  let queuedSonarFocus = null;
   let stationPickerOpen = false;
   let lobbyMessage = null;
   let commandMessage = null;
@@ -77,6 +79,8 @@
   let sonarAudioNextTime = 0;
   let sonarAudioSources = [];
   let sonarAudioGain = null;
+  let bridgeCavitationSource = null;
+  let bridgeCavitationGain = null;
   let seenEvents = new Set();
   let eventHighWater = -1;
   let eventHistory = [];
@@ -112,6 +116,7 @@
     "sonar-tma-plot", "sonar-environment", "sonar-active", "damage-schematic",
     "engine-instruments", "eloka-scope", "weapons-system"];
   const mapRoles = new Set(["bridge", "weapons", "opz", "radio", "helicopter"]);
+  const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
   const roleMapViews = Object.fromEntries([...mapRoles].map((role) => [role, {x: 250, y: 250, zoom: 1}]));
   const maxRoleMapHits = 512;
   let roleMapHits = [];
@@ -154,6 +159,45 @@
     const value = Number($("volume").value) / 200;
     return finite(value) ? Math.max(0, Math.min(.5, value)) : 0;
   };
+
+  const bridgeCavitationAuthorized = () => soundEnabled && audio?.state === "running" &&
+    protocolMode === "v2" && connected && !document.hidden && navigator.onLine !== false &&
+    session?.station === "bridge" && v2State?.role === "bridge" && v2State.phase === "live" &&
+    v2State.bridge?.orders?.cavitating === true && Number($("volume").value) > 0;
+
+  function stopBridgeCavitationAudio() {
+    const source = bridgeCavitationSource;
+    bridgeCavitationSource = null;
+    bridgeCavitationGain?.disconnect();
+    bridgeCavitationGain = null;
+    if (source) { source.onended = null; try { source.stop(); } catch (_) {} source.disconnect(); }
+  }
+
+  function syncBridgeCavitationAudio() {
+    if (!bridgeCavitationAuthorized()) { stopBridgeCavitationAudio(); return; }
+    const volume = Math.max(0, Math.min(1, Number($("volume").value) / 100));
+    if (bridgeCavitationSource) { bridgeCavitationGain.gain.value = volume * .16; return; }
+    const frames = Math.min(192000, Math.max(8000, Math.floor(audio.sampleRate * 2)));
+    const buffer = audio.createBuffer(1, frames, audio.sampleRate);
+    const channel = buffer.getChannelData(0);
+    let state = 0x6d2b79f5, rumble = 0;
+    for (let index = 0; index < frames; index++) {
+      state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
+      const noise = (state >>> 0) / 0xffffffff * 2 - 1;
+      rumble = rumble * .94 + noise * .06;
+      channel[index] = rumble * (.65 + .35 * Math.sin(index * .0017));
+    }
+    const source = audio.createBufferSource();
+    const gain = audio.createGain();
+    source.buffer = buffer;
+    source.loop = true;
+    gain.gain.value = volume * .16;
+    source.connect(gain);
+    gain.connect(audio.destination);
+    bridgeCavitationSource = source;
+    bridgeCavitationGain = gain;
+    source.start();
+  }
 
   function renderSonarAudio(key) {
     const button = $("sonar-live-toggle");
@@ -367,7 +411,7 @@
         article = node("article", undefined, "station-row"); article.dataset.rowKey = key;
         article.append(node("h4"), node("dl", undefined, "detail-metrics"), node("div", undefined, "station-row-actions"));
       }
-      const entries = entryBuilder(row);
+      const entries = entryBuilder(row, index);
       const title = entries.shift();
       article.firstChild.textContent = String(title[1] ?? "");
       metrics(article.children[1], entries);
@@ -439,12 +483,13 @@
 
   function renderSonarStation(payload) {
     const settings = payload.settings;
+    const auditionMode = payload.visualization.receiver.listen_mode;
     metrics($("sonar-settings"), [["sonar_mode", settings.mode], ["sonar_page", number(settings.page, 0)],
       ["sonar_listen_bearing", unit(settings.listen_bearing, "\u00b0", 0)], ["sonar_focus", settings.focus_ref || t("station_none")],
       ["sonar_target", settings.target_ref || t("station_none")], ["station_down", yesNo(settings.station_down)],
       ["sonar_tow_state", settings.tow.state], ["sonar_tow_depth", unit(settings.tow.depth_m, "m", 0)],
       ["sonar_bt_ready", yesNo(settings.bt.ready)], ["sonar_ping_ready", yesNo(settings.ping.ready)],
-      ["sonar_tma", yesNo(settings.tma_enabled)], ["sonar_gain", unit(settings.gain_db, "dB")],
+      ["sonar_tma", yesNo(settings.tma_enabled)], ["sonar_audition_mode", enumText({BROADBAND: "sonar_audition_broadband", FILTERED: "sonar_audition_filtered", HETERODYNE: "sonar_audition_heterodyne"}, auditionMode)], ["sonar_gain", unit(settings.gain_db, "dB")],
       ["sonar_band", settings.band_preset || settings.band_hz.map((value) => number(value, 0)).join("-")],
       ["sonar_notch", yesNo(settings.notch)], ["sonar_peak_hold", yesNo(settings.peak_hold)],
       ["sonar_harmonic", unit(settings.harmonic_hz, "Hz")], ["sonar_audio", yesNo(settings.audio_enabled)],
@@ -456,8 +501,11 @@
     $("sonar-tas").dataset.deployed = String(tasDeployed);
     $("sonar-tma").checked = settings.tma_enabled;
     $("sonar-notch").checked = settings.notch;
+    $("sonar-listen-notch").checked = settings.notch;
     $("sonar-peak").checked = settings.peak_hold;
+    if (!stationDrafts.has("sonar-audition-mode")) $("sonar-audition-mode").value = auditionMode;
     if (settings.band_preset && !stationDrafts.has("sonar-band")) $("sonar-band").value = settings.band_preset;
+    if (settings.band_preset && !stationDrafts.has("sonar-listen-band")) $("sonar-listen-band").value = settings.band_preset;
     $("sonar-harmonic-candidates").replaceChildren(...settings.harmonic_candidates_hz.map((value) => {
       const option = node("option"); option.value = String(value); return option;
     }));
@@ -614,7 +662,7 @@
     }
     fillFireTargets("helicopter-fire-target", payload.target_choices);
     if (!stationDrafts.has("helicopter-fire-depth")) $("helicopter-fire-depth").value = "80";
-    stationRows($("helicopter-buoys"), payload.buoys, (row) => [["reference", row.ref], ["position", position(row)],
+    stationRows($("helicopter-buoys"), payload.buoys, (row) => [["reference", row.label], ["position", position(row)],
       ["battery", unit(row.battery_s, "s", 0)], ["active", yesNo(row.active)]]);
   }
 
@@ -712,6 +760,7 @@
 
   function drawSonarVisuals() {
     const visual = v2State.sonar.visualization;
+    const focusedTrack = selectedTrack();
     const broadband = heatmap("sonar-broadband", visual.broadband.history);
     if (broadband) {
       const bearing = visual.receiver.listen_bearing % 360;
@@ -726,6 +775,14 @@
       const x = bearing / 360 * broadband.width;
       broadband.context.beginPath(); broadband.context.moveTo(x, 0);
       broadband.context.lineTo(x, broadband.height); broadband.context.stroke();
+      if (finite(focusedTrack?.bearing)) {
+        const selectedX = focusedTrack.bearing % 360 / 360 * broadband.width;
+        broadband.context.strokeStyle = "#a1e7cc";
+        broadband.context.lineWidth = 3;
+        broadband.context.beginPath(); broadband.context.moveTo(selectedX, 0);
+        broadband.context.lineTo(selectedX, broadband.height); broadband.context.stroke();
+        broadband.context.lineWidth = 1;
+      }
     }
     heatmap("sonar-lofar", visual.lofar.history, visual.lofar.bin_frequencies_hz);
     spectrum("sonar-spectrum", visual.lofar.spectrum, [], visual.lofar.bin_frequencies_hz, 300);
@@ -738,7 +795,9 @@
       const maxAge = Math.max(1, ...contacts.flatMap((track) => track.bearings.map((point) => point.age_s)));
       tma = plotAxes(tma, maxAge, 360, " s", "°");
       contacts.forEach((track, index) => {
-        tma.context.strokeStyle = ["#a1e7cc", "#f3c577", "#81c5ff", "#ff9090"][index % 4];
+        const isSelected = track.ref === selected;
+        tma.context.strokeStyle = isSelected ? "#a1e7cc" : ["#7fb8a5", "#f3c577", "#81c5ff", "#ff9090"][index % 4];
+        tma.context.lineWidth = isSelected ? 3 : 1;
         tma.context.beginPath();
         track.bearings.forEach((point, pointIndex) => {
           const x = point.age_s / maxAge * tma.width;
@@ -747,6 +806,7 @@
         });
         tma.context.stroke();
       });
+      tma.context.lineWidth = 1;
     }
     let bt = visualContext("sonar-environment");
     if (bt) {
@@ -800,7 +860,9 @@
     if (role === "weapons") return {own: payload.navigation, observations: payload.tactical, assets: payload.active_assets, bearingLogs: [], fixes: []};
     if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : [], bearingLogs: [], fixes: []};
     if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
-    return {own: payload.navigation, observations: payload.tactical, assets: [payload.asset, ...payload.buoys, ...(payload.waypoint ? [{...payload.waypoint, waypoint: true}] : [])], bearingLogs: [], fixes: []};
+    return {own: payload.navigation, observations: payload.tactical,
+      assets: [payload.asset, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),
+        ...(payload.waypoint ? [{...payload.waypoint, waypoint: true}] : [])], bearingLogs: [], fixes: []};
   }
 
   function currentOpzSweepBearing() {
@@ -859,9 +921,14 @@
     roleMapHits = [];
     if (!plot || !chart) return;
     const payload = v2State[role], data = mapPayload(role), viewState = roleMapViews[role];
+    plot.context.textAlign = "left";
+    plot.context.textBaseline = "alphabetic";
     if (!viewState.initialized) { viewState.initialized = true; viewState.follow = true; viewState.zoom = role === "opz" ? chart.size_nm / (2 * payload.radar.range_nm) : 2; }
-    if (viewState.follow && hasPosition(data.own)) { viewState.x = data.own.x; viewState.y = data.own.y; }
+    const followTarget = role === "helicopter" && payload.asset.airborne && hasPosition(payload.asset) ?
+      payload.asset : data.own;
+    if (viewState.follow && hasPosition(followTarget)) { viewState.x = followTarget.x; viewState.y = followTarget.y; }
     $("role-map-follow").setAttribute("aria-pressed", String(Boolean(viewState.follow)));
+    $("role-map-follow").textContent = t(role === "helicopter" ? "follow_helicopter" : "follow");
     const {scale, point} = roleMapGeometry(role, plot.width, plot.height);
     const geo = chart.geography;
     if (geo?.depths.length) {
@@ -878,14 +945,31 @@
     plot.context.strokeStyle = "#243b46"; plot.context.fillStyle = "#829ba5";
     for (let value = 0; value <= chart.size_nm; value += step) {
       const [x, y] = point(value, value);
-      if (x >= 0 && x <= plot.width) { plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke(); plot.context.fillText(String(value), x + 2, plot.height - 5); }
-      if (y >= 0 && y <= plot.height) { plot.context.beginPath(); plot.context.moveTo(0, y); plot.context.lineTo(plot.width, y); plot.context.stroke(); plot.context.fillText(String(value), 2, y + 12); }
+      if (x >= 0 && x <= plot.width) { plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke(); }
+      if (y >= 0 && y <= plot.height) { plot.context.beginPath(); plot.context.moveTo(0, y); plot.context.lineTo(plot.width, y); plot.context.stroke(); }
     }
     plot.context.strokeStyle = "#30434e"; plot.context.fillStyle = "#233d38";
     for (const land of chart.landmasses) {
       plot.context.beginPath(); land.points.forEach(([x, y], index) => { const p = point(x, y); index ? plot.context.lineTo(...p) : plot.context.moveTo(...p); });
       plot.context.closePath(); plot.context.fill(); plot.context.stroke();
     }
+    plot.context.font = "12px sans-serif";
+    plot.context.lineWidth = 3;
+    plot.context.strokeStyle = "#07151c";
+    plot.context.fillStyle = "#b5c8cf";
+    for (let value = 0; value <= chart.size_nm; value += step) {
+      const [x, y] = point(value, value), text = String(value);
+      if (x >= 0 && x + plot.context.measureText(text).width + 2 <= plot.width) {
+        plot.context.strokeText(text, x + 2, plot.height - 5);
+        plot.context.fillText(text, x + 2, plot.height - 5);
+      }
+      if (y >= 10 && y <= plot.height - 20) {
+        const baseline = y + 4;
+        plot.context.strokeText(text, 4, baseline);
+        plot.context.fillText(text, 4, baseline);
+      }
+    }
+    plot.context.lineWidth = 1;
     plot.context.fillStyle = "#a7b9bf";
     for (const label of [...(geo?.labels || []), ...(geo?.airbases || [])]) {
       const [x, y] = point(label.x, label.y);
@@ -901,12 +985,15 @@
       plot.context.beginPath(); plot.context.moveTo(0, -9); plot.context.lineTo(0, -35); plot.context.stroke(); plot.context.restore();
     }
     for (const row of data.observations) {
-      plot.context.strokeStyle = colors[row.affiliation] || colors.UNKNOWN;
+      const isSelected = row.ref === selected;
+      plot.context.strokeStyle = isSelected ? "#a1e7cc" : colors[row.affiliation] || colors.UNKNOWN;
+      plot.context.lineWidth = isSelected ? 3 : 1;
       if (hasPosition(row)) {
         const [x, y] = point(row.x, row.y);
         addRoleMapHit(row.ref, x, y);
         if (finite(row.range_uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, row.range_uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
         plot.context.fillStyle = plot.context.strokeStyle; plot.context.beginPath(); plot.context.arc(x, y, 4, 0, Math.PI * 2); plot.context.fill();
+        if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 10, 0, Math.PI * 2); plot.context.stroke(); }
         plot.context.fillText(row.label || row.ref, x + 6, y - 6);
         if (finite(row.course)) { const angle = row.course * Math.PI / 180; plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(x + Math.sin(angle) * 22, y - Math.cos(angle) * 22); plot.context.stroke(); }
       } else if (finite(row.bearing) && (hasPosition(data.own) ||
@@ -924,6 +1011,7 @@
         plot.context.lineTo(bx + Math.sin(angle) * Math.max(plot.width, plot.height), by - Math.cos(angle) * Math.max(plot.width, plot.height)); plot.context.stroke(); plot.context.setLineDash([]);
       }
     }
+    plot.context.lineWidth = 1;
     for (const log of data.bearingLogs) {
       const [x, y] = point(log.observer_x, log.observer_y), angle = log.bearing * Math.PI / 180;
       plot.context.strokeStyle = "#f3c577"; plot.context.setLineDash([3, 4]); plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(x + Math.sin(angle) * plot.width, y - Math.cos(angle) * plot.width); plot.context.stroke(); plot.context.setLineDash([]);
@@ -934,7 +1022,7 @@
       plot.context.strokeStyle = item.waypoint ? "#f3c577" : "#81c5ff";
       if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
       plot.context.strokeRect(x - 4, y - 4, 8, 8);
-      plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? t("station_waypoint") : item.ref || t("helicopter"), x + 6, y + 12);
+      plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
     }
     if (role === "opz" && hasPosition(data.own)) {
       if (payload.radar.live && (payload.radar.surface || payload.radar.air)) {
@@ -946,7 +1034,7 @@
       for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = "#697f88"; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
     }
     $("role-map-scale").textContent = t("role_map_scale", {distance: number(chart.size_nm / viewState.zoom, 0)});
-    plot.context.textAlign = "right"; plot.context.fillStyle = "#e9eee8"; plot.context.fillText("N ↑", plot.width - 10, 18);
+    plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = "#e9eee8"; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();
     const equivalent = [t("role_map_own", {position: hasPosition(data.own) ? position(data.own) : t("unavailable")})];
     equivalent.push(...data.observations.map((row) => t("role_map_observation", {ref: row.ref, bearing: number(row.bearing, 0), position: hasPosition(row) ? position(row) : t("bearing_only")})));
     equivalent.push(...data.fixes.map((row) => t("role_map_fix", {ref: row.ref, position: position(row), uncertainty: number(row.uncertainty_nm, 1)})));
@@ -1072,6 +1160,7 @@
     }
     if (active) {
       const section = $(`station-${active}`), grid = section.querySelector(".station-grid");
+      section.classList.toggle("track-workstation", trackRoles.has(active));
       if ($("role-visuals").parentElement !== section) section.insertBefore($("role-visuals"), grid);
       if (active === "bridge" && $("bridge-orders").parentElement !== grid) grid.prepend($("bridge-orders"));
       if (active === "opz" && $("opz-controls").parentElement !== grid) grid.prepend($("opz-controls"));
@@ -1079,7 +1168,8 @@
         grid.prepend($("helicopter-dipping-controls"));
         $("helicopter-dipping-controls").hidden = false;
       }
-      if (["sonar", "opz"].includes(active) && $("operations-workspace").parentElement !== grid) grid.prepend($("operations-workspace"));
+      if (trackRoles.has(active) && $("operations-workspace").parentElement !== section)
+        section.insertBefore($("operations-workspace"), grid);
       const controls = grid.querySelector(":scope > .station-controls");
       if (controls && grid.firstElementChild !== controls) grid.prepend(controls);
       const fire = grid.querySelector(":scope > .direct-fire-controls");
@@ -1096,7 +1186,7 @@
       section.hidden = section.dataset.stationRole !== active;
       if (section.hidden) for (const container of section.querySelectorAll("dl, .station-list")) container.replaceChildren();
     }
-    $("operations-workspace").hidden = Boolean(active) && !["sonar", "opz"].includes(active);
+    $("operations-workspace").hidden = Boolean(active) && !trackRoles.has(active);
     $("legacy-support").hidden = Boolean(active);
     for (const element of document.querySelectorAll(".v2-irrelevant")) element.hidden = Boolean(active);
     renderRoleVisuals(active);
@@ -1113,6 +1203,7 @@
 
   function clearRoleState() {
     stopSonarAudio();
+    stopBridgeCavitationAudio();
     document.body.classList.remove("workstation-mode");
     $("station-view").append($("role-visuals"));
     $("legacy-support").before($("bridge-orders"), $("opz-controls"), $("operations-workspace"));
@@ -1125,6 +1216,7 @@
     chartEpoch = null;
     chartRole = null;
     selected = null;
+    queuedSonarFocus = null;
     pending = null;
     v2State = null;
     stationDrafts.clear();
@@ -1218,7 +1310,7 @@
       button.textContent = record.requested ? t("station_requested") : t("station_request");
       button.disabled = stationMutation || requested !== null || state !== "available";
     });
-    if (!assigned) return;
+    if (!assigned) { renderDisabledReasons(); return; }
     const role = t(`station_${session.station}`);
     $("role-rail-title").textContent = role;
     $("role-grants").textContent = t(session.grants.command ? "role_commands" : "role_read_only");
@@ -1229,17 +1321,24 @@
     for (const id of ["add-station", "mobile-add-station", "workstation-add-station"]) {
       $(id).disabled = stationMutation || requested !== null;
     }
+    const displayedStation = activatingStation && session.stations[activatingStation]?.status === "mine" ?
+      activatingStation : session.station;
+    const leasedStations = stationNames.filter((station) => session.stations[station].status === "mine");
     for (const id of ["mobile-station", "workstation-station"]) {
       const select = $(id);
-      select.replaceChildren(...stationNames.filter(
-        (station) => session.stations[station].status === "mine").map((station) => {
+      const signature = leasedStations.map((station) => `${station}:${t(`station_${station}`)}`).join("|");
+      if (select.dataset.options !== signature) {
+        select.replaceChildren(...leasedStations.map((station) => {
         const option = node("option", t(`station_${station}`));
         option.value = station;
-        option.selected = station === session.station;
         return option;
-      }));
+        }));
+        select.dataset.options = signature;
+      }
+      if (document.activeElement !== select || stationMutation) select.value = displayedStation;
       select.disabled = stationMutation;
     }
+    renderDisabledReasons();
   }
 
   function acceptSession(next) {
@@ -1286,6 +1385,7 @@
     } finally {
       if (context === generation) {
         stationMutation = false;
+        if (path === "/stations/activate") activatingStation = null;
         renderLobby();
       }
     }
@@ -1301,10 +1401,13 @@
   function chooseStation(station) {
     const record = session?.stations?.[station];
     if (!record || stationMutation || station === session.station) return;
-    if (record.status === "mine") mutateStation("/stations/activate", {
-      station, station_generation: record.station_generation,
-      active_generation: session.active_generation,
-    });
+    if (record.status === "mine") {
+      activatingStation = station;
+      mutateStation("/stations/activate", {
+        station, station_generation: record.station_generation,
+        active_generation: session.active_generation,
+      });
+    }
   }
 
   function activateTab(name, focus = true) {
@@ -1599,6 +1702,7 @@
     renderActionState();
     if (v2State?.role) renderRoleVisuals(v2State.role);
     if (sonarAudioEnabled && !sonarAudioAuthorized()) stopSonarAudio("sonar_live_unavailable");
+    syncBridgeCavitationAudio();
   }
 
   function forgetSession(message = "connection_unpaired") {
@@ -1606,6 +1710,7 @@
     generation += 1;
     token = null;
     session = null;
+    activatingStation = null;
     stationPickerOpen = false;
     lastSessionFetch = 0;
     activeRequest?.abort();
@@ -1778,9 +1883,12 @@
       const settings = payload.settings;
       if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode"]) ||
           !["BOW", "TOWED"].includes(settings.mode) || typeof settings.station_down !== "boolean" ||
-          !exactKeys(settings.tow, ["state", "payout", "available", "handling_ok", "depth_m", "depth_target_m"]) ||
+          !exactKeys(settings.tow, ["state", "payout", "available", "handling_ok", "speed_kn", "speed_min_kn", "speed_max_kn", "depth_m", "depth_target_m"]) ||
+          !finite(settings.tow.speed_kn) || !finite(settings.tow.speed_min_kn) || !finite(settings.tow.speed_max_kn) ||
           !exactKeys(settings.bt, ["ready", "cooldown_s", "thermocline_m"]) ||
           !exactKeys(settings.ping, ["ready", "cooldown_s"]) ||
+          settings.tow.speed_kn < 0 || settings.tow.speed_kn > 100 || settings.tow.speed_min_kn < 0 ||
+          settings.tow.speed_max_kn > 100 || settings.tow.speed_min_kn > settings.tow.speed_max_kn ||
           !boundedArray(settings.band_hz, 2) || settings.band_hz.length !== 2 ||
           !boundedArray(settings.harmonic_candidates_hz, 64) ||
           [settings.tow.available, settings.tow.handling_ok, settings.bt.ready, settings.ping.ready,
@@ -1798,7 +1906,7 @@
           !boundedArray(visual.tma, 32) || visual.tma.some((row) => !exactKeys(row, ["ref", "bearings", "solution"]) || !boundedArray(row.bearings, 24) || row.bearings.some((point) => !exactKeys(point, ["age_s", "bearing", "uncertainty_deg", "own_x", "own_y", "own_course"])) || row.solution !== null && !exactKeys(row.solution, ["x", "y", "course", "speed_kn", "quality", "age_s", "uncertainty_nm"])) ||
           (visual.bt !== null && (!exactKeys(visual.bt, ["age_s", "thermocline_m", "water_depth_m", "sea_state", "depths_m", "speeds_m_s", "cz_bands_nm"]) || !boundedArray(visual.bt.depths_m, 64) || !boundedArray(visual.bt.speeds_m_s, 64) || visual.bt.depths_m.length !== visual.bt.speeds_m_s.length || !boundedArray(visual.bt.cz_bands_nm, 8) || visual.bt.cz_bands_nm.some((band) => !boundedArray(band, 2) || band.length !== 2))) ||
           !boundedArray(visual.active_echoes, 40) || visual.active_echoes.some((row) => !exactKeys(row, ["age_s", "bearing", "range_nm", "depth_m", "range_uncertainty_nm", "depth_uncertainty_m", "snr_db", "array"])) ||
-          !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"]) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
+          !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"]) || !["BROADBAND", "FILTERED", "HETERODYNE"].includes(visual.receiver.listen_mode) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
     } else if (state.role === "weapons") {
       if (!exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
           !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "aa_ready", "state", "interlock", "reload_s"]) ||
@@ -1853,7 +1961,7 @@
     } else if (state.role === "helicopter") {
       if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"]) ||
           (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
-          !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "x", "y", "battery_s", "active"])) ||
+          !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label)) ||
           !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"]) ||
           !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "rtb_margin_s"]) ||
           [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping].some((value) => typeof value !== "boolean")) throw new Error("protocol");
@@ -2128,11 +2236,40 @@
     }
   }
 
+  function flushSonarFocus() {
+    if (!queuedSonarFocus) return;
+    if (!(connected && protocolMode === "v2" && session?.station === "sonar" &&
+          session.grants.command === true && v2State?.role === "sonar" && v2State.phase === "live" &&
+          chartMatches(snapshot) && snapshot.tracks.some((track) => track.ref === queuedSonarFocus))) {
+      queuedSonarFocus = null;
+      return;
+    }
+    if (v2State.sonar.settings.focus_ref === queuedSonarFocus) {
+      queuedSonarFocus = null;
+      return;
+    }
+    if (!stationActionAvailable()) return;
+    const ref = queuedSonarFocus;
+    queuedSonarFocus = null;
+    sendStationAction("sonar_set_focus", {ref});
+  }
+
   function selectTrack(ref) {
+    const changed = selected !== ref;
     selected = ref;
+    const track = selectedTrack();
+    const role = v2State?.role;
+    if (mapRoles.has(role) && hasPosition(track)) {
+      Object.assign(roleMapViews[role], {x: track.x, y: track.y, follow: false});
+    }
     renderTracks();
     renderDetail(true);
     queueDraw();
+    queueVisualDraw();
+    if (changed && role === "sonar" && track && v2State.sonar.settings.focus_ref !== ref &&
+        connected && session?.grants.command === true && v2State.phase === "live" && chartMatches(snapshot))
+      queuedSonarFocus = ref;
+    flushSonarFocus();
   }
 
   function renderTracks() {
@@ -2172,6 +2309,8 @@
 
   function renderDetail(resetDraft = false) {
     const track = selectedTrack();
+    $("classification-form").hidden = protocolMode === "v2" && !["sonar", "opz"].includes(session?.station);
+    $("affiliation-form").hidden = protocolMode === "v2" && session?.station !== "opz";
     $("no-selection").hidden = Boolean(track);
     $("track-detail").hidden = !track;
     if (track) {
@@ -2261,6 +2400,7 @@
     renderOpzControls();
     renderStationControls();
     renderDirectFireControls();
+    renderDisabledReasons();
   }
 
   function directFireSpec(action) {
@@ -2378,7 +2518,7 @@
     if (sonar) {
       const live = available && !sonar.station_down;
       for (const id of ["sonar-bearing", "sonar-bearing-submit", "sonar-clear-focus", "sonar-array-mode", "sonar-array-apply",
-        "sonar-tma", "sonar-gain", "sonar-gain-submit", "sonar-band", "sonar-band-apply", "sonar-notch", "sonar-peak",
+        "sonar-tma", "sonar-audition-mode", "sonar-listen-band", "sonar-listen-notch", "sonar-gain", "sonar-gain-submit", "sonar-band", "sonar-band-apply", "sonar-notch", "sonar-peak",
         "sonar-harmonic-input", "sonar-harmonic-submit", "sonar-harmonic-clear"]) $(id).disabled = !live;
       $("sonar-clear-focus").disabled = !live || sonar.focus_ref === null;
     }
@@ -2399,6 +2539,118 @@
   function stationActionAvailable() {
     return connected && protocolMode === "v2" && session?.grants.command === true &&
       v2State?.phase === "live" && chartMatches(snapshot) && !pending;
+  }
+
+  const unavailable = (key, values = {}) => ({key, values});
+
+  function stationUnavailableReason() {
+    if (protocolMode !== "v2" || !session?.station) return unavailable("reason_role_revoked");
+    if (!connected) return unavailable(linkState === "syncing" ? "connection_syncing" : "connection_stale", {age: 0});
+    if (!v2State || !chartMatches(snapshot)) return unavailable("connection_syncing");
+    if (session.grants.command !== true) return unavailable("reason_grant_revoked");
+    if (v2State.phase !== "live") return unavailable("reason_phase_blocked");
+    if (pending) return unavailable(pending.uncertain ? "command_uncertain" : "command_pending");
+    return null;
+  }
+
+  function directFireUnavailableReason(control) {
+    const shared = stationUnavailableReason();
+    if (shared) return shared;
+    if (session?.grants.direct_fire !== true) return unavailable("reason_direct_fire_grant");
+    const action = control.dataset.fireAction;
+    const spec = directFireSpec(action);
+    if (actionIncludesInvalidDepth(action, spec.params.depth_m)) return unavailable("reason_invalid_depth");
+    const payload = v2State?.[session.station];
+    if (!spec.ref && action !== "weapons_deploy_nixie") return unavailable("reason_no_target");
+    if (session.station === "weapons") {
+      if ((action === "weapons_launch_torpedo" && payload.inventory.torpedoes <= 0) ||
+          (action === "weapons_deploy_nixie" && payload.inventory.nixies <= 0)) return unavailable("reason_no_inventory");
+      if (action === "weapons_launch_torpedo" && !payload.tubes.some((tube) => tube.state === "ready")) return unavailable("reason_no_ready_tube");
+    }
+    if (session.station === "helicopter") {
+      if (!payload.asset.airborne) return unavailable("reason_not_airborne");
+      if (payload.asset.torpedoes <= 0) return unavailable("reason_no_inventory");
+    }
+    return unavailable("reason_not_ready");
+  }
+
+  function disabledReason(control) {
+    if (!control.disabled) return null;
+    if (control.dataset.fireAction) return directFireUnavailableReason(control);
+    if (control.closest("#station-cards")) {
+      const record = session?.stations[control.dataset.station];
+      if (session?.requested_station) return unavailable("reason_station_request_pending");
+      if (record?.status === "occupied") return unavailable("reason_station_occupied");
+      if (record?.status === "mine") return unavailable("reason_station_already_leased");
+      return unavailable("reason_station_change_pending");
+    }
+    if (["add-station", "mobile-add-station", "workstation-add-station"].includes(control.id)) {
+      return unavailable(session?.requested_station ? "reason_station_request_pending" : "reason_station_change_pending");
+    }
+    if (["release-station", "mobile-release-station", "mobile-station", "workstation-station"].includes(control.id)) {
+      return unavailable("reason_station_change_pending");
+    }
+    if (control.id === "follow") return unavailable("reason_position_unavailable");
+    if (control.id === "sonar-live-toggle") return unavailable("reason_sonar_audio_grant");
+    const shared = stationUnavailableReason();
+    if (shared) return shared;
+    const sonar = v2State?.sonar?.settings;
+    if (control.closest('[data-station-role="sonar"]') && sonar) {
+      if (sonar.station_down) return unavailable("reason_sonar_down");
+      if (control.id === "sonar-clear-focus" && sonar.focus_ref === null) return unavailable("reason_no_focus");
+      if (["sonar-tas", "sonar-depth", "sonar-depth-submit"].includes(control.id)) {
+        if (sonar.tow.state === "FAULT") return unavailable("reason_tas_fault");
+        if (sonar.tow.speed_kn > sonar.tow.speed_max_kn) return unavailable("reason_tas_too_fast", {speed: number(sonar.tow.speed_kn), limit: number(sonar.tow.speed_max_kn)});
+        if (sonar.tow.speed_kn < sonar.tow.speed_min_kn) return unavailable("reason_tas_too_slow", {speed: number(sonar.tow.speed_kn), limit: number(sonar.tow.speed_min_kn)});
+        if (["sonar-depth", "sonar-depth-submit"].includes(control.id) && sonar.tow.state !== "STREAMED") return unavailable("reason_tas_not_streamed");
+      }
+      if (control.id === "sonar-ping" && !sonar.ping.ready) return unavailable("reason_cooldown", {seconds: number(sonar.ping.cooldown_s, 0)});
+      if (control.id === "sonar-bt" && !sonar.bt.ready) return unavailable("reason_cooldown", {seconds: number(sonar.bt.cooldown_s, 0)});
+    }
+    if (control.closest('[data-station-role="engine"]') && v2State?.engine?.machinery.station_state === "ZERSTOERT") return unavailable("reason_engine_down");
+    if (control.closest('[data-station-role="opz"]') && v2State?.opz?.radar.live === false) return unavailable("reason_opz_down");
+    if (control.closest('[data-station-role="radio"]') && v2State?.radio?.station_down) return unavailable("reason_radio_down");
+    if (control.closest('[data-station-role="bridge"]') && v2State?.bridge?.orders.station_down) return unavailable("reason_bridge_down");
+    const helicopter = v2State?.helicopter;
+    if (control.closest('[data-station-role="helicopter"]') && helicopter) {
+      if (helicopter.readiness.flightdeck_down) return unavailable("reason_flightdeck_down");
+      if (["helicopter-return", "helicopter-buoy", "helicopter-dip-toggle", "helicopter-dip-depth", "helicopter-dip-depth-submit", "helicopter-dip-ping"].includes(control.id) && !helicopter.asset.airborne) return unavailable("reason_not_airborne");
+      if (control.id === "helicopter-buoy" && helicopter.asset.buoys <= 0) return unavailable("reason_no_buoys");
+      if (control.id === "helicopter-dip-ping" && helicopter.asset.dip_ping_cooldown_s > 0) return unavailable("reason_cooldown", {seconds: number(helicopter.asset.dip_ping_cooldown_s, 0)});
+    }
+    return unavailable("reason_not_ready");
+  }
+
+  function renderDisabledReasons() {
+    const visibleReasons = [];
+    for (const control of document.querySelectorAll("button, input, select")) {
+      const reason = disabledReason(control);
+      if (reason) {
+        const text = t(reason.key, reason.values);
+        control.title = text;
+        control.dataset.disabledReason = text;
+        control.setAttribute("aria-disabled", "true");
+        const stationPanel = control.closest("[data-station-role]");
+        const relevant = stationPanel ? stationPanel.dataset.stationRole === session?.station
+          : !control.closest("[hidden]");
+        if (relevant && !visibleReasons.includes(text)) {
+          visibleReasons.push(text);
+        }
+      } else {
+        control.removeAttribute("title");
+        delete control.dataset.disabledReason;
+        control.removeAttribute("aria-disabled");
+      }
+    }
+    $("disabled-control-explain").hidden = visibleReasons.length === 0;
+    $("disabled-control-explain").dataset.reasons = JSON.stringify(visibleReasons.slice(0, 24));
+    if (!visibleReasons.length) {
+      $("disabled-control-help").hidden = true;
+      $("disabled-control-explain").setAttribute("aria-expanded", "false");
+    }
+    else if (!$("disabled-control-help").hidden) {
+      $("disabled-control-help").textContent = visibleReasons.slice(0, 24).join(" ");
+    }
   }
 
   function renderOpzControls() {
@@ -2475,6 +2727,7 @@
     queueDraw();
     renderLookoutStatus();
     queueLookoutDraw();
+    flushSonarFocus();
   }
 
   function secureId() {
@@ -2511,6 +2764,7 @@
     $("bridge-order-status").textContent = message ? t(message.key, {reason}) :
       v2State?.bridge?.orders.station_down ? t("bridge_down") : "";
     $("bridge-order-status").dataset.status = message?.status || "";
+    renderDisabledReasons();
   }
 
   async function sendBridgeOrder(kind) {
@@ -3566,6 +3820,7 @@
   $("language").addEventListener("change", () => loadLanguage($("language").value === "de" ? "de" : "en"));
   $("volume").addEventListener("input", () => {
     if (sonarAudioGain) sonarAudioGain.gain.value = sonarGainValue();
+    syncBridgeCavitationAudio();
   });
   $("analysis-filter").addEventListener("input", renderContactAnalysis);
   $("analysis-category").addEventListener("change", renderContactAnalysis);
@@ -3667,7 +3922,7 @@
     if (!finite(value) || value < minimum || value > maximum) return;
     sendStationAction(action, {[field]: value});
   };
-  for (const id of ["sonar-array-mode", "sonar-band", "sonar-bearing", "sonar-depth", "sonar-gain",
+  for (const id of ["sonar-array-mode", "sonar-audition-mode", "sonar-band", "sonar-listen-band", "sonar-bearing", "sonar-depth", "sonar-gain",
     "sonar-harmonic-input", "engine-telegraph", "engine-speed", "helicopter-x", "helicopter-y",
     "helicopter-dip-depth",
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target"]) {
@@ -3710,11 +3965,14 @@
   $("sonar-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("sonar-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("sonar-tma").addEventListener("change", () => sendStationAction("sonar_set_tma_enabled", {enabled: $("sonar-tma").checked}));
+  $("sonar-audition-mode").addEventListener("change", () => sendStationAction("sonar_set_audition_mode", {mode: $("sonar-audition-mode").value}));
   $("sonar-gain-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("sonar-gain-form", "sonar-gain", "sonar_set_gain", "gain_db", -12, 24);
   });
   $("sonar-band-apply").addEventListener("click", () => sendStationAction("sonar_set_band_preset", {preset: $("sonar-band").value}));
   $("sonar-notch").addEventListener("change", () => sendStationAction("sonar_set_notch", {enabled: $("sonar-notch").checked}));
+  $("sonar-listen-band").addEventListener("change", () => sendStationAction("sonar_set_band_preset", {preset: $("sonar-listen-band").value}));
+  $("sonar-listen-notch").addEventListener("change", () => sendStationAction("sonar_set_notch", {enabled: $("sonar-listen-notch").checked}));
   $("sonar-peak").addEventListener("change", () => sendStationAction("sonar_set_peak_hold", {enabled: $("sonar-peak").checked}));
   $("sonar-harmonic-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("sonar-harmonic-form", "sonar-harmonic-input", "sonar_set_harmonic", "frequency_hz", 0.000001, 300);
@@ -3796,6 +4054,7 @@
     try {
       if (soundEnabled) {
         soundEnabled = false;
+        stopBridgeCavitationAudio();
         if (!sonarAudioEnabled) await audio?.suspend();
       } else {
         const Audio = window.AudioContext || window.webkitAudioContext;
@@ -3805,7 +4064,8 @@
         soundEnabled = audio.state === "running";
       }
       renderSound();
-    } catch (_) { soundEnabled = false; renderSound(); $("sound").textContent = t("sound_unavailable"); }
+      syncBridgeCavitationAudio();
+    } catch (_) { soundEnabled = false; stopBridgeCavitationAudio(); renderSound(); $("sound").textContent = t("sound_unavailable"); }
   });
   $("sonar-live-toggle").addEventListener("click", async () => {
     if (sonarAudioEnabled) { stopSonarAudio(); return; }
@@ -3903,6 +4163,12 @@
     else { const amount = chart.size_nm / roleMapViews[role].zoom / 10; if (event.key === "ArrowLeft") roleMapViews[role].x -= amount; if (event.key === "ArrowRight") roleMapViews[role].x += amount; if (event.key === "ArrowUp") roleMapViews[role].y -= amount; if (event.key === "ArrowDown") roleMapViews[role].y += amount; queueVisualDraw(); }
   });
   $("damage-team").addEventListener("change", queueVisualDraw);
+  $("disabled-control-explain").addEventListener("click", () => {
+    const reasons = JSON.parse($("disabled-control-explain").dataset.reasons || "[]");
+    $("disabled-control-help").textContent = reasons.join(" ");
+    $("disabled-control-help").hidden = !$("disabled-control-help").hidden || reasons.length === 0;
+    $("disabled-control-explain").setAttribute("aria-expanded", String(!$("disabled-control-help").hidden));
+  });
   $("damage-schematic").addEventListener("click", (event) => {
     if (v2State?.role !== "damage" || !stationActionAvailable()) return;
     const rect = $("damage-schematic").getBoundingClientRect();
@@ -4028,10 +4294,11 @@
     // A background tab's event batch is not a new audible alarm on return.
     suppressNextEvents = true;
     if (document.hidden) stopSonarAudio("sonar_live_unavailable");
+    if (document.hidden) stopBridgeCavitationAudio();
     if (document.hidden && authenticated()) setConnection("stale");
     syncOpzSweepAnimation();
   });
-  window.addEventListener("offline", () => { stopSonarAudio("sonar_live_unavailable"); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
+  window.addEventListener("offline", () => { stopSonarAudio("sonar_live_unavailable"); stopBridgeCavitationAudio(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
   window.addEventListener("online", () => { syncOpzSweepAnimation(); if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); } });
   setInterval(() => {
     if (authenticated() && lastSuccess && performance.now() - lastSuccess > 4500) setConnection("stale");

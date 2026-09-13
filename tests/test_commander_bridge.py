@@ -34,6 +34,43 @@ def test_sonar_pcm_conversion_is_exact_deterministic_and_does_not_mutate():
         sonar_pcm_s16le(np.zeros(1023, dtype=np.float32))
 
 
+def test_web_sonar_audio_uses_independent_operator_filter():
+    class AudioServer:
+        def __init__(self):
+            self.blocks = []
+
+        def prepare_sonar_audio(self, **_context):
+            return 7
+
+        def publish_sonar_audio(self, pcm, **_context):
+            self.blocks.append(pcm)
+
+        def clear_sonar_audio(self):
+            self.blocks.clear()
+
+    game = Game(seed=84, start_menu=False, audio_enabled=False, language="en")
+    server = AudioServer()
+    bridge = CommanderBridge()
+    receiver = game.sonar.receiver
+    bridge._publish_sonar_audio(game, server, "live")
+    game.sonar.set_audition_mode("FILTERED")
+    game.sonar.band_low_hz, game.sonar.band_high_hz = 4.0, 80.0
+    source = np.sin(2 * np.pi * 200 * np.arange(1024) / receiver.sample_rate).astype(
+        np.float32)
+    receiver.sequence += 1
+    receiver._blocks.append((receiver.sequence, source))
+
+    bridge._publish_sonar_audio(game, server, "live")
+    receiver.sequence += 1
+    receiver._blocks.append((receiver.sequence, source))
+    bridge._publish_sonar_audio(game, server, "live")
+
+    assert len(server.blocks) == 2
+    filtered = np.frombuffer(server.blocks[-1], dtype="<i2")
+    assert np.sqrt(np.mean(filtered.astype(float) ** 2)) < 50
+    assert game.sonar._audition_previous_controls is None
+
+
 class Server:
     def __init__(self):
         self.connected = True

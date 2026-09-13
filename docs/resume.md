@@ -829,9 +829,10 @@ uConsole bleibt offen.
 
 ## Naechster Schritt
 
-1. Den vollstaendig verifizierten 0.2.0-Arbeitsbaum lokal committen; kein Push
-   ohne ausdrueckliche Freigabe.
-2. Vor einem Release die oben aufgefuehrten physischen Abnahmen
+Der verifizierte 0.2.0-Kandidat wurde als `5203707` lokal committed. Es erfolgte
+kein Push und kein Release-Upload.
+
+1. Vor einem Release die oben aufgefuehrten physischen Abnahmen
    durchfuehren.
 
 ## 0.1.7 Entscheidungen

@@ -455,3 +455,13 @@ composite spectral/DEMON diagrams (113 cruise and 113 high).
 - `git diff --check`: passed.
 - Release status: HOLD only for physical multi-device, WLAN, audio, sustained
   load and thermal acceptance on the target uConsole hardware.
+
+## 2026-09-13 0.2.0 Authorized Candidate Commit
+
+- Revision: `5203707` (`Complete 0.2.0 workstation systems`).
+- Scope: complete verified 0.2.0 candidate, including runtime, browser assets,
+  tests, catalogs and documentation; 79 files changed.
+- Pre-commit staged-tree check passed and contained no build products, local
+  saves or credentials.
+- No push or release upload was performed. Release status remains HOLD only for
+  the listed physical target-hardware checks.

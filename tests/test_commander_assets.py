@@ -358,7 +358,8 @@ def test_v2_nonlethal_station_controls_are_native_and_exactly_wired():
         "helicopter-y", "helicopter-buoy", "station-command-status",
     } <= ids
     actions = {
-        "engine_set_telegraph", "engine_set_speed", "engine_set_quiet_mode",
+        "engine_set_telegraph", "engine_set_course", "engine_set_speed",
+        "engine_set_quiet_mode",
         "damage_assign_team", "damage_unassign_team", "radio_capture_hfdf",
         "eloka_annotate", "eloka_clear_annotation",
         "sonar_set_listen_bearing", "sonar_set_focus", "sonar_clear_focus",

@@ -146,6 +146,42 @@ def test_ship_helm_state_survives_save_load():
     assert other.ship.yaw_rate == game.ship.yaw_rate
 
 
+def test_ship_fuel_uses_simulation_time_and_ordered_load():
+    ship = Ship(0.0, 0.0, speed_kn=12.0)
+    ship.target_speed = 15.0
+    expected_burn = (config.SHIP_FUEL_HOTEL_KG_H
+                     + config.SHIP_FUEL_MAX_PROPULSION_KG_H
+                     * (15.0 / config.SHIP_SPEED_MAX_KN) ** 3)
+    assert ship.fuel_burn_kg_h() == expected_burn
+    ship.update_fuel(3600.0)
+    assert abs(ship.fuel_kg - (config.SHIP_FUEL_CAPACITY_KG - expected_burn)) < 1e-9
+    assert ship.fuel_endurance_h() > 100.0
+    assert ship.fuel_range_nm() > 1000.0
+
+
+def test_empty_fuel_stops_propulsion_and_rpm():
+    ship = Ship(0.0, 0.0, speed_kn=12.0)
+    ship.target_speed = config.SHIP_SPEED_MAX_KN
+    ship.order_idx = len(config.TELEGRAPH_ORDERS) - 1
+    ship.fuel_kg = 0.01
+    ship.update_fuel(60.0)
+    assert ship.fuel_kg == 0.0
+    assert ship.target_speed == 0.0 and ship.telegraph == "STOP"
+    assert ship.rpm() == 0.0
+
+
+def test_ship_fuel_survives_save_load():
+    from src.core.game import Game
+
+    game = Game(seed=24, start_menu=False, audio_enabled=False)
+    game.ship.fuel_kg -= 1234.5
+    state = game.save_state()
+    other = Game(seed=25, start_menu=False, audio_enabled=False)
+    other.load_state(state)
+    assert other.ship.fuel_capacity_kg == game.ship.fuel_capacity_kg
+    assert other.ship.fuel_kg == game.ship.fuel_kg
+
+
 def test_focused_sonar_track_exposes_signature_analysis():
     world = World(seed=6)
     frigate = Ship(250.0, 250.0, speed_kn=4.0)

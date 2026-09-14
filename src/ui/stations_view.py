@@ -61,6 +61,35 @@ def _panel(game, x_off: int = 0, w: int = None, title: str = "") -> tuple:
     return r, y
 
 
+@localized
+def draw_autocrew_overview(game, tr=None) -> None:
+    """Render the host-only nine-station automation overview."""
+    layout.configure_for(game)
+    r, y = _panel(game, title="autocrew.overview.title")
+    x = r[0] + 14
+    width = r[2] - 28
+    gap = 12
+    card_w = (width - gap * 2) // 3
+    card_h = (r[1] + r[3] - y - gap * 2) // 3
+    for index, key in enumerate(game.autocrew.enabled):
+        row, column = divmod(index, 3)
+        rect = (x + column * (card_w + gap), y + row * (card_h + gap),
+                card_w, card_h)
+        content = layout.box(game.screen, rect, message(
+            "autocrew.station", station=display_value("station", key.upper())))
+        cx, cy, cw, _ = content
+        status = game.autocrew.status(game, key)
+        color = (config.COLOR_OK if status == "active" else
+                 config.COLOR_WARN if status in ("suspended_remote", "blocked_damage")
+                 else config.COLOR_TEXT_DIM)
+        layout.blit_line(game.screen, "autocrew.status." + status,
+                         (cx, cy, cw, 24), color, size=16)
+        layout.blit_block(game.screen,
+                          "autocrew.action." + game.autocrew.last_action[key],
+                          cx, cy + 30, cw, max(24, card_h - 72),
+                          config.COLOR_TEXT_DIM, size=13)
+
+
 def _observation_bearing(observation) -> float:
     return observations.bearing(observation)
 
@@ -90,6 +119,86 @@ def _compartment_name(key: str, fallback: str) -> str:
 
 
 # --- Brücke / Nautik -------------------------------------------------------
+
+
+def _draw_bridge_weather(surface, rect, weather: dict, hour: float,
+                         phase_s: float) -> None:
+    """Draw a bounded marine instrument from authoritative weather values."""
+    area = pygame.Rect(rect)
+    previous_clip = surface.get_clip()
+    surface.set_clip(area)
+    is_night = hour < 5.5 or hour >= 19.5
+    visibility = weather["visibility_nm"]
+    haze = 1.0 - config.clamp(visibility / config.WEATHER_VISIBILITY_MAX_NM,
+                              0.0, 1.0)
+    sky_top = (5, 14, 27) if is_night else (25, 70, 92)
+    sky_bottom = (38, 53, 62) if is_night else (111, 151, 157)
+    horizon = area.y + int(area.h * 0.54)
+    for py in range(area.y, horizon):
+        blend = (py - area.y) / max(1, horizon - area.y - 1)
+        color = tuple(int(a + (b - a) * blend)
+                      for a, b in zip(sky_top, sky_bottom))
+        pygame.draw.line(surface, color, (area.x, py), (area.right, py))
+    pygame.draw.rect(surface, (7, 35, 48) if is_night else (9, 54, 67),
+                     (area.x, horizon, area.w, area.bottom - horizon))
+
+    daylight_start, daylight_end = 5.5, 19.5
+    if not is_night:
+        progress = config.clamp((hour - daylight_start)
+                                / (daylight_end - daylight_start), 0.0, 1.0)
+        light = (247, 209, 92)
+    else:
+        progress = ((hour - daylight_end) % 24.0) / (24.0 - daylight_end
+                                                     + daylight_start)
+        light = (188, 210, 211)
+    light_x = area.x + 12 + int(progress * max(1, area.w - 24))
+    light_y = horizon - 7 - int(math.sin(progress * math.pi)
+                               * max(5, area.h * 0.28))
+    pygame.draw.circle(surface, light, (light_x, light_y), 6)
+
+    sea_state = weather["sea_state"]
+    direction_phase = math.radians(weather["wind_from_deg"])
+    for band in range(3):
+        base = horizon + 8 + band * 10
+        amplitude = 1.5 + sea_state * (0.45 + band * 0.12)
+        wavelength = max(14.0, 31.0 - sea_state * 2.0 + band * 5.0)
+        speed = 0.7 + weather["wind_speed_kn"] / 35.0 + band * 0.18
+        points = []
+        for px in range(area.x - 2, area.right + 3, 3):
+            angle = ((px - area.x) / wavelength * math.tau
+                     + phase_s * speed + direction_phase)
+            points.append((px, base + int(math.sin(angle) * amplitude)))
+        pygame.draw.lines(surface,
+                          config.COLOR_WARN if sea_state >= 5 else
+                          ((71, 145, 151) if is_night else (91, 181, 181)),
+                          False, points, 1)
+        if sea_state >= 4.0:
+            for crest in range(min(8, int(sea_state * 1.2))):
+                px = area.x + int((crest * 43 + phase_s * 7 + band * 17) % area.w)
+                pygame.draw.line(surface, (178, 208, 202),
+                                 (px, base - int(amplitude)), (px + 5, base - 1), 1)
+
+    rain_count = int(weather["rain_intensity"] * 26)
+    for index in range(rain_count):
+        px = area.x + int((index * 47 + phase_s * 31) % (area.w + 16)) - 8
+        py = area.y + int((index * 23 + phase_s * 53) % area.h)
+        pygame.draw.line(surface, (128, 174, 184), (px, py), (px - 3, py + 8), 1)
+    if haze > 0.02:
+        veil = pygame.Surface(area.size, pygame.SRCALPHA)
+        veil.fill((170, 184, 181, int(150 * haze)))
+        surface.blit(veil, area.topleft)
+
+    center = (area.x + 17, area.y + 17)
+    angle = math.radians(weather["wind_from_deg"])
+    source = (center[0] + int(math.sin(angle) * 11),
+              center[1] - int(math.cos(angle) * 11))
+    pygame.draw.circle(surface, (8, 24, 30), center, 13)
+    pygame.draw.circle(surface, config.COLOR_TEXT_DIM, center, 13, 1)
+    pygame.draw.line(surface, config.COLOR_WARN, source, center, 2)
+    pygame.draw.circle(surface, config.COLOR_WARN, source, 2)
+    pygame.draw.rect(surface, config.COLOR_GRID, area, 1)
+    surface.set_clip(previous_clip)
+
 
 @localized
 def draw_bridge_view(game, tr=None) -> None:
@@ -179,19 +288,36 @@ def draw_bridge_view(game, tr=None) -> None:
                        size=15, label_w=100)
     y += 112
 
-    systems = layout.box(s, (x, y, w, 82), "panel.tactical")
+    systems = layout.box(s, (x, y, w, 120), "panel.tactical")
     sx, sy, sw, _ = systems
+    weather_w = min(190, sw // 3)
+    text_w = sw - weather_w - 12
     radar = localize(message("station.tooltip.radar_state",
         surface=localize("common.on" if game.surface_radar_on else "common.off"),
         air=localize("common.on" if game.air_radar_on else "common.off")))
-    layout.status_line(s, sx, sy, sw, "panel.sensors",
+    layout.status_line(s, sx, sy, text_w, "panel.sensors",
                        message("bridge.line.sensors", count=len(game.sonar.active_contacts()), radar=radar),
                        size=14, label_w=90)
-    layout.status_line(s, sx, sy + 25, sw, "panel.assets",
+    layout.status_line(s, sx, sy + 25, text_w, "panel.assets",
                         message("bridge.line.assets", vls=game.vls_cells,
                                 torpedoes=game.torpedo_count,
                                 helo=localize('enum.helo.' + game.helo.state)),
-                       size=14, label_w=110)
+                        size=14, label_w=110)
+    weather = game.world.weather_values()
+    layout.blit_line(s, message("bridge.line.weather",
+                                kind=display_value("weather", game.world.weather_kind()),
+                                sea=f"{weather['sea_state']:.1f}",
+                                light=localize("weather.night" if game.world.is_night()
+                                               else "weather.day")),
+                     (sx, sy + 50, text_w, 18), config.COLOR_TEXT_DIM, size=12)
+    layout.blit_line(s, message(
+        "bridge.line.weather_detail", direction=f"{weather['wind_from_deg']:03.0f}",
+        speed=f"{weather['wind_speed_kn']:.0f}",
+        rain=f"{weather['rain_intensity']:.0%}",
+        visibility=f"{weather['visibility_nm']:.1f}"),
+        (sx, sy + 68, text_w, 18), config.COLOR_TEXT_DIM, size=11)
+    weather_rect = pygame.Rect(sx + text_w + 12, sy, weather_w, 68)
+    _draw_bridge_weather(s, weather_rect, weather, game.world.hour, game.sim_t)
 
 
 # --- OPZ / CIC (M12) -------------------------------------------------------
@@ -1335,6 +1461,12 @@ def draw_engine_view(game, tr=None) -> None:
                          message("engine.line.speed_target", speed=f"{ship.speed:4.1f}", target=f"{ship.target_speed:4.1f}"),
                         label_w=125, size=16)
     py += 32
+    layout.status_line(s, px, py, pw, "engine.course",
+                       message("engine.line.course_target",
+                               course=f"{ship.course:03.0f}",
+                               target=f"{ship.target_course:03.0f}"),
+                       label_w=125, size=15)
+    py += 28
     bar_w = int(pw * 0.72)
     max_rpm = config.SHIP_RPM_MIN + config.SHIP_SPEED_MAX_KN * config.SHIP_RPM_PER_KN
     frac = min(1.0, ship.rpm() / max_rpm)
@@ -1354,12 +1486,11 @@ def draw_engine_view(game, tr=None) -> None:
                           color=config.COLOR_DANGER, size=16)
         py += 30
     layout.status_line(s, px, py, pw, "panel.sea_state",
-                         message("engine.line.sea_motion", sea=game.world.sea_state,
+                         message("engine.line.sea_motion", sea=f"{getattr(game.world, 'effective_sea_state', game.world.sea_state):.1f}",
                                  roll=f"{ship.roll:4.1f}", pitch=f"{ship.pitch:4.1f}"),
                          label_w=125, size=14)
     py += 28
-    masch = next((c for c in game.damage.compartments.values()
-                  if c.name.startswith("Maschinerie")), None)
+    masch = game.damage.compartments.get("engine")
     if masch is not None:
         col = config.COLOR_DANGER if masch.state == "ZERSTOERT" else (
             config.COLOR_WARN if masch.flood > 20 or masch.fire > 0 else config.COLOR_OK)
@@ -1370,6 +1501,35 @@ def draw_engine_view(game, tr=None) -> None:
                               flooding=f"{masch.flood:.0f}", extra=extra)),
                            px, py, pw, 22, color=col, size=14)
         py += 28
+    fuel_fraction = (ship.fuel_kg / ship.fuel_capacity_kg
+                     if ship.fuel_capacity_kg > 0.0 else 0.0)
+    endurance = ship.fuel_endurance_h()
+    distance = ship.fuel_range_nm()
+    layout.status_line(s, px, py, pw, "engine.fuel",
+                       message("engine.line.fuel", fuel=f"{ship.fuel_kg / 1000.0:.1f}",
+                               percent=f"{fuel_fraction:.0%}"),
+                       color=(config.COLOR_DANGER if fuel_fraction <= 0.1
+                              else config.COLOR_WARN if fuel_fraction <= 0.25
+                              else config.COLOR_TEXT),
+                       label_w=140, size=14)
+    py += 27
+    layout.status_line(s, px, py, pw, "engine.consumption",
+                       message("engine.line.endurance",
+                               burn=f"{ship.fuel_burn_kg_h():.0f}",
+                               hours=(f"{endurance:.0f}" if endurance is not None else "--"),
+                               range=(f"{distance:.0f}" if distance is not None else "--")),
+                       label_w=140, size=13)
+    py += 27
+    teams = game.damage.teams_on("engine")
+    trend = game.damage.compartment_trend("engine")
+    layout.status_line(s, px, py, pw, "engine.repairs",
+                       message("engine.line.repairs",
+                               teams=", ".join(str(team) for team in teams) or "--",
+                               flood=f"{trend['flood_rate']:+.2f}",
+                               fire=f"{trend['fire_rate']:+.2f}"),
+                       color=config.COLOR_OK if teams else config.COLOR_TEXT_DIM,
+                       label_w=140, size=13)
+    py += 27
     layout.status_line(s, px, py, pw, "view.engine.speed_limit", message("bridge.line.speed", speed=f"{cap:4.1f}"),
                        label_w=140, size=15)
     py += 28
@@ -1378,7 +1538,8 @@ def draw_engine_view(game, tr=None) -> None:
                         color=config.COLOR_OK if ship.quiet_mode else config.COLOR_TEXT,
                         label_w=140, size=15)
     py += 28
-    sonar_range = game.ship.passive_sonar_range_nm(0.5, game.world.sea_state)
+    sonar_range = game.ship.passive_sonar_range_nm(
+        0.5, getattr(game.world, "effective_sea_state", game.world.sea_state))
     if game.sonar_mode == "TOWED":
         sonar_range *= max(0.5, config.SONAR_ARRAY_TOWED_PASSIVE
                            - config.SONAR_TOWED_SPEED_PENALTY * ship.speed)

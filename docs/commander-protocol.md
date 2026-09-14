@@ -2,7 +2,7 @@
 
 [Deutsch](commander-protocol.de.md)
 
-Application 0.2.0, API protocols 1 and 2, save format v10-only. These versions are independent.
+Application 0.2.1, API protocols 1 and 2, save format v10-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
 persistence.
@@ -61,6 +61,15 @@ It never receives simulation objects, hidden IDs, undiscovered positions, RNG
 state, credentials, or save data. OPZ receives only explicitly released sonar
 observations; classification is independent. Browser labels are opaque
 observation-lifetime references.
+
+Every assigned v2 role receives the same detached environment summary: authored
+integer `sea_state`, transitioning `effective_sea_state`, authoritative
+`is_night`, weather class, nautical wind-from direction, wind speed in knots,
+rain intensity and visibility in NM. The Helicopter role additionally receives
+only derived launch/dipping safety booleans and crosswind; it receives no hidden
+aircraft or weather state. Each role's Autocrew projection contains only that
+role's enabled flag and status. Credentials, leases and Autocrew commands are
+not part of this projection.
 
 Commands use strict envelopes containing protocol, cryptographic request ID,
 per-client sequence, station generation, active generation, world

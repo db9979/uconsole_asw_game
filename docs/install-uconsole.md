@@ -92,6 +92,9 @@ sind fiktionale Übungsrollen.
 kontextabhängige Hilfe; `Alt+Enter` wechselt jederzeit zwischen Vollbild und
 Fenster.
 
+Eine vollständige druckbare Übersicht aller lokalen Stationskürzel liegt unter
+[`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
+
 Die Arbeitsoberfläche rendert nativ auf einem 1280 x 720 Pixel großen Canvas.
 Sie wird im Vollbild auf die verfügbare Displayfläche skaliert; im Fenstermodus
 ist 1280 x 720 die native Größe.
@@ -99,6 +102,19 @@ ist 1280 x 720 die native Größe.
 Optionales Remote Crew wird auf der uConsole mit `F9` oder über **F10 >
 Commander LAN** eingerichtet. Der Dienst startet bei jedem Programmstart
 ausgeschaltet.
+
+Damit Remote Crew auch ohne vorhandenes Netzwerk einen eigenen, temporaeren
+WLAN-Hotspot anlegen kann, wird einmalig der eng begrenzte System-Helper aus dem
+Checkout installiert:
+
+```sh
+sudo ./packaging/uconsole/install-hotspot-helper.sh
+```
+
+Das Spiel selbst wird weiterhin ohne `sudo` gestartet. Der Helper erlaubt nur
+das Erzeugen und Entfernen des fluechtigen U-Jagd-Hotspots. Zum Entfernen der
+Systemintegration dient
+`sudo ./packaging/uconsole/install-hotspot-helper.sh --uninstall`.
 
 **Sicherheit:** HTTP ist unverschlüsselt. Nur in einem vertrauenswürdigen LAN
 verwenden. Internet-Hosting, Wildcard-Bindung, CDN, entfernte

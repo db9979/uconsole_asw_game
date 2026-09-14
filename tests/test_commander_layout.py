@@ -703,7 +703,7 @@ def test_native_host_menu_join_code_is_focal_and_bounded(language, large):
         with layout.capture_text() as text:
             console.draw(game)
         canvas = pygame.Rect(0, 0, 1280, 720)
-        assert len(console.row_rects()) == 4
+        assert len(console.row_rects()) == 5
         assert all(canvas.contains(entry["bounds"]) for entry in text)
         assert all(entry["bounds"].contains(entry["rect"]) for entry in text)
         assert game.tr("commander.local.join_code") in {entry["text"] for entry in text}

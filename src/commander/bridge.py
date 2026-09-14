@@ -164,6 +164,10 @@ def _engine_set_telegraph(game, params, _bindings):
     return game.set_engine_telegraph(params["order"])
 
 
+def _engine_set_course(game, params, _bindings):
+    return game.set_engine_course(params["course"])
+
+
 def _engine_set_speed(game, params, _bindings):
     return game.set_engine_speed(params["speed_kn"])
 
@@ -364,6 +368,7 @@ _V2_ACTION_HANDLERS = {
     "opz_set_range": _opz_set_range,
     "opz_designate_target": _opz_designate_target,
     "engine_set_telegraph": _engine_set_telegraph,
+    "engine_set_course": _engine_set_course,
     "engine_set_speed": _engine_set_speed,
     "engine_set_quiet_mode": _engine_set_quiet_mode,
     "damage_assign_team": _damage_assign_team,
@@ -921,6 +926,7 @@ class CommanderBridge:
         if not hasattr(server, "drain_commands_v2"):
             return False
         drained = False
+        bridge_course = None
         for envelope in server.drain_commands_v2():
             drained = True
             rows, bindings = self._tracks(game)
@@ -933,11 +939,21 @@ class CommanderBridge:
             for (track_key, emitter_key), (track, ref) in self._esm_candidate_refs.items():
                 bindings[ref] = (emitter_key, "ELOKA_CANDIDATE", track,
                                  False, track_key)
+            def apply_action(action, params, bindings=bindings):
+                nonlocal bridge_course
+                result = self._apply_v2_action(game, action, params, bindings)
+                if action == "bridge_set_course" and result in (True, "ok"):
+                    bridge_course = params["course"]
+                return result
+
             server.apply_command_v2(
                 envelope, now=now, phase=phase, world_session=self._session,
                 world_epoch=self._epoch, resource_revision=self._revision,
-                apply=lambda action, params, bindings=bindings:
-                    self._apply_v2_action(game, action, params, bindings))
+                apply=apply_action)
+        if bridge_course is not None:
+            # Preserve station/client/FIFO application while resolving the one
+            # shared setpoint with explicit Bridge authority.
+            game.ship.target_course = bridge_course
         return drained
 
     def pump(self, game, server, now=None):

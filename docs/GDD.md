@@ -1,6 +1,6 @@
 # GDD – U-Jagd (Game Design Document)
 
-> Historisches Design-/Entwicklungsdokument. Aktueller Stand: Version 0.2.0,
+> Historisches Design-/Entwicklungsdokument. Aktueller Stand: Version 0.2.1,
 > Save v10 als einziges Schreib- und Ladeformat. Verbindliche laufende Arbeit:
 > `plan-0.1.8.md` und
 > `resume.md`. Alte Phasen- und Save-v7-Aussagen unten sind keine aktuellen APIs.

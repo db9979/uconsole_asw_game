@@ -75,12 +75,24 @@ async function run() {
     $test("name").value = "Lobby Watch";
     $test("code").value = "123ABC";
     $test("pair-form").requestSubmit();
-    await until(() => !$test("lobby").hidden, "pair enters authenticated lobby");
+    await until(() => $test("pairing").hidden && !$test("simlog-view").hidden,
+      "pair preserves the initial unassigned SimLog route");
     const cards = [...$test("station-cards").children];
     assert(cards.length === 9, "lobby has exactly nine station cards");
     assert(cards.map((card) => card.dataset.station).join(",") === __STATIONS__, "canonical station order");
     assert(cards[1].classList.contains("station-occupied") && cards[0].classList.contains("station-available"), "occupancy is rendered");
     assert(operational().length === 0, "unassigned client fetches no operational state");
+    await sleep(1100);
+    assert(location.hash === "#simlog" && !$test("simlog-view").hidden && $test("lobby").hidden && $test("operations").hidden,
+      "unassigned SimLog route remains stable across session polling");
+    const simlogBounds = $test("simlog-view").getBoundingClientRect();
+    assert(simlogBounds.width > 0 && simlogBounds.height > 0 && simlogBounds.bottom <= innerHeight + 1,
+      "unassigned SimLog route is laid out inside the viewport");
+    assert($test("simlog-status").textContent.includes(__SIMLOG_STATION__),
+      "unassigned SimLog route explains its station requirement");
+    assert(operational().length === 0, "unassigned SimLog route fetches no operational data");
+    location.hash = "";
+    await until(() => !$test("lobby").hidden, "leaving SimLog returns to station selection");
     const requestButton = cards[0].querySelector("button");
     assert(requestButton.type === "button" && requestButton.tabIndex === 0, "station request is a native keyboard control");
     requestButton.focus();
@@ -105,7 +117,12 @@ async function run() {
     assert($test("engine-telegraph").disabled && $test("helicopter-launch").disabled,
       "controls belonging to other roles remain disabled");
     location.hash = "#simlog";
-    await sleep(150);
+    await until(() => !$test("simlog-view").hidden, "assigned SimLog route becomes visible");
+    await sleep(1100);
+    assert(!$test("simlog-view").hidden && $test("operations").hidden,
+      "assigned SimLog route remains stable across session polling");
+    assert($test("simlog-status").textContent.includes(__SIMLOG_GRANT__),
+      "SimLog route explains its missing host grant");
     assert(!issued.some((entry) => entry.url.endsWith("/api/v2/simlog")), "SimLog remains gated by its grant");
     location.hash = "";
     $test("release-station").click();
@@ -742,10 +759,14 @@ window.addEventListener("DOMContentLoaded", () => run().catch((error) => {
 
 def _direct_fire_browser_states():
     common = dict(protocol=2, version="test", session="fire-world", epoch=2,
-                  revision=7, seq=1, phase="live", chart_revision="fire-world",
-                  clock=dict(sim=10.0, mission=10.0, time_scale=1.0, world=12.0),
-                  environment=dict(sea_state=2, is_night=False),
-                  mission=dict(name="Fire test", objective="Observe", remaining_s=500.0))
+                   revision=7, seq=1, phase="live", chart_revision="fire-world",
+                   clock=dict(sim=10.0, mission=10.0, time_scale=1.0, world=12.0),
+                   environment=dict(sea_state=2, effective_sea_state=2.4,
+                                    is_night=False, weather="clear",
+                                    wind_from_deg=245.0, wind_speed_kn=12.0,
+                                    rain_intensity=.1, visibility_nm=24.0),
+                   mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
+                   autocrew=dict(enabled=False, status="off"))
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
                       yaw_rate=0.0)
@@ -793,9 +814,11 @@ def _direct_fire_browser_states():
         tactical=[], target_choices=[weapon_row],
         readiness=dict(flightdeck_down=False, deck_state="OK", can_launch=False,
                         can_return=True, can_set_waypoint=True, can_deploy_buoy=True,
-                        can_set_dipping=True, can_set_dip_depth=False,
-                        can_dipping_ping=False,
-                        rtb_margin_s=600.0)))
+                         can_set_dipping=True, can_set_dip_depth=False,
+                         can_dipping_ping=False,
+                         weather_launch_safe=True,
+                         weather_dipping_safe=True, crosswind_kn=4.0,
+                         rtb_margin_s=600.0)))
     damage = dict(common, role="damage", damage=dict(
         compartments=[dict(key="engine", name="Engine", state="BESCHAEDIGT",
                            flood=20.0, fire=10.0, repairable=True,
@@ -924,6 +947,13 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             "version", "session", "epoch", "revision", "seq", "phase",
             "chart_revision", "clock", "environment", "mission")}
         common.update(protocol=2, role=role)
+        common["environment"] = dict(
+            sea_state=legacy["environment"]["sea_state"],
+            effective_sea_state=float(legacy["environment"]["sea_state"]),
+            is_night=legacy["environment"]["is_night"], weather="clear",
+            wind_from_deg=220.0, wind_speed_kn=10.0,
+            rain_intensity=0.0, visibility_nm=30.0)
+        common["autocrew"] = {"enabled": False, "status": "off"}
         if role == "bridge":
             common[role] = {"navigation": {key: legacy["ownship"][key] for key in (
                 "x", "y", "course", "speed", "target_course", "target_speed")},
@@ -982,6 +1012,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
               .replace("__PENDING__", json.dumps(en[PREFIX + "station_requested"]))
               .replace("__FAILED__", json.dumps(en[PREFIX + "station_mutation_failed"].split(".")[0]))
               .replace("__REVOKED__", json.dumps(en[PREFIX + "role_revoked"].split(".")[0]))
+              .replace("__SIMLOG_STATION__", json.dumps(en[PREFIX + "simlog_station_required"]))
+              .replace("__SIMLOG_GRANT__", json.dumps(en[PREFIX + "simlog_grant_required"]))
               .replace("__BRIDGE__", json.dumps(en[PREFIX + "station_bridge"]))
               .replace("__SONAR__", json.dumps(en[PREFIX + "station_sonar"])))
 
@@ -1114,7 +1146,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
              "--disable-background-networking", "--no-first-run",
              "--no-default-browser-check", "--disable-dev-shm-usage",
              f"--user-data-dir={tmp_path / 'browser'}", "--virtual-time-budget=30000", "--dump-dom",
-             f"http://127.0.0.1:{server.server_port}/"],
+             f"http://127.0.0.1:{server.server_port}/#simlog"],
             capture_output=True, text=True, timeout=50,
         )
     finally:

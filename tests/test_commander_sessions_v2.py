@@ -79,10 +79,11 @@ def pair_v2(server, name=" Watch Officer "):
 
 def projection_states(revision="chart"):
     common = dict(protocol=2, version="test", session=revision, epoch=0,
-                  revision=0, seq=1, phase="live", chart_revision=revision,
-                  clock={}, environment={}, mission={})
+                   revision=0, seq=1, phase="live", chart_revision=revision,
+                   clock={}, environment={}, mission={},
+                   autocrew={"enabled": False, "status": "off"})
     return {None: {key: value for key, value in common.items()
-                   if key not in ("clock", "environment", "mission")} | {"role": None},
+                    if key not in ("clock", "environment", "mission", "autocrew")} | {"role": None},
             **{role: dict(common, role=role, **{role: {}})
                for role in transport.STATIONS}}
 
@@ -364,7 +365,7 @@ def test_host_revoke_and_grants_are_station_scoped(server):
         "command": True, "direct_fire": False, "sonar_audio": True}
     assert state["simlog"] is True and state["active_station"] == "bridge"
     server.publish_simlog(b'[{"detached":true}]')
-    assert request(server, "/api/v2/simlog", cookie=cookie)[2] == [{"detached": True}]
+    assert request(server, "/api/v2/simlog", cookie=cookie)[0] == 403
     roster = server.client_statuses()[0]
     assert set(roster) == {"client_id", "name", "ordinal", "active_station",
                            "active_generation", "simlog", "stations", "presence"}

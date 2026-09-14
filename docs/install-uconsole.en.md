@@ -90,12 +90,26 @@ fictional training roles. `F` toggles fullscreen there. In the game, `F1` opens
 context-sensitive help; `Alt+Enter` switches between fullscreen and windowed
 mode at any time.
 
+A complete printable German reference for all local station shortcuts is
+available at [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
+
 The interface renders natively on a 1280 x 720 pixel canvas. In fullscreen it is
 scaled to the available display area; in windowed mode, 1280 x 720 is the native
 size.
 
 Optional Remote Crew is configured on the uConsole with `F9` or through **F10 >
 Commander LAN**. The service starts off on every launch.
+
+To let Remote Crew create its own temporary Wi-Fi hotspot when no network is
+available, install the narrowly scoped system helper once from the checkout:
+
+```sh
+sudo ./packaging/uconsole/install-hotspot-helper.sh
+```
+
+Continue to launch the game itself without `sudo`. The helper can only create
+and remove the transient U-Jagd hotspot. Remove the system integration with
+`sudo ./packaging/uconsole/install-hotspot-helper.sh --uninstall`.
 
 **Security:** HTTP is unencrypted. Use only a trusted LAN. No Internet hosting,
 wildcard binding, CDN, remote ROE/time/save controls, or hidden entity data are

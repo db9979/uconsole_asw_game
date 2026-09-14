@@ -140,6 +140,22 @@ def test_bridge_bearing_only_asm_is_still_a_threat(game, monkeypatch):
     assert Translator("en").t("panel.no_threat") not in rendered
 
 
+def test_bridge_weather_picture_tracks_modeled_sea_and_light(game, monkeypatch):
+    monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
+    game.world.sea_state = 0
+    game.world.hour = 12.0
+    stations_view.draw_bridge_view(game, tr=Translator("en").t)
+    calm_day = pygame.image.tobytes(game.screen, "RGB")
+    game.world.sea_state = 6
+    game.world.hour = 23.0
+    with layout.capture_text() as text:
+        stations_view.draw_bridge_view(game, tr=Translator("en").t)
+    storm_night = pygame.image.tobytes(game.screen, "RGB")
+    assert calm_day != storm_night
+    rendered = "\n".join(item["text"] for item in text)
+    assert "Sea 6" in rendered and "NIGHT" in rendered
+
+
 def test_opz_keeps_selected_asm_visible_after_first_three(game, monkeypatch):
     monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
     game.air_picture._tracks.clear()

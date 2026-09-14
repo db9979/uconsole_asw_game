@@ -149,8 +149,10 @@ slice below now adds Bridge orders. Save v10 and protocol v1 are unchanged.
 - [x] Replace the single Commander entry flow with an authenticated lobby and nine
   station cards.
 - [x] Use a persistent desktop role rail and a native mobile station chooser.
-- [x] Preserve Operations, Lookout, Guide, Contact Analyzer, and role-safe SimLog
-  as shared utilities.
+- [x] Preserve Operations, Lookout, Guide, and Contact Analyzer as shared utilities.
+- [ ] Restore hidden SimLog for v2 from bounded per-role projection history. Until
+  then the browser reports it unavailable and the v2 endpoint rejects access;
+  full-truth protocol-v1 and host-local diagnostics remain unchanged.
 - [x] Keep transport/session state, authoritative station state, and per-role local
   presentation state separate.
 - [x] Preserve selections and harmless view state across polling; clear command

@@ -729,7 +729,8 @@ class SonarSystem:
                            apply_propagation: bool = True,
                            spectral_out: list | None = None) -> float:
         passive_range = frigate.passive_sonar_range_nm(
-            tgt.quiet_factor(), world.sea_state)
+            tgt.quiet_factor(), getattr(world, "effective_sea_state",
+                                        world.sea_state))
         thermo = world.thermocline_depth_m(tgt.x, tgt.y)
         sensor_depth = self.towed_depth_m if mode == "TOWED" else 5.0
         same_layer = (sensor_depth < thermo) == (tgt.depth < thermo)
@@ -765,7 +766,8 @@ class SonarSystem:
                 frigate.x, frigate.y, sensor_depth, tgt.x, tgt.y,
                 getattr(tgt, "depth", 0.0),
                 propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
-                midpoint_thermo, water_depth, sea_state=world.sea_state,
+                 midpoint_thermo, water_depth, sea_state=getattr(
+                     world, "effective_sea_state", world.sea_state),
                 terrain_blocked=getattr(world, "sonar_path_blocked", None))
             passive_range *= propagation.passive_range_factor(result, dist_nm)
             if spectral_out is not None:
@@ -784,7 +786,8 @@ class SonarSystem:
             dx, dy = tgt.x - helicopter.x, tgt.y - helicopter.y
             distance = math.hypot(dx, dy)
             target_bonus = 1.0 + 0.8 * (1.0 - tgt.quiet_factor())
-            sea = 1.0 - config.SEA_STATE_SONAR_FACTOR * max(0, world.sea_state - 1)
+            sea_state = getattr(world, "effective_sea_state", world.sea_state)
+            sea = 1.0 - config.SEA_STATE_SONAR_FACTOR * max(0, sea_state - 1)
             effective_range = (config.HELO_DIP_PASSIVE_RANGE_NM * target_bonus
                                * sea * range_factor)
             midpoint_x = (helicopter.x + tgt.x) * .5
@@ -797,7 +800,8 @@ class SonarSystem:
                 helicopter.x, helicopter.y, sensor_depth, tgt.x, tgt.y,
                 getattr(tgt, "depth", 0.0),
                 propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
-                thermocline, water_depth, sea_state=world.sea_state,
+                 thermocline, water_depth, sea_state=getattr(
+                     world, "effective_sea_state", world.sea_state),
                 terrain_blocked=getattr(world, "sonar_path_blocked", None))
             effective_range *= propagation.passive_range_factor(result, distance)
             if distance >= effective_range:
@@ -1061,7 +1065,8 @@ class SonarSystem:
             self._lofar_timer = max(0.0, self._lofar_timer - self.receiver.block_s)
             self.receiver.update(sources, self.listen_bearing, self.beam_width_deg,
                                   frigate.noise_level() * self._receiver_noise_factor(mode),
-                                  world.sea_state, frigate.speed,
+                                   getattr(world, "effective_sea_state",
+                                           world.sea_state), frigate.speed,
                                   own_cavitation=own_cavitation,
                                   own_noise_bearing=self._own_noise_bearing(mode, frigate.course))
             stamp = t - self._lofar_timer
@@ -1151,7 +1156,8 @@ class SonarSystem:
                         else config.SONAR_ACTIVE_BASE_NM * ping_mult)
         if getattr(tgt, "depth", 0.0) >= world.thermocline_depth_m(tgt.x, tgt.y):
             active_range *= config.SONAR_THERMO_ACTIVE_BELOW
-        return active_range * (1.0 - 0.03 * world.sea_state) * range_factor
+        sea_state = getattr(world, "effective_sea_state", world.sea_state)
+        return active_range * (1.0 - 0.03 * sea_state) * range_factor
 
     def process_lofar_column(self, column, frigate) -> list:
         """Apply operator gain and frequency controls to one LOFAR column."""

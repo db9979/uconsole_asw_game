@@ -1,5 +1,6 @@
 """Welt: Meer, Küsten (W3), Thermokline, Wetter, Tag/Nacht, Schallfeld (W2)."""
 
+import hashlib
 import math
 import random
 
@@ -37,6 +38,108 @@ class World:
         self.sea_state = self.rng.randint(2, 4)     # 0-6
         self.hour = float(self.rng.randint(6, 18))  # Uhrzeit 0-24
         self.weather_shift_timer = 0.0
+        self.refresh_weather()
+
+    @staticmethod
+    def _weather_endpoint(rng_state, sea_state: int) -> dict:
+        """Derive one bounded atmosphere without advancing simulation RNG."""
+        digest = hashlib.blake2b(
+            repr(rng_state).encode("ascii"), digest_size=16,
+            person=b"ujagd-weather-v1").digest()
+        rng = random.Random(int.from_bytes(digest, "big"))
+        wind_bands = ((0.0, 3.0), (2.0, 7.0), (5.0, 12.0),
+                      (9.0, 18.0), (14.0, 24.0), (20.0, 32.0),
+                      (28.0, 45.0))
+        wind_from = rng.uniform(0.0, 360.0)
+        low, high = wind_bands[sea_state]
+        wind_speed = low + (high - low) * rng.random()
+        rain_gate = rng.random()
+        rain_draw = rng.random()
+        rain_probability = 0.08 + sea_state * 0.105
+        rain = (0.0 if rain_gate >= rain_probability else
+                0.12 + rain_draw * min(0.88, 0.30 + sea_state * 0.10))
+        fog_gate = rng.random()
+        fog_draw = rng.random()
+        visibility = config.WEATHER_VISIBILITY_MAX_NM * (1.0 - 0.78 * rain)
+        fog_probability = max(0.03, 0.16 - wind_speed / 300.0)
+        if fog_gate < fog_probability:
+            visibility = min(visibility, 0.4 + fog_draw * 2.6)
+        return {
+            "wind_from_deg": wind_from,
+            "wind_speed_kn": wind_speed,
+            "rain_intensity": config.clamp(rain, 0.0, 1.0),
+            "visibility_nm": config.clamp(
+                visibility, config.WEATHER_VISIBILITY_MIN_NM,
+                config.WEATHER_VISIBILITY_MAX_NM),
+        }
+
+    def refresh_weather(self) -> None:
+        """Rebuild continuous epoch endpoints from the authoritative RNG state."""
+        state = self.rng.getstate()
+        self._weather_source_sea = self.sea_state
+        self._weather_start = self._weather_endpoint(state, self.sea_state)
+        future = random.Random()
+        future.setstate(state)
+        delta = future.choice([-1, 0, 0, 1])
+        self._weather_target_sea = max(0, min(6, self.sea_state + delta))
+        self._weather_target = self._weather_endpoint(
+            future.getstate(), self._weather_target_sea)
+
+    def _weather_blend(self) -> float:
+        start = config.WEATHER_SHIFT_PERIOD_S - config.WEATHER_TRANSITION_S
+        fraction = config.clamp(
+            (self.weather_shift_timer - start) / config.WEATHER_TRANSITION_S,
+            0.0, 1.0)
+        return fraction * fraction * (3.0 - 2.0 * fraction)
+
+    def weather_values(self) -> dict:
+        """Return current finite atmospheric values for simulation and display."""
+        if self._weather_source_sea != self.sea_state:
+            self.refresh_weather()
+        blend = self._weather_blend()
+        direction_delta = ((self._weather_target["wind_from_deg"]
+                            - self._weather_start["wind_from_deg"]
+                            + 180.0) % 360.0) - 180.0
+        values = {}
+        for key in ("wind_speed_kn", "rain_intensity", "visibility_nm"):
+            values[key] = (self._weather_start[key]
+                           + (self._weather_target[key]
+                              - self._weather_start[key]) * blend)
+        values["wind_from_deg"] = (
+            self._weather_start["wind_from_deg"] + direction_delta * blend) % 360.0
+        values["sea_state"] = (self.sea_state
+                               + (self._weather_target_sea - self.sea_state) * blend)
+        return values
+
+    @property
+    def effective_sea_state(self) -> float:
+        return self.weather_values()["sea_state"]
+
+    @property
+    def wind_from_deg(self) -> float:
+        return self.weather_values()["wind_from_deg"]
+
+    @property
+    def wind_speed_kn(self) -> float:
+        return self.weather_values()["wind_speed_kn"]
+
+    @property
+    def rain_intensity(self) -> float:
+        return self.weather_values()["rain_intensity"]
+
+    @property
+    def visibility_nm(self) -> float:
+        return self.weather_values()["visibility_nm"]
+
+    def weather_kind(self) -> str:
+        values = self.weather_values()
+        if values["visibility_nm"] <= 2.0 and values["rain_intensity"] < 0.3:
+            return "fog"
+        if values["rain_intensity"] >= 0.65 or values["wind_speed_kn"] >= 32.0:
+            return "storm"
+        if values["rain_intensity"] >= 0.1:
+            return "rain"
+        return "clear"
 
     # --- Zugriff mit bilinearem Interpolieren ---
 
@@ -137,10 +240,11 @@ class World:
         # Eine Simulationssekunde ist bei 1x eine reale Sekunde.
         self.hour = (self.hour + dt * config.GAME_TIME_PER_SEC / 60.0) % 24.0
         self.weather_shift_timer += dt
-        if self.weather_shift_timer > config.WEATHER_SHIFT_PERIOD_S:
+        while self.weather_shift_timer >= config.WEATHER_SHIFT_PERIOD_S:
             self.weather_shift_timer -= config.WEATHER_SHIFT_PERIOD_S
             d = self.rng.choice([-1, 0, 0, 1])
             self.sea_state = max(0, min(6, self.sea_state + d))
+            self.refresh_weather()
 
     def is_night(self) -> bool:
         return self.hour < 5.5 or self.hour >= 19.5

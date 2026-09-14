@@ -123,6 +123,10 @@
   let damageHits = [];
   let sonarVisualPage = "broadband";
   let visualDrawQueued = false;
+  let weatherFrame = null;
+  let weatherTimer = null;
+  let weatherLastDraw = 0;
+  let weatherReceivedAt = 0;
   let roleMapDrag = null;
   let opzSweepFrame = null;
   let opzSweepSample = null;
@@ -479,6 +483,76 @@
       ["noise", number(payload.orders.noise, 2)], ["cavitating", yesNo(payload.orders.cavitating)],
       ["threat_count", number(payload.threat.count, 0)], ["flood", unit(payload.threat.average_flood, "%")]]);
     stationRows($("bridge-tactical"), payload.tactical_summary, tacticalEntries);
+    weatherReceivedAt = performance.now();
+    drawBridgeWeather(weatherReceivedAt);
+    syncWeatherAnimation();
+    const weather = v2State.environment;
+    $("bridge-weather-text").textContent = t("weather_equivalent", {
+      kind: t(`weather_${weather.weather}`), light: t(weather.is_night ? "weather_night" : "weather_day"),
+      sea: number(weather.effective_sea_state, 1), direction: number(weather.wind_from_deg, 0),
+      speed: number(weather.wind_speed_kn, 0), rain: number(weather.rain_intensity * 100, 0),
+      visibility: number(weather.visibility_nm, 1),
+    });
+  }
+
+  function drawBridgeWeather(now) {
+    const weather = v2State?.environment;
+    if (!weather || session?.station !== "bridge") return;
+    const canvas = $("bridge-weather-canvas"), context = canvas.getContext("2d");
+    const width = canvas.width, height = canvas.height, horizon = Math.floor(height / 2);
+    const phase = (v2State.clock.sim + Math.max(0, now - weatherReceivedAt) / 1000 * v2State.clock.time_scale);
+    const gradient = context.createLinearGradient(0, 0, 0, horizon);
+    gradient.addColorStop(0, weather.is_night ? "#050e1b" : "#19465c");
+    gradient.addColorStop(1, weather.is_night ? "#26353e" : "#789ba0");
+    context.fillStyle = gradient; context.fillRect(0, 0, width, horizon);
+    context.fillStyle = weather.is_night ? "#08232f" : "#0c3641";
+    context.fillRect(0, horizon, width, height - horizon);
+    context.fillStyle = weather.is_night ? "#bed2cd" : "#f4cc5c";
+    const dayStart = 5.5, dayEnd = 19.5;
+    const progress = weather.is_night ? ((v2State.clock.world - dayEnd + 24) % 24) / (24 - dayEnd + dayStart) : Math.max(0, Math.min(1, (v2State.clock.world - dayStart) / (dayEnd - dayStart)));
+    const lightX = 24 + progress * (width - 48), lightY = horizon - 12 - Math.sin(progress * Math.PI) * 32;
+    context.beginPath(); context.arc(lightX, lightY, 12, 0, Math.PI * 2); context.fill();
+    const sea = weather.effective_sea_state;
+    context.strokeStyle = sea >= 5 ? "#f3cf79" : "#63b5b5";
+    context.lineWidth = 2;
+    for (let band = 0; band < 3; band += 1) {
+      context.beginPath();
+      const amplitude = 3 + sea * (.8 + band * .16), wavelength = Math.max(28, 62 - sea * 4 + band * 10);
+      for (let x = 0; x <= width + 4; x += 4) {
+        const y = horizon + 15 + band * 20 + Math.sin(x / wavelength * Math.PI * 2 + phase * (.7 + weather.wind_speed_kn / 35 + band * .18) + weather.wind_from_deg * Math.PI / 180) * amplitude;
+        if (x === 0) context.moveTo(x, y); else context.lineTo(x, y);
+      }
+      context.stroke();
+    }
+    context.strokeStyle = "#80aeb8"; context.lineWidth = 1;
+    for (let i = 0; i < Math.floor(weather.rain_intensity * 44); i += 1) {
+      const x = (i * 47 + phase * 31) % (width + 20) - 10, y = (i * 23 + phase * 53) % height;
+      context.beginPath(); context.moveTo(x, y); context.lineTo(x - 5, y + 13); context.stroke();
+    }
+    const haze = 1 - Math.max(0, Math.min(1, weather.visibility_nm / 30));
+    context.fillStyle = `rgba(180, 194, 190, ${haze * .55})`; context.fillRect(0, 0, width, height);
+    const windAngle = weather.wind_from_deg * Math.PI / 180, cx = 28, cy = 28;
+    context.fillStyle = "rgba(4, 18, 24, .75)"; context.beginPath(); context.arc(cx, cy, 20, 0, Math.PI * 2); context.fill();
+    context.strokeStyle = "#f3cf79"; context.lineWidth = 3; context.beginPath();
+    context.moveTo(cx + Math.sin(windAngle) * 17, cy - Math.cos(windAngle) * 17); context.lineTo(cx, cy); context.stroke();
+  }
+
+  function weatherAnimation(now) {
+    weatherFrame = null;
+    if (now - weatherLastDraw >= 66) { weatherLastDraw = now; drawBridgeWeather(now); }
+    syncWeatherAnimation();
+  }
+
+  function syncWeatherAnimation() {
+    const active = !document.hidden && connected && protocolMode === "v2" && session?.station === "bridge" && v2State?.role === "bridge";
+    if (active && weatherFrame === null && weatherTimer === null) weatherTimer = setTimeout(() => {
+      weatherTimer = null; weatherFrame = requestAnimationFrame(weatherAnimation);
+    }, 66);
+    if (!active) {
+      if (weatherFrame !== null) cancelAnimationFrame(weatherFrame);
+      if (weatherTimer !== null) clearTimeout(weatherTimer);
+      weatherFrame = null; weatherTimer = null;
+    }
   }
 
   function renderSonarStation(payload) {
@@ -605,13 +679,19 @@
 
   function renderEngineStation(payload) {
     const propulsion = payload.propulsion;
-    metrics($("engine-propulsion"), [["speed", unit(propulsion.speed, "kn")], ["ordered_speed", unit(propulsion.target_speed, "kn")],
+    metrics($("engine-propulsion"), [["course", unit(propulsion.course, "\u00b0", 0)], ["ordered_course", unit(propulsion.target_course, "\u00b0", 0)],
+      ["speed", unit(propulsion.speed, "kn")], ["ordered_speed", unit(propulsion.target_speed, "kn")],
       ["telegraph", propulsion.telegraph], ["rpm", unit(propulsion.rpm, "RPM", 0)], ["quiet_mode", yesNo(propulsion.quiet_mode)],
-      ["cavitating", yesNo(propulsion.cavitating)]]);
+      ["cavitating", yesNo(propulsion.cavitating)], ["engine_fuel", unit(propulsion.fuel_kg / 1000, "t")],
+      ["engine_fuel_capacity", unit(propulsion.fuel_capacity_kg / 1000, "t")], ["engine_fuel_burn", unit(propulsion.fuel_burn_kg_h, "kg/h", 0)],
+      ["engine_endurance", unit(propulsion.fuel_endurance_h, "h", 0)], ["engine_range", unit(propulsion.fuel_range_nm, "NM", 0)]]);
     const machinery = payload.machinery;
     metrics($("engine-machinery"), [["station_state", machinery.station_state], ["speed_cap", unit(machinery.speed_cap, "kn")],
       ["effective_speed_cap", unit(machinery.effective_speed_cap, "kn")], ["flood", unit(machinery.flood, "%")],
-      ["fire", unit(machinery.fire, "%")], ["noise", number(machinery.noise, 2)], ["grounded", yesNo(machinery.grounded)]]);
+      ["fire", unit(machinery.fire, "%")], ["engine_repair_teams", machinery.repair_teams.join(", ") || t("station_none")],
+      ["engine_flood_trend", unit(machinery.repair_trend.flood_rate, "%/s")],
+      ["engine_fire_trend", unit(machinery.repair_trend.fire_rate, "%/s")],
+      ["noise", number(machinery.noise, 2)], ["grounded", yesNo(machinery.grounded)]]);
     const effects = payload.environment_effects;
     metrics($("engine-environment"), [["sea_state", number(effects.sea_state, 0)], ["roll", unit(effects.roll, "\u00b0")],
       ["pitch", unit(effects.pitch, "\u00b0")], ["tas_available", yesNo(effects.tas_available)],
@@ -621,6 +701,7 @@
       const option = node("option", order); option.value = order; return option;
     }));
     if (!stationDrafts.has("engine-telegraph")) $("engine-telegraph").value = propulsion.telegraph;
+    if (!stationDrafts.has("engine-course")) $("engine-course").value = String(propulsion.target_course);
     $("engine-speed").max = String(Math.min(controls.speed_max_kn, machinery.speed_cap));
     $("engine-quiet").textContent = t(propulsion.quiet_mode ? "engine_quiet_disable" : "engine_quiet_enable");
     $("engine-quiet").setAttribute("aria-pressed", String(propulsion.quiet_mode));
@@ -643,6 +724,9 @@
       ["helicopter_can_buoy", yesNo(ready.can_deploy_buoy)],
       ["helicopter_can_dipping", yesNo(ready.can_set_dipping)],
       ["helicopter_can_dip_ping", yesNo(ready.can_dipping_ping)],
+      ["helicopter_weather_launch", yesNo(ready.weather_launch_safe)],
+      ["helicopter_weather_dipping", yesNo(ready.weather_dipping_safe)],
+      ["helicopter_crosswind", unit(ready.crosswind_kn, "kn")],
       ["rtb_margin", unit(ready.rtb_margin_s, "s", 0)]]);
     $("helicopter-launch").dataset.ready = String(ready.can_launch);
     $("helicopter-return").dataset.ready = String(ready.can_return);
@@ -1191,7 +1275,7 @@
     for (const element of document.querySelectorAll(".v2-irrelevant")) element.hidden = Boolean(active);
     renderRoleVisuals(active);
     if (!active) return;
-    const signature = `${language}:${active}:${JSON.stringify(v2State[active])}`;
+    const signature = `${language}:${active}:${JSON.stringify(v2State[active])}:${JSON.stringify(v2State.environment)}`;
     if (signature === stationRenderSignature) return;
     stationRenderSignature = signature;
     const renderers = {bridge: renderBridgeStation, sonar: renderSonarStation, weapons: renderWeaponsStation,
@@ -1245,7 +1329,7 @@
     $("bridge-course-form").reset();
     $("bridge-speed-form").reset();
     for (const id of ["sonar-bearing-form", "sonar-depth-form", "sonar-gain-form", "sonar-harmonic-form",
-      "engine-speed-form", "helicopter-waypoint-form", "helicopter-dip-depth-form"]) $(id).reset();
+      "engine-course-form", "engine-speed-form", "helicopter-waypoint-form", "helicopter-dip-depth-form"]) $(id).reset();
     $("sonar-control-page").value = "listen";
     renderSonarControlPage();
     $("navigation-status").textContent = "";
@@ -1262,7 +1346,8 @@
       "mission-metrics", "own-metrics", "inventory", "helo-metrics", "damage-list", "event-list",
       "chart-disclaimer", "proposal-status", "command-status", "snapshot-meta", "lookout-sea",
       "lookout-light", "lookout-own", "lookout-observations", "bridge-order-values",
-      "bridge-order-status", "opz-mark-status", "sonar-release-status", "station-command-status"]) $(id).replaceChildren();
+      "bridge-order-status", "opz-mark-status", "sonar-release-status", "station-command-status",
+      "autocrew-status", "bridge-weather-text"]) $(id).replaceChildren();
     $("simlog-list").replaceChildren();
     $("simlog-current").replaceChildren();
     closeSimlogMap();
@@ -1274,14 +1359,16 @@
   function renderLobby() {
     if (protocolMode !== "v2" || !session) return;
     const assigned = session.station !== null;
+    const simlog = simlogActive();
     $("pairing").hidden = true;
-    $("lobby").hidden = assigned && !stationPickerOpen;
+    $("lobby").hidden = simlog || assigned && !stationPickerOpen;
     $("lobby-back").hidden = !assigned;
     $("role-rail").hidden = !assigned || stationPickerOpen;
     $("mobile-role").hidden = !assigned || stationPickerOpen;
     const rolePublished = protocolMode !== "v2" || v2State?.role === session.station;
-    $("operations").hidden = !assigned || stationPickerOpen || !rolePublished || simlogActive();
-    $("simlog-view").hidden = !assigned || stationPickerOpen || !simlogActive();
+    $("operations").hidden = simlog || !assigned || stationPickerOpen || !rolePublished;
+    $("simlog-view").hidden = !simlog;
+    if (simlog) loadSimlog();
     document.body.dataset.remoteRole = assigned ? "assigned" : "lobby";
     const requested = session.requested_station;
     $("lobby-status").textContent = lobbyMessage ? t(lobbyMessage) : requested ?
@@ -1840,10 +1927,19 @@
       if (!exactKeys(state, status)) throw new Error("protocol");
       return;
     }
-    const common = [...status, "clock", "environment", "mission"];
+    const common = [...status, "clock", "environment", "mission", "autocrew"];
     if (!stationNames.includes(state.role) || state.role !== session?.station ||
         !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "time_scale", "world"]) ||
-        !exactKeys(state.environment, ["sea_state", "is_night"]) ||
+        !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm"]) ||
+        !Number.isInteger(state.environment.sea_state) || state.environment.sea_state < 0 || state.environment.sea_state > 6 ||
+        !finite(state.environment.effective_sea_state) || state.environment.effective_sea_state < 0 || state.environment.effective_sea_state > 6 ||
+        typeof state.environment.is_night !== "boolean" || !["clear", "rain", "storm", "fog"].includes(state.environment.weather) ||
+        !finite(state.environment.wind_from_deg) || state.environment.wind_from_deg < 0 || state.environment.wind_from_deg >= 360 ||
+        !finite(state.environment.wind_speed_kn) || state.environment.wind_speed_kn < 0 || state.environment.wind_speed_kn > 80 ||
+        !finite(state.environment.rain_intensity) || state.environment.rain_intensity < 0 || state.environment.rain_intensity > 1 ||
+        !finite(state.environment.visibility_nm) || state.environment.visibility_nm < .1 || state.environment.visibility_nm > 30 ||
+        !exactKeys(state.autocrew, ["enabled", "status"]) || typeof state.autocrew.enabled !== "boolean" ||
+        !["off", "active", "suspended_remote", "blocked_damage"].includes(state.autocrew.status) ||
         !exactKeys(state.mission, ["name", "objective", "remaining_s"])) throw new Error("protocol");
     const payload = state[state.role];
     const shapes = {
@@ -1953,8 +2049,9 @@
           !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"])) throw new Error("protocol");
       tacticalRows(payload.tactical, 128);
     } else if (state.role === "engine") {
-      if (!exactKeys(payload.propulsion, ["speed", "target_speed", "telegraph", "rpm", "quiet_mode", "cavitating"]) ||
-          !exactKeys(payload.machinery, ["station_state", "speed_cap", "effective_speed_cap", "flood", "fire", "noise", "grounded"]) ||
+      if (!exactKeys(payload.propulsion, ["course", "target_course", "speed", "target_speed", "telegraph", "rpm", "quiet_mode", "cavitating", "fuel_kg", "fuel_capacity_kg", "fuel_burn_kg_h", "fuel_endurance_h", "fuel_range_nm"]) ||
+          !exactKeys(payload.machinery, ["station_state", "speed_cap", "effective_speed_cap", "flood", "fire", "repair_teams", "repair_trend", "noise", "grounded"]) ||
+          !boundedArray(payload.machinery.repair_teams, 16) || !exactKeys(payload.machinery.repair_trend, ["flood_rate", "fire_rate", "repairable"]) ||
           !exactKeys(payload.controls, ["orders", "speed_max_kn"]) || !boundedArray(payload.controls.orders, 6) ||
           payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
           !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");
@@ -1963,8 +2060,9 @@
           (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
           !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label)) ||
           !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"]) ||
-          !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "rtb_margin_s"]) ||
-          [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping].some((value) => typeof value !== "boolean")) throw new Error("protocol");
+          !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
+          [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping, payload.readiness.weather_launch_safe, payload.readiness.weather_dipping_safe].some((value) => typeof value !== "boolean") ||
+          !finite(payload.readiness.crosswind_kn) || payload.readiness.crosswind_kn < 0 || payload.readiness.crosswind_kn > 80) throw new Error("protocol");
       tacticalRows(payload.tactical, 128);
       rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
     } else if (state.role === "eloka") {
@@ -2065,7 +2163,7 @@
     if (state.tracks.some((track) => new Set(track.fixes.map((fix) => fix.source)).size !== track.fixes.length)) throw new Error("protocol");
     const environment = state.environment;
     if (environment != null && (typeof environment !== "object" || Array.isArray(environment) ||
-        Object.keys(environment).sort().join(",") !== "is_night,sea_state" ||
+        Object.keys(environment).sort().join(",") !== (protocolMode === "v2" ? "effective_sea_state,is_night,rain_intensity,sea_state,visibility_nm,weather,wind_from_deg,wind_speed_kn" : "is_night,sea_state") ||
         (environment.sea_state !== null && (!Number.isInteger(environment.sea_state) || environment.sea_state < 0 || environment.sea_state > 9)) ||
         (environment.is_night !== null && typeof environment.is_night !== "boolean"))) throw new Error("protocol");
     const navigation = state.navigation_proposal;
@@ -2183,7 +2281,7 @@
           $("opz-manage").checked = false;
           stationDrafts.clear();
           for (const id of ["sonar-bearing-form", "sonar-depth-form", "sonar-gain-form", "sonar-harmonic-form",
-            "engine-speed-form", "helicopter-waypoint-form"]) $(id).reset();
+            "engine-course-form", "engine-speed-form", "helicopter-waypoint-form"]) $(id).reset();
           $("sonar-control-page").value = "listen";
           renderSonarControlPage();
         }
@@ -2525,7 +2623,7 @@
     const engine = v2State?.engine;
     if (engine) {
       const live = available && engine.machinery.station_state !== "ZERSTOERT";
-      for (const id of ["engine-telegraph", "engine-telegraph-submit", "engine-speed", "engine-speed-submit", "engine-quiet"]) $(id).disabled = !live;
+      for (const id of ["engine-telegraph", "engine-telegraph-submit", "engine-course", "engine-course-submit", "engine-speed", "engine-speed-submit", "engine-quiet"]) $(id).disabled = !live;
     }
     $("damage-team").disabled = !(available && session?.station === "damage" && v2State?.damage?.teams.length);
     $("opz-designate").disabled = !(available && session?.station === "opz" && selectedTrack() && v2State?.opz?.radar.live);
@@ -2679,6 +2777,9 @@
     $("objective").textContent = snapshot.mission.objective;
     $("phase").textContent = enumText(phases, snapshot.phase);
     $("command-permission").textContent = t(snapshot.commands_allowed ? "commands_enabled" : "commands_disabled");
+    $("autocrew-status").textContent = v2State?.autocrew ? t("autocrew_status", {
+      status: t(`autocrew_${v2State.autocrew.status}`),
+    }) : "";
     metrics($("mission-metrics"), [
       ["remaining", unit(snapshot.mission.remaining_s, "s", 0)],
       ["mission_clock", unit(snapshot.clock.mission, "s", 0)],
@@ -3008,12 +3109,12 @@
     nixies: ["SUBSURFACE", "#c89cff"], buoys: ["UNKNOWN", "#76d5b0"],
     flights: ["AIR", "#d4c37b"], raiders: ["AIR", "#ff9090"], helo: ["AIR", "#a1e7cc"],
   };
-  function simlogActive() { return location.hash === "#simlog" && authenticated() &&
-    (protocolMode !== "v2" || session?.station !== null); }
+  function simlogActive() { return location.hash === "#simlog" && authenticated(); }
   function applySimlogView() {
     const active = simlogActive();
     $("simlog-view").hidden = !active;
     $("operations").hidden = active;
+    if (protocolMode === "v2" && session) renderLobby();
     if (active) { releaseCanvas(canvas); releaseCanvas(lookoutCanvas); }
     else closeSimlogMap();
   }
@@ -3254,7 +3355,7 @@
         context.beginPath(); context.moveTo(x - 8, y - 8); context.lineTo(x + 8, y + 8); context.stroke();
       }
     }
-    plotted.forEach(({ item }, index) => {
+    plotted.forEach(({ item, x }, index) => {
       const label = simlogMapLabel(item);
       const textWidth = context.measureText(label).width;
       const footprint = occupied[index];
@@ -3378,7 +3479,8 @@
       $("simlog-current-map").disabled = true;
       closeSimlogMap();
       $("simlog-status").hidden = false;
-      $("simlog-status").textContent = t("simlog_unavailable");
+      $("simlog-status").textContent = t(session?.station === null ? "simlog_station_required" :
+        session?.simlog !== true ? "simlog_grant_required" : "simlog_unavailable");
       $("simlog-current").replaceChildren(node("p", t("simlog_state_unavailable"), "empty"));
       $("simlog-list").replaceChildren();
       $("simlog-count").textContent = "";
@@ -3923,7 +4025,7 @@
     sendStationAction(action, {[field]: value});
   };
   for (const id of ["sonar-array-mode", "sonar-audition-mode", "sonar-band", "sonar-listen-band", "sonar-bearing", "sonar-depth", "sonar-gain",
-    "sonar-harmonic-input", "engine-telegraph", "engine-speed", "helicopter-x", "helicopter-y",
+    "sonar-harmonic-input", "engine-telegraph", "engine-course", "engine-speed", "helicopter-x", "helicopter-y",
     "helicopter-dip-depth",
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target"]) {
     $(id).addEventListener("input", () => stationDrafts.add(id));
@@ -3979,6 +4081,9 @@
   });
   $("sonar-harmonic-clear").addEventListener("click", () => sendStationAction("sonar_set_harmonic", {frequency_hz: null}));
   $("engine-telegraph-submit").addEventListener("click", () => sendStationAction("engine_set_telegraph", {order: $("engine-telegraph").value}));
+  $("engine-course-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("engine-course-form", "engine-course", "engine_set_course", "course", 0, 359.99999999999994);
+  });
   $("engine-speed-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("engine-speed-form", "engine-speed", "engine_set_speed", "speed_kn", 0, 25);
   });
@@ -4297,6 +4402,7 @@
     if (document.hidden) stopBridgeCavitationAudio();
     if (document.hidden && authenticated()) setConnection("stale");
     syncOpzSweepAnimation();
+    syncWeatherAnimation();
   });
   window.addEventListener("offline", () => { stopSonarAudio("sonar_live_unavailable"); stopBridgeCavitationAudio(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
   window.addEventListener("online", () => { syncOpzSweepAnimation(); if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); } });

@@ -250,6 +250,8 @@ main { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min
 .station-row .detail-metrics, .station-card-view > .detail-metrics { padding-bottom: 0; }
 .station-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .55rem; align-items: end; }
 .station-controls > h3 { grid-column: 1 / -1; }
+.bridge-weather canvas { display: block; width: 100%; height: clamp(4.5rem, 12vw, 7rem); border: 1px solid var(--line); }
+.bridge-weather p { margin-top: .45rem; color: var(--muted); }
 .station-controls label, .control-form label { display: block; color: var(--muted); font-size: .72rem; }
 .station-controls select, .station-controls button, .station-controls input { width: 100%; }
 .control-page { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: .55rem; align-items: end; padding-top: .35rem; }

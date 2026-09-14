@@ -371,6 +371,7 @@ def test_web_assets_expose_hidden_simlog_view():
     assert "simlogCurrentState" in js and "simlog-table" in js
     assert "simlogMapItems" in js and "drawSimlogMap" in js
     assert "simlogMapLabel" in js and "Math.sin(angle)" in js
+    assert "plotted.forEach(({ item, x }, index)" in js
     assert 'item.section === "ship"' in js
     assert "simlogSectionRows" in js  # helo object is rendered as one row
     assert "JSON.stringify(row.data" not in js

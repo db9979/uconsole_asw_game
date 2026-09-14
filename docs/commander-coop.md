@@ -1,4 +1,4 @@
-# Commander LAN Co-op (0.2.0)
+# Commander LAN Co-op (0.2.1)
 
 [Deutsch](commander-coop.de.md)
 
@@ -12,19 +12,24 @@ IPv4 network. HTTP does not protect traffic from someone who can observe the LAN
 
 1. Launch the game. Networking is off, regardless of settings or saved game.
 2. Open F10 Options and choose Commander LAN, or press F9 directly.
-3. While off, choose the local private IPv4 address with Left/Right. Loopback
-   127.0.0.1 is offered for same-machine testing only. If no LAN address appears,
-   check the device's network connection; discovery does not perform DNS or
-   Internet probes.
-4. Choose a port if the default 8765 is occupied. Enable the service with Enter.
-5. Open the actual displayed URL in each crew browser. Permit incoming
+3. Choose **existing LAN** or **temporary U-Jagd hotspot** while the service is
+   off. In LAN mode, then select the local private IPv4 address. Loopback
+   127.0.0.1 is for same-machine tests only.
+4. Hotspot mode requires the one-time system-helper installation described in
+   the uConsole installation guide. Activation temporarily disconnects the
+   current Wi-Fi and displays a random SSID and a new Wi-Fi password. Neither is
+   saved nor sent to browsers.
+5. Choose a port if the default 8765 is occupied and enable the service with
+   Enter. The Commander listener starts on the hotspot's exact private IPv4 only
+   after NetworkManager has assigned it.
+6. Open the actual displayed URL in each crew browser. Permit incoming
    connections on the host firewall only from the trusted LAN if needed.
-6. Type the local pairing code: three digits plus three uppercase letters.
+7. Type the local pairing code: three digits plus three uppercase letters.
    Browser lowercase input is normalized. Codes are one-use and expire after
    five minutes. Five wrong guesses per rolling minute block further attempts
    temporarily; the fifth failure rotates the code. Explicit local revocation
    creates a new code and clears the lockout.
-7. Once paired, request a station in the browser. The host grants or rejects the
+8. Once paired, request a station in the browser. The host grants or rejects the
    exact request. Approval enables normal station operation; sonar audio and
    direct fire remain separate grants. When a crew station is active, the
    simulation continues behind F9 and F9 may remain open for crew administration.
@@ -92,6 +97,12 @@ Commander proposal and crew target have distinct outlines.
 The Helicopter chart follows the airborne helicopter rather than the ship and
 labels its projected Sonobuoys `SB01`, `SB02`, and so on.
 
+The Bridge weather instrument shows the authoritative day/night state, effective
+sea state, weather class, wind, rain and visibility. Its subdued wave and rain
+animation follows projected simulation time and freezes while paused. Helicopter
+readiness separately shows weather-safe launch/dipping decisions and crosswind.
+Autocrew status is read-only in every browser role; the host controls it locally.
+
 On Sonar, clicking or tapping inside the Broadband waterfall sets the manual
 listening bearing and clears contact-follow focus. The yellow line marks that
 bearing. LOFAR and the other analysis plots do not steer the listening beam.
@@ -114,8 +125,10 @@ the current picture. The server reports expired queued actions as rejections.
 
 ## Lifecycle and Limits
 
-Local disable or process shutdown stops the listener and revokes credentials.
-Successful load/reset replaces the network session at the next main-thread pump;
+Local disable or process shutdown first stops the listener and revokes credentials.
+A game-owned hotspot is then removed and the previous Wi-Fi connection is
+reactivated. A normal application failure also closes the helper control channel
+and triggers that cleanup. Successful load/reset replaces the network session at the next main-thread pump;
 pair and grant again. Failed candidate restoration leaves the live network session
 unchanged. A new connection never inherits the previous connection's grant.
 

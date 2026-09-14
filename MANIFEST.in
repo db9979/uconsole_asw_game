@@ -1,0 +1,6 @@
+include packaging/uconsole/install-hotspot-helper.sh
+include packaging/uconsole/io.github.db9979.u-jagd.hotspot.policy
+include packaging/uconsole/u-jagd-hotspot-helper
+include docs/station-shortcuts.de.md
+include docs/station-shortcuts.de.pdf
+include tools/build_station_shortcuts_pdf.py

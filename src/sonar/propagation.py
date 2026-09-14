@@ -146,7 +146,7 @@ def _segment(start: AcousticPoint, end: AcousticPoint,
 def propagate(source_x_nm: float, source_y_nm: float, source_depth_m: float,
               target_x_nm: float, target_y_nm: float, target_depth_m: float,
               frequency_hz: float, thermocline_m: float, water_depth_m: float,
-              *, sea_state: int = 0,
+              *, sea_state: float = 0,
               terrain_blocked: TerrainBlocked | None = None) -> PropagationResult:
     """Compute at most four stable, terrain-clear synthetic one-way paths."""
     sx = _number("source_x_nm", source_x_nm, -1_000_000.0, 1_000_000.0)
@@ -160,9 +160,9 @@ def propagate(source_x_nm: float, source_y_nm: float, source_depth_m: float,
                         CANONICAL_FREQUENCY_BANDS_HZ[-1])
     if frequency not in CANONICAL_FREQUENCY_BANDS_HZ:
         raise ValueError("frequency_hz must be a canonical game band")
-    if not isinstance(sea_state, int) or isinstance(sea_state, bool) \
-            or not 0 <= sea_state <= 6:
-        raise ValueError("sea_state must be an integer from 0 to 6")
+    if (type(sea_state) not in (int, float) or not math.isfinite(sea_state)
+            or not 0 <= sea_state <= 6):
+        raise ValueError("sea_state must be a finite number from 0 to 6")
     if terrain_blocked is not None and not callable(terrain_blocked):
         raise ValueError("terrain_blocked must be callable")
     profile = synthetic_sound_speed_profile(thermocline_m, water_depth_m)

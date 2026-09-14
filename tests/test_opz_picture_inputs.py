@@ -28,6 +28,10 @@ def clean_game(seed=1201):
     game.air_picture._tracks.clear()
     game.world.hour = 12.0
     game.world.sea_state = 0
+    game.world.refresh_weather()
+    for endpoint in (game.world._weather_start, game.world._weather_target):
+        endpoint["rain_intensity"] = 0.0
+        endpoint["visibility_nm"] = config.WEATHER_VISIBILITY_MAX_NM
     return game
 
 

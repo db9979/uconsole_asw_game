@@ -102,14 +102,22 @@ def _direct_fire_observations(rows, refs):
 
 
 def _common(game, status, role):
+    weather = game.world.weather_values()
     return dict(protocol=2, version=APP_VERSION, session=status["session"],
                 epoch=status["epoch"], revision=status["revision"],
                 seq=status["seq"], phase=status["phase"], role=role,
                 chart_revision=status["session"],
                 clock=dict(sim=_number(game.sim_t), mission=_number(game.mission_time),
                            time_scale=game.time_scale, world=_number(game.world.hour)),
-                environment=dict(sea_state=game.world.sea_state,
-                                 is_night=bool(game.world.is_night())),
+                 environment=dict(
+                     sea_state=game.world.sea_state,
+                     effective_sea_state=_number(weather["sea_state"]),
+                     is_night=bool(game.world.is_night()),
+                     weather=game.world.weather_kind(),
+                     wind_from_deg=_number(weather["wind_from_deg"]),
+                     wind_speed_kn=_number(weather["wind_speed_kn"]),
+                     rain_intensity=_number(weather["rain_intensity"]),
+                     visibility_nm=_number(weather["visibility_nm"])),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))))
@@ -396,6 +404,7 @@ def _radio(game, rows, ref_by_track):
 
 def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None):
     helo = game.helo
+    flight_weather = game.helicopter_weather()
     airborne = bool(helo.airborne)
     asset = dict(state=helo.state, airborne=airborne,
                  x=_number(helo.x) if airborne else None,
@@ -429,20 +438,26 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None):
                  readiness=dict(
                      flightdeck_down=game.damage.station_down("flightdeck"),
                      deck_state=game.damage.station_state("flightdeck"),
-                     can_launch=helo.state == "HANGAR"
-                    and not game.damage.station_down("flightdeck"),
+                      can_launch=helo.state == "HANGAR"
+                     and not game.damage.station_down("flightdeck")
+                     and flight_weather["launch_safe"],
                     can_return=airborne,
                      can_set_waypoint=helo.state != "VERLOREN",
                      can_deploy_buoy=airborne and helo.buoys_left > 0
                       and helo.water_entry_clear(game.world),
-                     can_set_dipping=helo.state == "AUF"
-                      and (helo.dip_state != "STOWED"
+                      can_set_dipping=helo.state == "AUF"
+                       and (helo.dip_state != "STOWED"
+                            or flight_weather["dipping_safe"])
+                       and (helo.dip_state != "STOWED"
                            or helo.dip_depth_limit(game.world)
                            >= config.HELO_DIP_DEPTH_MIN_M),
                      can_set_dip_depth=helo.state == "AUF"
                       and helo.dip_state in ("DEPLOYING", "DEPLOYED"),
-                     can_dipping_ping=not game.damage.station_down("sonar")
-                      and helo.dip_ping_ready,
+                      can_dipping_ping=not game.damage.station_down("sonar")
+                       and helo.dip_ping_ready,
+                      weather_launch_safe=flight_weather["launch_safe"],
+                      weather_dipping_safe=flight_weather["dipping_safe"],
+                      crosswind_kn=_number(flight_weather["crosswind_kn"]),
                      rtb_margin_s=(None if distance is None else _number(
                          helo.fuel_s - distance / max(.001, config.kn_to_nm_per_s(
                              config.HELO_SPEED_KN)) - config.HELO_FUEL_RESERVE_S))))
@@ -589,24 +604,37 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                        helicopter=_helicopter(
                                            game, rows, asset_refs, buoy_labels)["asset"])),
         "radio": _radio(game, rows, ref_by_track),
-        "engine": dict(propulsion=dict(speed=_number(game.ship.speed),
+        "engine": dict(propulsion=dict(course=_number(game.ship.course),
+                    target_course=_number(game.ship.target_course),
+                    speed=_number(game.ship.speed),
                     target_speed=_number(game.ship.target_speed), telegraph=game.ship.telegraph,
                     rpm=_number(game.ship.rpm()), quiet_mode=bool(game.ship.quiet_mode),
-                    cavitating=bool(game.ship.cavitating)),
+                    cavitating=bool(game.ship.cavitating),
+                    fuel_kg=_number(game.ship.fuel_kg),
+                    fuel_capacity_kg=_number(game.ship.fuel_capacity_kg),
+                    fuel_burn_kg_h=_number(game.ship.fuel_burn_kg_h()),
+                    fuel_endurance_h=_number(game.ship.fuel_endurance_h()),
+                    fuel_range_nm=_number(game.ship.fuel_range_nm())),
                      machinery=dict(station_state=game.damage.station_state("engine"),
                                     speed_cap=_number(game.ship.speed_cap),
                                     effective_speed_cap=_number(
                                         game.damage.engine_speed_cap()),
                                     flood=_number(game.damage.compartments[
                                         "engine"].flood),
-                                    fire=_number(game.damage.compartments[
-                                        "engine"].fire),
-                                    noise=_number(game.ship.noise_level()),
+                                     fire=_number(game.damage.compartments[
+                                         "engine"].fire),
+                                     repair_teams=game.damage.teams_on("engine"),
+                                     repair_trend={key: (_number(value)
+                                         if key != "repairable" else bool(value))
+                                         for key, value in game.damage.compartment_trend(
+                                             "engine").items()},
+                                     noise=_number(game.ship.noise_level()),
                                     grounded=bool(game.ship.grounded)),
                     controls=dict(orders=["ASTERN", "STOP", "SLOW", "HALF",
                                           "FULL", "FLANK"],
                                   speed_max_kn=_number(config.SHIP_SPEED_MAX_KN)),
-                     environment_effects=dict(sea_state=game.world.sea_state,
+                      environment_effects=dict(sea_state=_number(
+                          game.world.effective_sea_state),
                                               roll=_number(game.ship.roll),
                                               pitch=_number(game.ship.pitch),
                                               tas_available=bool(
@@ -622,6 +650,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
     for role in ROLE_NAMES:
         state = deepcopy(common)
         state["role"] = role
+        state["autocrew"] = dict(enabled=bool(game.autocrew.enabled[role]),
+                                 status=game.autocrew.status(game, role))
         state[role] = operational[role]
         result[role] = state
     return result

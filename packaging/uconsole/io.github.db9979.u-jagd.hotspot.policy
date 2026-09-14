@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>U-Jagd</vendor>
+  <vendor_url>https://github.com/db9979/uconsole_asw_game</vendor_url>
+  <action id="io.github.db9979.u-jagd.hotspot">
+    <description>Manage the temporary U-Jagd Remote Crew hotspot</description>
+    <message>U-Jagd is requesting its temporary Remote Crew hotspot</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>yes</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/u-jagd-hotspot-helper</annotate>
+  </action>
+</policyconfig>

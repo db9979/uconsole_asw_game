@@ -205,6 +205,20 @@ class PlatformSensorSuite:
                 or (profile.domain == "ais" and target_domain != "surface")
                 or (profile.domain == "sonar" and target_domain == "air")):
             return
+        if profile.domain == "radar":
+            sea_state = getattr(world, "effective_sea_state",
+                                getattr(world, "sea_state", 0.0))
+            sea = config.clamp(
+                (sea_state - (config.RADAR_WEATHER_THRESHOLD - 1)) / 2.0,
+                0.0, 1.0)
+            rain = config.clamp(getattr(world, "rain_intensity", 0.0), 0.0, 1.0)
+            sea_loss = (config.RADAR_AIR_WEATHER_LOSS
+                        if target_domain == "air"
+                        else config.RADAR_SURFACE_WEATHER_LOSS)
+            rain_loss = (config.RADAR_RAIN_AIR_LOSS
+                         if target_domain == "air"
+                         else config.RADAR_RAIN_SURFACE_LOSS)
+            availability *= (1.0 - sea_loss * sea) * (1.0 - rain_loss * rain)
         maximum = (profile.synthetic_range_nm or 0.0) * availability
         if maximum <= 0.0 or distance > maximum:
             return
@@ -237,7 +251,8 @@ class PlatformSensorSuite:
                     owner.x, owner.y, source_depth,
                     candidate.x, candidate.y, target_depth,
                     propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
-                    thermo, water_depth, sea_state=getattr(world, "sea_state", 0),
+                     thermo, water_depth, sea_state=getattr(
+                         world, "effective_sea_state", getattr(world, "sea_state", 0)),
                     terrain_blocked=getattr(world, "sonar_path_blocked", None))
                 maximum *= propagation.passive_range_factor(result, distance)
                 if maximum <= 0.0 or distance > maximum:

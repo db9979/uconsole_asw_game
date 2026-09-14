@@ -510,6 +510,7 @@ def test_fusion_schema_rejects_duplicate_refs_and_action_role_mismatch(server):
 
 @pytest.mark.parametrize(("station", "action", "params"), [
     ("engine", "engine_set_telegraph", {"order": "ASTERN"}),
+    ("engine", "engine_set_course", {"course": 271.5}),
     ("engine", "engine_set_speed", {"speed_kn": 12.5}),
     ("engine", "engine_set_quiet_mode", {"enabled": True}),
     ("damage", "damage_assign_team", {"team": 1, "compartment": "engine"}),
@@ -551,6 +552,7 @@ def test_remaining_nonlethal_action_schemas_are_exact(server, station, action, p
 
 @pytest.mark.parametrize(("action", "params"), [
     ("engine_set_telegraph", {"order": "AHEAD"}),
+    ("engine_set_course", {"course": 360}),
     ("engine_set_quiet_mode", {"enabled": 1}),
     ("damage_assign_team", {"team": True, "compartment": "engine"}),
     ("damage_assign_team", {"team": 1, "compartment": "unknown"}),
@@ -757,6 +759,7 @@ def test_engine_and_damage_actions_match_result_helpers_without_ui_cursor_mutati
         ui = (game.station, game.dmg_team, game.dmg_cursor, game.selected_contact)
         actions = [
             ("engine_set_telegraph", {"order": "ASTERN"}),
+            ("engine_set_course", {"course": 217.5}),
             ("engine_set_speed", {"speed_kn": 8.5}),
             ("engine_set_quiet_mode", {"enabled": True}),
         ]
@@ -764,6 +767,7 @@ def test_engine_and_damage_actions_match_result_helpers_without_ui_cursor_mutati
             assert submit(game, bridge, server, engine_cookie, engine,
                           action, params, seq)["reasoncode"] == "ok"
         assert game.ship.telegraph == "HALF"
+        assert game.ship.target_course == 217.5
         assert game.ship.target_speed == 8.5 and game.ship.quiet_mode
         assert (game.station, game.dmg_team, game.dmg_cursor,
                 game.selected_contact) == ui
@@ -783,10 +787,32 @@ def test_engine_and_damage_actions_match_result_helpers_without_ui_cursor_mutati
         game.damage.compartments["engine"].state = "ZERSTOERT"
         before = (game.ship.telegraph, game.ship.target_speed, game.ship.quiet_mode)
         assert submit(game, bridge, server, engine_cookie, engine,
-                      "engine_set_quiet_mode", {"enabled": False},
-                      3)["reasoncode"] == "engine_down"
+                       "engine_set_quiet_mode", {"enabled": False},
+                       4)["reasoncode"] == "engine_down"
         assert (game.ship.telegraph, game.ship.target_speed,
                 game.ship.quiet_mode) == before
+    finally:
+        game.audio.shutdown()
+
+
+def test_bridge_course_wins_over_engine_course_in_same_pump(server):
+    game = Game(seed=419, start_menu=False, audio_enabled=False, language="en")
+    bridge = CommanderBridge()
+    try:
+        bridge.pump(game, server, now=time.monotonic())
+        bridge_cookie, bridge_session = pair(server, "Bridge course", "bridge")
+        engine_cookie, engine_session = pair(server, "Engine course", "engine")
+        bridge.pump(game, server, now=time.monotonic())
+        assert post(server, bridge_cookie, bridge_session, station_command(
+            bridge_session, "bridge_set_course", {"course": 40.0}, bridge,
+            command_id="bridge-course", seq=0))[0] == 202
+        assert post(server, engine_cookie, engine_session, station_command(
+            engine_session, "engine_set_course", {"course": 220.0}, bridge,
+            command_id="engine-course", seq=0))[0] == 202
+        bridge.pump(game, server, now=time.monotonic())
+        assert game.ship.target_course == 40.0
+        assert results(server, bridge_cookie)[-1]["reasoncode"] == "ok"
+        assert results(server, engine_cookie)[-1]["reasoncode"] == "ok"
     finally:
         game.audio.shutdown()
 

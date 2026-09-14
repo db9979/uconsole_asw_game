@@ -96,6 +96,13 @@ def test_direct_course_and_speed_input():
     key(game, pygame.K_RETURN)
     assert game.ship.target_speed == 18.5
 
+    game.station = Station.ENGINE
+    key(game, pygame.K_u)
+    for value in (pygame.K_2, pygame.K_7, pygame.K_0):
+        key(game, value)
+    key(game, pygame.K_RETURN)
+    assert game.ship.target_course == 270.0
+
 
 def test_numeric_navigation_input_can_be_cancelled():
     game = Game(seed=31415, start_menu=False)

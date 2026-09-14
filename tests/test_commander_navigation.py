@@ -12,6 +12,7 @@ from unittest.mock import Mock
 import pygame
 import pytest
 
+from src.commander.access_point import HotspotDetails
 from src.commander.server import CommanderServer, _command_valid
 from src.core import config
 from src.core.game import Game
@@ -273,12 +274,20 @@ def test_real_http_only_queues_navigation_and_denies_direct_actions(game):
 
 @pytest.mark.parametrize("language", ["en", "de", "pseudo"])
 @pytest.mark.parametrize("large", [False, True])
-def test_native_four_rows_nonoverlap_and_roomy_join_code(game, monkeypatch, language, large):
+@pytest.mark.parametrize("network_mode", ["lan", "hotspot"])
+def test_native_five_rows_nonoverlap_and_roomy_join_code(
+        game, monkeypatch, language, large, network_mode):
     console = game.commander
     bridge, server = start(game)
     console.bridge = bridge
     console.address = ("127.0.0.1", 8765)
     console.pairing_code = "123ABC"
+    console.network_mode = network_mode
+    if network_mode == "hotspot":
+        console.hotspot.state = "running"
+        console.hotspot.details = HotspotDetails(
+            ssid="U-Jagd-7KPX", password="SecureCrewKey2345",
+            address="10.42.0.1", interface="wlan0")
     server.send(navigation(server.state, course=359.999, speed_kn=25))
     bridge.pump(game, server, now=100.1)
     game.tr = (Translator("en", pseudolocale()) if language == "pseudo" else Translator(language)).t
@@ -286,7 +295,7 @@ def test_native_four_rows_nonoverlap_and_roomy_join_code(game, monkeypatch, lang
     console.error = "commander.local.navigation.bridge_down"
     with layout.capture_text() as text:
         console.draw(game)
-    assert len(console.row_rects()) == 4
+    assert len(console.row_rects()) == 5
     for entry in text:
         assert entry["bounds"].contains(entry["rect"])
         assert pygame.Rect(0, 0, 1280, 720).contains(entry["bounds"])
@@ -303,9 +312,11 @@ def test_native_four_rows_nonoverlap_and_roomy_join_code(game, monkeypatch, lang
     console.handle_key(game, pygame.K_DOWN)
     assert console.selection == 3
     console.handle_key(game, pygame.K_DOWN)
+    assert console.selection == 4
+    console.handle_key(game, pygame.K_DOWN)
     assert console.selection == 0
     console.handle_key(game, pygame.K_UP)
-    assert console.selection == 3
+    assert console.selection == 4
 
 
 NAVIGATION_BROWSER = r"""

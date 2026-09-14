@@ -15,6 +15,7 @@ import pygame
 import pytest
 
 from src.commander import local
+from src.commander.access_point import HotspotDetails
 from src.commander.local import CommanderConsole
 from src.core.game import Game
 from src.core.i18n import Translator, load_catalog, pseudolocale
@@ -75,6 +76,65 @@ class Transport:
             command["track"] = state["tracks"][0]["ref"]
         self.queue.append(dict(command=command, lease=self.lease_generation,
                                received_at=time.monotonic()))
+
+
+class FakeHotspot:
+    def __init__(self, order=None):
+        self.state = "off"
+        self.details = None
+        self.error = None
+        self.order = order if order is not None else []
+
+    @property
+    def active(self):
+        return self.state in ("starting", "running", "stopping")
+
+    def start(self):
+        self.order.append("hotspot-start")
+        self.state = "starting"
+        return True
+
+    def ready(self):
+        self.details = HotspotDetails(
+            ssid="U-Jagd-TEST", password="TestPassword2345",
+            address="10.42.0.1", interface="wlan0")
+        self.state = "running"
+
+    def request_stop(self):
+        self.order.append("hotspot-stop")
+        self.state = "stopping"
+        return True
+
+    def poll(self):
+        return self.state
+
+    def close(self):
+        self.order.append("hotspot-close")
+        self.state = "off"
+        self.details = None
+
+
+class HotspotTransport:
+    connected = False
+    pairing_code = "123ABC"
+
+    def __init__(self, order=None, fail=False):
+        self.order = order if order is not None else []
+        self.fail = fail
+        self.address = None
+
+    def start(self, host, port):
+        self.order.append(("server-start", host, port))
+        if self.fail:
+            raise OSError("test bind failure")
+        self.address = (host, port)
+
+    def stop(self):
+        self.order.append("server-stop")
+        self.address = None
+
+    def station_leased(self, station):
+        return False
 
 
 class RosterTransport:
@@ -447,11 +507,11 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     assert game.commander_open
     activate = Mock()
     monkeypatch.setattr(game.commander, "activate", activate)
-    rect = game.commander.row_rects()[3]
+    rect = game.commander.row_rects()[4]
     event = pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                               pos=(rect.centerx, rect.centery + 140))
     game.handle_event(event)
-    assert game.commander.selection == 3 and not activate.called
+    assert game.commander.selection == 4 and not activate.called
     game.handle_event(event)
     activate.assert_called_once_with(game)
 
@@ -489,7 +549,7 @@ def test_loopback_start_bind_failure_disable_and_translation_cache(game, monkeyp
     assert "127.0.0.1" not in other.error
     other.stop()
     host, port = console.host, console.port
-    for selection in (1, 2):
+    for selection in (1, 2, 3):
         console.selection = selection
         console.activate(game)
     assert (console.host, console.port) == (host, port)
@@ -505,14 +565,85 @@ def test_loopback_start_bind_failure_disable_and_translation_cache(game, monkeyp
     assert console.pairing_code == session_code
 
 
+def test_hotspot_starts_before_listener_and_stops_after_listener(game):
+    order = []
+    hotspot = FakeHotspot(order)
+    server = HotspotTransport(order)
+    console = game.commander
+    console.hotspot = hotspot
+    console.network_mode = "hotspot"
+    console.server = server
+    console._translations = {}
+    console._contact_analysis_assets = {}
+    console.bridge.pump = Mock()
+
+    console.activate(game)
+    assert order == ["hotspot-start"] and console.address is None
+    hotspot.ready()
+    console.pump(game)
+    assert order == ["hotspot-start", ("server-start", "10.42.0.1", 8765)]
+    assert console.address == ("10.42.0.1", 8765)
+    assert console.pairing_code == "123ABC"
+    persisted = json.dumps(game.save_state()) + json.dumps(asdict(game.preferences))
+    assert all(secret not in persisted for secret in (
+        "U-Jagd-TEST", "TestPassword2345", "10.42.0.1", "hotspot"))
+
+    console.activate(game)
+    assert order[-2:] == ["server-stop", "hotspot-stop"]
+    assert console.address is None and console.pairing_code is None
+
+
+def test_hotspot_listener_failure_rolls_back_without_exposing_service(game):
+    order = []
+    hotspot = FakeHotspot(order)
+    console = game.commander
+    console.hotspot = hotspot
+    console.network_mode = "hotspot"
+    console.server = HotspotTransport(order, fail=True)
+    console._translations = {}
+    console._contact_analysis_assets = {}
+
+    console.activate(game)
+    hotspot.ready()
+    console.pump(game)
+
+    assert order == ["hotspot-start", ("server-start", "10.42.0.1", 8765),
+                     "server-stop", "hotspot-stop"]
+    assert console.address is None and console.pairing_code is None
+    assert console.error == "commander.local.hotspot.error.listener"
+
+
+def test_unexpected_hotspot_loss_revokes_remote_service(game):
+    order = []
+    hotspot = FakeHotspot(order)
+    hotspot.ready()
+    server = HotspotTransport(order)
+    server.address = ("10.42.0.1", 8765)
+    console = game.commander
+    console.hotspot = hotspot
+    console.network_mode = "hotspot"
+    console.server = server
+    console.address = server.address
+    console.pairing_code = server.pairing_code
+    console.bridge.pump = Mock()
+    hotspot.state = "error"
+    hotspot.error = "start"
+
+    console.pump(game)
+
+    assert order == ["server-stop"]
+    assert console.address is None and console.pairing_code is None
+    assert console.error == "commander.local.hotspot.error.start"
+
+
 def test_port_and_host_are_transient_local_controls(game):
     console = game.commander
     console._prepared = True
     console.hosts = ("127.0.0.1", "192.168.1.2")
-    console.selection = 1
+    console.selection = 2
     console.handle_key(game, pygame.K_RIGHT)
     assert console.host == "192.168.1.2"
-    console.selection = 2
+    console.selection = 3
     console.handle_key(game, pygame.K_PLUS)
     assert console.port == 8766
     console.handle_key(game, pygame.K_MINUS)
@@ -528,12 +659,12 @@ def test_port_and_host_are_transient_local_controls(game):
     assert all(value not in saved + prefs for value in ("192.168.1.2", '"8765"', '"commander"'))
 
 
-def test_fourth_row_opens_roster_and_escape_f9_preserve_admin_ownership(game):
+def test_fifth_row_opens_roster_and_escape_f9_preserve_admin_ownership(game):
     console = game.commander
     console._prepared = True
     console.server = RosterTransport()
     key(game, pygame.K_F9)
-    console.selection = 3
+    console.selection = 4
     key(game, pygame.K_RETURN)
     assert game.commander_open and console.roster_open
     key(game, pygame.K_ESCAPE)

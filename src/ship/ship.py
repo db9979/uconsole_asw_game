@@ -23,6 +23,8 @@ class Ship:
         self.astern = False
         self.speed_cap = config.SHIP_SPEED_MAX_KN
         self.quiet_mode = False
+        self.fuel_capacity_kg = config.SHIP_FUEL_CAPACITY_KG
+        self.fuel_kg = self.fuel_capacity_kg
         self.grounding_latched = False
         self.grounding_contact = None
         self.last_safe_pose = (self.x, self.y, self.course)
@@ -79,7 +81,39 @@ class Ship:
 
     def rpm(self) -> float:
         """M10: Wellendrehzahl für die Maschinenraum-Anzeige."""
+        if self.fuel_kg <= 0.0:
+            return 0.0
         return config.SHIP_RPM_MIN + self.speed * config.SHIP_RPM_PER_KN
+
+    def fuel_burn_kg_h(self) -> float:
+        """Current hotel plus propulsion consumption for the ordered load."""
+        if self.fuel_kg <= 0.0:
+            return 0.0
+        ordered_speed = min(
+            self.target_speed, self.speed_cap,
+            12.0 if self.quiet_mode else self.speed_cap)
+        load = config.clamp(ordered_speed / config.SHIP_SPEED_MAX_KN, 0.0, 1.0)
+        propulsion = config.SHIP_FUEL_MAX_PROPULSION_KG_H * load ** 3
+        if self.astern:
+            propulsion *= config.SHIP_FUEL_ASTERN_FACTOR
+        return config.SHIP_FUEL_HOTEL_KG_H + propulsion
+
+    def fuel_endurance_h(self) -> float | None:
+        burn = self.fuel_burn_kg_h()
+        return self.fuel_kg / burn if burn > 0.0 else None
+
+    def fuel_range_nm(self) -> float | None:
+        endurance = self.fuel_endurance_h()
+        if endurance is None or self.speed <= 0.0:
+            return None
+        return endurance * self.speed
+
+    def update_fuel(self, dt: float) -> None:
+        self.fuel_kg = max(0.0, self.fuel_kg - self.fuel_burn_kg_h() * dt / 3600.0)
+        if self.fuel_kg <= 0.0:
+            self.astern = False
+            self.order_idx = 0
+            self.target_speed = 0.0
 
     # --- Physik ---
 
@@ -159,7 +193,8 @@ class Ship:
     # --- M10: Roll/Pitch aus Seegang + Fahrt (Anzeige) ---
 
     def _update_roll_pitch(self, dt: float, world) -> None:
-        sea = world.sea_state if world is not None else 0
+        sea = (getattr(world, "effective_sea_state", world.sea_state)
+               if world is not None else 0)
         amp = 0.4 + 0.30 * sea + 0.02 * self.speed
         self._clock += dt
         self.roll = amp * math.sin(self._clock * 0.23)

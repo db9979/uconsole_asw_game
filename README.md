@@ -7,7 +7,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **0.2.0**
+Current release: **0.2.1**
+
+Release 0.2.1 adds deterministic wind, rain, visibility and changing sea state;
+weather effects on sensors and helicopter operations; station Autocrew; fuel and
+expanded Engineering controls; the uConsole-hosted Remote Crew hotspot; and
+animated native and browser weather instruments. Save format v10 and Commander
+protocols v1/v2 remain unchanged.
 
 This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
@@ -69,6 +75,12 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 - Optional trusted-LAN Remote Crew: multiple authenticated browser clients can
   hold exclusive station roles, switch among their retained roles, operate the
   same observation-led controls, and use separately granted direct fire.
+- Conservative station Autocrew with local `F2` control and an `F3` overview.
+  Remote Crew temporarily suspends Autocrew only for the leased station.
+- Deterministic marine weather with wind, rain, visibility and smooth sea-state
+  transitions. Weather affects radar, lookout, sonar and helicopter limits but
+  does not add hidden wind drift.
+- Modeled fuel consumption, endurance, range and repair trends in Engineering.
 
 ## Requirements
 
@@ -142,8 +154,11 @@ picture with onboard sensors.
 
 ## Controls
 
-Press `F1` in the game for complete context-sensitive help. The most important
-global controls are:
+Press `F1` in the game for context-sensitive help. A printable complete local
+keyboard reference is available as
+[`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf), with its text
+source at [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md). The
+most important global controls are:
 
 | Input | Action |
 |---|---|
@@ -151,9 +166,12 @@ global controls are:
 | `Tab` / `Shift+Tab` | Next / previous station |
 | `P` | Pause / resume |
 | `F1` | Context-sensitive help |
+| `F2` / `F3` | Toggle Autocrew for the current station / open the Autocrew overview |
+| `F4` | Open SimLog when enabled |
+| `F8` | Open the tactical unit analyzer; cycles a visible Commander proposal when applicable |
 | `F10` | Options; while paused, `O` also opens options |
 | `F9` | Local Commander LAN administration |
-| `S` / `L` | Save / load using slots 1 to 5 |
+| `S` / `L` | Save / load using slots 1 to 5; at OPZ/CIC, `L` is the contextual fusion command |
 | `Z` / `X` or `[` / `]` | Slower / faster time acceleration |
 | `+` / `-` | Engine telegraph |
 | `Alt+Enter` | Toggle fullscreen |
@@ -163,17 +181,19 @@ global controls are:
 | `K` | Toggle camera follow on a visible map |
 | `Esc` | Clear a pinned tooltip, cancel the current view/input, or open quit confirmation |
 
-Station keys are deliberately contextual. For example, `A` sends an active
-ping at Sonar but changes acoustic mode in Engineering. Use `F1` rather than
+Station keys are deliberately contextual. For example, `Shift+A` sends an active
+ping at Sonar, plain `A` selects Broadband listening there, and `A` changes
+acoustic mode in Engineering. Use `F1` rather than
 assuming that a key has the same meaning at every station.
 
 In help, Left/Right switches category; Up/Down or Page Up/Page Down scrolls its
 contents. Existing station weapon shortcuts remain available. Held course and
 torpedo-depth adjustments use real time, not the selected simulation multiplier.
 
-At Damage Control, click a zone or its label to select it. With tooltips enabled,
-the click also pins its details; it never assigns a team. Up/Down selects a team,
-Enter assigns it, and Backspace withdraws it. Flood and fire trends show the
+At Damage Control, click a zone or its label to select it and attempt to assign
+the currently selected team. With tooltips enabled, the click also pins its
+details. Up/Down selects a team, Enter assigns it, and Backspace withdraws it.
+Flood and fire trends show the
 model's net rate, including difficulty and multi-team effectiveness.
 
 ## Sonar Notes
@@ -202,8 +222,9 @@ saved tactical observations are retained.
 
 Sonar controls include:
 
-- `A`: transmit an active ping; the transmitter has a 30-second cooldown.
-- `B`: select HMS or TAS as the receiving/transmitting array.
+- `Shift+A`: transmit an active ping; the transmitter has a 30-second cooldown.
+- `Shift+B`: select HMS or TAS as the receiving/transmitting array.
+- `A` / `B` / `H`: select Broadband, Filtered or Heterodyne listening.
 - `Y`: deploy or retrieve TAS.
 - `U` / `V`: adjust TAS/VDS target depth after deployment.
 - `Page Up` / `Page Down`: move through Broadband, LOFAR, DEMON, TMA,
@@ -218,7 +239,7 @@ array for the rest of the current game. TAS depth is also constrained by ship
 speed.
 
 Selecting TAS does not make it available: a TAS ping can produce echoes only
-after enough cable is streamed. Pressing `A` while TAS is unavailable is
+after enough cable is streamed. Pressing `Shift+A` while TAS is unavailable is
 rejected without transmitting or consuming the shared ping cooldown. TAS active
 range is lower than HMS active range; its primary advantage is passive bearing
 accuracy and performance against suitably layered contacts after it has
@@ -229,7 +250,7 @@ settled.
 At OPZ/CIC, `Page Up` and `Page Down` only select display scales of **10, 20, 40,
 80, or 120 NM**; they do not change pages or sensor power. The modeled
 clear-weather detection limits are 30 NM for surface radar and 100 NM for air
-radar, with degradation from sea state 5. Surface and air radar can be
+radar, with degradation from sea state 5 and rain clutter. Surface and air radar can be
 controlled separately with `R` and `Shift+R`.
 
 ## Language and Options
@@ -248,6 +269,15 @@ Use **F10 > Commander LAN**, or **F9**, on the uConsole. Select an explicit
 private IPv4 while the service is off, then enable it. Open the displayed URL on
 each crew device. The default `127.0.0.1:8765` is local-only, not reachable from
 another device. No router forwarding is needed or supported.
+
+Alternatively, the uConsole can create a temporary WPA2 Remote Crew hotspot.
+Install its narrowly scoped privileged helper once with
+`sudo ./packaging/uconsole/install-hotspot-helper.sh`, select the hotspot network
+mode in F9, and enable the service. U-Jagd generates a fresh SSID and Wi-Fi
+password each time, starts the listener only after the private hotspot address is
+ready, and stores neither credential. Stopping Remote Crew removes the hotspot
+and restores the previous Wi-Fi connection. The game itself must not run with
+`sudo`.
 
 Pair using the six-character code: **three digits followed by three uppercase
 letters**, for example `482KMT`. Codes expire after five minutes; five wrong
@@ -302,7 +332,7 @@ import. JSON templates under `data/editor_templates/` describe the accepted
 schemas; user files are stored under `~/.u-jagd/missions/` and
 `~/.u-jagd/units/`.
 
-Validated does not mean runtime-effective. In release 0.2.0:
+Validated does not mean runtime-effective. In release 0.2.1:
 
 - A user mission can be started with `F5` from the Mission Editor browser only
   when it uses the supported runtime subset.
@@ -324,7 +354,7 @@ Validated does not mean runtime-effective. In release 0.2.0:
 
 ## Saves and User Data
 
-Release 0.2.0 writes and loads save format **v10** only. V10 requires the exact
+Release 0.2.1 writes and loads save format **v10** only. V10 requires the exact
 `u-jagd-save-v10` schema, including the current runtime catalog snapshot and all
 deterministic continuation state. Older, newer, malformed, or incomplete saves
 are rejected without replacing the running game.

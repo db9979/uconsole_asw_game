@@ -465,3 +465,23 @@ composite spectral/DEMON diagrams (113 cruise and 113 high).
   saves or credentials.
 - No push or release upload was performed. Release status remains HOLD only for
   the listed physical target-hardware checks.
+
+## 2026-09-14 0.2.1 Software Acceptance
+
+- Revision: complete uncommitted 0.2.1 candidate; no push or release upload.
+- Scope: deterministic marine weather and effects, station Autocrew, Engineering
+  fuel/course/repair readouts, Remote Crew role completion, and the temporary
+  uConsole-hosted WPA2 hotspot with privileged-helper boundary.
+- Compatibility: save format remains exact v10; Commander protocols remain v1
+  and v2. Protocol v1 was not broadened.
+- Focused release tests: 317 save/weather/Autocrew/hotspot/Commander tests passed;
+  four real Chromium desktop/mobile session tests passed; 123 startup/i18n/layout
+  tests passed; two packaging build/install tests passed.
+- Catalog: 109 acoustic profiles valid. Smoke: `SMOKE-OK` across save/load,
+  menus, all stations and overlays.
+- Printable controls: deterministic generator check passed; PDF is valid PDF
+  1.4, A4, three pages, unencrypted and contains no scripts or metadata stream.
+- A complete suite attempt reached 26 percent without failure before the
+  execution timeout; focused coverage above completed successfully.
+- Release status: HOLD only for physical hotspot, multi-device, audio, sustained
+  load, readability and thermal acceptance on the target uConsole hardware.

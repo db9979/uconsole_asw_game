@@ -89,8 +89,12 @@ def test_engine_native_layout_uses_two_equal_work_columns(monkeypatch):
 
     monkeypatch.setattr(layout, "box", record)
     ship = NS(
-        telegraph="HALF", order_idx=2, speed=10.0, target_speed=10.0,
+        telegraph="HALF", order_idx=2, course=90.0, target_course=95.0,
+        speed=10.0, target_speed=10.0,
         cavitating=False, roll=1.0, pitch=.5, quiet_mode=False,
+        fuel_kg=400_000.0, fuel_capacity_kg=500_000.0,
+        fuel_burn_kg_h=lambda: 1000.0, fuel_endurance_h=lambda: 400.0,
+        fuel_range_nm=lambda: 4000.0,
         rpm=lambda: 120.0, noise_level=lambda: .3,
         passive_sonar_range_nm=lambda *args: 15.0,
     )

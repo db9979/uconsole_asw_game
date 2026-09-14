@@ -15,6 +15,7 @@ from src.audio.engine import AudioEngine
 from src.audio.preview import unit_sonar_preview
 from src.commander.local import CommanderConsole
 from src.core import config
+from src.core.autocrew import AutocrewController, station_key
 from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
                                station_page_step, toggle_tas)
 from src.core.i18n import (Translator, display_value, localized, localize,
@@ -62,8 +63,9 @@ from src.ui.feedback import EventFeed
 from src.ui.map_view import draw_map_view, map_hit_target
 from src.ui.splash_view import SPLASH_PING_PERIOD_S, draw_splash
 from src.ui.sonar_view import draw_sonar_view, sonar_click_target, sonar_hit_target
-from src.ui.stations_view import (draw_bridge_view, draw_damage_view,
-                                  draw_eloka_view, draw_engine_view, draw_opz_view,
+from src.ui.stations_view import (draw_autocrew_overview, draw_bridge_view,
+                                  draw_damage_view, draw_eloka_view,
+                                  draw_engine_view, draw_opz_view,
                                   draw_radio_view,
                                    draw_helicopter_view, station_hit_target)
 from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
@@ -131,6 +133,7 @@ SAVE_ROOT_FIELDS = {
     "opz_affiliations", "air_threat_reported", "esm", "next_entity_ids",
     "asm_spawned", "asm_seq", "warship_asm_seq", "torpedo_seq", "buoy_seq",
     "ciws_cooldown_s", "schedulers", "rngs", "ui",
+    "autocrew",
 }
 
 
@@ -425,6 +428,8 @@ class Game:
         self.decoys = []
         self.incident = False
         self.station = Station.BRIDGE
+        self.autocrew = AutocrewController()
+        self.autocrew_overview_open = False
         self.paused = False
         self.running = True
         self.simlog_view_open = False
@@ -545,7 +550,13 @@ class Game:
                                  config.MAP_ZOOM_MAX_PX_PER_NM)
         self._reset_map_view()
         self.hq_msg(message("runtime.hq.roe", roe=self.roe))
-        self.hq_msg(message("runtime.hq.weather", sea_state=self.world.sea_state))
+        weather = self.world.weather_values()
+        self.hq_msg(message(
+            "runtime.hq.weather", sea_state=f"{weather['sea_state']:.1f}",
+            wind_from=f"{weather['wind_from_deg']:.0f}",
+            wind_speed=f"{weather['wind_speed_kn']:.0f}",
+            rain=f"{weather['rain_intensity']:.0%}",
+            visibility=f"{weather['visibility_nm']:.1f}"))
         self.feed.add(self.world.format_time(), "mission",
                       self._mission_started_notice())
         if publish_intel:
@@ -611,6 +622,7 @@ class Game:
         env = definition["environment"]
         self.world.hour = float(env["time_hour"])
         self.world.sea_state = int(env["sea_state"])
+        self.world.refresh_weather()
         thermo = float(env["thermocline_depth_m"])
         self.world._thermo = [[thermo for _ in row] for row in self.world._thermo]
         lv = config.LEVELS[self.level]
@@ -785,8 +797,8 @@ class Game:
                 and not self.splash_active and not overlay_blocked
                 and self.input_mode in (None, "course", "speed"))
 
-    def order_course(self, course: float) -> str:
-        """Apply a validated helm course order and return a stable result code."""
+    def _set_course_order(self, course: float, station: str) -> str:
+        """Apply a validated shared helm order for one local station owner."""
         if type(course) not in (int, float):
             return "invalid_value"
         try:
@@ -797,12 +809,20 @@ class Game:
             return "invalid_value"
         if not self._navigation_order_live():
             return "phase_blocked"
-        if self.damage.station_down("bridge"):
-            return "bridge_down"
+        if self.damage.station_down(station):
+            return f"{station}_down"
         self.ship.target_course = course
         self.feed.add(self.world.format_time(), "navigation",
                       message("runtime.numeric.course_feed", course=f"{course:03.0f}"))
         return "ok"
+
+    def order_course(self, course: float) -> str:
+        """Apply a Bridge course order and return a stable result code."""
+        return self._set_course_order(course, "bridge")
+
+    def set_engine_course(self, course: float) -> str:
+        """Set the common course controller from the machinery station."""
+        return self._set_course_order(course, "engine")
 
     def order_speed(self, speed_kn: float) -> str:
         """Apply a validated ahead-speed order and return a stable result code."""
@@ -817,6 +837,8 @@ class Game:
             return "invalid_value"
         if not self._navigation_order_live():
             return "phase_blocked"
+        if self.ship.fuel_kg <= 0.0:
+            return "no_fuel"
         self.ship.target_speed = speed_kn
         self.ship.astern = False
         self.ship.order_idx = min(range(len(config.TELEGRAPH_ORDERS)),
@@ -831,6 +853,8 @@ class Game:
             return "invalid_value"
         if self.damage.station_down("engine"):
             return "engine_down"
+        if self.ship.fuel_kg <= 0.0:
+            return "no_fuel"
         if order == "ASTERN":
             self.ship.astern = True
             self.ship.order_idx = 0
@@ -983,6 +1007,8 @@ class Game:
             return "flightdeck_down"
         if not self.helo.airborne:
             return "not_ready"
+        if deployed and not self.helicopter_weather()["dipping_safe"]:
+            return "weather_unsafe"
         if not self.helo.set_dipping(deployed, self.world):
             return "water_required" if deployed else "not_ready"
         return True
@@ -1113,9 +1139,11 @@ class Game:
                     return
                 self.flash(message("runtime.numeric.true_bearing", bearing=f"{number:05.1f}"), 2.0)
             else:
-                result = self.order_course(number)
-                if result == "bridge_down":
-                    self.flash(message("event.bridge_down"))
+                result = (self.set_engine_course(number)
+                          if self.station is Station.ENGINE else self.order_course(number))
+                if result in ("bridge_down", "engine_down"):
+                    self.flash(message("event.bridge_down" if result == "bridge_down"
+                                       else "engine.limit.down"))
                     self.input_mode = None
                     self.input_buffer = ""
                     return
@@ -1414,7 +1442,8 @@ class Game:
         self._stop_sonar_audio()
 
     def _local_station_input_locked(self) -> bool:
-        if not self.commander.station_leased(self.station):
+        if (not self.autocrew.enabled[station_key(self.station)]
+                and not self.commander.station_leased(self.station)):
             return False
         self._clear_station_input()
         self.input_mode = None
@@ -1609,6 +1638,7 @@ class Game:
         fields = ("paused", "in_menu", "main_menu", "splash_active", "input_mode",
                   "help_open", "nations_open", "quit_confirm", "save_ui",
                   "options_open", "commander_open", "simlog_view_open",
+                  "autocrew_overview_open",
                   "running", "game_over")
         before = tuple(getattr(self, field) for field in fields), id(self.editor)
         try:
@@ -1717,6 +1747,15 @@ class Game:
                     return
                 return
             return
+        if self.autocrew_overview_open:
+            if e.type == pygame.QUIT:
+                self.autocrew_overview_open = False
+                self._open_administration("quit")
+            elif (e.type == pygame.KEYDOWN
+                  and e.key in (pygame.K_F3, pygame.K_ESCAPE)):
+                self.autocrew_overview_open = False
+                self._clear_station_input()
+            return
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
             if self._local_station_input_locked():
                 return
@@ -1822,6 +1861,18 @@ class Game:
                 return
             if e.key == pygame.K_F8:
                 self._open_analyzer_in_game()
+                return
+            if e.key == pygame.K_F2:
+                enabled = self.autocrew.toggle(self.station, self.sim_t)
+                self._clear_station_input()
+                self.flash(message("autocrew.toggled.on" if enabled
+                                   else "autocrew.toggled.off",
+                                   station=display_value(
+                                       "station", self.station.name, self.tr)))
+                return
+            if e.key == pygame.K_F3:
+                self._clear_station_input()
+                self.autocrew_overview_open = True
                 return
             if e.key == pygame.K_F4:
                 self._open_simlog_view()
@@ -2059,7 +2110,8 @@ class Game:
                     self.set_target()
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self.designate_opz_track()
-            elif e.key == pygame.K_u and self.station is Station.BRIDGE:
+            elif e.key == pygame.K_u and self.station in (Station.BRIDGE,
+                                                           Station.ENGINE):
                 self._begin_numeric_input("course")
             elif e.key == pygame.K_LEFT:
                 if self.station is Station.BRIDGE:
@@ -2110,6 +2162,8 @@ class Game:
                     if result is True:
                         self.flash(message("runtime.helo.dip_deploy" if deploy
                                            else "runtime.helo.dip_retrieve"))
+                    elif result == "weather_unsafe":
+                        self.flash(message("runtime.helo.weather_unsafe"))
                     else:
                         self.flash(message("runtime.helo.dip_unavailable"))
             elif e.key == pygame.K_h and self.station in (Station.WEAPONS,
@@ -2473,15 +2527,22 @@ class Game:
     def radar_weather_severity(self) -> float:
         """0 bis Seegang 4; 0.5/1.0 erst bei schwerem Wetter 5/6."""
         return config.clamp(
-            (self.world.sea_state - (config.RADAR_WEATHER_THRESHOLD - 1)) / 2.0,
+            (getattr(self.world, "effective_sea_state", self.world.sea_state)
+             - (config.RADAR_WEATHER_THRESHOLD - 1)) / 2.0,
             0.0, 1.0)
+
+    def radar_rain_severity(self) -> float:
+        return config.clamp(getattr(self.world, "rain_intensity", 0.0), 0.0, 1.0)
 
     def radar_effective_range(self, domain: str) -> float:
         loss = (config.RADAR_AIR_WEATHER_LOSS if domain == "air"
                 else config.RADAR_SURFACE_WEATHER_LOSS)
         nominal = (config.RADAR_AIR_RANGE_NM if domain == "air"
                    else config.RADAR_SURFACE_RANGE_NM)
-        return nominal * (1.0 - loss * self.radar_weather_severity())
+        rain_loss = (config.RADAR_RAIN_AIR_LOSS if domain == "air"
+                     else config.RADAR_RAIN_SURFACE_LOSS)
+        return (nominal * (1.0 - loss * self.radar_weather_severity())
+                * (1.0 - rain_loss * self.radar_rain_severity()))
 
     def radar_sweep_bearing(self) -> float:
         """Nautische Peilung: zunehmende Werte drehen Nord -> Ost rechtsherum."""
@@ -2496,15 +2557,38 @@ class Game:
             if result == "flightdeck_down":
                 self.flash(message("runtime.helo.deck_down"))
                 return
+            if result == "weather_unsafe":
+                self.flash(message("runtime.helo.weather_unsafe"))
+                return
             if result is not True:
                 self.flash(message("runtime.helo.lost"))
                 return
             self.flash(message("runtime.helo.launch", torpedoes=self.helo.torps,
                                buoys=self.helo.buoys_left), 3.0)
 
+    def helicopter_weather(self) -> dict:
+        """Return one shared, observation-safe flight-weather decision."""
+        weather = self.world.weather_values()
+        relative = math.radians(config.angle_diff_deg(
+            weather["wind_from_deg"], self.ship.course))
+        crosswind = abs(weather["wind_speed_kn"] * math.sin(relative))
+        launch_safe = (
+            weather["wind_speed_kn"] <= config.HELO_LAUNCH_WIND_MAX_KN
+            and crosswind <= config.HELO_LAUNCH_CROSSWIND_MAX_KN
+            and weather["visibility_nm"] >= config.HELO_LAUNCH_VISIBILITY_MIN_NM
+            and weather["sea_state"] <= config.HELO_LAUNCH_SEA_STATE_MAX)
+        dipping_safe = (
+            weather["wind_speed_kn"] <= config.HELO_DIP_WIND_MAX_KN
+            and weather["visibility_nm"] >= config.HELO_DIP_VISIBILITY_MIN_NM
+            and weather["sea_state"] <= config.HELO_DIP_SEA_STATE_MAX)
+        return dict(weather, crosswind_kn=crosswind,
+                    launch_safe=launch_safe, dipping_safe=dipping_safe)
+
     def launch_helicopter(self):
         if self.damage.station_down("flightdeck"):
             return "flightdeck_down"
+        if not self.helicopter_weather()["launch_safe"]:
+            return "weather_unsafe"
         if self.helo.state != "HANGAR":
             return "not_ready"
         self.helo.launch(self.ship)
@@ -2807,8 +2891,11 @@ class Game:
 
         if self.world.is_night():
             base_range_nm *= config.LOOKOUT_NIGHT_FACTOR
-        base_range_nm *= max(0.0, 1.0 - self.world.sea_state
+        base_range_nm *= max(0.0, 1.0 - getattr(
+            self.world, "effective_sea_state", self.world.sea_state)
                              * config.LOOKOUT_SEA_STATE_LOSS)
+        base_range_nm = min(base_range_nm, getattr(
+            self.world, "visibility_nm", config.WEATHER_VISIBILITY_MAX_NM))
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
         distance = math.hypot(dx, dy)
         if (distance > base_range_nm or self.world.land_blocks_line(
@@ -2868,7 +2955,9 @@ class Game:
         surface_eff = self.radar_effective_range("surface")
         air_eff = self.radar_effective_range("air")
         error_scale = 1.0 + (config.RADAR_WEATHER_ERROR_GAIN
-                             * self.radar_weather_severity())
+                             * self.radar_weather_severity()
+                             + config.RADAR_RAIN_ERROR_GAIN
+                             * self.radar_rain_severity())
         for c in self.civilians:
             if c.sunk:
                 continue
@@ -4220,6 +4309,7 @@ class Game:
         self.ship.turn_rate_scale = (
             0.5 if self.damage.station_degraded("bridge") else 1.0)
         self.ship.speed_cap = self.damage.engine_speed_cap()
+        self.ship.update_fuel(dt)
         self.world.update(dt)
         contact = self.ship.update(dt, self.world)
         if contact is not None:
@@ -4379,6 +4469,9 @@ class Game:
 
     def _update_aviation(self, dt: float) -> None:
         """Aktualisiert HSP-5, Sonarbojen und Chaff-Kühlzeit."""
+        if (self.helo.dip_state in ("DEPLOYING", "DEPLOYED")
+                and not self.helicopter_weather()["dipping_safe"]):
+            self.helo.set_dipping(False, self.world)
         self.helo.update(dt, self.ship, self.world,
                          recovery_available=not self.damage.station_down("flightdeck"))
         for buoy in self.buoys:
@@ -4704,8 +4797,14 @@ class Game:
         self.hq_timer -= dt
         if self.hq_timer <= 0.0:
             self.hq_timer = config.WEATHER_BULLETIN_PERIOD_S
-            self.hq_msg(message("runtime.hq.profile", sea_state=self.world.sea_state,
-                                depth=f"{self.world.thermocline_depth_m(self.ship.x, self.ship.y):.0f}"))
+            weather = self.world.weather_values()
+            self.hq_msg(message(
+                "runtime.hq.profile", sea_state=f"{weather['sea_state']:.1f}",
+                depth=f"{self.world.thermocline_depth_m(self.ship.x, self.ship.y):.0f}",
+                wind_from=f"{weather['wind_from_deg']:.0f}",
+                wind_speed=f"{weather['wind_speed_kn']:.0f}",
+                rain=f"{weather['rain_intensity']:.0%}",
+                visibility=f"{weather['visibility_nm']:.1f}"))
         self._update_enemy_torpedoes(dt)
         self._update_player_torpedoes(dt)
         # A payload entering the water starts moving on the next substep; the
@@ -4725,6 +4824,9 @@ class Game:
             slow_dt = self._slow_acc
             self._slow_acc = 0.0
             self._update_damage_and_mission(slow_dt)
+        # Automation consumes observations published in this substep; actuator
+        # changes take effect on the following physics substep.
+        self.autocrew.update(self)
         self._record_simlog_state(dt)
 
     def _mission_time_warning(self) -> None:
@@ -4822,6 +4924,7 @@ class Game:
             "next_entity_ids": {
                 key: max(cls._next_id, max((e.id + 1 for e in entities), default=0))
                 for key, (cls, entities) in entity_groups.items()},
+            "autocrew": self.autocrew.serialize(),
             "seed": self.seed,
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
@@ -4851,9 +4954,11 @@ class Game:
                          turn_rate_scale=self.ship.turn_rate_scale,
                          rudder_angle=self.ship.rudder_angle,
                          yaw_rate=self.ship.yaw_rate,
-                         roll=self.ship.roll, pitch=self.ship.pitch,
-                         quiet_mode=self.ship.quiet_mode,
-                         clock=self.ship._clock),
+                          roll=self.ship.roll, pitch=self.ship.pitch,
+                          quiet_mode=self.ship.quiet_mode,
+                          fuel_capacity_kg=self.ship.fuel_capacity_kg,
+                          fuel_kg=self.ship.fuel_kg,
+                          clock=self.ship._clock),
             "torpedoes": dict(total=self.torpedo_total, count=self.torpedo_count,
                                depth=self.torpedo_depth),
             "asw": {
@@ -5327,7 +5432,11 @@ class Game:
         self.ship.roll = ship["roll"]
         self.ship.pitch = ship["pitch"]
         self.ship.quiet_mode = ship["quiet_mode"]
+        self.ship.fuel_capacity_kg = ship["fuel_capacity_kg"]
+        self.ship.fuel_kg = ship["fuel_kg"]
         self.ship._clock = ship["clock"]
+        self.autocrew = AutocrewController.restore(data["autocrew"])
+        self.autocrew_overview_open = False
         self.mission = Mission(seed, type_key=data["mission_type"])
         runtime_mission = data["mission_runtime"]
         self.mission.name = runtime_mission["name"]
@@ -5897,6 +6006,7 @@ class Game:
         rg = data["rngs"]
         self._restore_rng(rng, rg["world"])
         self._restore_rng(self.world.rng, rg["world_weather"])
+        self.world.refresh_weather()
         self._restore_rng(self.rng_asm, rg["asm"])
         self._restore_rng(self.damage.rng, rg["damage"])
         self._restore_rng(self.helo.rng, rg["helo"])
@@ -5970,7 +6080,8 @@ class Game:
         """Upgrade only the exact R8 v10 shape that existed before R9."""
         if not isinstance(data, dict) or "air_defense" in data:
             return data
-        if set(data) != SAVE_ROOT_FIELDS - {"air_defense"}:
+        if set(data) not in (SAVE_ROOT_FIELDS - {"air_defense"},
+                             SAVE_ROOT_FIELDS - {"air_defense", "autocrew"}):
             return data
         old_asm = {"x", "y", "course", "seq", "state", "jammer", "age_s",
                    "travel", "chaff_left", "broken"}
@@ -6054,7 +6165,8 @@ class Game:
     @staticmethod
     def _upgrade_pre_r16_v10(data):
         """Upgrade only the exact canonical R15 endurance-free save shape."""
-        if not isinstance(data, dict) or set(data) != SAVE_ROOT_FIELDS:
+        if (not isinstance(data, dict) or set(data) not in (
+                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})):
             return data
         subs = data.get("subs")
         prior_sub_fields = {
@@ -6104,7 +6216,8 @@ class Game:
             "order_idx", "turn_rate_scale", "rudder_angle", "yaw_rate",
             "roll", "pitch", "quiet_mode", "clock",
         }
-        if (not isinstance(data, dict) or set(data) != SAVE_ROOT_FIELDS
+        if (not isinstance(data, dict) or set(data) not in (
+                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})
                 or not isinstance(data.get("ship"), dict)
                 or set(data["ship"]) != old_ship_fields):
             return data
@@ -6165,7 +6278,8 @@ class Game:
     @staticmethod
     def _upgrade_pre_dipping_v10(data):
         """Upgrade only the exact pre-dipping/release canonical v10 sub-shapes."""
-        if not isinstance(data, dict) or set(data) != SAVE_ROOT_FIELDS:
+        if (not isinstance(data, dict) or set(data) not in (
+                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})):
             return data
         old_helo_fields = {
             "state", "x", "y", "torpedo_profile_key", "course", "torps",
@@ -6207,6 +6321,35 @@ class Game:
         return upgraded
 
     @staticmethod
+    def _upgrade_pre_ownship_fuel_v10(data):
+        """Upgrade only the exact canonical same-v10 pre-fuel ship shape."""
+        old_ship_fields = {
+            "x", "y", "course", "target_course", "speed", "target_speed",
+            "order_idx", "astern", "hull", "grounding", "turn_rate_scale",
+            "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "clock",
+        }
+        if (not isinstance(data, dict) or set(data) not in (
+                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})
+                or not isinstance(data.get("ship"), dict)
+                or set(data["ship"]) != old_ship_fields):
+            return data
+        upgraded = copy.deepcopy(data)
+        upgraded["ship"].update(
+            fuel_capacity_kg=config.SHIP_FUEL_CAPACITY_KG,
+            fuel_kg=config.SHIP_FUEL_CAPACITY_KG)
+        return upgraded
+
+    @staticmethod
+    def _upgrade_pre_autocrew_v10(data):
+        """Upgrade only the exact canonical same-v10 pre-Autocrew root shape."""
+        if (not isinstance(data, dict)
+                or set(data) != SAVE_ROOT_FIELDS - {"autocrew"}):
+            return data
+        upgraded = copy.deepcopy(data)
+        upgraded["autocrew"] = AutocrewController().serialize()
+        return upgraded
+
+    @staticmethod
     def _valid_save_document(data, runtime_catalog=None) -> bool:
         def finite_number(value) -> bool:
             try:
@@ -6243,6 +6386,8 @@ class Game:
                 or data.get("save_schema") != SAVE_SCHEMA):
             return False
         if set(data) != SAVE_ROOT_FIELDS:
+            return False
+        if not AutocrewController.valid_state(data.get("autocrew"), data.get("sim_t")):
             return False
         controls = data.get("sonar_controls")
         control_fields = {"gain_db", "band_low_hz", "band_high_hz",
@@ -6447,6 +6592,7 @@ class Game:
             "x", "y", "course", "target_course", "speed", "target_speed",
             "order_idx", "astern", "hull", "grounding", "turn_rate_scale",
             "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "clock",
+            "fuel_capacity_kg", "fuel_kg",
         }
         if not isinstance(ship, dict) or set(ship) != ship_fields:
             return False
@@ -6470,6 +6616,8 @@ class Game:
                 or (ship["astern"] and order != 0)
                 or (ship["astern"] and ship.get("target_speed") != config.ASTERN_SPEED_KN)
                 or type(ship.get("quiet_mode")) is not bool
+                or ship.get("fuel_capacity_kg") != config.SHIP_FUEL_CAPACITY_KG
+                or not bounded(ship.get("fuel_kg"), 0, config.SHIP_FUEL_CAPACITY_KG)
                 or any(not bounded(ship.get(key), 0, config.SHIP_SPEED_MAX_KN)
                        for key in ("speed", "target_speed"))
                 or not isinstance(hull, dict) or set(hull) != hull_fields
@@ -7522,6 +7670,8 @@ class Game:
                 data = self._upgrade_pre_r18_v10(data)
                 data = self._upgrade_pre_r20_v10(data)
                 data = self._upgrade_pre_dipping_v10(data)
+                data = self._upgrade_pre_ownship_fuel_v10(data)
+                data = self._upgrade_pre_autocrew_v10(data)
             runtime_catalog = self._catalog_for_save(data)
         except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
             return False
@@ -7834,35 +7984,40 @@ class Game:
             self.draw_menu()
         else:
             self.draw_top_bar()
-            map_station = self.station in (Station.BRIDGE, Station.WEAPONS,
-                                           Station.HELICOPTER)
+            map_station = (not self.autocrew_overview_open
+                           and self.station in (Station.BRIDGE, Station.WEAPONS,
+                                                Station.HELICOPTER))
             previous_rect = config.STATION_RECT
             try:
                 config.STATION_RECT = (config.STATION_PANEL_RECT if map_station
                                        else config.FULL_STATION_RECT)
-                if map_station:
+                if self.autocrew_overview_open:
+                    with layout.clip_to(s, config.STATION_RECT):
+                        draw_autocrew_overview(self)
+                elif map_station:
                     draw_map_view(self)
                     if self.station is Station.WEAPONS:
                         draw_weapons_overlay(self)
-                with layout.clip_to(s, config.STATION_RECT):
-                    if self.station is Station.SONAR:
-                        draw_sonar_view(self)
-                    elif self.station is Station.WEAPONS:
-                        draw_weapons_panel(self)
-                    elif self.station is Station.DAMAGE:
-                        draw_damage_view(self)
-                    elif self.station is Station.OPZ:
-                        draw_opz_view(self)
-                    elif self.station is Station.RADIO:
-                        draw_radio_view(self)
-                    elif self.station is Station.ENGINE:
-                        draw_engine_view(self)
-                    elif self.station is Station.HELICOPTER:
-                        draw_helicopter_view(self)
-                    elif self.station is Station.ELOKA:
-                        draw_eloka_view(self)
-                    else:
-                        draw_bridge_view(self)
+                if not self.autocrew_overview_open:
+                    with layout.clip_to(s, config.STATION_RECT):
+                        if self.station is Station.SONAR:
+                            draw_sonar_view(self)
+                        elif self.station is Station.WEAPONS:
+                            draw_weapons_panel(self)
+                        elif self.station is Station.DAMAGE:
+                            draw_damage_view(self)
+                        elif self.station is Station.OPZ:
+                            draw_opz_view(self)
+                        elif self.station is Station.RADIO:
+                            draw_radio_view(self)
+                        elif self.station is Station.ENGINE:
+                            draw_engine_view(self)
+                        elif self.station is Station.HELICOPTER:
+                            draw_helicopter_view(self)
+                        elif self.station is Station.ELOKA:
+                            draw_eloka_view(self)
+                        else:
+                            draw_bridge_view(self)
                 self.draw_bottom_feed()
                 self.draw_bottom_telemetry()
                 self.draw_navigation_input()
@@ -7889,7 +8044,8 @@ class Game:
             layout.blit_block(s, localize(self.msg), 22, 62, config.SCREEN_W - 44, 76,
                               config.COLOR_WARN, size=28, align="center")
         if (not self.in_menu and not self.splash_active and self.editor is None
-                and not self.simlog_view_open and self.tooltips_enabled
+                and not self.simlog_view_open and not self.autocrew_overview_open
+                and self.tooltips_enabled
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
             payload = self.pinned_tooltip or self.tooltip_at(canvas)

@@ -8,7 +8,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **0.2.0**
+Aktuelle Version: **0.2.1**
+
+Version 0.2.1 ergänzt deterministischen Wind, Regen, Sicht und wechselnden
+Seegang, Wetterwirkungen auf Sensoren und Helikopterbetrieb, stationsbezogene
+Autocrew, Treibstoff und erweiterte Maschinenbedienung, den von der uConsole
+bereitgestellten Remote-Crew-Hotspot sowie animierte Wetterinstrumente in der
+lokalen und der Browseroberfläche. Speicherformat v10 und die
+Commander-Protokolle v1/v2 bleiben unverändert.
 
 Dies ist eine frühe spielbare Version. Sie ist ein Spiel und kein Ausbildungs-
 oder Navigationsprodukt. Die Systeme sind vereinfacht und erheben nicht den
@@ -74,6 +81,13 @@ Commander-Browser: [OPZ/CIC mit 1920 x 1080](docs/screenshots/commander-v2-de-op
   Browser-Clients können exklusive Stationsrollen innehaben, zwischen ihren
   behaltenen Rollen wechseln, dieselben beobachtungsbasierten Bedienelemente
   nutzen und mit einer getrennten Freigabe direkt Waffen einsetzen.
+- Konservative stationsbezogene Autocrew mit `F2` und einer Übersicht mit `F3`.
+  Remote Crew pausiert Autocrew nur für die jeweils belegte Station.
+- Deterministisches Seewetter mit Wind, Regen, Sicht und weichen
+  Seegangübergängen. Wetter beeinflusst Radar, Ausguck, Sonar und
+  Helikoptergrenzen, erzeugt aber keine verborgene Winddrift.
+- Modellierter Treibstoffverbrauch mit Ausdauer, Reichweite und Reparaturtrends
+  im Maschinenraum.
 
 ## Voraussetzungen
 
@@ -149,8 +163,11 @@ aufzuklären.
 
 ## Steuerung
 
-Drücken Sie im Spiel `F1`, um die vollständige kontextsensitive Hilfe
-aufzurufen. Die wichtigsten globalen Bedienelemente sind:
+Drücken Sie im Spiel `F1`, um die kontextsensitive Hilfe aufzurufen. Eine
+vollständige druckbare Übersicht der lokalen Tastenkürzel steht als
+[`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf) bereit; die
+Textquelle ist [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md).
+Die wichtigsten globalen Bedienelemente sind:
 
 | Eingabe | Aktion |
 |---|---|
@@ -158,9 +175,12 @@ aufzurufen. Die wichtigsten globalen Bedienelemente sind:
 | `Tab` / `Shift+Tab` | Nächste / vorherige Station |
 | `P` | Pause / fortsetzen |
 | `F1` | Kontextsensitive Hilfe |
+| `F2` / `F3` | Autocrew der aktuellen Station umschalten / Autocrew-Übersicht öffnen |
+| `F4` | SimLog öffnen, sofern aktiviert |
+| `F8` | Taktischen Einheitenanalysator öffnen; gegebenenfalls sichtbaren Commander-Vorschlag wechseln |
 | `F10` | Optionen; während der Pause öffnet auch `O` die Optionen |
 | `F9` | Lokale Commander-LAN-Verwaltung |
-| `S` / `L` | Speichern / Laden über die Plätze 1 bis 5 |
+| `S` / `L` | Speichern / Laden über die Plätze 1 bis 5; in der OPZ ist `L` der kontextbezogene Fusionsbefehl |
 | `Z` / `X` oder `[` / `]` | Zeitraffer verlangsamen / beschleunigen |
 | `+` / `-` | Maschinentelegraf |
 | `Alt+Enter` | Vollbildmodus umschalten |
@@ -170,8 +190,9 @@ aufzurufen. Die wichtigsten globalen Bedienelemente sind:
 | `K` | Kameraverfolgung auf einer sichtbaren Karte umschalten |
 | `Esc` | Einen fixierten Hinweis entfernen, die aktuelle Ansicht/Eingabe abbrechen oder die Beenden-Bestätigung öffnen |
 
-Stationstasten sind bewusst kontextabhängig. Beispielsweise sendet `A` am Sonar
-einen aktiven Ping, ändert im Maschinenraum jedoch den Akustikmodus. Verwenden
+Stationstasten sind bewusst kontextabhängig. Beispielsweise sendet `Shift+A` am
+Sonar einen aktiven Ping, während dort `A` den Breitband-Hörmodus wählt und im
+Maschinenraum den Akustikmodus ändert. Verwenden
 Sie `F1`, statt davon auszugehen, dass eine Taste an jeder Station dieselbe
 Bedeutung hat.
 
@@ -181,9 +202,10 @@ verfügbar. Gedrückt gehaltene Kurs- und Torpedotiefensteuerungen verwenden
 Echtzeit und nicht den gewählten Simulationsfaktor.
 
 Klicken Sie bei der Schadensabwehr auf eine Zone oder deren Beschriftung, um sie
-auszuwählen. Sind Kontexthinweise aktiviert, fixiert der Klick zugleich ihre
-Details; ein Trupp wird dadurch nie zugewiesen. Auf/Ab wählt einen Trupp, Enter
-weist ihn zu und Backspace zieht ihn ab. Flutungs- und Brandtrends zeigen die
+auszuwählen und die Zuweisung des aktuell gewählten Trupps zu versuchen. Sind
+Kontexthinweise aktiviert, fixiert der Klick zugleich ihre Details. Auf/Ab wählt
+einen Trupp, Enter weist ihn zu und Backspace zieht ihn ab. Flutungs- und
+Brandtrends zeigen die
 Nettorate des Modells einschließlich der Auswirkungen von Schwierigkeitsgrad und
 mehreren Trupps.
 
@@ -217,8 +239,9 @@ Anlaufphase; gespeicherte taktische Beobachtungen bleiben erhalten.
 
 Die Sonarbedienung umfasst:
 
-- `A`: Einen aktiven Ping senden; der Sender hat 30 Sekunden Abklingzeit.
-- `B`: HMS oder TAS als Empfangs-/Sende-Array auswählen.
+- `Shift+A`: Einen aktiven Ping senden; der Sender hat 30 Sekunden Abklingzeit.
+- `Shift+B`: HMS oder TAS als Empfangs-/Sende-Array auswählen.
+- `A` / `B` / `H`: Breitband-, gefilterten oder Heterodyn-Hörmodus wählen.
 - `Y`: TAS ausbringen oder einholen.
 - `U` / `V`: Nach dem Ausbringen die TAS/VDS-Solltiefe anpassen.
 - `Page Up` / `Page Down`: Zwischen den Seiten Broadband, LOFAR, DEMON, TMA,
@@ -234,7 +257,7 @@ des aktuellen Spiels aus. Die TAS-Tiefe wird ebenfalls durch die Schiffsfahrt
 begrenzt.
 
 Die Auswahl von TAS macht es nicht automatisch verfügbar: Ein TAS-Ping kann erst
-Echos erzeugen, nachdem genügend Kabel ausgebracht wurde. Wird `A` bei nicht
+Echos erzeugen, nachdem genügend Kabel ausgebracht wurde. Wird `Shift+A` bei nicht
 verfügbarem TAS gedrückt, wird der Befehl abgelehnt, ohne zu senden oder die
 gemeinsame Ping-Abklingzeit zu verbrauchen. Die aktive Reichweite von TAS ist
 geringer als die von HMS; sein Hauptvorteil liegt in der Genauigkeit passiver
@@ -247,8 +270,8 @@ In der OPZ/CIC wählen `Page Up` und `Page Down` ausschließlich Anzeigebereiche
 von **10, 20, 40, 80 oder 120 NM**; sie wechseln weder die Seite noch die
 Sensorleistung. Die modellierten Erfassungsgrenzen bei klarem Wetter betragen
 30 NM für das Seezielradar und 100 NM für das Luftraumradar, mit
-Leistungseinbußen ab Seegang 5. Seeziel- und Luftraumradar können mit `R` und
-`Shift+R` getrennt gesteuert werden.
+Leistungseinbußen ab Seegang 5 und durch Regenclutter. Seeziel- und
+Luftraumradar können mit `R` und `Shift+R` getrennt gesteuert werden.
 
 ## Sprache und Optionen
 
@@ -272,6 +295,15 @@ ihn anschließend. Öffnen Sie auf jedem Besatzungsgerät die angezeigte URL. Di
 Voreinstellung `127.0.0.1:8765` gilt nur für das lokale Gerät und ist von anderen
 Geräten nicht erreichbar. Eine Router-Portweiterleitung ist weder erforderlich
 noch unterstützt.
+
+Alternativ kann die uConsole einen temporären WPA2-Hotspot für Remote Crew
+bereitstellen. Installieren Sie dafür einmalig den eng begrenzten Helper mit
+`sudo ./packaging/uconsole/install-hotspot-helper.sh`, wählen Sie in F9 den
+Hotspot-Netzmodus und aktivieren Sie den Dienst. U-Jagd erzeugt bei jedem Start
+eine neue SSID und ein neues WLAN-Passwort und speichert beides nicht. Beim
+Beenden von Remote Crew wird der Hotspot entfernt und die vorherige
+WLAN-Verbindung wiederhergestellt. Das Spiel selbst darf nicht mit `sudo`
+gestartet werden.
 
 Koppeln Sie den Browser mit dem sechsstelligen Code: **drei Ziffern gefolgt von
 drei Großbuchstaben**, beispielsweise `482KMT`. Codes laufen nach fünf Minuten
@@ -318,7 +350,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **0.2.0**, API-Protokolle **v1** und **v2** sowie
+Anwendungsversion **0.2.1**, API-Protokolle **v1** und **v2** sowie
 Speicherformat **v10** sind voneinander unabhängige Kompatibilitätsverträge. Das
 rollenorientierte Remote-Crew-System verwendet Protokoll v2; das ältere
 Commander-Protokoll v1 bleibt für die Kompatibilität unverändert und wird nicht
@@ -346,7 +378,7 @@ Schemata; Benutzerdateien werden unter `~/.u-jagd/missions/` und
 `~/.u-jagd/units/` gespeichert.
 
 Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
-0.2.0 gilt:
+0.2.1 gilt:
 
 - Eine Benutzermission kann nur dann mit `F5` aus der Browseransicht des
   Missionseditors gestartet werden, wenn sie die unterstützte Laufzeitteilmenge
@@ -371,7 +403,7 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Version 0.2.0 schreibt und lädt ausschließlich das Speicherformat **v10**. V10
+Version 0.2.1 schreibt und lädt ausschließlich das Speicherformat **v10**. V10
 verlangt das exakte Schema `u-jagd-save-v10` einschließlich des aktuellen
 Schnappschusses des Laufzeitkatalogs und des gesamten Zustands für die
 deterministische Fortsetzung. Ältere, neuere, fehlerhafte oder unvollständige

@@ -33,9 +33,10 @@ def published():
 
 
 def test_exact_role_envelopes_and_status_only_unassigned(published):
-    _, bridge, server = published
+    game, bridge, server = published
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
-              "phase", "role", "chart_revision", "clock", "environment", "mission"}
+              "phase", "role", "chart_revision", "clock", "environment", "mission",
+              "autocrew"}
     assert set(server.v2_states) == {None, *ROLE_NAMES}
     assert server.v2_states[None] == dict(
         protocol=2, version=server.state["version"], session=bridge.status["session"],
@@ -45,6 +46,19 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     for role in ROLE_NAMES:
         assert set(server.v2_states[role]) == common | {role}
         assert server.v2_states[role]["role"] == role
+        weather = game.world.weather_values()
+        assert server.v2_states[role]["environment"] == {
+            "sea_state": game.world.sea_state,
+            "effective_sea_state": weather["sea_state"],
+            "is_night": game.world.is_night(),
+            "weather": game.world.weather_kind(),
+            "wind_from_deg": weather["wind_from_deg"],
+            "wind_speed_kn": weather["wind_speed_kn"],
+            "rain_intensity": weather["rain_intensity"],
+            "visibility_nm": weather["visibility_nm"],
+        }
+        assert server.v2_states[role]["autocrew"] == {
+            "enabled": False, "status": "off"}
     assert set(server.v2_charts[None]) == {
         "protocol", "revision", "size_nm", "landmasses", "disclaimer"}
     assert server.v2_charts[None]["landmasses"] == []
@@ -103,6 +117,18 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
         "orders": ["ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"],
         "speed_max_kn": config.SHIP_SPEED_MAX_KN}
     assert "audition_mode" not in sonar
+
+
+def test_autocrew_projection_is_role_local_and_reports_damage_block(published):
+    game, bridge, server = published
+    game.autocrew.set_enabled("engine", True, game.sim_t)
+    game.damage.compartments["engine"].state = "ZERSTOERT"
+    bridge.pump(game, server, now=10.5)
+    assert server.v2_states["engine"]["autocrew"] == {
+        "enabled": True, "status": "blocked_damage"}
+    assert server.v2_states["bridge"]["autocrew"] == {
+        "enabled": False, "status": "off"}
+    assert "stations" not in server.v2_states["engine"]["autocrew"]
 
 
 def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
@@ -284,6 +310,12 @@ def test_native_status_semantic_sentinels_and_exact_subschemas(published):
     assert engine["machinery"]["effective_speed_cap"] == \
         game.damage.engine_speed_cap()
     assert engine["machinery"]["noise"] == game.ship.noise_level()
+    assert engine["propulsion"]["course"] == game.ship.course
+    assert engine["propulsion"]["target_course"] == game.ship.target_course
+    assert engine["propulsion"]["fuel_kg"] == game.ship.fuel_kg
+    assert engine["machinery"]["repair_teams"] == []
+    assert set(engine["machinery"]["repair_trend"]) == {
+        "flood_rate", "fire_rate", "repairable"}
     assert server.v2_states["helicopter"]["helicopter"]["readiness"][
         "rtb_margin_s"] is None
 

@@ -863,3 +863,26 @@ Der verbindliche Gesamtplan steht in `docs/plan-0.1.7.md`. Kerngrenzen:
   Kontakt-/Ereignislisten im LAN pruefen.
 
 Keine Codes, Tokens oder andere Zugangsdaten in diese Datei eintragen.
+
+## 0.2.1 Release-Kandidat (2026-09-14)
+
+Version 0.2.1 umfasst deterministisches Seewetter mit Sensor-/Helikopterwirkung
+und animierten lokalen/Browserinstrumenten, stationsbezogene Autocrew,
+Treibstoff- und erweiterte Maschinenraumdaten, vervollständigte Remote-Crew-
+Stationen sowie den temporaeren uConsole-WPA2-Hotspot mit eng begrenztem
+System-Helper. Save bleibt exakt v10; Commander v1 und v2 bleiben getrennte
+Protokollvertraege.
+
+Die deutsch/englische Haupt-, Installations-, Koop- und Protokolldokumentation ist
+aktualisiert. `docs/station-shortcuts.de.md` und das reproduzierbare dreiseitige
+A4-PDF `docs/station-shortcuts.de.pdf` enthalten die implementierte lokale
+Bedienung aller neun Stationen. Erzeugung und Driftpruefung erfolgen mit
+`python tools/build_station_shortcuts_pdf.py [--check]`.
+
+Softwareverifikation: 317 fokussierte Kern-/Save-/Wetter-/Autocrew-/Hotspot-/
+Commander-Tests, vier echte Chromium-Vertraege, 123 Startup-/i18n-/Layout-Tests
+und zwei Pakettests bestanden. Katalogvalidator: 109 Profile; Smoke: `SMOKE-OK`;
+PDF: A4, drei Seiten, unverschluesselt, ohne Skripte oder Metadatenstrom. Ein
+Gesamtlauf erreichte vor dem Ausfuehrungszeitlimit 26 Prozent ohne Fehler. Die
+physische WLAN-, Mehrgeraete-, Audio-, Lesbarkeits-, Last- und Thermalabnahme auf
+der uConsole bleibt offen.

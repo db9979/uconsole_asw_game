@@ -55,7 +55,7 @@ def test_profile_retains_exact_bt_truth_curve_and_bt_noise_contract():
     ("target_x_nm", float("inf")), ("source_depth_m", -1.0),
     ("target_depth_m", 501.0), ("frequency_hz", 101.0),
     ("thermocline_m", False), ("water_depth_m", 0.0),
-    ("sea_state", 2.5), ("sea_state", True),
+    ("sea_state", 6.5), ("sea_state", True),
     ("terrain_blocked", 4),
 ])
 def test_invalid_values_are_rejected(field, value):

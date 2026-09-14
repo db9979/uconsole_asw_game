@@ -2,7 +2,7 @@
 
 [English](commander-protocol.md)
 
-Anwendung 0.2.0, API-Protokolle 1 und 2, ausschließlich Spielstandsformat v10. Diese
+Anwendung 0.2.1, API-Protokolle 1 und 2, ausschließlich Spielstandsformat v10. Diese
 Versionen sind voneinander unabhängig. Zugangsdaten, Netzwerksitzungen, Leases,
 Befehlswarteschlangen oder Vorschläge werden nicht gespeichert. Gemeinsame
 Anmerkungen und von der Besatzung angenommene Ziel-/Navigations-Sollwerte verwenden
@@ -69,6 +69,15 @@ Simulationsobjekte, versteckte IDs, unentdeckte Positionen, RNG-Zustand,
 Zugangsdaten oder Spielstanddaten. OPZ erhält nur ausdrücklich freigegebene
 Sonarbeobachtungen; die Klassifizierung ist davon unabhängig. Browser-Bezeichnungen
 sind undurchsichtige Referenzen für die Lebensdauer einer Beobachtung.
+
+Jede zugewiesene v2-Rolle erhält dieselbe abgelöste Umgebungszusammenfassung:
+vorgegebenen ganzzahligen `sea_state`, überblendeten `effective_sea_state`, den
+maßgeblichen Wert `is_night`, Wetterart, nautische Wind-Herkunftsrichtung,
+Windgeschwindigkeit in Knoten, Regenstärke und Sicht in NM. Die Helikopterrolle
+erhält zusätzlich nur abgeleitete Freigaben für Start und Tauchsonar sowie den
+Querwind; verborgener Luftfahrzeug- oder Wetterzustand wird nicht übertragen.
+Die Autocrew-Projektion jeder Rolle enthält ausschließlich deren Aktivierung und
+Status. Zugangsdaten, Leases und Autocrew-Befehle gehören nicht zur Projektion.
 
 Befehle verwenden strikte Umschläge mit `protocol`, kryptografischer Anfrage-ID
 (`id`), clientbezogener Sequenz (`seq`), `station_generation`,

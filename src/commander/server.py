@@ -210,6 +210,7 @@ V2_ACTION_REGISTRY = {
     "opz_designate_target": V2Action(frozenset({"opz"}), _single_ref_params),
     "engine_set_telegraph": V2Action(frozenset({"engine"}), _enum_params(
         "order", ("ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"))),
+    "engine_set_course": V2Action(frozenset({"engine"}), _course_params),
     "engine_set_speed": V2Action(frozenset({"engine"}), _speed_params),
     "engine_set_quiet_mode": V2Action(frozenset({"engine"}),
                                       _bool_params("enabled")),
@@ -979,7 +980,8 @@ class CommanderServer:
                                "roe_blocked", "not_located", "not_classified",
                                "salvo_limit", "empty", "no_tube",
                                "weapons_down", "weapons_degraded", "out_of_range",
-                               "opz_degraded", "active_limit"}
+                                "opz_degraded", "active_limit", "no_fuel",
+                                "weather_unsafe"}
                           else "action_rejected")
             return self._finish_v2_locked(
                 session, envelope, "applied" if reason == "ok" else "rejected", reason)
@@ -999,7 +1001,8 @@ class CommanderServer:
         expected = {None, *STATIONS}
         status_fields = {"protocol", "version", "session", "epoch", "revision",
                          "seq", "phase", "role", "chart_revision"}
-        assigned_fields = status_fields | {"clock", "environment", "mission"}
+        assigned_fields = status_fields | {"clock", "environment", "mission",
+                                           "autocrew"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")
@@ -1476,14 +1479,14 @@ class _Handler(BaseHTTPRequestHandler):
                     if session is not None and self.path == "/api/v2/session":
                         session["presence"] = time.monotonic()
                     role = session["active_station"] if session is not None else None
+                    # The shared v1 log contains ground truth. Protocol v2 stays
+                    # closed until it has per-role projected history.
                     body = (self._session_v2_body(session, owner._sessions_v2) if session is not None
                              and self.path == "/api/v2/session"
                             else _json_bytes({"protocol": 2, "results": [
                                 dict(result) for result in session["command_results"]]})
                             if session is not None and self.path == "/api/v2/results"
-                            else owner._simlog
-                            if session is not None and self.path == "/api/v2/simlog"
-                            and session["simlog"]
+                            else None if self.path == "/api/v2/simlog"
                              else owner._v2_states[role] if self.path == "/api/v2/state"
                             else owner._v2_charts[role] if self.path == "/api/v2/chart"
                             else None)

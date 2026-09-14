@@ -886,3 +886,26 @@ PDF: A4, drei Seiten, unverschluesselt, ohne Skripte oder Metadatenstrom. Ein
 Gesamtlauf erreichte vor dem Ausfuehrungszeitlimit 26 Prozent ohne Fehler. Die
 physische WLAN-, Mehrgeraete-, Audio-, Lesbarkeits-, Last- und Thermalabnahme auf
 der uConsole bleibt offen.
+
+## 0.2.2 Release-Kandidat (2026-09-14)
+
+Version 0.2.2 stellt Remote Crew vollständig auf API-Protokoll v2 um. Alle
+`/api/v1/*`-Routen sind entfernt und liefern 404 ohne Weiterleitung oder Fallback.
+Browser verwenden ausschließlich Cookie-Sitzungen mit Origin-/CSRF-Schutz.
+Ziel- und Navigationsvorschläge bleiben bis zur lokalen Host-Annahme wirkungslose
+Staging-Anfragen. Ereignisse und die auf 64 frühere Rollenprojektionen begrenzte
+SimLog-Historie beachten Sitzungs-, Rollen- und Beobachtungsgrenzen. Save bleibt
+exakt v10.
+
+Softwareverifikation: vollständige Suite mit 2467 bestandenen und 26 abgelösten
+Layoutfällen; darin vier Browser-Sitzungsverträge. Der nach Review erweiterte
+fokussierte Release-Satz bestand mit 311 Tests und deckt SimLog-Epochwechsel,
+Freigabewiderruf, sofortige Rollencache-Grenzen, Cache-Löschung beim Widerruf,
+reine Lobby-Clients, Alarm-Ausgangsbasen und unsichere Befehlssequenzen ab.
+Katalogvalidator: 109 Profile;
+Smoke: `SMOKE-OK`; Paketbau: 0.2.2-sdist und -Wheel erfolgreich; Stationsreferenz
+reproduzierbar; `git diff --check` sauber. Der Kandidat ist uncommitted und wurde
+nicht gepusht oder veröffentlicht.
+
+Offen bleibt ausschließlich die physische Hotspot-, Mehrgeräte-, Audio-,
+Lesbarkeits-, Last- und Thermalabnahme auf der uConsole.

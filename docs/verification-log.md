@@ -485,3 +485,27 @@ composite spectral/DEMON diagrams (113 cruise and 113 high).
   execution timeout; focused coverage above completed successfully.
 - Release status: HOLD only for physical hotspot, multi-device, audio, sustained
   load, readability and thermal acceptance on the target uConsole hardware.
+
+## 2026-09-14 0.2.2 Software Acceptance
+
+- Revision: complete uncommitted 0.2.2 candidate; no commit, push or release
+  upload performed.
+- Scope: Remote Crew protocol v2-only transport and browser, strict retirement
+  of all `/api/v1/*` routes, locally accepted target/navigation proposals,
+  role-scoped events, and observation-safe role SimLog history.
+- Compatibility: save format remains exact v10. Remote Crew protocol v1 is
+  intentionally retired; its routes return 404 without redirect or fallback.
+- Full suite: 2467 passed, 26 superseded layout cases skipped, in 965.84
+  seconds. Four browser-session contracts completed in that run.
+- Focused release tests: 311 browser-asset, command, session, proposal, event,
+  SimLog and local-console tests passed after review. Added regressions cover
+  epoch-safe SimLog rebasing, grant-revocation authority, immediate role-cache
+  privacy, revocation cache clearing, lobby-only clients, alarm baselines and
+  uncertain-command sequence recovery. The strict same-v10 pre-R18 fixture was
+  corrected to omit both grounding and later fuel fields.
+- Catalog: 109 acoustic profiles valid. Smoke: `SMOKE-OK` across save/load,
+  menus, all stations and overlays.
+- Packaging: 0.2.2 sdist and wheel built successfully. Printable station
+  reference regeneration and drift check passed; `git diff --check` passed.
+- Release status: HOLD only for physical hotspot, multi-device, audio, sustained
+  load, readability and thermal acceptance on the target uConsole hardware.

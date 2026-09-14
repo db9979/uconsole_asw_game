@@ -38,44 +38,87 @@ def key(game, value, **attrs):
 
 
 class Transport:
-    """Detached transport fixture; all decisions still use the real bridge."""
+    """Compact v2 authority fixture; decisions still use the real bridge."""
     connected = True
-    lease_generation = 1
     pairing_code = "local-code"
 
     def __init__(self):
         self.queue = []
+        self.results = []
         self.revocations = 0
+        self.generations = {"sonar": 1, "bridge": 1}
+        self.v2_states = None
 
-    def publish(self, state, chart=None):
-        self.state = state
+    @property
+    def state(self):
+        return {"results": self.results}
 
-    def publish_simlog(self, payload):
-        self.simlog = payload
+    def publish_v2(self, states, _charts):
+        self.v2_states = deepcopy(states)
 
-    def drain_commands(self, limit=4):
-        batch, self.queue = self.queue[:limit], self.queue[limit:]
+    def publish_proposals_v2(self, **_payload):
+        pass
+
+    def publish_events_v2(self, **_payload):
+        pass
+
+    def publish_simlog_v2(self, **_payload):
+        pass
+
+    def drain_commands_v2(self):
+        batch, self.queue = self.queue, []
         return batch
 
-    def is_current(self, envelope):
-        return self.connected and envelope["lease"] == self.lease_generation
+    def authority_current_v2(self, envelope):
+        return (self.connected and envelope is not None
+                and self.generations.get(envelope.role) == envelope.lease_generation)
+
+    def apply_command_v2(self, envelope, *, now, phase, world_session,
+                         world_epoch, resource_revision, apply):
+        current = self.authority_current_v2(envelope)
+        current &= (phase == "live" and envelope.world_session == world_session
+                    and envelope.world_epoch == world_epoch
+                    and envelope.resource_revision == resource_revision)
+        result = apply(envelope.action, envelope.params) if current else "context_invalidated"
+        reason = "ok" if result is True else result
+        self.results.append(dict(id=envelope.command_id, seq=envelope.seq,
+            status="applied" if reason == "ok" else "rejected", reasoncode=reason))
+        return True
+
+    def invalidate_v2_commands(self, reason):
+        for envelope in self.queue:
+            self.results.append(dict(id=envelope.command_id, seq=envelope.seq,
+                status="rejected", reasoncode=reason))
+        self.queue.clear()
 
     def revoke(self):
         self.revocations += 1
-        self.lease_generation += 1
+        self.generations = {role: generation + 1
+                            for role, generation in self.generations.items()}
         self.connected = False
         self.queue.clear()
 
     stop = revoke
 
     def send(self, action="propose", identity="one", **values):
-        state = self.state
-        command = dict(id=identity, session=state["session"], epoch=state["epoch"],
-                       revision=state["revision"], action=action, **values)
-        if action != "propose_navigation":
-            command["track"] = state["tracks"][0]["ref"]
-        self.queue.append(dict(command=command, lease=self.lease_generation,
-                               received_at=time.monotonic()))
+        role = "bridge" if action == "propose_navigation" else "sonar"
+        bridge = self.bridge
+        params = dict(values)
+        if action == "propose":
+            action = "propose_target"
+            params["ref"] = self.v2_states["sonar"]["sonar"]["observations"][0]["ref"]
+        elif action == "classify":
+            action = "sonar_classify"
+            params = {"ref": self.v2_states["sonar"]["sonar"]["observations"][0]["ref"],
+                      "classification": params.pop("value")}
+        status = bridge.status
+        self.queue.append(NS(
+            role=role, lease_generation=self.generations[role],
+            session_digest=b"local-session", client_id="local-client",
+            client_ordinal=0, active_generation=self.generations[role],
+            command_id=identity, seq=len(self.results), action=action, params=params,
+            world_session=status["session"], world_epoch=status["epoch"],
+            resource_revision=status["revision"], received_at=time.monotonic()))
 
 
 class FakeHotspot:
@@ -282,20 +325,10 @@ def session(game):
     console = game.commander
     console._prepared = True
     console.server = Transport()
+    console.server.bridge = console.bridge
     console.address = ("127.0.0.1", 8765)
-    console.bridge.allowed = True
     console.pump(game)
     return console, console.server, contact
-
-
-def test_legacy_pair_permission_binds_during_main_thread_pump(game):
-    console, server, _ = session(game)
-    assert console.bridge.allowed
-    server.lease_generation += 1
-    assert server.connected and not console.bridge.allowed
-    console.pump(game)
-    assert console.bridge.allowed
-    assert server.state["commands_allowed"] is True
 
 
 def test_default_off_has_no_network_or_server_resources(monkeypatch):
@@ -310,7 +343,7 @@ def test_default_off_has_no_network_or_server_resources(monkeypatch):
     console = game.commander
     assert console.server is None and console.address is None
     assert console.host == "127.0.0.1" and console.port == 8765
-    assert not console.bridge.allowed and not game.commander_open
+    assert console.bridge.allowed and not game.commander_open
     console.pump(game)
     game.reset(32)
     game.load_state(game.save_state())
@@ -357,7 +390,7 @@ def test_prepare_failure_keeps_explicit_loopback(monkeypatch):
 
 def test_activation_prebuilds_contact_assets_once_on_calling_thread(monkeypatch):
     calls = []
-    payload = {"/api/v1/contacts": ("application/json; charset=utf-8", b"{}")}
+    payload = {"/api/v2/contacts": ("application/json; charset=utf-8", b"{}")}
 
     def load_assets():
         calls.append(threading.get_ident())
@@ -494,6 +527,20 @@ def test_new_remote_lease_clears_latched_and_numeric_uconsole_input(game):
     assert game._map_drag is None
 
 
+def test_paired_lobby_client_is_connected_but_not_active_crew(game):
+    server = RosterTransport((roster_client("lobby", "Lobby", 0),))
+    game.commander.server = server
+    game.commander.address = ("127.0.0.1", 8765)
+    game.commander.bridge.pump = Mock()
+    game.commander_open = True
+
+    game.commander.pump(game)
+
+    assert game.commander.connected
+    assert not game.commander.active_crew
+    assert not game.crew_overlay_allows_simulation()
+
+
 def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     game.commander._prepared = True
     game._open_administration("options")
@@ -536,7 +583,7 @@ def test_loopback_start_bind_failure_disable_and_translation_cache(game, monkeyp
     game._open_administration("commander")
     assert console.pairing_code == session_code
     with closing(http.client.HTTPConnection(*console.address, timeout=2)) as client:
-        client.request("GET", "/api/v1/ui?lang=de")
+        client.request("GET", "/api/v2/ui?lang=de")
         response = client.getresponse()
         translations = json.loads(response.read())
         assert response.status == 200
@@ -830,7 +877,7 @@ def test_owner_roundtrip_invalidates_queue_without_revoking_pair(game):
     assert console.bridge.status["epoch"] == epoch + 2
     console.pump(game)
     assert contact.player_class is None
-    assert server.state["results"][-1]["reasoncode"] == "stale_epoch"
+    assert server.state["results"][-1]["reasoncode"] == "context_invalidated"
     assert server.connected and server.revocations == 0
     assert console.bridge.allowed and server.connected and server.revocations == 0
 
@@ -955,7 +1002,7 @@ def test_crew_message_box_hidden_behind_non_live_views(game, owner, value):
 
 
 @pytest.mark.parametrize("change", [
-    "grant", "revoke", "lease", "disconnect", "world", "expiry",
+    "grant", "revoke", "station_generation", "disconnect", "world", "expiry",
 ])
 def test_crew_message_box_closes_on_authority_or_world_loss(game, change):
     console, server, _ = session(game)
@@ -966,8 +1013,9 @@ def test_crew_message_box_closes_on_authority_or_world_loss(game, change):
         console.bridge.allowed = False
     elif change == "revoke":
         server.revoke()
-    elif change == "lease":
-        server.lease_generation += 1
+    elif change == "station_generation":
+        server.generations["sonar"] += 1
+        console.pump(game)
     elif change == "disconnect":
         server.connected = False
     elif change == "world":

@@ -15,19 +15,21 @@ def key(game, value):
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value))
 
 
-def request(server, path, *, token=None, body=None):
+def request(server, path, *, cookie=None, csrf=None, body=None):
     host, port = server.address
     client = http.client.HTTPConnection(host, port, timeout=3)
     headers = {"Origin": f"http://{host}:{port}"}
-    if token is not None:
-        headers["Authorization"] = "Bearer " + token
+    if cookie is not None:
+        headers["Cookie"] = cookie
+    if csrf is not None:
+        headers["X-U-Jagd-CSRF"] = csrf
     if body is not None:
         headers["Content-Type"] = "application/json"
     try:
         client.request("GET" if body is None else "POST", path,
                        body=None if body is None else json.dumps(body), headers=headers)
         response = client.getresponse()
-        return response.status, json.loads(response.read())
+        return response.status, dict(response.getheaders()), json.loads(response.read())
     finally:
         client.close()
 
@@ -47,32 +49,30 @@ def paired_menu(game):
     key(game, pygame.K_F9)
     key(game, pygame.K_RETURN)
     console.pump(game)
-    status, paired = request(console.server, "/api/v1/pair",
-                             body={"code": console.pairing_code})
+    status, headers, paired = request(console.server, "/api/v2/pair",
+        body={"code": console.pairing_code, "name": "Bridge watch"})
     assert status == 200
+    cookie = headers["Set-Cookie"].split(";", 1)[0]
+    assert console.server.grant_station(paired["client_id"], "bridge")
     key(game, pygame.K_ESCAPE)
     console.pump(game)
     assert game.in_menu and game.main_menu and console.bridge.allowed
-    return console.server, paired["token"]
+    return console.server, cookie, paired
 
 
 @pytest.mark.parametrize("confirm", [pygame.K_RETURN, pygame.K_SPACE])
 def test_normal_menu_start_keeps_world_pairing_grant_and_session(game, paired_menu, confirm):
-    server, token = paired_menu
+    server, cookie, paired = paired_menu
     world, sonar = game.world, game.sonar
-    lease = server.lease_generation
+    assigned = request(server, "/api/v2/session", cookie=cookie)[2]
+    station_generation = assigned["station_generation"]
     key(game, confirm)  # Main menu -> scenarios.
     key(game, confirm)  # Default patrol -> briefing.
     assert game.menu_screen == "briefing" and game.in_menu
     game.commander.pump(game)
-    _, before = request(server, "/api/v1/state", token=token)
-    assert before["phase"] == "menu" and not before["commands_allowed"]
-    assert before["ownship"]["x"] is None and before["tracks"] == []
-    assert request(server, "/api/v1/chart", token=token)[1]["landmasses"] == []
-    old_action = dict(id="before-start", session=before["session"],
-                      epoch=before["epoch"], revision=before["revision"],
-                      action="clear_proposal")
-    assert request(server, "/api/v1/commands", token=token, body=old_action)[0] == 202
+    before = request(server, "/api/v2/state", cookie=cookie)[2]
+    assert before["phase"] == "menu" and before["role"] is None
+    assert request(server, "/api/v2/chart", cookie=cookie)[2]["landmasses"] == []
     game.update(.1)  # Waiting in the briefing cannot dirty the preparation.
     assert game.sim_t == 0.0
     key(game, confirm)
@@ -80,21 +80,22 @@ def test_normal_menu_start_keeps_world_pairing_grant_and_session(game, paired_me
     assert game.world is world and game.sonar is sonar
     assert game.commander.bridge.status["epoch"] > before["epoch"]
     game.commander.pump(game)
-    status, after = request(server, "/api/v1/state", token=token)
-    assert status == 200 and after["phase"] == "live" and after["commands_allowed"]
-    assert game.commander.server is server and server.lease_generation == lease
+    status, _, after = request(server, "/api/v2/state", cookie=cookie)
+    assert status == 200 and after["phase"] == "live" and after["role"] == "bridge"
+    current = request(server, "/api/v2/session", cookie=cookie)[2]
+    assert current["station_generation"] == station_generation
+    assert current["client_id"] == paired["client_id"]
+    assert game.commander.server is server
     assert game.commander.bridge.allowed and after["session"] == before["session"]
     assert after["epoch"] > before["epoch"]
-    assert after["ownship"]["x"] == game.ship.x
-    assert after["results"][-1] == dict(id="before-start", status="rejected",
-                                       reasoncode="stale_epoch")
-    assert request(server, "/api/v1/chart", token=token)[1]["landmasses"]
+    assert after["bridge"]["navigation"]["x"] == game.ship.x
+    assert request(server, "/api/v2/chart", cookie=cookie)[2]["landmasses"]
 
 
 @pytest.mark.parametrize("change", ["seed", "world_mode", "scenario", "difficulty",
                                     "reset", "load"])
 def test_real_replacements_still_revoke_on_next_pump(game, paired_menu, change):
-    server, token = paired_menu
+    server, cookie, _ = paired_menu
     world, sonar = game.world, game.sonar
     session = game.commander.bridge.status["session"]
     join_code = server.pairing_code
@@ -118,20 +119,21 @@ def test_real_replacements_still_revoke_on_next_pump(game, paired_menu, change):
         key(game, pygame.K_RETURN)
     assert game.world is not world and game.sonar is not sonar
     assert server.connected and game.commander.bridge.allowed
-    assert request(server, "/api/v1/state", token=token)[0] == 200
+    assert request(server, "/api/v2/state", cookie=cookie)[0] == 200
     game.commander.pump(game)
     assert server.pairing_code != join_code
     assert game.commander.server is server
     assert not server.connected and not game.commander.bridge.allowed
     assert game.commander.bridge.status["session"] != session
-    assert request(server, "/api/v1/state", token=token)[0] == 401
+    assert request(server, "/api/v2/state", cookie=cookie)[0] == 401
 
 
 def test_late_failed_load_preserves_preparation_and_pairing(game, paired_menu, monkeypatch):
-    server, token = paired_menu
+    server, cookie, _ = paired_menu
     world, sonar = game.world, game.sonar
     bridge = game.commander.bridge
-    before, lease = bridge.status, server.lease_generation
+    before = bridge.status
+    assigned = request(server, "/api/v2/session", cookie=cookie)[2]
     restore = Game._restore_state
 
     def fail_after_restore(candidate, data):
@@ -143,14 +145,16 @@ def test_late_failed_load_preserves_preparation_and_pairing(game, paired_menu, m
         game.load_state(game.save_state())
     assert game.world is world and game.sonar is sonar
     assert bridge.status == before and bridge.allowed
-    assert server.connected and server.lease_generation == lease
+    assert server.connected
+    assert request(server, "/api/v2/session", cookie=cookie)[2][
+        "station_generation"] == assigned["station_generation"]
     game.commander.pump(game)
     assert bridge.status == before
     for _ in range(3):
         key(game, pygame.K_RETURN)
     game.commander.pump(game)
     assert game.world is world and game.sonar is sonar
-    assert request(server, "/api/v1/state", token=token)[0] == 200
+    assert request(server, "/api/v2/state", cookie=cookie)[0] == 200
     assert bridge.allowed and bridge.status["session"] == before["session"]
 
 

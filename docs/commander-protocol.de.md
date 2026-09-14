@@ -2,7 +2,7 @@
 
 [English](commander-protocol.md)
 
-Anwendung 0.2.1, API-Protokolle 1 und 2, ausschließlich Spielstandsformat v10. Diese
+Anwendung 0.2.2, API-Protokoll 2, ausschließlich Spielstandsformat v10. Diese
 Versionen sind voneinander unabhängig. Zugangsdaten, Netzwerksitzungen, Leases,
 Befehlswarteschlangen oder Vorschläge werden nicht gespeichert. Gemeinsame
 Anmerkungen und von der Besatzung angenommene Ziel-/Navigations-Sollwerte verwenden
@@ -17,20 +17,27 @@ veröffentlicht abgelöstes JSON. HTTP-Handler importieren niemals Game/Pygame,
 greifen nicht auf Simulationsobjekte zu und lösen keine Sensor-/TMA-Arbeit aus.
 Methoden zum Laden eines Kandidaten haben keine Netzwerknebenwirkungen.
 
-## Endpunkte des Legacy-Protokolls v1
+## Endpunkte von Protokoll v2
 
 | Methode / Route | Vertrag |
 |---|---|
 | GET /, /app.js, /style.css | Feste paketierte Ressourcen, beim Serverstart zwischengespeichert |
-| GET /api/v1/ui?lang=en or de | Nur `commander.web.*`-Zeichenketten aus den Root-Katalogen |
-| POST /api/v1/pair | JSON-Code; Erfolg liefert ein ausschließlich im Speicher gehaltenes Bearer-Token |
-| GET /api/v1/state | Authentifizierter zwischengespeicherter Beobachtungs-Snapshot |
-| GET /api/v1/chart | Authentifizierte zwischengespeicherte aktuelle Karte oder redigierte leere Karte |
-| POST /api/v1/commands | Strikter Aktionsumschlag; 202 bedeutet eingereiht, nicht angewendet |
+| GET /api/v2/ui?lang=en or de | Nur `commander.web.*`-Zeichenketten aus den Root-Katalogen |
+| GET /api/v2/contacts | Öffentlicher paketierter Kontaktreferenzkatalog |
+| POST /api/v2/pair | JSON-Kopplungscode; Erfolg erzeugt Cookie-Sitzung und CSRF-Zustand |
+| GET /api/v2/session | Authentifizierter Client-, Lease-, Freigabe- und Sequenzzustand |
+| GET /api/v2/state, /chart | Aktive Rollenprojektion und passende bekannte Karte |
+| GET /api/v2/results, /proposals, /events | Rollen- und sitzungsbegrenzter Befehlszustand |
+| GET /api/v2/simlog | Freigegebene frühere Rollenprojektionen, höchstens 64 Einträge |
+| POST /api/v2/stations/request, /activate, /release | Strikte Lease-Operationen |
+| POST /api/v2/commands | Strikter Aktionsumschlag; 202 bedeutet eingereiht, nicht angewendet |
+| POST /api/v2/sonar/audio | Separat freigegebene Live-Sonaraudio-Abfrage |
+| POST /api/v2/logout | Widerruft die aktuelle Sitzung und löscht ihr Cookie |
 
-Geschützte Anfragen verwenden `Authorization: Bearer`. Token sind niemals
-Query-Parameter oder Cookies. Änderungsanfragen erfordern `application/json` und
-exakt denselben `Origin`. `Host` ist auf die gebundene IPv4-Adresse und den
+Alle Routen unter `/api/v1/*` sind entfernt und liefern 404 ohne Weiterleitung
+oder Fallback. Geschützte Anfragen verwenden das HttpOnly-Sitzungscookie.
+Änderungsanfragen erfordern `application/json`, exakt denselben `Origin` und nach
+der Kopplung das exakte CSRF-Token. `Host` ist auf die gebundene IPv4-Adresse und den
 tatsächlichen Port beschränkt (localhost ist für Loopback ebenfalls erlaubt). Es
 gibt weder Wildcard-CORS, beliebige Routen/Dateien, Weiterleitungen, externe
 Ressourcen noch HTML-Interpolation von erstelltem Text. Antworten verwenden
@@ -101,47 +108,47 @@ Eigenschiff-Kavitations-Boolean synthetisiert. Es ergänzt weder Endpunkt, Freig
 Befehl noch uConsole-Audiosteuerung. Die Sonarrollenprojektion erhält nur die
 begrenzte Eigenschifffahrt und die TAS-Handhabungsgrenzen, die zur Erklärung eines
 deaktivierten Array-Bedienelements nötig sind; Hovergründe prüfen niemals
-verborgene Einheiten. Protokoll v1 bleibt aus Kompatibilitätsgründen exakt
-unverändert und wird nicht stillschweigend um v2-Felder erweitert.
+verborgene Einheiten.
 
-## Kopplung und Grenzen von Protokoll v1
+## Kopplung und Grenzen von Protokoll v2
 
 - Explizite RFC1918- oder Loopback-IPv4-Bindung; keine Wildcard/öffentliche IPv4.
-- Kryptografischer Code: `[0-9]{3}[A-Z]{3}`, fünf Minuten gültig, einmal verwendbar.
+- Kryptografischer Code: `[0-9]{3}[A-Z]{3}`, für weitere Besatzungsmitglieder bis
+  zum ausdrücklichen Widerruf oder zur Erneuerung nach Fehlversuchen wiederverwendbar.
   Bei Erneuerung ist der Vorgänger ausgeschlossen. Der Serververgleich ist
   groß-/kleinschreibungssensitiv und erfolgt in konstanter Zeit.
 - Fünf fehlgeschlagene Versuche innerhalb gleitender 60 Sekunden, global über alle
   IPs.
   Automatische Erneuerung löscht Fehlversuche nicht. Weitere Versuche liefern bei
   ausgeschöpftem Limit 429.
-- Unabhängiges Bearer-Token aus 32 zufälligen Bytes und eine Idle-Lease von 30
-  Sekunden, die durch authentifizierte State-/Chart-Abfragen erneuert wird. Eine
-  Freigabe ist an diese Lease-Generation gebunden.
+- Unabhängige kryptografische Cookie-Sitzung mit acht Stunden Idle-Limit. Die
+  Anwesenheitsabfrage erneuert eine Stations-Lease von 15 Sekunden; Freigaben
+  binden an deren Generation. Höchstens zwölf Clients können Sitzungen halten.
 - Vier zugelassene Worker-Verbindungen, 1,5 Sekunden Inaktivitäts-Timeout und drei
   Sekunden absolute Deadline. Deadline-Timer sind durch die Worker begrenzt und
   werden bei der Bereinigung gejoint.
 - JSON-Bodys mit höchstens 4096 Bytes; begrenzte Request-Line/Header, striktes
   Framing sowie Ablehnung doppelter Member, nicht endlicher Zahlen und unbekannter
   Felder.
-- Warteschlange mit höchstens 32 Einträgen; die Bridge wendet höchstens vier
-  Anfragen pro Wall-Frame an. Nach fünf Sekunden abgelaufene Anfragen ergeben eine
-  endgültige Ablehnung und verschwinden nicht stillschweigend.
-- Höchstens 256 projizierte Tracks, 128 Ereignisse, 32 aktuelle Ergebnisse und 128
-  deduplizierte IDs. Karte mit höchstens 20.000 Vertices und 1.024 Polygonen; zu
+- Globale Befehlswarteschlange mit höchstens 64 und je Client höchstens acht
+  Einträgen. Nach zwei Sekunden veraltete Befehle ergeben eine endgültige
+  Ablehnung und verschwinden nicht stillschweigend.
+- Höchstens 256 projizierte Tracks, 128 Ereignisse und 64 SimLog-Einträge. Karte
+  mit höchstens 20.000 Vertices und 1.024 Polygonen; zu
   große Karten werden ausdrücklich weggelassen, statt teilweise falsch dargestellt.
 
 HTTP bleibt unverschlüsselt. Kopplung, Origin-Prüfungen und Limits bieten keine
 Vertraulichkeit im Netzwerk. Nur für ein vertrauenswürdiges LAN; keine
 Portweiterleitung und kein öffentliches Hosting.
 
-## Snapshot und Befehle von Protokoll v1
+## Projektionen und Befehle von Protokoll v2
 
-Der Zustand enthält `protocol`/`version`/`session`/`epoch`/`revision`/`seq`, Phase
-und Befehlsverfügbarkeit, Uhren, bekannte Missionsinformationen, eigene Bereitschaft,
-öffentliche Tracks, Besatzungsziel, Zielvorschlag, Navigationsvorschlag, Ereignisse
-und Befehlsergebnisse. Das additive Protokoll-1-Objekt `environment` enthält den
-ganzzahligen `sea_state` im Bereich 0-9 und den maßgeblichen booleschen Wert
-`is_night`; unbekannte Werte sind `null`.
+Der Rollenzustand enthält Protokoll/Version, Weltsitzung/-epoche,
+Ressourcenrevision, Phase und Befehlsverfügbarkeit, Uhren, bekannte
+Missionsinformationen, eigene Bereitschaft, öffentliche Tracks und die
+Umgebungszusammenfassung. Vorschläge, Ereignisse, Befehlsergebnisse und
+SimLog-Historie verwenden getrennte authentifizierte Endpunkte, damit jeder seine
+eigene Sitzungs-, Rollen-, Autoritäts- und Freigabegrenze erzwingt.
 Menü/Editor/Splash verwenden dasselbe Schema mit eigener Geometrie und Umgebung
 als `null` sowie leerer Mission, leeren Tracks, Ereignissen und leerer Karte.
 Pausierte laufende Missionen behalten ein eingefrorenes schreibgeschütztes Bild.
@@ -153,20 +160,20 @@ Producer-Präfixe dürfen die Identität als Zivil-/Kriegsschiff nicht offenlege
 Seed, RNG, versteckte Entity-/Profilinformationen oder Spielstand-Dumps werden
 nicht exportiert.
 
-Befehle enthalten `id`, `session`, `epoch`, `revision`, `action` und
-aktionsspezifische Felder:
+Befehle enthalten `protocol`, kryptografische Anfrage-ID, Clientsequenz, Station,
+Stations- und Aktivgeneration, Weltsitzung/-epoche, Ressourcenrevision, Aktion und
+exakte aktionsspezifische Parameter. Vorschlagsaktionen sind:
 
 | Aktion | Zusätzliche Felder |
 |---|---|
-| classify | `track`, `value` (zulässige Bedienerklasse oder `null`) |
-| affiliate | `track`, `value` (zulässige NATO-Zuordnung) |
-| propose | `track` |
-| clear_proposal | optional passender `track` |
+| propose_target | Beobachtungs-`ref` |
+| clear_target_proposal | keine Parameter |
 | propose_navigation | `course` und/oder `speed_kn`; `course` in [0,360), Geschwindigkeit im konfigurierten Ruderbereich |
 
-Alle erfordern Kopplung, eine an die Lease gebundene lokale Freigabe und aktive
-Befehlszuständigkeit. Explizite Revisionsprüfungen lösen gleichzeitige Änderungen
-von Besatzungs-/Commander-Anmerkungen auf. Die Wiederholung einer identischen
+Alle Aktionen erfordern Kopplung, eine aktive Rollen-Lease, die Befehlsfreigabe
+der Rolle und aktive Befehlszuständigkeit; Direktfeueraktionen erfordern ihre
+zusätzliche Freigabe. Explizite Revisionsprüfungen lösen gleichzeitige Änderungen
+der Besatzung auf. Die Wiederholung einer identischen
 behaltenen ID spielt ihr Ergebnis erneut ab; eine Änderung ihrer Payload wird
 abgelehnt. Eine separate Anfrage kann einen noch nicht abgeschlossenen Vorschlag
 derselben Art nicht ersetzen und erhält `proposal_pending`; je ein Ziel- und ein
@@ -185,6 +192,13 @@ Vorschlag ausschließlich für die Geschwindigkeit kann dennoch angenommen werde
 Die physische Bewegung unterliegt weiterhin der normalen Schiffsphysik, dem Antrieb
 und den Grenzen des Schleichmodus. Keine Remote-Aktion kann direkt steuern.
 Air-/Missile-Sequenznamensräume können die Sonaridentität nicht als Alias verwenden.
+
+Schadensereignisse sind für Brücke und Schadensabwehr sichtbar, Bedrohungen für
+Brücke, OPZ und Waffen und Missionsereignisse für jede Rolle. Der Lebenszyklus
+eines Vorschlags ist nur für Ursprungssitzung und -rolle sichtbar. SimLog hält
+höchstens 64 frühere Rollenprojektionen mit ihren Simulationszeitstempeln;
+deaktiviertes oder nicht freigegebenes SimLog liefert keine Historie und
+vollständige lokale Host-Einträge werden niemals exportiert.
 
 Epochenwechsel lehnen eingereihte Aktionen über Übergänge bei
 Verwaltung/Eingabe/Freigabe/Verbindung hinweg ab. Ein Weltersatz widerruft die

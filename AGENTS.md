@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 0.2.1 (`src/core/version.py`); current saves are v10-only. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 0.2.2 (`src/core/version.py`); current saves are v10-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-0.1.8.md` and `docs/resume.md`.
@@ -63,7 +63,7 @@
 ## Remote Crew multiplayer
 
 - Remote Crew is authoritative-host multiplayer for multiple authenticated browser clients. The uConsole process remains the sole simulation authority. Browsers never run simulation, advance time, resolve physics, read live entities, or mutate game state from transport threads.
-- Multiplayer protocol versions are independent of application and save versions. New behavior uses protocol v2 rather than silently broadening Commander v1. Saves remain exact v10; credentials, clients, station leases, network queues, drafts, and unaccepted commands are transient and never enter saves or settings.
+- Multiplayer protocol versions are independent of application and save versions. Remote Crew is protocol v2-only; every `/api/v1/*` route is retired and returns 404. Saves remain exact v10; credentials, clients, station leases, network queues, drafts, and unaccepted commands are transient and never enter saves or settings.
 - Support a hard-bounded client count. Each client has an independent cryptographic session, expiry, request namespace, and revocation state. The host explicitly grants one exclusive station role per client and can revoke or take over any role. Reconnect never inherits another client's authority.
 - Role capabilities are allowlisted. A granted browser may directly operate its station, including weapons when the host separately enables direct fire, but every action must pass the same observation freshness, damage, inventory, ROE, envelope, and readiness checks as local input. Save/load, reset, editors, options, quit, network administration, and credentials remain host-only.
 - Transport handlers accept only strict, finite, size-bounded, versioned messages and enqueue detached envelopes. The main thread revalidates client, role, lease generation, world epoch, resource revision, freshness, and readiness immediately before applying each command. Never synthesize Pygame events or dispatch arbitrary method names from network data.

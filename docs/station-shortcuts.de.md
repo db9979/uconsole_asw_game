@@ -1,4 +1,4 @@
-# U-Jagd 0.2.1 - Stations- und Tastenkürzel
+# U-Jagd 0.2.2 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und

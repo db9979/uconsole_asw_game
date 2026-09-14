@@ -1,4 +1,4 @@
-# Commander-LAN-Koop (0.2.1)
+# Commander-LAN-Koop (0.2.2)
 
 [English](commander-coop.md)
 
@@ -28,11 +28,11 @@ Datenverkehr nicht vor Personen, die das LAN beobachten können.
    eingehende Verbindungen in der Host-Firewall bei Bedarf ausschließlich aus dem
    vertrauenswürdigen LAN.
 7. Gib den lokalen Kopplungscode ein: drei Ziffern gefolgt von drei
-   Großbuchstaben. Kleinbuchstaben aus dem Browser werden normalisiert. Codes
-   können einmal verwendet werden und laufen nach fünf Minuten ab. Fünf falsche
+   Großbuchstaben. Kleinbuchstaben aus dem Browser werden normalisiert. Der
+   angezeigte Code bleibt für weitere Besatzungsmitglieder gültig. Fünf falsche
    Versuche innerhalb eines gleitenden Zeitfensters von einer Minute sperren
-   weitere Versuche vorübergehend; der fünfte Fehlversuch erneuert den Code. Ein
-   ausdrücklicher lokaler Widerruf erzeugt einen neuen Code und hebt die Sperre auf.
+   weitere Versuche vorübergehend und erneuern den Code. Ein ausdrücklicher
+   lokaler Widerruf erzeugt ebenfalls einen neuen Code und hebt die Sperre auf.
 8. Fordere nach der Kopplung im Browser eine Station an. Der Host genehmigt oder
    verwirft genau diese Anfrage. Die Genehmigung aktiviert die normale
    Stationsbedienung; Sonar-Audio und Direktfeuer bleiben separate Freigaben. Wenn
@@ -82,6 +82,11 @@ Fehlerberichten.
   bleibt bei 1x ausschließlich live verfügbar. Seine Modi Broadband, Filtered und
   Heterodyne nutzen gemeinsam mit dem Sonar-Arbeitsplatz die maßgeblichen
   Einstellungen für Band, Notch und Gain.
+- Die Sonarbesatzung kann Zielvorschläge und die Brückenbesatzung Kurs- und/oder
+  Fahrtvorschläge bereitstellen. Vorschläge sind an die ursprüngliche v2-Sitzung,
+  aktive Rolle, Stationsgeneration, den Weltkontext und die Beobachtungsreferenz
+  gebunden. Ziel oder Navigationssollwerte ändern sich erst nach lokaler Annahme
+  durch den Host.
 - Das lokale Bedienfeld unterstützt unabhängige Entscheidungen über Anfragen je
   Station, zusätzliche Freigaben, Widerruf, Übernahme und Host-Steuerung. Ein Klick
   umgeht niemals die Bereitschaftsprüfung.
@@ -141,6 +146,13 @@ Rollenwechsel, Pause, versteckter Seite oder Stummschaltung. Autoplay kann vom
 Browser bis zu dieser Geste gesperrt werden. Visuelle Alarme bleiben immer
 verfügbar. Eine neue Verbindung setzt eine neue Ton-Ausgangsbasis, statt Alarme
 erneut abzuspielen.
+
+Ereignisse sind rollenbegrenzt: Schadensmeldungen erreichen Brücke und
+Schadensabwehr, Bedrohungen Brücke, OPZ und Waffen und Missionsereignisse alle
+Rollen. Der Lebenszyklus eines Vorschlags ist nur für Ursprungssitzung und
+-rolle sichtbar. Mit lokaler SimLog-Freigabe erhält ein Browser höchstens 64
+frühere Rollenprojektionen, niemals das vollständige Host-SimLog oder verborgene
+Entity-IDs.
 
 Eine Antwort über die Einreihung in die Warteschlange ist keine angenommene
 Aktion. Bei unsicherer Zustellung hält der Browser die Aktion ausstehend. Seine

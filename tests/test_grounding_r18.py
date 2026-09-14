@@ -276,7 +276,7 @@ def test_current_roundtrip_and_exact_pre_r18_upgrade_preserve_bathymetry(tmp_pat
     assert restored["rngs"] == current["rngs"]
 
     old = copy.deepcopy(current)
-    for key in ("astern", "hull", "grounding"):
+    for key in ("astern", "hull", "grounding", "fuel_kg", "fuel_capacity_kg"):
         old["ship"].pop(key)
     bathymetry = copy.deepcopy(old["world"]["coast"]["bathymetry"])
     path = tmp_path / "old.json"

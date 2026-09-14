@@ -2,7 +2,7 @@
 
 [Deutsch](commander-protocol.de.md)
 
-Application 0.2.1, API protocols 1 and 2, save format v10-only. These versions are independent.
+Application 0.2.2, API protocol 2, save format v10-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
 persistence.
@@ -15,19 +15,26 @@ reads public observations and own assets, validates commands and publishes
 detached JSON. HTTP handlers never import Game/Pygame, access simulation objects,
 or trigger sensor/TMA work. Candidate-load methods have no network side effects.
 
-## Legacy Protocol v1 Endpoints
+## Protocol v2 Endpoints
 
 | Method / route | Contract |
 |---|---|
 | GET /, /app.js, /style.css | Fixed packaged resources, cached at server start |
-| GET /api/v1/ui?lang=en or de | Only commander.web.* strings from root catalogs |
-| POST /api/v1/pair | JSON code; success returns memory-only bearer token |
-| GET /api/v1/state | Authenticated cached observation snapshot |
-| GET /api/v1/chart | Authenticated cached current chart or redacted empty chart |
-| POST /api/v1/commands | Strict action envelope; 202 means queued, not applied |
+| GET /api/v2/ui?lang=en or de | Only `commander.web.*` strings from root catalogs |
+| GET /api/v2/contacts | Public packaged contact-reference catalog |
+| POST /api/v2/pair | JSON pairing code; success creates a cookie session and returns CSRF state |
+| GET /api/v2/session | Authenticated client, lease, grant and sequence state |
+| GET /api/v2/state, /chart | Active role projection and matching known chart |
+| GET /api/v2/results, /proposals, /events | Role- and session-scoped command state |
+| GET /api/v2/simlog | Granted, role-scoped prior projections, at most 64 entries |
+| POST /api/v2/stations/request, /activate, /release | Strict lease operations |
+| POST /api/v2/commands | Strict action envelope; 202 means queued, not applied |
+| POST /api/v2/sonar/audio | Separately granted live Sonar audio polling |
+| POST /api/v2/logout | Revokes the current session and clears its cookie |
 
-Protected requests use Authorization: Bearer. Tokens are never query parameters
-or cookies. Mutation requests require application/json and exact same Origin.
+Every `/api/v1/*` route is retired and returns 404 without redirect or fallback.
+Protected requests use the HttpOnly session cookie. Mutation requests require
+`application/json`, exact same Origin and, after pairing, the exact CSRF token.
 Host is restricted to the bound IPv4 and actual port (localhost also allowed for
 loopback). No wildcard CORS, arbitrary routes/files, redirects, external assets,
 or HTML interpolation of authored text. Responses use no-store, CSP, nosniff and
@@ -88,38 +95,38 @@ locally in the browser after sound opt-in from the already allowlisted own-ship
 cavitation boolean; it adds no endpoint, grant, command, or host-audio control.
 The Sonar role receives only bounded own-ship speed and TAS handling limits needed
 to explain a disabled array control; hover reasons never inspect hidden entities.
-Protocol v1 remains exact for compatibility and is not silently broadened by v2
-fields.
 
-## Protocol v1 Pairing and Bounds
+## Protocol v2 Pairing and Bounds
 
 - Explicit RFC1918 or loopback IPv4 bind; no wildcard/public IPv4.
-- Cryptographic code: [0-9]{3}[A-Z]{3}, five-minute validity, one use. Rotation
-  excludes its predecessor. Server comparison is case-sensitive and constant-time.
+- Cryptographic code: `[0-9]{3}[A-Z]{3}`, reusable for additional crew until
+  explicit revocation or rate-limit rotation. Rotation excludes its predecessor.
+  Server comparison is case-sensitive and constant-time.
 - Five failed guesses per rolling 60 seconds, globally across IPs. Automatic
   rotation does not erase failures. Further attempts return 429 while exhausted.
-- Independent 32-random-byte bearer token and 30-second idle lease, renewed by
-  authenticated state/chart polling. A grant binds to this lease generation.
+- Independent cryptographic cookie session with an eight-hour idle limit. Presence
+  polling renews a 15-second station lease; grants bind to its generation. At most
+  12 clients can hold sessions.
 - Four admitted worker connections, 1.5-second inactivity timeout and three-second
   absolute deadline. Deadline timers are bounded by workers and joined on cleanup.
 - JSON bodies at most 4096 bytes; bounded request line/headers, strict framing,
   duplicate-member/nonfinite-number/unknown-field rejection.
-- Queue at most 32; bridge applies at most four requests per wall frame. Expired
-  five-second requests yield terminal rejection, not silent disappearance.
-- At most 256 projected tracks, 128 events, 32 recent results and 128 deduplicated
-  IDs. Chart at most 20,000 vertices and 1,024 polygons; oversized charts are
+- Global command queue at most 64 and per-client queue at most eight. Commands
+  older than two seconds yield terminal rejection, not silent disappearance.
+- At most 256 projected tracks, 128 events and 64 SimLog entries. Chart at most
+  20,000 vertices and 1,024 polygons; oversized charts are
   explicitly omitted rather than partially misrepresented.
 
 HTTP remains plaintext. Pairing, Origin checks and limits do not provide network
 confidentiality. Trusted LAN only; no port forwarding or public hosting.
 
-## Protocol v1 Snapshot and Commands
+## Protocol v2 Projections and Commands
 
-State includes protocol/version/session/epoch/revision/sequence, phase and command
-availability, clocks, known mission information, own readiness, public tracks,
-crew target, target proposal, navigation proposal, events and command results.
-The additive protocol-1 `environment` object contains integer `sea_state` in
-0-9 and authoritative boolean `is_night`; unknown values are null.
+Role state includes protocol/version/world session/epoch/resource revision,
+phase and command availability, clocks, known mission information, own readiness,
+public tracks and the environment summary. Proposals, events, command results and
+SimLog history use separate authenticated endpoints so each can enforce its own
+session, role, authority and grant boundary.
 Menu/editor/splash use the same schema with null own geometry and environment,
 plus empty mission, tracks, events and chart. Paused live missions retain a
 frozen read-only picture.
@@ -129,18 +136,19 @@ entity IDs. Replacement/reacquisition invalidates them. Only modeled AIS labels
 are forwarded; internal producer prefixes cannot reveal civilian/warship identity.
 No seed, RNG, hidden entity/profile information or save dumps are exported.
 
-Commands carry id, session, epoch, revision, action, and action-specific fields:
+Commands carry protocol, cryptographic request ID, client sequence, station,
+station and active generations, world session/epoch, resource revision, action,
+and exact action-specific parameters. Proposal actions are:
 
 | Action | Additional fields |
 |---|---|
-| classify | track, value (allowed operator class or null) |
-| affiliate | track, value (allowed NATO affiliation) |
-| propose | track |
-| clear_proposal | optional matching track |
-| propose_navigation | course and/or speed_kn; course in [0,360), speed in the configured helm range |
+| propose_target | observation `ref` |
+| clear_target_proposal | no parameters |
+| propose_navigation | `course` and/or `speed_kn`; course in [0,360), speed in the configured helm range |
 
-All require pairing, lease-bound local grant and live command ownership. Explicit
-revision checks resolve concurrent crew/Commander annotation changes. Repeating
+All actions require pairing, an active role lease, the role's command grant and
+live command ownership; direct-fire actions require their additional grant.
+Explicit revision checks resolve concurrent crew changes. Repeating
 an identical retained ID replays its result; changing its payload is rejected. A
 distinct request cannot replace an unresolved proposal of the same kind and
 receives `proposal_pending`; one target and one navigation proposal may coexist.
@@ -156,6 +164,12 @@ speed-only proposal may still be accepted. Physical movement remains governed by
 normal ship physics, propulsion and quiet-mode limits. No remote action can
 directly steer. Air/missile
 sequence namespaces cannot alias sonar identity.
+
+Damage events are visible to Bridge and Damage Control, threats to Bridge, OPZ
+and Weapons, and mission events to every role. Proposal lifecycle events are
+visible only to the originating session and role. SimLog stores at most 64 prior
+role projections with their simulation timestamps; disabled or ungranted SimLog
+returns no history and host-local full-truth entries are never exported.
 
 Epoch changes reject queued actions across administrative/input/grant/connection
 transitions. World replacement revokes pairing and generates a new session at the

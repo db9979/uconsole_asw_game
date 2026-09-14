@@ -40,6 +40,7 @@ def _station_record(status="available", *, requested=False, request_generation=0
 BROWSER_SESSION = r"""
 "use strict";
 const issued = [];
+let tones = 0;
 const consoleErrors = [];
 const nativeConsoleError = console.error.bind(console);
 console.error = (...args) => {
@@ -57,6 +58,14 @@ window.fetch = async (url, options = {}) => {
   return response;
 };
 window.requestAnimationFrame = (callback) => setTimeout(() => callback(performance.now()), 16);
+class TestAudio {
+  constructor() { this.state = "suspended"; this.currentTime = 0; this.destination = {}; }
+  async resume() { this.state = "running"; }
+  async suspend() { this.state = "suspended"; }
+  createOscillator() { tones++; return {type: "sine", frequency: {setValueAtTime() {}}, connect() {}, disconnect() {}, start() {}, stop() { setTimeout(() => this.onended?.(), 1); }}; }
+  createGain() { return {gain: {setValueAtTime() {}, linearRampToValueAtTime() {}}, connect() {}, disconnect() {}}; }
+}
+window.AudioContext = TestAudio;
 const $test = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const assert = (value, message) => { if (!value) throw new Error(message); };
@@ -67,7 +76,7 @@ async function until(check, message) {
   }
   throw new Error(`${message}; console=${consoleErrors.join(" | ")}`);
 }
-const operational = () => issued.filter((entry) => /\/api\/v2\/(state|chart|simlog)$/.test(entry.url));
+const operational = () => issued.filter((entry) => /\/api\/v2\/(state|chart|proposals|events|simlog)$/.test(entry.url));
 async function run() {
   await until(() => !$test("shell").hidden, "translations loaded");
   assert(issued[0].url.endsWith("/api/v2/session"), "resume is the first request");
@@ -105,6 +114,8 @@ async function run() {
     await until(() => issued.filter((entry) => entry.url.endsWith("/api/v2/session")).length >= 2, "lobby polls session");
     assert($test("operations").hidden && operational().length === 0, "request never implies an immediate grant");
     await until(() => !$test("operations").hidden, "host grant is discovered by session polling");
+    assert($test("target-proposal").hidden && !$test("navigation-proposal").hidden,
+      "bridge sees only navigation proposals");
     assert($test("role-rail-title").textContent === __BRIDGE__ && !$test("role-rail").hidden, "assigned role is prominent in desktop rail");
     assert(!$test("mobile-station").disabled && $test("mobile-station").value === "bridge", "mobile station switcher reflects assignment");
     assert($test("mobile-station").options.length === 1, "station switcher contains only granted stations");
@@ -147,6 +158,15 @@ async function run() {
   }
   await until(() => !$test("operations").hidden, "assigned cookie session resumes after reload");
   assert(issued[0].session.station === "sonar" && !issued.some((entry) => entry.url.endsWith("/api/v2/pair")), "reload resumes exact role without pairing");
+  await until(() => !$test("target-proposal").hidden && $test("navigation-proposal").hidden &&
+    $test("proposal-status").textContent.includes("Sierra 01"), "sonar sees only its target proposal");
+  await until(() => $test("event-list").textContent.includes("Baseline warning"), "event baseline rendered");
+  $test("sound").click();
+  await until(() => $test("sound").getAttribute("aria-pressed") === "true", "sound enabled");
+  assert(tones === 0, "enabling sound does not replay the warning baseline");
+  await nativeFetch("/test/new-warning");
+  await until(() => $test("event-list").textContent.includes("New warning") && tones === 1,
+    "a subsequent warning is rendered and alerted once");
   $test("sonar-control-page").value = "analysis";
   $test("sonar-control-page").dispatchEvent(new Event("change", {bubbles: true}));
   $test("sonar-gain").value = "4";
@@ -181,7 +201,7 @@ console.error = (...args) => {
 };
 window.Error = function(...args) {
   const error = new NativeError(...args);
-  if (["protocol", "chart", "session", "results"].includes(String(args[0]))) protocolErrors.push(error.stack || String(error));
+  if (["protocol", "chart", "session", "proposals", "events", "results", "simlog_schema"].includes(String(args[0]))) protocolErrors.push(error.stack || String(error));
   return error;
 };
 window.Error.prototype = NativeError.prototype;
@@ -211,7 +231,7 @@ window.fetch = async (url, options = {}) => {
     stationActions.push(JSON.parse(options.body).action);
   }
   const response = await nativeFetch(url, options);
-  if (/\/api\/v2\/(session|state|chart|results)$/.test(path) && response.ok) {
+  if (/\/api\/v2\/(session|state|chart|proposals|events|results)$/.test(path) && response.ok) {
     const value = await response.clone().json();
     if (path.endsWith("/session")) {
       sessionPolls += 1;
@@ -224,7 +244,7 @@ window.fetch = async (url, options = {}) => {
       events.push(`state:${value.role}`);
     } else if (path.endsWith("/chart")) {
       events.push("chart");
-    } else {
+    } else if (path.endsWith("/results")) {
       resultPolls += 1;
       events.push(`results:${JSON.stringify(value)}`);
     }
@@ -527,11 +547,21 @@ function state() {
 window.fetch = async (url, options = {}) => {
   const path = new URL(String(url), location.href).pathname;
   if (path === "/api/v2/session") return new Response(JSON.stringify(session), {status: session.client_id ? 200 : 401});
-  if (path === "/api/v1/ui") return nativeFetch(url, options);
-  if (path === "/api/v1/contacts") return new Response(JSON.stringify({version: 1, profiles: []}), {status: 200});
+  if (path === "/api/v2/ui") return nativeFetch(url, options);
+  if (path === "/api/v2/contacts") return new Response(JSON.stringify({version: 1, profiles: []}), {status: 200});
   if (path === "/api/v2/pair") return new Response(JSON.stringify(session), {status: 200});
   if (path === "/api/v2/state") return new Response(JSON.stringify(state()), {status: 200});
   if (path === "/api/v2/chart") return new Response(JSON.stringify(chart), {status: 200});
+  if (path === "/api/v2/proposals") {
+    const current = state();
+    return new Response(JSON.stringify({protocol: 2, session: current.session, epoch: current.epoch,
+      role: current.role, target: null, navigation: null}), {status: 200});
+  }
+  if (path === "/api/v2/events") {
+    const current = state();
+    return new Response(JSON.stringify({protocol: 2, session: current.session, epoch: current.epoch,
+      role: current.role, latest_seq: 0, events: []}), {status: 200});
+  }
   if (path === "/api/v2/stations/activate") {
     const body = JSON.parse(options.body);
     stationActivations.push(body);
@@ -885,7 +915,7 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
             elif self.path in ("/app.js", "/style.css"):
                 self.reply(ASSETS.joinpath(self.path[1:]).read_bytes(),
                            "text/javascript" if self.path.endswith("js") else "text/css")
-            elif self.path in ("/api/v1/ui?lang=en", "/api/v1/ui?lang=de"):
+            elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply({key: value for key, value in source.items()
                             if key.startswith(PREFIX)})
@@ -1023,6 +1053,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
         request_polls = 0
         reload_ready = False
         reload_polls = 0
+        sonar_event_polls = 0
+        publish_warning = False
 
         def log_message(self, *_args):
             pass
@@ -1054,14 +1086,17 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             elif self.path in ("/app.js", "/style.css"):
                 mime = "text/javascript" if self.path.endswith("js") else "text/css"
                 self.reply(200, ASSETS.joinpath(self.path[1:]).read_bytes(), mime)
-            elif self.path in ("/api/v1/ui?lang=en", "/api/v1/ui?lang=de"):
+            elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply(200, {key: value for key, value in source.items() if key.startswith(PREFIX)})
-            elif self.path == "/api/v1/contacts":
+            elif self.path == "/api/v2/contacts":
                 self.reply(200, browser_contact_analysis())
             elif self.path == "/test/reload-ready":
                 type(self).reload_ready = True
                 type(self).reload_polls = 0
+                self.reply(200, {})
+            elif self.path == "/test/new-warning":
+                type(self).publish_warning = True
                 self.reply(200, {})
             elif self.path == "/api/v2/session" and self.authenticated():
                 cls = type(self)
@@ -1091,6 +1126,37 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 self.reply(200, state_for(type(self).session["station"]))
             elif self.path == "/api/v2/chart" and self.authenticated():
                 self.reply(200, chart)
+            elif self.path in ("/api/v2/proposals", "/api/v2/events", "/api/v2/simlog") and self.authenticated():
+                cls = type(self)
+                role = cls.session["station"]
+                state = state_for(role)
+                if self.path == "/api/v2/proposals":
+                    self.reply(200, {"protocol": 2, "session": state["session"],
+                                     "epoch": state["epoch"], "role": role,
+                                     "target": ({"ref": state["sonar"]["observations"][0]["ref"],
+                                                 "label": "Sierra 01", "status": "pending"}
+                                                if role == "sonar" else None),
+                                     "navigation": None})
+                elif self.path == "/api/v2/events":
+                    rows = []
+                    if role == "sonar":
+                        cls.sonar_event_polls += 1
+                        rows = [{"seq": 1, "kind": "mission", "severity": "warning",
+                                 "message": "Baseline warning"}]
+                        if cls.publish_warning:
+                            rows.append({"seq": 2, "kind": "mission", "severity": "warning",
+                                         "message": "New warning"})
+                    self.reply(200, {"protocol": 2, "session": state["session"],
+                                     "epoch": state["epoch"], "role": role,
+                                     "latest_seq": rows[-1]["seq"] if rows else 0,
+                                     "events": rows})
+                elif cls.session["simlog"]:
+                    self.reply(200, {"protocol": 2, "session": state["session"],
+                                     "epoch": state["epoch"], "role": role,
+                                     "entries": [{"seq": 1, "t": 1.0, "stamp": "00:01",
+                                                  "state": state}]})
+                else:
+                    self.reply(403, {"error": "forbidden"})
             else:
                 self.reply(404, {"error": "not_found"})
 

@@ -1,64 +1,30 @@
 """Simulationsprotokoll: Options-Toggle, begrenzte Aufnahme, Commander #simlog."""
 
 import json
-import re
 from contextlib import closing
 from dataclasses import replace
-from importlib import resources
+import http.client
+import time
 
 import pygame
 import pytest
 
 from src.commander.bridge import CommanderBridge
+from src.commander.server import CommanderServer
 from src.core import config
 from src.core.game import Game
 from src.core.i18n import message
 from src.core.preferences import load_preferences, save_preferences, Preferences
+from src.sonar.sonar import Contact
 import src.commander.server as transport
-
-
-class FakeServer:
-    """Detached transport fixture for bridge-level simlog tests."""
-
-    def __init__(self):
-        self.connected = True
-        self.lease = 1
-        self.queue = []
-        self.state = None
-        self.simlog = b"[]"
-        self.simlog_calls = 0
-
-    @property
-    def lease_generation(self):
-        return self.lease
-
-    def publish(self, state, chart=None):
-        json.dumps(state, allow_nan=False)
-        self.state = state
-
-    def publish_simlog(self, payload):
-        rows = json.loads(payload.decode("utf-8"))
-        assert type(rows) is list
-        self.simlog = payload
-        self.simlog_calls += 1
-
-    def drain_commands(self, limit=4):
-        assert limit == 4
-        batch, self.queue = self.queue[:limit], self.queue[limit:]
-        return batch
-
-    def is_current(self, envelope):
-        return self.connected and envelope["lease"] == self.lease
-
-    def revoke(self):
-        self.lease += 1
-        self.connected = False
-        self.queue.clear()
+import src.commander.bridge as commander_bridge
 
 
 @pytest.fixture
 def game():
-    return Game(seed=31, start_menu=False, audio_enabled=False, language="en")
+    instance = Game(seed=31, start_menu=False, audio_enabled=False, language="en")
+    yield instance
+    instance.audio.shutdown()
 
 
 def test_preferences_simlog_defaults_off_and_roundtrips(tmp_path):
@@ -242,55 +208,7 @@ def test_options_menu_has_seven_rows_and_toggles_simlog(game):
     assert game.commander_open
 
 
-def test_bridge_publishes_simlog_once_per_change_and_localizes(game):
-    server = FakeServer()
-    bridge = CommanderBridge()
-    game.preferences = replace(game.preferences, simlog=True)
-    game.sim_t = 5.0
-    game.feed.add("00:05", "mission", message("runtime.raid.downed"))
-    bridge.pump(game, server, now=1.0)
-    rows = json.loads(server.simlog.decode("utf-8"))
-    assert len(rows) == 1
-    assert rows[0]["text"] == "AA gun: hostile aircraft destroyed."
-    assert rows[0]["stamp"] == "00:05" and rows[0]["cat"] == "mission"
-    calls = server.simlog_calls
-    bridge.pump(game, server, now=1.6)
-    assert server.simlog_calls == calls  # ohne Aenderung nicht erneut
-    game.feed.add("00:06", "sonar", "Ping")
-    bridge.pump(game, server, now=2.2)
-    assert len(json.loads(server.simlog.decode("utf-8"))) == 2
-
-
-def test_bridge_publishes_empty_simlog_when_disabled_or_redacted(game):
-    server = FakeServer()
-    bridge = CommanderBridge()
-    bridge.pump(game, server, now=1.0)
-    assert server.simlog == b"[]"
-    game.preferences = replace(game.preferences, simlog=True)
-    game.feed.add("00:05", "mission", "Ereignis")
-    bridge.pump(game, server, now=1.6)
-    assert len(json.loads(server.simlog.decode("utf-8"))) == 1
-    game.in_menu = True
-    bridge.pump(game, server, now=2.2)
-    assert server.simlog == b"[]"
-
-
-def test_bridge_simlog_payload_respects_server_byte_bound(monkeypatch, game):
-    server = FakeServer()
-    bridge = CommanderBridge()
-    big = "x" * (transport.SIMLOG_MAX_BYTES // 4 + 1)
-    rows = [dict(seq=i + 1, t=0.0, stamp="00:00", cat="mission", text=big)
-            for i in range(128)]
-    game.preferences = replace(game.preferences, simlog=True)
-    game.simlog.extend(rows)
-    game._simlog_seq = 128
-    bridge.pump(game, server, now=1.0)
-    published = json.loads(server.simlog.decode("utf-8"))
-    assert len(published) < len(rows)
-    assert all(type(item["text"]) is str for item in published)
-
-
-# --- Server-Route (echte Loopback) ---
+# --- Role-safe Remote Crew v2 history (real loopback transport) ---
 
 @pytest.fixture
 def assets(tmp_path, monkeypatch):
@@ -315,78 +233,186 @@ def server(assets):
         instance.stop()
 
 
-def test_simlog_route_requires_authentication(server):
-    import http.client
+def request(server, path, method="GET", body=None, cookie=None, csrf=None):
     host, port = server.address
+    headers = {}
+    if method == "POST":
+        headers.update(Origin=f"http://{host}:{port}",
+                       **{"Content-Type": "application/json"})
+    if cookie:
+        headers["Cookie"] = cookie
+    if csrf:
+        headers["X-U-Jagd-CSRF"] = csrf
+    payload = None if body is None else json.dumps(body)
     with closing(http.client.HTTPConnection(host, port, timeout=3)) as client:
-        client.request("GET", "/api/v1/simlog")
-        assert client.getresponse().status == 401
-
-
-def test_simlog_route_serves_published_payload(server):
-    import http.client
-    token = None
-    host, port = server.address
-    with closing(http.client.HTTPConnection(host, port, timeout=3)) as client:
-        client.request("POST", "/api/v1/pair",
-                       body=json.dumps({"code": server.pairing_code}),
-                       headers={"Content-Type": "application/json",
-                                "Origin": f"http://{host}:{port}"})
-        body = json.loads(client.getresponse().read())
-        token = body["token"]
-    server.publish_simlog(json.dumps(
-        [{"seq": 1, "t": 2.0, "stamp": "00:07", "cat": "mission",
-          "text": "Missionsstart"}],
-        ensure_ascii=False).encode("utf-8"))
-    with closing(http.client.HTTPConnection(host, port, timeout=3)) as client:
-        client.request("GET", "/api/v1/simlog",
-                       headers={"Authorization": f"Bearer {token}"})
+        client.request(method, path, body=payload, headers=headers)
         response = client.getresponse()
-        assert response.status == 200
-        rows = json.loads(response.read().decode("utf-8"))
-        assert rows[0]["text"] == "Missionsstart" and rows[0]["seq"] == 1
+        raw = response.read()
+        return response.status, dict(response.getheaders()), (
+            json.loads(raw) if raw else None)
 
 
-@pytest.mark.parametrize("payload", [b"{}", b"[", b"]", b"[[1]]", b""])
-def test_publish_simlog_rejects_invalid_payload(server, payload):
-    with pytest.raises(ValueError):
-        server.publish_simlog(payload)
+def pair(server, name="Recorder", role=None, simlog=False):
+    status, headers, session = request(server, "/api/v2/pair", "POST", {
+        "code": server.pairing_code, "name": name})
+    assert status == 200
+    cookie = headers["Set-Cookie"].split(";", 1)[0]
+    if role is not None:
+        assert server.grant_station(session["client_id"], role)
+    if simlog:
+        assert server.set_client_grant(session["client_id"], "simlog", True)
+    session = request(server, "/api/v2/session", cookie=cookie)[2]
+    return cookie, session
 
 
-def test_web_assets_expose_hidden_simlog_view():
-    assets = resources.files("data.commander")
-    html = assets.joinpath("index.html").read_text(encoding="utf-8")
-    js = assets.joinpath("app.js").read_text(encoding="utf-8")
-    css = assets.joinpath("style.css").read_text(encoding="utf-8")
-    assert 'id="simlog-view"' in html and "hidden" in html
-    assert 'id="simlog-list"' in html
-    assert 'id="simlog-current"' in html
-    for identity in ("simlog-current-map", "simlog-map-dialog", "simlog-map",
-                     "simlog-map-close", "simlog-map-world",
-                     "simlog-map-units-fit", "simlog-map-units"):
-        assert f'id="{identity}"' in html
-    assert "#simlog" in js and "/simlog" in js
-    assert "hashchange" in js and "validateSimlog" in js
-    # State-Snapshots werden als Tabellen gerendert, nicht als rohes JSON.
-    assert "simlogCurrentState" in js and "simlog-table" in js
-    assert "simlogMapItems" in js and "drawSimlogMap" in js
-    assert "simlogMapLabel" in js and "Math.sin(angle)" in js
-    assert "plotted.forEach(({ item, x }, index)" in js
-    assert 'item.section === "ship"' in js
-    assert "simlogSectionRows" in js  # helo object is rendered as one row
-    assert "JSON.stringify(row.data" not in js
-    assert ".simlog-list" in css and ".simlog-entry" in css
-    assert ".simlog-table" in css and ".simlog-current" in css
-    assert re.search(r"\.simlog-table-wrap\s*\{[^}]*grid-column:\s*1\s*/\s*-1", css)
-    assert re.search(r"\.simlog-table-wrap\s*\{[^}]*overflow-x:\s*auto", css)
-    assert "#simlog-map-dialog" in css and "#simlog-map" in css
-    map_renderer = js.split("function simlogMapItems", 1)[1].split(
-        "function simlogSummary", 1)[0]
-    assert "sendCommand" not in map_renderer and "snapshot.tracks" not in map_renderer
-    for section in ("subs", "surfaces", "animals", "torpedoes",
-                    "enemy_torpedoes", "decoys", "asms", "essms", "asrocs",
-                    "nixies", "buoys", "flights", "raiders", "helo"):
-        assert section in map_renderer or section in js.split(
-            "const simlogStateSections", 1)[1].split(";", 1)[0]
-    # Die versteckte Ansicht ist nicht aus der normalen UI verlinkt.
-    assert 'href="#simlog"' not in html
+def remote_simlog(server, cookie):
+    status, _, body = request(server, "/api/v2/simlog", cookie=cookie)
+    assert status == 200
+    assert set(body) == {"protocol", "session", "epoch", "role", "entries"}
+    assert body["protocol"] == 2
+    return body
+
+
+def test_v2_simlog_requires_cookie_active_role_and_host_grant(server):
+    assert request(server, "/api/v2/simlog")[0] == 401
+    cookie, session = pair(server)
+    assert request(server, "/api/v2/simlog", cookie=cookie)[0] == 403
+    assert server.set_client_grant(session["client_id"], "simlog", True)
+    assert request(server, "/api/v2/simlog", cookie=cookie)[0] == 403
+    assert server.grant_station(session["client_id"], "bridge")
+    assert request(server, "/api/v2/simlog", cookie=cookie)[0] == 200
+
+
+def test_remote_simlog_is_prior_exact_projection_not_local_truth(game, server):
+    hidden = Contact(1, 998877, "passiv", "sub")
+    hidden.update_passive(47.0, .8, .8, "hidden-class", game.sim_t)
+    game.sonar.contacts[hidden.target_id] = hidden
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="sonar", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    prior = request(server, "/api/v2/state", cookie=cookie)[2]
+
+    game.sim_t = 12.5
+    game.feed.add("00:01", "sonar", "classified locally")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    body = remote_simlog(server, cookie)
+    assert (body["session"], body["epoch"], body["role"]) == (
+        prior["session"], prior["epoch"], "sonar")
+    entry = body["entries"][-1]
+    assert set(entry) == {"seq", "t", "stamp", "state"}
+    assert entry["t"] == 12.5 and entry["stamp"] == "00:01"
+    assert entry["state"] == prior
+    encoded = json.dumps(body)
+    assert "998877" not in encoded and "hidden-class" not in encoded
+    assert not ({"subs", "surfaces", "enemy_torpedoes", "raiders"}
+                & set(entry["state"]))
+
+
+def test_remote_simlog_history_is_role_and_session_specific(game, server):
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    bridge_cookie, _ = pair(server, "Bridge log", "bridge", True)
+    sonar_cookie, _ = pair(server, "Sonar log", "sonar", True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    bridge_prior = request(server, "/api/v2/state", cookie=bridge_cookie)[2]
+    sonar_prior = request(server, "/api/v2/state", cookie=sonar_cookie)[2]
+    game.feed.add("00:02", "mission", "checkpoint")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+
+    bridge_log = remote_simlog(server, bridge_cookie)
+    sonar_log = remote_simlog(server, sonar_cookie)
+    assert bridge_log["entries"][-1]["state"] == bridge_prior
+    assert sonar_log["entries"][-1]["state"] == sonar_prior
+    assert bridge_log["entries"][-1]["state"] != sonar_log["entries"][-1]["state"]
+    assert all(row["state"]["role"] == "bridge" for row in bridge_log["entries"])
+    assert all(row["state"]["role"] == "sonar" for row in sonar_log["entries"])
+
+
+def test_remote_simlog_is_empty_when_recording_disabled_or_context_redacted(
+        game, server):
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="bridge", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    assert remote_simlog(server, cookie)["entries"] == []
+
+    game.preferences = replace(game.preferences, simlog=True)
+    game.feed.add("00:03", "mission", "visible")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    assert remote_simlog(server, cookie)["entries"]
+    game.in_menu = True
+    bridge.pump(game, server, now=time.monotonic() + 1.8)
+    assert remote_simlog(server, cookie)["entries"] == []
+
+
+def test_remote_simlog_rebaselines_on_nonredacted_epoch_change(game, server):
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="bridge", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    game.feed.add("00:04", "mission", "before help")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    previous_epoch = remote_simlog(server, cookie)["epoch"]
+
+    game.help_open = True
+    bridge.pump(game, server, now=time.monotonic() + 1.8)
+    body = remote_simlog(server, cookie)
+    assert body["epoch"] == previous_epoch + 1
+    assert body["entries"] == []
+
+
+def test_remote_simlog_rebaselines_when_transport_invalidates_commands(game, server):
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="bridge", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    game.feed.add("00:05", "mission", "before restart")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    assert remote_simlog(server, cookie)["entries"]
+
+    bridge.invalidate_commands()
+    bridge.pump(game, server, now=time.monotonic() + 1.8)
+    body = remote_simlog(server, cookie)
+    assert body["epoch"] == bridge.status["epoch"]
+    assert body["entries"] == []
+
+
+def test_remote_simlog_is_bounded_to_64_entries(game, server):
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="bridge", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    for index in range(80):
+        game.sim_t = float(index)
+        game.feed.add(f"00:{index % 60:02d}", "mission", f"event {index}")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    entries = remote_simlog(server, cookie)["entries"]
+    assert len(entries) == 64
+    assert len(transport._json_bytes(entries)) <= transport.SIMLOG_MAX_BYTES
+    assert [entry["seq"] for entry in entries] == sorted(
+        entry["seq"] for entry in entries)
+
+
+def test_remote_simlog_publication_respects_byte_bound(
+        game, server, monkeypatch):
+    limit = 12 * 1024
+    monkeypatch.setattr(transport, "SIMLOG_MAX_BYTES", limit)
+    monkeypatch.setattr(commander_bridge, "SIMLOG_MAX_BYTES", limit)
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="bridge", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    for index in range(40):
+        game.feed.add("00:00", "mission", f"bounded {index}")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    body = remote_simlog(server, cookie)
+    entries = body["entries"]
+    assert entries
+    assert len(transport._json_bytes(body)) <= limit

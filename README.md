@@ -7,13 +7,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **0.2.1**
+Current release: **0.2.2**
 
-Release 0.2.1 adds deterministic wind, rain, visibility and changing sea state;
-weather effects on sensors and helicopter operations; station Autocrew; fuel and
-expanded Engineering controls; the uConsole-hosted Remote Crew hotspot; and
-animated native and browser weather instruments. Save format v10 and Commander
-protocols v1/v2 remain unchanged.
+Release 0.2.2 consolidates Remote Crew on protocol v2 with cookie-authenticated
+role sessions, locally accepted target and navigation proposals, role-scoped
+events, and observation-safe SimLog history. Legacy protocol v1 is retired and
+all `/api/v1/*` routes return 404. Save format v10 remains unchanged.
 
 This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
@@ -280,9 +279,11 @@ and restores the previous Wi-Fi connection. The game itself must not run with
 `sudo`.
 
 Pair using the six-character code: **three digits followed by three uppercase
-letters**, for example `482KMT`. Codes expire after five minutes; five wrong
-guesses in a rolling minute temporarily block further attempts. Lowercase browser
-input is normalized to uppercase. The example is not a functioning credential.
+letters**, for example `482KMT`. Five wrong guesses in a rolling minute
+temporarily block further attempts. The displayed code remains valid for
+additional crew until the host revokes access or the fifth failure rotates it.
+Lowercase browser input is normalized to uppercase. The example is not a
+functioning credential.
 
 After pairing, each browser requests one or more stations. The host grants each
 station exclusively; ordinary station operation is enabled on approval, while
@@ -294,6 +295,12 @@ command is revalidated on the main
 simulation thread against station damage, observation freshness, inventory,
 readiness, ROE, and the current world generation. Communication still relies on
 external voice; no microphone or chat is included.
+
+Sonar crew may stage target proposals and Bridge crew may stage course and speed
+proposals. These requests never act directly: the host reviews and accepts or
+rejects them locally. Browser alerts and SimLog history are role-scoped and use
+only previously published observations; reconnecting establishes a silent event
+baseline rather than replaying old alarms.
 
 While a browser owns a station lease, matching station input on the uConsole is
 read-only. Host administration, pause, and switching to another station remain
@@ -332,7 +339,7 @@ import. JSON templates under `data/editor_templates/` describe the accepted
 schemas; user files are stored under `~/.u-jagd/missions/` and
 `~/.u-jagd/units/`.
 
-Validated does not mean runtime-effective. In release 0.2.1:
+Validated does not mean runtime-effective. In release 0.2.2:
 
 - A user mission can be started with `F5` from the Mission Editor browser only
   when it uses the supported runtime subset.
@@ -354,7 +361,7 @@ Validated does not mean runtime-effective. In release 0.2.1:
 
 ## Saves and User Data
 
-Release 0.2.1 writes and loads save format **v10** only. V10 requires the exact
+Release 0.2.2 writes and loads save format **v10** only. V10 requires the exact
 `u-jagd-save-v10` schema, including the current runtime catalog snapshot and all
 deterministic continuation state. Older, newer, malformed, or incomplete saves
 are rejected without replacing the running game.

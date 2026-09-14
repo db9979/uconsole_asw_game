@@ -8,14 +8,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **0.2.1**
+Aktuelle Version: **0.2.2**
 
-Version 0.2.1 ergänzt deterministischen Wind, Regen, Sicht und wechselnden
-Seegang, Wetterwirkungen auf Sensoren und Helikopterbetrieb, stationsbezogene
-Autocrew, Treibstoff und erweiterte Maschinenbedienung, den von der uConsole
-bereitgestellten Remote-Crew-Hotspot sowie animierte Wetterinstrumente in der
-lokalen und der Browseroberfläche. Speicherformat v10 und die
-Commander-Protokolle v1/v2 bleiben unverändert.
+Version 0.2.2 vereinheitlicht Remote Crew auf Protokoll v2 mit Cookie-
+authentifizierten Rollensitzungen, lokal angenommenen Ziel- und
+Navigationsvorschlägen, rollenbegrenzten Ereignissen und einer
+beobachtungssicheren SimLog-Historie. Das Legacy-Protokoll v1 ist entfernt; alle
+Routen unter `/api/v1/*` liefern 404. Speicherformat v10 bleibt unverändert.
 
 Dies ist eine frühe spielbare Version. Sie ist ein Spiel und kein Ausbildungs-
 oder Navigationsprodukt. Die Systeme sind vereinfacht und erheben nicht den
@@ -306,10 +305,12 @@ WLAN-Verbindung wiederhergestellt. Das Spiel selbst darf nicht mit `sudo`
 gestartet werden.
 
 Koppeln Sie den Browser mit dem sechsstelligen Code: **drei Ziffern gefolgt von
-drei Großbuchstaben**, beispielsweise `482KMT`. Codes laufen nach fünf Minuten
-ab; fünf falsche Versuche innerhalb einer gleitenden Minute sperren weitere
-Versuche vorübergehend. Browser-Eingaben in Kleinbuchstaben werden in
-Großbuchstaben umgewandelt. Das Beispiel ist kein gültiger Zugangscode.
+drei Großbuchstaben**, beispielsweise `482KMT`. Fünf falsche Versuche innerhalb
+einer gleitenden Minute sperren weitere Versuche vorübergehend. Der angezeigte
+Code bleibt für weitere Besatzungsmitglieder gültig, bis der Host den Zugriff
+widerruft oder der fünfte Fehlversuch ihn erneuert. Browser-Eingaben in
+Kleinbuchstaben werden in Großbuchstaben umgewandelt. Das Beispiel ist kein
+gültiger Zugangscode.
 
 Nach der Kopplung fordert jeder Browser eine oder mehrere Stationen an. Der Host
 vergibt jede Station exklusiv; mit der Genehmigung wird die normale
@@ -323,6 +324,13 @@ anhand von Stationsschaden, Aktualität der Beobachtung, Bestand, Bereitschaft,
 Einsatzregeln und aktueller Weltgeneration geprüft. Die Kommunikation ist
 weiterhin auf eine externe Sprachverbindung angewiesen; Mikrofon und Chat sind
 nicht enthalten.
+
+Die Sonarbesatzung kann Zielvorschläge und die Brückenbesatzung Kurs- und
+Fahrtvorschläge bereitstellen. Diese Anfragen wirken niemals direkt: Der Host
+prüft sie lokal und nimmt sie an oder lehnt sie ab. Browseralarme und die
+SimLog-Historie sind rollenbegrenzt und verwenden nur zuvor veröffentlichte
+Beobachtungen; eine Neuverbindung setzt eine stille Ereignis-Ausgangsbasis,
+anstatt alte Alarme erneut abzuspielen.
 
 Solange ein Browser eine Stations-Lease besitzt, ist die Bedienung der
 entsprechenden Station auf der uConsole schreibgeschützt. Host-Verwaltung, Pause
@@ -350,11 +358,10 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **0.2.1**, API-Protokolle **v1** und **v2** sowie
-Speicherformat **v10** sind voneinander unabhängige Kompatibilitätsverträge. Das
-rollenorientierte Remote-Crew-System verwendet Protokoll v2; das ältere
-Commander-Protokoll v1 bleibt für die Kompatibilität unverändert und wird nicht
-stillschweigend um v2-Felder oder -Berechtigungen erweitert.
+Anwendungsversion **0.2.2**, API-Protokoll **v2** und Speicherformat **v10** sind
+voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
+ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
+entfernt und liefern 404.
 
 **Sicherheit:** HTTP ist unverschlüsselt. Verwenden Sie den Dienst nur in einem
 vertrauenswürdigen LAN. Internet-Hosting, Bindung an Wildcard-Adressen, CDN,
@@ -378,7 +385,7 @@ Schemata; Benutzerdateien werden unter `~/.u-jagd/missions/` und
 `~/.u-jagd/units/` gespeichert.
 
 Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
-0.2.1 gilt:
+0.2.2 gilt:
 
 - Eine Benutzermission kann nur dann mit `F5` aus der Browseransicht des
   Missionseditors gestartet werden, wenn sie die unterstützte Laufzeitteilmenge
@@ -403,7 +410,7 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Version 0.2.1 schreibt und lädt ausschließlich das Speicherformat **v10**. V10
+Version 0.2.2 schreibt und lädt ausschließlich das Speicherformat **v10**. V10
 verlangt das exakte Schema `u-jagd-save-v10` einschließlich des aktuellen
 Schnappschusses des Laufzeitkatalogs und des gesamten Zustands für die
 deterministische Fortsetzung. Ältere, neuere, fehlerhafte oder unvollständige

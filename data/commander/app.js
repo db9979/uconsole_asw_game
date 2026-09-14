@@ -35,10 +35,9 @@
   const colors = { UNKNOWN: "#f3cf79", FRIEND: "#81c5ff", NEUTRAL: "#8fdfab", HOSTILE: "#ff9090" };
   let language = (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en";
   let catalog = {};
-  // Legacy credentials and v2 session metadata stay closure-local: no URL, DOM or persistence.
-  let protocolMode = "detecting";
-  let token = null;
+  // Session metadata stays closure-local: no URL, DOM or persistence.
   let session = null;
+  let pairingAvailable = false;
   let generation = 0;
   let snapshot = null;
   let chart = null;
@@ -81,10 +80,6 @@
   let sonarAudioGain = null;
   let bridgeCavitationSource = null;
   let bridgeCavitationGain = null;
-  let seenEvents = new Set();
-  let eventHighWater = -1;
-  let eventHistory = [];
-  let suppressNextEvents = true;
   const view = { x: 0, y: 0, zoom: 1, follow: false, initialized: false };
   const canvas = $("chart");
   const ctx = canvas.getContext("2d");
@@ -103,15 +98,13 @@
   let analysisSelected = null;
   let analysisImageKey = null;
   let lastSimlogFetch = 0;
+  let proposals = null;
+  let eventContext = null;
+  let eventBaselinePending = false;
+  let eventHighWater = 0;
+  let eventHistory = [];
   let analysisError = false;
-  const simlogMapCanvas = $("simlog-map");
-  const simlogMapCtx = simlogMapCanvas.getContext("2d");
   let latestSimlogState = null;
-  let simlogMapData = null;
-  let simlogMapSeq = null;
-  let simlogMapLatest = false;
-  let simlogMapFit = "world";
-  let simlogMapDrawQueued = false;
   const visualCanvasIds = ["role-map", "sonar-broadband", "sonar-lofar", "sonar-spectrum", "sonar-demon",
     "sonar-tma-plot", "sonar-environment", "sonar-active", "damage-schematic",
     "engine-instruments", "eloka-scope", "weapons-system"];
@@ -148,12 +141,9 @@
   const sameContext = (a, b) => a && b && a.session === b.session && a.epoch === b.epoch;
   const chartMatches = (state) => chart && chartSession === state.session && chartEpoch === state.epoch &&
     chartRole === state.role && chart.revision === state.chart_revision;
-  const authenticated = () => protocolMode === "v2" ? session !== null : protocolMode === "v1" && token !== null;
-  const canCommand = () => connected && (protocolMode === "v1" || session?.grants.command === true) &&
-    snapshot?.commands_allowed === true && chartMatches(snapshot) && !pending;
-  const navigationLive = () => snapshot?.phase === "live" && hasPosition(snapshot?.ownship);
+  const authenticated = () => session !== null;
 
-  const sonarAudioAuthorized = () => protocolMode === "v2" && connected && !document.hidden && navigator.onLine !== false &&
+  const sonarAudioAuthorized = () => connected && !document.hidden && navigator.onLine !== false &&
     session?.station === "sonar" && session.grants.sonar_audio === true && v2State?.role === "sonar" &&
     v2State.phase === "live" && v2State.clock?.time_scale === 1 && v2State.sonar?.settings?.station_down === false;
   const sonarAudioStartLead = .3;
@@ -165,7 +155,7 @@
   };
 
   const bridgeCavitationAuthorized = () => soundEnabled && audio?.state === "running" &&
-    protocolMode === "v2" && connected && !document.hidden && navigator.onLine !== false &&
+    connected && !document.hidden && navigator.onLine !== false &&
     session?.station === "bridge" && v2State?.role === "bridge" && v2State.phase === "live" &&
     v2State.bridge?.orders?.cavitating === true && Number($("volume").value) > 0;
 
@@ -544,7 +534,7 @@
   }
 
   function syncWeatherAnimation() {
-    const active = !document.hidden && connected && protocolMode === "v2" && session?.station === "bridge" && v2State?.role === "bridge";
+    const active = !document.hidden && connected && session?.station === "bridge" && v2State?.role === "bridge";
     if (active && weatherFrame === null && weatherTimer === null) weatherTimer = setTimeout(() => {
       weatherTimer = null; weatherFrame = requestAnimationFrame(weatherAnimation);
     }, 66);
@@ -1229,7 +1219,7 @@
   }
 
   function renderStationView() {
-    const active = protocolMode === "v2" && v2State?.role;
+    const active = v2State?.role;
     document.body.classList.toggle("workstation-mode", Boolean(active));
     $("workstation-tools").hidden = !active;
     $("workstation-station-label").hidden = !active;
@@ -1259,10 +1249,10 @@
       const fire = grid.querySelector(":scope > .direct-fire-controls");
       if (active === "weapons" && fire && grid.firstElementChild !== fire) grid.prepend(fire);
     } else {
-      // Return shared nodes to their v1/lobby homes before hiding role panels.
+      // Return shared nodes to their neutral homes before hiding role panels.
       if ($("role-visuals").parentElement !== $("station-view")) $("station-view").append($("role-visuals"));
-      if ($("operations-workspace").parentElement !== $("legacy-support").parentElement)
-        $("legacy-support").before($("bridge-orders"), $("opz-controls"), $("operations-workspace"));
+      if ($("operations-workspace").parentElement !== $("panel-operations"))
+        $("station-view").after($("bridge-orders"), $("opz-controls"), $("operations-workspace"));
       $("helicopter-dipping-controls").hidden = true;
     }
     $("station-view").hidden = !active;
@@ -1271,8 +1261,6 @@
       if (section.hidden) for (const container of section.querySelectorAll("dl, .station-list")) container.replaceChildren();
     }
     $("operations-workspace").hidden = Boolean(active) && !trackRoles.has(active);
-    $("legacy-support").hidden = Boolean(active);
-    for (const element of document.querySelectorAll(".v2-irrelevant")) element.hidden = Boolean(active);
     renderRoleVisuals(active);
     if (!active) return;
     const signature = `${language}:${active}:${JSON.stringify(v2State[active])}:${JSON.stringify(v2State.environment)}`;
@@ -1290,7 +1278,7 @@
     stopBridgeCavitationAudio();
     document.body.classList.remove("workstation-mode");
     $("station-view").append($("role-visuals"));
-    $("legacy-support").before($("bridge-orders"), $("opz-controls"), $("operations-workspace"));
+    $("station-view").after($("bridge-orders"), $("opz-controls"), $("operations-workspace"));
     $("workstation-tools").hidden = true;
     $("workstation-station-label").hidden = true;
     for (const name of tabNames) $(`tab-${name}`).hidden = false;
@@ -1317,14 +1305,14 @@
     $("opz-manage").checked = false;
     latestSimlogState = null;
     lastSimlogFetch = 0;
+    proposals = null;
+    eventContext = null;
+    eventHighWater = 0;
+    eventHistory = [];
     view.initialized = false;
     view.follow = false;
     lookoutView.rangeNm = 100;
     activeTab = "operations";
-    eventHistory = [];
-    seenEvents.clear();
-    eventHighWater = -1;
-    suppressNextEvents = true;
     $("navigation-form").reset();
     $("bridge-course-form").reset();
     $("bridge-speed-form").reset();
@@ -1336,28 +1324,25 @@
     $("track-list").replaceChildren();
     $("station-view").hidden = true;
     $("operations-workspace").hidden = false;
-    $("legacy-support").hidden = false;
     for (const section of document.querySelectorAll("[data-station-role]")) {
       section.hidden = true;
       for (const container of section.querySelectorAll("dl, .station-list")) container.replaceChildren();
     }
     $("track-detail").hidden = true;
     for (const id of ["detail-label", "detail-badges", "detail-metrics", "mission-name", "objective",
-      "mission-metrics", "own-metrics", "inventory", "helo-metrics", "damage-list", "event-list",
-      "chart-disclaimer", "proposal-status", "command-status", "snapshot-meta", "lookout-sea",
+      "mission-metrics", "chart-disclaimer", "proposal-status", "command-status", "snapshot-meta", "lookout-sea",
       "lookout-light", "lookout-own", "lookout-observations", "bridge-order-values",
       "bridge-order-status", "opz-mark-status", "sonar-release-status", "station-command-status",
       "autocrew-status", "bridge-weather-text"]) $(id).replaceChildren();
     $("simlog-list").replaceChildren();
     $("simlog-current").replaceChildren();
-    closeSimlogMap();
     releaseCanvas(canvas);
     releaseCanvas(lookoutCanvas);
     activateTab("operations", false);
   }
 
   function renderLobby() {
-    if (protocolMode !== "v2" || !session) return;
+    if (!session) return;
     const assigned = session.station !== null;
     const simlog = simlogActive();
     $("pairing").hidden = true;
@@ -1365,7 +1350,7 @@
     $("lobby-back").hidden = !assigned;
     $("role-rail").hidden = !assigned || stationPickerOpen;
     $("mobile-role").hidden = !assigned || stationPickerOpen;
-    const rolePublished = protocolMode !== "v2" || v2State?.role === session.station;
+    const rolePublished = v2State?.role === session.station;
     $("operations").hidden = simlog || !assigned || stationPickerOpen || !rolePublished;
     $("simlog-view").hidden = !simlog;
     if (simlog) loadSimlog();
@@ -1450,7 +1435,7 @@
   }
 
   async function mutateStation(path, body) {
-    if (protocolMode !== "v2" || !session || stationMutation) return;
+    if (!session || stationMutation) return;
     stationMutation = true;
     lobbyMessage = null;
     renderLobby();
@@ -1512,7 +1497,7 @@
       releaseCanvas(lookoutCanvas);
       $("lookout-observations").replaceChildren();
     }
-    if (focus) (protocolMode === "v2" && name !== "operations" ? $(`panel-${name}`) : $(`tab-${name}`)).focus();
+    if (focus) (name !== "operations" ? $(`panel-${name}`) : $(`tab-${name}`)).focus();
     if (name === "operations") { queueDraw(); queueVisualDraw(); }
     if (name === "lookout") { renderLookoutStatus(); queueLookoutDraw(); }
     if (name === "contacts") renderContactAnalysis();
@@ -1701,13 +1686,11 @@
 
   // All requests, including commands and language changes, share one lane. The
   // deadline covers JSON consumption as well as headers, including stalled bodies.
-  function request(path, { method = "GET", body, auth = true, expected = 200, guard, version, csrf } = {}) {
-    const requestVersion = version || (auth && protocolMode === "v2" ? 2 : 1);
-    const credential = auth && protocolMode === "v1" ? token : null;
-    const cookieSession = auth && protocolMode === "v2" ? session : null;
+  function request(path, { method = "GET", body, auth = true, expected = 200, guard, csrf } = {}) {
+    const cookieSession = auth ? session : null;
     const requestGeneration = generation;
     const run = async () => {
-      if (auth && ((!credential && !cookieSession) || requestGeneration !== generation)) throw new Error("cancelled");
+      if (auth && (!cookieSession || requestGeneration !== generation)) throw new Error("cancelled");
       if (guard && !guard()) throw new Error("cancelled");
       const controller = new AbortController();
       activeRequest = controller;
@@ -1715,10 +1698,9 @@
       let response;
       try {
         const headers = { Accept: "application/json" };
-        if (credential) headers.Authorization = `Bearer ${credential}`;
         if (csrf) headers["X-U-Jagd-CSRF"] = csrf;
         if (body !== undefined) headers["Content-Type"] = "application/json";
-        response = await fetch(`/api/v${requestVersion}${path}`, {
+        response = await fetch(`/api/v2${path}`, {
           method, headers, body: body === undefined ? undefined : JSON.stringify(body),
           signal: controller.signal, cache: "no-store", credentials: "same-origin", redirect: "error", mode: "same-origin",
         });
@@ -1795,7 +1777,6 @@
   function forgetSession(message = "connection_unpaired") {
     stopSonarAudio();
     generation += 1;
-    token = null;
     session = null;
     activatingStation = null;
     stationPickerOpen = false;
@@ -1813,10 +1794,6 @@
     commandMessage = null;
     view.initialized = false;
     lookoutView.rangeNm = 100;
-    eventHistory = [];
-    seenEvents.clear();
-    eventHighWater = -1;
-    suppressNextEvents = true;
     failures = 0;
     lastSuccess = 0;
     $("operations").hidden = true;
@@ -1828,8 +1805,11 @@
     $("simlog-current").replaceChildren();
     $("simlog-count").textContent = "";
     latestSimlogState = null;
-    $("simlog-current-map").disabled = true;
-    closeSimlogMap();
+    proposals = null;
+    eventContext = null;
+    eventHighWater = 0;
+    eventHistory = [];
+    renderEvents();
     $("pairing").hidden = false;
     $("disconnect").hidden = true;
     $("pair-error").textContent = "";
@@ -1840,7 +1820,7 @@
     lobbyMessage = null;
     stationMutation = false;
     activateTab("operations", false);
-    for (const id of ["track-list", "detail-label", "detail-badges", "detail-metrics", "mission-name", "objective", "mission-metrics", "own-metrics", "inventory", "helo-metrics", "damage-list", "event-list", "chart-disclaimer", "proposal-status", "command-status", "snapshot-meta", "lookout-sea", "lookout-light", "lookout-own", "lookout-observations"]) $(id).replaceChildren();
+    for (const id of ["track-list", "detail-label", "detail-badges", "detail-metrics", "mission-name", "objective", "mission-metrics", "proposal-status", "command-status", "snapshot-meta", "lookout-sea", "lookout-light", "lookout-own", "lookout-observations"]) $(id).replaceChildren();
     $("lookout-scope").dataset.light = "unknown";
     releaseCanvas(canvas);
     releaseCanvas(lookoutCanvas);
@@ -1895,19 +1875,16 @@
           value.grants.sonar_audio !== value.stations[value.station].grants.sonar_audio)) throw new Error("session");
   }
 
-  async function detectSession() {
+  async function resumeSession() {
     try {
-      const resumed = await request("/session", { auth: false, version: 2 });
+      const resumed = await request("/session", { auth: false });
       validateSession(resumed);
-      protocolMode = "v2";
+      pairingAvailable = true;
       acceptSession(resumed);
       return true;
     } catch (error) {
-      if (error.status === 401) {
-        protocolMode = "v2";
-        return false;
-      }
-      protocolMode = [404, 503].includes(error.status) ? "v1" : "v2";
+      pairingAvailable = error.status === 401;
+      if (!pairingAvailable) setConnection("stale");
       return false;
     }
   }
@@ -2093,7 +2070,7 @@
     updateOpzSweepSample(state);
   }
 
-  function adaptV2State(state) {
+  function buildDisplayModel(state) {
     const emptyOwn = {x: null, y: null, course: null, speed: null, target_course: null, target_speed: null, damage: [], inventory: {}, helo: {}};
     const ownship = structuredClone(emptyOwn);
     let observations = [];
@@ -2130,23 +2107,23 @@
       members: row.members || [],
       can_classify: state.role === "sonar" || (state.role === "opz" &&
         (row.source.startsWith("RADAR") || ["HOJ", "FUSION"].includes(row.source))),
-      can_propose: false})).filter((row) => state.role !== "opz" || opzManage || !opzSuppressed.has(row.ref));
-    return {...state, protocol: 1, commands_allowed: false, ownship, tracks,
-      crew_target: null, proposal: null, events: [], results: []};
+      can_propose: state.role === "sonar"})).filter((row) => state.role !== "opz" || opzManage || !opzSuppressed.has(row.ref));
+    return {version: state.version, session: state.session, epoch: state.epoch,
+      revision: state.revision, seq: state.seq, phase: state.phase,
+      chart_revision: state.chart_revision, clock: state.clock,
+      environment: state.environment, mission: state.mission, ownship, tracks};
   }
 
   function validateState(state) {
-    if (protocolMode === "v2") {
-      validateV2State(state);
-      if (state.role === null) return;
-      state = adaptV2State(state);
-    }
-    if (!state || state.protocol !== 1 || typeof state.session !== "string" || !state.session ||
-        !Number.isSafeInteger(state.epoch) || !Number.isSafeInteger(state.revision) || !Number.isSafeInteger(state.seq) ||
-        state.chart_revision == null || typeof state.commands_allowed !== "boolean" ||
-        !state.ownship || ["x", "y"].some((key) => state.ownship[key] !== null && !finite(state.ownship[key])) ||
-        !state.clock || !state.mission || !Array.isArray(state.tracks) || !Array.isArray(state.events) || !Array.isArray(state.results) ||
-        state.tracks.some((track) => !track || typeof track.ref !== "string" || !track.ref ||
+    validateV2State(state);
+    if (state.role === null) return;
+    const display = buildDisplayModel(state);
+    if (typeof display.session !== "string" || !display.session ||
+        !Number.isSafeInteger(display.epoch) || !Number.isSafeInteger(display.revision) || !Number.isSafeInteger(display.seq) ||
+        display.chart_revision == null ||
+        !display.ownship || ["x", "y"].some((key) => display.ownship[key] !== null && !finite(display.ownship[key])) ||
+        !display.clock || !display.mission || !Array.isArray(display.tracks) ||
+        display.tracks.some((track) => !track || typeof track.ref !== "string" || !track.ref ||
           !Array.isArray(track.fixes) || track.fixes.length > 4 || track.fixes.some((fix) => !fix ||
             !["PING", "DIPPING", "TMA", "SONOBUOY"].includes(fix.source) ||
             ![fix.x, fix.y, fix.measured_at, fix.fixed_at, fix.measurement_age_s,
@@ -2159,24 +2136,17 @@
             ((fix.depth_m === null) !== (fix.depth_uncertainty_m === null)) ||
             (fix.depth_m !== null && (!finite(fix.depth_m) || !finite(fix.depth_uncertainty_m) ||
               fix.depth_m < 0 || fix.depth_uncertainty_m <= 0))))) throw new Error("protocol");
-    if (new Set(state.tracks.map((track) => track.ref)).size !== state.tracks.length) throw new Error("protocol");
-    if (state.tracks.some((track) => new Set(track.fixes.map((fix) => fix.source)).size !== track.fixes.length)) throw new Error("protocol");
-    const environment = state.environment;
+    if (new Set(display.tracks.map((track) => track.ref)).size !== display.tracks.length) throw new Error("protocol");
+    if (display.tracks.some((track) => new Set(track.fixes.map((fix) => fix.source)).size !== track.fixes.length)) throw new Error("protocol");
+    const environment = display.environment;
     if (environment != null && (typeof environment !== "object" || Array.isArray(environment) ||
-        Object.keys(environment).sort().join(",") !== (protocolMode === "v2" ? "effective_sea_state,is_night,rain_intensity,sea_state,visibility_nm,weather,wind_from_deg,wind_speed_kn" : "is_night,sea_state") ||
+        Object.keys(environment).sort().join(",") !== "effective_sea_state,is_night,rain_intensity,sea_state,visibility_nm,weather,wind_from_deg,wind_speed_kn" ||
         (environment.sea_state !== null && (!Number.isInteger(environment.sea_state) || environment.sea_state < 0 || environment.sea_state > 9)) ||
         (environment.is_night !== null && typeof environment.is_night !== "boolean"))) throw new Error("protocol");
-    const navigation = state.navigation_proposal;
-    if (navigation != null && (typeof navigation !== "object" || Array.isArray(navigation) ||
-        Object.keys(navigation).sort().join(",") !== "course,speed_kn,status" ||
-        !["pending", "accepted", "rejected", "expired"].includes(navigation.status) ||
-        (navigation.course === null && navigation.speed_kn === null) ||
-        (navigation.course !== null && (!finite(navigation.course) || navigation.course < 0 || navigation.course >= 360)) ||
-        (navigation.speed_kn !== null && (!finite(navigation.speed_kn) || navigation.speed_kn < 0 || navigation.speed_kn > 25)))) throw new Error("protocol");
   }
 
   function validateChart(data, state) {
-    if (!data || (protocolMode === "v2" && data.protocol !== 2) ||
+    if (!data || data.protocol !== 2 ||
         data.revision !== state.chart_revision || !finite(data.size_nm) || data.size_nm <= 0 ||
         !Array.isArray(data.landmasses) || data.landmasses.some((land) => !Array.isArray(land.points) ||
           land.points.some((point) => !Array.isArray(point) || point.length !== 2 || !point.every(finite)))) throw new Error("chart");
@@ -2190,6 +2160,99 @@
     }
   }
 
+  function contextKey(value) {
+    return value ? `${value.session}\n${value.epoch}\n${value.role}` : null;
+  }
+
+  function validateProposals(value) {
+    if (!exactKeys(value, ["protocol", "session", "epoch", "role", "target", "navigation"]) ||
+        value.protocol !== 2 || typeof value.session !== "string" || !value.session || value.session.length > 64 ||
+        !Number.isSafeInteger(value.epoch) || value.epoch < 0 || !stationNames.includes(value.role)) throw new Error("proposals");
+    const validStatus = (status) => ["pending", "accepted", "rejected", "expired"].includes(status);
+    if (value.target !== null && (!exactKeys(value.target, ["ref", "label", "status"]) ||
+        value.role !== "sonar" || typeof value.target.ref !== "string" || !value.target.ref || value.target.ref.length > 64 ||
+        typeof value.target.label !== "string" || !value.target.label || value.target.label.length > 64 ||
+        !validStatus(value.target.status))) throw new Error("proposals");
+    if (value.navigation !== null && (!exactKeys(value.navigation, ["course", "speed_kn", "status"]) ||
+        value.role !== "bridge" || !validStatus(value.navigation.status) ||
+        (value.navigation.course !== null && (!finite(value.navigation.course) || value.navigation.course < 0 || value.navigation.course >= 360)) ||
+        (value.navigation.speed_kn !== null && (!finite(value.navigation.speed_kn) || value.navigation.speed_kn < 0 || value.navigation.speed_kn > 25)) ||
+        value.navigation.course === null && value.navigation.speed_kn === null)) throw new Error("proposals");
+  }
+
+  function renderProposals() {
+    const sonar = session?.station === "sonar";
+    const bridge = session?.station === "bridge";
+    $("target-proposal-controls").hidden = !sonar;
+    $("target-proposal").hidden = !sonar;
+    $("navigation-proposal").hidden = !bridge;
+    const target = sonar ? proposals?.target : null;
+    $("proposal-status").textContent = target ? t(`proposal_${target.status}`, {label: target.label}) : "";
+    const navigation = bridge ? proposals?.navigation : null;
+    if (navigation) {
+      const summary = t("navigation_summary", {
+        course: navigation.course === null ? t("navigation_unchanged") : unit(navigation.course, "\u00b0", 0),
+        speed: navigation.speed_kn === null ? t("navigation_unchanged") : unit(navigation.speed_kn, "kn"),
+      });
+      $("navigation-status").textContent = t(`proposal_${navigation.status}`, {label: summary});
+    } else $("navigation-status").textContent = t("navigation_none");
+  }
+
+  function validateEvents(value) {
+    if (!exactKeys(value, ["protocol", "session", "epoch", "role", "latest_seq", "events"]) ||
+        value.protocol !== 2 || typeof value.session !== "string" || !value.session || value.session.length > 64 ||
+        !Number.isSafeInteger(value.epoch) || value.epoch < 0 || !stationNames.includes(value.role) ||
+        !Number.isSafeInteger(value.latest_seq) || value.latest_seq < 0 ||
+        !boundedArray(value.events, 128)) throw new Error("events");
+    let previous = 0;
+    for (const event of value.events) {
+      if (!exactKeys(event, ["seq", "kind", "severity", "message"]) ||
+          !Number.isSafeInteger(event.seq) || event.seq <= previous || event.seq < 1 || event.seq > value.latest_seq ||
+          typeof event.kind !== "string" || !event.kind || event.kind.length > 32 ||
+          !["info", "warning"].includes(event.severity) ||
+          typeof event.message !== "string" || !event.message || event.message.length > 512) throw new Error("events");
+      previous = event.seq;
+    }
+  }
+
+  function useEvents(value, state) {
+    const key = contextKey(state);
+    if (eventContext !== key || eventBaselinePending || document.hidden || !navigator.onLine) {
+      eventContext = key;
+      eventHighWater = value.latest_seq;
+      eventHistory = value.events.slice(-80);
+      if (!document.hidden && navigator.onLine) eventBaselinePending = false;
+    } else {
+      const fresh = value.events.filter((event) => event.seq > eventHighWater);
+      if (fresh.some((event) => event.severity === "warning")) playAlert();
+      eventHistory = [...eventHistory, ...fresh].slice(-80);
+      eventHighWater = Math.max(eventHighWater, value.latest_seq);
+    }
+    renderEvents();
+  }
+
+  function renderEvents() {
+    $("event-list").replaceChildren(...[...eventHistory].reverse().map((event) => {
+      const item = node("li", undefined, event.severity === "warning" ? "warning" : "");
+      item.append(node("span", `${event.seq} / ${event.kind}`, "event-meta"), node("span", event.message));
+      return item;
+    }));
+    if (!eventHistory.length) $("event-list").append(node("li", t("no_events")));
+  }
+
+  async function pollRoleFeeds(state, context) {
+    const nextProposals = await request("/proposals", {guard: () => context === generation});
+    validateProposals(nextProposals);
+    if (contextKey(nextProposals) !== contextKey(state)) return;
+    const nextEvents = await request("/events", {guard: () => context === generation});
+    validateEvents(nextEvents);
+    if (context !== generation || contextKey(nextEvents) !== contextKey(state) ||
+        contextKey(state) !== contextKey(v2State)) return;
+    proposals = nextProposals;
+    renderProposals();
+    useEvents(nextEvents, state);
+  }
+
   async function poll() {
     if (!authenticated() || polling) return;
     polling = true;
@@ -2197,12 +2260,12 @@
     const started = performance.now();
     let delay = 500;
     try {
-      if (protocolMode === "v2" && started - lastSessionFetch >= 1000) {
+      if (started - lastSessionFetch >= 1000) {
         const metadata = await request("/session");
         if (context !== generation) return;
         acceptSession(metadata);
       }
-      if (protocolMode === "v2" && session.station === null) {
+      if (session.station === null) {
         failures = 0;
         lastSuccess = performance.now();
         setConnection("lobby");
@@ -2211,13 +2274,13 @@
       }
       let next = await request("/state");
       if (context !== generation) return;
-      if (protocolMode === "v2" && next?.role !== null && next?.role !== session.station) {
+      if (next?.role !== null && next?.role !== session.station) {
         const metadata = await request("/session");
         if (context !== generation) return;
         acceptSession(metadata);
       }
       validateState(next);
-      if (protocolMode === "v2" && next.role !== null) { useV2State(next); next = adaptV2State(next); }
+      if (next.role !== null) { useV2State(next); next = buildDisplayModel(next); }
       if (!chartMatches(next)) {
         // Chart has no session field. Sandwich it between matching snapshots;
         // never display a previous session with a new session's geography.
@@ -2229,7 +2292,7 @@
         let confirmed = await request("/state");
         if (context !== generation) return;
         validateState(confirmed);
-        if (protocolMode === "v2" && confirmed.role !== null) { useV2State(confirmed); confirmed = adaptV2State(confirmed); }
+        if (confirmed.role !== null) { useV2State(confirmed); confirmed = buildDisplayModel(confirmed); }
         if (!sameContext(next, confirmed) || confirmed.role !== next.role ||
             confirmed.chart_revision !== candidate.revision || confirmed.seq < next.seq) {
           // An active-station switch may race the chart sandwich. Discard both
@@ -2242,7 +2305,7 @@
         chartRole = confirmed.role;
         next = confirmed;
       }
-      if (protocolMode === "v2" && next.role === null) {
+      if (next.role === null) {
         const redactedChart = chart;
         const redactedChartSession = chartSession;
         const redactedChartEpoch = chartEpoch;
@@ -2262,9 +2325,7 @@
       const hadSnapshot = Boolean(snapshot);
       const sessionChanged = hadSnapshot && snapshot.session !== next.session;
       const epochChanged = hadSnapshot && !sessionChanged && snapshot.epoch !== next.epoch;
-      const redacted = !hasPosition(next.ownship) && next.tracks.length === 0;
       const changed = !sameContext(snapshot, next);
-      const quiet = !connected || changed || suppressNextEvents;
       const advanced = changed || !snapshot || next.seq > snapshot.seq;
       if (changed) {
         if (sonarAudioEnabled) stopSonarAudio("sonar_live_unavailable");
@@ -2285,28 +2346,21 @@
           $("sonar-control-page").value = "listen";
           renderSonarControlPage();
         }
-        if (sessionChanged || redacted || protocolMode === "v2" && epochChanged) {
+        if (sessionChanged || epochChanged) {
           selected = null;
+          eventContext = null;
+          eventHighWater = 0;
           eventHistory = [];
-          seenEvents.clear();
-          eventHighWater = -1;
           view.initialized = false;
           lookoutView.rangeNm = 100;
         }
       }
       snapshot = next;
+      await pollRoleFeeds(v2State, context);
       if (sonarAudioEnabled && !sonarAudioAuthorized()) stopSonarAudio("sonar_live_unavailable");
-      if (protocolMode === "v2" && pending) await pollV2Result(context);
+      if (pending) await pollV2Result(context);
       if (!view.initialized) fitChart();
       if (selected && !selectedTrack()) selected = null;
-      for (const result of next.results) {
-        if (pending && result.id === pending.id && ["applied", "rejected"].includes(result.status)) {
-          commandMessage = { key: result.status === "applied" ? (pending.body.action === "propose_navigation" ? "navigation_queued" : "command_applied") : "command_rejected", status: result.status, reasoncode: result.reasoncode };
-          pending = null;
-        }
-      }
-      processEvents(next.events, quiet);
-      suppressNextEvents = document.hidden;
       failures = 0;
       if (advanced) lastSuccess = performance.now();
       setConnection(performance.now() - lastSuccess > 4500 ? "stale" : "connected");
@@ -2328,7 +2382,7 @@
     } finally {
       polling = false;
       if (authenticated()) {
-        const cadence = protocolMode === "v2" && session?.station === null ? 1000 : delay;
+        const cadence = session?.station === null ? 1000 : delay;
         pollTimer = setTimeout(poll, context !== generation ? 0 : failures ? delay : Math.max(0, cadence - (performance.now() - started)));
       }
     }
@@ -2336,7 +2390,7 @@
 
   function flushSonarFocus() {
     if (!queuedSonarFocus) return;
-    if (!(connected && protocolMode === "v2" && session?.station === "sonar" &&
+    if (!(connected && session?.station === "sonar" &&
           session.grants.command === true && v2State?.role === "sonar" && v2State.phase === "live" &&
           chartMatches(snapshot) && snapshot.tracks.some((track) => track.ref === queuedSonarFocus))) {
       queuedSonarFocus = null;
@@ -2392,8 +2446,6 @@
       body.append(node("span", `${unit(track.bearing, "\u00b0", 0)} / ${unit(track.range_nm, "NM")} / ${unit(track.age_s, "s", 0)}`, "track-info"));
       const flags = [];
       if (track.ref === selected) flags.push(t("selected"));
-      if (track.ref === snapshot.crew_target) flags.push(t("crew_target"));
-      if (track.ref === snapshot.proposal?.ref) flags.push(t("proposal"));
       if (opzMarked.has(track.ref)) flags.push(t("opz_marked"));
       if (opzSuppressed.has(track.ref)) flags.push(t("opz_suppressed"));
       if (flags.length) body.append(node("span", flags.join(" / "), "track-flags"));
@@ -2407,14 +2459,14 @@
 
   function renderDetail(resetDraft = false) {
     const track = selectedTrack();
-    $("classification-form").hidden = protocolMode === "v2" && !["sonar", "opz"].includes(session?.station);
-    $("affiliation-form").hidden = protocolMode === "v2" && session?.station !== "opz";
+    $("classification-form").hidden = !["sonar", "opz"].includes(session?.station);
+    $("affiliation-form").hidden = session?.station !== "opz";
     $("no-selection").hidden = Boolean(track);
     $("track-detail").hidden = !track;
     if (track) {
       let stationActions = document.getElementById("selection-station-actions");
       if (!stationActions) { stationActions = node("div", undefined, "station-row-actions"); stationActions.id = "selection-station-actions"; $("track-detail").append(stationActions); }
-      if (protocolMode === "v2" && session?.station === "sonar") {
+      if (session?.station === "sonar") {
         const key = `${track.ref}:${track.released_to_opz}:${stationActionAvailable()}:${language}`;
         if (stationActions.dataset.key !== key) {
           stationActions.replaceChildren(actionButton("sonar_focus", "sonar_set_focus", {ref: track.ref}),
@@ -2443,45 +2495,35 @@
         $("classification").value = Object.hasOwn(classes, track.classification) ? track.classification : "";
         $("affiliation").value = Object.hasOwn(affiliations, track.affiliation) ? track.affiliation : "UNKNOWN";
       }
-      if (protocolMode === "v2" && session?.station === "sonar") {
+      if (session?.station === "sonar") {
         $("sonar-release-status").hidden = false;
         $("sonar-release-status").textContent = t(track.released_to_opz ? "sonar_released" : "sonar_withdrawn");
         $("sonar-release").hidden = false;
         $("sonar-release").textContent = t(track.released_to_opz ? "sonar_withdraw_opz" : "sonar_release_to_opz");
       } else { $("sonar-release-status").hidden = true; $("sonar-release").hidden = true; }
     }
-    const proposal = snapshot.proposal;
-    const statuses = { pending: "proposal_pending", accepted: "proposal_accepted", rejected: "proposal_rejected", expired: "proposal_expired" };
-    $("proposal-status").textContent = proposal ? t(statuses[proposal.status] || "proposal_pending", { label: proposal.label }) : t("no_proposal");
-    const navigation = snapshot.navigation_proposal;
-    $("navigation-status").textContent = navigation ? t(statuses[navigation.status], {
-      label: t("navigation_summary", {
-        course: navigation.course === null ? t("navigation_unchanged") : unit(navigation.course, "\u00b0"),
-        speed: navigation.speed_kn === null ? t("navigation_unchanged") : unit(navigation.speed_kn, "kn"),
-      }),
-    }) : t("navigation_none");
     renderActionState();
   }
 
   function renderActionState() {
-    const enabled = canCommand();
     const track = selectedTrack();
     $("follow").disabled = !hasPosition(snapshot?.ownship);
     if ($("follow").disabled) view.follow = false;
     $("follow").setAttribute("aria-pressed", String(view.follow));
-    const stationEnabled = protocolMode === "v2" && stationActionAvailable();
+    const stationEnabled = stationActionAvailable();
     const sonarAction = stationEnabled && session.station === "sonar" && track?.can_classify === true;
     const opzAction = stationEnabled && session.station === "opz";
-    $("apply-classification").disabled = !(enabled && track?.can_classify === true) &&
-      !(sonarAction || opzAction && track?.can_classify === true);
+    $("apply-classification").disabled = !(sonarAction || opzAction && track?.can_classify === true);
     $("classification").disabled = $("apply-classification").disabled;
     $("apply-classification").textContent = t("apply");
     $("sonar-release").disabled = !(sonarAction && track);
-    $("apply-affiliation").disabled = !(enabled && track) && !(opzAction && track);
+    $("apply-affiliation").disabled = !(opzAction && track);
     $("affiliation").disabled = $("apply-affiliation").disabled;
-    $("propose").disabled = !enabled || track?.can_propose !== true;
-    $("clear-proposal").disabled = !enabled || !snapshot?.proposal;
-    for (const id of ["navigation-course", "navigation-speed", "propose-navigation"]) $(id).disabled = !enabled || !navigationLive();
+    const proposalAvailable = stationEnabled && proposals && contextKey(proposals) === contextKey(v2State);
+    $("propose").disabled = !(proposalAvailable && session.station === "sonar" && track?.can_propose === true);
+    $("clear-proposal").disabled = !(proposalAvailable && session.station === "sonar" && proposals.target !== null);
+    const navigationAvailable = proposalAvailable && session.station === "bridge";
+    for (const id of ["navigation-course", "navigation-speed", "propose-navigation"]) $(id).disabled = !navigationAvailable;
     const message = pending ? { key: pending.uncertain ? "command_uncertain" : "command_pending", status: "pending" } : commandMessage;
     const reason = Object.hasOwn(reasons, message?.reasoncode) ? t(reasons[message.reasoncode]) : message?.reasoncode || t("unavailable");
     $("command-status").textContent = message ? t(message.key, { reason }) : "";
@@ -2489,11 +2531,11 @@
     $("station-command-status").textContent = message ? t(message.key, {reason}) : "";
     $("station-command-status").dataset.status = message?.status || "";
     $("command-reconcile").hidden = !pending?.uncertain;
-    if (protocolMode === "v2") $("command-reconcile").hidden = true;
     $("retry-command").disabled = !pending?.uncertain || pending.inFlight || performance.now() < pending.retryAt ||
-      !connected || (protocolMode === "v2" && session?.grants.command !== true) ||
-      snapshot?.commands_allowed !== true || !chartMatches(snapshot) || !sameContext(snapshot, pending.body) ||
-      (pending.body.action === "propose_navigation" && !navigationLive());
+      !connected || session?.grants.command !== true || !sameContext(v2State, {
+        session: pending?.body.world_session, epoch: pending?.body.world_epoch,
+      });
+    renderProposals();
     renderBridgeOrders();
     renderOpzControls();
     renderStationControls();
@@ -2635,14 +2677,14 @@
   }
 
   function stationActionAvailable() {
-    return connected && protocolMode === "v2" && session?.grants.command === true &&
+    return connected && session?.grants.command === true &&
       v2State?.phase === "live" && chartMatches(snapshot) && !pending;
   }
 
   const unavailable = (key, values = {}) => ({key, values});
 
   function stationUnavailableReason() {
-    if (protocolMode !== "v2" || !session?.station) return unavailable("reason_role_revoked");
+    if (!session?.station) return unavailable("reason_role_revoked");
     if (!connected) return unavailable(linkState === "syncing" ? "connection_syncing" : "connection_stale", {age: 0});
     if (!v2State || !chartMatches(snapshot)) return unavailable("connection_syncing");
     if (session.grants.command !== true) return unavailable("reason_grant_revoked");
@@ -2752,7 +2794,7 @@
   }
 
   function renderOpzControls() {
-    const active = protocolMode === "v2" && session?.station === "opz";
+    const active = session?.station === "opz";
     $("opz-controls").hidden = !active;
     $("opz-track-actions").hidden = !active;
     if (!active) return;
@@ -2776,7 +2818,7 @@
     $("mission-name").textContent = snapshot.mission.name;
     $("objective").textContent = snapshot.mission.objective;
     $("phase").textContent = enumText(phases, snapshot.phase);
-    $("command-permission").textContent = t(snapshot.commands_allowed ? "commands_enabled" : "commands_disabled");
+    $("command-permission").textContent = t(session?.grants.command ? "commands_enabled" : "commands_disabled");
     $("autocrew-status").textContent = v2State?.autocrew ? t("autocrew_status", {
       status: t(`autocrew_${v2State.autocrew.status}`),
     }) : "";
@@ -2786,45 +2828,12 @@
       ["time_scale", unit(snapshot.clock.time_scale, "x")],
       ["world_clock", finite(snapshot.clock.world) ? `${String(Math.floor(snapshot.clock.world) % 24).padStart(2, "0")}:${String(Math.floor(snapshot.clock.world * 60) % 60).padStart(2, "0")}` : t("unavailable")],
     ]);
-    const own = snapshot.ownship;
     renderStationView();
     renderBridgeOrders();
-    metrics($("own-metrics"), [
-      ["course", unit(own.course, "\u00b0", 0)], ["speed", unit(own.speed, "kn")],
-      ["ordered_course", unit(own.target_course, "\u00b0", 0)], ["ordered_speed", unit(own.target_speed, "kn")],
-      ["position", `${unit(own.x, "NM")} / ${unit(own.y, "NM")}`],
-    ]);
-    const inventory = own.inventory || {};
-    metrics($("inventory"), [
-      ["torpedoes", number(inventory.torpedoes, 0)], ["vls", number(inventory.vls, 0)],
-      ["ciws", number(inventory.ciws, 0)], ["chaff", typeof inventory.chaff_ready === "boolean" ? t(inventory.chaff_ready ? "ready" : "not_ready") : number(inventory.chaff_ready, 0)],
-    ]);
-    const helo = own.helo || {};
-    metrics($("helo-metrics"), [
-      ["state", enumText(heloStates, helo.state)], ["fuel", unit(helo.fuel_s, "s", 0)],
-      ["torpedoes", number(helo.torpedoes, 0)], ["buoys", number(helo.buoys, 0)],
-      ["course", unit(helo.course, "\u00b0", 0)], ["position", `${unit(helo.x, "NM")} / ${unit(helo.y, "NM")}`],
-    ]);
-    const damage = Array.isArray(own.damage) ? own.damage : [];
-    let alarms = 0;
-    $("damage-list").replaceChildren(...damage.map((item) => {
-      const alarm = item.flood > 0 || item.fire > 0 || ["FLUTEND", "BESCHAEDIGT", "ZERSTOERT"].includes(item.state);
-      if (alarm) alarms += 1;
-      const row = node("div", undefined, `damage-row${alarm ? " alarm" : ""}`);
-      const heading = node("h3");
-      heading.append(node("span", item.name), node("span", enumText(damageStates, item.state)));
-      const values = node("dl", undefined, "metrics");
-      metrics(values, [["flood", unit(item.flood, "%")], ["fire", unit(item.fire, "%")], ["teams", Array.isArray(item.teams) ? number(item.teams.length, 0) : t("unavailable")]]);
-      row.append(heading, values);
-      return row;
-    }));
-    if (!damage.length) $("damage-list").append(node("p", t("no_damage_data"), "empty"));
-    $("alarm-count").textContent = t("alarm_count", { count: number(alarms, 0) });
     $("chart-disclaimer").textContent = chart.disclaimer;
     $("snapshot-meta").textContent = t("snapshot_meta", { version: snapshot.version, seq: snapshot.seq, revision: snapshot.revision, sim: number(snapshot.clock.sim, 1) });
     renderTracks();
     renderDetail(resetDraft);
-    renderEvents();
     queueDraw();
     renderLookoutStatus();
     queueLookoutDraw();
@@ -2842,14 +2851,14 @@
 
   function bridgeOrderAvailable(kind) {
     const orders = v2State?.bridge?.orders;
-    return protocolMode === "v2" && session?.station === "bridge" &&
+    return session?.station === "bridge" &&
       session.grants.command === true && connected && v2State?.phase === "live" &&
       chartMatches(snapshot) && !pending && orders && (kind !== "course" || !orders.station_down);
   }
 
   function renderBridgeOrders() {
     const panel = $("bridge-orders");
-    panel.hidden = protocolMode !== "v2" || session?.station !== "bridge";
+    panel.hidden = session?.station !== "bridge";
     if (panel.hidden) return;
     const navigation = v2State?.bridge?.navigation || {};
     metrics($("bridge-order-values"), [
@@ -2892,7 +2901,7 @@
       world_session: v2State.session, world_epoch: v2State.epoch,
       resource_revision: v2State.revision, action: `bridge_set_${kind}`,
       params: Object.freeze({[kind === "course" ? "course" : "speed_kn"]: value})});
-    pending = {id, body, uncertain: false, inFlight: true};
+    pending = {id, body, uncertain: false, inFlight: true, retryAt: 0};
     commandMessage = null;
     renderBridgeOrders();
     const context = generation;
@@ -2907,7 +2916,10 @@
       else if (!error.status || error.status >= 500) setConnection("stale");
       else { commandMessage = {key: "bridge_order_http_rejected", status: "rejected", reasoncode: "action_rejected"}; pending = null; }
     } finally {
-      if (pending?.id === id) pending.inFlight = false;
+      if (pending?.id === id) {
+        pending.inFlight = false;
+        pending.retryAt = performance.now() + 5000;
+      }
       renderBridgeOrders();
     }
   }
@@ -2925,7 +2937,7 @@
       active_generation: session.active_generation,
       world_session: v2State.session, world_epoch: v2State.epoch,
       resource_revision: v2State.revision, action, params: Object.freeze(params)});
-    pending = {id, body, uncertain: false, inFlight: true};
+    pending = {id, body, uncertain: false, inFlight: true, retryAt: 0};
     commandMessage = null;
     renderActionState();
     const context = generation;
@@ -2940,8 +2952,38 @@
       else if (!error.status || error.status >= 500) setConnection("stale");
       else { commandMessage = {key: "command_rejected", status: "rejected", reasoncode: "action_rejected"}; pending = null; }
     } finally {
-      if (pending?.id === id) pending.inFlight = false;
+      if (pending?.id === id) {
+        pending.inFlight = false;
+        pending.retryAt = performance.now() + 5000;
+      }
       renderActionState();
+    }
+  }
+
+  async function retryPendingCommand() {
+    const command = pending;
+    if (!command?.uncertain || command.inFlight || performance.now() < command.retryAt ||
+        !connected || session?.grants.command !== true ||
+        command.body.station !== session.station || command.body.station_generation !== session.station_generation ||
+        command.body.active_generation !== session.active_generation ||
+        command.body.world_session !== v2State?.session || command.body.world_epoch !== v2State?.epoch) return;
+    command.inFlight = true;
+    renderActionState();
+    const context = generation;
+    try {
+      await request("/commands", {method: "POST", body: command.body, expected: 202, csrf: session.csrf,
+        guard: () => context === generation && pending === command});
+      nextCommandSeq = Math.max(nextCommandSeq, command.body.seq + 1);
+    } catch (error) {
+      if (context !== generation || pending !== command || error.message === "cancelled") return;
+      if (error.status === 401 || error.status === 403) forgetSession("connection_expired");
+      else if (!error.status || error.status >= 500) setConnection("stale");
+    } finally {
+      if (pending === command) {
+        command.inFlight = false;
+        command.retryAt = performance.now() + 5000;
+        renderActionState();
+      }
     }
   }
 
@@ -2962,97 +3004,6 @@
     pending = null;
     stationDrafts.clear();
     clearFireDrafts();
-  }
-
-  async function sendCommand(action, value) {
-    if (!canCommand()) return;
-    const track = selectedTrack();
-    if (!["clear_proposal", "propose_navigation"].includes(action) && !track) return;
-    let navigation;
-    if (action === "propose_navigation") {
-      if (!navigationLive() || !$("navigation-form").reportValidity()) return;
-      navigation = {};
-      for (const [id, field] of [["navigation-course", "course"], ["navigation-speed", "speed_kn"]]) {
-        const input = $(id);
-        if (input.value.trim()) navigation[field] = input.valueAsNumber;
-      }
-      if (!Object.keys(navigation).length || Object.values(navigation).some((n) => !finite(n)) ||
-          (navigation.course !== undefined && (navigation.course < 0 || navigation.course >= 360)) ||
-          (navigation.speed_kn !== undefined && (navigation.speed_kn < 0 || navigation.speed_kn > 25))) {
-        commandMessage = { key: "navigation_invalid", status: "rejected" };
-        renderActionState();
-        return;
-      }
-    }
-    if (action === "classify" && track.can_classify !== true) return;
-    if (action === "propose" && track.can_propose !== true) return;
-    let id;
-    try { id = secureId(); } catch (_) {
-      commandMessage = { key: "command_no_crypto", status: "rejected" };
-      renderActionState();
-      return;
-    }
-    const body = { id, session: snapshot.session, epoch: snapshot.epoch, revision: snapshot.revision, action };
-    if (!["clear_proposal", "propose_navigation"].includes(action)) body.track = track.ref;
-    if (navigation) Object.assign(body, navigation);
-    if (action === "classify" || action === "affiliate") body.value = value;
-    pending = { id, body: Object.freeze(body), uncertain: false, inFlight: false, retryAt: 0 };
-    commandMessage = null;
-    await transmitCommand(pending);
-  }
-
-  async function transmitCommand(command) {
-    const current = () => pending === command && connected && snapshot?.commands_allowed === true &&
-      (protocolMode !== "v2" || session?.grants.command === true) &&
-      chartMatches(snapshot) && sameContext(snapshot, command.body) &&
-      (command.body.action !== "propose_navigation" || navigationLive());
-    if (!current() || command.inFlight) return;
-    command.inFlight = true;
-    renderActionState();
-    try {
-      await request("/commands", { method: "POST", body: command.body, expected: 202, guard: current });
-      // HTTP 202 only acknowledges the queue. Only snapshot.results settles it.
-    } catch (error) {
-      if (pending !== command || error.message === "cancelled") return;
-      if (error.status === 401 || error.status === 403) {
-        forgetSession("connection_expired");
-        return;
-      }
-      // Even a refused retry cannot prove that the original attempt did not apply.
-      command.uncertain = true;
-      if (!error.status || error.status >= 500) setConnection("stale");
-    } finally {
-      if (pending === command) {
-        command.inFlight = false;
-        command.retryAt = performance.now() + 5000;
-        renderActionState();
-      }
-    }
-  }
-
-  function processEvents(events, quiet) {
-    let alert = false;
-    for (const event of [...events].sort((a, b) => a.seq - b.seq)) {
-      if (!Number.isSafeInteger(event.seq) || seenEvents.has(event.seq) || event.seq <= eventHighWater) continue;
-      seenEvents.add(event.seq);
-      eventHighWater = event.seq;
-      eventHistory.push(event);
-      if (!quiet && ["warning", "critical", "alarm", "error"].includes(String(event.severity).toLowerCase())) alert = true;
-    }
-    while (seenEvents.size > 256) seenEvents.delete(seenEvents.values().next().value);
-    eventHistory = eventHistory.slice(-80);
-    if (alert) playAlert();
-  }
-
-  function renderEvents() {
-    $("event-list").replaceChildren(...[...eventHistory].reverse().map((event) => {
-      const severity = String(event.severity).toLowerCase();
-      const style = ["critical", "alarm", "error"].includes(severity) ? "critical" : severity === "warning" ? "warning" : "";
-      const item = node("li", undefined, style);
-      item.append(node("span", `${event.seq} / ${event.kind}`, "event-meta"), node("span", event.message));
-      return item;
-    }));
-    if (!eventHistory.length) $("event-list").append(node("li", t("no_events")));
   }
 
     // Hidden view (#simlog): complete bounded simulation log, read-only.
@@ -3114,9 +3065,8 @@
     const active = simlogActive();
     $("simlog-view").hidden = !active;
     $("operations").hidden = active;
-    if (protocolMode === "v2" && session) renderLobby();
+    if (session) renderLobby();
     if (active) { releaseCanvas(canvas); releaseCanvas(lookoutCanvas); }
-    else closeSimlogMap();
   }
   function validateSimlogData(data, depth = 0) {
     if (data === null || typeof data === "boolean" || typeof data === "string" ||
@@ -3474,13 +3424,11 @@
   }
   async function loadSimlog() {
     if (!simlogActive()) return;
-    if (protocolMode === "v2") {
+    const status = $("simlog-status");
+    if (session?.station === null || session?.simlog !== true) {
       latestSimlogState = null;
-      $("simlog-current-map").disabled = true;
-      closeSimlogMap();
-      $("simlog-status").hidden = false;
-      $("simlog-status").textContent = t(session?.station === null ? "simlog_station_required" :
-        session?.simlog !== true ? "simlog_grant_required" : "simlog_unavailable");
+      status.hidden = false;
+      status.textContent = t(session?.station === null ? "simlog_station_required" : "simlog_grant_required");
       $("simlog-current").replaceChildren(node("p", t("simlog_state_unavailable"), "empty"));
       $("simlog-list").replaceChildren();
       $("simlog-count").textContent = "";
@@ -3489,19 +3437,91 @@
     const now = performance.now();
     if (now - lastSimlogFetch < 2000) return;
     lastSimlogFetch = now;
+    const expected = v2State;
+    if (!expected || expected.role !== session.station) return;
     try {
-      const rows = await request("/simlog");
-      if (!simlogActive()) return;
-      validateSimlog(rows);
-      renderSimlog(rows);
-    } catch (_) {
+      const value = await request("/simlog");
+      validateRoleSimlog(value, expected);
+      if (!simlogActive() || contextKey(value) !== contextKey(v2State)) return;
+      renderRoleSimlog(value.entries);
+    } catch (error) {
       latestSimlogState = null;
-      $("simlog-current-map").disabled = true;
-      closeSimlogMap();
-      $("simlog-status").hidden = false;
-      $("simlog-status").textContent = t("simlog_unavailable");
+      status.hidden = false;
+      status.textContent = t(error.status === 403 ? "simlog_grant_required" : "simlog_unavailable");
+      $("simlog-current").replaceChildren(node("p", t("simlog_state_unavailable"), "empty"));
       $("simlog-list").replaceChildren();
+      $("simlog-count").textContent = "";
     }
+  }
+
+  function validateRoleSimlog(value, expected) {
+    if (!exactKeys(value, ["protocol", "session", "epoch", "role", "entries"]) ||
+        value.protocol !== 2 || value.session !== expected.session || value.epoch !== expected.epoch ||
+        value.role !== expected.role || !boundedArray(value.entries, 64)) throw new Error("simlog_schema");
+    let previous = 0;
+    for (const entry of value.entries) {
+      if (!exactKeys(entry, ["seq", "t", "stamp", "state"]) ||
+          !Number.isSafeInteger(entry.seq) || entry.seq <= previous || entry.seq < 1 ||
+          !finite(entry.t) || entry.t < 0 || entry.t > 1e12 ||
+          typeof entry.stamp !== "string" || !entry.stamp || entry.stamp.length > 32) throw new Error("simlog_schema");
+      validateV2State(entry.state);
+      if (entry.state.session !== value.session || entry.state.epoch !== value.epoch || entry.state.role !== value.role)
+        throw new Error("simlog_schema");
+      previous = entry.seq;
+    }
+  }
+
+  function roleHistorySummary(entry, expanded = false) {
+    const state = entry.state;
+    const display = buildDisplayModel(state);
+    const root = node("div", undefined, "simlog-current-body");
+    root.append(simlogMetricBlock("mission", [
+      ["mission", state.mission.name],
+      ["phase", enumText(phases, state.phase)],
+      ["remaining", unit(state.mission.remaining_s, "s", 0)],
+      ["mission_clock", unit(state.clock.mission, "s", 0)],
+    ]));
+    root.append(simlogMetricBlock("station_dashboard", [
+      ["role_assigned", t(`station_${state.role}`)],
+      ["contacts", number(display.tracks.length, 0)],
+      ["world_clock", finite(state.clock.world) ? `${String(Math.floor(state.clock.world) % 24).padStart(2, "0")}:${String(Math.floor(state.clock.world * 60) % 60).padStart(2, "0")}` : t("unavailable")],
+      ["time_scale", unit(state.clock.time_scale, "x")],
+    ]));
+    if (expanded && display.tracks.length) {
+      const list = node("ul", undefined, "visual-equivalent");
+      for (const track of display.tracks.slice(0, 16)) {
+        const position = hasPosition(track) ? `${unit(track.x, "NM")} / ${unit(track.y, "NM")}` : unit(track.bearing, "\u00b0", 0);
+        list.append(node("li", `${track.label}: ${position} / ${unit(track.age_s, "s", 0)}`));
+      }
+      root.append(list);
+    }
+    return root;
+  }
+
+  function renderRoleSimlog(entries) {
+    const status = $("simlog-status");
+    $("simlog-count").textContent = number(entries.length, 0);
+    if (!entries.length) {
+      latestSimlogState = null;
+      status.hidden = false;
+      status.textContent = t("simlog_empty");
+      $("simlog-current").replaceChildren(node("p", t("simlog_state_unavailable"), "empty"));
+      $("simlog-list").replaceChildren();
+      return;
+    }
+    status.hidden = true;
+    latestSimlogState = entries.at(-1);
+    $("simlog-current").replaceChildren(roleHistorySummary(latestSimlogState, true));
+    $("simlog-list").replaceChildren(...[...entries].reverse().map((entry) => {
+      const item = node("li", undefined, "simlog-entry");
+      item.append(node("span", `${entry.stamp}  T+${Math.floor(entry.t)}s`, "simlog-stamp"),
+        node("span", t(`station_${entry.state.role}`), "simlog-cat"));
+      const details = node("details", undefined, "simlog-snapshot");
+      details.append(node("summary", `${entry.state.mission.name} / ${enumText(phases, entry.state.phase)}`),
+        roleHistorySummary(entry));
+      item.append(details);
+      return item;
+    }));
   }
 
   function renderSound() {
@@ -3657,8 +3677,6 @@
         }
         ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(angle) * rayLength, oy + Math.sin(angle) * rayLength);
         if (track.ref === selected) { ctx.strokeStyle = "#a1e7cc"; ctx.lineWidth = 4; ctx.stroke(); }
-        if (track.ref === snapshot.crew_target) { ctx.strokeStyle = "#e9eee8"; ctx.lineWidth = 6; ctx.setLineDash([14, 14]); ctx.stroke(); }
-        if (track.ref === snapshot.proposal?.ref) { ctx.strokeStyle = "#f3c577"; ctx.lineWidth = 7; ctx.setLineDash([2, 10]); ctx.stroke(); }
         ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([6, 6]); ctx.stroke(); ctx.setLineDash([]);
         // A ray is intentionally not pickable as a fictitious contact position.
         continue;
@@ -3675,14 +3693,6 @@
         ctx.globalAlpha = 1;
       }
       drawSymbol(x, y, track.domain, color, fontSize * .65);
-      if (track.ref === snapshot.crew_target) {
-        ctx.strokeStyle = "#e9eee8";
-        for (const r of [18, 21]) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke(); }
-      }
-      if (track.ref === snapshot.proposal?.ref) {
-        ctx.strokeStyle = "#f3c577"; ctx.setLineDash([4, 3]);
-        ctx.beginPath(); ctx.moveTo(x, y - 28); ctx.lineTo(x + 28, y); ctx.lineTo(x, y + 28); ctx.lineTo(x - 28, y); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
-      }
       if (track.ref === selected) { ctx.strokeStyle = "#a1e7cc"; ctx.lineWidth = 2; ctx.strokeRect(x - 25, y - 25, 50, 50); }
       ctx.fillStyle = color;
       ctx.fillText(String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
@@ -3892,26 +3902,23 @@
   $("pair-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if ($("pair-submit").disabled || !$("pair-form").reportValidity()) return;
+    if (!pairingAvailable) {
+      $("pair-error").textContent = t("pair_failed");
+      return;
+    }
     $("pair-submit").disabled = true;
     $("pair-error").textContent = "";
     const code = $("code").value.toUpperCase();
     const name = $("name").value.trim();
     $("code").value = "";
     try {
-      const body = protocolMode === "v2" ? { code, name } : { code };
-      const result = await request("/pair", { method: "POST", body, auth: false,
-        version: protocolMode === "v2" ? 2 : 1 });
-      if (protocolMode === "v2") {
-        acceptSession(result);
-      } else {
-        if (!result || typeof result.token !== "string" || !result.token) throw new Error("pair");
-        token = result.token;
-      }
+      const result = await request("/pair", { method: "POST", body: {code, name}, auth: false });
+      acceptSession(result);
       generation += 1;
       failures = 0;
       $("pairing").hidden = true;
       $("disconnect").hidden = false;
-      setConnection(protocolMode === "v2" && session.station === null ? "lobby" : "syncing");
+      setConnection(session.station === null ? "lobby" : "syncing");
       clearTimeout(pollTimer);
       poll();
     } catch (_) {
@@ -3943,9 +3950,7 @@
   $("disconnect").addEventListener("click", async () => {
     const csrf = session?.csrf;
     try {
-      if (protocolMode === "v2" && csrf) await request("/logout", {
-        method: "POST", auth: true, version: 2, csrf,
-      });
+      if (csrf) await request("/logout", {method: "POST", csrf});
     } catch (_) {
       // Local tactical data is cleared even when the host cannot confirm logout.
     } finally {
@@ -3977,9 +3982,8 @@
   $("classification-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const classification = $("classification").value || null;
-    if (protocolMode === "v2" && session?.station === "sonar") sendStationAction("sonar_classify", {ref: selected, classification});
-    else if (protocolMode === "v2" && session?.station === "opz") sendStationAction("opz_classify", {ref: selected, classification});
-    else sendCommand("classify", classification);
+    if (session?.station === "sonar") sendStationAction("sonar_classify", {ref: selected, classification});
+    else if (session?.station === "opz") sendStationAction("opz_classify", {ref: selected, classification});
   });
   $("classification").addEventListener("change", renderActionState);
   $("sonar-release").addEventListener("click", () => {
@@ -3990,8 +3994,7 @@
   });
   $("affiliation-form").addEventListener("submit", (event) => {
     event.preventDefault();
-    if (protocolMode === "v2" && session?.station === "opz") sendStationAction("opz_affiliate", {ref: selected, affiliation: $("affiliation").value});
-    else sendCommand("affiliate", $("affiliation").value);
+    if (session?.station === "opz") sendStationAction("opz_affiliate", {ref: selected, affiliation: $("affiliation").value});
   });
   $("opz-radar-surface").addEventListener("change", () => sendStationAction("opz_set_radar", {domain: "surface", enabled: $("opz-radar-surface").checked}));
   $("opz-radar-air").addEventListener("change", () => sendStationAction("opz_set_radar", {domain: "air", enabled: $("opz-radar-air").checked}));
@@ -4011,11 +4014,11 @@
     const track = selectedTrack();
     if (!track) return;
     if (opzSuppressed.has(track.ref)) opzSuppressed.delete(track.ref); else opzSuppressed.add(track.ref);
-    const raw = v2State; if (raw) { snapshot = adaptV2State(raw); if (!selectedTrack()) selected = null; renderSnapshot(); }
+    const raw = v2State; if (raw) { snapshot = buildDisplayModel(raw); if (!selectedTrack()) selected = null; renderSnapshot(); }
   });
   $("opz-manage").addEventListener("change", () => {
     opzManage = $("opz-manage").checked;
-    if (v2State) { snapshot = adaptV2State(v2State); renderSnapshot(); }
+    if (v2State) { snapshot = buildDisplayModel(v2State); renderSnapshot(); }
   });
   const numberAction = (formId, inputId, action, field, minimum, maximum) => {
     const form = $(formId);
@@ -4107,16 +4110,30 @@
     const depth_m = $("helicopter-dip-depth").valueAsNumber;
     if (finite(depth_m)) sendStationAction("helicopter_set_dip_depth", {depth_m});
   });
-  $("propose").addEventListener("click", () => sendCommand("propose"));
-  $("clear-proposal").addEventListener("click", () => sendCommand("clear_proposal"));
-  $("navigation-form").addEventListener("submit", (event) => { event.preventDefault(); sendCommand("propose_navigation"); });
+  $("propose").addEventListener("click", () => {
+    const track = selectedTrack();
+    if (track?.can_propose) sendStationAction("propose_target", {ref: track.ref});
+  });
+  $("clear-proposal").addEventListener("click", () => sendStationAction("clear_target_proposal", {}));
+  $("navigation-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!event.currentTarget.reportValidity()) return;
+    const params = {};
+    const course = $("navigation-course").value.trim() ? $("navigation-course").valueAsNumber : null;
+    const speed = $("navigation-speed").value.trim() ? $("navigation-speed").valueAsNumber : null;
+    if (course !== null) params.course = course;
+    if (speed !== null) params.speed_kn = speed;
+    if (!Object.keys(params).length || (course !== null && (!finite(course) || course < 0 || course >= 360)) ||
+        (speed !== null && (!finite(speed) || speed < 0 || speed > 25))) {
+      commandMessage = {key: "navigation_invalid", status: "rejected"};
+      renderActionState();
+      return;
+    }
+    sendStationAction("propose_navigation", params);
+  });
   $("bridge-course-form").addEventListener("submit", (event) => { event.preventDefault(); sendBridgeOrder("course"); });
   $("bridge-speed-form").addEventListener("submit", (event) => { event.preventDefault(); sendBridgeOrder("speed"); });
-  $("retry-command").addEventListener("click", () => {
-    if (!pending?.uncertain || pending.inFlight || performance.now() < pending.retryAt) return;
-    // Reconciliation never reconstructs an envelope from the current selection.
-    transmitCommand(pending);
-  });
+  $("retry-command").addEventListener("click", retryPendingCommand);
   for (const [id, name] of [["workstation-help", "guide"], ["workstation-library", "contacts"], ["workstation-lookout", "lookout"]]) {
     $(id).addEventListener("click", () => { $("workstation-tools").open = false; activateTab(name); });
   }
@@ -4299,26 +4316,6 @@
     renderLookoutStatus();
     queueLookoutDraw();
   });
-  $("simlog-current-map").addEventListener("click", () => {
-    if (latestSimlogState) openSimlogMap(latestSimlogState.data,
-      `${latestSimlogState.stamp} / T+${Math.floor(latestSimlogState.t)}s`,
-      latestSimlogState.seq, true);
-  });
-  $("simlog-map-close").addEventListener("click", closeSimlogMap);
-  $("simlog-map-world").addEventListener("click", () => {
-    simlogMapFit = "world";
-    queueSimlogMapDraw();
-  });
-  $("simlog-map-units-fit").addEventListener("click", () => {
-    simlogMapFit = "units";
-    queueSimlogMapDraw();
-  });
-  $("simlog-map-dialog").addEventListener("close", () => {
-    simlogMapData = null;
-    simlogMapSeq = null;
-    simlogMapLatest = false;
-    releaseCanvas(simlogMapCanvas);
-  });
   lookoutCanvas.addEventListener("wheel", (event) => {
     event.preventDefault();
     changeLookoutRange(event.deltaY < 0 ? -1 : 1);
@@ -4391,20 +4388,19 @@
   });
   new ResizeObserver(queueDraw).observe(canvas);
   new ResizeObserver(queueLookoutDraw).observe(lookoutCanvas);
-  new ResizeObserver(queueSimlogMapDraw).observe(simlogMapCanvas);
   for (const id of visualCanvasIds) new ResizeObserver(() => { queueVisualDraw(); syncOpzSweepAnimation(); }).observe($(id));
-  window.addEventListener("resize", () => { queueDraw(); queueLookoutDraw(); queueSimlogMapDraw(); queueVisualDraw(); });
+  window.addEventListener("resize", () => { queueDraw(); queueLookoutDraw(); queueVisualDraw(); });
   window.addEventListener("hashchange", () => { applySimlogView(); loadSimlog(); });
   document.addEventListener("visibilitychange", () => {
     // A background tab's event batch is not a new audible alarm on return.
-    suppressNextEvents = true;
+    if (document.hidden) eventBaselinePending = true;
     if (document.hidden) stopSonarAudio("sonar_live_unavailable");
     if (document.hidden) stopBridgeCavitationAudio();
     if (document.hidden && authenticated()) setConnection("stale");
     syncOpzSweepAnimation();
     syncWeatherAnimation();
   });
-  window.addEventListener("offline", () => { stopSonarAudio("sonar_live_unavailable"); stopBridgeCavitationAudio(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
+  window.addEventListener("offline", () => { eventBaselinePending = true; stopSonarAudio("sonar_live_unavailable"); stopBridgeCavitationAudio(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
   window.addEventListener("online", () => { syncOpzSweepAnimation(); if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); } });
   setInterval(() => {
     if (authenticated() && lastSuccess && performance.now() - lastSuccess > 4500) setConnection("stale");
@@ -4416,7 +4412,7 @@
   }, 1000);
 
   async function bootstrap() {
-    const resumed = await detectSession();
+    const resumed = await resumeSession();
     let delay = 1000;
     while (!await loadLanguage(language)) {
       await new Promise((resolve) => setTimeout(resolve, delay));

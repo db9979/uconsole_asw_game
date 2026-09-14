@@ -132,7 +132,6 @@ def test_pair_sets_host_only_cookie_and_stores_digest_only(server):
 
 
 def test_multiple_pairings_reload_and_read_only_snapshots(server):
-    server.publish({"protocol": 1, "tracks": [{"id": "detached"}]}, {"land": [[1, 2]]})
     states = projection_states()
     charts = {role: {"protocol": 2, "revision": "chart", "role_marker": role}
               for role in (None, *transport.STATIONS)}
@@ -248,22 +247,22 @@ def test_unknown_revoked_cookie_is_cleared_and_missing_cookie_is_not(server):
     assert status == 401 and "Max-Age=0" in headers["Set-Cookie"]
 
 
-def test_v1_v2_pairing_is_mutually_exclusive_and_failure_budget_is_shared(server):
+def test_v1_is_retired_and_v2_pairings_share_the_failure_budget(server):
     for _ in range(4):
         assert request(server, "/api/v2/pair", "POST", {"code": "wrong", "name": "x"})[0] == 403
-    assert request(server, "/api/v1/pair", "POST", {"code": "wrong"})[0] == 403
+    for path in ("pair", "commands", "logout", "stations/request"):
+        assert request(server, "/api/v1/" + path, "POST", {})[0] == 404
+    for path in ("state", "chart", "results", "simlog", "session", "contacts", "ui"):
+        assert request(server, "/api/v1/" + path)[0] == 404
+    assert request(server, "/api/v2/pair", "POST",
+                   {"code": "wrong", "name": "x"})[0] == 403
     assert request(server, "/api/v2/pair", "POST",
                    {"code": server.pairing_code, "name": "x"})[0] == 429
     server.revoke()
-    _, cookie, _, _ = pair_v2(server)
-    assert request(server, "/api/v1/pair", "POST", {"code": server.pairing_code})[0] == 409
-    server.revoke()
-    status, _, body = request(
-        server, "/api/v1/pair", "POST", {"code": server.pairing_code})
-    assert status == 200
-    assert request(server, "/api/v2/pair", "POST",
-                   {"code": server.pairing_code, "name": "x"})[0] == 409
-    assert request(server, "/api/v2/session", cookie=cookie)[0] == 401
+    first_cookie = pair_v2(server, "First")[1]
+    second_cookie = pair_v2(server, "Second")[1]
+    assert request(server, "/api/v2/session", cookie=first_cookie)[0] == 200
+    assert request(server, "/api/v2/session", cookie=second_cookie)[0] == 200
 
 
 def test_stop_revokes_sessions_across_restart(server):
@@ -274,6 +273,30 @@ def test_stop_revokes_sessions_across_restart(server):
     assert server.pairing_code == code
     status, headers, _ = request(server, "/api/v2/session", cookie=cookie)
     assert status == 401 and "Max-Age=0" in headers["Set-Cookie"]
+
+
+def test_revocation_clears_role_event_and_simlog_publications(server):
+    states = projection_states("published")
+    charts = {role: {"protocol": 2, "revision": "published",
+                     "role_marker": role}
+              for role in (None, *transport.STATIONS)}
+    server.publish_v2(states, charts)
+    server.publish_events_v2(
+        world_session="published", world_epoch=0, latest_seq=1,
+        events_by_role={role: [{"seq": 1, "kind": "mission",
+                               "severity": "warning", "message": "old"}]
+                        for role in transport.STATIONS})
+    server.publish_simlog_v2(
+        world_session="published", world_epoch=0,
+        entries_by_role={role: [{"seq": 1, "t": 1.0, "stamp": "00:01",
+                                 "state": states[role]}]
+                         for role in transport.STATIONS})
+
+    server.revoke()
+
+    assert server._v2_events == {}
+    assert server._v2_private_events == {}
+    assert server._v2_simlogs == {}
 
 
 def test_station_request_requires_cookie_csrf_and_exact_schema(server):
@@ -364,8 +387,9 @@ def test_host_revoke_and_grants_are_station_scoped(server):
     assert state["stations"]["sonar"]["grants"] == {
         "command": True, "direct_fire": False, "sonar_audio": True}
     assert state["simlog"] is True and state["active_station"] == "bridge"
-    server.publish_simlog(b'[{"detached":true}]')
-    assert request(server, "/api/v2/simlog", cookie=cookie)[0] == 403
+    status, _, simlog = request(server, "/api/v2/simlog", cookie=cookie)
+    assert status == 200
+    assert simlog["role"] == "bridge" and simlog["entries"] == []
     roster = server.client_statuses()[0]
     assert set(roster) == {"client_id", "name", "ordinal", "active_station",
                            "active_generation", "simlog", "stations", "presence"}

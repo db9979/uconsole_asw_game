@@ -1,4 +1,4 @@
-# Commander LAN Co-op (0.2.1)
+# Commander LAN Co-op (0.2.2)
 
 [Deutsch](commander-coop.de.md)
 
@@ -25,10 +25,10 @@ IPv4 network. HTTP does not protect traffic from someone who can observe the LAN
 6. Open the actual displayed URL in each crew browser. Permit incoming
    connections on the host firewall only from the trusted LAN if needed.
 7. Type the local pairing code: three digits plus three uppercase letters.
-   Browser lowercase input is normalized. Codes are one-use and expire after
-   five minutes. Five wrong guesses per rolling minute block further attempts
-   temporarily; the fifth failure rotates the code. Explicit local revocation
-   creates a new code and clears the lockout.
+   Browser lowercase input is normalized. The displayed code remains valid for
+   additional crew. Five wrong guesses per rolling minute block further attempts
+   temporarily and rotate the code; explicit local revocation also creates a new
+   code and clears the lockout.
 8. Once paired, request a station in the browser. The host grants or rejects the
    exact request. Approval enables normal station operation; sonar audio and
    direct fire remain separate grants. When a crew station is active, the
@@ -68,6 +68,10 @@ in screenshots, logs, or issue reports.
   publish them. Sonar audio needs its own host grant and remains live-only at 1x.
   Its Broadband, Filtered, and Heterodyne modes share the authoritative band,
   notch, and gain settings with the Sonar workstation.
+- Sonar crew can stage a target proposal and Bridge crew can stage course and/or
+  speed orders. Proposals are bound to the originating v2 session, active role,
+  station generation, world context and observation reference. They affect no
+  target or navigation setpoint until the host accepts them locally.
 - The local panel supports independent per-station request decisions, additional
   grants, revocation, takeover, and host control. Clicking never bypasses readiness.
 - Voice coordination uses your existing external voice connection or conversation.
@@ -116,6 +120,12 @@ Bridge projection and stops on quiet propulsion, stale connection, role change,
 pause, hidden page, or mute.
 Autoplay may be blocked by the browser until this gesture. Visual alarms always
 remain available. Reconnection establishes a new sound baseline, not alarm replay.
+
+Events are role-scoped: damage reports reach Bridge and Damage Control, threats
+reach Bridge, OPZ and Weapons, and mission events reach every role. Proposal
+lifecycle events are visible only to their originating session and role. With a
+local SimLog grant, a browser receives at most 64 prior role projections; it
+never receives the host's full-truth SimLog or hidden entity identifiers.
 
 A queued response is not an accepted action. If delivery is uncertain, the browser
 keeps the action pending. Its explicit reconciliation control retries the same

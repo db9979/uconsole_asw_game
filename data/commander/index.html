@@ -129,7 +129,7 @@
           <div class="chart-toolbar"><button id="zoom-in" type="button" data-i18n="zoom_in"></button><button id="zoom-out" type="button" data-i18n="zoom_out"></button><button id="fit" type="button" data-i18n="fit"></button><button id="follow" type="button" aria-pressed="false" data-i18n="follow"></button><output id="chart-scale"></output></div>
           <canvas id="chart" tabindex="0" data-i18n-aria="chart_help"></canvas>
           <p class="chart-help" data-i18n="chart_help"></p>
-          <div class="legend"><span class="selected-key" data-i18n="selected"></span><span class="crew-key" data-i18n="crew_target"></span><span class="proposal-key" data-i18n="proposal"></span><span class="bearing-key" data-i18n="bearing_only"></span></div>
+          <div class="legend"><span class="selected-key" data-i18n="selected"></span><span class="bearing-key" data-i18n="bearing_only"></span></div>
           <p id="chart-disclaimer" class="fine"></p>
         </section>
         <section class="panel details-panel"><div class="panel-heading"><h2 data-i18n="contact_detail"></h2><span class="local-tag" data-i18n="local"></span></div>
@@ -140,10 +140,10 @@
             <div id="opz-track-actions" class="opz-track-actions" hidden><button id="opz-mark" type="button" data-i18n="opz_mark"></button><button id="opz-suppress" type="button" data-i18n="opz_suppress"></button><button id="opz-dissolve" type="button" data-i18n="opz_dissolve"></button><button id="opz-designate" type="button" data-i18n="opz_designate"></button></div>
             <p id="sonar-release-status" class="fine" hidden></p>
             <button id="sonar-release" type="button" hidden data-i18n="sonar_release_to_opz"></button>
-            <p class="fine v2-irrelevant" data-i18n="annotation_note"></p><button id="propose" type="button" class="primary v2-irrelevant" data-i18n="propose"></button>
+            <div id="target-proposal-controls" hidden><p class="fine" data-i18n="annotation_note"></p><button id="propose" type="button" class="primary" data-i18n="propose"></button></div>
           </div>
-          <div class="proposal-box v2-irrelevant"><h3 data-i18n="proposal"></h3><p id="proposal-status"></p><p class="fine" data-i18n="proposal_note"></p><button id="clear-proposal" type="button" data-i18n="clear_proposal"></button></div>
-          <div class="proposal-box v2-irrelevant"><h3 data-i18n="navigation"></h3>
+          <div id="target-proposal" class="proposal-box" hidden><h3 data-i18n="proposal"></h3><p id="proposal-status"></p><p class="fine" data-i18n="proposal_note"></p><button id="clear-proposal" type="button" data-i18n="clear_proposal"></button></div>
+          <div id="navigation-proposal" class="proposal-box" hidden><h3 data-i18n="navigation"></h3>
             <p id="navigation-status" role="status" aria-live="polite"></p>
             <p id="navigation-note" class="fine" data-i18n="navigation_note"></p>
             <form id="navigation-form" class="annotation-form" aria-describedby="navigation-note">
@@ -156,11 +156,7 @@
           <div id="command-reconcile" class="command-reconcile" hidden><p id="command-retry-note" class="fine" data-i18n="command_retry_note"></p><button id="retry-command" type="button" aria-describedby="command-retry-note" data-i18n="command_retry"></button></div>
         </section>
       </div>
-      <div id="legacy-support" class="support-grid">
-        <section class="panel own-panel"><div class="panel-heading"><h2 data-i18n="ownship"></h2><span class="own-key" aria-hidden="true"></span></div><dl id="own-metrics" class="metrics"></dl><h3 data-i18n="inventory"></h3><dl id="inventory" class="metrics"></dl><h3 data-i18n="helicopter"></h3><dl id="helo-metrics" class="metrics"></dl></section>
-        <section class="panel"><div class="panel-heading"><h2 data-i18n="damage"></h2><span id="alarm-count" class="counter"></span></div><div id="damage-list" class="damage-list"></div></section>
-        <section class="panel"><div class="panel-heading"><h2 data-i18n="events"></h2><span class="local-tag" data-i18n="live_feed"></span></div><ol id="event-list" class="event-list"></ol></section>
-      </div>
+      <section class="panel events-panel"><div class="panel-heading"><h2 data-i18n="events"></h2><span class="local-tag" data-i18n="live_feed"></span></div><ol id="event-list" class="event-list"></ol></section>
       <footer><span data-i18n="observation_note"></span><span id="snapshot-meta"></span></footer>
         </section>
         <section id="panel-lookout" class="tab-panel lookout-panel" role="tabpanel" aria-labelledby="tab-lookout" tabindex="0" hidden>
@@ -216,26 +212,14 @@
         <div class="panel-heading"><h2 data-i18n="simlog_title"></h2><span id="simlog-count" class="counter"></span></div>
         <p id="simlog-status" class="empty" role="status" aria-live="polite" data-i18n="simlog_empty"></p>
         <section class="simlog-current-section">
-          <div class="simlog-section-heading"><h3 data-i18n="simlog_current_title"></h3><button id="simlog-current-map" type="button" class="quiet" data-i18n="simlog_map_open" disabled></button></div>
+          <div class="simlog-section-heading"><h3 data-i18n="simlog_current_title"></h3></div>
           <p class="fine" data-i18n="simlog_current_note"></p>
           <div id="simlog-current" class="simlog-current" aria-live="polite"></div>
         </section>
-        <h3 class="simlog-events-heading" data-i18n="simlog_events_title"></h3>
         <ol id="simlog-list" class="simlog-list" data-i18n-aria="simlog_list"></ol>
-        <p class="fine" data-i18n="simlog_note"></p>
       </section>
     </main>
-    <dialog id="simlog-map-dialog" aria-labelledby="simlog-map-title">
-      <section class="simlog-map-shell">
-        <header class="simlog-map-header"><div><p class="eyebrow" data-i18n="simlog_map_eyebrow"></p><h2 id="simlog-map-title" data-i18n="simlog_map_title"></h2><p id="simlog-map-stamp" class="fine"></p></div><button id="simlog-map-close" type="button" class="quiet" data-i18n="simlog_map_close"></button></header>
-        <div class="simlog-map-toolbar"><button id="simlog-map-world" type="button" data-i18n="simlog_map_fit_world"></button><button id="simlog-map-units-fit" type="button" data-i18n="simlog_map_fit_units"></button><output id="simlog-map-count"></output></div>
-        <div class="simlog-map-layout">
-          <div class="simlog-map-plot"><canvas id="simlog-map" tabindex="0" data-i18n-aria="simlog_map_canvas" aria-describedby="simlog-map-help"></canvas></div>
-          <aside class="simlog-map-sidebar"><h3 data-i18n="simlog_map_units"></h3><ol id="simlog-map-units"></ol></aside>
-        </div>
-        <p id="simlog-map-help" class="fine" data-i18n="simlog_map_help"></p>
-      </section>
-    </dialog>
+    <dialog id="simlog-map-dialog" hidden><button id="simlog-map-close" type="button"></button><button id="simlog-map-world" type="button"></button><button id="simlog-map-units-fit" type="button"></button><button id="simlog-current-map" type="button" disabled></button><p id="simlog-map-stamp"></p><output id="simlog-map-count"></output><ol id="simlog-map-units"></ol><canvas id="simlog-map"></canvas></dialog>
   </div>
 </body>
 </html>

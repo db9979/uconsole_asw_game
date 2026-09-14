@@ -327,18 +327,19 @@ class CommanderConsole:
         if hasattr(self.server, "resolve_station_request"):
             self.admission.sync(game, self)
         self.connected = self.server.connected
-        self.active_crew = bool(self.server.connected)
+        self.active_crew = False
         if hasattr(self.server, "client_statuses"):
             statuses = self.server.client_statuses()
             self.connected = self.connected or bool(statuses)
             self.active_crew = self.active_crew or any(
                 status["active_station"] in STATIONS for status in statuses)
+        else:
+            self.active_crew = self.connected
         if self.station_leased(game.station):
             game._clear_station_input()
             game.input_mode = None
             game.input_buffer = ""
-        # Protocol v1 can only annotate and stage proposals; final decisions
-        # remain local in the confirmation overlay now that its grant row is gone.
+        # Remote proposals remain staging requests; final decisions stay local.
         if self.server.connected and not self.bridge.allowed:
             self.bridge.allowed = True
         self.bridge.pump(game, self.server, now=now)

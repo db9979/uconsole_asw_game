@@ -77,7 +77,8 @@ from src.sonar.sonar import SonarSystem
 from src.core import config
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
-from src.commander.server import SIMLOG_MAX_BYTES, _command_valid, _json_bytes
+from src.commander.server import (SIMLOG_ENTRIES_MAX, SIMLOG_MAX_BYTES,
+                                  _json_bytes)
 from src.commander.projections import (ROLE_NAMES, build_role_states, known_chart,
                                        redacted_chart, redacted_state)
 
@@ -438,7 +439,7 @@ def sonar_pcm_s16le(samples) -> bytes:
 class CommanderBridge:
     def __init__(self):
         self._server = None
-        self._allowed = False
+        self._allowed = True
         self._grant_lease = None
         self._identity = None
         self._session = secrets.token_urlsafe(24)
@@ -474,6 +475,10 @@ class CommanderBridge:
         self._chart_world = None
         self._published_chart = None
         self._simlog_fingerprint = None
+        self._v2_simlog_seq = 0
+        self._v2_simlog = {role: deque(maxlen=SIMLOG_ENTRIES_MAX)
+                           for role in ROLE_NAMES}
+        self._last_v2_states = None
         self._language = None
         self._last_publish = None
         self._audio_context = None
@@ -484,28 +489,15 @@ class CommanderBridge:
                             commands_allowed=False, session=self._session,
                              epoch=0, revision=0, seq=0)
 
-    @staticmethod
-    def _transport_lease(server):
-        lease = getattr(server, "lease_generation", None)
-        return lease if type(lease) is int and lease >= 0 else None
-
     @property
     def allowed(self) -> bool:
-        if not self._allowed or self._server is None:
-            return self._allowed
-        return (self._grant_lease is not None
-                and self._server.connected
-                and self._grant_lease == self._transport_lease(self._server))
+        return self._allowed
 
     @allowed.setter
     def allowed(self, value):
         self._main_thread()
         self._allowed = value is True
-        self._grant_lease = (self._transport_lease(self._server)
-                             if self._allowed and self._server is not None else None)
-        if self._server is not None and not self.allowed:
-            self._allowed = False
-            self._grant_lease = None
+        self._grant_lease = None
         if (not self._allowed and self._navigation_proposal is not None
                 and self._navigation_proposal["status"] == "pending"):
             self._proposal_status("expired", navigation=True)
@@ -533,6 +525,10 @@ class CommanderBridge:
         self._main_thread()
         self._epoch += 1
         self._status["epoch"] = self._epoch
+        for history in self._v2_simlog.values():
+            history.clear()
+        self._last_v2_states = None
+        self._simlog_fingerprint = None
         if self._server is not None and hasattr(self._server, "invalidate_v2_commands"):
             self._server.invalidate_v2_commands("context_invalidated")
         self._dirty = True
@@ -563,10 +559,16 @@ class CommanderBridge:
             return "blocked"
         return "live"
 
-    def _event(self, kind, severity, key):
+    def _event(self, kind, severity, key, authority=None):
+        roles = {
+            "damage": frozenset(("bridge", "damage")),
+            "threat": frozenset(("bridge", "opz", "weapons")),
+            "mission": frozenset(ROLE_NAMES),
+        }.get(kind, frozenset())
         self._event_seq += 1
         self._events.append(dict(seq=self._event_seq, kind=kind,
-                                 severity=severity, message=key))
+                                 severity=severity, message=key,
+                                 _roles=roles, _authority=authority))
         self._dirty = True
 
     def _proposal_status(self, status, *, navigation=False):
@@ -574,10 +576,13 @@ class CommanderBridge:
             self._navigation_proposal = dict(self._navigation_proposal, status=status)
         else:
             self._proposal = dict(self._proposal, status=status)
-        self._revision += 1
-        self._status["revision"] = self._revision
+        if status != "pending":
+            self._revision += 1
+            self._status["revision"] = self._revision
+        authority = (self._navigation_lease if navigation else self._proposal_lease)
         self._event("proposal", "info", ("commander.nav." if navigation
-                                        else "commander.event.proposal.") + status)
+                                        else "commander.event.proposal.") + status,
+                    authority=authority)
         if status == "pending":
             self._pending_seq = self._event_seq
 
@@ -820,107 +825,49 @@ class CommanderBridge:
                     self._chart_geography["depths"] = [list(row) for row in grid]
         self._chart["revision"] = self._session
 
-    def _command(self, game, server, envelope, now, rows, bindings):
-        command = envelope.get("command") if type(envelope) is dict else None
-        command_id = command.get("id") if type(command) is dict else None
-        valid_id = type(command_id) is str and 0 < len(command_id) <= 64
-        reason = "invalid_schema"
-        valid = (type(command) is dict
-                 and {"id", "session", "epoch", "revision", "action"} <= command.keys()
-                 and not command.keys() - {"id", "session", "epoch", "revision", "action", "track", "value"}
-                 and valid_id and type(command["session"]) is str
-                 and 0 < len(command["session"]) <= 64
-                 and type(command["epoch"]) is int and 0 <= command["epoch"] <= 2**53 - 1
-                 and type(command["revision"]) is int and 0 <= command["revision"] <= 2**53 - 1
-                 and type(command["action"]) is str
-                 and command["action"] in ("classify", "affiliate", "propose", "clear_proposal")
-                 and ("track" not in command or
-                      type(command["track"]) is str and 0 < len(command["track"]) <= 64)
-                 and (command.get("value") is None or
-                      type(command["value"]) is str and len(command["value"]) <= 64))
-        if valid:
-            action, value, ref = command["action"], command.get("value"), command.get("track")
-            valid = ((action == "classify" and ref is not None and "value" in command
-                      and (value is None or value in config.PLAYER_CLASSES))
-                     or (action == "affiliate" and ref is not None and value in config.NATO_AFFILIATIONS)
-                     or (action == "propose" and ref is not None and "value" not in command)
-                     or (action == "clear_proposal" and "value" not in command))
-        if (type(command) is dict and command.get("action") == "propose_navigation"
-                and _command_valid(command)):
-            valid = True
-            action, value, ref = command["action"], None, None
-        if valid:
-            if (set(envelope) != {"command", "lease", "received_at"}
-                    or type(envelope["lease"]) is not int
-                    or not _fresh(now, envelope["received_at"], 5.0)
-                    or not server.is_current(envelope)):
-                reason = "unauthorized"
-            elif command["session"] != self._session:
-                reason = "stale_session"
-            elif command["epoch"] != self._epoch:
-                reason = "stale_epoch"
-            elif (not self.allowed or envelope["lease"] != self._grant_lease
-                  or not self._status["commands_allowed"]):
-                reason = "commands_blocked"
-            elif command_id in self._ids:
-                previous, result = self._ids[command_id]
-                if previous == command:
-                    self._results.append(dict(result))
-                    self._dirty = True
-                    return
-                reason = "duplicate_id"
-            elif (action == "propose" and self._proposal is not None
-                  and self._proposal["status"] == "pending"):
-                reason = "proposal_pending"
-            elif (action == "propose_navigation" and self._navigation_proposal is not None
-                  and self._navigation_proposal["status"] == "pending"):
-                reason = "proposal_pending"
-            elif command["revision"] != self._revision:
-                reason = "revision_conflict"
-            elif action not in ("clear_proposal", "propose_navigation") and ref not in bindings:
-                reason = "unknown_track"
-            elif (action == "clear_proposal" and ref is not None
-                  and (self._proposal is None or ref != self._proposal["ref"])):
-                reason = "unknown_track"
-            elif action in ("classify", "propose") and bindings[ref][2] is None:
-                reason = "ineligible_track"
-            else:
-                reason = "ok"
-                if action == "classify":
-                    bindings[ref][2].player_class = value
-                elif action == "affiliate":
-                    game.opz_affiliations[bindings[ref][0]] = value
-                elif action == "propose":
-                    row = next(r for r in rows if r["ref"] == ref)
-                    self._proposal = dict(ref=ref, label=row["label"], status="pending")
-                    self._proposal_contact = bindings[ref][2]
-                    self._proposal_lease = envelope["lease"]
-                    self._proposal_status("pending")
-                elif action == "propose_navigation":
-                    self._navigation_proposal = dict(course=command.get("course"),
-                        speed_kn=command.get("speed_kn"), status="pending")
-                    self._navigation_lease = envelope["lease"]
-                    self.navigation_error = None
-                    self._proposal_status("pending", navigation=True)
-                elif self._proposal is not None:
-                    self._proposal_status("rejected")
-                    self._proposal = self._proposal_contact = self._proposal_lease = None
-        result = dict(id=command_id if valid_id else "", status="applied" if reason == "ok"
-                      else "rejected", reasoncode=reason)
-        if (valid and command["session"] == self._session
-                and command_id not in self._ids):
-            self._ids[command_id] = (dict(command), dict(result))
-            if len(self._ids) > 128:
-                self._ids.popitem(last=False)
-        self._results.append(result)
-        self._dirty = True
-
     @staticmethod
     def _apply_v2_action(game, action, params, bindings):
         handler = _V2_ACTION_HANDLERS.get(action)
         if handler is None:
             return False
         return handler(game, params, bindings)
+
+    def _apply_proposal_v2(self, envelope, action, params, rows, bindings):
+        if action == "propose_target":
+            if self._proposal is not None and self._proposal["status"] == "pending":
+                return "proposal_pending"
+            binding = bindings.get(params["ref"])
+            if binding is None:
+                return "unknown_ref"
+            if binding[2] is None:
+                return "ineligible_track"
+            row = next((item for item in rows if item["ref"] == params["ref"]), None)
+            if row is None:
+                return "unknown_ref"
+            self._proposal = dict(ref=params["ref"], label=row["label"],
+                                  status="pending")
+            self._proposal_contact = binding[2]
+            self._proposal_lease = envelope
+            self._proposal_status("pending")
+            return True
+        if action == "clear_target_proposal":
+            if (self._proposal is None or self._proposal_lease is None
+                    or self._proposal_lease.session_digest != envelope.session_digest):
+                return "unknown_ref"
+            self._proposal_status("rejected")
+            self._proposal = self._proposal_contact = self._proposal_lease = None
+            return True
+        if action == "propose_navigation":
+            if (self._navigation_proposal is not None
+                    and self._navigation_proposal["status"] == "pending"):
+                return "proposal_pending"
+            self._navigation_proposal = dict(course=params.get("course"),
+                speed_kn=params.get("speed_kn"), status="pending")
+            self._navigation_lease = envelope
+            self.navigation_error = None
+            self._proposal_status("pending", navigation=True)
+            return True
+        return False
 
     def _commands_v2(self, game, server, now, phase):
         if not hasattr(server, "drain_commands_v2"):
@@ -941,7 +888,12 @@ class CommanderBridge:
                                  False, track_key)
             def apply_action(action, params, bindings=bindings):
                 nonlocal bridge_course
-                result = self._apply_v2_action(game, action, params, bindings)
+                if action in ("propose_target", "clear_target_proposal",
+                              "propose_navigation"):
+                    result = self._apply_proposal_v2(
+                        envelope, action, params, rows, bindings)
+                else:
+                    result = self._apply_v2_action(game, action, params, bindings)
                 if action == "bridge_set_course" and result in (True, "ok"):
                     bridge_course = params["course"]
                 return result
@@ -962,10 +914,7 @@ class CommanderBridge:
         now = time.monotonic() if now is None else now
         if _number(now) is None or now < 0:
             raise ValueError("now must be finite monotonic seconds")
-        if self._server is None:
-            if self._allowed:
-                self._grant_lease = self._transport_lease(server)
-        elif self._server is not server:
+        if self._server is not None and self._server is not server:
             self.allowed = False
         self._server = server
         identity = (id(game.world), id(game.sonar))
@@ -992,6 +941,11 @@ class CommanderBridge:
                 self._events.clear()
                 self._proposal = self._proposal_contact = self._proposal_lease = None
                 self._navigation_proposal = self._navigation_lease = None
+                self._v2_simlog_seq = 0
+                for history in self._v2_simlog.values():
+                    history.clear()
+                self._last_v2_states = None
+                self._simlog_fingerprint = None
                 self.navigation_error = None
                 self._fingerprint = self._damage = self._threats = None
                 self._mission_state = None
@@ -1001,20 +955,23 @@ class CommanderBridge:
             self._dirty = True
         phase = self._phase(game)
         connected = bool(server.connected)
-        lease = self._transport_lease(server)
-        if self._allowed and not self.allowed:
-            self.allowed = False
-        gate = (phase, self.allowed is True, connected, bool(game.help_open),
+        gate = (phase, bool(game.help_open),
                 bool(game.nations_open), bool(game.quit_confirm), game.save_ui,
                 bool(game.options_open), bool(getattr(game, "commander_open", False)),
                 game.input_mode, id(game.editor), bool(game.splash_active),
                 bool(game.paused), bool(game.in_menu), bool(game.main_menu),
-                bool(game.running), bool(game.game_over), lease, id(server))
+                bool(game.running), bool(game.game_over), id(server))
         if gate != self._gate:
             if self._gate is not None:
                 self._epoch += 1
                 if hasattr(server, "invalidate_v2_commands"):
                     server.invalidate_v2_commands("context_invalidated")
+                self._v2_simlog_seq = (game.simlog[-1]["seq"]
+                                       if game.simlog else self._v2_simlog_seq)
+                for history in self._v2_simlog.values():
+                    history.clear()
+                self._last_v2_states = None
+                self._simlog_fingerprint = None
             self._gate = gate
             self._dirty = True
         self._publish_sonar_audio(game, server, phase)
@@ -1024,7 +981,7 @@ class CommanderBridge:
                     or (game.editor is not None
                         and not game.crew_overlay_allows_simulation())
                     or game.splash_active)
-        self._publish_simlog(server, game, redacted)
+        self._publish_role_simlog(server, game, redacted)
         if redacted:
             self._refs.clear()
             self._esm_refs.clear()
@@ -1040,7 +997,7 @@ class CommanderBridge:
                 self._dirty = True
             self._events.clear()
             self._damage = self._threats = self._mission_state = None
-            rows, bindings = [], {}
+            rows, bindings, direct_fire_refs = [], {}, {}
         else:
             rows, bindings = self._tracks(game)
             direct_fire_refs = self._refresh_direct_fire_refs(game, rows, bindings)
@@ -1048,28 +1005,18 @@ class CommanderBridge:
         if self._proposal is not None and self._proposal["status"] == "pending":
             bound = bindings.get(self._proposal["ref"])
             if (not connected or self.allowed is not True or bound is None
-                    or self._proposal_lease != lease
+                    or not server.authority_current_v2(self._proposal_lease)
                     or bound[2] is not self._proposal_contact):
                 self._proposal_status("expired")
         if (self._navigation_proposal is not None
                 and self._navigation_proposal["status"] == "pending"
-                and (not connected or not self.allowed or self._navigation_lease != lease)):
+                and (not connected or not self.allowed
+                     or not server.authority_current_v2(self._navigation_lease))):
             self._proposal_status("expired", navigation=True)
         if self._commands_v2(game, server, now, phase) and not redacted:
             rows, bindings = self._tracks(game)
             direct_fire_refs = self._refresh_direct_fire_refs(game, rows, bindings)
             target = self._annotations(game, rows, bindings)
-        for envelope in islice(server.drain_commands(limit=4), 4):
-            self._command(game, server, envelope, now, rows, bindings)
-            if not redacted:
-                rows, bindings = self._tracks(game)
-                target = self._annotations(game, rows, bindings)
-        # HTTP threads may expire/re-pair while this frame drains its batch.
-        if self._allowed and not self.allowed:
-            self.allowed = False
-            self._status["commands_allowed"] = False
-            if self._proposal is not None and self._proposal["status"] == "pending":
-                self._proposal_status("expired")
         damage, remaining = [], None
         if not redacted:
             damage = [dict(key=c.key, name=game.tr("compartment." + c.key),
@@ -1110,130 +1057,88 @@ class CommanderBridge:
             self._dirty = True
         if not self._dirty and self._last_publish is not None and now - self._last_publish < .5:
             return
-        ownship = {key: None for key in
-                   ("x", "y", "course", "speed", "target_course", "target_speed")}
-        ownship.update(damage=damage, inventory=dict.fromkeys(
-            ("torpedoes", "vls", "ciws", "chaff_ready")), helo=dict.fromkeys(
-                ("state", "x", "y", "course", "fuel_s", "torpedoes", "buoys")))
-        clock = dict.fromkeys(("sim", "mission", "time_scale", "world"))
-        environment = dict.fromkeys(("sea_state", "is_night"))
-        mission = dict(name="", objective="", remaining_s=None)
-        chart = dict(revision=self._session, size_nm=500, landmasses=[], disclaimer="")
         if not redacted:
             self._build_chart(game)
-            ship, helo = game.ship, game.helo
-            airborne = helo.airborne
-            ownship.update({key: _number(getattr(ship, key)) for key in
-                            ("x", "y", "course", "speed", "target_course", "target_speed")})
-            ownship.update(inventory=dict(
-                torpedoes=game.torpedo_count, vls=game.vls_cells, ciws=game.ciws_ammo,
-                chaff_ready=game.softkill_store.ready > 0), helo=dict(
-                    state=helo.state, x=_number(helo.x) if airborne else None,
-                    y=_number(helo.y) if airborne else None,
-                    course=_number(helo.course) if airborne else None,
-                    fuel_s=helo.fuel_s, torpedoes=helo.torps, buoys=helo.buoys_left))
-            clock = dict(sim=game.sim_t, mission=game.mission_time,
-                         time_scale=game.time_scale, world=game.world.hour)
-            environment = dict(sea_state=_number(game.world.sea_state),
-                               is_night=bool(game.world.is_night()))
-            mission = dict(name=localize(game.mission_name_display(), game.tr),
-                           objective=localize(game.mission_objective_display(), game.tr),
-                           remaining_s=remaining)
-            chart = dict(self._chart, disclaimer=game.tr(self._chart["disclaimer"]))
         self._seq += 1
         self._status["seq"] = self._seq
-        v2_only_fields = {"_opz", "_display_id", "observer_x", "observer_y",
-                          "released_to_opz"}
-        public_rows = [{key: value for key, value in row.items()
-                        if key not in v2_only_fields} for row in rows]
-        state = dict(protocol=1, version=APP_VERSION, session=self._session,
-                     epoch=self._epoch, revision=self._revision, seq=self._seq,
-                      phase=phase, commands_allowed=self._status["commands_allowed"],
-                      language=game.preferences.language,
-                      clock=clock, environment=environment, mission=mission,
-                     ownship=ownship, tracks=public_rows, crew_target=target,
-                     proposal=self.proposal,
-                     events=[dict(e, message=game.tr(e["message"])) for e in self._events],
-                      results=list(self._results), chart_revision=self._session)
-        if self._navigation_proposal is not None:
-            state["navigation_proposal"] = self.navigation_proposal
-        chart_key = (self._session, self._language, redacted)
-        if chart_key == self._published_chart:
-            chart = None
-        # Publication transfers no mutable references back into Game or the bridge.
-        server.publish(deepcopy(state), chart=deepcopy(chart))
-        if hasattr(server, "publish_v2"):
-            if redacted or world_replaced:
-                unassigned = redacted_state(self._status)
-                redacted_v2_chart = redacted_chart(self._status)
-                states = {role: deepcopy(unassigned) for role in (None, *ROLE_NAMES)}
-                charts = {role: deepcopy(redacted_v2_chart) for role in (None, *ROLE_NAMES)}
-            else:
-                current_esm = {}
-                for track in game.eloka_tracks():
-                    previous = self._esm_refs.get(track.track_key)
-                    ref = (previous[1] if previous is not None and previous[0] is track
-                           else secrets.token_urlsafe(18))
-                    current_esm[track.track_key] = (track, ref)
-                self._esm_refs = current_esm
-                current_candidates = {}
-                for track in game.eloka_tracks():
-                    for candidate in game.eloka_candidates(track)[:5]:
-                        key = (track.track_key, candidate.emitter_key)
-                        previous = self._esm_candidate_refs.get(key)
-                        ref = (previous[1] if previous is not None
-                               and previous[0] is track else secrets.token_urlsafe(18))
-                        current_candidates[key] = (track, ref)
-                self._esm_candidate_refs = current_candidates
-                current_assets = {}
-                current_buoy_labels = {}
-                bounded_assets = (
-                    ("torpedo", sorted(game.torpedoes,
-                                       key=lambda item: item.idx)[:64]),
-                    ("asroc", sorted(game.asrocs,
-                                     key=lambda item: item.seq)[:32]),
-                    ("buoy", sorted(game.buoys,
-                                    key=lambda item: item.seq)[:64]),
-                    ("nixie", sorted(game.nixies,
-                                     key=lambda item: item.seq)[:8]),
-                )
-                for namespace, assets in bounded_assets:
-                    for asset in assets:
-                        key = (namespace, id(asset))
-                        previous = self._asset_refs.get(key)
-                        ref = (previous[1] if previous is not None
-                               and previous[0] is asset else secrets.token_urlsafe(18))
-                        current_assets[key] = (asset, ref)
-                        if namespace == "buoy":
-                            previous_label = self._buoy_labels.get(key)
-                            if previous_label is not None and previous_label[0] is asset:
-                                label = previous_label[1]
-                            else:
-                                self._buoy_label_seq += 1
-                                label = f"SB{self._buoy_label_seq:02d}"
-                            current_buoy_labels[key] = (asset, label)
-                self._asset_refs = current_assets
-                self._buoy_labels = current_buoy_labels
-                ref_by_track = {key: binding[2] for key, binding in self._refs.items()}
-                focus_ref = next((binding[2] for binding in self._refs.values()
-                                  if binding[1] is game.selected_contact), None)
-                sonar_refs = {binding[2]: binding[1] for binding in self._refs.values()
-                              if binding[1] is not None}
-                states = {None: redacted_state(self._status)}
-                states.update(build_role_states(
-                    game, self._status, rows, target, focus_ref, ref_by_track,
-                    {key: value[1] for key, value in current_esm.items()},
-                    {key: value[1] for key, value in current_assets.items()},
-                    {key: value[1] for key, value in current_buoy_labels.items()},
-                    {key: value[1] for key, value in current_candidates.items()},
-                    sonar_refs, direct_fire_refs))
-                known_v2_chart = known_chart(self._status, dict(
-                    self._chart, disclaimer=game.tr(self._chart["disclaimer"])))
-                known_v2_chart["geography"] = deepcopy(self._chart_geography)
-                charts = {None: redacted_chart(self._status)}
-                charts.update({role: deepcopy(known_v2_chart) for role in ROLE_NAMES})
-            server.publish_v2(states, charts)
-        self._published_chart = chart_key
+        if redacted or world_replaced:
+            unassigned = redacted_state(self._status)
+            redacted_v2_chart = redacted_chart(self._status)
+            states = {role: deepcopy(unassigned) for role in (None, *ROLE_NAMES)}
+            charts = {role: deepcopy(redacted_v2_chart) for role in (None, *ROLE_NAMES)}
+        else:
+            current_esm = {}
+            for track in game.eloka_tracks():
+                previous = self._esm_refs.get(track.track_key)
+                ref = (previous[1] if previous is not None and previous[0] is track
+                       else secrets.token_urlsafe(18))
+                current_esm[track.track_key] = (track, ref)
+            self._esm_refs = current_esm
+            current_candidates = {}
+            for track in game.eloka_tracks():
+                for candidate in game.eloka_candidates(track)[:5]:
+                    key = (track.track_key, candidate.emitter_key)
+                    previous = self._esm_candidate_refs.get(key)
+                    ref = (previous[1] if previous is not None
+                           and previous[0] is track else secrets.token_urlsafe(18))
+                    current_candidates[key] = (track, ref)
+            self._esm_candidate_refs = current_candidates
+            current_assets = {}
+            current_buoy_labels = {}
+            bounded_assets = (
+                ("torpedo", sorted(game.torpedoes,
+                                   key=lambda item: item.idx)[:64]),
+                ("asroc", sorted(game.asrocs,
+                                 key=lambda item: item.seq)[:32]),
+                ("buoy", sorted(game.buoys,
+                                key=lambda item: item.seq)[:64]),
+                ("nixie", sorted(game.nixies,
+                                 key=lambda item: item.seq)[:8]),
+            )
+            for namespace, assets in bounded_assets:
+                for asset in assets:
+                    key = (namespace, id(asset))
+                    previous = self._asset_refs.get(key)
+                    ref = (previous[1] if previous is not None
+                           and previous[0] is asset else secrets.token_urlsafe(18))
+                    current_assets[key] = (asset, ref)
+                    if namespace == "buoy":
+                        previous_label = self._buoy_labels.get(key)
+                        if previous_label is not None and previous_label[0] is asset:
+                            label = previous_label[1]
+                        else:
+                            self._buoy_label_seq += 1
+                            label = f"SB{self._buoy_label_seq:02d}"
+                        current_buoy_labels[key] = (asset, label)
+            self._asset_refs = current_assets
+            self._buoy_labels = current_buoy_labels
+            ref_by_track = {key: binding[2] for key, binding in self._refs.items()}
+            focus_ref = next((binding[2] for binding in self._refs.values()
+                              if binding[1] is game.selected_contact), None)
+            sonar_refs = {binding[2]: binding[1] for binding in self._refs.values()
+                          if binding[1] is not None}
+            states = {None: redacted_state(self._status)}
+            states.update(build_role_states(
+                game, self._status, rows, target, focus_ref, ref_by_track,
+                {key: value[1] for key, value in current_esm.items()},
+                {key: value[1] for key, value in current_assets.items()},
+                {key: value[1] for key, value in current_buoy_labels.items()},
+                {key: value[1] for key, value in current_candidates.items()},
+                sonar_refs, direct_fire_refs))
+            known_v2_chart = known_chart(self._status, dict(
+                self._chart, disclaimer=game.tr(self._chart["disclaimer"])))
+            known_v2_chart["geography"] = deepcopy(self._chart_geography)
+            charts = {None: redacted_chart(self._status)}
+            charts.update({role: deepcopy(known_v2_chart) for role in ROLE_NAMES})
+        server.publish_v2(states, charts)
+        server.publish_proposals_v2(
+            world_session=self._session, world_epoch=self._epoch,
+            target_authority=self._proposal_lease, target=self.proposal,
+            navigation_authority=self._navigation_lease,
+            navigation=self.navigation_proposal)
+        self._publish_events_v2(server, game)
+        self._last_v2_states = (None if redacted or world_replaced else
+                                {role: deepcopy(states[role]) for role in ROLE_NAMES})
         self._last_publish = now
         self._dirty = False
 
@@ -1280,31 +1185,58 @@ class CommanderBridge:
                 station_generation=generation)
             self._audio_receiver_sequence = sequence
 
-    def _publish_simlog(self, server, game, redacted) -> None:
-        """Expose the bounded session log only while it actually changes.
-
-        Redacted phases publish an empty log; content is localized at publish
-        time so a language switch re-renders the whole history.
-        """
-        rows = []
-        if (not redacted and game.preferences.simlog and game.simlog):
-            for row in game.simlog:
-                entry = dict(seq=row["seq"], t=row["t"], stamp=row["stamp"],
-                             cat=row["cat"], text=localize(row["text"], game.tr))
-                if "data" in row:
-                    entry["data"] = row["data"]
-                rows.append(entry)
-        payload = b"[]"
-        if rows:
-            payload = _json_bytes(rows)
-            while len(payload) > SIMLOG_MAX_BYTES and len(rows) > 1:
+    def _publish_role_simlog(self, server, game, redacted) -> None:
+        """Record only prior detached v2 role projections at local log cadence."""
+        source = list(game.simlog)
+        latest = source[-1]["seq"] if source else self._v2_simlog_seq
+        enabled = bool(game.preferences.simlog) and not redacted
+        if not enabled:
+            for history in self._v2_simlog.values():
+                history.clear()
+            self._v2_simlog_seq = latest
+        elif self._last_v2_states is None:
+            self._v2_simlog_seq = latest
+        elif self._last_v2_states is not None:
+            for row in source:
+                if row["seq"] <= self._v2_simlog_seq:
+                    continue
+                for role in ROLE_NAMES:
+                    self._v2_simlog[role].append(dict(
+                        seq=row["seq"], t=row["t"], stamp=row["stamp"],
+                        state=deepcopy(self._last_v2_states[role])))
+                self._v2_simlog_seq = row["seq"]
+        entries = {role: list(history) for role, history in self._v2_simlog.items()}
+        for role, rows in entries.items():
+            while rows and len(_json_bytes({
+                    "protocol": 2, "session": self._session, "epoch": self._epoch,
+                    "role": role, "entries": rows})) > SIMLOG_MAX_BYTES:
                 del rows[0]
-                payload = _json_bytes(rows)
-        fingerprint = (self._session, bool(redacted), bool(game.preferences.simlog),
-                       len(rows), rows[-1]["seq"] if rows else 0)
+            self._v2_simlog[role] = deque(rows, maxlen=SIMLOG_ENTRIES_MAX)
+        fingerprint = (self._session, self._epoch, enabled,
+                       tuple((role, len(rows), rows[-1]["seq"] if rows else 0)
+                             for role, rows in entries.items()))
         if fingerprint != self._simlog_fingerprint:
-            server.publish_simlog(payload)
+            server.publish_simlog_v2(
+                world_session=self._session, world_epoch=self._epoch,
+                entries_by_role=entries)
             self._simlog_fingerprint = fingerprint
+
+    def _publish_events_v2(self, server, game):
+        public = {role: [] for role in ROLE_NAMES}
+        private = []
+        for stored in self._events:
+            row = {key: stored[key] for key in ("seq", "kind", "severity")}
+            row["message"] = game.tr(stored["message"])
+            authority = stored["_authority"]
+            if authority is not None:
+                private.append((authority, row))
+            else:
+                for role in stored["_roles"]:
+                    public[role].append(dict(row))
+        server.publish_events_v2(
+            world_session=self._session, world_epoch=self._epoch,
+            latest_seq=self._event_seq, events_by_role=public,
+            private_events=private)
 
     def _decide(self, game, accepted):
         self._main_thread()
@@ -1316,7 +1248,8 @@ class CommanderBridge:
             return False
         rows, bindings = self._tracks(game)
         bound = bindings.get(self._proposal["ref"])
-        if (self._proposal_lease != self._grant_lease or bound is None
+        if (not self._server.authority_current_v2(self._proposal_lease)
+                or bound is None
                 or bound[2] is None or bound[2] is not self._proposal_contact):
             self._proposal_status("expired")
             return False
@@ -1342,7 +1275,7 @@ class CommanderBridge:
                 or not self.allowed or self._server is None or not self._server.connected
                 or proposal is None or proposal["status"] != "pending"):
             return False
-        if self._navigation_lease != self._grant_lease:
+        if not self._server.authority_current_v2(self._navigation_lease):
             self._proposal_status("expired", navigation=True)
             return False
         if accepted:

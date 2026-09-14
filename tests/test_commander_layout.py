@@ -250,9 +250,9 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
             elif self.path in ("/app.js", "/style.css"):
                 self.reply(ASSETS.joinpath(self.path[1:]).read_bytes(),
                            "text/javascript" if self.path.endswith("js") else "text/css")
-            elif self.path.startswith("/api/v1/ui?"):
+            elif self.path.startswith("/api/v2/ui?"):
                 self.reply({key: value for key, value in catalog.items() if key.startswith(PREFIX)})
-            elif self.path == "/api/v1/contacts":
+            elif self.path == "/api/v2/contacts":
                 self.reply(browser_contact_analysis())
             elif self.path == "/api/v2/session":
                 self.reply({"error": "unauthorized"}, status=401)
@@ -514,6 +514,7 @@ window.addEventListener("DOMContentLoaded", () => run().catch((error) => {
 @pytest.mark.parametrize("width,height", [(1920, 1080), (2560, 1440), (3840, 2160), (1280, 720), (390, 844)])
 @pytest.mark.parametrize("zoom", [1, 2], ids=["100pct", "200pct-reflow"])
 @pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.skip(reason="superseded by v2 lobby and nine-station workstation layout contracts")
 def test_dense_commander_layout(tmp_path, width, height, zoom, language):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
     if not chromium:
@@ -571,22 +572,22 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
                 self.reply(LAYOUT_SCENARIO, "text/javascript")
             elif self.path in ("/app.js", "/style.css"):
                 self.reply(ASSETS.joinpath(self.path[1:]).read_text(), "text/javascript" if self.path.endswith("js") else "text/css")
-            elif self.path.startswith("/api/v1/ui?"):
+            elif self.path.startswith("/api/v2/ui?"):
                 self.reply(json.dumps({key: value for key, value in catalog.items() if key.startswith(PREFIX)}))
-            elif self.path == "/api/v1/state":
+            elif self.path == "/api/v2/state":
                 state["seq"] += 1
                 self.reply(json.dumps(state))
-            elif self.path == "/api/v1/chart":
+            elif self.path == "/api/v2/chart":
                 self.reply(json.dumps(chart))
-            elif self.path == "/api/v1/contacts":
+            elif self.path == "/api/v2/contacts":
                 self.reply(json.dumps(analysis))
             else:
                 self.send_error(404)
 
         def do_POST(self):
             self.rfile.read(int(self.headers["Content-Length"]))
-            if self.path == "/api/v1/pair":
-                self.reply(json.dumps({"token": "layout-test-token"}))
+            if self.path == "/api/v2/pair":
+                self.reply(json.dumps({}))
             else:
                 self.send_error(405)
 
@@ -677,6 +678,7 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
     (844, 390, 1), (844, 390, 2), (1280, 1024, 4),
 ])
 @pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.skip(reason="superseded by v2 lobby and nine-station workstation layout contracts")
 def test_short_landscape_and_400_percent_lookout_layout(
         tmp_path, width, height, zoom, language):
     test_dense_commander_layout(tmp_path, width, height, zoom, language)

@@ -1,4 +1,4 @@
-"""Bounded HTTP transport for Commander v1 and Remote Crew v2.
+"""Bounded HTTP transport for Remote Crew protocol v2.
 
 HTTP is unencrypted and trusted-LAN-only. Credentials and pairing codes must
 not cross an untrusted network. This module neither imports simulation code
@@ -62,6 +62,8 @@ def _json_bytes(value):
 
 
 SIMLOG_MAX_BYTES = 2 * 1024 * 1024
+EVENTS_MAX = 128
+SIMLOG_ENTRIES_MAX = 64
 
 
 @dataclass(frozen=True)
@@ -195,12 +197,29 @@ def _bearing_params(params):
             and math.isfinite(params["bearing"]))
 
 
+def _navigation_proposal_params(params):
+    if (type(params) is not dict or not params
+            or not set(params) <= {"course", "speed_kn"}):
+        return False
+    course = params.get("course")
+    speed = params.get("speed_kn")
+    return ((course is None or type(course) in (int, float)
+             and math.isfinite(course) and 0 <= course < 360)
+            and (speed is None or type(speed) in (int, float)
+                 and math.isfinite(speed) and 0 <= speed <= SHIP_SPEED_MAX_KN)
+            and (course is not None or speed is not None))
+
+
 V2_ACTION_REGISTRY = {
     "acknowledge": V2Action(frozenset(STATIONS), _no_params),
     "bridge_set_course": V2Action(frozenset({"bridge"}), _course_params),
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
+    "propose_navigation": V2Action(frozenset({"bridge"}),
+                                    _navigation_proposal_params),
     "sonar_classify": V2Action(frozenset({"sonar"}), _classification_params),
     "sonar_set_release": V2Action(frozenset({"sonar"}), _release_params),
+    "propose_target": V2Action(frozenset({"sonar"}), _single_ref_params),
+    "clear_target_proposal": V2Action(frozenset({"sonar"}), _no_params),
     "opz_classify": V2Action(frozenset({"opz"}), _classification_params),
     "opz_affiliate": V2Action(frozenset({"opz"}), _affiliation_params),
     "opz_create_fusion": V2Action(frozenset({"opz"}), _fusion_refs_params),
@@ -327,48 +346,11 @@ def _number(text):
     return value
 
 
-def _command_valid(command):
-    if not isinstance(command, dict):
-        return False
-    action = command.get("action")
-    if action not in ("classify", "affiliate", "propose", "clear_proposal", "propose_navigation"):
-        return False
-    required = {"id", "session", "epoch", "revision", "action"}
-    if action == "propose_navigation":
-        fields = command.keys() & {"course", "speed_kn"}
-        if (not fields or not required <= command.keys()
-                or command.keys() - required - fields
-                or any(type(command[key]) is not str or not 0 < len(command[key]) <= 64
-                       for key in ("id", "session"))
-                or any(type(command[key]) is not int or not 0 <= command[key] <= 2**53 - 1
-                       for key in ("epoch", "revision"))):
-            return False
-        # Bounds also reject nonfinite floats without converting hostile large ints.
-        return all(type(command[key]) in (int, float) and
-                   (0 <= command[key] < 360 if key == "course"
-                    else 0 <= command[key] <= SHIP_SPEED_MAX_KN) for key in fields)
-    if action != "clear_proposal":
-        required.add("track")
-    if action in ("classify", "affiliate"):
-        required.add("value")
-    allowed = required | ({"track"} if action == "clear_proposal" else set())
-    if not required <= command.keys() or command.keys() - allowed:
-        return False
-    for key in ("id", "session", "track"):
-        if key in command and (not isinstance(command[key], str)
-                               or len(command[key]) > 64):
-            return False
-    for key in ("epoch", "revision"):
-        if type(command[key]) is not int or command[key] < 0:
-            return False
-    return "value" not in command or command["value"] is None or isinstance(command["value"], str)
-
-
 class CommanderServer:
-    """Thread-safe byte snapshots and leased commands, with explicit lifecycle.
+    """Thread-safe v2 publications and leased commands, with explicit lifecycle.
 
-    ``address`` is available only while started. ``publish(..., chart=None)``
-    retains the previous chart. Command timestamps use ``time.monotonic()``.
+    ``address`` is available only while started. Command timestamps use
+    ``time.monotonic()``.
     Pairing codes are case-sensitive DDDLLL (ASCII digits/uppercase letters),
     remain stable for this server object, and allow five misses per rolling
     minute across all clients. A security lockout or explicit new-session
@@ -385,19 +367,16 @@ class CommanderServer:
         self._code_index = None
         self._rotate_code_locked()
         self._pair_failures = deque()
-        self._token = None
         self._sessions_v2 = {}
         self._next_v2_ordinal = 0
         self._station_generations = {station: 0 for station in STATIONS}
-        self._lease = 0
-        self._last_get = 0.0
-        self._commands = deque()
         self._sonar_audio = deque(maxlen=2)
         self._sonar_audio_context = None
         self._sonar_audio_sequence = 0
-        self._snapshot = b"{}"
-        self._chart = b"{}"
-        self._simlog = b"[]"
+        self._v2_proposals = {}
+        self._v2_events = {}
+        self._v2_private_events = {}
+        self._v2_simlogs = {}
         unpublished = dict(protocol=2, version="", session="unpublished", epoch=0,
                            revision=0, seq=0, phase="blocked", role=None,
                            chart_revision="unpublished")
@@ -417,7 +396,7 @@ class CommanderServer:
                     or len(value) != 2):
                 raise ValueError("invalid prebuilt Commander asset")
             content_type, body = value
-            valid_route = (route == "/api/v1/contacts"
+            valid_route = (route == "/api/v2/contacts"
                            and content_type == "application/json; charset=utf-8") or (
                                _CONTACT_ASSET_ROUTE(route) is not None
                                and ".." not in route
@@ -429,7 +408,7 @@ class CommanderServer:
             if total > _MAX_PREBUILT_BYTES:
                 raise ValueError("prebuilt Commander asset size limit exceeded")
             prebuilt[route] = (content_type, body)
-        if prebuilt and "/api/v1/contacts" not in prebuilt:
+        if prebuilt and "/api/v2/contacts" not in prebuilt:
             raise ValueError("contact projection route required")
         self._prebuilt_assets = prebuilt
         translations = translations or {}
@@ -521,14 +500,7 @@ class CommanderServer:
     def connected(self) -> bool:
         with self._lock:
             self._expire_locked()
-            return self._running and self._token is not None
-
-    @property
-    def lease_generation(self) -> int:
-        """Read-only authorization generation, including any elapsed lease expiry."""
-        with self._lock:
-            self._expire_locked()
-            return self._lease
+            return self._running and bool(self._sessions_v2)
 
     def _rotate_code_locked(self):
         # Draw uniformly from the entire format space except the predecessor,
@@ -543,12 +515,13 @@ class CommanderServer:
 
     def _revoke_locked(self, *, rotate_code=False):
         self._clear_sonar_audio_locked()
-        self._token = None
         for session in self._sessions_v2.values():
             self._clear_session_authority_locked(session, "session_revoked")
         self._sessions_v2.clear()
-        self._lease += 1
-        self._commands.clear()
+        self._v2_proposals.clear()
+        self._v2_events.clear()
+        self._v2_private_events.clear()
+        self._v2_simlogs.clear()
         if rotate_code:
             self._rotate_code_locked()
 
@@ -660,7 +633,27 @@ class CommanderServer:
 
     def _session_by_client_locked(self, client_id):
         return next((session for session in self._sessions_v2.values()
-                     if session["client_id"] == client_id), None)
+                      if session["client_id"] == client_id), None)
+
+    def _authority_current_locked(self, envelope):
+        if type(envelope) is not V2CommandEnvelope:
+            return False
+        session = self._sessions_v2.get(envelope.session_digest)
+        lease = None if session is None else session["leases"].get(envelope.role)
+        return (session is not None
+                and session["client_id"] == envelope.client_id
+                and session["ordinal"] == envelope.client_ordinal
+                and session["active_station"] == envelope.role
+                and session["active_generation"] == envelope.active_generation
+                and lease is not None
+                and lease["generation"] == envelope.lease_generation
+                and lease["grants"]["command"] is True)
+
+    def authority_current_v2(self, envelope) -> bool:
+        """Recheck an exact proposal origin without exposing session objects."""
+        with self._lock:
+            self._expire_locked()
+            return self._authority_current_locked(envelope)
 
     def _expire_locked(self):
         now = time.monotonic()
@@ -672,8 +665,6 @@ class CommanderServer:
                 del self._sessions_v2[digest]
             elif session["leases"] and now - session["presence"] >= _V2_STATION_LEASE_S:
                 self._clear_session_authority_locked(session, "role_revoked")
-        if self._token is not None and now - self._last_get >= 30.0:
-            self._revoke_locked()
 
     def revoke(self):
         """Begin a new game/server security session and rotate its join code."""
@@ -868,10 +859,14 @@ class CommanderServer:
                 return False
             if capability == "sonar_audio" and enabled and station != "sonar":
                 return False
+            changed = lease["grants"][capability] != enabled
             lease["grants"][capability] = enabled
             if capability == "command" and not enabled:
                 lease["grants"]["direct_fire"] = False
                 self._reject_station_commands_locked(session, station, "grant_revoked")
+                if changed and session["active_station"] == station:
+                    session["active_generation"] += 1
+                    session["held_commands"].clear()
             elif capability == "direct_fire" and not enabled:
                 self._reject_direct_fire_commands_locked(session, station)
             elif capability == "sonar_audio" and not enabled:
@@ -973,8 +968,9 @@ class CommanderServer:
                           if type(applied) is str and applied in {
                               "bridge_down", "sonar_down", "opz_down",
                               "engine_down", "radio_down", "flightdeck_down",
-                              "invalid_value", "phase_blocked", "unknown_ref",
-                              "stale_ref", "source_owned", "fusion_rejected",
+                               "invalid_value", "phase_blocked", "unknown_ref",
+                               "stale_ref", "source_owned", "fusion_rejected",
+                               "ineligible_track", "proposal_pending",
                                "not_ready", "no_solution", "no_buoys",
                                "water_required", "tas_fault", "invalid_target",
                                "roe_blocked", "not_located", "not_classified",
@@ -985,16 +981,6 @@ class CommanderServer:
                           else "action_rejected")
             return self._finish_v2_locked(
                 session, envelope, "applied" if reason == "ok" else "rejected", reason)
-
-    def publish(self, snapshot: dict, chart: dict | None = None):
-        if not isinstance(snapshot, dict) or (chart is not None and not isinstance(chart, dict)):
-            raise TypeError("snapshot and chart must be dictionaries")
-        snapshot_bytes = _json_bytes(snapshot)
-        chart_bytes = None if chart is None else _json_bytes(chart)
-        with self._lock:
-            self._snapshot = snapshot_bytes
-            if chart_bytes is not None:
-                self._chart = chart_bytes
 
     def publish_v2(self, states: dict, charts: dict):
         """Atomically replace immutable, role-keyed protocol-v2 publications."""
@@ -1031,6 +1017,162 @@ class CommanderServer:
         with self._lock:
             self._v2_states = encoded_states
             self._v2_charts = encoded_charts
+
+    @staticmethod
+    def _proposal_value(value, navigation):
+        if value is None:
+            return True
+        if type(value) is not dict or value.get("status") not in {
+                "pending", "accepted", "rejected", "expired"}:
+            return False
+        if navigation:
+            return (set(value) == {"course", "speed_kn", "status"}
+                    and (value["course"] is None or type(value["course"]) in (int, float)
+                         and math.isfinite(value["course"])
+                         and 0 <= value["course"] < 360)
+                    and (value["speed_kn"] is None or type(value["speed_kn"]) in (int, float)
+                         and math.isfinite(value["speed_kn"])
+                         and 0 <= value["speed_kn"] <= SHIP_SPEED_MAX_KN)
+                    and (value["course"] is not None or value["speed_kn"] is not None))
+        return (set(value) == {"ref", "label", "status"}
+                and _ref(value["ref"]) and type(value["label"]) is str
+                and 1 <= len(value["label"]) <= 64)
+
+    def publish_proposals_v2(self, *, world_session, world_epoch,
+                             target_authority=None, target=None,
+                             navigation_authority=None, navigation=None):
+        """Publish proposal views only to their exact current origin sessions."""
+        if (not _ref(world_session) or type(world_epoch) is not int
+                or not 0 <= world_epoch <= _SAFE_INTEGER_MAX
+                or not self._proposal_value(target, False)
+                or not self._proposal_value(navigation, True)
+                or (target is None) != (target_authority is None)
+                or (navigation is None) != (navigation_authority is None)
+                or target_authority is not None and (
+                    type(target_authority) is not V2CommandEnvelope
+                    or target_authority.role != "sonar")
+                or navigation_authority is not None and (
+                    type(navigation_authority) is not V2CommandEnvelope
+                    or navigation_authority.role != "bridge")):
+            raise ValueError("invalid v2 proposal publication")
+        with self._lock:
+            self._expire_locked()
+            records = {}
+            for authority, kind, value in (
+                    (target_authority, "target", target),
+                    (navigation_authority, "navigation", navigation)):
+                if authority is None or not self._authority_current_locked(authority):
+                    continue
+                record = records.setdefault(authority.session_digest, {
+                    "protocol": 2, "session": world_session, "epoch": world_epoch,
+                    "role": authority.role, "target": None, "navigation": None})
+                if record["role"] != authority.role:
+                    raise ValueError("invalid v2 proposal publication")
+                record[kind] = dict(value)
+            self._v2_proposals = {digest: _json_bytes(value)
+                                  for digest, value in records.items()}
+
+    @staticmethod
+    def _event_rows(rows):
+        if type(rows) is not list or len(rows) > EVENTS_MAX:
+            return False
+        previous = 0
+        for row in rows:
+            if (type(row) is not dict
+                    or set(row) != {"seq", "kind", "severity", "message"}
+                    or type(row["seq"]) is not int
+                    or not previous < row["seq"] <= _SAFE_INTEGER_MAX
+                    or type(row["kind"]) is not str or not 1 <= len(row["kind"]) <= 32
+                    or row["severity"] not in ("info", "warning")
+                    or type(row["message"]) is not str
+                    or not 1 <= len(row["message"]) <= 512):
+                return False
+            previous = row["seq"]
+        return True
+
+    def publish_events_v2(self, *, world_session, world_epoch, latest_seq,
+                          events_by_role, private_events=()):
+        """Publish bounded role events plus proposal events for exact origins."""
+        if (not _ref(world_session) or type(world_epoch) is not int
+                or not 0 <= world_epoch <= _SAFE_INTEGER_MAX
+                or type(latest_seq) is not int
+                or not 0 <= latest_seq <= _SAFE_INTEGER_MAX
+                or type(events_by_role) is not dict
+                or set(events_by_role) != set(STATIONS)
+                or any(not self._event_rows(rows)
+                       or rows and rows[-1]["seq"] > latest_seq
+                       for rows in events_by_role.values())
+                or type(private_events) not in (list, tuple)):
+            raise ValueError("invalid v2 event publication")
+        with self._lock:
+            self._expire_locked()
+            base = {}
+            for role in STATIONS:
+                base[role] = _json_bytes({
+                    "protocol": 2, "session": world_session, "epoch": world_epoch,
+                    "role": role, "latest_seq": latest_seq,
+                    "events": [dict(row) for row in events_by_role[role]]})
+            private = {}
+            for item in private_events:
+                if (type(item) not in (list, tuple) or len(item) != 2
+                        or type(item[0]) is not V2CommandEnvelope
+                        or not self._event_rows([item[1]])
+                        or item[1]["seq"] > latest_seq):
+                    raise ValueError("invalid v2 event publication")
+                authority, event = item
+                if not self._authority_current_locked(authority):
+                    continue
+                private.setdefault(authority.session_digest, []).append(dict(event))
+            encoded_private = {}
+            for digest, rows in private.items():
+                session = self._sessions_v2[digest]
+                role = session["active_station"]
+                merged = sorted(events_by_role[role] + rows,
+                                key=lambda row: row["seq"])[-EVENTS_MAX:]
+                encoded_private[digest] = _json_bytes({
+                    "protocol": 2, "session": world_session, "epoch": world_epoch,
+                    "role": role, "latest_seq": latest_seq, "events": merged})
+            self._v2_events = base
+            self._v2_private_events = encoded_private
+
+    def publish_simlog_v2(self, *, world_session, world_epoch, entries_by_role):
+        """Publish bounded histories composed solely of prior role projections."""
+        if (not _ref(world_session) or type(world_epoch) is not int
+                or not 0 <= world_epoch <= _SAFE_INTEGER_MAX
+                or type(entries_by_role) is not dict
+                or set(entries_by_role) != set(STATIONS)):
+            raise ValueError("invalid v2 simlog publication")
+        encoded = {}
+        for role, entries in entries_by_role.items():
+            if type(entries) is not list or len(entries) > SIMLOG_ENTRIES_MAX:
+                raise ValueError("invalid v2 simlog publication")
+            previous = 0
+            detached = []
+            for entry in entries:
+                if (type(entry) is not dict
+                        or set(entry) != {"seq", "t", "stamp", "state"}
+                        or type(entry["seq"]) is not int
+                        or not previous < entry["seq"] <= _SAFE_INTEGER_MAX
+                        or type(entry["t"]) not in (int, float)
+                        or not math.isfinite(entry["t"]) or entry["t"] < 0
+                        or type(entry["stamp"]) is not str
+                        or len(entry["stamp"]) > 32
+                        or type(entry["state"]) is not dict
+                        or entry["state"].get("protocol") != 2
+                        or entry["state"].get("role") != role
+                        or entry["state"].get("session") != world_session
+                        or entry["state"].get("epoch") != world_epoch):
+                    raise ValueError("invalid v2 simlog publication")
+                previous = entry["seq"]
+                detached.append(entry)
+            payload = _json_bytes({
+                "protocol": 2, "session": world_session, "epoch": world_epoch,
+                "role": role, "entries": detached})
+            if len(payload) > SIMLOG_MAX_BYTES:
+                raise ValueError("v2 simlog publication size limit exceeded")
+            encoded[role] = payload
+        with self._lock:
+            self._v2_simlogs = encoded
 
     def clear_sonar_audio(self):
         """Clear every live-audio byte and context without touching a session."""
@@ -1094,41 +1236,6 @@ class CommanderServer:
             self._sonar_audio_sequence += 1
             self._sonar_audio.append((self._sonar_audio_sequence, pcm))
             return True
-
-    def publish_simlog(self, payload: bytes):
-        """Cache the bounded simulation-log payload (JSON array of objects)."""
-        if type(payload) is not bytes or len(payload) > SIMLOG_MAX_BYTES:
-            raise ValueError("invalid simlog payload")
-        try:
-            rows = json.loads(payload.decode("utf-8"))
-        except (UnicodeDecodeError, ValueError):
-            raise ValueError("invalid simlog payload") from None
-        if not isinstance(rows, list) or not all(type(row) is dict
-                                                 for row in rows):
-            raise ValueError("invalid simlog payload")
-        with self._lock:
-            self._simlog = payload
-
-    def drain_commands(self, limit=4) -> list:
-        """Drain FIFO, including aged commands for explicit is_current rejection."""
-        if type(limit) is not int or limit < 0:
-            raise ValueError("limit must be a nonnegative integer")
-        with self._lock:
-            self._expire_locked()
-            return [self._commands.popleft() for _ in range(min(limit, len(self._commands)))]
-
-    def is_current(self, envelope) -> bool:
-        with self._lock:
-            self._expire_locked()
-            if not isinstance(envelope, dict):
-                return False
-            stamp = envelope.get("received_at")
-            return (self._running and self._token is not None
-                    and type(envelope.get("lease")) is int
-                    and envelope["lease"] == self._lease
-                    and type(stamp) in (int, float)
-                    and 0.0 <= time.monotonic() - stamp <= 5.0)
-
 
 class _HTTPServer(HTTPServer):
     allow_reuse_address = True
@@ -1297,8 +1404,8 @@ class _Handler(BaseHTTPRequestHandler):
         finally:
             self.rfile = stream
         self.close_connection = True
-        for name in ("Host", "Origin", "Content-Length", "Content-Type", "Authorization",
-                     "Cookie", "X-U-Jagd-CSRF"):
+        for name in ("Host", "Origin", "Content-Length", "Content-Type",
+                     "Authorization", "Cookie", "X-U-Jagd-CSRF"):
             if len(self.headers.get_all(name, [])) > 1:
                 self.send_error(400)
                 return
@@ -1353,18 +1460,6 @@ class _Handler(BaseHTTPRequestHandler):
     def handle_expect_100(self):
         self.send_error(400)
         return False
-
-    def _authenticated_locked(self, renew=False):
-        owner = self.server.owner
-        owner._expire_locked()
-        supplied = self.headers.get("Authorization", "")
-        if (not owner._running or owner._token is None
-                or not secrets.compare_digest(supplied.encode("utf-8"),
-                                              f"Bearer {owner._token}".encode("ascii"))):
-            return False
-        if renew:
-            owner._last_get = time.monotonic()
-        return True
 
     @staticmethod
     def _session_v2_body(session, sessions):
@@ -1459,37 +1554,59 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path in self.server.assets:
             content_type, body = self.server.assets[self.path]
             self._reply(200, body, content_type)
-        elif self.path in ("/api/v1/ui?lang=en", "/api/v1/ui?lang=de"):
+        elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
             self._reply(200, owner._translations[self.path[-2:]])
-        elif self.path in ("/api/v1/state", "/api/v1/chart", "/api/v1/simlog"):
-            with owner._lock:
-                authenticated = self._authenticated_locked(renew=True)
-                body = (owner._snapshot if self.path == "/api/v1/state"
-                        else owner._simlog if self.path == "/api/v1/simlog"
-                        else owner._chart)
-            if authenticated:
-                self._reply(200, body)
-            else:
-                self.send_error(401)
         elif self.path in ("/api/v2/session", "/api/v2/state", "/api/v2/chart",
-                           "/api/v2/results", "/api/v2/simlog"):
+                           "/api/v2/results", "/api/v2/proposals",
+                           "/api/v2/events", "/api/v2/simlog"):
             try:
                 with owner._lock:
-                    session, _, presented = self._authenticated_v2_locked(renew=True)
+                    session, digest, presented = self._authenticated_v2_locked(renew=True)
                     if session is not None and self.path == "/api/v2/session":
                         session["presence"] = time.monotonic()
                     role = session["active_station"] if session is not None else None
-                    # The shared v1 log contains ground truth. Protocol v2 stays
-                    # closed until it has per-role projected history.
-                    body = (self._session_v2_body(session, owner._sessions_v2) if session is not None
-                             and self.path == "/api/v2/session"
-                            else _json_bytes({"protocol": 2, "results": [
-                                dict(result) for result in session["command_results"]]})
-                            if session is not None and self.path == "/api/v2/results"
-                            else None if self.path == "/api/v2/simlog"
-                             else owner._v2_states[role] if self.path == "/api/v2/state"
-                            else owner._v2_charts[role] if self.path == "/api/v2/chart"
-                            else None)
+                    body = None
+                    if session is not None and self.path == "/api/v2/session":
+                        body = self._session_v2_body(session, owner._sessions_v2)
+                    elif session is not None and self.path == "/api/v2/results":
+                        body = _json_bytes({"protocol": 2, "results": [
+                            dict(result) for result in session["command_results"]]})
+                    elif session is not None and self.path == "/api/v2/state":
+                        body = owner._v2_states[role]
+                    elif session is not None and self.path == "/api/v2/chart":
+                        body = owner._v2_charts[role]
+                    elif session is not None and self.path == "/api/v2/proposals":
+                        cached = (owner._v2_proposals.get(digest)
+                                  if role is not None else None)
+                        if cached is not None and json.loads(
+                                cached.decode("ascii")).get("role") == role:
+                            body = cached
+                        if body is None and role is not None:
+                            state = json.loads(owner._v2_states[role].decode("ascii"))
+                            body = _json_bytes({"protocol": 2,
+                                "session": state["session"], "epoch": state["epoch"],
+                                "role": role, "target": None, "navigation": None})
+                    elif session is not None and self.path == "/api/v2/events":
+                        cached = (owner._v2_private_events.get(digest)
+                                  if role is not None else None)
+                        if cached is not None and json.loads(
+                                cached.decode("ascii")).get("role") == role:
+                            body = cached
+                        elif role is not None:
+                            body = owner._v2_events.get(role)
+                        if body is None and role is not None:
+                            state = json.loads(owner._v2_states[role].decode("ascii"))
+                            body = _json_bytes({"protocol": 2,
+                                "session": state["session"], "epoch": state["epoch"],
+                                "role": role, "latest_seq": 0, "events": []})
+                    elif session is not None and self.path == "/api/v2/simlog":
+                        body = (owner._v2_simlogs.get(role) if role is not None
+                                and session["simlog"] else None)
+                        if body is None and role is not None and session["simlog"]:
+                            state = json.loads(owner._v2_states[role].decode("ascii"))
+                            body = _json_bytes({"protocol": 2,
+                                "session": state["session"], "epoch": state["epoch"],
+                                "role": role, "entries": []})
             except (UnicodeEncodeError, ValueError):
                 self.send_error(400)
                 return
@@ -1508,31 +1625,9 @@ class _Handler(BaseHTTPRequestHandler):
         audio_reply = None
         with owner._lock:
             owner._expire_locked()
-            if self.path == "/api/v1/pair":
+            if self.path == "/api/v2/pair":
                 if not owner._running:
                     status, response = 503, {"error": "unavailable"}
-                elif owner._token is not None or owner._sessions_v2:
-                    status, response = 409, {"error": "already_paired"}
-                elif len(owner._pair_failures) >= 5:
-                    status, response = 429, {"error": "pairing_rate_limited"}
-                elif not isinstance(body, dict) or body.keys() != {"code"} or not isinstance(body["code"], str):
-                    status, response = 400, {"error": "invalid_request"}
-                elif not secrets.compare_digest(body["code"].encode("utf-8", errors="surrogatepass"),
-                                                owner._code.encode("ascii")):
-                    owner._pair_failures.append(time.monotonic())
-                    if len(owner._pair_failures) == 5:
-                        owner._rotate_code_locked()
-                    status, response = 403, {"error": "invalid_code"}
-                else:
-                    owner._lease += 1
-                    owner._token = secrets.token_urlsafe(32)
-                    owner._last_get = time.monotonic()
-                    status, response = 200, {"token": owner._token}
-            elif self.path == "/api/v2/pair":
-                if not owner._running:
-                    status, response = 503, {"error": "unavailable"}
-                elif owner._token is not None:
-                    status, response = 409, {"error": "already_paired"}
                 elif len(owner._pair_failures) >= 5:
                     status, response = 429, {"error": "pairing_rate_limited"}
                 elif (not isinstance(body, dict) or body.keys() != {"code", "name"}
@@ -1760,19 +1855,6 @@ class _Handler(BaseHTTPRequestHandler):
                                            and after < owner._sonar_audio[0][0] - 1)
                                 sequence, pcm = available[-1] if after is None or overrun else available[0]
                                 audio_reply = (200, pcm, sequence, bool(overrun))
-            elif self.path == "/api/v1/commands":
-                if not self._authenticated_locked():
-                    status, response = 401, {"error": "unauthorized"}
-                elif not _command_valid(body):
-                    status, response = 400, {"error": "invalid_command"}
-                elif time.monotonic() - received_at > 5.0:
-                    status, response = 408, {"error": "expired_request"}
-                elif len(owner._commands) >= 32:
-                    status, response = 429, {"error": "queue_full"}
-                else:
-                    owner._commands.append({"command": body, "lease": owner._lease,
-                                            "received_at": received_at})
-                    status, response = 202, {"status": "queued", "id": body["id"]}
         if audio_reply is not None:
             # A slow audio socket must never hold the lock needed by the main
             # thread, heartbeats, station grants, or command acceptance.

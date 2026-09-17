@@ -377,10 +377,16 @@ async function run() {
           const broadband = document.getElementById("sonar-broadband");
           const bounds = broadband.getBoundingClientRect();
           const scale = bounds.width / broadband.clientWidth;
-          broadband.dispatchEvent(new MouseEvent("click", {
-            bubbles: true, clientX: bounds.left + (46 + (broadband.clientWidth - 64) * .25) * scale,
-            clientY: bounds.top + bounds.height / 2,
+          const tapX = bounds.left + (46 + (broadband.clientWidth - 64) * .25) * scale;
+          const tapY = bounds.top + bounds.height / 2;
+          // Pointer Events, not a synthetic click - matches the real
+          // pointerdown/pointerup tap-vs-drag handling the control uses.
+          const capture = broadband.setPointerCapture, release = broadband.releasePointerCapture;
+          broadband.setPointerCapture = () => {}; broadband.releasePointerCapture = () => {};
+          for (const type of ["pointerdown", "pointerup"]) broadband.dispatchEvent(new PointerEvent(type, {
+            bubbles: true, pointerId: 51, isPrimary: true, button: 0, clientX: tapX, clientY: tapY,
           }));
+          broadband.setPointerCapture = capture; broadband.releasePointerCapture = release;
         }
         const tabs = [...document.querySelectorAll("[data-sonar-visual]")];
         for (const next of tabs.filter((button) => !sonarPages.has(button.dataset.sonarVisual))) {
@@ -602,7 +608,8 @@ async function fire(id, expectedCount) {
   button.click();
   assert(commands.length === expectedCount, `${id} first activation sent a command`);
   assert(button.classList.contains("armed"), `${id} did not enter confirmation state`);
-  button.click();
+  assert($test("fire-confirm-dialog").open, `${id} did not open the confirmation dialog`);
+  $test("fire-confirm-confirm").click();
   await until(() => commands.length === expectedCount + 1, `${id} did not send after confirmation`);
 }
 async function terminal() {

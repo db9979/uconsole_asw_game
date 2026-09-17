@@ -15,6 +15,7 @@ from src.sensors.platform import (
     PlatformSensorSuite,
     machine_acoustics,
     motion_limits,
+    side_datalink_group,
     snapshot_observation,
 )
 from src.weapons.asw import WeaponBattery
@@ -57,6 +58,11 @@ class SurfaceShip:
             cruise_speed=self.profile.speed_kn[1],
             maximum_speed=self.profile.speed_kn[1], turn_rate=1.0,
             acceleration=0.03)
+        # W2: hydrodynamische Fahrtantwort (Exponential-Verzug, siehe Ship) -
+        # Zeitkonstante aus der katalogspezifischen Beschleunigung abgeleitet,
+        # damit unterschiedliche Schiffstypen ihre relative Trägheit behalten.
+        self.speed_tau_s = max(5.0, self.motion.cruise_speed_kn
+                               / max(0.001, self.motion.acceleration_kn_s) / 3.0)
         systems = runtime_catalog.profile_systems.get(self.signature_key)
         self.legacy_observation_model = bool(
             systems is not None and systems.machine_key is not None
@@ -65,7 +71,7 @@ class SurfaceShip:
         self.sensor_suite = PlatformSensorSuite(
             runtime_catalog, self.signature_key, self.sensor_seed,
             side=self.side, doctrine=self.doctrine,
-            datalink_group="blue" if self.side == "friendly" else None)
+            datalink_group=side_datalink_group(self.side))
         self.x = x_nm
         self.y = y_nm
         self.depth = 5.0
@@ -91,10 +97,18 @@ class SurfaceShip:
             runtime_catalog, self.signature_key, "asroc")
         self.pending_asroc: list[dict] = []
         self.asw_last_seen = -1.0
+        # W2: Torpedo-Alarm -> harte Wende weg von der Bedrohung
+        self._torpedo_evade_left = 0.0
+        self._torpedo_threat_bearing = 0.0
 
     @property
     def hostile(self) -> bool:
         return self.side == "hostile"
+
+    @property
+    def speed_cap_kn(self) -> float:
+        """Propulsion damage caps top speed, mirroring Sub's degradation."""
+        return self.motion.maximum_speed_kn * (1.0 - 0.25 * self.damage / 100.0)
 
     @property
     def radar_emitting(self) -> bool:
@@ -113,6 +127,13 @@ class SurfaceShip:
         if self.damage >= 100.0:
             self.sunk = True
 
+    def alert_torpedo(self, bearing_deg: float) -> None:
+        """W2: Torpedostart gehört -> Wende weg von der Bedrohung, Flankfahrt."""
+        if self.sunk:
+            return
+        self._torpedo_evade_left = config.WARSHIP_TORPEDO_EVADE_S
+        self._torpedo_threat_bearing = bearing_deg % 360.0
+
     # --- Bewegung ---
 
     def update(self, dt: float, observation, world, asw_observation=None) -> None:
@@ -130,7 +151,7 @@ class SurfaceShip:
             self.target_course = (self.course
                                   + self.rng.uniform(-30.0, 30.0)) % 360.0
             self.target_speed = self.rng.uniform(
-                self.profile.speed_kn[0], self.motion.maximum_speed_kn)
+                self.profile.speed_kn[0], self.speed_cap_kn)
         self._steer(dt, min(.5, self.motion.turn_rate_deg_s), world)
         self._move(dt, world)
 
@@ -162,6 +183,15 @@ class SurfaceShip:
                 self.sensor_suite.last_consumed_s, observation.last_seen)
         if self.sensor_contact_age >= config.RADAR_TRACK_STALE_S:
             self.sensor_contact = None
+        if self._torpedo_evade_left > 0.0:
+            self._torpedo_evade_left = max(0.0, self._torpedo_evade_left - dt)
+            self.target_course = (self._torpedo_threat_bearing + 180.0) % 360.0
+            self.target_speed = self.speed_cap_kn
+            self._steer(dt, self.motion.turn_rate_deg_s, world)
+            self._move(dt, world)
+            self._maybe_asm(dt)
+            self._maybe_asroc(asw_observation)
+            return
         dist = (math.hypot(self.sensor_contact[0] - self.x, self.sensor_contact[1] - self.y)
                 if self.sensor_contact is not None else float("inf"))
         bearing = (math.degrees(math.atan2(self.sensor_contact[0] - self.x,
@@ -169,10 +199,10 @@ class SurfaceShip:
                    if self.sensor_contact is not None else self.course)
         if dist < 18.0:
             self.target_course = (bearing + 180.0) % 360.0
-            self.target_speed = self.motion.maximum_speed_kn
+            self.target_speed = self.speed_cap_kn
         elif dist <= config.WARSHIP_ASM_RANGE_NM:
             self.target_course = (bearing + self.orbit_direction * 90.0) % 360.0
-            self.target_speed = min(18.0, self.motion.maximum_speed_kn)
+            self.target_speed = min(18.0, self.speed_cap_kn)
         elif self.anchor is not None:
             ax, ay = self.anchor
             radius = min(20.0, max(8.0, self.profile.loiter_nm * .75))
@@ -185,7 +215,7 @@ class SurfaceShip:
             wx, wy = self.waypoint
             self.target_course = math.degrees(
                 math.atan2(wx - self.x, -(wy - self.y))) % 360.0
-            self.target_speed = min(16.0, self.motion.maximum_speed_kn)
+            self.target_speed = min(16.0, self.speed_cap_kn)
         self._steer(dt, self.motion.turn_rate_deg_s, world)
         self._move(dt, world)
         self._maybe_asm(dt)
@@ -240,20 +270,32 @@ class SurfaceShip:
                     if offset:
                         self.target_course = course
                     break
+        # W2: Ruderwirkung skaliert mit Staudruck (~v^2), wie beim Spielerschiff.
+        speed_factor = config.clamp((self.speed / 10.0) ** 2, 0.0, 1.5)
         diff = config.angle_diff_deg(self.target_course, self.course)
+        effective_rate = max_rate * speed_factor
         self.course = (self.course + config.clamp(
-            diff, -max_rate * dt, max_rate * dt)) % 360.0
-        delta = self.target_speed - self.speed
-        self.speed += config.clamp(
-            delta, -self.motion.acceleration_kn_s * dt,
-            self.motion.acceleration_kn_s * dt)
-        self.speed = config.clamp(self.speed, 0.0, self.motion.maximum_speed_kn)
+            diff, -effective_rate * dt, effective_rate * dt)) % 360.0
+        # W2: Schub/Widerstand-Gleichgewicht als Exponential-Verzug (geschlossene
+        # Form -> dt-unabhaengig, siehe Ship.update()).
+        if abs(self.target_speed - self.speed) <= 0.05:
+            self.speed = self.target_speed
+        else:
+            self.speed = self.target_speed + (self.speed - self.target_speed) \
+                * math.exp(-dt / self.speed_tau_s)
+        self.speed = config.clamp(self.speed, 0.0, self.speed_cap_kn)
 
     def _move(self, dt: float, world) -> None:
         on_land = getattr(world, "on_land", lambda x, y: False)
         v = config.kn_to_nm_per_s(self.speed) * dt
         nx = self.x + v * math.sin(math.radians(self.course))
         ny = self.y - v * math.cos(math.radians(self.course))
+        # W2: Meeresstroemung - reiner Driftzusatz, kein Antrieb/keine Steuerung.
+        current = getattr(world, "current_vec", None)
+        if current is not None:
+            cu, cv = current(self.x, self.y)
+            nx += config.kn_to_nm_per_s(cu) * dt
+            ny -= config.kn_to_nm_per_s(cv) * dt
         world_size = world.size_nm
         if (on_land(nx, ny) or getattr(world, "land_blocks_line", lambda *args: False)(
                 self.x, self.y, nx, ny)):

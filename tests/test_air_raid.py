@@ -305,6 +305,31 @@ def test_raider_publishes_as_anonymous_flg_track(game, monkeypatch):
     assert "R-3" not in game.air_picture._tracks
 
 
+def test_raider_radar_detection_is_capped_by_geometric_horizon(game, monkeypatch):
+    """A low-altitude raider stays below the radar horizon until it closes,
+    even though it is well inside the nominal power-limited air radar range."""
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+    profile = game._air_defense_loadout
+    horizon = config.radar_horizon_nm(
+        config.RADAR_ANTENNA_HEIGHT_M, profile["raider"]["altitude_m"])
+    assert horizon < config.RADAR_AIR_RANGE_NM  # the case this test guards
+
+    beyond_horizon = Raider(game.ship.x + horizon + 5.0, game.ship.y, 0.0, 4,
+                            game.rng_raid, profile["raider"])
+    game.raiders = [beyond_horizon]
+    game.raid_seq = 4
+    game._update_air_picture()
+    assert "R-4" not in game.air_picture._tracks
+
+    within_horizon = Raider(game.ship.x + horizon - 5.0, game.ship.y, 0.0, 5,
+                            game.rng_raid, profile["raider"])
+    game.raiders = [within_horizon]
+    game.raid_seq = 5
+    game._update_air_picture()
+    track = game.air_picture._tracks.get("R-5")
+    assert track is not None and track.source == "RADAR-L"
+
+
 def test_raider_first_contact_flashes_once(game, monkeypatch):
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
     profile = game._air_defense_loadout

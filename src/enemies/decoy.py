@@ -50,6 +50,12 @@ class Decoy:
         ox, oy = self.x, self.y
         self.x += self.speed * dt * math.sin(math.radians(self.course))
         self.y -= self.speed * dt * math.cos(math.radians(self.course))
+        # W2: Meeresstroemung - reiner Driftzusatz, kein Antrieb/keine Steuerung.
+        current = getattr(world, "current_vec", None)
+        if current is not None:
+            cu, cv = current(self.x, self.y)
+            self.x += config.kn_to_nm_per_s(cu) * dt
+            self.y -= config.kn_to_nm_per_s(cv) * dt
         world_size = world.size_nm
         if self.x < 0 or self.x > world_size:
             self.course = (360.0 - self.course) % 360.0

@@ -83,57 +83,18 @@
   "references": [
     {
       "key": "reference.frigate_torp",
-      "variant": "Synthetic frigate torpedo gameplay archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": ["anti_submarine"],
       "hull_type": "unknown",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
     },
     {
       "key": "reference.helo_torp",
-      "variant": "Synthetic helicopter torpedo gameplay archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": ["anti_submarine"],
       "hull_type": "unknown",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
     },
     {
       "key": "reference.enemy_torp",
-      "variant": "Synthetic hostile torpedo gameplay archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": ["anti_submarine"],
       "hull_type": "unknown",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
     }
   ],
   "machines": [
@@ -142,7 +103,9 @@
       "cruise_speed_kn": 45.0,
       "maximum_speed_kn": 45.0,
       "quiet_speed_kn": null,
-      "propulsion_codes": ["other"],
+      "propulsion_codes": [
+        "other"
+      ],
       "motor_rpm": null,
       "shaft_rpm": null,
       "propulsor_type": "unknown",
@@ -157,7 +120,9 @@
       "cruise_speed_kn": 55.0,
       "maximum_speed_kn": 55.0,
       "quiet_speed_kn": null,
-      "propulsion_codes": ["other"],
+      "propulsion_codes": [
+        "other"
+      ],
       "motor_rpm": null,
       "shaft_rpm": null,
       "propulsor_type": "unknown",
@@ -172,15 +137,25 @@
       "cruise_speed_kn": 28.0,
       "maximum_speed_kn": 28.0,
       "quiet_speed_kn": null,
-      "propulsion_codes": ["other"],
+      "propulsion_codes": [
+        "other"
+      ],
       "motor_rpm": null,
       "shaft_rpm": null,
       "propulsor_type": "unknown",
       "blade_count": null,
       "cruise_lines": [],
       "high_speed_lines": [],
-      "cruise_broadband": [0.5, 80.0, 300.0],
-      "high_speed_broadband": [0.5, 80.0, 300.0]
+      "cruise_broadband": [
+        0.5,
+        80.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.5,
+        80.0,
+        300.0
+      ]
     }
   ],
   "sensors": [],

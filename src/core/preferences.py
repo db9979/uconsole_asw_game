@@ -19,6 +19,8 @@ class Preferences:
     large_text: bool = False
     tooltips: bool = True
     simlog: bool = False
+    night_mode: bool = False
+    high_contrast: bool = False
 
     @classmethod
     def defaults(cls) -> "Preferences":
@@ -45,7 +47,8 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     if language not in SUPPORTED_LANGUAGES:
         language = defaults.language
     values: dict[str, object] = {"language": language}
-    for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog"):
+    for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
+                 "night_mode", "high_contrast"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)
     return replace(defaults, **values)

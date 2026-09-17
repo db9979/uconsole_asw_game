@@ -276,6 +276,33 @@ def test_sensor_picture_uses_generic_evidence_not_platform_truth(monkeypatch):
     assert sonar_track.course is None
 
 
+def test_surface_radar_detection_is_capped_by_geometric_horizon(monkeypatch):
+    """A surface contact stays below the radar horizon until it closes, even
+    though it is well inside the nominal power-limited surface radar range."""
+    game = Game(seed=85, audio_enabled=False)
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+    game.civilians = []
+    game.flights.flights = []
+    game.asms = []
+    horizon = config.radar_horizon_nm(
+        config.RADAR_ANTENNA_HEIGHT_M, config.RADAR_SURFACE_TARGET_HEIGHT_M)
+    assert horizon < config.RADAR_SURFACE_RANGE_NM  # the case this test guards
+
+    beyond_horizon = SurfaceShip(game.ship.x + horizon + 5.0, game.ship.y,
+                                 random.Random(850), hostile=True)
+    beyond_horizon.emitter = True
+    game.warships = [beyond_horizon]
+    game._update_air_picture()
+    assert f"W-{beyond_horizon.id}" not in game.air_picture._tracks
+
+    within_horizon = SurfaceShip(game.ship.x + horizon - 5.0, game.ship.y,
+                                 random.Random(851), hostile=True)
+    within_horizon.emitter = True
+    game.warships = [within_horizon]
+    game._update_air_picture()
+    assert f"W-{within_horizon.id}" in game.air_picture._tracks
+
+
 def test_weapon_datum_uses_canonical_observed_position(monkeypatch):
     game = Game(seed=84, audio_enabled=False)
     target = game.subs[0]

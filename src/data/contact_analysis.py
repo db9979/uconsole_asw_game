@@ -42,24 +42,7 @@ def _lines(lines):
 
 
 def _reference_summary(reference):
-    return {
-        "variant": reference.variant,
-        "variant_year": reference.variant_year,
-        "refit_year": reference.refit_year,
-        "aliases": list(reference.aliases),
-        "roles": list(reference.roles),
-        "hull_type": reference.hull_type,
-        "displacement_tonnes": reference.displacement_tonnes,
-        "displacement_basis": reference.displacement_basis,
-        "length_m": reference.length_m,
-        "beam_waterline_m": reference.beam_waterline_m,
-        "beam_overall_m": reference.beam_overall_m,
-        "flight_deck_width_m": reference.flight_deck_width_m,
-        "draft_m": reference.draft_m,
-        "ship_crew": None if reference.ship_crew is None else list(reference.ship_crew),
-        "air_group_crew": (None if reference.air_group_crew is None
-                             else list(reference.air_group_crew)),
-    }
+    return {"hull_type": reference.hull_type, "length_m": reference.length_m}
 
 
 def _machine_summary(machine):

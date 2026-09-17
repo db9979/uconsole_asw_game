@@ -3,11 +3,20 @@
 Die eingebauten Profile werden aus den paketierten ``data.contacts``-JSON-
 Ressourcen geladen. Der Katalog enthält:
 
-- 23 U-Boot-Profile (3 Legacy-Archetypen + 20 benannte Klassen)
-- 25 feindliche Kampfschiffe (spawnbar, KAMPFSCHIFF)
-- 55 zivile Schiffe (Tanker/Passagier/Fracht/Sonstiges)
+- 23 U-Boot-Profile (3 Legacy-Archetypen + 20 benannte Klassen); der zufällige
+  Spawn-Pool (``spawn_weight``) ist auf die russischen Klassen konzentriert
+- 5 Kampfschiff-Profile in ``warships.json`` (KAMPFSCHIFF); der tatsächliche
+  Zufalls-Feind-Pool (``LEGACY_HOSTILE_SURFACE_KEYS``) ist auf die russischen
+  Klassen + Projekt 20380 begrenzt; die neue F217 *Bayern* ist dort ebenfalls
+  gelistet, aber ``default_faction: "FREUND"`` und nicht im Zufalls-Pool
+- 80 zivile Schiffe (Tanker/Passagier/Fracht/Sonstiges), davon 25 real-benannte
+  Marinen, die zu neutralem Drittparteien-Verkehr umklassifiziert wurden
 - Flugzeugprofile (sonar-invisible, nur Radar/ESM)
 - 3 Meerestier-Typen, 3 Torpedo-Profile, 1 Dekoy-Profil
+
+Siehe "Russland-Feindgrundlage" weiter unten für den Hintergrund dieser
+Umklassifizierung und die neuen optionalen Felder (``wiki_url``,
+``default_faction``, ``rcs_m2``, akustische LOFAR-Zusatzfelder).
 
 Kontakte sind nie an ein einzelnes Profil gebunden: pro Instanz wird aus
 Blätterzahl, Takt-Skala und Linien-Offsets ein Fingerprint gerollt
@@ -30,7 +39,12 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 CONTACTS_DIR = os.path.join(_ROOT, "data", "contacts")
 
 CIVIL_CATEGORIES = ("TANKER", "PASSAGIER", "FRACHT", "SONSTIGES")
-LEGACY_HOSTILE_SURFACE_KEYS = tuple(f"warship_{index:02d}" for index in range(1, 26))
+# Random hostile-surface spawns are drawn only from this pool (not from
+# spawn_weight across all KAMPFSCHIFF entries) - kept to Russian-Federation
+# classes so a random scenario's enemy surface units are Russia by default.
+# Other real navies remain in the catalog as neutral civilians.json traffic
+# (category "SONSTIGES") and via explicit mission-editor placement.
+LEGACY_HOSTILE_SURFACE_KEYS = ("warship_22", "warship_23", "warship_24", "warship_29")
 
 
 # ---------------------------------------------------------------------------
@@ -60,6 +74,10 @@ class TargetSignature:
     secondary_tonals: tuple = ()
     broadband: tuple = None
     signature_text: str = ""
+    # Optional, authoring-may-be-absent extensions (Wikipedia-Import-Editor):
+    lofar_base_freq_hz: tuple = ()
+    cavitation_speed_knots: float | None = None
+    audio_sample_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -73,6 +91,9 @@ class SubProfile:
     aggression: float
     spawn_weight: float
     acoustic: TargetSignature
+    wiki_url: str | None = None
+    default_faction: str | None = None
+    rcs_m2: float | None = None
 
     @property
     def is_nuclear(self) -> bool:
@@ -98,6 +119,9 @@ class SurfaceProfile:
     loiter_nm: float         # Patrouillen-Radius um Basis (nur feindlich)
     spawn_weight: float
     acoustic: TargetSignature
+    wiki_url: str | None = None
+    default_faction: str | None = None
+    rcs_m2: float | None = None
 
 
 @dataclass(frozen=True)
@@ -112,6 +136,9 @@ class AircraftProfile:
     loiter_nm: tuple         # (min, max)
     spawn_weight: float
     signature_text: str = ""
+    wiki_url: str | None = None
+    default_faction: str | None = None
+    rcs_m2: float | None = None
 
 
 @dataclass(frozen=True)
@@ -154,21 +181,8 @@ class DecoyProfile:
 @dataclass(frozen=True, slots=True)
 class ReferenceProfile:
     key: str
-    variant: str | None
-    variant_year: int | None
-    refit_year: int | None
-    aliases: tuple[str, ...]
-    roles: tuple[str, ...]
     hull_type: str
-    displacement_tonnes: float | None
-    displacement_basis: str
     length_m: float | None
-    beam_waterline_m: float | None
-    beam_overall_m: float | None
-    flight_deck_width_m: float | None
-    draft_m: float | None
-    ship_crew: tuple[int, int] | None
-    air_group_crew: tuple[int, int] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -522,12 +536,15 @@ def _weighted_pick(rng, pool):
 
 CONTACT_FIELDS = {
     "subs.json": {"key", "name", "speed_kn", "max_depth_m", "torpedoes",
-                  "quiet", "aggression", "spawn_weight", "acoustic"},
+                  "quiet", "aggression", "spawn_weight", "acoustic",
+                  "wiki_url", "default_faction", "rcs_m2"},
     "warships.json": {"key", "name", "category", "hostile", "speed_kn",
                       "callsigns", "esm_prob", "asm_salvo", "asm_cooldown_s",
-                      "loiter_nm", "spawn_weight", "acoustic"},
+                      "loiter_nm", "spawn_weight", "acoustic",
+                      "wiki_url", "default_faction", "rcs_m2"},
     "aircraft.json": {"key", "name", "nation", "kind", "speed_kn", "esm",
-                      "esm_range_nm", "loiter_nm", "spawn_weight", "signature_text"},
+                      "esm_range_nm", "loiter_nm", "spawn_weight", "signature_text",
+                      "wiki_url", "default_faction", "rcs_m2"},
     "animals.json": {"key", "name", "depth_min", "depth_max", "speed_kn",
                      "quiet", "size_nm", "spawn_weight", "lines", "signature_text"},
     "torpedoes.json": {"key", "name", "used_by", "speed_kn", "range_nm", "hit_dist_nm"},
@@ -535,10 +552,16 @@ CONTACT_FIELDS = {
                     "chance", "lines", "signature_text"},
     "acoustics.json": {"key", "label", "propulsion", "blades", "rpm_range",
                        "tonal_band_hz", "cavitation_tendency", "category",
-                       "secondary_tonals", "broadband", "signature_text"},
+                       "secondary_tonals", "broadband", "signature_text",
+                       "lofar_base_freq_hz", "cavitation_speed_knots", "audio_sample_id"},
 }
 CONTACT_FIELDS["civilians.json"] = CONTACT_FIELDS["warships.json"]
 ACOUSTIC_FIELDS = CONTACT_FIELDS["acoustics.json"] - {"key"}
+# Entry-level fields that may be entirely absent (authoring not yet done for
+# that profile), mirroring the pre-existing torpedoes.json "acoustic" optionality.
+ENTRY_OPTIONAL_FIELDS = {"wiki_url", "default_faction", "rcs_m2"}
+ACOUSTIC_OPTIONAL_FIELDS = {"lofar_base_freq_hz", "cavitation_speed_knots", "audio_sample_id"}
+DEFAULT_FACTIONS = ("FREUND", "FEIND", "NEUTRAL")
 ACOUSTIC_CATEGORIES = (*CIVIL_CATEGORIES, "KAMPFSCHIFF", "U_BOOT", "FAHRZEUG", "BIOLOGISCH")
 CONTACT_FILENAMES = tuple(CONTACT_FIELDS)
 SOURCES_FILENAME = "sources.json"
@@ -552,11 +575,7 @@ PROFILE_SYSTEM_FIELDS = {
     "profile_key", "reference_key", "machine_key", "sensor_keys", "emitter_keys",
     "launcher_keys", "magazine_keys", "countermeasure_keys",
 }
-REFERENCE_FIELDS = {
-    "key", "variant", "variant_year", "refit_year", "aliases", "roles", "hull_type",
-    "displacement_tonnes", "displacement_basis", "length_m", "beam_waterline_m",
-    "beam_overall_m", "flight_deck_width_m", "draft_m", "ship_crew", "air_group_crew",
-}
+REFERENCE_FIELDS = {"key", "hull_type", "length_m"}
 MACHINE_FIELDS = {
     "key", "cruise_speed_kn", "maximum_speed_kn", "quiet_speed_kn",
     "propulsion_codes", "motor_rpm", "shaft_rpm", "propulsor_type", "blade_count",
@@ -589,16 +608,10 @@ COUNTERMEASURE_FIELDS = {
 SOURCE_FIELDS = {"id", "kind", "title", "publisher", "url", "reference", "retrieved", "license"}
 CLAIM_FIELDS = {"resource", "profile_key", "field_paths", "status", "source_ids"}
 
-REFERENCE_ROLES = {
-    "air_defense", "anti_submarine", "attack_submarine", "carrier", "cargo",
-    "escort", "maritime_patrol", "passenger_transport", "replenishment", "strike",
-    "training",
-}
 HULL_TYPES = {
     "aircraft_carrier", "container_ship", "cruiser", "destroyer", "frigate",
     "fixed_wing_aircraft", "replenishment_ship", "submarine", "support_ship", "unknown",
 }
-DISPLACEMENT_BASES = {"deadweight", "full_load", "light", "standard", "submerged", "unknown"}
 PROPULSION_CODES = {
     "biological", "diesel", "electric", "gas_turbine", "integrated_electric",
     "nuclear_steam", "other", "steam",
@@ -655,6 +668,15 @@ def _schema_text(value, where):
         raise ValueError(f"{where}: control characters not allowed")
 
 
+def _schema_wiki_url(value, where):
+    _schema_text(value, where)
+    parsed = urlsplit(value)
+    if (parsed.scheme != "https" or not parsed.hostname
+            or not parsed.hostname.lower().endswith(".wikipedia.org")
+            or not parsed.path.startswith("/wiki/")):
+        raise ValueError(f"{where}: https://<lang>.wikipedia.org/wiki/... URL expected")
+
+
 def _schema_pair(value, where, high, equal=False, integer=False):
     if not isinstance(value, list) or len(value) != 2:
         raise ValueError(f"{where}: two-item array expected")
@@ -675,10 +697,26 @@ def _schema_lines(value, where):
         _schema_number(line[2], where, high=10000, positive=True)
 
 
+def _schema_number_array(value, where, maximum=32, high=100000):
+    if not isinstance(value, list) or len(value) > maximum:
+        raise ValueError(f"{where}: bounded number array expected")
+    for item in value:
+        _schema_number(item, where, high=high, positive=True)
+
+
 def _schema_acoustic(value, where, category=None):
-    _schema_object(value, ACOUSTIC_FIELDS, where)
+    _schema_object(value, ACOUSTIC_FIELDS, where, ACOUSTIC_OPTIONAL_FIELDS)
     for field in ("label", "propulsion", "signature_text"):
         _schema_text(value[field], f"{where}.{field}")
+    if "lofar_base_freq_hz" in value:
+        if not value["lofar_base_freq_hz"]:
+            raise ValueError(f"{where}.lofar_base_freq_hz: omit the field instead of an empty array")
+        _schema_number_array(value["lofar_base_freq_hz"], f"{where}.lofar_base_freq_hz")
+    if "cavitation_speed_knots" in value:
+        _schema_number(value["cavitation_speed_knots"],
+                       f"{where}.cavitation_speed_knots", high=1000, positive=True)
+    if "audio_sample_id" in value:
+        _schema_text(value["audio_sample_id"], f"{where}.audio_sample_id")
     blades = value["blades"]
     if not isinstance(blades, list) or len(blades) > 20:
         raise ValueError(f"{where}.blades: positive integer array expected")
@@ -710,12 +748,22 @@ def validate_contact_entry(filename, entry, where="entry"):
     Editor documents have their own versioned schema and are not runtime profiles.
     """
     optional = {"acoustic"} if filename == "torpedoes.json" else set()
+    if filename in ("subs.json", "warships.json", "civilians.json", "aircraft.json"):
+        optional = optional | ENTRY_OPTIONAL_FIELDS
+    elif filename == "acoustics.json":
+        optional = optional | ACOUSTIC_OPTIONAL_FIELDS
     _schema_object(entry, CONTACT_FIELDS[filename] | optional, where, optional)
     _schema_text(entry["key"], f"{where}.key")
     if filename == "acoustics.json":
         _schema_acoustic({k: v for k, v in entry.items() if k != "key"}, where)
         return
     _schema_text(entry["name"], f"{where}.name")
+    if "wiki_url" in entry:
+        _schema_wiki_url(entry["wiki_url"], f"{where}.wiki_url")
+    if "default_faction" in entry and entry["default_faction"] not in DEFAULT_FACTIONS:
+        raise ValueError(f"{where}.default_faction: invalid faction")
+    if "rcs_m2" in entry:
+        _schema_number(entry["rcs_m2"], f"{where}.rcs_m2", high=200000, positive=True)
     for field in ("nation", "signature_text"):
         if field in entry:
             _schema_text(entry[field], f"{where}.{field}")
@@ -841,43 +889,11 @@ def _acoustic_lines(value, where):
 def _reference_from_dict(value, where):
     _schema_object(value, REFERENCE_FIELDS, where)
     _schema_key(value["key"], f"{where}.key", "reference.")
-    _schema_nullable_text(value["variant"], f"{where}.variant")
-    for field in ("variant_year", "refit_year"):
-        _schema_nullable_number(value[field], f"{where}.{field}", low=1850, high=2100, integer=True)
-    if (value["variant_year"] is not None and value["refit_year"] is not None
-            and value["refit_year"] < value["variant_year"]):
-        raise ValueError(f"{where}: refit year precedes variant year")
-    _schema_string_array(value["aliases"], f"{where}.aliases", maximum=64)
-    _schema_string_array(value["roles"], f"{where}.roles", REFERENCE_ROLES, maximum=16)
     if value["hull_type"] not in HULL_TYPES:
         raise ValueError(f"{where}.hull_type: invalid hull type")
-    _schema_nullable_number(value["displacement_tonnes"], f"{where}.displacement_tonnes",
-                            high=1_000_000, positive=True)
-    if value["displacement_basis"] not in DISPLACEMENT_BASES:
-        raise ValueError(f"{where}.displacement_basis: invalid displacement basis")
-    if ((value["displacement_tonnes"] is None) !=
-            (value["displacement_basis"] == "unknown")):
-        raise ValueError(f"{where}: displacement value and basis disagree")
-    for field in ("length_m", "beam_waterline_m", "beam_overall_m",
-                  "flight_deck_width_m", "draft_m"):
-        _schema_nullable_number(value[field], f"{where}.{field}", high=5000, positive=True)
-    if (value["beam_waterline_m"] is not None and value["beam_overall_m"] is not None
-            and value["beam_overall_m"] < value["beam_waterline_m"]):
-        raise ValueError(f"{where}: overall beam below waterline beam")
-    for field in ("ship_crew", "air_group_crew"):
-        _schema_nullable_pair(value[field], f"{where}.{field}", 100_000,
-                              equal=True, integer=True)
+    _schema_nullable_number(value["length_m"], f"{where}.length_m", high=5000, positive=True)
     return ReferenceProfile(
-        key=value["key"], variant=value["variant"], variant_year=value["variant_year"],
-        refit_year=value["refit_year"], aliases=tuple(value["aliases"]),
-        roles=tuple(value["roles"]), hull_type=value["hull_type"],
-        displacement_tonnes=value["displacement_tonnes"],
-        displacement_basis=value["displacement_basis"],
-        length_m=value["length_m"], beam_waterline_m=value["beam_waterline_m"],
-        beam_overall_m=value["beam_overall_m"],
-        flight_deck_width_m=value["flight_deck_width_m"], draft_m=value["draft_m"],
-        ship_crew=_nullable_pair(value["ship_crew"], integer=True),
-        air_group_crew=_nullable_pair(value["air_group_crew"], integer=True))
+        key=value["key"], hull_type=value["hull_type"], length_m=value["length_m"])
 
 
 def _machine_from_dict(value, where):
@@ -1105,19 +1121,7 @@ def _v2_to_dict(value):
             "countermeasure_keys": list(value.countermeasure_keys),
         }
     if isinstance(value, ReferenceProfile):
-        return {
-            "key": value.key, "variant": value.variant, "variant_year": value.variant_year,
-            "refit_year": value.refit_year, "aliases": list(value.aliases),
-            "roles": list(value.roles), "hull_type": value.hull_type,
-            "displacement_tonnes": value.displacement_tonnes,
-            "displacement_basis": value.displacement_basis, "length_m": value.length_m,
-            "beam_waterline_m": value.beam_waterline_m,
-            "beam_overall_m": value.beam_overall_m,
-            "flight_deck_width_m": value.flight_deck_width_m, "draft_m": value.draft_m,
-            "ship_crew": None if value.ship_crew is None else list(value.ship_crew),
-            "air_group_crew": (None if value.air_group_crew is None
-                                else list(value.air_group_crew)),
-        }
+        return {"key": value.key, "hull_type": value.hull_type, "length_m": value.length_m}
     if isinstance(value, MachineProfile):
         lines = lambda items: [[line.frequency_hz, line.relative_level, line.width_hz]
                                for line in items]
@@ -1403,7 +1407,11 @@ def _acoustic_from_dict(d: dict, key: str, category_default: str,
             (float(t[0]), float(t[1]), float(t[2]))
             for t in d.get("secondary_tonals", ())),
         broadband=tuple(d["broadband"]) if d.get("broadband") else None,
-        signature_text=d.get("signature_text", ""))
+        signature_text=d.get("signature_text", ""),
+        lofar_base_freq_hz=tuple(float(f) for f in d.get("lofar_base_freq_hz", ())),
+        cavitation_speed_knots=(float(d["cavitation_speed_knots"])
+                                if d.get("cavitation_speed_knots") is not None else None),
+        audio_sample_id=d.get("audio_sample_id", ""))
 
 
 def _load_subs(path: str) -> dict:
@@ -1420,7 +1428,10 @@ def _load_subs(path: str) -> dict:
             quiet=float(e.get("quiet", 0.8)),
             aggression=float(e.get("aggression", 0.6)),
             spawn_weight=float(e.get("spawn_weight", 1.0)),
-            acoustic=acoustic)
+            acoustic=acoustic,
+            wiki_url=e.get("wiki_url"),
+            default_faction=e.get("default_faction"),
+            rcs_m2=(float(e["rcs_m2"]) if e.get("rcs_m2") is not None else None))
     return out
 
 
@@ -1439,7 +1450,10 @@ def _load_surfaces(path: str) -> dict:
             loiter_nm=float(e.get("loiter_nm", 0.0)),
             spawn_weight=float(e.get("spawn_weight", 1.0)),
             acoustic=_acoustic_from_dict(e.get("acoustic", {}), key, cat,
-                                         e.get("name", key)))
+                                         e.get("name", key)),
+            wiki_url=e.get("wiki_url"),
+            default_faction=e.get("default_faction"),
+            rcs_m2=(float(e["rcs_m2"]) if e.get("rcs_m2") is not None else None))
     return out
 
 
@@ -1457,7 +1471,10 @@ def _load_aircraft(path: str) -> dict:
             esm_range_nm=float(e.get("esm_range_nm", 0.0)),
             loiter_nm=_pair(e.get("loiter_nm", (0, 0)), "loiter_nm"),
             spawn_weight=float(e.get("spawn_weight", 1.0)),
-            signature_text=e.get("signature_text", ""))
+            signature_text=e.get("signature_text", ""),
+            wiki_url=e.get("wiki_url"),
+            default_faction=e.get("default_faction"),
+            rcs_m2=(float(e["rcs_m2"]) if e.get("rcs_m2") is not None else None))
     return out
 
 

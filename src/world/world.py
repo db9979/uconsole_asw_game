@@ -39,6 +39,17 @@ class World:
         self.hour = float(self.rng.randint(6, 18))  # Uhrzeit 0-24
         self.weather_shift_timer = 0.0
         self.refresh_weather()
+        # W2: Meeresstroemung - eigener, von self.rng abgekoppelter Strom
+        # (Digest aus dem Seed), damit das Hinzufuegen dieses Feldes keine
+        # bestehende Tiefen-/Thermoklinen-/Wetter-/Spawn-RNG-Sequenz verschiebt.
+        current_digest = hashlib.blake2b(
+            str(seed).encode("ascii"), digest_size=16,
+            person=b"ujagd-current-v1").digest()
+        current_rng = random.Random(int.from_bytes(current_digest, "big"))
+        self._current_u = [[current_rng.uniform(-1.0, 1.0) for _ in range(grid_n)]
+                           for _ in range(grid_n)]
+        self._current_v = [[current_rng.uniform(-1.0, 1.0) for _ in range(grid_n)]
+                           for _ in range(grid_n)]
 
     @staticmethod
     def _weather_endpoint(rng_state, sea_state: int) -> dict:
@@ -202,6 +213,16 @@ class World:
     def thermocline_depth_m(self, x_nm: float, y_nm: float) -> float:
         measured = self._cell(x_nm, y_nm, self._thermo)
         return min(measured, max(10.0, self.depth_m(x_nm, y_nm) - 20.0))
+
+    def current_vec(self, x_nm: float, y_nm: float) -> tuple[float, float]:
+        """W2: Meeresstroemung in kn (u=Ost/+x, v=Nord/-y - Positionskonvention).
+
+        Reiner Driftzusatz zur eigenen Fahrt; kein eigener Systemzustand,
+        deterministisch aus Position + Seed (bilinear interpoliert wie Tiefe/
+        Thermokline)."""
+        u = self._cell(x_nm, y_nm, self._current_u) * config.CURRENT_MAX_KN
+        v = self._cell(x_nm, y_nm, self._current_v) * config.CURRENT_MAX_KN
+        return u, v
 
     # --- W3: Land / Küsten ---
 

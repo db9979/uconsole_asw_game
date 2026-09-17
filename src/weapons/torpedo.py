@@ -59,7 +59,8 @@ class Torpedo:
                     guidance_y: float = None, range_nm: float = None,
                     profile=None, launch_origin: str | None = None,
                     launch_platform_id: int | None = None,
-                    launch_weapon_key: str | None = None):
+                    launch_weapon_key: str | None = None,
+                    time_since_launch: float | None = None):
         self.x = x_nm
         self.y = y_nm
         self.course = course_deg % 360.0
@@ -83,6 +84,11 @@ class Torpedo:
         self.range_nm = default_range if range_nm is None else range_nm
         # Keep RANGE_NM as the established public API for callers and saves.
         self.RANGE_NM = self.range_nm
+        # Default is "already spooled up": direct construction (tests, legacy
+        # saves) gets today's instant-cruise-speed behavior. Only real launch
+        # sites pass time_since_launch=0.0 for the ramp-up.
+        self.time_since_launch = (config.TORP_SPOOLUP_S if time_since_launch is None
+                                  else time_since_launch)
         self._search_phase = 0.0     # M15: Serpentin-Phase
         self._midcourse = course_deg % 360.0  # M15: Draht-Mittelkurs
         # The persisted timer also carries wire age.
@@ -99,6 +105,13 @@ class Torpedo:
     def speed_nm_per_s(self) -> float:
         """Physikalische Geschwindigkeit in NM pro Simulationssekunde."""
         return config.kn_to_nm_per_s(self.speed_kn)
+
+    def _spoolup_factor(self) -> float:
+        """Motor-Hochlauf: 0..TORP_SPOOLUP_S linear von MIN_FRAC auf 1.0."""
+        if self.time_since_launch >= config.TORP_SPOOLUP_S:
+            return 1.0
+        frac = self.time_since_launch / config.TORP_SPOOLUP_S
+        return config.TORP_SPOOLUP_MIN_FRAC + (1.0 - config.TORP_SPOOLUP_MIN_FRAC) * frac
 
     def distance_to_target_nm(self) -> float:
         if self.target is None or getattr(self.target, "sunk", False):
@@ -169,6 +182,8 @@ class Torpedo:
         if self.state != "RUN":
             return
 
+        self.time_since_launch = min(
+            config.TORP_SPOOLUP_S, self.time_since_launch + dt)
         self._midcourse_timer = min(
             self.WIRE_BREAK_S, self._midcourse_timer + dt)
 
@@ -248,11 +263,17 @@ class Torpedo:
                     0.0, min(1.0, (abs(diff) - 30.0) / 30.0))
         # Bewegung (Anti-Tunneling: Swept-Check über den ganzen Schritt)
         ox, oy = self.x, self.y
-        step = min(self.speed_nm_per_s * dt * throttle,
+        step = min(self.speed_nm_per_s * dt * throttle * self._spoolup_factor(),
                    max(0.0, self.range_nm - self.travel))
         self.x += step * math.sin(math.radians(self.course))
         self.y -= step * math.cos(math.radians(self.course))
         self.travel += step
+        # W2: Meeresstroemung - reiner Driftzusatz, kein Antrieb/keine Steuerung.
+        current = getattr(world, "current_vec", None)
+        if current is not None:
+            cu, cv = current(self.x, self.y)
+            self.x += config.kn_to_nm_per_s(cu) * dt
+            self.y -= config.kn_to_nm_per_s(cv) * dt
 
         bodies = [(body, config.CIVILIAN_HIT_RADIUS_NM)
                   for body in collision_candidates if not body.sunk]
@@ -337,7 +358,8 @@ class EnemyTorpedo:
                    depth_m: float, idx: int, profile=None,
                    guidance_x: float = None, guidance_y: float = None, *,
                    launch_platform_id: int | None = None,
-                   launch_weapon_key: str | None = None):
+                   launch_weapon_key: str | None = None,
+                   time_since_launch: float | None = None):
         self.id = EnemyTorpedo._next_id
         EnemyTorpedo._next_id += 1
         self.x = x_nm
@@ -361,6 +383,13 @@ class EnemyTorpedo:
         self.terminal_active = False
         self.seeker_acquired = False
         self._seeker_target = None
+        # Default is "already spooled up" (see Torpedo); only real launch
+        # sites pass time_since_launch=0.0 for the ramp-up.
+        self.time_since_launch = (config.TORP_SPOOLUP_S if time_since_launch is None
+                                  else time_since_launch)
+
+    def _spoolup_factor(self) -> float:
+        return Torpedo._spoolup_factor(self)
 
     @property
     def dead(self) -> bool:
@@ -388,6 +417,8 @@ class EnemyTorpedo:
     def update(self, dt: float, ship, world=None, seeker_candidates=()) -> None:
         if self.state != "RUN":
             return
+        self.time_since_launch = min(
+            config.TORP_SPOOLUP_S, self.time_since_launch + dt)
         if self.seeker_acquired and (self._seeker_target is None
                 or getattr(self._seeker_target, "dead", False)
                 or getattr(self._seeker_target, "sunk", False)):
@@ -412,10 +443,17 @@ class EnemyTorpedo:
             self.course = (self.course + config.clamp(
                 diff, -6.0 * dt, 6.0 * dt)) % 360.0
         ox, oy = self.x, self.y
-        step = min(self.speed_nm_per_s * dt, max(0.0, self.range_nm - self.travel))
+        step = min(self.speed_nm_per_s * dt * self._spoolup_factor(),
+                   max(0.0, self.range_nm - self.travel))
         self.x += step * math.sin(math.radians(self.course))
         self.y -= step * math.cos(math.radians(self.course))
         self.travel += step
+        # W2: Meeresstroemung - reiner Driftzusatz, kein Antrieb/keine Steuerung.
+        current = getattr(world, "current_vec", None)
+        if current is not None:
+            cu, cv = current(self.x, self.y)
+            self.x += config.kn_to_nm_per_s(cu) * dt
+            self.y -= config.kn_to_nm_per_s(cv) * dt
 
         if underwater_path_blocked(world, ox, oy, self.depth,
                                    self.x, self.y, self.depth):

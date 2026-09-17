@@ -15,6 +15,7 @@ from src.sensors.platform import (
     PlatformSensorSuite,
     machine_acoustics,
     motion_limits,
+    side_datalink_group,
     snapshot_observation,
 )
 from src.weapons.torpedo import underwater_path_blocked
@@ -89,7 +90,7 @@ class Sub:
         self.sensor_suite = PlatformSensorSuite(
             runtime_catalog, source.key, self.sensor_seed,
             side=side, doctrine=doctrine,
-            datalink_group="blue" if side == "friendly" else None)
+            datalink_group=side_datalink_group(side))
         self.runtime_catalog = runtime_catalog
         endurance_profile = runtime_catalog.endurances.get(f"endurance.{source.key}")
         self.endurance = (SubmarineEndurance(endurance_profile)
@@ -110,6 +111,9 @@ class Sub:
         self.course = course_deg % 360.0
         self.target_course = self.course
         self.target_depth = depth_m
+        # W2: signed vertical rate (+ = descending), acceleration-limited so
+        # depth changes have inertia instead of snapping to the full rate.
+        self.depth_rate_mps = 0.0
         self.speed = rng.uniform(self.stype.speed_min_kn,
                                  min(self.stype.speed_kn, 8.0))
         self.state = "PATROLLE"
@@ -135,6 +139,9 @@ class Sub:
         self.torpedo_alerted = False   # eigener Torpedo gehört -> harte Reaktion
         self.pending_decoys: list[tuple[float, float]] = []
         self._decoy_cd = 0.0
+        # W2: aktiver Ping als riskante, seltene Aufklärungsaktion
+        self._active_ping_cd = 0.0
+        self.pinged_this_tick = False
         self.countermeasure_store = ConsumableStore.from_catalog(
             runtime_catalog, source.key, "acoustic_decoy")
         # Taktisches Gedaechtnis: nur Ereignisse, die das Boot wahrnimmt.
@@ -302,6 +309,27 @@ class Sub:
                                        else self.torpedoes_left - launched)
                 self.attack_left = self.attack_cooldown
 
+    def _maybe_active_ping(self, dt: float) -> bool:
+        """W2: ein aggressives Boot mit frischem Kontakt riskiert selten einen
+        aktiven Ping zur Zielaufklärung - laut und sofort vom Ziel gehört,
+        keine Feuerlösungsverbesserung (kein Balance-Eingriff, nur Spannung/
+        Wahrnehmbarkeit)."""
+        self._active_ping_cd = max(0.0, self._active_ping_cd - dt)
+        if (self.side != "hostile" or self.sunk or self.state == "SINKING"
+                or self._active_ping_cd > 0.0
+                or self.stype.aggression < config.SUB_ACTIVE_PING_MIN_AGGRESSION
+                or self.memory["contact"] is None
+                or self.memory["contact_age"] > 5.0):
+            return False
+        contact = self.memory["contact"]
+        distance = math.hypot(contact["x"] - self.x, contact["y"] - self.y)
+        if distance > config.SUB_ACTIVE_PING_MAX_RANGE_NM:
+            return False
+        if self.asw_rng.random() >= config.SUB_ACTIVE_PING_CHANCE_PER_S * dt:
+            return False
+        self._active_ping_cd = config.SUB_ACTIVE_PING_COOLDOWN_S
+        return True
+
     # --- M13: Schnorcheln / Funk ---
 
     @property
@@ -311,8 +339,39 @@ class Sub:
 
     # --- Physik/KI ---
 
+    def _advance_depth(self, target_depth: float, max_rate: float, dt: float) -> None:
+        """Acceleration-limited depth approach (closed-form, no overshoot).
+
+        Replaces an instant-full-rate clamp with inertia: depth_rate_mps
+        ramps toward +/-max_rate at SUB_DEPTH_ACCEL_MPS2, and the step is the
+        exact trapezoidal integral of that constant-acceleration segment -
+        deterministic and exact as long as the rate does not saturate mid-
+        segment. Callers only ever pass dt bounded by PHYS_SUBSTEP_S/
+        PHYS_SUBSTEP_MAX (see Game._update_sim), far below the several
+        seconds a rate would need to saturate at SUB_DEPTH_ACCEL_MPS2, so
+        this holds in practice; it is not a general arbitrary-dt integrator.
+        Snaps to target_depth (zeroing the rate) once the closing gap would
+        be crossed, so there is no asymptotic tail. Not used by
+        _update_surface_cycle, which has its own independent, deliberately-
+        still-linear depth stepping (see there).
+        """
+        desired_rate = (max_rate if target_depth > self.depth
+                        else -max_rate if target_depth < self.depth else 0.0)
+        accel = config.SUB_DEPTH_ACCEL_MPS2 * dt
+        new_rate = self.depth_rate_mps + config.clamp(
+            desired_rate - self.depth_rate_mps, -accel, accel)
+        step = (self.depth_rate_mps + new_rate) / 2.0 * dt
+        if (step >= 0.0 and self.depth + step >= target_depth) or \
+           (step <= 0.0 and self.depth + step <= target_depth):
+            self.depth = target_depth
+            self.depth_rate_mps = 0.0
+        else:
+            self.depth += step
+            self.depth_rate_mps = new_rate
+
     def update(self, dt: float, observation, world) -> None:
         """dt in Simulationssekunden; bei 1x identisch zu Echtzeit."""
+        self.pinged_this_tick = False
         if self.sunk:
             return
         depth_at = getattr(world, "depth_m", lambda x, y: 1000.0)
@@ -405,6 +464,7 @@ class Sub:
                 bearing_uncertainty_deg=None, range_uncertainty_nm=None,
                 depth_uncertainty_m=None, label=None)
         self._maybe_attack(dt, tactical_observation)
+        self.pinged_this_tick = self._maybe_active_ping(dt)
 
         surface_steps = 0
         if self.endurance is not None and self.endurance.surface_operation:
@@ -438,9 +498,8 @@ class Sub:
                 return
             # Tiefer unter die Thermokline + Kurs ab der Fregatte
             self.target_depth = min(thermo + 40.0, safe_depth)
-            rate = self.motion.depth_rate_m_s * 3.0
-            self.depth += config.clamp(self.target_depth - self.depth,
-                                       -rate * dt, rate * dt)
+            self._advance_depth(self.target_depth,
+                                self.motion.depth_rate_m_s * 3.0, dt)
             bearing = self.memory["contact_bearing"]
             target_course = (self.course if bearing is None else
                              (bearing + 180.0 + self.evade_offset) % 360.0)
@@ -454,9 +513,7 @@ class Sub:
             # W2: Stillhalten unter der Thermokline (sehr leise, lauschen)
             self.evac_left -= dt
             self.target_depth = min(thermo + 15.0, safe_depth)
-            self.depth += config.clamp(self.target_depth - self.depth,
-                                       -self.motion.depth_rate_m_s * dt,
-                                       self.motion.depth_rate_m_s * dt)
+            self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
             self.speed = max(1.0, self.speed - .08 * dt)
             if self.evac_left <= 0:
                 self.state = "PATROLLE"
@@ -480,10 +537,7 @@ class Sub:
                 diff, -self.motion.turn_rate_deg_s * dt,
                 self.motion.turn_rate_deg_s * dt)) % 360.0
             self.target_depth = config.clamp(self.target_depth, 0.0, safe_depth)
-            self.depth += config.clamp(
-                self.target_depth - self.depth,
-                -self.motion.depth_rate_m_s * dt,
-                self.motion.depth_rate_m_s * dt)
+            self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
             # R15 consumed this patrol snorkel-trigger draw. Preserve the shared
             # world stream while endurance now decides when air is required.
             if self.stype.profile.requires_air and self.depth > 55.0:
@@ -498,6 +552,12 @@ class Sub:
         v = config.kn_to_nm_per_s(self.speed) * motion_dt
         nx = self.x + v * math.sin(math.radians(self.course))
         ny = self.y - v * math.cos(math.radians(self.course))
+        # W2: Meeresstroemung - reiner Driftzusatz, kein Antrieb/keine Steuerung.
+        current = getattr(world, "current_vec", None)
+        if current is not None:
+            cu, cv = current(self.x, self.y)
+            nx += config.kn_to_nm_per_s(cu) * motion_dt
+            ny -= config.kn_to_nm_per_s(cv) * motion_dt
         if (world.on_land(nx, ny) or underwater_path_blocked(
                 world, self.x, self.y, old_depth + 25.0 - 1e-6,
                 nx, ny, self.depth + 25.0 - 1e-6)):
@@ -592,6 +652,15 @@ class Sub:
 
     def noise_level(self) -> float:
         return 1.0 - self.quiet_factor()
+
+    def torpedo_notice_range_nm(self) -> float:
+        """Graduated passive notice of a running torpedo's own machinery
+        noise: short of the launch-transient alert (SUB_TORPEDO_ALERT_NM) and
+        beyond pure terminal homing range (TORP_HOME_RANGE_NM), scaled by the
+        sub's own noise the same way Ship.passive_sonar_range_nm penalises
+        self-noise - a sub running loud hears less of its surroundings."""
+        own_penalty = 1.0 - 0.8 * self.noise_level()
+        return config.TORP_RUNNING_NOISE_RANGE_NM * own_penalty
 
     def acoustic_signature(self) -> str:
         """M9: Hörbare Geräusch-Signatur für manuelle Klassifizierung.

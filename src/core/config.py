@@ -42,6 +42,8 @@ AUDIO_CHANNELS = 1
 
 # M8: CRT-Scanline-Overlay (subtiler Phosphor-Look)
 CRT_SCANLINES = False
+# W2: Rotlicht-Nachtmodus (Preferences.night_mode) - Multiply-Blend-Farbe
+NIGHT_MODE_COLOR = (255, 60, 60)
 SCANLINE_ALPHA = 14
 
 # --- W0: 3-Teil-Grid (Widescreen 1280x720) ---
@@ -75,6 +77,9 @@ MAP_ZOOM_WHEEL_FACTOR = 1.25      # stufenlos pro Mausrad-Schritt
 
 # Welt
 WORLD_SIZE_NM = 500.0     # quadratische Welt in NM
+# W2: Meeresstroemung - raumabhaengiges, aber schwaches Feld (Schelfmeer-
+# Groessenordnung); wirkt als reiner Driftzusatz zur eigenen Fahrt.
+CURRENT_MAX_KN = 1.0
 NM_PER_PX_MAP = 1.0
 
 # Fregatte
@@ -83,7 +88,11 @@ SHIP_SPEED_MAX_KN = 25.0
 SHIP_SPEED_START_KN = 12.0
 SHIP_TUR_RATE_DEG_PER_S = 0.8         # max. Kurssatz des Schiffes
 SHIP_TURN_INPUT_DEG_PER_S = 75.0      # Zielkurs-Drehung bei gedrückter Taste
-SHIP_SPEED_RESP_KN_PER_S = 0.08       # ca. 2-4 min bis volle Fahrt
+SHIP_SPEED_RESP_KN_PER_S = 0.08       # ca. 2-4 min bis volle Fahrt (Legacy-Name)
+# W2: hydrodynamische Fahrtantwort - Exponential-Verzug statt fixer Rampe
+# (Schub/Widerstand-Gleichgewicht: schnelle Anfangsbeschleunigung, die sich
+# asymptotisch dem Zielwert naehert, statt linear bis zum Anschlag zu laufen).
+SHIP_SPEED_TAU_S = 40.0
 SHIP_SPEED_INPUT_KN_PER_S = 3.0       # Zielgeschw.-Anpassung bei gedrückter Taste
 
 # Sonar (Captain's Log §1)
@@ -117,11 +126,21 @@ CZ_CONVERGENCE_GAIN_DB = 8.0         # Konvergenzzone: Fokus unterhalb/oberhalb
 
 # U-Boot-KI (M2: Patrouille + Ausweichen; sim-Sekunden)
 SUB_EVADE_DURATION_S = 240.0
+# W2: Tiefenaenderung mit Traegheit statt sofort voller Rate (Auftrieb/
+# Anstellwinkel-Ersatz) - begrenzt, wie schnell sich depth_rate_mps aendert.
+SUB_DEPTH_ACCEL_MPS2 = 0.15
 SUB_PATROL_TURN_PERIOD_S = 600.0
 # W2: Taktik-Erweiterung
 SUB_LUER_DURATION_S = (300.0, 900.0) # LAUER: still liegen + lauschen
 SUB_LUER_DIST_NM = 25.0              # LAUER nur, wenn Fregatte naeher
 SUB_TORPEDO_ALERT_NM = 35.0          # Torpedostart akustisch hörbar
+# W2: aggressive Boote riskieren gelegentlich einen aktiven Ping zur
+# Zielaufklärung - laut, sofort gehört, kein Dauerzustand (nur Peilung/Flash,
+# keine Feuerlösung).
+SUB_ACTIVE_PING_MIN_AGGRESSION = 0.6
+SUB_ACTIVE_PING_MAX_RANGE_NM = 15.0
+SUB_ACTIVE_PING_CHANCE_PER_S = 0.01
+SUB_ACTIVE_PING_COOLDOWN_S = 120.0
 # Kompatibilitaetsnamen; das geladene JSON-Profil ist die Laufzeitquelle.
 SUB_DECOY_CHANCE = _DECOY_PROFILE.chance
 SUB_DECOY_LIFE_S = _DECOY_PROFILE.life_s
@@ -137,6 +156,7 @@ RADAR_AIR_RANGE_NM = 100.0
 # KAMPFSCHIFF (Kontakt-DB): feindliche Kriegsschiffe loiteren um ihre Basis
 # und feuern ASM-Salven, wenn die Fregatte in Reichweite ist.
 WARSHIP_ASM_RANGE_NM = 35.0    # Abstand, ab dem Salven möglich sind
+WARSHIP_TORPEDO_EVADE_S = 90.0  # W2: Torpedoalarm -> harte Wende, dann weiter
 
 # M5: Schadensmodell (Raten in sim-Sekunden)
 DMG_FLOOD_RATE = 0.10          # schwere Flutung: Minuten bis kritisch
@@ -211,6 +231,14 @@ SHIP_RUDDER_RATE_DEG_PER_S = 4.0
 SHIP_YAW_RESPONSE_S = 10.0
 SHIP_MAX_YAW_RATE_DEG_PER_S = 0.8
 SHIP_YAW_DAMPING = 2.0
+# Asymmetric flooding heels the ship toward the heavier side (list) and makes
+# it want to yaw that way, requiring constant rudder correction to hold a
+# straight course - a small, bounded game model of a real damage-control
+# effect, derived purely from the existing hull_left/hull_right flood state
+# (no new persisted ship state).
+SHIP_LIST_DEG_PER_FLOOD_PCT = 0.15
+SHIP_MAX_LIST_DEG = 15.0
+SHIP_LIST_YAW_GAIN = 0.05        # deg/s of persistent yaw pull per degree of list
 CAVITATION_KN = 15.0            # Schraubenkavitation ab dieser Fahrt
 CAVITATION_PASSIVE_FACTOR = 0.35   # passives Sonar bei Kavitation: Sensor "bricht"
 SEA_STATE_SONAR_FACTOR = 0.06     # passiver Reichweiten-Abzug pro Seegang-Grad
@@ -282,6 +310,16 @@ WEATHER_VISIBILITY_MAX_NM = 30.0
 RADAR_RAIN_SURFACE_LOSS = 0.10
 RADAR_RAIN_AIR_LOSS = 0.20
 RADAR_RAIN_ERROR_GAIN = 0.75
+# Own radar antenna/mast height for the geometric radar horizon (standard
+# "4/3 Earth radius" refraction constant). Sea-skimming threats at very low
+# altitude/height stay below this horizon until they close to short range,
+# regardless of the nominal power-limited radar range above.
+RADAR_ANTENNA_HEIGHT_M = 20.0
+# Target-side heights for the same horizon term, applied to contacts that
+# previously used only the flat power-limited range (civilians/warships/
+# regular air traffic) - raiders already used this via their own altitude_m.
+RADAR_SURFACE_TARGET_HEIGHT_M = 10.0
+FLIGHT_RADAR_ALTITUDE_M = 3000.0
 HELO_LAUNCH_WIND_MAX_KN = 32.0
 HELO_LAUNCH_CROSSWIND_MAX_KN = 22.0
 HELO_LAUNCH_VISIBILITY_MIN_NM = 2.0
@@ -305,6 +343,9 @@ TORP_DOCTRINE = "SHOOT_LOOK_SHOOT"
 TORP_MAX_IN_AIR = {"SHOOT_LOOK_SHOOT": 2, "SEMI_CONTINUOUS": 4}
 TORP_HOME_RANGE_NM = 1.2        # darunter: Homing, sonst Serpentin-Suchlauf
 TORP_MIDCOURSE_UPDATE_S = 0.5   # Draht-Mittelkurs-Update (Serpentin)
+TORP_SPOOLUP_S = 2.0            # Anlaufzeit bis Marschgeschwindigkeit
+TORP_SPOOLUP_MIN_FRAC = 0.25    # Anfangsgeschwindigkeit als Bruchteil (Rohrabschuss)
+TORP_RUNNING_NOISE_RANGE_NM = 6.0  # passive Eigenlaerm-Reichweite eines laufenden Torpedos
 HELO_FUEL_S = 7200.0
 HELO_FUEL_RESERVE_S = 1200.0
 HELO_RETURN_DIST_NM = 0.3
@@ -406,8 +447,21 @@ LEVELS = {
         enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
         second_sub_prob=0.85,
         second_sub_pool=["aip_modern", "ssn", "aip_modern"]),
+    # W2: vierte, rein optionale Realismus-Stufe - keine leichtere Munitions-/
+    # Treffertoleranz als "harte", nur enger; siehe hardcore-Verhaltensgates
+    # in game.py (Klassifizierungs-Vorschau, TMA-Fehlertoleranz, Kartenpunkte).
+    "hardcore": dict(
+        label="Hardcore", desc="minimale Munition, engste Trefftoleranz, keine Hilfen",
+        quiet_mult=1.0, repair_mult=0.7,
+        torp_total=3, kill_dist_nm=0.10, kill_depth_m=10.0,
+        enemy_attack_mult=1.7, enemy_cooldown_s=480.0,
+        second_sub_prob=0.9,
+        second_sub_pool=["aip_modern", "ssn", "aip_modern"]),
 }
-LEVEL_ORDER = ["leicht", "normal", "harte"]
+LEVEL_ORDER = ["leicht", "normal", "harte", "hardcore"]
+# i18n-Schlüsselsuffix je Level (level.<x> / level.<x>_desc)
+LEVEL_I18N_KEY = {"leicht": "easy", "normal": "normal", "harte": "hard",
+                  "hardcore": "hardcore"}
 DEFAULT_LEVEL = "normal"
 
 # M6: Missions-System
@@ -521,6 +575,9 @@ COLOR_DEEP = (4, 24, 48)
 COLOR_ESM = (140, 150, 220)
 COLOR_HFDF = (200, 140, 220)
 COLOR_FLIGHT = (220, 180, 90)
+# W2: OPZ-Domänenfarbe für Flugkörper/Torpedo - eigene Farbe, da COLOR_DANGER
+# und COLOR_CONTACT_UBOOT (Unterwasser-Domäne) sonst fast ununterscheidbar sind.
+COLOR_CONTACT_MISSILE = (235, 70, 180)
 
 # W3: Feed-Kategorien (Farbe, Kürzel)
 FEED_CATEGORIES = {
@@ -547,6 +604,16 @@ def aspect_rcs_factor(course_target: float, bearing_from_frigate: float) -> floa
     Grad (0° = Nord, im Uhrzeigersinn)."""
     rel = math.radians(bearing_from_frigate - course_target)
     return 0.55 + 0.45 * abs(math.sin(rel))
+
+
+def radar_horizon_nm(height_a_m: float, height_b_m: float) -> float:
+    """Geometric two-way radar horizon (standard 4/3-Earth-radius refraction):
+    2.2256 * (sqrt(h_a) + sqrt(h_b)) in NM for heights in metres. A game
+    model of the real effect that low-altitude/low-freeboard targets (a
+    sea-skimming missile, a periscope) are invisible to radar until they
+    close inside this range, independent of the sensor's nominal power-
+    limited range."""
+    return 2.2256 * (math.sqrt(max(0.0, height_a_m)) + math.sqrt(max(0.0, height_b_m)))
 
 
 def nm_to_px(nm: float, nm_per_px: float = NM_PER_PX_MAP) -> float:

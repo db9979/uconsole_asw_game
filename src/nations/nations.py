@@ -12,8 +12,9 @@ NATIONS = {
         "flag": "HANSE",
         "color": config.COLOR_CONTACT_ZIVIL,
         "hostile": False,
-        "desc": ("Verbündete Marine. Fregatte F-217 stationiert in WESTHAVEN. "
-                 "Zivile Schifffahrt und HSP-5-Flugfeld NORDHAVN."),
+        "desc": ("Verbündete Marine. Fregatte F-217 Bayern (Brandenburg-Klasse) "
+                 "stationiert in WESTHAVEN. Zivile Schifffahrt und "
+                 "HSP-5-Flugfeld NORDHAVN."),
         "radar": "AN (Allied – Tracks werden mit AIS geteilt)",
         "submarines": "–",
     },
@@ -22,11 +23,13 @@ NATIONS = {
         "flag": "BOREN",
         "color": config.COLOR_DANGER,
         "hostile": True,
-        "desc": ("Gegnerische Marine. Operiert U-Boot-Floot (Diesel, AIP, "
-                 "nuklear) aus GOTH-OST. Feindliche ASMs starten von dort. "
-                 "ESM/Chaff gegen unsere Radargeräte."),
+        "desc": ("Gegnerische Marine (russische Föderation). Operiert U-Boot- "
+                 "und Kriegsschiffflotte (Kilo/Lada-Diesel, Akula/Oscar-II/"
+                 "Yasen/Borei-Nuklearboote, Projekt-20380-Korvetten) aus "
+                 "GOTH-OST. Feindliche ASMs starten von dort. ESM/Chaff gegen "
+                 "unsere Radargeräte."),
         "radar": "FEINDLICH (ESM-Abwehr, Chaff)",
-        "submarines": "U-27 (Altmetall) · U-58 (AIP) · SSN-7 (Kern)",
+        "submarines": "Kilo-Klasse · Lada-Klasse · Akula-Klasse · Oscar-II-Klasse · Yasen-Klasse · Borei-Klasse",
     },
     "SKANDIA": {
         "name": "Skandia",

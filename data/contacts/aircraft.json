@@ -3,10 +3,10 @@
   "entries": [
     {
       "key": "mil_patrol",
-      "name": "BOREN Patrouille",
+      "name": "Suchoi Su-33 (Flanker-D)",
       "nation": "BOREN",
       "kind": "military",
-      "speed_kn": 200.0,
+      "speed_kn": 480.0,
       "esm": true,
       "esm_range_nm": 60.0,
       "loiter_nm": [
@@ -14,11 +14,14 @@
         30.0
       ],
       "spawn_weight": 1.0,
-      "signature_text": "militärisch, nur ESM/Radar"
+      "signature_text": "traegergestuetzter Abfangjaeger, Seepatrouille",
+      "wiki_url": "https://de.wikipedia.org/wiki/Suchoi_Su-33",
+      "default_faction": "FEIND",
+      "rcs_m2": 12.0
     },
     {
       "key": "civil_transit",
-      "name": "Ziviler Verkehrsflug",
+      "name": "Mittelstreckenjet (Airbus-A320-Familie)",
       "nation": "HANSE",
       "kind": "civil",
       "speed_kn": 450.0,
@@ -29,7 +32,28 @@
         0.0
       ],
       "spawn_weight": 1.0,
-      "signature_text": "ziviler Transport, nur Radar"
+      "signature_text": "ziviler Transport, nur Radar",
+      "wiki_url": "https://de.wikipedia.org/wiki/Airbus_A320",
+      "default_faction": "NEUTRAL",
+      "rcs_m2": 60.0
+    },
+    {
+      "key": "su_25",
+      "name": "Suchoi Su-25 (Frogfoot)",
+      "nation": "BOREN",
+      "kind": "military",
+      "speed_kn": 380.0,
+      "esm": false,
+      "esm_range_nm": 0.0,
+      "loiter_nm": [
+        10.0,
+        20.0
+      ],
+      "spawn_weight": 0.6,
+      "signature_text": "gepanzertes Erdkampfflugzeug, tiefer Anflug",
+      "wiki_url": "https://de.wikipedia.org/wiki/Suchoi_Su-25",
+      "default_faction": "FEIND",
+      "rcs_m2": 8.0
     }
   ],
   "profiles": [
@@ -62,55 +86,44 @@
       "launcher_keys": [],
       "magazine_keys": [],
       "countermeasure_keys": []
+    },
+    {
+      "profile_key": "su_25",
+      "reference_key": "reference.su_25",
+      "machine_key": "machine.su_25",
+      "sensor_keys": [
+        "sensor.su_25.radar"
+      ],
+      "emitter_keys": [
+        "emitter.su_25.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
     }
   ],
   "references": [
     {
       "key": "reference.mil_patrol",
-      "variant": "BOREN maritime-patrol archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": [
-        "maritime_patrol"
-      ],
       "hull_type": "fixed_wing_aircraft",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
     },
     {
       "key": "reference.civil_transit",
-      "variant": "HANSE civil-transit archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": [
-        "passenger_transport"
-      ],
       "hull_type": "fixed_wing_aircraft",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
+    },
+    {
+      "key": "reference.su_25",
+      "hull_type": "fixed_wing_aircraft",
+      "length_m": null
     }
   ],
   "machines": [
     {
       "key": "machine.mil_patrol",
-      "cruise_speed_kn": 200.0,
-      "maximum_speed_kn": 200.0,
+      "cruise_speed_kn": 480.0,
+      "maximum_speed_kn": 480.0,
       "quiet_speed_kn": null,
       "propulsion_codes": [
         "gas_turbine"
@@ -180,6 +193,43 @@
         100.0,
         2500.0
       ]
+    },
+    {
+      "key": "machine.su_25",
+      "cruise_speed_kn": 380.0,
+      "maximum_speed_kn": 380.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "other",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          95.0,
+          1.0,
+          4.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          190.0,
+          1.0,
+          6.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ]
     }
   ],
   "sensors": [
@@ -242,6 +292,21 @@
       "bearing_uncertainty_deg": null,
       "range_uncertainty_nm": null,
       "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.su_25.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.su_25.radar",
+      "synthetic_range_nm": 40.0,
+      "sensitivity_db": -80.0,
+      "cadence_s": 2.0,
+      "bearing_uncertainty_deg": 1.0,
+      "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
     }
   ],
   "emitters": [
@@ -259,6 +324,18 @@
     },
     {
       "key": "emitter.civil_transit.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": null,
+      "modulation_codes": [
+        "unknown"
+      ]
+    },
+    {
+      "key": "emitter.su_25.radar",
       "domain": "radar",
       "frequency_band_hz": [
         8000000000.0,

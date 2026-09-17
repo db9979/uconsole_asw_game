@@ -4,6 +4,7 @@ from contextlib import closing
 from dataclasses import replace
 import http.client
 import json
+import logging
 import random
 import threading
 import time
@@ -392,6 +393,25 @@ def test_bridge_applies_acknowledge_on_main_thread_without_rng_or_save_mutation(
         game.audio.shutdown()
 
 
+def test_apply_command_v2_exception_is_logged_without_leaking_data(server, caplog):
+    cookie, session = pair(server, "Faulty helm", "bridge")
+    body = command(session)
+    assert post(server, cookie, session, body)[0] == 202
+    envelope = next(iter(server.drain_commands_v2()))
+
+    def boom(action, params):
+        raise ValueError("s3cr3t-internal-detail")
+
+    with caplog.at_level(logging.WARNING, logger="src.commander.server"):
+        server.apply_command_v2(
+            envelope, now=time.monotonic(), phase="live",
+            world_session="world", world_epoch=3, resource_revision=5, apply=boom)
+    assert results(server, cookie)[-1]["reasoncode"] == "action_rejected"
+    [record] = caplog.records
+    assert record.getMessage() == "command apply failed: acknowledge (ValueError)"
+    assert "s3cr3t" not in record.getMessage()
+
+
 def test_bridge_orders_share_local_model_without_changing_local_ui_state(server):
     game = Game(seed=412, start_menu=False, audio_enabled=False, language="en")
     bridge = CommanderBridge()
@@ -712,13 +732,17 @@ def test_actual_game_sonar_release_opz_visibility_and_fusion(server):
         bridge.pump(game, server, now=time.monotonic())
         picture = request(server, "/api/v2/state", cookie=opz_cookie)[2]["opz"]
         assert len(picture["observations"]) == 2
-        source_owned = station_command(opz_session, "opz_classify", {
+        # OPZ may reclassify a released sonar contact too - it writes through
+        # to the shared Contact, not a fusion-only classification overlay.
+        reclassify = station_command(opz_session, "opz_classify", {
             "ref": picture["observations"][0]["ref"],
             "classification": "KAMPFSCHIFF"}, bridge,
-            command_id="source-owned", seq=0)
-        assert post(server, opz_cookie, opz_session, source_owned)[0] == 202
+            command_id="reclassify", seq=0)
+        assert post(server, opz_cookie, opz_session, reclassify)[0] == 202
         bridge.pump(game, server, now=time.monotonic())
-        assert results(server, opz_cookie)[-1]["reasoncode"] == "source_owned"
+        assert results(server, opz_cookie)[-1]["reasoncode"] == "ok"
+        assert any(contact.player_class == "KAMPFSCHIFF"
+                   for contact in game.sonar.contacts.values())
         fusion = station_command(opz_session, "opz_create_fusion",
             {"refs": [row["ref"] for row in picture["observations"]]}, bridge,
             command_id="fusion", seq=1)
@@ -737,6 +761,50 @@ def test_actual_game_sonar_release_opz_visibility_and_fusion(server):
         assert game.target in game.sonar.contacts.values()
         encoded = json.dumps(picture)
         assert "88001" not in encoded and "88002" not in encoded and "hidden" not in encoded
+    finally:
+        game.audio.shutdown()
+
+
+def test_helicopter_role_can_classify_and_release_its_own_dip_only_contact(server):
+    """Feature request: the helicopter role must have its own path to
+    classify/release a contact only its own dip has found, without waiting
+    on the Sonar role - matching the local Helicopter station's G/Shift-G/C."""
+    game = Game(seed=415, start_menu=False, audio_enabled=False, language="en")
+    bridge = CommanderBridge()
+    try:
+        game.sonar.contacts.clear()
+        contact = Contact(1, 89001, "dipping-passiv", "sub")
+        contact.update_dip_passive(200.0, game.sim_t, game.ship.x + 4.0,
+                                   game.ship.y + 1.0, 1.5)
+        game.sonar.contacts[89001] = contact
+        bridge.pump(game, server, now=time.monotonic())
+
+        helo_cookie, helo_session = pair(server, "Remote helicopter", "helicopter")
+        bridge.pump(game, server, now=time.monotonic())
+        state = request(server, "/api/v2/state", cookie=helo_cookie)[2]
+        tactical = state["helicopter"]["tactical"]
+        assert len(tactical) == 1 and tactical[0]["released_to_opz"] is False
+        ref = tactical[0]["ref"]
+
+        assert submit(game, bridge, server, helo_cookie, helo_session,
+                      "sonar_classify", {"ref": ref, "classification": "U_BOOT"},
+                      0)["reasoncode"] == "ok"
+        assert contact.player_class == "U_BOOT"
+
+        assert submit(game, bridge, server, helo_cookie, helo_session,
+                      "sonar_set_release", {"ref": ref, "released": True},
+                      1)["reasoncode"] == "ok"
+        assert contact.released_to_opz is True
+
+        state = request(server, "/api/v2/state", cookie=helo_cookie)[2]
+        assert state["helicopter"]["tactical"][0]["released_to_opz"] is True
+
+        opz_cookie, _ = pair(server, "Remote OPZ", "opz")
+        bridge.pump(game, server, now=time.monotonic())
+        opz_picture = request(server, "/api/v2/state", cookie=opz_cookie)[2]["opz"]
+        assert any(row["ref"] == ref for row in opz_picture["observations"])
+        assert any(item["ref"] == ref and item["classification"] == "U_BOOT"
+                   for item in opz_picture["source_classifications"])
     finally:
         game.audio.shutdown()
 

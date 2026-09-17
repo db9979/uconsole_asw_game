@@ -123,7 +123,12 @@ def test_r10_submarine_decoy_activation_is_deterministic():
 
 
 def test_r10_warship_components_preserve_legacy_runtime_and_draw_order():
-    for index, key in enumerate(f"warship_{number:02d}" for number in range(3, 25)):
+    # warship_03..warship_21 were recategorized to neutral "SONSTIGES"
+    # civilian traffic by the Russia-hostile-pool migration (they now behave
+    # like test_r10_civilian_components_preserve_legacy_runtime_and_draw_order
+    # below, which already iterates every CATALOG.civilian_surfaces entry).
+    # Only warship_22..warship_24 (Russia) remain KAMPFSCHIFF/hostile.
+    for index, key in enumerate(f"warship_{number:02d}" for number in range(22, 25)):
         profile = CATALOG.surfaces[key]
         rng = random.Random(4100 + index)
         ship = SurfaceShip(
@@ -165,13 +170,33 @@ def test_r10_civilian_components_preserve_legacy_runtime_and_draw_order():
         expected_rng.choice((-1, 1))
 
         assert rng.getstate() == expected_rng.getstate()
-        assert set(ship.sensor_suite.controllers) == {
-            f"sensor.{profile.key}.radar", f"sensor.{profile.key}.ais"}
-        assert ship.asroc_battery is None
-        if profile.key != "cargo_05":
+        # Former real-navy warships recategorized to neutral "SONSTIGES"
+        # traffic by the Russia-hostile-pool migration kept their original
+        # radar+sonar sensor suite (a real warship, just not belligerent here)
+        # instead of the civilian archetypes' radar+ais AIS transponder.
+        controllers = set(ship.sensor_suite.controllers)
+        assert f"sensor.{profile.key}.radar" in controllers
+        assert controllers == {f"sensor.{profile.key}.radar", f"sensor.{profile.key}.ais"} \
+            or controllers == {f"sensor.{profile.key}.radar", f"sensor.{profile.key}.sonar"}
+        # Former real-navy warships keep their original weapon data too
+        # (unarmed only in the sense that they never reach the doctrine-
+        # gated ASM/ASROC engage paths as neutral traffic); only the ones
+        # whose launcher actually carries an asroc-type weapon (the VLS/
+        # asroc-magazine warship_01/02/25/26) get a real battery here - the
+        # rest (rail/asm, ciws, sam launcher types) don't, same as the
+        # original 55 civilian archetypes which never had any such component.
+        if profile.key in ("warship_01", "warship_02", "warship_25", "warship_26"):
+            assert ship.asroc_battery is not None
+        else:
+            assert ship.asroc_battery is None
+        # cargo_05 (kept as an intentional generic archetype) and the
+        # already-real-navy ex-warships moved in by the hostile-pool
+        # migration carry genuine (non-"unknown") machine data; only
+        # profiles still on the legacy/unknown-propulsor path derive
+        # cruise == maximum straight from the top-level speed_kn[1].
+        if ship.legacy_observation_model:
             assert ship.motion.cruise_speed_kn == profile.speed_kn[1]
             assert ship.motion.maximum_speed_kn == profile.speed_kn[1]
-            assert ship.legacy_observation_model
             assert machine_acoustics(CATALOG, profile.key, ship.speed) is None
 
 

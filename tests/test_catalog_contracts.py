@@ -46,11 +46,31 @@ def test_required_fields_cannot_be_replaced_by_loader_defaults(filename):
     source = resources.files("data.contacts") / filename
     with source.open("r", encoding="utf-8") as stream:
         entry = json.load(stream)["entries"][0]
+    optional = catalog.ENTRY_OPTIONAL_FIELDS if filename != "acoustics.json" \
+        else catalog.ACOUSTIC_OPTIONAL_FIELDS
     for field in catalog.CONTACT_FIELDS[filename]:
+        if field in optional:
+            continue  # genuinely optional (Wikipedia-import-authored) fields
         incomplete = copy.deepcopy(entry)
         del incomplete[field]
         with pytest.raises(ValueError, match="missing fields"):
             catalog.validate_contact_entry(filename, incomplete)
+
+
+@pytest.mark.parametrize("filename", ["subs.json", "warships.json", "civilians.json",
+                                      "aircraft.json", "acoustics.json"])
+def test_optional_wiki_import_fields_may_be_absent(filename):
+    """The new wiki_url/default_faction/rcs_m2 (+ acoustic extras) fields are
+    genuinely optional: real packaged entries omit them and still validate."""
+    source = resources.files("data.contacts") / filename
+    with source.open("r", encoding="utf-8") as stream:
+        entry = json.load(stream)["entries"][0]
+    optional = catalog.ENTRY_OPTIONAL_FIELDS if filename != "acoustics.json" \
+        else catalog.ACOUSTIC_OPTIONAL_FIELDS
+    reduced = copy.deepcopy(entry)
+    for field in optional:
+        reduced.pop(field, None)
+    catalog.validate_contact_entry(filename, reduced)  # must not raise
 
 
 @pytest.mark.parametrize(("filename", "field", "value"), [

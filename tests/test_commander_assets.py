@@ -257,6 +257,37 @@ def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
     assert '("role-map").addEventListener("keydown"' in js
 
 
+def test_simlog_map_dialog_toolbar_is_structured_and_wired():
+    """Regression: .simlog-map-shell/-header/-toolbar/-layout/-plot/-sidebar
+    in style.css had no matching markup (the dialog was unstyled default
+    block flow), and its three toolbar buttons (close/fit-to-world/
+    fit-to-units) had no click handlers at all - silently dead controls."""
+    html = ASSETS.joinpath("index.html").read_text()
+    js = ASSETS.joinpath("app.js").read_text()
+    document = Document(html)
+    dialog = next(attrs for tag, attrs in document.elements if attrs.get("id") == "simlog-map-dialog")
+    assert "hidden" in dialog
+    classes = {attrs.get("class", "") for _, attrs in document.elements}
+    for expected in ("simlog-map-shell", "simlog-map-header", "simlog-map-toolbar",
+                     "simlog-map-layout", "simlog-map-plot", "simlog-map-sidebar"):
+        assert any(expected in value.split() for value in classes), expected
+    for control in ("simlog-map-close", "simlog-map-world", "simlog-map-units-fit"):
+        assert any(attrs.get("id") == control and attrs.get("data-i18n")
+                   for _, attrs in document.elements), control
+    body = js.split("function closeSimlogMap", 1)[1].split("function openSimlogMap", 1)[0]
+    assert "dialog.close()" in body
+    wiring = js.split('$("simlog-map-close").addEventListener("click"', 1)[1][:900]
+    assert "closeSimlogMap" in wiring
+    assert '$("simlog-map-dialog").addEventListener("close"' in wiring
+    assert "simlogMapData = null" in wiring and "releaseCanvas(simlogMapCanvas)" in wiring
+    assert '$("simlog-map-world").addEventListener("click"' in wiring
+    assert '$("simlog-map-units-fit").addEventListener("click"' in wiring
+    assert 'simlogMapFit = "world"' in wiring and 'simlogMapFit = "units"' in wiring
+    world_button = next(attrs for _, attrs in document.elements if attrs.get("id") == "simlog-map-world")
+    units_button = next(attrs for _, attrs in document.elements if attrs.get("id") == "simlog-map-units-fit")
+    assert world_button["aria-pressed"] == "true" and units_button["aria-pressed"] == "false"
+
+
 def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
     html = ASSETS.joinpath("index.html").read_text()
     js = ASSETS.joinpath("app.js").read_text()
@@ -434,7 +465,7 @@ def test_v2_direct_fire_controls_use_opaque_projections_and_exact_actions():
         "function stationActionAvailable", 1)[1].split("function renderOpzControls", 1)[0]
     assert "performance.now() + 5000" in direct
     assert "station_generation" in direct and "v2State?.epoch" in direct
-    assert "sendStationAction(action, spec.params)" in direct
+    assert "sendStationAction(state.action, spec.params)" in direct
     assert "transmitCommand" not in direct
     assert all(term not in html for term in ("target_id", "track_id", "profile_key"))
 
@@ -1130,7 +1161,11 @@ async function runContract() {
   assert(mapBounds.left >= -1 && mapBounds.top >= -1 && mapBounds.right <= innerWidth + 1 && mapBounds.bottom <= innerHeight + 1,
     "simlog map dialog remains inside the viewport");
   $test("simlog-map-units-fit").click();
+  assert($test("simlog-map-units-fit").getAttribute("aria-pressed") === "true" &&
+    $test("simlog-map-world").getAttribute("aria-pressed") === "false",
+    "fit-to-units toggle is reflected on both toolbar buttons");
   $test("simlog-map-close").click();
+  assert(!$test("simlog-map-dialog").open, "close button actually closes the map dialog");
   location.hash = "";
   await until(() => !$test("operations").hidden, "operations return without a page reload");
   $test("disconnect").click();
@@ -1195,12 +1230,7 @@ def browser_status_state():
 def browser_contact_analysis():
     return dict(version=1, profiles=[dict(
         key="reference_unit", name="Reference Unit <inert>", resource="subs.json",
-        reference=dict(variant="Test", variant_year=None, refit_year=None,
-                       aliases=["Sample"], roles=["reference"], hull_type="single",
-                       displacement_tonnes=2000, displacement_basis="submerged",
-                       length_m=80, beam_waterline_m=None, beam_overall_m=9,
-                       flight_deck_width_m=None, draft_m=7, ship_crew=None,
-                       air_group_crew=None),
+        reference=dict(hull_type="single", length_m=80),
         machine=dict(cruise_speed_kn=8, maximum_speed_kn=18,
                       quiet_speed_kn=5, propulsion_codes=["DE"], motor_rpm=None,
                       shaft_rpm=None, propulsor_type="propeller", blade_count=None,

@@ -231,6 +231,17 @@ class DamageModel:
     def avg_flood(self) -> float:
         return self.total / len(self.compartments)
 
+    def list_deg(self) -> float:
+        """Heel from asymmetric flooding: positive = listing to starboard.
+
+        Pure derived value from the existing hull_left/hull_right flood
+        percentages (already part of save state) - not itself new state.
+        """
+        asymmetry = (self.compartments["hull_right"].flood
+                     - self.compartments["hull_left"].flood)
+        return config.clamp(asymmetry * config.SHIP_LIST_DEG_PER_FLOOD_PCT,
+                            -config.SHIP_MAX_LIST_DEG, config.SHIP_MAX_LIST_DEG)
+
     def engine_speed_cap(self) -> float:
         if self.station_down("engine"):
             return 8.0

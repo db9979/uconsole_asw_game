@@ -6,14 +6,17 @@ import copy
 from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
+from urllib.parse import urlsplit
 
 import pygame
+import webbrowser
 
 from src.core.i18n import display_value, raw_text, translation_scope
 from src.data.catalog import ACOUSTIC_FIELDS
 from src.data.user_content import ContentRecord, UserContentStore
+from src.data import wiki_import
 from src.data.validation import (ContentValidationError, ValidationIssue, enum,
-                                 finite_number, integer, issue, pair, text,
+                                 finite_number, integer, issue, mapping, pair, text,
                                  unique, validate_user_key, localized_error,
                                  localized_issue)
 from src.ui import editor_widgets as widgets
@@ -21,6 +24,13 @@ from src.ui import editor_widgets as widgets
 
 UNIT_VERSION = 1
 PROFILE_KINDS = ("sub", "surface", "aircraft", "animal", "torpedo", "decoy")
+DEFAULT_FACTIONS = ("FREUND", "FEIND", "NEUTRAL")
+# Wikipedia-Import/authoring fields, present on the platform kinds a real-world
+# unit is likely to model. Genuinely optional (absent key = not authored yet),
+# mirroring how the acoustic/torpedo "acoustic: null" field already behaves -
+# never populated by default_unit() and stripped from builtin clones when unset.
+WIKI_IMPORT_FIELDS = ("wiki_url", "default_faction", "rcs_m2", "radar_emitter",
+                      "radar_range_km", "weapons", "countermeasures")
 
 
 @dataclass(frozen=True)
@@ -40,15 +50,67 @@ UNIT_FIELD_METADATA = {
 }
 
 _UNIT_KIND_FIELDS = {
-    "sub": ("speed_kn", "max_depth_m", "torpedoes", "quiet", "aggression", "spawn_weight", "acoustic"),
+    "sub": ("speed_kn", "max_depth_m", "torpedoes", "quiet", "aggression", "spawn_weight",
+            "acoustic") + WIKI_IMPORT_FIELDS,
     "surface": ("category", "hostile", "speed_kn", "callsigns", "esm_prob", "asm_salvo",
-                "asm_cooldown_s", "loiter_nm", "spawn_weight", "acoustic"),
+                "asm_cooldown_s", "loiter_nm", "spawn_weight",
+                "acoustic") + WIKI_IMPORT_FIELDS,
     "aircraft": ("nation", "aircraft_kind", "speed_kn", "esm", "esm_range_nm", "loiter_nm",
-                 "spawn_weight", "signature_text"),
+                 "spawn_weight", "signature_text") + WIKI_IMPORT_FIELDS,
     "animal": ("depth_min", "depth_max", "speed_kn", "quiet", "size_nm", "spawn_weight",
                "lines", "signature_text"),
     "torpedo": ("used_by", "speed_kn", "range_nm", "hit_dist_nm", "acoustic"),
     "decoy": ("life_s", "speed_kn", "cooldown_s", "chance", "lines", "signature_text"),
+}
+# Fields that are allowed but never required (absent = "not authored yet").
+_UNIT_OPTIONAL_FIELDS = {"sub": set(WIKI_IMPORT_FIELDS), "surface": set(WIKI_IMPORT_FIELDS),
+                         "aircraft": set(WIKI_IMPORT_FIELDS)}
+
+# W2: field-list section grouping per kind, in display order. Every group's
+# fields, unioned across a kind, must equal exactly the kind's full field
+# set (version/key/profile_kind/name + _UNIT_KIND_FIELDS[kind]) - checked by
+# tests/test_unit_editor.py so a newly added field can never silently fall
+# outside every group.
+_IDENTITY_FIELDS = ("version", "key", "profile_kind", "name")
+_UNIT_FIELD_GROUPS = {
+    "sub": (
+        ("field.group_identity", _IDENTITY_FIELDS),
+        ("field.group_movement", ("speed_kn", "max_depth_m")),
+        ("field.group_combat", ("torpedoes", "quiet", "aggression", "spawn_weight")),
+        ("field.group_acoustic", ("acoustic",)),
+        ("field.group_wiki", WIKI_IMPORT_FIELDS),
+    ),
+    "surface": (
+        ("field.group_identity", _IDENTITY_FIELDS + ("category", "hostile")),
+        ("field.group_movement", ("speed_kn", "loiter_nm")),
+        ("field.group_combat", ("callsigns", "esm_prob", "asm_salvo",
+                                "asm_cooldown_s", "spawn_weight")),
+        ("field.group_acoustic", ("acoustic",)),
+        ("field.group_wiki", WIKI_IMPORT_FIELDS),
+    ),
+    "aircraft": (
+        ("field.group_identity", _IDENTITY_FIELDS + ("nation", "aircraft_kind")),
+        ("field.group_movement", ("speed_kn", "loiter_nm")),
+        ("field.group_combat", ("esm", "esm_range_nm", "spawn_weight")),
+        ("field.group_acoustic", ("signature_text",)),
+        ("field.group_wiki", WIKI_IMPORT_FIELDS),
+    ),
+    "animal": (
+        ("field.group_identity", _IDENTITY_FIELDS),
+        ("field.group_movement", ("depth_min", "depth_max", "speed_kn", "quiet",
+                                  "size_nm", "spawn_weight")),
+        ("field.group_acoustic", ("lines", "signature_text")),
+    ),
+    "torpedo": (
+        ("field.group_identity", _IDENTITY_FIELDS + ("used_by",)),
+        ("field.group_movement", ("speed_kn", "range_nm", "hit_dist_nm")),
+        ("field.group_acoustic", ("acoustic",)),
+    ),
+    "decoy": (
+        ("field.group_identity", _IDENTITY_FIELDS),
+        ("field.group_movement", ("life_s", "speed_kn", "cooldown_s", "chance")),
+        ("field.group_acoustic", ("lines", "signature_text")),
+    ),
 }
 
 
@@ -156,6 +218,90 @@ def _validate_acoustic(value: Any, path: str = "acoustic") -> list[ValidationIss
                 problems.append(issue(f"{path}.broadband", "order", "low frequency must be below high frequency"))
     problems += text(value.get("signature_text", ""), f"{path}.signature_text",
                      required=False, maximum=500)
+    if "lofar_base_freq_hz" in value:
+        freqs = value["lofar_base_freq_hz"]
+        if not isinstance(freqs, list) or not freqs:
+            problems.append(issue(f"{path}.lofar_base_freq_hz", "array",
+                                  "must be a non-empty array (omit the field instead of [])"))
+        else:
+            for index, freq in enumerate(freqs):
+                problems += finite_number(freq, f"{path}.lofar_base_freq_hz[{index}]",
+                                          minimum=0.01, maximum=100000)
+    if "cavitation_speed_knots" in value:
+        problems += finite_number(value["cavitation_speed_knots"],
+                                  f"{path}.cavitation_speed_knots", minimum=0.01, maximum=1000)
+    if "audio_sample_id" in value:
+        problems += text(value["audio_sample_id"], f"{path}.audio_sample_id", maximum=128)
+    return problems
+
+
+def _validate_weapons(value: Any, path: str = "weapons") -> list[ValidationIssue]:
+    if not isinstance(value, list):
+        return [issue(path, "array", "must be an array")]
+    problems = []
+    ids = []
+    for index, weapon in enumerate(value):
+        base = f"{path}[{index}]"
+        if not isinstance(weapon, Mapping):
+            problems.append(issue(base, "object", "must be a weapon object"))
+            continue
+        extra = weapon.keys() - {"id", "name", "range_km", "damage", "hit_chance_base"}
+        for field in extra:
+            problems += enum(field, f"{base}.{field}",
+                             ("id", "name", "range_km", "damage", "hit_chance_base"))
+        problems += text(weapon.get("id"), f"{base}.id", maximum=64)
+        problems += text(weapon.get("name"), f"{base}.name", maximum=80)
+        problems += finite_number(weapon.get("range_km"), f"{base}.range_km", minimum=0.01, maximum=20000)
+        problems += finite_number(weapon.get("damage"), f"{base}.damage", minimum=0, maximum=10000)
+        problems += finite_number(weapon.get("hit_chance_base"), f"{base}.hit_chance_base",
+                                  minimum=0, maximum=1)
+        if isinstance(weapon.get("id"), str):
+            ids.append(weapon["id"])
+    problems += unique(ids, path)
+    return problems
+
+
+def _validate_countermeasures(value: Any, path: str = "countermeasures") -> list[ValidationIssue]:
+    problems = mapping(value, path)
+    if problems:
+        return problems
+    extra = value.keys() - {"chaff_flares", "towed_decoy", "jamming_effectiveness"}
+    for field in extra:
+        problems += enum(field, f"{path}.{field}",
+                         ("chaff_flares", "towed_decoy", "jamming_effectiveness"))
+    for field in ("chaff_flares", "towed_decoy"):
+        if not isinstance(value.get(field), bool):
+            problems.append(issue(f"{path}.{field}", "boolean", "must be true or false"))
+    problems += finite_number(value.get("jamming_effectiveness"),
+                              f"{path}.jamming_effectiveness", minimum=0, maximum=1)
+    return problems
+
+
+def _validate_wiki_import_fields(data: Mapping[str, Any]) -> list[ValidationIssue]:
+    """Validate the optional, Wikipedia-importer-authored fields, if present."""
+    problems = []
+    if "wiki_url" in data:
+        value = data["wiki_url"]
+        problems += text(value, "wiki_url", maximum=300)
+        if not problems:
+            parsed = urlsplit(value)
+            if (parsed.scheme != "https" or not parsed.hostname
+                    or not parsed.hostname.lower().endswith(".wikipedia.org")
+                    or not parsed.path.startswith("/wiki/")):
+                problems.append(issue("wiki_url", "wiki_url",
+                                      "must be a https://<lang>.wikipedia.org/wiki/... URL"))
+    if "default_faction" in data:
+        problems += enum(data["default_faction"], "default_faction", DEFAULT_FACTIONS)
+    if "rcs_m2" in data:
+        problems += finite_number(data["rcs_m2"], "rcs_m2", minimum=0.001, maximum=200000)
+    if "radar_emitter" in data:
+        problems += text(data["radar_emitter"], "radar_emitter", maximum=80)
+    if "radar_range_km" in data:
+        problems += finite_number(data["radar_range_km"], "radar_range_km", minimum=0.01, maximum=5000)
+    if "weapons" in data:
+        problems += _validate_weapons(data["weapons"])
+    if "countermeasures" in data:
+        problems += _validate_countermeasures(data["countermeasures"])
     return problems
 
 
@@ -182,6 +328,7 @@ def validate_unit(data: Mapping[str, Any]) -> list[ValidationIssue]:
         problems += finite_number(data.get("aggression"), "aggression", minimum=0, maximum=1)
         problems += finite_number(data.get("spawn_weight"), "spawn_weight", minimum=0, maximum=100000)
         problems += _validate_acoustic(data.get("acoustic"))
+        problems += _validate_wiki_import_fields(data)
     elif kind == "surface":
         problems += enum(data.get("category"), "category",
                          ("TANKER", "PASSAGIER", "FRACHT", "SONSTIGES", "KAMPFSCHIFF"))
@@ -203,6 +350,7 @@ def validate_unit(data: Mapping[str, Any]) -> list[ValidationIssue]:
         problems += finite_number(data.get("loiter_nm"), "loiter_nm", minimum=0, maximum=5000)
         problems += finite_number(data.get("spawn_weight"), "spawn_weight", minimum=0, maximum=100000)
         problems += _validate_acoustic(data.get("acoustic"))
+        problems += _validate_wiki_import_fields(data)
     elif kind == "aircraft":
         problems += text(data.get("nation"), "nation", maximum=32)
         problems += enum(data.get("aircraft_kind"), "aircraft_kind", ("civil", "military"))
@@ -213,6 +361,7 @@ def validate_unit(data: Mapping[str, Any]) -> list[ValidationIssue]:
         problems += pair(data.get("loiter_nm"), "loiter_nm", minimum=0, maximum=5000)
         problems += finite_number(data.get("spawn_weight"), "spawn_weight", minimum=0, maximum=100000)
         problems += text(data.get("signature_text", ""), "signature_text", required=False, maximum=500)
+        problems += _validate_wiki_import_fields(data)
     elif kind == "animal":
         problems += finite_number(data.get("depth_min"), "depth_min", minimum=0, maximum=2000)
         problems += finite_number(data.get("depth_max"), "depth_max", minimum=0, maximum=2000)
@@ -251,6 +400,11 @@ def _plain_builtin(profile: Any, kind: str) -> dict[str, Any]:
         source["hostile"] = source.get("category") == "KAMPFSCHIFF"
     if kind == "aircraft" and "kind" in source:
         source["aircraft_kind"] = source.pop("kind")
+    # asdict() always yields these dataclass fields, even when the catalog
+    # profile never set them; keep the editor's "absent = not authored" model.
+    for field in ("wiki_url", "default_faction", "rcs_m2"):
+        if source.get(field) is None:
+            source.pop(field, None)
     if "acoustic" in source and source["acoustic"] is not None:
         acoustic = source["acoustic"]
         if is_dataclass(acoustic):
@@ -258,6 +412,12 @@ def _plain_builtin(profile: Any, kind: str) -> dict[str, Any]:
         acoustic = dict(acoustic)
         if "blade_counts" in acoustic:
             acoustic["blades"] = acoustic.pop("blade_counts")
+        if not acoustic.get("lofar_base_freq_hz"):
+            acoustic.pop("lofar_base_freq_hz", None)
+        if acoustic.get("cavitation_speed_knots") is None:
+            acoustic.pop("cavitation_speed_knots", None)
+        if not acoustic.get("audio_sample_id"):
+            acoustic.pop("audio_sample_id", None)
         source["acoustic"] = acoustic
     # JSON profiles use lists; dataclass profiles use tuples.
     def lists(value):
@@ -328,6 +488,8 @@ class UnitEditor:
                          else catalog_builtins(builtins))
         self.records: list[ContentRecord] = []
         self.listbox = widgets.ListBox()
+        self.filter = widgets.FilterField()
+        self.filtered: list[int] = []
         self.mode = "browser"
         self.current: UnitDefinition | None = None
         self.status = ""
@@ -337,18 +499,42 @@ class UnitEditor:
         self._delete_pending = False
         self.path_action: str | None = None
         self.path_input = widgets.TextField(maximum=1024)
+        self.wiki_input = widgets.TextField(maximum=300)
+        self.wiki_result: dict[str, tuple[Any, str]] | None = None
         self.refresh()
 
     def refresh(self) -> None:
         builtin = [ContentRecord(key, "unit", _plain_builtin(value, kind), True)
                    for key, (kind, value) in sorted(self.builtins.items())]
         self.records = builtin + self.store.list("unit")
-        self.listbox.set_items([f"{'[built-in]' if item.builtin else '[user]'} {item.key}"
-                                for item in self.records])
+        self._apply_filter()
+
+    def _record_label(self, record: ContentRecord) -> str:
+        tag = "built-in" if record.builtin else "user"
+        name = record.data.get("name") or record.key
+        return f"{name}  [{tag}] {record.key}"
+
+    def _apply_filter(self) -> None:
+        self.filtered = [
+            index for index, record in enumerate(self.records)
+            if self.filter.matches(record.key, record.data.get("name", ""),
+                                   record.data.get("profile_kind", ""))
+        ]
+        self.listbox.set_items([self._record_label(self.records[index])
+                                for index in self.filtered])
+        self.listbox.selected = min(self.listbox.selected, max(0, len(self.filtered) - 1))
+
+    def _set_filter(self, value: str) -> None:
+        self.filter.set(value)
+        self.listbox.selected = 0
+        self.listbox.scroll = 0
+        self._apply_filter()
 
     @property
     def selected(self) -> ContentRecord | None:
-        return self.records[self.listbox.selected] if self.records else None
+        if not self.filtered:
+            return None
+        return self.records[self.filtered[self.listbox.selected]]
 
     def new(self, kind: str, key: str) -> UnitDefinition:
         self.current = UnitDefinition(default_unit(kind, key)); self.mode = "editor"
@@ -413,7 +599,12 @@ class UnitEditor:
         return records
 
     def _sync_fields(self) -> None:
-        self.fields.set_rows(widgets.mapping_rows(self.current.data) if self.current else ())
+        if not self.current:
+            self.fields.set_rows(())
+            return
+        kind = self.current.data.get("profile_kind")
+        groups = _UNIT_FIELD_GROUPS.get(kind)
+        self.fields.set_rows(widgets.mapping_rows(self.current.data, groups=groups))
 
     def _begin_path(self, action: str) -> None:
         self.path_action = action
@@ -460,6 +651,8 @@ class UnitEditor:
             event = pygame.event.Event(pygame.KEYDOWN, key=key, mod=0, unicode="")
         if self.path_action:
             return self._handle_path(event)
+        if self.mode == "wiki_import":
+            return self._handle_wiki_import(event)
         if self._delete_pending:
             if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_DELETE):
                 self._delete_selected(); return True
@@ -476,11 +669,11 @@ class UnitEditor:
                 self.mode = "browser"; return True
             return changed
         if self.mode == "browser":
-            changed = self.listbox.handle_event(event, self._rects.get("browser", pygame.Rect(28, 104, 404, 532)))
+            browser_rect = self._rects.get("browser", pygame.Rect(28, 104, 404, 532))
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     self.open_selected(); return True
-                if event.key == pygame.K_n:
+                if event.key == pygame.K_n and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                     self.mode = "kind"; return True
                 if event.key == pygame.K_DELETE and self.selected and not self.selected.builtin:
                     if getattr(event, "mod", 0) & pygame.KMOD_SHIFT:
@@ -491,11 +684,32 @@ class UnitEditor:
                     return True
                 if event.key == pygame.K_i and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                     self._begin_path("import"); return True
-            return changed
+                # Real navigation keys move the list; everything else typed
+                # here (including bare letters, unlike the old "N" shortcut
+                # above) goes straight into the live search filter, matching
+                # the tactical/contact analyzer's type-to-search behavior.
+                if event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP,
+                                 pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
+                    return self.listbox.handle_event(event, browser_rect)
+                if self.filter.handle_event(event):
+                    self._set_filter(self.filter.text)
+                    return True
+                return False
+            if event.type == pygame.TEXTINPUT:
+                if self.filter.handle_event(event):
+                    self._set_filter(self.filter.text)
+                    return True
+                return False
+            return self.listbox.handle_event(event, browser_rect)
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1
+                and getattr(event, "pos", None) is not None):
+            wiki_rect = self._rects.get("open_wiki")
+            if wiki_rect is not None and wiki_rect.collidepoint(event.pos):
+                return self.open_wiki_url()
         if self.fields.editing:
             if (event.type == pygame.KEYDOWN and event.key == pygame.K_s
                     and getattr(event, "mod", 0) & pygame.KMOD_CTRL):
-                self.fields.apply_edit()
+                self.fields.apply_edit(self.tr)
                 if self.fields.editing:
                     self.status = self.fields.error
                 else:
@@ -505,13 +719,15 @@ class UnitEditor:
                     except (ContentValidationError, OSError) as exc:
                         self.status = localized_error(exc, self.tr)
                 return True
-            handled = self.fields.handle_event(event, self._rects.get("fields", pygame.Rect(400, 105, 840, 520)))
+            handled = self.fields.handle_event(
+                event, self._rects.get("fields", pygame.Rect(400, 105, 840, 520)), tr=self.tr)
             if self.fields.error:
                 self.status = self.fields.error
             elif handled:
                 self._sync_fields()
             return handled
-        if self.fields.handle_event(event, self._rects.get("fields", pygame.Rect(400, 105, 840, 520))):
+        if self.fields.handle_event(
+                event, self._rects.get("fields", pygame.Rect(400, 105, 840, 520)), tr=self.tr):
             return True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -526,7 +742,111 @@ class UnitEditor:
                 self._begin_path("export"); return True
             if event.key == pygame.K_i and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
                 self._begin_path("import"); return True
+            if event.key == pygame.K_w and getattr(event, "mod", 0) & pygame.KMOD_CTRL:
+                self.open_wiki_url(); return True
+            if (event.key == pygame.K_g and getattr(event, "mod", 0) & pygame.KMOD_CTRL
+                    and self.current is not None
+                    and self.current.data.get("profile_kind") in ("sub", "surface", "aircraft")):
+                self._begin_wiki_import(); return True
         return False
+
+    def open_wiki_url(self) -> bool:
+        """Open the current profile's wiki_url in the system browser, if set."""
+        url = self.current.data.get("wiki_url") if self.current else None
+        if not url:
+            self.status = self.tr("editor.wiki_missing")
+            return False
+        webbrowser.open(url)
+        self.status = self.tr("editor.wiki_opened")
+        return True
+
+    # --- Wikipedia importer --------------------------------------------
+
+    def _begin_wiki_import(self) -> None:
+        self.mode = "wiki_import"
+        self.wiki_result = None
+        self.wiki_input.value = self.current.data.get("wiki_url") or ""
+        self.wiki_input.selected_all = True
+        self.status = self.tr("editor.wiki_url_prompt")
+
+    def _fetch_wiki(self) -> None:
+        url = self.wiki_input.value.strip()
+        try:
+            wikitext = wiki_import.fetch_wikitext(url)
+            infobox = wiki_import.parse_infobox(wikitext)
+            kind = self.current.data.get("profile_kind")
+            concepts = wiki_import.map_infobox_to_fields(infobox, kind)
+            acoustic = self.current.data.get("acoustic") or {}
+            suggestions = wiki_import.suggest_missing_fields(
+                concepts, hull_type=kind,
+                propulsion_text=concepts.get("propulsion_text", acoustic.get("propulsion")),
+                displacement_t=concepts.get("displacement_t"))
+        except wiki_import.WikiImportError as exc:
+            self.status = self.tr("editor.wiki_fetch_error", error=str(exc))
+            return
+        result: dict[str, tuple[Any, str]] = {}
+        for key, value in concepts.items():
+            if key == "_unmapped" or value is None:
+                continue
+            result[key] = (value, "wiki")
+        for key, value in suggestions.items():
+            result[key] = (value, "suggested")
+        self.wiki_result = result
+        self._wiki_url = url
+        self.status = self.tr("editor.wiki_review_hint")
+
+    def _apply_wiki_result(self) -> None:
+        if self.current is None or not self.wiki_result:
+            return
+        data = self.current.data
+        kind = data.get("profile_kind")
+        concepts = {k: v for k, (v, source) in self.wiki_result.items() if source == "wiki"}
+        suggestions = {k: v for k, (v, source) in self.wiki_result.items() if source == "suggested"}
+        url = getattr(self, "_wiki_url", None)
+        if url:
+            data["wiki_url"] = url
+        if "max_speed_kn" in concepts:
+            speed = concepts["max_speed_kn"]
+            if kind == "aircraft":
+                data["speed_kn"] = float(speed)
+            elif isinstance(data.get("speed_kn"), list):
+                low = min(data["speed_kn"][0], speed * 0.6)
+                data["speed_kn"] = [low, float(speed)]
+        acoustic = data.get("acoustic")
+        if isinstance(acoustic, dict):
+            if "propulsion_text" in concepts:
+                acoustic["propulsion"] = str(concepts["propulsion_text"])[:100]
+            if "demon_blade_count" in suggestions:
+                acoustic["blades"] = [int(suggestions["demon_blade_count"])]
+            if "demon_rpm_idle" in suggestions and "demon_rpm_max" in suggestions:
+                acoustic["rpm_range"] = [suggestions["demon_rpm_idle"], suggestions["demon_rpm_max"]]
+            if "lofar_base_freq_hz" in suggestions:
+                acoustic["lofar_base_freq_hz"] = list(suggestions["lofar_base_freq_hz"])
+            if "cavitation_speed_knots" in suggestions:
+                acoustic["cavitation_speed_knots"] = suggestions["cavitation_speed_knots"]
+        if "rcs_m2" in suggestions:
+            data["rcs_m2"] = suggestions["rcs_m2"]
+        self.wiki_result = None
+        self.mode = "editor"
+        self._sync_fields()
+        self.status = self.tr("editor.wiki_applied")
+
+    def _handle_wiki_import(self, event: pygame.event.Event) -> bool:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self.wiki_result = None
+            self.mode = "editor"
+            self.status = ""
+            return True
+        if self.wiki_result is not None:
+            if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                self._apply_wiki_result()
+            return True
+        if event.type == pygame.KEYDOWN and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self._fetch_wiki()
+            return True
+        if event.type == pygame.TEXTINPUT:
+            return self.wiki_input.handle_text(getattr(event, "text", ""))
+        return self.wiki_input.handle_event(event)
 
     def draw(self, surface: pygame.Surface) -> None:
         # Keep profile-authored values out of translation/template parsing,
@@ -539,26 +859,41 @@ class UnitEditor:
         surface.fill(widgets.PALETTE.background)
         widgets.draw_text(surface, self.tr("editor.unit_title"),
                           (20, 15, bounds.width - 40, 42), size=24, bold=True)
+        banner = pygame.Rect(20, 59, max(1, bounds.width - 40), 24)
+        pygame.draw.rect(surface, widgets.PALETTE.raised, banner)
+        pygame.draw.rect(surface, widgets.PALETTE.focus, banner, 1)
+        widgets.draw_text(surface, self.tr("editor.runtime_banner"), banner.inflate(-12, -4),
+                          color=widgets.PALETTE.focus, size=13, bold=True)
         footer = pygame.Rect(0, max(0, bounds.height - 42), bounds.width, min(42, bounds.height))
-        content = pygame.Rect(20, 66, max(1, bounds.width - 40), max(1, footer.y - 76))
+        content = pygame.Rect(20, banner.bottom + 8, max(1, bounds.width - 40),
+                              max(1, footer.y - banner.bottom - 18))
         with widgets.clipped(surface, content):
             if self.mode == "browser":
                 left = pygame.Rect(content.x, content.y, min(420, content.width), content.height)
                 inner = widgets.panel(surface, left, "editor.profiles", tr=self.tr)
-                self._rects["browser"] = inner
-                self.listbox.draw(surface, inner)
+                filter_rect = pygame.Rect(inner.x, inner.y, inner.width, 34)
+                self.filter.draw(surface, filter_rect, placeholder="editor.filter", tr=self.tr)
+                list_rect = pygame.Rect(inner.x, filter_rect.bottom + 8, inner.width,
+                                        max(1, inner.bottom - filter_rect.bottom - 8))
+                self._rects["browser"] = list_rect
+                self.listbox.draw(surface, list_rect)
                 right = pygame.Rect(left.right + 12, content.y,
                                     max(1, content.right - left.right - 12), content.height)
                 detail = widgets.panel(surface, right, "editor.selection", tr=self.tr)
                 record = self.selected
                 if record:
-                    lines = [record.key,
+                    name = record.data.get("name") or record.key
+                    lines = [name, record.key,
                              self.tr("editor.read_only" if record.read_only else "editor.user_content"),
                              self.tr("editor.open_clone"), self.tr("editor.runtime_no")]
                     for row, line in enumerate(lines):
-                        widgets.draw_text(surface, raw_text(line) if row == 0 else line,
+                        widgets.draw_text(surface, raw_text(line) if row < 2 else line,
                                           (detail.x, detail.y + row * 28, detail.width, 25),
-                                           color=widgets.PALETTE.dim if row else widgets.PALETTE.text)
+                                           color=widgets.PALETTE.text if row == 0 else widgets.PALETTE.dim,
+                                           size=17 if row == 0 else 15, bold=row == 0)
+                else:
+                    widgets.draw_text(surface, self.tr("editor.no_results"), detail,
+                                      color=widgets.PALETTE.dim, align="center")
             elif self.mode == "kind":
                 chooser = pygame.Rect(content.centerx - min(260, content.width // 2), content.y + 35,
                                       min(520, content.width), min(300, content.height - 50))
@@ -568,6 +903,25 @@ class UnitEditor:
                     surface, inner,
                     tr=lambda value: display_value("profile_kind", value, self.tr),
                     row_height=38)
+            elif self.mode == "wiki_import":
+                box = pygame.Rect(content.x, content.y, content.width, content.height)
+                inner = widgets.panel(surface, box, "editor.wiki_import_title", tr=self.tr)
+                if self.wiki_result is None:
+                    widgets.draw_text(surface, self.tr("editor.wiki_url_label"),
+                                      (inner.x, inner.y, inner.width, 24))
+                    self.wiki_input.draw(surface, pygame.Rect(inner.x, inner.y + 26, inner.width, 34),
+                                         focused=True)
+                else:
+                    row = 0
+                    for key, (value, source) in sorted(self.wiki_result.items()):
+                        tag = self.tr("editor.wiki_tag_wiki" if source == "wiki"
+                                      else "editor.wiki_tag_suggested")
+                        widgets.draw_text(
+                            surface, raw_text(f"{key}: {value}  [{tag}]"),
+                            (inner.x, inner.y + row * 24, inner.width, 22),
+                            color=widgets.PALETTE.text if source == "wiki" else widgets.PALETTE.dim,
+                            size=13)
+                        row += 1
             elif self.current:
                 self._sync_fields()
                 left_w = min(360, content.width // 3)
@@ -582,6 +936,16 @@ class UnitEditor:
                                       (nav.x, nav.y + row * 30, nav.width, 26),
                                       color=widgets.PALETTE.focus if row == 3 else widgets.PALETTE.text,
                                       size=13 if row == 3 else 15)
+                wiki_url = self.current.data.get("wiki_url")
+                if wiki_url:
+                    wiki_rect = pygame.Rect(nav.x, nav.y + 130, min(200, nav.width), 30)
+                    self._rects["open_wiki"] = wiki_rect
+                    pygame.draw.rect(surface, widgets.PALETTE.raised, wiki_rect)
+                    pygame.draw.rect(surface, widgets.PALETTE.focus, wiki_rect, 1)
+                    widgets.draw_text(surface, self.tr("editor.wiki_button"), wiki_rect,
+                                      color=widgets.PALETTE.text, size=13, align="center")
+                else:
+                    self._rects["open_wiki"] = None
                 detail = widgets.panel(surface,
                     (content.x + left_w + 12, content.y, content.width - left_w - 12, content.height),
                     "editor.validated_fields", tr=self.tr)
@@ -596,13 +960,18 @@ class UnitEditor:
                                   color=widgets.PALETTE.danger if problems else widgets.PALETTE.focus,
                                   size=13)
         if self.mode == "browser":
-            hints = ("editor.select_hint", "editor.open_hint", "editor.new_hint", "editor.remove_hint",
-                     "editor.import_hint", "editor.esc_browser")
+            hints = ("editor.filter_hint", "editor.select_hint", "editor.open_hint",
+                     "editor.new_hint", "editor.remove_hint",
+                     "editor.import_hint", "editor.wiki_import_hint", "editor.esc_browser")
         elif self.mode == "kind":
             hints = ("editor.select_hint", "editor.create_hint", "editor.cancel_short_hint")
+        elif self.mode == "wiki_import":
+            hints = (("editor.wiki_apply_hint", "editor.cancel_short_hint") if self.wiki_result is not None
+                     else ("editor.wiki_fetch_hint", "editor.cancel_short_hint"))
         else:
             hints = ("editor.field_hint", "editor.edit_hint", "editor.save_hint",
-                     "editor.bundle_hint", "editor.cancel_hint")
+                     "editor.bundle_hint", "editor.wiki_hint", "editor.wiki_import_hint",
+                     "editor.cancel_hint")
         widgets.draw_footer(surface, footer, hints, tr=self.tr)
         if self.path_action:
             box = pygame.Rect(max(20, bounds.width // 6), bounds.height // 2 - 55,

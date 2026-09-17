@@ -249,8 +249,13 @@ def test_map_roles_only_receive_shared_published_tactical_rows(published):
     weapons = server.v2_states["weapons"]["weapons"]
     helicopter = server.v2_states["helicopter"]["helicopter"]
     radio = server.v2_states["radio"]["radio"]
+    sonar_refs = {row["ref"] for row in
+                  server.v2_states["sonar"]["sonar"]["observations"]}
     assert {row["ref"] for row in weapons["tactical"]} <= released
-    assert {row["ref"] for row in helicopter["tactical"]} <= released
+    # Unlike Weapons/Radio, the Helicopter role sees its own targetable sonar
+    # picture directly - released or not - so it can classify/release what
+    # only its own dip has found, without waiting on the Sonar role.
+    assert {row["ref"] for row in helicopter["tactical"]} <= sonar_refs
     assert all(row["source"].startswith("SONAR")
                for row in weapons["target_choices"])
     assert all(row["source"].startswith("SONAR")
@@ -263,10 +268,9 @@ def test_map_roles_only_receive_shared_published_tactical_rows(published):
                (weapons, helicopter, radio))
     assert len(weapons["target_choices"]) <= 128
     assert len(helicopter["target_choices"]) <= 128
-    sonar_only = {row["ref"] for row in
-                  server.v2_states["sonar"]["sonar"]["observations"]} - released
+    sonar_only = sonar_refs - released
     assert not sonar_only.intersection(row["ref"] for row in weapons["tactical"])
-    assert not sonar_only.intersection(row["ref"] for row in helicopter["tactical"])
+    assert sonar_only and sonar_only <= {row["ref"] for row in helicopter["tactical"]}
 
 
 def test_direct_fire_refs_are_role_scoped_and_chaff_uses_ready_inventory(published):

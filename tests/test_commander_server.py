@@ -259,26 +259,28 @@ def test_host_headers_and_framing(server, headers, expected):
 
 def test_connection_cap_timeout_and_bounded_shutdown(server, deadline_timers):
     http = server._http
+    cap = transport._CONNECTION_SLOT_LIMIT
     clients = []
     try:
-        for _ in range(4):
+        for _ in range(cap):
             client = socket.create_connection(server.address, timeout=3)
             client.sendall(b"GET / HTTP/1.1\r\n")
             clients.append(client)
         deadline = time.monotonic() + 1
-        while len(http.workers) < 4 and time.monotonic() < deadline:
+        while len(http.workers) < cap and time.monotonic() < deadline:
             time.sleep(0.005)
         with http.work_lock:
             workers = list(http.workers)
-            assert len(workers) == 4
-        with closing(socket.create_connection(server.address, timeout=3)) as fifth:
-            assert fifth.recv(1) == b""
+            assert len(workers) == cap
+        with closing(socket.create_connection(server.address, timeout=3)) as overload:
+            assert overload.recv(4096) == transport._OVERLOAD_RESPONSE
+            assert overload.recv(1) == b""
         started = time.monotonic()
         server.stop()
         assert time.monotonic() - started < 2.5
         assert all(not worker.is_alive() for worker in workers)
         assert not http.workers
-        assert len(deadline_timers) == 4
+        assert len(deadline_timers) == cap
     finally:
         for client in clients:
             client.close()

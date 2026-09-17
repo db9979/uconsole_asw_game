@@ -101,57 +101,18 @@
   "references": [
     {
       "key": "reference.whale",
-      "variant": "Synthetic whale gameplay archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": [],
       "hull_type": "unknown",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
     },
     {
       "key": "reference.fish_school",
-      "variant": "Synthetic fish-school gameplay archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": [],
       "hull_type": "unknown",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
     },
     {
       "key": "reference.jellyfish",
-      "variant": "Synthetic jellyfish gameplay archetype",
-      "variant_year": null,
-      "refit_year": null,
-      "aliases": [],
-      "roles": [],
       "hull_type": "unknown",
-      "displacement_tonnes": null,
-      "displacement_basis": "unknown",
-      "length_m": null,
-      "beam_waterline_m": null,
-      "beam_overall_m": null,
-      "flight_deck_width_m": null,
-      "draft_m": null,
-      "ship_crew": null,
-      "air_group_crew": null
+      "length_m": null
     }
   ],
   "machines": [
@@ -160,13 +121,37 @@
       "cruise_speed_kn": 4.0,
       "maximum_speed_kn": 4.0,
       "quiet_speed_kn": null,
-      "propulsion_codes": ["biological"],
+      "propulsion_codes": [
+        "biological"
+      ],
       "motor_rpm": null,
       "shaft_rpm": null,
       "propulsor_type": "unknown",
       "blade_count": null,
-      "cruise_lines": [[32.0, 0.55, 3.0], [45.0, 0.35, 2.0]],
-      "high_speed_lines": [[32.0, 0.55, 3.0], [45.0, 0.35, 2.0]],
+      "cruise_lines": [
+        [
+          32.0,
+          0.55,
+          3.0
+        ],
+        [
+          45.0,
+          0.35,
+          2.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          32.0,
+          0.55,
+          3.0
+        ],
+        [
+          45.0,
+          0.35,
+          2.0
+        ]
+      ],
       "cruise_broadband": null,
       "high_speed_broadband": null
     },
@@ -175,13 +160,37 @@
       "cruise_speed_kn": 1.0,
       "maximum_speed_kn": 1.0,
       "quiet_speed_kn": null,
-      "propulsion_codes": ["biological"],
+      "propulsion_codes": [
+        "biological"
+      ],
       "motor_rpm": null,
       "shaft_rpm": null,
       "propulsor_type": "unknown",
       "blade_count": null,
-      "cruise_lines": [[90.0, 0.25, 6.0], [140.0, 0.18, 5.0]],
-      "high_speed_lines": [[90.0, 0.25, 6.0], [140.0, 0.18, 5.0]],
+      "cruise_lines": [
+        [
+          90.0,
+          0.25,
+          6.0
+        ],
+        [
+          140.0,
+          0.18,
+          5.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          90.0,
+          0.25,
+          6.0
+        ],
+        [
+          140.0,
+          0.18,
+          5.0
+        ]
+      ],
       "cruise_broadband": null,
       "high_speed_broadband": null
     },
@@ -190,13 +199,27 @@
       "cruise_speed_kn": 0.2,
       "maximum_speed_kn": 0.2,
       "quiet_speed_kn": null,
-      "propulsion_codes": ["biological"],
+      "propulsion_codes": [
+        "biological"
+      ],
       "motor_rpm": null,
       "shaft_rpm": null,
       "propulsor_type": "unknown",
       "blade_count": null,
-      "cruise_lines": [[180.0, 0.12, 4.0]],
-      "high_speed_lines": [[180.0, 0.12, 4.0]],
+      "cruise_lines": [
+        [
+          180.0,
+          0.12,
+          4.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          180.0,
+          0.12,
+          4.0
+        ]
+      ],
       "cruise_broadband": null,
       "high_speed_broadband": null
     }

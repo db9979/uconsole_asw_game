@@ -33,10 +33,10 @@ def test_projection_is_bounded_ordered_detached_json_primitives():
     assert all(len(items) <= MAX_COMPONENTS_PER_PROFILE
                for profile in projected["profiles"]
                for items in profile["components"].values())
-    projected["profiles"][0]["reference"]["aliases"].append("detached")
-    assert "detached" not in catalog.CATALOG.references[
-        catalog.CATALOG.profile_systems[projected["profiles"][0]["key"]].reference_key
-    ].aliases
+    projected["profiles"][0]["machine"]["propulsion_codes"].append("detached")
+    assert "detached" not in catalog.CATALOG.machines[
+        catalog.CATALOG.profile_systems[projected["profiles"][0]["key"]].machine_key
+    ].propulsion_codes
 
 
 def test_projection_omits_forbidden_data_and_imports():

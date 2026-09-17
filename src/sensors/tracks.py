@@ -38,6 +38,27 @@ class SensorTrack:
     def display_quality(self, now: float, stale_s: float) -> float:
         return max(0.0, self.quality * (1.0 - self.age(now) / stale_s))
 
+    def derived_motion(self) -> tuple[float | None, float | None]:
+        """Course/speed inferred from the two most recent positioned fixes.
+
+        Plain radar/ESM measurements never carry a true course, so the chart
+        plots heading and speed the same way a human plotter would: from the
+        drift between successive fixes, not from simulation truth.
+        """
+        positioned = [m for m in (self.measurement_history or []) if m["x"] is not None]
+        if len(positioned) < 2:
+            return None, None
+        older, newer = positioned[-2], positioned[-1]
+        dt = newer["t"] - older["t"]
+        if dt < 1.0:
+            return None, None
+        dx, dy = newer["x"] - older["x"], newer["y"] - older["y"]
+        dist_nm = math.hypot(dx, dy)
+        speed_kn = dist_nm / dt * 3600.0
+        course = (math.degrees(math.atan2(dx, -dy)) % 360.0
+                  if dist_nm > 1e-3 else None)
+        return course, speed_kn
+
 
 class TrackPicture:
     """Merge current measurements and retain them briefly after contact loss."""

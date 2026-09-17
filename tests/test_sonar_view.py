@@ -392,3 +392,18 @@ def test_sonar_view_accepts_optional_translator(game, monkeypatch):
     view.draw_sonar_view(game, lambda text: f"TR:{text}")
     assert "TR:sonar.page_title" in texts
     assert "TR:sonar.active_analysis" in texts
+
+
+def test_tma_closing_rate_kn_matches_radial_velocity_component():
+    stationary = NS(course=0.0, speed=0.0)
+    # Target dead ahead, closing straight at us.
+    assert view.tma_closing_rate_kn(stationary, 0.0, 180.0, 10.0) == pytest.approx(10.0)
+    # Target dead ahead, opening straight away.
+    assert view.tma_closing_rate_kn(stationary, 0.0, 0.0, 10.0) == pytest.approx(-10.0)
+    # Target abeam moving perpendicular to the line of sight: no radial component.
+    assert view.tma_closing_rate_kn(stationary, 90.0, 0.0, 10.0) == pytest.approx(0.0, abs=1e-9)
+    # Own ship motion is subtracted out too (both converging at 5 kn each).
+    moving = NS(course=0.0, speed=5.0)
+    assert view.tma_closing_rate_kn(moving, 0.0, 180.0, 5.0) == pytest.approx(10.0)
+    # No TMA solution yet -> no rate to show.
+    assert view.tma_closing_rate_kn(stationary, 0.0, None, None) is None

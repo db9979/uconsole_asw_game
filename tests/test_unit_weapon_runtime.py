@@ -58,6 +58,157 @@ def assign_contact(game, target_id=9001):
     return contact
 
 
+def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(game):
+    """A launch is a loud, one-time acoustic event: subs react to it from much
+    farther away than the torpedo's own eventual terminal seeker range
+    (TORP_HOME_RANGE_NM), which only covers the final homing approach."""
+    contact = assign_contact(game)
+    near = Sub(game.ship.x + config.SUB_TORPEDO_ALERT_NM - 5.0, game.ship.y,
+              50, 0, "diesel_alt", random.Random(11))
+    far = Sub(game.ship.x + config.SUB_TORPEDO_ALERT_NM + 20.0, game.ship.y,
+             50, 0, "diesel_alt", random.Random(12))
+    game.subs = [near, far]
+    assert config.SUB_TORPEDO_ALERT_NM > config.TORP_HOME_RANGE_NM  # the case this guards
+
+    assert game.launch_torpedo_at(contact, 50.0) is True
+
+    assert near.torpedo_alerted is True
+    assert far.torpedo_alerted is False
+
+
+def test_torpedo_notice_ranges_are_ordered_between_homing_and_launch_alert():
+    assert (config.TORP_HOME_RANGE_NM < config.TORP_RUNNING_NOISE_RANGE_NM
+            < config.SUB_TORPEDO_ALERT_NM)
+
+
+def test_quiet_sub_notices_running_torpedo_before_homing_range(game):
+    """Between TORP_HOME_RANGE_NM and the launch transient, a sub can still
+    passively notice a running torpedo - scaled by how much its own noise
+    masks its listening."""
+    torpedo = Torpedo(game.ship.x + config.TORP_RUNNING_NOISE_RANGE_NM - 1.0,
+                      game.ship.y, 90.0, 50.0, None, 1)
+    game.torpedoes = [torpedo]
+    quiet_sub = Sub(game.ship.x, game.ship.y, 50, 0, "diesel_alt",
+                    random.Random(21))
+    quiet_sub.noise_level = lambda: 0.0
+    game.subs = [quiet_sub]
+
+    game._update_player_torpedoes(0.0)
+
+    assert quiet_sub.torpedo_alerted is True
+
+
+def test_loud_sub_does_not_notice_running_torpedo_at_the_same_distance(game):
+    torpedo = Torpedo(game.ship.x + config.TORP_RUNNING_NOISE_RANGE_NM - 1.0,
+                      game.ship.y, 90.0, 50.0, None, 1)
+    game.torpedoes = [torpedo]
+    loud_sub = Sub(game.ship.x, game.ship.y, 50, 0, "diesel_alt",
+                   random.Random(22))
+    loud_sub.noise_level = lambda: 1.0
+    game.subs = [loud_sub]
+
+    game._update_player_torpedoes(0.0)
+
+    assert loud_sub.torpedo_alerted is False
+
+
+def test_launch_torpedo_at_starts_the_motor_spoolup_ramp(game):
+    """A freshly fired torpedo starts its launch ramp at zero, while a torpedo
+    built directly (e.g. by tests or legacy saves) defaults to already
+    cruising - only the real launch path resets the ramp."""
+    contact = assign_contact(game)
+    assert game.launch_torpedo_at(contact, 50.0) is True
+
+    assert game.torpedoes[-1].time_since_launch == 0.0
+
+
+def test_torpedo_motor_spoolup_reduces_travel_right_after_launch():
+    target = contact_target(105.0, 100.0)
+    ramping = Torpedo(100.0, 100.0, 90.0, 50.0, target, 1,
+                      speed_kn=45.0, time_since_launch=0.0)
+    cruising = Torpedo(100.0, 100.0, 90.0, 50.0, target, 2, speed_kn=45.0)
+    world = ocean()
+    ramping.update(1.0, world=world)
+    cruising.update(1.0, world=world)
+
+    assert 0.0 < ramping.travel < cruising.travel
+    assert cruising.travel == pytest.approx(config.kn_to_nm_per_s(45.0) * 1.0)
+
+
+def test_surface_ship_alert_torpedo_forces_hard_turn_and_flank_speed():
+    ship = SurfaceShip(100, 100, random.Random(31), side="hostile",
+                       doctrine="surface_combatant",
+                       profile=CATALOG.surfaces["warship_01"],
+                       runtime_catalog=CATALOG)
+    ship.course = 90.0
+    ship.speed = 5.0
+    ship.alert_torpedo(0.0)  # threat bears due north of the ship
+    ship.update(1.0, None, ocean())
+    assert ship._torpedo_evade_left == pytest.approx(config.WARSHIP_TORPEDO_EVADE_S - 1.0)
+    assert config.angle_diff_deg(ship.target_course, 180.0) == pytest.approx(0.0, abs=1e-6)
+    assert ship.target_speed == pytest.approx(ship.speed_cap_kn)
+
+
+def test_torpedo_launch_alerts_nearby_hostile_warship_into_evasion(game):
+    contact = assign_contact(game)
+    near = SurfaceShip(game.ship.x + config.SUB_TORPEDO_ALERT_NM - 5.0, game.ship.y,
+                       random.Random(32), side="hostile",
+                       doctrine="surface_combatant",
+                       profile=CATALOG.surfaces["warship_01"],
+                       runtime_catalog=CATALOG)
+    far = SurfaceShip(game.ship.x + config.SUB_TORPEDO_ALERT_NM + 20.0, game.ship.y,
+                      random.Random(33), side="hostile",
+                      doctrine="surface_combatant",
+                      profile=CATALOG.surfaces["warship_01"],
+                      runtime_catalog=CATALOG)
+    game.warships = [near, far]
+
+    assert game.launch_torpedo_at(contact, 50.0) is True
+
+    assert near._torpedo_evade_left > 0.0
+    assert far._torpedo_evade_left == 0.0
+
+
+def test_sub_maybe_active_ping_requires_aggression_contact_range_and_cooldown():
+    sub = Sub(100, 100, 50, 0, "diesel_alt", random.Random(40))
+    sub.side = "hostile"
+    sub.stype.aggression = 0.9
+    sub.asw_rng = SimpleNamespace(random=lambda: 0.0)
+
+    assert sub._maybe_active_ping(1.0) is False  # no contact yet
+
+    sub.memory["contact"] = dict(x=sub.x + 5.0, y=sub.y, speed=0.0,
+                                 course=0.0, noise=0.5)
+    sub.memory["contact_age"] = 0.0
+    assert sub._maybe_active_ping(1.0) is True
+    assert sub._active_ping_cd == pytest.approx(config.SUB_ACTIVE_PING_COOLDOWN_S)
+    assert sub._maybe_active_ping(1.0) is False  # cooldown just spent
+
+    sub._active_ping_cd = 0.0
+    sub.stype.aggression = 0.1
+    assert sub._maybe_active_ping(1.0) is False  # too passive a boat
+
+    sub.stype.aggression = 0.9
+    sub.memory["contact"] = dict(x=sub.x + 50.0, y=sub.y, speed=0.0,
+                                 course=0.0, noise=0.5)
+    assert sub._maybe_active_ping(1.0) is False  # target too far to bother
+
+
+def test_hostile_sub_active_ping_is_heard_by_player(game):
+    sub = Sub(game.ship.x + 5.0, game.ship.y, 50, 0, "diesel_alt", random.Random(41),
+              side="hostile", asw_rng=SimpleNamespace(random=lambda: 0.0))
+    sub.stype.aggression = 0.9
+    sub.memory["contact"] = dict(x=sub.x, y=sub.y, speed=0.0, course=0.0, noise=0.5)
+    sub.memory["contact_age"] = 0.0
+    game.subs = [sub]
+
+    game._update_underwater_entities(1.0)
+
+    assert sub.pinged_this_tick is True
+    assert game.msg["__u_jagd_i18n__"] == "runtime.enemy_ping.detected"
+    assert game.feed.entries[-1].category == "sonar"
+
+
 def test_explicit_torpedo_helper_uses_depth_and_observation_without_ui_mutation(game):
     contact = assign_contact(game)
     other = Contact(18, 9002, "passiv", "sub")

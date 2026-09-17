@@ -13,6 +13,7 @@ import hashlib
 import io
 import ipaddress
 import json
+import logging
 import math
 import secrets
 import socket
@@ -24,10 +25,11 @@ import unicodedata
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
                              HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M)
+_log = logging.getLogger(__name__)
 _CONNECTION_DEADLINE_S = 3.0
 _CONTACT_ASSET_ROUTE = re.compile(
     r"/contact-analysis/[a-z0-9][a-z0-9_.-]{0,95}-(?:cruise|high)\.png").fullmatch
-_MAX_PREBUILT_ROUTES = 227
+_MAX_PREBUILT_ROUTES = 256  # 2 PNG routes/profile + 1 JSON route; headroom above the current catalog size
 _MAX_PREBUILT_FILE_BYTES = 4 * 1024 * 1024
 _MAX_PREBUILT_BYTES = 32 * 1024 * 1024
 _V2_COOKIE = "ujagd_remote_v2"
@@ -216,8 +218,8 @@ V2_ACTION_REGISTRY = {
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
                                     _navigation_proposal_params),
-    "sonar_classify": V2Action(frozenset({"sonar"}), _classification_params),
-    "sonar_set_release": V2Action(frozenset({"sonar"}), _release_params),
+    "sonar_classify": V2Action(frozenset({"sonar", "helicopter"}), _classification_params),
+    "sonar_set_release": V2Action(frozenset({"sonar", "helicopter"}), _release_params),
     "propose_target": V2Action(frozenset({"sonar"}), _single_ref_params),
     "clear_target_proposal": V2Action(frozenset({"sonar"}), _no_params),
     "opz_classify": V2Action(frozenset({"opz"}), _classification_params),
@@ -962,7 +964,10 @@ class CommanderServer:
             else:
                 try:
                     applied = apply(body["action"], dict(body["params"]))
-                except Exception:
+                except Exception as exc:
+                    # Never log params/credentials/client addresses; type + action name only.
+                    _log.warning("command apply failed: %s (%s)",
+                                 body["action"], type(exc).__name__)
                     applied = False
                 reason = ("ok" if applied is True or applied == "ok" else applied
                           if type(applied) is str and applied in {
@@ -1237,14 +1242,23 @@ class CommanderServer:
             self._sonar_audio.append((self._sonar_audio_sequence, pcm))
             return True
 
+_OVERLOAD_RESPONSE = (
+    b"HTTP/1.1 503 Service Unavailable\r\n"
+    b"Connection: close\r\n"
+    b"Content-Length: 0\r\n"
+    b"\r\n"
+)
+# Up to 9 stations poll at 2 Hz plus a sonar audio stream; headroom above that.
+_CONNECTION_SLOT_LIMIT = 16
+
 class _HTTPServer(HTTPServer):
     allow_reuse_address = True
-    request_queue_size = 4
+    request_queue_size = _CONNECTION_SLOT_LIMIT
 
     def __init__(self, address, owner, assets):
         self.owner = owner
         self.assets = assets
-        self.slots = threading.BoundedSemaphore(4)
+        self.slots = threading.BoundedSemaphore(_CONNECTION_SLOT_LIMIT)
         self.work_lock = threading.Lock()
         self.workers = {}
         super().__init__(address, _Handler)
@@ -1256,6 +1270,10 @@ class _HTTPServer(HTTPServer):
     def process_request(self, request, client_address):
         deadline = time.monotonic() + _CONNECTION_DEADLINE_S
         if not self.slots.acquire(blocking=False):
+            try:
+                request.sendall(_OVERLOAD_RESPONSE)
+            except OSError:
+                pass
             self.shutdown_request(request)
             return
         request.settimeout(1.5)

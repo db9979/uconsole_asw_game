@@ -104,3 +104,23 @@ def test_fully_repaired_compartment_releases_all_teams():
     assert compartment.flood == 0.0
     assert model.teams[1] is None
     assert model.teams[2] is None
+
+
+def test_list_deg_reflects_flood_asymmetry_and_is_bounded():
+    model = DamageModel(random.Random(1))
+    assert model.list_deg() == 0.0
+
+    model.compartments["hull_right"].flood = 20.0
+    assert model.list_deg() == pytest.approx(
+        20.0 * config.SHIP_LIST_DEG_PER_FLOOD_PCT)
+
+    model.compartments["hull_left"].flood = 20.0
+    assert model.list_deg() == 0.0  # symmetric flooding: no net list
+
+    model.compartments["hull_left"].flood = 0.0
+    model.compartments["hull_right"].flood = 1000.0
+    assert model.list_deg() == config.SHIP_MAX_LIST_DEG  # clamped
+
+    model.compartments["hull_right"].flood = 0.0
+    model.compartments["hull_left"].flood = 1000.0
+    assert model.list_deg() == -config.SHIP_MAX_LIST_DEG

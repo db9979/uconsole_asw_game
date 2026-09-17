@@ -117,8 +117,13 @@ class Ship:
 
     # --- Physik ---
 
-    def update(self, dt: float, world=None):
-        """dt in Simulationssekunden; bei 1x identisch zu Echtzeit."""
+    def update(self, dt: float, world=None, list_bias_deg: float = 0.0):
+        """dt in Simulationssekunden; bei 1x identisch zu Echtzeit.
+
+        list_bias_deg: current hull list from DamageModel.list_deg(), passed
+        in fresh each tick (not stored) so a listing ship persistently pulls
+        toward its heavier side and needs rudder correction to hold course.
+        """
 
         start_pose = (self.x, self.y, self.course)
         # Kurs: Ruder, Giergeschwindigkeit und Kurs bauen sich nacheinander auf.
@@ -129,34 +134,44 @@ class Ship:
         rudder_step = config.SHIP_RUDDER_RATE_DEG_PER_S * self.turn_rate_scale * dt
         self.rudder_angle += config.clamp(
             desired_rudder - self.rudder_angle, -rudder_step, rudder_step)
-        speed_factor = config.clamp(self.speed / 10.0, 0.0, 1.5)
+        # W2: Ruderwirkung skaliert mit Staudruck (~v^2), nicht linear -
+        # ein liegen gebliebenes Schiff hat kaum Anstroemung am Ruderblatt.
+        speed_factor = config.clamp((self.speed / 10.0) ** 2, 0.0, 1.5)
         max_yaw = config.SHIP_MAX_YAW_RATE_DEG_PER_S * speed_factor \
             * self.turn_rate_scale
-        desired_yaw = (self.rudder_angle / config.SHIP_MAX_RUDDER_DEG) * max_yaw
+        # Scaled by speed_factor too: a stopped ship has no flow over the
+        # rudder/hull, so a list alone should not spin it in place.
+        desired_yaw = ((self.rudder_angle / config.SHIP_MAX_RUDDER_DEG) * max_yaw
+                       + list_bias_deg * config.SHIP_LIST_YAW_GAIN * speed_factor)
         yaw_step = max_yaw * dt / config.SHIP_YAW_RESPONSE_S if max_yaw else dt
         self.yaw_rate += config.clamp(desired_yaw - self.yaw_rate,
                                       -yaw_step, yaw_step)
         self.course = (self.course + self.yaw_rate * dt) % 360.0
 
-        # Geschwindigkeit: Trägheit
+        # Geschwindigkeit: Schub/Widerstand-Gleichgewicht als Exponential-Verzug
+        # (geschlossene Form -> dt-unabhaengig: ein Aufruf mit grossem dt liefert
+        # exakt dasselbe Ergebnis wie viele kleine Teilschritte).
         effective_target = min(self.target_speed, self.speed_cap,
                                12.0 if self.quiet_mode else self.speed_cap)
         if self.grounding_latched and not self.astern:
             effective_target = 0.0
-        target_delta = effective_target - self.speed
-        if abs(target_delta) <= 0.2:
+        if abs(effective_target - self.speed) <= 0.05:
             self.speed = effective_target
         else:
-            step = config.clamp(target_delta,
-                                -config.SHIP_SPEED_RESP_KN_PER_S * dt,
-                                config.SHIP_SPEED_RESP_KN_PER_S * dt)
-            self.speed += step
+            self.speed = effective_target + (self.speed - effective_target) \
+                * math.exp(-dt / config.SHIP_SPEED_TAU_S)
 
         # Physikalische Bewegung (W3: Land-Rueckstoss)
         # Nautisch: 0° = Nord/-y, 90° = Ost/+x (konsistent zu Peilungen)
         step = config.kn_to_nm_per_s(self.speed) * dt * (-1.0 if self.astern else 1.0)
         nx = self.x + step * math.sin(math.radians(self.course))
         ny = self.y - step * math.cos(math.radians(self.course))
+        # W2: Meeresstroemung - reiner Driftzusatz, kein Antrieb/keine Steuerung.
+        current = getattr(world, "current_vec", None)
+        if current is not None:
+            cu, cv = current(self.x, self.y)
+            nx += config.kn_to_nm_per_s(cu) * dt
+            ny -= config.kn_to_nm_per_s(cv) * dt
         contact = self._advance(start_pose, nx, ny, world)
         self._update_roll_pitch(dt, world)
         return contact

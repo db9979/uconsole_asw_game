@@ -126,8 +126,11 @@ def test_classification_ownership_suppression_scope_and_transience():
     report = game.opz_tracks()[0]
     game.opz_selected_track_id = report.observation_id
     press(game, pygame.K_c)
-    assert contact.player_class == "U_BOOT"
-    assert game.opz_source_classification(report.observation_id) == "U_BOOT"
+    # OPZ may cycle a released sonar contact's classification too - it writes
+    # straight through to the shared Contact, not a fusion-only overlay.
+    assert contact.player_class == "KAMPFSCHIFF"
+    assert game.opz_source_classification(report.observation_id) == "KAMPFSCHIFF"
+    contact.player_class = "U_BOOT"
 
     before = copy.deepcopy(game.save_state())
     press(game, pygame.K_DELETE)
@@ -164,9 +167,13 @@ def test_result_helpers_enforce_freshness_damage_and_source_ownership():
     assert game.classify_sonar_contact(contact, "U_BOOT") is True
     assert game.release_sonar_contact(contact, True) is True
     report = game.opz_source_observations()[0]
+    # OPZ may reclassify a released sonar contact too - it writes through to
+    # the shared Contact, not a separate fusion-only classification store.
     assert game.classify_opz_observation(report.observation_id,
-                                         "KAMPFSCHIFF") == "source_owned"
-    assert contact.player_class == "U_BOOT"
+                                         "KAMPFSCHIFF") is True
+    assert contact.player_class == "KAMPFSCHIFF"
+    assert game.opz_source_classification(report.observation_id) == "KAMPFSCHIFF"
+    assert game.classify_sonar_contact(contact, "U_BOOT") is True
     assert game.affiliate_opz_observation(report.observation_id, "HOSTILE") is True
     observe(game, "S-99003", "SURFACE", "RADAR-S")
     radar = next(item for item in game.opz_source_observations()

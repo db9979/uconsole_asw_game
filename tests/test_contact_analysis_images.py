@@ -35,11 +35,11 @@ def test_two_generations_are_byte_identical_and_manifest_hashes_match(tmp_path):
     assert first_files == second_files
     manifest = json.loads(first_files["manifest.json"])
     assert manifest["version"] == 1
-    assert len(manifest["assets"]) == 226
+    assert len(manifest["assets"]) == 228  # +2: new su_25 (Su-25 Frogfoot) profile
     assert sum(item["kind"] == "acoustic_cruise"
-               for item in manifest["assets"]) == 113
+               for item in manifest["assets"]) == 114
     assert sum(item["kind"] == "acoustic_high"
-               for item in manifest["assets"]) == 113
+               for item in manifest["assets"]) == 114
     assert "silhouette" not in json.dumps(manifest)
     for asset in manifest["assets"]:
         payload = first_files[asset["filename"]]

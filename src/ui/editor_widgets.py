@@ -11,11 +11,12 @@ from typing import Any, Callable, Iterable
 import pygame
 
 from src.core.i18n import localize, raw_text
+from src.data.validation import ContentValidationError, issue, localized_error
 from src.ui import layout
 
 
-Tr = Callable[[str], str]
-IDENTITY_TR: Tr = lambda value: value
+Tr = Callable[..., str]
+IDENTITY_TR: Tr = lambda value, **_: value
 
 
 @dataclass(frozen=True)
@@ -134,7 +135,9 @@ class ListBox:
         if event.type == pygame.MOUSEWHEEL and (position is None or rect.collidepoint(position)):
             return self.move(-event.y)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and position and rect.collidepoint(position):
-            index = self.scroll + (position[1] - rect.y) // row_height
+            # Window-to-canvas scaling (Game._window_to_canvas) can hand us
+            # float pointer coordinates; row indices must stay integers.
+            index = self.scroll + int((position[1] - rect.y) // row_height)
             if 0 <= index < len(self.items):
                 changed = index != self.selected
                 self.selected = index
@@ -225,6 +228,67 @@ class TextField:
         draw_text(surface, raw_text(shown), rect.inflate(-8, -2), size=15)
 
 
+class FilterField:
+    """Bounded, IME-safe, case-insensitive substring filter box.
+
+    Shared by every browser-style list (unit editor, tactical/contact
+    analyzer): types directly into the filter with no separate focus step,
+    using the same KEYDOWN/TEXTINPUT dedup trick as TextField.handle_text().
+    Navigation keys (arrows, page, enter, escape, tab) are left unhandled so
+    callers can still use them for list navigation.
+    """
+
+    def __init__(self, maximum: int = 48):
+        self.text = ""
+        self.maximum = maximum
+        self._key_text = ""
+
+    def set(self, value: str) -> None:
+        self.text = value[:self.maximum]
+
+    def handle_event(self, event: pygame.event.Event) -> bool:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                self.set(self.text[:-1])
+                self._key_text = ""
+                return True
+            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_ESCAPE,
+                             pygame.K_TAB, pygame.K_UP, pygame.K_DOWN,
+                             pygame.K_LEFT, pygame.K_RIGHT, pygame.K_PAGEUP,
+                             pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
+                return False
+            char = getattr(event, "unicode", "")
+            if char and char.isprintable() and len(self.text) < self.maximum:
+                self.set(self.text + char)
+                self._key_text = char
+                return True
+            return False
+        if event.type == pygame.TEXTINPUT:
+            text = "".join(char for char in getattr(event, "text", "")
+                           if char.isprintable())
+            if text == self._key_text:
+                self._key_text = ""
+                return True
+            self._key_text = ""
+            if text:
+                self.set(self.text + text)
+                return True
+        return False
+
+    def matches(self, *fields: object) -> bool:
+        query = self.text.casefold()
+        return not query or query in " ".join(str(f) for f in fields).casefold()
+
+    def draw(self, surface: pygame.Surface, rect: pygame.Rect | tuple[int, int, int, int],
+             *, placeholder: str = "", tr: Tr = IDENTITY_TR) -> None:
+        rect = pygame.Rect(rect)
+        pygame.draw.rect(surface, PALETTE.background, rect)
+        pygame.draw.rect(surface, PALETTE.focus, rect, 1)
+        shown = self.text or tr(placeholder)
+        draw_text(surface, raw_text(shown), rect.inflate(-8, 0),
+                  color=(PALETTE.text if self.text else PALETTE.dim), size=14)
+
+
 @dataclass
 class FieldRow:
     """One editable value. The setter is called only after successful parsing."""
@@ -233,6 +297,13 @@ class FieldRow:
     label: str
     value: Any
     setter: Callable[[Any], None]
+    header: bool = False
+
+
+def section_header(group: str) -> FieldRow:
+    """A non-selectable section heading row, grouping the fields under it."""
+    return FieldRow(f"__section__{group}", group, None, lambda value: None,
+                    header=True)
 
 
 def value_text(value: Any) -> str:
@@ -245,47 +316,53 @@ def value_text(value: Any) -> str:
     return str(value)
 
 
-def parse_value(text: str, existing: Any) -> Any:
+def parse_value(text: str, existing: Any, path: str = "") -> Any:
     """Parse an edit according to the existing type, never executing input."""
     if isinstance(existing, bool):
         normalized = text.strip().lower()
         if normalized not in ("true", "false"):
-            raise ValueError("use true or false")
+            raise ContentValidationError([issue(path, "boolean", "must be true or false")])
         return normalized == "true"
     if isinstance(existing, int):
         try:
             return int(text.strip())
         except ValueError as exc:
-            raise ValueError("must be an integer") from exc
+            raise ContentValidationError([issue(path, "integer", "must be an integer")]) from exc
     if isinstance(existing, float):
         try:
             value = float(text.strip())
         except ValueError as exc:
-            raise ValueError("must be a number") from exc
+            raise ContentValidationError([issue(path, "number", "must be a number")]) from exc
         if not math.isfinite(value):
-            raise ValueError("must be a finite number")
+            raise ContentValidationError([issue(path, "finite", "must be a finite number")])
         return value
     if isinstance(existing, str):
         return text
 
     def reject_constant(value: str):
-        raise ValueError(f"invalid JSON constant {value}")
+        raise ContentValidationError(
+            [issue(path, "json_constant", f"invalid JSON constant {value}", value=value)])
 
     try:
         value = json.loads(text, parse_constant=reject_constant)
+    except ContentValidationError:
+        raise
     except (json.JSONDecodeError, ValueError, RecursionError) as exc:
-        raise ValueError("must be valid JSON") from exc
+        raise ContentValidationError([issue(path, "json", "must be valid JSON")]) from exc
     pending = [value]
     while pending:
         item = pending.pop()
         if isinstance(item, float) and not math.isfinite(item):
-            raise ValueError("JSON numbers must be finite")
+            raise ContentValidationError(
+                [issue(path, "json_finite", "JSON numbers must be finite")])
         if isinstance(item, dict):
             pending.extend(item.values())
         elif isinstance(item, list):
             pending.extend(item)
     if existing is not None and not isinstance(value, type(existing)):
-        raise ValueError(f"must be a JSON {type(existing).__name__}")
+        raise ContentValidationError([issue(
+            path, "json_type", f"must be a JSON {type(existing).__name__}",
+            type=type(existing).__name__)])
     return value
 
 
@@ -312,10 +389,26 @@ class FieldList:
             self.selected = next((index for index, row in enumerate(self.rows)
                                   if row.path == old_path), self.selected)
         self.selected = max(0, min(self.selected, len(self.rows) - 1))
+        self._land_on_selectable(1)
+
+    def _land_on_selectable(self, step: int) -> None:
+        """Nudge self.selected off a non-selectable section-header row."""
+        if not self.rows or not self.rows[self.selected].header:
+            return
+        index = self.selected
+        for _ in range(len(self.rows)):
+            index += step
+            if not 0 <= index < len(self.rows):
+                step = -step
+                index = self.selected
+                continue
+            if not self.rows[index].header:
+                self.selected = index
+                return
 
     def begin_edit(self) -> bool:
         row = self.selected_row
-        if row is None:
+        if row is None or row.header:
             return False
         self.original = row.value
         self.input.value = value_text(row.value)
@@ -332,13 +425,16 @@ class FieldList:
         self.error = ""
         return True
 
-    def apply_edit(self) -> bool:
+    def apply_edit(self, tr: Tr = IDENTITY_TR) -> bool:
         row = self.selected_row
         if not self.editing or row is None:
             return False
         try:
-            value = parse_value(self.input.value, self.original)
+            value = parse_value(self.input.value, self.original, row.path)
             row.setter(value)
+        except ContentValidationError as exc:
+            self.error = localized_error(exc, tr)
+            return True
         except (TypeError, ValueError, KeyError) as exc:
             self.error = f"{row.path}: {exc}"
             return True
@@ -350,15 +446,26 @@ class FieldList:
         if self.editing or not self.rows:
             return False
         before = self.selected
-        self.selected = max(0, min(len(self.rows) - 1, self.selected + amount))
+        step = 1 if amount > 0 else -1
+        index = self.selected
+        remaining = abs(amount)
+        while remaining > 0:
+            candidate = index + step
+            if not 0 <= candidate < len(self.rows):
+                break
+            index = candidate
+            if not self.rows[index].header:
+                remaining -= 1
+        self.selected = index
+        self._land_on_selectable(step)
         return before != self.selected
 
     def handle_event(self, event: pygame.event.Event, rect: pygame.Rect,
-                     row_height: int = 32) -> bool:
+                     row_height: int = 32, tr: Tr = IDENTITY_TR) -> bool:
         if self.editing:
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                    return self.apply_edit()
+                    return self.apply_edit(tr)
                 if event.key == pygame.K_ESCAPE:
                     return self.cancel_edit()
                 return self.input.handle_event(event)
@@ -381,8 +488,10 @@ class FieldList:
             return self.move(-event.y)
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and position
                 and rect.collidepoint(position)):
-            index = self.scroll + (position[1] - rect.y) // row_height
-            if 0 <= index < len(self.rows):
+            # Window-to-canvas scaling (Game._window_to_canvas) can hand us
+            # float pointer coordinates; row indices must stay integers.
+            index = self.scroll + int((position[1] - rect.y) // row_height)
+            if 0 <= index < len(self.rows) and not self.rows[index].header:
                 changed = index != self.selected
                 self.selected = index
                 if getattr(event, "clicks", 1) >= 2:
@@ -404,6 +513,15 @@ class FieldList:
                 index = self.scroll + screen_row
                 row_rect = pygame.Rect(rect.x, rect.y + screen_row * row_height,
                                        rect.width, row_height)
+                if row.header:
+                    header_rect = pygame.Rect(row_rect.x + 4, row_rect.y,
+                                              row_rect.width - 8, row_height)
+                    pygame.draw.line(surface, PALETTE.border,
+                                     (header_rect.x, header_rect.bottom - 4),
+                                     (header_rect.right, header_rect.bottom - 4))
+                    draw_text(surface, tr(row.label), header_rect,
+                             color=PALETTE.focus, size=13, bold=True)
+                    continue
                 selected = index == self.selected
                 if selected:
                     pygame.draw.rect(surface, PALETTE.raised, row_rect)
@@ -419,23 +537,55 @@ class FieldList:
                     draw_text(surface, raw_text(value_text(row.value)), value_rect, size=14)
 
 
-def mapping_rows(value: dict[str, Any], prefix: str = "") -> list[FieldRow]:
-    """Flatten dictionaries into editable leaves; arrays remain safe JSON fields."""
+def _leaf_rows(current: dict[str, Any], current_prefix: str,
+               label_prefix: str) -> list[FieldRow]:
+    """Recursively flatten one dict; nested fields get a parent-qualified
+    label (e.g. "field.acoustic.category") so they can never collide with a
+    same-named top-level field ("field.category")."""
     rows: list[FieldRow] = []
+    for key, item in current.items():
+        path = f"{current_prefix}.{key}" if current_prefix else key
+        label = f"{label_prefix}{key}"
+        if isinstance(item, dict):
+            rows.extend(_leaf_rows(item, path, f"{label}."))
+            continue
 
-    def visit(current: dict[str, Any], current_prefix: str) -> None:
-        for key, item in current.items():
-            path = f"{current_prefix}.{key}" if current_prefix else key
+        def assign(new_value: Any, target=current, field=key) -> None:
+            target[field] = new_value
+
+        rows.append(FieldRow(path, "field." + label, item, assign))
+    return rows
+
+
+def mapping_rows(value: dict[str, Any], prefix: str = "",
+                 groups: Iterable[tuple[str, tuple[str, ...]]] | None = None
+                 ) -> list[FieldRow]:
+    """Flatten dictionaries into editable leaves; arrays remain safe JSON fields.
+
+    With `groups` - an ordered [(header_label, (top_level_key, ...)), ...] -
+    top-level keys are arranged under non-selectable section-header rows in
+    that order instead of raw dict-iteration order; a group with none of its
+    keys present in `value` is omitted.
+    """
+    if groups is None:
+        return _leaf_rows(value, prefix, "")
+    rows: list[FieldRow] = []
+    for header_label, keys in groups:
+        present = [key for key in keys if key in value]
+        if not present:
+            continue
+        rows.append(section_header(header_label))
+        for key in present:
+            item = value[key]
+            path = f"{prefix}.{key}" if prefix else key
             if isinstance(item, dict):
-                visit(item, path)
+                rows.extend(_leaf_rows(item, path, f"{key}."))
                 continue
 
-            def assign(new_value: Any, target=current, field=key) -> None:
+            def assign(new_value: Any, target=value, field=key) -> None:
                 target[field] = new_value
 
             rows.append(FieldRow(path, "field." + key, item, assign))
-
-    visit(value, prefix)
     return rows
 
 

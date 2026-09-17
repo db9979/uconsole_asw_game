@@ -172,13 +172,17 @@ def test_pending_launch_queues_survive_save(game):
     sub.pending_torpedoes = [(
         sub.x, sub.y, 123, 8, sub.x + 5, sub.y, "enemy_torp", sub.id,
         weapon_key)]
-    game.warships[0].pending_asm = [(300, 300, 2)]
+    # The salvo count must be within *whichever* hostile-pool profile ends up
+    # as game.warships[0] (Russia-hostile-pool migration: candidates now
+    # differ in asm_salvo bounds) - use its own minimum, always in envelope.
+    salvo_count = game.warships[0].profile.asm_salvo[0]
+    game.warships[0].pending_asm = [(300, 300, salvo_count)]
     state = game.save_state()
     game.load_state(state)
     assert game.subs[0].pending_torpedoes == [(
         sub.x, sub.y, 123, 8, sub.x + 5, sub.y, "enemy_torp", sub.id,
         weapon_key)]
-    assert game.warships[0].pending_asm == [(300, 300, 2)]
+    assert game.warships[0].pending_asm == [(300, 300, salvo_count)]
     game._drain_enemy_torpedoes()
     assert game.enemy_torpedoes[-1].course == 123
 
@@ -426,8 +430,10 @@ def test_actual_flank_noise_observation_roundtrips(game, monkeypatch, tmp_path):
     game.ship.cycle_telegraph(len(config.TELEGRAPH_ORDERS))
     game.ship.update(300.0)
     assert game.ship.telegraph == "FLANK"
-    assert game.ship.speed == config.SHIP_SPEED_MAX_KN
-    assert game.ship.noise_level() == pytest.approx(1.05)
+    # W2: exponential hydrodynamic speed response only asymptotically reaches
+    # its target - 300s is >7 time constants, well converged for gameplay.
+    assert game.ship.speed == pytest.approx(config.SHIP_SPEED_MAX_KN, abs=0.05)
+    assert game.ship.noise_level() == pytest.approx(1.05, abs=1e-3)
     sub = game.subs[0]
     sub.x, sub.y = game.ship.x + 1, game.ship.y
     monkeypatch.setattr(game.world, "on_land", lambda *args: False)
@@ -442,7 +448,11 @@ def test_actual_flank_noise_observation_roundtrips(game, monkeypatch, tmp_path):
     assert game.subs[0].memory["contact"]["noise"] == game.ship.noise_level()
 
 
-@pytest.mark.parametrize("count", [0, 1, 5, 1_000_000, True, 2.5, float("inf")])
+# 20 is comfortably above every current hostile-pool profile's asm_salvo
+# maximum (Russia-hostile-pool migration; the highest is Projekt 20380 at 8),
+# so this stays out-of-envelope regardless of which profile game.warships[0]
+# happens to be for the fixture's fixed seed.
+@pytest.mark.parametrize("count", [0, 1, 20, 1_000_000, True, 2.5, float("inf")])
 def test_pending_salvo_counts_obey_catalog_envelope_before_restore(game, monkeypatch, count):
     before, counters = game.save_state(), counter_state()
     bad = copy.deepcopy(before)

@@ -298,6 +298,39 @@ def test_submarine_safe_command_never_teleports_depth(state, rate):
     assert abs(sub.depth - 70) <= rate * .1 + 1e-9
 
 
+def test_submarine_depth_change_has_inertia_not_an_instant_full_rate():
+    """W2: depth approaches the target with acceleration-limited inertia -
+    a single short tick moves less than the old instant-full-rate model
+    would (rate * dt), because depth_rate_mps must first ramp up from 0."""
+    sub = Sub(100, 100, 50, 0, "diesel_alt", random.Random(1))
+    sub.state, sub.evac_left, sub.target_depth = "PATROLLE", 100, 200
+    player = SimpleNamespace(x=400, y=400, noise_level=lambda: 0)
+    sub.update(.1, player, water(depth_m=lambda x, y: 1000))
+    assert 0.0 < sub.depth - 50.0 < sub.motion.depth_rate_m_s * .1
+    assert sub.depth_rate_mps > 0.0
+
+
+def test_submarine_depth_response_is_dt_agnostic_within_one_physics_substep():
+    """Closed-form acceleration integration is exact within a single segment
+    where the rate does not saturate - matching at any dt up to the game's
+    own PHYS_SUBSTEP_S/PHYS_SUBSTEP_MAX bound (sub.update() is never called
+    with a larger single dt in practice, see Game._update_sim's substepping;
+    the rate-saturation case beyond one segment is intentionally out of
+    scope, matching how it is actually driven)."""
+    big = Sub(100, 100, 50, 0, "diesel_alt", random.Random(1))
+    big.state, big.evac_left, big.target_depth = "PATROLLE", 1e9, 200
+    small = Sub(100, 100, 50, 0, "diesel_alt", random.Random(1))
+    small.state, small.evac_left, small.target_depth = "PATROLLE", 1e9, 200
+    player = SimpleNamespace(x=400, y=400, noise_level=lambda: 0)
+    world = water(depth_m=lambda x, y: 1000)
+    big.update(1.0, player, world)
+    for _ in range(10):
+        small.update(0.1, player, world)
+
+    assert big.depth == pytest.approx(small.depth, abs=1e-6)
+    assert big.depth_rate_mps == pytest.approx(small.depth_rate_mps, abs=1e-6)
+
+
 def test_submarine_depth_converges_without_overshoot_and_does_not_cross_shoal():
     sub = Sub(100, 100, 50, 90, "diesel_alt", random.Random(1))
     sub.state, sub.evac_left = "EVADE", 100

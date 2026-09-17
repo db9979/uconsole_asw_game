@@ -53,6 +53,7 @@ _SONAR_FIELDS = ("ref", "label", "source", "classification", "bearing",
                  "released_to_opz", "fixes")
 _RADIO_FIELDS = ("ref", "label", "bearing", "quality", "age_s",
                   "bearing_uncertainty_deg")
+_HELICOPTER_TACTICAL_FIELDS = _TACTICAL_FIELDS + ("classification", "released_to_opz")
 
 _HISTORY_ROWS_MAX = config.LOFAR_HISTORY_COLS
 _BROADBAND_BINS_MAX = 180
@@ -427,11 +428,13 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None):
              for buoy in sorted(game.buoys, key=lambda item: item.seq)[:64]]
     distance = (math.hypot(helo.x - game.ship.x, helo.y - game.ship.y)
                 if airborne else None)
-    tactical = [row for row in rows if row.get("_opz")
-                and row["ref"] in (direct_refs or {})]
+    # The helicopter's own sonar picture is not gated on OPZ release - unlike
+    # every other map role, it must be able to see, classify and release what
+    # only its own dip has found, the same way the local Helicopter station can.
+    tactical = [row for row in rows if row["ref"] in (direct_refs or {})]
     return dict(asset=asset, waypoint=waypoint, buoys=buoys,
                 navigation=_own_navigation(game), tactical=[
-                    _observation(row, _TACTICAL_FIELDS)
+                    _observation(row, _HELICOPTER_TACTICAL_FIELDS)
                     for row in tactical[:_MAP_ROWS_MAX]],
                  target_choices=_direct_fire_observations(
                      rows, {} if direct_refs is None else direct_refs),

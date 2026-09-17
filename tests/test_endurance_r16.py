@@ -437,6 +437,9 @@ def _prior_r16_save(game):
         component.pop("endurances")
     for row in prior["subs"]:
         row.pop("endurance")
+        # W2 added depth_rate_mps after R16 - strip it too so this fixture
+        # stays an authentic R16-vintage shape, not "today minus endurance".
+        row.pop("depth_rate_mps")
     return prior
 
 

@@ -23,6 +23,20 @@ MAX_LOCAL_TRACKS = 64
 MAX_DATALINK_TRACKS = 64
 
 
+def _candidate_acoustic_signature(candidate):
+    """Best-effort TargetSignature lookup across the different entity types."""
+    for attr in ("acoustic", "stype", "profile"):
+        value = getattr(candidate, attr, None)
+        if value is None:
+            continue
+        if hasattr(value, "tonal_band_hz"):
+            return value
+        nested = getattr(value, "acoustic", None)
+        if nested is not None and hasattr(nested, "tonal_band_hz"):
+            return nested
+    return None
+
+
 def _stable_int(*parts: object) -> int:
     payload = "\x1f".join(str(part) for part in parts).encode("utf-8")
     return int.from_bytes(hashlib.blake2b(payload, digest_size=8).digest(), "big")
@@ -219,6 +233,12 @@ class PlatformSensorSuite:
                          if target_domain == "air"
                          else config.RADAR_RAIN_SURFACE_LOSS)
             availability *= (1.0 - sea_loss * sea) * (1.0 - rain_loss * rain)
+            # Radar cross-section is catalog metadata, not a physics model: a
+            # small, bounded scaling factor around a ~500 m2 reference target,
+            # not a rewrite of the range-based detection formula.
+            rcs = getattr(getattr(candidate, "profile", None), "rcs_m2", None)
+            if rcs is not None:
+                availability *= config.clamp((rcs / 500.0) ** 0.25, 0.5, 1.5)
         maximum = (profile.synthetic_range_nm or 0.0) * availability
         if maximum <= 0.0 or distance > maximum:
             return
@@ -250,7 +270,8 @@ class PlatformSensorSuite:
                 result = propagation.propagate(
                     owner.x, owner.y, source_depth,
                     candidate.x, candidate.y, target_depth,
-                    propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
+                    propagation.representative_frequency_hz(
+                        _candidate_acoustic_signature(candidate)),
                      thermo, water_depth, sea_state=getattr(
                          world, "effective_sea_state", getattr(world, "sea_state", 0)),
                     terrain_blocked=getattr(world, "sonar_path_blocked", None))
@@ -363,10 +384,14 @@ class PlatformSensorSuite:
 def exchange_friendly_datalink(
         suites: list[PlatformSensorSuite], now: float,
         allowed_track_ids: dict[str, set[str]] | None = None) -> None:
-    """Publish detached observations after every sender has completed its scan."""
+    """Publish detached observations after every sender has completed its scan.
+
+    Despite the name, this is side-agnostic: it exchanges within any matching
+    `datalink_group` (blue for friendly, red for hostile - W2 coordination),
+    never across groups.
+    """
     eligible = sorted(
-        (suite for suite in suites
-         if suite.side == "friendly" and suite.datalink_group is not None),
+        (suite for suite in suites if suite.datalink_group is not None),
         key=lambda suite: suite.datalink_id)
     reports = {
         suite.datalink_id: tuple(
@@ -394,6 +419,11 @@ def exchange_friendly_datalink(
                     range_uncertainty_nm=report.range_uncertainty_nm,
                     depth_uncertainty_m=report.depth_uncertainty_m,
                     label=report.label, fix_source=report.fix_source))
+
+
+def side_datalink_group(side: str) -> str | None:
+    """W2: same-side datalink group key - hostile units coordinate like blue does."""
+    return {"friendly": "blue", "hostile": "red"}.get(side)
 
 
 def motion_limits(catalog, profile_key: str, *, cruise_speed: float,

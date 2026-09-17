@@ -11,14 +11,22 @@ def test_catalog_completeness():
     assert len(CATALOG.subs) == 23
     for key in ("diesel_alt", "aip_modern", "ssn"):
         assert key in CATALOG.subs
-    assert len(CATALOG.hostile_surfaces) == 28
-    assert len(CATALOG.legacy_hostile_surfaces) == 25
-    assert len(CATALOG.civilian_surfaces) == 55
-    assert set(CATALOG.aircraft) >= {"mil_patrol", "civil_transit"}
+    # hostile_surfaces = all KAMPFSCHIFF-category profiles in warships.json:
+    # Kirov, Udaloy, Admiral Gorshkov (already-Russian), the new Projekt 20380
+    # Steregushchiy corvette, and the new friendly F217 Bayern (category
+    # KAMPFSCHIFF but default_faction FREUND - the "hostile" field is file-
+    # placement bookkeeping, not IFF; see docs/contacts-db.md). Only the first
+    # four are in the actual random hostile spawn pool (legacy_hostile_surfaces).
+    # The 25 other real navies previously in warships.json were recategorized
+    # as neutral "SONSTIGES" civilian traffic rather than deleted.
+    assert len(CATALOG.hostile_surfaces) == 5
+    assert len(CATALOG.legacy_hostile_surfaces) == 4
+    assert len(CATALOG.civilian_surfaces) == 55 + 25
+    assert set(CATALOG.aircraft) >= {"mil_patrol", "civil_transit", "su_25"}
     assert set(CATALOG.animals) == {"whale", "fish_school", "jellyfish"}
     assert "enemy_torp" in CATALOG.torpedoes
     assert "decoy" in CATALOG.decoys
-    assert len(CATALOG.acoustic_profiles) == 109
+    assert len(CATALOG.acoustic_profiles) == 111
 
 
 def test_builtin_catalog_loads_from_package_resources():

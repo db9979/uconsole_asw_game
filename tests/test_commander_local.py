@@ -423,13 +423,13 @@ def test_activation_prebuilds_contact_assets_once_on_calling_thread(monkeypatch)
     assert console._contact_analysis_assets is payload
 
 
-def test_options_seven_and_f9_live_menu_ownership(game, monkeypatch):
+def test_options_eight_and_f9_live_menu_ownership(game, monkeypatch):
     monkeypatch.setattr(game.commander, "prepare", Mock())
     key(game, pygame.K_F10)
     assert game.options_open
-    for _ in range(6):
+    for _ in range(8):
         key(game, pygame.K_DOWN)
-    assert game.options_sel == 6
+    assert game.options_sel == 8
     key(game, pygame.K_RETURN)
     assert game.commander_open and game.administration_open and not game.options_open
     key(game, pygame.K_ESCAPE)
@@ -545,7 +545,7 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     game.commander._prepared = True
     game._open_administration("options")
     monkeypatch.setattr(pygame.display, "get_window_size", lambda: (1280, 1000))
-    rect = game._options_row_rects()[6]
+    rect = game._options_row_rects()[8]
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                         pos=(rect.centerx, 20)))
     assert game.options_open

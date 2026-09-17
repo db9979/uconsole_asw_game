@@ -42,7 +42,7 @@ def _same_json(left, right):
 
 
 def _sig_dict(signature):
-    return {
+    value = {
         "label": signature.label, "propulsion": signature.propulsion,
         "blades": list(signature.blade_counts),
         "rpm_range": list(signature.rpm_range),
@@ -53,6 +53,24 @@ def _sig_dict(signature):
         "broadband": list(signature.broadband) if signature.broadband else None,
         "signature_text": signature.signature_text,
     }
+    if signature.lofar_base_freq_hz:
+        value["lofar_base_freq_hz"] = list(signature.lofar_base_freq_hz)
+    if signature.cavitation_speed_knots is not None:
+        value["cavitation_speed_knots"] = signature.cavitation_speed_knots
+    if signature.audio_sample_id:
+        value["audio_sample_id"] = signature.audio_sample_id
+    return value
+
+
+def _entry_optional(profile):
+    value = {}
+    if profile.wiki_url is not None:
+        value["wiki_url"] = profile.wiki_url
+    if profile.default_faction is not None:
+        value["default_faction"] = profile.default_faction
+    if profile.rcs_m2 is not None:
+        value["rcs_m2"] = profile.rcs_m2
+    return value
 
 
 def _runtime_documents(cat, library_keys):
@@ -65,6 +83,7 @@ def _runtime_documents(cat, library_keys):
             "asm_salvo": list(profile.asm_salvo),
             "asm_cooldown_s": profile.asm_cooldown_s, "loiter_nm": profile.loiter_nm,
             "spawn_weight": profile.spawn_weight, "acoustic": _sig_dict(profile.acoustic),
+            **_entry_optional(profile),
         }
 
     entries = {}
@@ -73,6 +92,7 @@ def _runtime_documents(cat, library_keys):
         "max_depth_m": p.max_depth_m, "torpedoes": p.torpedoes,
         "quiet": p.quiet, "aggression": p.aggression,
         "spawn_weight": p.spawn_weight, "acoustic": _sig_dict(p.acoustic),
+        **_entry_optional(p),
     } for p in cat.subs.values()]
     entries["warships.json"] = [surface(p) for p in cat.hostile_surfaces]
     entries["civilians.json"] = [surface(p) for p in cat.civilian_surfaces]
@@ -81,6 +101,7 @@ def _runtime_documents(cat, library_keys):
         "speed_kn": p.speed_kn, "esm": p.esm, "esm_range_nm": p.esm_range_nm,
         "loiter_nm": list(p.loiter_nm), "spawn_weight": p.spawn_weight,
         "signature_text": p.signature_text,
+        **_entry_optional(p),
     } for p in cat.aircraft.values()]
     entries["animals.json"] = [{
         "key": p.key, "name": p.name, "depth_min": p.depth_min,

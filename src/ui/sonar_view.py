@@ -1,5 +1,6 @@
 """Read-only sonar instruments. All plots use receiver data or observations."""
 
+import math
 from collections import OrderedDict
 from functools import lru_cache
 
@@ -879,6 +880,28 @@ def tma_observation_summary(track, now, solution_quality=0.0):
                 state=state, age=age, span=span)
 
 
+def tma_closing_rate_kn(ship, bearing_deg, course_deg, speed_kn):
+    """Range-rate (closing positive) along the line of sight to a TMA fix.
+
+    Pure display-derived value from data already shown alongside it (TMA
+    course/speed, own ship state); never stored, so it carries no save-schema
+    or determinism risk. This is what a real Doppler shift on an active ping
+    would report - the sign and magnitude of the closing rate - without
+    modeling the acoustic frequency shift itself.
+    """
+    if course_deg is None or speed_kn is None:
+        return None
+    bearing = math.radians(bearing_deg)
+    los = (math.sin(bearing), -math.cos(bearing))
+    course = math.radians(course_deg)
+    target_vx, target_vy = speed_kn * math.sin(course), -speed_kn * math.cos(course)
+    own_course = math.radians(getattr(ship, "course", 0.0))
+    own_speed = float(getattr(ship, "speed", 0.0))
+    own_vx, own_vy = own_speed * math.sin(own_course), -own_speed * math.cos(own_course)
+    relative_vx, relative_vy = target_vx - own_vx, target_vy - own_vy
+    return -(relative_vx * los[0] + relative_vy * los[1])
+
+
 def _draw_tma(game, panel):
     screen = game.screen
     contact = getattr(game, "selected_contact", None)
@@ -1164,6 +1187,11 @@ def _detail_rows(game, page):
                           course=f"{course % 360:05.1f}" if course is not None else "--",
                           speed=f"{speed:.1f}" if speed is not None else "--"),
                   "sonar.depth_not_tma"]
+        closing_kn = tma_closing_rate_kn(
+            game.ship, getattr(contact, "bearing", 0.0), course, speed)
+        lines.append(message(
+            "sonar.line.tma_closing_rate",
+            rate=f"{closing_kn:+.1f}" if closing_kn is not None else "--"))
         seen = getattr(contact, "tma_seen", None)
         if seen is not None:
             lines += [message("observation.fix_age", age=f"{max(0, game.sim_t - seen):.0f}")]

@@ -227,15 +227,18 @@ def test_snapshot_profile_references_are_strict():
 
 
 def test_pending_asm_validation_uses_snapshot_profile(monkeypatch):
+    # warship_22 (Russia): still a "warships.json"/hostile, ASM-armed profile
+    # after the hostile-pool migration; warship_01 was recategorized as
+    # unarmed neutral civilians.json traffic (asm_salvo [0, 0]).
     game = Game(seed=2406, start_menu=False)
-    profile = game.runtime_catalog.surfaces["warship_01"]
+    profile = game.runtime_catalog.surfaces["warship_22"]
     warship = SurfaceShip(
         game.ship.x + 20.0, game.ship.y, random.Random(8), hostile=True,
         profile=profile)
     warship.pending_asm = [(game.ship.x, game.ship.y, 3)]
     game.warships = [warship]
     state = game.save_state()
-    _entry(state["catalog_snapshot"], "warships.json", "warship_01")[
+    _entry(state["catalog_snapshot"], "warships.json", "warship_22")[
         "asm_salvo"] = [3, 3]
     monkeypatch.setattr(
         game_module, "CATALOG", _changed_catalog(state["catalog_snapshot"]))

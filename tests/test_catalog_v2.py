@@ -17,14 +17,30 @@ from tools.gen_contacts import _same_json, validate
 GENERIC_SUBMARINE_KEYS = ("diesel_alt", "aip_modern", "ssn")
 NAMED_SUBMARINE_KEYS = tuple(f"sub_{index:02d}" for index in range(1, 21))
 ALL_SUBMARINE_KEYS = GENERIC_SUBMARINE_KEYS + NAMED_SUBMARINE_KEYS
+# Identity set: all 28 original warship profiles still exist and still carry
+# v2 reference/machine/sensor/emitter/countermeasure components (only their
+# weapons/launchers/magazines were dropped for the 25 demoted to neutral
+# traffic - see MOVED_WARSHIP_KEYS). Used for profile_systems/shape checks
+# that apply regardless of which file a profile currently lives in.
 ALL_WARSHIP_KEYS = tuple(f"warship_{index:02d}" for index in range(1, 29))
+# The Russia-hostile-pool migration recategorized these 25 real (non-Russian)
+# navies as neutral "SONSTIGES" civilian traffic instead of deleting them.
+MOVED_WARSHIP_KEYS = tuple(
+    f"warship_{index:02d}" for index in (*range(1, 22), *range(25, 29)))
+# warships.json now holds only the Russian-Federation hostile baseline: the
+# already-Russian Kirov/Udaloy/Admiral-Gorshkov classes plus the new Projekt
+# 20380 Steregushchiy corvette.
+WARSHIPS_FILE_KEYS = ("warship_22", "warship_23", "warship_24", "warship_29", "warship_30")
 ALL_CIVILIAN_KEYS = (
     *(f"tanker_{index:02d}" for index in range(1, 16)),
     *(f"passenger_{index:02d}" for index in range(1, 16)),
     *(f"cargo_{index:02d}" for index in range(1, 16)),
     *(f"aux_{index:02d}" for index in range(1, 11)),
 )
-ALL_AIRCRAFT_KEYS = ("mil_patrol", "civil_transit")
+# civilians.json's actual current entry order: the original 55 archetypes
+# followed by the 25 demoted real navies (ascending warship index).
+CIVILIANS_FILE_KEYS = ALL_CIVILIAN_KEYS + MOVED_WARSHIP_KEYS
+ALL_AIRCRAFT_KEYS = ("mil_patrol", "civil_transit", "su_25")
 ALL_ANIMAL_KEYS = ("whale", "fish_school", "jellyfish")
 ALL_TORPEDO_KEYS = ("frigate_torp", "helo_torp", "enemy_torp")
 ALL_DECOY_KEYS = ("decoy",)
@@ -64,13 +80,8 @@ def _v2_documents(directory):
             "countermeasure_keys": ["countermeasure.warship_01.decoy"],
         }],
         references=[{
-            "key": "reference.warship_01", "variant": "Flight IIA",
-            "variant_year": 2000, "refit_year": None, "aliases": ["DDG"],
-            "roles": ["air_defense", "anti_submarine"], "hull_type": "destroyer",
-            "displacement_tonnes": 9500, "displacement_basis": "full_load",
-            "length_m": 155, "beam_waterline_m": 20.0, "beam_overall_m": 20.4,
-            "flight_deck_width_m": None, "draft_m": 9.3,
-            "ship_crew": [300, 330], "air_group_crew": None,
+            "key": "reference.warship_01", "hull_type": "destroyer",
+            "length_m": 155,
         }],
         machines=[{
             "key": "machine.warship_01", "cruise_speed_kn": 18,
@@ -135,17 +146,11 @@ def _v2_documents(directory):
         ],
         "claims": [
             {"resource": "warships.json", "profile_key": profile_key,
-             "field_paths": ["/reference/length_m", "/reference/ship_crew"],
+             "field_paths": ["/reference/length_m"],
              "status": "published", "source_ids": ["source.public", "source.manufacturer"]},
-            {"resource": "warships.json", "profile_key": profile_key,
-             "field_paths": ["/reference/displacement_tonnes"], "status": "derived",
-             "source_ids": ["source.public"]},
             {"resource": "warships.json", "profile_key": profile_key,
              "field_paths": ["/machine/cruise_lines"], "status": "game_assumption",
              "source_ids": ["u-jagd.game-model"]},
-            {"resource": "warships.json", "profile_key": profile_key,
-             "field_paths": ["/reference/flight_deck_width_m"], "status": "unknown",
-             "source_ids": []},
         ],
     }
     claimed = {path for claim in source_document["claims"]
@@ -185,19 +190,23 @@ def test_packaged_migration_versions_counts_and_provenance():
         ALL_SUBMARINE_KEYS) | set(ALL_WARSHIP_KEYS) | set(ALL_CIVILIAN_KEYS) \
         | set(ALL_AIRCRAFT_KEYS) | set(ALL_ANIMAL_KEYS) \
         | set(ALL_TORPEDO_KEYS) | set(ALL_DECOY_KEYS)
-    assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 115
-    assert len(catalog.CATALOG.sensors) == 216
-    assert len(catalog.CATALOG.emitters) == 85
+    assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 116
+    assert len(catalog.CATALOG.sensors) == 217
+    assert len(catalog.CATALOG.emitters) == 86
+    # Weapon/launcher/magazine/countermeasure counts are unchanged: demoted
+    # ex-warships moved to civilians.json keep their v2 combat components
+    # (profile_systems/launchers/etc. are global registries, not file-scoped;
+    # a neutral spawn just never reaches the ASM/ASROC engage paths).
     assert len(catalog.CATALOG.weapons) == 51
     assert len(catalog.CATALOG.launchers) == 51
     assert len(catalog.CATALOG.magazines) == 51
     assert len(catalog.CATALOG.countermeasures) == 51
-    assert len(catalog.CATALOG.sources) == 15
-    assert len(catalog.CATALOG.provenance_claims) == 366
+    assert len(catalog.CATALOG.sources) == 14
+    assert len(catalog.CATALOG.provenance_claims) == 365
     assert len(catalog.CATALOG.subs) + len(catalog.CATALOG.surfaces) \
         + len(catalog.CATALOG.aircraft) + len(catalog.CATALOG.animals) \
-        + len(catalog.CATALOG.torpedoes) + len(catalog.CATALOG.decoys) == 115
-    assert len(catalog.CATALOG.acoustic_profiles) == 109
+        + len(catalog.CATALOG.torpedoes) + len(catalog.CATALOG.decoys) == 115 + 3
+    assert len(catalog.CATALOG.acoustic_profiles) == 111
     source = resources.files("data.contacts")
     reconstructed = catalog.CATALOG.reconstruct_documents()
     for filename in catalog.CONTACT_FILENAMES:
@@ -228,21 +237,25 @@ def test_r10_batch1_keeps_legacy_entries_and_spawn_selection_stable():
     encoded = json.dumps(
         entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     assert hashlib.sha256(encoded).hexdigest() == \
-        "25a51032dcba8956ede1ff4d09cba539ec14c84a226033b2e9165f59f166f5d9"
+        "12d9d2366a5351ff3ab24e70ad8cb9b11dda9f9e796d10e617cfca1aa4f23280"
+    # Non-Russian submarine classes now spawn_weight 0 (Russia-hostile-pool
+    # migration): the weighted pool draws only the Russian classes plus the
+    # three generic legacy archetypes.
     assert [catalog.CATALOG.pick_sub(random.Random(seed)).key for seed in range(20)] == [
-        "sub_17", "aip_modern", "sub_19", "sub_01", "sub_01", "sub_11",
-        "sub_15", "sub_03", "sub_01", "sub_07", "sub_10", "sub_06",
-        "sub_07", "sub_02", "aip_modern", "sub_20", "sub_04", "sub_08",
-        "ssn", "sub_12",
+        "sub_16", "diesel_alt", "sub_17", "aip_modern", "aip_modern", "sub_13",
+        "sub_15", "ssn", "aip_modern", "sub_11", "sub_12", "sub_11",
+        "sub_11", "aip_modern", "diesel_alt", "sub_17", "ssn", "sub_11",
+        "aip_modern", "sub_13",
     ]
 
 
 def test_r10_batch2_migrates_every_warship_in_legacy_order():
-    assert tuple(profile.key for profile in catalog.CATALOG.hostile_surfaces) == \
-        ALL_WARSHIP_KEYS
-    assert tuple(key for key in catalog.CATALOG.profile_systems
-                 if key in ALL_WARSHIP_KEYS) == ALL_WARSHIP_KEYS
-
+    # Identity-level: all 28 original warship profiles still exist and still
+    # carry reference/machine/sensor/emitter/countermeasure v2 components,
+    # regardless of which file (warships.json vs civilians.json) they now
+    # live in after the Russia-hostile-pool migration.
+    assert {key for key in catalog.CATALOG.profile_systems
+            if key in ALL_WARSHIP_KEYS} == set(ALL_WARSHIP_KEYS)
     for key in ALL_WARSHIP_KEYS:
         systems = catalog.CATALOG.profile_systems[key]
         assert systems.reference_key == f"reference.{key}"
@@ -250,31 +263,43 @@ def test_r10_batch2_migrates_every_warship_in_legacy_order():
         assert systems.sensor_keys == (f"sensor.{key}.radar", f"sensor.{key}.sonar")
         assert systems.emitter_keys == (f"emitter.{key}.radar",)
         assert systems.countermeasure_keys == (f"countermeasure.{key}.softkill",)
-    for key in ALL_WARSHIP_KEYS[2:24]:
+    # Weapons/launchers/magazines are unchanged too - only the 3 still-
+    # Russian, still-hostile keys use the ASM rail-launcher pattern checked
+    # here; the moved keys' own (VLS/CIWS/SAM/none) launcher types are
+    # covered by test_r4_pilot_capacity_and_mission_load_are_separate_...
+    for key in ("warship_22", "warship_23", "warship_24"):
         systems = catalog.CATALOG.profile_systems[key]
         assert systems.launcher_keys == (f"launcher.{key}.asm",)
         assert systems.magazine_keys == (f"magazine.{key}.asm",)
 
+    # File-level: warships.json (the actual random hostile-spawn pool) now
+    # holds only the Russian classes plus the new Projekt 20380 corvette
+    # (and the dormant, spawn_weight-0 friendly F217 Bayern).
+    assert tuple(profile.key for profile in catalog.CATALOG.hostile_surfaces) == \
+        WARSHIPS_FILE_KEYS
+
 
 def test_r10_batch2_keeps_warship_entries_and_spawn_selection_stable():
     entries = catalog.CATALOG.reconstruct_documents()["warships.json"]["entries"]
-    assert tuple(entry["key"] for entry in entries) == ALL_WARSHIP_KEYS
+    assert tuple(entry["key"] for entry in entries) == WARSHIPS_FILE_KEYS
     encoded = json.dumps(
         entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     assert hashlib.sha256(encoded).hexdigest() == \
-        "21c4f75329d1afd209bf1b79c0f59d32cc58847910fca408f7e8d0570e8bfd0d"
+        "35cab89cb08f597e802aa890b90e0fd5a58ad5f3f468f230a74f0f7760daa319"
     assert [catalog.CATALOG.pick_surface(random.Random(seed), hostile=True).key
             for seed in range(10)] == [
-        "warship_22", "warship_04", "warship_24", "warship_06", "warship_06",
-        "warship_16", "warship_20", "warship_09", "warship_06", "warship_12",
+        "warship_29", "warship_22", "warship_29", "warship_22", "warship_22",
+        "warship_24", "warship_29", "warship_23", "warship_22", "warship_23",
     ]
 
 
 def test_r10_batch3_migrates_every_civilian_in_legacy_order_without_armament():
+    # File-level: civilians.json now also holds the 25 real navies demoted to
+    # neutral "SONSTIGES" traffic, appended after the original 55 archetypes.
     assert tuple(profile.key for profile in catalog.CATALOG.civilian_surfaces) == \
-        ALL_CIVILIAN_KEYS
+        CIVILIANS_FILE_KEYS
     assert tuple(key for key in catalog.CATALOG.profile_systems
-                 if key in ALL_CIVILIAN_KEYS) == ALL_CIVILIAN_KEYS
+                 if key in CIVILIANS_FILE_KEYS) == CIVILIANS_FILE_KEYS
 
     for key in ALL_CIVILIAN_KEYS:
         systems = catalog.CATALOG.profile_systems[key]
@@ -282,34 +307,41 @@ def test_r10_batch3_migrates_every_civilian_in_legacy_order_without_armament():
         assert systems.machine_key == f"machine.{key}"
         assert systems.sensor_keys == (f"sensor.{key}.radar", f"sensor.{key}.ais")
         assert systems.emitter_keys == (f"emitter.{key}.radar",)
+    for key in MOVED_WARSHIP_KEYS:
+        systems = catalog.CATALOG.profile_systems[key]
+        # A demoted real-navy vessel keeps its warship radar+sonar suite
+        # rather than gaining a civilian AIS transponder it never had, and it
+        # keeps its original weapon/launcher/magazine/countermeasure data too
+        # (a neutral spawn just never reaches the ASM/ASROC engage paths,
+        # which are gated on doctrine, not on this data).
+        assert systems.sensor_keys == (f"sensor.{key}.radar", f"sensor.{key}.sonar")
+        assert systems.emitter_keys == (f"emitter.{key}.radar",)
+        assert len(systems.launcher_keys) == len(systems.magazine_keys) == \
+            len(systems.countermeasure_keys) == 1
+    for key in ALL_CIVILIAN_KEYS:
+        systems = catalog.CATALOG.profile_systems[key]
         assert systems.launcher_keys == systems.magazine_keys == \
             systems.countermeasure_keys == ()
     document = catalog.CATALOG.reconstruct_documents()["civilians.json"]
-    assert document["weapons"] == document["launchers"] == \
-        document["magazines"] == document["countermeasures"] == []
+    assert len(document["weapons"]) == len(document["launchers"]) == \
+        len(document["magazines"]) == len(document["countermeasures"]) == \
+        len(MOVED_WARSHIP_KEYS)
 
 
 def test_r10_batch3_keeps_civilian_entries_and_spawn_selection_stable():
     entries = catalog.CATALOG.reconstruct_documents()["civilians.json"]["entries"]
-    assert tuple(entry["key"] for entry in entries) == ALL_CIVILIAN_KEYS
+    assert tuple(entry["key"] for entry in entries) == CIVILIANS_FILE_KEYS
     encoded = json.dumps(
         entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     assert hashlib.sha256(encoded).hexdigest() == \
-        "5ac1e45fd372942f2979472f89fdb51dd6d6729bfe85b11110a07b3df8d9ca1d"
+        "cf142f149c3a5ac2cbbdb0adffc2f4da77e69a10d6f909dae09c1cd45a7bdfbb"
     assert [catalog.CATALOG.pick_surface(random.Random(seed)).key
             for seed in range(20)] == [
-        "aux_02", "tanker_08", "aux_08", "tanker_14", "tanker_13",
-        "cargo_05", "cargo_14", "passenger_03", "tanker_13", "passenger_11",
-        "cargo_02", "passenger_10", "passenger_12", "tanker_15", "tanker_06",
-        "aux_09", "passenger_05", "passenger_14", "tanker_10", "cargo_08",
+        "warship_11", "tanker_11", "warship_19", "passenger_04", "passenger_04",
+        "aux_03", "warship_07", "passenger_10", "passenger_03", "cargo_06",
+        "cargo_14", "cargo_05", "cargo_07", "passenger_05", "tanker_09",
+        "warship_20", "passenger_13", "cargo_11", "tanker_14", "aux_08",
     ]
-
-
-def test_r10_batch3_preserves_explicitly_generic_panamax_archetype():
-    reference = catalog.CATALOG.references["reference.cargo_05"]
-    assert reference.variant == "Generic Panamax container-ship archetype"
-    assert reference.aliases == ("Panamax container ship",)
-    assert reference.hull_type == "container_ship"
 
 
 def test_r10_batch4_migrates_every_aircraft_in_legacy_order_without_armament():
@@ -320,6 +352,7 @@ def test_r10_batch4_migrates_every_aircraft_in_legacy_order_without_armament():
         "mil_patrol": ("sensor.mil_patrol.radar", "sensor.mil_patrol.esm"),
         "civil_transit": (
             "sensor.civil_transit.radar", "sensor.civil_transit.ais"),
+        "su_25": ("sensor.su_25.radar",),
     }
     for key in ALL_AIRCRAFT_KEYS:
         systems = catalog.CATALOG.profile_systems[key]
@@ -340,9 +373,14 @@ def test_r10_batch4_keeps_aircraft_entries_and_spawn_selection_stable():
     encoded = json.dumps(
         entries, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     assert hashlib.sha256(encoded).hexdigest() == \
-        "ec0d82921231f2535cdf8be96286026804f8cb504472cb8ec818a9693eccfc38"
+        "5615f57cd2b22128a8308e4dc6f5ce468efb998905013889fe2063c4a95e7964"
+    # mil_patrol (Su-33) and su_25 both have positive spawn_weight; military
+    # patrol flights spawn a real Russian aircraft either way.
     assert [catalog.CATALOG.pick_aircraft(random.Random(seed), "military").key
-            for seed in range(10)] == ["mil_patrol"] * 10
+            for seed in range(10)] == [
+        "su_25", "mil_patrol", "su_25", "mil_patrol", "mil_patrol",
+        "mil_patrol", "su_25", "mil_patrol", "mil_patrol", "mil_patrol",
+    ]
     assert [catalog.CATALOG.pick_aircraft(random.Random(seed), "civil").key
             for seed in range(10)] == ["civil_transit"] * 10
 
@@ -455,6 +493,12 @@ def test_migrated_claims_cover_every_component_field():
 
 
 def test_r4_pilot_capacity_and_mission_load_are_separate_and_not_runtime_effective():
+    # warship_01/02/25/26 (VLS-armed Western/Chinese classes) were
+    # recategorized to neutral civilians.json traffic by the Russia-hostile-
+    # pool migration, but their v2 weapon/launcher/magazine components moved
+    # with them unchanged (profile_systems/launchers/magazines are global
+    # registries, not scoped to a file) - a neutral spawn just never calls
+    # the ASM/ASROC engage paths (gated on doctrine, not on this data).
     expected = {
         "warship_01": (96, 8), "warship_02": (122, 8),
         "warship_25": (112, 8), "warship_26": (64, 8),
@@ -469,22 +513,32 @@ def test_r4_pilot_capacity_and_mission_load_are_separate_and_not_runtime_effecti
         "launcher.warship_27.ciws",)
     assert catalog.CATALOG.profile_systems["warship_28"].launcher_keys == (
         "launcher.warship_28.sam",)
+    # The still-hostile Russian classes use non-VLS rail launchers instead.
+    for profile_key in ("warship_22", "warship_23", "warship_24"):
+        systems = catalog.CATALOG.profile_systems[profile_key]
+        launcher = catalog.CATALOG.launchers[systems.launcher_keys[0]]
+        magazine = catalog.CATALOG.magazines[systems.magazine_keys[0]]
+        assert launcher.launcher_type == "rail"
+        assert launcher.vls_cells is None
+        assert magazine.mission_count == 4
 
 
 def test_r4_new_profiles_are_appended_without_changing_legacy_spawn_pool():
-    assert [profile.key for profile in catalog.CATALOG.hostile_surfaces][-3:] == [
-        "warship_26", "warship_27", "warship_28",
+    # Projekt 20380 (warship_29, hostile) and F217 Bayern (warship_30,
+    # default_faction FREUND - "hostile" is file-placement bookkeeping, not
+    # IFF) are new profiles appended after the existing Russian classes
+    # without disturbing their order or spawn behavior.
+    assert [profile.key for profile in catalog.CATALOG.hostile_surfaces] == [
+        "warship_22", "warship_23", "warship_24", "warship_29", "warship_30",
     ]
     assert [profile.key for profile in catalog.CATALOG.legacy_hostile_surfaces] == [
-        f"warship_{index:02d}" for index in range(1, 26)
+        "warship_22", "warship_23", "warship_24", "warship_29",
     ]
     assert [catalog.CATALOG.pick_surface(random.Random(seed), hostile=True).key
             for seed in range(10)] == [
-        "warship_22", "warship_04", "warship_24", "warship_06", "warship_06",
-        "warship_16", "warship_20", "warship_09", "warship_06", "warship_12",
+        "warship_29", "warship_22", "warship_29", "warship_22", "warship_22",
+        "warship_24", "warship_29", "warship_23", "warship_22", "warship_23",
     ]
-    assert all(catalog.CATALOG.surfaces[key].spawn_weight == 0 for key in (
-        "warship_26", "warship_27", "warship_28"))
 
 
 def test_r4_legacy_runtime_profiles_remain_unchanged_and_new_data_is_conservative():
@@ -504,11 +558,8 @@ def test_r4_legacy_runtime_profiles_remain_unchanged_and_new_data_is_conservativ
     cargo = catalog.CATALOG.surfaces["cargo_05"]
     assert (cargo.speed_kn, cargo.acoustic.rpm_range,
             cargo.acoustic.cavitation_tendency) == ((12.0, 20.0), (114.0, 514.0), 0.78)
-    type_052d = catalog.CATALOG.references["reference.warship_26"]
-    assert (type_052d.beam_waterline_m, type_052d.draft_m) == (17.2, 6.2)
     nimitz = catalog.CATALOG.references["reference.warship_28"]
-    assert (nimitz.displacement_tonnes, nimitz.length_m,
-            nimitz.ship_crew, nimitz.air_group_crew) == (None, None, None, None)
+    assert nimitz.length_m is None
 
 
 def test_mixed_v1_v2_catalog_loads_immutable_registries_and_reconstructs_exactly(tmp_path):

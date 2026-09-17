@@ -33,6 +33,25 @@
     ok: "reason_ok",
   };
   const colors = { UNKNOWN: "#f3cf79", FRIEND: "#81c5ff", NEUTRAL: "#8fdfab", HOSTILE: "#ff9090" };
+  // Canvas drawing cannot use CSS custom properties directly, so it used to
+  // duplicate the palette as hand-copied hex literals - a real drift risk if
+  // style.css's :root palette is ever retuned. Read it once instead; these
+  // are static custom properties (no @media override anywhere in style.css),
+  // so there is nothing to invalidate the cache for.
+  let paletteCache = null;
+  function palette() {
+    if (!paletteCache) {
+      const style = getComputedStyle(document.documentElement);
+      const read = (name) => style.getPropertyValue(name).trim();
+      paletteCache = {
+        bg: read("--bg"), panel: read("--panel"), line: read("--line"),
+        text: read("--text"), muted: read("--muted"), accent: read("--accent"),
+        amber: read("--amber"), red: read("--red"), blue: read("--blue"),
+        scopeBg: read("--scope-bg"),
+      };
+    }
+    return paletteCache;
+  }
   let language = (navigator.language || "en").toLowerCase().startsWith("de") ? "de" : "en";
   let catalog = {};
   // Session metadata stays closure-local: no URL, DOM or persistence.
@@ -50,6 +69,19 @@
   let lastSuccess = 0;
   let lastSessionFetch = 0;
   let failures = 0;
+  // Distinguishes "server sent something this client cannot parse" (a real
+  // bug, not a network blip) from ordinary transient failures, and gives
+  // the operator an honest signal once a transient failure has been
+  // retrying for a while instead of "retrying automatically" forever with
+  // no escalation.
+  const PROTOCOL_ERROR_MESSAGES = new Set(["protocol", "session", "chart", "events",
+    "proposals", "results", "simlog_schema", "catalog"]);
+  const ESCALATE_AFTER_FAILURES = 10;
+  // Below this, a stale poll is shown as a low-alarm "reconnecting" notice
+  // rather than the full amber "stale" treatment - most blips clear before
+  // this many consecutive failures. Purely cosmetic: linkState/connected and
+  // the action-locking gate they drive are untouched.
+  const NOTICE_AFTER_FAILURES = 2;
   let pollTimer = null;
   let polling = false;
   let pending = null;
@@ -62,6 +94,7 @@
   let stationPickerOpen = false;
   let lobbyMessage = null;
   let commandMessage = null;
+  let lastToastedMessage = null;
   let opzMarked = new Set();
   let opzSuppressed = new Set();
   let opzManage = false;
@@ -121,6 +154,7 @@
   let weatherLastDraw = 0;
   let weatherReceivedAt = 0;
   let roleMapDrag = null;
+  let sonarBroadbandDrag = null;
   let opzSweepFrame = null;
   let opzSweepSample = null;
   let fireConfirmation = null;
@@ -337,6 +371,17 @@
     return element;
   }
 
+  // Visual add-on for high-importance command/fire results, alongside (not
+  // instead of) the role=status/aria-live text that already carries this to
+  // screen readers - a busy operator screen can otherwise bury that text.
+  function showToast(key, values, variant) {
+    const region = $("toast-region");
+    if (!region) return;
+    const toast = node("p", t(key, values), `toast toast-${variant}`);
+    region.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+  }
+
   function metrics(element, entries) {
     entries.forEach(([key, value], index) => {
       let group = element.children[index];
@@ -367,6 +412,8 @@
     fireConfirmation = null;
     clearTimeout(fireConfirmationTimer);
     fireConfirmationTimer = null;
+    const dialog = $("fire-confirm-dialog");
+    if (dialog?.open) dialog.close();
   }
 
   function clearFireDrafts() {
@@ -770,7 +817,7 @@
   }
 
   function drawEmpty(plot, key = "visual_empty") {
-    plot.context.fillStyle = "#a7b9bf";
+    plot.context.fillStyle = palette().muted;
     plot.context.textAlign = "center";
     plot.context.fillText(t(key), plot.width / 2, plot.height / 2);
   }
@@ -778,7 +825,7 @@
   function plotAxes(plot, xmax, ymax, xunit, yunit, xorigin = 0, reverseY = false) {
     const context = plot.context;
     const {left, top, width, height} = plotArea(plot.width, plot.height);
-    context.fillStyle = "#a7b9bf"; context.strokeStyle = "#30434e"; context.textAlign = "center";
+    context.fillStyle = palette().muted; context.strokeStyle = palette().line; context.textAlign = "center";
     for (let tick = 0; tick <= 4; tick++) {
       const x = left + tick * width / 4, y = top + tick * height / 4;
       context.fillText(`${number(xorigin + xmax * tick / 4, 0)}${tick === 4 ? xunit : ""}`, x, top + height + 20);
@@ -820,7 +867,7 @@
     if (!values.length) { drawEmpty(plot); return; }
     const maximum = Math.max(1e-6, ...values.map((value) => Math.abs(value)));
     plot = plotAxes(plot, xmax, maximum, " Hz", "rel.", 0, true);
-    plot.context.strokeStyle = "#a1e7cc";
+    plot.context.strokeStyle = palette().accent;
     plot.context.beginPath();
     values.forEach((value, index) => {
       const x = frequencies ? frequencies[index] / xmax * plot.width : values.length === 1 ? 0 : index / (values.length - 1) * plot.width;
@@ -828,7 +875,7 @@
       index ? plot.context.lineTo(x, y) : plot.context.moveTo(x, y);
     });
     plot.context.stroke();
-    plot.context.fillStyle = "#f3c577";
+    plot.context.fillStyle = palette().amber;
     for (const marker of markers.slice(0, 20)) plot.context.fillText(marker.text, Math.max(2, Math.min(plot.width - 50, marker.x * plot.width)), 14);
   }
 
@@ -839,19 +886,19 @@
     if (broadband) {
       const bearing = visual.receiver.listen_bearing % 360;
       const half = visual.receiver.beam_width_deg / 2;
-      broadband.context.strokeStyle = "#a7b9bf";
+      broadband.context.strokeStyle = palette().muted;
       for (const value of [(bearing - half + 360) % 360, (bearing + half) % 360]) {
         const x = value / 360 * broadband.width;
         broadband.context.beginPath(); broadband.context.moveTo(x, 0);
         broadband.context.lineTo(x, broadband.height); broadband.context.stroke();
       }
-      broadband.context.strokeStyle = "#f3c577";
+      broadband.context.strokeStyle = palette().amber;
       const x = bearing / 360 * broadband.width;
       broadband.context.beginPath(); broadband.context.moveTo(x, 0);
       broadband.context.lineTo(x, broadband.height); broadband.context.stroke();
       if (finite(focusedTrack?.bearing)) {
         const selectedX = focusedTrack.bearing % 360 / 360 * broadband.width;
-        broadband.context.strokeStyle = "#a1e7cc";
+        broadband.context.strokeStyle = palette().accent;
         broadband.context.lineWidth = 3;
         broadband.context.beginPath(); broadband.context.moveTo(selectedX, 0);
         broadband.context.lineTo(selectedX, broadband.height); broadband.context.stroke();
@@ -870,7 +917,7 @@
       tma = plotAxes(tma, maxAge, 360, " s", "°");
       contacts.forEach((track, index) => {
         const isSelected = track.ref === selected;
-        tma.context.strokeStyle = isSelected ? "#a1e7cc" : ["#7fb8a5", "#f3c577", "#81c5ff", "#ff9090"][index % 4];
+        tma.context.strokeStyle = isSelected ? palette().accent : ["#7fb8a5", palette().amber, palette().blue, palette().red][index % 4];
         tma.context.lineWidth = isSelected ? 3 : 1;
         tma.context.beginPath();
         track.bearings.forEach((point, pointIndex) => {
@@ -889,10 +936,10 @@
         const min = Math.min(...visual.bt.speeds_m_s), max = Math.max(...visual.bt.speeds_m_s, min + 1);
         const depth = Math.max(1, ...visual.bt.depths_m);
         bt = plotAxes(bt, max - min, depth, " m/s", "m", min);
-        bt.context.fillStyle = "#a7b9bf";
+        bt.context.fillStyle = palette().muted;
         bt.context.fillText(`${number(min, 0)}–${number(max, 0)} m/s`, bt.width / 2, -7);
-        if (finite(visual.bt.thermocline_m)) { const y = visual.bt.thermocline_m / depth * bt.height; bt.context.strokeStyle = "#f3c577"; bt.context.setLineDash([4, 4]); bt.context.beginPath(); bt.context.moveTo(0, y); bt.context.lineTo(bt.width, y); bt.context.stroke(); bt.context.setLineDash([]); }
-        bt.context.strokeStyle = "#81c5ff"; bt.context.beginPath();
+        if (finite(visual.bt.thermocline_m)) { const y = visual.bt.thermocline_m / depth * bt.height; bt.context.strokeStyle = palette().amber; bt.context.setLineDash([4, 4]); bt.context.beginPath(); bt.context.moveTo(0, y); bt.context.lineTo(bt.width, y); bt.context.stroke(); bt.context.setLineDash([]); }
+        bt.context.strokeStyle = palette().blue; bt.context.beginPath();
         visual.bt.depths_m.forEach((value, index) => {
           const x = 12 + (visual.bt.speeds_m_s[index] - min) / (max - min) * (bt.width - 24);
           const y = value / depth * bt.height;
@@ -904,14 +951,14 @@
     const active = visualContext("sonar-active");
     if (active) {
       const radius = Math.min(active.width, active.height) * .44, cx = active.width / 2, cy = active.height / 2;
-      active.context.strokeStyle = "#30434e";
+      active.context.strokeStyle = palette().line;
       for (const scale of [.25, .5, .75, 1]) { active.context.beginPath(); active.context.arc(cx, cy, radius * scale, 0, Math.PI * 2); active.context.stroke(); }
       const maxRange = Math.max(5, Math.ceil(Math.max(0, ...visual.active_echoes.map((echo) => echo.range_nm)) / 5) * 5);
-      active.context.fillStyle = "#a7b9bf"; active.context.fillText(`N · ${number(maxRange, 0)} NM`, cx, 18);
+      active.context.fillStyle = palette().muted; active.context.fillText(`N · ${number(maxRange, 0)} NM`, cx, 18);
       for (const echo of visual.active_echoes) {
         const angle = echo.bearing * Math.PI / 180;
         const r = echo.range_nm / maxRange * radius;
-        active.context.fillStyle = "#f3c577"; active.context.beginPath();
+        active.context.fillStyle = palette().amber; active.context.beginPath();
         active.context.arc(cx + Math.sin(angle) * r, cy - Math.cos(angle) * r, 3, 0, Math.PI * 2); active.context.fill();
       }
       if (!visual.active_echoes.length) drawEmpty(active);
@@ -1022,7 +1069,7 @@
       if (x >= 0 && x <= plot.width) { plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke(); }
       if (y >= 0 && y <= plot.height) { plot.context.beginPath(); plot.context.moveTo(0, y); plot.context.lineTo(plot.width, y); plot.context.stroke(); }
     }
-    plot.context.strokeStyle = "#30434e"; plot.context.fillStyle = "#233d38";
+    plot.context.strokeStyle = palette().line; plot.context.fillStyle = "#233d38";
     for (const land of chart.landmasses) {
       plot.context.beginPath(); land.points.forEach(([x, y], index) => { const p = point(x, y); index ? plot.context.lineTo(...p) : plot.context.moveTo(...p); });
       plot.context.closePath(); plot.context.fill(); plot.context.stroke();
@@ -1044,7 +1091,7 @@
       }
     }
     plot.context.lineWidth = 1;
-    plot.context.fillStyle = "#a7b9bf";
+    plot.context.fillStyle = palette().muted;
     for (const label of [...(geo?.labels || []), ...(geo?.airbases || [])]) {
       const [x, y] = point(label.x, label.y);
       if (x >= 0 && x <= plot.width && y >= 0 && y <= plot.height) plot.context.fillText(label.name, x + 5, y - 5);
@@ -1054,13 +1101,13 @@
     if (hasPosition(data.own)) {
       addRoleMapHit(null, ox, oy);
       plot.context.save(); plot.context.translate(ox, oy); plot.context.rotate(data.own.course * Math.PI / 180);
-      plot.context.strokeStyle = "#a1e7cc"; plot.context.fillStyle = "#a1e7cc"; plot.context.beginPath();
+      plot.context.strokeStyle = palette().accent; plot.context.fillStyle = palette().accent; plot.context.beginPath();
       plot.context.moveTo(0, -9); plot.context.lineTo(-5, 6); plot.context.lineTo(5, 6); plot.context.closePath(); plot.context.fill();
       plot.context.beginPath(); plot.context.moveTo(0, -9); plot.context.lineTo(0, -35); plot.context.stroke(); plot.context.restore();
     }
     for (const row of data.observations) {
       const isSelected = row.ref === selected;
-      plot.context.strokeStyle = isSelected ? "#a1e7cc" : colors[row.affiliation] || colors.UNKNOWN;
+      plot.context.strokeStyle = isSelected ? palette().accent : colors[row.affiliation] || colors.UNKNOWN;
       plot.context.lineWidth = isSelected ? 3 : 1;
       if (hasPosition(row)) {
         const [x, y] = point(row.x, row.y);
@@ -1069,7 +1116,11 @@
         plot.context.fillStyle = plot.context.strokeStyle; plot.context.beginPath(); plot.context.arc(x, y, 4, 0, Math.PI * 2); plot.context.fill();
         if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 10, 0, Math.PI * 2); plot.context.stroke(); }
         plot.context.fillText(row.label || row.ref, x + 6, y - 6);
-        if (finite(row.course)) { const angle = row.course * Math.PI / 180; plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(x + Math.sin(angle) * 22, y - Math.cos(angle) * 22); plot.context.stroke(); }
+        if (finite(row.course)) {
+          const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * 22, tipY = y - Math.cos(angle) * 22;
+          plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(tipX, tipY); plot.context.stroke();
+          if (finite(row.speed_kn)) plot.context.fillText(unit(row.speed_kn, "kn", 0), tipX + 4, tipY + 4);
+        }
       } else if (finite(row.bearing) && (hasPosition(data.own) ||
           finite(row.observer_x) && finite(row.observer_y))) {
         const [bx, by] = finite(row.observer_x) && finite(row.observer_y) ?
@@ -1088,12 +1139,12 @@
     plot.context.lineWidth = 1;
     for (const log of data.bearingLogs) {
       const [x, y] = point(log.observer_x, log.observer_y), angle = log.bearing * Math.PI / 180;
-      plot.context.strokeStyle = "#f3c577"; plot.context.setLineDash([3, 4]); plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(x + Math.sin(angle) * plot.width, y - Math.cos(angle) * plot.width); plot.context.stroke(); plot.context.setLineDash([]);
+      plot.context.strokeStyle = palette().amber; plot.context.setLineDash([3, 4]); plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(x + Math.sin(angle) * plot.width, y - Math.cos(angle) * plot.width); plot.context.stroke(); plot.context.setLineDash([]);
     }
     for (const item of [...data.fixes, ...data.assets]) if (hasPosition(item)) {
       const [x, y] = point(item.x, item.y);
       addRoleMapHit(null, x, y);
-      plot.context.strokeStyle = item.waypoint ? "#f3c577" : "#81c5ff";
+      plot.context.strokeStyle = item.waypoint ? palette().amber : palette().blue;
       if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
       plot.context.strokeRect(x - 4, y - 4, 8, 8);
       plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
@@ -1102,13 +1153,13 @@
       if (payload.radar.live && (payload.radar.surface || payload.radar.air)) {
         for (const range of [payload.radar.surface_effective_range_nm, payload.radar.air_effective_range_nm]) if (finite(range)) { plot.context.strokeStyle = "#365d69"; plot.context.beginPath(); plot.context.arc(ox, oy, range * scale, 0, Math.PI * 2); plot.context.stroke(); }
         const sweepBearing = currentOpzSweepBearing() ?? payload.radar.sweep_bearing;
-        if (finite(sweepBearing)) { const angle = sweepBearing * Math.PI / 180; plot.context.strokeStyle = "#a1e7cc"; plot.context.beginPath(); plot.context.moveTo(ox, oy); plot.context.lineTo(ox + Math.sin(angle) * payload.radar.range_nm * scale, oy - Math.cos(angle) * payload.radar.range_nm * scale); plot.context.stroke(); }
+        if (finite(sweepBearing)) { const angle = sweepBearing * Math.PI / 180; plot.context.strokeStyle = palette().accent; plot.context.beginPath(); plot.context.moveTo(ox, oy); plot.context.lineTo(ox + Math.sin(angle) * payload.radar.range_nm * scale, oy - Math.cos(angle) * payload.radar.range_nm * scale); plot.context.stroke(); }
       }
       const byRef = new Map(data.observations.map((row) => [row.ref, row]));
       for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = "#697f88"; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
     }
     $("role-map-scale").textContent = t("role_map_scale", {distance: number(chart.size_nm / viewState.zoom, 0)});
-    plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = "#e9eee8"; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();
+    plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = palette().text; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();
     const equivalent = [t("role_map_own", {position: hasPosition(data.own) ? position(data.own) : t("unavailable")})];
     equivalent.push(...data.observations.map((row) => t("role_map_observation", {ref: row.ref, bearing: number(row.bearing, 0), position: hasPosition(row) ? position(row) : t("bearing_only")})));
     equivalent.push(...data.fixes.map((row) => t("role_map_fix", {ref: row.ref, position: position(row), uncertainty: number(row.uncertainty_nm, 1)})));
@@ -1116,9 +1167,9 @@
   }
 
   function gauge(context, x, y, radius, value, maximum, label) {
-    context.strokeStyle = "#30434e"; context.lineWidth = 6; context.beginPath(); context.arc(x, y, radius, Math.PI, Math.PI * 2); context.stroke();
-    context.strokeStyle = "#a1e7cc"; context.beginPath(); context.arc(x, y, radius, Math.PI, Math.PI + Math.PI * Math.max(0, Math.min(1, value / Math.max(1e-6, maximum)))); context.stroke();
-    context.fillStyle = "#e9eee8"; context.textAlign = "center"; context.fillText(label, x, y + 18);
+    context.strokeStyle = palette().line; context.lineWidth = 6; context.beginPath(); context.arc(x, y, radius, Math.PI, Math.PI * 2); context.stroke();
+    context.strokeStyle = palette().accent; context.beginPath(); context.arc(x, y, radius, Math.PI, Math.PI + Math.PI * Math.max(0, Math.min(1, value / Math.max(1e-6, maximum)))); context.stroke();
+    context.fillStyle = palette().text; context.textAlign = "center"; context.fillText(label, x, y + 18);
   }
 
   function drawDamageVisual() {
@@ -1134,9 +1185,9 @@
       const width = roomW - 6, height = roomH - 6;
       damageHits.push({key: room.key, x, y, width, height});
       const assigned = payload.teams.some((team) => team.team === selectedTeam && team.compartment === room.key);
-      plot.context.strokeStyle = assigned ? "#a1e7cc" : room.state === "ZERSTOERT" ? "#ff9090" : "#536873";
+      plot.context.strokeStyle = assigned ? palette().accent : room.state === "ZERSTOERT" ? palette().red : "#536873";
       plot.context.lineWidth = assigned ? 3 : 1.5; plot.context.strokeRect(x, y, width, height);
-      plot.context.fillStyle = "#e9eee8"; plot.context.textAlign = "left"; plot.context.fillText(room.name, x + 6, y + 20, roomW - 18);
+      plot.context.fillStyle = palette().text; plot.context.textAlign = "left"; plot.context.fillText(room.name, x + 6, y + 20, roomW - 18);
       plot.context.fillText(enumText(damageStates, room.state), x + 6, y + 38, roomW - 18);
       plot.context.fillStyle = "#397fa5"; plot.context.fillRect(x + 6, y + height - 29, (roomW - 18) * room.flood / 100, 10);
       plot.context.fillStyle = "#c95d43"; plot.context.fillRect(x + 6, y + height - 14, (roomW - 18) * room.fire / 100, 10);
@@ -1153,7 +1204,7 @@
     gauge(plot.context, plot.width * .18, plot.height * .55, radius, p.rpm, 300, `${number(p.rpm, 0)} RPM`);
     gauge(plot.context, plot.width * .5, plot.height * .55, radius, p.speed, payload.controls.speed_max_kn, `${number(p.speed, 1)} kn`);
     gauge(plot.context, plot.width * .82, plot.height * .55, radius, m.noise, 1, t("noise"));
-    plot.context.fillStyle = p.cavitating ? "#ff9090" : "#a1e7cc"; plot.context.textAlign = "center"; plot.context.fillText(`${p.telegraph} / ${t(p.cavitating ? "cavitating" : "not_cavitating")}`, plot.width / 2, 22);
+    plot.context.fillStyle = p.cavitating ? palette().red : palette().accent; plot.context.textAlign = "center"; plot.context.fillText(`${p.telegraph} / ${t(p.cavitating ? "cavitating" : "not_cavitating")}`, plot.width / 2, 22);
     $("engine-instruments-text").textContent = t("engine_equivalent", {telegraph: p.telegraph, rpm: number(p.rpm, 0), speed: number(p.speed, 1), target: number(p.target_speed, 1), cap: number(m.effective_speed_cap, 1), noise: number(m.noise, 2), roll: number(e.roll, 1), pitch: number(e.pitch, 1)});
   }
 
@@ -1161,8 +1212,8 @@
     const plot = visualContext("eloka-scope"), payload = v2State.eloka;
     if (!plot) return;
     const radius = Math.min(plot.width, plot.height) * .42, cx = plot.width / 2, cy = plot.height / 2;
-    plot.context.strokeStyle = "#30434e"; plot.context.beginPath(); plot.context.arc(cx, cy, radius, 0, Math.PI * 2); plot.context.stroke();
-    for (const row of payload.intercepts) { const angle = row.bearing * Math.PI / 180; plot.context.strokeStyle = "#f3c577"; plot.context.lineWidth = 2 + row.quality * 3; plot.context.beginPath(); plot.context.moveTo(cx, cy); plot.context.lineTo(cx + Math.sin(angle) * radius, cy - Math.cos(angle) * radius); plot.context.stroke(); }
+    plot.context.strokeStyle = palette().line; plot.context.beginPath(); plot.context.arc(cx, cy, radius, 0, Math.PI * 2); plot.context.stroke();
+    for (const row of payload.intercepts) { const angle = row.bearing * Math.PI / 180; plot.context.strokeStyle = palette().amber; plot.context.lineWidth = 2 + row.quality * 3; plot.context.beginPath(); plot.context.moveTo(cx, cy); plot.context.lineTo(cx + Math.sin(angle) * radius, cy - Math.cos(angle) * radius); plot.context.stroke(); }
     if (!payload.intercepts.length) drawEmpty(plot);
     $("eloka-scope-text").replaceChildren(...payload.intercepts.map((row) => node("p", t("eloka_equivalent", {ref: row.label, bearing: number(row.bearing, 0), frequency: number(row.frequency_hz, 0), prf: number(row.prf_hz, 0), modulation: row.modulation, candidates: row.candidates.map((item) => item.name).join(", ") || t("station_none"), correlations: row.correlations.map((item) => item.ref).join(", ") || t("station_none")}))));
     if (!payload.intercepts.length) $("eloka-scope-text").textContent = t("visual_empty");
@@ -1172,8 +1223,8 @@
     const plot = visualContext("weapons-system"), payload = v2State.weapons;
     if (!plot) return;
     const stages = [payload.readiness.station_down ? t("station_down_state") : t("station_live_state"), payload.readiness.roe, payload.readiness.interlock];
-    stages.forEach((text, index) => { const x = 10 + index * plot.width / 3; plot.context.fillStyle = index === 2 && payload.readiness.interlock ? "#53421f" : "#24493f"; plot.context.fillRect(x, 20, plot.width / 3 - 20, 45); plot.context.fillStyle = "#e9eee8"; plot.context.textAlign = "center"; plot.context.fillText(text, x + plot.width / 6 - 10, 48, plot.width / 3 - 28); });
-    payload.tubes.forEach((tube, index) => { const x = 10 + index * Math.max(36, (plot.width - 20) / Math.max(1, payload.tubes.length)); plot.context.strokeStyle = tube.state === "ready" ? "#a1e7cc" : "#f3c577"; plot.context.strokeRect(x, 90, 28, 55); plot.context.fillStyle = "#e9eee8"; plot.context.fillText(String(tube.tube), x + 14, 122); });
+    stages.forEach((text, index) => { const x = 10 + index * plot.width / 3; plot.context.fillStyle = index === 2 && payload.readiness.interlock ? "#53421f" : "#24493f"; plot.context.fillRect(x, 20, plot.width / 3 - 20, 45); plot.context.fillStyle = palette().text; plot.context.textAlign = "center"; plot.context.fillText(text, x + plot.width / 6 - 10, 48, plot.width / 3 - 28); });
+    payload.tubes.forEach((tube, index) => { const x = 10 + index * Math.max(36, (plot.width - 20) / Math.max(1, payload.tubes.length)); plot.context.strokeStyle = tube.state === "ready" ? palette().accent : palette().amber; plot.context.strokeRect(x, 90, 28, 55); plot.context.fillStyle = palette().text; plot.context.fillText(String(tube.tube), x + 14, 122); });
     $("weapons-system-text").textContent = t("weapons_equivalent", {state: payload.readiness.state, interlock: payload.readiness.interlock, tubes: payload.tubes.map((tube) => `${tube.tube}:${tube.state}/${number(tube.reload_s, 0)}s`).join(", ") || t("station_none"), nixies: number(payload.inventory.nixies, 0), active: payload.active_assets.length});
   }
 
@@ -1523,7 +1574,7 @@
         !Array.isArray(data.profiles) || data.profiles.length > 4096) throw new Error("analysis_schema");
     const keys = new Set();
     for (const profile of data.profiles) {
-      const referenceFields = ["variant", "variant_year", "refit_year", "aliases", "roles", "hull_type", "displacement_tonnes", "displacement_basis", "length_m", "beam_waterline_m", "beam_overall_m", "flight_deck_width_m", "draft_m", "ship_crew", "air_group_crew"];
+      const referenceFields = ["hull_type", "length_m"];
       const machineFields = ["cruise_speed_kn", "maximum_speed_kn", "quiet_speed_kn", "propulsion_codes", "motor_rpm", "shaft_rpm", "propulsor_type", "blade_count", "cruise_lines", "high_speed_lines", "cruise_broadband", "high_speed_broadband"];
       if (!profile || typeof profile !== "object" || Array.isArray(profile) ||
           Object.keys(profile).sort().join(",") !== "assets,components,key,machine,name,reference,resource" ||
@@ -1540,10 +1591,7 @@
           Object.keys(profile.components).sort().join(",") !== "countermeasures,emitters,launchers,magazines,sensors,weapons" ||
           Object.values(profile.components).some((items) => !Array.isArray(items) || items.length > 128 || items.some((item) => !boundedObject(item))) ||
           !record(profile.reference, referenceFields) || !record(profile.machine, machineFields) ||
-          typeof profile.reference.variant !== "string" || profile.reference.variant.length > 256 ||
-          !textList(profile.reference.aliases) || !textList(profile.reference.roles) ||
-          !referenceFields.slice(1).every((field) => ["aliases", "roles", "ship_crew", "air_group_crew"].includes(field) || scalar(profile.reference[field])) ||
-          !numberList(profile.reference.ship_crew) || !numberList(profile.reference.air_group_crew) ||
+          !referenceFields.every((field) => scalar(profile.reference[field])) ||
           !textList(profile.machine.propulsion_codes) || !numberList(profile.machine.motor_rpm) || !numberList(profile.machine.shaft_rpm) ||
           !["cruise_lines", "high_speed_lines"].every((field) => Array.isArray(profile.machine[field]) && profile.machine[field].length <= 128 && profile.machine[field].every((line) => Array.isArray(line) && line.length === 3 && line.every(finite))) ||
           !["cruise_broadband", "high_speed_broadband"].every((field) => profile.machine[field] === null || (Array.isArray(profile.machine[field]) && profile.machine[field].length === 3 && profile.machine[field].every(finite))) ||
@@ -1586,7 +1634,7 @@
     const term = $("analysis-filter").value.trim().toLocaleLowerCase(language).slice(0, 96);
     const category = $("analysis-category").value;
     const visible = contactAnalysis.profiles.filter((profile) => (!category || profile.resource === category) &&
-      (!term || `${profile.name} ${profile.key} ${profile.reference.variant || ""} ${(profile.reference.aliases || []).join(" ")} ${(profile.reference.roles || []).join(" ")}`.toLocaleLowerCase(language).includes(term)));
+      (!term || `${profile.name} ${profile.key}`.toLocaleLowerCase(language).includes(term)));
     list.replaceChildren(...visible.map((profile) => {
       const button = node("button", undefined, "analysis-item");
       button.type = "button";
@@ -1609,13 +1657,8 @@
     const machine = profile.machine;
     const joined = (items) => Array.isArray(items) && items.length ? items.join(", ") : t("unavailable");
     metrics($("analysis-metrics"), [
-      ["analyzer_variant", reference.variant || t("unavailable")],
-      ["analyzer_roles", joined(reference.roles)],
       ["analyzer_hull", reference.hull_type || t("unavailable")],
       ["analyzer_length", unit(reference.length_m, "m")],
-      ["analyzer_beam", unit(reference.beam_overall_m ?? reference.beam_waterline_m, "m")],
-      ["analyzer_draft", unit(reference.draft_m, "m")],
-      ["analyzer_displacement", unit(reference.displacement_tonnes, "t", 0)],
       ["analyzer_speed_band", `${unit(machine.cruise_speed_kn, "kn")} / ${unit(machine.maximum_speed_kn, "kn")}`],
       ["analyzer_propulsion", joined(machine.propulsion_codes)],
       ["analyzer_propulsor", machine.propulsor_type || t("unavailable")],
@@ -1759,9 +1802,18 @@
   }
 
   function renderConnection() {
-    $("connection").dataset.state = linkState;
+    const displayState = linkState === "stale" && failures < NOTICE_AFTER_FAILURES
+      ? "reconnecting" : linkState;
+    $("connection").dataset.state = displayState;
     const age = lastSuccess ? Math.max(0, Math.floor((performance.now() - lastSuccess) / 1000)) : 0;
-    $("connection").textContent = t(linkState === "stale" ? "connection_stale" : `connection_${linkState}`, { age });
+    const key = displayState === "stale" ? "connection_stale"
+      : displayState === "protocol_error" ? "connection_protocol_error"
+      : `connection_${displayState}`;
+    let text = t(key, { age });
+    if ((linkState === "stale" || linkState === "protocol_error") && failures >= ESCALATE_AFTER_FAILURES) {
+      text += " " + t("connection_escalated_hint", { minutes: Math.max(1, Math.floor(age / 60)) });
+    }
+    $("connection").textContent = text;
   }
 
   function setConnection(state) {
@@ -2040,7 +2092,7 @@
           !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
           [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping, payload.readiness.weather_launch_safe, payload.readiness.weather_dipping_safe].some((value) => typeof value !== "boolean") ||
           !finite(payload.readiness.crosswind_kn) || payload.readiness.crosswind_kn < 0 || payload.readiness.crosswind_kn > 80) throw new Error("protocol");
-      tacticalRows(payload.tactical, 128);
+      tacticalRows(payload.tactical, 128, ["classification", "released_to_opz"]);
       rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
     } else if (state.role === "eloka") {
       if (!boundedArray(payload.intercepts, 64) || payload.intercepts.some((row) => !exactKeys(row, ["ref", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "prf_hz", "modulation", "quality", "age_s", "annotation", "candidates", "correlations"]) ||
@@ -2105,8 +2157,9 @@
       bearing_uncertainty_deg: row.bearing_uncertainty_deg ?? null,
       range_uncertainty_nm: row.range_uncertainty_nm ?? null, fixes: row.fixes || [],
       members: row.members || [],
-      can_classify: state.role === "sonar" || (state.role === "opz" &&
-        (row.source.startsWith("RADAR") || ["HOJ", "FUSION"].includes(row.source))),
+      can_classify: state.role === "sonar" || state.role === "helicopter" || (state.role === "opz" &&
+        (row.source.startsWith("RADAR") || row.source.startsWith("SONAR") ||
+         ["HOJ", "FUSION"].includes(row.source))),
       can_propose: state.role === "sonar"})).filter((row) => state.role !== "opz" || opzManage || !opzSuppressed.has(row.ref));
     return {version: state.version, session: state.session, epoch: state.epoch,
       revision: state.revision, seq: state.seq, phase: state.phase,
@@ -2377,7 +2430,10 @@
       } else {
         failures += 1;
         delay = Math.min(8000, 500 * (2 ** Math.min(failures, 4)));
-        setConnection("stale");
+        // Still retried automatically either way (no forced reload) - only
+        // the message differs, so the operator can tell "network is rough"
+        // from "the host is sending something broken".
+        setConnection(PROTOCOL_ERROR_MESSAGES.has(error.message) ? "protocol_error" : "stale");
       }
     } finally {
       polling = false;
@@ -2495,7 +2551,7 @@
         $("classification").value = Object.hasOwn(classes, track.classification) ? track.classification : "";
         $("affiliation").value = Object.hasOwn(affiliations, track.affiliation) ? track.affiliation : "UNKNOWN";
       }
-      if (session?.station === "sonar") {
+      if (session?.station === "sonar" || session?.station === "helicopter") {
         $("sonar-release-status").hidden = false;
         $("sonar-release-status").textContent = t(track.released_to_opz ? "sonar_released" : "sonar_withdrawn");
         $("sonar-release").hidden = false;
@@ -2511,7 +2567,9 @@
     if ($("follow").disabled) view.follow = false;
     $("follow").setAttribute("aria-pressed", String(view.follow));
     const stationEnabled = stationActionAvailable();
-    const sonarAction = stationEnabled && session.station === "sonar" && track?.can_classify === true;
+    const sonarAction = stationEnabled &&
+      (session.station === "sonar" || session.station === "helicopter") &&
+      track?.can_classify === true;
     const opzAction = stationEnabled && session.station === "opz";
     $("apply-classification").disabled = !(sonarAction || opzAction && track?.can_classify === true);
     $("classification").disabled = $("apply-classification").disabled;
@@ -2530,6 +2588,10 @@
     $("command-status").dataset.status = message?.status || "";
     $("station-command-status").textContent = message ? t(message.key, {reason}) : "";
     $("station-command-status").dataset.status = message?.status || "";
+    if (message && message !== lastToastedMessage && message.status !== "pending") {
+      lastToastedMessage = message;
+      showToast(message.key, { reason }, message.status === "rejected" ? "danger" : "ok");
+    }
     $("command-reconcile").hidden = !pending?.uncertain;
     $("retry-command").disabled = !pending?.uncertain || pending.inFlight || performance.now() < pending.retryAt ||
       !connected || session?.grants.command !== true || !sameContext(v2State, {
@@ -2600,22 +2662,26 @@
     const status = role === "weapons" ? $("weapons-fire-status") : role === "opz" ? $("opz-fire-status") :
       role === "helicopter" ? $("helicopter-fire-status") : null;
     if (!status) { clearFireConfirmation(); return; }
-    let armed = false;
+    let pendingConfirm = false;
     let anyReady = false;
     for (const button of document.querySelectorAll("[data-fire-action]")) {
       const owned = button.closest("[data-station-role]")?.dataset.stationRole === role;
       const spec = directFireSpec(button.dataset.fireAction);
       const fingerprint = directFireFingerprint(button.dataset.fireAction, spec);
-      const confirmed = owned && fireConfirmation?.action === button.dataset.fireAction &&
-        fireConfirmation.fingerprint === fingerprint &&
-        performance.now() < fireConfirmation.expiresAt;
-      if (owned && fireConfirmation?.action === button.dataset.fireAction && !confirmed) clearFireConfirmation();
+      const isTarget = fireConfirmation?.action === button.dataset.fireAction;
+      // The dialog holds its own fingerprint snapshot; if the underlying
+      // spec changed while it was open (target dropped, readiness lost),
+      // cancel rather than let a stale confirm silently go through.
+      if (isTarget && (fireConfirmation.fingerprint !== fingerprint || performance.now() >= fireConfirmation.expiresAt)) {
+        clearFireConfirmation();
+      }
+      const stillPending = fireConfirmation?.action === button.dataset.fireAction;
       button.disabled = !owned || !directFireAvailable() || !spec.ready ||
         actionIncludesInvalidDepth(button.dataset.fireAction, spec.params.depth_m);
       anyReady ||= owned && spec.ready && !actionIncludesInvalidDepth(button.dataset.fireAction, spec.params.depth_m);
-      button.classList.toggle("armed", confirmed);
-      button.textContent = t(confirmed ? "fire_confirm" : button.dataset.fireAction);
-      armed ||= confirmed;
+      button.classList.toggle("armed", stillPending);
+      button.textContent = t(button.dataset.fireAction);
+      pendingConfirm ||= stillPending;
     }
     for (const control of document.querySelectorAll(".direct-fire-controls input, .direct-fire-controls select")) {
       const owned = control.closest("[data-station-role]")?.dataset.stationRole === role;
@@ -2623,28 +2689,52 @@
     }
     const stateKey = fireStatusKey();
     const statusKey = stateKey === "fire_ready" && !anyReady ? "fire_not_ready" : stateKey;
-    status.textContent = t(armed ? "fire_confirmation_active" : statusKey);
-    status.dataset.state = armed ? "armed" : statusKey;
+    status.textContent = t(pendingConfirm ? "fire_confirmation_active" : statusKey);
+    status.dataset.state = pendingConfirm ? "armed" : statusKey;
   }
 
   function actionIncludesInvalidDepth(action, depth) {
     return action.includes("torpedo") && (!finite(depth) || depth < 10 || depth > 300);
   }
 
+  function fireConfirmSummary(action, spec) {
+    const parts = [t(action)];
+    if (spec.ref) parts.push(t("fire_confirm_dialog_target", { ref: spec.ref }));
+    if (action.includes("torpedo") && finite(spec.params.depth_m)) {
+      parts.push(t("fire_confirm_dialog_depth", { depth: spec.params.depth_m }));
+    }
+    return parts.join(" — ");
+  }
+
   function activateDirectFire(button) {
     const action = button.dataset.fireAction;
     const spec = directFireSpec(action);
     if (!directFireAvailable() || !spec.ready || actionIncludesInvalidDepth(action, spec.params.depth_m)) return;
-    const fingerprint = directFireFingerprint(action, spec);
-    if (!fireConfirmation || fireConfirmation.fingerprint !== fingerprint || performance.now() >= fireConfirmation.expiresAt) {
-      clearFireConfirmation();
-      fireConfirmation = {action, fingerprint, expiresAt: performance.now() + 5000};
-      fireConfirmationTimer = setTimeout(() => { clearFireConfirmation(); renderDirectFireControls(); }, 5000);
+    clearFireConfirmation();
+    fireConfirmation = {action, fingerprint: directFireFingerprint(action, spec),
+      expiresAt: performance.now() + 5000};
+    fireConfirmationTimer = setTimeout(() => { clearFireConfirmation(); renderDirectFireControls(); }, 5000);
+    $("fire-confirm-summary").textContent = fireConfirmSummary(action, spec);
+    renderDirectFireControls();
+    const dialog = $("fire-confirm-dialog");
+    if (!dialog.open) dialog.showModal();
+  }
+
+  function confirmFireDialog() {
+    const state = fireConfirmation;
+    clearFireConfirmation();
+    if (!state) return;
+    const spec = directFireSpec(state.action);
+    const fingerprint = directFireFingerprint(state.action, spec);
+    // Re-validate against the current state rather than trusting what was
+    // true when the dialog opened - readiness or the target list can move
+    // underneath a modal the operator took a few seconds to act on.
+    if (!directFireAvailable() || !spec.ready || fingerprint !== state.fingerprint ||
+        actionIncludesInvalidDepth(state.action, spec.params.depth_m)) {
       renderDirectFireControls();
       return;
     }
-    clearFireConfirmation();
-    sendStationAction(action, spec.params);
+    sendStationAction(state.action, spec.params);
   }
 
   function renderStationControls() {
@@ -3008,36 +3098,9 @@
 
     // Hidden view (#simlog): complete bounded simulation log, read-only.
   // Event rows carry localized text; state rows carry a structured snapshot
-  // of every unit, weapon and map item, rendered as readable tables.
-  const simlogTags = { navigation: "NAV", funk: "FUNK", sonar: "SON", waffen: "WAF", schaden: "SCH", mission: "MIS", welt: "WET", state: "STATE" };
+  // of every unit, weapon and map item, summarized per role in the entry
+  // history and fully plottable via the snapshot map dialog.
   const simlogStateSections = ["subs", "surfaces", "animals", "torpedoes", "enemy_torpedoes", "decoys", "asms", "essms", "asrocs", "nixies", "buoys", "flights", "raiders", "helo"];
-  const simlogStateColumns = {
-    subs: ["id", "x", "y", "depth", "course", "speed", "state", "torps", "sunk"],
-    surfaces: ["id", "kind", "x", "y", "course", "speed", "damage", "sunk"],
-    animals: ["id", "x", "y", "dead"],
-    torpedoes: ["id", "x", "y", "depth", "course", "state", "target"],
-    enemy_torpedoes: ["id", "x", "y", "depth", "course", "state"],
-    decoys: ["id", "x", "y", "depth", "life", "dead"],
-    asms: ["seq", "x", "y", "course", "state", "jammer"],
-    essms: ["seq", "x", "y", "course", "state"],
-    asrocs: ["seq", "x", "y", "course", "state"],
-    nixies: ["seq", "x", "y", "depth", "dead"],
-    buoys: ["seq", "x", "y", "battery_s", "active"],
-    flights: ["seq", "kind", "x", "y", "course"],
-    raiders: ["seq", "x", "y", "course", "phase", "hp", "pending_asm"],
-    helo: ["state", "x", "y", "airborne"],
-  };
-  const simlogColumnKeys = {
-    id: "simlog_col_id", seq: "simlog_col_id", kind: "simlog_col_kind",
-    x: "simlog_col_x", y: "simlog_col_y", depth: "simlog_col_depth",
-    course: "simlog_col_course", speed: "simlog_col_speed",
-    state: "simlog_col_state", torps: "simlog_col_torps",
-    damage: "simlog_col_damage", sunk: "simlog_col_sunk", dead: "simlog_col_dead",
-    target: "simlog_col_target", life: "simlog_col_life",
-    battery_s: "simlog_col_battery", active: "simlog_col_active",
-    jammer: "simlog_col_jammer", phase: "simlog_col_phase", hp: "simlog_col_hp",
-    pending_asm: "simlog_col_pending_asm", airborne: "simlog_col_active",
-  };
   const simlogCategoryKeys = {
     subs: "simlog_cat_subs", surfaces: "simlog_cat_surfaces",
     animals: "simlog_cat_animals", torpedoes: "simlog_cat_torps",
@@ -3046,10 +3109,6 @@
     asrocs: "simlog_cat_asrocs", nixies: "simlog_cat_nixies",
     buoys: "simlog_cat_buoys", flights: "simlog_cat_flights",
     raiders: "simlog_cat_raiders", helo: "simlog_cat_helo",
-  };
-  const simlogFlagFields = {
-    subs: "sunk", surfaces: "sunk", animals: "dead",
-    decoys: "dead", nixies: "dead",
   };
   const simlogMapStyles = {
     ship: ["SURFACE", "#a1e7cc"], subs: ["SUBSURFACE", "#ff9090"],
@@ -3068,69 +3127,10 @@
     if (session) renderLobby();
     if (active) { releaseCanvas(canvas); releaseCanvas(lookoutCanvas); }
   }
-  function validateSimlogData(data, depth = 0) {
-    if (data === null || typeof data === "boolean" || typeof data === "string" ||
-        (typeof data === "number" && Number.isFinite(data))) {
-      return typeof data !== "string" || data.length <= 128;
-    }
-    if (depth >= 4) return false;
-    if (Array.isArray(data)) return data.length <= 1024 && data.every((item) => validateSimlogData(item, depth + 1));
-    if (typeof data !== "object") return false;
-    const keys = Object.keys(data);
-    return keys.length <= 64 && keys.every((key) => key.length <= 32 &&
-      keys.length > 0 && validateSimlogData(data[key], depth + 1));
-  }
-  function validateSimlog(rows) {
-    if (!Array.isArray(rows) || rows.length > 2048) throw new Error("simlog_schema");
-    for (const row of rows) {
-      if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("simlog_schema");
-      const keys = Object.keys(row).sort().join(",");
-      if (keys !== "cat,seq,stamp,t,text" && keys !== "cat,data,seq,stamp,t,text") throw new Error("simlog_schema");
-      if (typeof row.seq !== "number" || !Number.isSafeInteger(row.seq) || row.seq < 1) throw new Error("simlog_schema");
-      if (!finite(row.t) || row.t < 0 || row.t > 1e9) throw new Error("simlog_schema");
-      if (typeof row.stamp !== "string" || row.stamp.length > 32) throw new Error("simlog_schema");
-      if (typeof row.cat !== "string" || row.cat.length > 24) throw new Error("simlog_schema");
-      if (typeof row.text !== "string" || row.text.length > 512) throw new Error("simlog_schema");
-      if ("data" in row && !validateSimlogData(row.data)) throw new Error("simlog_schema");
-    }
-  }
-  function simlogCell(field, value) {
-    if (typeof value === "boolean") return t(value ? "simlog_yes" : "simlog_no");
-    if (finite(value)) return number(value, 1);
-    if (value === null || value === undefined) return t("unavailable");
-    return String(value).slice(0, 40);
-  }
   function simlogSectionRows(section, data) {
     if (Array.isArray(data[section])) return data[section];
     if (section === "helo" && data.helo && typeof data.helo === "object" && !Array.isArray(data.helo)) return [data.helo];
     return [];
-  }
-  function simlogUnitTable(section, data) {
-    const columns = simlogStateColumns[section] || [];
-    const rows = simlogSectionRows(section, data);
-    const wrap = node("div", undefined, "simlog-table-wrap");
-    wrap.append(node("h4", `${t(simlogCategoryKeys[section])} (${rows.length})`));
-    if (!rows.length) return wrap;
-    const table = node("table", undefined, "simlog-table");
-    const head = node("thead");
-    const headRow = node("tr");
-    for (const field of columns) {
-      headRow.append(node("th", t(simlogColumnKeys[field] || "unavailable")));
-    }
-    head.append(headRow);
-    const body = node("tbody");
-    const flagField = simlogFlagFields[section];
-    for (const row of rows) {
-      const tr = node("tr");
-      if (flagField && row[flagField]) tr.className = "simlog-flag-row";
-      for (const field of columns) {
-        tr.append(node("td", simlogCell(field, row[field])));
-      }
-      body.append(tr);
-    }
-    table.append(head, body);
-    wrap.append(table);
-    return wrap;
   }
   function simlogMetricBlock(titleKey, entries) {
     const wrap = node("div", undefined, "simlog-metrics-wrap");
@@ -3143,46 +3143,6 @@
     }
     wrap.append(dl);
     return wrap;
-  }
-  function simlogCurrentState(data) {
-    const root = node("div", undefined, "simlog-current-body");
-    if (!data || typeof data !== "object" || Array.isArray(data)) {
-      root.append(node("p", t("simlog_state_unavailable"), "empty"));
-      return root;
-    }
-    const ship = data.ship && typeof data.ship === "object" ? data.ship : {};
-    const world = data.world && typeof data.world === "object" ? data.world : {};
-    const weapons = data.weapons && typeof data.weapons === "object" ? data.weapons : {};
-    const downed = Object.keys(ship.stations || {}).filter((key) => ship.stations[key]);
-    root.append(simlogMetricBlock("simlog_own", [
-      ["position", `${unit(ship.x, "NM")} / ${unit(ship.y, "NM")}`],
-      ["course", unit(ship.course, "\u00b0", 0)],
-      ["speed", unit(ship.speed, "kn")],
-      ["simlog_col_damage", unit(ship.damage, "%")],
-      ["simlog_col_sunk", simlogCell("sunk", ship.sunk)],
-    ]));
-    if (downed.length) {
-      root.append(node("p", `${t("simlog_stations_down")}: ${downed.join(", ")}`, "simlog-note-danger"));
-    }
-    root.append(simlogMetricBlock("simlog_world", [
-      ["world_clock", number(world.hour, 1)],
-      ["sea_state", String(world.sea_state ?? t("unavailable"))],
-      ["night", simlogCell("night", world.night)],
-      ["simlog_mission_time", `${Math.round(data.mission_t ?? 0)} s`],
-      ["time_scale", `x${data.timescale ?? 1}`],
-      ["simlog_result", data.result ? String(data.result) : "-"],
-    ]));
-    root.append(simlogMetricBlock("simlog_weapons", [
-      ["torpedoes", number(weapons.torpedoes, 0)],
-      ["vls", number(weapons.vls, 0)],
-      ["ciws", number(weapons.ciws, 0)],
-      ["aa", number(weapons.aa, 0)],
-      ["chaff", unit(weapons.chaff_cd, "s", 1)],
-    ]));
-    for (const section of simlogStateSections) {
-      root.append(simlogUnitTable(section, data));
-    }
-    return root;
   }
   function simlogMapItems(data) {
     const items = [];
@@ -3234,7 +3194,7 @@
     if (!width || !height) return;
     resizeCanvas(simlogMapCanvas, simlogMapCtx, width, height);
     const context = simlogMapCtx;
-    context.fillStyle = "#071117";
+    context.fillStyle = palette().scopeBg;
     context.fillRect(0, 0, width, height);
     const items = simlogMapItems(simlogMapData);
     const bounds = simlogMapBounds(items);
@@ -3331,16 +3291,18 @@
   function closeSimlogMap() {
     const dialog = $("simlog-map-dialog");
     if (dialog.open) dialog.close();
-    simlogMapData = null;
-    simlogMapSeq = null;
-    simlogMapLatest = false;
-    $("simlog-map-units").replaceChildren();
-    releaseCanvas(simlogMapCanvas);
+    // Cleanup lives on the native "close" event (below) so every dismissal
+    // path - this helper, the dialog's own close button, or the browser's
+    // built-in Escape handling - converges on the same state reset.
   }
   function openSimlogMap(data, stamp, seq, latest = false) {
     if (!data || typeof data !== "object") return;
     const dialog = $("simlog-map-dialog");
-    if (!dialog.open) simlogMapFit = "world";
+    if (!dialog.open) {
+      simlogMapFit = "world";
+      $("simlog-map-world").setAttribute("aria-pressed", "true");
+      $("simlog-map-units-fit").setAttribute("aria-pressed", "false");
+    }
     simlogMapData = data;
     simlogMapSeq = seq;
     simlogMapLatest = latest;
@@ -3354,73 +3316,6 @@
     }));
     if (!dialog.open) dialog.showModal();
     queueSimlogMapDraw();
-  }
-  function simlogSummary(data) {
-    if (!data || typeof data !== "object") return "";
-    const parts = [`mission ${Math.round(data.mission_t ?? 0)}s`];
-    const ship = data.ship;
-    if (ship && typeof ship === "object") parts.push(`ship ${ship.x ?? "?"} / ${ship.y ?? "?"} dmg ${ship.damage ?? "?"}`);
-    for (const key of simlogStateSections) {
-      if (Array.isArray(data[key]) && data[key].length) parts.push(`${data[key].length}x${key}`);
-    }
-    return parts.join("  ");
-  }
-  function renderSimlog(rows) {
-    const status = $("simlog-status");
-    const list = $("simlog-list");
-    const current = $("simlog-current");
-    $("simlog-count").textContent = String(rows.length);
-    if (!rows.length) {
-      latestSimlogState = null;
-      $("simlog-current-map").disabled = true;
-      closeSimlogMap();
-      status.hidden = false;
-      status.textContent = t("simlog_empty");
-      current.replaceChildren(node("p", t("simlog_state_unavailable"), "empty"));
-      list.replaceChildren();
-      return;
-    }
-    status.hidden = true;
-    const lastState = [...rows].reverse().find((row) => row.cat === "state");
-    latestSimlogState = lastState || null;
-    $("simlog-current-map").disabled = !lastState;
-    current.replaceChildren(simlogCurrentState(lastState ? lastState.data : null));
-    const openSnapshots = new Set([...list.querySelectorAll("details[open][data-seq]")]
-      .map((detail) => detail.dataset.seq));
-    const oldScroll = list.scrollTop;
-    const followedBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 24;
-    list.replaceChildren(...rows.map((row) => {
-      const item = node("li", undefined, "simlog-entry");
-      item.append(
-        node("span", `${row.stamp}  T+${Math.floor(row.t)}s`, "simlog-stamp"),
-        node("span", simlogTags[row.cat] || row.cat.toUpperCase().slice(0, 5), "simlog-cat"));
-      if (row.cat === "state" && row.data) {
-        const details = node("details", undefined, "simlog-snapshot");
-        details.dataset.seq = String(row.seq);
-        details.open = openSnapshots.has(String(row.seq));
-        details.append(node("summary",
-          `${t("simlog_snapshot")} \u2013 ${simlogSummary(row.data)}`));
-        const mapButton = node("button", t("simlog_map_open"), "quiet simlog-snapshot-map");
-        mapButton.type = "button";
-        mapButton.addEventListener("click", () => openSimlogMap(
-          row.data, `${row.stamp} / T+${Math.floor(row.t)}s`, row.seq));
-        details.append(mapButton);
-        details.append(simlogCurrentState(row.data));
-        item.append(details);
-      } else {
-        item.append(node("span", row.text, "simlog-text"));
-      }
-      return item;
-    }));
-    list.scrollTop = followedBottom ? list.scrollHeight : Math.min(oldScroll,
-      Math.max(0, list.scrollHeight - list.clientHeight));
-    if ($("simlog-map-dialog").open) {
-      const mapped = simlogMapLatest ? lastState : rows.find(
-        (row) => row.seq === simlogMapSeq && row.cat === "state");
-      if (mapped) openSimlogMap(mapped.data,
-        `${mapped.stamp} / T+${Math.floor(mapped.t)}s`, mapped.seq, simlogMapLatest);
-      else closeSimlogMap();
-    }
   }
   async function loadSimlog() {
     if (!simlogActive()) return;
@@ -3676,7 +3571,7 @@
           ctx.beginPath(); ctx.moveTo(ox, oy); ctx.arc(ox, oy, rayLength, angle - uncertainty, angle + uncertainty); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
         }
         ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(angle) * rayLength, oy + Math.sin(angle) * rayLength);
-        if (track.ref === selected) { ctx.strokeStyle = "#a1e7cc"; ctx.lineWidth = 4; ctx.stroke(); }
+        if (track.ref === selected) { ctx.strokeStyle = palette().accent; ctx.lineWidth = 4; ctx.stroke(); }
         ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([6, 6]); ctx.stroke(); ctx.setLineDash([]);
         // A ray is intentionally not pickable as a fictitious contact position.
         continue;
@@ -3693,7 +3588,7 @@
         ctx.globalAlpha = 1;
       }
       drawSymbol(x, y, track.domain, color, fontSize * .65);
-      if (track.ref === selected) { ctx.strokeStyle = "#a1e7cc"; ctx.lineWidth = 2; ctx.strokeRect(x - 25, y - 25, 50, 50); }
+      if (track.ref === selected) { ctx.strokeStyle = palette().accent; ctx.lineWidth = 2; ctx.strokeRect(x - 25, y - 25, 50, 50); }
       ctx.fillStyle = color;
       ctx.fillText(String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
       chartHits.push({ ref: track.ref, x, y });
@@ -3705,7 +3600,7 @@
         const [x, y] = point(fix.x, fix.y);
         const radius = Math.max(2, fix.uncertainty_nm * scale);
         if (x + radius < -60 || y + radius < -60 || x - radius > width + 60 || y - radius > height + 60) continue;
-        ctx.strokeStyle = fix.source === "PING" ? "#59d8dc" : fix.source === "TMA" ? "#f3c577" : "#83c99a";
+        ctx.strokeStyle = fix.source === "PING" ? "#59d8dc" : fix.source === "TMA" ? palette().amber : "#83c99a";
         ctx.lineWidth = track.ref === selected ? 2 : 1;
         ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
@@ -3717,7 +3612,7 @@
     if (ownPosition) {
       ctx.save();
       ctx.translate(ox, oy);
-      ctx.strokeStyle = "#a1e7cc"; ctx.fillStyle = "#183e3c"; ctx.lineWidth = 2;
+      ctx.strokeStyle = palette().accent; ctx.fillStyle = "#183e3c"; ctx.lineWidth = 2;
       ctx.beginPath();
       if (finite(own.course)) {
         ctx.rotate(own.course * Math.PI / 180);
@@ -3727,14 +3622,14 @@
         ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.restore();
-      ctx.fillStyle = "#a1e7cc"; ctx.fillText(t("ownship"), ox + 15, oy + 18);
+      ctx.fillStyle = palette().accent; ctx.fillText(t("ownship"), ox + 15, oy + 18);
     }
     const helo = own.helo;
     if (hasPosition(helo) && ["AUF", "ZURUECK"].includes(helo.state)) {
       const [hx, hy] = point(helo.x, helo.y);
       if (hx > -30 && hy > -30 && hx < width + 30 && hy < height + 30) {
-        drawSymbol(hx, hy, "AIR", "#a1e7cc", 8);
-        ctx.fillStyle = "#a1e7cc"; ctx.fillText(t("helicopter"), hx + 15, hy + 5);
+        drawSymbol(hx, hy, "AIR", palette().accent, 8);
+        ctx.fillStyle = palette().accent; ctx.fillText(t("helicopter"), hx + 15, hy + 5);
       }
     }
     ctx.fillStyle = "#c6d6d9"; ctx.fillText(t("north"), width - 27, 25);
@@ -3781,7 +3676,7 @@
     if (!width || !height) return;
     resizeCanvas(lookoutCanvas, lookoutCtx, width, height);
     const environment = snapshot.environment;
-    lookoutCtx.fillStyle = environment?.is_night === true ? "#071117" : environment?.is_night === false ? "#102833" : "#0b151c";
+    lookoutCtx.fillStyle = environment?.is_night === true ? palette().scopeBg : environment?.is_night === false ? "#102833" : palette().bg;
     lookoutCtx.fillRect(0, 0, width, height);
     const own = snapshot.ownship;
     if (!hasPosition(own)) return;
@@ -3850,7 +3745,7 @@
     }
     lookoutCtx.save();
     lookoutCtx.translate(centerX, centerY);
-    lookoutCtx.strokeStyle = "#a1e7cc";
+    lookoutCtx.strokeStyle = palette().accent;
     lookoutCtx.fillStyle = "#183e3c";
     lookoutCtx.lineWidth = 2;
     if (finite(own.course)) {
@@ -3933,8 +3828,29 @@
   });
   $("analysis-filter").addEventListener("input", renderContactAnalysis);
   $("analysis-category").addEventListener("change", renderContactAnalysis);
-  $("sonar-broadband").addEventListener("click", (event) => {
-    if (session?.station !== "sonar" || !stationActionAvailable() || sonarVisualPage !== "broadband") return;
+  // Pointer Events (not "click") so this canvas matches #chart/#role-map's
+  // tap-vs-drag disambiguation: a touch that starts a scroll/pan gesture
+  // must not also silently set the listen bearing.
+  $("sonar-broadband").addEventListener("pointerdown", (event) => {
+    if (session?.station !== "sonar" || !stationActionAvailable() || sonarVisualPage !== "broadband"
+        || !event.isPrimary || event.button !== 0) return;
+    const canvas = $("sonar-broadband");
+    canvas.setPointerCapture(event.pointerId);
+    sonarBroadbandDrag = {id: event.pointerId, x: event.clientX, y: event.clientY, moved: false};
+  });
+  $("sonar-broadband").addEventListener("pointermove", (event) => {
+    if (!sonarBroadbandDrag || sonarBroadbandDrag.id !== event.pointerId) return;
+    const dx = event.clientX - sonarBroadbandDrag.x;
+    const dy = event.clientY - sonarBroadbandDrag.y;
+    if (Math.hypot(dx, dy) > 5) sonarBroadbandDrag.moved = true;
+  });
+  $("sonar-broadband").addEventListener("pointerup", (event) => {
+    if (!sonarBroadbandDrag || sonarBroadbandDrag.id !== event.pointerId) return;
+    const gesture = sonarBroadbandDrag;
+    sonarBroadbandDrag = null;
+    $("sonar-broadband").releasePointerCapture(event.pointerId);
+    if (gesture.moved || session?.station !== "sonar" || !stationActionAvailable()
+        || sonarVisualPage !== "broadband") return;
     const canvas = $("sonar-broadband");
     const bounds = canvas.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
@@ -3946,6 +3862,34 @@
     sendStationAction("sonar_set_listen_bearing", {
       bearing: (x - area.left) / area.width * 360,
     });
+  });
+  $("sonar-broadband").addEventListener("pointercancel", (event) => {
+    if (sonarBroadbandDrag?.id === event.pointerId) sonarBroadbandDrag = null;
+  });
+  $("sonar-broadband").addEventListener("lostpointercapture", () => { sonarBroadbandDrag = null; });
+  // The dialog's own toolbar (close/fit-to-world/fit-to-units) was never
+  // wired to the click handlers and view-fit modes it was built to control.
+  $("simlog-map-close").addEventListener("click", closeSimlogMap);
+  // Fires for every dismissal path (this button, Escape, a future .close()
+  // call) - the single place that resets the dialog's transient state.
+  $("simlog-map-dialog").addEventListener("close", () => {
+    simlogMapData = null;
+    simlogMapSeq = null;
+    simlogMapLatest = false;
+    $("simlog-map-units").replaceChildren();
+    releaseCanvas(simlogMapCanvas);
+  });
+  $("simlog-map-world").addEventListener("click", () => {
+    simlogMapFit = "world";
+    $("simlog-map-world").setAttribute("aria-pressed", "true");
+    $("simlog-map-units-fit").setAttribute("aria-pressed", "false");
+    queueSimlogMapDraw();
+  });
+  $("simlog-map-units-fit").addEventListener("click", () => {
+    simlogMapFit = "units";
+    $("simlog-map-world").setAttribute("aria-pressed", "false");
+    $("simlog-map-units-fit").setAttribute("aria-pressed", "true");
+    queueSimlogMapDraw();
   });
   $("disconnect").addEventListener("click", async () => {
     const csrf = session?.csrf;
@@ -3982,7 +3926,8 @@
   $("classification-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const classification = $("classification").value || null;
-    if (session?.station === "sonar") sendStationAction("sonar_classify", {ref: selected, classification});
+    if (session?.station === "sonar" || session?.station === "helicopter")
+      sendStationAction("sonar_classify", {ref: selected, classification});
     else if (session?.station === "opz") sendStationAction("opz_classify", {ref: selected, classification});
   });
   $("classification").addEventListener("change", renderActionState);
@@ -4038,6 +3983,15 @@
     });
   }
   for (const button of document.querySelectorAll("[data-fire-action]")) button.addEventListener("click", () => activateDirectFire(button));
+  $("fire-confirm-cancel").addEventListener("click", clearFireConfirmation);
+  $("fire-confirm-confirm").addEventListener("click", confirmFireDialog);
+  // Converges every dismissal path (Cancel, the 5s timeout, and the
+  // browser's own Escape handling) on the same state reset, mirroring
+  // closeSimlogMap()'s use of the dialog's native close event.
+  $("fire-confirm-dialog").addEventListener("close", () => {
+    clearFireConfirmation();
+    renderDirectFireControls();
+  });
   $("sonar-control-page").addEventListener("change", renderSonarControlPage);
   for (const button of $("sonar-page-tabs").querySelectorAll("button")) {
     button.addEventListener("click", () => {

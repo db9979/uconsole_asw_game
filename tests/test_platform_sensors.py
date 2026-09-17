@@ -19,6 +19,7 @@ from src.sensors.platform import (
     PlatformSensorSuite,
     SensorController,
     exchange_friendly_datalink,
+    side_datalink_group,
     validate_suite_state,
 )
 
@@ -253,6 +254,35 @@ def test_friendly_datalink_copies_observations_without_entity_truth():
     assert len(second.datalink_picture.serialize()) == 1
 
 
+def test_side_datalink_group_pairs_friendly_blue_hostile_red_neutral_none():
+    assert side_datalink_group("friendly") == "blue"
+    assert side_datalink_group("hostile") == "red"
+    assert side_datalink_group("neutral") is None
+
+
+def test_hostile_datalink_shares_contacts_within_red_group_only():
+    """W2: hostile units coordinate via the same detached-observation pattern
+    already used for the blue side - never leaking entity truth or crossing
+    into the friendly group."""
+    red_a = PlatformSensorSuite(
+        CATALOG, "sub_03", 20, side="hostile",
+        doctrine="submarine", datalink_group="red")
+    red_b = PlatformSensorSuite(
+        CATALOG, "sub_14", 21, side="hostile",
+        doctrine="submarine", datalink_group="red")
+    blue = PlatformSensorSuite(
+        CATALOG, "warship_01", 22, side="friendly",
+        doctrine="surface_combatant", datalink_group="blue")
+    report = observation("RED-LOCAL", 1.0)
+    red_a.local_picture.observe(report)
+
+    exchange_friendly_datalink([red_a, red_b, blue], 1.0)
+
+    assert len(red_b.datalink_picture.serialize()) == 1
+    assert red_b.datalink_picture.serialize()[0]["source"] == "DATALINK"
+    assert len(blue.datalink_picture.serialize()) == 0
+
+
 def test_platform_sensor_phase_and_picture_roundtrip_transactionally():
     game = Game(seed=2710, start_menu=False)
     ship = SurfaceShip(
@@ -301,8 +331,10 @@ def test_same_profile_roundtrips_on_opposing_sides():
 
 
 def test_surface_weapon_release_requires_positioned_observation():
+    # warship_22 (Russia, still ASM-armed after the hostile-pool migration);
+    # warship_01 was recategorized as unarmed neutral traffic (asm_salvo [0,0]).
     warship = SurfaceShip(
-        0, 0, random.Random(3), profile=CATALOG.surfaces["warship_01"],
+        0, 0, random.Random(3), profile=CATALOG.surfaces["warship_22"],
         side="hostile", doctrine="surface_combatant", runtime_catalog=CATALOG)
     warship.attack_left = 0.0
     warship.update(1.0, None, OpenWorld())
@@ -314,7 +346,7 @@ def test_surface_weapon_release_requires_positioned_observation():
     assert warship.pending_asm
 
     friendly = SurfaceShip(
-        0, 0, random.Random(3), profile=CATALOG.surfaces["warship_01"],
+        0, 0, random.Random(3), profile=CATALOG.surfaces["warship_22"],
         side="friendly", doctrine="surface_combatant", runtime_catalog=CATALOG)
     friendly.attack_left = 0.0
     friendly.update(1.0, observation("FIX", 0.0), OpenWorld())

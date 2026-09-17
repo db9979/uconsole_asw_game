@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import webbrowser
 from collections import OrderedDict
 from io import BytesIO
 from typing import Mapping
@@ -9,6 +10,7 @@ from typing import Mapping
 import pygame
 
 from src.core.i18n import raw_text, translation_scope
+from src.data.catalog import CATALOG
 from src.data.contact_analysis import (ASSET_ROUTE_PREFIX,
                                        load_contact_analysis_assets,
                                        project_contact_catalog)
@@ -19,6 +21,17 @@ from src.ui import layout
 MAX_FILTER_CHARS = 48
 SURFACE_CACHE_SIZE = 4
 _ASSET_ORDER = ("acoustic_cruise", "acoustic_high")
+
+
+def _wiki_url_for(key: str, cat=CATALOG) -> str | None:
+    """Look up an optional Wikipedia link directly from the in-process
+    catalog - never through project_contact_catalog()'s served projection,
+    which is deliberately kept URL-free for the web commander API."""
+    for registry in (cat.subs, cat.surfaces, cat.aircraft):
+        profile = registry.get(key)
+        if profile is not None:
+            return getattr(profile, "wiki_url", None)
+    return None
 
 
 class ContactAnalyzer:
@@ -42,7 +55,7 @@ class ContactAnalyzer:
             if route.startswith(ASSET_ROUTE_PREFIX) and mime == "image/png"
         }
         self.surface_cache: OrderedDict[str, pygame.Surface] = OrderedDict()
-        self.filter_text = ""
+        self.filter = widgets.FilterField(MAX_FILTER_CHARS)
         self.filtered = list(range(len(self.profiles)))
         self.listbox = widgets.ListBox(self._list_labels())
         self.detail_scroll = 0
@@ -64,12 +77,11 @@ class ContactAnalyzer:
                 for index in self.filtered]
 
     def _set_filter(self, value: str) -> None:
-        self.filter_text = value[:MAX_FILTER_CHARS]
-        query = self.filter_text.casefold()
+        self.filter.set(value)
         self.filtered = [
             index for index, profile in enumerate(self.profiles)
-            if not query or query in " ".join((profile["key"], profile["name"],
-                                                profile["resource"])).casefold()
+            if self.filter.matches(profile["key"], profile["name"],
+                                   profile["resource"])
         ]
         self.listbox.selected = 0
         self.listbox.scroll = 0
@@ -148,6 +160,16 @@ class ContactAnalyzer:
         self._playing_sample = sample
         return True
 
+    def _open_wiki(self) -> bool:
+        profile = self.selected_profile
+        if profile is None:
+            return False
+        url = _wiki_url_for(profile["key"])
+        if not url:
+            return False
+        webbrowser.open(url)
+        return True
+
     def _shown(self, value) -> str:
         if value is None:
             return "-"
@@ -167,16 +189,8 @@ class ContactAnalyzer:
         rows = [
             ("analyzer.key", profile["key"]),
             ("analyzer.resource", profile["resource"]),
-            ("analyzer.variant", reference["variant"]),
-            ("analyzer.years", [reference["variant_year"], reference["refit_year"]]),
-            ("analyzer.aliases", reference["aliases"]),
-            ("analyzer.roles", reference["roles"]),
             ("analyzer.hull", reference["hull_type"]),
-            ("analyzer.displacement", reference["displacement_tonnes"]),
             ("analyzer.length", reference["length_m"]),
-            ("analyzer.beam", reference["beam_overall_m"] or reference["beam_waterline_m"]),
-            ("analyzer.draft", reference["draft_m"]),
-            ("analyzer.crew", reference["ship_crew"]),
             ("analyzer.cruise_speed", machine["cruise_speed_kn"]),
             ("analyzer.maximum_speed", machine["maximum_speed_kn"]),
             ("analyzer.quiet_speed", machine["quiet_speed_kn"]),
@@ -259,9 +273,6 @@ class ContactAnalyzer:
                     self._stop_sample()
                     self._prepare_selected_image()
                 return True
-            if event.key == pygame.K_BACKSPACE:
-                self._set_filter(self.filter_text[:-1])
-                return True
             if event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP,
                              pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
                 if self.focus == "detail":
@@ -278,19 +289,15 @@ class ContactAnalyzer:
                 if self.listbox.selected != before:
                     self._selection_changed()
                 return changed
-            char = getattr(event, "unicode", "")
-            if char and char.isprintable() and len(self.filter_text) < MAX_FILTER_CHARS:
-                self._set_filter(self.filter_text + char)
-                self._key_text = char
+            if self.filter.handle_event(event):
+                self._set_filter(self.filter.text)
                 return True
         if event.type == pygame.TEXTINPUT:
-            text = "".join(char for char in getattr(event, "text", "") if char.isprintable())
-            if text == self._key_text:
+            if getattr(event, "text", "") == self._key_text:
                 self._key_text = ""
                 return True
-            self._key_text = ""
-            if text:
-                self._set_filter(self.filter_text + text)
+            if self.filter.handle_event(event):
+                self._set_filter(self.filter.text)
                 return True
         position = getattr(event, "pos", None)
         if event.type == pygame.MOUSEWHEEL:
@@ -307,6 +314,9 @@ class ContactAnalyzer:
             audio_rect = self._rects.get("audio_sample")
             if audio_rect is not None and audio_rect.collidepoint(position):
                 return self._play_sample()
+            wiki_rect = self._rects.get("open_wiki")
+            if wiki_rect is not None and wiki_rect.collidepoint(position):
+                return self._open_wiki()
             for index, tab in enumerate(self._rects.get("asset_tabs", ())):
                 if tab.collidepoint(position):
                     self.asset_index = index
@@ -338,6 +348,17 @@ class ContactAnalyzer:
         surface.fill(widgets.PALETTE.background)
         widgets.draw_text(surface, self.tr("analyzer.title"),
                           (20, 15, bounds.width - 40, 42), size=24, bold=True)
+        wiki_rect = pygame.Rect(bounds.width - 614, 18, 84, 34)
+        wiki_url = (_wiki_url_for(self.selected_profile["key"])
+                   if self.selected_profile is not None else None)
+        if wiki_url:
+            self._rects["open_wiki"] = wiki_rect
+            pygame.draw.rect(surface, widgets.PALETTE.raised, wiki_rect)
+            pygame.draw.rect(surface, widgets.PALETTE.focus, wiki_rect, 1)
+            widgets.draw_text(surface, self.tr("analyzer.open_wiki"), wiki_rect,
+                              color=widgets.PALETTE.text, size=12, align="center")
+        else:
+            self._rects["open_wiki"] = None
         audio_rect = pygame.Rect(bounds.width - 522, 18, 84, 34)
         playing = bool(self.preview_active()) if callable(self.preview_active) else False
         if self._sample_available():
@@ -364,12 +385,7 @@ class ContactAnalyzer:
         left = pygame.Rect(content.x, content.y, 390, content.height)
         left_inner = widgets.panel(surface, left, "analyzer.contacts", tr=self.tr)
         filter_rect = pygame.Rect(left_inner.x, left_inner.y, left_inner.width, 34)
-        pygame.draw.rect(surface, widgets.PALETTE.background, filter_rect)
-        pygame.draw.rect(surface, widgets.PALETTE.focus, filter_rect, 1)
-        filter_value = self.filter_text or self.tr("analyzer.filter")
-        widgets.draw_text(surface, raw_text(filter_value), filter_rect.inflate(-8, 0),
-                          color=(widgets.PALETTE.text if self.filter_text else widgets.PALETTE.dim),
-                          size=14)
+        self.filter.draw(surface, filter_rect, placeholder="analyzer.filter", tr=self.tr)
         list_rect = pygame.Rect(left_inner.x, filter_rect.bottom + 8, left_inner.width,
                                 max(1, left_inner.bottom - filter_rect.bottom - 8))
         self._rects["list"] = list_rect

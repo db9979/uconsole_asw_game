@@ -379,6 +379,13 @@ def test_integrated_softkill_and_datalink_split_run(game, monkeypatch):
     restored = Game(seed=1, start_menu=False, audio_enabled=False)
     restored.load_state(snapshot)
     monkeypatch.setattr(restored.world, "land_blocks_line", lambda *args: False)
+    # The speed_kn=0 override above is a test-only in-memory tweak; save/
+    # restore reconstructs ASMs from their catalog profile_key and does not
+    # (and is not meant to) round-trip ad-hoc instance attributes. Re-apply it
+    # on the restored copy too, so both runs keep the missile stationary for
+    # the deterministic position/travel comparison below.
+    for restored_missile in restored.asms:
+        restored_missile.speed_kn = 0
 
     for current in (game, restored):
         for _ in range(10):

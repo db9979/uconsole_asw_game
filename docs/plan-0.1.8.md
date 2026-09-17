@@ -150,9 +150,12 @@ slice below now adds Bridge orders. Save v10 and protocol v1 are unchanged.
   station cards.
 - [x] Use a persistent desktop role rail and a native mobile station chooser.
 - [x] Preserve Operations, Lookout, Guide, and Contact Analyzer as shared utilities.
-- [ ] Restore hidden SimLog for v2 from bounded per-role projection history. Until
-  then the browser reports it unavailable and the v2 endpoint rejects access;
-  full-truth protocol-v1 and host-local diagnostics remain unchanged.
+- [x] Restore hidden SimLog for v2 from bounded per-role projection history. The
+  `/api/v2/simlog` endpoint serves each role's own bounded, redacted state
+  history (never full truth); the browser's `#simlog` view fetches and renders
+  it once the host grants the `simlog` capability, gated the same way as
+  `command`/`direct_fire`. Full-truth protocol-v1 and host-local diagnostics
+  remain unchanged and unaffected.
 - [x] Keep transport/session state, authoritative station state, and per-role local
   presentation state separate.
 - [x] Preserve selections and harmless view state across polling; clear command
@@ -231,6 +234,12 @@ deterministic save continuation after accepted launches.
 - Slow or abusive clients cannot block the main loop or other stations.
 - Role loss returns the browser to the lobby and clears private role state.
 
+Status: complete and covered in software - reload, presence/lease expiry, host
+revoke, server restart, and role loss all have deterministic automated
+coverage, including a real-Chromium end-to-end reconnect test. What remains is
+physical: multi-hour LAN stability and multi-device queue pressure under real
+network conditions, not something a test suite can stand in for.
+
 Acceptance: reload, transient loss, lease expiry, host revoke, server restart,
 queue pressure, stale imagery, and multi-hour LAN stability tests.
 
@@ -250,6 +259,12 @@ python tools/gen_contacts.py --check
 python tools/smoke_full.py
 python -m build
 ```
+
+Status: re-verified 2026-09-15 after the sonar/radar/damage/torpedo-alert/AI/
+GUI polish work above - full suite green (2535 passed, 26 skipped, 0
+failures), catalog check clean, `smoke_full.py` clean, and `python -m build`
+produces an installable wheel (spot-checked with a throwaway venv install and
+import). This is the full extent of what a software-only pass can confirm.
 
 Release remains paused until save-v10 compatibility, security review,
 multi-device browser testing, and real uConsole performance acceptance are

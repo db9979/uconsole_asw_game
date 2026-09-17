@@ -22,11 +22,11 @@ from src.world.grounding import (DEFAULT_HULL_SPEC, HullSpec,
 from src.world.world import World
 
 
-def _world(*, size=2.0, landmasses=(), depths=None):
+def _world(*, size=2.0, landmasses=(), depths=None, seed=1):
     data = {"world_nm": size, "landmasses": list(landmasses), "airbases": []}
     if depths is not None:
         data["bathymetry"] = {"size": len(depths), "values": depths}
-    return World(seed=1, size_nm=size, coast=Coastline(data, size))
+    return World(seed=seed, size_nm=size, coast=Coastline(data, size))
 
 
 def test_new_only_synthetic_shallows_are_deterministic_and_start_is_safe():
@@ -245,7 +245,11 @@ def test_astern_recovery_cannot_cross_a_reverse_obstacle():
 
 def test_contact_save_split_recovery_continuation_is_deterministic():
     game = Game(seed=919, start_menu=False, audio_enabled=False)
-    game.world = _world()
+    # W2: match the swapped world's own seed to the game's, exactly like
+    # load_state() reconstructs it below - otherwise the (correctly
+    # deterministic) ocean-current field would legitimately differ between
+    # the hand-built stub and the reloaded world.
+    game.world = _world(seed=game.seed)
     game.flights.flights = []
     game.ship.x, game.ship.y, game.ship.course = .15, 1.0, 270.0
     game.ship.target_course = 270.0

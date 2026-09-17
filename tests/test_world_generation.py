@@ -5,6 +5,7 @@ import json
 
 import pytest
 
+from src.core import config
 from src.world.coastline import Coastline
 from src.world.world import World
 
@@ -32,6 +33,41 @@ def test_generation_is_exactly_deterministic_and_seed_varied():
     assert _snapshot(first) == _snapshot(again)
     assert _snapshot(first) != _snapshot(different)
     assert first.metadata["sector_id"] != different.metadata["sector_id"]
+
+
+def test_current_vec_is_deterministic_bounded_and_varies_with_position():
+    world = Coastline.generate(41)
+    first = World(seed=41, coast=world)
+    again = World(seed=41, coast=world)
+    other_seed = World(seed=42, coast=world)
+
+    for x, y in ((50.0, 50.0), (250.0, 250.0), (450.0, 100.0)):
+        u1, v1 = first.current_vec(x, y)
+        u2, v2 = again.current_vec(x, y)
+        assert (u1, v1) == (u2, v2)
+        assert abs(u1) <= config.CURRENT_MAX_KN
+        assert abs(v1) <= config.CURRENT_MAX_KN
+
+    assert first.current_vec(50.0, 50.0) != other_seed.current_vec(50.0, 50.0)
+    assert first.current_vec(50.0, 50.0) != first.current_vec(450.0, 450.0)
+
+
+def test_current_field_does_not_disturb_depth_thermocline_or_weather_rng():
+    """W2: the current field uses a detached RNG stream derived from the
+    seed - adding it (and querying it any number of times, in any order)
+    must never shift the existing depth/thermocline/sea-state/hour sequence."""
+    coast = Coastline.generate(41)
+    untouched = World(seed=41, coast=coast)
+    probed = World(seed=41, coast=coast)
+    for x, y in ((10.0, 10.0), (300.0, 400.0), (490.0, 5.0)):
+        probed.current_vec(x, y)
+        probed.current_vec(x, y)
+
+    for x, y in ((175.0, 175.0), (250.0, 250.0), (325.0, 325.0)):
+        assert untouched.depth_m(x, y) == probed.depth_m(x, y)
+        assert untouched.thermocline_depth_m(x, y) == probed.thermocline_depth_m(x, y)
+    assert untouched.sea_state == probed.sea_state
+    assert untouched.hour == probed.hour
 
 
 def test_generated_geometry_airbases_and_radar_are_usable():

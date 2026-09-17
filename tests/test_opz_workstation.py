@@ -7,7 +7,8 @@ import pygame
 from src.core import config
 from src.core.game import Game
 from src.core.station import Station
-from src.ui import nato_symbols
+from src.sonar.sonar import Contact
+from src.ui import layout, nato_symbols
 from src.ui import stations_view
 
 
@@ -239,8 +240,38 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     assert any("Bearing" in line and "available" in line for line in lines)
     assert any("Range" in line and "available" in line for line in lines)
     assert any("Course" in line and "available" in line for line in lines)
+    assert "opz.line.depth_unavailable" in lines
+    assert "opz.line.speed_unavailable" in lines
     assert any("Age/Q" in line for line in lines)
     assert any("Affiliation" in line and "Neutral" in line for line in lines)
+
+
+def test_selected_track_sidebar_reports_sonar_depth_and_speed(monkeypatch):
+    game = opz_game()
+    contact = Contact(1, 1, "passiv", "sub")
+    contact.update_passive(30.0, .8, .8, "hidden producer label", game.sim_t)
+    contact.update_ping(30.0, 4.0, 40.0, .9, game.sim_t)
+    contact.tma_course = 270.0
+    contact.tma_speed = 12.0
+    contact._publish_fix("TMA", game.sim_t, game.sim_t,
+                         game.ship.x + 4, game.ship.y, .3, .8)
+    contact.player_class = "U_BOOT"
+    contact.released_to_opz = True
+    game.sonar.contacts[1] = contact
+    game.opz_selected_track_id = game.opz_tracks()[0].track_id
+    lines = []
+    original = stations_view.layout.blit_line
+
+    def record(screen, text, *args, **kwargs):
+        lines.append(text)
+        return original(screen, text, *args, **kwargs)
+
+    monkeypatch.setattr(stations_view.layout, "blit_line", record)
+    stations_view.draw_opz_view(game)
+    assert any("Depth" in line and "40" in line and "available" in line
+               for line in lines)
+    assert any("Speed" in line and "12.0" in line and "available" in line
+               for line in lines)
 
 
 def test_known_coastline_is_requested_even_without_surface_radar(monkeypatch):
@@ -289,25 +320,22 @@ def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypat
     game.opz_range_nm = 40.0
     game.radar_range_nm = 20.0
     symbols = []
-    lines = []
     original_symbol = nato_symbols.draw_symbol
-    original_line = stations_view.layout.blit_line
 
     def record_symbol(*args, **kwargs):
         symbols.append(args[2:4])
         return original_symbol(*args, **kwargs)
 
-    def record_line(screen, text, *args, **kwargs):
-        lines.append(text)
-        return original_line(screen, text, *args, **kwargs)
-
     monkeypatch.setattr(nato_symbols, "draw_symbol", record_symbol)
-    monkeypatch.setattr(stations_view.layout, "blit_line", record_line)
-    stations_view.draw_opz_view(game)
+    with layout.capture_text() as text:
+        stations_view.draw_opz_view(game)
 
     assert symbols == [("FRIEND", "SURFACE")]
-    footer = next(line for line in lines if "PgUp/PgDn" in line)
-    assert "RANGE 20 NM" in footer and "wheel over PPI" in footer
+    footer_y = pygame.Rect(config.STATION_RECT).bottom - 23
+    footer = " ".join(entry["text"] for entry in text
+                      if abs(entry["rect"].y - footer_y) <= 4)
+    assert "PGUP/DN" in footer
+    assert "20 NM" in footer
     assert all(str(scale) in footer for scale in (10, 20, 40, 80, 120))
 
 
@@ -389,7 +417,11 @@ def test_unreleased_legacy_sonar_mirrors_are_not_opz_rows(monkeypatch):
     assert (stations_view.OPZ_DOMAIN_COLORS["SUBSURFACE"] ==
             config.COLOR_CONTACT_UBOOT)
     assert (stations_view.OPZ_DOMAIN_COLORS["UNDERWATER_WEAPON"] ==
-            config.COLOR_DANGER)
+            config.COLOR_CONTACT_MISSILE)
+    # W2: sub vs. inbound weapon are different threats and must not render
+    # in near-identical reds (COLOR_CONTACT_UBOOT vs. the old COLOR_DANGER).
+    assert (stations_view.OPZ_DOMAIN_COLORS["SUBSURFACE"]
+            != stations_view.OPZ_DOMAIN_COLORS["UNDERWATER_WEAPON"])
 
 
 def test_weather_clutter_is_absent_before_five_and_deterministic_at_six():

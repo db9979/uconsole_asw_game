@@ -33,6 +33,30 @@ def snr_db(passive_range_nm: float, dist_nm: float) -> float:
                              / max(dist_nm, 1e-6))
 
 
+def _target_acoustic_signature(tgt):
+    """Best-effort TargetSignature lookup across the different contact types."""
+    for attr in ("acoustic", "stype", "profile"):
+        candidate = getattr(tgt, attr, None)
+        if candidate is None:
+            continue
+        if hasattr(candidate, "tonal_band_hz"):
+            return candidate
+        nested = getattr(candidate, "acoustic", None)
+        if nested is not None and hasattr(nested, "tonal_band_hz"):
+            return nested
+    return None
+
+
+def representative_frequency_hz(tgt) -> float:
+    """Propagation band closest to the target's own dominant tonal frequency.
+
+    Different platforms radiate at different frequencies (a slow diesel
+    tanker's blade-rate tonal vs. a fast cavitating warship's broadband), and
+    higher frequencies attenuate faster underwater.
+    """
+    return propagation.representative_frequency_hz(_target_acoustic_signature(tgt))
+
+
 def bearing_error_deg(mode: str, frigate_speed_kn: float, quality: float) -> float:
     """± Peilfehler: Array-Basis * Eigenfahrt-Aufschlag * Qualitätsfaktor."""
     base = (config.BEARING_ERR_TOWED_DEG if mode == "TOWED"
@@ -115,6 +139,16 @@ class Contact:
         self.fusion_status = "KEINE DATEN"
         self.fusion_delta_deg = None
         self.fused_quality = 0.0
+        # W2: independent helicopter dip-passive bearing track. Kept fully
+        # separate from the ship's own passive_bearing/_fx/_fy/observer_x/y -
+        # they are measured from different platforms and must never corrupt
+        # each other's filter state (the reported bug: the frigate's own
+        # bearing was being overwritten every tick the helo was also dipping).
+        self.dip_bearing = None
+        self.dip_bearing_uncertainty_deg = None
+        self.dip_last_seen = None
+        self.dip_observer_x = None
+        self.dip_observer_y = None
 
     def update_passive(self, bearing: float, confidence: float,
                        quality: float, signature: str, t: float,
@@ -189,6 +223,27 @@ class Contact:
             self.bearing_uncertainty_deg = self._bearing_filter_uncertainty_deg
         if signature:
             self.signature = signature
+
+    def update_dip_passive(self, bearing: float, t: float, observer_x: float,
+                           observer_y: float,
+                           bearing_uncertainty_deg: float) -> None:
+        """W2: the helicopter's own dipping-sonar bearing track.
+
+        A lighter smoothing filter than update_passive() - dips are
+        occasional, hover-based fixes, not a continuous towed/bow array -
+        but it is fully independent state so it never overwrites the ship's
+        own passive_bearing/observer position."""
+        raw = bearing % 360.0
+        if self.dip_bearing is None or self.dip_last_seen is None:
+            self.dip_bearing = raw
+        else:
+            dt = max(0.0, t - self.dip_last_seen)
+            alpha = 1.0 - math.exp(-dt / config.SONAR_BEARING_DISPLAY_TAU_S)
+            self.dip_bearing = (self.dip_bearing + alpha * config.angle_diff_deg(
+                raw, self.dip_bearing)) % 360.0
+        self.dip_bearing_uncertainty_deg = max(0.05, bearing_uncertainty_deg)
+        self.dip_observer_x, self.dip_observer_y = observer_x, observer_y
+        self.dip_last_seen = t
 
     def _publish_fix(self, source: str, measured_at: float, fixed_at: float,
                      x: float, y: float, uncertainty_nm: float,
@@ -765,7 +820,7 @@ class SonarSystem:
             result = propagation.propagate(
                 frigate.x, frigate.y, sensor_depth, tgt.x, tgt.y,
                 getattr(tgt, "depth", 0.0),
-                propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
+                representative_frequency_hz(tgt),
                  midpoint_thermo, water_depth, sea_state=getattr(
                      world, "effective_sea_state", world.sea_state),
                 terrain_blocked=getattr(world, "sonar_path_blocked", None))
@@ -799,7 +854,7 @@ class SonarSystem:
             result = propagation.propagate(
                 helicopter.x, helicopter.y, sensor_depth, tgt.x, tgt.y,
                 getattr(tgt, "depth", 0.0),
-                propagation.REPRESENTATIVE_PASSIVE_BAND_HZ,
+                representative_frequency_hz(tgt),
                  thermocline, water_depth, sea_state=getattr(
                      world, "effective_sea_state", world.sea_state),
                 terrain_blocked=getattr(world, "sonar_path_blocked", None))
@@ -816,16 +871,23 @@ class SonarSystem:
                 seed, t, config.SONAR_BEARING_NOISE_EPOCH_S, 43)) % 360.0
             uncertainty = error / math.sqrt(3.0)
             contact = self._get_contact(tgt)
-            contact._fx, contact._fy = helicopter.x, helicopter.y
-            contact.observer_x, contact.observer_y = helicopter.x, helicopter.y
-            contact.passive_source = "SONAR-DIP-BRG"
             contact.origin = "dipping-passiv"
+            # W2: contact-level fields (confidence/quality/last_seen/signature)
+            # are shared across sensors by design - the *bearing* and the
+            # observer position are not, so they go through the helicopter's
+            # own independent track instead of contact.update_passive().
+            contact.confidence = min(
+                1.0, contact.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt)
             signature = (tgt.acoustic_signature()
-                         if contact.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt
-                         >= config.CONTACT_SIG_CONF else "")
-            contact.update_passive(
-                bearing, contact.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt,
-                quality, signature, t, signal, uncertainty)
+                         if contact.confidence >= config.CONTACT_SIG_CONF else "")
+            contact.quality = min(1.0, quality)
+            contact.last_seen = max(contact.last_seen, t)
+            contact.snr = signal
+            if signature:
+                contact.signature = signature
+            contact.update_dip_passive(
+                bearing, t, helicopter.x, helicopter.y, uncertainty)
+            contact.expire_ping_fix(t)
             track = self._tracks.setdefault(tgt.id, BearingTrack())
             track.add(t, bearing, helicopter.x, helicopter.y,
                       helicopter.course, uncertainty)

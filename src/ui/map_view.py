@@ -24,6 +24,19 @@ def _near(pos, point, radius=12):
     return (pos[0] - point[0]) ** 2 + (pos[1] - point[1]) ** 2 <= radius ** 2
 
 
+def _draw_course_speed(s, font, px, py, course, speed_kn, color, length=16):
+    """Short heading tick plus a speed readout, mirrored on every unit icon."""
+    if course is None:
+        return
+    ang = math.radians(course - 90.0)
+    ex = px + length * math.cos(ang)
+    ey = py + length * math.sin(ang)
+    pygame.draw.line(s, color, (int(px), int(py)), (int(ex), int(ey)), 2)
+    if speed_kn is not None:
+        s.blit(font.render(f"{speed_kn:.0f}kn", True, color),
+               (int(ex) + 4, int(ey) - 6))
+
+
 def observed_position(observation):
     """Read the public displayed position, with legacy field compatibility."""
     return observations.position(observation)
@@ -341,6 +354,8 @@ def draw_map_view(game, tr=None) -> None:
                 s, (px, py), affiliation, "SURFACE", 14)
             s.blit(game.font.render(track["label"], True, col),
                    (int(px) + 7, int(py) - 18))
+            _draw_course_speed(s, game.font, px, py,
+                               track["course"], track["speed_kn"], col)
 
         for track in (t for t in tracks if t["kind"] == "FLG"
                       and observed_position(t)[0] is not None):
@@ -351,6 +366,8 @@ def draw_map_view(game, tr=None) -> None:
             col = nato_symbols.draw_symbol(s, (px, py), affiliation, "AIR", 14)
             s.blit(game.font.render(track["label"], True, col),
                    (int(px) + 9, int(py) - 14))
+            _draw_course_speed(s, game.font, px, py,
+                               track["course"], track["speed_kn"], col)
 
         # Eigene Torpedos
         for t in game.torpedoes:
@@ -376,6 +393,8 @@ def draw_map_view(game, tr=None) -> None:
                 s, (px, py), affiliation, "MISSILE", 14)
             s.blit(game.font.render(track["label"], True, col),
                    (int(px) + 10, int(py) - 12))
+            _draw_course_speed(s, game.font, px, py,
+                               track["course"], track["speed_kn"], col)
         fx, fy = view.world_to_screen(game.ship.x, game.ship.y)
         for track in (t for t in tracks if t["kind"] == "ASM"
                       and observed_position(t)[0] is None):
@@ -427,6 +446,9 @@ def draw_map_view(game, tr=None) -> None:
                     "map.line.contact_fix", contact=contact.id,
                     range=f"{observations.range_nm(contact, game.ship):4.1f}", source=src)),
                     True, line_col), (int(tx) + 11, int(ty) - 22))
+                _draw_course_speed(s, game.font, tx, ty,
+                                   getattr(contact, "tma_course", None),
+                                   getattr(contact, "tma_speed", None), line_col)
             else:
                 ex = fx + 300 * math.sin(brg)
                 ey = fy - 300 * math.cos(brg)

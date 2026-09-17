@@ -43,9 +43,9 @@ def test_ownship_loadout_is_typed_and_matches_legacy_level_inventory():
         definition["magazine"]["weapon_key"]]
     assert definition["weapons"][0]["runtime_profile_key"] == "frigate_torp"
     assert definition["weapons"][0]["kill_dist_nm_by_level"] == {
-        "leicht": .2, "normal": .135, "harte": .135}
+        "leicht": .2, "normal": .135, "harte": .135, "hardcore": .10}
     assert definition["magazine"]["mission_count_by_level"] == {
-        "leicht": 6, "normal": 6, "harte": 4}
+        "leicht": 6, "normal": 6, "harte": 4, "hardcore": 3}
 
 
 def test_tubes_reserve_magazine_rounds_and_reload_deterministically():
@@ -702,6 +702,23 @@ def test_easy_helicopter_torpedo_roundtrips_with_difficulty_envelope():
     game.helo.launch(game.ship)
     game.launch_helo_torpedo()
     assert game.torpedoes[-1].launch_origin == "helo"
+    state = game.save_state()
+    game.load_state(copy.deepcopy(state))
+    assert game.save_state() == state
+
+
+def test_hardcore_level_applies_tighter_ammo_and_hit_tolerance_and_roundtrips():
+    game = Game(seed=197, start_menu=False, audio_enabled=False)
+    # The initial built-in patrol scenario has a fixed level; select the free
+    # ("s4_zufall") scenario to actually honor an explicit difficulty choice.
+    game.level = "hardcore"
+    game.scenario_key = "s4_zufall"
+    game._start_menu_mission()
+    assert game.torpedo_count == 3
+    assert game.player_torpedo_battery.capacity_total == 3
+    lv = config.LEVELS["hardcore"]
+    assert lv["kill_dist_nm"] < config.LEVELS["harte"]["kill_dist_nm"]
+    assert lv["kill_depth_m"] < config.LEVELS["harte"]["kill_depth_m"]
     state = game.save_state()
     game.load_state(copy.deepcopy(state))
     assert game.save_state() == state

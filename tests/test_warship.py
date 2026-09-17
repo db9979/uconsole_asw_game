@@ -36,6 +36,24 @@ def test_no_warships_outside_spawn_range():
         assert 0 <= by <= g.world.size_nm
 
 
+def test_surface_ship_speed_response_is_dt_agnostic():
+    """W2: exponential-lag speed response (closed form) must match regardless
+    of dt splitting, mirroring the player ship's hydrodynamic model."""
+    big = SurfaceShip(100.0, 100.0, random.Random(1), hostile=True)
+    big.speed = 0.0
+    big.target_speed = big.speed_cap_kn
+    big._steer(120.0, 1.0)
+
+    small = SurfaceShip(100.0, 100.0, random.Random(1), hostile=True)
+    small.speed = 0.0
+    small.target_speed = small.speed_cap_kn
+    for _ in range(1200):
+        small._steer(0.1, 1.0)
+
+    assert big.speed == pytest.approx(small.speed, abs=1e-6)
+    assert 0.0 < big.speed < big.speed_cap_kn
+
+
 def test_warship_asks_asm_when_frigate_close():
     ship = SurfaceShip(10.0, 10.0, random.Random(1), hostile=True)
     ship.anchor = (10.0, 10.0)

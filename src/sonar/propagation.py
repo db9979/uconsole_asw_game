@@ -235,6 +235,21 @@ def propagate(source_x_nm: float, source_y_nm: float, source_depth_m: float,
                              spectral_gains)
 
 
+def representative_frequency_hz(signature) -> float:
+    """Canonical propagation band closest to a target's own dominant tonal
+    frequency (its ``tonal_band_hz`` midpoint), e.g. a fast cavitating
+    warship attenuates faster than a slow diesel tanker. Falls back to the
+    historical fixed representative band when no usable signature is given
+    (unmodeled contacts, e.g. biological), so those keep today's behavior.
+    """
+    band = getattr(signature, "tonal_band_hz", None) if signature is not None else None
+    if not band or band[0] <= 0.0 or band[1] <= 0.0:
+        return REPRESENTATIVE_PASSIVE_BAND_HZ
+    midpoint = (band[0] + band[1]) / 2.0
+    return min(CANONICAL_FREQUENCY_BANDS_HZ,
+               key=lambda candidate: abs(candidate - midpoint))
+
+
 def passive_range_factor(result: PropagationResult, direct_range_nm: float) -> float:
     """Convert modeled excess loss into a range multiplier without re-spreading."""
     distance = _number("direct_range_nm", direct_range_nm, 0.0, MAX_RANGE_NM)

@@ -101,12 +101,54 @@ def test_dipping_passive_bearing_uses_helicopter_origin_deterministically():
         sonar.update_dipping_passive(.25, 12.0, helo, [target], Ocean())
 
     contact = first.contacts[target.id]
-    assert contact.passive_source == "SONAR-DIP-BRG"
-    assert (contact.observer_x, contact.observer_y) == (helo.x, helo.y)
+    assert (contact.dip_observer_x, contact.dip_observer_y) == (helo.x, helo.y)
     assert contact.range_est is None
-    assert contact.raw_bearing == second.contacts[target.id].raw_bearing
-    assert abs(config.angle_diff_deg(contact.raw_bearing, 90.0)) \
+    assert contact.dip_bearing == second.contacts[target.id].dip_bearing
+    assert abs(config.angle_diff_deg(contact.dip_bearing, 90.0)) \
         <= config.HELO_DIP_BEARING_ERR_DEG
+    # W2: the ship's own passive track is a fully separate state and must
+    # stay untouched by a helicopter dip (this was the reported bug: a dip
+    # was overwriting the frigate's own bearing every tick).
+    assert contact.passive_bearing is None
+    assert contact.passive_source == "SONAR-BRG"
+
+
+def test_helicopter_dip_never_overwrites_ships_own_passive_bearing():
+    """Reported bug: as long as the helicopter was also dipping, the ship's
+    own passive bearing on the same contact kept disappearing every tick,
+    because both wrote into the same Kalman-filter state despite being
+    measured from two different platforms."""
+    sonar = SonarSystem(55)
+    ship = NS(x=0.0, y=0.0, speed=0.0, course=0.0)
+    target = Target(target_id=90050, x=10.0, y=0.0)
+
+    # The ship hears the contact on its own bow array first.
+    contact = sonar._get_contact(target)
+    contact._fx, contact._fy = ship.x, ship.y
+    contact.observer_x, contact.observer_y = ship.x, ship.y
+    contact.passive_source = "SONAR-BRG"
+    ship_bearing_before = 90.0
+    contact.update_passive(ship_bearing_before, .6, .6, "test signature", 10.0)
+    assert contact.passive_bearing == pytest.approx(ship_bearing_before)
+
+    helo = Helicopter(random.Random(9))
+    helo.state = "AUF"
+    helo.x, helo.y = 5.0, 5.0
+    helo.dip_state = "DEPLOYED"
+    helo.dip_depth_m = 75.0
+
+    for tick in range(20):
+        sonar.update_dipping_passive(.25, 10.25 + tick * .25, helo, [target],
+                                     Ocean())
+
+    # The frigate's own tracked bearing must still be there and unchanged by
+    # the helicopter's independent dip measurements.
+    assert contact.passive_bearing == pytest.approx(ship_bearing_before)
+    assert contact.passive_source == "SONAR-BRG"
+    assert (contact.observer_x, contact.observer_y) == (0.0, 0.0)
+    # The helicopter gets its own, separately tracked bearing.
+    assert contact.dip_bearing is not None
+    assert (contact.dip_observer_x, contact.dip_observer_y) == (helo.x, helo.y)
 
 
 def test_dipping_ping_delivers_frozen_helicopter_snapshot_after_delay():
@@ -193,7 +235,9 @@ def test_same_v10_upgrader_recognizes_only_prior_exact_release_shape():
                 "dip_water_depth_m", "dip_ping_cooldown"):
         del old["helo"][key]
     for row in old["sonar"]["contacts"].values():
-        for key in ("released_to_opz", "passive_source", "observer_x", "observer_y"):
+        for key in ("released_to_opz", "passive_source", "observer_x", "observer_y",
+                    "dip_bearing", "dip_bearing_uncertainty_deg", "dip_last_seen",
+                    "dip_observer_x", "dip_observer_y"):
             del row[key]
 
     restored = Game(seed=903, start_menu=False, audio_enabled=False)
@@ -265,3 +309,104 @@ def test_native_keys_control_release_and_dipping(monkeypatch):
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_v, mod=0))
     assert game.helo.dip_depth_target_m > prior_depth
     assert game.helo.dip_state == "DEPLOYING"
+
+
+def test_helicopter_station_can_cycle_and_release_its_own_dip_plot():
+    """Feature request: the helicopter needs its own active-ping plotter and
+    a way to release what it found to CIC directly from its own station."""
+    game = Game(seed=908, start_menu=False, audio_enabled=False)
+    game.sonar.contacts.clear()
+    game.station = Station.HELICOPTER
+
+    # A contact the ship's own array holds - no dip - must never appear here.
+    ship_only = Contact(1, 90101, "passiv", "sub")
+    ship_only.update_passive(10.0, .8, .8, "hidden", game.sim_t)
+    game.sonar.contacts[ship_only.target_id] = ship_only
+
+    # A contact the helicopter's own dip has plotted.
+    dip_found = Contact(2, 90102, "dipping-passiv", "sub")
+    dip_found.update_dip_passive(200.0, game.sim_t, 12.0, 34.0, 1.5)
+    game.sonar.contacts[dip_found.target_id] = dip_found
+
+    assert game.selected_contact is None
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
+    assert game.selected_contact is dip_found
+
+    game.handle_event(pygame.event.Event(
+        pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
+    assert dip_found.released_to_opz is True
+    assert ship_only.released_to_opz is False
+
+    game.handle_event(pygame.event.Event(
+        pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
+    assert dip_found.released_to_opz is False
+
+
+def test_helicopter_view_shows_only_the_helicopters_own_dip_plot():
+    game = Game(seed=909, start_menu=False, audio_enabled=False)
+    game.sonar.contacts.clear()
+
+    assert stations_view.helo_dip_contacts(game) == []
+
+    dip_found = Contact(1, 90201, "dipping-passiv", "sub")
+    dip_found.update_dip_passive(123.0, game.sim_t, 5.0, 6.0, 1.5)
+    game.sonar.contacts[dip_found.target_id] = dip_found
+    game.selected_contact = dip_found
+
+    assert stations_view.helo_dip_contacts(game) == [dip_found]
+    line = stations_view._helo_dip_contact_line(game)
+    assert "K1" in line and "123" in line
+
+    pygame.init()
+    surface = pygame.Surface((1280, 720))
+    game.screen = surface
+    game.station = Station.HELICOPTER
+    stations_view.draw_helicopter_view(game)  # must not crash
+    pygame.quit()
+
+
+def test_helicopter_station_can_classify_its_own_selected_contact():
+    """Feature request: the helicopter must be able to classify a contact
+    itself - otherwise it can never launch a torpedo on its own dip find."""
+    game = Game(seed=910, start_menu=False, audio_enabled=False)
+    game.sonar.contacts.clear()
+    game.station = Station.HELICOPTER
+
+    dip_found = Contact(1, 90301, "dipping-passiv", "sub")
+    dip_found.update_dip_passive(200.0, game.sim_t, 12.0, 34.0, 1.5)
+    game.sonar.contacts[dip_found.target_id] = dip_found
+
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
+    assert game.selected_contact is dip_found
+
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c))
+    assert dip_found.player_class == "U_BOOT"
+
+    game.handle_event(pygame.event.Event(
+        pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
+    game.roe = "FREE"  # only classification gates a release under FREE ROE
+    result = game.launch_helicopter_torpedo_at(dip_found, 90.0)
+    assert result != "not_classified"
+
+
+def test_helicopter_only_contact_reports_its_own_origin_to_opz():
+    """A sub only the helicopter's dip has heard must plot from the
+    helicopter's own position in OPZ, not a bogus ship-relative bearing."""
+    game = Game(seed=911, start_menu=False, audio_enabled=False)
+    game.sonar.contacts.clear()
+    contact = Contact(1, 90401, "dipping-passiv", "sub")
+    origin_x, origin_y = game.ship.x + 5.0, game.ship.y + 2.0
+    contact.update_dip_passive(15.0, game.sim_t, origin_x, origin_y, 1.5)
+    contact.last_seen = game.sim_t
+    contact.released_to_opz = True
+    game.sonar.contacts[contact.target_id] = contact
+
+    report = game.opz_tracks()[0]
+    assert report.source == "SONAR-DIP-BRG"
+    assert report.bearing == pytest.approx(15.0)
+    assert report.observer_x == pytest.approx(origin_x)
+    assert report.observer_y == pytest.approx(origin_y)
+
+    ppi = pygame.Rect(0, 0, 400, 400)
+    start, end = stations_view._opz_bearing_ray(game, report, ppi, 20.0)
+    assert (start[0], start[1]) != (ppi.centerx, ppi.centery)

@@ -52,3 +52,31 @@ def test_legacy_preferences_default_tooltips_on(tmp_path):
     path.write_text(json.dumps({"language": "de", "audio": False}),
                     encoding="utf-8")
     assert load_preferences(path).tooltips is True
+
+
+def test_legacy_preferences_default_night_mode_off(tmp_path):
+    path = tmp_path / "preferences.json"
+    path.write_text(json.dumps({"language": "de", "audio": False}),
+                    encoding="utf-8")
+    assert load_preferences(path).night_mode is False
+
+
+def test_night_mode_round_trips(tmp_path):
+    path = tmp_path / "preferences.json"
+    expected = Preferences(night_mode=True)
+    assert save_preferences(expected, path) == path
+    assert load_preferences(path) == expected
+
+
+def test_legacy_preferences_default_high_contrast_off(tmp_path):
+    path = tmp_path / "preferences.json"
+    path.write_text(json.dumps({"language": "de", "audio": False}),
+                    encoding="utf-8")
+    assert load_preferences(path).high_contrast is False
+
+
+def test_high_contrast_round_trips(tmp_path):
+    path = tmp_path / "preferences.json"
+    expected = Preferences(high_contrast=True)
+    assert save_preferences(expected, path) == path
+    assert load_preferences(path) == expected

@@ -6,7 +6,7 @@ import pytest
 
 from src.core.i18n import Translator, pseudolocale
 from src.data.contact_analysis import load_contact_analysis_assets
-from src.ui import layout
+from src.ui import contact_analyzer, layout
 from src.ui.contact_analyzer import ContactAnalyzer, MAX_FILTER_CHARS, SURFACE_CACHE_SIZE
 
 
@@ -41,7 +41,7 @@ def test_filter_selection_images_and_internal_detail_scroll_are_bounded(monkeypa
     for char in "warship_":
         analyzer.handle_event(pygame.event.Event(
             pygame.KEYDOWN, key=ord(char), unicode=char, mod=0))
-    assert analyzer.filter_text == "warship_"
+    assert analyzer.filter.text == "warship_"
     assert analyzer.filtered
     assert all("warship_" in profile["key"]
                for profile in (analyzer.profiles[index] for index in analyzer.filtered))
@@ -58,7 +58,7 @@ def test_filter_selection_images_and_internal_detail_scroll_are_bounded(monkeypa
             pygame.KEYDOWN, key=pygame.K_DOWN, unicode="", mod=0))
     assert len(analyzer.surface_cache) <= SURFACE_CACHE_SIZE
     analyzer._set_filter("x" * (MAX_FILTER_CHARS + 20))
-    assert len(analyzer.filter_text) == MAX_FILTER_CHARS
+    assert len(analyzer.filter.text) == MAX_FILTER_CHARS
     pygame.quit()
 
 
@@ -221,6 +221,38 @@ def test_audio_sample_hidden_and_inert_without_audio_or_callback():
     assert bare._rects.get("audio_sample") is None
     assert bare.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_SPACE, unicode=" ", mod=0)) is False
+    pygame.quit()
+
+
+def test_open_wiki_button_opens_the_profile_wiki_url(monkeypatch):
+    pygame.init()
+    opened = []
+    monkeypatch.setattr(contact_analyzer.webbrowser, "open", opened.append)
+    analyzer = ContactAnalyzer()
+    analyzer._set_filter("sub_11")
+    screen = pygame.Surface((1280, 720))
+    analyzer.draw(screen)
+    rect = analyzer._rects.get("open_wiki")
+    assert rect is not None
+    assert screen.get_rect().contains(rect)
+    assert analyzer.handle_event(pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN, button=1, pos=rect.center)) is True
+    assert opened == ["https://de.wikipedia.org/wiki/Kilo-Klasse"]
+    pygame.quit()
+
+
+def test_open_wiki_button_hidden_and_inert_without_wiki_url(monkeypatch):
+    pygame.init()
+    opened = []
+    monkeypatch.setattr(contact_analyzer.webbrowser, "open", opened.append)
+    analyzer = ContactAnalyzer()
+    analyzer._set_filter("diesel_alt")
+    screen = pygame.Surface((1280, 720))
+    analyzer.draw(screen)
+    assert analyzer._rects.get("open_wiki") is None
+    assert analyzer.handle_event(pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN, button=1, pos=(0, 0))) is False
+    assert opened == []
     pygame.quit()
 
 

@@ -7,12 +7,14 @@
       "kill_dist_nm_by_level": {
         "leicht": 0.2,
         "normal": 0.135,
-        "harte": 0.135
+        "harte": 0.135,
+        "hardcore": 0.10
       },
       "kill_depth_m_by_level": {
         "leicht": 20.0,
         "normal": 15.0,
-        "harte": 15.0
+        "harte": 15.0,
+        "hardcore": 10.0
       }
     }
   ],
@@ -31,7 +33,8 @@
     "mission_count_by_level": {
       "leicht": 6,
       "normal": 6,
-      "harte": 4
+      "harte": 4,
+      "hardcore": 3
     }
   },
   "countermeasure": {

@@ -20,7 +20,7 @@ from src.commander.server import CommanderServer, STATIONS
 from src.core import config
 from src.core.i18n import load_catalog, message, raw_text, translation_scope
 from src.data.contact_analysis import load_contact_analysis_assets
-from src.ui import layout
+from src.ui import layout, qr
 
 
 class CommanderConsole:
@@ -58,6 +58,8 @@ class CommanderConsole:
         self.roster_status = None
         self._roster_mouse_confirm = None
         self._hotspot_error_seen = None
+        self._qr_payload = None
+        self._qr_surface = None
 
     def prepare(self):
         """Discover at most 64 Linux interface IPv4s, with no DNS or LAN probe."""
@@ -653,6 +655,15 @@ class CommanderConsole:
                 self._roster_action(action)
                 return
 
+    def _hotspot_qr(self, ssid, password):
+        """Return the cached QR surface for the current Wi-Fi credentials."""
+        payload = qr.wifi_payload(ssid, password)
+        if self._qr_payload != payload or self._qr_surface is None:
+            matrix = qr.encode(payload)
+            self._qr_payload = payload
+            self._qr_surface = qr.to_surface(matrix, module_px=max(1, 132 // (len(matrix) + 4)))
+        return self._qr_surface
+
     def draw(self, game):
         if self.admission.request is not None:
             self.admission.draw(game)
@@ -674,28 +685,36 @@ class CommanderConsole:
             layout.blit_line(screen, message("commander.local.connection", state=tr(
                 "commander.local.connected" if self.connected else "commander.local.disconnected")),
                 (124, 104, 1032, 26), config.COLOR_TEXT, size=20, align="center")
-            if self.network_mode == "hotspot":
+            hotspot = self.network_mode == "hotspot"
+            if hotspot:
                 details = self.hotspot.details
                 ssid = details.ssid if details is not None else tr("commander.local.unavailable")
                 password = (details.password if details is not None
                             else tr("commander.local.unavailable"))
                 layout.blit_line(screen, message("commander.local.hotspot.ssid",
                                                   ssid=raw_text(ssid)),
-                                 (124, 134, 1032, 24), config.COLOR_TEXT, size=18,
+                                 (124, 134, 790, 26), config.COLOR_TEXT, size=22,
                                  align="center")
                 layout.blit_line(screen, message("commander.local.hotspot.password",
                                                   password=raw_text(password)),
-                                 (124, 160, 1032, 24), config.COLOR_WARN, size=18,
+                                 (124, 164, 790, 34), config.COLOR_WARN, size=28,
                                  align="center")
+                layout.blit_line(screen, "commander.local.hotspot.qr",
+                                 (936, 134, 220, 28), config.COLOR_TEXT_DIM, size=14,
+                                 align="center")
+                if details is not None:
+                    surface = self._hotspot_qr(details.ssid, details.password)
+                    screen.blit(surface, (980 + (132 - surface.get_width()) // 2,
+                                          166 + (132 - surface.get_height()) // 2))
             layout.blit_line(screen, "commander.local.join_code",
-                              (124, 190 if self.network_mode == "hotspot" else 144,
-                               1032, 26), config.COLOR_TEXT_DIM, size=20, align="center")
+                              (124, 206 if hotspot else 144, 790 if hotspot else 1032,
+                               24), config.COLOR_TEXT_DIM, size=20, align="center")
             code = self.pairing_code or "------"
             grouped_code = raw_text(code[:3] + " " + code[3:])
             layout.blit_line(screen, grouped_code,
-                             (124, 216 if self.network_mode == "hotspot" else 174,
-                              1032, 76 if self.network_mode == "hotspot" else 108),
-                             config.COLOR_WARN, size=64 if self.network_mode == "hotspot" else 72,
+                             (124, 228 if hotspot else 174, 790 if hotspot else 1032,
+                              72 if hotspot else 108),
+                             config.COLOR_WARN, size=62 if hotspot else 72,
                              align="center")
             service_state = (f"commander.local.hotspot.state.{self.hotspot.state}"
                              if self.network_mode == "hotspot" and self.hotspot.active

@@ -61,6 +61,23 @@ def _panel(game, x_off: int = 0, w: int = None, title: str = "") -> tuple:
     return r, y
 
 
+def _shortcut_footer(screen, rect, specs) -> None:
+    """Draw a persistent, single-row legend of a station's key shortcuts.
+
+    ``specs`` is an ordered iterable of ``(key, description_i18n_key)`` pairs,
+    evenly split across ``rect``, matching sonar_view's always-visible
+    footer-legend pattern (layout.command_segment) instead of a plain hint.
+    """
+    rect = pygame.Rect(rect)
+    specs = tuple(specs)
+    if not specs:
+        return
+    width = max(1, rect.w // len(specs))
+    for index, (key, description) in enumerate(specs):
+        segment = pygame.Rect(rect.x + index * width, rect.y, width, rect.h)
+        layout.command_segment(screen, segment, key, description, size=11)
+
+
 @localized
 def draw_autocrew_overview(game, tr=None) -> None:
     """Render the host-only nine-station automation overview."""
@@ -319,6 +336,14 @@ def draw_bridge_view(game, tr=None) -> None:
     weather_rect = pygame.Rect(sx + text_w + 12, sy, weather_w, 68)
     _draw_bridge_weather(s, weather_rect, weather, game.world.hour, game.sim_t)
 
+    station_bottom = config.STATION_RECT[1] + config.STATION_RECT[3]
+    _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
+        ("←/→", "bridge.footer.course"),
+        ("↑/↓", "bridge.footer.telegraph"),
+        ("U", "bridge.footer.set_course"),
+        ("V", "bridge.footer.set_speed"),
+    ))
+
 
 # --- OPZ / CIC (M12) -------------------------------------------------------
 
@@ -335,9 +360,37 @@ OPZ_DOMAIN_COLORS = {
     "SURFACE": config.COLOR_CONTACT_ZIVIL,
     "SUBSURFACE": config.COLOR_CONTACT_UBOOT,
     "AIR": config.COLOR_FLIGHT,
-    "MISSILE": config.COLOR_DANGER,
-    "UNDERWATER_WEAPON": config.COLOR_DANGER,
+    "MISSILE": config.COLOR_CONTACT_MISSILE,
+    "UNDERWATER_WEAPON": config.COLOR_CONTACT_MISSILE,
 }
+
+
+def helo_dip_contacts(game):
+    """W2: contacts the helicopter's own dip has plotted - independent of
+    (and, since the bug fix, never overwriting) the ship's own sonar picture."""
+    sonar = getattr(game, "sonar", None)
+    contacts = getattr(sonar, "contacts", None)
+    if not contacts:
+        return []
+    sim_t = getattr(game, "sim_t", 0.0)
+    return sorted((c for c in contacts.values()
+                   if c.dip_last_seen is not None
+                   and sim_t - c.dip_last_seen < config.SONAR_CONTACT_LOST_S),
+                  key=lambda c: c.id)
+
+
+def _helo_dip_contact_line(game) -> str:
+    contacts = helo_dip_contacts(game)
+    if not contacts:
+        return localize("helo.dip_contact_none")
+    current = getattr(game, "selected_contact", None)
+    selected = current if current in contacts else contacts[0]
+    age = max(0.0, game.sim_t - selected.dip_last_seen)
+    released = localize("common.yes" if selected.released_to_opz else "common.no")
+    return message(
+        "helo.dip_contact_line", contact=selected.id,
+        bearing=f"{selected.dip_bearing:05.1f}", age=f"{age:.0f}",
+        count=len(contacts), released=released)
 
 
 def _track_tooltip(game, track):
@@ -1260,6 +1313,10 @@ def draw_opz_view(game, tr=None) -> None:
              if observations.range_nm(selected, game.ship) is not None else "opz.line.range_unavailable"),
             (message("opz.line.course_available", course=f"{selected.course:03.0f}")
              if selected.course is not None else "opz.line.course_unavailable"),
+            (message("opz.line.depth_available", depth=f"{selected.depth_m:.0f}")
+             if selected.depth_m is not None else "opz.line.depth_unavailable"),
+            (message("opz.line.speed_available", speed=f"{selected.speed_kn:.1f}")
+             if selected.speed_kn is not None else "opz.line.speed_unavailable"),
             (message("opz.line.ages_quality", observation_age=f"{selected.age(game.sim_t):.0f}",
                      fix_age=f"{observations.position_age(selected, game.sim_t):.0f}",
                      quality=f"{selected.display_quality(game.sim_t, game.air_picture.stale_s):.0%}")
@@ -1353,11 +1410,10 @@ def draw_opz_view(game, tr=None) -> None:
     scales = " ".join(
         f"[{scale:g}]" if scale == max_nm else f"{scale:g}"
         for scale in config.RADAR_RANGE_SCALES_NM)
-    footer = message("opz.line.footer", range=f"{max_nm:g}", scales=scales)
-    footer_rect = (station.x + 8, station.bottom - 23, scope_w - 16, 19)
+    footer_rect = pygame.Rect(station.x + 8, station.bottom - 23, scope_w - 16, 19)
     pygame.draw.rect(s, (8, 18, 13), footer_rect)
-    layout.blit_line(s, footer, footer_rect, config.COLOR_TEXT, size=12,
-                     align="center")
+    layout.command_segment(s, footer_rect, "PGUP/DN", "opz.footer.range", "",
+                          f"{max_nm:g} NM  {scales}", size=12)
 
 
 # --- Funkraum (M13) --------------------------------------------------------
@@ -1400,8 +1456,10 @@ def draw_radio_view(game, tr=None) -> None:
     if game.hfdf_log:
         layout.blit_line(s, message("radio.line.log_fix", log=len(game.hfdf_log), fixes=len(game.hfdf_fixes)),
                          (lx, ly, lw, 22), config.COLOR_OK, size=15)
-    layout.blit_line(s, "control.radio_log",
-                     (lx, ly + 28, lw, 22), config.COLOR_TEXT_DIM, size=14)
+    _shortcut_footer(s, (lx, ly + 28, lw, 20), (
+        ("↑/↓", "radio.footer.select"),
+        ("Enter", "radio.footer.log"),
+    ))
 
     right = layout.box(s, (x + col_w + gap, y, col_w, r[3] - 52),
                         "panel.messages")
@@ -1447,12 +1505,6 @@ def draw_engine_view(game, tr=None) -> None:
                            message("bridge.line.speed", speed=f"{sp:4.1f}"),
                            color=col, label_w=190, size=15)
         oy += 25
-    oy += 8
-    layout.blit_line(s, "view.engine.telegraph_hint", (ox, oy, ow, 22),
-                     config.COLOR_TEXT_DIM, size=14)
-    layout.blit_line(s, "control.quiet_mode", (ox, oy + 27, ow, 22),
-                     config.COLOR_TEXT_DIM, size=14)
-
     systems = layout.box(s, (x + col_w + gap, y, col_w, r[3] - 54),
                           "panel.propulsion",
                          border=config.COLOR_DANGER if ship.cavitating else config.COLOR_TEXT)
@@ -1490,6 +1542,16 @@ def draw_engine_view(game, tr=None) -> None:
                                  roll=f"{ship.roll:4.1f}", pitch=f"{ship.pitch:4.1f}"),
                          label_w=125, size=14)
     py += 28
+    list_deg = game.damage.list_deg()
+    if abs(list_deg) > 0.05:
+        layout.status_line(
+            s, px, py, pw, "panel.hull_list",
+            message("engine.line.hull_list",
+                    side=localize("engine.list_starboard" if list_deg > 0
+                                  else "engine.list_port"),
+                    degrees=f"{abs(list_deg):3.1f}"),
+            label_w=125, size=14, color=config.COLOR_WARN)
+        py += 28
     masch = game.damage.compartments.get("engine")
     if masch is not None:
         col = config.COLOR_DANGER if masch.state == "ZERSTOERT" else (
@@ -1556,6 +1618,14 @@ def draw_engine_view(game, tr=None) -> None:
                   "engine.limit.none")
     layout.status_line(s, px, py, pw, "panel.limit", cap_reason,
                        label_w=140, size=14)
+
+    station_bottom = config.STATION_RECT[1] + config.STATION_RECT[3]
+    _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
+        ("↑/↓", "engine.footer.telegraph"),
+        ("A", "engine.footer.quiet"),
+        ("U", "engine.footer.set_course"),
+        ("V", "engine.footer.set_speed"),
+    ))
 
 
 # --- Helikopter-Deck --------------------------------------------------------
@@ -1681,14 +1751,18 @@ def draw_helicopter_view(game, tr=None) -> None:
     margin_color = (config.COLOR_TEXT_DIM if not helo.airborne else
                     config.COLOR_DANGER if margin_s < 0 else
                     config.COLOR_WARN if margin_s < 300 else config.COLOR_OK)
+    dip_contacts = helo_dip_contacts(game)
     rules = (localize(message("helo.waypoint_rule", bearing=f"{wp_brg:03.0f}",
                               range=f"{wp_dist:.0f}")),
              localize(message("helo.rtb_margin", margin=f"{margin_s / 60:+.0f}")) if helo.airborne else localize("helo.rtb_unavailable"),
               localize("helo.launch_rule"), localize("helo.dip_controls"),
               localize("helo.weapon_controls"),
+              _helo_dip_contact_line(game),
               localize("view.helo.roe"))
     colors = (config.COLOR_TEXT, margin_color, config.COLOR_TEXT_DIM,
-              config.COLOR_OK, config.COLOR_WARN, config.COLOR_WARN)
+              config.COLOR_OK, config.COLOR_WARN,
+              config.COLOR_OK if dip_contacts else config.COLOR_TEXT_DIM,
+              config.COLOR_WARN)
     line_y = my
     line_h = max(21, layout.font(14).get_linesize() + 2)
     for text, color in zip(rules, colors):
@@ -1916,6 +1990,9 @@ def draw_damage_view(game, tr=None) -> None:
                  average=f"{game.damage.avg_flood():.0f}"),
         color=config.COLOR_DANGER if game.damage.ship_sunk else config.COLOR_TEXT,
         label_w=170, size=15)
-    layout.blit_line(s, "control.damage_select",
-                     (rect.x + 16, footer_y + 26, rect.w - 32, 21),
-                     config.COLOR_TEXT_DIM, size=14, align="right")
+    _shortcut_footer(s, (rect.x + 16, footer_y + 26, rect.w - 32, 19), (
+        ("←/→", "damage.footer.department"),
+        ("↑/↓", "damage.footer.team"),
+        ("Enter", "damage.footer.assign"),
+        ("Backspace", "damage.footer.withdraw"),
+    ))

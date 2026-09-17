@@ -122,6 +122,68 @@ und ruft keine Quellen-URLs ab. Nicht referenzierte Komponenten, falsche
 Namespaces, unaufgeloeste Referenzen und inkompatible Launcher-/Waffentypen
 werden abgewiesen.
 
+## Russland-Feindgrundlage (Katalog-Migration)
+
+Zufällig generierte Szenarien spawnen standardmäßig russische Einheiten als
+Feind, statt einer Mischung realer Marinen. Das ist über zwei getrennte
+Mechanismen umgesetzt, die man beim Erweitern des Katalogs kennen muss:
+
+- **Oberflächenschiffe**: `LEGACY_HOSTILE_SURFACE_KEYS` (`src/data/catalog.py`)
+  ist ein hartkodiertes Tupel, unabhängig von `spawn_weight`. Es enthält nur
+  noch die russischen Klassen (`warship_22` Kirov, `warship_23` Udaloy,
+  `warship_24` Admiral-Gorschkow, `warship_29` Projekt 20380
+  Stereguschtschi) plus `warship_30` (F217 *Bayern*, siehe unten).
+  `ContactCatalog.pick_surface(hostile=True)` zieht ausschließlich aus
+  dieser Liste, nie aus allen `category == "KAMPFSCHIFF"`-Profilen.
+- **U-Boote**: `pick_sub()` gewichtet rein über `spawn_weight`; die 13
+  nicht-russischen U-Boot-Klassen (`sub_01`…`sub_10`, `sub_18`…`sub_20`)
+  haben `spawn_weight: 0` und sind damit aus dem Zufallspool draußen, bleiben
+  aber ladbar (z. B. für den Missions-Editor).
+- **Flugzeuge**: `mil_patrol` wurde inhaltlich zu Su-33 (Flanker-D)
+  umgewidmet (Schlüssel unverändert, `RUNTIME_BINDINGS["military_flight"]`
+  zeigt weiterhin darauf); `su_25` (Su-25 Frogfoot) ist neu, aber nur über
+  `pick_aircraft()` (gewichteter Fallback), nicht über die feste
+  Doktrin-Bindung erreichbar.
+
+Die 25 vormals in `warships.json` gelisteten, real benannten anderen Marinen
+(US, China, UK, Frankreich, Deutschland, Japan, Skandinavien, Südkorea) wurden
+**nicht gelöscht**, sondern nach `civilians.json` verschoben:
+`category` → `"SONSTIGES"`, `hostile` → `false` (Datei-Pflichtfeld),
+`default_faction` → `"NEUTRAL"` (bzw. `"FREUND"` für die deutschen Einträge
+F124/F125/Sachsen/Baden-Württemberg). Ihre kompletten v2-Komponenten
+(`reference`/`machine`/`sensor`/`emitter`/`weapons`/`launchers`/`magazines`/
+`countermeasures`) wanderten unverändert mit: `profile_systems`,
+`launchers` usw. sind globale, nicht dateigebundene Register (siehe
+`_collect_v2()`), und ein reales Kriegsschiff hat nun mal reale ASW-/ASM-
+Systeme, unabhängig davon, ob es in diesem fiktiven Szenario Partei ergreift.
+Dass diese Kontakte als `SONSTIGES`-Verkehr trotzdem nie ASM/ASROC feuern,
+kommt allein aus der Doktrin-Gate (`SurfaceShip.update()`: nur
+`doctrine == "surface_combatant"` ruft `_maybe_asm()`/`_maybe_asroc()` auf),
+nicht aus fehlenden Katalogdaten. Passende `sources.json`-Claims wurden
+mitverschoben (Ressource `warships.json` → `civilians.json`).
+
+Neue, rein additive optionale Felder (fehlen = "noch nicht recherchiert",
+analog zum bereits bestehenden optionalen `acoustic`-Feld bei Torpedos):
+
+| Feld | Datei-Ebene | Bedeutung |
+|---|---|---|
+| `wiki_url` | Eintrag (subs/warships/civilians/aircraft) | `https://<sprache>.wikipedia.org/wiki/...`; von `[ 🌐 Wikipedia Info ]` im Unit-Editor geöffnet |
+| `default_faction` | Eintrag | `FREUND`/`FEIND`/`NEUTRAL` – reines Autoren-/Editor-Metadatum, ändert nichts an der Laufzeit-IFF (Kontakte starten weiterhin `UNKNOWN`) |
+| `rcs_m2` | Eintrag | Radarquerschnitt in m²; fließt nur als kleiner, begrenzter Skalierungsfaktor (`(rcs/500)**0.25`, geklemmt auf 0.5..1.5) in die bestehende reichweitenbasierte Radar-Erkennung ein (`src/sensors/platform.py`) |
+| `lofar_base_freq_hz` | `acoustic`-Block | explizite LOFAR-Linienliste (muss nicht-leer sein, wenn vorhanden) |
+| `cavitation_speed_knots` | `acoustic`-Block | Geschwindigkeit, ab der Kavitation einsetzt |
+| `audio_sample_id` | `acoustic`-Block | Verweis auf eine Audio-Asset-ID |
+
+Diese Felder existieren auch im Unit-Editor-Schema (`src/ui/unit_editor.py`,
+gleiche Optionalität) und werden dort per Wikipedia-Import befüllt
+(`src/data/wiki_import.py`): eine Wikipedia-URL wird per stdlib `urllib`
+gegen die MediaWiki-Action-API abgerufen, die Infobox geparst, bekannte
+Felder übernommen ("wiki"-Herkunft) und fehlende Simulationswerte
+(LOFAR/DEMON, RCS) aus Antriebstyp/Verdrängung geschätzt
+("suggested"-Herkunft) – der Entwickler prüft/übernimmt im Editor, bevor
+etwas in den paketierten Katalog übernommen wird (siehe "Unit Editor" unten:
+Editor-Inhalte sind weiterhin nicht laufzeitwirksam).
+
 ## Quellenmanifest
 
 `sources.json` enthaelt nur Quellenmetadaten und Zuordnungen von

@@ -21,6 +21,8 @@ from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
 from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text)
 from src.core.preferences import Preferences, save_preferences
+from src.network.connectivity import ConnectivityMonitor
+from src.network.live_traffic import LiveTrafficManager
 from src.core.help import get_global_help, get_help
 from src.core.mission import Mission
 from src.core.mission_definition import static_preview, validate_mission
@@ -59,6 +61,7 @@ from src.sonar import propagation
 from src.sonar.sonar import Contact, SonarSystem, TowState
 from src.sonar.tma import BearingPoint, BearingTrack
 from src.ui import layout
+from src.ui.editor_widgets import TextField
 from src.ui.feedback import EventFeed
 from src.ui.map_view import draw_map_view, map_hit_target
 from src.ui.splash_view import SPLASH_PING_PERIOD_S, draw_splash
@@ -273,6 +276,12 @@ class Game:
         self.options_sel = 0
         self.commander = CommanderConsole()
         self.commander_open = False
+        self.live_traffic = LiveTrafficManager()
+        self.connectivity = ConnectivityMonitor()
+        self.live_traffic_open = False
+        self.live_traffic_sel = 0
+        self.live_traffic_field: TextField | None = None
+        self.live_traffic_field_name: str | None = None
         self.menu_back = False
         # W0: neue UI-Zustände
         self.help_open = False
@@ -327,6 +336,7 @@ class Game:
 
         coast = Coastline.load() if self.world_mode == "fixed" else None
         self.world = World(seed=seed, coast=coast)
+        self.live_traffic.configure(self, self.world, self.preferences)
         start = sc["ship_start"] or (250.0, 250.0)
         course = sc["ship_course"]
         if course is None:
@@ -1436,7 +1446,8 @@ class Game:
     @property
     def administration_open(self) -> bool:
         return (self.help_open or self.nations_open or self.quit_confirm
-                or self.save_ui is not None or self.options_open or self.commander_open)
+                or self.save_ui is not None or self.options_open or self.commander_open
+                or self.live_traffic_open)
 
     def crew_overlay_allows_simulation(self) -> bool:
         """Keep tactical crew stations live behind selected local overlays."""
@@ -1445,7 +1456,8 @@ class Game:
         if self.editor is not None:
             return (isinstance(self.editor, ContactAnalyzer)
                     and not self.in_menu and not self.main_menu)
-        return self.help_open or self.options_open or self.commander_open
+        return (self.help_open or self.options_open or self.commander_open
+                or self.live_traffic_open)
 
     def _clear_station_input(self) -> None:
         self.held.clear()
@@ -1487,6 +1499,12 @@ class Game:
         self.commander_open = name == "commander"
         if self.commander_open:
             self.commander.prepare()
+        self.live_traffic_open = name == "live_traffic"
+        if self.live_traffic_open:
+            self.live_traffic_sel = 0
+            self.live_traffic_field = None
+            self.live_traffic_field_name = None
+            self.connectivity.start()
         self.quit_selection = 0
         self.quit_after_save = False
         self.save_confirm = False
@@ -1518,9 +1536,12 @@ class Game:
             if key == pygame.K_ESCAPE:
                 self.options_open = False
             elif key in (pygame.K_UP, pygame.K_DOWN):
-                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 9
+                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 10
             elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
                 if self.options_sel == 8:
+                    self._open_administration("live_traffic")
+                    return
+                if self.options_sel == 9:
                     self._open_administration("commander")
                     return
                 names = ("language", "fullscreen", "audio", "large_text",
@@ -1529,6 +1550,8 @@ class Game:
                 value = ("de" if self.preferences.language == "en" else "en") \
                     if name == "language" else not getattr(self.preferences, name)
                 self._set_preference(name, value)
+        elif self.live_traffic_open:
+            self._handle_live_traffic_key(key)
         elif self.quit_confirm:
             choices = (0, 2) if self.in_menu else (0, 1, 2)
             if key in (pygame.K_ESCAPE, pygame.K_n):
@@ -1590,6 +1613,51 @@ class Game:
                                               getattr(self, "help_scroll", 0) + step))
         elif self.nations_open and key in (pygame.K_ESCAPE, pygame.K_n):
             self.nations_open = False
+
+    _LIVE_TRAFFIC_ROWS = ("live_ais_enabled", "live_adsb_enabled",
+                         "aisstream_api_key", "opensky_credentials")
+
+    def _live_traffic_can_enable(self, name: str) -> bool:
+        if not self.connectivity.online:
+            return False
+        if name == "live_ais_enabled":
+            return bool(self.preferences.aisstream_api_key.strip())
+        return True
+
+    def _handle_live_traffic_key(self, key: int) -> None:
+        name = self._LIVE_TRAFFIC_ROWS[self.live_traffic_sel]
+        if self.live_traffic_field is not None:
+            if key == pygame.K_ESCAPE:
+                self.live_traffic_field = None
+                self.live_traffic_field_name = None
+            elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                self._set_preference(self.live_traffic_field_name,
+                                     self.live_traffic_field.value.strip())
+                self.live_traffic_field = None
+                self.live_traffic_field_name = None
+                self.live_traffic.configure(self, self.world, self.preferences)
+            return
+        if key == pygame.K_ESCAPE:
+            self.connectivity.stop()
+            self.live_traffic_open = False
+            return
+        if key in (pygame.K_UP, pygame.K_DOWN):
+            self.live_traffic_sel = (self.live_traffic_sel
+                                     + (1 if key == pygame.K_DOWN else -1)) % 4
+            return
+        if key not in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
+            return
+        if name in ("aisstream_api_key", "opensky_credentials"):
+            self.live_traffic_field = TextField(
+                value=getattr(self.preferences, name), maximum=256)
+            self.live_traffic_field_name = name
+            return
+        new_value = not getattr(self.preferences, name)
+        if new_value and not self._live_traffic_can_enable(name):
+            self.flash(message("live_traffic.needs_prerequisite"), 3.0)
+            return
+        self._set_preference(name, new_value)
+        self.live_traffic.configure(self, self.world, self.preferences)
 
     def _window_to_canvas(self, pos):
         """Convert display coordinates to the virtual 1280x720 canvas."""
@@ -1655,7 +1723,8 @@ class Game:
         # changes within one wall frame must still invalidate queued commands.
         fields = ("paused", "in_menu", "main_menu", "splash_active", "input_mode",
                   "help_open", "nations_open", "quit_confirm", "save_ui",
-                  "options_open", "commander_open", "simlog_view_open",
+                  "options_open", "commander_open", "live_traffic_open",
+                  "simlog_view_open",
                   "autocrew_overview_open",
                   "running", "game_over")
         before = tuple(getattr(self, field) for field in fields), id(self.editor)
@@ -1815,7 +1884,14 @@ class Game:
             return
         if self.administration_open:
             if e.type == pygame.KEYDOWN:
-                self._handle_administration_key(e.key)
+                if (self.live_traffic_field is not None
+                        and e.key not in (pygame.K_RETURN, pygame.K_KP_ENTER,
+                                         pygame.K_ESCAPE)):
+                    self.live_traffic_field.handle_event(e)
+                else:
+                    self._handle_administration_key(e.key)
+            elif e.type == pygame.TEXTINPUT and self.live_traffic_field is not None:
+                self.live_traffic_field.handle_text(e.text)
             elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
                 canvas = self._window_to_canvas(getattr(e, "pos", None))
                 if canvas is not None:
@@ -1826,6 +1902,8 @@ class Game:
                             if rect.collidepoint(canvas):
                                 self.options_sel = index
                                 if index == 8:
+                                    self._open_administration("live_traffic")
+                                elif index == 9:
                                     self._open_administration("commander")
                                 break
             return
@@ -3021,6 +3099,12 @@ class Game:
                 self._lookout_observe(
                     actor, "raider", "FLG", config.LOOKOUT_AIR_RANGE_NM,
                     actor.seq + 400_000)
+        for actor in sorted(self.live_traffic.aircraft.values(),
+                            key=lambda item: item.seq):
+            if not actor.despawned:
+                self._lookout_observe(
+                    actor, "live_air", "FLG", config.LOOKOUT_AIR_RANGE_NM,
+                    actor.seq + 800_000)
 
     def _update_air_picture(self) -> None:
         """Create noisy observations; consumers never receive world objects."""
@@ -3121,6 +3205,29 @@ class Game:
                     range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.85, now=self.sim_t, label=f"A-{r.seq}",
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+        for live in self.live_traffic.aircraft.values():
+            if live.despawned:
+                continue
+            dist = live.distance_nm(self.ship)
+            bearing = live.bearing_from_frigate(self.ship)
+            horizon = config.radar_horizon_nm(
+                config.RADAR_ANTENNA_HEIGHT_M, getattr(live, "altitude_m", 0.0))
+            radar_eligible = air_live and dist <= min(air_eff, horizon)
+            radar_clear = radar_eligible and not self.world.land_blocks_line(
+                self.ship.x, self.ship.y, live.x, live.y)
+            if radar_eligible and radar_clear:
+                rng = random.Random((live.seq + 90000) * 3571 + int(self.sim_t * 2.0))
+                bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
+                brg = (bearing + rng.uniform(-bearing_error, bearing_error)) % 360.0
+                range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
+                measured = max(0.0, dist * (1.0 + rng.uniform(
+                    -range_error, range_error)))
+                self.air_picture.observe(track_id=f"AD-{live.icao24}", kind="FLG",
+                    target_id=live.seq, source="RADAR-L", bearing=brg,
+                    range_nm=measured,
+                    observer_x=self.ship.x, observer_y=self.ship.y, course=None,
+                    quality=.85, now=self.sim_t, label=f"AD-{live.icao24}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
         for a in self.asms:
             if a.state not in ("LAUF", "CHAFF"):
@@ -4007,9 +4114,12 @@ class Game:
         self.aa_cooldown_s = max(0.0, self.aa_cooldown_s - dt)
         aa = profiles["aa_gun"]
         observed = {}
+        observed_live_air = {}
         for track in self.air_picture.tracks(self.sim_t, ("FLG",)):
             if track.track_id.startswith("R-"):
                 observed[track.track_id] = track
+            elif track.track_id.startswith("AD-"):
+                observed_live_air[track.track_id] = track
         for raider in self.raiders:
             if raider.hp <= 0:
                 continue
@@ -4042,6 +4152,40 @@ class Game:
                         self.feed.add(self.world.format_time(), "waffen",
                                       message("runtime.raid.downed"))
         self.raiders = [r for r in self.raiders if not r.despawned]
+        # Dasselbe Flak-Geschuetz kann - versehentlich - auch echten
+        # ADS-B-Flugverkehr treffen, wenn die Feuerfreigabe steht und ein
+        # Kontakt in Reichweite/Sicht geraet (Nutzervorgabe: kein separater
+        # Schutzmechanismus, es ist bewusst dieselbe Freigabe wie gegen
+        # Raider).
+        for live in list(self.live_traffic.aircraft.values()):
+            if live.despawned:
+                continue
+            track = observed_live_air.get(f"AD-{live.icao24}")
+            if (self.flak_authorized
+                    and track is not None and track.x is not None and track.y is not None
+                    and track.position_seen is not None
+                    and self.sim_t - track.position_seen
+                    <= aa["observation_max_age_s"]
+                    and track.range_nm is not None
+                    and track.range_nm <= aa["range_nm"]
+                    and self.aa_ammo >= aa["rounds_per_attempt"]
+                    and self.aa_cooldown_s <= 0.0
+                    and not self.damage.station_down("weapons")
+                    and not self.world.land_blocks_line(
+                        self.ship.x, self.ship.y, track.x, track.y)):
+                self.aa_ammo -= aa["rounds_per_attempt"]
+                self.aa_cooldown_s = aa["cycle_s"]
+                distance_factor = 1.0 - 0.5 * config.clamp(
+                    track.range_nm / max(0.01, aa["range_nm"]), 0.0, 1.0)
+                if self.rng_raid.random() < aa["hit_probability"] * distance_factor:
+                    live.hit()
+                    if live.despawned:
+                        self.live_traffic.mark_aircraft_destroyed(live.icao24)
+                        self.incident = True
+                        self.audio.play_alert("danger")
+                        self.flash(message("runtime.live_air.downed"), 4.0)
+                        self.feed.add(self.world.format_time(), "waffen",
+                                      message("runtime.live_air.downed"))
         if publish_picture:
             visible = bool(observed)
             if visible and not self._raider_visible_last:
@@ -4885,6 +5029,8 @@ class Game:
                     and torpedo.target.side != "hostile"):
                 torpedo.target.sunk = True
                 self.incident = True
+                self.live_traffic.mark_ship_destroyed(
+                    getattr(torpedo.target, "live_mmsi", None))
                 self.audio.play_alert("danger")
                 self.flash(message("runtime.incident"), 6.0)
                 continue
@@ -5642,6 +5788,7 @@ class Game:
         coast = Coastline(coast_data, float(coast_data["world_nm"]))
         self.world_mode = w["mode"]
         self.world = World(seed=seed, coast=coast)
+        self.live_traffic.configure(self, self.world, self.preferences)
         self.world.hour = w["hour"]
         self.world.sea_state = w["sea_state"]
         self.world.weather_shift_timer = w["weather_shift_timer"]
@@ -8423,6 +8570,8 @@ class Game:
             self.draw_save_ui()
         elif self.options_open:
             self.draw_options_overlay()
+        elif self.live_traffic_open:
+            self.draw_live_traffic_overlay()
         elif self.commander_open:
             self.commander.draw(self)
         self.commander.draw_confirm(self)
@@ -8701,7 +8850,7 @@ class Game:
 
     @staticmethod
     def _options_row_rects():
-        return tuple(pygame.Rect(292, 140 + index * 54, 696, 44) for index in range(9))
+        return tuple(pygame.Rect(292, 140 + index * 50, 696, 44) for index in range(10))
 
     @localized
     def draw_options_overlay(self) -> None:
@@ -8726,6 +8875,7 @@ class Game:
             + self.tr("common.on" if self.preferences.night_mode else "common.off"),
             self.tr("option.high_contrast") + ": "
             + self.tr("common.on" if self.preferences.high_contrast else "common.off"),
+            self.tr("option.live_traffic"),
             self.tr("commander.local.option"),
         )
         for index, (value, row) in enumerate(zip(values, self._options_row_rects())):
@@ -8734,7 +8884,68 @@ class Game:
             layout.blit_line(self.screen, raw_text(prefix + value), row, color, size=20)
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
-                          292, 636, 696, 50, config.COLOR_TEXT_DIM, size=18,
+                          292, 644, 696, 50, config.COLOR_TEXT_DIM, size=18,
+                          align="center")
+
+    @staticmethod
+    def _live_traffic_row_rects():
+        return tuple(pygame.Rect(292, 150 + index * 84, 696, 44) for index in range(4))
+
+    @staticmethod
+    def _mask_credential(value: str) -> str:
+        value = (value or "").strip()
+        if not value:
+            return "-"
+        return f"...{value[-4:]}" if len(value) > 4 else "*" * len(value)
+
+    @localized
+    def draw_live_traffic_overlay(self) -> None:
+        rect = pygame.Rect(260, 40, 760, 660)
+        pygame.draw.rect(self.screen, (7, 18, 13), rect)
+        pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
+        layout.blit_line(self.screen, "live_traffic.title", (292, 64, 696, 48),
+                         config.COLOR_WARN, size=32, align="center")
+        online = self.connectivity.online
+        status_key = ("live_traffic.online" if online
+                     else "live_traffic.offline" if online is False
+                     else "live_traffic.checking")
+        layout.blit_line(self.screen, status_key, (292, 108, 696, 28),
+                         config.COLOR_TEXT_DIM, size=16, align="center")
+        rows = self._live_traffic_row_rects()
+        names = self._LIVE_TRAFFIC_ROWS
+        toggle_labels = (
+            self.tr("live_traffic.ais_toggle") + ": "
+            + self.tr("common.on" if self.preferences.live_ais_enabled else "common.off"),
+            self.tr("live_traffic.adsb_toggle") + ": "
+            + self.tr("common.on" if self.preferences.live_adsb_enabled else "common.off"),
+        )
+        for index in range(2):
+            color = (config.COLOR_TEXT if index == self.live_traffic_sel
+                     else config.COLOR_TEXT_DIM)
+            if not getattr(self.preferences, names[index]) \
+                    and not self._live_traffic_can_enable(names[index]):
+                color = config.COLOR_TEXT_DIM
+            prefix = "> " if index == self.live_traffic_sel else "  "
+            layout.blit_line(self.screen, raw_text(prefix + toggle_labels[index]),
+                             rows[index], color, size=20)
+        for index, key in ((2, "aisstream_api_key"), (3, "opensky_credentials")):
+            color = config.COLOR_TEXT if index == self.live_traffic_sel else config.COLOR_TEXT_DIM
+            prefix = "> " if index == self.live_traffic_sel else "  "
+            label = self.tr("live_traffic.aisstream_key" if key == "aisstream_api_key"
+                            else "live_traffic.opensky_key")
+            row = rows[index]
+            layout.blit_line(self.screen, raw_text(prefix + label),
+                             (row.x, row.y, row.w, 22), color, size=18)
+            field_rect = pygame.Rect(row.x, row.y + 24, row.w, 30)
+            if self.live_traffic_field is not None and self.live_traffic_field_name == key:
+                self.live_traffic_field.draw(self.screen, field_rect, focused=True)
+            else:
+                layout.blit_line(self.screen,
+                                 raw_text(self._mask_credential(getattr(self.preferences, key))),
+                                 field_rect, config.COLOR_TEXT_DIM, size=16)
+        layout.blit_block(self.screen,
+                          "live_traffic.hint",
+                          292, 636, 696, 58, config.COLOR_TEXT_DIM, size=16,
                           align="center")
 
     @localized
@@ -8796,6 +9007,7 @@ class Game:
                 for e in pygame.event.get():
                     self.handle_event(e)
                 self.commander.pump(self)
+                self.live_traffic.pump(self)
                 self.update(dt, audio_dt=wall_dt)
                 self.draw()
                 self.compose_frame()
@@ -8803,5 +9015,9 @@ class Game:
             try:
                 self.commander.stop()
             finally:
-                self.audio.shutdown()
-                pygame.quit()
+                try:
+                    self.connectivity.stop()
+                    self.live_traffic.stop()
+                finally:
+                    self.audio.shutdown()
+                    pygame.quit()

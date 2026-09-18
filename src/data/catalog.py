@@ -432,6 +432,13 @@ class ContactCatalog:
                 else self.civilian_surfaces)
         return _weighted_pick(rng, pool)
 
+    def pick_civilian_by_category(self, rng, category: str):
+        """Ziviles Profil einer Kategorie (TANKER/FRACHT/PASSAGIER/...);
+        faellt auf ein beliebiges ziviles Profil zurueck, falls keines der
+        Kategorie existiert (z. B. fuer aus AIS-Daten abgeleitete Kontakte)."""
+        pool = tuple(p for p in self.civilian_surfaces if p.category == category)
+        return _weighted_pick(rng, pool or self.civilian_surfaces)
+
     def pick_sub(self, rng, pool=None):
         keys = pool if pool else list(self.subs.keys())
         pool = [self.subs[k] for k in keys if k in self.subs]

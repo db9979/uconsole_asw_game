@@ -85,6 +85,10 @@ class SurfaceShip:
         self.sunk = False
         self.damage = 0.0
         self.sunk_score_awarded = False
+        # Von einem echten AIS-Kontakt gesteuert (MMSI); unterdrueckt die
+        # zufaellige Kurs-/Geschwindigkeitswahl in _update_civil, siehe
+        # LiveTrafficManager.
+        self.live_mmsi: str | None = None
         self.sensor_contact = None
         self.sensor_contact_age = config.RADAR_TRACK_STALE_S
         # Kriegsschiff: Loiter + ASM
@@ -145,13 +149,14 @@ class SurfaceShip:
             self._update_civil(dt, world)
 
     def _update_civil(self, dt: float, world) -> None:
-        self.turn_left -= dt
-        if self.turn_left <= 0:
-            self.turn_left = self.rng.uniform(600.0, 1800.0)
-            self.target_course = (self.course
-                                  + self.rng.uniform(-30.0, 30.0)) % 360.0
-            self.target_speed = self.rng.uniform(
-                self.profile.speed_kn[0], self.speed_cap_kn)
+        if self.live_mmsi is None:
+            self.turn_left -= dt
+            if self.turn_left <= 0:
+                self.turn_left = self.rng.uniform(600.0, 1800.0)
+                self.target_course = (self.course
+                                      + self.rng.uniform(-30.0, 30.0)) % 360.0
+                self.target_speed = self.rng.uniform(
+                    self.profile.speed_kn[0], self.speed_cap_kn)
         self._steer(dt, min(.5, self.motion.turn_rate_deg_s), world)
         self._move(dt, world)
 

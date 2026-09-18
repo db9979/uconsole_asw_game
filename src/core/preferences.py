@@ -10,6 +10,8 @@ from pathlib import Path
 
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
 
+_MAX_CREDENTIAL_LEN = 256
+
 
 @dataclass(frozen=True, slots=True)
 class Preferences:
@@ -21,6 +23,10 @@ class Preferences:
     simlog: bool = False
     night_mode: bool = False
     high_contrast: bool = False
+    live_ais_enabled: bool = False
+    live_adsb_enabled: bool = False
+    aisstream_api_key: str = ""
+    opensky_credentials: str = ""
 
     @classmethod
     def defaults(cls) -> "Preferences":
@@ -48,9 +54,14 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
         language = defaults.language
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
-                 "night_mode", "high_contrast"):
+                 "night_mode", "high_contrast", "live_ais_enabled",
+                 "live_adsb_enabled"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)
+    for name in ("aisstream_api_key", "opensky_credentials"):
+        value = payload.get(name, getattr(defaults, name))
+        values[name] = value.strip()[:_MAX_CREDENTIAL_LEN] \
+            if isinstance(value, str) else getattr(defaults, name)
     return replace(defaults, **values)
 
 

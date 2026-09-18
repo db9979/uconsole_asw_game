@@ -13,7 +13,7 @@ authors = [
     {name = "Dominik Bornhäußer"},
 ]
 requires-python = ">=3.11"
-dependencies = ["pygame>=2.6", "numpy>=2.0"]
+dependencies = ["pygame>=2.6", "numpy>=2.0", "websockets>=12"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Natural Language :: English",

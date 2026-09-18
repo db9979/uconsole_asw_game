@@ -69,7 +69,8 @@ from src.ui.stations_view import (draw_autocrew_overview, draw_bridge_view,
                                   draw_radio_view,
                                    draw_helicopter_view, station_hit_target)
 from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
-                                   opz_action_at, opz_ppi_rect)
+                                    opz_action_at, opz_ppi_rect,
+                                    station_page_tab_at)
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 from src.ui.contact_analyzer import ContactAnalyzer
@@ -291,6 +292,11 @@ class Game:
         layout.configure_for(self)
         self.font = layout.font(18)
         self.font_big = layout.font(28, bold=True)
+        # Menus get a larger baseline than in-game HUD text: more free
+        # space per screen, and no risk to the already-tuned station views
+        # that also read `self.font`/`self.font_big`.
+        self.menu_font = layout.font(21)
+        self.menu_font_big = layout.font(34, bold=True)
 
     @property
     def radar_range_nm(self) -> float:
@@ -477,6 +483,7 @@ class Game:
         # M10–M16
         self.sonar_mode = "BOW"                      # "BOW" | "TOWED"
         self.sonar_page = 0
+        self.station_page = 0
         self.sonar_harmonic_hz = None
         self.sonar_audio_enabled = True
         self.sonar_volume = 0.5
@@ -525,8 +532,10 @@ class Game:
         self.hfdf_fixes = {}
         self.ciws_ammo = self._air_defense_loadout["ciws"]["ammo"]
         self.ciws_cooldown_s = 0.0
+        self.ciws_authorized = True  # session-only fire-release gate, OPZ "I"
         self.aa_ammo = self._air_defense_loadout["aa_gun"]["ammo"]
         self.aa_cooldown_s = 0.0
+        self.flak_authorized = True  # session-only fire-release gate, Weapons "F"
         self.raiders = []
         self.raid_seq = 0
         self.raid_waves_spawned = 0
@@ -1906,12 +1915,16 @@ class Game:
                     # Page cycle: clear held controls, but keep the station's
                     # audio stream continuous (no stop/restart blip).
                     self._clear_station_input()
-                    if len(STATION_PAGES[self.station]) > 1:
+                    if self.station is Station.SONAR:
                         self.sonar_page = station_page_step(
-                            self.station, self.sonar_page, 1)
+                            Station.SONAR, self.sonar_page, 1)
+                    elif len(STATION_PAGES[self.station]) > 1:
+                        self.station_page = station_page_step(
+                            self.station, self.station_page, 1)
                 else:
                     self._clear_controls()
                     self.station = destination
+                    self.station_page = 0
                 return
             if e.key == pygame.K_TAB:
                 self._clear_controls()
@@ -1920,6 +1933,7 @@ class Game:
                 order = list(Station)
                 step = -1 if getattr(e, "mod", 0) & pygame.KMOD_SHIFT else 1
                 self.station = order[(order.index(self.station) + step) % len(order)]
+                self.station_page = 0
                 return
             if self.game_over:
                 if e.key == pygame.K_r:
@@ -2090,6 +2104,11 @@ class Game:
                 self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
             elif e.key in (pygame.K_i, pygame.K_o) and self.station is Station.SONAR:
                 self._adjust_sonar_gain(-3.0 if e.key == pygame.K_i else 3.0)
+            elif e.key == pygame.K_i and self.station is Station.OPZ:
+                if self.set_ciws_authorized(not self.ciws_authorized) is True:
+                    self.flash(message(
+                        "runtime.ciws.authorized" if self.ciws_authorized
+                        else "runtime.ciws.withheld"), 1.5)
             elif e.key == pygame.K_a and (self.station is not Station.SONAR
                                            or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
                 if self.station is Station.SONAR:
@@ -2223,6 +2242,11 @@ class Game:
                     self._cycle_sonar_band()
                 elif self.station is Station.OPZ:
                     self._cycle_opz_affiliation()
+                elif self.station is Station.WEAPONS:
+                    if self.set_flak_authorized(not self.flak_authorized) is True:
+                        self.flash(message(
+                            "runtime.flak.authorized" if self.flak_authorized
+                            else "runtime.flak.withheld"), 1.5)
             elif e.key == pygame.K_k:
                 if self.station in MAP_STATIONS:
                     self.map_follow = not self.map_follow
@@ -2276,6 +2300,22 @@ class Game:
             self.map_view.zoom(factor, pivot=pointer)
         elif e.type == pygame.MOUSEBUTTONDOWN:
             if e.button == 1 and not self.in_menu and not self.game_over:
+                if (self.station is not Station.SONAR
+                        and len(STATION_PAGES[self.station]) > 1
+                        and not self.autocrew_overview_open):
+                    canvas = self._window_to_canvas(getattr(e, "pos", None))
+                    station_rect = (config.STATION_PANEL_RECT
+                                    if self.station in MAP_STATIONS
+                                    else config.FULL_STATION_RECT)
+                    page_index = station_page_tab_at(
+                        canvas, pygame.Rect(station_rect),
+                        len(STATION_PAGES[self.station]))
+                    if page_index is not None:
+                        self.station_page = page_index
+                        self._clear_station_input()
+                        self.pinned_tooltip = None
+                        self._tooltip_anchor = None
+                        return
                 if self.station is Station.SONAR:
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
                     previous = config.STATION_RECT
@@ -2293,7 +2333,9 @@ class Game:
                     previous = config.STATION_RECT
                     config.STATION_RECT = config.FULL_STATION_RECT
                     try:
-                        compartment = damage_compartment_at(self, canvas)
+                        compartment = damage_compartment_at(
+                            self, canvas,
+                            page=int(getattr(self, "station_page", 0)))
                     finally:
                         config.STATION_RECT = previous
                     if compartment is not None:
@@ -2837,6 +2879,26 @@ class Game:
             self.nixie_seq, self.ship, life_s=definition["active_life_s"],
             tether_nm=definition["tether_nm"], depth_m=definition["depth_m"]))
         self.flash(message("runtime.nixie.deployed", count=self.nixie_store.remaining_total))
+        return True
+
+    def set_flak_authorized(self, authorized: bool):
+        """Fire-release gate for the AA gun; it never engages FLG raiders
+        while withheld, regardless of ammo/cooldown/range readiness."""
+        if type(authorized) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("weapons"):
+            return "weapons_down"
+        self.flak_authorized = authorized
+        return True
+
+    def set_ciws_authorized(self, authorized: bool):
+        """Fire-release gate for CIWS; it never engages inbound ASMs while
+        withheld, regardless of ammo/cooldown/range readiness."""
+        if type(authorized) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        self.ciws_authorized = authorized
         return True
 
     def _joy_step(self, delta: int) -> None:
@@ -3952,7 +4014,8 @@ class Game:
             if raider.hp <= 0:
                 continue
             track = observed.get(f"R-{raider.seq}")
-            if (track is not None and track.x is not None and track.y is not None
+            if (self.flak_authorized
+                    and track is not None and track.x is not None and track.y is not None
                     and track.position_seen is not None
                     and self.sim_t - track.position_seen
                     <= aa["observation_max_age_s"]
@@ -4041,11 +4104,10 @@ class Game:
             return "BLOCKIERT: WAFFENZENTRALE GESTOERT", config.COLOR_DANGER
         return "FEUER FREI", config.COLOR_OK
 
-    def _target_affiliation_interlock(self, contact=None):
-        """Return a protected OPZ affiliation for the assigned sonar target."""
-        contact = self.target if contact is None else contact
+    def _contact_affiliations(self, contact) -> list:
+        """Return every OPZ affiliation annotation bound to a sonar target."""
         if contact is None:
-            return None
+            return []
         # Operator annotations outlive measurements. Aircraft/missile sequence
         # IDs are a separate namespace and must not annotate a sonar target.
         affiliations = [self.opz_affiliations.get(
@@ -4059,6 +4121,21 @@ class Game:
                 == contact.target_id and str(
                     getattr(source, "track_id", "")).split("-", 1)[0]
                 in ("U", "S", "W")))
+        return affiliations
+
+    def contact_affiliation(self, contact) -> str:
+        """Resolve one affiliation for a contact, FRIEND/NEUTRAL taking
+        precedence over HOSTILE so callers stay conservative by default."""
+        affiliations = self._contact_affiliations(contact)
+        return next((value for value in ("FRIEND", "NEUTRAL", "HOSTILE")
+                     if value in affiliations), "UNKNOWN")
+
+    def _target_affiliation_interlock(self, contact=None):
+        """Return a protected OPZ affiliation for the assigned sonar target."""
+        contact = self.target if contact is None else contact
+        if contact is None:
+            return None
+        affiliations = self._contact_affiliations(contact)
         return next((value for value in ("FRIEND", "NEUTRAL")
                      if value in affiliations), None)
 
@@ -4655,7 +4732,8 @@ class Game:
         ciws = profiles["ciws"]
         for asm in self.asms:
             track = observed_asms.get(asm.seq)
-            if (asm.state in ("LAUF", "CHAFF")
+            if (self.ciws_authorized
+                    and asm.state in ("LAUF", "CHAFF")
                     and not (asm.state == "CHAFF" and asm.broken)
                     and track is not None
                     and track.x is not None and track.y is not None
@@ -6189,6 +6267,7 @@ class Game:
         # Zustand und sichtbarer Bedienfokus
         ui = data.get("ui", {})
         self.station = Station[ui["station"]]
+        self.station_page = 0
         self.paused = bool(ui.get("paused", False))
         self.running = True
         self.held = set()
@@ -8192,12 +8271,12 @@ class Game:
         cx = config.SCREEN_W // 2
 
         def center(text: str, y: int, font=None, color=config.COLOR_TEXT) -> None:
-            f = font or self.font
+            f = font or self.menu_font
             text = localize(text)
             surf = f.render(text, True, color)
             s.blit(surf, surf.get_rect(center=(cx, y)))
 
-        center("U-JAGD – FREGATTE F-217", 100, self.font_big)
+        center("U-JAGD – FREGATTE F-217", 100, self.menu_font_big)
 
         if self.main_menu:
             labels = ("menu.new_game", "menu.load", "menu.mission_editor",
@@ -8241,10 +8320,10 @@ class Game:
             scenario_key = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                             "s3_abfang": "intercept", "s4_zufall": "random"}[self.scenario_key]
             center(self.tr("scenario." + scenario_key + ".title"), 170,
-                   self.font_big, config.COLOR_WARN)
+                   self.menu_font_big, config.COLOR_WARN)
             layout.blit_block(s, self.tr("scenario." + scenario_key + ".brief"),
                               cx - 420, 210, 840, 180,
-                              color=config.COLOR_TEXT, size=16)
+                              color=config.COLOR_TEXT, size=20)
             if sc["win_text"]:
                 center(message("menu.goal_value",
                                goal=self.tr("scenario." + scenario_key + ".win")),
@@ -8371,16 +8450,16 @@ class Game:
         if self.input_mode is None:
             return
         label = self.tr("input." + self.input_mode)
-        rect = pygame.Rect(330, 92, 620, 62)
+        rect = pygame.Rect(280, 88, 720, 70)
         pygame.draw.rect(self.screen, (8, 20, 14), rect)
         pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
         layout.blit_line(self.screen, self.tr("input.value", label=label,
                                               value=self.input_buffer),
-                         (rect.x + 14, rect.y + 8, rect.w - 28, 22),
-                         config.COLOR_TEXT, size=18)
+                         (rect.x + 14, rect.y + 8, rect.w - 28, 26),
+                         config.COLOR_TEXT, size=20)
         layout.blit_line(self.screen, self.tr("input.hint"),
-                         (rect.x + 14, rect.y + 34, rect.w - 28, 18),
-                         config.COLOR_TEXT_DIM, size=12)
+                         (rect.x + 14, rect.y + 38, rect.w - 28, 22),
+                         config.COLOR_TEXT_DIM, size=14)
 
     @localized
     def draw_top_bar(self) -> None:
@@ -8483,7 +8562,7 @@ class Game:
             text = intro + "\n\n" + "\n".join(f"{k:<18} {a}" for k, a in keys)
         else:
             text = self.tr("help.sensors_tactics") + "\n\n" + "\n\n".join(params + tactics)
-        face = layout.font(17)
+        face = layout.font(18)
         return layout.wrap_text(text, face, 960), max(1, 500 // layout._line_height(face))
 
     @localized
@@ -8501,18 +8580,18 @@ class Game:
         help_title = self.tr("help.title", station=display_value(
             "station", self.station.name, self.tr).upper())
         layout.blit_line(s, help_title, (bx + 18, by + 10, bw - 36, 40),
-                         config.COLOR_TEXT, size=28)
+                         config.COLOR_TEXT, size=30)
         x = bx + 20
         w = bw - 40
         y = by + 52
         lines, visible = self._help_lines()
         scroll = min(getattr(self, "help_scroll", 0), max(0, len(lines) - visible))
         layout.blit_block(s, "\n".join(lines[scroll:scroll + visible]), x, y, w, 500,
-                          config.COLOR_TEXT, size=17, min_size=17)
+                          config.COLOR_TEXT, size=18, min_size=18)
         layout.blit_block(s, self.tr("control.help.scroll_hint", page=self.help_page + 1,
                                     pages=3, first=scroll + 1,
                                     last=min(len(lines), scroll + visible), total=len(lines)),
-                          x, by + bh - 62, w, 54, config.COLOR_TEXT_DIM, size=14)
+                          x, by + bh - 62, w, 54, config.COLOR_TEXT_DIM, size=16)
 
     @localized
     def draw_nations_overlay(self) -> None:
@@ -8525,7 +8604,7 @@ class Game:
         by = (config.SCREEN_H - bh) // 2
         pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
-        s.blit(self.font_big.render(localize("NATIONEN & EINHEITEN"), True, config.COLOR_TEXT),
+        s.blit(self.menu_font_big.render(localize("NATIONEN & EINHEITEN"), True, config.COLOR_TEXT),
                (bx + 18, by + 12))
         cw, ch = 520, 260
         for i, key in enumerate(list(NATIONS.keys())[:4]):
@@ -8534,22 +8613,20 @@ class Game:
             cyy = by + 52 + (i // 2) * (ch + 12)
             pygame.draw.rect(s, (14, 24, 18), (cx, cyy, cw, ch))
             pygame.draw.rect(s, n["color"], (cx, cyy, cw, ch), 1)
-            s.blit(self.font_big.render(localize(message(
+            layout.blit_line(s, message(
                 "nations.card_title", flag=n["flag"], name=localize(n["name"]),
-                status=self.tr("nations.hostile") if n["hostile"] else "")),
-                True, n["color"]), (cx + 12, cyy + 10))
-            layout.blit_block(s, n["desc"], cx + 12, cyy + 44, cw - 24, 130,
-                              color=config.COLOR_TEXT, size=13)
-            s.blit(self.font.render(localize(message(
-                "nations.radar_value", radar=localize(n["radar"]))),
-                True, config.COLOR_TEXT_DIM),
-                   (cx + 12, cyy + 184))
-            s.blit(self.font.render(localize(message(
-                "nations.submarine_count", count=n["submarines"])),
-                                    True, config.COLOR_TEXT_DIM),
-                   (cx + 12, cyy + 206))
-        s.blit(self.font.render(localize("N: schließen"), True, config.COLOR_TEXT_DIM),
-               (bx + bw - 120, by + bh - 26))
+                status=self.tr("nations.hostile") if n["hostile"] else ""),
+                (cx + 12, cyy + 8, cw - 24, 36), n["color"], size=24)
+            layout.blit_block(s, n["desc"], cx + 12, cyy + 50, cw - 24, 124,
+                              color=config.COLOR_TEXT, size=18)
+            layout.blit_line(s, message(
+                "nations.radar_value", radar=localize(n["radar"])),
+                (cx + 12, cyy + 190, cw - 24, 24), config.COLOR_TEXT_DIM, size=18)
+            layout.blit_line(s, message(
+                "nations.submarine_count", count=n["submarines"]),
+                (cx + 12, cyy + 216, cw - 24, 24), config.COLOR_TEXT_DIM, size=18)
+        layout.blit_line(s, "N: schließen", (bx + bw - 160, by + bh - 30, 140, 24),
+                         config.COLOR_TEXT_DIM, size=16, align="right")
 
     @localized
     def draw_save_ui(self) -> None:
@@ -8558,28 +8635,28 @@ class Game:
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 150))
         s.blit(dim, (0, 0))
-        bw, bh = 620, 340
+        bw, bh = 660, 380
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
         pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
         layout.blit_line(s, self.tr("save.title", mode=mode),
-                         (bx + 18, by + 14, bw - 36, 30), config.COLOR_TEXT, size=19)
-        ly = by + 66
+                         (bx + 18, by + 14, bw - 36, 34), config.COLOR_TEXT, size=22)
+        ly = by + 70
         for slot in range(1, 6):
             info = self.save_info[slot - 1] if len(self.save_info) == 5 else "--"
             selected = slot == self.save_slot
             col = config.COLOR_WARN if selected else config.COLOR_TEXT_DIM
             layout.blit_line(s, message("save.slot", marker=">" if selected else " ",
                                          slot=slot, info=localize(info)),
-                             (bx + 24, ly, bw - 48, 28), col, size=17)
-            ly += 38
+                             (bx + 24, ly, bw - 48, 32), col, size=19)
+            ly += 42
         hint = "save.paused"
         if self.save_confirm:
             hint = ("save.overwrite" if self.save_ui == "save"
                     else "save.replace")
-        layout.blit_line(s, hint, (bx + 18, by + bh - 50, bw - 36, 30),
-                         config.COLOR_WARN, size=16)
+        layout.blit_line(s, hint, (bx + 18, by + bh - 54, bw - 36, 34),
+                         config.COLOR_WARN, size=18)
 
     @localized
     def draw_end_panel(self) -> None:
@@ -8588,7 +8665,7 @@ class Game:
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 140))
         s.blit(dim, (0, 0))
-        w, h = 560, 300
+        w, h = 700, 340
         x = (config.SCREEN_W - w) // 2
         y = (config.SCREEN_H - h) // 2
         pygame.draw.rect(s, (12, 26, 18), (x, y, w, h))
@@ -8611,28 +8688,31 @@ class Game:
             ("", config.COLOR_TEXT, False),
             ("end.restart", config.COLOR_TEXT_DIM, False),
         ]
-        ly = y + 40
+        ly = y + 44
         for text, c, big in lines:
             if not text:
-                ly += 14
+                ly += 16
                 continue
-            text = localize(text)
-            f = self.font_big if big else self.font
-            r = f.render(text, True, c).get_rect(center=(config.SCREEN_W // 2, ly))
-            s.blit(f.render(text, True, c), r)
-            ly += 36 if big else 26
+            size = 26 if big else 20
+            height = 36 if big else 26
+            layout.blit_line(s, text, (x + 16, ly, w - 32, height), c,
+                             size=size, align="center")
+            ly += 42 if big else 30
 
     @staticmethod
     def _options_row_rects():
-        return tuple(pygame.Rect(292, 204 + index * 52, 696, 42) for index in range(9))
+        return tuple(pygame.Rect(292, 140 + index * 54, 696, 44) for index in range(9))
 
     @localized
     def draw_options_overlay(self) -> None:
-        rect = pygame.Rect(260, 100, 760, 592)
+        # Panel/row geometry is sized so the footer hint always starts below
+        # the last row with margin, never overlapping it (was previously a
+        # fixed y=612 footer colliding with row 9's box at y=620-662).
+        rect = pygame.Rect(260, 40, 760, 660)
         pygame.draw.rect(self.screen, (7, 18, 13), rect)
         pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
-        layout.blit_line(self.screen, "option.title", (292, 126, 696, 44),
-                         config.COLOR_WARN, size=28, align="center")
+        layout.blit_line(self.screen, "option.title", (292, 64, 696, 48),
+                         config.COLOR_WARN, size=32, align="center")
         values = (
             self.tr("option.language") + ": " + self.tr("option.language." + self.preferences.language),
             self.tr("option.fullscreen") + ": " + self.tr("common.on" if self.preferences.fullscreen else "common.off"),
@@ -8651,10 +8731,10 @@ class Game:
         for index, (value, row) in enumerate(zip(values, self._options_row_rects())):
             color = config.COLOR_TEXT if index == self.options_sel else config.COLOR_TEXT_DIM
             prefix = "> " if index == self.options_sel else "  "
-            layout.blit_line(self.screen, raw_text(prefix + value), row, color, size=18)
+            layout.blit_line(self.screen, raw_text(prefix + value), row, color, size=20)
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
-                          292, 612, 696, 58, config.COLOR_TEXT_DIM, size=16,
+                          292, 636, 696, 50, config.COLOR_TEXT_DIM, size=18,
                           align="center")
 
     @localized
@@ -8679,14 +8759,14 @@ class Game:
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 155))
         s.blit(dim, (0, 0))
-        rect = pygame.Rect(280, 205, 720, 290)
+        rect = pygame.Rect(260, 185, 760, 330)
         pygame.draw.rect(s, (12, 24, 18), rect)
         pygame.draw.rect(s, config.COLOR_WARN, rect, 2)
         layout.blit_line(s, "quit.title", (rect.x + 20, rect.y + 22,
-                         rect.w - 40, 30), config.COLOR_WARN, size=24)
+                         rect.w - 40, 36), config.COLOR_WARN, size=28)
         layout.blit_line(s, "quit.warning",
-                         (rect.x + 20, rect.y + 68, rect.w - 40, 22),
-                         config.COLOR_TEXT, size=13)
+                         (rect.x + 20, rect.y + 74, rect.w - 40, 26),
+                         config.COLOR_TEXT, size=16)
         choices = (("quit.menu", "common.exit") if self.in_menu else
                    ("quit.game", "quit.save", "quit.no_save"))
         for index, label in enumerate(choices):
@@ -8694,12 +8774,12 @@ class Game:
             layout.blit_line(s, message("menu.choice",
                                         marker="> " if selected else "  ",
                                         label=self.tr(label)),
-                             (rect.x + 20, rect.y + 112 + index * 36, rect.w - 40, 30),
+                             (rect.x + 20, rect.y + 124 + index * 40, rect.w - 40, 32),
                              config.COLOR_WARN if selected else config.COLOR_TEXT,
-                             size=20)
+                             size=22)
         layout.blit_line(s, "control.quit_hint",
-                         (rect.x + 20, rect.bottom - 40, rect.w - 40, 26),
-                         config.COLOR_TEXT_DIM, size=16)
+                         (rect.x + 20, rect.bottom - 44, rect.w - 40, 28),
+                         config.COLOR_TEXT_DIM, size=18)
 
     # --- Main loop ---
 

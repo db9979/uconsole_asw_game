@@ -4,12 +4,14 @@ import copy
 import json
 import random
 
+import pygame
 import pytest
 
 from src.air.asm import ASM
 from src.air.raid import RaidPhase, Raider
 from src.core import config
 from src.core.game import Game
+from src.core.station import Station
 from src.weapons.air_defense import (
     AIR_DEFENSE_STATE_VERSION,
     air_defense_loadout,
@@ -120,6 +122,38 @@ def test_aa_gun_engages_only_fresh_raider_observations(game, monkeypatch):
     assert game.aa_ammo == ammo - profile["aa_gun"]["rounds_per_attempt"]
     assert game.aa_cooldown_s == profile["aa_gun"]["cycle_s"]
     assert game.raiders == []  # abgeschossen und entfernt
+
+
+def test_weapons_f_key_toggles_flak_release(game):
+    game.station = Station.WEAPONS
+    assert game.flak_authorized is True
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f,
+                                         mod=0, repeat=False))
+    assert game.flak_authorized is False
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f,
+                                         mod=0, repeat=False))
+    assert game.flak_authorized is True
+
+
+def test_aa_gun_never_fires_while_flak_release_is_withheld(game, monkeypatch):
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+    profile = game._air_defense_loadout
+    raider = Raider(game.ship.x + 20.0, game.ship.y, 0.0, 1,
+                    game.rng_raid, profile["raider"])
+    raider.hp = 1
+    game.raiders = [raider]
+    game.raid_seq = 1
+    game.air_picture.observe(
+        track_id="R-1", kind="FLG", target_id=1, source="RADAR-L",
+        bearing=90.0, range_nm=20.0, observer_x=game.ship.x,
+        observer_y=game.ship.y, course=None, quality=0.9, now=game.sim_t,
+        label="A-1")
+    game.rng_raid.random = lambda: 0.0
+    assert game.set_flak_authorized(False) is True
+    ammo = game.aa_ammo
+    game._update_raiders(0.1, publish_picture=False)
+    assert game.aa_ammo == ammo
+    assert game.raiders == [raider]
 
 
 def test_aa_gun_refuses_stale_or_missing_observations(game, monkeypatch):

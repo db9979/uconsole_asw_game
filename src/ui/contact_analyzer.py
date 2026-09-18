@@ -401,7 +401,7 @@ class ContactAnalyzer:
         else:
             widgets.draw_text(surface, raw_text(profile["name"]),
                               (inner.x, inner.y, inner.width, 30), size=20, bold=True)
-            image_box = pygame.Rect(inner.x, inner.y + 38, 324, 300)
+            image_box = pygame.Rect(inner.x, inner.y + 38, 324, 460)
             pygame.draw.rect(surface, widgets.PALETTE.background, image_box)
             pygame.draw.rect(surface, widgets.PALETTE.border, image_box, 1)
             kinds = self._asset_kinds()
@@ -414,7 +414,7 @@ class ContactAnalyzer:
                                                         image_box.y + 4))
                     surface.blit(image, image_rect)
                 legend_y = image_box.y + 187
-                legend_h = 34 if layout.text_scale() > 1.0 else 30
+                legend_h = (image_box.bottom - 30 - legend_y) // 2
                 spectrum_legend = pygame.Rect(image_box.x + 6, legend_y,
                                                image_box.width - 12, legend_h)
                 hypothesis_legend = pygame.Rect(image_box.x + 6,
@@ -425,10 +425,10 @@ class ContactAnalyzer:
                 self._rects["hypothesis_legend"] = hypothesis_legend
                 layout.blit_block(surface, self.tr("analyzer.spectrum_legend"),
                                   *spectrum_legend, color=widgets.PALETTE.dim,
-                                  size=11, min_size=9)
+                                  size=16, min_size=16)
                 layout.blit_block(surface, self.tr("analyzer.hypothesis_legend"),
                                   *hypothesis_legend, color=widgets.PALETTE.dim,
-                                  size=11, min_size=9)
+                                  size=16, min_size=16)
                 tab_width = max(1, image_box.width // len(kinds))
                 tabs = []
                 for index, asset_kind in enumerate(kinds):

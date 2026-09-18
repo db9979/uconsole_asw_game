@@ -24,19 +24,6 @@ def _near(pos, point, radius=12):
     return (pos[0] - point[0]) ** 2 + (pos[1] - point[1]) ** 2 <= radius ** 2
 
 
-def _draw_course_speed(s, font, px, py, course, speed_kn, color, length=16):
-    """Short heading tick plus a speed readout, mirrored on every unit icon."""
-    if course is None:
-        return
-    ang = math.radians(course - 90.0)
-    ex = px + length * math.cos(ang)
-    ey = py + length * math.sin(ang)
-    pygame.draw.line(s, color, (int(px), int(py)), (int(ex), int(ey)), 2)
-    if speed_kn is not None:
-        s.blit(font.render(f"{speed_kn:.0f}kn", True, color),
-               (int(ex) + 4, int(ey) - 6))
-
-
 def observed_position(observation):
     """Read the public displayed position, with legacy field compatibility."""
     return observations.position(observation)
@@ -354,8 +341,8 @@ def draw_map_view(game, tr=None) -> None:
                 s, (px, py), affiliation, "SURFACE", 14)
             s.blit(game.font.render(track["label"], True, col),
                    (int(px) + 7, int(py) - 18))
-            _draw_course_speed(s, game.font, px, py,
-                               track["course"], track["speed_kn"], col)
+            nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
+                                            view.scale, col, font=game.font, max_px=120)
 
         for track in (t for t in tracks if t["kind"] == "FLG"
                       and observed_position(t)[0] is not None):
@@ -366,8 +353,8 @@ def draw_map_view(game, tr=None) -> None:
             col = nato_symbols.draw_symbol(s, (px, py), affiliation, "AIR", 14)
             s.blit(game.font.render(track["label"], True, col),
                    (int(px) + 9, int(py) - 14))
-            _draw_course_speed(s, game.font, px, py,
-                               track["course"], track["speed_kn"], col)
+            nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
+                                            view.scale, col, font=game.font, max_px=120)
 
         # Eigene Torpedos
         for t in game.torpedoes:
@@ -393,8 +380,8 @@ def draw_map_view(game, tr=None) -> None:
                 s, (px, py), affiliation, "MISSILE", 14)
             s.blit(game.font.render(track["label"], True, col),
                    (int(px) + 10, int(py) - 12))
-            _draw_course_speed(s, game.font, px, py,
-                               track["course"], track["speed_kn"], col)
+            nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
+                                            view.scale, col, font=game.font, max_px=120)
         fx, fy = view.world_to_screen(game.ship.x, game.ship.y)
         for track in (t for t in tracks if t["kind"] == "ASM"
                       and observed_position(t)[0] is None):
@@ -446,9 +433,10 @@ def draw_map_view(game, tr=None) -> None:
                     "map.line.contact_fix", contact=contact.id,
                     range=f"{observations.range_nm(contact, game.ship):4.1f}", source=src)),
                     True, line_col), (int(tx) + 11, int(ty) - 22))
-                _draw_course_speed(s, game.font, tx, ty,
-                                   getattr(contact, "tma_course", None),
-                                   getattr(contact, "tma_speed", None), line_col)
+                nato_symbols.draw_motion_vector(
+                    s, (tx, ty), getattr(contact, "tma_course", None),
+                    getattr(contact, "tma_speed", None),
+                    view.scale, line_col, font=game.font, max_px=120)
             else:
                 ex = fx + 300 * math.sin(brg)
                 ey = fy - 300 * math.cos(brg)
@@ -509,25 +497,17 @@ def draw_map_view(game, tr=None) -> None:
         pygame.draw.line(s, config.COLOR_TEXT, (int(px), int(py)),
                          (int(px + L * math.cos(ang)), int(py + L * math.sin(ang))), 3)
         pygame.draw.circle(s, config.COLOR_TEXT, (int(px), int(py)), 4)
-        # 30-Minuten-Fahrtvektor macht reale Bewegung auch bei 1x ablesbar.
-        vector_nm = game.ship.speed * .5
-        vector_px = vector_nm * view.scale
-        vx = int(px + vector_px * math.cos(ang))
-        vy = int(py + vector_px * math.sin(ang))
-        pygame.draw.line(s, config.COLOR_OK, (int(px), int(py)), (vx, vy), 1)
-        layout.blit_line(s, "30 min", (vx + 4, vy - 8, 60, 18),
-                         config.COLOR_OK, size=12)
+        nato_symbols.draw_motion_vector(s, (px, py), game.ship.course, game.ship.speed,
+                                        view.scale, config.COLOR_OK, max_px=120)
 
         # HSP-5 zuletzt: beim Start an gleicher Position bleibt es ueber dem Schiff.
         if game.helo.airborne:
             px, py = view.world_to_screen(game.helo.x, game.helo.y)
-            ang = math.radians(game.helo.course - 90.0)
-            pygame.draw.line(
-                s, nato_symbols.AFFILIATION_COLORS["FRIEND"],
-                (int(px), int(py)),
-                (int(px + 20 * math.cos(ang)), int(py + 20 * math.sin(ang))), 2)
             col = nato_symbols.draw_symbol(
                 s, (px, py), "FRIEND", "AIR", size=22)
+            nato_symbols.draw_motion_vector(
+                s, (px, py), game.helo.course, game.helo.SPEED_KN,
+                view.scale, col, max_px=120)
             s.blit(game.font.render("HSP-5", True, col),
                    (int(px) + 15, int(py) - 14))
 

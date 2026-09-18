@@ -14,9 +14,9 @@ from src.core.i18n import localize, message
 # Font-Cache: pygame-Fonts sind teuer -> pro Größe einmal erzeugen.
 _FONT_CACHE: dict = {}
 _FONT_CACHE_DISPLAY = None
-MIN_OPERATIONAL_FONT = 14
-TOOLTIP_BODY_SIZE = 14
-TOOLTIP_TITLE_SIZE = 16
+MIN_OPERATIONAL_FONT = 16
+TOOLTIP_BODY_SIZE = 16
+TOOLTIP_TITLE_SIZE = 18
 LARGE_TEXT_SCALE = 1.2
 _TEXT_SCALE = 1.0
 _GEOMETRY_TRACE = None
@@ -58,7 +58,7 @@ def text_scale() -> float:
 
 
 def scaled_size(size: int | float) -> int:
-    return max(1, round(float(size) * _TEXT_SCALE))
+    return max(MIN_OPERATIONAL_FONT, round(float(size) * _TEXT_SCALE))
 
 
 @contextmanager

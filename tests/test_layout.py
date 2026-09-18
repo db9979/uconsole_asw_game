@@ -57,7 +57,7 @@ def test_fit_text_does_not_emit_an_oversized_ellipsis(monkeypatch, text_font):
     assert all(fitted_font.size(line)[0] <= width for line in lines)
 
 
-def test_operational_text_defaults_never_shrink_below_fourteen_pixels(monkeypatch):
+def test_operational_text_defaults_never_shrink_below_the_operational_floor(monkeypatch):
     requested = []
     original = layout.font
 
@@ -68,9 +68,9 @@ def test_operational_text_defaults_never_shrink_below_fourteen_pixels(monkeypatc
     monkeypatch.setattr(layout, "font", record)
     layout.fit_text("A deliberately long operational status line", 16, 20, 12)
 
-    assert layout.MIN_OPERATIONAL_FONT == 14
+    assert layout.MIN_OPERATIONAL_FONT == 16
     assert requested
-    assert min(requested) >= 14
+    assert min(requested) >= 16
 
 
 @pytest.mark.parametrize("observed,course,expected", [

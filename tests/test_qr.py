@@ -8,7 +8,13 @@ regression in the encoder is caught without a QR scanner.
 
 import pytest
 
+from src.core.game import Game
 from src.ui import qr
+
+
+@pytest.fixture
+def game():
+    return Game(seed=1701, start_menu=False, audio_enabled=False)
 
 # ---------------------------------------------------------------------------
 # Independent GF(256) / BCH / Reed-Solomon helpers (PRIMITIVE = 0x11D).
@@ -113,10 +119,10 @@ def decode(m):
     size = len(m)
     version = (size - 17) // 4
     f1, f2 = _read_format(m, size, 1), _read_format(m, size, 2)
-    assert f1 in _VALID_FORMATS, f1
-    assert f2 in _VALID_FORMATS, f2
+    assert f1 in _MASK_BY_FORMAT, f1
+    assert f2 in _MASK_BY_FORMAT, f2
     assert f1 == f2, (f1, f2)
-    mask = (f1 >> 10) & 0x7
+    mask = _MASK_BY_FORMAT[f1]
     base = qr._base_matrix(version)
     bits = []
     for (r, c) in _data_cells(size, base):
@@ -124,8 +130,11 @@ def decode(m):
         if qr._mask(mask, r, c):
             b ^= 1
         bits.append(b)
-    while len(bits) % 8:
-        bits.append(0)
+    # Some versions (e.g. 2-6) define trailing "remainder bits" after the last
+    # codeword that carry no data; padding up to the next byte instead of
+    # truncating to the real codeword count fabricates a bogus extra byte.
+    total_cw = sum(count * (d + e) for count, d, e in qr._BLOCKS[version])
+    bits = bits[:total_cw * 8]
     cw = [0] * (len(bits) // 8)
     for i in range(len(cw)):
         v = 0
@@ -140,28 +149,23 @@ def decode(m):
     nblk = len(dsz)
     maxd, maxe = max(dsz), max(ecl)
     cursor = 0
-    data_blocks = []
+    data_blocks = [[] for _ in range(nblk)]
     for p in range(maxd):
-        row_bytes = []
         for b in range(nblk):
             if p < dsz[b]:
-                row_bytes.append(cw[cursor]); cursor += 1
-        data_blocks.append(row_bytes)
-    ec_blocks = []
+                data_blocks[b].append(cw[cursor]); cursor += 1
+    ec_blocks = [[] for _ in range(nblk)]
     for p in range(maxe):
-        row_bytes = []
         for b in range(nblk):
             if p < ecl[b]:
-                row_bytes.append(cw[cursor]); cursor += 1
-        ec_blocks.append(row_bytes)
+                ec_blocks[b].append(cw[cursor]); cursor += 1
     assert cursor == len(cw)
     for b in range(nblk):
-        block = [data_blocks[p][b] for p in range(dsz[b])] + \
-                [ec_blocks[p][b] for p in range(ecl[b])]
+        block = data_blocks[b] + ec_blocks[b]
         assert _rs_valid(block, ecl[b]), f"RS check failed for block {b}"
     data = bytearray()
     for b in range(nblk):
-        data += bytes(data_blocks[p][b] for p in range(dsz[b]))
+        data += bytes(data_blocks[b])
     raw = "".join(format(x, "08b") for x in data)
     assert raw[:4] == "0100", raw[:8]
     cnt_bits = 8 if version <= 9 else 16
@@ -288,8 +292,8 @@ def test_encode_format_info_consistent():
         size = len(m)
         f1, f2 = _read_format(m, size, 1), _read_format(m, size, 2)
         assert f1 == f2
-        assert f1 in _VALID_FORMATS
-        assert (f1 >> 12) & 3 == 0  # EC level M
+        assert f1 in _MASK_BY_FORMAT
+        assert ((f1 ^ 0x5412) >> 13) & 3 == 0  # EC level M
 
 
 @pytest.mark.parametrize("payload", [
@@ -369,7 +373,30 @@ def test_hotspot_screen_renders_wifi_qr(game):
 
     assert console._qr_payload == qr.wifi_payload("U-Jagd-7KPX", "SecureCrewKey2345")
     assert console._qr_surface is not None
+    # A second QR opens the crew page directly, so scanning it needs no manual
+    # browser step once the phone has joined the Wi-Fi network.
+    assert console._url_qr_payload == "http://10.42.0.1:8765/"
+    assert console._url_qr_surface is not None
+    # Both codes sit side by side in a 105px slot; either one sized for the
+    # old single-QR 132px box would overflow into its neighbour.
+    assert console._qr_surface.get_width() <= 105
+    assert console._url_qr_surface.get_width() <= 105
     # The cached surface must actually decode back to the credential payload.
     version, mask, text = decode(qr.encode(console._qr_payload))
     assert text == console._qr_payload
+    console.commander_open = False
+
+
+def test_lan_mode_screen_renders_url_qr(game):
+    console = game.commander
+    console.network_mode = "lan"
+    console.address = ("192.168.1.42", 8765)
+    console.pairing_code = "123ABC"
+    game.commander_open = True
+    console.draw(game)
+
+    assert console._url_qr_payload == "http://192.168.1.42:8765/"
+    assert console._url_qr_surface is not None
+    # LAN mode has no Wi-Fi to join, so only the URL QR is ever populated.
+    assert console._qr_surface is None
     console.commander_open = False

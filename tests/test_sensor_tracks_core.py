@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from src.air.asm import ASM
+from src.core import config
 from src.core.game import Game
 from src.enemies.surface import SurfaceShip
 from src.enemies.sub import Sub
@@ -19,6 +20,64 @@ def observe(picture, *, source, now, bearing=90.0, range_nm=None,
         bearing=bearing, range_nm=range_nm, observer_x=observer_x,
         observer_y=observer_y, course=None, quality=.8, now=now,
         label="T-1")
+
+
+def _bearing_range(x, y):
+    return math.degrees(math.atan2(x, -y)) % 360.0, math.hypot(x, y)
+
+
+def test_derived_motion_recovers_exact_course_and_speed_without_noise():
+    picture = TrackPicture(300.0)
+    vx = 20.0 / 3600.0 * math.sin(math.radians(90.0))
+    vy = -20.0 / 3600.0 * math.cos(math.radians(90.0))
+    x, y = 20.0, 0.0
+    track = None
+    for i in range(12):
+        bearing, range_nm = _bearing_range(x, y)
+        track = observe(picture, source="RADAR", now=i * 0.5,
+                        bearing=bearing, range_nm=range_nm)
+        x, y = x + vx * 0.5, y + vy * 0.5
+    course, speed = track.derived_motion()
+    assert course == pytest.approx(90.0, abs=0.5)
+    assert speed == pytest.approx(20.0, abs=0.5)
+
+
+def test_derived_motion_averages_out_per_fix_noise_far_better_than_two_point():
+    """A least-squares fit through the whole window must not flicker like a
+    naive two-point slope does under the same per-fix bearing/range noise —
+    this is what made displayed contact courses swing wildly (see session
+    report: 'die Kurse der Einheiten flackern')."""
+    def two_point_course(a, b):
+        dx, dy = b["x"] - a["x"], b["y"] - a["y"]
+        return math.degrees(math.atan2(dx, -dy)) % 360.0
+
+    random.seed(4)
+    picture = TrackPicture(300.0)
+    vx = 20.0 / 3600.0 * math.sin(math.radians(90.0))
+    vy = -20.0 / 3600.0 * math.cos(math.radians(90.0))
+    x, y = 20.0, 0.0
+    fitted_courses, secant_courses = [], []
+    track = None
+    for i in range(12):
+        nx, ny = x + random.uniform(-0.05, 0.05), y + random.uniform(-0.05, 0.05)
+        bearing, range_nm = _bearing_range(nx, ny)
+        track = observe(picture, source="RADAR", now=i * 0.5,
+                        bearing=bearing, range_nm=range_nm)
+        x, y = x + vx * 0.5, y + vy * 0.5
+        course, _speed = track.derived_motion()
+        if course is not None:
+            fitted_courses.append(course)
+        if len(track.measurement_history) >= 2:
+            secant_courses.append(two_point_course(
+                *track.measurement_history[-2:]))
+
+    def max_swing(courses):
+        return max((abs(config.angle_diff_deg(a, b))
+                    for a, b in zip(courses, courses[1:])), default=0.0)
+
+    fitted_swing, secant_swing = max_swing(fitted_courses), max_swing(secant_courses)
+    assert fitted_swing < secant_swing * 0.5
+    assert fitted_swing < 90.0
 
 
 def test_measurement_cadence_is_source_aware_and_refreshes_only_on_samples():

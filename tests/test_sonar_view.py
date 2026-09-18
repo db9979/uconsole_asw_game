@@ -63,8 +63,8 @@ def test_broadband_interpolation_is_circular_and_preserves_real_bins():
 def test_broadband_tooltip_snaps_to_two_degree_source_bin(game):
     game.sonar.broadband_history = [list(np.arange(180) / 180.0)]
     station = pygame.Rect(config.STATION_RECT)
-    body = pygame.Rect(station.x + 12, station.y + 73,
-                       station.w - 24, station.h - 124)
+    body = pygame.Rect(station.x + 12, station.y + 69,
+                       station.w - 24, station.h - 111)
     rail_w = min(350, max(240, round(body.w * .28)))
     main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
     plot = pygame.Rect(main.x + 57, main.y + 61, main.w - 83, main.h - 108)

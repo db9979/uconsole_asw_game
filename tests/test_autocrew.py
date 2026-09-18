@@ -3,10 +3,13 @@
 from types import SimpleNamespace
 
 import pygame
+import pytest
 
+from src.core import config
 from src.core.autocrew import AutocrewController
 from src.core.game import Game
 from src.core.station import Station
+from src.sonar.sonar import Contact
 
 
 class _Commander:
@@ -27,14 +30,16 @@ def _event(key):
 
 
 def test_cadence_stays_anchored_when_update_crosses_deadline_late():
+    # Helicopter stays a deliberate no-op, so this needs no station stubs
+    # beyond what every AutocrewController.update() call already requires.
     crew = AutocrewController()
-    crew.set_enabled("bridge", True, 0.0)
+    crew.set_enabled("helicopter", True, 0.0)
     game = SimpleNamespace(sim_t=.3, commander=_Commander(), damage=_Damage())
     crew.update(game)
-    assert crew.next_due_s["bridge"] == 1.0
+    assert crew.next_due_s["helicopter"] == 1.0
     game.sim_t = 2.4
     crew.update(game)
-    assert crew.next_due_s["bridge"] == 3.0
+    assert crew.next_due_s["helicopter"] == 3.0
 
 
 def test_remote_lease_suspends_without_disabling_station():
@@ -86,3 +91,130 @@ def test_save_roundtrip_preserves_autocrew_state():
     finally:
         game.audio.shutdown()
         restored.audio.shutdown()
+
+
+def test_new_action_vocabulary_round_trips_through_valid_state():
+    for action in ("evading", "correcting", "engaged"):
+        state = AutocrewController().serialize()
+        state["stations"]["bridge"]["last_action"] = action
+        assert AutocrewController.valid_state(state, 0.0)
+        restored = AutocrewController.restore(state)
+        assert restored.last_action["bridge"] == action
+
+
+def test_bridge_evades_inbound_asm_threat(monkeypatch):
+    game = Game(seed=930, start_menu=False, audio_enabled=False)
+    try:
+        monkeypatch.setattr(game, "asm_tracks", lambda: [
+            SimpleNamespace(range_nm=5.0, track_id="M-1", bearing=90.0)])
+        game.ship.target_course = 0.0
+        game.ship.target_speed = 10.0
+
+        action = AutocrewController._bridge(game)
+
+        assert action == "evading"
+        assert game.ship.target_course == pytest.approx(270.0)
+        assert game.ship.target_speed == pytest.approx(config.SHIP_SPEED_MAX_KN)
+    finally:
+        game.audio.shutdown()
+
+
+def test_bridge_evades_when_asm_and_torpedo_both_have_unknown_range(monkeypatch):
+    # Both threats resolve to the same "unknown range" tie-break key; the
+    # nearest-threat scan must not crash comparing a str ASM track id
+    # against an int torpedo contact id when breaking that tie.
+    game = Game(seed=934, start_menu=False, audio_enabled=False)
+    try:
+        monkeypatch.setattr(game, "asm_tracks", lambda: [
+            SimpleNamespace(range_nm=None, track_id="M-1", bearing=90.0)])
+        contact = Contact(1, 9103, "passiv", "torpedo")
+        contact.bearing = 180.0
+        contact.last_seen = game.sim_t
+        game.sonar.contacts[9103] = contact
+        game.ship.target_course = 0.0
+        game.ship.target_speed = 10.0
+
+        action = AutocrewController._bridge(game)
+
+        assert action == "evading"
+    finally:
+        game.audio.shutdown()
+
+
+def test_bridge_does_not_evade_a_threat_straight_into_a_grounding(monkeypatch):
+    game = Game(seed=935, start_menu=False, audio_enabled=False)
+    try:
+        monkeypatch.setattr(game, "asm_tracks", lambda: [
+            SimpleNamespace(range_nm=5.0, track_id="M-1", bearing=90.0)])
+        game.ship.target_course = 0.0
+        game.ship.target_speed = 10.0
+        # Ideal evade course (270) and the first deflection (300) both run
+        # the ship aground; 240 is the nearest clear water.
+        monkeypatch.setattr(game.world, "hull_is_safe",
+                            lambda x, y, course, hull: course not in (270.0, 300.0))
+
+        action = AutocrewController._bridge(game)
+
+        assert action == "evading"
+        assert game.ship.target_course == pytest.approx(240.0)
+        assert game.ship.target_speed == pytest.approx(config.SHIP_SPEED_MAX_KN)
+    finally:
+        game.audio.shutdown()
+
+
+def test_bridge_steers_around_a_projected_grounding_when_no_threat(monkeypatch):
+    game = Game(seed=931, start_menu=False, audio_enabled=False)
+    try:
+        monkeypatch.setattr(game, "asm_tracks", lambda: [])
+        game.ship.target_course = 0.0
+        game.ship.speed = 10.0
+        # Only dead-ahead (0 deg) is unsafe; every deflection is clear water.
+        monkeypatch.setattr(game.world, "hull_is_safe",
+                            lambda x, y, course, hull: course != 0.0)
+
+        action = AutocrewController._bridge(game)
+
+        assert action == "correcting"
+        assert game.ship.target_course == pytest.approx(30.0)
+    finally:
+        game.audio.shutdown()
+
+
+def test_weapons_engages_hostile_classified_contact(monkeypatch):
+    game = Game(seed=932, start_menu=False, audio_enabled=False)
+    try:
+        monkeypatch.setattr(game.world, "sonar_path_blocked", lambda *a: False)
+        game.roe = "FREE"
+        contact = Contact(1, 9101, "passiv", "sub")
+        contact.player_class = "U_BOOT"
+        contact.bearing = 45.0
+        contact.last_seen = game.sim_t
+        game.sonar.contacts[9101] = contact
+        game.opz_affiliations["S-9101"] = "HOSTILE"
+
+        action = AutocrewController._weapons(game)
+
+        assert action == "engaged"
+        assert len(game.torpedoes) == 1
+    finally:
+        game.audio.shutdown()
+
+
+def test_weapons_does_not_engage_an_unclassified_affiliation(monkeypatch):
+    game = Game(seed=933, start_menu=False, audio_enabled=False)
+    try:
+        monkeypatch.setattr(game.world, "sonar_path_blocked", lambda *a: False)
+        game.roe = "FREE"
+        contact = Contact(1, 9102, "passiv", "sub")
+        contact.player_class = "U_BOOT"
+        contact.bearing = 45.0
+        contact.last_seen = game.sim_t
+        game.sonar.contacts[9102] = contact
+        # No affiliation annotated -> resolves to UNKNOWN, must not be engaged.
+
+        action = AutocrewController._weapons(game)
+
+        assert action == "monitoring"
+        assert game.torpedoes == []
+    finally:
+        game.audio.shutdown()

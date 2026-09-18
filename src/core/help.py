@@ -74,7 +74,7 @@ STATION_HELP = {
           ("H", "help.control.helo_toggle"), ("B", "help.control.buoy"),
           ("D", "help.control.air_torp"), ("V", "help.control.nixie"),
           ("Q / E", "help.control.zoom"),
-         ("K", "help.control.follow")],
+         ("K", "help.control.follow"), ("F", "help.control.flak_release")],
         ["help.note.roe", "help.note.target_depth", "help.note.salvo"],
         "help.note.weapon_tactic"),
     Station.DAMAGE: _station(
@@ -92,7 +92,7 @@ STATION_HELP = {
           ("M", "help.control.designate"), ("help.key.page_spaced", "help.control.radar_range"),
          ("<- / ->", "help.control.asm_track"), ("E / Ctrl+Enter", "help.control.essm"),
          ("G", "help.control.chaff"), ("R", "help.control.surface_radar"),
-          ("Shift+R", "help.control.air_radar"),
+          ("Shift+R", "help.control.air_radar"), ("I", "help.control.ciws_release"),
           ("Backspace", "help.control.opz_clear_marks")],
         ["help.note.radar", "help.note.ais_esm", "help.note.nato", "help.note.ciws",
          "help.note.jammer", "help.note.clutter", "help.note.chaff"],

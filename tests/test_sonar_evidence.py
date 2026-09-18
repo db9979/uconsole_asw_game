@@ -179,7 +179,8 @@ def test_delayed_tma_solve_does_not_redate_measurement(monkeypatch):
     track = BearingTrack()
     track.add(10, 30, 0, 0, 0)
     sonar._tracks[1] = track
-    monkeypatch.setattr("src.sonar.sonar.solve_tma", lambda tr: solution())
+    monkeypatch.setattr("src.sonar.sonar.solve_tma",
+                        lambda tr, **kwargs: solution())
     sonar._update_tma(target, 20)
     assert contact.range_seen == contact.tma_seen == 10
     sonar.advance_mechanics(1, 131, Ship(0, 0))

@@ -126,6 +126,52 @@ def test_tma_inverse_variance_and_robust_weighting_limit_an_uncertain_outlier():
     assert uncertain_error < certain_error
 
 
+def test_tma_hysteresis_curbs_course_swing_across_resolves():
+    """Re-solving TMA from a slightly different bearing window (one point
+    added, oldest dropped) can otherwise hop the discrete grid search between
+    near-tied (course, speed) candidates every few seconds - visible as the
+    contact's course/speed readout flickering on the sonar and map views.
+    Anchoring each re-solve on the previous one (see solve_tma's
+    previous_course/previous_speed) must keep that far steadier than
+    resolving from scratch each time, without losing a genuine course change."""
+    def bearing_from_origin(x, y):
+        return math.degrees(math.atan2(x, -y)) % 360.0
+
+    course_deg, speed_kn = 90.0, 10.0
+    vx = config.kn_to_nm_per_s(speed_kn) * math.sin(math.radians(course_deg))
+    vy = -config.kn_to_nm_per_s(speed_kn) * math.cos(math.radians(course_deg))
+    x0, y0 = 5.0, -25.0
+    rng = random.Random(11)
+
+    track = BearingTrack()
+    fresh_courses, anchored_courses = [], []
+    anchor_course, anchor_speed = None, None
+    step_s = config.BEARING_TRACK_MIN_INTERVAL_S
+    for i in range(config.BEARING_TRACK_MAX_PTS):
+        t = i * step_s
+        x, y = x0 + vx * t, y0 + vy * t
+        bearing = (bearing_from_origin(x, y) + rng.uniform(-1.5, 1.5)) % 360.0
+        track.add(t, bearing, 0.0, 0.0, i * 0.5, uncertainty_deg=3.0)
+
+        fresh = solve_tma(track)
+        anchored = solve_tma(track, previous_course=anchor_course,
+                             previous_speed=anchor_speed)
+        if fresh is not None:
+            fresh_courses.append(fresh.course)
+        if anchored is not None:
+            anchored_courses.append(anchored.course)
+            anchor_course, anchor_speed = anchored.course, anchored.speed
+
+    def max_swing(courses):
+        return max((abs(config.angle_diff_deg(a, b))
+                    for a, b in zip(courses, courses[1:])), default=0.0)
+
+    assert len(fresh_courses) > 10 and len(anchored_courses) > 10
+    assert max_swing(anchored_courses) < max_swing(fresh_courses)
+    assert max_swing(anchored_courses) <= config.TMA_FINE_COURSE_STEP_DEG + .5
+    assert abs(config.angle_diff_deg(anchored_courses[-1], course_deg)) < 10.0
+
+
 def test_low_quality_tma_does_not_move_an_acquired_fix():
     contact = Contact(1, 1, "passiv", "sub")
     contact._fx = contact._fy = 0.0

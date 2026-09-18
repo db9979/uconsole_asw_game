@@ -105,7 +105,7 @@ def test_every_station_has_meaningful_context(game, station, pos):
     (Station.BRIDGE, (700, 150), "COURSE / RUDDER"),
     (Station.SONAR, (100, 200), "BROADBAND BIN"),
     (Station.WEAPONS, (700, 150), "FIRE-CONTROL SOLUTION"),
-    (Station.DAMAGE, (30, 120), "Flooding"),
+    (Station.DAMAGE, (30, 150), "Flooding"),
     (Station.OPZ, (1100, 120), "OPERATIONS / CIC CONTROLS"),
     (Station.RADIO, (30, 120), "HFDF BEARINGS"),
     (Station.ENGINE, (30, 120), "ENGINE ORDER"),
@@ -122,6 +122,7 @@ def test_every_station_tooltip_is_composed_in_english(game, station, pos, englis
 def test_radio_tooltip_localizes_structured_feed_message(game):
     game.tr = Translator("en").translate
     game.station = Station.RADIO
+    game.station_page = 1
     game.messages[:] = [("12:34", message("runtime.helo.return"))]
     payload = game.tooltip_at((1100, 120))
     assert payload["lines"][0] == "12:34 HSP-5: return ordered"
@@ -164,7 +165,7 @@ def test_sonar_contact_tooltip_does_not_read_truth_attributes(monkeypatch):
     sonar = NS(active_contacts=lambda: [contact])
     fake = NS(sonar=sonar, sonar_page=0, selected_contact=contact,
               sim_t=100.0, station=Station.SONAR)
-    payload = sonar_view.sonar_hit_target(fake, (950, 360))
+    payload = sonar_view.sonar_hit_target(fake, (950, 380))
     assert payload["id"] == "sonar:contact:7"
 
 

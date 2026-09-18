@@ -59,7 +59,11 @@ class CommanderConsole:
         self._roster_mouse_confirm = None
         self._hotspot_error_seen = None
         self._qr_payload = None
+        self._qr_box_px = None
         self._qr_surface = None
+        self._url_qr_payload = None
+        self._url_qr_box_px = None
+        self._url_qr_surface = None
 
     def prepare(self):
         """Discover at most 64 Linux interface IPv4s, with no DNS or LAN probe."""
@@ -655,14 +659,29 @@ class CommanderConsole:
                 self._roster_action(action)
                 return
 
-    def _hotspot_qr(self, ssid, password):
+    def _hotspot_qr(self, ssid, password, box_px=132):
         """Return the cached QR surface for the current Wi-Fi credentials."""
         payload = qr.wifi_payload(ssid, password)
-        if self._qr_payload != payload or self._qr_surface is None:
+        if (self._qr_payload != payload or self._qr_box_px != box_px
+                or self._qr_surface is None):
             matrix = qr.encode(payload)
             self._qr_payload = payload
-            self._qr_surface = qr.to_surface(matrix, module_px=max(1, 132 // (len(matrix) + 4)))
+            self._qr_box_px = box_px
+            self._qr_surface = qr.to_surface(
+                matrix, module_px=max(1, box_px // (len(matrix) + 4)))
         return self._qr_surface
+
+    def _url_qr(self, host, port, box_px=132):
+        """Return the cached QR surface that opens the crew page directly."""
+        payload = f"http://{host}:{port}/"
+        if (self._url_qr_payload != payload or self._url_qr_box_px != box_px
+                or self._url_qr_surface is None):
+            matrix = qr.encode(payload)
+            self._url_qr_payload = payload
+            self._url_qr_box_px = box_px
+            self._url_qr_surface = qr.to_surface(
+                matrix, module_px=max(1, box_px // (len(matrix) + 4)))
+        return self._url_qr_surface
 
     def draw(self, game):
         if self.admission.request is not None:
@@ -700,19 +719,34 @@ class CommanderConsole:
                                  (124, 164, 790, 34), config.COLOR_WARN, size=28,
                                  align="center")
                 layout.blit_line(screen, "commander.local.hotspot.qr",
-                                 (936, 134, 220, 28), config.COLOR_TEXT_DIM, size=14,
+                                 (936, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
+                                 align="center")
+                layout.blit_line(screen, "commander.local.url.qr",
+                                 (1051, 134, 105, 28), config.COLOR_TEXT_DIM, size=12,
                                  align="center")
                 if details is not None:
-                    surface = self._hotspot_qr(details.ssid, details.password)
+                    surface = self._hotspot_qr(details.ssid, details.password, box_px=105)
+                    screen.blit(surface, (936 + (105 - surface.get_width()) // 2,
+                                          166 + (105 - surface.get_height()) // 2))
+                if self.address is not None:
+                    surface = self._url_qr(self.address[0], self.address[1], box_px=105)
+                    screen.blit(surface, (1051 + (105 - surface.get_width()) // 2,
+                                          166 + (105 - surface.get_height()) // 2))
+            else:
+                layout.blit_line(screen, "commander.local.url.qr",
+                                 (936, 134, 220, 28), config.COLOR_TEXT_DIM, size=14,
+                                 align="center")
+                if self.address is not None:
+                    surface = self._url_qr(self.address[0], self.address[1])
                     screen.blit(surface, (980 + (132 - surface.get_width()) // 2,
                                           166 + (132 - surface.get_height()) // 2))
             layout.blit_line(screen, "commander.local.join_code",
-                              (124, 206 if hotspot else 144, 790 if hotspot else 1032,
+                              (124, 206 if hotspot else 144, 790,
                                24), config.COLOR_TEXT_DIM, size=20, align="center")
             code = self.pairing_code or "------"
             grouped_code = raw_text(code[:3] + " " + code[3:])
             layout.blit_line(screen, grouped_code,
-                             (124, 228 if hotspot else 174, 790 if hotspot else 1032,
+                             (124, 228 if hotspot else 174, 790,
                               72 if hotspot else 108),
                              config.COLOR_WARN, size=62 if hotspot else 72,
                              align="center")

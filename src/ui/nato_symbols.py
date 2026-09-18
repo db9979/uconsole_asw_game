@@ -1,6 +1,10 @@
 """Kleine APP-6-aehnliche Symbole fuer das gemeinsame Lagebild."""
 
+import math
+
 import pygame
+
+from src.core import config
 
 
 AFFILIATION_COLORS = {
@@ -86,3 +90,25 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
     if selected:
         pygame.draw.circle(surface, (235, 235, 220), (x, y), half + 7, 1)
     return color
+
+
+def draw_motion_vector(surface, center, course_deg, speed_kn, px_per_nm,
+                        color, minutes=config.MOTION_VECTOR_WINDOW_MIN,
+                        max_px=None, font=None):
+    """Vektor von center in Kursrichtung, Laenge proportional zur in
+    `minutes` zurueckgelegten Distanz. Ohne Speed nur ein kurzer Heading-Tick."""
+    if course_deg is None:
+        return None
+    ang = math.radians(course_deg)
+    if speed_kn is not None:
+        length = speed_kn * (minutes / 60.0) * px_per_nm
+        if max_px is not None:
+            length = min(length, max_px)
+    else:
+        length = 10.0  # Kurs bekannt, Speed noch nicht aufgeloest
+    end = (center[0] + length * math.sin(ang), center[1] - length * math.cos(ang))
+    pygame.draw.line(surface, color, center, end, 2)
+    if font is not None and speed_kn is not None:
+        surface.blit(font.render(f"{speed_kn:.0f}kn", True, color),
+                     (int(end[0]) + 4, int(end[1]) - 6))
+    return end

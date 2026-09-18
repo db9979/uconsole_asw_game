@@ -3,10 +3,12 @@
 import copy
 import json
 
+import pygame
 import pytest
 
 from src.air.asm import ASM
 from src.core.game import Game
+from src.core.station import Station
 from src.enemies.surface import SurfaceShip
 from src.ui.stations_view import draw_opz_view
 from src.weapons.air_defense import air_defense_loadout
@@ -218,6 +220,30 @@ def test_ciws_requires_fresh_observation_and_uses_profiled_ammunition(game):
     game.rng_asm.random = lambda: 1.0
     game._update_air_defense(.1, publish_picture=False)
     assert game.ciws_ammo == before - ciws["rounds_per_attempt"]
+
+
+def test_opz_i_key_toggles_ciws_release(game):
+    game.station = Station.OPZ
+    assert game.ciws_authorized is True
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_i,
+                                         mod=0, repeat=False))
+    assert game.ciws_authorized is False
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_i,
+                                         mod=0, repeat=False))
+    assert game.ciws_authorized is True
+
+
+def test_ciws_never_fires_while_release_is_withheld(game):
+    missile = ASM(game.ship.x + 1, game.ship.y, 0, 1, game.rng_asm)
+    missile.speed_kn = 0
+    game.asms = [missile]
+    observe_asm(game, missile)
+    game.rng_asm.random = lambda: 1.0
+    assert game.set_ciws_authorized(False) is True
+    before = game.ciws_ammo
+    game._update_air_defense(.1, publish_picture=False)
+    assert game.ciws_ammo == before
+    assert missile.state == "LAUF"
 
 
 def test_successful_softkill_precedes_and_suppresses_hardkill(game):

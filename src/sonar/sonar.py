@@ -1347,7 +1347,8 @@ class SonarSystem:
         c = self.contacts.get(tgt.id)
         if c is None:
             return
-        sol = solve_tma(tr)
+        sol = solve_tma(tr, previous_course=c.tma_course,
+                        previous_speed=c.tma_speed)
         if sol is not None:
             c.update_tma(sol, tr.pts[-1].t, fixed_at=t)
         self._tma_versions[tgt.id] = tr.version

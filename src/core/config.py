@@ -296,6 +296,7 @@ OBS_BEARING_EPOCH_S = 5.0
 OBS_RADAR_SMOOTH_TAU_S = 1.5
 OBS_BEARING_SMOOTH_TAU_S = 4.0
 OBS_HISTORY_MAX = 12
+MOTION_VECTOR_WINDOW_MIN = 3.0
 
 # M13: Funkraum / HFDF
 SNOCKEL_TRANSMIT_NOISE = -0.20  # Lärmänderung beim Senden (negativ = lauter)
@@ -406,6 +407,10 @@ TMA_RANGE_MIN_QUALITY = 0.35    # TMA-Range erst ab dieser Qualität nutzen
 TMA_FINE_COURSE_STEP_DEG = 3
 TMA_FINE_SPEED_STEP_KN = 0.5
 TMA_PRESENTATION_ALPHA = 0.35
+TMA_HYSTERESIS_RMSE_MARGIN_DEG = 1.0  # keep the previous solve unless a fresh
+                                       # candidate fits the bearings clearly
+                                       # better - stops re-solves from hopping
+                                       # between near-tied local optima
 TMA_DEFAULT_BEARING_SIGMA_DEG = 3.5
 TMA_ROBUST_SIGMA = 2.5          # Huber-Grenze in Mess-Standardabweichungen
 BEARING_TRACK_MAX_PTS = 80      # 4-s-Fenster umfasst gut fünf Minuten

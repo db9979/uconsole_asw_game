@@ -235,6 +235,7 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
         return original(screen, text, *args, **kwargs)
 
     monkeypatch.setattr(stations_view.layout, "blit_line", record)
+    game.station_page = 1
     stations_view.draw_opz_view(game)
     assert any("Source" in line and "RADAR" in line for line in lines)
     assert any("Bearing" in line and "available" in line for line in lines)
@@ -267,6 +268,7 @@ def test_selected_track_sidebar_reports_sonar_depth_and_speed(monkeypatch):
         return original(screen, text, *args, **kwargs)
 
     monkeypatch.setattr(stations_view.layout, "blit_line", record)
+    game.station_page = 1
     stations_view.draw_opz_view(game)
     assert any("Depth" in line and "40" in line and "available" in line
                for line in lines)
@@ -467,15 +469,15 @@ def test_own_airborne_helicopter_is_direct_friend_air_datalink_not_track(monkeyp
 
     game = NS(
         screen=pygame.Surface((1280, 720)), opz_range_nm=40.0,
-        ship=NS(x=100.0, y=100.0, course=0.0),
-        helo=NS(airborne=True, x=110.0, y=100.0),
+        ship=NS(x=100.0, y=100.0, course=0.0, speed=0.0),
+        helo=NS(airborne=True, x=110.0, y=100.0, course=0.0, SPEED_KN=0.0),
         damage=NS(station_down=lambda station: False),
         surface_radar_on=False, air_radar_on=False,
         radar_tracks=lambda: sensor_tracks,
         opz_selected_track_id=None, asm_tracks=lambda: [],
         radar_weather_severity=lambda: 0.0,
         world=NS(sea_state=2), vls_cells=8, chaff_cd=0.0,
-        selected_opz_track=lambda: None, ciws_ammo=100,
+        selected_opz_track=lambda: None, ciws_ammo=100, ciws_authorized=True,
     )
     monkeypatch.setattr(nato_symbols, "draw_symbol", symbol)
 

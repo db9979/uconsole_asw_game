@@ -8,13 +8,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **0.2.2**
+Aktuelle Version: **0.2.3**
 
-Version 0.2.2 vereinheitlicht Remote Crew auf Protokoll v2 mit Cookie-
-authentifizierten Rollensitzungen, lokal angenommenen Ziel- und
-Navigationsvorschlägen, rollenbegrenzten Ereignissen und einer
-beobachtungssicheren SimLog-Historie. Das Legacy-Protokoll v1 ist entfernt; alle
-Routen unter `/api/v1/*` liefern 404. Speicherformat v10 bleibt unverändert.
+Version 0.2.3 teilt jede Arbeitsstation in zwei per Tab wählbare Unterseiten,
+ergänzt manuelle Freigabeschalter für CIWS und FLAK neben den bestehenden
+automatischen Feuerfreigaben und gibt der Autocrew-Brücke ein Ausweich- und
+Grundberührungs-Vermeidungsverhalten gegen ASM-/Torpedo-Bedrohungen. TMA-
+Neulösungen nutzen jetzt eine Hysterese gegen fast gleichwertige
+Peilungslösungen, und feindliche Seezielflugkörper tragen einen aktiven
+Radar-Suchkopf in der Terminalphase, der eine ESM/RWR-Warnung liefert, bevor
+das Suchradar sie erfasst. Ein konsolidiertes Theme-System ergänzt eine
+optionale High-Contrast-Palette für Farbfehlsichtigkeit. Speicherformat v10
+und das Remote-Crew-v2-Protokoll bleiben unverändert.
 
 Dies ist eine frühe spielbare Version. Sie ist ein Spiel und kein Ausbildungs-
 oder Navigationsprodukt. Die Systeme sind vereinfacht und erheben nicht den
@@ -358,7 +363,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **0.2.2**, API-Protokoll **v2** und Speicherformat **v10** sind
+Anwendungsversion **0.2.3**, API-Protokoll **v2** und Speicherformat **v10** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -385,7 +390,7 @@ Schemata; Benutzerdateien werden unter `~/.u-jagd/missions/` und
 `~/.u-jagd/units/` gespeichert.
 
 Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
-0.2.2 gilt:
+0.2.3 gilt:
 
 - Eine Benutzermission kann nur dann mit `F5` aus der Browseransicht des
   Missionseditors gestartet werden, wenn sie die unterstützte Laufzeitteilmenge
@@ -410,7 +415,7 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Version 0.2.2 schreibt und lädt ausschließlich das Speicherformat **v10**. V10
+Version 0.2.3 schreibt und lädt ausschließlich das Speicherformat **v10**. V10
 verlangt das exakte Schema `u-jagd-save-v10` einschließlich des aktuellen
 Schnappschusses des Laufzeitkatalogs und des gesamten Zustands für die
 deterministische Fortsetzung. Ältere, neuere, fehlerhafte oder unvollständige

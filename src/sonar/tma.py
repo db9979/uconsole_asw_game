@@ -155,8 +155,19 @@ def _try_candidate(geometry, t0, course_deg, speed_kn, max_range_nm):
 
 
 def solve_tma(track: BearingTrack,
-              max_range_nm: float = None) -> "TMASolution | None":
-    """TMA-Lösung oder None (zu wenig Daten / keine Observierbarkeit)."""
+              max_range_nm: float = None,
+              previous_course: float = None,
+              previous_speed: float = None) -> "TMASolution | None":
+    """TMA-Lösung oder None (zu wenig Daten / keine Observierbarkeit).
+
+    `previous_course`/`previous_speed` add re-solve hysteresis: bearing-only
+    geometry routinely has several near-tied (course, speed) candidates, and
+    the window sliding by one point between re-solves can tip the coarse grid
+    search from one to another even though neither fits meaningfully better.
+    Re-scoring the previous solution and keeping it unless a fresh candidate
+    clears it by more than the RMSE margin stops that hopping without ever
+    preferring a candidate that fits distinctly worse.
+    """
     pts = track.pts
     if len(pts) < config.TMA_MIN_PTS:
         return None
@@ -196,6 +207,21 @@ def solve_tma(track: BearingTrack,
             cand = _try_candidate(geometry, t0, c2, s2, max_range_nm)
             if cand is not None and cand[0] < best[0]:
                 best = cand
+    if previous_course is not None and previous_speed is not None:
+        prev = _try_candidate(geometry, t0, previous_course % 360.0,
+                              previous_speed, max_range_nm)
+        if prev is not None:
+            for dc in (-course_step, 0, course_step):
+                for ds in (-speed_step, 0.0, speed_step):
+                    c2 = (previous_course + dc) % 360
+                    s2 = previous_speed + ds
+                    if s2 < 0.0:
+                        continue
+                    cand = _try_candidate(geometry, t0, c2, s2, max_range_nm)
+                    if cand is not None and cand[0] < prev[0]:
+                        prev = cand
+            if prev[0] <= best[0] + config.TMA_HYSTERESIS_RMSE_MARGIN_DEG:
+                best = prev
     rmse, course, speed, pos, quality = best
     # Heading changes alone (including turns in place) do not resolve range.
     # Scale confidence by the actual departure from constant ownship velocity,

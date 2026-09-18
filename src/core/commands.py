@@ -11,7 +11,7 @@ MAP_STATIONS = frozenset((
 ))
 
 STATION_PAGES = {
-    Station.BRIDGE: ("BRIDGE",),
+    Station.BRIDGE: ("BRIDGE_NAV", "BRIDGE_MISSION"),
     Station.SONAR: (
         "BROADBAND",
         "LOFAR",
@@ -20,13 +20,13 @@ STATION_PAGES = {
         "UMWELT/FUSION",
         "ACTIVE",
     ),
-    Station.WEAPONS: ("WEAPONS",),
-    Station.DAMAGE: ("DAMAGE",),
-    Station.OPZ: ("OPZ",),
-    Station.RADIO: ("RADIO",),
-    Station.ENGINE: ("ENGINE",),
-    Station.HELICOPTER: ("HELICOPTER",),
-    Station.ELOKA: ("ELOKA",),
+    Station.WEAPONS: ("WEAPONS_TARGET", "WEAPONS_AMMO"),
+    Station.DAMAGE: ("DAMAGE_PLAN", "DAMAGE_DETAIL"),
+    Station.OPZ: ("OPZ_PICTURE", "OPZ_TARGET"),
+    Station.RADIO: ("RADIO_HFDF", "RADIO_MESSAGES"),
+    Station.ENGINE: ("ENGINE_TELEGRAPH", "ENGINE_SYSTEMS"),
+    Station.HELICOPTER: ("HELO_STATUS", "HELO_MISSION"),
+    Station.ELOKA: ("ELOKA_INTERCEPTS", "ELOKA_EVIDENCE"),
 }
 
 # Compatibility export for callers that have not moved to station metadata yet.

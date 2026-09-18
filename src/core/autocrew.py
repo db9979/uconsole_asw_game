@@ -32,8 +32,31 @@ _DAMAGE_COMPARTMENT = {
 _ACTIONS = frozenset({
     "off", "enabled", "monitoring", "tma", "bt", "tas", "released", "focused",
     "countermeasure", "air_defense", "repair", "hfdf", "identified",
-    "limited_speed", "returning",
+    "limited_speed", "returning", "evading", "correcting", "engaged",
 })
+
+
+def _nearest_threat(game):
+    """Return the nearest inbound ASM or torpedo threat as {bearing, range_nm}.
+
+    Observation-bounded like the rest of this module: only tracks/contacts a
+    real crew could already see, never world truth. Mirrors the range-then-id
+    tie-break `_opz` already uses for ASM tracks.
+    """
+    items = [(track.range_nm, track.track_id, track.bearing)
+             for track in game.asm_tracks()]
+    items += [(contact.range_est, f"T{contact.id}", contact.bearing)
+              for contact in game.sonar.contacts.values()
+              if contact.kind == "torpedo"
+              and 0.0 <= game.sim_t - contact.last_seen <= 2.0]
+    if not items:
+        return None
+    # `_id` is a str on both branches above so the tie-break stays orderable
+    # even when an ASM track (str track_id) and a torpedo contact (int id)
+    # tie on range at the same time.
+    range_nm, _id, bearing = min(
+        items, key=lambda item: (float("inf") if item[0] is None else item[0], item[1]))
+    return {"bearing": bearing, "range_nm": range_nm}
 
 
 def station_key(station) -> str:
@@ -141,6 +164,40 @@ class AutocrewController:
 
     @staticmethod
     def _bridge(game):
+        def safe(course):
+            lookahead_nm = max(0.5, game.ship.speed * (120.0 / 3600.0))
+            rad = math.radians(course)
+            x = game.ship.x + lookahead_nm * math.sin(rad)
+            y = game.ship.y - lookahead_nm * math.cos(rad)
+            return game.world.hull_is_safe(x, y, course, game.ship.hull_spec)
+
+        threat = _nearest_threat(game)
+        if threat is not None:
+            evade_course = (threat["bearing"] + 180.0) % 360.0
+            # Turning away from the threat must not steer the ship aground;
+            # fall back to the nearest safe heading off that ideal course,
+            # same search pattern as the no-threat grounding correction below.
+            candidate = evade_course if safe(evade_course) else next(
+                (c for c in ((evade_course + delta) % 360.0
+                             for delta in (30.0, -30.0, 60.0, -60.0, 90.0, -90.0))
+                 if safe(c)), None)
+            changed = False
+            if candidate is not None:
+                course_off = abs(((game.ship.target_course - candidate + 180.0)
+                                  % 360.0) - 180.0)
+                if course_off > 5.0 and game.order_course(candidate) == "ok":
+                    changed = True
+            if (game.ship.target_speed < config.SHIP_SPEED_MAX_KN - 0.5
+                    and game.order_speed(config.SHIP_SPEED_MAX_KN) == "ok"):
+                changed = True
+            return "evading" if changed else "monitoring"
+
+        if safe(game.ship.target_course):
+            return "monitoring"
+        for delta in (30.0, -30.0, 60.0, -60.0, 90.0, -90.0):
+            candidate = (game.ship.target_course + delta) % 360.0
+            if safe(candidate) and game.order_course(candidate) == "ok":
+                return "correcting"
         return "monitoring"
 
     @staticmethod
@@ -179,6 +236,20 @@ class AutocrewController:
         if observed and not game.nixies and game.nixie_store.ready > 0:
             if game.deploy_nixie_result() is True:
                 return "countermeasure"
+        if game.damage.station_down("weapons"):
+            return "monitoring"
+        candidates = [
+            contact for contact in game.sonar.contacts.values()
+            if contact.player_class in ("U_BOOT", "KAMPFSCHIFF")
+            and 0.0 <= game.sim_t - contact.last_seen <= 2.0
+            and game.contact_affiliation(contact) == "HOSTILE"]
+        if not candidates:
+            return "monitoring"
+        target = min(candidates, key=lambda contact: (
+            float("inf") if contact.range_est is None else contact.range_est,
+            contact.id))
+        if game.launch_torpedo_at(target, game.torpedo_depth) is True:
+            return "engaged"
         return "monitoring"
 
     @staticmethod

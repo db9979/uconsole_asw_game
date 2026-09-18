@@ -7,12 +7,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **0.2.2**
+Current release: **0.2.3**
 
-Release 0.2.2 consolidates Remote Crew on protocol v2 with cookie-authenticated
-role sessions, locally accepted target and navigation proposals, role-scoped
-events, and observation-safe SimLog history. Legacy protocol v1 is retired and
-all `/api/v1/*` routes return 404. Save format v10 remains unchanged.
+Release 0.2.3 splits every workstation into two tabbed sub-pages, adds manual
+CIWS and FLAK release authorization alongside the existing automatic gates,
+and gives the autocrew bridge ASM/torpedo evasion and grounding-avoidance
+behavior. TMA re-solves now use hysteresis against near-tied bearing
+solutions, and inbound anti-ship missiles carry a terminal-active radar
+seeker that gives an ESM/RWR warning before search radar acquires them. A
+consolidated theme system adds an optional high-contrast, colorblind-safe
+palette. Save format v10 and the Remote Crew v2 protocol are unchanged.
 
 This is an early playable release. It is a game, not a training or navigation
 product. Its systems are simplified and do not claim to reproduce classified
@@ -339,7 +343,7 @@ import. JSON templates under `data/editor_templates/` describe the accepted
 schemas; user files are stored under `~/.u-jagd/missions/` and
 `~/.u-jagd/units/`.
 
-Validated does not mean runtime-effective. In release 0.2.2:
+Validated does not mean runtime-effective. In release 0.2.3:
 
 - A user mission can be started with `F5` from the Mission Editor browser only
   when it uses the supported runtime subset.
@@ -361,7 +365,7 @@ Validated does not mean runtime-effective. In release 0.2.2:
 
 ## Saves and User Data
 
-Release 0.2.2 writes and loads save format **v10** only. V10 requires the exact
+Release 0.2.3 writes and loads save format **v10** only. V10 requires the exact
 `u-jagd-save-v10` schema, including the current runtime catalog snapshot and all
 deterministic continuation state. Older, newer, malformed, or incomplete saves
 are rejected without replacing the running game.

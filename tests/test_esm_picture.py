@@ -439,6 +439,7 @@ def test_eloka_view_renders_platform_names_not_emitter_keys(monkeypatch):
     name = CATALOG.emitter_name("emitter.warship_01.radar")
     assert name
     game.eloka_annotations[track.track_key] = "emitter.warship_01.radar"
+    game.station_page = 1
     with layout.capture_text() as rendered:
         stations_view.draw_eloka_view(game)
     text = "\n".join(item["text"] for item in rendered)

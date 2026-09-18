@@ -39,24 +39,33 @@ class SensorTrack:
         return max(0.0, self.quality * (1.0 - self.age(now) / stale_s))
 
     def derived_motion(self) -> tuple[float | None, float | None]:
-        """Course/speed inferred from the two most recent positioned fixes.
+        """Course/speed from a least-squares fit through the retained fixes.
 
         Plain radar/ESM measurements never carry a true course, so the chart
         plots heading and speed the same way a human plotter would: from the
-        drift between successive fixes, not from simulation truth.
+        drift across recent fixes, not from simulation truth. Fitting a
+        trend line through the whole retained window (instead of just the
+        two latest fixes) averages out per-fix bearing/range noise that
+        would otherwise make the derived heading flicker between updates;
+        for two exact points it reduces to the same secant slope as before.
         """
         positioned = [m for m in (self.measurement_history or []) if m["x"] is not None]
         if len(positioned) < 2:
             return None, None
-        older, newer = positioned[-2], positioned[-1]
-        dt = newer["t"] - older["t"]
-        if dt < 1.0:
+        if positioned[-1]["t"] - positioned[0]["t"] < 1.0:
             return None, None
-        dx, dy = newer["x"] - older["x"], newer["y"] - older["y"]
-        dist_nm = math.hypot(dx, dy)
-        speed_kn = dist_nm / dt * 3600.0
-        course = (math.degrees(math.atan2(dx, -dy)) % 360.0
-                  if dist_nm > 1e-3 else None)
+        n = len(positioned)
+        t_mean = sum(m["t"] for m in positioned) / n
+        x_mean = sum(m["x"] for m in positioned) / n
+        y_mean = sum(m["y"] for m in positioned) / n
+        denom = sum((m["t"] - t_mean) ** 2 for m in positioned)
+        if denom <= 0.0:
+            return None, None
+        vx = sum((m["t"] - t_mean) * (m["x"] - x_mean) for m in positioned) / denom
+        vy = sum((m["t"] - t_mean) * (m["y"] - y_mean) for m in positioned) / denom
+        speed_kn = math.hypot(vx, vy) * 3600.0
+        course = (math.degrees(math.atan2(vx, -vy)) % 360.0
+                  if speed_kn > 1e-3 else None)
         return course, speed_kn
 
 

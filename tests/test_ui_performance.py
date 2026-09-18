@@ -11,7 +11,7 @@ import pytest
 
 from src.core import config
 from src.core.i18n import Translator
-from src.ui import map_view, sonar_view, stations_view
+from src.ui import map_view, sonar_view, stations_view, theme
 from src.ui.viewport import Viewport
 from src.world.coastline import Coastline
 from src.world.world import World
@@ -193,7 +193,12 @@ def test_bathymetry_cache_invalidation_scales_and_bound(monkeypatch):
         elif change == "world":
             game.world = world = World(coast=world.coast)
         else:
-            monkeypatch.setattr(config, "COLOR_DEEP", (1, 2, 3))
+            # `draw_map_view` re-applies the active theme's palette on every
+            # call (`layout.configure_for` -> `theme.configure_for`), which
+            # would stomp a direct `config.COLOR_DEEP` patch before the
+            # bathymetry key is even computed; patch the theme's source
+            # dict instead, as if a real palette change took effect.
+            monkeypatch.setitem(theme.CONFIG_COLORS_STANDARD, "COLOR_DEEP", (1, 2, 3))
         map_view.draw_map_view(game)
         assert calls
         assert map_view.draw_map_view._bathymetry_cache is not previous

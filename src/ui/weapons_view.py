@@ -6,7 +6,9 @@ import pygame
 
 from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
+from src.core.station import Station
 from src.ui import layout
+from src.ui import nato_symbols
 from src.ui import observations
 
 
@@ -72,95 +74,124 @@ def _inventory_state(game):
     return ready, tubes, reload_s, nixies
 
 
-def weapons_regions(game) -> dict:
-    """Shared panel geometry, including the full interlock reason."""
+def weapons_regions(game, page=0) -> dict:
+    """Shared panel geometry, including the full interlock reason.
+
+    Page 0 shows the targeting solution + engagement stages; page 1 shows
+    inventory, active weapons and engagement controls.
+    """
     layout.configure_for(game)
+    from src.core.commands import STATION_PAGES
     station = pygame.Rect(config.STATION_RECT)
-    top = station.y + 16 + int(layout.font(20).get_linesize() * 1.15)
     x, w, gap = station.x + 14, station.w - 28, 10
-    right_w = min(224, max(200, round(w * .37)))
-    left_w = w - right_w - gap
-    upper_h = 294 if layout.text_scale() > 1 else 270
-    ready_h = 166 if layout.text_scale() > 1 else 158
-    lower = top + upper_h + gap
-    return {
-        "solution": pygame.Rect(x, top, left_w, upper_h),
-        "stages": pygame.Rect(x + left_w + gap, top, right_w, ready_h),
-        "inventory": pygame.Rect(x + left_w + gap, top + ready_h + gap,
-                                 right_w, upper_h - ready_h - gap),
-        "active": pygame.Rect(x, lower, left_w, station.bottom - lower - 12),
-        "controls": pygame.Rect(x + left_w + gap, lower, right_w,
-                                station.bottom - lower - 12),
-    }
+    top = _content_top(station)
+    h = station.bottom - top - 34
+    left_w = int(w * .65)
+    right_w = w - left_w - gap
+    if page == 0:
+        return {
+            "solution": pygame.Rect(x, top, left_w, h),
+            "stages": pygame.Rect(x + left_w + gap, top, right_w, h),
+        }
+    else:
+        inv_h = max(1, int(h * .42))
+        lower_h = max(1, h - inv_h - gap)
+        return {
+            "inventory": pygame.Rect(x, top, w, inv_h),
+            "active": pygame.Rect(x, top + inv_h + gap, left_w, lower_h),
+            "controls": pygame.Rect(x + left_w + gap, top + inv_h + gap,
+                                    right_w, lower_h),
+        }
+
+
+def _active_row_pitch() -> int:
+    """Row pitch for active-weapon lines (wraps to two lines at the operational font floor)."""
+    face = layout.font(15)
+    return 2 * int(face.get_linesize() * 1.15) + 6
+
+
+def _content_top(station: pygame.Rect) -> int:
+    from src.ui import stations_view
+    return stations_view._station_content_top(station, 2)
 
 
 @localized
 def weapons_hit_target(game, pos):
     """Hit-test the displayed fire-control panels without consulting targets."""
     layout.configure_for(game)
+    from src.core.commands import STATION_PAGES
+    from src.core.station import Station as St
+    pages = STATION_PAGES[St.WEAPONS]
+    page = int(getattr(game, "station_page", 0)) % len(pages)
     station = pygame.Rect(config.STATION_RECT)
     if pos is None or not station.collidepoint(pos):
         return None
-    regions = weapons_regions(game)
+    regions = weapons_regions(game, page=page)
     target = game.target
     readiness = game.torpedo_readiness()[0]
-    solution, stages, inventory, active, controls = (
-        regions[key] for key in ("solution", "stages", "inventory", "active", "controls"))
-    if solution.collidepoint(pos):
-        if target is None:
-            return layout.tooltip_payload("panel.fire_solution", "weapons.no_assigned_target",
-                                          "tooltip.adopt_contact",
-                                          target_id="weapons:solution")
-        displayed_range = _display_range(target, game.ship)
-        distance = f"{displayed_range:.1f}" if displayed_range is not None else "--"
-        sigma = f"{target.range_sigma_nm:.2f}" if target.range_sigma_nm is not None else "--"
-        return layout.tooltip_payload(
-            message("weapons.tooltip.solution_title", contact=target.id),
-            observations.format_bearing_pair(target, game.ship),
-            message("weapons.tooltip.range_sigma", range=distance, sigma=sigma),
-            message("map.tooltip.class_confidence", classification=display_value('classification', target.player_class), confidence=f"{target.confidence:.0%}"),
-            message("weapons.tooltip.source_age", source=target.range_source or localize("map.tooltip.passive_bearing"), age=f"{observations.observation_age(target, game.sim_t):.0f}"),
-            message("observation.fix_age", age=f"{observations.position_age(target, game.sim_t):.0f}")
-            if observations.position_age(target, game.sim_t) is not None else None,
-            _readiness_text(readiness),
-            target_id=f"weapons:contact:{target.id}")
-    if stages.collidepoint(pos):
-        return layout.tooltip_payload("weapons.tooltip.interlock_title", _readiness_text(readiness),
-                                      "tooltip.interlock",
-                                      target_id="weapons:interlock")
-    if inventory.collidepoint(pos):
-        ready, tubes, reload_s, nixies = _inventory_state(game)
-        return layout.tooltip_payload(
-            "panel.inventory", message("weapons.tooltip.ship_torpedoes", count=game.torpedo_count, total=game.torpedo_total),
-            message("weapons.tooltip.tubes", ready=ready,
-                    total=tubes, reload=f"{reload_s:.0f}"),
-            message("weapons.tooltip.nixie", count=nixies),
-            message("weapons.tooltip.helo_assets", torpedoes=game.helo.torps, buoys=game.helo.buoys_left),
-            "tooltip.inventory",
-            target_id="weapons:inventory")
-    if active.collidepoint(pos):
-        body_top = active.y + 16 + layout.font(16, bold=True).get_linesize()
-        row = (int(pos[1]) - body_top) // 23
-        capacity = max(0, min(5, (active.bottom - body_top - 30) // 23))
-        if 0 <= row < len(game.torpedoes[:capacity]):
-            weapon = game.torpedoes[row]
-            remaining = max(0.0, weapon.range_nm - weapon.travel)
-            mode = display_value("weapon_mode",
-                                 "SUCHER" if weapon.seeker_acquired else "DRAHT")
+    if page == 0:
+        solution = regions["solution"]
+        stages = regions["stages"]
+        if solution.collidepoint(pos):
+            if target is None:
+                return layout.tooltip_payload("panel.fire_solution", "weapons.no_assigned_target",
+                                              "tooltip.adopt_contact",
+                                              target_id="weapons:solution")
+            displayed_range = _display_range(target, game.ship)
+            distance = f"{displayed_range:.1f}" if displayed_range is not None else "--"
+            sigma = f"{target.range_sigma_nm:.2f}" if target.range_sigma_nm is not None else "--"
             return layout.tooltip_payload(
-                message("weapons.tooltip.weapon_title", weapon=weapon.idx),
-                message("weapons.tooltip.mode_remaining", mode=mode, remaining=f"{remaining:.1f}"),
-                "tooltip.own_weapon",
-                target_id=f"weapons:torpedo:{weapon.idx}")
-        if not game.torpedoes:
-            return layout.tooltip_payload("panel.active_weapons", "ui.no_weapons",
-                                          target_id="weapons:active")
-    if controls.collidepoint(pos):
-        return layout.tooltip_payload(
-            "tooltip.engagement_controls", message("weapons.tooltip.depth_roe", depth=f"{game.torpedo_depth:.0f}", roe=game.roe),
-            message("weapons.tooltip.helo_state", state=localize('enum.helo.' + game.helo.state)),
-            "control.weapons",
-            target_id="weapons:controls")
+                message("weapons.tooltip.solution_title", contact=target.id),
+                observations.format_bearing_pair(target, game.ship),
+                message("weapons.tooltip.range_sigma", range=distance, sigma=sigma),
+                message("map.tooltip.class_confidence", classification=display_value('classification', target.player_class), confidence=f"{target.confidence:.0%}"),
+                message("weapons.tooltip.source_age", source=target.range_source or localize("map.tooltip.passive_bearing"), age=f"{observations.observation_age(target, game.sim_t):.0f}"),
+                message("observation.fix_age", age=f"{observations.position_age(target, game.sim_t):.0f}")
+                if observations.position_age(target, game.sim_t) is not None else None,
+                _readiness_text(readiness),
+                target_id=f"weapons:contact:{target.id}")
+        if stages.collidepoint(pos):
+            return layout.tooltip_payload("weapons.tooltip.interlock_title", _readiness_text(readiness),
+                                          "tooltip.interlock",
+                                          target_id="weapons:interlock")
+    else:
+        inventory = regions["inventory"]
+        active = regions["active"]
+        controls = regions["controls"]
+        if inventory.collidepoint(pos):
+            ready, tubes, reload_s, nixies = _inventory_state(game)
+            return layout.tooltip_payload(
+                "panel.inventory", message("weapons.tooltip.ship_torpedoes", count=game.torpedo_count, total=game.torpedo_total),
+                message("weapons.tooltip.tubes", ready=ready,
+                        total=tubes, reload=f"{reload_s:.0f}"),
+                message("weapons.tooltip.nixie", count=nixies),
+                message("weapons.tooltip.helo_assets", torpedoes=game.helo.torps, buoys=game.helo.buoys_left),
+                "tooltip.inventory",
+                target_id="weapons:inventory")
+        if active.collidepoint(pos):
+            body_top = active.y + 16 + layout.font(16, bold=True).get_linesize()
+            pitch = _active_row_pitch()
+            row = (int(pos[1]) - body_top) // pitch
+            capacity = max(0, min(5, (active.bottom - body_top - 30) // pitch))
+            if 0 <= row < len(game.torpedoes[:capacity]):
+                weapon = game.torpedoes[row]
+                remaining = max(0.0, weapon.range_nm - weapon.travel)
+                mode = display_value("weapon_mode",
+                                      "SUCHER" if weapon.seeker_acquired else "DRAHT")
+                return layout.tooltip_payload(
+                    message("weapons.tooltip.weapon_title", weapon=weapon.idx),
+                    message("weapons.tooltip.mode_remaining", mode=mode, remaining=f"{remaining:.1f}"),
+                    "tooltip.own_weapon",
+                    target_id=f"weapons:torpedo:{weapon.idx}")
+            if not game.torpedoes:
+                return layout.tooltip_payload("panel.active_weapons", "ui.no_weapons",
+                                              target_id="weapons:active")
+        if controls.collidepoint(pos):
+            return layout.tooltip_payload(
+                "tooltip.engagement_controls", message("weapons.tooltip.depth_roe", depth=f"{game.torpedo_depth:.0f}", roe=game.roe),
+                message("weapons.tooltip.helo_state", state=localize('enum.helo.' + game.helo.state)),
+                "control.weapons",
+                target_id="weapons:controls")
     return None
 
 
@@ -196,6 +227,10 @@ def draw_weapons_overlay(game, tr=None) -> None:
                 pygame.draw.line(s, config.COLOR_DANGER, (int(tx), int(ty) - 10),
                                  (int(tx), int(ty) + 10), 2)
                 pygame.draw.circle(s, config.COLOR_DANGER, (int(tx), int(ty)), 8, 1)
+                nato_symbols.draw_motion_vector(
+                    s, (tx, ty), getattr(c, "tma_course", None),
+                    getattr(c, "tma_speed", None),
+                    view.scale, config.COLOR_DANGER, font=game.font, max_px=120)
                 layout.blit_line(s, message("weapons.overlay.fix", contact=c.id,
                                             source=src),
                                  (int(tx) + 12, int(ty) - 22, 130, 20),
@@ -213,135 +248,154 @@ def draw_weapons_overlay(game, tr=None) -> None:
 @localized
 def draw_weapons_panel(game, tr=None) -> None:
     layout.configure_for(game)
+    from src.core.commands import STATION_PAGES
+    from src.ui.stations_view import draw_station_page_tabs, _station_content_top
     s = game.screen
+    pages = STATION_PAGES[Station.WEAPONS]
+    page = int(getattr(game, "station_page", 0)) % len(pages)
     station = pygame.Rect(config.STATION_RECT)
     layout.panel(s, station, "station.weapons.title", title_size=20)
-    regions = weapons_regions(game)
+    draw_station_page_tabs(s, station, pages, page, tr)
     c = game.target
     readiness, readiness_color = game.torpedo_readiness()
     fresh_solution = c is not None and game._contact_range_fresh(c)
 
-    solution = layout.box(s, regions["solution"], "panel.fire_solution",
-                          border=config.COLOR_DANGER if c else config.COLOR_WARN)
-    sx, sy, sw, _ = solution
-    if c is None:
-        layout.blit_line(s, "ui.no_target", (sx, sy, sw, 28),
-                         config.COLOR_WARN, size=18)
-        layout.blit_block(s, "tooltip.target_contact",
-                          sx, sy + 38, sw, 48, config.COLOR_TEXT_DIM, size=14)
+    if page == 0:
+        regions = weapons_regions(game, 0)
+        solution = layout.box(s, regions["solution"], "panel.fire_solution",
+                              border=config.COLOR_DANGER if c else config.COLOR_WARN)
+        sx, sy, sw, _ = solution
+        if c is None:
+            layout.blit_line(s, "ui.no_target", (sx, sy, sw, 30),
+                             config.COLOR_WARN, size=20)
+            layout.blit_block(s, "tooltip.target_contact",
+                              sx, sy + 40, sw, 48, config.COLOR_TEXT_DIM, size=16)
+        else:
+            displayed_range = _display_range(c, getattr(game, "ship", None)) \
+                if getattr(game, "ship", None) is not None else c.range_est
+            dist = f"{displayed_range:6.1f} NM" if displayed_range is not None else "     --"
+            lines = [
+                (message("weapons.line.contact", contact=c.id, label=c.display_label), config.COLOR_TEXT, 18),
+                (observations.format_bearing_pair(c, getattr(game, "ship", None), compact=True),
+                 config.COLOR_TEXT, 15),
+                (message("weapons.line.confidence", confidence=int(c.confidence * 100)), config.COLOR_TEXT_DIM, 14),
+                (message("weapons.line.range", range=dist.strip()), config.COLOR_TEXT, 15),
+            ]
+            source = ({"tma": "TMA", "ping": "PING", "buoy": localize("map.source.buoy")}
+                      .get(c.range_source, "FIX") if displayed_range is not None
+                      else localize("ui.bearing_only"))
+            age = observations.observation_age(c, game.sim_t)
+            sigma = (f"+/- {c.range_sigma_nm:.2f} NM" if c.range_sigma_nm is not None
+                     else localize("weapons.no_range_solution"))
+            lines += [
+                (message("weapons.line.solution", source=source, sigma=sigma), config.COLOR_OK if fresh_solution else config.COLOR_WARN, 14),
+                (message("weapons.line.ages", observation_age=f"{age:.0f}",
+                         fix_age=f"{observations.position_age(c, game.sim_t):.0f}")
+                 if observations.position_age(c, game.sim_t) is not None
+                 else message("weapons.line.age", age=f"{age:.0f}"),
+                 config.COLOR_TEXT_DIM, 14),
+            ]
+            if c.tma_course is not None or c.tma_speed is not None:
+                course = f"{c.tma_course % 360:05.1f}" if c.tma_course is not None else "--"
+                speed = f"{c.tma_speed:.1f}" if c.tma_speed is not None else "--"
+                lines.append((message("weapons.line.tma_compact", course=course, speed=speed,
+                                      quality=f"{c.tma_quality:.0%}"),
+                              config.COLOR_TEXT_DIM, 14))
+            if c.depth_est is not None:
+                lines.append((message("weapons.line.depth_compact", actual=f"{c.depth_est:.0f}",
+                                      target=f"{game.torpedo_depth:.0f}"),
+                              config.COLOR_TEXT, 14))
+            for text, color, size in lines:
+                if text:
+                    face = layout.font(size)
+                    wrapped = layout.wrap_text(localize(text), face, sw) or [""]
+                    pitch = max(1, len(wrapped)) * int(face.get_linesize() * 1.15) + 4
+                    layout.blit_block(s, text, sx, sy, sw, pitch, color, size=size)
+                    sy += pitch
+        readiness_text = localize(_readiness_text(readiness))
+        ready_face, ready_lines = layout.fit_text(
+            readiness_text, 14, sw, 96, min_size=14)
+        ready_h = max(40, len(ready_lines) * int(ready_face.get_linesize() * 1.15) + 8)
+        layout.blit_block(s, _readiness_text(readiness), sx,
+                          regions["solution"].bottom - ready_h - 6, sw, ready_h,
+                          readiness_color, size=14)
+
+        ready = layout.box(s, regions["stages"], "panel.engagement_stages",
+                            border=readiness_color)
+        rx, ry, rw, _ = ready
+        has_target = c is not None
+        has_solution = fresh_solution
+        authorized = (has_target and c.player_class in ("U_BOOT", "KAMPFSCHIFF")
+                      and not readiness.startswith("BLOCKIERT: ZUGEHOERIGKEIT"))
+        stages = ((message("ui.target"), message("panel.assigned" if has_target else "ui.no_target"), has_target),
+                  (message("weapons.fix"), message("panel.valid" if has_solution else
+                      "weapons.manual_datum" if has_target and game.roe == "FREE" else "panel.pending"), has_solution),
+                  ("ROE", message("panel.authorized" if authorized else "panel.blocked"), authorized),
+                  (message("weapons.weapon"), message("ui.ready" if readiness == "FEUER FREI" else "panel.blocked"),
+                   readiness == "FEUER FREI"),
+                  ("FLAK", message("panel.authorized" if game.flak_authorized else "panel.blocked"),
+                   game.flak_authorized))
+        for index, (name, value, ok) in enumerate(stages):
+            layout.status_line(s, rx, ry + index * 26, rw, name, value,
+                               color=config.COLOR_OK if ok else config.COLOR_WARN,
+                               label_w=54, size=13)
+        layout.blit_line(s, "weapons.control.launch", (rx, ry + 142, rw, 24), readiness_color, size=14)
+        layout.blit_line(s, "weapons.control.flak", (rx, ry + 166, rw, 24), config.COLOR_TEXT_DIM, size=13)
+
     else:
-        displayed_range = _display_range(c, getattr(game, "ship", None)) \
-            if getattr(game, "ship", None) is not None else c.range_est
-        dist = f"{displayed_range:6.1f} NM" if displayed_range is not None else "     --"
-        lines = [
-            (message("weapons.line.contact", contact=c.id, label=c.display_label), config.COLOR_TEXT, 18),
-            (observations.format_bearing_pair(c, getattr(game, "ship", None), compact=True),
-             config.COLOR_TEXT, 15),
-            (message("weapons.line.confidence", confidence=int(c.confidence * 100)), config.COLOR_TEXT_DIM, 14),
-            (message("weapons.line.range", range=dist.strip()), config.COLOR_TEXT, 14),
-        ]
-        source = ({"tma": "TMA", "ping": "PING", "buoy": localize("map.source.buoy")}
-                  .get(c.range_source, "FIX") if displayed_range is not None
-                  else localize("ui.bearing_only"))
-        age = observations.observation_age(c, game.sim_t)
-        sigma = (f"+/- {c.range_sigma_nm:.2f} NM" if c.range_sigma_nm is not None
-                 else localize("weapons.no_range_solution"))
-        lines += [
-            (message("weapons.line.solution", source=source, sigma=sigma), config.COLOR_OK if fresh_solution else config.COLOR_WARN, 14),
-            (message("weapons.line.ages", observation_age=f"{age:.0f}",
-                     fix_age=f"{observations.position_age(c, game.sim_t):.0f}")
-             if observations.position_age(c, game.sim_t) is not None
-             else message("weapons.line.age", age=f"{age:.0f}"),
-             config.COLOR_TEXT_DIM, 14),
-        ]
-        if c.tma_course is not None or c.tma_speed is not None:
-            course = f"{c.tma_course % 360:05.1f}" if c.tma_course is not None else "--"
-            speed = f"{c.tma_speed:.1f}" if c.tma_speed is not None else "--"
-            lines.append((message("weapons.line.tma_compact", course=course, speed=speed,
-                                  quality=f"{c.tma_quality:.0%}"),
-                          config.COLOR_TEXT_DIM, 14))
-        if c.depth_est is not None:
-            lines.append((message("weapons.line.depth_compact", actual=f"{c.depth_est:.0f}",
-                                  target=f"{game.torpedo_depth:.0f}"),
-                          config.COLOR_TEXT, 14))
-        for text, color, size in lines:
-            if text:
-                layout.blit_line(s, text, (sx, sy, sw, 22), color, size=size)
-            sy += 24 if layout.text_scale() > 1 else 21
-    layout.blit_block(s, _readiness_text(readiness), sx,
-                      regions["solution"].bottom - 62, sw, 56,
-                      readiness_color, size=14)
+        regions = weapons_regions(game, 1)
+        inventory = layout.box(s, regions["inventory"],
+                               "panel.inventory")
+        ix, iy, iw, _ = inventory
+        layout.status_line(s, ix, iy, iw, "field.torpedoes", message("weapons.line.inventory",
+                           count=game.torpedo_count, total=game.torpedo_total),
+                           label_w=100, size=17)
+        tube_ready, tube_total, reload_s, nixies = _inventory_state(game)
+        tube_status = message("weapons.line.tubes", ready=tube_ready,
+                              total=tube_total, reload=f"{reload_s:.0f}")
+        layout.status_line(s, ix, iy + 30, iw, "weapons.tubes_short", tube_status,
+                           label_w=100, size=15)
+        layout.status_line(s, ix, iy + 60, iw, "weapons.nixie_short",
+                           str(nixies), label_w=100, size=15)
+        layout.status_line(s, ix, iy + 90, iw, "ui.helo_torpedoes_short", str(game.helo.torps),
+                            label_w=120, size=17)
+        layout.status_line(s, ix, iy + 120, iw, "ui.buoys", str(game.helo.buoys_left),
+                            label_w=120, size=17)
 
-    ready = layout.box(s, regions["stages"], "panel.engagement_stages",
-                        border=readiness_color)
-    rx, ry, rw, _ = ready
-    has_target = c is not None
-    has_solution = fresh_solution
-    authorized = (has_target and c.player_class in ("U_BOOT", "KAMPFSCHIFF")
-                  and not readiness.startswith("BLOCKIERT: ZUGEHOERIGKEIT"))
-    stages = ((message("ui.target"), message("panel.assigned" if has_target else "ui.no_target"), has_target),
-              (message("weapons.fix"), message("panel.valid" if has_solution else
-                  "weapons.manual_datum" if has_target and game.roe == "FREE" else "panel.pending"), has_solution),
-              ("ROE", message("panel.authorized" if authorized else "panel.blocked"), authorized),
-              (message("weapons.weapon"), message("ui.ready" if readiness == "FEUER FREI" else "panel.blocked"),
-               readiness == "FEUER FREI"))
-    for index, (name, value, ok) in enumerate(stages):
-        layout.status_line(s, rx, ry + index * 22, rw, name, value,
-                           color=config.COLOR_OK if ok else config.COLOR_WARN,
-                           label_w=76, size=15)
-    layout.blit_line(s, "weapons.control.launch", (rx, ry + 90, rw, 22), readiness_color, size=14)
+        active = layout.box(s, regions["active"],
+                             "panel.active_weapons")
+        ax, ay, aw, ah = active
+        if not game.torpedoes:
+            layout.blit_line(s, "ui.no_weapons", (ax, ay, aw, 24),
+                             config.COLOR_TEXT_DIM, size=16)
+        pitch = _active_row_pitch()
+        capacity = max(0, min(5, (regions["active"].bottom - ay - 30) // pitch))
+        for t in game.torpedoes[:capacity]:
+            d = t.guidance_distance_nm()
+            d_txt = f"{d:.1f} NM" if d != float("inf") else "--"
+            mode = display_value("weapon_mode",
+                                  "SUCHER" if t.seeker_acquired else "DRAHT")
+            remaining = max(0.0, t.range_nm - t.travel)
+            run_s = remaining / max(.001, t.speed_nm_per_s)
+            layout.blit_block(s, message("weapons.line.active", weapon=t.idx, mode=mode,
+                                       solution=d_txt, remaining=f"{remaining:.1f}", time=f"{run_s:.0f}"),
+                              ax, ay, aw, pitch, color=config.COLOR_WARN, size=15)
+            ay += pitch
+        if len(game.torpedoes) > capacity:
+            layout.blit_line(s, message("weapons.line.more", count=len(game.torpedoes) - capacity),
+                              (ax, ay, aw, 22), config.COLOR_TEXT_DIM, size=14)
 
-    inventory = layout.box(s, regions["inventory"],
-                           "panel.inventory")
-    ix, iy, iw, _ = inventory
-    layout.status_line(s, ix, iy, iw, "field.torpedoes", message("weapons.line.inventory",
-                       count=game.torpedo_count, total=game.torpedo_total),
-                       label_w=78, size=15)
-    tube_ready, tube_total, reload_s, nixies = _inventory_state(game)
-    tube_status = message("weapons.line.tubes", ready=tube_ready,
-                          total=tube_total, reload=f"{reload_s:.0f}")
-    layout.status_line(s, ix, iy + 24, iw, "weapons.tubes_short", tube_status,
-                       label_w=78, size=13)
-    layout.status_line(s, ix, iy + 48, iw, "weapons.nixie_short",
-                       str(nixies), label_w=78, size=14)
-    layout.status_line(s, ix, iy + 72, iw, "ui.helo_torpedoes_short", str(game.helo.torps),
-                        label_w=96, size=15)
-    layout.status_line(s, ix, iy + 96, iw, "ui.buoys", str(game.helo.buoys_left),
-                        label_w=96, size=15)
-
-    active = layout.box(s, regions["active"],
-                         "panel.active_weapons")
-    ax, ay, aw, ah = active
-    if not game.torpedoes:
-        layout.blit_line(s, "ui.no_weapons", (ax, ay, aw, 22),
-                         config.COLOR_TEXT_DIM, size=14)
-    capacity = max(0, min(5, (regions["active"].bottom - ay - 30) // 23))
-    for t in game.torpedoes[:capacity]:
-        d = t.guidance_distance_nm()
-        d_txt = f"{d:.1f} NM" if d != float("inf") else "--"
-        mode = display_value("weapon_mode",
-                             "SUCHER" if t.seeker_acquired else "DRAHT")
-        remaining = max(0.0, t.range_nm - t.travel)
-        run_s = remaining / max(.001, t.speed_nm_per_s)
-        layout.blit_line(s, message("weapons.line.active", weapon=t.idx, mode=mode,
-                                   solution=d_txt, remaining=f"{remaining:.1f}", time=f"{run_s:.0f}"),
-                         (ax, ay, aw, 21), config.COLOR_WARN, size=13)
-        ay += 23
-    if len(game.torpedoes) > capacity:
-        layout.blit_line(s, message("weapons.line.more", count=len(game.torpedoes) - capacity),
-                         (ax, ay, aw, 19), config.COLOR_TEXT_DIM, size=12)
-
-    controls = layout.box(s, regions["controls"], "panel.engagement")
-    cx, cy, cw, _ = controls
-    layout.blit_line(s, message("weapons.depth_roe", depth=f"{game.torpedo_depth:.0f}", roe=game.roe),
-                     (cx, cy, cw, 22), config.COLOR_TEXT, size=14)
-    helo = game.helo
-    hstate = localize("enum.helo." + helo.state)
-    layout.status_line(s, cx, cy + 22, cw, "HSP-5", hstate,
-                       color=config.COLOR_DANGER if helo.state == "VERLOREN" else
-                       config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM,
-                       label_w=66, size=14)
-    for offset, text in enumerate(("weapons.control.depth_compact", "weapons.control.helo",
-                                    "weapons.control.air_compact", "weapons.control.nixie")):
-        layout.blit_line(s, text, (cx, cy + 44 + offset * 22, cw, 22),
-                         config.COLOR_TEXT_DIM, size=14)
+        controls = layout.box(s, regions["controls"], "panel.engagement")
+        cx, cy, cw, _ = controls
+        layout.blit_line(s, message("weapons.depth_roe", depth=f"{game.torpedo_depth:.0f}", roe=game.roe),
+                         (cx, cy, cw, 24), config.COLOR_TEXT, size=16)
+        helo = game.helo
+        hstate = localize("enum.helo." + helo.state)
+        layout.status_line(s, cx, cy + 28, cw, "HSP-5", hstate,
+                           color=config.COLOR_DANGER if helo.state == "VERLOREN" else
+                           config.COLOR_OK if helo.airborne else config.COLOR_TEXT_DIM,
+                           label_w=80, size=16)
+        for offset, text in enumerate(("weapons.control.depth_compact", "weapons.control.helo",
+                                        "weapons.control.air_compact", "weapons.control.nixie")):
+            layout.blit_line(s, text, (cx, cy + 56 + offset * 26, cw, 24),
+                             config.COLOR_TEXT_DIM, size=15)

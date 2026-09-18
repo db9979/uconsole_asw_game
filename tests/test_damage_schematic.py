@@ -81,19 +81,31 @@ def test_schematic_readable_markers_detail_and_localized_destination(monkeypatch
     model.teams[1] = "engine"
     game = NS(screen=pygame.Surface((1280, 720)), damage=model,
               preferences=NS(large_text=large), station=Station.DAMAGE,
-              dmg_cursor=list(model.compartments).index("engine"), dmg_team=1)
+              dmg_cursor=list(model.compartments).index("engine"), dmg_team=1,
+              station_page=0)
     translator = Translator(language)
+    # Page 0: full-width plan with readable compartment markers.
     with layout.capture_text() as text:
         stations_view.draw_damage_view(game, tr=translator.t)
-    geometry = stations_view.damage_regions(game)
+    plan_geometry = stations_view.damage_regions(game, page=0)
     rendered = "\n".join(item["text"] for item in text)
     assert "X ~ ^ T1" in rendered
+    assert "..." not in rendered
+    assert all(item["bounds"].contains(item["rect"]) for item in text), text
+    assert all(plan_geometry["station"].contains(item["rect"]) for item in text)
+
+    # Page 1: selected-compartment detail and localized team destination.
+    game.station_page = 1
+    with layout.capture_text() as text:
+        stations_view.draw_damage_view(game, tr=translator.t)
+    detail_geometry = stations_view.damage_regions(game, page=1)
+    rendered = "\n".join(item["text"] for item in text)
     assert translator.t("damage.unrepairable") in rendered
     assert translator.t("damage.falling") not in rendered
     assert "Team 1: " + translator.t("compartment.engine") in rendered
     assert "..." not in rendered
     assert all(item["bounds"].contains(item["rect"]) for item in text), text
-    assert all(geometry["station"].contains(item["rect"]) for item in text)
+    assert all(detail_geometry["station"].contains(item["rect"]) for item in text)
     game.tr = translator.t
-    payload = stations_view.station_hit_target(game, geometry["detail"].center)
+    payload = stations_view.station_hit_target(game, detail_geometry["detail"].center)
     assert translator.t("compartment.engine") in "\n".join(payload["lines"])

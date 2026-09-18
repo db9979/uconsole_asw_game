@@ -351,7 +351,7 @@ def test_v10_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
 
     calls = []
     monkeypatch.setattr("src.sonar.sonar.solve_tma",
-                        lambda track: calls.append(track) or None)
+                        lambda track, **kwargs: calls.append(track) or None)
     for game, game_target in ((uninterrupted, target),
                               (restored, restored_target)):
         track = game.sonar._tracks[target.id]

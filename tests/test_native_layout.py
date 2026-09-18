@@ -26,15 +26,26 @@ def test_weapons_panel_has_fixed_solution_readiness_inventory_and_active_section
         screen=pygame.Surface((1280, 720)), target=None,
         torpedo_readiness=lambda: ("ROHRE BEREIT", config.COLOR_OK),
         torpedo_count=4, torpedo_total=4, torpedo_depth=50.0,
-        torpedoes=[], roe="FREIGABE",
+        torpedoes=[], roe="FREIGABE", station_page=0, flak_authorized=True,
         helo=NS(torps=2, buoys_left=6, airborne=False, state="HANGAR"),
     )
 
+    # Page 0: solution + stages
     weapons_view.draw_weapons_panel(game)
+    names_p0 = {title for title, _ in titles}
+    assert "panel.fire_solution" in names_p0
+    assert "panel.engagement_stages" in names_p0
+    assert all(rect.left >= 640 and rect.right <= 1280 for _, rect in titles)
+    assert all(rect.top >= 30 and rect.bottom <= 540 for _, rect in titles)
 
-    names = {title for title, _ in titles}
-    assert {"panel.fire_solution", "panel.engagement_stages", "panel.inventory",
-            "panel.active_weapons", "panel.engagement"} <= names
+    # Page 1: inventory + active + controls
+    titles.clear()
+    game.station_page = 1
+    weapons_view.draw_weapons_panel(game)
+    names_p1 = {title for title, _ in titles}
+    assert "panel.inventory" in names_p1
+    assert "panel.active_weapons" in names_p1
+    assert "panel.engagement" in names_p1
     assert all(rect.left >= 640 and rect.right <= 1280 for _, rect in titles)
     assert all(rect.top >= 30 and rect.bottom <= 540 for _, rect in titles)
 
@@ -44,17 +55,23 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
     monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
     lines = []
     original_line = layout.blit_line
+    original_block = layout.blit_block
     original_status = layout.status_line
 
     def record_line(screen, text, *args, **kwargs):
         lines.append(localize(text))
         return original_line(screen, text, *args, **kwargs)
 
+    def record_block(screen, text, *args, **kwargs):
+        lines.append(localize(text))
+        return original_block(screen, text, *args, **kwargs)
+
     def record_status(screen, x, y, w, label, value, *args, **kwargs):
         lines.append(f"{localize(label)} {localize(value)}")
         return original_status(screen, x, y, w, label, value, *args, **kwargs)
 
     monkeypatch.setattr(layout, "blit_line", record_line)
+    monkeypatch.setattr(layout, "blit_block", record_block)
     monkeypatch.setattr(layout, "status_line", record_status)
     contact = NS(id=3, display_label="U-Boot", bearing=80.0, range_est=6.0,
                  confidence=.8, range_source="tma", last_seen=90.0,
@@ -65,7 +82,7 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
         torpedo_readiness=lambda: ("FEUER FREI", config.COLOR_OK),
         _contact_range_fresh=lambda c: True,
         torpedo_count=4, torpedo_total=4, torpedo_depth=50.0,
-        torpedoes=[], roe="STD",
+        torpedoes=[], roe="STD", station_page=0, flak_authorized=True,
         helo=NS(torps=2, buoys_left=6, airborne=False, state="HANGAR"),
     )
     weapons_view.draw_weapons_panel(game)
@@ -125,7 +142,7 @@ def test_damage_native_layout_has_selected_detail_panel(monkeypatch):
     damage.compartments["sonar"].flood = 42.0
     cursor = list(damage.compartments).index("sonar")
     game = NS(screen=pygame.Surface((1280, 720)), damage=damage,
-              dmg_cursor=cursor, dmg_team=1)
+              dmg_cursor=cursor, dmg_team=1, station_page=1)
 
     stations_view.draw_damage_view(game)
 
@@ -137,16 +154,19 @@ def test_helicopter_regions_are_shared_bounded_and_adapt_to_large_text(monkeypat
     monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
     normal_game = NS(preferences=NS(large_text=False))
     large_game = NS(preferences=NS(large_text=True))
-    normal = stations_view.helicopter_regions(normal_game)
-    large = stations_view.helicopter_regions(large_game)
+    normal = stations_view.helicopter_regions(normal_game, page=0)
+    large = stations_view.helicopter_regions(large_game, page=0)
+    normal_rules = stations_view.helicopter_regions(normal_game, page=1)
     station = pygame.Rect(config.STATION_RECT)
 
     for regions in (normal, large):
-        assert all(station.contains(regions[name])
-                   for name in ("status", "resources", "rules"))
+        assert station.contains(regions["status"])
+        assert station.contains(regions["resources"])
         assert regions["status"].bottom < regions["resources"].top
-        assert regions["resources"].bottom < regions["rules"].top
-        assert regions["rules"].h >= 100
+        assert regions["rules"].w == 0 and regions["rules"].h == 0
+    assert station.contains(normal_rules["rules"])
+    assert normal_rules["rules"].h >= 100
+    assert normal_rules["status"].w == 0 and normal_rules["status"].h == 0
     assert large["status"].h > normal["status"].h
     layout.configure_for(large_text=False)
 
@@ -191,7 +211,7 @@ def test_helicopter_status_rendered_rows_are_inside_card(monkeypatch):
         ship=NS(x=0.0, y=0.0, course=25.0), buoys=[],
         _helo_waypoint_polar=lambda: (80.0, 12.0),
     )
-    status = stations_view.helicopter_regions(game)["status"]
+    status = stations_view.helicopter_regions(game, page=0)["status"]
 
     with layout.capture_text() as rendered:
         stations_view.draw_helicopter_view(game, tr=Translator("en").t)
@@ -200,5 +220,5 @@ def test_helicopter_status_rendered_rows_are_inside_card(monkeypatch):
                    if "Flight course" in item["text"] or "Flugkurs" in item["text"]]
     assert flight_rows
     assert all(status.contains(item["rect"]) for item in flight_rows)
-    assert stations_view.helicopter_regions(game)["rules"].h >= 100
+    assert stations_view.helicopter_regions(game, page=1)["rules"].h >= 100
     layout.configure_for(large_text=False)

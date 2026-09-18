@@ -888,9 +888,9 @@ class UnitEditor:
                              self.tr("editor.open_clone"), self.tr("editor.runtime_no")]
                     for row, line in enumerate(lines):
                         widgets.draw_text(surface, raw_text(line) if row < 2 else line,
-                                          (detail.x, detail.y + row * 28, detail.width, 25),
+                                          (detail.x, detail.y + row * 34, detail.width, 30),
                                            color=widgets.PALETTE.text if row == 0 else widgets.PALETTE.dim,
-                                           size=17 if row == 0 else 15, bold=row == 0)
+                                           size=19 if row == 0 else 17, bold=row == 0)
                 else:
                     widgets.draw_text(surface, self.tr("editor.no_results"), detail,
                                       color=widgets.PALETTE.dim, align="center")
@@ -918,9 +918,9 @@ class UnitEditor:
                                       else "editor.wiki_tag_suggested")
                         widgets.draw_text(
                             surface, raw_text(f"{key}: {value}  [{tag}]"),
-                            (inner.x, inner.y + row * 24, inner.width, 22),
+                            (inner.x, inner.y + row * 30, inner.width, 27),
                             color=widgets.PALETTE.text if source == "wiki" else widgets.PALETTE.dim,
-                            size=13)
+                            size=16)
                         row += 1
             elif self.current:
                 self._sync_fields()
@@ -933,9 +933,9 @@ class UnitEditor:
                          self.tr("editor.supported_no"))
                 for row, line in enumerate(lines):
                     widgets.draw_text(surface, raw_text(line) if row < 3 else line,
-                                      (nav.x, nav.y + row * 30, nav.width, 26),
+                                      (nav.x, nav.y + row * 36, nav.width, 32),
                                       color=widgets.PALETTE.focus if row == 3 else widgets.PALETTE.text,
-                                      size=13 if row == 3 else 15)
+                                      size=16 if row == 3 else 17)
                 wiki_url = self.current.data.get("wiki_url")
                 if wiki_url:
                     wiki_rect = pygame.Rect(nav.x, nav.y + 130, min(200, nav.width), 30)

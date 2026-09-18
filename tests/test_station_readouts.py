@@ -78,6 +78,7 @@ def test_weapon_solution_stage_uses_same_freshness_as_launch(game, monkeypatch):
 
 def test_active_weapon_uses_profile_runtime_range(game, monkeypatch):
     monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
+    game.station_page = 1
     game.torpedoes = [type("DisplayedWeapon", (), {
         "idx": 4, "range_nm": 3.0, "travel": 1.0,
         "speed_nm_per_s": 1.0,
@@ -85,7 +86,7 @@ def test_active_weapon_uses_profile_runtime_range(game, monkeypatch):
     })()]
     with layout.capture_text() as text:
         weapons_view.draw_weapons_panel(game, tr=Translator("en").t)
-    rendered = "\n".join(item["text"] for item in text)
+    rendered = " ".join(item["text"] for item in text)
     assert "REM 2.0NM" in rendered
 
 
@@ -110,17 +111,26 @@ def test_non_airborne_helo_has_no_fictitious_navigation_or_rtb(game, monkeypatch
     game.helo.state = state
     game.helo.fuel_s = 0
     game.helo.x, game.helo.y = game.ship.x + 900, game.ship.y - 700
+    # Page 0 = status (navigation values). No fictitious range/bearing when not airborne.
+    game.station_page = 0
     with layout.capture_text() as text:
         stations_view.draw_helicopter_view(game, tr=Translator("en").t)
     rendered = "\n".join(item["text"] for item in text)
     assert "0.0 NM" not in rendered and "TRUE/N 0" not in rendered
+    # Page 1 = mission rules, carries the RTB margin line.
+    game.station_page = 1
+    with layout.capture_text() as text:
+        stations_view.draw_helicopter_view(game, tr=Translator("en").t)
+    rendered = "\n".join(item["text"] for item in text)
     assert "RTB margin: --" in rendered
     assert "RTB margin: -" not in rendered.replace("RTB margin: --", "")
     game.station = Station.HELICOPTER
     game.tr = Translator("en").t
+    game.station_page = 0
     payload = stations_view.station_hit_target(
-        game, stations_view.helicopter_regions(game)["status"].center)
+        game, stations_view.helicopter_regions(game, page=0)["status"].center)
     assert not any("bearing" in line.lower() for line in payload["lines"])
+    game.station_page = 1
     with layout.capture_text() as text:
         weapons_view.draw_weapons_panel(game, tr=Translator("en").t)
     assert Translator("en").t("enum.helo." + state) in "\n".join(i["text"] for i in text)
@@ -142,6 +152,7 @@ def test_bridge_bearing_only_asm_is_still_a_threat(game, monkeypatch):
 
 def test_bridge_weather_picture_tracks_modeled_sea_and_light(game, monkeypatch):
     monkeypatch.setattr(config, "STATION_RECT", (640, 30, 640, 510))
+    game.station_page = 1
     game.world.sea_state = 0
     game.world.hour = 12.0
     stations_view.draw_bridge_view(game, tr=Translator("en").t)
@@ -158,6 +169,7 @@ def test_bridge_weather_picture_tracks_modeled_sea_and_light(game, monkeypatch):
 
 def test_opz_keeps_selected_asm_visible_after_first_three(game, monkeypatch):
     monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
+    game.station_page = 1
     game.air_picture._tracks.clear()
     for i in range(6):
         game.air_picture.observe(track_id=f"M-{i}", kind="ASM", target_id=i,
@@ -185,6 +197,7 @@ def test_engine_does_not_promise_unavailable_tas_advantage(game, monkeypatch):
     monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
     game.sonar_mode = "TOWED"
     assert not game.sonar._tow_available()
+    game.station_page = 1
     with layout.capture_text() as text:
         stations_view.draw_engine_view(game, tr=Translator("en").t)
     assert "TAS unavailable" in "\n".join(item["text"] for item in text)

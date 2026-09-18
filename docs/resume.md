@@ -909,3 +909,63 @@ nicht gepusht oder veröffentlicht.
 
 Offen bleibt ausschließlich die physische Hotspot-, Mehrgeräte-, Audio-,
 Lesbarkeits-, Last- und Thermalabnahme auf der uConsole.
+
+## 0.2.3 Release-Kandidat (2026-09-18)
+
+Version 0.2.3 ergänzt ein zentrales Theme-System (`src/ui/theme.py`), das
+Standard- und High-Contrast-Farbpaletten für `config.COLOR_*`, `sonar_view`
+und den Unit-Editor konsolidiert und bei jedem Zeichenaufruf über
+`layout.configure_for()` neu anwendet. Jede der neun Stationen bekommt zwei
+Unterseiten (Tab-Leiste, z. B. Bridge: Navigation/Mission, Weapons:
+Targeting/Ammunition) mit gemeinsamer Tab-Hit-Test-/Zeichenlogik in
+`stations_view.py`; Seiten- und Tastenbelegung stehen in
+`core/commands.py:STATION_PAGES` und `core/i18n.py`'s `station_page`-
+Anzeigeschlüsseln. Weapons und OPZ bekommen manuelle Freigabeschalter für
+FLAK (`F`) und CIWS (`I`), die als zusätzliche UND-Bedingung neben den
+bestehenden Frische-/Reichweiten-/Munitions-/Stationsausfall-Prüfungen der
+Auto-Feuerlogik greifen. Die Autocrew-Brücke weicht jetzt beobachteten
+ASM-/Torpedo-Bedrohungen aus (Kursumkehr + Flankenfahrt, nur auf durch
+`world.hull_is_safe()` geprüften Kursen) und korrigiert eigenständig einen
+projizierten Aufsitzer, wenn kein Ziel bedroht; die Waffen-Autocrew
+verschießt Torpedos auf den nächsten klassifizierten Feindkontakt. Die
+TMA-Loesung (`sonar/tma.py`) bekommt eine Re-Solve-Hysterese
+(`TMA_HYSTERESIS_RMSE_MARGIN_DEG`), die zwischen fast gleichwertigen
+Peilungslösungen nicht mehr bei jedem Update hin- und herspringt, und
+`SensorTrack.derived_motion()` schätzt Kurs/Speed jetzt per
+Kleinste-Quadrate-Fit über das gesamte gehaltene Messfenster statt nur aus
+den letzten zwei Fixes. Separat dazu: ein aktiver Radar-Suchkopf für ASM
+(`seeker_active_range_nm`, 18 NM), der ab Terminalphase eine eigene
+ESM-Signatur (9,0-9,5 GHz, Puls-Doppler) unabhängig vom bestehenden
+Jammer-/HOJ-Pfad ins ESM-Bild speist – eine frühere, RWR-basierte Warnung vor
+einer ansteuernden Rakete, bevor das Suchradar sie erfasst; siehe
+`docs/simulation-gaps.md` Abschnitt 6 für die zwei dazu noch offenen
+Folgepunkte (Radarhorizont für den ASM-Rumpf selbst, Anflug-Höhenprofil des
+Raiders).
+
+Beim Fertigstellen dieses unfertig vorgefundenen Standes wurden zwei echte
+Fehler behoben: `autocrew._nearest_threat()` verglich beim Unentschieden
+einen String-Track-Schlüssel (ASM) gegen eine Integer-Kontakt-ID (Torpedo)
+und stürzte ab, sobald beide gleichzeitig unbekannte Reichweite hatten;
+`AutocrewController._bridge()` befahl den Ausweichkurs ungeprüft, ohne die
+Grundberührungsprüfung der direkt darunterliegenden Korrekturlogik zu
+verwenden. Beide sind durch Regressionstests abgesichert
+(`tests/test_autocrew.py`). Dazu kam ein Layoutfehler in
+`commander/local.py`: `_hotspot_qr()` war noch auf die alte 132px-Box
+skaliert, obwohl das Hotspot-Layout inzwischen zwei nebeneinander stehende
+105px-QR-Codes zeichnet. Drei bereits gemergte Tests hingen an inzwischen
+veralteten Annahmen und wurden korrigiert statt den Code danach zu richten:
+`tests/test_startup.py`/`tests/test_packaging.py` prüften noch die
+Versionszeichenkette „0.2.2", und `tests/test_ui_performance.py` patchte
+`config.COLOR_DEEP` direkt, was das neue Theme-System bei jedem Zeichenaufruf
+wieder überschreibt – der Test patcht jetzt stattdessen
+`theme.CONFIG_COLORS_STANDARD`, die tatsächliche Quelle.
+
+Softwareverifikation: vollständige Suite 2641 bestanden, 26 abgelöst (offene
+Hardwareabnahme), 0 Fehler. Katalogvalidator: 111 akustische Profile.
+Smoke: `SMOKE-OK`. Paketbau: 0.2.3-sdist und -Wheel erfolgreich.
+`docs/screenshots/*.png` wurden mit `tools/capture_screenshots.py` für
+beide Sprachen neu erzeugt (Stationsseiten-Tabs, CIWS/FLAK-Freigabe sichtbar).
+Der Kandidat ist uncommitted und wurde nicht gepusht oder veröffentlicht.
+
+Offen bleibt ausschließlich die physische Hotspot-, Mehrgeräte-, Audio-,
+Lesbarkeits-, Last- und Thermalabnahme auf der uConsole.

@@ -41,8 +41,11 @@ def _bearing_line(game, bearing) -> str:
 
 def _panels(game, page):
     station = pygame.Rect(config.STATION_RECT)
-    body = pygame.Rect(station.x + 12, station.y + 73,
-                       station.w - 24, station.h - 124)
+    # Tightened top/bottom margins (was +73/-124): the larger operational
+    # font floor needs a few extra px in `details` so worst-case content
+    # (e.g. a fully evidenced TMA solution) never clips.
+    body = pygame.Rect(station.x + 12, station.y + 69,
+                       station.w - 24, station.h - 111)
     rail_w = min(350, max(240, round(body.w * .28)))
     main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
     rail = pygame.Rect(main.right + 12, body.y, rail_w, body.h)

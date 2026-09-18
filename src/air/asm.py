@@ -34,6 +34,7 @@ class ASM:
         self.y = y_nm
         self.course = course_deg % 360.0
         self.seq = seq
+        self.sensor_seed = int(seq)
         self.rng = rng
         self.state = "LAUF"
         self.jammer = rng.random() < self.profile["jam_probability"]
@@ -57,6 +58,11 @@ class ASM:
         """Outside the profiled burn-through range, expose bearing-only HOJ."""
         return bool(self.jammer
                     and self.distance_nm(frigate) > self.profile["jam_break_nm"])
+
+    def seeker_active(self, frigate) -> bool:
+        """Terminal active-radar seeker: silent mid-course, radiates close in."""
+        return (self.state in ("LAUF", "CHAFF")
+                and self.distance_nm(frigate) <= self.profile["seeker_active_range_nm"])
 
     # --- Wirkung ---
 

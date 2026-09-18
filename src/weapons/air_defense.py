@@ -8,6 +8,7 @@ import math
 from functools import lru_cache
 from importlib import resources
 
+from src.sensors.esm import ESM_MODULATIONS
 from src.weapons.asw import ConsumableStore, valid_consumable_state
 
 
@@ -51,7 +52,9 @@ def validate_air_defense_loadout(value):
         raise ValueError("air_defense.version: unsupported version")
     asm = _object(value["asm"], {
         "key", "speed_kn", "range_nm", "turn_rate_deg_s", "jam_probability",
-        "jam_break_nm", "hit_distance_nm"}, "air_defense.asm")
+        "jam_break_nm", "hit_distance_nm", "seeker_active_range_nm",
+        "seeker_frequency_hz", "seeker_prf_hz", "seeker_modulation"},
+        "air_defense.asm")
     sam = _object(value["sam"], {
         "key", "speed_kn", "range_nm", "turn_rate_deg_s", "seeker_range_nm",
         "kill_distance_nm", "observation_max_age_s"}, "air_defense.sam")
@@ -71,7 +74,8 @@ def validate_air_defense_loadout(value):
                                    (softkill, "countermeasure.", "softkill")):
         _key(profile["key"], prefix, f"air_defense.{where}.key")
     for profile, fields in ((asm, ("speed_kn", "range_nm", "turn_rate_deg_s",
-                                    "jam_break_nm", "hit_distance_nm")),
+                                    "jam_break_nm", "hit_distance_nm",
+                                    "seeker_active_range_nm")),
                             (sam, ("speed_kn", "range_nm", "turn_rate_deg_s",
                                     "seeker_range_nm", "kill_distance_nm",
                                     "observation_max_age_s")),
@@ -82,6 +86,21 @@ def validate_air_defense_loadout(value):
     for profile, field in ((asm, "jam_probability"), (ciws, "kill_probability"),
                            (softkill, "defeat_probability")):
         _number(profile[field], 0, 1, f"air_defense.{field}")
+    if asm["seeker_active_range_nm"] > asm["range_nm"]:
+        raise ValueError("air_defense.asm.seeker_active_range_nm: exceeds range_nm")
+    seeker_freq = asm["seeker_frequency_hz"]
+    if not isinstance(seeker_freq, list) or len(seeker_freq) != 2:
+        raise ValueError("air_defense.asm.seeker_frequency_hz: pair expected")
+    freq_low = _number(seeker_freq[0], 1.0, 1e12,
+                       "air_defense.asm.seeker_frequency_hz")
+    _number(seeker_freq[1], freq_low, 1e12, "air_defense.asm.seeker_frequency_hz")
+    seeker_prf = asm["seeker_prf_hz"]
+    if not isinstance(seeker_prf, list) or len(seeker_prf) != 2:
+        raise ValueError("air_defense.asm.seeker_prf_hz: pair expected")
+    prf_low = _number(seeker_prf[0], 1.0, 1e7, "air_defense.asm.seeker_prf_hz")
+    _number(seeker_prf[1], prf_low, 1e7, "air_defense.asm.seeker_prf_hz")
+    if asm["seeker_modulation"] not in ESM_MODULATIONS:
+        raise ValueError("air_defense.asm.seeker_modulation: invalid modulation")
     capacity = _number(vls["capacity"], 1, MAX_VLS_CELLS,
                        "air_defense.vls.capacity", integer=True)
     _number(vls["sam_loadout"], 0, capacity, "air_defense.vls.sam_loadout",

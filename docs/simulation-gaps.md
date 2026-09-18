@@ -202,7 +202,7 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 |--------|-------|-----|
 | **Flight** (civil/military) | Waypoint transit or loiter; 2°/s turn; ESM sensing; AIS (civil) | `flights.py:113-172` |
 | **Raider** (attack plane) | 3-phase FSM: APPROACH → ATTACK (tangential stand-off) → RETREAT; fires ASM salvo; fixed altitude; 4°/s turn | `raid.py:75-117` |
-| **ASM** (missile) | Sea-skimming; homing on frigate with 12°/s turn; optional jammer (burn-through at `jam_break_nm`); chaff vulnerability | `asm.py:75-107` |
+| **ASM** (missile) | Sea-skimming; homing on frigate with 12°/s turn; optional jammer (burn-through at `jam_break_nm`); chaff vulnerability; terminal-active radar seeker (silent until `seeker_active_range_nm`, then feeds ESM independently of the HOJ path) | `asm.py:75-113` |
 | **ESSM** (SAM) | Homing on observed ASM track; seeker activates within `seeker_range_nm`; 12°/s turn; no boost phase | `asm.py:138-182` |
 | **Helicopter** | Fixed speed 120 kn; fuel timer; dipping sonar (deploy/retrieve, depth control); sonobuoy drop; torpedo release; weather-gated launch/dip | `helicopter.py:59-272` |
 | **Sonobuoy** | Static position, battery life, passive sonar sensor | `sonobuoy.py:6-19` |
@@ -212,9 +212,12 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
 | **No flight dynamics** | Fixed altitude, constant speed, rate-limited turn | Climb/dive rate, speed- altitude coupling, turn rate vs speed, engine-out |
-| ~~**No radar horizon**~~ | **Fixed (2026-09).** Raiders already used `radar_horizon_nm()`; regular civil/military `flights` now use it too (flat `FLIGHT_RADAR_ALTITUDE_M`), so all air-radar contacts respect the geometric horizon. | — |
+| ~~**No radar horizon**~~ | **Fixed (2026-09) for airframes.** Raiders already used `radar_horizon_nm()`; regular civil/military `flights` now use it too (flat `FLIGHT_RADAR_ALTITUDE_M`). **Still open for the ASM body itself** (see below): its own search-radar detection in `game.py._update_air_picture` uses flat `air_eff` with no altitude/horizon term, so a sea-skimmer is currently seen by search radar at the same range as a 60 m-altitude aircraft. | — |
 | **No ASM boost phase** | ASM flies at constant speed from launch | Boost motor (first seconds), then cruise; speed affects intercept geometry |
-| **No seeker physics** | ESSM/ASM seeker is a range gate + turn-rate limit | Seeker FOV, lock-on delay, jamming resistance (burn-through is binary) |
+| **No seeker physics** | ESSM/ASM homing itself is a range gate + turn-rate limit (unchanged) | Seeker FOV, lock-on delay, jamming resistance (burn-through is binary) |
+| ~~**No ESM warning for inbound ASM**~~ | **Fixed (2026-09).** ASM `seeker_active()` stays silent mid-course (INS-only) and radiates once inside `seeker_active_range_nm` (18 NM); the seeker's own fingerprint (9.0-9.5 GHz, pulse-Doppler) feeds `_update_esm_picture` as a distinct RWR track, independent of the existing HOJ/jammer path (`asm.py`, `game.py._asm_seeker_emitter`). Not yet catalogued for classification in `data/contacts/*` emitters, so `rank_emitters()` won't positively ID it as "missile" — an intentional ambiguity, but worth revisiting. | — |
+| **ASM body ignores radar horizon** | Regular (non-jamming) radar detection of the missile airframe uses flat `air_eff` range (`game.py:3141`), unlike raiders/warships/civilians/flights which all use `radar_horizon_nm()` | Give ASM a low `altitude_m` (~10-20 m) and route its radar branch through the same horizon formula, so search radar only picks it up very late, consistent with the new ESM early warning |
+| **Raider has no attack-altitude profile** | `altitude_m` is a fixed profile constant across APPROACH/ATTACK/RETREAT | Brief pop-up (e.g. 60 m → few hundred m) during ATTACK for target acquisition before missile release, then back down; ties into `radar_horizon_nm()` (a visible radar "spike") and could feed a raider fire-control-radar ESM emission during the pop-up window |
 | **No CIWS physics** | CIWS is a probability roll per cycle with range falloff | Gun barrel elevation/traverse rate; radar-illuminated tracking; round-in-air time |
 | **No chaff physics** | Chaff is a timer (`chaff_left`); ASM goes straight or breaks | Chaff cloud drift, radar reflectivity, seeker discrimination |
 | **No ECM on own ship** | Only chaff (soft-kill) and CIWS/ESSM (hard-kill) | Radar jamming, GPS spoofing (less relevant 1970s but modern) |
@@ -224,8 +227,8 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 ### 6.3 Data structures touched
 
-- `ASM.__init__`: add `altitude_m` (already in profile but not used in update), `boost_phase_s`, `seeker_delay_s`
-- `Raider.__init__`: add `climb_rate_m_s`, `min_altitude_m`, `max_altitude_m`
+- `ASM.__init__`: seeker activation range done (`seeker_active_range_nm`); still add `altitude_m` for its own radar-horizon detection (distinct from the seeker's ESM range), `boost_phase_s`
+- `Raider.__init__`: add `climb_rate_m_s`, `min_altitude_m`, `max_altitude_m` for an attack pop-up
 - `Helicopter`: add `wind_drift`, `hover_fuel_rate`, `dip_sonar_dynamics`
 - `config.py`: add `ASM_BOOST_S`, `CIWS_TURN_RATE`, `RAIDER_CLIMB_RATE`
 

@@ -27,7 +27,7 @@ from src.core.mission_definition import static_preview, validate_mission
 from src.core.station import Station
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.data import fingerprint as fingerprint_mod
-from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
+from src.data.catalog import CATALOG, EmitterProfile, catalog_from_runtime_snapshot
 from src.enemies.animal import Animal
 from src.enemies.civilian import CivilianShip
 from src.enemies.decoy import Decoy
@@ -3663,6 +3663,15 @@ class Game:
                      if key in self.runtime_catalog.emitters
                      and self.runtime_catalog.emitters[key].domain == "radar"), None)
 
+    @staticmethod
+    def _asm_seeker_emitter(profile: dict) -> EmitterProfile:
+        """Terminal active-radar seeker signature of an inbound ASM."""
+        return EmitterProfile(
+            key=profile["key"] + ".seeker", domain="radar",
+            frequency_band_hz=tuple(profile["seeker_frequency_hz"]),
+            prf_band_hz=tuple(profile["seeker_prf_hz"]),
+            modulation_codes=(profile["seeker_modulation"],))
+
     def _esm_measurement(self, actor, bearing: float, distance: float,
                          emitter, namespace: int) -> ESMMeasurement:
         import random
@@ -3721,6 +3730,15 @@ class Game:
                     yield self._esm_measurement(
                         flight, flight.bearing_to_frigate(self.ship), distance,
                         self._emitter_profile(flight.akey), 200_000)
+                for asm in self.asms:
+                    if (not asm.seeker_active(self.ship)
+                            or self.world.land_blocks_line(
+                                self.ship.x, self.ship.y, asm.x, asm.y)):
+                        continue
+                    yield self._esm_measurement(
+                        asm, asm.bearing_to_frigate(self.ship),
+                        asm.distance_nm(self.ship),
+                        self._asm_seeker_emitter(asm.profile), 300_000)
 
             self.esm_picture.observe_batch(measurements(), self.sim_t)
             self._publish_released_esm()

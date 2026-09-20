@@ -323,6 +323,7 @@ class Game:
         self._map_drag = None
         self._map_drag_moved = False
         self.map_follow = True
+        self.opz_map_follow = True
         self.reset(seed)
         self.splash_active = bool(show_splash)
         self.splash_started_at = self._t
@@ -635,6 +636,7 @@ class Game:
         self.map_view = Viewport(self.world.size_nm,
                                  config.MAP_ZOOM_MIN_PX_PER_NM,
                                  config.MAP_ZOOM_MAX_PX_PER_NM)
+        self.opz_map_view = Viewport(self.world.size_nm, 1.0, 100.0)
         self._reset_map_view()
         self.hq_msg(message("runtime.hq.roe", roe=self.roe))
         weather = self.world.weather_values()
@@ -1895,6 +1897,17 @@ class Game:
             return None
         return canvas
 
+    def _opz_map_pointer(self, event_pos=None):
+        """Return a canvas pointer only over the native OPZ chart."""
+        if self.station is not Station.OPZ:
+            return None
+        pos = event_pos if event_pos is not None else pygame.mouse.get_pos()
+        canvas = self._window_to_canvas(pos)
+        if canvas is None:
+            return None
+        chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+        return canvas if chart.collidepoint(canvas) else None
+
     def tooltip_at(self, canvas_pos):
         """Return serializable context for the meaningful visual under the pointer."""
         if (not self.tooltips_enabled or canvas_pos is None or self.in_menu
@@ -1902,8 +1915,10 @@ class Game:
             return None
         previous = config.STATION_RECT
         config.STATION_RECT = (config.STATION_PANEL_RECT
-                               if self.station in MAP_STATIONS
-                               else config.FULL_STATION_RECT)
+                               if self.station in MAP_STATIONS else
+                               config.OPZ_STATION_RECT
+                               if self.station is Station.OPZ else
+                               config.FULL_STATION_RECT)
         try:
             if (self.station in MAP_STATIONS
                     and pygame.Rect(config.MAP_RECT).collidepoint(canvas_pos)):
@@ -2069,6 +2084,11 @@ class Game:
             if self._local_station_input_locked():
                 return
             if self._map_drag is not None and not self._map_drag_moved:
+                if self.station is Station.OPZ:
+                    self._pin_tooltip_at(getattr(e, "pos", None))
+                    self._map_drag = None
+                    self._map_drag_moved = False
+                    return
                 canvas = self._window_to_canvas(getattr(e, "pos", None))
                 hit = map_hit_target(self, canvas) if canvas is not None else None
                 hit_id = hit.get("id", "") if isinstance(hit, dict) else ""
@@ -2612,7 +2632,16 @@ class Game:
                             "runtime.flak.authorized" if self.flak_authorized
                             else "runtime.flak.withheld"), 1.5)
             elif e.key == pygame.K_k:
-                if self.station in MAP_STATIONS:
+                if self.station is Station.OPZ:
+                    self.opz_map_follow = not self.opz_map_follow
+                    if self.opz_map_follow:
+                        self._configure_opz_map_view()
+                        self.opz_map_view.cx = self.ship.x
+                        self.opz_map_view.cy = self.ship.y
+                        self.opz_map_view.clamp_center()
+                    self.flash(message("runtime.map_follow.on" if self.opz_map_follow
+                                       else "runtime.map_follow.off"), 1.5)
+                elif self.station in MAP_STATIONS:
                     self.map_follow = not self.map_follow
                     self.flash(message("runtime.map_follow.on" if self.map_follow
                                        else "runtime.map_follow.off"), 1.5)
@@ -2650,11 +2679,12 @@ class Game:
             # Wheel-Events haben nicht in allen SDL-Versionen ein pos.
             if self.in_menu or self.game_over or e.y == 0:
                 return
-            canvas = self._window_to_canvas(getattr(e, "pos", None)
-                                            or pygame.mouse.get_pos())
-            if (self.station is Station.OPZ and canvas is not None
-                    and opz_ppi_rect(config.FULL_STATION_RECT).collidepoint(canvas)):
-                self._cycle_radar_range(1 if e.y > 0 else -1)
+            pointer = self._opz_map_pointer(getattr(e, "pos", None))
+            if pointer is not None:
+                chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+                self._configure_opz_map_view(chart)
+                self.opz_map_view.zoom(
+                    config.MAP_ZOOM_WHEEL_FACTOR ** e.y, pivot=pointer)
                 return
             pointer = self._map_pointer(getattr(e, "pos", None))
             if pointer is None:
@@ -2669,8 +2699,10 @@ class Game:
                         and not self.autocrew_overview_open):
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
                     station_rect = (config.STATION_PANEL_RECT
-                                    if self.station in MAP_STATIONS
-                                    else config.FULL_STATION_RECT)
+                                    if self.station in MAP_STATIONS else
+                                    config.OPZ_STATION_RECT
+                                    if self.station is Station.OPZ else
+                                    config.FULL_STATION_RECT)
                     page_index = station_page_tab_at(
                         canvas, pygame.Rect(station_rect),
                         len(STATION_PAGES[self.station]))
@@ -2718,7 +2750,7 @@ class Game:
                         return
                 if self.station is Station.OPZ:
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
-                    action = opz_action_at(self, canvas, config.FULL_STATION_RECT)
+                    action = opz_action_at(self, canvas, config.OPZ_STATION_RECT)
                     if isinstance(action, tuple) and action[0] == "select":
                         self.opz_selected_track_id = action[1]
                     elif action == "classify":
@@ -2734,6 +2766,11 @@ class Game:
                     if action is not None:
                         self.pinned_tooltip = None
                         self._tooltip_anchor = None
+                        return
+                    pointer = self._opz_map_pointer(getattr(e, "pos", None))
+                    if pointer is not None:
+                        self._map_drag = pointer
+                        self._map_drag_moved = False
                         return
                 pointer = self._map_pointer(getattr(e, "pos", None))
                 if pointer is not None:
@@ -2754,8 +2791,12 @@ class Game:
                 if not self._map_drag_moved and abs(dx) + abs(dy) <= 2:
                     return
                 self._map_drag_moved = True
-                self.map_follow = False
-                self.map_view.pan_px(dx, dy)
+                if self.station is Station.OPZ:
+                    self.opz_map_follow = False
+                    self.opz_map_view.pan_px(dx, dy)
+                else:
+                    self.map_follow = False
+                    self.map_view.pan_px(dx, dy)
                 self._map_drag = pointer
 
     def _assign_selected_team(self) -> None:
@@ -5242,6 +5283,10 @@ class Game:
         if self.map_follow:
             self.map_view.cx, self.map_view.cy = self.ship.x, self.ship.y
             self.map_view.clamp_center()
+        self._configure_opz_map_view()
+        if self.opz_map_follow:
+            self.opz_map_view.cx, self.opz_map_view.cy = self.ship.x, self.ship.y
+            self.opz_map_view.clamp_center()
         if not self.game_over:
             self._update_audio(wall_dt)
         else:
@@ -6007,6 +6052,7 @@ class Game:
 
     def save_state(self) -> dict:
         """Return the complete canonical save state for this release."""
+        opz_map = self._opz_map_save_values()
         entity_groups = {
             "sub": (Sub, self.subs), "animal": (Animal, self.animals),
             "surface": (SurfaceShip, self.civilians + self.warships),
@@ -6434,6 +6480,10 @@ class Game:
                 map_cx=self.map_view.cx, map_cy=self.map_view.cy,
                 map_scale=self.map_view.scale,
                 map_follow=self.map_follow,
+                opz_map_cx=opz_map.cx,
+                opz_map_cy=opz_map.cy,
+                opz_map_scale=opz_map.scale,
+                opz_map_follow=self.opz_map_follow,
                 paused=self.paused,
                 tooltips_enabled=getattr(self, "tooltips_enabled", True),
                 pinned_tooltip=layout.valid_tooltip(
@@ -7156,6 +7206,10 @@ class Game:
         self.map_view.cx = ui.get("map_cx", self.ship.x)
         self.map_view.cy = ui.get("map_cy", self.ship.y)
         self.map_follow = bool(ui.get("map_follow", True))
+        self.opz_map_view.scale = ui["opz_map_scale"]
+        self.opz_map_view.cx = ui["opz_map_cx"]
+        self.opz_map_view.cy = ui["opz_map_cy"]
+        self.opz_map_follow = ui["opz_map_follow"]
         self.tooltips_enabled = bool(ui.get("tooltips_enabled", True))
         self.pinned_tooltip = (layout.valid_tooltip(ui.get("pinned_tooltip"))
                                if self.tooltips_enabled else None)
@@ -7166,6 +7220,8 @@ class Game:
         self._tooltip_anchor = (tuple(anchor) if self.pinned_tooltip is not None
                                 and valid_anchor else None)
         self.map_view.clamp_center()
+        self._configure_opz_map_view()
+        self.opz_map_view.clamp_center()
         target_id = ui.get("target_id")
         selected_id = ui.get("selected_contact_id")
         opz_selected_id = ui.get("opz_selected_track_id")
@@ -7584,6 +7640,37 @@ class Game:
         return upgraded
 
     @staticmethod
+    def _upgrade_pre_opz_map_current_save(data):
+        """Add the optional native-OPZ camera to an otherwise current save UI."""
+        if not isinstance(data, dict) or not isinstance(data.get("ui"), dict):
+            return data
+        ui = data["ui"]
+        fields = {"opz_map_cx", "opz_map_cy", "opz_map_scale",
+                  "opz_map_follow"}
+        if fields & set(ui):
+            return data
+        ship = data.get("ship")
+        if not isinstance(ship, dict):
+            return data
+        chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+        world = data.get("world")
+        coast = world.get("coast") if isinstance(world, dict) else None
+        world_size = (coast.get("world_nm") if isinstance(coast, dict)
+                      else config.WORLD_SIZE_NM)
+        default_scale = min(chart.w, chart.h) / (
+            2.0 * config.OPZ_MAP_DEFAULT_RADIUS_NM)
+        if isinstance(world_size, (int, float)) and not isinstance(world_size, bool) \
+                and math.isfinite(world_size) and world_size > 0.0:
+            default_scale = max(default_scale,
+                                min(chart.w, chart.h) / world_size)
+        upgraded = copy.deepcopy(data)
+        upgraded["ui"].update(
+            opz_map_cx=ship.get("x"), opz_map_cy=ship.get("y"),
+            opz_map_scale=default_scale,
+            opz_map_follow=True)
+        return upgraded
+
+    @staticmethod
     def _valid_save_document(data, runtime_catalog=None) -> bool:
         def finite_number(value) -> bool:
             try:
@@ -7653,6 +7740,26 @@ class Game:
         if not finite_number(save_sim_t) or not 0.0 <= save_sim_t <= 1e12:
             return False
         if not finite_tree(data):
+            return False
+        ui = data.get("ui")
+        world_data = data.get("world")
+        coast_data = (world_data.get("coast")
+                      if isinstance(world_data, dict) else None)
+        world_size = (coast_data.get("world_nm")
+                      if isinstance(coast_data, dict) else None)
+        if not bounded(world_size, 1e-6, 1_000_000.0):
+            return False
+        opz_chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+        opz_min_scale = min(opz_chart.w, opz_chart.h) / world_size
+        opz_max_scale = max(opz_min_scale, min(opz_chart.w, opz_chart.h) / (
+            2.0 * config.OPZ_MAP_MAX_ZOOM_RADIUS_NM)
+        )
+        if (not isinstance(ui, dict)
+                or type(ui.get("opz_map_follow")) is not bool
+                or not bounded(ui.get("opz_map_cx"), -1_000_000, 1_000_000)
+                or not bounded(ui.get("opz_map_cy"), -1_000_000, 1_000_000)
+                or not bounded(ui.get("opz_map_scale"), opz_min_scale,
+                               opz_max_scale)):
             return False
         try:
             if runtime_catalog is None:
@@ -8936,6 +9043,7 @@ class Game:
                 data = self._upgrade_pre_helo_dip_bearing_v10(data)
                 data = self._upgrade_pre_torpedo_spoolup_v10(data)
                 data = self._upgrade_pre_depth_inertia_v10(data)
+            data = self._upgrade_pre_opz_map_current_save(data)
             runtime_catalog = self._catalog_for_save(data)
         except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
             return False
@@ -8970,6 +9078,7 @@ class Game:
         candidate.runtime_catalog = runtime_catalog
         candidate.held = set(self.held)
         candidate.map_view = copy.copy(self.map_view)
+        candidate.opz_map_view = copy.copy(self.opz_map_view)
         candidate._observed_enemy_torpedoes = set(
             self._observed_enemy_torpedoes)
         candidate.audio = copy.copy(self.audio)
@@ -9046,6 +9155,41 @@ class Game:
         self.map_view.cy = self.ship.y
         self.map_view.clamp_center()
         self.map_follow = True
+        self._configure_opz_map_view()
+        self.opz_map_view.scale = min(self.opz_map_view.rect[2],
+                                      self.opz_map_view.rect[3]) / (
+            2.0 * config.OPZ_MAP_DEFAULT_RADIUS_NM)
+        self.opz_map_view.cx = self.ship.x
+        self.opz_map_view.cy = self.ship.y
+        self.opz_map_view.clamp_center()
+        self.opz_map_follow = True
+
+    def _configure_opz_map_view(self, chart=None) -> None:
+        chart = pygame.Rect(chart or opz_ppi_rect(config.OPZ_STATION_RECT))
+        self.opz_map_view.world_size = self.world.size_nm
+        self.opz_map_view.set_rect(tuple(chart))
+        self.opz_map_view.min_scale = min(chart.w, chart.h) / self.world.size_nm
+        self.opz_map_view.max_scale = max(
+            self.opz_map_view.min_scale, min(chart.w, chart.h) / (
+                2.0 * config.OPZ_MAP_MAX_ZOOM_RADIUS_NM))
+        self.opz_map_view.scale = config.clamp(
+            self.opz_map_view.scale, self.opz_map_view.min_scale,
+            self.opz_map_view.max_scale)
+
+    def _opz_map_save_values(self):
+        """Return a canonical camera snapshot without mutating live UI state."""
+        view = copy.copy(self.opz_map_view)
+        chart = pygame.Rect(opz_ppi_rect(config.OPZ_STATION_RECT))
+        view.world_size = self.world.size_nm
+        view.set_rect(tuple(chart))
+        view.min_scale = min(chart.w, chart.h) / self.world.size_nm
+        view.max_scale = max(view.min_scale, min(chart.w, chart.h) / (
+            2.0 * config.OPZ_MAP_MAX_ZOOM_RADIUS_NM))
+        view.scale = config.clamp(view.scale, view.min_scale, view.max_scale)
+        if self.opz_map_follow:
+            view.cx, view.cy = self.ship.x, self.ship.y
+        view.clamp_center()
+        return view
 
     def _reroll_menu_seed(self) -> None:
         """Choose a menu seed uniformly without repeating the current value."""
@@ -9327,8 +9471,11 @@ class Game:
                                                 Station.HELICOPTER))
             previous_rect = config.STATION_RECT
             try:
-                config.STATION_RECT = (config.STATION_PANEL_RECT if map_station
-                                       else config.FULL_STATION_RECT)
+                config.STATION_RECT = (config.STATION_PANEL_RECT if map_station else
+                                       config.OPZ_STATION_RECT
+                                       if self.station is Station.OPZ
+                                       and not self.autocrew_overview_open else
+                                       config.FULL_STATION_RECT)
                 if self.autocrew_overview_open:
                     with layout.clip_to(s, config.STATION_RECT):
                         draw_autocrew_overview(self)
@@ -9356,8 +9503,9 @@ class Game:
                             draw_eloka_view(self)
                         else:
                             draw_bridge_view(self)
-                self.draw_bottom_feed()
-                self.draw_bottom_telemetry()
+                if self.station is not Station.OPZ:
+                    self.draw_bottom_feed()
+                    self.draw_bottom_telemetry()
                 self.draw_navigation_input()
                 if self.game_over:
                     self.draw_end_panel()

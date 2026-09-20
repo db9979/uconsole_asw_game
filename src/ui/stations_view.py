@@ -6,6 +6,7 @@ Alle Views rendern ausschließlich innerhalb des Rechtecks
 
 import math
 import random
+import copy
 
 import pygame
 
@@ -494,44 +495,23 @@ def _track_tooltip(game, track):
 
 @localized
 def opz_hit_target(game, pos):
-    """Hit-test the PPI against the displayed observation picture only."""
+    """Hit-test the chart using the same OPZ viewport used for drawing."""
     layout.configure_for(game)
-    ppi = opz_regions()["chart"]
+    chart = opz_regions()["chart"]
     if pos is None or not pygame.Rect(config.STATION_RECT).collidepoint(pos):
         return None
     tracks = game.opz_tracks()
-    if ppi.collidepoint(pos):
-        max_nm = _opz_radar_range_nm(game)
-        radius = ppi.w // 2
+    if chart.collidepoint(pos):
+        view = _opz_view(game, chart)
         for track in reversed(tracks):
-            observed_x, observed_y = _observation_position(track)
-            if observed_x is not None and observed_y is not None:
-                dx, dy = observed_x - game.ship.x, observed_y - game.ship.y
-                distance = math.hypot(dx, dy)
-                if distance > max_nm:
-                    continue
-                point = (ppi.centerx + dx / max_nm * radius,
-                         ppi.centery + dy / max_nm * radius)
-            elif track.range_nm is None:
-                radial = radius - 13
-                angle = math.radians(_observation_bearing(track))
-                point = (ppi.centerx + radial * math.sin(angle),
-                         ppi.centery - radial * math.cos(angle))
-            elif track.range_nm <= max_nm:
-                radial = track.range_nm / max_nm * radius
-                angle = math.radians(_observation_bearing(track))
-                point = (ppi.centerx + radial * math.sin(angle),
-                         ppi.centery - radial * math.cos(angle))
-            else:
-                continue
-            if (pos[0] - point[0]) ** 2 + (pos[1] - point[1]) ** 2 <= 15 ** 2:
+            point = _opz_track_point(game, track, chart, view)
+            if point is not None and _near_point(pos, point, 15):
                 return _track_tooltip(game, track)
         helo = getattr(game, "helo", None)
         if helo is not None and helo.airborne:
             dx, dy = helo.x - game.ship.x, helo.y - game.ship.y
-            point = (ppi.centerx + dx / max_nm * radius,
-                     ppi.centery + dy / max_nm * radius)
-            if _near_point(pos, point, 15):
+            point = view.world_to_screen(helo.x, helo.y)
+            if chart.collidepoint(point) and _near_point(pos, point, 15):
                 bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
                 return layout.tooltip_payload(
                     "opz.tooltip.helo_title",
@@ -540,10 +520,11 @@ def opz_hit_target(game, pos):
                         bearing, game.ship.course)),
                     message("opz.tooltip.helo_range", range=f"{math.hypot(dx, dy):.1f}"),
                     target_id="opz:helo")
-        if (pos[0] - ppi.centerx) ** 2 + (pos[1] - ppi.centery) ** 2 <= 14 ** 2:
+        own = view.world_to_screen(game.ship.x, game.ship.y)
+        if chart.collidepoint(own) and _near_point(pos, own, 14):
             return layout.tooltip_payload(
                 "opz.tooltip.own_title",
-                message("opz.tooltip.own_course_scope", course=f"{game.ship.course:05.1f}", range=f"{max_nm:g}"),
+                message("opz.tooltip.own_course_scope", course=f"{game.ship.course:05.1f}", range=f"{_opz_radar_range_nm(game):g}"),
                 "tooltip.own_navigation",
                 target_id="opz:ownship")
         return None
@@ -1072,17 +1053,14 @@ def draw_eloka_view(game, tr=None) -> None:
 def opz_regions(station_rect=None) -> dict[str, pygame.Rect]:
     """Single OPZ geometry source for drawing and pointer ownership.
 
-    Both pages share the same PPI geometry; only the sidebar content differs.
+    Both pages share the same rectangular chart; only the sidebar differs.
     """
     station = pygame.Rect(station_rect or config.STATION_RECT)
     scope_w = int(station.w * .75)
     top = _station_content_top(station, 2)
     map_rect = pygame.Rect(station.x + 8, top,
                            scope_w - 16, station.bottom - top - 42)
-    radius = min(map_rect.w // 2 - 8, map_rect.h // 2 - 8)
-    center = map_rect.center
-    chart = pygame.Rect(center[0] - radius, center[1] - radius,
-                        radius * 2, radius * 2)
+    chart = map_rect.copy()
     sidebar = pygame.Rect(station.x + scope_w, top,
                           station.right - station.x - scope_w,
                           map_rect.h)
@@ -1101,32 +1079,73 @@ def opz_ppi_rect(station_rect=None) -> pygame.Rect:
     return opz_regions(station_rect)["chart"]
 
 
-def _opz_bearing_ray(game, track, ppi, max_nm):
-    """Return the visible bearing segment from its public sensor origin."""
-    radius = ppi.w / 2 - 13
-    scale = radius / max_nm
+def _opz_view(game, chart):
+    """Return the OPZ camera configured for this frame's chart geometry."""
+    source = getattr(game, "opz_map_view", None)
+    if source is None:
+        from src.ui.viewport import Viewport
+        world_size = float(getattr(getattr(game, "world", None), "size_nm",
+                                   config.WORLD_SIZE_NM))
+        source = Viewport(world_size, 1.0, 100.0)
+        source.cx, source.cy = game.ship.x, game.ship.y
+        source.scale = min(chart.w, chart.h) / (
+            2.0 * config.OPZ_MAP_DEFAULT_RADIUS_NM)
+    view = copy.copy(source)
+    view.set_rect(tuple(chart))
+    view.min_scale = min(chart.w, chart.h) / float(view.world_size)
+    view.max_scale = max(view.min_scale, min(chart.w, chart.h) / (
+        2.0 * config.OPZ_MAP_MAX_ZOOM_RADIUS_NM))
+    view.scale = config.clamp(view.scale, view.min_scale, view.max_scale)
+    view.clamp_center()
+    return view
+
+
+def _opz_bearing_ray(game, track, chart, view):
+    """Return a public bearing ray clipped to the rectangular chart."""
+    # Compatibility for focused geometry callers from the former PPI API.
+    if isinstance(view, (int, float)) and not isinstance(view, bool):
+        from src.ui.viewport import Viewport
+        radius_nm = max(float(view), 1e-6)
+        legacy = Viewport(float(getattr(getattr(game, "world", None),
+                                        "size_nm", config.WORLD_SIZE_NM)),
+                          1e-6, 1e6)
+        legacy.set_rect(tuple(chart))
+        legacy.cx, legacy.cy = game.ship.x, game.ship.y
+        legacy.scale = min(chart.w, chart.h) / (2.0 * radius_nm)
+        view = legacy
     if (getattr(track, "source", "") == "SONAR-DIP-BRG"
             and getattr(track, "observer_x", None) is not None
             and getattr(track, "observer_y", None) is not None):
-        ox = (track.observer_x - game.ship.x) * scale
-        oy = (track.observer_y - game.ship.y) * scale
+        origin = view.world_to_screen(track.observer_x, track.observer_y)
     else:
-        ox = oy = 0.0
+        origin = view.world_to_screen(game.ship.x, game.ship.y)
     angle = math.radians(_observation_bearing(track))
     dx, dy = math.sin(angle), -math.cos(angle)
-    dot = ox * dx + oy * dy
-    discriminant = dot * dot + radius * radius - ox * ox - oy * oy
-    if discriminant < 0.0:
-        return None
-    root = math.sqrt(discriminant)
-    near, far = -dot - root, -dot + root
+    near, far = 0.0, float("inf")
+    for value, direction, low, high in (
+            (origin[0], dx, chart.left, chart.right - 1),
+            (origin[1], dy, chart.top, chart.bottom - 1)):
+        if abs(direction) < 1e-12:
+            if not low <= value <= high:
+                return None
+            continue
+        first, second = (low - value) / direction, (high - value) / direction
+        near, far = max(near, min(first, second)), min(far, max(first, second))
+        if near > far:
+            return None
     if far < 0.0:
         return None
-    start_t = max(0.0, near)
-    return ((ppi.centerx + ox + dx * start_t,
-             ppi.centery + oy + dy * start_t),
-            (ppi.centerx + ox + dx * far,
-             ppi.centery + oy + dy * far))
+    return ((origin[0] + dx * near, origin[1] + dy * near),
+            (origin[0] + dx * far, origin[1] + dy * far))
+
+
+def _opz_track_point(game, track, chart, view):
+    observed_x, observed_y = _observation_position(track)
+    if observed_x is not None and observed_y is not None:
+        point = view.world_to_screen(observed_x, observed_y)
+        return point if chart.collidepoint(point) else None
+    ray = _opz_bearing_ray(game, track, chart, view)
+    return ray[1] if ray is not None else None
 
 
 def opz_action_at(game, pos, station_rect=None):
@@ -1137,24 +1156,13 @@ def opz_action_at(game, pos, station_rect=None):
     for action in ("classify", "affiliate", "mark", "fusion"):
         if regions[action].collidepoint(pos):
             return action
-    ppi = regions["chart"]
-    if not ppi.collidepoint(pos):
+    chart = regions["chart"]
+    if not chart.collidepoint(pos):
         return None
-    radius, max_nm = ppi.w // 2, _opz_radar_range_nm(game)
+    view = _opz_view(game, chart)
     for track in reversed(game.opz_tracks()):
-        observed_x, observed_y = _observation_position(track)
-        if observed_x is not None and observed_y is not None:
-            dx, dy = observed_x - game.ship.x, observed_y - game.ship.y
-            if math.hypot(dx, dy) > max_nm:
-                continue
-            point = (ppi.centerx + dx / max_nm * radius,
-                     ppi.centery + dy / max_nm * radius)
-        else:
-            ray = _opz_bearing_ray(game, track, ppi, max_nm)
-            if ray is None:
-                continue
-            point = ray[1]
-        if _near_point(pos, point, 15):
+        point = _opz_track_point(game, track, chart, view)
+        if point is not None and _near_point(pos, point, 15):
             return ("select", track.observation_id)
     return None
 
@@ -1264,16 +1272,15 @@ def _contour_segments_in_circle(coast, cx: float, cy: float,
     return out
 
 
-def _opz_basemap_surface(game, map_rect: pygame.Rect, ppi: pygame.Rect,
-                         max_nm: float) -> pygame.Surface:
+def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
     """Build a bounded cached chart layer beneath the live OPZ radar picture."""
     world = game.world
     coast = getattr(world, "coast", None)
     world_size_nm = float(getattr(world, "size_nm", config.WORLD_SIZE_NM))
-    bucket_x = round(game.ship.x * 10.0) / 10.0
-    bucket_y = round(game.ship.y * 10.0) / 10.0
-    key = (world, coast, map_rect.size, ppi.size,
-           round(max_nm, 6), bucket_x, bucket_y,
+    bucket_x = round(view.cx * 10.0) / 10.0
+    bucket_y = round(view.cy * 10.0) / 10.0
+    scale = view.scale
+    key = (world, coast, map_rect.size, round(scale, 6), bucket_x, bucket_y,
            config.COLOR_GEO_BG, config.COLOR_GEO_GRID,
            config.COLOR_LAND, config.COLOR_LAND_EDGE,
            config.COLOR_SHALLOW, config.COLOR_DEEP)
@@ -1283,9 +1290,8 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, ppi: pygame.Rect,
 
     layer = pygame.Surface(map_rect.size)
     layer.fill(config.COLOR_GEO_BG)
-    center_x = ppi.centerx - map_rect.x
-    center_y = ppi.centery - map_rect.y
-    scale = (ppi.w / 2.0) / max_nm
+    center_x = map_rect.w / 2.0
+    center_y = map_rect.h / 2.0
 
     depth_query = getattr(world, "depth_m", None)
     if (coast is not None and getattr(coast, "has_bathymetry", False)
@@ -1306,8 +1312,9 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, ppi: pygame.Rect,
                                   config.COLOR_SHALLOW, config.COLOR_DEEP))
                 pygame.draw.rect(layer, color, (px, py, cell_px + 1, cell_px + 1))
 
-    step = 5 if max_nm <= 20 else (10 if max_nm <= 40 else
-                                   (20 if max_nm <= 80 else 40))
+    visible_radius = min(map_rect.w, map_rect.h) / (2.0 * scale)
+    step = 5 if visible_radius <= 20 else (10 if visible_radius <= 40 else
+                                          (20 if visible_radius <= 80 else 40))
     half_w_nm = map_rect.w / (2.0 * scale)
     half_h_nm = map_rect.h / (2.0 * scale)
     first_x = math.ceil((bucket_x - half_w_nm) / step) * step
@@ -1375,77 +1382,70 @@ def draw_opz_view(game, tr=None) -> None:
     regions = opz_regions()
     scope_w = regions["sidebar"].x - station.x
     map_rect = regions["map"]
-    ppi = regions["chart"]
-    cx, cy = ppi.center
-    r = ppi.w // 2
+    chart = regions["chart"]
+    view = _opz_view(game, chart)
     max_nm = _opz_radar_range_nm(game)
-    s.blit(_opz_basemap_surface(game, map_rect, ppi, max_nm), map_rect)
+    s.blit(_opz_basemap_surface(game, map_rect, view), map_rect)
     pygame.draw.rect(s, config.COLOR_LAND_EDGE, map_rect, 1)
-    pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), r + 7, 1)
-    for ring_index, rr in enumerate((r // 4, r // 2, (3 * r) // 4, r), 1):
-        pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), rr, 1)
-        ring_nm = max_nm * ring_index / 4.0
-        layout.blit_line(s, f"{ring_nm:g}",
-                          (cx + 6, cy - rr + 3, 54, 18),
-                          config.COLOR_TEXT_DIM, size=13)
-    pygame.draw.line(s, config.COLOR_SONAR_RING, (cx - r, cy), (cx + r, cy), 1)
-    pygame.draw.line(s, config.COLOR_SONAR_RING, (cx, cy - r), (cx, cy + r), 1)
+    previous_clip = s.get_clip()
+    s.set_clip(chart)
     station_live = not game.damage.station_down("opz")
     radar_live = station_live and (game.surface_radar_on or game.air_radar_on)
-    px_per_nm = r / max_nm
+    px_per_nm = view.scale
+    own_x, own_y = view.world_to_screen(game.ship.x, game.ship.y)
+    radar_radius = max_nm * px_per_nm
 
     coast = getattr(game.world, "coast", None)
     coast_segments = (_contour_segments_in_circle(
         coast, game.ship.x, game.ship.y, max_nm) if coast is not None else [])
-    for first, second in coast_segments:
-        p1 = (int(cx + (first[0] - game.ship.x) * px_per_nm),
-              int(cy + (first[1] - game.ship.y) * px_per_nm))
-        p2 = (int(cx + (second[0] - game.ship.x) * px_per_nm),
-              int(cy + (second[1] - game.ship.y) * px_per_nm))
-        pygame.draw.line(s, _scale_color(config.COLOR_GRID, .55), p1, p2, 1)
+    with layout.clip_to(s, chart):
+        # Radar presentation remains ship-centred and independent of the camera.
+        for ring_index in range(1, 5):
+            rr = radar_radius * ring_index / 4.0
+            pygame.draw.circle(s, config.COLOR_SONAR_RING,
+                               (int(own_x), int(own_y)), max(1, int(rr)), 1)
+        pygame.draw.line(s, config.COLOR_SONAR_RING,
+                         (int(own_x - radar_radius), int(own_y)),
+                         (int(own_x + radar_radius), int(own_y)), 1)
+        pygame.draw.line(s, config.COLOR_SONAR_RING,
+                         (int(own_x), int(own_y - radar_radius)),
+                         (int(own_x), int(own_y + radar_radius)), 1)
 
-    if station_live and game.surface_radar_on:
-        coast_range = min(max_nm, game.radar_effective_range("surface"))
-        for first, second in coast_segments:
-            if max(math.hypot(first[0] - game.ship.x, first[1] - game.ship.y),
-                   math.hypot(second[0] - game.ship.x, second[1] - game.ship.y)) > coast_range:
-                continue
-            mx = (first[0] + second[0]) * .5
-            my = (first[1] + second[1]) * .5
-            bearing = math.degrees(math.atan2(mx - game.ship.x,
-                                              -(my - game.ship.y))) % 360.0
-            glow = _radar_glow(game, bearing)
-            if glow <= 0.0:
-                continue
-            p1 = (int(cx + (first[0] - game.ship.x) * px_per_nm),
-                  int(cy + (first[1] - game.ship.y) * px_per_nm))
-            p2 = (int(cx + (second[0] - game.ship.x) * px_per_nm),
-                  int(cy + (second[1] - game.ship.y) * px_per_nm))
-            pygame.draw.line(s, _scale_color((75, 180, 105), .25 + .75 * glow),
-                             p1, p2, 2)
+        if station_live and game.surface_radar_on:
+            coast_range = min(max_nm, game.radar_effective_range("surface"))
+            for first, second in coast_segments:
+                if max(math.hypot(first[0] - game.ship.x, first[1] - game.ship.y),
+                       math.hypot(second[0] - game.ship.x, second[1] - game.ship.y)) > coast_range:
+                    continue
+                mx = (first[0] + second[0]) * .5
+                my = (first[1] + second[1]) * .5
+                bearing = math.degrees(math.atan2(mx - game.ship.x,
+                                                  -(my - game.ship.y))) % 360.0
+                glow = _radar_glow(game, bearing)
+                if glow > 0.0:
+                    pygame.draw.line(
+                        s, _scale_color((75, 180, 105), .25 + .75 * glow),
+                        view.world_to_screen(*first), view.world_to_screen(*second), 2)
 
-    if radar_live:
-        _draw_radar_clutter(game, s, (cx, cy), r)
-        bearing = game.radar_sweep_bearing()
-        ang = math.radians(bearing)
-        pygame.draw.line(s, (70, 190, 130), (cx, cy),
-                         (int(cx + r * math.sin(ang)),
-                          int(cy - r * math.cos(ang))), 2)
-    pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), r, 2)
-    nato_symbols.draw_symbol(s, (cx, cy), "FRIEND", "SURFACE", 18)
-    nato_symbols.draw_motion_vector(s, (cx, cy), game.ship.course, game.ship.speed,
-                                    px_per_nm, config.COLOR_TEXT, max_px=r * 0.4)
+        if radar_live:
+            _draw_radar_clutter(game, s, (own_x, own_y), int(radar_radius))
+            ang = math.radians(game.radar_sweep_bearing())
+            pygame.draw.line(s, (70, 190, 130), (own_x, own_y),
+                             (own_x + radar_radius * math.sin(ang),
+                              own_y - radar_radius * math.cos(ang)), 2)
+        nato_symbols.draw_symbol(s, (own_x, own_y), "FRIEND", "SURFACE", 18)
+        nato_symbols.draw_motion_vector(
+            s, (own_x, own_y), game.ship.course, game.ship.speed,
+            px_per_nm, config.COLOR_TEXT, max_px=min(chart.size) * .3)
 
     # Own-force aircraft is datalink truth, not a radar/sensor track.
     helo = getattr(game, "helo", None)
     if helo is not None and helo.airborne:
-        hdx, hdy = helo.x - game.ship.x, helo.y - game.ship.y
-        hdist = math.hypot(hdx, hdy)
-        if hdist <= max_nm:
-            hx, hy = cx + hdx * px_per_nm, cy + hdy * px_per_nm
+        hx, hy = view.world_to_screen(helo.x, helo.y)
+        if chart.collidepoint(hx, hy):
             hcol = nato_symbols.draw_symbol(s, (hx, hy), "FRIEND", "AIR", 17)
             nato_symbols.draw_motion_vector(s, (hx, hy), helo.course, helo.SPEED_KN,
-                                            px_per_nm, hcol, max_px=r * 0.4)
+                                            px_per_nm, hcol, max_px=min(chart.size) * .3)
             layout.blit_line(s, "HSP-5 DL",
                              (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
     cic_tracks = (game.opz_tracks() if hasattr(game, "opz_tracks")
@@ -1453,7 +1453,7 @@ def draw_opz_view(game, tr=None) -> None:
     selected_id = game.opz_selected_track_id
     plotted = {}
     for track in (t for t in cic_tracks if _observation_position(t)[0] is None):
-        ray = _opz_bearing_ray(game, track, ppi, max_nm)
+        ray = _opz_bearing_ray(game, track, chart, view)
         if ray is None:
             continue
         start, (sx, sy) = ray
@@ -1465,19 +1465,16 @@ def draw_opz_view(game, tr=None) -> None:
         nato_symbols.draw_symbol(s, (sx, sy), affiliation, domain, 14,
                                  track["track_id"] == selected_id)
         nato_symbols.draw_motion_vector(s, (sx, sy), track.course, track.speed_kn,
-                                        px_per_nm, col, max_px=r * 0.4)
+                                        px_per_nm, col, max_px=min(chart.size) * .3)
         layout.blit_line(s, track["source"],
                          (int(sx) - 22, int(sy) - 21, 66, 18), col, size=12)
 
     # Gemeinsames Lagebild: Oberflaeche, Luft und Flugkoerper im selben Scope.
     for track in (t for t in cic_tracks if _observation_position(t)[0] is not None):
         observed_x, observed_y = _observation_position(track)
-        dx, dy = observed_x - game.ship.x, observed_y - game.ship.y
-        dist = math.hypot(dx, dy)
-        if dist > max_nm:
+        bx, by = view.world_to_screen(observed_x, observed_y)
+        if not chart.collidepoint(bx, by):
             continue
-        bx = cx + dx * px_per_nm
-        by = cy + dy * px_per_nm
         plotted[track.track_id] = (bx, by)
         if track["source"].startswith("RADAR"):
             glow = _radar_glow(game, observations.bearing(track, game.ship))
@@ -1490,7 +1487,7 @@ def draw_opz_view(game, tr=None) -> None:
             s, (bx, by), affiliation, domain, 16,
             track["track_id"] == selected_id)
         nato_symbols.draw_motion_vector(s, (bx, by), track.course, track.speed_kn,
-                                        px_per_nm, col, max_px=r * 0.4)
+                                        px_per_nm, col, max_px=min(chart.size) * .3)
         layout.blit_line(s, track["label"],
                           (int(bx) + 12, int(by) - 10, 118, 19), col, size=12)
 
@@ -1515,14 +1512,16 @@ def draw_opz_view(game, tr=None) -> None:
             brg = observations.bearing(track, game.ship)
         else:
             continue
-        if dist > max_nm:
-            continue
         rad = math.radians(brg)
-        bx, by = (cx + dist * px_per_nm * math.sin(rad),
-                  cy - dist * px_per_nm * math.cos(rad))
+        bx, by = view.world_to_screen(
+            game.ship.x + dist * math.sin(rad),
+            game.ship.y - dist * math.cos(rad))
+        if not chart.collidepoint(bx, by):
+            continue
         if i == min(game.asm_sel, len(asm_tracks) - 1):
             pygame.draw.circle(s, config.COLOR_DANGER, (int(bx), int(by)), 16, 1)
 
+    s.set_clip(previous_clip)
     side_top = regions["sidebar"].y
     side_h = regions["sidebar"].h
     sb_box = layout.box(s, (regions["sidebar"].x + 4, side_top,
@@ -1550,7 +1549,7 @@ def draw_opz_view(game, tr=None) -> None:
         layout.status_line(s, x, py, w, "ui.scope",
                             message("opz.line.scope", range=f"{max_nm:.0f}", sea=game.world.sea_state,
                                     weather=localize(weather_key)),
-                            label_w=70, size=15, color=weather_color)
+                            label_w=66, size=14, color=weather_color)
         py += 26
         surface_count = sum(1 for t in cic_tracks
                             if t["kind"] in ("SURFACE", "AIS"))

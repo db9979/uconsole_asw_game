@@ -204,7 +204,7 @@ def test_map_marker_hit_and_tooltip_recompute_bearing_from_observed_position(gam
 
 
 def test_opz_marker_hit_and_tooltip_share_position_bearing_after_ownship_move(monkeypatch):
-    monkeypatch.setattr(config, "STATION_RECT", config.FULL_STATION_RECT)
+    monkeypatch.setattr(config, "STATION_RECT", config.OPZ_STATION_RECT)
 
     class Track:
         track_id, label, kind, source = "S-9", "FIX", "AIS", "RADAR-S"
@@ -220,14 +220,12 @@ def test_opz_marker_hit_and_tooltip_share_position_bearing_after_ownship_move(mo
               sim_t=10.0, air_picture=NS(stale_s=8.0), helo=None,
               tr=Translator("en").translate)
     ppi = stations_view.opz_ppi_rect()
-    radius = ppi.w // 2
-    first_pos = (ppi.centerx + 10.0 / 20.0 * radius, ppi.centery)
+    first_pos = stations_view._opz_view(fake, ppi).world_to_screen(10.0, 0.0)
     first = stations_view.opz_hit_target(fake, first_pos)
     assert "090.0" in first["lines"][1]
 
     fake.ship.x, fake.ship.y = 5.0, 5.0
-    second_pos = (ppi.centerx + 5.0 / 20.0 * radius,
-                  ppi.centery - 5.0 / 20.0 * radius)
+    second_pos = stations_view._opz_view(fake, ppi).world_to_screen(10.0, 0.0)
     second = stations_view.opz_hit_target(fake, second_pos)
     assert "045.0" in second["lines"][1]
 

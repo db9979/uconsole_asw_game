@@ -9,7 +9,8 @@ from src.core import config
 from src.core.game import Game
 from src.core.station import Station
 from src.sonar.sonar import Contact
-from src.ui.stations_view import opz_action_at, opz_regions
+from src.ui.stations_view import (_opz_track_point, _opz_view, opz_action_at,
+                                  opz_regions)
 from test_commander_bridge import Server, observe
 
 
@@ -88,14 +89,12 @@ def test_shared_opz_geometry_and_mouse_select_use_opaque_report_id():
     game.sonar.contacts[70001].player_class = "U_BOOT"
     game.sonar.contacts[70001].released_to_opz = True
     report = game.opz_tracks()[0]
-    regions = opz_regions(config.FULL_STATION_RECT)
-    station = pygame.Rect(config.FULL_STATION_RECT)
+    regions = opz_regions(config.OPZ_STATION_RECT)
+    station = pygame.Rect(config.OPZ_STATION_RECT)
     assert .74 <= (regions["sidebar"].x - station.x) / station.w <= .76
-    radius = regions["chart"].w // 2 - 13
-    angle = math.radians(report.bearing)
-    point = (regions["chart"].centerx + radius * math.sin(angle),
-             regions["chart"].centery - radius * math.cos(angle))
-    assert opz_action_at(game, point, config.FULL_STATION_RECT) == (
+    point = _opz_track_point(
+        game, report, regions["chart"], _opz_view(game, regions["chart"]))
+    assert opz_action_at(game, point, config.OPZ_STATION_RECT) == (
         "select", report.observation_id)
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN,
                                          button=1, pos=point))

@@ -272,6 +272,7 @@ def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale(t
                 station_rect = pygame.Rect(
                     config.STATION_PANEL_RECT if station in (
                         Station.BRIDGE, Station.WEAPONS, Station.HELICOPTER)
+                    else config.OPZ_STATION_RECT if station is Station.OPZ
                     else config.FULL_STATION_RECT)
                 pages = range(6) if station is Station.SONAR else range(1)
                 for page in pages:

@@ -145,6 +145,30 @@ def test_save_load_restores_navigation_ui_state():
     assert restored.map_view.scale == 4.0
 
 
+def test_save_load_restores_independent_opz_map_and_accepts_prior_ui():
+    game = Game(seed=31415, start_menu=False)
+    game.opz_map_follow = False
+    game.opz_map_view.cx = 210.0
+    game.opz_map_view.cy = 220.0
+    game.opz_map_view.scale = 12.0
+    data = game.save_state()
+
+    restored = Game(seed=999, start_menu=False)
+    restored.load_state(data)
+    assert restored.opz_map_follow is False
+    assert (restored.opz_map_view.cx, restored.opz_map_view.cy,
+            restored.opz_map_view.scale) == (210.0, 220.0, 12.0)
+
+    for key in ("opz_map_cx", "opz_map_cy", "opz_map_scale",
+                "opz_map_follow"):
+        del data["ui"][key]
+    legacy = Game(seed=1000, start_menu=False)
+    legacy.load_state(data)
+    assert legacy.opz_map_follow is True
+    assert (legacy.opz_map_view.cx, legacy.opz_map_view.cy) == pytest.approx(
+        (legacy.ship.x, legacy.ship.y))
+
+
 def test_escape_requires_explicit_quit_confirmation():
     game = Game(seed=31415, start_menu=False)
     key(game, pygame.K_ESCAPE)

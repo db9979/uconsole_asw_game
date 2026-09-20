@@ -132,12 +132,16 @@ Zustände: `PATROLLE` → (Kontakt) → `EVALUATION` → (`VERMEIDUNG` | `LAUER`
   (Uhrzeit, Kurs, Geschw., Flutungs-Summe, Munition, Mission-Status)
 - **Sonar-Kreisbild**: Fregatte in der Mitte, 360°, stationsabhängige Skalierung,
   Kontakte als farbige Punkte (grün = zivil/AIS, gelb = unbestimmt, rot = U-Boot-Verdacht)
-- **Radar-PPI**: dunkelblaues geografisches PPI, 360°, Darstellungsbereiche
-  10/20/40/80/120 NM. Die nominelle Sensorreichweite ist davon getrennt:
+- **OPZ-Karte**: nordorientierte, rechteckige Karte über die volle nutzbare
+  Bildschirmhöhe mit unabhängiger Kamera, Mauszeiger-Zoom bis 5 NM Radius,
+  Drag-Pan und `K`-Follow. Der schiffszentrierte Radar-Overlay besitzt davon
+  getrennte Bereiche 10/20/40/80/120 NM. Die nominelle Sensorreichweite ist:
   30 NM für Seeziele und 100 NM für Luftziele; Wetter und Stationsschaden
   können sie reduzieren.
 - **Gemeinsames Lagebild**: NATO-ähnliche Symbole für See, Luft und Flugkörper;
   der eigene HSP-5 erscheint als freundliches Luftsymbol aus Datalink-Daten.
+- In der nativen OPZ bleiben Ereignis-Feed und Telemetrie unsichtbar, ohne ihre
+  Datenerfassung anzuhalten; auf anderen Stationen erscheinen sie unverändert.
 - **Geografische Karten**: dunkelblaue Seekarten und PPI-Flächen mit
   zurückhaltender blauer synthetischer Tiefenstaffelung.
 - **Hud-Stile**: dunkel, phosphor-grün (CRT-Feeling), große lesbare Zahlen

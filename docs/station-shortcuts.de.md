@@ -110,14 +110,16 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Backspace` | Alle Markierungen leeren. |
 | `Delete / H` | Bericht unterdrücken / Anzeige unterdrückter Meldungen umschalten. |
 | `M` | CIC-Track an Sonar/Waffen übergeben. |
-| `Bild↑ / Bild↓` | Radar-Anzeigebereich vergrößern / verkleinern. |
+| `Bild↑ / Bild↓` | Schiffszentrierten Radarbereich vergrößern / verkleinern; die Kartenkamera bleibt unverändert. |
+| `Mausrad / Ziehen` | Unabhängige OPZ-Karte am Zeiger zoomen (bis 5 NM Radius) / verschieben. |
+| `K` | Kartenverfolgung des eigenen Schiffs ein- oder ausschalten. |
 | `← / →` | Vorheriges / nächstes ASM-Ziel wählen. |
 | `E / Strg+Enter` | ESSM starten; Bereitschafts- und ROE-Prüfungen gelten. |
 | `G` | Chaff ausbringen. |
 | `R / Shift+R` | Seezielradar / Luftraumradar ein- oder ausschalten. |
 | `I` | CIWS-Feuerfreigabe erteilen oder entziehen. |
 | `Enter` | Angriff auf einen als feindlich eingestuften Live-Kontakt ausdrücklich bestätigen. |
-| `Mausrad / Klick` | PPI-Bereich ändern / dargestellten Bericht wählen. |
+| `Klick` | Dargestellten Bericht wählen; freie Kartenfläche beginnt das Verschieben. |
 
 ## 6  Funk
 
@@ -186,6 +188,8 @@ Berechtigungsprüfungen bleiben wirksam.
   gehalten beschriebene Steuerungen arbeiten kontinuierlich.
 - Remote Crew verwendet Browser-Bedienelemente. Dieses Blatt beschreibt die
   lokale Tastatur- und Mausbedienung auf der uConsole.
+- In der nativen OPZ sind Ereignis-Feed und Telemetrie ausgeblendet; ihre
+  Daten laufen weiter und erscheinen auf anderen Stationen wieder.
 - U-Jagd ist ein Spiel und kein Ausbildungs- oder Navigationsprodukt.
 
 Erzeugt mit `python tools/build_station_shortcuts_pdf.py`.

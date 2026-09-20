@@ -136,9 +136,12 @@ einfachste Weg. Kontakt- und Küstendaten sind in der Paketkonfiguration enthalt
 
 Im Spiel öffnet `Esc` den Beenden-Dialog beziehungsweise schließt die laufende
 Eingabe oder Verwaltungsansicht. `Q`/`E` zoomen ausschließlich auf Brücke,
-Waffen- und Helikopterstation. Der Ereignis-Feed ist stationsübergreifend und
+Waffen- und Helikopterstation. In der OPZ zoomt das Mausrad die unabhängige
+Karte bis 5 NM Radius, Ziehen verschiebt sie und `K` schaltet Follow; Bild↑/Bild↓
+ändert ausschließlich den schiffszentrierten Radarbereich. Der Ereignis-Feed ist stationsübergreifend und
 bewahrt operative Meldungen, abgeschlossene Befehle und Alarme auf; kurzlebige
-Eingabe- und Auswahlhinweise bleiben im Statusbanner. Die vollständige
+Eingabe- und Auswahlhinweise bleiben im Statusbanner. Feed und Telemetrie sind
+in der OPZ ausgeblendet, laufen aber weiter. Die vollständige
 kontextabhängige Tastenbelegung steht unter `F1`.
 
 ## 6. Aktualisieren

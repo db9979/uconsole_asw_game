@@ -184,9 +184,9 @@ most important global controls are:
 | `+` / `-` | Engine telegraph |
 | `Alt+Enter` | Toggle fullscreen |
 | `Ctrl+Enter` | Primary weapon action at Weapons, OPZ/CIC, or Helicopter; normal readiness checks apply |
-| `Q` / `E` or mouse wheel | Zoom visible maps on Bridge, Weapons, and Helicopter stations |
-| Mouse drag | Pan a visible map and disable camera follow |
-| `K` | Toggle camera follow on a visible map |
+| `Q` / `E` or mouse wheel | Zoom maps on Bridge, Weapons, and Helicopter; the OPZ chart uses the mouse wheel |
+| Mouse drag | Pan a visible map, including the OPZ chart, and disable its independent camera follow |
+| `K` | Toggle camera follow on the current map or OPZ chart |
 | `Esc` | Clear a pinned tooltip, cancel the current view/input, or open quit confirmation |
 
 Station keys are deliberately contextual. For example, `Shift+A` sends an active
@@ -261,8 +261,13 @@ settled.
 
 ## Radar Notes
 
-At OPZ/CIC, `Page Up` and `Page Down` only select display scales of **10, 20, 40,
-80, or 120 NM**; they do not change pages or sensor power. The modeled
+At OPZ/CIC, `Page Up` and `Page Down` select the ship-centred radar range of
+**10, 20, 40, 80, or 120 NM**; they do not move or zoom the chart and do not
+change pages or sensor power. The full-height, north-up OPZ chart has its own
+camera: the mouse wheel zooms around the pointer down to a 5 NM radius, dragging
+free chart space pans, and `K` toggles own-ship follow. Its initial view is about
+a 40 NM radius. The event feed and telemetry continue collecting while hidden
+on this station and reappear unchanged elsewhere. The modeled
 clear-weather detection limits are 30 NM for surface radar and 100 NM for air
 radar, with degradation from sea state 5 and rain clutter. Surface and air radar can be
 controlled separately with `R` and `Shift+R`.

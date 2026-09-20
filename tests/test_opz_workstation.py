@@ -256,6 +256,19 @@ def test_opz_draws_positioned_and_bearing_only_tracks():
     game.draw()
 
 
+def test_native_opz_uses_full_height_and_suppresses_bottom_panels(monkeypatch):
+    game = opz_game()
+    calls = []
+    monkeypatch.setattr(game, "draw_bottom_feed", lambda: calls.append("feed"))
+    monkeypatch.setattr(game, "draw_bottom_telemetry",
+                        lambda: calls.append("telemetry"))
+    game.draw()
+    assert calls == []
+    regions = stations_view.opz_regions(config.OPZ_STATION_RECT)
+    assert regions["map"].bottom > config.MAIN_BOTTOM
+    assert regions["sidebar"].right == config.SCREEN_W
+
+
 def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     game = opz_game()
     observe(game, "S-1", "AIS")
@@ -330,7 +343,7 @@ def test_known_coastline_is_requested_even_without_surface_radar(monkeypatch):
     assert calls and calls[-1][2] == game.opz_range_nm
 
 
-def test_scope_hides_positioned_tracks_outside_selected_range(monkeypatch):
+def test_chart_tracks_are_independent_of_selected_radar_range(monkeypatch):
     game = opz_game()
     observe(game, "S-1", "AIS", range_nm=30.0)
     calls = []
@@ -343,7 +356,7 @@ def test_scope_hides_positioned_tracks_outside_selected_range(monkeypatch):
     monkeypatch.setattr(nato_symbols, "draw_symbol", record)
     game.opz_range_nm = 20.0
     game.draw()
-    assert len(calls) == 1  # nur eigenes Schiff
+    assert len(calls) == 2
     calls.clear()
     game.opz_range_nm = 40.0
     game.draw()
@@ -366,7 +379,7 @@ def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypat
     with layout.capture_text() as text:
         stations_view.draw_opz_view(game)
 
-    assert symbols == [("FRIEND", "SURFACE")]
+    assert symbols == [("FRIEND", "SURFACE"), ("UNKNOWN", "SURFACE")]
     footer_y = pygame.Rect(config.STATION_RECT).bottom - 23
     footer = " ".join(entry["text"] for entry in text
                       if abs(entry["rect"].y - footer_y) <= 4)
@@ -376,20 +389,21 @@ def test_scope_prefers_public_radar_range_and_shows_all_scale_controls(monkeypat
 
 
 def test_opz_ppi_hit_rect_is_bounded_at_1280x720(monkeypatch):
-    monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
+    monkeypatch.setattr(config, "STATION_RECT", config.OPZ_STATION_RECT)
     regions = stations_view.opz_regions()
     ppi = regions["chart"]
     assert pygame.Rect(0, 0, 1280, 720).contains(ppi)
     assert ppi.right <= int(config.STATION_RECT[2] * .75)
     assert regions["map"].contains(ppi)
-    assert regions["map"].w > ppi.w
+    assert regions["map"] == ppi
+    assert regions["map"].bottom > config.MAIN_BOTTOM
     assert all(not regions["map"].colliderect(regions[action])
                for action in ("classify", "affiliate", "mark", "fusion"))
 
 
 def test_opz_draws_recognizable_chart_beneath_disabled_radar(monkeypatch):
     game = opz_game()
-    monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
+    monkeypatch.setattr(config, "STATION_RECT", config.OPZ_STATION_RECT)
     ship_x, ship_y = game.ship.x, game.ship.y
     game.world.coast.landmasses = [NS(
         name="Chart land", bounds=(ship_x + 2, ship_y + 2,
@@ -404,14 +418,13 @@ def test_opz_draws_recognizable_chart_beneath_disabled_radar(monkeypatch):
 
     regions = stations_view.opz_regions()
     ppi, chart = regions["chart"], regions["map"]
-    scale = (ppi.w / 2.0) / game.opz_range_nm
-    land_pixel = (int(ppi.centerx + 4 * scale),
-                  int(ppi.centery + 4 * scale))
+    view = stations_view._opz_view(game, ppi)
+    land_pixel = tuple(map(int, view.world_to_screen(ship_x + 4, ship_y + 4)))
     assert game.screen.get_at(land_pixel)[:3] == config.COLOR_LAND
     assert game.screen.get_at((chart.left + 4, chart.centery))[:3] != (201, 12, 93)
 
 
-def test_contact_scale_tracks_selected_range(monkeypatch):
+def test_contact_scale_does_not_track_selected_radar_range(monkeypatch):
     game = opz_game()
     observe(game, "S-1", "AIS", range_nm=10.0)
     positions = []
@@ -430,7 +443,7 @@ def test_contact_scale_tracks_selected_range(monkeypatch):
     stations_view.draw_opz_view(game)
     far_displacement = positions[-1][0] - center_x
 
-    assert near_displacement == 2 * far_displacement
+    assert near_displacement == far_displacement
 
 
 def test_unreleased_legacy_sonar_mirrors_are_not_opz_rows(monkeypatch):
@@ -493,7 +506,6 @@ def test_nato_symbol_frames_draw_for_every_affiliation_and_domain():
 
 
 def test_own_airborne_helicopter_is_direct_friend_air_datalink_not_track(monkeypatch):
-    monkeypatch.setattr(config, "STATION_RECT", (0, 30, 1280, 510))
     symbols = []
     sensor_tracks = []
 
@@ -501,18 +513,12 @@ def test_own_airborne_helicopter_is_direct_friend_air_datalink_not_track(monkeyp
         symbols.append((affiliation, domain, position))
         return (100, 220, 150)
 
-    game = NS(
-        screen=pygame.Surface((1280, 720)), opz_range_nm=40.0,
-        ship=NS(x=100.0, y=100.0, course=0.0, speed=0.0),
-        helo=NS(airborne=True, x=110.0, y=100.0, course=0.0, SPEED_KN=0.0),
-        damage=NS(station_down=lambda station: False),
-        surface_radar_on=False, air_radar_on=False,
-        radar_tracks=lambda: sensor_tracks,
-        opz_selected_track_id=None, asm_tracks=lambda: [],
-        radar_weather_severity=lambda: 0.0,
-        world=NS(sea_state=2), vls_cells=8, chaff_cd=0.0,
-        selected_opz_track=lambda: None, ciws_ammo=100, ciws_authorized=True,
-    )
+    game = opz_game()
+    game.air_picture._tracks.clear()
+    game.helo.state = "AUF"
+    game.helo.x, game.helo.y = game.ship.x + 10.0, game.ship.y
+    game.helo.course = 0.0
+    game.surface_radar_on = game.air_radar_on = False
     monkeypatch.setattr(nato_symbols, "draw_symbol", symbol)
 
     stations_view.draw_opz_view(game)

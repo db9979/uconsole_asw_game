@@ -85,19 +85,57 @@ def test_editor_universal_guards_and_canvas_pointer(game, monkeypatch):
     assert received[-1].rel == (20, 20)
 
 
-def test_opz_wheel_uses_full_station_geometry_even_before_draw(game, monkeypatch):
+def test_opz_wheel_zooms_independent_map_even_before_draw(game, monkeypatch):
     game.station = Station.OPZ
     monkeypatch.setattr(config, "STATION_RECT", config.STATION_PANEL_RECT)
-    pos = opz_ppi_rect(config.FULL_STATION_RECT).center
+    pos = opz_ppi_rect(config.OPZ_STATION_RECT).center
     assert not opz_ppi_rect().collidepoint(pos)
     game.opz_range_nm = config.RADAR_RANGE_SCALES_NM[1]
+    before = game.opz_map_view.scale
     event(game, pygame.MOUSEWHEEL, y=0, x=1, pos=pos)
     assert game.opz_range_nm == config.RADAR_RANGE_SCALES_NM[1]
     event(game, pygame.MOUSEWHEEL, y=1, pos=pos)
-    assert game.opz_range_nm == config.RADAR_RANGE_SCALES_NM[2]
+    assert game.opz_range_nm == config.RADAR_RANGE_SCALES_NM[1]
+    assert game.opz_map_view.scale > before
     event(game, pygame.MOUSEWHEEL, y=-1, pos=(1200, 100))
-    assert game.opz_range_nm == config.RADAR_RANGE_SCALES_NM[2]
+    assert game.opz_range_nm == config.RADAR_RANGE_SCALES_NM[1]
     assert config.STATION_RECT == config.STATION_PANEL_RECT
+
+
+def test_opz_pan_follow_and_radar_range_are_independent(game):
+    game.station = Station.OPZ
+    chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+    start = (chart.centerx + 120, chart.centery + 80)
+    end = (start[0] + 30, start[1] + 20)
+    before_center = (game.opz_map_view.cx, game.opz_map_view.cy)
+    event(game, pygame.MOUSEBUTTONDOWN, button=1, pos=start)
+    event(game, pygame.MOUSEMOTION, pos=end, rel=(30, 20))
+    event(game, pygame.MOUSEBUTTONUP, button=1, pos=end)
+    assert not game.opz_map_follow
+    assert (game.opz_map_view.cx, game.opz_map_view.cy) != before_center
+    map_state = (game.opz_map_view.cx, game.opz_map_view.cy,
+                 game.opz_map_view.scale)
+    before_range = game.opz_range_nm
+    press(game, pygame.K_PAGEUP)
+    assert game.opz_range_nm > before_range
+    assert (game.opz_map_view.cx, game.opz_map_view.cy,
+            game.opz_map_view.scale) == map_state
+    press(game, pygame.K_k)
+    assert game.opz_map_follow
+    assert (game.opz_map_view.cx, game.opz_map_view.cy) == pytest.approx(
+        (game.ship.x, game.ship.y))
+
+
+def test_opz_zoom_is_cursor_centred_and_limited_to_five_nm_radius(game):
+    game.station = Station.OPZ
+    chart = opz_ppi_rect(config.OPZ_STATION_RECT)
+    pivot = (chart.centerx + 100, chart.centery - 70)
+    game._configure_opz_map_view(chart)
+    world_before = game.opz_map_view.screen_to_world(*pivot)
+    for _ in range(30):
+        event(game, pygame.MOUSEWHEEL, y=1, pos=pivot)
+    assert game.opz_map_view.screen_to_world(*pivot) == pytest.approx(world_before)
+    assert min(chart.size) / game.opz_map_view.scale == pytest.approx(10.0)
 
 
 def test_letterbox_rejects_damage_and_opz_clicks(game, monkeypatch):

@@ -539,3 +539,19 @@ def test_every_failed_file_load_preserves_live_state(
     assert loaded is False
     assert game.save_state() == before
     assert (game.held, game.map_view.cx, game.msg) == before_transient
+
+
+@pytest.mark.parametrize("key,value", [
+    ("opz_map_cx", float("nan")),
+    ("opz_map_cy", float("inf")),
+    ("opz_map_scale", "bad"),
+    ("opz_map_follow", "yes"),
+])
+def test_invalid_opz_map_state_is_rejected_transactionally(key, value):
+    game = Game(seed=7001, start_menu=False, audio_enabled=False)
+    before = game.save_state()
+    malformed = json.loads(json.dumps(before))
+    malformed["ui"][key] = value
+    with pytest.raises(ValueError):
+        game.load_state(malformed)
+    assert game.save_state() == before

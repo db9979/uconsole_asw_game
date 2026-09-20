@@ -130,9 +130,12 @@ checkout. Contact and coastline data are included in the package configuration.
 
 In the game, `Esc` opens the quit dialog or closes the current input or
 administrative view. `Q`/`E` zoom only on the Bridge, Weapons, and Helicopter
-stations. The event feed is shared across stations and retains operational
+stations. At OPZ, the wheel zooms its independent chart down to a 5 NM radius,
+dragging pans, and `K` toggles follow; Page Up/Down changes only the ship-centred
+radar range. The event feed is shared across stations and retains operational
 reports, completed orders, and alerts; transient input and selection hints stay
-in the status banner. The full context-sensitive key map is available under
+in the status banner. Feed and telemetry remain active but are hidden at OPZ.
+The full context-sensitive key map is available under
 `F1`.
 
 ## 6. Update

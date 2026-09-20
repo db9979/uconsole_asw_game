@@ -114,8 +114,11 @@ spaeteren Lieferungen durch zwingende Szenarien ergaenzt.
 - Die feste stilisierte `region.json` ist weiterhin im Startmenue waehlbar.
 - Native 1280x720-Oberflaeche; dunkelblaue geografische Karten/PPI;
   freundliches NATO-aehnliches Luftsymbol fuer den eigenen HSP-5.
-- OPZ-Darstellungsbereiche: 10/20/40/80/120 NM. Nominelle Radarreichweiten:
-  30 NM See und 100 NM Luft, getrennt von der Darstellungsskala.
+- Die native OPZ nutzt eine rechteckige Karte von y=30 bis 720 mit eigener
+  Kamera (Mausrad am Zeiger, Ziehen, K-Follow, 5-NM-Nahzoom). Feed und
+  Telemetrie laufen dort weiter, werden aber nicht gezeichnet.
+- OPZ-Radarbereiche: 10/20/40/80/120 NM, unabhängig von der Kartenkamera.
+  Nominelle Radarreichweiten: 30 NM See und 100 NM Luft.
 
 ### Ausstehende Lieferungen
 

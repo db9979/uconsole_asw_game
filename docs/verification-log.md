@@ -486,6 +486,21 @@ composite spectral/DEMON diagrams (113 cruise and 113 high).
 - Release status: HOLD only for physical hotspot, multi-device, audio, sustained
   load, readability and thermal acceptance on the target uConsole hardware.
 
+## 2026-09-20 Native OPZ Chart
+
+- Added focused coverage for the 1280x720 full-height OPZ workspace, hidden
+  bottom panels, pointer-centred zoom through the 5 NM-radius limit, drag-pan,
+  independent follow, radar-range separation, shared draw/hit geometry, and
+  strict transactional v11 camera restoration including legacy defaults.
+- Updated EN/DE help, current operator/install/design documentation, and the
+  deterministic printable German shortcut source/PDF. Native EN/DE OPZ and
+  second-overview screenshots were regenerated; Commander browser captures
+  were intentionally left unchanged.
+- Full suite: 2874 passed, 26 skipped. Catalog validator: 111 acoustic profiles.
+  Full smoke: `SMOKE-OK`. Package build: `u_jagd-0.2.3.tar.gz` and
+  `u_jagd-0.2.3-py3-none-any.whl` built successfully. Printable-reference drift
+  check and `git diff --check` passed.
+
 ## 2026-09-14 0.2.2 Software Acceptance
 
 - Revision: complete uncommitted 0.2.2 candidate; no commit, push or release

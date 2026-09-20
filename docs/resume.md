@@ -910,6 +910,23 @@ nicht gepusht oder veröffentlicht.
 Offen bleibt ausschließlich die physische Hotspot-, Mehrgeräte-, Audio-,
 Lesbarkeits-, Last- und Thermalabnahme auf der uConsole.
 
+## Native OPZ-Kartenkamera (2026-09-20)
+
+Die native OPZ verwendet jetzt den eigenen Arbeitsbereich `(0, 30, 1280, 690)`
+und eine nordorientierte rechteckige Karte mit unabhängiger `Viewport`-Kamera.
+Mausrad-Zoom bleibt unter dem Zeiger verankert und reicht bis 5 NM Radius,
+Ziehen schwenkt die Karte und beendet Follow, `K` schaltet OPZ-Follow separat.
+Bild↑/Bild↓ verändert weiterhin ausschließlich den schiffszentrierten
+Radarbereich 10/20/40/80/120 NM; Sweep, Clutter und Ringe werden an der frei
+navigierten Karte geclippt. Ereignis-Feed und Telemetrie werden in der OPZ nur
+nicht gezeichnet und laufen unverändert weiter.
+
+Der Kamerazustand wird als optionale Erweiterung im unveränderten v11-`ui`-
+Objekt gespeichert. Vollständige ältere v11-UI-Zustände ohne die vier neuen
+Felder erhalten sichere schiffszentrierte Standardwerte; partielle, typfalsche
+oder nicht endliche Zustände werden vor dem transaktionalen Commit abgewiesen.
+Remote Crew und die Kameras anderer Kartenstationen bleiben unverändert.
+
 ## 0.2.3 Release-Kandidat (2026-09-18)
 
 Version 0.2.3 ergänzt ein zentrales Theme-System (`src/ui/theme.py`), das

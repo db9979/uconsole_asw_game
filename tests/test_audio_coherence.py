@@ -24,7 +24,7 @@ def source(lines=(), seed=0, level=1, bearing=0, **kwargs):
 
 @pytest.fixture
 def playback(monkeypatch):
-    channels = [Mock() for _ in range(4)]
+    channels = [Mock() for _ in range(5)]
     for channel in channels:
         channel.get_busy.return_value = False
         channel.get_queue.return_value = None
@@ -349,23 +349,25 @@ def test_real_postlimiter_pcm_bus_and_composite_ceiling(playback, monkeypatch, b
     if hostile:
         # Force coincident over-range peaks through actual public playback paths.
         import src.audio.engine as module
-        for name in ("propeller_block", "fm_chirp", "tone"):
+        for name in ("propeller_block", "active_sonar_ping", "tone",
+                     "helicopter_block"):
             monkeypatch.setattr(module, name, lambda *a, **k: np.full(5512, 1e6))
     assert engine.update_engine(247.3, cavitation=.7, volume=1)
     assert engine.play_sonar(np.full(1024, 1e6, dtype=np.float32), 4096,
                              volume=1, bearing_deg=bearing)
     assert engine.play_ping(volume=1)
     assert engine.play_alert("damage")
-    buses = dict(zip(("engine", "sonar", "ping", "alert"),
+    assert engine.update_helicopter(0, 90, 0, True)
+    buses = dict(zip(("engine", "sonar", "ping", "alert", "helicopter"),
                      (call.args[0].astype(float) / 32767 for call in capture.call_args_list)))
     length = min(map(len, buses.values()))
     composite = np.zeros((length, 2))
     for name, pcm in buses.items():
         assert np.max(np.abs(pcm)) <= engine.SOURCE_LIMITS[name]
         composite += pcm[:length] * engine.CHANNEL_GAINS[name]
-    assert np.max(np.abs(composite)) <= .9155
+    assert np.max(np.abs(composite)) <= .908
     if hostile and bearing in (None, 90, 270):
-        assert np.max(composite) > .915  # exercise the ceiling, not a quiet mix
+        assert np.max(composite) > .817  # exercise the ceiling, not a quiet mix
 
 
 def test_engine_wrapped_blade_and_shaft_phases_match_unwrapped_reference(playback):

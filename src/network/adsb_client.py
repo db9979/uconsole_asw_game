@@ -128,3 +128,18 @@ class OpenSkyClient:
         self._token = payload["access_token"]
         self._token_expires_at = time.time() + float(payload.get("expires_in", 1800))
         return self._token
+
+
+def test_connection(credentials: str, bounding_box) -> tuple[bool, str | None]:
+    """Einmaliger, blockierender Verbindungstest fuer den Optionen-Dialog.
+
+    Fragt einmal ``STATES_URL`` fuer die Bounding Box ab (inkl. OAuth2-Token-
+    Beschaffung, falls Zugangsdaten hinterlegt sind) und liefert
+    ``(erfolgreich, fehlertext)``.
+    """
+    probe = OpenSkyClient(credentials, bounding_box)
+    try:
+        probe._fetch_states()
+        return True, None
+    except Exception as exc:
+        return False, str(exc)

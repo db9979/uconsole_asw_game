@@ -39,7 +39,8 @@ DISPLAY_KEYS = {
         "SUBMARINE": "class.submarine", "KAMPFSCHIFF": "class.warship",
         "WARSHIP": "class.warship", "BIOLOGISCH": "class.biological",
         "BIOLOGICAL": "class.biological", "FAHRZEUG": "class.vehicle",
-        "VEHICLE": "class.vehicle",
+        "VEHICLE": "class.vehicle", "FLUGZEUG": "class.aircraft",
+        "AIRCRAFT": "class.aircraft",
     },
     "affiliation": {
         "UNKNOWN": "affiliation.unknown", "FRIEND": "affiliation.friend",
@@ -125,6 +126,15 @@ DISPLAY_KEYS = {
         "BROADBAND": "enum.audition_mode.broadband",
         "FILTERED": "enum.audition_mode.filtered",
         "HETERODYNE": "enum.audition_mode.heterodyne",
+    },
+    "contact_filter": {
+        "ALL": "enum.contact_filter.all",
+        "RADAR": "enum.contact_filter.radar",
+        "SONAR": "enum.contact_filter.sonar",
+        "ESM": "enum.contact_filter.esm",
+        "AIR": "enum.contact_filter.air",
+        "SURFACE": "enum.contact_filter.surface",
+        "SUBSURFACE": "enum.contact_filter.subsurface",
     },
 }
 

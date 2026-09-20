@@ -78,7 +78,7 @@ class ASM:
 
     # --- Physik ---
 
-    def update(self, dt: float, frigate, world=None) -> None:
+    def update(self, dt: float, frigate, world=None, ecm_effect=None) -> None:
         if self.state in ("ABGEFANGEN", "TREFFER", "VERLOREN"):
             return
         run_dt = min(dt, max(0.0, self.life_s - self.age_s))
@@ -88,13 +88,27 @@ class ASM:
                 run_dt = min(run_dt, max(0.0, self.chaff_left))
             self.chaff_left -= dt
         elif not self.jamming(frigate):
-            # homt auf die Fregatte
+            effectiveness = (max(0.0, min(.7, float(ecm_effect)))
+                             if isinstance(ecm_effect, (int, float))
+                             else max(0.0, min(.7, float(getattr(
+                                 ecm_effect, "effectiveness", 0.0)))))
+            technique = getattr(ecm_effect, "technique", None)
+            home_on_jam = bool(getattr(ecm_effect, "hoj_exposure", False))
+            deceived = (effectiveness > 0.0 and not home_on_jam
+                        and self.rng.random() < effectiveness)
             desired = math.degrees(math.atan2(frigate.x - self.x,
                                               -(frigate.y - self.y))) % 360.0
-            diff = config.angle_diff_deg(desired, self.course)
-            self.course = (self.course + config.clamp(
-                diff, -self.profile["turn_rate_deg_s"] * dt,
-                self.profile["turn_rate_deg_s"] * dt)) % 360.0
+            if deceived and technique == "false_targets":
+                # A coherent phantom is represented as a bounded angular gate
+                # displacement; no hidden target object is introduced.
+                desired = (desired + (25.0 if self.seq % 2 else -25.0)) % 360.0
+            if not deceived or technique == "false_targets":
+                # Noise exposes the transmitting ship to HOJ. RGPO/VGPO break
+                # the seeker's gate for this substep; false targets pull it.
+                diff = config.angle_diff_deg(desired, self.course)
+                self.course = (self.course + config.clamp(
+                    diff, -self.profile["turn_rate_deg_s"] * dt,
+                    self.profile["turn_rate_deg_s"] * dt)) % 360.0
         ox, oy = self.x, self.y
         self.age_s = min(self.life_s, self.age_s + dt)
         step = min(config.kn_to_nm_per_s(self.speed_kn) * run_dt,

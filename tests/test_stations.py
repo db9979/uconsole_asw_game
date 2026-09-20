@@ -27,6 +27,19 @@ def test_all_stations_are_selectable():
         game.draw()
 
 
+def test_eloka_m_toggles_only_local_contact_sound():
+    game = Game(seed=31415, start_menu=False, audio_enabled=False)
+    game.station = Station.ELOKA
+
+    assert game.eloka_audio_enabled is True
+    key(game, pygame.K_m)
+    assert game.eloka_audio_enabled is False
+    assert game.msg["__u_jagd_i18n__"] == "runtime.eloka_audio.off"
+    key(game, pygame.K_m)
+    assert game.eloka_audio_enabled is True
+    assert game.msg["__u_jagd_i18n__"] == "runtime.eloka_audio.on"
+
+
 def test_sonar_to_weapon_handoff_requires_valid_track():
     game = Game(seed=31415, start_menu=False)
     sub = game.subs[0]

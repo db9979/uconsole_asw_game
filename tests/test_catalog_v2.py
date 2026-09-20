@@ -105,6 +105,9 @@ def _v2_documents(directory):
             "key": "emitter.warship_01.radar", "domain": "radar",
             "frequency_band_hz": [8_000_000_000, 12_000_000_000],
             "prf_band_hz": None, "modulation_codes": ["unknown"],
+            "radar_role": "multi_function", "operating_mode": "search",
+            "power_class": "high", "operating_period_s": 10,
+            "on_duration_s": 8,
         }],
         weapons=[{
             "key": "weapon.lightweight_torpedo", "weapon_type": "torpedo",
@@ -192,7 +195,7 @@ def test_packaged_migration_versions_counts_and_provenance():
         | set(ALL_TORPEDO_KEYS) | set(ALL_DECOY_KEYS)
     assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 116
     assert len(catalog.CATALOG.sensors) == 217
-    assert len(catalog.CATALOG.emitters) == 86
+    assert len(catalog.CATALOG.emitters) == 194
     # Weapon/launcher/magazine/countermeasure counts are unchanged: demoted
     # ex-warships moved to civilians.json keep their v2 combat components
     # (profile_systems/launchers/etc. are global registries, not file-scoped;
@@ -202,7 +205,7 @@ def test_packaged_migration_versions_counts_and_provenance():
     assert len(catalog.CATALOG.magazines) == 51
     assert len(catalog.CATALOG.countermeasures) == 51
     assert len(catalog.CATALOG.sources) == 14
-    assert len(catalog.CATALOG.provenance_claims) == 365
+    assert len(catalog.CATALOG.provenance_claims) == 473
     assert len(catalog.CATALOG.subs) + len(catalog.CATALOG.surfaces) \
         + len(catalog.CATALOG.aircraft) + len(catalog.CATALOG.animals) \
         + len(catalog.CATALOG.torpedoes) + len(catalog.CATALOG.decoys) == 115 + 3
@@ -225,7 +228,7 @@ def test_r10_batch1_migrates_every_submarine_in_legacy_order():
         assert systems.reference_key == f"reference.{key}"
         assert systems.machine_key == f"machine.{key}"
         assert systems.sensor_keys == (f"sensor.{key}.sonar", f"sensor.{key}.esm")
-        assert systems.emitter_keys == ()
+        assert systems.emitter_keys == (f"emitter.{key}.mast_radar",)
         assert systems.launcher_keys == (f"launcher.{key}.tubes",)
         assert systems.magazine_keys == (f"magazine.{key}.torpedoes",)
         assert systems.countermeasure_keys == (f"countermeasure.{key}.decoy",)
@@ -261,7 +264,9 @@ def test_r10_batch2_migrates_every_warship_in_legacy_order():
         assert systems.reference_key == f"reference.{key}"
         assert systems.machine_key == f"machine.{key}"
         assert systems.sensor_keys == (f"sensor.{key}.radar", f"sensor.{key}.sonar")
-        assert systems.emitter_keys == (f"emitter.{key}.radar",)
+        assert systems.emitter_keys == (
+            f"emitter.{key}.radar", f"emitter.{key}.navigation",
+            f"emitter.{key}.air_search", f"emitter.{key}.fire_control")
         assert systems.countermeasure_keys == (f"countermeasure.{key}.softkill",)
     # Weapons/launchers/magazines are unchanged too - only the 3 still-
     # Russian, still-hostile keys use the ASM rail-launcher pattern checked
@@ -315,7 +320,9 @@ def test_r10_batch3_migrates_every_civilian_in_legacy_order_without_armament():
         # (a neutral spawn just never reaches the ASM/ASROC engage paths,
         # which are gated on doctrine, not on this data).
         assert systems.sensor_keys == (f"sensor.{key}.radar", f"sensor.{key}.sonar")
-        assert systems.emitter_keys == (f"emitter.{key}.radar",)
+        assert systems.emitter_keys == (
+            f"emitter.{key}.radar", f"emitter.{key}.navigation",
+            f"emitter.{key}.air_search", f"emitter.{key}.fire_control")
         assert len(systems.launcher_keys) == len(systems.magazine_keys) == \
             len(systems.countermeasure_keys) == 1
     for key in ALL_CIVILIAN_KEYS:
@@ -359,7 +366,9 @@ def test_r10_batch4_migrates_every_aircraft_in_legacy_order_without_armament():
         assert systems.reference_key == f"reference.{key}"
         assert systems.machine_key == f"machine.{key}"
         assert systems.sensor_keys == expected_sensors[key]
-        assert systems.emitter_keys == (f"emitter.{key}.radar",)
+        assert systems.emitter_keys == (
+            (f"emitter.{key}.radar", f"emitter.{key}.fire_control")
+            if key == "su_25" else (f"emitter.{key}.radar",))
         assert systems.launcher_keys == systems.magazine_keys == \
             systems.countermeasure_keys == ()
     document = catalog.CATALOG.reconstruct_documents()["aircraft.json"]

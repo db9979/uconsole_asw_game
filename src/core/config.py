@@ -33,6 +33,11 @@ FILL_SCREEN = False
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 AUDIO_UPDATE_S = 0.25
+# Solo Remote Crew: while the paired browser is live the uConsole only redraws a
+# small status screen (display only; the simulation is unaffected).
+ECO_REDRAW_S = 0.25
+ECO_PRESENCE_POLL_S = 0.5
+ECO_PRESENCE_MAX_AGE_S = 5.0
 # Pygame specifies its mixer buffer in samples. 512 samples are about 23 ms at
 # 22050 Hz; longer scheduling gaps use the engine's bounded last-block hold.
 AUDIO_MIXER_BUFFER_SAMPLES = 512
@@ -189,12 +194,14 @@ LOOKOUT_BEARING_ERR_DEG = 0.6
 LOOKOUT_RANGE_ERR_FRAC = 0.06
 LOOKOUT_EPOCH_S = 0.5
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
-PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG")
+PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG",
+                  "FLUGZEUG")
 PLAYER_CLASS_LABELS = {
     "U_BOOT": "U-Boot",
     "KAMPFSCHIFF": "Kampfschiff",
     "BIOLOGISCH": "Biologisch",
     "FAHRZEUG": "Fahrzeug",
+    "FLUGZEUG": "Flugzeug",
 }
 
 # OPZ/CIC: manuell gesetzte NATO-Zugehoerigkeit. Die Domaene (See, Luft,
@@ -276,6 +283,12 @@ LOFAR_FMAX_HZ = 300.0
 LOFAR_BINS = 110               # 0-40 Hz @1 Hz, 40-100 Hz @2 Hz, 100-300 Hz @5 Hz
 LOFAR_HISTORY_COLS = 80
 LOFAR_SAMPLE_S = 0.25          # sim-Sekunden pro Wasserfall-Spalte
+# Display-only, decimated histories.  The fine receiver history remains the
+# save-compatible 20 s buffer above; these bounded rings provide operator time
+# context without changing detections or the v10 save schema.
+SONAR_BROADBAND_LONG_SAMPLE_S = 2.0
+SONAR_BROADBAND_LONG_ROWS = 120       # four minutes
+SONAR_DEMON_HISTORY_ROWS = 120        # thirty seconds at receiver cadence
 
 # M12: OPZ / EMCON
 RADAR_ON_DEFAULT = True
@@ -290,12 +303,34 @@ RADAR_WEATHER_ERROR_GAIN = 1.5
 RADAR_TRACK_STALE_S = 30.0
 RADAR_BEARING_ERR_DEG = 0.8
 RADAR_RANGE_ERR_FRAC = 0.015
+# Air-search radar height estimate: a game model of a 3D radar's altitude
+# channel, noisier than range (fraction of altitude plus a fixed floor).
+RADAR_ALTITUDE_ERR_FRAC = 0.04
+RADAR_ALTITUDE_ERR_M = 60.0
+OBS_ALTITUDE_SMOOTH = 0.35
 # Observation filters operate on sensor epochs, not render/physics substeps.
 OBS_RADAR_EPOCH_S = 0.5
 OBS_BEARING_EPOCH_S = 5.0
 OBS_RADAR_SMOOTH_TAU_S = 1.5
 OBS_BEARING_SMOOTH_TAU_S = 4.0
-OBS_HISTORY_MAX = 12
+# 12 fixes at the 0.5s epoch above is only a 6s regression window - far too
+# short for bearing/range noise to average out against typical contact
+# displacement (the raw slope's noise scales with window_span^-1.5), which is
+# what made the derived course/speed swing wildly between re-fits. 60 fixes
+# (30s) keeps a still-responsive window while cutting that noise by roughly
+# an order of magnitude.
+OBS_HISTORY_MAX = 60
+# Presentation-only slew cap for the derived (bearing-only) contact course:
+# real hulls turn at well under 1.5 deg/s (see motion_limits()), so capping
+# the DISPLAYED course at this rate keeps it stable between per-fix least
+# squares re-fits without ever lagging behind an actual maneuver noticeably.
+OBS_DERIVED_COURSE_MAX_RATE_DEG_S = 3.0
+# Same idea for the derived (bearing-only) contact speed: every simulated
+# contact type that ever goes through this path (ships, flights, ASMs) flies
+# at a constant true speed once spawned/launched - there is no real maneuver
+# to keep up with - so a per-fix noise-driven jump here is pure display
+# jitter and can be damped hard without ever lagging a genuine change.
+OBS_DERIVED_SPEED_MAX_RATE_KN_S = 5.0
 MOTION_VECTOR_WINDOW_MIN = 3.0
 
 # M13: Funkraum / HFDF
@@ -321,6 +356,21 @@ RADAR_ANTENNA_HEIGHT_M = 20.0
 # regular air traffic) - raiders already used this via their own altitude_m.
 RADAR_SURFACE_TARGET_HEIGHT_M = 10.0
 FLIGHT_RADAR_ALTITUDE_M = 3000.0
+FLIGHT_ALTITUDE_SPREAD = 0.6    # per-flight altitude 0.7x..1.3x of the above
+
+
+def flight_altitude_m(seq: int) -> float:
+    """Deterministic per-flight altitude (no RNG draw, save-compatible)."""
+    unit = (int(seq) * 7919 % 101) / 100.0
+    return FLIGHT_RADAR_ALTITUDE_M * (
+        1.0 - FLIGHT_ALTITUDE_SPREAD / 2.0 + FLIGHT_ALTITUDE_SPREAD * unit)
+
+
+def measure_altitude_m(rng, altitude_m: float, error_scale: float = 1.0) -> float:
+    """Noisy radar altitude estimate from a caller-owned RNG stream."""
+    fraction = RADAR_ALTITUDE_ERR_FRAC * error_scale
+    return max(0.0, altitude_m * (1.0 + rng.uniform(-fraction, fraction))
+               + rng.uniform(-RADAR_ALTITUDE_ERR_M, RADAR_ALTITUDE_ERR_M))
 HELO_LAUNCH_WIND_MAX_KN = 32.0
 HELO_LAUNCH_CROSSWIND_MAX_KN = 22.0
 HELO_LAUNCH_VISIBILITY_MIN_NM = 2.0
@@ -510,22 +560,24 @@ MISSION_TYPES = {
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall")
 SCENARIOS = {
     "s1_patrouille": dict(
-        title="Patrouille Nordsee",
+        title="Patrouille",
         level="leicht",
         mission_type="patrouille",
         ship_start=(300.0, 380.0), ship_course=300.0,
-        briefing=("Auftrag: Sektor NORDSEE-Nord überwachen. Ein alter Diesel- "
+        # Kein Seename hier: Welt/Seed sind im Menü frei wählbar (W/R), die
+        # tatsächliche Karte kann von jeder Namensnennung abweichen.
+        briefing=("Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein alter Diesel- "
                   "Jäger wurde im westlichen Sektor gemeldet. Ziel: Identifizieren, "
                   "klassifizieren und versenken – ohne zivile Verluste."),
         win_text="Ziel-U-Boot versenkt",
         lose_text="Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust",
     ),
     "s2_doppeljagd": dict(
-        title="Doppeljagd Ostsee",
+        title="Doppeljagd",
         level="normal",
         mission_type="doppeljagd",
         ship_start=(250.0, 300.0), ship_course=0.0,
-        briefing=("Auftrag: Zwei U-Boote operieren im OSTSEE-Sektor (eines davon "
+        briefing=("Auftrag: Zwei U-Boote operieren im Einsatzsektor (eines davon "
                   "möglicherweise AIP – nahezu stumm). Belegungen: ESM-Wellen "
                   "werden erwartet. Ziel: Beide Boote versenken, zivile Schifffahrt "
                   "schützen, ASM-Wellen abwehren."),
@@ -590,6 +642,7 @@ FEED_CATEGORIES = {
     "funk": (COLOR_ESM, "FUNK"),
     "sonar": (COLOR_OK, "SONAR"),
     "waffen": (COLOR_WARN, "WAF"),
+    "opz": (COLOR_ESM, "OPZ"),
     "schaden": (COLOR_DANGER, "SCH"),
     "mission": (COLOR_CONTACT, "MIS"),
     "welt": (COLOR_TEXT_DIM, "WET"),

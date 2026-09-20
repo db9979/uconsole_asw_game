@@ -58,7 +58,8 @@ def assign_contact(game, target_id=9001):
     return contact
 
 
-def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(game):
+def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(
+        game, monkeypatch):
     """A launch is a loud, one-time acoustic event: subs react to it from much
     farther away than the torpedo's own eventual terminal seeker range
     (TORP_HOME_RANGE_NM), which only covers the final homing approach."""
@@ -70,10 +71,13 @@ def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(g
     game.subs = [near, far]
     assert config.SUB_TORPEDO_ALERT_NM > config.TORP_HOME_RANGE_NM  # the case this guards
 
+    effects = []
+    monkeypatch.setattr(game.audio, "play_effect", effects.append)
     assert game.launch_torpedo_at(contact, 50.0) is True
 
     assert near.torpedo_alerted is True
     assert far.torpedo_alerted is False
+    assert effects == ["torpedo_launch"]
 
 
 def test_torpedo_notice_ranges_are_ordered_between_homing_and_launch_alert():

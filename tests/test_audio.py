@@ -10,8 +10,10 @@ import src.audio.engine as audio_module
 from src.audio.database import TARGET_DATABASE, rank_signatures
 from src.audio.demon import DemonAnalyzer
 from src.audio.engine import AudioEngine
-from src.audio.synthesis import (filtered_noise_event, fm_chirp,
-                                  propeller_block, stereo_bearing, tone)
+from src.audio.synthesis import (active_sonar_ping, combat_effect,
+                                  filtered_noise_event, fm_chirp,
+                                  helicopter_block, propeller_block,
+                                  ship_ambience_block, stereo_bearing, tone)
 from src.core import config
 
 
@@ -38,6 +40,22 @@ def test_propeller_phase_continuity_and_event_primitives_are_finite():
         assert np.isfinite(event).all()
         assert np.max(np.abs(event)) <= 1
         assert event[0] == event[-1] == 0
+
+
+def test_sonar_combat_and_rotor_synthesis_is_finite_and_distinct():
+    rate = 8000
+    ping = active_sonar_ping(900, rate)
+    effects = [combat_effect(kind, rate) for kind in
+               ("torpedo_launch", "missile_launch", "gunfire", "explosion",
+                "water_entry")]
+    rotor = helicopter_block(rate, phase=.37)
+    ambience = ship_ambience_block(rate, sea_state=5, rain=.8, phase=.21)
+    for signal in (ping, rotor, ambience, *effects):
+        assert signal.dtype == np.float32
+        assert signal.size > 100
+        assert np.isfinite(signal).all()
+        assert 0 < np.max(np.abs(signal)) <= 1
+    assert len({signal.size for signal in effects}) >= 4
 
 
 def test_propeller_cavitation_rng_and_filter_are_continuous():
@@ -100,7 +118,9 @@ def test_audio_engine_is_safe_when_disabled(monkeypatch):
     assert engine.available is False
     assert engine.play_ping() is False
     assert engine.play_alert("damage") is False
+    assert engine.play_effect("explosion") is False
     assert engine.update_engine(180.0) is False
+    assert engine.update_helicopter(.2, 0, 0, True) is False
     assert engine.play_sonar(np.ones(100, dtype=np.float32), 4096) is False
     engine.stop_sonar()
     engine.shutdown()
@@ -115,7 +135,7 @@ def test_tone_has_fade_in_and_out():
 
 @pytest.fixture
 def mixer(monkeypatch):
-    channels = [Mock(), Mock(), Mock(), Mock()]
+    channels = [Mock(), Mock(), Mock(), Mock(), Mock()]
     for channel in channels:
         channel.get_busy.return_value = False
         channel.get_queue.return_value = None
@@ -139,7 +159,7 @@ def test_uses_actual_mixer_rate_and_shape(mixer, channels):
     backend.init.assert_not_called()
     assert engine.play_ping()
     pcm = make_sound.call_args.args[0]
-    count = int(0.45 * 44100)
+    count = int(0.62 * 44100)
     assert pcm.shape == ((count,) if channels == 1 else (count, 2))
     assert pcm.dtype == np.int16
     assert pcm.flags.c_contiguous
@@ -158,13 +178,15 @@ def test_initializes_signed16_and_reserves_independent_channels(mixer):
     backend.init.assert_called_once_with(
         frequency=22050, size=-16, channels=config.AUDIO_CHANNELS,
         buffer=config.AUDIO_MIXER_BUFFER_SAMPLES, allowedchanges=0)
-    backend.set_num_channels.assert_called_once_with(4)
-    backend.set_reserved.assert_called_once_with(4)
+    backend.set_num_channels.assert_called_once_with(5)
+    backend.set_reserved.assert_called_once_with(5)
     assert engine._engine_channel is channels[0]
     assert engine._sonar_channel is channels[1]
     assert engine._ping_channel is channels[2]
     assert engine._alert_channel is channels[3]
-    for name, channel in zip(("engine", "sonar", "ping", "alert"), channels):
+    assert engine._helicopter_channel is channels[4]
+    for name, channel in zip(
+            ("engine", "sonar", "ping", "alert", "helicopter"), channels):
         channel.set_volume.assert_called_once_with(engine.CHANNEL_GAINS[name])
 
 
@@ -237,6 +259,7 @@ def test_dedicated_channels_allow_overlap_and_ping_rejects_self_overlap(mixer):
     assert engine.play_sonar(np.ones(4096, dtype=np.float32), 4096)
     assert engine.play_ping()
     assert engine.play_alert("damage")
+    assert engine.update_helicopter(.5, 90, 0, True)
     for channel in channels:
         channel.play.assert_called_once()
     calls = make_sound.call_count
@@ -252,6 +275,41 @@ def test_dedicated_channels_allow_overlap_and_ping_rejects_self_overlap(mixer):
     channels[3].get_queue.return_value = channels[3].queue.call_args.args[0]
     assert not engine.play_alert("defense")
     assert engine.alert_dropped_events == 1
+
+
+def test_effect_queue_and_helicopter_distance_are_bounded(mixer):
+    _, channels, make_sound = mixer
+    engine = AudioEngine()
+    assert engine.play_effect("torpedo_launch")
+    channels[3].get_busy.return_value = True
+    assert engine.play_effect("gunfire")
+    channels[3].get_queue.return_value = object()
+    assert not engine.play_effect("explosion")
+    assert engine.alert_dropped_events == 1
+    assert not engine.play_effect("unknown")
+
+    before = make_sound.call_count
+    assert engine.update_helicopter(4.0, 0, 0, True)
+    assert make_sound.call_count == before
+    assert engine.update_helicopter(.5, 90, 0, True)
+    rotor_pcm = make_sound.call_args.args[0]
+    assert rotor_pcm.ndim == 2
+    assert np.max(np.abs(rotor_pcm[:, 1])) > np.max(np.abs(rotor_pcm[:, 0]))
+    channels[4].get_busy.return_value = True
+    channels[4].get_queue.return_value = object()
+    assert not engine.update_helicopter(.5, 90, 0, True)
+
+
+def test_weather_ambience_is_mixed_only_when_requested(mixer):
+    engine = AudioEngine()
+    assert engine.update_engine(180, volume=.12)
+    dry = mixer[2].call_args.args[0].copy()
+    engine._engine_phase = engine._engine_shaft_phase = engine._ambience_phase = 0.0
+    engine._engine_blocks = 0
+    mixer[1][0].reset_mock()
+    assert engine.update_engine(180, volume=.12, sea_state=5, rain=.8)
+    weather = mixer[2].call_args.args[0]
+    assert not np.array_equal(dry, weather)
 
 
 @pytest.mark.parametrize("mixer_format", [
@@ -280,6 +338,7 @@ def test_inactive_engine_does_not_synthesize(mixer, monkeypatch, enabled, availa
     assert not engine.play_ping()
     assert not engine.play_alert()
     assert not engine.update_engine(180.0)
+    assert not engine.update_helicopter(.2, 0, 0, True)
     assert not engine.play_sonar(np.ones(100, dtype=np.float32), 4096)
     synthesize.assert_not_called()
     mixer[2].assert_not_called()
@@ -580,13 +639,15 @@ def test_normal_stop_fades_streams_and_clears_event_buses(mixer):
     channels = mixer[1]
     channels[0].get_busy.return_value = True
     channels[1].get_busy.return_value = True
+    channels[4].get_busy.return_value = True
     engine.stop()
     engine.stop()
     channels[0].fadeout.assert_called_once_with(engine.FADE_MS)
     channels[1].fadeout.assert_called_once_with(engine.FADE_MS)
-    for channel in channels[:2]:
+    channels[4].fadeout.assert_called_once_with(engine.FADE_MS)
+    for channel in (channels[0], channels[1], channels[4]):
         channel.stop.assert_not_called()
-    for channel in channels[2:]:
+    for channel in channels[2:4]:
         assert channel.stop.call_count == 2
         channel.stop.reset_mock()
     engine.shutdown()
@@ -598,9 +659,9 @@ def test_normal_stop_fades_streams_and_clears_event_buses(mixer):
 
 def test_cache_size_and_lru_avoid_resynthesis(mixer, monkeypatch):
     synthesize = Mock(wraps=tone)
-    chirps = Mock(wraps=audio_module.fm_chirp)
+    chirps = Mock(wraps=audio_module.active_sonar_ping)
     monkeypatch.setattr(audio_module, "tone", synthesize)
-    monkeypatch.setattr(audio_module, "fm_chirp", chirps)
+    monkeypatch.setattr(audio_module, "active_sonar_ping", chirps)
     engine = AudioEngine(cache_size=2)
     assert engine.play_ping(800)
     assert engine.play_alert()

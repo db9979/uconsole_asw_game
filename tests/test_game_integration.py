@@ -84,6 +84,20 @@ def test_sonar_audio_is_silent_and_drained_across_time_scale(monkeypatch):
     game.audio.shutdown()
 
 
+def test_runtime_audio_does_not_play_machinery_or_helicopter_loops(monkeypatch):
+    game = Game(seed=86, audio_enabled=False)
+    machinery = Mock()
+    helicopter = Mock()
+    monkeypatch.setattr(game.audio, "update_engine", machinery)
+    monkeypatch.setattr(game.audio, "update_helicopter", helicopter)
+
+    game._update_audio(config.AUDIO_UPDATE_S * 2)
+
+    machinery.assert_not_called()
+    helicopter.assert_not_called()
+    game.audio.shutdown()
+
+
 def test_audio_replacement_and_run_shutdown_old_engines(monkeypatch):
     game = Game(seed=81, audio_enabled=False)
     initial = game.audio

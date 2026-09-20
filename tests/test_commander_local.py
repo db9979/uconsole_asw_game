@@ -427,9 +427,9 @@ def test_options_eight_and_f9_live_menu_ownership(game, monkeypatch):
     monkeypatch.setattr(game.commander, "prepare", Mock())
     key(game, pygame.K_F10)
     assert game.options_open
-    for _ in range(8):
+    for _ in range(9):
         key(game, pygame.K_DOWN)
-    assert game.options_sel == 8
+    assert game.options_sel == 9
     key(game, pygame.K_RETURN)
     assert game.commander_open and game.administration_open and not game.options_open
     key(game, pygame.K_ESCAPE)
@@ -503,6 +503,39 @@ def test_remote_lease_locks_matching_uconsole_station_but_preserves_host_keys(ga
     assert game.commander_open
 
 
+@pytest.mark.parametrize(("solo", "expected_step"), [(False, 0), (True, 1)])
+def test_solo_keeps_time_scale_keys_alive_under_the_station_lock(
+        game, solo, expected_step):
+    game.commander.server = RosterTransport((roster_client(
+        "crew", "Crew", 0, station="bridge", command=True),))
+    game.commander.solo = solo
+    game.station = Station.BRIDGE
+    telegraph = game.ship.telegraph
+    before = game.time_scale_idx
+
+    key(game, pygame.K_x, mod=0)
+    assert game.time_scale_idx == before + expected_step
+    key(game, pygame.K_PLUS, mod=0)
+    assert game.ship.telegraph == telegraph  # station input stays locked either way
+
+
+def test_crew_mode_row_toggles_solo_and_reaches_the_server(game):
+    console = game.commander
+    assert console.solo is False and len(console.row_rects()) == 6
+    game._open_administration("commander")
+    console.selection = 4
+    key(game, pygame.K_DOWN)
+    assert console.selection == 5
+    key(game, pygame.K_RIGHT)
+    assert console.solo is True
+    key(game, pygame.K_RETURN)
+    assert console.solo is False
+    key(game, pygame.K_DOWN)
+    assert console.selection == 0  # six rows wrap around
+    key(game, pygame.K_UP)
+    assert console.selection == 5
+
+
 def test_new_remote_lease_clears_latched_and_numeric_uconsole_input(game):
     server = RosterTransport()
     game.commander.server = server
@@ -545,7 +578,7 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     game.commander._prepared = True
     game._open_administration("options")
     monkeypatch.setattr(pygame.display, "get_window_size", lambda: (1280, 1000))
-    rect = game._options_row_rects()[8]
+    rect = game._options_row_rects()[9]
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                         pos=(rect.centerx, 20)))
     assert game.options_open

@@ -150,12 +150,11 @@ slice below now adds Bridge orders. Save v10 and protocol v1 are unchanged.
   station cards.
 - [x] Use a persistent desktop role rail and a native mobile station chooser.
 - [x] Preserve Operations, Lookout, Guide, and Contact Analyzer as shared utilities.
-- [x] Restore hidden SimLog for v2 from bounded per-role projection history. The
-  `/api/v2/simlog` endpoint serves each role's own bounded, redacted state
-  history (never full truth); the browser's `#simlog` view fetches and renders
-  it once the host grants the `simlog` capability, gated the same way as
-  `command`/`direct_fire`. Full-truth protocol-v1 and host-local diagnostics
-  remain unchanged and unaffected.
+- [x] Restore hidden SimLog for v2 as bounded, detached diagnostic history. The
+  `/api/v2/simlog` endpoint exposes full simulation truth only after the host
+  grants the `simlog` capability; ordinary role state remains redacted. The
+  browser's `#simlog` view renders the same unit groups and map as the local
+  diagnostic view, bounded to 64 entries and the protocol byte limit.
 - [x] Keep transport/session state, authoritative station state, and per-role local
   presentation state separate.
 - [x] Preserve selections and harmless view state across polling; clear command

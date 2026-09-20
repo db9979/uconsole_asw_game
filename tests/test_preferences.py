@@ -80,3 +80,43 @@ def test_high_contrast_round_trips(tmp_path):
     expected = Preferences(high_contrast=True)
     assert save_preferences(expected, path) == path
     assert load_preferences(path) == expected
+
+
+def test_legacy_preferences_default_live_traffic_off(tmp_path):
+    path = tmp_path / "preferences.json"
+    path.write_text(json.dumps({"language": "de", "audio": False}),
+                    encoding="utf-8")
+    loaded = load_preferences(path)
+    assert loaded.live_ais_enabled is False
+    assert loaded.live_adsb_enabled is False
+    assert loaded.aisstream_api_key == ""
+    assert loaded.opensky_credentials == ""
+
+
+def test_live_traffic_preferences_round_trip(tmp_path):
+    path = tmp_path / "preferences.json"
+    expected = Preferences(live_ais_enabled=True, live_adsb_enabled=True,
+                           aisstream_api_key="abc123",
+                           opensky_credentials="id:secret")
+    assert save_preferences(expected, path) == path
+    assert load_preferences(path) == expected
+
+
+def test_invalid_live_traffic_fields_fall_back_to_defaults(tmp_path):
+    path = tmp_path / "preferences.json"
+    path.write_text(json.dumps({
+        "live_ais_enabled": "yes", "live_adsb_enabled": 1,
+        "aisstream_api_key": 12345, "opensky_credentials": None,
+    }), encoding="utf-8")
+    loaded = load_preferences(path)
+    assert loaded.live_ais_enabled is False
+    assert loaded.live_adsb_enabled is False
+    assert loaded.aisstream_api_key == ""
+    assert loaded.opensky_credentials == ""
+
+
+def test_credential_fields_are_length_limited(tmp_path):
+    path = tmp_path / "preferences.json"
+    path.write_text(json.dumps({"aisstream_api_key": "x" * 500}),
+                    encoding="utf-8")
+    assert len(load_preferences(path).aisstream_api_key) == 256

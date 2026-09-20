@@ -39,6 +39,7 @@ class Raider:
                  rng: random.Random, profile: dict):
         self.profile = profile
         self.seq = seq
+        self.sensor_seed = int(seq)
         self.rng = rng
         self.x = float(x_nm)
         self.y = float(y_nm)

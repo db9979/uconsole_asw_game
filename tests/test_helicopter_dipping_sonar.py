@@ -355,7 +355,7 @@ def test_helicopter_view_shows_only_the_helicopters_own_dip_plot():
 
     assert stations_view.helo_dip_contacts(game) == [dip_found]
     line = stations_view._helo_dip_contact_line(game)
-    assert "K1" in line and "123" in line
+    assert "K01" in line and "123" in line
 
     pygame.init()
     surface = pygame.Surface((1280, 720))

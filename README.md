@@ -78,6 +78,10 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 - Optional trusted-LAN Remote Crew: multiple authenticated browser clients can
   hold exclusive station roles, switch among their retained roles, operate the
   same observation-led controls, and use separately granted direct fire.
+  The browser console is a one-viewport desktop layout with a station tab bar.
+  `python main.py --solo-crew` (or the F9 "Crew mode" row) lets one browser run
+  all nine stations plus pause, time scale, save/load and new game while the
+  uConsole stays the simulation server; see [Remote Crew setup](docs/commander-coop.md).
 - Conservative station Autocrew with local `F2` control and an `F3` overview.
   Remote Crew temporarily suspends Autocrew only for the leased station.
 - Deterministic marine weather with wind, rain, visibility and smooth sea-state
@@ -166,6 +170,7 @@ most important global controls are:
 | Input | Action |
 |---|---|
 | `1` to `9` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter, Electronic Warfare/ESM; press the active station number again to advance its page when available |
+| `F` / `Shift+F` / `B` at ESM | Cycle signal-status, minimum-threat, and frequency-band filters |
 | `Tab` / `Shift+Tab` | Next / previous station |
 | `P` | Pause / resume |
 | `F1` | Context-sensitive help |
@@ -192,6 +197,12 @@ assuming that a key has the same meaning at every station.
 In help, Left/Right switches category; Up/Down or Page Up/Page Down scrolls its
 contents. Existing station weapon shortcuts remain available. Held course and
 torpedo-depth adjustments use real time, not the selected simulation multiplier.
+
+The bottom event feed is shared by all stations. It retains operational reports,
+completed orders, and alerts—including mission outcome, weapon and defensive
+events, damage, radio traffic, navigation, and pause/time state. Short-lived
+input prompts, invalid-entry hints, selections, and display settings remain in
+the transient status banner instead of displacing operational history.
 
 At Damage Control, click a zone or its label to select it and attempt to assign
 the currently selected team. With tooltips enabled, the click also pins its
@@ -302,9 +313,10 @@ external voice; no microphone or chat is included.
 
 Sonar crew may stage target proposals and Bridge crew may stage course and speed
 proposals. These requests never act directly: the host reviews and accepts or
-rejects them locally. Browser alerts and SimLog history are role-scoped and use
-only previously published observations; reconnecting establishes a silent event
-baseline rather than replaying old alarms.
+rejects them locally. Browser alerts remain role-scoped. The separately
+host-granted, read-only SimLog is a diagnostic exception and exposes detached
+full-truth snapshots, including hidden units; reconnecting establishes a silent
+event baseline rather than replaying old alarms.
 
 While a browser owns a station lease, matching station input on the uConsole is
 read-only. Host administration, pause, and switching to another station remain

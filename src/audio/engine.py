@@ -10,7 +10,9 @@ import numpy as np
 import pygame
 
 from src.audio.receiver import smooth_limit
-from src.audio.synthesis import fm_chirp, propeller_block, stereo_bearing, tone
+from src.audio.synthesis import (active_sonar_ping, combat_effect,
+                                 helicopter_block, propeller_block,
+                                 ship_ambience_block, stereo_bearing, tone)
 from src.core import config
 
 
@@ -22,14 +24,16 @@ class AudioEngine:
     SONAR_CHANNEL = 1
     PING_CHANNEL = 2
     ALERT_CHANNEL = 3
+    HELICOPTER_CHANNEL = 4
     FADE_MS = 35
     SONAR_HOLD_MAX = 2
 
-    # Post-limiter per-channel PCM ceilings, NOT input volume caps. Their
-    # weighted sum is .9155, including hard left/right pan and hostile input.
-    # This budgets our reserved buses only, not unrelated shared-mixer users.
-    SOURCE_LIMITS = {"engine": .18, "sonar": .55, "ping": .40, "alert": .32}
-    CHANNEL_GAINS = {"engine": .50, "sonar": .65, "ping": .65, "alert": .65}
+    # Post-limiter per-channel PCM ceilings, NOT input volume caps. The gains
+    # keep all five reserved buses below full scale even at coincident peaks.
+    SOURCE_LIMITS = {"engine": .18, "sonar": .55, "ping": .40,
+                     "alert": .32, "helicopter": .18}
+    CHANNEL_GAINS = {"engine": .45, "sonar": .58, "ping": .58,
+                     "alert": .58, "helicopter": .50}
 
     def __init__(self, sample_rate: int = 22050,
                  channels: int = config.AUDIO_CHANNELS,
@@ -46,12 +50,17 @@ class AudioEngine:
         self._sonar_channel = None
         self._ping_channel = None
         self._alert_channel = None
+        self._helicopter_channel = None
         self._engine_phase = 0.0
         self._engine_shaft_phase = 0.0
         self._engine_blocks = 0
         self._engine_rng = np.random.default_rng(17)
         self._engine_filter_state = np.zeros(5, dtype=np.float64)
         self._engine_fading = False
+        self._ambience_phase = 0.0
+        self._helicopter_phase = 0.0
+        self._helicopter_fading = False
+        self._helicopter_blocks = 0
         self._sonar_fading = False
         self._sonar_rate = None
         self._sonar_input_count = 0
@@ -86,17 +95,20 @@ class AudioEngine:
             if sample_format != -16 or self.channels not in (1, 2):
                 self.enabled = False
                 return
-            if pygame.mixer.get_num_channels() < 4:
-                pygame.mixer.set_num_channels(4)
-            pygame.mixer.set_reserved(4)
+            if pygame.mixer.get_num_channels() < 5:
+                pygame.mixer.set_num_channels(5)
+            pygame.mixer.set_reserved(5)
             self._engine_channel = pygame.mixer.Channel(self.ENGINE_CHANNEL)
             self._sonar_channel = pygame.mixer.Channel(self.SONAR_CHANNEL)
             self._ping_channel = pygame.mixer.Channel(self.PING_CHANNEL)
             self._alert_channel = pygame.mixer.Channel(self.ALERT_CHANNEL)
+            self._helicopter_channel = pygame.mixer.Channel(
+                self.HELICOPTER_CHANNEL)
             for name, channel in (("engine", self._engine_channel),
                                   ("sonar", self._sonar_channel),
                                   ("ping", self._ping_channel),
-                                  ("alert", self._alert_channel)):
+                                  ("alert", self._alert_channel),
+                                  ("helicopter", self._helicopter_channel)):
                 channel.set_volume(self.CHANNEL_GAINS[name])
             self.available = True
         except (pygame.error, TypeError, ValueError, OverflowError):
@@ -151,9 +163,8 @@ class AudioEngine:
                 return False
             volume = np.clip(float(volume), 0.0, self.SOURCE_LIMITS["ping"])
             sound = self._sound(
-                lambda: fm_chirp(frequency_hz * .78, frequency_hz * 1.08,
-                                 .45, self.sample_rate, volume,
-                                 modulation_hz=7.0, modulation_depth_hz=12.0),
+                lambda: active_sonar_ping(frequency_hz, self.sample_rate,
+                                          volume),
                 ("ping", round(frequency_hz), round(float(volume), 2)))
             if sound is None:
                 return False
@@ -165,11 +176,79 @@ class AudioEngine:
             return False
         return True
 
+    def play_effect(self, kind: str) -> bool:
+        """Play one bounded local combat/handling effect on the alert bus."""
+        if kind not in {"torpedo_launch", "missile_launch", "gunfire",
+                        "explosion", "water_entry"}:
+            return False
+        if (not self.enabled or not self.available or self._alert_channel is None):
+            return False
+        try:
+            if (self._alert_channel.get_busy()
+                    and self._alert_channel.get_queue() is not None):
+                self.alert_dropped_events += 1
+                return False
+            sound = self._sound(
+                lambda: combat_effect(kind, self.sample_rate,
+                                      self.SOURCE_LIMITS["alert"]),
+                ("alert", "effect", kind, self.sample_rate))
+            if sound is None:
+                return False
+            if self._alert_channel.get_busy():
+                self._alert_channel.queue(sound)
+            else:
+                self._alert_channel.play(sound)
+            return True
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
+            return False
+
+    def update_helicopter(self, distance_nm: float, bearing_deg: float,
+                          listener_bearing_deg: float, airborne: bool) -> bool:
+        """Queue a nearby rotor block; distance limits work and channel use."""
+        if (not self.enabled or not self.available
+                or self._helicopter_channel is None):
+            return False
+        try:
+            distance = float(distance_nm)
+            if (not airborne or not np.isfinite(distance) or distance >= 4.0):
+                self.stop_helicopter()
+                return True
+            if (self._helicopter_channel.get_busy()
+                    and self._helicopter_channel.get_queue() is not None):
+                return False
+            proximity = 1.0 - np.clip(distance / 4.0, 0.0, 1.0)
+            volume = self.SOURCE_LIMITS["helicopter"] * (.18 + .82 * proximity**2)
+            signal = helicopter_block(self.sample_rate, volume,
+                                      self._helicopter_phase)
+            if self.channels == 2:
+                signal = stereo_bearing(signal, bearing_deg,
+                                        listener_bearing_deg)
+            sound = self._make_sound(signal, "helicopter")
+            if self._helicopter_channel.get_busy():
+                self._helicopter_channel.queue(sound)
+            else:
+                self._helicopter_channel.play(sound, fade_ms=self.FADE_MS)
+            self._helicopter_phase = (
+                self._helicopter_phase + 2 * np.pi * 4.8 * 4
+                * len(signal) / self.sample_rate) % (2 * np.pi)
+            self._helicopter_blocks += 1
+            self._helicopter_fading = False
+            return True
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
+            return False
+
     def play_alert(self, kind: str = "danger") -> bool:
         """Kurze priorisierte Meldung fuer Stations- und Gefahrenaudio."""
         tones = {
             "launch": (620.0, 0.18, 0.18),
             "defense": (420.0, 0.12, 0.16),
+            "esm": (1040.0, 0.16, 0.16),
             "danger": (180.0, 0.28, 0.28),
             "damage": (110.0, 0.35, 0.32),
         }
@@ -199,7 +278,8 @@ class AudioEngine:
         return True
 
     def update_engine(self, rpm: float, blade_count: int = 5,
-                      cavitation: float = 0.0, volume: float = 0.15) -> bool:
+                      cavitation: float = 0.0, volume: float = 0.15,
+                      sea_state: float | None = None, rain: float = 0.0) -> bool:
         """Queue a machine block; callers should feed it at approximately 4 Hz."""
         if not self.enabled or not self.available or self._engine_channel is None:
             return False
@@ -227,6 +307,11 @@ class AudioEngine:
                     cavitation=cavitation, phase=self._engine_phase,
                     rng=self._engine_rng, filter_state=next_filter,
                     shaft_phase=self._engine_shaft_phase)
+                if sea_state is not None:
+                    signal = signal + ship_ambience_block(
+                        self.sample_rate, sea_state, rain,
+                        amplitude=min(.045, volume * .32),
+                        phase=self._ambience_phase)
                 sound = self._make_sound(signal, "engine")
                 if busy:
                     self._engine_channel.queue(sound)
@@ -240,6 +325,9 @@ class AudioEngine:
                                    * count / self.sample_rate) % (2 * np.pi)
             self._engine_shaft_phase = (
                 self._engine_shaft_phase + 2 * np.pi * blade_hz / max(1, blade_count)
+                * count / self.sample_rate) % (2 * np.pi)
+            self._ambience_phase = (
+                self._ambience_phase + 2 * np.pi * 31.0
                 * count / self.sample_rate) % (2 * np.pi)
             self._engine_blocks += 1
             self._engine_fading = False
@@ -398,9 +486,19 @@ class AudioEngine:
             except pygame.error:
                 pass
 
+    def stop_helicopter(self) -> None:
+        if self._helicopter_channel is not None and not self._helicopter_fading:
+            try:
+                if self._helicopter_channel.get_busy():
+                    self._helicopter_channel.fadeout(self.FADE_MS)
+                self._helicopter_fading = True
+            except pygame.error:
+                pass
+
     def stop(self) -> None:
         self.stop_sonar()
         self.stop_engine()
+        self.stop_helicopter()
         self._hard_stop(self._ping_channel)
         self._hard_stop(self._alert_channel)
 
@@ -530,7 +628,8 @@ class AudioEngine:
 
     def shutdown(self) -> None:
         for channel in (self._engine_channel, self._sonar_channel,
-                        self._ping_channel, self._alert_channel):
+                        self._ping_channel, self._alert_channel,
+                        self._helicopter_channel):
             self._hard_stop(channel)
         self.stop_preview()
         self._reset_sonar_stream()

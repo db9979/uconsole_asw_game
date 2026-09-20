@@ -66,6 +66,7 @@ def test_tabs_contacts_and_safe_actions_share_draw_hit_geometry(monkeypatch):
     contact = Contact(73, 9001, "passiv", "sub")
     contact.bearing = 42
     contact.last_seen = game.sim_t
+    game.sonar.contacts[contact.target_id] = contact
     game.sonar.active_contacts = lambda: [contact]
     previous = config.STATION_RECT
     config.STATION_RECT = config.FULL_STATION_RECT
@@ -76,6 +77,15 @@ def test_tabs_contacts_and_safe_actions_share_draw_hit_geometry(monkeypatch):
         for index, rect in enumerate(regions["tabs"]):
             assert sonar_view.sonar_click_target(game, rect.center) == {
                 "action": "page_set", "value": index, "safe": True}
+        plot = sonar_view._waterfall_plot(regions["main"], 0)
+        track_x = plot.x + round(contact.bearing / 360.0 * (plot.w - 1))
+        assert sonar_view.sonar_click_target(game, (track_x, plot.centery)) == {
+            "action": "contact_listen", "value": 73, "safe": True}
+        assert game._handle_sonar_click({
+            "action": "contact_listen", "value": 73, "safe": True})
+        assert game.selected_contact is contact
+        assert game.sonar.focus_locked is True
+        assert game.sonar.listen_bearing == 42
         contact_rect = next(item["rect"] for item in drawn
                             if item["kind"] == "sonar-contact")
         assert sonar_view.sonar_click_target(game, contact_rect.center)["value"] == 73

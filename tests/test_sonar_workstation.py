@@ -49,6 +49,21 @@ def test_bearing_controls_and_pages_do_not_change_ship_orders(game):
     assert not game.held and game.ship.target_course == course
 
 
+def test_native_display_controls_are_transient_and_do_not_change_analysis(game):
+    gain = game.sonar.gain_db
+    press(game, pygame.K_c, mod=pygame.KMOD_SHIFT)
+    assert game.sonar_display_palette == "amber"
+    press(game, pygame.K_i, mod=pygame.KMOD_SHIFT)
+    assert game.sonar_display_contrast == 1.4
+    press(game, pygame.K_o, mod=pygame.KMOD_CTRL)
+    assert game.sonar_display_black == .01
+    press(game, pygame.K_h, mod=pygame.KMOD_SHIFT)
+    assert game.sonar_display_history == .25
+    assert game.sonar.gain_db == gain
+    controls = game.save_state()["sonar_controls"]
+    assert not any(key.startswith("sonar_display_") for key in controls)
+
+
 def test_manual_beam_hears_without_selected_contact_and_resets_on_retune():
     ship = Ship(250, 250, speed_kn=0)
     world = SimpleNamespace(sea_state=0, thermocline_depth_m=lambda x, y: 100)
@@ -223,6 +238,29 @@ def test_history_and_peak_hold_are_bounded():
     assert len(sonar.lofar_times) == len(sonar.lofar_bearings) == config.LOFAR_HISTORY_COLS
     assert len(sonar.peak_spectrum) == config.LOFAR_BINS
     assert sonar.history_times == sorted(sonar.history_times)
+    assert len(sonar.broadband_long_history) == (
+        (config.LOFAR_HISTORY_COLS + 5)
+        // round(config.SONAR_BROADBAND_LONG_SAMPLE_S / sonar.receiver.block_s))
+    assert len(sonar.demon_history) == min(
+        config.LOFAR_HISTORY_COLS + 5, config.SONAR_DEMON_HISTORY_ROWS)
+    assert sonar.broadband_long_times == sorted(sonar.broadband_long_times)
+    assert sonar.demon_times == sorted(sonar.demon_times)
+
+
+def test_display_histories_are_bounded_and_long_broadband_is_decimated():
+    ship = Ship(250, 250, speed_kn=0)
+    world = SimpleNamespace(sea_state=0, thermocline_depth_m=lambda x, y: 100)
+    sonar = SonarSystem()
+    block_count = (config.SONAR_BROADBAND_LONG_ROWS + 4) * round(
+        config.SONAR_BROADBAND_LONG_SAMPLE_S / sonar.receiver.block_s)
+    for index in range(block_count):
+        sonar.update(.25, (index + 1) * .25, ship, [], world)
+
+    assert len(sonar.broadband_long_history) == config.SONAR_BROADBAND_LONG_ROWS
+    assert len(sonar.broadband_long_times) == config.SONAR_BROADBAND_LONG_ROWS
+    assert len(sonar.demon_history) == config.SONAR_DEMON_HISTORY_ROWS
+    assert all(len(row) == 180 for row in sonar.broadband_long_history)
+    assert all(len(row) == 80 for row in sonar.demon_history)
 
 
 def test_bathythermograph_and_towed_depth_are_operator_controls(game):

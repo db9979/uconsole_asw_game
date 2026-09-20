@@ -26,9 +26,7 @@ proposal decisions, not movement. References bind to observation AND contact
 object identity; the bounded private registry never exposes either object.
 All observations, including verified sonar, receive neutral lifetime labels
 C001, C002, ... alongside their opaque refs. Producer labels/contact numbers
-are never forwarded, except a nonempty observed AIS name when kind is exactly
-AIS and source exactly RADAR-S/AIS (at most 128 characters). Losing that AIS
-source restores the neutral label; no historical AIS name is carried forward.
+and the external origin of live-traffic entities are never forwarded.
 Reincarnation rotates both ref and neutral label. The registry retains at most
 256 entries; the label counter never wraps, is bounded by 2**53 - 1 and resets
 with the session. At exhaustion new observations are omitted until reset.
@@ -66,6 +64,7 @@ from collections import OrderedDict, deque
 from copy import deepcopy
 from itertools import chain, islice
 import math
+import os
 import secrets
 import threading
 import time
@@ -77,8 +76,8 @@ from src.sonar.sonar import SonarSystem
 from src.core import config
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
-from src.commander.server import (SIMLOG_ENTRIES_MAX, SIMLOG_MAX_BYTES,
-                                  _json_bytes)
+from src.commander.server import (HOST_ROLE, SIMLOG_ENTRIES_MAX,
+                                  SIMLOG_MAX_BYTES, _json_bytes)
 from src.commander.projections import (ROLE_NAMES, build_role_states, known_chart,
                                        redacted_chart, redacted_state)
 
@@ -128,6 +127,12 @@ def _opz_affiliate(game, params, bindings):
     key = _opz_id(bindings, params["ref"])
     return "unknown_ref" if key is None else game.affiliate_opz_observation(
         key, params["affiliation"])
+
+
+def _opz_set_track_id(game, params, bindings):
+    key = _opz_id(bindings, params["ref"])
+    return "unknown_ref" if key is None else game.set_opz_track_label(
+        key, params["label"])
 
 
 def _opz_create_fusion(game, params, bindings):
@@ -209,6 +214,24 @@ def _eloka_clear_annotation(game, params, bindings):
     if binding is None or binding[1] != "ELOKA":
         return "unknown_ref"
     return game.clear_eloka_annotation(binding[2])
+
+
+def _eloka_set_jamming(game, params, bindings):
+    binding = _bound(bindings, params["ref"])
+    if binding is None or binding[1] != "ELOKA":
+        return "unknown_ref"
+    return game.set_jamming(binding[2], params["enabled"])
+
+
+def _eloka_set_technique(game, params, bindings):
+    binding = _bound(bindings, params["ref"])
+    if binding is None or binding[1] != "ELOKA":
+        return "unknown_ref"
+    return game.set_jamming_technique(binding[2], params["technique"])
+
+
+def _eloka_set_auto(game, params, _bindings):
+    return game.set_ecm_auto(params["enabled"])
 
 
 def _sonar_contact(bindings, ref):
@@ -363,6 +386,7 @@ _V2_ACTION_HANDLERS = {
     "sonar_set_release": _sonar_set_release,
     "opz_classify": _opz_classify,
     "opz_affiliate": _opz_affiliate,
+    "opz_set_track_id": _opz_set_track_id,
     "opz_create_fusion": _opz_create_fusion,
     "opz_dissolve_fusion": _opz_dissolve_fusion,
     "opz_set_radar": _opz_set_radar,
@@ -377,6 +401,9 @@ _V2_ACTION_HANDLERS = {
     "radio_capture_hfdf": _radio_capture_hfdf,
     "eloka_annotate": _eloka_annotate,
     "eloka_clear_annotation": _eloka_clear_annotation,
+    "eloka_set_jamming": _eloka_set_jamming,
+    "eloka_set_technique": _eloka_set_technique,
+    "eloka_set_auto": _eloka_set_auto,
     "sonar_set_listen_bearing": _sonar_set_listen_bearing,
     "sonar_set_focus": _sonar_set_focus,
     "sonar_clear_focus": _sonar_clear_focus,
@@ -405,6 +432,82 @@ _V2_ACTION_HANDLERS = {
     "weapons_deploy_nixie": _weapons_deploy_nixie,
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,
+}
+
+
+def _host_pause(game, params):
+    return game.set_paused(True)
+
+
+def _host_resume(game, params):
+    return game.set_paused(False)
+
+
+def _host_time_scale(game, params):
+    delta = params["index"] - game.time_scale_idx
+    if delta:
+        game.cycle_time_scale(delta)
+    return True
+
+
+def _host_save(game, params):
+    try:
+        game.save_to_slot(params["slot"])
+    except (OSError, ValueError, TypeError, OverflowError, RecursionError):
+        return "save_failed"
+    return True
+
+
+def _host_load(game, params):
+    return True if game.load_from_slot(params["slot"]) else "no_save"
+
+
+def _host_new_game(game, params):
+    return game.start_new_game(params["scenario"], params["world_mode"],
+                               params.get("level"), params.get("seed"))
+
+
+def _host_instructor_environment(game, params):
+    """Apply a bounded, save-compatible exercise environment change."""
+    if params["event"] is not None:
+        result = _host_instructor_event(game, {"event": params["event"]})
+        if result is not True:
+            return result
+    game.world.sea_state = params["sea_state"]
+    game.world.refresh_weather()
+    return True
+
+
+def _host_instructor_event(game, params):
+    """Inject a deterministic exercise cue without exporting target identity."""
+    targets = sorted(
+        (sub for sub in game.subs
+         if sub.side == "hostile" and not sub.sunk and sub.state != "SINKING"),
+        key=lambda sub: sub.id)
+    if not targets:
+        return "no_target"
+    event = params["event"]
+    if event == "torpedo_transient":
+        targets[0].alert_torpedo()
+        game._emit_sound("torpedo_launch")
+        return True
+    fraction = {"targets_quiet": .2, "targets_cruise": .5,
+                "targets_flank": 1.0}[event]
+    for sub in targets:
+        sub.speed = max(0.0, sub.motion.maximum_speed_kn * fraction)
+    return True
+
+
+# Solo-only host surface: a closed table, never a dynamic method lookup. The
+# world-replacing actions are listed so the rest of the frame can fail closed.
+_HOST_ACTION_HANDLERS = {
+    "host_pause": _host_pause,
+    "host_resume": _host_resume,
+    "host_time_scale": _host_time_scale,
+    "host_save": _host_save,
+    "host_load": _host_load,
+    "host_new_game": _host_new_game,
+    "host_instructor_environment": _host_instructor_environment,
 }
 
 
@@ -474,6 +577,7 @@ class CommanderBridge:
         self._chart = None
         self._chart_world = None
         self._published_chart = None
+        self._chart_publication = None
         self._simlog_fingerprint = None
         self._v2_simlog_seq = 0
         self._v2_simlog = {role: deque(maxlen=SIMLOG_ENTRIES_MAX)
@@ -481,6 +585,8 @@ class CommanderBridge:
         self._last_v2_states = None
         self._language = None
         self._last_publish = None
+        self._slots = None
+        self._slots_at = None
         self._audio_context = None
         self._audio_receiver_sequence = None
         self._audio_filter = None
@@ -648,7 +754,7 @@ class CommanderBridge:
             positioned = (source not in ("HFDF", "SONAR-BRG", "SONAR")
                           and _fresh(game.sim_t, track.position_seen, lifetime))
             if source.startswith("SONAR") and associated is not None:
-                display_id = f"K{associated.id:02d}"
+                display_id = str(track.label)[:64]
             elif source == "HFDF":
                 display_id = game.hfdf_display_id(track)
             elif key in opz_ids:
@@ -667,6 +773,8 @@ class CommanderBridge:
                        y=_number(track.y) if positioned else None,
                        depth_m=None, course=_number(track.course) if positioned else None,
                         speed_kn=_number(getattr(track, "speed_kn", None)) if positioned else None,
+                        altitude_m=(_number(getattr(track, "altitude_m", None))
+                                    if positioned else None),
                         observer_x=_number(getattr(track, "observer_x", None)),
                         observer_y=_number(getattr(track, "observer_y", None)),
                         released_to_opz=bool(getattr(track, "released_to_opz", False)),
@@ -875,8 +983,28 @@ class CommanderBridge:
             return False
         drained = False
         bridge_course = None
+        identity = (id(game.world), id(game.sonar))
         for envelope in server.drain_commands_v2():
             drained = True
+            if (id(game.world), id(game.sonar)) != identity:
+                # An earlier command in this frame replaced the world. Anything
+                # prepared for the old world fails closed, never on the new one.
+                server.apply_command_v2(
+                    envelope, now=now, phase="blocked", world_session=self._session,
+                    world_epoch=self._epoch, resource_revision=self._revision,
+                    apply=lambda action, params: False)
+                continue
+            if envelope.role == HOST_ROLE:
+                server.apply_command_v2(
+                    envelope, now=now, phase=phase, world_session=self._session,
+                    world_epoch=self._epoch, resource_revision=self._revision,
+                    apply=lambda action, params: (
+                        _HOST_ACTION_HANDLERS[action](game, params)
+                        if action in _HOST_ACTION_HANDLERS else False))
+                phase = self._phase(game)  # pause/resume changes what may follow
+                self._slots_at = None  # a save may have changed the slot list
+                self._dirty = True  # publish the new host view immediately
+                continue
             rows, bindings = self._tracks(game)
             self._refresh_direct_fire_refs(game, rows, bindings)
             bindings.update((entry[1], entry[3])
@@ -909,6 +1037,28 @@ class CommanderBridge:
             game.ship.target_course = bridge_course
         return drained
 
+    def _settle_gate(self, game, server, phase):
+        """Advance the epoch and drop queued input when the input owner changed."""
+        gate = (phase, bool(game.help_open),
+                bool(game.nations_open), bool(game.quit_confirm), game.save_ui,
+                bool(game.options_open), bool(getattr(game, "commander_open", False)),
+                game.input_mode, id(game.editor), bool(game.splash_active),
+                bool(game.paused), bool(game.in_menu), bool(game.main_menu),
+                bool(game.running), bool(game.game_over), id(server))
+        if gate != self._gate:
+            if self._gate is not None:
+                self._epoch += 1
+                if hasattr(server, "invalidate_v2_commands"):
+                    server.invalidate_v2_commands("context_invalidated")
+                self._v2_simlog_seq = (game.simlog[-1]["seq"]
+                                       if game.simlog else self._v2_simlog_seq)
+                for history in self._v2_simlog.values():
+                    history.clear()
+                self._last_v2_states = None
+                self._simlog_fingerprint = None
+            self._gate = gate
+            self._dirty = True
+
     def pump(self, game, server, now=None):
         """Project and drain at most four commands; publish at 2 Hz/no catchup."""
         self._main_thread()
@@ -925,7 +1075,12 @@ class CommanderBridge:
                 game.opz_fusion.clear()
                 game.opz_selected_track_id = None
                 self.allowed = False
-                server.revoke()
+                if getattr(server, "solo_mode", False) is True:
+                    # The solo browser is the console: keep its session and
+                    # re-lease every station under fresh generations.
+                    server.solo_rebase()
+                else:
+                    server.revoke()
                 self._session = secrets.token_urlsafe(24)
                 self._epoch += 1
                 self._revision = self._seq = 0
@@ -956,25 +1111,7 @@ class CommanderBridge:
             self._dirty = True
         phase = self._phase(game)
         connected = bool(server.connected)
-        gate = (phase, bool(game.help_open),
-                bool(game.nations_open), bool(game.quit_confirm), game.save_ui,
-                bool(game.options_open), bool(getattr(game, "commander_open", False)),
-                game.input_mode, id(game.editor), bool(game.splash_active),
-                bool(game.paused), bool(game.in_menu), bool(game.main_menu),
-                bool(game.running), bool(game.game_over), id(server))
-        if gate != self._gate:
-            if self._gate is not None:
-                self._epoch += 1
-                if hasattr(server, "invalidate_v2_commands"):
-                    server.invalidate_v2_commands("context_invalidated")
-                self._v2_simlog_seq = (game.simlog[-1]["seq"]
-                                       if game.simlog else self._v2_simlog_seq)
-                for history in self._v2_simlog.values():
-                    history.clear()
-                self._last_v2_states = None
-                self._simlog_fingerprint = None
-            self._gate = gate
-            self._dirty = True
+        self._settle_gate(game, server, phase)
         self._publish_sonar_audio(game, server, phase)
         self._status.update(phase=phase, connected=connected,
                             commands_allowed=self.allowed is True and connected and phase == "live")
@@ -1014,7 +1151,21 @@ class CommanderBridge:
                 and (not connected or not self.allowed
                      or not server.authority_current_v2(self._navigation_lease))):
             self._proposal_status("expired", navigation=True)
-        if self._commands_v2(game, server, now, phase) and not redacted:
+        drained = self._commands_v2(game, server, now, phase)
+        if (id(game.world), id(game.sonar)) != self._identity:
+            # A host command replaced the world: never publish it under the old
+            # session. The next pump rebases (solo) before anything is shown.
+            self._dirty = True
+            return
+        if drained:
+            # A host command may have paused or resumed: settle that context change
+            # in this very frame, so the browser never sees the new state while the
+            # bridge still owes an epoch bump (which would eat its next command).
+            phase = self._phase(game)
+            self._settle_gate(game, server, phase)
+            self._status.update(phase=phase, epoch=self._epoch, commands_allowed=(
+                self.allowed is True and connected and phase == "live"))
+        if drained and not redacted:
             rows, bindings = self._tracks(game)
             direct_fire_refs = self._refresh_direct_fire_refs(game, rows, bindings)
             target = self._annotations(game, rows, bindings)
@@ -1126,12 +1277,21 @@ class CommanderBridge:
                 {key: value[1] for key, value in current_buoy_labels.items()},
                 {key: value[1] for key, value in current_candidates.items()},
                 sonar_refs, direct_fire_refs))
-            known_v2_chart = known_chart(self._status, dict(
-                self._chart, disclaimer=game.tr(self._chart["disclaimer"])))
-            known_v2_chart["geography"] = deepcopy(self._chart_geography)
+            # The known chart is identical for every role and constant for a
+            # world/session/language, so build it once and share one object.
+            chart_key = (self._chart_world, self._session, self._language)
+            if self._chart_publication is None or self._chart_publication[0] != chart_key:
+                known_v2_chart = known_chart(self._status, dict(
+                    self._chart, disclaimer=game.tr(self._chart["disclaimer"])))
+                known_v2_chart["geography"] = deepcopy(self._chart_geography)
+                self._chart_publication = (chart_key, known_v2_chart)
+            known_v2_chart = self._chart_publication[1]
             charts = {None: redacted_chart(self._status)}
-            charts.update({role: deepcopy(known_v2_chart) for role in ROLE_NAMES})
+            charts.update({role: known_v2_chart for role in ROLE_NAMES})
         server.publish_v2(states, charts)
+        if (getattr(server, "solo_mode", False) is True
+                and hasattr(server, "publish_host_v2")):
+            server.publish_host_v2(self._host_view(game, phase, now))
         server.publish_proposals_v2(
             world_session=self._session, world_epoch=self._epoch,
             target_authority=self._proposal_lease, target=self.proposal,
@@ -1142,6 +1302,38 @@ class CommanderBridge:
                                 {role: deepcopy(states[role]) for role in ROLE_NAMES})
         self._last_publish = now
         self._dirty = False
+
+    @staticmethod
+    def _slot_rows():
+        """Metadata only (stat, never parse): which save slots hold a file."""
+        rows = []
+        for slot in range(1, config.SAVE_SLOTS + 1):
+            path = os.path.join(config.SAVE_DIR, f"slot{slot}.json")
+            try:
+                info = os.stat(path)
+            except OSError:
+                rows.append(dict(slot=slot, saved=False, modified=None))
+            else:
+                rows.append(dict(slot=slot, saved=info.st_size > 0,
+                                 modified=int(info.st_mtime)))
+        return rows
+
+    def _host_view(self, game, phase, now):
+        """Detached solo host view: clock, phase, scenario choices and save slots."""
+        if self._slots is None or self._slots_at is None or now - self._slots_at >= 2.0:
+            self._slots = self._slot_rows()
+            self._slots_at = now
+        return dict(
+            protocol=2, session=self._session, epoch=self._epoch, phase=phase,
+            paused=bool(game.paused),
+            time_scale=dict(index=game.time_scale_idx,
+                            steps=list(config.TIME_SCALE_STEPS)),
+            world_mode=game.world_mode, scenario=game.scenario_key,
+            level=game.level,
+            scenarios=[dict(key=key, level=config.SCENARIOS[key]["level"])
+                       for key in config.SCENARIO_ORDER],
+            levels=list(config.LEVEL_ORDER),
+            slots=[dict(row) for row in self._slots])
 
     def _publish_sonar_audio(self, game, server, phase):
         """Copy only complete mixed receiver blocks on the main thread."""
@@ -1187,7 +1379,7 @@ class CommanderBridge:
             self._audio_receiver_sequence = sequence
 
     def _publish_role_simlog(self, server, game, redacted) -> None:
-        """Record only prior detached v2 role projections at local log cadence."""
+        """Publish host-granted diagnostics with role context and full truth."""
         source = list(game.simlog)
         latest = source[-1]["seq"] if source else self._v2_simlog_seq
         enabled = bool(game.preferences.simlog) and not redacted
@@ -1201,10 +1393,12 @@ class CommanderBridge:
             for row in source:
                 if row["seq"] <= self._v2_simlog_seq:
                     continue
+                truth = deepcopy(row.get("data") or game._simlog_state_data())
                 for role in ROLE_NAMES:
                     self._v2_simlog[role].append(dict(
                         seq=row["seq"], t=row["t"], stamp=row["stamp"],
-                        state=deepcopy(self._last_v2_states[role])))
+                        state=deepcopy(self._last_v2_states[role]),
+                        truth=deepcopy(truth)))
                 self._v2_simlog_seq = row["seq"]
         entries = {role: list(history) for role, history in self._v2_simlog.items()}
         for role, rows in entries.items():

@@ -1,5 +1,6 @@
 import copy
 import random
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pygame
@@ -88,6 +89,35 @@ def test_association_depends_on_measurements_not_input_order():
     second.observe_batch(reversed(updates), 1.5)
     assert first.serialize() == second.serialize()
 
+
+def test_intermittent_radar_track_survives_duty_cycle_and_keeps_identity():
+    picture = ESMPicture()
+    picture.observe_batch([measurement(bearing=90.0, frequency=9e9,
+                                       now=0.0)], 0.0)
+    key = picture.tracks(0.0)[0].track_key
+
+    # A mast/search radar may be silent longer than the former 30 s display
+    # lifetime. The operator must retain selection and analysis during that
+    # interval instead of seeing a blinking sequence of new contacts.
+    picture.observe_batch([], 54.0)
+    assert picture.tracks(54.0)[0].track_key == key
+    picture.observe_batch([measurement(bearing=91.0, frequency=9e9,
+                                       now=60.0)], 60.0)
+    tracks = picture.tracks(60.0)
+    assert len(tracks) == 1
+    assert tracks[0].track_key == key
+
+
+def test_selected_eloka_track_remains_analyzable_during_emitter_silence():
+    game = Game(seed=6201, audio_enabled=False)
+    game.esm_picture = ESMPicture()
+    game.esm_picture.observe_batch([measurement(
+        bearing=90.0, frequency=9e9, now=0.0)], 0.0)
+    game.eloka_selected_track_key = game.eloka_tracks()[0].track_key
+    game.sim_t = 54.0
+    selected = game.selected_eloka_track()
+    assert selected is not None
+    assert game.eloka_analysis(selected) is not None
 
 def test_candidate_ranking_uses_only_observed_fingerprint():
     picture = ESMPicture()
@@ -379,6 +409,8 @@ def test_key_nine_and_eloka_controls_are_station_owned(monkeypatch):
     game, _ = emitting_game(monkeypatch)
     game.sim_t = .5
     game._update_esm_picture()
+    game.sim_t = 1.5
+    game._update_esm_picture()
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_9))
     assert game.station is Station.ELOKA
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
@@ -445,3 +477,27 @@ def test_eloka_view_renders_platform_names_not_emitter_keys(monkeypatch):
     text = "\n".join(item["text"] for item in rendered)
     assert "emitter." not in text
     assert name[:7] in text
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_eloka_evidence_text_does_not_overlap_footer_at_large_text(
+        monkeypatch, language):
+    from src.core.i18n import Translator
+    from src.core import config
+    from src.ui import layout, stations_view
+
+    game, _ = emitting_game(monkeypatch)
+    game.preferences = replace(game.preferences, language=language,
+                               large_text=True)
+    game.sim_t = .5
+    game._update_esm_picture()
+    game.eloka_selected_track_key = game.eloka_tracks()[0].track_key
+    game.station_page = 1
+    with layout.capture_text() as rendered:
+        stations_view.draw_eloka_view(game, tr=Translator(language).t)
+
+    footer = max((item["rect"] for item in rendered), key=lambda rect: rect.y)
+    assert all(not item["rect"].colliderect(footer)
+               for item in rendered if item["rect"] != footer)
+    assert all(item["rect"].bottom <= config.STATION_RECT[1]
+               + config.STATION_RECT[3] for item in rendered)

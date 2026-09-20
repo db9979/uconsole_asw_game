@@ -6,7 +6,9 @@ import hashlib
 import json
 import math
 import os
+import threading
 from collections import deque
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pygame
@@ -21,6 +23,8 @@ from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
 from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text)
 from src.core.preferences import Preferences, save_preferences
+from src.network.adsb_client import test_connection as adsb_test_connection
+from src.network.ais_client import test_connection as ais_test_connection
 from src.network.connectivity import ConnectivityMonitor
 from src.network.live_traffic import LiveTrafficManager
 from src.core.help import get_global_help, get_help
@@ -43,9 +47,16 @@ from src.sensors.esm import (
     ESM_MAX_ANNOTATIONS,
     ESM_STATE_VERSION,
     ESMCorrelationEvidence,
+    ECM_SIGNAL_FRESH_S,
+    ECM_TECHNIQUES,
+    ECMJammer,
     ESMMeasurement,
     ESMPicture,
+    RadarSuiteController,
+    scan_for_signals,
+    analyze_signal,
     correlate_observations,
+    filter_and_sort_tracks,
     rank_emitters,
     valid_esm_state,
 )
@@ -77,6 +88,7 @@ from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 from src.ui.contact_analyzer import ContactAnalyzer
+from src.ui import simlog_map
 from src.ui.simlog_view import draw_simlog_view
 from src.ui.viewport import Viewport
 from src.ui.weapons_view import (draw_weapons_overlay, draw_weapons_panel,
@@ -114,6 +126,8 @@ from src.weapons.air_defense import (
 
 MAX_SAVE_DOCUMENT_BYTES = 64 * 1024 * 1024
 MAX_AIR_PICTURE_TRACKS = 512
+MAX_TRACK_DISPLAY_ID_LEN = 16
+MAX_OPZ_TRACK_LABELS = 1024
 MAX_SAVED_ENTITIES = 512
 MAX_ENEMY_TORPEDOES = 128
 MAX_DECOYS = 128
@@ -204,6 +218,14 @@ def make_night_overlay(w: int, h: int, color: tuple = config.NIGHT_MODE_COLOR):
     return s
 
 
+# Input and window changes redraw an eco frame at once; pointer motion does not.
+_ECO_REFRESH_EVENTS = frozenset(
+    getattr(pygame, name) for name in (
+        "KEYDOWN", "MOUSEBUTTONDOWN", "VIDEOEXPOSE", "VIDEORESIZE", "WINDOWSHOWN",
+        "WINDOWEXPOSED", "WINDOWRESIZED", "WINDOWSIZECHANGED", "WINDOWRESTORED",
+        "WINDOWFOCUSGAINED", "WINDOWFOCUSLOST") if hasattr(pygame, name))
+
+
 class Game:
     def __init__(self, seed: int = 42, level: str = None,
                   start_menu: bool = False, fullscreen: bool = None,
@@ -254,6 +276,9 @@ class Game:
         self.audio = AudioEngine(sample_rate=config.AUDIO_SAMPLE_RATE,
                                  enabled=requested_audio)
         self._audio_timer = 0.0
+        self._sound_event_seq = 0
+        self._sound_events = deque(maxlen=16)
+        self._eco_drawn_at = float("-inf")
         self._sensor_acc = 0.0
         self._esm_acc = 0.0
         self._radio_acc = 0.0
@@ -272,6 +297,8 @@ class Game:
         self.editor = None
         self.simlog_view_open = False
         self.simlog_view_scroll = 0
+        self.simlog_view_map = False
+        self.simlog_map_fit = simlog_map.FIT_WORLD
         self.options_open = False
         self.options_sel = 0
         self.commander = CommanderConsole()
@@ -282,6 +309,10 @@ class Game:
         self.live_traffic_sel = 0
         self.live_traffic_field: TextField | None = None
         self.live_traffic_field_name: str | None = None
+        # ("idle" | "running" | "ok" | "no_key" | "error", fehlertext | None)
+        self.live_traffic_test_result: dict[str, tuple[str, str | None]] = {
+            "ais": ("idle", None), "adsb": ("idle", None)}
+        self._live_traffic_test_thread: threading.Thread | None = None
         self.menu_back = False
         # W0: neue UI-Zustände
         self.help_open = False
@@ -325,6 +356,7 @@ class Game:
         self.runtime_catalog = CATALOG
         self.commander_open = False
         self.audio.stop()
+        self._sound_events.clear()
         self._sonar_audio_sequence = -1
         scenario_key = scenario_key or self.scenario_key
         if scenario_key not in config.SCENARIOS:
@@ -459,6 +491,8 @@ class Game:
         self.running = True
         self.simlog_view_open = False
         self.simlog_view_scroll = 0
+        self.simlog_view_map = False
+        self.simlog_map_fit = simlog_map.FIT_WORLD
         self.held = set()
         self._map_drag = None
         self._map_drag_moved = False
@@ -495,10 +529,19 @@ class Game:
         self.sonar_page = 0
         self.station_page = 0
         self.sonar_harmonic_hz = None
+        # Display-only CRT controls are intentionally transient: they affect no
+        # observation, simulation or v10 save contract.
+        self.sonar_display_palette = "green"
+        self.sonar_display_black = 0.0
+        self.sonar_display_contrast = 1.6
+        self.sonar_display_history = 1.0
         self.sonar_audio_enabled = True
         self.sonar_volume = 0.5
         self._sonar_audio_sequence = -1
         self._sonar_audio_suspended = False
+        # Local ESM cues belong to the ELOKA workstation.  The browser receives
+        # the detached event separately and applies its own role/audio gate.
+        self.eloka_audio_enabled = True
         self.surface_radar_on = config.RADAR_ON_DEFAULT
         self.air_radar_on = config.RADAR_ON_DEFAULT
         self.opz_range_nm = config.RADAR_RANGE_DEFAULT_NM
@@ -529,12 +572,21 @@ class Game:
         self.air_picture = TrackPicture(
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
         self.opz_selected_track_id = None
+        self.opz_contact_filter = "ALL"
         self.opz_affiliations = {}
+        # Operator-authored display identifiers are deliberately separate from
+        # opaque observation IDs.  Every station renders these labels while
+        # commands continue to use the non-public observation identity.
+        self.opz_track_labels = {}
         self.opz_fusion = OPZFusionPicture()
         self._opz_source_bindings = {}
         self._opz_world_identity = id(self.world)
         self.esm_picture = ESMPicture()
+        self.ecm_jammer = ECMJammer()
         self.eloka_selected_track_key = None
+        self.eloka_status_filter = "OPERATIONAL"
+        self.eloka_threat_filter = "ALL"
+        self.eloka_band_filter = "ALL"
         self.eloka_annotations = {}
         self.radio_picture = TrackPicture(300.0)
         self.radio_sel = 0
@@ -546,6 +598,13 @@ class Game:
         self.aa_ammo = self._air_defense_loadout["aa_gun"]["ammo"]
         self.aa_cooldown_s = 0.0
         self.flak_authorized = True  # session-only fire-release gate, Weapons "F"
+        # Real ADS-B traffic: HOSTILE is a manual OPZ classification (see
+        # affiliate_opz_observation) but never authorizes weapons on its own -
+        # engaging a real contact needs an explicit, freshly re-affirmed
+        # confirmation so an accidental IFF slip can't autofire straight into
+        # a political incident.
+        self.live_engage_confirm_pending = None  # icao24 awaiting confirmation
+        self.live_engage_authorized = set()       # icao24s cleared to engage
         self.raiders = []
         self.raid_seq = 0
         self.raid_waves_spawned = 0
@@ -711,6 +770,16 @@ class Game:
         self.msg = text
         self.msg_until = self._t + seconds
 
+    def announce(self, text: object, category: str, seconds: float = 3.0) -> None:
+        """Show and retain one operational message in the event feed.
+
+        Input prompts, selection feedback and display-only settings continue to
+        use :meth:`flash`; simulation events and completed orders use this path
+        so their message does not disappear with the transient banner.
+        """
+        self.flash(text, seconds)
+        self.feed.add(self.world.format_time(), category, text)
+
     def mission_name_display(self):
         """Keep authored mission text opaque while localizing built-ins."""
         if self.custom_mission_definition is not None:
@@ -787,8 +856,45 @@ class Game:
         self.time_scale_idx = config.clamp(
             self.time_scale_idx + delta, 0, len(config.TIME_SCALE_STEPS) - 1)
         notice = message("status.speed", speed=self.time_scale)
-        self.flash(notice, 1.5)
-        self.feed.add(self.world.format_time(), "welt", notice)
+        self.announce(notice, "welt", 1.5)
+
+    def set_paused(self, paused: bool) -> bool:
+        """Manual pause, exactly like the P key; used by the solo host command."""
+        if self.game_over:
+            return False
+        paused = bool(paused)
+        if paused is not self.paused:
+            self._clear_controls()
+            self.paused = paused
+            self.announce(message("status.paused" if paused else "status.resumed"),
+                          "welt")
+        return True
+
+    def start_new_game(self, scenario_key: str, world_mode: str,
+                       level: str = None, seed: int = None) -> bool:
+        """Start a mission through the same path as the main menu.
+
+        Only ``s4_zufall`` lets the operator pick a level; every other scenario
+        fixes its own. Without a seed the menu's uniform re-roll is used, so a
+        host-approved caller can never pin a seed by accident.
+        """
+        if (scenario_key not in config.SCENARIOS
+                or world_mode not in ("fixed", "procedural")
+                or level is not None and level not in config.LEVELS
+                or seed is not None and not (
+                    type(seed) is int and 1 <= seed < 1_000_000_000)):
+            return False
+        self.scenario_key = scenario_key
+        self.world_mode = world_mode
+        if level is not None and config.SCENARIOS[scenario_key]["level"] is None:
+            self.level = level
+        if seed is None:
+            self._reroll_menu_seed()
+        else:
+            self.seed = seed
+        self._prepared_menu_mission = None
+        self._start_menu_mission()
+        return True
 
     def hq_msg(self, text: object) -> None:
         """M13/W3: Teletype-Nachricht – Funkraum-Verkehr + Ereignis-Feed."""
@@ -816,6 +922,17 @@ class Game:
                              current=f"{self.ship.target_speed:.1f}")
         self.flash(message("runtime.input.pending", prompt=localize(prompt, self.tr),
                             value=self.input_buffer), 60.0)
+
+    def _begin_track_id_input(self) -> None:
+        """Open bounded OPZ entry for the selected track's shared display ID."""
+        track = self.selected_opz_track()
+        if track is None:
+            self.flash(message("runtime.cic.none_select"), 2.0)
+            return
+        self._clear_controls()
+        self.input_mode = "track_id"
+        self.input_buffer = ""
+        self.flash(message("runtime.input.track_id", current=track.label), 60.0)
 
     def _navigation_order_live(self) -> bool:
         overlay_blocked = ((self.administration_open or self.editor is not None)
@@ -1022,7 +1139,7 @@ class Game:
             return "not_ready"
         if not self.sonar.fire_ping():
             return "not_ready"
-        self.audio.play_ping()
+        self._emit_sound("sonar_ping")
         self.sonar.queue_ping(self.ship, self._sonar_targets(), self.world,
                               self.sim_t, self._sonar_range_factor(),
                               mode=self.sonar_mode)
@@ -1058,7 +1175,7 @@ class Game:
             return "sonar_down"
         if not self.helo.fire_dipping_ping():
             return "not_ready"
-        self.audio.play_ping()
+        self._emit_sound("sonar_ping")
         self.sonar.queue_ping(self.helo, self._sonar_targets(), self.world,
                               self.sim_t, self._sonar_range_factor(),
                               mode="DIPPING")
@@ -1151,6 +1268,19 @@ class Game:
     def _finish_numeric_input(self) -> None:
         """Validate and apply a pending course or speed order."""
         mode = self.input_mode
+        if mode == "track_id":
+            track = self.selected_opz_track()
+            result = ("stale_ref" if track is None else
+                      self.set_opz_track_label(track.observation_id,
+                                               self.input_buffer))
+            if result is not True:
+                self.flash(message("runtime.cic.track_id_invalid"), 2.0)
+                return
+            self.flash(message("runtime.cic.track_id_set",
+                               track=self.input_buffer.upper()), 2.0)
+            self.input_mode = None
+            self.input_buffer = ""
+            return
         value = self.input_buffer.replace(",", ".")
         try:
             number = float(value)
@@ -1202,6 +1332,15 @@ class Game:
             self._finish_numeric_input()
         elif key == pygame.K_BACKSPACE:
             self.input_buffer = self.input_buffer[:-1]
+        elif self.input_mode == "track_id":
+            name = pygame.key.name(key)
+            if (len(self.input_buffer) < MAX_TRACK_DISPLAY_ID_LEN
+                    and len(name) == 1 and name.isascii()
+                    and (name.isalnum() or name == "-")):
+                self.input_buffer += name.upper()
+            elif (len(self.input_buffer) < MAX_TRACK_DISPLAY_ID_LEN
+                  and key in (pygame.K_MINUS, pygame.K_KP_MINUS)):
+                self.input_buffer += "-"
         elif len(pygame.key.name(key)) == 1 and pygame.key.name(key).isdigit():
             if len(self.input_buffer) < 5:
                 self.input_buffer += pygame.key.name(key)
@@ -1357,12 +1496,32 @@ class Game:
                       "speed": r1(s.speed), "state": s.state,
                       "torps": s.torpedoes_left, "sunk": s.sunk}
                      for s in self.subs],
-            "surfaces": ([{"id": w.id, "kind": "warship", "x": r2(w.x),
+            "surfaces": ([{"id": w.id, "kind": "warship",
+                           "name": getattr(w, "name", None),
+                           "callsign": getattr(w, "callsign", None),
+                           "mmsi": None, "imo": None, "ship_type": None,
+                           "destination": None, "draught_m": None,
+                           "length_m": None, "width_m": None,
+                           "nav_status": None, "ais_heading": None,
+                           "position_accuracy": None, "x": r2(w.x),
                            "y": r2(w.y), "course": r1(w.course),
                            "speed": r1(w.speed), "sunk": w.sunk,
                            "damage": r1(w.damage)}
                           for w in self.warships]
-                         + [{"id": c.id, "kind": "civilian", "x": r2(c.x),
+                         + [{"id": c.id, "kind": "civilian",
+                             "name": getattr(c, "name", None),
+                             "callsign": getattr(c, "callsign", None),
+                             "mmsi": getattr(c, "live_mmsi", None),
+                             "imo": getattr(c, "live_ais_details", {}).get("imo"),
+                             "ship_type": getattr(c, "live_ais_details", {}).get("ship_type"),
+                             "destination": getattr(c, "live_ais_details", {}).get("destination"),
+                             "draught_m": getattr(c, "live_ais_details", {}).get("draught_m"),
+                             "length_m": getattr(c, "live_ais_details", {}).get("length_m"),
+                             "width_m": getattr(c, "live_ais_details", {}).get("width_m"),
+                             "nav_status": getattr(c, "live_ais_details", {}).get("nav_status"),
+                             "ais_heading": getattr(c, "live_ais_details", {}).get("heading"),
+                             "position_accuracy": getattr(c, "live_ais_details", {}).get("position_accuracy"),
+                             "x": r2(c.x),
                              "y": r2(c.y), "course": r1(c.course),
                              "speed": r1(c.speed), "sunk": c.sunk,
                              "damage": r1(c.damage)}
@@ -1399,9 +1558,19 @@ class Game:
                       for b in self.buoys],
             "helo": {"state": self.helo.state, "x": r2(self.helo.x),
                      "y": r2(self.helo.y), "airborne": self.helo.airborne},
-            "flights": [{"seq": f.seq, "kind": f.kind, "x": r2(f.x),
-                         "y": r2(f.y), "course": r1(f.course)}
-                        for f in self.flights.flights],
+            "flights": ([{"seq": f.seq, "kind": f.kind, "callsign": None,
+                          "icao24": None, "x": r2(f.x), "y": r2(f.y),
+                          "course": r1(f.course), "speed": r1(f.speed),
+                          "alt_m": None}
+                         for f in self.flights.flights]
+                        + [{"seq": a.seq, "kind": "live",
+                            "callsign": a.callsign, "icao24": a.icao24,
+                            "x": r2(a.x), "y": r2(a.y),
+                            "course": r1(a.course), "speed": r1(a.speed),
+                            "alt_m": r1(a.altitude_m)}
+                           for a in sorted(self.live_traffic.aircraft.values(),
+                                           key=lambda item: item.seq)
+                           if not a.despawned]),
             "raiders": [{"seq": r.seq, "x": r2(r.x), "y": r2(r.y),
                          "course": r1(r.course), "phase": r.phase.value,
                          "hp": r.hp, "pending_asm": r.pending_asm}
@@ -1420,15 +1589,21 @@ class Game:
         w, h = pygame.display.get_window_size()
         if w <= 0 or h <= 0:
             w, h = config.SCREEN_W, config.SCREEN_H
-        self.display.fill((0, 0, 0))
+        # Unter X11/XWayland ersetzt pygame die Display-Surface nach dem ersten
+        # Event-Pump/Resize durch ein neues Objekt; das gemerkte self.display
+        # ist dann 0x0 und der Blit scheitert mit "Surfaces must not be locked".
+        display = pygame.display.get_surface()
+        if display is None:
+            return
+        self.display = display
+        display.fill((0, 0, 0))
         if (w, h) == (config.SCREEN_W, config.SCREEN_H):
-            self.display.blit(self.screen, (0, 0))
+            display.blit(self.screen, (0, 0))
         elif config.FILL_SCREEN:
-            self.display.blit(pygame.transform.scale(self.screen, (w, h)),
-                              (0, 0))
+            display.blit(pygame.transform.scale(self.screen, (w, h)), (0, 0))
         else:
             _, ox, oy, sw, sh = letterbox_layout(w, h)
-            self.display.blit(
+            display.blit(
                 pygame.transform.scale(self.screen, (sw, sh)), (ox, oy))
         pygame.display.flip()
 
@@ -1615,7 +1790,39 @@ class Game:
             self.nations_open = False
 
     _LIVE_TRAFFIC_ROWS = ("live_ais_enabled", "live_adsb_enabled",
-                         "aisstream_api_key", "opensky_credentials")
+                         "aisstream_api_key", "opensky_credentials", "test")
+
+    def _start_live_traffic_test(self) -> None:
+        """Einmaliger Hintergrund-Test, ob AIS-/ADS-B-API erreichbar sind.
+
+        Laeuft in einem eigenen Daemon-Thread (Netzwerk-I/O darf die
+        Spiel-Loop nie blockieren, siehe `ais_client`/`adsb_client`);
+        `live_traffic_test_result` wird ausschliesslich vom Worker-Thread
+        geschrieben und nur im Hauptthread gelesen (Overlay-Zeichnen).
+        """
+        if (self._live_traffic_test_thread is not None
+                and self._live_traffic_test_thread.is_alive()):
+            return
+        bbox = self.live_traffic._bounding_box_latlon()
+        ais_key = self.preferences.aisstream_api_key.strip()
+        adsb_credentials = self.preferences.opensky_credentials.strip()
+        self.live_traffic_test_result = {
+            "ais": ("running", None) if ais_key else ("no_key", None),
+            "adsb": ("running", None),
+        }
+
+        def _run() -> None:
+            result = dict(self.live_traffic_test_result)
+            if ais_key:
+                ok, reason = ais_test_connection(ais_key, bbox)
+                result["ais"] = ("ok", None) if ok else ("error", reason)
+            ok, reason = adsb_test_connection(adsb_credentials, bbox)
+            result["adsb"] = ("ok", None) if ok else ("error", reason)
+            self.live_traffic_test_result = result
+
+        self._live_traffic_test_thread = threading.Thread(
+            target=_run, name="live-traffic-test", daemon=True)
+        self._live_traffic_test_thread.start()
 
     def _live_traffic_can_enable(self, name: str) -> bool:
         if not self.connectivity.online:
@@ -1643,9 +1850,13 @@ class Game:
             return
         if key in (pygame.K_UP, pygame.K_DOWN):
             self.live_traffic_sel = (self.live_traffic_sel
-                                     + (1 if key == pygame.K_DOWN else -1)) % 4
+                                     + (1 if key == pygame.K_DOWN else -1)
+                                     ) % len(self._LIVE_TRAFFIC_ROWS)
             return
         if key not in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
+            return
+        if name == "test":
+            self._start_live_traffic_test()
             return
         if name in ("aisstream_api_key", "opensky_credentials"):
             self.live_traffic_field = TextField(
@@ -1825,6 +2036,17 @@ class Game:
                 if e.key in (pygame.K_F4, pygame.K_ESCAPE):
                     self._close_simlog_view()
                     return
+                if e.key == pygame.K_m:
+                    self.simlog_view_map = not self.simlog_view_map
+                    return
+                if e.key == pygame.K_f and self.simlog_view_map:
+                    self.simlog_map_fit = (
+                        simlog_map.FIT_UNITS
+                        if self.simlog_map_fit == simlog_map.FIT_WORLD
+                        else simlog_map.FIT_WORLD)
+                    return
+                if self.simlog_view_map:
+                    return
                 if e.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_PAGEUP,
                              pygame.K_PAGEDOWN, pygame.K_HOME, pygame.K_END):
                     amount = {pygame.K_UP: -1, pygame.K_DOWN: 1,
@@ -1933,15 +2155,13 @@ class Game:
                 if e.key == pygame.K_ESCAPE or not self.paused:
                     self._handle_numeric_input(e.key)
                 elif e.key == pygame.K_p:
-                    self.paused = False
+                    self.set_paused(False)
                 return
             if e.key == pygame.K_F9:
                 self._open_administration("commander")
                 return
             if e.key == pygame.K_p and self.commander.confirm_visible(self):
-                self._clear_controls()
-                self.paused = not self.paused
-                self.flash(message("status.paused" if self.paused else "status.resumed"))
+                self.set_paused(not self.paused)
                 return
             if self.commander.confirm_visible(self):
                 if self.commander.handle_confirm_key(self, e.key):
@@ -1981,9 +2201,7 @@ class Game:
                 self._open_administration("save" if e.key == pygame.K_s else "load")
                 return
             if e.key == pygame.K_p and not self.game_over:
-                self._clear_controls()
-                self.paused = not self.paused
-                self.flash(message("status.paused" if self.paused else "status.resumed"))
+                self.set_paused(not self.paused)
                 return
             if pygame.K_1 <= e.key <= pygame.K_9:
                 destination = list(Station)[e.key - pygame.K_1]
@@ -2020,6 +2238,13 @@ class Game:
             if self.paused:
                 return
             if self._local_station_input_locked():
+                # In solo mode the browser owns every station, but the game clock
+                # remains a host control that must not die with the station lock.
+                if (getattr(self.commander, "solo", False)
+                        and e.key in (pygame.K_LEFTBRACKET, pygame.K_z,
+                                      pygame.K_RIGHTBRACKET, pygame.K_x)):
+                    self.cycle_time_scale(
+                        -1 if e.key in (pygame.K_LEFTBRACKET, pygame.K_z) else 1)
                 return
             if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                     and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
@@ -2033,6 +2258,21 @@ class Game:
                     self.launch_helo_torpedo()
                     return
             if self.station is Station.SONAR:
+                mods = getattr(e, "mod", 0)
+                if e.key == pygame.K_c and mods & pygame.KMOD_SHIFT:
+                    self._cycle_sonar_display_palette()
+                    return
+                if e.key == pygame.K_h and mods & pygame.KMOD_SHIFT:
+                    self._cycle_sonar_display_history()
+                    return
+                if e.key in (pygame.K_i, pygame.K_o) and mods & (
+                        pygame.KMOD_SHIFT | pygame.KMOD_CTRL):
+                    delta = -1.0 if e.key == pygame.K_i else 1.0
+                    if mods & pygame.KMOD_SHIFT:
+                        self._adjust_sonar_display_contrast(delta * .2)
+                    else:
+                        self._adjust_sonar_display_black(delta * .01)
+                    return
                 if e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
                     self.sonar_page = station_page_step(
                         Station.SONAR,
@@ -2148,6 +2388,10 @@ class Game:
                     and self.station is Station.RADIO:
                 self.capture_hfdf()
                 return
+            if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+                    and self.station is Station.OPZ:
+                self.confirm_live_engagement()
+                return
             if e.key in (pygame.K_LEFTBRACKET, pygame.K_z):
                 self.cycle_time_scale(-1)
             elif e.key in (pygame.K_RIGHTBRACKET, pygame.K_x):
@@ -2170,6 +2414,8 @@ class Game:
                     self._dissolve_opz_fusion()
                 else:
                     self._create_opz_fusion()
+            elif e.key == pygame.K_j and self.station is Station.OPZ:
+                self._begin_track_id_input()
             elif e.key == pygame.K_BACKSPACE and self.station is Station.OPZ:
                 self.opz_fusion.marked.clear()
             elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
@@ -2203,6 +2449,11 @@ class Game:
                     result = self.send_helicopter_dipping_ping()
                     self.flash(message("runtime.helo.dip_ping_sent" if result is True
                                        else "runtime.helo.dip_ping_unavailable"))
+                elif self.station is Station.ELOKA:
+                    self.set_ecm_auto(not self.ecm_jammer.auto_enabled)
+                    self.flash(message("runtime.eloka.auto_on"
+                                       if self.ecm_jammer.auto_enabled else
+                                       "runtime.eloka.auto_off"), 1.5)
             elif e.key == pygame.K_r:
                 if self.game_over:
                     self.reset(self.seed)
@@ -2216,6 +2467,11 @@ class Game:
                     self.set_target()
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self.designate_opz_track()
+                elif self.station is Station.ELOKA:
+                    self.eloka_audio_enabled = not self.eloka_audio_enabled
+                    self.flash(message("runtime.eloka_audio.on"
+                                       if self.eloka_audio_enabled else
+                                       "runtime.eloka_audio.off"))
             elif e.key == pygame.K_u and self.station in (Station.BRIDGE,
                                                            Station.ENGINE):
                 self._begin_numeric_input("course")
@@ -2250,12 +2506,35 @@ class Game:
                     self._cycle_opz_classification()
                 elif self.station is Station.ELOKA:
                     self._cycle_eloka_annotation()
+            elif e.key == pygame.K_j and self.station is Station.ELOKA:
+                if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    technique = self._cycle_jamming_technique(
+                        self.selected_eloka_track())
+                    technique_names = {
+                        "noise": message("eloka.technique.noise"),
+                        "rgpo": message("eloka.technique.rgpo"),
+                        "vgpo": message("eloka.technique.vgpo"),
+                        "false_targets": message(
+                            "eloka.technique.false_targets"),
+                    }
+                    notice = (message("runtime.eloka.technique",
+                                      technique=technique_names[technique])
+                              if technique in technique_names else
+                              message("runtime.eloka.jamming_off"))
+                    self.flash(notice, 1.5)
+                else:
+                    result = self.deploy_jamming(self.selected_eloka_track())
+                    self.flash(message("runtime.eloka.jamming_on"
+                                       if result is True else
+                                       "runtime.eloka.jamming_off"), 1.5)
             elif e.key == pygame.K_b and (self.station is not Station.SONAR
                                            or getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
                 if self.station is Station.SONAR:
                     self._cycle_sonar_mode()
                 elif self.station in (Station.WEAPONS, Station.HELICOPTER):
                     self.deploy_buoys()
+                elif self.station is Station.ELOKA:
+                    self._cycle_eloka_filter("band")
             elif e.key == pygame.K_y:
                 if self.station is Station.SONAR:
                     if self.damage.station_down("sonar"):
@@ -2318,8 +2597,15 @@ class Game:
             elif e.key == pygame.K_f:
                 if self.station is Station.SONAR:
                     self._cycle_sonar_band()
+                elif self.station is Station.ELOKA:
+                    self._cycle_eloka_filter(
+                        "threat" if getattr(e, "mod", 0) & pygame.KMOD_SHIFT
+                        else "status")
                 elif self.station is Station.OPZ:
-                    self._cycle_opz_affiliation()
+                    if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        self._cycle_opz_contact_filter()
+                    else:
+                        self._cycle_opz_affiliation()
                 elif self.station is Station.WEAPONS:
                     if self.set_flak_authorized(not self.flak_authorized) is True:
                         self.flash(message(
@@ -2513,13 +2799,17 @@ class Game:
             self.sonar_page = value
         elif action == "page":
             self.sonar_page = station_page_step(Station.SONAR, self.sonar_page, 1)
-        elif action in ("contact", "echo"):
+        elif action in ("contact", "echo", "contact_listen"):
             contact_id = target.get("value")
             contact = next((item for item in self.sonar.active_contacts()
                             if item.id == contact_id), None)
             if contact is None:
                 return False
-            self.selected_contact = contact
+            if action == "contact_listen":
+                if self.set_sonar_focus(contact) is not True:
+                    return False
+            else:
+                self.selected_contact = contact
         elif action == "listen_bearing":
             value = target.get("value")
             if (type(value) not in (int, float) or not math.isfinite(value)
@@ -2569,6 +2859,34 @@ class Game:
     def _adjust_sonar_gain(self, delta: float) -> None:
         self.set_sonar_gain(config.clamp(self.sonar.gain_db + delta, -12.0, 24.0))
         self.flash(message("runtime.sonar_gain", gain=f"{self.sonar.gain_db:+.0f}"), 1.2)
+
+    def _cycle_sonar_display_palette(self) -> None:
+        palettes = ("green", "amber", "cyan")
+        current = (palettes.index(self.sonar_display_palette)
+                   if self.sonar_display_palette in palettes else -1)
+        self.sonar_display_palette = palettes[(current + 1) % len(palettes)]
+        self.flash(message("runtime.sonar_palette",
+                           palette=self.sonar_display_palette.upper()), 1.2)
+
+    def _adjust_sonar_display_contrast(self, delta: float) -> None:
+        self.sonar_display_contrast = round(config.clamp(
+            self.sonar_display_contrast + delta, .5, 4.0), 1)
+        self.flash(message("runtime.sonar_contrast",
+                           contrast=f"{self.sonar_display_contrast:.1f}"), 1.2)
+
+    def _adjust_sonar_display_black(self, delta: float) -> None:
+        self.sonar_display_black = round(config.clamp(
+            self.sonar_display_black + delta, 0.0, .8), 2)
+        self.flash(message("runtime.sonar_black_level",
+                           level=f"{self.sonar_display_black:.2f}"), 1.2)
+
+    def _cycle_sonar_display_history(self) -> None:
+        depths = (.25, .5, 1.0)
+        current = next((index for index, value in enumerate(depths)
+                        if abs(self.sonar_display_history - value) < 1e-6), -1)
+        self.sonar_display_history = depths[(current + 1) % len(depths)]
+        self.flash(message("runtime.sonar_history",
+                           history=f"{self.sonar_display_history:.0%}"), 1.2)
 
     def _set_sonar_audition_mode(self, mode: str) -> None:
         if self.set_sonar_audition_mode(mode) is not True:
@@ -2685,7 +3003,7 @@ class Game:
     def toggle_helo(self) -> None:
         if self.helo.airborne:
             if self.return_helicopter() is True:
-                self.flash(message("runtime.helo.return"))
+                self.announce(message("runtime.helo.return"), "waffen")
         else:
             result = self.launch_helicopter()
             if result == "flightdeck_down":
@@ -2697,8 +3015,8 @@ class Game:
             if result is not True:
                 self.flash(message("runtime.helo.lost"))
                 return
-            self.flash(message("runtime.helo.launch", torpedoes=self.helo.torps,
-                               buoys=self.helo.buoys_left), 3.0)
+            self.announce(message("runtime.helo.launch", torpedoes=self.helo.torps,
+                                  buoys=self.helo.buoys_left), "waffen", 3.0)
 
     def helicopter_weather(self) -> dict:
         """Return one shared, observation-safe flight-weather decision."""
@@ -2851,6 +3169,7 @@ class Game:
             return "not_ready"
         self.torpedo_seq += 1
         self.torpedoes.append(torp)
+        self._emit_sound("water_entry")
         self.flash(message("runtime.helo_torpedo.launched",
                            torpedo=self.torpedo_seq), 2.0)
         self.feed.add(self.world.format_time(), "waffen",
@@ -2903,7 +3222,9 @@ class Game:
                                guidance_x=track.x, guidance_y=track.y,
                                target_id=track.target_id, profile=sam))
         self.vls_cells -= 1
-        self.flash(message("runtime.essm.launched", cells=self.vls_cells), 2.0)
+        self._emit_sound("missile_launch")
+        self.announce(message("runtime.essm.launched", cells=self.vls_cells),
+                      "waffen", 2.0)
         return True
 
     def launch_chaff(self) -> None:
@@ -2933,8 +3254,8 @@ class Game:
                 and self.softkill_store.fire()):
             broke = a.launch_chaff(self.rng_asm, profile)
             self.chaff_cd = min(self.softkill_store.loading, default=0.0)
-            self.flash(message("runtime.chaff.decoyed" if broke
-                               else "runtime.chaff.jammed"))
+            self.announce(message("runtime.chaff.decoyed" if broke
+                                  else "runtime.chaff.jammed"), "waffen")
             return True
         else:
             self.flash(message("runtime.chaff.none"))
@@ -2956,7 +3277,8 @@ class Game:
         self.nixies.append(TowedAcousticDecoy(
             self.nixie_seq, self.ship, life_s=definition["active_life_s"],
             tether_nm=definition["tether_nm"], depth_m=definition["depth_m"]))
-        self.flash(message("runtime.nixie.deployed", count=self.nixie_store.remaining_total))
+        self.announce(message("runtime.nixie.deployed",
+                              count=self.nixie_store.remaining_total), "waffen")
         return True
 
     def set_flak_authorized(self, authorized: bool):
@@ -3136,8 +3458,8 @@ class Game:
                 range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
-                self.air_picture.observe(track_id=f"S-{c.id}", kind="AIS",
-                    target_id=c.id, source="RADAR-S/AIS", bearing=brg,
+                self.air_picture.observe(track_id=f"S-{c.id}", kind="SURFACE",
+                    target_id=c.id, source="RADAR-S", bearing=brg,
                     range_nm=measured, observer_x=self.ship.x, observer_y=self.ship.y,
                     course=c.course, quality=.95, now=self.sim_t, label=c.name,
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
@@ -3169,7 +3491,7 @@ class Game:
             dist = f.distance_nm(self.ship)
             bearing = f.bearing_to_frigate(self.ship)
             horizon = config.radar_horizon_nm(
-                config.RADAR_ANTENNA_HEIGHT_M, config.FLIGHT_RADAR_ALTITUDE_M)
+                config.RADAR_ANTENNA_HEIGHT_M, f.altitude_m)
             radar_eligible = air_live and dist <= min(air_eff, horizon)
             radar_clear = radar_eligible and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, f.x, f.y)
@@ -3180,11 +3502,13 @@ class Game:
                 range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
+                altitude = config.measure_altitude_m(rng, f.altitude_m, error_scale)
                 self.air_picture.observe(track_id=f"A-{f.seq}", kind="FLG",
                     target_id=f.seq, source="RADAR-L", bearing=brg, range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.85, now=self.sim_t, label=f"A-{f.seq}",
-                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0),
+                    altitude_m=altitude)
         for r in self.raiders:
             dist = r.distance_nm(self.ship)
             bearing = r.bearing_from_frigate(self.ship)
@@ -3200,12 +3524,15 @@ class Game:
                 range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
+                altitude = config.measure_altitude_m(
+                    rng, getattr(r, "altitude_m", 0.0), error_scale)
                 self.air_picture.observe(track_id=f"R-{r.seq}", kind="FLG",
                     target_id=r.seq, source="RADAR-L", bearing=brg,
                     range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.85, now=self.sim_t, label=f"A-{r.seq}",
-                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0),
+                    altitude_m=altitude)
         for live in self.live_traffic.aircraft.values():
             if live.despawned:
                 continue
@@ -3223,12 +3550,18 @@ class Game:
                 range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
-                self.air_picture.observe(track_id=f"AD-{live.icao24}", kind="FLG",
+                # Selbe Track-ID-Form wie simulierte Fluege (A-<seq>, geteilter
+                # Zaehler via FlightManager.next_seq): reale und simulierte
+                # Luftkontakte sind fuer den Spieler ununterscheidbar.
+                altitude = config.measure_altitude_m(
+                    rng, live.altitude_m, error_scale)
+                self.air_picture.observe(track_id=f"A-{live.seq}", kind="FLG",
                     target_id=live.seq, source="RADAR-L", bearing=brg,
                     range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                    quality=.85, now=self.sim_t, label=f"AD-{live.icao24}",
-                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+                    quality=.85, now=self.sim_t, label=f"A-{live.seq}",
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0),
+                    altitude_m=altitude)
         for a in self.asms:
             if a.state not in ("LAUF", "CHAFF"):
                 continue
@@ -3267,6 +3600,8 @@ class Game:
         """Compatibility view of the persistent surface/air picture."""
         tracks = []
         for t in self.air_picture.tracks(self.sim_t):
+            if "AIS" in t.source.upper():
+                continue
             derived_course, derived_speed = t.derived_motion()
             tracks.append(dict(
                 kind=t.kind, track_id=t.track_id, target_id=t.target_id,
@@ -3275,13 +3610,43 @@ class Game:
                 course=t.course if t.course is not None else derived_course,
                 speed_kn=derived_speed,
                 quality=t.display_quality(self.sim_t, self.air_picture.stale_s),
-                label=t.label, hostile=t.hostile, jamming=t.jamming,
+                label=self.opz_track_label(
+                    self._opz_observation_id("picture", t.track_id),
+                    self._opz_observation_id("picture", t.track_id)[-6:]),
+                hostile=t.hostile, jamming=t.jamming,
                 age=t.age(self.sim_t), position_seen=t.position_seen,
-                bearing_uncertainty_deg=t.bearing_uncertainty_deg))
+                bearing_uncertainty_deg=t.bearing_uncertainty_deg,
+                altitude_m=t.altitude_m))
         return tracks
 
     def _opz_observation_id(self, namespace: str, identity: object) -> str:
         return "O-" + self._observation_key("opz-" + namespace, identity)
+
+    def opz_track_label(self, observation_id: str, fallback: str) -> str:
+        """Return the one shared, operator-visible ID for an observation."""
+        return self.opz_track_labels.get(observation_id, fallback)
+
+    def contact_display_id(self, contact: Contact) -> str:
+        observation_id = self._opz_observation_id("sonar", contact.target_id)
+        return self.opz_track_label(observation_id, f"K{contact.id:02d}")
+
+    def set_opz_track_label(self, observation_id: str, label: str):
+        """Assign an OPZ-authored display ID without changing track identity."""
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if (type(label) is not str or not 1 <= len(label) <= MAX_TRACK_DISPLAY_ID_LEN
+                or not label.isascii()
+                or any(not (char.isalnum() or char == "-") for char in label)
+                or not any(char.isalnum() for char in label)):
+            return "invalid_value"
+        current = {item.observation_id for item in self.opz_published_observations()}
+        if observation_id not in current:
+            return "stale_ref"
+        if (observation_id not in self.opz_track_labels
+                and len(self.opz_track_labels) >= MAX_OPZ_TRACK_LABELS):
+            del self.opz_track_labels[next(iter(self.opz_track_labels))]
+        self.opz_track_labels[observation_id] = label.upper()
+        return True
 
     def _detached_air_observations(self) -> list[OPZObservation]:
         observations = []
@@ -3289,11 +3654,12 @@ class Game:
         for track in self.air_picture.tracks(self.sim_t):
             # Sonar owns its release policy and detached report identity. Legacy
             # save-backed mirrors are never consumed as OPZ source reports.
-            if track.source.startswith("SONAR"):
+            if track.source.startswith("SONAR") or "AIS" in track.source.upper():
                 continue
             observation_id = self._opz_observation_id("picture", track.track_id)
             classification = (self.opz_fusion.classifications.get(observation_id)
-                              if track.source.startswith("RADAR") or track.source == "HOJ"
+                              if (track.source.startswith("RADAR")
+                                  or track.source == "HOJ")
                               else self.released_esm_labels().get(track.track_id)
                               if track.source == "ESM" else None)
             kind = "UNKNOWN" if track.source == "ESM" else track.kind
@@ -3303,9 +3669,9 @@ class Game:
                 track.x, track.y,
                 track.course if track.course is not None else derived_course,
                 track.quality, track.last_seen,
-                observation_id[-6:], classification,
+                self.opz_track_label(observation_id, observation_id[-6:]), classification,
                 track.bearing_uncertainty_deg, track.position_seen, track.jamming,
-                speed_kn=derived_speed)
+                speed_kn=derived_speed, altitude_m=track.altitude_m)
             observations.append(observation)
             bindings[observation_id] = track
         self._opz_source_bindings = bindings
@@ -3357,7 +3723,7 @@ class Game:
             observation = OPZObservation(
                 observation_id, source, "UNKNOWN", bearing, range_nm, x, y, course,
                 max(contact.quality, contact.confidence), contact.last_seen,
-                f"K{contact.id:02d}", (contact.player_class
+                self.opz_track_label(observation_id, f"K{contact.id:02d}"), (contact.player_class
                                       if contact.player_class in config.PLAYER_CLASSES
                                       else None),
                 bearing_uncertainty_deg,
@@ -3376,6 +3742,7 @@ class Game:
     def opz_source_observations(self) -> tuple[OPZObservation, ...]:
         if id(self.world) != self._opz_world_identity:
             self.opz_fusion.clear()
+            self.opz_track_labels.clear()
             self.opz_selected_track_id = None
             self._opz_world_identity = id(self.world)
         observations = self._detached_air_observations()
@@ -3389,6 +3756,8 @@ class Game:
         fused = [self.opz_fusion.computed(item, observations, self.sim_t,
                                           self.air_picture.stale_s)
                  for item in self.opz_fusion.fusions.values()]
+        fused = [replace(item, label=self.opz_track_label(
+            item.observation_id, item.label)) for item in fused if item is not None]
         return tuple(sorted((*observations, *(item for item in fused if item is not None)),
                             key=lambda item: item.observation_id))
 
@@ -3399,8 +3768,43 @@ class Game:
     def opz_tracks(self) -> list:
         """Host-visible OPZ reports, with local suppression applied."""
         observations = self.opz_source_observations()
-        return list(self.opz_fusion.visible(observations, self.sim_t,
-                                            self.air_picture.stale_s))
+        visible = self.opz_fusion.visible(observations, self.sim_t,
+                                          self.air_picture.stale_s)
+        return [replace(item, label=self.opz_track_label(
+            item.observation_id, item.label)) for item in visible]
+
+    def filtered_opz_tracks(self) -> list:
+        """Presentation-only OPZ register filter; never alters observations."""
+        tracks = self.opz_tracks()
+        selected = getattr(self, "opz_contact_filter", "ALL")
+        if selected == "ALL":
+            return tracks
+        if selected in ("RADAR", "SONAR"):
+            return [track for track in tracks
+                    if track.source.startswith(selected)]
+        if selected == "ESM":
+            return [track for track in tracks if track.source == "ESM"]
+        kind_domains = {
+            "AIS": "SURFACE", "SURFACE": "SURFACE", "SUB": "SUBSURFACE",
+            "TORP": "SUBSURFACE", "FLG": "AIR", "ASM": "AIR",
+        }
+        return [track for track in tracks
+                if kind_domains.get(track.kind, "UNKNOWN") == selected]
+
+    def _cycle_opz_contact_filter(self) -> None:
+        filters = ("ALL", "RADAR", "SONAR", "ESM", "AIR", "SURFACE",
+                   "SUBSURFACE")
+        current = getattr(self, "opz_contact_filter", "ALL")
+        index = filters.index(current) if current in filters else 0
+        self.opz_contact_filter = filters[(index + 1) % len(filters)]
+        tracks = self.filtered_opz_tracks()
+        if not any(track.track_id == self.opz_selected_track_id
+                   for track in tracks):
+            self.opz_selected_track_id = tracks[0].track_id if tracks else None
+        self.flash(message(
+            "runtime.cic.filter",
+            filter=display_value("contact_filter", self.opz_contact_filter,
+                                 self.tr)), 1.5)
 
     def selected_opz_track(self):
         return next((track for track in self.opz_tracks()
@@ -3510,7 +3914,8 @@ class Game:
                     or self.sonar.contacts.get(contact.target_id) is not contact):
                 return "stale_ref"
             return self.classify_sonar_contact(contact, classification)
-        if not (track.source.startswith("RADAR") or track.source in ("HOJ", "FUSION")):
+        if not (track.source.startswith("RADAR")
+                or track.source in ("HOJ", "FUSION")):
             return "source_owned"
         if classification is None:
             self.opz_fusion.classifications.pop(observation_id, None)
@@ -3530,6 +3935,65 @@ class Game:
         destination = (self.opz_fusion.fusion_affiliations
                        if track.source == "FUSION" else self.opz_affiliations)
         destination[observation_id] = affiliation
+        self._sync_live_engagement_hold(observation_id, track.track_id, affiliation)
+        return True
+
+    def _live_aircraft_icao_for_track_id(self, track_id) -> str | None:
+        """Resolve an air-picture 'A-<seq>' track id to its live ADS-B icao24,
+        if that id happens to be bound to a real LiveAircraft rather than a
+        simulated Flight (both intentionally share the same id namespace)."""
+        if not isinstance(track_id, str) or not track_id.startswith("A-"):
+            return None
+        try:
+            seq = int(track_id[2:])
+        except ValueError:
+            return None
+        return next((icao24 for icao24, aircraft in self.live_traffic.aircraft.items()
+                     if aircraft.seq == seq), None)
+
+    def _sync_live_engagement_hold(self, observation_id: str, display_id: str,
+                                    affiliation: str) -> None:
+        """Real ADS-B traffic is indistinguishable from a simulated contact,
+        so a manual HOSTILE call on it is a possible political incident, not
+        a weapons release. Any prior engagement confirmation is revoked here
+        and must be freshly re-affirmed (confirm_live_engagement) every time
+        the classification turns HOSTILE again."""
+        bound = self._opz_source_bindings.get(observation_id)
+        icao24 = self._live_aircraft_icao_for_track_id(getattr(bound, "track_id", None))
+        if icao24 is None:
+            return
+        self.live_engage_authorized.discard(icao24)
+        if affiliation == "HOSTILE":
+            self.live_engage_confirm_pending = icao24
+            self.flash(message("runtime.cic.hostile_confirm_required",
+                               track=display_id), 5.0)
+            self.feed.add(self.world.format_time(), "opz",
+                          message("runtime.cic.hostile_confirm_required",
+                                  track=display_id))
+        elif self.live_engage_confirm_pending == icao24:
+            self.live_engage_confirm_pending = None
+
+    def live_engagement_pending_for_observation(self, observation_id: str) -> bool:
+        """Whether this OPZ observation is the live contact currently
+        awaiting an attack confirmation (see _sync_live_engagement_hold)."""
+        if self.live_engage_confirm_pending is None:
+            return False
+        bound = self._opz_source_bindings.get(observation_id)
+        icao24 = self._live_aircraft_icao_for_track_id(getattr(bound, "track_id", None))
+        return icao24 == self.live_engage_confirm_pending
+
+    def confirm_live_engagement(self) -> bool:
+        """OPZ 'Enter': explicit player affirmation to fire on the live,
+        real-world contact currently awaiting confirmation after being
+        classified HOSTILE. See _sync_live_engagement_hold."""
+        icao24 = self.live_engage_confirm_pending
+        if icao24 is None or icao24 not in self.live_traffic.aircraft:
+            return False
+        self.live_engage_authorized.add(icao24)
+        self.live_engage_confirm_pending = None
+        self.flash(message("runtime.cic.hostile_confirmed"), 2.5)
+        self.feed.add(self.world.format_time(), "opz",
+                      message("runtime.cic.hostile_confirmed"))
         return True
 
     def create_opz_fusion(self, observation_ids):
@@ -3562,7 +4026,7 @@ class Game:
         return True
 
     def _cycle_opz_track(self, delta: int) -> None:
-        tracks = self.opz_tracks()
+        tracks = self.filtered_opz_tracks()
         if not tracks:
             self.opz_selected_track_id = None
             return
@@ -3597,7 +4061,8 @@ class Game:
                 self.flash(message("runtime.cic.source_owned"))
                 return
             current = contact.player_class
-        elif track.source.startswith("RADAR") or track.source in ("HOJ", "FUSION"):
+        elif (track.source.startswith("RADAR")
+              or track.source in ("HOJ", "FUSION")):
             current = self.opz_fusion.classifications.get(track.observation_id)
         else:
             self.flash(message("runtime.cic.source_owned"))
@@ -3638,6 +4103,38 @@ class Game:
         """Return detached passive intercepts in stable picture order."""
         return self.esm_picture.tracks(self.sim_t)
 
+    def eloka_visible_tracks(self) -> tuple:
+        """Return the one filtered/sorted list used by ELOKA presentation."""
+        return filter_and_sort_tracks(
+            self.eloka_tracks(), self.sim_t, self.eloka_analysis,
+            status=self.eloka_status_filter,
+            minimum_threat=self.eloka_threat_filter,
+            band=self.eloka_band_filter,
+            annotated_keys=self.eloka_annotations,
+            jamming_keys=(channel.track_key
+                          for channel in self.ecm_jammer.channels))
+
+    def _reconcile_eloka_selection(self) -> None:
+        visible = self.eloka_visible_tracks()
+        keys = {track.track_key for track in visible}
+        if self.eloka_selected_track_key not in keys:
+            self.eloka_selected_track_key = (visible[0].track_key
+                                             if visible else None)
+
+    def _cycle_eloka_filter(self, kind: str) -> None:
+        names = {
+            "status": ("eloka_status_filter",
+                       ("OPERATIONAL", "LIVE", "MEMORY", "ALL")),
+            "threat": ("eloka_threat_filter",
+                       ("ALL", "LOW", "MEDIUM", "HIGH", "CRITICAL")),
+            "band": ("eloka_band_filter",
+                     ("ALL", "A_C", "D", "E_F", "G_H", "I_J", "K")),
+        }
+        attribute, values = names[kind]
+        current = getattr(self, attribute)
+        setattr(self, attribute, values[(values.index(current) + 1) % len(values)])
+        self._reconcile_eloka_selection()
+
     def selected_eloka_track(self):
         return next((track for track in self.eloka_tracks()
                      if track.track_key == self.eloka_selected_track_key), None)
@@ -3645,7 +4142,7 @@ class Game:
     def _cycle_eloka_track(self, delta: int) -> None:
         if self.damage.station_down("opz"):
             return
-        tracks = self.eloka_tracks()
+        tracks = self.eloka_visible_tracks()
         if not tracks:
             self.eloka_selected_track_key = None
             return
@@ -3662,6 +4159,86 @@ class Game:
         track = track or self.selected_eloka_track()
         return (() if track is None else
                 rank_emitters(track, self.runtime_catalog.emitters))
+
+    def eloka_analysis(self, track=None):
+        track = track or self.selected_eloka_track()
+        return (None if track is None else
+                analyze_signal(track, self.runtime_catalog.emitters))
+
+    def deploy_jamming(self, track, technique=None):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if track is None or not any(item is track for item in self.eloka_tracks()):
+            return "stale_ref"
+        return self.ecm_jammer.deploy_jamming(
+            track, self.sim_t, technique=technique)
+
+    def set_jamming_technique(self, track, technique: str):
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        if track is None or not any(item is track for item in self.eloka_tracks()):
+            return "stale_ref"
+        return self.ecm_jammer.set_technique(track, technique, self.sim_t)
+
+    def _cycle_jamming_technique(self, track) -> str | None:
+        if track is None:
+            return None
+        channel = next((item for item in self.ecm_jammer.channels
+                        if item.track_key == track.track_key), None)
+        current = (channel.technique if channel is not None else
+                   self.ecm_jammer.recommended_technique(track))
+        index = ECM_TECHNIQUES.index(current)
+        technique = ECM_TECHNIQUES[(index + 1) % len(ECM_TECHNIQUES)]
+        return (technique if self.set_jamming_technique(track, technique) is True
+                else None)
+
+    def set_jamming(self, track, enabled: bool):
+        if type(enabled) is not bool:
+            return "invalid"
+        active = (track is not None and any(
+            channel.track_key == track.track_key
+            for channel in self.ecm_jammer.channels))
+        if active == enabled:
+            return True
+        return self.deploy_jamming(track)
+
+    def set_ecm_auto(self, enabled: bool):
+        if type(enabled) is not bool:
+            return "invalid"
+        if self.damage.station_down("opz"):
+            return "opz_down"
+        self.ecm_jammer.auto_enabled = enabled
+        if not enabled:
+            self.ecm_jammer.channels = [channel for channel in
+                self.ecm_jammer.channels if not channel.automatic]
+        return True
+
+    def _update_ecm(self) -> None:
+        tracks = self.eloka_tracks()
+        self.ecm_jammer.update(
+            tracks, self.sim_t, operational=not self.damage.station_down("opz"))
+        if not self.ecm_jammer.auto_enabled:
+            return
+        occupied = {channel.track_key for channel in self.ecm_jammer.channels}
+        threat_order = {"critical": 0, "high": 1, "medium": 2, "low": 3,
+                        "unknown": 4}
+        choices = []
+        for track in tracks:
+            if (track.track_key in occupied
+                    or track.age(self.sim_t) > ECM_SIGNAL_FRESH_S):
+                continue
+            analysis = analyze_signal(track, self.runtime_catalog.emitters)
+            if (analysis.threat_level not in ("critical", "high")
+                    or not analysis.candidates
+                    or analysis.candidates[0].score < .65):
+                continue
+            choices.append((threat_order[analysis.threat_level],
+                            track.age(self.sim_t), -track.quality,
+                            track.track_key, track))
+        for *_, track in sorted(choices):
+            if len(self.ecm_jammer.channels) >= self.ecm_jammer.MAX_CHANNELS:
+                break
+            self.ecm_jammer.deploy_jamming(track, self.sim_t, automatic=True)
 
     def eloka_annotation(self, track_key: str) -> str | None:
         emitter_key = self.eloka_annotations.get(track_key)
@@ -3776,7 +4353,8 @@ class Game:
         raw_evidence = []
         for observed in self.air_picture._tracks.values():
             if (not isinstance(observed.source, str)
-                    or not observed.source.startswith("RADAR")):
+                    or not observed.source.startswith("RADAR")
+                    or "AIS" in observed.source.upper()):
                 continue
             values = (observed.bearing, observed.last_seen)
             optional = (observed.bearing_uncertainty_deg, observed.x,
@@ -3839,7 +4417,70 @@ class Game:
             key=profile["key"] + ".seeker", domain="radar",
             frequency_band_hz=tuple(profile["seeker_frequency_hz"]),
             prf_band_hz=tuple(profile["seeker_prf_hz"]),
-            modulation_codes=(profile["seeker_modulation"],))
+            modulation_codes=(profile["seeker_modulation"],),
+            radar_role="missile_seeker", operating_mode="terminal_search",
+            power_class="medium", operating_period_s=.5, on_duration_s=.5)
+
+    def _radar_signals(self, actor, profile_key: str, *, enabled=True,
+                       synthetic=False, fire_control=False, terminal=False):
+        systems = self.runtime_catalog.profile_systems.get(profile_key)
+        if systems is None:
+            return ()
+        emitters = [self.runtime_catalog.emitters[key]
+                    for key in systems.emitter_keys
+                    if key in self.runtime_catalog.emitters]
+        return RadarSuiteController(
+            emitters, int(getattr(actor, "sensor_seed", 0)),
+            synthetic_assumption=synthetic).active_signals(
+                self.sim_t, actor.x, actor.y, enabled=enabled,
+                fire_control=fire_control, terminal=terminal)
+
+    def own_radar_signals(self):
+        """Internal own-force emissions available to hostile ESM simulation."""
+        profile_key = "warship_25"
+        systems = self.runtime_catalog.profile_systems.get(profile_key)
+        if systems is None or self.damage.station_down("opz"):
+            return ()
+        emitters = []
+        for key in systems.emitter_keys:
+            emitter = self.runtime_catalog.emitters[key]
+            role = emitter.radar_role
+            if ((role in ("navigation", "surface_search") and self.surface_radar_on)
+                    or role == "air_search" and self.air_radar_on
+                    or role == "multi_function"
+                    and (self.surface_radar_on or self.air_radar_on)
+                    or role == "fire_control" and self.selected_opz_track() is not None):
+                emitters.append(emitter)
+        return RadarSuiteController(emitters, self.seed + 0x52414441).active_signals(
+            self.sim_t, self.ship.x, self.ship.y,
+            fire_control=self.selected_opz_track() is not None)
+
+    def _signal_measurements(self, actor, signals):
+        seed = int(getattr(actor, "sensor_seed", 0))
+        return scan_for_signals(
+            signals, observer_x=self.ship.x, observer_y=self.ship.y,
+            now=self.sim_t, maximum_range_nm=config.ESM_RANGE_NM,
+            bearing_error_deg=config.ESM_BEARING_ERR_DEG,
+            noise_for=lambda signal: self._smooth_sensor_noise(
+                seed * 1009 + int(signal.signal_id[1:9], 16),
+                self.sim_t, 5.0),
+            line_of_sight=lambda signal: not self.world.land_blocks_line(
+                self.ship.x, self.ship.y, signal.x, signal.y))
+
+    def _ecm_effect_against_asm(self, asm):
+        if not asm.seeker_active(self.ship) or not self.ecm_jammer.channels:
+            return None
+        emitter = self._asm_seeker_emitter(asm.profile)
+        signals = RadarSuiteController((emitter,), asm.sensor_seed).active_signals(
+            self.sim_t, asm.x, asm.y, terminal=True)
+        if not signals:
+            return None
+        blocked = self.world.land_blocks_line(
+            self.ship.x, self.ship.y, asm.x, asm.y)
+        return self.ecm_jammer.effect_details_on(
+            signals[0], asm.distance_nm(self.ship), line_of_sight=not blocked,
+            operational=not self.damage.station_down("opz"),
+            burn_through_nm=asm.profile["jam_break_nm"])
 
     def _esm_measurement(self, actor, bearing: float, distance: float,
                          emitter, namespace: int) -> ESMMeasurement:
@@ -3875,45 +4516,73 @@ class Game:
         """Publish passive intercepts independently from own-radar evidence."""
         if self.damage.station_down("opz"):
             self.esm_picture.expire(self.sim_t)
+            self._update_ecm()
         else:
             def measurements():
+                for sub in self.subs:
+                    # Mast radar is possible only near periscope/snorkel depth
+                    # and outside evasion/attack phases.
+                    enabled = (not sub.sunk and sub.depth <= 20.0
+                               and sub.state == "PATROLLE")
+                    signals = self._radar_signals(
+                        sub, sub.stype.key, enabled=enabled)
+                    yield from self._signal_measurements(sub, signals)
                 for actor in self.civilians + self.warships:
                     if actor.sunk or not actor.emitter:
                         continue
-                    distance = actor.distance_nm(self.ship)
-                    if (distance > config.ESM_RANGE_NM
-                            or self.world.land_blocks_line(
-                                self.ship.x, self.ship.y, actor.x, actor.y)):
-                        continue
-                    yield self._esm_measurement(
-                        actor, actor.bearing_from_frigate(self.ship), distance,
-                        self._emitter_profile(actor.signature_key), 100_000)
+                    signals = self._radar_signals(
+                        actor, actor.signature_key, enabled=actor.radar_emitting,
+                        synthetic=actor.live_mmsi is not None,
+                        fire_control=actor in self.warships
+                        and bool(actor.pending_asm))
+                    yield from self._signal_measurements(actor, signals)
                 for flight in self.flights.flights:
-                    if flight.kind != "military" or not flight.radar_emitting:
-                        continue
-                    distance = flight.distance_nm(self.ship)
-                    if (distance > config.ESM_RANGE_NM
-                            or self.world.land_blocks_line(
-                                self.ship.x, self.ship.y, flight.x, flight.y)):
-                        continue
-                    yield self._esm_measurement(
-                        flight, flight.bearing_to_frigate(self.ship), distance,
-                        self._emitter_profile(flight.akey), 200_000)
+                    signals = self._radar_signals(
+                        flight, flight.akey,
+                        enabled=flight.radar_emitting or flight.kind == "civil",
+                        synthetic=flight.kind == "civil",
+                        fire_control=flight.akey == "su_25")
+                    yield from self._signal_measurements(flight, signals)
+                for live in sorted(self.live_traffic.aircraft.values(),
+                                   key=lambda item: item.seq):
+                    profile_key = self.runtime_catalog.runtime_bindings[
+                        "civil_flight"]
+                    signals = self._radar_signals(
+                        live, profile_key, enabled=True, synthetic=True)
+                    yield from self._signal_measurements(live, signals)
+                for raider in sorted(self.raiders, key=lambda item: item.seq):
+                    signals = self._radar_signals(
+                        raider, "su_25", enabled=not raider.despawned,
+                        fire_control=raider.phase is RaidPhase.ATTACK)
+                    yield from self._signal_measurements(raider, signals)
                 for asm in self.asms:
-                    if (not asm.seeker_active(self.ship)
-                            or self.world.land_blocks_line(
-                                self.ship.x, self.ship.y, asm.x, asm.y)):
-                        continue
-                    yield self._esm_measurement(
-                        asm, asm.bearing_to_frigate(self.ship),
-                        asm.distance_nm(self.ship),
-                        self._asm_seeker_emitter(asm.profile), 300_000)
+                    emitter = self._asm_seeker_emitter(asm.profile)
+                    signals = RadarSuiteController(
+                        (emitter,), asm.sensor_seed).active_signals(
+                            self.sim_t, asm.x, asm.y,
+                            terminal=asm.seeker_active(self.ship))
+                    yield from self._signal_measurements(asm, signals)
 
-            self.esm_picture.observe_batch(measurements(), self.sim_t)
+            protected = set(self.eloka_annotations)
+            protected.update(channel.track_key for channel in self.ecm_jammer.channels)
+            previous_operational = {
+                track.track_key for track in self.eloka_tracks()
+                if filter_and_sort_tracks(
+                    (track,), self.sim_t, self.eloka_analysis,
+                    annotated_keys=self.eloka_annotations,
+                    jamming_keys=protected)}
+            self.esm_picture.observe_batch(
+                measurements(), self.sim_t, protected_keys=protected)
+            self._update_ecm()
+            operational = {track.track_key for track in filter_and_sort_tracks(
+                self.eloka_tracks(), self.sim_t, self.eloka_analysis,
+                annotated_keys=self.eloka_annotations,
+                jamming_keys=(channel.track_key
+                              for channel in self.ecm_jammer.channels))}
+            if operational - previous_operational:
+                self._emit_sound("esm_contact")
             self._publish_released_esm()
-        if self.eloka_selected_track_key not in {
-                track.track_key for track in self.eloka_tracks()}:
-            self.eloka_selected_track_key = None
+        self._reconcile_eloka_selection()
 
     def hfdf_bearings(self) -> list:
         """Current and recently retained HFDF observations."""
@@ -4002,12 +4671,12 @@ class Game:
                          and math.hypot(item["observer_x"] - row["observer_x"],
                                         item["observer_y"] - row["observer_y"]) >= 1.0), None)
         if previous is None:
-            self.flash(message("runtime.hfdf.logged", label=display_id,
-                               bearing=f"{report.bearing:05.1f}"))
+            self.announce(message("runtime.hfdf.logged", label=display_id,
+                                  bearing=f"{report.bearing:05.1f}"), "funk")
             return True
         fix = self._bearing_intersection(previous, row)
         if fix is None:
-            self.flash(message("runtime.hfdf.geometry"))
+            self.announce(message("runtime.hfdf.geometry"), "funk")
             return True
         x, y, geometry = fix
         # Angular errors projected at the two measurement origins. This assumes
@@ -4114,12 +4783,17 @@ class Game:
         self.aa_cooldown_s = max(0.0, self.aa_cooldown_s - dt)
         aa = profiles["aa_gun"]
         observed = {}
-        observed_live_air = {}
+        # Live-Flugzeuge tragen absichtlich dasselbe "A-<seq>"-Format wie
+        # simulierte Fluege (siehe FlightManager.next_seq) - der exakte,
+        # eindeutige Seq-Wert je LiveAircraft macht die Zuordnung trotzdem
+        # kollisionsfrei, ohne dass ein eigenes, erkennbares Praefix noetig
+        # waere.
+        observed_a_tracks = {}
         for track in self.air_picture.tracks(self.sim_t, ("FLG",)):
             if track.track_id.startswith("R-"):
                 observed[track.track_id] = track
-            elif track.track_id.startswith("AD-"):
-                observed_live_air[track.track_id] = track
+            elif track.track_id.startswith("A-"):
+                observed_a_tracks[track.track_id] = track
         for raider in self.raiders:
             if raider.hp <= 0:
                 continue
@@ -4138,6 +4812,7 @@ class Game:
                         self.ship.x, self.ship.y, track.x, track.y)):
                 self.aa_ammo -= aa["rounds_per_attempt"]
                 self.aa_cooldown_s = aa["cycle_s"]
+                self._emit_sound("gunfire")
                 # Pk composes base accuracy with evasion and a range falloff:
                 # closer raiders are easier hard-kill targets for the AA gun.
                 distance_factor = 1.0 - 0.5 * config.clamp(
@@ -4152,15 +4827,21 @@ class Game:
                         self.feed.add(self.world.format_time(), "waffen",
                                       message("runtime.raid.downed"))
         self.raiders = [r for r in self.raiders if not r.despawned]
-        # Dasselbe Flak-Geschuetz kann - versehentlich - auch echten
-        # ADS-B-Flugverkehr treffen, wenn die Feuerfreigabe steht und ein
-        # Kontakt in Reichweite/Sicht geraet (Nutzervorgabe: kein separater
-        # Schutzmechanismus, es ist bewusst dieselbe Freigabe wie gegen
-        # Raider).
+        # Echter ADS-B-Verkehr ist nie automatisch feindlich: die Flak darf
+        # ihn nur treffen, wenn der Spieler den konkreten OPZ-Track manuell
+        # als HOSTILE eingestuft hat (dieselbe IFF-Klassifizierung wie fuer
+        # jeden anderen Radar-/Sonar-Kontakt). Ohne diese bewusste
+        # Fehleinschaetzung bleibt Realverkehr fuer die Waffen unantastbar,
+        # daher gilt hier - anders als vorher - die reale Geschuetzreichweite.
         for live in list(self.live_traffic.aircraft.values()):
             if live.despawned:
                 continue
-            track = observed_live_air.get(f"AD-{live.icao24}")
+            track_id = f"A-{live.seq}"
+            if self.opz_affiliation(track_id) != "HOSTILE":
+                continue
+            if live.icao24 not in self.live_engage_authorized:
+                continue
+            track = observed_a_tracks.get(track_id)
             if (self.flak_authorized
                     and track is not None and track.x is not None and track.y is not None
                     and track.position_seen is not None
@@ -4175,6 +4856,7 @@ class Game:
                         self.ship.x, self.ship.y, track.x, track.y)):
                 self.aa_ammo -= aa["rounds_per_attempt"]
                 self.aa_cooldown_s = aa["cycle_s"]
+                self._emit_sound("gunfire")
                 distance_factor = 1.0 - 0.5 * config.clamp(
                     track.range_nm / max(0.01, aa["range_nm"]), 0.0, 1.0)
                 if self.rng_raid.random() < aa["hit_probability"] * distance_factor:
@@ -4477,7 +5159,7 @@ class Game:
                     self.ship.x - warship.x,
                     -(self.ship.y - warship.y))) % 360.0
                 warship.alert_torpedo(bearing)
-        self.audio.play_alert("launch")
+        self._emit_sound("torpedo_launch")
         self.flash(message("runtime.torpedo.launched", torpedo=self.torpedo_seq), 2.0)
         self.feed.add(self.world.format_time(), "waffen",
                       message("runtime.torpedo.feed", torpedo=self.torpedo_seq,
@@ -4567,7 +5249,7 @@ class Game:
             self._sonar_audio_sequence = -1
 
     def _update_audio(self, dt: float) -> None:
-        """Stream coherent 1x blocks and discard accelerated-time audio."""
+        """Stream opt-in sonar at 1x; continuous ambience is intentionally off."""
         receiver = self.sonar.receiver
         listening = (self.station is Station.SONAR and self.sonar_audio_enabled
                      and not self.damage.station_down("sonar"))
@@ -4602,15 +5284,20 @@ class Game:
                             listener_bearing_deg=self.ship.course):
                         break
                     self._sonar_audio_sequence = sequence
-        self._audio_timer += dt
-        due = self._audio_timer >= config.AUDIO_UPDATE_S
-        if not due:
-            return
-        self._audio_timer %= config.AUDIO_UPDATE_S
-        cavitation = 0.8 if self.ship.cavitating else 0.0
-        self.audio.update_engine(self.ship.rpm(), blade_count=5,
-                                  cavitation=cavitation,
-                                  volume=0.0 if listening else 0.08 + 0.08 * self.ship.noise_level())
+
+    def _emit_sound(self, kind: str) -> None:
+        """Play locally and publish a bounded, detached browser sound cue."""
+        if kind == "sonar_ping":
+            self.audio.play_ping()
+        elif kind == "esm_contact":
+            if (self.station is Station.ELOKA
+                    and self.eloka_audio_enabled
+                    and not self.damage.station_down("opz")):
+                self.audio.play_alert("esm")
+        else:
+            self.audio.play_effect(kind)
+        self._sound_event_seq += 1
+        self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind))
 
     def _play_unit_audio(self, profile_key: str, mode: str, machine) -> None:
         """Kontakt-Katalog-Hörprobe: deterministisches Einheiten-Sample abspielen."""
@@ -4639,10 +5326,12 @@ class Game:
         self._clear_station_input()
         self.simlog_view_open = True
         self.simlog_view_scroll = 0
+        self.simlog_view_map = False
 
     def _close_simlog_view(self) -> None:
         self.simlog_view_open = False
         self.simlog_view_scroll = 0
+        self.simlog_view_map = False
         self._clear_station_input()
 
     def _scroll_simlog_view(self, amount: int) -> None:
@@ -4855,14 +5544,18 @@ class Game:
         self._drain_warship_asm()
         self._drain_raider_asm()
         self._maybe_spawn_asm()
+        self._auto_ecm_softkill()
         # Softkill state is resolved by ASM.update before layered hardkill.
         self.ciws_cooldown_s = max(0.0, getattr(self, "ciws_cooldown_s", 0.0) - dt)
         for asm in self.asms:
-            asm.update(dt, self.ship, self.world)
+            asm.update(dt, self.ship, self.world,
+                       ecm_effect=self._ecm_effect_against_asm(asm))
             if asm.state == "TREFFER":
                 hit = self.damage.torpedo_hit()
-                self.flash(message("runtime.hit.asm", compartments=", ".join(
-                    self.damage.compartments[k].name for k in hit)), 5.0)
+                self._emit_sound("explosion")
+                self.announce(message("runtime.hit.asm", compartments=", ".join(
+                    self.damage.compartments[k].name for k in hit)),
+                    "schaden", 5.0)
         observed_asms = {track.target_id: track for track in self.asm_tracks()}
         for essm in self.essms:
             track = observed_asms.get(essm.target_id)
@@ -4893,6 +5586,7 @@ class Game:
                         self.ship.x, self.ship.y, track.x, track.y)):
                 self.ciws_ammo -= ciws["rounds_per_attempt"]
                 self.ciws_cooldown_s = ciws["cycle_s"]
+                self._emit_sound("gunfire")
                 # Pk composes base kill probability with a range falloff (a
                 # closing missile is an easier hard-kill target) and a penalty
                 # while the missile is actively jamming our fire control.
@@ -4903,7 +5597,8 @@ class Game:
                         < ciws["kill_probability"] * distance_factor * (1.0 - target_jamming)):
                     asm.state = "ABGEFANGEN"
                     self.audio.play_alert("defense")
-                    self.flash(message("runtime.ciws.intercepted"), 3.0)
+                    self.announce(message("runtime.ciws.intercepted"),
+                                  "waffen", 3.0)
         self.asms = [a for a in self.asms if a.state in ("LAUF", "CHAFF")]
         self.essms = [e for e in self.essms if e.state == "LAUF"]
         if publish_picture:
@@ -4914,6 +5609,25 @@ class Game:
                 self.feed.add(self.world.format_time(), "waffen", message("runtime.threat.air"))
             self.air_threat_reported = observed_threat
 
+    def _auto_ecm_softkill(self) -> None:
+        """Couple critical terminal ECM tracks to the finite RF decoy store."""
+        if (not self.ecm_jammer.auto_enabled or self.softkill_store.ready <= 0
+                or self.damage.station_down("opz")):
+            return
+        by_target = {track.target_id: track for track in self.asm_tracks()}
+        softkill_range = self._air_defense_loadout["softkill"]["range_nm"]
+        candidates = []
+        for asm in self.asms:
+            track = by_target.get(asm.seq)
+            effect = self._ecm_effect_against_asm(asm)
+            if (asm.state != "LAUF" or track is None or track.range_nm is None
+                    or track.range_nm > softkill_range or effect is None
+                    or effect.effectiveness <= 0.0):
+                continue
+            candidates.append((track.range_nm, track.track_id, track))
+        if candidates:
+            self.launch_chaff_at(min(candidates, key=lambda item: item[:2])[2])
+
     def _update_enemy_torpedoes(self, dt: float) -> None:
         """Erzeugt und bewegt Feindtorpedos; Treffer werden als Schaden gebucht."""
         self._drain_enemy_torpedoes()
@@ -4923,7 +5637,7 @@ class Game:
         for torpedo in self.enemy_torpedoes:
             if torpedo.state == "HIT":
                 hit = self.damage.torpedo_hit(self._incoming_hit_zone(torpedo))
-                self.audio.play_alert("damage")
+                self._emit_sound("explosion")
                 text = ", ".join(self.damage.compartments[k].name for k in hit)
                 self.flash(message("runtime.hit.torpedo", compartments=text), 5.0)
                 self.feed.add(self.world.format_time(), "schaden",
@@ -5025,6 +5739,7 @@ class Game:
                 continue
             if torpedo.state != "HIT":
                 continue
+            self._emit_sound("explosion")
             if (isinstance(torpedo.target, SurfaceShip)
                     and torpedo.target.side != "hostile"):
                 torpedo.target.sunk = True
@@ -5033,6 +5748,8 @@ class Game:
                     getattr(torpedo.target, "live_mmsi", None))
                 self.audio.play_alert("danger")
                 self.flash(message("runtime.incident"), 6.0)
+                self.feed.add(self.world.format_time(), "waffen",
+                              message("runtime.incident"))
                 continue
             contact = self.sonar.contacts.get(getattr(torpedo.target, "id", None))
             if contact is not None and self.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S:
@@ -5065,6 +5782,9 @@ class Game:
                 self.sonar.reset_listening_history()
                 self.sonar.broadband_history.clear()
                 self.sonar.history_times.clear()
+                self.sonar.broadband_long_history.clear()
+                self.sonar.broadband_long_times.clear()
+                self.sonar._broadband_long_accumulator.clear()
             return
         focus = (self._find_target(self.selected_contact.target_id)
                  if self.selected_contact else None)
@@ -5271,8 +5991,8 @@ class Game:
             self.score += bonus + config.SCORE_AMMO_BONUS * self.torpedo_count
             if not self.incident:
                 self.score += config.SCORE_CIVIL_BONUS
-        self.flash(message("runtime.mission.won" if win
-                           else "runtime.mission.lost"), 10.0)
+        self.announce(message("runtime.mission.won" if win
+                              else "runtime.mission.lost"), "mission", 10.0)
 
     # --- M6: Speichern / Laden ---
 
@@ -5428,6 +6148,7 @@ class Game:
                     for track_key, emitter_key in sorted(
                         self.eloka_annotations.items())
                 ],
+                "ecm": self.ecm_jammer.serialize(),
             },
             "radio_picture": self.radio_picture.serialize(),
             "radio_sel": self.radio_sel,
@@ -5935,14 +6656,20 @@ class Game:
             track.track_id.startswith("R-")
             for track in self.air_picture.tracks(self.sim_t, ("FLG",)))
         self.opz_affiliations = dict(data["opz_affiliations"])
+        self.opz_track_labels = {}
         self.opz_selected_track_id = None
         self.opz_fusion.clear()
         self._opz_source_bindings = {}
         self.esm_picture = ESMPicture()
+        self.ecm_jammer = ECMJammer()
         self.eloka_selected_track_key = None
         self.eloka_annotations = {}
         esm = data["esm"]
         self.esm_picture.restore(esm["picture"], esm["track_seq"], self.sim_t)
+        if esm["version"] in (2, ESM_STATE_VERSION):
+            self.ecm_jammer.restore(esm["ecm"], {
+                track.track_key for track in self.esm_picture.tracks(self.sim_t)},
+                self.sim_t, version=esm["version"])
         self.eloka_selected_track_key = esm["selected_track_key"]
         self.eloka_annotations = {
             row["track_key"]: row["emitter_key"]
@@ -6932,7 +7659,10 @@ class Game:
                 runtime_catalog = Game._catalog_for_save(data)
             elif not _same_save_value(
                     runtime_catalog.runtime_snapshot(), data["catalog_snapshot"]):
-                return False
+                normalized = catalog_from_runtime_snapshot(
+                    data["catalog_snapshot"]).runtime_snapshot()
+                if not _same_save_value(runtime_catalog.runtime_snapshot(), normalized):
+                    return False
         except Exception:
             return False
         if ("esm" not in data
@@ -8209,6 +8939,31 @@ class Game:
             runtime_catalog = self._catalog_for_save(data)
         except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
             return False
+        legacy_esm_fields = {
+            "version", "track_seq", "picture", "selected_track_key", "annotations"}
+        esm_state = data.get("esm") if isinstance(data, dict) else None
+        if (isinstance(esm_state, dict) and set(esm_state) == legacy_esm_fields
+                and esm_state.get("version") == 1):
+            # The sole accepted same-save-version compatibility shape: the
+            # pre-ECM ESM envelope.  Canonicalize only after the catalog and
+            # exact legacy keys have validated structurally.
+            data = copy.deepcopy(data)
+            data["esm"]["version"] = ESM_STATE_VERSION
+            data["esm"]["ecm"] = {"auto_enabled": False, "channels": []}
+            data["catalog_snapshot"] = runtime_catalog.runtime_snapshot()
+        elif (isinstance(esm_state, dict) and esm_state.get("version") == 2
+              and valid_esm_state(esm_state, data.get("sim_t", -1.0),
+                                  runtime_catalog.emitters)):
+            # Canonicalize the earlier two-channel ECM envelope while keeping
+            # the outer save schema unchanged.
+            legacy_jammer = ECMJammer()
+            legacy_jammer.restore(
+                esm_state["ecm"],
+                {row["track_key"] for row in esm_state["picture"]},
+                data["sim_t"], version=2)
+            data = copy.deepcopy(data)
+            data["esm"]["version"] = ESM_STATE_VERSION
+            data["esm"]["ecm"] = legacy_jammer.serialize()
         if not self._valid_save_document(data, runtime_catalog):
             return False
         candidate = copy.copy(self)
@@ -8264,9 +9019,7 @@ class Game:
             raise ValueError("slot must be an integer from 1 to 5")
         path = os.path.join(config.SAVE_DIR, f"slot{slot}.json")
         self.save_game(path)
-        self.flash(message("status.saved", slot=slot), 2.0)
-        self.feed.add(self.world.format_time(), "mission",
-                      message("status.save_feed", slot=slot))
+        self.announce(message("status.save_feed", slot=slot), "mission", 2.0)
 
     def load_from_slot(self, slot: int) -> bool:
         if type(slot) is not int or not 1 <= slot <= 5:
@@ -8280,7 +9033,7 @@ class Game:
             return False
         if not self._load_save_data(data, allow_pre_r9=True):
             return False
-        self.flash(message("status.loaded", slot=slot), 2.0)
+        self.announce(message("status.loaded", slot=slot), "mission", 2.0)
         return True
 
     # --- W4: Hauptmenü (Szenario -> [Level] -> Briefing) ---
@@ -8498,9 +9251,56 @@ class Game:
     # --- W0: Draw-Grid ---
 
     @localized
+    def _eco_display_active(self) -> bool:
+        """Solo browser is live: the uConsole shows a cheap status screen.
+
+        Pure display decision; it never touches simulation state, saves or input.
+        """
+        return (self.running and not self.splash_active and self.editor is None
+                and not self.simlog_view_open and not self.in_menu
+                and not self.main_menu and not self.administration_open
+                and not self.game_over and not self.autocrew_overview_open
+                and self.commander.eco_display_ready(self))
+
+    def _skip_eco_frame(self) -> bool:
+        """True while the last eco frame is still current (draw and blit skipped)."""
+        if not self._eco_display_active():
+            self._eco_drawn_at = float("-inf")
+            return False
+        if self._t - self._eco_drawn_at < config.ECO_REDRAW_S:
+            return True
+        self._eco_drawn_at = self._t
+        return False
+
+    @localized
+    def draw_eco_display(self) -> None:
+        s = self.screen
+        panel = pygame.Rect(240, 90, 800, 360)
+        layout.panel(s, panel)
+        x, w = panel.x + 24, panel.w - 48
+        layout.blit_line(s, "eco.title", (x, panel.y + 16, w, 36),
+                         config.COLOR_WARN, size=28, align="center")
+        layout.blit_block(s, "eco.subtitle", x, panel.y + 66, w, 66,
+                          config.COLOR_TEXT, size=20, align="center", valign="center")
+        address = getattr(self.commander, "address", None)
+        if address is not None:
+            layout.blit_line(s, message("commander.local.url", url=raw_text(
+                f"http://{address[0]}:{address[1]}/")),
+                (x, panel.y + 150, w, 32), config.COLOR_TEXT, size=22, align="center")
+        layout.blit_line(s, message(
+            "eco.state.paused" if self.paused else "eco.state.running",
+            time=raw_text(self.world.format_time()),
+            scale=raw_text(str(self.time_scale))),
+            (x, panel.y + 200, w, 32),
+            config.COLOR_WARN if self.paused else config.COLOR_OK,
+            size=24, align="center")
+        layout.blit_line(s, "eco.hint", (x, panel.bottom - 56, w, 30),
+                         config.COLOR_TEXT_DIM, size=16, align="center")
+
     def draw(self) -> None:
         self._apply_text_size()
         s = self.screen
+        eco = self._eco_display_active()
         s.fill(config.COLOR_BG)
         if self.splash_active:
             draw_splash(s, self._t - self.splash_started_at, self.tr)
@@ -8515,6 +9315,11 @@ class Game:
             draw_simlog_view(self)
         elif self.in_menu:
             self.draw_menu()
+        elif eco:
+            self.draw_top_bar()
+            self.draw_eco_display()
+            self.draw_bottom_feed()
+            self.draw_bottom_telemetry()
         else:
             self.draw_top_bar()
             map_station = (not self.autocrew_overview_open
@@ -8580,7 +9385,7 @@ class Game:
                               config.COLOR_WARN, size=28, align="center")
         if (not self.in_menu and not self.splash_active and self.editor is None
                 and not self.simlog_view_open and not self.autocrew_overview_open
-                and self.tooltips_enabled
+                and self.tooltips_enabled and not eco
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
             payload = self.pinned_tooltip or self.tooltip_at(canvas)
@@ -8889,7 +9694,7 @@ class Game:
 
     @staticmethod
     def _live_traffic_row_rects():
-        return tuple(pygame.Rect(292, 150 + index * 84, 696, 44) for index in range(4))
+        return tuple(pygame.Rect(292, 150 + index * 84, 696, 44) for index in range(5))
 
     @staticmethod
     def _mask_credential(value: str) -> str:
@@ -8943,10 +9748,33 @@ class Game:
                 layout.blit_line(self.screen,
                                  raw_text(self._mask_credential(getattr(self.preferences, key))),
                                  field_rect, config.COLOR_TEXT_DIM, size=16)
+        test_row = rows[4]
+        color = config.COLOR_TEXT if self.live_traffic_sel == 4 else config.COLOR_TEXT_DIM
+        prefix = "> " if self.live_traffic_sel == 4 else "  "
+        layout.blit_line(self.screen, raw_text(prefix + self.tr("live_traffic.test_action")),
+                         (test_row.x, test_row.y, test_row.w, 22), color, size=18)
+        status_line = self.tr("live_traffic.test_result",
+                              ais=self._live_traffic_test_label("ais"),
+                              adsb=self._live_traffic_test_label("adsb"))
+        layout.blit_line(self.screen, raw_text(status_line),
+                         (test_row.x, test_row.y + 24, test_row.w, 24),
+                         config.COLOR_TEXT_DIM, size=16)
         layout.blit_block(self.screen,
                           "live_traffic.hint",
                           292, 636, 696, 58, config.COLOR_TEXT_DIM, size=16,
                           align="center")
+
+    def _live_traffic_test_label(self, side: str) -> str:
+        status, reason = self.live_traffic_test_result.get(side, ("idle", None))
+        if status == "running":
+            return self.tr("live_traffic.test_running")
+        if status == "no_key":
+            return self.tr("live_traffic.test_no_key")
+        if status == "ok":
+            return self.tr("live_traffic.test_ok")
+        if status == "error":
+            return self.tr("live_traffic.test_error", reason=(reason or "?")[:80])
+        return self.tr("live_traffic.test_idle")
 
     @localized
     def draw_pause_overlay(self) -> None:
@@ -9006,9 +9834,13 @@ class Game:
                 self._t += dt
                 for e in pygame.event.get():
                     self.handle_event(e)
+                    if e.type in _ECO_REFRESH_EVENTS:
+                        self._eco_drawn_at = float("-inf")
                 self.commander.pump(self)
                 self.live_traffic.pump(self)
                 self.update(dt, audio_dt=wall_dt)
+                if self._skip_eco_frame():
+                    continue
                 self.draw()
                 self.compose_frame()
         finally:

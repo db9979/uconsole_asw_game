@@ -9,6 +9,7 @@ from collections import OrderedDict, deque
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from importlib import resources
+import base64
 import hashlib
 import io
 import ipaddress
@@ -17,6 +18,7 @@ import logging
 import math
 import secrets
 import socket
+import struct
 import threading
 import time
 import re
@@ -24,7 +26,9 @@ import unicodedata
 
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
-                             HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M)
+                             HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M,
+                             LEVEL_ORDER, SAVE_SLOTS, SCENARIO_ORDER,
+                             TIME_SCALE_STEPS)
 _log = logging.getLogger(__name__)
 _CONNECTION_DEADLINE_S = 3.0
 _CONTACT_ASSET_ROUTE = re.compile(
@@ -38,12 +42,29 @@ _V2_STATION_LEASE_S = 15.0
 _V2_SESSION_LIMIT = 12
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
             "engine", "helicopter", "eloka")
+# Pseudo-role of the solo host command surface. It is never a station lease:
+# only a solo session carries it, and STATIONS (and every projection) stays nine.
+HOST_ROLE = "host"
+HOST_MAX_BYTES = 16 * 1024
 STATE_MAX_BYTES = 512 * 1024
 CHART_MAX_BYTES = 2 * 1024 * 1024
 _V2_STATION_CAPABILITIES = ("command", "direct_fire", "sonar_audio")
 SONAR_AUDIO_BYTES = 2048
+# Two seconds of blocks: a client that stalls for a moment catches up in order
+# instead of losing audio; older blocks are dropped and reported as a discontinuity.
+SONAR_AUDIO_RING_BLOCKS = 8
 SONAR_AUDIO_FRAMES = 1024
 SONAR_AUDIO_RATE = 4096
+SONAR_STREAM_ROUTE = "/ws/v2/sonar"
+SONAR_STREAM_MAGIC = b"UJS2"
+SONAR_STREAM_VERSION = 1
+SONAR_STREAM_HEADER_BYTES = 60
+SONAR_STREAM_MAX_BYTES = 4096
+SONAR_SCOPE_ROUTES = frozenset(
+    f"/?scope={scope}" for scope in
+    ("broadband", "lofar", "demon", "tma", "environment", "active")
+)
+_WEBSOCKET_GUID = b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 _SAFE_INTEGER_MAX = 2**53 - 1
 _V2_SONAR_AUDIO_FIELDS = {"protocol", "after", "world_session", "world_epoch",
                           "station_generation", "active_generation"}
@@ -63,6 +84,66 @@ def _json_bytes(value):
                       separators=(",", ":")).encode("ascii")
 
 
+def _quantized(values, maximum):
+    if not isinstance(values, (list, tuple)):
+        return b""
+    result = bytearray()
+    for value in values[:maximum]:
+        if type(value) not in (int, float) or not math.isfinite(value):
+            return b""
+        result.append(round(max(0.0, min(1.0, value)) * 255))
+    return bytes(result)
+
+
+def _sonar_stream_payload(state, sequence):
+    """Pack one detached projected sonar sample; never inspect simulation objects."""
+    try:
+        visual = state["sonar"]["visualization"]
+        broadband_rows = visual["broadband"]["history"]
+        lofar_rows = visual["lofar"]["history"]
+        demon_rows = visual["demon"]["history"]
+        broadband = _quantized(broadband_rows[-1]["bins"], 180) if broadband_rows else b""
+        lofar = _quantized(lofar_rows[-1]["bins"], 256) if lofar_rows else b""
+        demon = _quantized(demon_rows[-1]["bins"], 80) if demon_rows else b""
+        lofar_spectrum = _quantized(visual["lofar"]["spectrum"], 256)
+        demon_spectrum = _quantized(visual["demon"]["spectrum"], 80)
+        bearing = (float(lofar_rows[-1]["bearing"]) if lofar_rows else
+                   float(visual["receiver"]["listen_bearing"]))
+        broadband_age = (float(broadband_rows[-1]["age_s"])
+                         if broadband_rows else 0.0)
+        lofar_age = float(lofar_rows[-1]["age_s"]) if lofar_rows else 0.0
+        demon_age = float(demon_rows[-1]["age_s"]) if demon_rows else 0.0
+        epoch = int(state["epoch"])
+        sim_time = float(state["clock"]["sim"])
+        world_session = str(state["session"])
+    except (KeyError, IndexError, TypeError, ValueError, OverflowError):
+        return None
+    if (not all(math.isfinite(value) and value >= 0 for value in
+                (sim_time, broadband_age, lofar_age, demon_age))
+            or not math.isfinite(bearing)
+            or not 0 <= epoch <= _SAFE_INTEGER_MAX
+            or not 1 <= len(world_session) <= 64):
+        return None
+    header = struct.pack(
+        "<4sBBHQQdfHHHHHHfff", SONAR_STREAM_MAGIC, SONAR_STREAM_VERSION, 0,
+        SONAR_STREAM_HEADER_BYTES, sequence, epoch, sim_time, bearing,
+        len(broadband), len(lofar), len(demon), len(lofar_spectrum),
+        len(demon_spectrum), 0, broadband_age, lofar_age, demon_age)
+    payload = header + broadband + lofar + demon + lofar_spectrum + demon_spectrum
+    if len(header) != SONAR_STREAM_HEADER_BYTES or len(payload) > SONAR_STREAM_MAX_BYTES:
+        return None
+    return (world_session, epoch), payload
+
+
+def _websocket_frame(payload, opcode=2):
+    length = len(payload)
+    if length <= 125:
+        return bytes((0x80 | opcode, length)) + payload
+    if length <= 65535:
+        return bytes((0x80 | opcode, 126)) + struct.pack("!H", length) + payload
+    raise ValueError("websocket frame too large")
+
+
 SIMLOG_MAX_BYTES = 2 * 1024 * 1024
 EVENTS_MAX = 128
 SIMLOG_ENTRIES_MAX = 64
@@ -75,6 +156,7 @@ class V2Action:
     stations: frozenset
     validate_params: object
     direct_fire: bool = False
+    phases: frozenset = frozenset({"live"})
 
 
 def _no_params(params):
@@ -124,6 +206,16 @@ def _fusion_refs_params(params):
 
 def _single_ref_params(params):
     return type(params) is dict and set(params) == {"ref"} and _ref(params["ref"])
+
+
+def _track_label_params(params):
+    if (type(params) is not dict or set(params) != {"ref", "label"}
+            or not _ref(params["ref"]) or type(params["label"]) is not str):
+        return False
+    label = params["label"]
+    return (1 <= len(label) <= 16 and label.isascii()
+            and any(char.isalnum() for char in label)
+            and all(char.isalnum() or char == "-" for char in label))
 
 
 def _torpedo_params(params):
@@ -185,6 +277,13 @@ def _annotation_params(params):
             and _ref(params["ref"]) and _ref(params["candidate_ref"]))
 
 
+def _ecm_technique_params(params):
+    return (type(params) is dict and set(params) == {"ref", "technique"}
+            and _ref(params["ref"])
+            and params["technique"] in (
+                "noise", "rgpo", "vgpo", "false_targets"))
+
+
 def _waypoint_params(params):
     return (type(params) is dict and set(params) == {"x", "y"}
             and all(type(params[key]) in (int, float)
@@ -212,8 +311,63 @@ def _navigation_proposal_params(params):
             and (course is not None or speed is not None))
 
 
+def _ref_enabled_params(params):
+    return (type(params) is dict and set(params) == {"ref", "enabled"}
+            and _ref(params.get("ref"))
+            and type(params.get("enabled")) is bool)
+
+
+def _slot_params(params):
+    return (type(params) is dict and set(params) == {"slot"}
+            and type(params["slot"]) is int and 1 <= params["slot"] <= SAVE_SLOTS)
+
+
+def _time_scale_params(params):
+    return (type(params) is dict and set(params) == {"index"}
+            and type(params["index"]) is int
+            and 0 <= params["index"] < len(TIME_SCALE_STEPS))
+
+
+def _instructor_environment_params(params):
+    return (type(params) is dict and set(params) == {"sea_state", "event"}
+            and type(params["sea_state"]) is int
+            and 0 <= params["sea_state"] <= 6
+            and (params["event"] is None or params["event"] in (
+                "targets_quiet", "targets_cruise", "targets_flank",
+                "torpedo_transient")))
+
+
+def _new_game_params(params):
+    required = {"scenario", "world_mode"}
+    if (type(params) is not dict or not required <= set(params)
+            or not set(params) <= required | {"level", "seed"}):
+        return False
+    return (type(params["scenario"]) is str and params["scenario"] in SCENARIO_ORDER
+            and type(params["world_mode"]) is str
+            and params["world_mode"] in ("fixed", "procedural")
+            and ("level" not in params or type(params["level"]) is str
+                 and params["level"] in LEVEL_ORDER)
+            and ("seed" not in params or type(params["seed"]) is int
+                 and 1 <= params["seed"] < 1_000_000_000))
+
+
+_HOST_ANY = frozenset({"live", "paused"})
+_HOST_REPLACING = frozenset({"live", "paused", "menu", "ended"})
+_HOST_STATIONS = frozenset({HOST_ROLE})
+
 V2_ACTION_REGISTRY = {
     "acknowledge": V2Action(frozenset(STATIONS), _no_params),
+    # Solo-only host controls: admitted only for a session carrying the host
+    # surface, and each action states the exact phases it may run in.
+    "host_pause": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_ANY),
+    "host_resume": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_ANY),
+    "host_time_scale": V2Action(_HOST_STATIONS, _time_scale_params, phases=_HOST_ANY),
+    "host_save": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_ANY),
+    "host_load": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_REPLACING),
+    "host_new_game": V2Action(_HOST_STATIONS, _new_game_params,
+                              phases=_HOST_REPLACING),
+    "host_instructor_environment": V2Action(
+        _HOST_STATIONS, _instructor_environment_params, phases=_HOST_ANY),
     "bridge_set_course": V2Action(frozenset({"bridge"}), _course_params),
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
@@ -224,6 +378,7 @@ V2_ACTION_REGISTRY = {
     "clear_target_proposal": V2Action(frozenset({"sonar"}), _no_params),
     "opz_classify": V2Action(frozenset({"opz"}), _classification_params),
     "opz_affiliate": V2Action(frozenset({"opz"}), _affiliation_params),
+    "opz_set_track_id": V2Action(frozenset({"opz"}), _track_label_params),
     "opz_create_fusion": V2Action(frozenset({"opz"}), _fusion_refs_params),
     "opz_dissolve_fusion": V2Action(frozenset({"opz"}), _single_ref_params),
     "opz_set_radar": V2Action(frozenset({"opz"}), _radar_params),
@@ -242,6 +397,10 @@ V2_ACTION_REGISTRY = {
     "radio_capture_hfdf": V2Action(frozenset({"radio"}), _single_ref_params),
     "eloka_annotate": V2Action(frozenset({"eloka"}), _annotation_params),
     "eloka_clear_annotation": V2Action(frozenset({"eloka"}), _single_ref_params),
+    "eloka_set_jamming": V2Action(frozenset({"eloka"}), _ref_enabled_params),
+    "eloka_set_technique": V2Action(
+        frozenset({"eloka"}), _ecm_technique_params),
+    "eloka_set_auto": V2Action(frozenset({"eloka"}), _bool_params("enabled")),
     "sonar_set_listen_bearing": V2Action(frozenset({"sonar"}), _bearing_params),
     "sonar_set_focus": V2Action(frozenset({"sonar"}), _single_ref_params),
     "sonar_clear_focus": V2Action(frozenset({"sonar"}), _no_params),
@@ -317,7 +476,11 @@ def _v2_command_valid(command):
         return False
     action = command.get("action")
     spec = V2_ACTION_REGISTRY.get(action) if type(action) is str else None
-    if spec is None or command.get("station") not in spec.stations:
+    if (spec is None or type(command.get("station")) is not str
+            or command["station"] not in spec.stations):
+        return False
+    # The host surface has no station-activation context to bind to.
+    if command["station"] == HOST_ROLE and command.get("active_generation") != 0:
         return False
     for field in ("id", "world_session"):
         value = command.get(field)
@@ -370,12 +533,19 @@ class CommanderServer:
         self._rotate_code_locked()
         self._pair_failures = deque()
         self._sessions_v2 = {}
+        self._solo = False
         self._next_v2_ordinal = 0
         self._station_generations = {station: 0 for station in STATIONS}
-        self._sonar_audio = deque(maxlen=2)
+        self._sonar_audio = deque(maxlen=SONAR_AUDIO_RING_BLOCKS)
         self._sonar_audio_context = None
         self._sonar_audio_sequence = 0
+        self._sonar_stream_sequence = 0
+        self._sonar_stream_context = None
+        self._sonar_stream_payload = None
+        self._sonar_stream_condition = threading.Condition(self._lock)
+        self._sonar_stream_clients = {}
         self._v2_proposals = {}
+        self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._v2_events = {}
         self._v2_private_events = {}
         self._v2_simlogs = {}
@@ -386,6 +556,7 @@ class CommanderServer:
                            landmasses=[], disclaimer="")
         self._v2_states = {role: _json_bytes(unpublished)
                            for role in (None, *STATIONS)}
+        self._v2_sonar_compact_state = self._v2_states["sonar"]
         self._v2_charts = {role: _json_bytes(empty_chart)
                            for role in (None, *STATIONS)}
         supplied = {} if contact_analysis_assets is None else contact_analysis_assets
@@ -517,10 +688,16 @@ class CommanderServer:
 
     def _revoke_locked(self, *, rotate_code=False):
         self._clear_sonar_audio_locked()
+        self._sonar_stream_sequence += 1
+        self._sonar_stream_context = None
+        self._sonar_stream_payload = None
+        self._sonar_stream_condition.notify_all()
+        self._sonar_stream_clients.clear()
         for session in self._sessions_v2.values():
             self._clear_session_authority_locked(session, "session_revoked")
         self._sessions_v2.clear()
         self._v2_proposals.clear()
+        self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._v2_events.clear()
         self._v2_private_events.clear()
         self._v2_simlogs.clear()
@@ -550,6 +727,7 @@ class CommanderServer:
         session["active_station"] = station
         session["active_generation"] += 1
         session["held_commands"].clear()
+        self._sonar_stream_condition.notify_all()
         return True
 
     def _reject_station_commands_locked(self, session, station, reason):
@@ -585,6 +763,9 @@ class CommanderServer:
                 self._release_station_locked(session, station, reason)
         session["requests"].clear()
         session["simlog"] = False
+        if session["solo_host"]:
+            self._reject_station_commands_locked(session, HOST_ROLE, reason)
+            session["solo_host"] = False
         session["held_commands"].clear()
 
     @staticmethod
@@ -642,11 +823,17 @@ class CommanderServer:
             return False
         session = self._sessions_v2.get(envelope.session_digest)
         lease = None if session is None else session["leases"].get(envelope.role)
+        # A solo session holds every station at once, so a proposal made from one
+        # station stays current while the browser looks at another one; the
+        # lease generation and grant below still bind it to its exact origin.
+        active_current = (session is not None and (
+            session["solo_host"]
+            or (session["active_station"] == envelope.role
+                and session["active_generation"] == envelope.active_generation)))
         return (session is not None
                 and session["client_id"] == envelope.client_id
                 and session["ordinal"] == envelope.client_ordinal
-                and session["active_station"] == envelope.role
-                and session["active_generation"] == envelope.active_generation
+                and active_current
                 and lease is not None
                 and lease["generation"] == envelope.lease_generation
                 and lease["grants"]["command"] is True)
@@ -665,7 +852,10 @@ class CommanderServer:
             if now - session["last_get"] >= _V2_SESSION_IDLE_S:
                 self._clear_session_authority_locked(session)
                 del self._sessions_v2[digest]
-            elif session["leases"] and now - session["presence"] >= _V2_STATION_LEASE_S:
+            elif (session["leases"] and not session["solo_host"]
+                  and now - session["presence"] >= _V2_STATION_LEASE_S):
+                # A solo session has no competing client to free stations for;
+                # direct fire still requires fresh presence at apply time.
                 self._clear_session_authority_locked(session, "role_revoked")
 
     def revoke(self):
@@ -673,6 +863,91 @@ class CommanderServer:
         with self._lock:
             self._revoke_locked(rotate_code=True)
             self._pair_failures.clear()
+
+    @property
+    def solo_mode(self) -> bool:
+        with self._lock:
+            return self._solo
+
+    def solo_browser_present(self, max_age=5.0):
+        """Whether the paired solo browser polled its session within ``max_age`` s.
+
+        Host-local liveness only; it never grants or clears any authority.
+        """
+        with self._lock:
+            self._expire_locked()
+            if not (self._running and self._solo):
+                return False
+            now = time.monotonic()
+            return any(session["solo_host"] and 0 <= now - session["presence"] <= max_age
+                       for session in self._sessions_v2.values())
+
+    def set_solo_mode(self, enabled):
+        """Switch between crew and solo operation; every change is a new security session.
+
+        Solo mode is an explicit host decision: a single paired browser holds all
+        nine stations at once and may use the host command surface. Changing the
+        mode revokes all sessions and rotates the join code, so a client can never
+        carry authority across the switch.
+        """
+        if type(enabled) is not bool:
+            raise ValueError("solo mode must be a bool")
+        with self._lock:
+            if enabled is not self._solo:
+                self._solo = enabled
+                self._revoke_locked(rotate_code=True)
+                self._pair_failures.clear()
+
+    @staticmethod
+    def _solo_grants(station):
+        return {
+            "command": True,
+            "direct_fire": station in ("weapons", "helicopter", "opz"),
+            "sonar_audio": station == "sonar",
+        }
+
+    def _solo_grant_all_locked(self, session, active=None):
+        """Lease every station to the single solo session with full grants."""
+        for station in STATIONS:
+            self._station_generations[station] += 1
+            session["leases"][station] = {
+                "generation": self._station_generations[station],
+                "grants": self._solo_grants(station),
+            }
+        session["requests"].clear()
+        session["simlog"] = True
+        session["solo_host"] = True
+        session["host_generation"] += 1
+        session["active_station"] = None
+        self._set_active_station_locked(
+            session, active if active in session["leases"] else STATIONS[0])
+
+    def solo_rebase(self):
+        """Keep the solo session across a world replacement, as a fresh authority.
+
+        Session, cookie, CSRF and command history survive so the browser can read
+        the result of the very command that replaced the world. Every queued or
+        held command is rejected, every station is re-leased under a new
+        generation and the active generation advances, so anything the browser
+        prepared for the old world fails closed. The join code is not rotated.
+        """
+        with self._lock:
+            self._expire_locked()
+            self._clear_sonar_audio_locked()
+            self._v2_proposals.clear()
+            self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
+            self._v2_events.clear()
+            self._v2_private_events.clear()
+            self._v2_simlogs.clear()
+            for session in self._sessions_v2.values():
+                self._reject_session_commands_locked(session, "session_revoked")
+                if not session["solo_host"]:
+                    self._clear_session_authority_locked(session)
+                    continue
+                active = session["active_station"]
+                for station in tuple(session["leases"]):
+                    self._release_station_locked(session, station, "session_revoked")
+                self._solo_grant_all_locked(session, active)
 
     def client_statuses(self) -> list[dict]:
         """Return a detached, deterministic local-host roster."""
@@ -906,7 +1181,9 @@ class CommanderServer:
         """Detach one deterministic frame batch in station/client/FIFO order."""
         with self._lock:
             self._expire_locked()
+            # Host controls run first in a frame, then stations in fixed order.
             order = {station: index for index, station in enumerate(STATIONS)}
+            order[HOST_ROLE] = -1
             result = []
             for session in self._sessions_v2.values():
                 result.extend(session["command_queue"])
@@ -930,12 +1207,16 @@ class CommanderServer:
             if (session is None or session.get("client_id") != envelope.client_id
                     or session.get("ordinal") != envelope.client_ordinal):
                 return False
+            is_host = envelope.role == HOST_ROLE
             if not _v2_command_valid(body) or spec is None:
                 reason = "invalid_schema"
-            elif (envelope.role not in session["leases"]
+            elif ((not session["solo_host"] if is_host
+                   else envelope.role not in session["leases"])
                   or body["station"] != envelope.role):
                 reason = "role_revoked"
-            elif (session["leases"][envelope.role]["generation"] != envelope.lease_generation
+            elif ((session["host_generation"] if is_host
+                   else session["leases"][envelope.role]["generation"])
+                  != envelope.lease_generation
                   or body["station_generation"] != envelope.lease_generation):
                 reason = "stale_generation"
             elif body["active_generation"] != envelope.active_generation:
@@ -948,18 +1229,22 @@ class CommanderServer:
                     or type(session.get("presence")) not in (int, float)
                     or not 0 <= now - session["presence"] <= 2.0):
                 reason = "direct_fire_unavailable"
-            elif not session["leases"][envelope.role]["grants"]["command"]:
+            elif (not is_host
+                  and not session["leases"][envelope.role]["grants"]["command"]):
                 reason = "grant_revoked"
             elif (type(now) not in (int, float) or not math.isfinite(now)
                   or not 0 <= now - envelope.received_at <= _V2_COMMAND_MAX_AGE_S):
                 reason = "expired"
-            elif phase != "live":
+            elif phase not in spec.phases:
                 reason = "phase_blocked"
             elif body["world_session"] != world_session:
                 reason = "stale_world_session"
-            elif body["world_epoch"] != world_epoch:
+            elif not is_host and body["world_epoch"] != world_epoch:
+                # Host controls bind the world session only: pause and resume move
+                # the epoch themselves, and queued input is invalidated anyway.
                 reason = "stale_world_epoch"
-            elif body["resource_revision"] != resource_revision:
+            elif not is_host and body["resource_revision"] != resource_revision:
+                # Host controls reference no resource, only the world and epoch.
                 reason = "revision_conflict"
             else:
                 try:
@@ -982,7 +1267,7 @@ class CommanderServer:
                                "salvo_limit", "empty", "no_tube",
                                "weapons_down", "weapons_degraded", "out_of_range",
                                 "opz_degraded", "active_limit", "no_fuel",
-                                "weather_unsafe"}
+                                "weather_unsafe", "no_save", "save_failed"}
                           else "action_rejected")
             return self._finish_v2_locked(
                 session, envelope, "applied" if reason == "ok" else "rejected", reason)
@@ -993,11 +1278,15 @@ class CommanderServer:
         status_fields = {"protocol", "version", "session", "epoch", "revision",
                          "seq", "phase", "role", "chart_revision"}
         assigned_fields = status_fields | {"clock", "environment", "mission",
-                                           "autocrew"}
+                                           "autocrew", "audio"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")
         encoded_states, encoded_charts = {}, {}
+        compact_sonar = None
+        # Roles with identical visibility share one chart object, so it is
+        # serialised once per publication instead of once per role.
+        chart_bytes_by_object = {}
         for role in (None, *STATIONS):
             state, chart = states[role], charts[role]
             redacted = state == states[None] and chart == charts[None]
@@ -1013,15 +1302,54 @@ class CommanderServer:
                     or state.get("chart_revision") != chart.get("revision")):
                 raise ValueError("invalid v2 publication")
             try:
-                state_bytes, chart_bytes = _json_bytes(state), _json_bytes(chart)
+                state_bytes = _json_bytes(state)
+                chart_bytes = chart_bytes_by_object.get(id(chart))
+                if chart_bytes is None:
+                    chart_bytes = chart_bytes_by_object[id(chart)] = _json_bytes(chart)
             except (TypeError, ValueError, OverflowError):
                 raise ValueError("invalid v2 publication") from None
             if len(state_bytes) > STATE_MAX_BYTES or len(chart_bytes) > CHART_MAX_BYTES:
                 raise ValueError("v2 publication size limit exceeded")
             encoded_states[role], encoded_charts[role] = state_bytes, chart_bytes
+            if (role == "sonar" and state.get("role") == "sonar"
+                    and isinstance(state.get("sonar"), dict)
+                    and isinstance(state["sonar"].get("visualization"), dict)):
+                compact = json.loads(state_bytes.decode("ascii"))
+                visual = compact["sonar"]["visualization"]
+                visual["broadband"]["history"] = []
+                visual["lofar"]["history"] = []
+                visual["lofar"]["spectrum"] = []
+                visual["demon"]["history"] = []
+                visual["demon"]["spectrum"] = []
+                compact_sonar = _json_bytes(compact)
         with self._lock:
             self._v2_states = encoded_states
             self._v2_charts = encoded_charts
+            self._v2_sonar_compact_state = compact_sonar or encoded_states["sonar"]
+            self._sonar_stream_sequence += 1
+            packed = (_sonar_stream_payload(states["sonar"],
+                                             self._sonar_stream_sequence)
+                      if states["sonar"].get("role") == "sonar" else None)
+            if packed is None:
+                self._sonar_stream_context = None
+                self._sonar_stream_payload = None
+            else:
+                self._sonar_stream_context, self._sonar_stream_payload = packed
+            self._sonar_stream_condition.notify_all()
+
+    def publish_host_v2(self, host: dict):
+        """Publish the solo host view; only sessions with the host surface read it."""
+        if (type(host) is not dict or host.get("protocol") != 2
+                or type(host.get("phase")) is not str):
+            raise ValueError("invalid v2 host publication")
+        try:
+            encoded = _json_bytes(host)
+        except (TypeError, ValueError, OverflowError):
+            raise ValueError("invalid v2 host publication") from None
+        if len(encoded) > HOST_MAX_BYTES:
+            raise ValueError("v2 host publication size limit exceeded")
+        with self._lock:
+            self._v2_host = encoded
 
     @staticmethod
     def _proposal_value(value, navigation):
@@ -1062,20 +1390,21 @@ class CommanderServer:
             raise ValueError("invalid v2 proposal publication")
         with self._lock:
             self._expire_locked()
+            # One record per (session, role): a session that holds several
+            # stations may have a sonar target and a bridge navigation proposal
+            # pending at once, and each is only served to its own active role.
             records = {}
             for authority, kind, value in (
                     (target_authority, "target", target),
                     (navigation_authority, "navigation", navigation)):
                 if authority is None or not self._authority_current_locked(authority):
                     continue
-                record = records.setdefault(authority.session_digest, {
+                record = records.setdefault((authority.session_digest, authority.role), {
                     "protocol": 2, "session": world_session, "epoch": world_epoch,
                     "role": authority.role, "target": None, "navigation": None})
-                if record["role"] != authority.role:
-                    raise ValueError("invalid v2 proposal publication")
                 record[kind] = dict(value)
-            self._v2_proposals = {digest: _json_bytes(value)
-                                  for digest, value in records.items()}
+            self._v2_proposals = {key: _json_bytes(value)
+                                  for key, value in records.items()}
 
     @staticmethod
     def _event_rows(rows):
@@ -1141,7 +1470,7 @@ class CommanderServer:
             self._v2_private_events = encoded_private
 
     def publish_simlog_v2(self, *, world_session, world_epoch, entries_by_role):
-        """Publish bounded histories composed solely of prior role projections."""
+        """Publish bounded host-granted histories including diagnostic truth."""
         if (not _ref(world_session) or type(world_epoch) is not int
                 or not 0 <= world_epoch <= _SAFE_INTEGER_MAX
                 or type(entries_by_role) is not dict
@@ -1155,7 +1484,7 @@ class CommanderServer:
             detached = []
             for entry in entries:
                 if (type(entry) is not dict
-                        or set(entry) != {"seq", "t", "stamp", "state"}
+                        or set(entry) != {"seq", "t", "stamp", "state", "truth"}
                         or type(entry["seq"]) is not int
                         or not previous < entry["seq"] <= _SAFE_INTEGER_MAX
                         or type(entry["t"]) not in (int, float)
@@ -1166,7 +1495,19 @@ class CommanderServer:
                         or entry["state"].get("protocol") != 2
                         or entry["state"].get("role") != role
                         or entry["state"].get("session") != world_session
-                        or entry["state"].get("epoch") != world_epoch):
+                        or entry["state"].get("epoch") != world_epoch
+                        or type(entry["truth"]) is not dict
+                        or set(entry["truth"]) != {
+                            "mission_t", "timescale", "result", "world", "ship",
+                            "weapons", "subs", "surfaces", "animals", "torpedoes",
+                            "enemy_torpedoes", "decoys", "asms", "essms", "asrocs",
+                            "nixies", "buoys", "helo", "flights", "raiders", "radars"}
+                        or any(type(entry["truth"].get(key)) is not list
+                               or len(entry["truth"][key]) > 1024
+                               for key in ("subs", "surfaces", "animals", "torpedoes",
+                                           "enemy_torpedoes", "decoys", "asms", "essms",
+                                           "asrocs", "nixies", "buoys", "flights",
+                                           "raiders"))):
                     raise ValueError("invalid v2 simlog publication")
                 previous = entry["seq"]
                 detached.append(entry)
@@ -1261,6 +1602,7 @@ class _HTTPServer(HTTPServer):
         self.slots = threading.BoundedSemaphore(_CONNECTION_SLOT_LIMIT)
         self.work_lock = threading.Lock()
         self.workers = {}
+        self.upgrade_events = {}
         super().__init__(address, _Handler)
         host, port = self.server_address
         self.hosts = {f"{host}:{port}"}
@@ -1281,11 +1623,13 @@ class _HTTPServer(HTTPServer):
                                   name="commander-request", daemon=True)
         with self.work_lock:
             self.workers[worker] = request
+            self.upgrade_events[worker] = threading.Event()
         try:
             worker.start()
         except BaseException:
             with self.work_lock:
                 self.workers.pop(worker)
+                self.upgrade_events.pop(worker, None)
             self.slots.release()
             self.shutdown_request(request)
             raise
@@ -1301,8 +1645,13 @@ class _HTTPServer(HTTPServer):
         # A socket inactivity timeout alone can be extended forever by trickled
         # bytes, including inside buffered readline/read calls. Interrupt all I/O
         # at the absolute deadline; keep the worker slot until its timer is joined.
+        with self.work_lock:
+            upgraded = self.upgrade_events[threading.current_thread()]
+        def interrupt_if_http():
+            if not upgraded.is_set():
+                self._interrupt_connection(request)
         timer = threading.Timer(max(0.0, deadline - time.monotonic()),
-                                self._interrupt_connection, args=(request,))
+                                interrupt_if_http)
         timer.name = "commander-deadline"
         timer.daemon = True
         try:
@@ -1317,7 +1666,16 @@ class _HTTPServer(HTTPServer):
             self.shutdown_request(request)
             with self.work_lock:
                 self.workers.pop(threading.current_thread(), None)
+                self.upgrade_events.pop(threading.current_thread(), None)
             self.slots.release()
+
+    def mark_upgraded(self):
+        with self.work_lock:
+            event = self.upgrade_events.get(threading.current_thread())
+            if event is None:
+                return False
+            event.set()
+            return True
 
     def handle_error(self, request, client_address):
         # Never include request data, credentials, or client addresses in logs.
@@ -1423,7 +1781,9 @@ class _Handler(BaseHTTPRequestHandler):
             self.rfile = stream
         self.close_connection = True
         for name in ("Host", "Origin", "Content-Length", "Content-Type",
-                     "Authorization", "Cookie", "X-U-Jagd-CSRF"):
+                     "Authorization", "Cookie", "X-U-Jagd-CSRF", "Upgrade",
+                     "Sec-WebSocket-Key", "Sec-WebSocket-Version",
+                     "Sec-WebSocket-Protocol"):
             if len(self.headers.get_all(name, [])) > 1:
                 self.send_error(400)
                 return
@@ -1507,6 +1867,9 @@ class _Handler(BaseHTTPRequestHandler):
             "simlog": session["simlog"],
             "grants": dict(active_grants, simlog=session["simlog"]),
             "presence": session["presence"],
+            # Host command surface: only a solo session carries one.
+            "host": ({"generation": session["host_generation"]}
+                     if session["solo_host"] else None),
             "stations": {
                 station: {
                     "status": ("available" if station not in occupied else
@@ -1556,27 +1919,124 @@ class _Handler(BaseHTTPRequestHandler):
 
     @staticmethod
     def _v2_cookie(token):
-        return f"{_V2_COOKIE}={token}; Path=/api/v2; HttpOnly; SameSite=Strict"
+        return f"{_V2_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict"
 
     @staticmethod
     def _clear_v2_cookie():
-        return (f"{_V2_COOKIE}=; Path=/api/v2; HttpOnly; SameSite=Strict; "
+        return (f"{_V2_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; "
                 "Max-Age=0")
 
     def _v2_unauthorized(self, presented):
         self._reply(401, {"error": "unauthorized"},
                     set_cookie=self._clear_v2_cookie() if presented else None)
 
+    def _sonar_websocket(self):
+        """Stream immutable projected samples to one active Sonar client."""
+        owner = self.server.owner
+        if (self.headers.get("Origin") != f"http://{self.headers.get('Host')}"
+                or self.headers.get("Upgrade", "").lower() != "websocket"
+                or "upgrade" not in {item.strip().lower() for item in
+                                      self.headers.get("Connection", "").split(",")}
+                or self.headers.get("Sec-WebSocket-Version") != "13"
+                or self.headers.get("Sec-WebSocket-Protocol") != "u-jagd-sonar-v2"):
+            self.send_error(400)
+            return
+        key = self.headers.get("Sec-WebSocket-Key")
+        try:
+            decoded_key = base64.b64decode(key or "", validate=True)
+        except (ValueError, TypeError):
+            decoded_key = b""
+        if len(decoded_key) != 16:
+            self.send_error(400)
+            return
+        client_token = object()
+        with owner._lock:
+            owner._expire_locked()
+            try:
+                session, digest, presented = self._authenticated_v2_locked(renew=True)
+            except (UnicodeEncodeError, ValueError):
+                self.send_error(400)
+                return
+            if session is None:
+                self._v2_unauthorized(presented)
+                return
+            lease = session["leases"].get("sonar")
+            if (session["active_station"] != "sonar" or lease is None
+                    or owner._sonar_stream_payload is None
+                    or owner._sonar_stream_context is None):
+                self.send_error(403)
+                return
+            if digest in owner._sonar_stream_clients:
+                self._reply(409, {"error": "stream_exists"})
+                return
+            station_generation = lease["generation"]
+            active_generation = session["active_generation"]
+            world_context = owner._sonar_stream_context
+            owner._sonar_stream_clients[digest] = client_token
+        accept = base64.b64encode(hashlib.sha1(
+            key.encode("ascii") + _WEBSOCKET_GUID).digest()).decode("ascii")
+        self.send_response_only(101)
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", accept)
+        self.send_header("Sec-WebSocket-Protocol", "u-jagd-sonar-v2")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if not self.server.mark_upgraded():
+            return
+        last_sequence = -1
+        try:
+            while True:
+                with owner._sonar_stream_condition:
+                    owner._expire_locked()
+                    current = owner._sessions_v2.get(digest)
+                    lease = None if current is None else current["leases"].get("sonar")
+                    valid = (owner._running and current is session
+                             and owner._sonar_stream_clients.get(digest) is client_token
+                             and current["active_station"] == "sonar"
+                             and lease is not None
+                             and lease["generation"] == station_generation
+                             and current["active_generation"] == active_generation
+                             and owner._sonar_stream_context == world_context)
+                    if not valid:
+                        break
+                    if owner._sonar_stream_sequence == last_sequence:
+                        owner._sonar_stream_condition.wait(timeout=1.0)
+                        continue
+                    last_sequence = owner._sonar_stream_sequence
+                    payload = owner._sonar_stream_payload
+                    current["last_get"] = time.monotonic()
+                if payload is not None:
+                    self.connection.sendall(_websocket_frame(payload))
+        except (OSError, TimeoutError, ValueError):
+            pass
+        finally:
+            with owner._lock:
+                if owner._sonar_stream_clients.get(digest) is client_token:
+                    del owner._sonar_stream_clients[digest]
+            try:
+                self.connection.sendall(_websocket_frame(
+                    struct.pack("!H", 1008), opcode=8))
+            except OSError:
+                pass
+        self.close_connection = True
+
     def _get(self):
         owner = self.server.owner
-        if self.path in self.server.assets:
+        if self.path == SONAR_STREAM_ROUTE:
+            self._sonar_websocket()
+        elif self.path in SONAR_SCOPE_ROUTES:
+            content_type, body = self.server.assets["/"]
+            self._reply(200, body, content_type)
+        elif self.path in self.server.assets:
             content_type, body = self.server.assets[self.path]
             self._reply(200, body, content_type)
         elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
             self._reply(200, owner._translations[self.path[-2:]])
-        elif self.path in ("/api/v2/session", "/api/v2/state", "/api/v2/chart",
+        elif self.path in ("/api/v2/session", "/api/v2/state",
+                           "/api/v2/state?sonar=stream", "/api/v2/chart",
                            "/api/v2/results", "/api/v2/proposals",
-                           "/api/v2/events", "/api/v2/simlog"):
+                           "/api/v2/events", "/api/v2/simlog", "/api/v2/host"):
             try:
                 with owner._lock:
                     session, digest, presented = self._authenticated_v2_locked(renew=True)
@@ -1589,16 +2049,18 @@ class _Handler(BaseHTTPRequestHandler):
                     elif session is not None and self.path == "/api/v2/results":
                         body = _json_bytes({"protocol": 2, "results": [
                             dict(result) for result in session["command_results"]]})
-                    elif session is not None and self.path == "/api/v2/state":
-                        body = owner._v2_states[role]
+                    elif session is not None and self.path == "/api/v2/host":
+                        body = owner._v2_host if session["solo_host"] else None
+                    elif session is not None and self.path in (
+                            "/api/v2/state", "/api/v2/state?sonar=stream"):
+                        body = (owner._v2_sonar_compact_state
+                                if self.path.endswith("?sonar=stream")
+                                and role == "sonar" else owner._v2_states[role])
                     elif session is not None and self.path == "/api/v2/chart":
                         body = owner._v2_charts[role]
                     elif session is not None and self.path == "/api/v2/proposals":
-                        cached = (owner._v2_proposals.get(digest)
-                                  if role is not None else None)
-                        if cached is not None and json.loads(
-                                cached.decode("ascii")).get("role") == role:
-                            body = cached
+                        body = (owner._v2_proposals.get((digest, role))
+                                if role is not None else None)
                         if body is None and role is not None:
                             state = json.loads(owner._v2_states[role].decode("ascii"))
                             body = _json_bytes({"protocol": 2,
@@ -1657,7 +2119,8 @@ class _Handler(BaseHTTPRequestHandler):
                     if (not 1 <= len(name) <= 32
                             or any(unicodedata.category(char).startswith("C") for char in name)):
                         status, response = 400, {"error": "invalid_request"}
-                    elif len(owner._sessions_v2) >= _V2_SESSION_LIMIT:
+                    elif len(owner._sessions_v2) >= (1 if owner._solo
+                                                     else _V2_SESSION_LIMIT):
                         status, response = 429, {"error": "session_limit"}
                     elif not secrets.compare_digest(
                             body["code"].encode("utf-8", errors="surrogatepass"),
@@ -1679,6 +2142,8 @@ class _Handler(BaseHTTPRequestHandler):
                             "active_station": None,
                             "active_generation": 0,
                             "simlog": False,
+                            "solo_host": False,
+                            "host_generation": 0,
                             "presence": time.monotonic(),
                             "last_get": time.monotonic(),
                             "last_command_seq": -1,
@@ -1687,6 +2152,8 @@ class _Handler(BaseHTTPRequestHandler):
                             "command_results": deque(maxlen=_V2_COMMAND_HISTORY_LIMIT),
                             "held_commands": {},
                         }
+                        if owner._solo:
+                            owner._solo_grant_all_locked(session)
                         owner._next_v2_ordinal += 1
                         owner._sessions_v2[hashlib.sha256(token.encode("ascii")).digest()] = session
                         self._reply(200, self._session_v2_body(session, owner._sessions_v2),
@@ -1789,14 +2256,17 @@ class _Handler(BaseHTTPRequestHandler):
                                 status, response = 202, {"status": "pending", "id": body["id"]}
                             else:
                                 status, response = 200, dict(previous[1])
-                        elif (body["station"] != session["active_station"]
-                              or body["station"] not in session["leases"]
-                              or not session["leases"][body["station"]]["grants"]["command"]):
+                        elif (not session["solo_host"] if body["station"] == HOST_ROLE
+                              else (body["station"] != session["active_station"]
+                                    or body["station"] not in session["leases"]
+                                    or not session["leases"][body["station"]]["grants"]["command"])):
                             status, response = 403, {"error": "forbidden"}
                         elif (body["station_generation"]
-                              != session["leases"][body["station"]]["generation"]):
+                              != (session["host_generation"] if body["station"] == HOST_ROLE
+                                  else session["leases"][body["station"]]["generation"])):
                             status, response = 409, {"error": "stale_generation"}
-                        elif body["active_generation"] != session["active_generation"]:
+                        elif (body["station"] != HOST_ROLE
+                              and body["active_generation"] != session["active_generation"]):
                             status, response = 409, {"error": "stale_active_generation"}
                         elif body["seq"] <= session["last_command_seq"]:
                             status, response = 409, {"error": "out_of_order"}

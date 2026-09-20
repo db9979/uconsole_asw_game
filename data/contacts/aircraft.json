@@ -95,7 +95,8 @@
         "sensor.su_25.radar"
       ],
       "emitter_keys": [
-        "emitter.su_25.radar"
+        "emitter.su_25.radar",
+        "emitter.su_25.fire_control"
       ],
       "launcher_keys": [],
       "magazine_keys": [],
@@ -320,7 +321,12 @@
       "prf_band_hz": null,
       "modulation_codes": [
         "unknown"
-      ]
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "mission_search",
+      "power_class": "medium",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
     },
     {
       "key": "emitter.civil_transit.radar",
@@ -332,7 +338,12 @@
       "prf_band_hz": null,
       "modulation_codes": [
         "unknown"
-      ]
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "weather_navigation",
+      "power_class": "low",
+      "operating_period_s": 40.0,
+      "on_duration_s": 8.0
     },
     {
       "key": "emitter.su_25.radar",
@@ -344,7 +355,33 @@
       "prf_band_hz": null,
       "modulation_codes": [
         "unknown"
-      ]
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "mission_search",
+      "power_class": "medium",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.su_25.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "pulse_doppler"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "attack",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
     }
   ],
   "weapons": [],

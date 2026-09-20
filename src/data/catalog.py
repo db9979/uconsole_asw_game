@@ -247,6 +247,11 @@ class EmitterProfile:
     frequency_band_hz: tuple[float, float]
     prf_band_hz: tuple[float, float] | None
     modulation_codes: tuple[str, ...]
+    radar_role: str = "surface_search"
+    operating_mode: str = "search"
+    power_class: str = "medium"
+    operating_period_s: float = 10.0
+    on_duration_s: float = 10.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -599,7 +604,14 @@ SENSOR_FIELDS = {
     "sensitivity_db", "cadence_s", "bearing_uncertainty_deg",
     "range_uncertainty_nm", "depth_uncertainty_m",
 }
-EMITTER_FIELDS = {"key", "domain", "frequency_band_hz", "prf_band_hz", "modulation_codes"}
+EMITTER_FIELDS = {
+    "key", "domain", "frequency_band_hz", "prf_band_hz", "modulation_codes",
+    "radar_role", "operating_mode", "power_class", "operating_period_s",
+    "on_duration_s",
+}
+LEGACY_EMITTER_FIELDS = {
+    "key", "domain", "frequency_band_hz", "prf_band_hz", "modulation_codes",
+}
 WEAPON_FIELDS = {
     "key", "weapon_type", "target_domains", "runtime_profile_key", "maximum_speed_kn",
     "engagement_range_nm", "seeker_type", "guidance_type", "payload_type",
@@ -627,6 +639,9 @@ PROPULSOR_TYPES = {"propeller", "pumpjet", "waterjet", "other", "unknown"}
 SENSOR_DOMAINS = {"ais", "esm", "hfdf", "radar", "sonar", "visual"}
 SENSOR_MODES = {"active", "passive"}
 MODULATION_CODES = {"continuous_wave", "frequency_agile", "pulse", "pulse_doppler", "unknown"}
+RADAR_ROLES = {"navigation", "surface_search", "air_search", "multi_function",
+               "fire_control", "missile_seeker"}
+RADAR_POWER_CLASSES = {"low", "medium", "high"}
 WEAPON_TYPES = {"asm", "asroc", "ciws", "sam", "torpedo"}
 TARGET_DOMAINS = {"air", "subsurface", "surface"}
 SEEKER_TYPES = {"acoustic_active", "acoustic_passive", "command", "infrared", "none", "radar_active"}
@@ -1005,17 +1020,34 @@ def _emitter_from_dict(value, where):
     _schema_key(value["key"], f"{where}.key", "emitter.")
     if value["domain"] != "radar":
         raise ValueError(f"{where}.domain: only radar emitters are supported")
-    _schema_pair(value["frequency_band_hz"], f"{where}.frequency_band_hz", 1e12)
-    _schema_number(value["frequency_band_hz"][0], f"{where}.frequency_band_hz", positive=True)
+    _schema_pair(value["frequency_band_hz"], f"{where}.frequency_band_hz", 18e9)
+    _schema_number(value["frequency_band_hz"][0], f"{where}.frequency_band_hz",
+                   low=500e6, high=18e9)
     _schema_nullable_pair(value["prf_band_hz"], f"{where}.prf_band_hz", 1e7,
                           positive=True)
     _schema_string_array(value["modulation_codes"], f"{where}.modulation_codes",
                          MODULATION_CODES, maximum=16, nonempty=True)
+    if value["radar_role"] not in RADAR_ROLES:
+        raise ValueError(f"{where}.radar_role: invalid radar role")
+    if value["power_class"] not in RADAR_POWER_CLASSES:
+        raise ValueError(f"{where}.power_class: invalid power class")
+    if not isinstance(value["operating_mode"], str) or not value["operating_mode"]:
+        raise ValueError(f"{where}.operating_mode: non-empty string expected")
+    _schema_number(value["operating_period_s"], f"{where}.operating_period_s",
+                   low=.1, high=3600)
+    _schema_number(value["on_duration_s"], f"{where}.on_duration_s",
+                   low=.05, high=3600)
+    if value["on_duration_s"] > value["operating_period_s"]:
+        raise ValueError(f"{where}: on duration exceeds operating period")
     return EmitterProfile(
         key=value["key"], domain=value["domain"],
         frequency_band_hz=_nullable_pair(value["frequency_band_hz"]),
         prf_band_hz=_nullable_pair(value["prf_band_hz"]),
-        modulation_codes=tuple(value["modulation_codes"]))
+        modulation_codes=tuple(value["modulation_codes"]),
+        radar_role=value["radar_role"], operating_mode=value["operating_mode"],
+        power_class=value["power_class"],
+        operating_period_s=value["operating_period_s"],
+        on_duration_s=value["on_duration_s"])
 
 
 def _weapon_from_dict(value, where):
@@ -1164,6 +1196,11 @@ def _v2_to_dict(value):
             "frequency_band_hz": list(value.frequency_band_hz),
             "prf_band_hz": None if value.prf_band_hz is None else list(value.prf_band_hz),
             "modulation_codes": list(value.modulation_codes),
+            "radar_role": value.radar_role,
+            "operating_mode": value.operating_mode,
+            "power_class": value.power_class,
+            "operating_period_s": value.operating_period_s,
+            "on_duration_s": value.on_duration_s,
         }
     if isinstance(value, WeaponProfile):
         return {
@@ -1680,6 +1717,8 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
         }
         if not sensor_emitters.issubset(profile.emitter_keys):
             raise ValueError(f"profile {profile_key!r}: sensor emitter not attached to platform")
+        if len(profile.emitter_keys) > 4:
+            raise ValueError(f"profile {profile_key!r}: radar suite exceeds four emitters")
         compatible = {
             weapon for key in profile.launcher_keys for weapon in launchers[key].weapon_keys
         }
@@ -1883,6 +1922,31 @@ def _catalog_from_documents(documents, db_source, provenance_document=None,
     return cat
 
 
+def _normalize_legacy_emitters(values):
+    """Recognize the one pre-emissions same-v10 component shape exactly."""
+    if (not values or not all(isinstance(row, dict)
+                              and set(row) == LEGACY_EMITTER_FIELDS
+                              for row in values)):
+        return values
+    normalized = []
+    for original in values:
+        row = copy.deepcopy(original)
+        key = row["key"]
+        aircraft = "mil_patrol" in key or "su_25" in key
+        role = ("air_search" if aircraft else
+                "multi_function" if ".warship_" in key else "navigation")
+        row.update(
+            radar_role=role,
+            operating_mode=("mission_search" if aircraft else
+                            "combined_search" if role == "multi_function"
+                            else "navigation"),
+            power_class=("medium" if aircraft else
+                         "high" if role == "multi_function" else "low"),
+            operating_period_s=10.0, on_duration_s=10.0)
+        normalized.append(row)
+    return normalized
+
+
 def catalog_from_runtime_snapshot(snapshot) -> ContactCatalog:
     """Validate an untrusted save snapshot and reconstruct its runtime catalog."""
     if not isinstance(snapshot, dict) or type(snapshot.get("version")) is not int:
@@ -1936,13 +2000,18 @@ def catalog_from_runtime_snapshot(snapshot) -> ContactCatalog:
                                           for field, _ in V2_REGISTRIES):
             raise ValueError("catalog_snapshot.components: v1 component data")
         for field, factory in V2_REGISTRIES:
+            values = (_normalize_legacy_emitters(component[field])
+                      if field == "emitters" else component[field])
             _schema_object_array(
-                component[field], f"catalog_snapshot.components.{filename}.{field}",
+                values, f"catalog_snapshot.components.{filename}.{field}",
                 factory)
         documents[filename] = {
             "version": document_version,
             "entries": copy.deepcopy(entries[filename]),
-            **{field: copy.deepcopy(component[field]) for field, _ in V2_REGISTRIES},
+            **{field: copy.deepcopy(
+                _normalize_legacy_emitters(component[field])
+                if field == "emitters" else component[field])
+               for field, _ in V2_REGISTRIES},
         }
     cat = _catalog_from_documents(
         documents, "save-snapshot", runtime_bindings=bindings,

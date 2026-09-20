@@ -31,6 +31,9 @@ class SensorTrack:
     measurement_history: list[dict] | None = None
     position_seen: float | None = None
     bearing_uncertainty_deg: float | None = None
+    derived_course: float | None = None
+    derived_speed: float | None = None
+    altitude_m: float | None = None
 
     def age(self, now: float) -> float:
         return max(0.0, now - self.last_seen)
@@ -38,7 +41,7 @@ class SensorTrack:
     def display_quality(self, now: float, stale_s: float) -> float:
         return max(0.0, self.quality * (1.0 - self.age(now) / stale_s))
 
-    def derived_motion(self) -> tuple[float | None, float | None]:
+    def _raw_fit_motion(self) -> tuple[float | None, float | None]:
         """Course/speed from a least-squares fit through the retained fixes.
 
         Plain radar/ESM measurements never carry a true course, so the chart
@@ -67,6 +70,18 @@ class SensorTrack:
         course = (math.degrees(math.atan2(vx, -vy)) % 360.0
                   if speed_kn > 1e-3 else None)
         return course, speed_kn
+
+    def derived_motion(self) -> tuple[float | None, float | None]:
+        """Displayed course/speed for contacts with no true-heading sensor.
+
+        Both are slew-rate-capped presentations of the raw least-squares fit
+        (see `_raw_fit_motion()`) maintained by `TrackPicture.observe()`: the
+        raw fit alone still swings between successive re-fits by however much
+        one noisy fix shifts the regression, which read as the contact's
+        course/speed flickering every update even while its true motion was
+        steady.
+        """
+        return self.derived_course, self.derived_speed
 
 
 class TrackPicture:
@@ -110,7 +125,8 @@ class TrackPicture:
                 quality: float, now: float, label: str,
                 hostile: bool = False, jamming: bool = False,
                 position_time: float | None = None,
-                bearing_uncertainty_deg: float | None = None) -> SensorTrack:
+                bearing_uncertainty_deg: float | None = None,
+                altitude_m: float | None = None) -> SensorTrack:
         raw_bearing = bearing % 360.0
         x = y = None
         if range_nm is not None:
@@ -138,7 +154,8 @@ class TrackPicture:
                 measurement_epoch=epoch, measurement_history=[measurement],
                 position_seen=(position_time if position_time is not None else now)
                 if x is not None else None,
-                bearing_uncertainty_deg=bearing_uncertainty_deg)
+                bearing_uncertainty_deg=bearing_uncertainty_deg,
+                altitude_m=altitude_m)
             measurement["track_bearing"] = track.bearing
             self._tracks[track_id] = track
         else:
@@ -162,6 +179,12 @@ class TrackPicture:
             track.raw_x, track.raw_y = x, y
             track.raw_course = course
             track.bearing_uncertainty_deg = bearing_uncertainty_deg
+            if altitude_m is not None:
+                track.altitude_m = (
+                    altitude_m if track.altitude_m is None
+                    or source != previous_source
+                    else track.altitude_m + (altitude_m - track.altitude_m)
+                    * config.OBS_ALTITUDE_SMOOTH)
             if track.measurement_history is None:
                 track.measurement_history = []
             last_t = (track.measurement_history[-1]["t"]
@@ -196,6 +219,25 @@ class TrackPicture:
             track.measurement_history.append(measurement)
             del track.measurement_history[:-config.OBS_HISTORY_MAX]
             track.measurement_epoch = epoch
+            raw_derived_course, raw_derived_speed = track._raw_fit_motion()
+            if raw_derived_course is not None:
+                if track.derived_course is None or source != previous_source:
+                    track.derived_course = raw_derived_course
+                else:
+                    max_step = (config.OBS_DERIVED_COURSE_MAX_RATE_DEG_S
+                                * max(0.0, now - last_t))
+                    track.derived_course = (track.derived_course + config.clamp(
+                        config.angle_diff_deg(raw_derived_course, track.derived_course),
+                        -max_step, max_step)) % 360.0
+            if raw_derived_speed is not None:
+                if track.derived_speed is None or source != previous_source:
+                    track.derived_speed = raw_derived_speed
+                else:
+                    max_step = (config.OBS_DERIVED_SPEED_MAX_RATE_KN_S
+                                * max(0.0, now - last_t))
+                    track.derived_speed = max(0.0, track.derived_speed + config.clamp(
+                        raw_derived_speed - track.derived_speed,
+                        -max_step, max_step))
         if self.maximum is not None and len(self._tracks) > self.maximum:
             evicted = min(self._tracks.values(), key=lambda item: (
                 item.last_seen, item.quality, item.track_id))

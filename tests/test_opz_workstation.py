@@ -53,6 +53,21 @@ def test_up_down_selects_all_cic_domains_without_changing_asm_target():
     assert not game.held
 
 
+def test_shift_f_filters_contact_register_without_removing_picture_tracks():
+    game = opz_game()
+    observe(game, "S-1", "AIS", source="RADAR")
+    observe(game, "A-2", "FLG", source="DATALINK")
+    all_ids = {track.track_id for track in game.opz_tracks()}
+
+    press(game, pygame.K_f, pygame.KMOD_SHIFT)
+    assert game.opz_contact_filter == "RADAR"
+    assert {track.source for track in game.filtered_opz_tracks()} == {"RADAR"}
+    assert {track.track_id for track in game.opz_tracks()} == all_ids
+
+    press(game, pygame.K_DOWN)
+    assert game.selected_opz_track().source == "RADAR"
+
+
 def test_opz_joystick_step_uses_cic_focus_not_asm_target():
     game = opz_game()
     observe(game, "S-1", "AIS")
@@ -75,6 +90,25 @@ def test_f_cycles_selected_track_affiliation_and_c_classifies():
     assert game.opz_affiliation(selected) == "NEUTRAL"
     press(game, pygame.K_c)
     assert game.opz_source_classification(selected) == "U_BOOT"
+
+
+def test_j_edits_selected_track_id_for_opz_and_source_station():
+    game = opz_game()
+    contact = Contact(1, 41, "passiv", "sub")
+    contact.update_passive(30.0, .8, .8, "", game.sim_t)
+    contact.released_to_opz = True
+    game.sonar.contacts[contact.target_id] = contact
+    game.opz_selected_track_id = game.opz_tracks()[0].observation_id
+
+    press(game, pygame.K_j)
+    for key in (pygame.K_s, pygame.K_u, pygame.K_b, pygame.K_MINUS,
+                pygame.K_4, pygame.K_1):
+        press(game, key)
+    press(game, pygame.K_RETURN)
+
+    assert game.selected_opz_track().label == "SUB-41"
+    assert game.private_sonar_observations()[0].label == "SUB-41"
+    assert game.contact_display_id(contact) == "SUB-41"
 
 
 def test_surface_and_air_radars_toggle_independently():
@@ -148,7 +182,7 @@ def test_separate_radars_publish_only_their_domains(monkeypatch):
     game.surface_radar_on, game.air_radar_on = True, False
     game._update_air_picture()
     assert {track.kind for track in game.opz_tracks()
-            if track.source.startswith("RADAR")} == {"AIS"}
+            if track.source.startswith("RADAR")} == {"SURFACE"}
 
     game.air_picture._tracks.clear()
     game.surface_radar_on, game.air_radar_on = False, True

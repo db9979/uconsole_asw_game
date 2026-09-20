@@ -17,6 +17,14 @@ def value(observation, name, fallback=None):
     return getattr(observation, fallback, None) if result is None and fallback else result
 
 
+def contact_display_id(game, contact) -> str:
+    """Shared track ID with a safe fallback for detached UI test doubles."""
+    resolver = getattr(game, "contact_display_id", None)
+    if callable(resolver) and hasattr(contact, "target_id"):
+        return resolver(contact)
+    return f"K{int(contact.id):02d}"
+
+
 def position(observation):
     """Return only an explicitly public observation position."""
     x = value(observation, "observed_x")

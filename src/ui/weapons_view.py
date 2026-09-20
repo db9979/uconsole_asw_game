@@ -231,7 +231,8 @@ def draw_weapons_overlay(game, tr=None) -> None:
                     s, (tx, ty), getattr(c, "tma_course", None),
                     getattr(c, "tma_speed", None),
                     view.scale, config.COLOR_DANGER, font=game.font, max_px=120)
-                layout.blit_line(s, message("weapons.overlay.fix", contact=c.id,
+                layout.blit_line(s, message("weapons.overlay.fix",
+                                            contact=observations.contact_display_id(game, c),
                                             source=src),
                                  (int(tx) + 12, int(ty) - 22, 130, 20),
                                  config.COLOR_DANGER, size=14)
@@ -240,7 +241,8 @@ def draw_weapons_overlay(game, tr=None) -> None:
                 ey = py - 300 * math.cos(brg)
                 pygame.draw.line(s, config.COLOR_DANGER, (int(px), int(py)),
                                  (int(ex), int(ey)), 1)
-                layout.blit_line(s, message("weapons.line.bearing_only", contact=c.id),
+                layout.blit_line(s, message("weapons.line.bearing_only",
+                                            contact=observations.contact_display_id(game, c)),
                                  (int(px) + 12, int(py) - 22, 260, 22),
                                  config.COLOR_DANGER, size=14)
 
@@ -275,7 +277,9 @@ def draw_weapons_panel(game, tr=None) -> None:
                 if getattr(game, "ship", None) is not None else c.range_est
             dist = f"{displayed_range:6.1f} NM" if displayed_range is not None else "     --"
             lines = [
-                (message("weapons.line.contact", contact=c.id, label=c.display_label), config.COLOR_TEXT, 18),
+                (message("weapons.line.contact",
+                         contact=observations.contact_display_id(game, c),
+                         label=c.display_label), config.COLOR_TEXT, 18),
                 (observations.format_bearing_pair(c, getattr(game, "ship", None), compact=True),
                  config.COLOR_TEXT, 15),
                 (message("weapons.line.confidence", confidence=int(c.confidence * 100)), config.COLOR_TEXT_DIM, 14),

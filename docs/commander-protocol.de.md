@@ -28,10 +28,11 @@ Methoden zum Laden eines Kandidaten haben keine Netzwerknebenwirkungen.
 | GET /api/v2/session | Authentifizierter Client-, Lease-, Freigabe- und Sequenzzustand |
 | GET /api/v2/state, /chart | Aktive Rollenprojektion und passende bekannte Karte |
 | GET /api/v2/results, /proposals, /events | Rollen- und sitzungsbegrenzter Befehlszustand |
-| GET /api/v2/simlog | Freigegebene frühere Rollenprojektionen, höchstens 64 Einträge |
+| GET /api/v2/simlog | Vom Host freigegebene Full-Truth-Diagnose-Snapshots, höchstens 64 Einträge |
 | POST /api/v2/stations/request, /activate, /release | Strikte Lease-Operationen |
 | POST /api/v2/commands | Strikter Aktionsumschlag; 202 bedeutet eingereiht, nicht angewendet |
 | POST /api/v2/sonar/audio | Separat freigegebene Live-Sonaraudio-Abfrage |
+| GET /ws/v2/sonar | Binärer Anzeigestrom der aktiven Sonarrollen-Lease (WebSocket-Upgrade) |
 | POST /api/v2/logout | Widerruft die aktuelle Sitzung und löscht ihr Cookie |
 
 Alle Routen unter `/api/v1/*` sind entfernt und liefern 404 ohne Weiterleitung
@@ -102,13 +103,41 @@ Projektionsgrößen sind strikt begrenzt. Sonar-Audio ist ausschließlich live
 verfügbar, wird separat freigegeben, ist an die aktive `station_generation` von
 Sonar gebunden und
 wird im Hauptthread anhand des projizierten Sonar-Abhörmodus sowie der Einstellungen
-für Band, Notch und Gain gefiltert. Das Kavitationsgeräusch der Brücke wird nach
+für Band, Notch und Gain gefiltert. Der Server hält die letzten acht Blöcke (zwei
+Sekunden), damit ein kurz stockender Client der Reihe nach aufholt; ältere Blöcke
+werden verworfen und als Diskontinuität gemeldet. Der Browser startet die Wiedergabe
+0,8 s hinter dem neuesten Block, damit ein Hänger des Hauptthreads oder ein
+WLAN-Aussetzer keine hörbare Lücke wird. Das Kavitationsgeräusch der Brücke wird nach
 lokaler Tonfreigabe im Browser ausschließlich aus dem bereits freigegebenen
 Eigenschiff-Kavitations-Boolean synthetisiert. Es ergänzt weder Endpunkt, Freigabe,
 Befehl noch uConsole-Audiosteuerung. Die Sonarrollenprojektion erhält nur die
 begrenzte Eigenschifffahrt und die TAS-Handhabungsgrenzen, die zur Erklärung eines
 deaktivierten Array-Bedienelements nötig sind; Hovergründe prüfen niemals
 verborgene Einheiten.
+
+Der Sonar-Anzeigestrom ist ein zusätzlicher Transport von Protokoll v2 und keine
+Simulationsschnittstelle. Das Upgrade gelingt nur mit exakt gleichem `Origin`,
+authentifiziertem HttpOnly-Cookie, aktiver Sonar-Lease samt Generation und dem
+Subprotokoll `u-jagd-sonar-v2`. Pro Sitzung wird höchstens ein Strom zugelassen.
+Widerruf, Rollenaktivierung, Lease-Wechsel, Weltersatz oder Serverende machen ihn
+sofort ungültig. Die normale Zustandsabfrage bleibt maßgeblich und dient als
+automatischer Fallback. Während der Strom läuft, fragt der Client
+`/api/v2/state?sonar=stream` ab; diese Sonarprojektion lässt die bereits binär
+übertragenen Spektralfelder weg. Das Cookie gilt für `/`, damit der Browser es an
+`/api/v2/*` und die feste WebSocket-Route senden kann; es bleibt HttpOnly,
+SameSite=Strict und erscheint weder in JavaScript noch in URLs oder Nutzdaten.
+
+Jede Servernachricht ist genau ein abschließender Binärframe mit höchstens 4096
+Bytes. Sein 60 Byte großer Little-Endian-Header lautet
+`<4sBBHQQdfHHHHHHfff>`: Magic `UJS2`, Stromversion, Flags, Headerlänge,
+monotone Stromsequenz, Weltepoche, Simulationszeit, Hörpeilung, fünf Feldlängen,
+eine reservierte Länge sowie das Alter von Broadband, LOFAR und DEMON. Danach
+folgen fünf Bytefelder: neueste Broadband-, LOFAR- und DEMON-Zeile, aktuelles
+LOFAR- und aktuelles DEMON-Spektrum. Die Werte stammen ausschließlich aus der
+bereits abgelösten Freigabelistenprojektion und werden von [0,1] auf [0,255]
+quantisiert. Der Server hält nur das neueste Paket; ein langsamer Client überspringt
+Zwischenbilder und wird bei stockender Ausgabe getrennt. So entstehen weder eine
+unbegrenzte Renderwarteschlange noch Einflüsse auf die deterministische Simulation.
 
 ## Kopplung und Grenzen von Protokoll v2
 
@@ -124,8 +153,10 @@ verborgene Einheiten.
 - Unabhängige kryptografische Cookie-Sitzung mit acht Stunden Idle-Limit. Die
   Anwesenheitsabfrage erneuert eine Stations-Lease von 15 Sekunden; Freigaben
   binden an deren Generation. Höchstens zwölf Clients können Sitzungen halten.
-- Vier zugelassene Worker-Verbindungen, 1,5 Sekunden Inaktivitäts-Timeout und drei
-  Sekunden absolute Deadline. Deadline-Timer sind durch die Worker begrenzt und
+- Sechzehn zugelassene Worker-Verbindungen, 1,5 Sekunden Inaktivitäts-Timeout und
+  drei Sekunden absolute Deadline für gewöhnliches HTTP. Ein erfolgreich
+  authentifiziertes Sonar-Upgrade belegt einen begrenzten Worker-Platz, bis es
+  ungültig wird oder schließt. Deadline-Timer sind durch die Worker begrenzt und
   werden bei der Bereinigung gejoint.
 - JSON-Bodys mit höchstens 4096 Bytes; begrenzte Request-Line/Header, striktes
   Framing sowie Ablehnung doppelter Member, nicht endlicher Zahlen und unbekannter
@@ -159,6 +190,13 @@ ungültig. Nur modellierte AIS-Bezeichnungen werden weitergegeben; interne
 Producer-Präfixe dürfen die Identität als Zivil-/Kriegsschiff nicht offenlegen.
 Seed, RNG, versteckte Entity-/Profilinformationen oder Spielstand-Dumps werden
 nicht exportiert.
+
+Die ELOKA-Auffassungszeile von v2 enthält zusätzlich die abgeleiteten Felder
+`signal_state` (`LIVE`, `RECENT`, `MEMORY` oder `UNCONFIRMED`) und `operational`.
+Die Browserfilter für Status, Mindestbedrohung und Frequenzband bleiben
+clientlokal und verwenden für Auffassungsliste, Kontakte, Scope und barrierefreie
+Textalternative dieselbe Teilmenge. Aktive ECM-Ziele bleiben sichtbar. Entfernung
+und verborgene Senderidentität werden weder projiziert noch filterbar gemacht.
 
 Befehle enthalten `protocol`, kryptografische Anfrage-ID, Clientsequenz, Station,
 Stations- und Aktivgeneration, Weltsitzung/-epoche, Ressourcenrevision, Aktion und
@@ -196,9 +234,10 @@ Air-/Missile-Sequenznamensräume können die Sonaridentität nicht als Alias ver
 Schadensereignisse sind für Brücke und Schadensabwehr sichtbar, Bedrohungen für
 Brücke, OPZ und Waffen und Missionsereignisse für jede Rolle. Der Lebenszyklus
 eines Vorschlags ist nur für Ursprungssitzung und -rolle sichtbar. SimLog hält
-höchstens 64 frühere Rollenprojektionen mit ihren Simulationszeitstempeln;
-deaktiviertes oder nicht freigegebenes SimLog liefert keine Historie und
-vollständige lokale Host-Einträge werden niemals exportiert.
+höchstens 64 frühere abgelöste Diagnose-Snapshots mit ihren
+Simulationszeitstempeln. Eine ausdrückliche Host-Freigabe legt über diesen
+schreibgeschützten Endpunkt die vollständige Simulationswahrheit offen;
+deaktiviertes oder nicht freigegebenes SimLog liefert keine Historie.
 
 Epochenwechsel lehnen eingereihte Aktionen über Übergänge bei
 Verwaltung/Eingabe/Freigabe/Verbindung hinweg ab. Ein Weltersatz widerruft die
@@ -221,6 +260,38 @@ sendet keinen Befehl. Seegang und Tag/Nacht beeinflussen nur die Darstellung; si
 sind keine Sichtbarkeitsmodelle, und Symbole belegen keine Plattformidentität. Der
 Lookout zeichnet nur bei Snapshots, Tab-Aktivierung, lokaler Reichweitenänderung
 oder Größenänderung und verwendet gerätepixelgerechte Backing-Dimensionen.
+
+## Ergänzungen für den Solo-Modus (Protokoll v2, additiv)
+
+Der Session-Body enthält `host`: normal `null`, für eine Solo-Sitzung
+`{"generation": n}`. `GET /api/v2/host` liefert die losgelöste Host-Sicht (`phase`,
+`paused`, `time_scale`, `world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`)
+nur an eine Sitzung mit `host`; andere erhalten 403. Slot-Zeilen enthalten `saved` und
+`modified` ausschließlich aus Dateimetadaten, nie Spielstandinhalte.
+
+Host-Steuerungen nutzen das normale `POST /api/v2/commands` mit der Pseudo-Rolle
+`"host"` (nie ein Station-Lease; `STATIONS` und jede Projektion bleiben bei neun).
+`station_generation` ist `host.generation` der Sitzung, `active_generation` muss 0
+sein und `world_session` muss passen; Epoche und Ressourcenrevision werden nicht
+geprüft, weil diese Aktionen keine Ressource referenzieren und Pause/Fortsetzen die
+Epoche selbst verschieben. Aktionen: `host_pause`, `host_resume`, `host_time_scale
+{index}`, `host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
+level?, seed?}` und `host_instructor_environment {sea_state, event}`. Die Ausbilderaktion
+aendert das spielstandkompatible autoritative Weltfeld (0–6) und baut die daraus
+abgeleiteten Wetterendpunkte neu auf. Ihre optionale geschlossene Ereignisauswahl
+setzt alle feindlichen U-Boote auf Schleich-, Marsch- oder Hoechstfahrt oder spielt
+einen Torpedostart als Uebungsreiz ein, ohne Zielidentitaet oder Simulationswahrheit
+offenzulegen. Jede Aktion hat ein geschlossenes Schema und eigene erlaubte Phasen (ein
+Menü oder Overlay am Host macht die Phase `blocked` und weist alle ab). Host-Befehle
+laufen in einem Frame vor den Stationsbefehlen; ersetzt einer die Welt, werden alle
+späteren Befehle dieses Frames mit `phase_blocked` abgewiesen. Im Solo-Modus behält
+ein Weltwechsel Sitzung, Cookie und CSRF, verwirft wartende und gehaltene Befehle,
+least alle Stationen unter neuen Generationen neu und rotiert den Beitrittscode nicht.
+
+Der Crew-Modus bleibt unverändert: `station: "host"` wird mit 403 abgewiesen, die
+Spielsteuerung bleibt Host-Sache. Der Solo-Modus ist eine ausdrückliche lokale
+Host-Entscheidung (CLI-Flag oder F9-Zeile), wird nie gespeichert, und ein Wechsel
+widerruft alle Sitzungen.
 
 ## Testumfang
 

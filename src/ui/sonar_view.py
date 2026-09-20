@@ -20,8 +20,14 @@ DIM = (119, 151, 169)
 TEXT = (211, 229, 233)
 CYAN = (79, 224, 202)
 AMBER = (244, 190, 97)
+PHOSPHOR_PALETTES = {
+    "green": (68, 255, 154),
+    "amber": (255, 184, 62),
+    "cyan": CYAN,
+}
 PAGES = ("BROADBAND", "LOFAR", "DEMON", "TMA", "UMWELT/FUSION", "ACTIVE")
 ACTIVE_HISTORY_WINDOW_S = 120.0
+DEMON_DISPLAY_MAX_HZ = 50.0
 _WATERFALL_CACHE = OrderedDict()
 _WATERFALL_CACHE_SCREEN = None
 
@@ -63,6 +69,17 @@ def _waterfall_plot(panel, page):
     top = panel.y + (105 if page == 1 else 61)
     return pygame.Rect(panel.x + 57, top, panel.w - 83,
                        panel.bottom - 47 - top)
+
+
+def _history_for_page(sonar, page):
+    if page == 0 and getattr(sonar, "broadband_long_history", None):
+        return sonar.broadband_long_history, sonar.broadband_long_times, \
+            config.SONAR_BROADBAND_LONG_ROWS
+    if page == 0:
+        return (getattr(sonar, "broadband_history", []),
+                getattr(sonar, "history_times", []), config.LOFAR_HISTORY_COLS)
+    return (getattr(sonar, "lofar_history", []),
+            getattr(sonar, "lofar_times", []), config.LOFAR_HISTORY_COLS)
 
 
 def _visible_contacts(game, rect):
@@ -144,6 +161,17 @@ def sonar_click_target(game, pos):
     plot = _waterfall_plot(geometry["main"], page)
     if page == 0 and plot.collidepoint(pos):
         bearing = (pos[0] - plot.x) / max(1, plot.w - 1) * 360.0
+        contacts = list(getattr(game.sonar, "active_contacts", lambda: ())())
+        threshold = max(3.0, float(getattr(game.sonar, "beam_width_deg", 0.0)) / 2.0)
+        nearest = min(
+            contacts,
+            key=lambda item: abs((_observed_bearing(item) - bearing + 180.0) % 360.0 - 180.0),
+            default=None,
+        )
+        if nearest is not None:
+            separation = abs((_observed_bearing(nearest) - bearing + 180.0) % 360.0 - 180.0)
+            if separation <= threshold:
+                return {"action": "contact_listen", "value": nearest.id, "safe": True}
         return {"action": "listen_bearing", "value": bearing % 360.0, "safe": True}
     if geometry["contacts"].collidepoint(pos):
         for item, rect in _list_rows(game, geometry["contacts"], page)[0]:
@@ -205,7 +233,8 @@ def sonar_hit_target(game, pos):
                 label = display_value("classification",
                                       getattr(contact, "player_class", None))
                 return layout.tooltip_payload(
-                    message("sonar.tooltip.contact_title", contact=f"{contact.id:02d}"),
+                    message("sonar.tooltip.contact_title",
+                            contact=observations.contact_display_id(game, contact)),
                     observations.format_bearing_pair(
                         contact, getattr(game, "ship", None)),
                     message("observation.bearing_uncertainty", uncertainty=f"{observations.bearing_uncertainty(contact):.1f}")
@@ -244,13 +273,12 @@ def sonar_hit_target(game, pos):
         if not plot.collidepoint(pos):
             return None
         axis = (pos[0] - plot.x) / max(1, plot.w - 1)
-        rows = getattr(sonar, "broadband_history" if page == 0 else "lofar_history", [])
-        times = getattr(sonar, "history_times" if page == 0 else "lofar_times", [])
+        rows, times, history_rows = _history_for_page(sonar, page)
         live = page == 1 and not len(rows)
         if live:
             spectrum = getattr(getattr(sonar, "receiver", None), "spectrum", [])
             rows = [spectrum] if len(spectrum) else []
-        count = len(rows) if live else max(config.LOFAR_HISTORY_COLS, len(rows))
+        count = len(rows) if live else max(history_rows, len(rows))
         row = len(rows) - 1 - int((pos[1] - plot.y) * count / plot.h)
         if not 0 <= row < len(rows) or not len(rows[row]):
             return layout.tooltip_payload(
@@ -286,11 +314,11 @@ def sonar_hit_target(game, pos):
             if beam is not None else None,
             target_id=f"sonar:lofar:{frequency:.1f}")
     if page == 2:
-        plot = pygame.Rect(main.x + 57, main.y + 68, main.w - 83,
-                           main.h - 115)
+        plot = pygame.Rect(main.x + 57, main.y + 62, main.w - 83,
+                           main.h - 109)
         if not plot.collidepoint(pos):
             return None
-        frequency = (pos[0] - plot.x) / max(1, plot.w - 1) * 80.0
+        frequency = (pos[0] - plot.x) / max(1, plot.w - 1) * DEMON_DISPLAY_MAX_HZ
         spectrum = getattr(getattr(sonar, "receiver", None),
                            "demon_spectrum", [])
         index = min(len(spectrum) - 1, max(0, round(frequency) - 1)) \
@@ -377,7 +405,8 @@ def _text(screen, text, rect, color=TEXT, size=14, align="left"):
         screen.blit(image, rendered)
 
 
-def waterfall_surface(rows, width, height, gain_db=0.0):
+def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
+                      contrast=1.0, palette="cyan"):
     """Oldest-first rows become a bitmap with newest at TOP; x is bin order.
 
     Zero input stays dark. Gain changes intensity, never time or frequency.
@@ -391,8 +420,17 @@ def waterfall_surface(rows, width, height, gain_db=0.0):
         return surface
     values = np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=0.0)
     values = np.clip(values[::-1] * 10.0 ** (gain_db / 20.0), 0.0, 1.0)
+    black_level = float(np.clip(black_level, 0.0, .8))
+    contrast = float(np.clip(contrast, .5, 4.0))
+    values = np.clip((values - black_level) / max(.01, 1.0 - black_level)
+                     * contrast, 0.0, 1.0)
+    # CRT-like persistence: the newest line is bright while older energy
+    # remains visible as a bounded fading trail.
+    persistence = np.linspace(1.0, .22, len(values), dtype=np.float32)
+    values *= persistence[:, None]
     # A navy-to-phosphor ramp leaves faint receiver noise visible, not invented.
-    low, high = np.asarray(NAVY), np.asarray(CYAN)
+    low = np.asarray(NAVY)
+    high = np.asarray(PHOSPHOR_PALETTES.get(palette, CYAN))
     pixels = (low + values[..., None] ** .72 * (high - low)).astype(np.uint8)
     small = pygame.surfarray.make_surface(pixels.transpose(1, 0, 2))
     return pygame.transform.scale(small, (width, height))
@@ -451,6 +489,20 @@ def _waterfall_controls(game, page):
             notch, getattr(getattr(game, "ship", None), "speed", 0.0) if notch else 0.0)
 
 
+def _display_controls(game):
+    return (float(getattr(game, "sonar_display_black", 0.0)),
+            float(getattr(game, "sonar_display_contrast", 1.6)),
+            str(getattr(game, "sonar_display_palette", "green")),
+            float(getattr(game, "sonar_display_history", 1.0)))
+
+
+def _draw_display_status(game, panel):
+    black, contrast, palette, history = _display_controls(game)
+    value = f"P {palette.upper()}  C {contrast:.1f}  BL {black:.2f}  H {history:.0%}"
+    _text(game.screen, value, (panel.right - 310, panel.y + 11, 294, 18),
+          DIM, 12, "right")
+
+
 def _waterfall(game, page, rect):
     global _WATERFALL_CACHE_SCREEN
     if game.screen is not _WATERFALL_CACHE_SCREEN:
@@ -458,8 +510,11 @@ def _waterfall(game, page, rect):
         _WATERFALL_CACHE_SCREEN = game.screen
     sonar = game.sonar
     receiver = getattr(sonar, "receiver", None)
-    rows = getattr(sonar, "broadband_history" if page == 0 else "lofar_history", [])
-    source_rows = rows
+    source_rows, _, history_rows = _history_for_page(sonar, page)
+    history_fraction = _display_controls(game)[3]
+    visible_rows = max(1, round(history_rows * history_fraction))
+    rows = source_rows[-visible_rows:]
+    history_rows = visible_rows
     live_fallback = not len(rows) and page == 1
     # No focus gate: an empty history may still have a live receiver spectrum.
     if not len(rows) and page == 1:
@@ -472,8 +527,9 @@ def _waterfall(game, page, rect):
         history_token = (id(source_rows), len(source_rows),
                          id(source_rows[0]) if len(source_rows) else None,
                          id(source_rows[-1]) if len(source_rows) else None)
+    display = _display_controls(game)[:3]
     key = (id(sonar), page, rect.size, getattr(receiver, "sequence", None),
-           controls, history_token)
+           controls, display, history_fraction, history_token)
     cached = _WATERFALL_CACHE.get(key)
     if cached is None:
         raw = np.asarray(rows, dtype=float)
@@ -488,11 +544,12 @@ def _waterfall(game, page, rect):
         # Fixed time scale from the first sample: empty history stays below it.
         bitmap = processed
         if (not live_fallback and len(processed)
-                and len(processed) < config.LOFAR_HISTORY_COLS):
-            bitmap = np.concatenate((np.zeros((config.LOFAR_HISTORY_COLS - len(processed),
+                and len(processed) < history_rows):
+            bitmap = np.concatenate((np.zeros((history_rows - len(processed),
                                                len(processed[0]))), processed))
-        surface = waterfall_surface(bitmap, *rect.size,
-                                    gain_db=controls[0] if page == 0 else 0.0)
+        surface = waterfall_surface(
+            bitmap, *rect.size, gain_db=controls[0] if page == 0 else 0.0,
+            black_level=display[0], contrast=display[1], palette=display[2])
         cached = (surface, processed)
         _WATERFALL_CACHE[key] = cached
         while len(_WATERFALL_CACHE) > 4:
@@ -503,7 +560,7 @@ def _waterfall(game, page, rect):
 
 
 def _grid(screen, rect, xmax, unit):
-    divisions = 4 if xmax == 80 else 6
+    divisions = 5 if xmax == DEMON_DISPLAY_MAX_HZ else 6
     for index in range(divisions + 1):
         x = rect.x + round(index * (rect.w - 1) / divisions)
         pygame.draw.line(screen, GRID, (x, rect.y), (x, rect.bottom - 1))
@@ -686,6 +743,7 @@ def _draw_waterfall(game, panel, page):
     screen, sonar = game.screen, game.sonar
     title = "sonar.omni_broadband" if page == 0 else "sonar.beam_narrowband"
     _text(screen, title, (panel.x + 16, panel.y + 10, panel.w - 32, 23), CYAN, 16)
+    _draw_display_status(game, panel)
     plot = _waterfall_plot(panel, page)
     if plot.w < 2 or plot.h < 2:
         return
@@ -694,7 +752,7 @@ def _draw_waterfall(game, panel, page):
           "sonar.bearing_axis_short" if page == 0 else "sonar.hz_linear")
     _text(screen, "sonar.new", (panel.x + 8, plot.y, 45, 18), CYAN, 12)
     _text(screen, "sonar.old", (panel.x + 8, plot.bottom - 18, 45, 18), DIM, 12)
-    times = getattr(sonar, "history_times" if page == 0 else "lofar_times", [])
+    _, times, _ = _history_for_page(sonar, page)
     timing = (message("sonar.line.history_timed", newest=f"{times[-1]:.1f}",
                       oldest=f"{times[0]:.1f}", rows=len(processed)) if len(times) else
               message("sonar.line.history_untimed", rows=len(processed)))
@@ -703,6 +761,13 @@ def _draw_waterfall(game, panel, page):
         _text(screen, "sonar.no_receiver_data", (plot.x, plot.centery - 10, plot.w, 22),
               DIM, 16, "center")
     if page == 0:
+        profile = pygame.Rect(plot.x, panel.y + 56, plot.w, 42)
+        pygame.draw.rect(screen, NAVY, profile)
+        current = getattr(getattr(sonar, "receiver", None), "broadband", [])
+        if len(current):
+            _trace(screen, profile, _circular_broadband(current, profile.w))
+        _text(screen, "sonar.instantaneous",
+              (profile.x + 5, profile.y + 2, 150, 18), DIM, 12)
         bearing = getattr(sonar, "listen_bearing", 0.0) % 360
         half = getattr(sonar, "beam_width_deg", 12.0) / 2
         with layout.clip_to(screen, plot):
@@ -711,6 +776,16 @@ def _draw_waterfall(game, panel, page):
                 pygame.draw.line(screen, DIM, (x, plot.y), (x, plot.bottom - 1))
             x = plot.x + round(bearing / 360 * (plot.w - 1))
             pygame.draw.line(screen, AMBER, (x, plot.y), (x, plot.bottom - 1))
+            own_lobe = getattr(getattr(sonar, "receiver", None),
+                               "own_noise_lobe", None)
+            if own_lobe:
+                center = float(own_lobe["bearing"]) % 360.0
+                lobe_half = float(own_lobe["width_deg"]) / 2.0
+                for value in ((center - lobe_half) % 360,
+                              (center + lobe_half) % 360):
+                    lx = plot.x + round(value / 360 * (plot.w - 1))
+                    pygame.draw.line(screen, (139, 91, 71),
+                                     (lx, plot.y), (lx, plot.bottom - 1), 1)
         _text(screen, "sonar.intensity",
               (plot.x, plot.bottom + 24, plot.w - 160, 18), DIM, 12)
     else:
@@ -725,6 +800,24 @@ def _draw_waterfall(game, panel, page):
         else:
             latest = processed[-1] if len(processed) else []
         _trace(screen, spectrum_rect, latest)
+        for frequency, label in ((40.0, "0-40"), (100.0, "40-100"),
+                                 (300.0, "100-300")):
+            x = spectrum_rect.x + round(frequency / config.LOFAR_FMAX_HZ
+                                        * (spectrum_rect.w - 1))
+            pygame.draw.line(screen, GRID, (x, spectrum_rect.y),
+                             (x, plot.bottom - 1), 1)
+            start = 0.0 if label == "0-40" else 40.0 if label == "40-100" else 100.0
+            left = spectrum_rect.x + round(start / config.LOFAR_FMAX_HZ
+                                           * (spectrum_rect.w - 1))
+            _text(screen, label + " Hz", (left + 4, spectrum_rect.bottom - 17,
+                  max(40, x - left - 8), 16), DIM, 10)
+        low = float(getattr(sonar, "band_low_hz", 0.0))
+        high = float(getattr(sonar, "band_high_hz", config.LOFAR_FMAX_HZ))
+        for frequency in (low, high):
+            x = spectrum_rect.x + round(frequency / config.LOFAR_FMAX_HZ
+                                        * (spectrum_rect.w - 1))
+            pygame.draw.line(screen, AMBER, (x, spectrum_rect.y),
+                             (x, plot.bottom - 1), 1)
         held = getattr(sonar, "peak_hold", False)
         if held:
             peak = getattr(sonar, "peak_spectrum", getattr(receiver, "peak_spectrum", []))
@@ -749,7 +842,7 @@ def _draw_waterfall(game, panel, page):
         if base is not None:
             with layout.clip_to(screen, pygame.Rect(spectrum_rect.x, spectrum_rect.y,
                                                     spectrum_rect.w, plot.bottom - spectrum_rect.y)):
-                for multiple in (1, 2, 3):
+                for multiple in range(1, 13):
                     frequency = base * multiple
                     if frequency > config.LOFAR_FMAX_HZ:
                         continue
@@ -792,20 +885,52 @@ def _demon_evidence(sonar):
 
 def _draw_demon(game, panel):
     screen = game.screen
-    spectrum, _, evidence = _demon_evidence(game.sonar)
+    sonar = game.sonar
+    spectrum, analysis, evidence = _demon_evidence(sonar)
     _text(screen, "sonar.demon_title", (panel.x + 16, panel.y + 10, panel.w - 32, 24), CYAN, 16)
+    _draw_display_status(game, panel)
     _text(screen, "sonar.demon_caption",
           (panel.x + 16, panel.y + 37, panel.w - 32, 20), DIM, 13)
-    plot = pygame.Rect(panel.x + 57, panel.y + 68, panel.w - 83, panel.h - 115)
+    full = pygame.Rect(panel.x + 57, panel.y + 62, panel.w - 83,
+                       panel.h - 109)
+    spectrum_rect = pygame.Rect(full.x, full.y, full.w, 44)
+    plot = pygame.Rect(full.x, spectrum_rect.bottom + 8, full.w,
+                       full.bottom - spectrum_rect.bottom - 8)
+    pygame.draw.rect(screen, NAVY, spectrum_rect)
     pygame.draw.rect(screen, NAVY, plot)
-    _grid(screen, plot, 80, localize("sonar.demon_axis"))
-    for value in (0, .25, .5, .75, 1):
-        y = plot.bottom - 1 - round(value * (plot.h - 1))
-        pygame.draw.line(screen, GRID, (plot.x, y), (plot.right - 1, y))
-        _text(screen, f"{value:.2f}", (panel.x + 6, y - 8, 45, 18), DIM, 12)
-    if spectrum.size:
-        # Receiver bins represent 1..80 Hz; add the zero-frequency baseline.
-        _trace(screen, plot, np.concatenate(([0.0], spectrum)))
+    visible_spectrum = spectrum[:int(DEMON_DISPLAY_MAX_HZ)]
+    if visible_spectrum.size:
+        _trace(screen, spectrum_rect, np.concatenate(([0.0], visible_spectrum)))
+    black, contrast, palette, history_fraction = _display_controls(game)
+    history_rows = max(1, round(config.SONAR_DEMON_HISTORY_ROWS * history_fraction))
+    rows = [np.asarray(row)[:int(DEMON_DISPLAY_MAX_HZ)]
+            for row in list(getattr(sonar, "demon_history", ()))[-history_rows:]]
+    bitmap = rows
+    if rows and len(rows) < history_rows:
+        bitmap = [[0.0] * len(rows[0]) for _ in range(history_rows - len(rows))] + rows
+    key = (id(sonar), "demon", plot.size,
+           getattr(getattr(sonar, "receiver", None), "sequence", None), len(rows),
+           black, contrast, palette, history_fraction)
+    cached = _WATERFALL_CACHE.get(key)
+    if cached is None:
+        cached = (waterfall_surface(bitmap, *plot.size, black_level=black,
+                                    contrast=contrast, palette=palette), rows)
+        _WATERFALL_CACHE[key] = cached
+        while len(_WATERFALL_CACHE) > 4:
+            _WATERFALL_CACHE.popitem(last=False)
+    _WATERFALL_CACHE.move_to_end(key)
+    screen.blit(cached[0], plot)
+    _grid(screen, plot, DEMON_DISPLAY_MAX_HZ, localize("sonar.demon_axis"))
+    _text(screen, "sonar.new", (panel.x + 8, plot.y, 45, 18), CYAN, 12)
+    _text(screen, "sonar.old", (panel.x + 8, plot.bottom - 18, 45, 18), DIM, 12)
+    peak = analysis.get("modulation_peak_hz")
+    if (peak is not None and np.isfinite(peak)
+            and 0.0 <= float(peak) <= DEMON_DISPLAY_MAX_HZ):
+        x = plot.x + round(float(peak) / DEMON_DISPLAY_MAX_HZ * (plot.w - 1))
+        pygame.draw.line(screen, AMBER, (x, spectrum_rect.y),
+                         (x, plot.bottom - 1), 1)
+        _text(screen, f"{float(peak):.1f} Hz",
+              (x + 4, spectrum_rect.y + 2, 70, 18), AMBER, 11)
     if not evidence:
         _text(screen, "sonar.low_evidence",
               (plot.x + 12, plot.y + 12, plot.w - 24, 22), AMBER, 14)
@@ -1020,7 +1145,8 @@ def _draw_environment(game, panel):
         status = display_value("fusion", status_raw)
         color = (config.COLOR_OK if status_raw == "BESTAETIGT" else
                  config.COLOR_WARN if "DIVERGENT" in status_raw else DIM)
-        _text(screen, message("sonar.line.array_contact", contact=f"{contact.id:02d}",
+        _text(screen, message("sonar.line.array_contact",
+                              contact=observations.contact_display_id(game, contact),
                               bow=bow_text, towed=towed_text, status=status),
               (panel.x + 20, y, panel.w - 40, 19), color, 12)
         y += 20
@@ -1265,7 +1391,8 @@ def _draw_contacts(game, rect):
             release = localize("sonar.release.short_released"
                                if getattr(contact, "released_to_opz", False)
                                else "sonar.release.short_private")
-            contact_line = (message("sonar.line.contact", contact=f"{contact.id:02d}",
+            contact_line = (message("sonar.line.contact",
+                                    contact=observations.contact_display_id(game, contact),
                                     label=label) + " " + release)
             _text(screen, contact_line,
                   (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)

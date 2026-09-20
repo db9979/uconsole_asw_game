@@ -82,8 +82,10 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert "img-src 'self'" in csp
     assert "media-src 'none'" in csp
     assert "unsafe-inline" not in csp and "unsafe-eval" not in csp
-    for forbidden in ("innerHTML", "outerHTML", "insertAdjacentHTML", "localStorage", "sessionStorage", "indexedDB", "document.cookie", "Math.random", "getUserMedia", "eval(", "new Function", "WebSocket", "https://", "http://"):
+    for forbidden in ("innerHTML", "outerHTML", "insertAdjacentHTML", "localStorage", "sessionStorage", "indexedDB", "document.cookie", "Math.random", "getUserMedia", "eval(", "new Function", "https://", "http://"):
         assert forbidden not in js
+    assert 'new window.WebSocket(`${scheme}//${location.host}/ws/v2/sonar`, "u-jagd-sonar-v2")' in js
+    assert "socket.binaryType = \"arraybuffer\"" in js
     assert "@import" not in css and "url(" not in css
     assert "AbortController" in js and "Authorization" not in js
     assert 'credentials: "same-origin"' in js and 'request("/session", { auth: false })' in js
@@ -99,7 +101,7 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert 'started - lastSessionFetch >= 1000' in js
     assert 'window.addEventListener("pagehide"' not in js
     assert "crypto.randomUUID" in js and "crypto.getRandomValues" in js
-    assert 'request("/state")' in js and 'request("/chart")' in js
+    assert 'const stateRoute = sonarStream.connected' in js and 'request(stateRoute)' in js and 'request("/chart")' in js
     assert 'request("/commands"' in js and 'expected: 202' in js
     assert 'request("/results"' in js and "next_command_seq" in js
     assert "nextCommandSeq = Math.max(nextCommandSeq, command.body.seq + 1)" in js
@@ -131,7 +133,9 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert "if (!sonarAudioEnabled || sonarAudioController) return" in js
     assert "sonarAudioSources.length >= sonarAudioMaxSources" in js
     assert "queuedAhead >= sonarAudioTargetAhead" in js
-    assert "start > audio.currentTime + 1.0" in js
+    assert "start > audio.currentTime + 2.5" in js
+    assert "raster = {canvas: off, context, image, pixels:" in js
+    assert "const image = raster.context.createImageData" not in js
     assert 'response.headers.get("content-length") !== "2048"' in js
     assert 'response.headers.get("x-u-jagd-pcm") !== "s16le"' in js
     assert "sonarAudioController?.abort()" in js and "flushSonarAudioQueue()" in js
@@ -314,7 +318,7 @@ def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
     assert "radar.sweep_rate_deg_s" in animation and ": 90" in animation
     validator = js.split("function validateV2State", 1)[1].split("function buildDisplayModel", 1)[0]
     assert '"sweep_rate_deg_s"' in validator
-    assert '"speed_kn", "observer_x", "observer_y"' in validator
+    assert '"speed_kn", "altitude_m", "observer_x", "observer_y"' in validator
     assert '["speed", unit(row.speed_kn, "kn")]' in js
     role_map = js.split("function drawRoleMap", 1)[1].split("function gauge", 1)[0]
     assert 'plot.context.textAlign = "left"' in role_map
@@ -333,24 +337,16 @@ def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
     assert '["reference", row.ref]' not in helicopter
 
 
-def test_bridge_cavitation_audio_is_local_bounded_and_lifecycle_guarded():
+def test_browser_game_audio_uses_one_shot_events_without_ambient_loops():
     js = ASSETS.joinpath("app.js").read_text()
-    audio = js.split("const bridgeCavitationAuthorized", 1)[1].split(
+    audio = js.split("function playGameEffect", 1)[1].split(
         "function renderSonarAudio", 1)[0]
-    assert 'session?.station === "bridge"' in audio
-    assert 'v2State?.role === "bridge"' in audio
-    assert 'v2State.phase === "live"' in audio
-    assert 'v2State.bridge?.orders?.cavitating === true' in audio
-    assert "connected" in audio
-    assert "!document.hidden && navigator.onLine !== false" in audio
-    assert "Math.min(192000" in audio
-    assert "source.loop = true" in audio
-    assert "if (bridgeCavitationSource)" in audio
-    assert "stopBridgeCavitationAudio()" in js.split(
-        "function clearRoleState", 1)[1].split("function renderLobby", 1)[0]
-    assert "syncBridgeCavitationAudio();" in js.split(
-        "function setConnection", 1)[1].split("function forgetSession", 1)[0]
-    assert "/sonar/audio" not in audio and "/commands" not in audio
+    assert "gameEffectKinds.has(kind)" in audio
+    assert "oscillator.stop(now + duration + .02)" in audio
+    assert "source.loop = true" not in js
+    assert "machineryOscillator" not in js
+    assert "helicopterOscillator" not in js
+    assert "bridgeCavitationSource" not in js
 
 
 def test_disabled_web_controls_publish_specific_localized_reasons():
@@ -505,6 +501,7 @@ def test_contacts_panel_owns_bounded_browser_and_detail_scrolling():
                     if attrs.get("id") == "panel-contacts")
     assert "pending-panel" not in contacts["class"]
     ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
+    assert "contact-filter" in ids
     assert {"analysis-filter", "analysis-category", "analysis-list",
             "analysis-profile", "analysis-images"} <= ids
     assert 'maxlength="96"' in html
@@ -790,6 +787,17 @@ async function runContract() {
     assert(canvasFrame.texts.includes("Own helicopter") === ["AUF", "ZURUECK"].includes(state), "only airborne helicopter states plot, even if stale coordinates exist: " + state);
   }
   fixture.ownship.helo = structuredClone(liveFixture.ownship.helo);
+  $test("contact-filter").value = "radar";
+  $test("contact-filter").dispatchEvent(new Event("input", {bubbles: true}));
+  assert($test("track-list").querySelectorAll("button").length === 2 &&
+    $test("track-count").textContent.includes("2") && $test("track-count").textContent.includes("3"),
+    "contact register filters by source and reports filtered/total count");
+  $test("contact-filter").value = "no-such-contact";
+  $test("contact-filter").dispatchEvent(new Event("input", {bubbles: true}));
+  assert(!$test("track-list").querySelector("button") && $test("track-list").textContent.includes("No contacts"),
+    "contact register has a localized empty filter state");
+  $test("contact-filter").value = "";
+  $test("contact-filter").dispatchEvent(new Event("input", {bubbles: true}));
   const first = $test("track-list").querySelector("button");
   first.focus(); first.click();
   assert($test("detail-label").textContent === fixture.tracks[0].label, "local selection details");
@@ -1018,11 +1026,11 @@ async function runContract() {
   assert($test("command-status").dataset.status === "rejected" && $test("command-status").textContent.includes("queue_expired"), "unknown expiry reason remains safe technical text");
   $test("sound").click();
   await until(() => $test("sound").getAttribute("aria-pressed") === "true", "sound enabled by gesture");
-  assert(tones === 0, "enabling sound does not replay old events");
+  assert(tones === 1, "enabling sound starts only the machinery ambience");
   fixture.events.push({seq: 2, kind: "sensor", severity: "warning", message: "New alarm"});
-  await until(() => tones === 1, "new alert gets one tone");
+  await until(() => tones === 2, "new alert gets one tone");
   await sleep(650);
-  assert(tones === 1, "event sequences deduplicated");
+  assert(tones === 2, "event sequences deduplicated");
   offline = true;
   await until(() => $test("connection").dataset.state === "stale", "disconnect is stale");
   assert($test("propose").disabled, "stale actions disabled");
@@ -1035,7 +1043,7 @@ async function runContract() {
   offline = false;
   window.dispatchEvent(new Event("online"));
   await until(() => $test("connection").dataset.state === "connected", "reconnect");
-  assert(tones === 1, "no reconnect alert backlog");
+  assert(tones === 2, "no reconnect alert backlog");
   loseAck = true;
   $test("propose").click();
   await until(() => commands.length === 5 && $test("command-status").textContent.includes("uncertain"), "lost ack remains uncertain");

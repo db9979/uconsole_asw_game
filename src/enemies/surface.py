@@ -88,7 +88,10 @@ class SurfaceShip:
         # Von einem echten AIS-Kontakt gesteuert (MMSI); unterdrueckt die
         # zufaellige Kurs-/Geschwindigkeitswahl in _update_civil, siehe
         # LiveTrafficManager.
-        self.live_mmsi: str | None = None
+        self.live_mmsi: int | None = None
+        # Detached, bounded metadata received for a real AIS contact. It is
+        # diagnostic/transient state and intentionally not part of save v10.
+        self.live_ais_details: dict[str, object] = {}
         self.sensor_contact = None
         self.sensor_contact_age = config.RADAR_TRACK_STALE_S
         # Kriegsschiff: Loiter + ASM

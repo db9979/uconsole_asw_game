@@ -154,6 +154,15 @@ def test_static_resources_cached_and_security_headers(server, assets):
     assert assets[1] == ["data.commander"]
 
 
+def test_detached_sonar_scopes_are_exact_static_routes(server):
+    for scope in ("broadband", "lofar", "demon", "tma", "environment", "active"):
+        status, _, body = request(server, f"/?scope={scope}")
+        assert status == 200 and body == b"fixture index.html"
+    for path in ("/?scope=overview", "/?scope=../../app.js",
+                 "/?scope=broadband&extra=1"):
+        assert request(server, path)[0] == 404
+
+
 def test_public_v2_ui_is_exact_filtered_and_does_not_pair(server):
     assert request(server, "/api/v2/ui?lang=en")[2] == {
         "commander.web.title": "Commander"}

@@ -151,8 +151,9 @@ Ereignisse sind rollenbegrenzt: Schadensmeldungen erreichen Brücke und
 Schadensabwehr, Bedrohungen Brücke, OPZ und Waffen und Missionsereignisse alle
 Rollen. Der Lebenszyklus eines Vorschlags ist nur für Ursprungssitzung und
 -rolle sichtbar. Mit lokaler SimLog-Freigabe erhält ein Browser höchstens 64
-frühere Rollenprojektionen, niemals das vollständige Host-SimLog oder verborgene
-Entity-IDs.
+abgelöste Diagnose-Snapshots einschließlich vollständiger Simulationswahrheit
+und verborgener Entity-IDs. Normale Stationszustände bleiben
+beobachtungsbegrenzt.
 
 Eine Antwort über die Einreihung in die Warteschlange ist keine angenommene
 Aktion. Bei unsicherer Zustellung hält der Browser die Aktion ausstehend. Seine
@@ -161,6 +162,34 @@ mit einer Abklingzeit von fünf Sekunden; sie sendet niemals stillschweigend ein
 neue Aktion und erfindet keinen Erfolg. Veralteter Kontext oder
 Revisionskonflikte erfordern eine Prüfung des aktuellen Lagebilds. Der Server
 meldet abgelaufene Aktionen in der Warteschlange als Ablehnungen.
+
+## Web-Konsole und Solo-Modus
+
+Die Browser-Konsole ist für einen Desktop-PC gedacht, nicht für die uConsole: ein
+Viewport ohne Seitenscroll, eine Stations-Tab-Leiste (1-9 wählen eine Station,
+`[`/`]` schalten durch die gehaltenen), Kontakte links neben einem Instrument in
+voller Höhe, rechts Steuerung und Kontaktdetail. Ab etwa 1800 px Breite bekommt das
+Detail eine vierte Spalte und die Sonar-Übersicht zeigt alle sechs Plots. Die Rückkehr
+zu einer bereits besuchten Station zeichnet aus einem Cache (Kartenzoom, Auswahl und
+Eingaben bleiben); der erste Besuch einer Station braucht einen Round-Trip. Schmale
+Fenster fallen auf eine einzelne, nicht optimierte Spalte zurück.
+
+Der **Solo-Modus** lässt eine Person das ganze Spiel aus einem Browser bedienen,
+während die uConsole der Simulations-Server bleibt. Start mit
+`python main.py --solo-crew` (nur dieser Start, erste private LAN-Adresse, nie
+gespeichert) oder über die Zeile „Crew-Modus“ im F9-Overlay; die Kopplung läuft weiter
+über den Beitrittscode. Eine Solo-Sitzung hält alle neun Stationen mit Befehlen,
+Direktfeuer, Sonar-Audio und SimLog, es kann nur ein Browser koppeln (ein zweiter
+erhält `session_limit`, bis der erste im Roster entfernt wird), und Leases verfallen
+nicht. Ein Moduswechsel widerruft alle Sitzungen und rotiert den Code.
+
+Der Solo-Browser erhält zusätzlich eine **Spielsteuerungsleiste**: Pause/Fortsetzen,
+Zeitfaktor (1x-120x), Speichern und Laden (Slots 1-5) sowie Neues Spiel (Szenario,
+Welt, Schwierigkeit, optionaler Seed). Laden oder ein neues Spiel ersetzt die Welt,
+der Browser bleibt aber gekoppelt; alles, was er für die alte Welt vorbereitet hatte,
+scheitert geschlossen. Im Hauptmenü der uConsole zeigt der Browser einen Startbildschirm.
+Editoren, Optionen, Netzwerkverwaltung, Beenden und Zugangsdaten bleiben Host-Sache.
+Sind alle Stationen geleast, ist die Autocrew für alle ausgesetzt.
 
 ## Lebenszyklus und Grenzen
 

@@ -111,6 +111,111 @@ def filtered_noise_event(duration_s: float, sample_rate: int,
     return np.clip(np.nan_to_num(signal * envelope), -1, 1).astype(np.float32)
 
 
+def active_sonar_ping(frequency_hz: float, sample_rate: int,
+                      amplitude: float = 0.32) -> np.ndarray:
+    """Short naval sonar pulse with a metallic onset and decaying reverb."""
+    duration_s = .62
+    count = max(1, int(duration_s * sample_rate))
+    signal = np.zeros(count, dtype=np.float64)
+    pulse = fm_chirp(frequency_hz * .76, frequency_hz * 1.08, .22,
+                     sample_rate, amplitude, modulation_hz=8.0,
+                     modulation_depth_hz=14.0).astype(np.float64)
+    signal[:pulse.size] += pulse
+    # Quiet, progressively darker replicas suggest hull/water reverberation
+    # without pretending to encode a gameplay range or a real returned echo.
+    for delay_s, gain in ((.075, .28), (.145, .15), (.245, .07)):
+        delay = round(delay_s * sample_rate)
+        end = min(count, delay + pulse.size)
+        if end > delay:
+            signal[delay:end] += pulse[:end - delay] * gain
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    ring = np.sin(2 * np.pi * frequency_hz * .48 * t + .6)
+    ring *= np.exp(-8.0 * t) * min(amplitude, .2) * .2
+    signal += ring
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[:edge] *= np.linspace(0.0, 1.0, edge)
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
+def combat_effect(kind: str, sample_rate: int,
+                  amplitude: float = .28) -> np.ndarray:
+    """Deterministic layered one-shot effects for local shipboard events."""
+    profiles = {
+        "torpedo_launch": (.72, 35.0, 900.0, 181, 72.0, 23.0),
+        "missile_launch": (.95, 90.0, 5200.0, 223, 180.0, 820.0),
+        "gunfire": (.62, 70.0, 4300.0, 277, 105.0, 47.0),
+        "explosion": (1.20, 25.0, 1600.0, 331, 54.0, 19.0),
+        "water_entry": (.58, 120.0, 3400.0, 389, 240.0, 82.0),
+    }
+    duration, low, high, seed, body_hz, tail_hz = profiles.get(
+        kind, profiles["explosion"])
+    count = max(1, int(duration * sample_rate))
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    noise = filtered_noise_event(duration, sample_rate, low, high,
+                                 amplitude, seed).astype(np.float64)
+    if kind == "gunfire":
+        envelope = np.zeros(count)
+        burst_len = max(1, round(.055 * sample_rate))
+        for onset_s, gain in ((0.0, 1.0), (.115, .85), (.23, .72), (.345, .58)):
+            onset = round(onset_s * sample_rate)
+            end = min(count, onset + burst_len)
+            if end > onset:
+                local_t = np.arange(end - onset) / sample_rate
+                envelope[onset:end] += gain * np.exp(-42.0 * local_t)
+        signal = noise * envelope * 2.5
+        signal += amplitude * .45 * np.sin(2 * np.pi * body_hz * t) * envelope
+    else:
+        attack = np.minimum(1.0, t * (90.0 if kind != "water_entry" else 28.0))
+        decay = np.exp(-(3.2 if kind == "explosion" else 5.0) * t)
+        envelope = attack * decay
+        signal = noise * envelope
+        signal += amplitude * .65 * np.sin(2 * np.pi * body_hz * t) * envelope
+        signal += amplitude * .25 * np.sin(2 * np.pi * tail_hz * t + .4) \
+            * np.exp(-7.0 * t)
+        if kind == "missile_launch":
+            sweep = 420.0 + 1250.0 * t / max(duration, 1e-6)
+            signal += amplitude * .22 * np.sin(2 * np.pi * sweep * t) * envelope
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[:edge] *= np.linspace(0.0, 1.0, edge)
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
+def helicopter_block(sample_rate: int, amplitude: float = .12,
+                     phase: float = 0.0, rotor_hz: float = 4.8,
+                     duration_s: float = .25) -> np.ndarray:
+    """Phase-continuous rotor/gearbox block for a nearby helicopter."""
+    count = max(1, int(duration_s * sample_rate))
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    blade_phase = 2 * np.pi * rotor_hz * 4 * t + phase
+    slap = np.sin(blade_phase) + .42 * np.sin(2 * blade_phase + .25)
+    slap += .18 * np.sin(3 * blade_phase - .4)
+    loading = .82 + .18 * np.sin(blade_phase / 4 + .7)
+    gearbox = .16 * np.sin(2 * np.pi * 690.0 * t + phase * .13)
+    signal = amplitude * (slap * loading / 1.6 + gearbox)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
+def ship_ambience_block(sample_rate: int, sea_state: float = 0.0,
+                        rain: float = 0.0, amplitude: float = .04,
+                        phase: float = 0.0,
+                        duration_s: float = .25) -> np.ndarray:
+    """Phase-continuous hull, ventilation, sea and rain ambience."""
+    count = max(1, int(duration_s * sample_rate))
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    sea = float(np.clip(sea_state, 0.0, 6.0)) / 6.0
+    rain_level = float(np.clip(rain, 0.0, 1.0))
+    base = 2 * np.pi * 31.0 * t + phase
+    ventilation = .55 * np.sin(base) + .25 * np.sin(base * 1.47 + .8)
+    hull = sea * (.42 * np.sin(base * .31 + 1.1)
+                  + .26 * np.sin(base * .73 - .4))
+    weather = rain_level * (.25 * np.sin(base * 13.7 + .2)
+                            + .18 * np.sin(base * 21.3 - .6))
+    signal = amplitude * (ventilation + hull + weather)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
 def stereo_bearing(samples: np.ndarray, bearing_deg: float,
                    listener_bearing_deg: float = 0.0) -> np.ndarray:
     """Pannt ein Monosignal nach relativer Peilung mit konstanter Leistung."""

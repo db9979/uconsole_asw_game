@@ -135,8 +135,9 @@ async function run() {
       }
     }));
     const textOverflow = [...section.querySelectorAll("h2, h3, h4, p, dt, dd, label, button, summary, output")]
-      .filter((element) => !element.hidden && getComputedStyle(element).display !== "none" && element.clientWidth > 0)
-      .some((element) => element.scrollWidth > element.clientWidth + 2);
+      .filter((element) => !element.hidden && getComputedStyle(element).display !== "none" && element.clientWidth > 1)
+      .filter((element) => element.scrollWidth > element.clientWidth + 2)
+      .map((element) => `${element.tagName.toLowerCase()}#${element.id}.${element.className}: ${element.textContent.slice(0, 40)}`);
     return {intersects, outer: [outer.left, outer.top, outer.right, outer.bottom],
       visual: [visual.left, visual.top, visual.right, visual.bottom],
       controls: [controls.left, controls.top, controls.right, controls.bottom],
@@ -178,17 +179,29 @@ def test_station_dashboards_have_bounded_responsive_layout_rules():
     assert ".fire-grid { grid-template-columns: minmax(0, 1fr); }" in mobile
     assert re.search(r"\.role-canvas \{[^}]*width: 100%[^}]*height: clamp", css)
     assert re.search(r"\.visual-equivalent \{[^}]*max-height:[^}]*overflow: auto", css)
-    assert re.search(r"\.visual-tabs \{[^}]*grid-template-columns: repeat\(6", css)
+    assert re.search(r"\.visual-tabs \{[^}]*grid-template-columns: repeat\(7", css)
     assert ".visual-tabs { grid-template-columns: repeat(2" in mobile
     assert ".role-canvas { height: min(54svh, 22rem); }" in mobile
     assert re.search(r"body\.workstation-mode \.operations-panel \{[^}]*overflow: hidden", css)
     assert re.search(r"body\.workstation-mode \.station-view \{[^}]*min-height: 0[^}]*overflow: hidden", css)
-    assert re.search(r"body\.workstation-mode \.station-section \{[^}]*grid-template-rows: auto minmax\(0, 1fr\)[^}]*overflow: hidden", css)
+    assert re.search(r"body\.workstation-mode \.station-section \{[^}]*grid-template-rows: minmax\(0, 1fr\)[^}]*overflow: hidden", css)
+    # Track stations: contacts | instrument | controls, contact detail under the controls.
+    assert re.search(r"\.station-section\.track-workstation \{[^}]*grid-template-columns: clamp\(13rem, 16vw, 21rem\) minmax\(0, 1fr\) clamp", css)
     assert re.search(r"body\.workstation-mode \.station-grid \{[^}]*min-height: 0[^}]*overflow-y: auto", css)
-    assert re.search(r"body\.workstation-mode #operations-workspace \{[^}]*grid-column: 2[^}]*grid-template-columns: repeat\(2", css)
+    assert re.search(r"body\.workstation-mode \.track-workstation #operations-workspace \{[^}]*display: contents", css)
+    assert re.search(r"body\.workstation-mode \.contacts-panel \{[^}]*grid-column: 1", css)
+    assert re.search(r"body\.workstation-mode \.details-panel \{[^}]*grid-column: 3", css)
+    # Wide desktop screens gain a fourth column for the contact detail.
+    desktop = css.split("@media (min-width: 1500px) and (min-height: 760px)", 1)[1]
+    assert re.search(r"\.station-section:not\(\.track-workstation\) \.station-grid \{[^}]*grid-template-columns: repeat\(2", desktop)
+    assert re.search(r"\.station-grid > \.station-wide \{[^}]*grid-column: 1 / -1", desktop)
+    wide = css.split("@media (min-width: 1800px) and (min-height: 850px)", 1)[1]
+    assert re.search(r"\.details-panel \{[^}]*grid-column: 4", wide)
 
 
-@pytest.mark.parametrize("width,height,zoom", [(1280, 720, 1), (390, 844, 1), (1280, 1024, 4)])
+@pytest.mark.parametrize("width,height,zoom", [
+    (1920, 1080, 1), (1280, 720, 1), (390, 844, 1), (1280, 1024, 4),
+])
 @pytest.mark.parametrize("language", ["en", "de", "pseudo"])
 def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
@@ -206,7 +219,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     session = {"protocol": 2, "client_id": "layout-client", "name": "Layout Lobby",
                "csrf": "layout-csrf", "ordinal": 0, "presence": 1.0,
                 "next_command_seq": 0, "active_station": None,
-                "active_generation": 0, "simlog": False,
+                "active_generation": 0, "simlog": False, "host": None,
                 "station": None, "requested_station": None, "station_generation": 0,
                 "stations": {
                     station: {
@@ -705,7 +718,7 @@ def test_native_host_menu_join_code_is_focal_and_bounded(language, large):
         with layout.capture_text() as text:
             console.draw(game)
         canvas = pygame.Rect(0, 0, 1280, 720)
-        assert len(console.row_rects()) == 5
+        assert len(console.row_rects()) == 6
         assert all(canvas.contains(entry["bounds"]) for entry in text)
         assert all(entry["bounds"].contains(entry["rect"]) for entry in text)
         assert game.tr("commander.local.join_code") in {entry["text"] for entry in text}

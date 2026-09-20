@@ -37,7 +37,9 @@ class Server:
         json.dumps(states, allow_nan=False)
         json.dumps(charts, allow_nan=False)
         self.v2_states = deepcopy(states)
-        self.v2_charts = deepcopy(charts)
+        # The real server serialises each role's chart to its own bytes, so a
+        # chart object shared between roles is still independent once published.
+        self.v2_charts = {role: deepcopy(chart) for role, chart in charts.items()}
 
     def publish_proposals_v2(self, **payload):
         self.proposals = deepcopy(payload)

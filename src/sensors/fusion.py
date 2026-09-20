@@ -34,6 +34,7 @@ class OPZObservation:
     observer_x: float | None = None
     observer_y: float | None = None
     released_to_opz: bool = False
+    altitude_m: float | None = None
 
     @property
     def track_id(self) -> str:

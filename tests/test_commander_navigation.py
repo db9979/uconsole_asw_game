@@ -393,7 +393,7 @@ def test_target_proposal_expires_when_observed_contact_binding_disappears(
 @pytest.mark.parametrize("language", ["en", "de", "pseudo"])
 @pytest.mark.parametrize("large", [False, True])
 @pytest.mark.parametrize("network_mode", ["lan", "hotspot"])
-def test_native_five_rows_nonoverlap_and_roomy_join_code(
+def test_native_six_rows_nonoverlap_and_roomy_join_code(
         game, language, large, network_mode):
     console = game.commander
     console.bridge = CommanderBridge()
@@ -413,7 +413,7 @@ def test_native_five_rows_nonoverlap_and_roomy_join_code(
     console.error = "commander.local.navigation.bridge_down"
     with layout.capture_text() as text:
         console.draw(game)
-    assert len(console.row_rects()) == 5
+    assert len(console.row_rects()) == 6
     for entry in text:
         assert entry["bounds"].contains(entry["rect"])
         assert pygame.Rect(0, 0, 1280, 720).contains(entry["bounds"])
@@ -424,8 +424,8 @@ def test_native_five_rows_nonoverlap_and_roomy_join_code(
     assert join["rect"].height >= 60
     game.commander_open = True
     console.selection = 0
-    for expected in (1, 2, 3, 4, 0):
+    for expected in (1, 2, 3, 4, 5, 0):
         console.handle_key(game, pygame.K_DOWN)
         assert console.selection == expected
     console.handle_key(game, pygame.K_UP)
-    assert console.selection == 4
+    assert console.selection == 5

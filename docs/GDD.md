@@ -40,25 +40,28 @@ Sonarzentrale deiner Fregatte – jedes Ping, jeder Kurs, jeder Torpedo entschei
 | 6 | Funkraum | HFDF-Peilungen, HQ-Teletype, Morseband |
 | 7 | Maschinenraum | Telegraph, RPM, Eigenlärm, Kavitation, Fahrtgrenze |
 | 8 | Helikopter-Deck | HSP-5-Status, Treibstoff, Bojen, Lufttorpedos, Datenlink |
+| 9 | EloKa / ESM | Passive Radarauffassungen, Filter, Zuordnung, ECM und Audio |
 
 **Steuerung (globale):**
 - `P`: Pause | `F1`: kontextabhängige Hilfe | `Esc`: Eingabe/Ansicht schließen
   oder Beenden-Dialog mit sicherer Vorauswahl
 - Verwaltung pausiert, keine operativen Befehle in Pause; U/V-Eingaben bleiben live.
 - `U`/`V`: Zielkurs/Zielfahrt direkt eingeben | `Alt+Enter`: Vollbild
-- `↑/↓`: Kurs/Ruder (Brücke/Engine) bzw. Torpedotiefe (Waffen)
-- `+/−`: Telegraph/Motorenbefehl | `B`: Sonar-Array oder Bojen (stationsabhängig)
-- `A`: Aktiver Ping (Sonar) | `M`: Kontakt markieren (Ziel setzen)
+- `←/→`: Kurs/Ruder (Brücke) bzw. Torpedoziel (Waffen); `↑/↓`: Telegraph
+  (Brücke/Engine) bzw. Torpedotiefe (Waffen)
+- `+/−`: Telegraph/Motorenbefehl | `Shift+B`: Sonar-Array | `B`: Bojen
+  (Waffen/Helikopter) oder EloKa-Bandfilter
+- `Shift+A`: Aktiver Ping (Sonar) | `M`: beobachteten Kontakt als Ziel setzen
 - `T`: Torpedo-Start (Waffenzentrale)
 - Station 4: Links/Rechts Raum, Auf/Ab Team, Enter zuweisen, Backspace zurückziehen
-- `R` (nach Game-Over): Neustart | `Tab`/`Shift+Tab`: Stationen wechseln (auch 1–8 direkt)
+- `R` (nach Game-Over): Neustart | `Tab`/`Shift+Tab`: Stationen wechseln (auch 1–9 direkt)
 - `Z`/`X` oder `[`/`]`: Zeitraffer; Sonar `I`/`O`: Gain; Space nur Sonar-Peak-Hold
 - `S`: Speichern (JSON) | `L`: Laden (M6)
 - Slots 1-5 auswählen, Enter bestätigen; Überschreiben/Laden zusätzlich bestätigen.
 - `Q`/`E`: Kartenzoom ausschließlich auf Brücke, Waffen- und
   Helikopterstation; `Q` ist keine Beenden-Taste.
-- Kurzhinweise im Ereignis-Feed sind stationsbezogen und nennen nur Befehle der
-  aktiven Station; `F1` enthält globale und stationsspezifische Seiten.
+- Der Ereignis-Feed ist eine stationsübergreifende operative Historie und keine
+  Tastenlegende; `F1` enthält globale und stationsspezifische Bedienhinweise.
 
 Der aktuelle Ausbaustand, bekannte Grenzen und die weitere Roadmap stehen in
 `implementation-plan.md`. Die folgenden Fachkapitel enthalten teilweise noch

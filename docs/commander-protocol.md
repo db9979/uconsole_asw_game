@@ -26,10 +26,11 @@ or trigger sensor/TMA work. Candidate-load methods have no network side effects.
 | GET /api/v2/session | Authenticated client, lease, grant and sequence state |
 | GET /api/v2/state, /chart | Active role projection and matching known chart |
 | GET /api/v2/results, /proposals, /events | Role- and session-scoped command state |
-| GET /api/v2/simlog | Granted, role-scoped prior projections, at most 64 entries |
+| GET /api/v2/simlog | Host-granted full-truth diagnostic snapshots, at most 64 entries |
 | POST /api/v2/stations/request, /activate, /release | Strict lease operations |
 | POST /api/v2/commands | Strict action envelope; 202 means queued, not applied |
 | POST /api/v2/sonar/audio | Separately granted live Sonar audio polling |
+| GET /ws/v2/sonar | Active-Sonar-role binary display stream (WebSocket upgrade) |
 | POST /api/v2/logout | Revokes the current session and clears its cookie |
 
 Every `/api/v1/*` route is retired and returns 404 without redirect or fallback.
@@ -90,11 +91,37 @@ response is never reported as successful before its terminal result.
 V2 sessions, clients, leases, histories, queues, polling, and projection sizes
 are hard-bounded. Sonar audio is live-only, separately granted, bound to the
 active sonar generation, and filtered on the main thread using the projected
-Sonar audition mode, band, notch, and gain. Bridge cavitation noise is synthesized
+Sonar audition mode, band, notch, and gain. The server keeps the last eight blocks
+(two seconds) so a briefly stalled client catches up in order; older blocks are dropped
+and reported as a discontinuity. The browser starts playback 0.8 s behind the newest
+block so a main-thread stall or Wi-Fi hiccup does not become an audible gap. Bridge cavitation noise is synthesized
 locally in the browser after sound opt-in from the already allowlisted own-ship
 cavitation boolean; it adds no endpoint, grant, command, or host-audio control.
 The Sonar role receives only bounded own-ship speed and TAS handling limits needed
 to explain a disabled array control; hover reasons never inspect hidden entities.
+
+The Sonar display stream is an additive protocol-v2 transport, not a simulation
+interface. It upgrades only with the exact same Origin, authenticated HttpOnly
+cookie, active Sonar lease/generation and subprotocol `u-jagd-sonar-v2`. Only one
+stream per session is admitted. Revocation, role activation, lease replacement,
+world replacement or shutdown invalidates it immediately. The ordinary state
+poll remains authoritative and is the automatic fallback; while streaming, the
+client requests `/api/v2/state?sonar=stream`, whose Sonar projection omits the
+duplicated spectral arrays. The cookie is scoped to `/` so the browser can present
+it to both `/api/v2/*` and the fixed WebSocket route; it remains HttpOnly,
+SameSite=Strict and absent from JavaScript, URLs and protocol payloads.
+
+Each server-to-client WebSocket message is one final binary frame, at most 4096
+bytes. Its 60-byte little-endian header is
+`<4sBBHQQdfHHHHHHfff>`: magic `UJS2`, stream version, flags, header bytes,
+monotonic stream sequence, world epoch, simulation time, listening bearing, five
+array lengths, one reserved length, then Broadband/LOFAR/DEMON ages. Five packed
+unsigned-byte arrays follow in that order: newest Broadband row, newest LOFAR row,
+newest DEMON row, current LOFAR spectrum, current DEMON spectrum. Values are the
+already detached, allowlisted projection quantized from [0,1] to [0,255]. The
+server caches only the newest packet; a slow client skips intermediate display
+samples and is disconnected if writing stalls, so render traffic cannot build an
+unbounded queue or alter deterministic simulation order.
 
 ## Protocol v2 Pairing and Bounds
 
@@ -107,8 +134,10 @@ to explain a disabled array control; hover reasons never inspect hidden entities
 - Independent cryptographic cookie session with an eight-hour idle limit. Presence
   polling renews a 15-second station lease; grants bind to its generation. At most
   12 clients can hold sessions.
-- Four admitted worker connections, 1.5-second inactivity timeout and three-second
-  absolute deadline. Deadline timers are bounded by workers and joined on cleanup.
+- Sixteen admitted worker connections, 1.5-second inactivity timeout and
+  three-second absolute deadline for ordinary HTTP. A successfully authenticated
+  Sonar upgrade retains one bounded worker slot until it is invalidated or closes.
+  Deadline timers are bounded by workers and joined on cleanup.
 - JSON bodies at most 4096 bytes; bounded request line/headers, strict framing,
   duplicate-member/nonfinite-number/unknown-field rejection.
 - Global command queue at most 64 and per-client queue at most eight. Commands
@@ -135,6 +164,13 @@ Track references and neutral labels are observation-lifetime identities, not raw
 entity IDs. Replacement/reacquisition invalidates them. Only modeled AIS labels
 are forwarded; internal producer prefixes cannot reveal civilian/warship identity.
 No seed, RNG, hidden entity/profile information or save dumps are exported.
+
+The ELOKA v2 intercept row additionally carries derived `signal_state`
+(`LIVE`, `RECENT`, `MEMORY`, or `UNCONFIRMED`) and boolean `operational` fields.
+Browser status, minimum-threat, and frequency-band filters are client-local and
+apply one identical subset to the intercept list, contacts, scope, and accessible
+text alternative. Active ECM targets remain visible. No range or hidden emitter
+identity is projected or filterable.
 
 Commands carry protocol, cryptographic request ID, client sequence, station,
 station and active generations, world session/epoch, resource revision, action,
@@ -168,8 +204,9 @@ sequence namespaces cannot alias sonar identity.
 Damage events are visible to Bridge and Damage Control, threats to Bridge, OPZ
 and Weapons, and mission events to every role. Proposal lifecycle events are
 visible only to the originating session and role. SimLog stores at most 64 prior
-role projections with their simulation timestamps; disabled or ungranted SimLog
-returns no history and host-local full-truth entries are never exported.
+detached diagnostic snapshots with their simulation timestamps. An explicit
+host grant exposes full simulation truth through this read-only endpoint;
+disabled or ungranted SimLog returns no history.
 
 Epoch changes reject queued actions across administrative/input/grant/connection
 transitions. World replacement revokes pairing and generates a new session at the
@@ -189,6 +226,37 @@ Its range is browser-local and sends no command. Sea state and day/night affect
 presentation only; they are not visibility models, and symbols do not establish
 platform identity. Lookout draws only on snapshots, tab activation, local range
 changes or resize, with device-pixel-aware backing dimensions.
+
+## Solo Mode Additions (protocol v2, additive)
+
+The session body carries `host`: `null` normally, `{"generation": n}` for a solo
+session. `GET /api/v2/host` returns the detached host view (`phase`, `paused`,
+`time_scale`, `world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`) only to a
+session with `host`; other sessions get 403. Slot rows carry `saved` and `modified`
+from file metadata only, never save contents.
+
+Host controls use the ordinary `POST /api/v2/commands` with the pseudo-role
+`"host"` (never a station lease; `STATIONS` and every projection stay nine).
+`station_generation` is the session's `host.generation`, `active_generation` must be
+0, and `world_session` must match; the epoch and resource revision are not checked
+because these actions reference no resource and pause/resume move the epoch
+themselves. Actions: `host_pause`, `host_resume`, `host_time_scale {index}`,
+`host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
+level?, seed?}`, and `host_instructor_environment {sea_state, event}`. The instructor
+action changes the save-compatible authoritative world field (0–6) and refreshes
+the derived weather endpoints. Its optional closed event enum changes all hostile
+submarines to quiet/cruise/flank speed or injects a torpedo-launch exercise cue,
+without exposing target identity or simulation truth to a station.
+Each action has a closed schema and its own allowed phases (a host menu
+or overlay makes the phase `blocked` and rejects all of them). Host commands run
+before station commands in a frame; once one replaces the world, every later command
+of that frame is rejected as `phase_blocked`. In solo mode a world replacement keeps
+session, cookie and CSRF, drops queued and held commands, re-leases every station
+under fresh generations and does not rotate the join code.
+
+Crew mode is unchanged: `station: "host"` is rejected with 403 and the game controls
+remain host-only. Solo mode is an explicit local host decision (CLI flag or F9 row),
+never persisted, and changing it revokes all sessions.
 
 ## Test Scope
 

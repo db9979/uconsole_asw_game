@@ -80,6 +80,62 @@ def test_derived_motion_averages_out_per_fix_noise_far_better_than_two_point():
     assert fitted_swing < 90.0
 
 
+def test_derived_course_is_slew_capped_between_updates():
+    """The raw per-refit least-squares slope alone still jumps around a lot
+    under normal radar noise (see the test above); the *displayed* course
+    additionally must not visibly change every update for a contact holding
+    a steady heading (session report: 'die Kursanzeige der Kontakte
+    schwankt zu sehr ... Kontakte ... adjust course every second')."""
+    random.seed(7)
+    picture = TrackPicture(300.0)
+    vx = 20.0 / 3600.0 * math.sin(math.radians(90.0))
+    vy = -20.0 / 3600.0 * math.cos(math.radians(90.0))
+    x, y = 20.0, 0.0
+    courses = []
+    for i in range(40):
+        nx, ny = x + random.uniform(-0.05, 0.05), y + random.uniform(-0.05, 0.05)
+        bearing, range_nm = _bearing_range(nx, ny)
+        track = observe(picture, source="RADAR", now=i * 0.5,
+                        bearing=bearing, range_nm=range_nm)
+        x, y = x + vx * 0.5, y + vy * 0.5
+        course, _speed = track.derived_motion()
+        if course is not None:
+            courses.append(course)
+
+    max_step = config.OBS_DERIVED_COURSE_MAX_RATE_DEG_S * config.OBS_RADAR_EPOCH_S
+    assert all(abs(config.angle_diff_deg(a, b)) <= max_step + 1e-6
+              for a, b in zip(courses, courses[1:]))
+
+
+def test_derived_course_still_follows_a_real_turn():
+    """The slew cap must not permanently pin the display to the old leg once
+    the contact genuinely changes course."""
+    picture = TrackPicture(300.0)
+    x, y = 20.0, 0.0
+    now = 0.0
+    for i in range(12):
+        bearing, range_nm = _bearing_range(x, y)
+        track = observe(picture, source="RADAR", now=now, bearing=bearing,
+                        range_nm=range_nm)
+        vx = 20.0 / 3600.0 * math.sin(math.radians(90.0))
+        vy = -20.0 / 3600.0 * math.cos(math.radians(90.0))
+        x, y = x + vx * 0.5, y + vy * 0.5
+        now += 0.5
+    course, _ = track.derived_motion()
+    assert course == pytest.approx(90.0, abs=0.5)
+
+    for i in range(240):
+        bearing, range_nm = _bearing_range(x, y)
+        track = observe(picture, source="RADAR", now=now, bearing=bearing,
+                        range_nm=range_nm)
+        vx = 20.0 / 3600.0 * math.sin(math.radians(180.0))
+        vy = -20.0 / 3600.0 * math.cos(math.radians(180.0))
+        x, y = x + vx * 0.5, y + vy * 0.5
+        now += 0.5
+    course, _ = track.derived_motion()
+    assert course == pytest.approx(180.0, abs=1.0)
+
+
 def test_measurement_cadence_is_source_aware_and_refreshes_only_on_samples():
     hfdf = TrackPicture(300.0)
     track = observe(hfdf, source="HFDF", now=0.0, bearing=10.0)

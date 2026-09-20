@@ -124,14 +124,42 @@ remain available. Reconnection establishes a new sound baseline, not alarm repla
 Events are role-scoped: damage reports reach Bridge and Damage Control, threats
 reach Bridge, OPZ and Weapons, and mission events reach every role. Proposal
 lifecycle events are visible only to their originating session and role. With a
-local SimLog grant, a browser receives at most 64 prior role projections; it
-never receives the host's full-truth SimLog or hidden entity identifiers.
+local SimLog grant, a browser receives at most 64 detached diagnostic snapshots.
+This explicit read-only capability includes full simulation truth and hidden
+entity identifiers; ordinary station state remains observation-bounded.
 
 A queued response is not an accepted action. If delivery is uncertain, the browser
 keeps the action pending. Its explicit reconciliation control retries the same
 request ID/envelope, with a five-second cooldown; it never silently sends a new
 action or invents success. Stale context or revision conflicts require reviewing
 the current picture. The server reports expired queued actions as rejections.
+
+## Web Console and Solo Mode
+
+The browser console is built for a desktop PC, not the uConsole: one viewport
+without page scroll, a station tab bar (1-9 select a station, `[`/`]` step through
+the held ones), contacts left of a full-height instrument and the controls and
+contact detail on the right. From about 1800 px wide the detail gets its own
+fourth column and the sonar overview shows all six plots. Returning to a station
+already visited repaints from a cache (map zoom, selection and typed values stay);
+the first visit to a station takes one round trip. Narrow windows fall back to a
+single unoptimised column.
+
+**Solo mode** lets one person run the whole game from one browser while the uConsole
+stays the simulation server. Start it with `python main.py --solo-crew` (this launch
+only, first private LAN address, never saved) or switch the "Crew mode" row in the
+F9 overlay; either way pairing still uses the join code. A solo session holds all
+nine stations with command, direct fire, sonar audio and SimLog, only one browser
+may pair (a second gets `session_limit` until you remove the first in the roster),
+and leases do not lapse. Changing the mode revokes every session and rotates the code.
+
+The solo browser also gets a **game control bar**: pause/resume, time scale
+(1x-120x), save and load (slots 1-5) and new game (scenario, world, difficulty,
+optional seed). Loading or starting a game replaces the world but keeps the browser
+paired; anything it had prepared for the old world fails closed. At the uConsole main
+menu the browser shows a start screen. Editors, options, network administration,
+quit and credentials stay host-only. With every station leased Autocrew is
+suspended for all of them.
 
 ## Lifecycle and Limits
 

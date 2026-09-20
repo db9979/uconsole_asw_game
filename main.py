@@ -14,16 +14,23 @@ def main(argv=None) -> int:
     parser.add_argument("seed", nargs="?", type=int)
     parser.add_argument("--windowed", action="store_true")
     parser.add_argument("--no-audio", action="store_true")
+    parser.add_argument("--solo-crew", action="store_true",
+                        help="start Remote Crew in solo mode for this launch: one "
+                             "paired browser operates every station and the game "
+                             "controls (never persisted)")
     parser.add_argument("--version", action="version", version=APP_VERSION)
     args = parser.parse_args(argv)
     preferences = load_preferences()
     seed = args.seed if args.seed is not None else random.SystemRandom().randrange(
         1, 1_000_000_000)
-    Game(seed=seed, start_menu=True,
-         preferences=preferences,
-         fullscreen=preferences.fullscreen and not args.windowed,
-         show_splash=True,
-         audio_enabled=preferences.audio and not args.no_audio).run()
+    game = Game(seed=seed, start_menu=True,
+                preferences=preferences,
+                fullscreen=preferences.fullscreen and not args.windowed,
+                show_splash=True,
+                audio_enabled=preferences.audio and not args.no_audio)
+    if args.solo_crew:
+        game.commander.autostart_solo()
+    game.run()
     return 0
 
 

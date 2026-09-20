@@ -176,6 +176,7 @@ Die wichtigsten globalen Bedienelemente sind:
 | Eingabe | Aktion |
 |---|---|
 | `1` bis `9` | Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk, Maschinenraum, Helikopter, Elektronische Kampfführung/ESM; erneutes Drücken der Nummer der aktiven Station wechselt, sofern vorhanden, zur nächsten Seite |
+| `F` / `Umschalt+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
 | `Tab` / `Shift+Tab` | Nächste / vorherige Station |
 | `P` | Pause / fortsetzen |
 | `F1` | Kontextsensitive Hilfe |
@@ -204,6 +205,12 @@ In der Hilfe wechselt Links/Rechts die Kategorie; Auf/Ab oder Page Up/Page Down
 scrollt den Inhalt. Bestehende stationsbezogene Tastenkürzel für Waffen bleiben
 verfügbar. Gedrückt gehaltene Kurs- und Torpedotiefensteuerungen verwenden
 Echtzeit und nicht den gewählten Simulationsfaktor.
+
+Der Ereignis-Feed am unteren Rand gilt stationsübergreifend. Er bewahrt operative
+Meldungen, abgeschlossene Befehle und Alarme auf, darunter Missionsergebnis,
+Waffen- und Abwehrereignisse, Schaden, Funkverkehr, Navigation sowie Pause und
+Zeitraffer. Kurzlebige Eingabe-, Fehler-, Auswahl- und Anzeigehinweise bleiben im
+Statusbanner, damit sie die operative Historie nicht verdrängen.
 
 Klicken Sie bei der Schadensabwehr auf eine Zone oder deren Beschriftung, um sie
 auszuwählen und die Zuweisung des aktuell gewählten Trupps zu versuchen. Sind
@@ -332,10 +339,11 @@ nicht enthalten.
 
 Die Sonarbesatzung kann Zielvorschläge und die Brückenbesatzung Kurs- und
 Fahrtvorschläge bereitstellen. Diese Anfragen wirken niemals direkt: Der Host
-prüft sie lokal und nimmt sie an oder lehnt sie ab. Browseralarme und die
-SimLog-Historie sind rollenbegrenzt und verwenden nur zuvor veröffentlichte
-Beobachtungen; eine Neuverbindung setzt eine stille Ereignis-Ausgangsbasis,
-anstatt alte Alarme erneut abzuspielen.
+prüft sie lokal und nimmt sie an oder lehnt sie ab. Browseralarme bleiben
+rollenbegrenzt. Das separat vom Host freigegebene, schreibgeschützte SimLog ist
+eine Diagnoseausnahme und zeigt abgelöste Full-Truth-Snapshots einschließlich
+versteckter Einheiten; eine Neuverbindung setzt eine stille
+Ereignis-Ausgangsbasis, anstatt alte Alarme erneut abzuspielen.
 
 Solange ein Browser eine Stations-Lease besitzt, ist die Bedienung der
 entsprechenden Station auf der uConsole schreibgeschützt. Host-Verwaltung, Pause

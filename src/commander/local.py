@@ -30,6 +30,10 @@ class CommanderConsole:
         self.bridge = CommanderBridge()
         self.hotspot = hotspot or HotspotController()
         self.network_mode = "lan"
+        # Solo is a per-launch host decision, never persisted.
+        self.solo = False
+        self._eco_present = False
+        self._eco_polled = float("-inf")
         self.hosts = ("127.0.0.1",)
         self.host = self.hosts[0]
         self.port = 8765
@@ -483,6 +487,50 @@ class CommanderConsole:
             self.server = CommanderServer(
                 translations=self._translations,
                 contact_analysis_assets=self._contact_analysis_assets)
+            if self.solo:
+                self.server.set_solo_mode(True)
+
+    def eco_display_ready(self, game):
+        """Solo browser is live and no host dialog needs the full local screen.
+
+        The presence query is sampled at most every ``ECO_PRESENCE_POLL_S`` of
+        wall time; anything that asks for the host's attention wins at once.
+        """
+        if (not self.solo or self.address is None or self.server is None
+                or self.admission.request is not None or self.roster_open
+                or self.confirm_visible(game)):
+            self._eco_present = False
+            return False
+        now = time.monotonic()
+        if now - self._eco_polled >= config.ECO_PRESENCE_POLL_S:
+            self._eco_polled = now
+            query = getattr(self.server, "solo_browser_present", None)
+            self._eco_present = bool(query and query(config.ECO_PRESENCE_MAX_AGE_S))
+        return self._eco_present
+
+    def set_solo(self, enabled):
+        """Switch crew/solo; a running server revokes every session and code."""
+        enabled = bool(enabled)
+        if enabled is self.solo:
+            return
+        self.solo = enabled
+        if self.server is not None:
+            self.server.set_solo_mode(enabled)
+            self.pairing_code = self.server.pairing_code
+            self.invalidate_commands()
+
+    def autostart_solo(self):
+        """Launch-time solo start on the first private LAN address, else loopback."""
+        self.solo = True
+        self.error = None
+        try:
+            self.prepare()
+            self.host = self.hosts[1] if len(self.hosts) > 1 else self.hosts[0]
+            self._prepare_transport()
+            self._start_transport(self.host)
+        except (ImportError, OSError, ValueError, RuntimeError):
+            self.deactivate()
+            self.error = "commander.local.error.start"
 
     def _start_transport(self, host):
         self._prepare_transport()
@@ -529,6 +577,8 @@ class CommanderConsole:
             station = ((self._requested_station(selected) or selected["active_station"])
                        if selected is not None else None)
             self.roster_station = STATIONS.index(station) if station in STATIONS else 0
+        elif self.selection == 5:
+            self.set_solo(not self.solo)
 
     def handle_key(self, game, key):
         if self.admission.request is not None:
@@ -545,12 +595,12 @@ class CommanderConsole:
                     self.confirm_kind = kinds[0]
             game._open_administration("")
         elif key in (pygame.K_UP, pygame.K_DOWN):
-            self.selection = (self.selection + (1 if key == pygame.K_DOWN else -1)) % 5
+            self.selection = (self.selection + (1 if key == pygame.K_DOWN else -1)) % 6
         elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.activate(game)
         elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_MINUS,
                      pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_MINUS, pygame.K_KP_PLUS):
-            if self.selection in (1, 2, 3):
+            if self.selection in (1, 2, 3, 5):
                 self.activate(game, -1 if key in (pygame.K_LEFT, pygame.K_MINUS,
                                                  pygame.K_KP_MINUS) else 1)
 
@@ -595,7 +645,7 @@ class CommanderConsole:
     @staticmethod
     def row_rects():
         """Shared canvas geometry for rendering and local click ownership."""
-        return tuple(pygame.Rect(124, 300 + index * 48, 1032, 40) for index in range(5))
+        return tuple(pygame.Rect(124, 300 + index * 40, 1032, 34) for index in range(6))
 
     @staticmethod
     def roster_client_rects():
@@ -760,6 +810,9 @@ class CommanderConsole:
                 (message("commander.local.host", host=self.host)
                  if self.network_mode == "lan" else "commander.local.hotspot.host_auto"),
                 message("commander.local.port", port=self.port), "commander.local.roster",
+                message("commander.local.crew_mode", mode=tr(
+                    "commander.local.crew_mode.solo" if self.solo
+                    else "commander.local.crew_mode.crew")),
             )
             for index, (text, rect) in enumerate(zip(values, self.row_rects())):
                 layout.blit_line(screen, message("menu.choice", marker=(

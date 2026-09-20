@@ -49,7 +49,7 @@
           40.0,
           300.0
         ],
-        "signature_text": "kräftige Gasturbinen-Tonals"
+        "signature_text": "kr\u00e4ftige Gasturbinen-Tonals"
       },
       "wiki_url": "https://de.wikipedia.org/wiki/Kirow-Klasse",
       "default_faction": "FEIND"
@@ -102,7 +102,7 @@
           40.0,
           300.0
         ],
-        "signature_text": "kräftige Gasturbinen-Tonals"
+        "signature_text": "kr\u00e4ftige Gasturbinen-Tonals"
       },
       "wiki_url": "https://de.wikipedia.org/wiki/Udaloy-Klasse",
       "default_faction": "FEIND"
@@ -155,7 +155,7 @@
           40.0,
           300.0
         ],
-        "signature_text": "kräftige Gasturbinen-Tonals"
+        "signature_text": "kr\u00e4ftige Gasturbinen-Tonals"
       },
       "wiki_url": "https://de.wikipedia.org/wiki/Admiral-Gorschkow-Klasse_(2006)",
       "default_faction": "FEIND"
@@ -297,7 +297,10 @@
         "sensor.warship_22.sonar"
       ],
       "emitter_keys": [
-        "emitter.warship_22.radar"
+        "emitter.warship_22.radar",
+        "emitter.warship_22.navigation",
+        "emitter.warship_22.air_search",
+        "emitter.warship_22.fire_control"
       ],
       "launcher_keys": [
         "launcher.warship_22.asm"
@@ -318,7 +321,10 @@
         "sensor.warship_23.sonar"
       ],
       "emitter_keys": [
-        "emitter.warship_23.radar"
+        "emitter.warship_23.radar",
+        "emitter.warship_23.navigation",
+        "emitter.warship_23.air_search",
+        "emitter.warship_23.fire_control"
       ],
       "launcher_keys": [
         "launcher.warship_23.asm"
@@ -339,7 +345,10 @@
         "sensor.warship_24.sonar"
       ],
       "emitter_keys": [
-        "emitter.warship_24.radar"
+        "emitter.warship_24.radar",
+        "emitter.warship_24.navigation",
+        "emitter.warship_24.air_search",
+        "emitter.warship_24.fire_control"
       ],
       "launcher_keys": [
         "launcher.warship_24.asm"
@@ -592,7 +601,12 @@
       "modulation_codes": [
         "frequency_agile",
         "pulse_doppler"
-      ]
+      ],
+      "radar_role": "multi_function",
+      "operating_mode": "combined_search",
+      "power_class": "high",
+      "operating_period_s": 10.0,
+      "on_duration_s": 8.0
     },
     {
       "key": "emitter.warship_23.radar",
@@ -608,7 +622,12 @@
       "modulation_codes": [
         "frequency_agile",
         "pulse_doppler"
-      ]
+      ],
+      "radar_role": "multi_function",
+      "operating_mode": "combined_search",
+      "power_class": "high",
+      "operating_period_s": 10.0,
+      "on_duration_s": 8.0
     },
     {
       "key": "emitter.warship_24.radar",
@@ -624,7 +643,195 @@
       "modulation_codes": [
         "frequency_agile",
         "pulse_doppler"
-      ]
+      ],
+      "radar_role": "multi_function",
+      "operating_mode": "combined_search",
+      "power_class": "high",
+      "operating_period_s": 10.0,
+      "on_duration_s": 8.0
+    },
+    {
+      "key": "emitter.warship_22.navigation",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        500,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "navigation",
+      "power_class": "low",
+      "operating_period_s": 30.0,
+      "on_duration_s": 18.0
+    },
+    {
+      "key": "emitter.warship_22.air_search",
+      "domain": "radar",
+      "frequency_band_hz": [
+        1000000000.0,
+        4000000000.0
+      ],
+      "prf_band_hz": [
+        200,
+        900
+      ],
+      "modulation_codes": [
+        "pulse_doppler"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "air_search",
+      "power_class": "high",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.warship_22.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "continuous_wave"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "weapon_support",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
+    },
+    {
+      "key": "emitter.warship_23.navigation",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        500,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "navigation",
+      "power_class": "low",
+      "operating_period_s": 30.0,
+      "on_duration_s": 18.0
+    },
+    {
+      "key": "emitter.warship_23.air_search",
+      "domain": "radar",
+      "frequency_band_hz": [
+        1000000000.0,
+        4000000000.0
+      ],
+      "prf_band_hz": [
+        200,
+        900
+      ],
+      "modulation_codes": [
+        "pulse_doppler"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "air_search",
+      "power_class": "high",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.warship_23.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "continuous_wave"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "weapon_support",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
+    },
+    {
+      "key": "emitter.warship_24.navigation",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        500,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "navigation",
+      "power_class": "low",
+      "operating_period_s": 30.0,
+      "on_duration_s": 18.0
+    },
+    {
+      "key": "emitter.warship_24.air_search",
+      "domain": "radar",
+      "frequency_band_hz": [
+        1000000000.0,
+        4000000000.0
+      ],
+      "prf_band_hz": [
+        200,
+        900
+      ],
+      "modulation_codes": [
+        "pulse_doppler"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "air_search",
+      "power_class": "high",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.warship_24.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "continuous_wave"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "weapon_support",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
     }
   ],
   "weapons": [

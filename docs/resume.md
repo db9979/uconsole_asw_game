@@ -893,9 +893,9 @@ Version 0.2.2 stellt Remote Crew vollständig auf API-Protokoll v2 um. Alle
 `/api/v1/*`-Routen sind entfernt und liefern 404 ohne Weiterleitung oder Fallback.
 Browser verwenden ausschließlich Cookie-Sitzungen mit Origin-/CSRF-Schutz.
 Ziel- und Navigationsvorschläge bleiben bis zur lokalen Host-Annahme wirkungslose
-Staging-Anfragen. Ereignisse und die auf 64 frühere Rollenprojektionen begrenzte
-SimLog-Historie beachten Sitzungs-, Rollen- und Beobachtungsgrenzen. Save bleibt
-exakt v10.
+Staging-Anfragen. Ereignisse beachten Sitzungs-, Rollen- und
+Beobachtungsgrenzen. Das separat freigegebene SimLog ist eine auf 64 abgelöste
+Full-Truth-Diagnose-Snapshots begrenzte Ausnahme. Save bleibt exakt v10.
 
 Softwareverifikation: vollständige Suite mit 2467 bestandenen und 26 abgelösten
 Layoutfällen; darin vier Browser-Sitzungsverträge. Der nach Review erweiterte

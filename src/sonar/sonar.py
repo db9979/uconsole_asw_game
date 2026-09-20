@@ -111,7 +111,7 @@ class Contact:
         self.last_seen = 0.0
         self.depth_est = None
         self.depth_sigma_m = None  # 1-sigma Unsicherheit der Tiefe
-        self.player_class = None  # None|U_BOOT|KAMPFSCHIFF|BIOLOGISCH|FAHRZEUG
+        self.player_class = None  # None|U_BOOT|KAMPFSCHIFF|BIOLOGISCH|FAHRZEUG|FLUGZEUG
         self.released_to_opz = False
         self.passive_source = "SONAR-BRG"
         self.observer_x = 0.0
@@ -464,6 +464,8 @@ class SonarSystem:
         self._tma_next: dict[int, float] = {}    # + Throttle: max. alle TMA_RESOLVE_EVERY_S
         self._pending_pings: list[dict] = []
         self.demon_analysis = None
+        self.demon_history = []
+        self.demon_times = []
         self.signature_candidates = []
         self.gain_db = 0.0
         self.band_low_hz = 0.0
@@ -484,6 +486,9 @@ class SonarSystem:
         self.receiver = AcousticReceiver(seed)
         self.broadband_history = []
         self.history_times = []
+        self.broadband_long_history = []
+        self.broadband_long_times = []
+        self._broadband_long_accumulator = []
         self.lofar_times = []
         self.lofar_bearings = []
         self.peak_spectrum = []
@@ -596,6 +601,8 @@ class SonarSystem:
         self.lofar_bearings.clear()
         self.peak_spectrum = []
         self.demon_analysis = None
+        self.demon_history.clear()
+        self.demon_times.clear()
         self.signature_candidates = []
         self.reset_audition_audio()
 
@@ -1140,6 +1147,21 @@ class SonarSystem:
             for history in (self.broadband_history, self.history_times, self.lofar_history,
                             self.lofar_times, self.lofar_bearings):
                 del history[:-config.LOFAR_HISTORY_COLS]
+            self._broadband_long_accumulator.append(
+                np.asarray(self.receiver.broadband, dtype=float))
+            long_count = max(1, round(config.SONAR_BROADBAND_LONG_SAMPLE_S
+                                      / self.receiver.block_s))
+            if len(self._broadband_long_accumulator) >= long_count:
+                self.broadband_long_history.append(np.mean(
+                    self._broadband_long_accumulator[:long_count], axis=0).tolist())
+                self.broadband_long_times.append(stamp)
+                del self._broadband_long_accumulator[:long_count]
+                del self.broadband_long_history[:-config.SONAR_BROADBAND_LONG_ROWS]
+                del self.broadband_long_times[:-config.SONAR_BROADBAND_LONG_ROWS]
+            self.demon_history.append(list(self.receiver.demon_spectrum))
+            self.demon_times.append(stamp)
+            del self.demon_history[:-config.SONAR_DEMON_HISTORY_ROWS]
+            del self.demon_times[:-config.SONAR_DEMON_HISTORY_ROWS]
             if self.peak_hold:
                 self.peak_spectrum = (np.maximum(self.peak_spectrum, self.receiver.spectrum).tolist()
                                       if self.peak_spectrum else list(self.receiver.spectrum))

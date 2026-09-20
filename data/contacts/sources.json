@@ -610,7 +610,12 @@
         "/countermeasures/countermeasure.warship_01.softkill/effect_type",
         "/countermeasures/countermeasure.warship_01.softkill/mission_count",
         "/countermeasures/countermeasure.warship_01.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_01.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_01.softkill/reload_s",
+        "/emitters/emitter.warship_01.radar/radar_role",
+        "/emitters/emitter.warship_01.radar/operating_mode",
+        "/emitters/emitter.warship_01.radar/power_class",
+        "/emitters/emitter.warship_01.radar/operating_period_s",
+        "/emitters/emitter.warship_01.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -675,7 +680,12 @@
         "/countermeasures/countermeasure.warship_02.softkill/effect_type",
         "/countermeasures/countermeasure.warship_02.softkill/mission_count",
         "/countermeasures/countermeasure.warship_02.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_02.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_02.softkill/reload_s",
+        "/emitters/emitter.warship_02.radar/radar_role",
+        "/emitters/emitter.warship_02.radar/operating_mode",
+        "/emitters/emitter.warship_02.radar/power_class",
+        "/emitters/emitter.warship_02.radar/operating_period_s",
+        "/emitters/emitter.warship_02.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -740,7 +750,12 @@
         "/countermeasures/countermeasure.warship_25.softkill/effect_type",
         "/countermeasures/countermeasure.warship_25.softkill/mission_count",
         "/countermeasures/countermeasure.warship_25.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_25.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_25.softkill/reload_s",
+        "/emitters/emitter.warship_25.radar/radar_role",
+        "/emitters/emitter.warship_25.radar/operating_mode",
+        "/emitters/emitter.warship_25.radar/power_class",
+        "/emitters/emitter.warship_25.radar/operating_period_s",
+        "/emitters/emitter.warship_25.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -805,7 +820,12 @@
         "/countermeasures/countermeasure.warship_26.softkill/effect_type",
         "/countermeasures/countermeasure.warship_26.softkill/mission_count",
         "/countermeasures/countermeasure.warship_26.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_26.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_26.softkill/reload_s",
+        "/emitters/emitter.warship_26.radar/radar_role",
+        "/emitters/emitter.warship_26.radar/operating_mode",
+        "/emitters/emitter.warship_26.radar/power_class",
+        "/emitters/emitter.warship_26.radar/operating_period_s",
+        "/emitters/emitter.warship_26.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -869,7 +889,12 @@
         "/countermeasures/countermeasure.warship_27.softkill/effect_type",
         "/countermeasures/countermeasure.warship_27.softkill/mission_count",
         "/countermeasures/countermeasure.warship_27.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_27.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_27.softkill/reload_s",
+        "/emitters/emitter.warship_27.radar/radar_role",
+        "/emitters/emitter.warship_27.radar/operating_mode",
+        "/emitters/emitter.warship_27.radar/power_class",
+        "/emitters/emitter.warship_27.radar/operating_period_s",
+        "/emitters/emitter.warship_27.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -934,7 +959,12 @@
         "/countermeasures/countermeasure.warship_28.softkill/effect_type",
         "/countermeasures/countermeasure.warship_28.softkill/mission_count",
         "/countermeasures/countermeasure.warship_28.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_28.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_28.softkill/reload_s",
+        "/emitters/emitter.warship_28.radar/radar_role",
+        "/emitters/emitter.warship_28.radar/operating_mode",
+        "/emitters/emitter.warship_28.radar/power_class",
+        "/emitters/emitter.warship_28.radar/operating_period_s",
+        "/emitters/emitter.warship_28.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -1098,7 +1128,12 @@
         "/emitters/emitter.cargo_05.radar/domain",
         "/emitters/emitter.cargo_05.radar/frequency_band_hz",
         "/emitters/emitter.cargo_05.radar/prf_band_hz",
-        "/emitters/emitter.cargo_05.radar/modulation_codes"
+        "/emitters/emitter.cargo_05.radar/modulation_codes",
+        "/emitters/emitter.cargo_05.radar/radar_role",
+        "/emitters/emitter.cargo_05.radar/operating_mode",
+        "/emitters/emitter.cargo_05.radar/power_class",
+        "/emitters/emitter.cargo_05.radar/operating_period_s",
+        "/emitters/emitter.cargo_05.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -1867,7 +1902,12 @@
         "/countermeasures/countermeasure.warship_03.softkill/effect_type",
         "/countermeasures/countermeasure.warship_03.softkill/mission_count",
         "/countermeasures/countermeasure.warship_03.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_03.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_03.softkill/reload_s",
+        "/emitters/emitter.warship_03.radar/radar_role",
+        "/emitters/emitter.warship_03.radar/operating_mode",
+        "/emitters/emitter.warship_03.radar/power_class",
+        "/emitters/emitter.warship_03.radar/operating_period_s",
+        "/emitters/emitter.warship_03.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -1932,7 +1972,12 @@
         "/countermeasures/countermeasure.warship_04.softkill/effect_type",
         "/countermeasures/countermeasure.warship_04.softkill/mission_count",
         "/countermeasures/countermeasure.warship_04.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_04.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_04.softkill/reload_s",
+        "/emitters/emitter.warship_04.radar/radar_role",
+        "/emitters/emitter.warship_04.radar/operating_mode",
+        "/emitters/emitter.warship_04.radar/power_class",
+        "/emitters/emitter.warship_04.radar/operating_period_s",
+        "/emitters/emitter.warship_04.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -1997,7 +2042,12 @@
         "/countermeasures/countermeasure.warship_05.softkill/effect_type",
         "/countermeasures/countermeasure.warship_05.softkill/mission_count",
         "/countermeasures/countermeasure.warship_05.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_05.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_05.softkill/reload_s",
+        "/emitters/emitter.warship_05.radar/radar_role",
+        "/emitters/emitter.warship_05.radar/operating_mode",
+        "/emitters/emitter.warship_05.radar/power_class",
+        "/emitters/emitter.warship_05.radar/operating_period_s",
+        "/emitters/emitter.warship_05.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -2062,7 +2112,12 @@
         "/countermeasures/countermeasure.warship_06.softkill/effect_type",
         "/countermeasures/countermeasure.warship_06.softkill/mission_count",
         "/countermeasures/countermeasure.warship_06.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_06.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_06.softkill/reload_s",
+        "/emitters/emitter.warship_06.radar/radar_role",
+        "/emitters/emitter.warship_06.radar/operating_mode",
+        "/emitters/emitter.warship_06.radar/power_class",
+        "/emitters/emitter.warship_06.radar/operating_period_s",
+        "/emitters/emitter.warship_06.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -2127,7 +2182,12 @@
         "/countermeasures/countermeasure.warship_07.softkill/effect_type",
         "/countermeasures/countermeasure.warship_07.softkill/mission_count",
         "/countermeasures/countermeasure.warship_07.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_07.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_07.softkill/reload_s",
+        "/emitters/emitter.warship_07.radar/radar_role",
+        "/emitters/emitter.warship_07.radar/operating_mode",
+        "/emitters/emitter.warship_07.radar/power_class",
+        "/emitters/emitter.warship_07.radar/operating_period_s",
+        "/emitters/emitter.warship_07.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3474,7 +3534,12 @@
         "/countermeasures/countermeasure.warship_08.softkill/effect_type",
         "/countermeasures/countermeasure.warship_08.softkill/mission_count",
         "/countermeasures/countermeasure.warship_08.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_08.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_08.softkill/reload_s",
+        "/emitters/emitter.warship_08.radar/radar_role",
+        "/emitters/emitter.warship_08.radar/operating_mode",
+        "/emitters/emitter.warship_08.radar/power_class",
+        "/emitters/emitter.warship_08.radar/operating_period_s",
+        "/emitters/emitter.warship_08.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3539,7 +3604,12 @@
         "/countermeasures/countermeasure.warship_09.softkill/effect_type",
         "/countermeasures/countermeasure.warship_09.softkill/mission_count",
         "/countermeasures/countermeasure.warship_09.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_09.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_09.softkill/reload_s",
+        "/emitters/emitter.warship_09.radar/radar_role",
+        "/emitters/emitter.warship_09.radar/operating_mode",
+        "/emitters/emitter.warship_09.radar/power_class",
+        "/emitters/emitter.warship_09.radar/operating_period_s",
+        "/emitters/emitter.warship_09.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3604,7 +3674,12 @@
         "/countermeasures/countermeasure.warship_10.softkill/effect_type",
         "/countermeasures/countermeasure.warship_10.softkill/mission_count",
         "/countermeasures/countermeasure.warship_10.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_10.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_10.softkill/reload_s",
+        "/emitters/emitter.warship_10.radar/radar_role",
+        "/emitters/emitter.warship_10.radar/operating_mode",
+        "/emitters/emitter.warship_10.radar/power_class",
+        "/emitters/emitter.warship_10.radar/operating_period_s",
+        "/emitters/emitter.warship_10.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3669,7 +3744,12 @@
         "/countermeasures/countermeasure.warship_11.softkill/effect_type",
         "/countermeasures/countermeasure.warship_11.softkill/mission_count",
         "/countermeasures/countermeasure.warship_11.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_11.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_11.softkill/reload_s",
+        "/emitters/emitter.warship_11.radar/radar_role",
+        "/emitters/emitter.warship_11.radar/operating_mode",
+        "/emitters/emitter.warship_11.radar/power_class",
+        "/emitters/emitter.warship_11.radar/operating_period_s",
+        "/emitters/emitter.warship_11.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3734,7 +3814,12 @@
         "/countermeasures/countermeasure.warship_12.softkill/effect_type",
         "/countermeasures/countermeasure.warship_12.softkill/mission_count",
         "/countermeasures/countermeasure.warship_12.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_12.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_12.softkill/reload_s",
+        "/emitters/emitter.warship_12.radar/radar_role",
+        "/emitters/emitter.warship_12.radar/operating_mode",
+        "/emitters/emitter.warship_12.radar/power_class",
+        "/emitters/emitter.warship_12.radar/operating_period_s",
+        "/emitters/emitter.warship_12.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3799,7 +3884,12 @@
         "/countermeasures/countermeasure.warship_13.softkill/effect_type",
         "/countermeasures/countermeasure.warship_13.softkill/mission_count",
         "/countermeasures/countermeasure.warship_13.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_13.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_13.softkill/reload_s",
+        "/emitters/emitter.warship_13.radar/radar_role",
+        "/emitters/emitter.warship_13.radar/operating_mode",
+        "/emitters/emitter.warship_13.radar/power_class",
+        "/emitters/emitter.warship_13.radar/operating_period_s",
+        "/emitters/emitter.warship_13.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3864,7 +3954,12 @@
         "/countermeasures/countermeasure.warship_14.softkill/effect_type",
         "/countermeasures/countermeasure.warship_14.softkill/mission_count",
         "/countermeasures/countermeasure.warship_14.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_14.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_14.softkill/reload_s",
+        "/emitters/emitter.warship_14.radar/radar_role",
+        "/emitters/emitter.warship_14.radar/operating_mode",
+        "/emitters/emitter.warship_14.radar/power_class",
+        "/emitters/emitter.warship_14.radar/operating_period_s",
+        "/emitters/emitter.warship_14.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3929,7 +4024,12 @@
         "/countermeasures/countermeasure.warship_15.softkill/effect_type",
         "/countermeasures/countermeasure.warship_15.softkill/mission_count",
         "/countermeasures/countermeasure.warship_15.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_15.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_15.softkill/reload_s",
+        "/emitters/emitter.warship_15.radar/radar_role",
+        "/emitters/emitter.warship_15.radar/operating_mode",
+        "/emitters/emitter.warship_15.radar/power_class",
+        "/emitters/emitter.warship_15.radar/operating_period_s",
+        "/emitters/emitter.warship_15.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -3994,7 +4094,12 @@
         "/countermeasures/countermeasure.warship_16.softkill/effect_type",
         "/countermeasures/countermeasure.warship_16.softkill/mission_count",
         "/countermeasures/countermeasure.warship_16.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_16.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_16.softkill/reload_s",
+        "/emitters/emitter.warship_16.radar/radar_role",
+        "/emitters/emitter.warship_16.radar/operating_mode",
+        "/emitters/emitter.warship_16.radar/power_class",
+        "/emitters/emitter.warship_16.radar/operating_period_s",
+        "/emitters/emitter.warship_16.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4059,7 +4164,12 @@
         "/countermeasures/countermeasure.warship_17.softkill/effect_type",
         "/countermeasures/countermeasure.warship_17.softkill/mission_count",
         "/countermeasures/countermeasure.warship_17.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_17.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_17.softkill/reload_s",
+        "/emitters/emitter.warship_17.radar/radar_role",
+        "/emitters/emitter.warship_17.radar/operating_mode",
+        "/emitters/emitter.warship_17.radar/power_class",
+        "/emitters/emitter.warship_17.radar/operating_period_s",
+        "/emitters/emitter.warship_17.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4124,7 +4234,12 @@
         "/countermeasures/countermeasure.warship_18.softkill/effect_type",
         "/countermeasures/countermeasure.warship_18.softkill/mission_count",
         "/countermeasures/countermeasure.warship_18.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_18.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_18.softkill/reload_s",
+        "/emitters/emitter.warship_18.radar/radar_role",
+        "/emitters/emitter.warship_18.radar/operating_mode",
+        "/emitters/emitter.warship_18.radar/power_class",
+        "/emitters/emitter.warship_18.radar/operating_period_s",
+        "/emitters/emitter.warship_18.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4189,7 +4304,12 @@
         "/countermeasures/countermeasure.warship_19.softkill/effect_type",
         "/countermeasures/countermeasure.warship_19.softkill/mission_count",
         "/countermeasures/countermeasure.warship_19.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_19.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_19.softkill/reload_s",
+        "/emitters/emitter.warship_19.radar/radar_role",
+        "/emitters/emitter.warship_19.radar/operating_mode",
+        "/emitters/emitter.warship_19.radar/power_class",
+        "/emitters/emitter.warship_19.radar/operating_period_s",
+        "/emitters/emitter.warship_19.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4254,7 +4374,12 @@
         "/countermeasures/countermeasure.warship_20.softkill/effect_type",
         "/countermeasures/countermeasure.warship_20.softkill/mission_count",
         "/countermeasures/countermeasure.warship_20.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_20.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_20.softkill/reload_s",
+        "/emitters/emitter.warship_20.radar/radar_role",
+        "/emitters/emitter.warship_20.radar/operating_mode",
+        "/emitters/emitter.warship_20.radar/power_class",
+        "/emitters/emitter.warship_20.radar/operating_period_s",
+        "/emitters/emitter.warship_20.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4319,7 +4444,12 @@
         "/countermeasures/countermeasure.warship_21.softkill/effect_type",
         "/countermeasures/countermeasure.warship_21.softkill/mission_count",
         "/countermeasures/countermeasure.warship_21.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_21.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_21.softkill/reload_s",
+        "/emitters/emitter.warship_21.radar/radar_role",
+        "/emitters/emitter.warship_21.radar/operating_mode",
+        "/emitters/emitter.warship_21.radar/power_class",
+        "/emitters/emitter.warship_21.radar/operating_period_s",
+        "/emitters/emitter.warship_21.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4384,7 +4514,12 @@
         "/countermeasures/countermeasure.warship_22.softkill/effect_type",
         "/countermeasures/countermeasure.warship_22.softkill/mission_count",
         "/countermeasures/countermeasure.warship_22.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_22.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_22.softkill/reload_s",
+        "/emitters/emitter.warship_22.radar/radar_role",
+        "/emitters/emitter.warship_22.radar/operating_mode",
+        "/emitters/emitter.warship_22.radar/power_class",
+        "/emitters/emitter.warship_22.radar/operating_period_s",
+        "/emitters/emitter.warship_22.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4449,7 +4584,12 @@
         "/countermeasures/countermeasure.warship_23.softkill/effect_type",
         "/countermeasures/countermeasure.warship_23.softkill/mission_count",
         "/countermeasures/countermeasure.warship_23.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_23.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_23.softkill/reload_s",
+        "/emitters/emitter.warship_23.radar/radar_role",
+        "/emitters/emitter.warship_23.radar/operating_mode",
+        "/emitters/emitter.warship_23.radar/power_class",
+        "/emitters/emitter.warship_23.radar/operating_period_s",
+        "/emitters/emitter.warship_23.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -4514,7 +4654,12 @@
         "/countermeasures/countermeasure.warship_24.softkill/effect_type",
         "/countermeasures/countermeasure.warship_24.softkill/mission_count",
         "/countermeasures/countermeasure.warship_24.softkill/ready_count",
-        "/countermeasures/countermeasure.warship_24.softkill/reload_s"
+        "/countermeasures/countermeasure.warship_24.softkill/reload_s",
+        "/emitters/emitter.warship_24.radar/radar_role",
+        "/emitters/emitter.warship_24.radar/operating_mode",
+        "/emitters/emitter.warship_24.radar/power_class",
+        "/emitters/emitter.warship_24.radar/operating_period_s",
+        "/emitters/emitter.warship_24.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5236,7 +5381,12 @@
         "/emitters/emitter.tanker_01.radar/domain",
         "/emitters/emitter.tanker_01.radar/frequency_band_hz",
         "/emitters/emitter.tanker_01.radar/prf_band_hz",
-        "/emitters/emitter.tanker_01.radar/modulation_codes"
+        "/emitters/emitter.tanker_01.radar/modulation_codes",
+        "/emitters/emitter.tanker_01.radar/radar_role",
+        "/emitters/emitter.tanker_01.radar/operating_mode",
+        "/emitters/emitter.tanker_01.radar/power_class",
+        "/emitters/emitter.tanker_01.radar/operating_period_s",
+        "/emitters/emitter.tanker_01.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5292,7 +5442,12 @@
         "/emitters/emitter.tanker_02.radar/domain",
         "/emitters/emitter.tanker_02.radar/frequency_band_hz",
         "/emitters/emitter.tanker_02.radar/prf_band_hz",
-        "/emitters/emitter.tanker_02.radar/modulation_codes"
+        "/emitters/emitter.tanker_02.radar/modulation_codes",
+        "/emitters/emitter.tanker_02.radar/radar_role",
+        "/emitters/emitter.tanker_02.radar/operating_mode",
+        "/emitters/emitter.tanker_02.radar/power_class",
+        "/emitters/emitter.tanker_02.radar/operating_period_s",
+        "/emitters/emitter.tanker_02.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5348,7 +5503,12 @@
         "/emitters/emitter.tanker_03.radar/domain",
         "/emitters/emitter.tanker_03.radar/frequency_band_hz",
         "/emitters/emitter.tanker_03.radar/prf_band_hz",
-        "/emitters/emitter.tanker_03.radar/modulation_codes"
+        "/emitters/emitter.tanker_03.radar/modulation_codes",
+        "/emitters/emitter.tanker_03.radar/radar_role",
+        "/emitters/emitter.tanker_03.radar/operating_mode",
+        "/emitters/emitter.tanker_03.radar/power_class",
+        "/emitters/emitter.tanker_03.radar/operating_period_s",
+        "/emitters/emitter.tanker_03.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5404,7 +5564,12 @@
         "/emitters/emitter.tanker_04.radar/domain",
         "/emitters/emitter.tanker_04.radar/frequency_band_hz",
         "/emitters/emitter.tanker_04.radar/prf_band_hz",
-        "/emitters/emitter.tanker_04.radar/modulation_codes"
+        "/emitters/emitter.tanker_04.radar/modulation_codes",
+        "/emitters/emitter.tanker_04.radar/radar_role",
+        "/emitters/emitter.tanker_04.radar/operating_mode",
+        "/emitters/emitter.tanker_04.radar/power_class",
+        "/emitters/emitter.tanker_04.radar/operating_period_s",
+        "/emitters/emitter.tanker_04.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5460,7 +5625,12 @@
         "/emitters/emitter.tanker_05.radar/domain",
         "/emitters/emitter.tanker_05.radar/frequency_band_hz",
         "/emitters/emitter.tanker_05.radar/prf_band_hz",
-        "/emitters/emitter.tanker_05.radar/modulation_codes"
+        "/emitters/emitter.tanker_05.radar/modulation_codes",
+        "/emitters/emitter.tanker_05.radar/radar_role",
+        "/emitters/emitter.tanker_05.radar/operating_mode",
+        "/emitters/emitter.tanker_05.radar/power_class",
+        "/emitters/emitter.tanker_05.radar/operating_period_s",
+        "/emitters/emitter.tanker_05.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5516,7 +5686,12 @@
         "/emitters/emitter.tanker_06.radar/domain",
         "/emitters/emitter.tanker_06.radar/frequency_band_hz",
         "/emitters/emitter.tanker_06.radar/prf_band_hz",
-        "/emitters/emitter.tanker_06.radar/modulation_codes"
+        "/emitters/emitter.tanker_06.radar/modulation_codes",
+        "/emitters/emitter.tanker_06.radar/radar_role",
+        "/emitters/emitter.tanker_06.radar/operating_mode",
+        "/emitters/emitter.tanker_06.radar/power_class",
+        "/emitters/emitter.tanker_06.radar/operating_period_s",
+        "/emitters/emitter.tanker_06.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5572,7 +5747,12 @@
         "/emitters/emitter.tanker_07.radar/domain",
         "/emitters/emitter.tanker_07.radar/frequency_band_hz",
         "/emitters/emitter.tanker_07.radar/prf_band_hz",
-        "/emitters/emitter.tanker_07.radar/modulation_codes"
+        "/emitters/emitter.tanker_07.radar/modulation_codes",
+        "/emitters/emitter.tanker_07.radar/radar_role",
+        "/emitters/emitter.tanker_07.radar/operating_mode",
+        "/emitters/emitter.tanker_07.radar/power_class",
+        "/emitters/emitter.tanker_07.radar/operating_period_s",
+        "/emitters/emitter.tanker_07.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5628,7 +5808,12 @@
         "/emitters/emitter.tanker_08.radar/domain",
         "/emitters/emitter.tanker_08.radar/frequency_band_hz",
         "/emitters/emitter.tanker_08.radar/prf_band_hz",
-        "/emitters/emitter.tanker_08.radar/modulation_codes"
+        "/emitters/emitter.tanker_08.radar/modulation_codes",
+        "/emitters/emitter.tanker_08.radar/radar_role",
+        "/emitters/emitter.tanker_08.radar/operating_mode",
+        "/emitters/emitter.tanker_08.radar/power_class",
+        "/emitters/emitter.tanker_08.radar/operating_period_s",
+        "/emitters/emitter.tanker_08.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5684,7 +5869,12 @@
         "/emitters/emitter.tanker_09.radar/domain",
         "/emitters/emitter.tanker_09.radar/frequency_band_hz",
         "/emitters/emitter.tanker_09.radar/prf_band_hz",
-        "/emitters/emitter.tanker_09.radar/modulation_codes"
+        "/emitters/emitter.tanker_09.radar/modulation_codes",
+        "/emitters/emitter.tanker_09.radar/radar_role",
+        "/emitters/emitter.tanker_09.radar/operating_mode",
+        "/emitters/emitter.tanker_09.radar/power_class",
+        "/emitters/emitter.tanker_09.radar/operating_period_s",
+        "/emitters/emitter.tanker_09.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5740,7 +5930,12 @@
         "/emitters/emitter.tanker_10.radar/domain",
         "/emitters/emitter.tanker_10.radar/frequency_band_hz",
         "/emitters/emitter.tanker_10.radar/prf_band_hz",
-        "/emitters/emitter.tanker_10.radar/modulation_codes"
+        "/emitters/emitter.tanker_10.radar/modulation_codes",
+        "/emitters/emitter.tanker_10.radar/radar_role",
+        "/emitters/emitter.tanker_10.radar/operating_mode",
+        "/emitters/emitter.tanker_10.radar/power_class",
+        "/emitters/emitter.tanker_10.radar/operating_period_s",
+        "/emitters/emitter.tanker_10.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5796,7 +5991,12 @@
         "/emitters/emitter.tanker_11.radar/domain",
         "/emitters/emitter.tanker_11.radar/frequency_band_hz",
         "/emitters/emitter.tanker_11.radar/prf_band_hz",
-        "/emitters/emitter.tanker_11.radar/modulation_codes"
+        "/emitters/emitter.tanker_11.radar/modulation_codes",
+        "/emitters/emitter.tanker_11.radar/radar_role",
+        "/emitters/emitter.tanker_11.radar/operating_mode",
+        "/emitters/emitter.tanker_11.radar/power_class",
+        "/emitters/emitter.tanker_11.radar/operating_period_s",
+        "/emitters/emitter.tanker_11.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5852,7 +6052,12 @@
         "/emitters/emitter.tanker_12.radar/domain",
         "/emitters/emitter.tanker_12.radar/frequency_band_hz",
         "/emitters/emitter.tanker_12.radar/prf_band_hz",
-        "/emitters/emitter.tanker_12.radar/modulation_codes"
+        "/emitters/emitter.tanker_12.radar/modulation_codes",
+        "/emitters/emitter.tanker_12.radar/radar_role",
+        "/emitters/emitter.tanker_12.radar/operating_mode",
+        "/emitters/emitter.tanker_12.radar/power_class",
+        "/emitters/emitter.tanker_12.radar/operating_period_s",
+        "/emitters/emitter.tanker_12.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5908,7 +6113,12 @@
         "/emitters/emitter.tanker_13.radar/domain",
         "/emitters/emitter.tanker_13.radar/frequency_band_hz",
         "/emitters/emitter.tanker_13.radar/prf_band_hz",
-        "/emitters/emitter.tanker_13.radar/modulation_codes"
+        "/emitters/emitter.tanker_13.radar/modulation_codes",
+        "/emitters/emitter.tanker_13.radar/radar_role",
+        "/emitters/emitter.tanker_13.radar/operating_mode",
+        "/emitters/emitter.tanker_13.radar/power_class",
+        "/emitters/emitter.tanker_13.radar/operating_period_s",
+        "/emitters/emitter.tanker_13.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -5964,7 +6174,12 @@
         "/emitters/emitter.tanker_14.radar/domain",
         "/emitters/emitter.tanker_14.radar/frequency_band_hz",
         "/emitters/emitter.tanker_14.radar/prf_band_hz",
-        "/emitters/emitter.tanker_14.radar/modulation_codes"
+        "/emitters/emitter.tanker_14.radar/modulation_codes",
+        "/emitters/emitter.tanker_14.radar/radar_role",
+        "/emitters/emitter.tanker_14.radar/operating_mode",
+        "/emitters/emitter.tanker_14.radar/power_class",
+        "/emitters/emitter.tanker_14.radar/operating_period_s",
+        "/emitters/emitter.tanker_14.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6020,7 +6235,12 @@
         "/emitters/emitter.tanker_15.radar/domain",
         "/emitters/emitter.tanker_15.radar/frequency_band_hz",
         "/emitters/emitter.tanker_15.radar/prf_band_hz",
-        "/emitters/emitter.tanker_15.radar/modulation_codes"
+        "/emitters/emitter.tanker_15.radar/modulation_codes",
+        "/emitters/emitter.tanker_15.radar/radar_role",
+        "/emitters/emitter.tanker_15.radar/operating_mode",
+        "/emitters/emitter.tanker_15.radar/power_class",
+        "/emitters/emitter.tanker_15.radar/operating_period_s",
+        "/emitters/emitter.tanker_15.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6076,7 +6296,12 @@
         "/emitters/emitter.passenger_01.radar/domain",
         "/emitters/emitter.passenger_01.radar/frequency_band_hz",
         "/emitters/emitter.passenger_01.radar/prf_band_hz",
-        "/emitters/emitter.passenger_01.radar/modulation_codes"
+        "/emitters/emitter.passenger_01.radar/modulation_codes",
+        "/emitters/emitter.passenger_01.radar/radar_role",
+        "/emitters/emitter.passenger_01.radar/operating_mode",
+        "/emitters/emitter.passenger_01.radar/power_class",
+        "/emitters/emitter.passenger_01.radar/operating_period_s",
+        "/emitters/emitter.passenger_01.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6132,7 +6357,12 @@
         "/emitters/emitter.passenger_02.radar/domain",
         "/emitters/emitter.passenger_02.radar/frequency_band_hz",
         "/emitters/emitter.passenger_02.radar/prf_band_hz",
-        "/emitters/emitter.passenger_02.radar/modulation_codes"
+        "/emitters/emitter.passenger_02.radar/modulation_codes",
+        "/emitters/emitter.passenger_02.radar/radar_role",
+        "/emitters/emitter.passenger_02.radar/operating_mode",
+        "/emitters/emitter.passenger_02.radar/power_class",
+        "/emitters/emitter.passenger_02.radar/operating_period_s",
+        "/emitters/emitter.passenger_02.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6188,7 +6418,12 @@
         "/emitters/emitter.passenger_03.radar/domain",
         "/emitters/emitter.passenger_03.radar/frequency_band_hz",
         "/emitters/emitter.passenger_03.radar/prf_band_hz",
-        "/emitters/emitter.passenger_03.radar/modulation_codes"
+        "/emitters/emitter.passenger_03.radar/modulation_codes",
+        "/emitters/emitter.passenger_03.radar/radar_role",
+        "/emitters/emitter.passenger_03.radar/operating_mode",
+        "/emitters/emitter.passenger_03.radar/power_class",
+        "/emitters/emitter.passenger_03.radar/operating_period_s",
+        "/emitters/emitter.passenger_03.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6244,7 +6479,12 @@
         "/emitters/emitter.passenger_04.radar/domain",
         "/emitters/emitter.passenger_04.radar/frequency_band_hz",
         "/emitters/emitter.passenger_04.radar/prf_band_hz",
-        "/emitters/emitter.passenger_04.radar/modulation_codes"
+        "/emitters/emitter.passenger_04.radar/modulation_codes",
+        "/emitters/emitter.passenger_04.radar/radar_role",
+        "/emitters/emitter.passenger_04.radar/operating_mode",
+        "/emitters/emitter.passenger_04.radar/power_class",
+        "/emitters/emitter.passenger_04.radar/operating_period_s",
+        "/emitters/emitter.passenger_04.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6300,7 +6540,12 @@
         "/emitters/emitter.passenger_05.radar/domain",
         "/emitters/emitter.passenger_05.radar/frequency_band_hz",
         "/emitters/emitter.passenger_05.radar/prf_band_hz",
-        "/emitters/emitter.passenger_05.radar/modulation_codes"
+        "/emitters/emitter.passenger_05.radar/modulation_codes",
+        "/emitters/emitter.passenger_05.radar/radar_role",
+        "/emitters/emitter.passenger_05.radar/operating_mode",
+        "/emitters/emitter.passenger_05.radar/power_class",
+        "/emitters/emitter.passenger_05.radar/operating_period_s",
+        "/emitters/emitter.passenger_05.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6356,7 +6601,12 @@
         "/emitters/emitter.passenger_06.radar/domain",
         "/emitters/emitter.passenger_06.radar/frequency_band_hz",
         "/emitters/emitter.passenger_06.radar/prf_band_hz",
-        "/emitters/emitter.passenger_06.radar/modulation_codes"
+        "/emitters/emitter.passenger_06.radar/modulation_codes",
+        "/emitters/emitter.passenger_06.radar/radar_role",
+        "/emitters/emitter.passenger_06.radar/operating_mode",
+        "/emitters/emitter.passenger_06.radar/power_class",
+        "/emitters/emitter.passenger_06.radar/operating_period_s",
+        "/emitters/emitter.passenger_06.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6412,7 +6662,12 @@
         "/emitters/emitter.passenger_07.radar/domain",
         "/emitters/emitter.passenger_07.radar/frequency_band_hz",
         "/emitters/emitter.passenger_07.radar/prf_band_hz",
-        "/emitters/emitter.passenger_07.radar/modulation_codes"
+        "/emitters/emitter.passenger_07.radar/modulation_codes",
+        "/emitters/emitter.passenger_07.radar/radar_role",
+        "/emitters/emitter.passenger_07.radar/operating_mode",
+        "/emitters/emitter.passenger_07.radar/power_class",
+        "/emitters/emitter.passenger_07.radar/operating_period_s",
+        "/emitters/emitter.passenger_07.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6468,7 +6723,12 @@
         "/emitters/emitter.passenger_08.radar/domain",
         "/emitters/emitter.passenger_08.radar/frequency_band_hz",
         "/emitters/emitter.passenger_08.radar/prf_band_hz",
-        "/emitters/emitter.passenger_08.radar/modulation_codes"
+        "/emitters/emitter.passenger_08.radar/modulation_codes",
+        "/emitters/emitter.passenger_08.radar/radar_role",
+        "/emitters/emitter.passenger_08.radar/operating_mode",
+        "/emitters/emitter.passenger_08.radar/power_class",
+        "/emitters/emitter.passenger_08.radar/operating_period_s",
+        "/emitters/emitter.passenger_08.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6524,7 +6784,12 @@
         "/emitters/emitter.passenger_09.radar/domain",
         "/emitters/emitter.passenger_09.radar/frequency_band_hz",
         "/emitters/emitter.passenger_09.radar/prf_band_hz",
-        "/emitters/emitter.passenger_09.radar/modulation_codes"
+        "/emitters/emitter.passenger_09.radar/modulation_codes",
+        "/emitters/emitter.passenger_09.radar/radar_role",
+        "/emitters/emitter.passenger_09.radar/operating_mode",
+        "/emitters/emitter.passenger_09.radar/power_class",
+        "/emitters/emitter.passenger_09.radar/operating_period_s",
+        "/emitters/emitter.passenger_09.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6580,7 +6845,12 @@
         "/emitters/emitter.passenger_10.radar/domain",
         "/emitters/emitter.passenger_10.radar/frequency_band_hz",
         "/emitters/emitter.passenger_10.radar/prf_band_hz",
-        "/emitters/emitter.passenger_10.radar/modulation_codes"
+        "/emitters/emitter.passenger_10.radar/modulation_codes",
+        "/emitters/emitter.passenger_10.radar/radar_role",
+        "/emitters/emitter.passenger_10.radar/operating_mode",
+        "/emitters/emitter.passenger_10.radar/power_class",
+        "/emitters/emitter.passenger_10.radar/operating_period_s",
+        "/emitters/emitter.passenger_10.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6636,7 +6906,12 @@
         "/emitters/emitter.passenger_11.radar/domain",
         "/emitters/emitter.passenger_11.radar/frequency_band_hz",
         "/emitters/emitter.passenger_11.radar/prf_band_hz",
-        "/emitters/emitter.passenger_11.radar/modulation_codes"
+        "/emitters/emitter.passenger_11.radar/modulation_codes",
+        "/emitters/emitter.passenger_11.radar/radar_role",
+        "/emitters/emitter.passenger_11.radar/operating_mode",
+        "/emitters/emitter.passenger_11.radar/power_class",
+        "/emitters/emitter.passenger_11.radar/operating_period_s",
+        "/emitters/emitter.passenger_11.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6692,7 +6967,12 @@
         "/emitters/emitter.passenger_12.radar/domain",
         "/emitters/emitter.passenger_12.radar/frequency_band_hz",
         "/emitters/emitter.passenger_12.radar/prf_band_hz",
-        "/emitters/emitter.passenger_12.radar/modulation_codes"
+        "/emitters/emitter.passenger_12.radar/modulation_codes",
+        "/emitters/emitter.passenger_12.radar/radar_role",
+        "/emitters/emitter.passenger_12.radar/operating_mode",
+        "/emitters/emitter.passenger_12.radar/power_class",
+        "/emitters/emitter.passenger_12.radar/operating_period_s",
+        "/emitters/emitter.passenger_12.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6748,7 +7028,12 @@
         "/emitters/emitter.passenger_13.radar/domain",
         "/emitters/emitter.passenger_13.radar/frequency_band_hz",
         "/emitters/emitter.passenger_13.radar/prf_band_hz",
-        "/emitters/emitter.passenger_13.radar/modulation_codes"
+        "/emitters/emitter.passenger_13.radar/modulation_codes",
+        "/emitters/emitter.passenger_13.radar/radar_role",
+        "/emitters/emitter.passenger_13.radar/operating_mode",
+        "/emitters/emitter.passenger_13.radar/power_class",
+        "/emitters/emitter.passenger_13.radar/operating_period_s",
+        "/emitters/emitter.passenger_13.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6804,7 +7089,12 @@
         "/emitters/emitter.passenger_14.radar/domain",
         "/emitters/emitter.passenger_14.radar/frequency_band_hz",
         "/emitters/emitter.passenger_14.radar/prf_band_hz",
-        "/emitters/emitter.passenger_14.radar/modulation_codes"
+        "/emitters/emitter.passenger_14.radar/modulation_codes",
+        "/emitters/emitter.passenger_14.radar/radar_role",
+        "/emitters/emitter.passenger_14.radar/operating_mode",
+        "/emitters/emitter.passenger_14.radar/power_class",
+        "/emitters/emitter.passenger_14.radar/operating_period_s",
+        "/emitters/emitter.passenger_14.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6860,7 +7150,12 @@
         "/emitters/emitter.passenger_15.radar/domain",
         "/emitters/emitter.passenger_15.radar/frequency_band_hz",
         "/emitters/emitter.passenger_15.radar/prf_band_hz",
-        "/emitters/emitter.passenger_15.radar/modulation_codes"
+        "/emitters/emitter.passenger_15.radar/modulation_codes",
+        "/emitters/emitter.passenger_15.radar/radar_role",
+        "/emitters/emitter.passenger_15.radar/operating_mode",
+        "/emitters/emitter.passenger_15.radar/power_class",
+        "/emitters/emitter.passenger_15.radar/operating_period_s",
+        "/emitters/emitter.passenger_15.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6916,7 +7211,12 @@
         "/emitters/emitter.cargo_01.radar/domain",
         "/emitters/emitter.cargo_01.radar/frequency_band_hz",
         "/emitters/emitter.cargo_01.radar/prf_band_hz",
-        "/emitters/emitter.cargo_01.radar/modulation_codes"
+        "/emitters/emitter.cargo_01.radar/modulation_codes",
+        "/emitters/emitter.cargo_01.radar/radar_role",
+        "/emitters/emitter.cargo_01.radar/operating_mode",
+        "/emitters/emitter.cargo_01.radar/power_class",
+        "/emitters/emitter.cargo_01.radar/operating_period_s",
+        "/emitters/emitter.cargo_01.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -6972,7 +7272,12 @@
         "/emitters/emitter.cargo_02.radar/domain",
         "/emitters/emitter.cargo_02.radar/frequency_band_hz",
         "/emitters/emitter.cargo_02.radar/prf_band_hz",
-        "/emitters/emitter.cargo_02.radar/modulation_codes"
+        "/emitters/emitter.cargo_02.radar/modulation_codes",
+        "/emitters/emitter.cargo_02.radar/radar_role",
+        "/emitters/emitter.cargo_02.radar/operating_mode",
+        "/emitters/emitter.cargo_02.radar/power_class",
+        "/emitters/emitter.cargo_02.radar/operating_period_s",
+        "/emitters/emitter.cargo_02.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7028,7 +7333,12 @@
         "/emitters/emitter.cargo_03.radar/domain",
         "/emitters/emitter.cargo_03.radar/frequency_band_hz",
         "/emitters/emitter.cargo_03.radar/prf_band_hz",
-        "/emitters/emitter.cargo_03.radar/modulation_codes"
+        "/emitters/emitter.cargo_03.radar/modulation_codes",
+        "/emitters/emitter.cargo_03.radar/radar_role",
+        "/emitters/emitter.cargo_03.radar/operating_mode",
+        "/emitters/emitter.cargo_03.radar/power_class",
+        "/emitters/emitter.cargo_03.radar/operating_period_s",
+        "/emitters/emitter.cargo_03.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7084,7 +7394,12 @@
         "/emitters/emitter.cargo_04.radar/domain",
         "/emitters/emitter.cargo_04.radar/frequency_band_hz",
         "/emitters/emitter.cargo_04.radar/prf_band_hz",
-        "/emitters/emitter.cargo_04.radar/modulation_codes"
+        "/emitters/emitter.cargo_04.radar/modulation_codes",
+        "/emitters/emitter.cargo_04.radar/radar_role",
+        "/emitters/emitter.cargo_04.radar/operating_mode",
+        "/emitters/emitter.cargo_04.radar/power_class",
+        "/emitters/emitter.cargo_04.radar/operating_period_s",
+        "/emitters/emitter.cargo_04.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7140,7 +7455,12 @@
         "/emitters/emitter.cargo_06.radar/domain",
         "/emitters/emitter.cargo_06.radar/frequency_band_hz",
         "/emitters/emitter.cargo_06.radar/prf_band_hz",
-        "/emitters/emitter.cargo_06.radar/modulation_codes"
+        "/emitters/emitter.cargo_06.radar/modulation_codes",
+        "/emitters/emitter.cargo_06.radar/radar_role",
+        "/emitters/emitter.cargo_06.radar/operating_mode",
+        "/emitters/emitter.cargo_06.radar/power_class",
+        "/emitters/emitter.cargo_06.radar/operating_period_s",
+        "/emitters/emitter.cargo_06.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7196,7 +7516,12 @@
         "/emitters/emitter.cargo_07.radar/domain",
         "/emitters/emitter.cargo_07.radar/frequency_band_hz",
         "/emitters/emitter.cargo_07.radar/prf_band_hz",
-        "/emitters/emitter.cargo_07.radar/modulation_codes"
+        "/emitters/emitter.cargo_07.radar/modulation_codes",
+        "/emitters/emitter.cargo_07.radar/radar_role",
+        "/emitters/emitter.cargo_07.radar/operating_mode",
+        "/emitters/emitter.cargo_07.radar/power_class",
+        "/emitters/emitter.cargo_07.radar/operating_period_s",
+        "/emitters/emitter.cargo_07.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7252,7 +7577,12 @@
         "/emitters/emitter.cargo_08.radar/domain",
         "/emitters/emitter.cargo_08.radar/frequency_band_hz",
         "/emitters/emitter.cargo_08.radar/prf_band_hz",
-        "/emitters/emitter.cargo_08.radar/modulation_codes"
+        "/emitters/emitter.cargo_08.radar/modulation_codes",
+        "/emitters/emitter.cargo_08.radar/radar_role",
+        "/emitters/emitter.cargo_08.radar/operating_mode",
+        "/emitters/emitter.cargo_08.radar/power_class",
+        "/emitters/emitter.cargo_08.radar/operating_period_s",
+        "/emitters/emitter.cargo_08.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7308,7 +7638,12 @@
         "/emitters/emitter.cargo_09.radar/domain",
         "/emitters/emitter.cargo_09.radar/frequency_band_hz",
         "/emitters/emitter.cargo_09.radar/prf_band_hz",
-        "/emitters/emitter.cargo_09.radar/modulation_codes"
+        "/emitters/emitter.cargo_09.radar/modulation_codes",
+        "/emitters/emitter.cargo_09.radar/radar_role",
+        "/emitters/emitter.cargo_09.radar/operating_mode",
+        "/emitters/emitter.cargo_09.radar/power_class",
+        "/emitters/emitter.cargo_09.radar/operating_period_s",
+        "/emitters/emitter.cargo_09.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7364,7 +7699,12 @@
         "/emitters/emitter.cargo_10.radar/domain",
         "/emitters/emitter.cargo_10.radar/frequency_band_hz",
         "/emitters/emitter.cargo_10.radar/prf_band_hz",
-        "/emitters/emitter.cargo_10.radar/modulation_codes"
+        "/emitters/emitter.cargo_10.radar/modulation_codes",
+        "/emitters/emitter.cargo_10.radar/radar_role",
+        "/emitters/emitter.cargo_10.radar/operating_mode",
+        "/emitters/emitter.cargo_10.radar/power_class",
+        "/emitters/emitter.cargo_10.radar/operating_period_s",
+        "/emitters/emitter.cargo_10.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7420,7 +7760,12 @@
         "/emitters/emitter.cargo_11.radar/domain",
         "/emitters/emitter.cargo_11.radar/frequency_band_hz",
         "/emitters/emitter.cargo_11.radar/prf_band_hz",
-        "/emitters/emitter.cargo_11.radar/modulation_codes"
+        "/emitters/emitter.cargo_11.radar/modulation_codes",
+        "/emitters/emitter.cargo_11.radar/radar_role",
+        "/emitters/emitter.cargo_11.radar/operating_mode",
+        "/emitters/emitter.cargo_11.radar/power_class",
+        "/emitters/emitter.cargo_11.radar/operating_period_s",
+        "/emitters/emitter.cargo_11.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7476,7 +7821,12 @@
         "/emitters/emitter.cargo_12.radar/domain",
         "/emitters/emitter.cargo_12.radar/frequency_band_hz",
         "/emitters/emitter.cargo_12.radar/prf_band_hz",
-        "/emitters/emitter.cargo_12.radar/modulation_codes"
+        "/emitters/emitter.cargo_12.radar/modulation_codes",
+        "/emitters/emitter.cargo_12.radar/radar_role",
+        "/emitters/emitter.cargo_12.radar/operating_mode",
+        "/emitters/emitter.cargo_12.radar/power_class",
+        "/emitters/emitter.cargo_12.radar/operating_period_s",
+        "/emitters/emitter.cargo_12.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7532,7 +7882,12 @@
         "/emitters/emitter.cargo_13.radar/domain",
         "/emitters/emitter.cargo_13.radar/frequency_band_hz",
         "/emitters/emitter.cargo_13.radar/prf_band_hz",
-        "/emitters/emitter.cargo_13.radar/modulation_codes"
+        "/emitters/emitter.cargo_13.radar/modulation_codes",
+        "/emitters/emitter.cargo_13.radar/radar_role",
+        "/emitters/emitter.cargo_13.radar/operating_mode",
+        "/emitters/emitter.cargo_13.radar/power_class",
+        "/emitters/emitter.cargo_13.radar/operating_period_s",
+        "/emitters/emitter.cargo_13.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7588,7 +7943,12 @@
         "/emitters/emitter.cargo_14.radar/domain",
         "/emitters/emitter.cargo_14.radar/frequency_band_hz",
         "/emitters/emitter.cargo_14.radar/prf_band_hz",
-        "/emitters/emitter.cargo_14.radar/modulation_codes"
+        "/emitters/emitter.cargo_14.radar/modulation_codes",
+        "/emitters/emitter.cargo_14.radar/radar_role",
+        "/emitters/emitter.cargo_14.radar/operating_mode",
+        "/emitters/emitter.cargo_14.radar/power_class",
+        "/emitters/emitter.cargo_14.radar/operating_period_s",
+        "/emitters/emitter.cargo_14.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7644,7 +8004,12 @@
         "/emitters/emitter.cargo_15.radar/domain",
         "/emitters/emitter.cargo_15.radar/frequency_band_hz",
         "/emitters/emitter.cargo_15.radar/prf_band_hz",
-        "/emitters/emitter.cargo_15.radar/modulation_codes"
+        "/emitters/emitter.cargo_15.radar/modulation_codes",
+        "/emitters/emitter.cargo_15.radar/radar_role",
+        "/emitters/emitter.cargo_15.radar/operating_mode",
+        "/emitters/emitter.cargo_15.radar/power_class",
+        "/emitters/emitter.cargo_15.radar/operating_period_s",
+        "/emitters/emitter.cargo_15.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7700,7 +8065,12 @@
         "/emitters/emitter.aux_01.radar/domain",
         "/emitters/emitter.aux_01.radar/frequency_band_hz",
         "/emitters/emitter.aux_01.radar/prf_band_hz",
-        "/emitters/emitter.aux_01.radar/modulation_codes"
+        "/emitters/emitter.aux_01.radar/modulation_codes",
+        "/emitters/emitter.aux_01.radar/radar_role",
+        "/emitters/emitter.aux_01.radar/operating_mode",
+        "/emitters/emitter.aux_01.radar/power_class",
+        "/emitters/emitter.aux_01.radar/operating_period_s",
+        "/emitters/emitter.aux_01.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7756,7 +8126,12 @@
         "/emitters/emitter.aux_02.radar/domain",
         "/emitters/emitter.aux_02.radar/frequency_band_hz",
         "/emitters/emitter.aux_02.radar/prf_band_hz",
-        "/emitters/emitter.aux_02.radar/modulation_codes"
+        "/emitters/emitter.aux_02.radar/modulation_codes",
+        "/emitters/emitter.aux_02.radar/radar_role",
+        "/emitters/emitter.aux_02.radar/operating_mode",
+        "/emitters/emitter.aux_02.radar/power_class",
+        "/emitters/emitter.aux_02.radar/operating_period_s",
+        "/emitters/emitter.aux_02.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7812,7 +8187,12 @@
         "/emitters/emitter.aux_03.radar/domain",
         "/emitters/emitter.aux_03.radar/frequency_band_hz",
         "/emitters/emitter.aux_03.radar/prf_band_hz",
-        "/emitters/emitter.aux_03.radar/modulation_codes"
+        "/emitters/emitter.aux_03.radar/modulation_codes",
+        "/emitters/emitter.aux_03.radar/radar_role",
+        "/emitters/emitter.aux_03.radar/operating_mode",
+        "/emitters/emitter.aux_03.radar/power_class",
+        "/emitters/emitter.aux_03.radar/operating_period_s",
+        "/emitters/emitter.aux_03.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7868,7 +8248,12 @@
         "/emitters/emitter.aux_04.radar/domain",
         "/emitters/emitter.aux_04.radar/frequency_band_hz",
         "/emitters/emitter.aux_04.radar/prf_band_hz",
-        "/emitters/emitter.aux_04.radar/modulation_codes"
+        "/emitters/emitter.aux_04.radar/modulation_codes",
+        "/emitters/emitter.aux_04.radar/radar_role",
+        "/emitters/emitter.aux_04.radar/operating_mode",
+        "/emitters/emitter.aux_04.radar/power_class",
+        "/emitters/emitter.aux_04.radar/operating_period_s",
+        "/emitters/emitter.aux_04.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7924,7 +8309,12 @@
         "/emitters/emitter.aux_05.radar/domain",
         "/emitters/emitter.aux_05.radar/frequency_band_hz",
         "/emitters/emitter.aux_05.radar/prf_band_hz",
-        "/emitters/emitter.aux_05.radar/modulation_codes"
+        "/emitters/emitter.aux_05.radar/modulation_codes",
+        "/emitters/emitter.aux_05.radar/radar_role",
+        "/emitters/emitter.aux_05.radar/operating_mode",
+        "/emitters/emitter.aux_05.radar/power_class",
+        "/emitters/emitter.aux_05.radar/operating_period_s",
+        "/emitters/emitter.aux_05.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -7980,7 +8370,12 @@
         "/emitters/emitter.aux_06.radar/domain",
         "/emitters/emitter.aux_06.radar/frequency_band_hz",
         "/emitters/emitter.aux_06.radar/prf_band_hz",
-        "/emitters/emitter.aux_06.radar/modulation_codes"
+        "/emitters/emitter.aux_06.radar/modulation_codes",
+        "/emitters/emitter.aux_06.radar/radar_role",
+        "/emitters/emitter.aux_06.radar/operating_mode",
+        "/emitters/emitter.aux_06.radar/power_class",
+        "/emitters/emitter.aux_06.radar/operating_period_s",
+        "/emitters/emitter.aux_06.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8036,7 +8431,12 @@
         "/emitters/emitter.aux_07.radar/domain",
         "/emitters/emitter.aux_07.radar/frequency_band_hz",
         "/emitters/emitter.aux_07.radar/prf_band_hz",
-        "/emitters/emitter.aux_07.radar/modulation_codes"
+        "/emitters/emitter.aux_07.radar/modulation_codes",
+        "/emitters/emitter.aux_07.radar/radar_role",
+        "/emitters/emitter.aux_07.radar/operating_mode",
+        "/emitters/emitter.aux_07.radar/power_class",
+        "/emitters/emitter.aux_07.radar/operating_period_s",
+        "/emitters/emitter.aux_07.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8092,7 +8492,12 @@
         "/emitters/emitter.aux_08.radar/domain",
         "/emitters/emitter.aux_08.radar/frequency_band_hz",
         "/emitters/emitter.aux_08.radar/prf_band_hz",
-        "/emitters/emitter.aux_08.radar/modulation_codes"
+        "/emitters/emitter.aux_08.radar/modulation_codes",
+        "/emitters/emitter.aux_08.radar/radar_role",
+        "/emitters/emitter.aux_08.radar/operating_mode",
+        "/emitters/emitter.aux_08.radar/power_class",
+        "/emitters/emitter.aux_08.radar/operating_period_s",
+        "/emitters/emitter.aux_08.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8148,7 +8553,12 @@
         "/emitters/emitter.aux_09.radar/domain",
         "/emitters/emitter.aux_09.radar/frequency_band_hz",
         "/emitters/emitter.aux_09.radar/prf_band_hz",
-        "/emitters/emitter.aux_09.radar/modulation_codes"
+        "/emitters/emitter.aux_09.radar/modulation_codes",
+        "/emitters/emitter.aux_09.radar/radar_role",
+        "/emitters/emitter.aux_09.radar/operating_mode",
+        "/emitters/emitter.aux_09.radar/power_class",
+        "/emitters/emitter.aux_09.radar/operating_period_s",
+        "/emitters/emitter.aux_09.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8204,7 +8614,12 @@
         "/emitters/emitter.aux_10.radar/domain",
         "/emitters/emitter.aux_10.radar/frequency_band_hz",
         "/emitters/emitter.aux_10.radar/prf_band_hz",
-        "/emitters/emitter.aux_10.radar/modulation_codes"
+        "/emitters/emitter.aux_10.radar/modulation_codes",
+        "/emitters/emitter.aux_10.radar/radar_role",
+        "/emitters/emitter.aux_10.radar/operating_mode",
+        "/emitters/emitter.aux_10.radar/power_class",
+        "/emitters/emitter.aux_10.radar/operating_period_s",
+        "/emitters/emitter.aux_10.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8261,7 +8676,12 @@
         "/sensors/sensor.mil_patrol.esm/bearing_uncertainty_deg",
         "/emitters/emitter.mil_patrol.radar/domain",
         "/emitters/emitter.mil_patrol.radar/frequency_band_hz",
-        "/emitters/emitter.mil_patrol.radar/modulation_codes"
+        "/emitters/emitter.mil_patrol.radar/modulation_codes",
+        "/emitters/emitter.mil_patrol.radar/radar_role",
+        "/emitters/emitter.mil_patrol.radar/operating_mode",
+        "/emitters/emitter.mil_patrol.radar/power_class",
+        "/emitters/emitter.mil_patrol.radar/operating_period_s",
+        "/emitters/emitter.mil_patrol.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8315,7 +8735,12 @@
         "/sensors/sensor.civil_transit.ais/cadence_s",
         "/emitters/emitter.civil_transit.radar/domain",
         "/emitters/emitter.civil_transit.radar/frequency_band_hz",
-        "/emitters/emitter.civil_transit.radar/modulation_codes"
+        "/emitters/emitter.civil_transit.radar/modulation_codes",
+        "/emitters/emitter.civil_transit.radar/radar_role",
+        "/emitters/emitter.civil_transit.radar/operating_mode",
+        "/emitters/emitter.civil_transit.radar/power_class",
+        "/emitters/emitter.civil_transit.radar/operating_period_s",
+        "/emitters/emitter.civil_transit.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8874,7 +9299,12 @@
         "/sensors/sensor.su_25.radar/range_uncertainty_nm",
         "/emitters/emitter.su_25.radar/domain",
         "/emitters/emitter.su_25.radar/frequency_band_hz",
-        "/emitters/emitter.su_25.radar/modulation_codes"
+        "/emitters/emitter.su_25.radar/modulation_codes",
+        "/emitters/emitter.su_25.radar/radar_role",
+        "/emitters/emitter.su_25.radar/operating_mode",
+        "/emitters/emitter.su_25.radar/power_class",
+        "/emitters/emitter.su_25.radar/operating_period_s",
+        "/emitters/emitter.su_25.radar/on_duration_s"
       ],
       "status": "game_assumption",
       "source_ids": [
@@ -8895,6 +9325,2058 @@
       ],
       "status": "unknown",
       "source_ids": []
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_01",
+      "field_paths": [
+        "/emitters/emitter.warship_01.navigation/domain",
+        "/emitters/emitter.warship_01.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_01.navigation/prf_band_hz",
+        "/emitters/emitter.warship_01.navigation/modulation_codes",
+        "/emitters/emitter.warship_01.navigation/radar_role",
+        "/emitters/emitter.warship_01.navigation/operating_mode",
+        "/emitters/emitter.warship_01.navigation/power_class",
+        "/emitters/emitter.warship_01.navigation/operating_period_s",
+        "/emitters/emitter.warship_01.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_01",
+      "field_paths": [
+        "/emitters/emitter.warship_01.air_search/domain",
+        "/emitters/emitter.warship_01.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_01.air_search/prf_band_hz",
+        "/emitters/emitter.warship_01.air_search/modulation_codes",
+        "/emitters/emitter.warship_01.air_search/radar_role",
+        "/emitters/emitter.warship_01.air_search/operating_mode",
+        "/emitters/emitter.warship_01.air_search/power_class",
+        "/emitters/emitter.warship_01.air_search/operating_period_s",
+        "/emitters/emitter.warship_01.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_01",
+      "field_paths": [
+        "/emitters/emitter.warship_01.fire_control/domain",
+        "/emitters/emitter.warship_01.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_01.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_01.fire_control/modulation_codes",
+        "/emitters/emitter.warship_01.fire_control/radar_role",
+        "/emitters/emitter.warship_01.fire_control/operating_mode",
+        "/emitters/emitter.warship_01.fire_control/power_class",
+        "/emitters/emitter.warship_01.fire_control/operating_period_s",
+        "/emitters/emitter.warship_01.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_02",
+      "field_paths": [
+        "/emitters/emitter.warship_02.navigation/domain",
+        "/emitters/emitter.warship_02.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_02.navigation/prf_band_hz",
+        "/emitters/emitter.warship_02.navigation/modulation_codes",
+        "/emitters/emitter.warship_02.navigation/radar_role",
+        "/emitters/emitter.warship_02.navigation/operating_mode",
+        "/emitters/emitter.warship_02.navigation/power_class",
+        "/emitters/emitter.warship_02.navigation/operating_period_s",
+        "/emitters/emitter.warship_02.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_02",
+      "field_paths": [
+        "/emitters/emitter.warship_02.air_search/domain",
+        "/emitters/emitter.warship_02.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_02.air_search/prf_band_hz",
+        "/emitters/emitter.warship_02.air_search/modulation_codes",
+        "/emitters/emitter.warship_02.air_search/radar_role",
+        "/emitters/emitter.warship_02.air_search/operating_mode",
+        "/emitters/emitter.warship_02.air_search/power_class",
+        "/emitters/emitter.warship_02.air_search/operating_period_s",
+        "/emitters/emitter.warship_02.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_02",
+      "field_paths": [
+        "/emitters/emitter.warship_02.fire_control/domain",
+        "/emitters/emitter.warship_02.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_02.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_02.fire_control/modulation_codes",
+        "/emitters/emitter.warship_02.fire_control/radar_role",
+        "/emitters/emitter.warship_02.fire_control/operating_mode",
+        "/emitters/emitter.warship_02.fire_control/power_class",
+        "/emitters/emitter.warship_02.fire_control/operating_period_s",
+        "/emitters/emitter.warship_02.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_03",
+      "field_paths": [
+        "/emitters/emitter.warship_03.navigation/domain",
+        "/emitters/emitter.warship_03.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_03.navigation/prf_band_hz",
+        "/emitters/emitter.warship_03.navigation/modulation_codes",
+        "/emitters/emitter.warship_03.navigation/radar_role",
+        "/emitters/emitter.warship_03.navigation/operating_mode",
+        "/emitters/emitter.warship_03.navigation/power_class",
+        "/emitters/emitter.warship_03.navigation/operating_period_s",
+        "/emitters/emitter.warship_03.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_03",
+      "field_paths": [
+        "/emitters/emitter.warship_03.air_search/domain",
+        "/emitters/emitter.warship_03.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_03.air_search/prf_band_hz",
+        "/emitters/emitter.warship_03.air_search/modulation_codes",
+        "/emitters/emitter.warship_03.air_search/radar_role",
+        "/emitters/emitter.warship_03.air_search/operating_mode",
+        "/emitters/emitter.warship_03.air_search/power_class",
+        "/emitters/emitter.warship_03.air_search/operating_period_s",
+        "/emitters/emitter.warship_03.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_03",
+      "field_paths": [
+        "/emitters/emitter.warship_03.fire_control/domain",
+        "/emitters/emitter.warship_03.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_03.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_03.fire_control/modulation_codes",
+        "/emitters/emitter.warship_03.fire_control/radar_role",
+        "/emitters/emitter.warship_03.fire_control/operating_mode",
+        "/emitters/emitter.warship_03.fire_control/power_class",
+        "/emitters/emitter.warship_03.fire_control/operating_period_s",
+        "/emitters/emitter.warship_03.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_04",
+      "field_paths": [
+        "/emitters/emitter.warship_04.navigation/domain",
+        "/emitters/emitter.warship_04.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_04.navigation/prf_band_hz",
+        "/emitters/emitter.warship_04.navigation/modulation_codes",
+        "/emitters/emitter.warship_04.navigation/radar_role",
+        "/emitters/emitter.warship_04.navigation/operating_mode",
+        "/emitters/emitter.warship_04.navigation/power_class",
+        "/emitters/emitter.warship_04.navigation/operating_period_s",
+        "/emitters/emitter.warship_04.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_04",
+      "field_paths": [
+        "/emitters/emitter.warship_04.air_search/domain",
+        "/emitters/emitter.warship_04.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_04.air_search/prf_band_hz",
+        "/emitters/emitter.warship_04.air_search/modulation_codes",
+        "/emitters/emitter.warship_04.air_search/radar_role",
+        "/emitters/emitter.warship_04.air_search/operating_mode",
+        "/emitters/emitter.warship_04.air_search/power_class",
+        "/emitters/emitter.warship_04.air_search/operating_period_s",
+        "/emitters/emitter.warship_04.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_04",
+      "field_paths": [
+        "/emitters/emitter.warship_04.fire_control/domain",
+        "/emitters/emitter.warship_04.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_04.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_04.fire_control/modulation_codes",
+        "/emitters/emitter.warship_04.fire_control/radar_role",
+        "/emitters/emitter.warship_04.fire_control/operating_mode",
+        "/emitters/emitter.warship_04.fire_control/power_class",
+        "/emitters/emitter.warship_04.fire_control/operating_period_s",
+        "/emitters/emitter.warship_04.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_05",
+      "field_paths": [
+        "/emitters/emitter.warship_05.navigation/domain",
+        "/emitters/emitter.warship_05.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_05.navigation/prf_band_hz",
+        "/emitters/emitter.warship_05.navigation/modulation_codes",
+        "/emitters/emitter.warship_05.navigation/radar_role",
+        "/emitters/emitter.warship_05.navigation/operating_mode",
+        "/emitters/emitter.warship_05.navigation/power_class",
+        "/emitters/emitter.warship_05.navigation/operating_period_s",
+        "/emitters/emitter.warship_05.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_05",
+      "field_paths": [
+        "/emitters/emitter.warship_05.air_search/domain",
+        "/emitters/emitter.warship_05.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_05.air_search/prf_band_hz",
+        "/emitters/emitter.warship_05.air_search/modulation_codes",
+        "/emitters/emitter.warship_05.air_search/radar_role",
+        "/emitters/emitter.warship_05.air_search/operating_mode",
+        "/emitters/emitter.warship_05.air_search/power_class",
+        "/emitters/emitter.warship_05.air_search/operating_period_s",
+        "/emitters/emitter.warship_05.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_05",
+      "field_paths": [
+        "/emitters/emitter.warship_05.fire_control/domain",
+        "/emitters/emitter.warship_05.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_05.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_05.fire_control/modulation_codes",
+        "/emitters/emitter.warship_05.fire_control/radar_role",
+        "/emitters/emitter.warship_05.fire_control/operating_mode",
+        "/emitters/emitter.warship_05.fire_control/power_class",
+        "/emitters/emitter.warship_05.fire_control/operating_period_s",
+        "/emitters/emitter.warship_05.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_06",
+      "field_paths": [
+        "/emitters/emitter.warship_06.navigation/domain",
+        "/emitters/emitter.warship_06.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_06.navigation/prf_band_hz",
+        "/emitters/emitter.warship_06.navigation/modulation_codes",
+        "/emitters/emitter.warship_06.navigation/radar_role",
+        "/emitters/emitter.warship_06.navigation/operating_mode",
+        "/emitters/emitter.warship_06.navigation/power_class",
+        "/emitters/emitter.warship_06.navigation/operating_period_s",
+        "/emitters/emitter.warship_06.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_06",
+      "field_paths": [
+        "/emitters/emitter.warship_06.air_search/domain",
+        "/emitters/emitter.warship_06.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_06.air_search/prf_band_hz",
+        "/emitters/emitter.warship_06.air_search/modulation_codes",
+        "/emitters/emitter.warship_06.air_search/radar_role",
+        "/emitters/emitter.warship_06.air_search/operating_mode",
+        "/emitters/emitter.warship_06.air_search/power_class",
+        "/emitters/emitter.warship_06.air_search/operating_period_s",
+        "/emitters/emitter.warship_06.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_06",
+      "field_paths": [
+        "/emitters/emitter.warship_06.fire_control/domain",
+        "/emitters/emitter.warship_06.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_06.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_06.fire_control/modulation_codes",
+        "/emitters/emitter.warship_06.fire_control/radar_role",
+        "/emitters/emitter.warship_06.fire_control/operating_mode",
+        "/emitters/emitter.warship_06.fire_control/power_class",
+        "/emitters/emitter.warship_06.fire_control/operating_period_s",
+        "/emitters/emitter.warship_06.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_07",
+      "field_paths": [
+        "/emitters/emitter.warship_07.navigation/domain",
+        "/emitters/emitter.warship_07.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_07.navigation/prf_band_hz",
+        "/emitters/emitter.warship_07.navigation/modulation_codes",
+        "/emitters/emitter.warship_07.navigation/radar_role",
+        "/emitters/emitter.warship_07.navigation/operating_mode",
+        "/emitters/emitter.warship_07.navigation/power_class",
+        "/emitters/emitter.warship_07.navigation/operating_period_s",
+        "/emitters/emitter.warship_07.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_07",
+      "field_paths": [
+        "/emitters/emitter.warship_07.air_search/domain",
+        "/emitters/emitter.warship_07.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_07.air_search/prf_band_hz",
+        "/emitters/emitter.warship_07.air_search/modulation_codes",
+        "/emitters/emitter.warship_07.air_search/radar_role",
+        "/emitters/emitter.warship_07.air_search/operating_mode",
+        "/emitters/emitter.warship_07.air_search/power_class",
+        "/emitters/emitter.warship_07.air_search/operating_period_s",
+        "/emitters/emitter.warship_07.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_07",
+      "field_paths": [
+        "/emitters/emitter.warship_07.fire_control/domain",
+        "/emitters/emitter.warship_07.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_07.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_07.fire_control/modulation_codes",
+        "/emitters/emitter.warship_07.fire_control/radar_role",
+        "/emitters/emitter.warship_07.fire_control/operating_mode",
+        "/emitters/emitter.warship_07.fire_control/power_class",
+        "/emitters/emitter.warship_07.fire_control/operating_period_s",
+        "/emitters/emitter.warship_07.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_08",
+      "field_paths": [
+        "/emitters/emitter.warship_08.navigation/domain",
+        "/emitters/emitter.warship_08.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_08.navigation/prf_band_hz",
+        "/emitters/emitter.warship_08.navigation/modulation_codes",
+        "/emitters/emitter.warship_08.navigation/radar_role",
+        "/emitters/emitter.warship_08.navigation/operating_mode",
+        "/emitters/emitter.warship_08.navigation/power_class",
+        "/emitters/emitter.warship_08.navigation/operating_period_s",
+        "/emitters/emitter.warship_08.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_08",
+      "field_paths": [
+        "/emitters/emitter.warship_08.air_search/domain",
+        "/emitters/emitter.warship_08.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_08.air_search/prf_band_hz",
+        "/emitters/emitter.warship_08.air_search/modulation_codes",
+        "/emitters/emitter.warship_08.air_search/radar_role",
+        "/emitters/emitter.warship_08.air_search/operating_mode",
+        "/emitters/emitter.warship_08.air_search/power_class",
+        "/emitters/emitter.warship_08.air_search/operating_period_s",
+        "/emitters/emitter.warship_08.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_08",
+      "field_paths": [
+        "/emitters/emitter.warship_08.fire_control/domain",
+        "/emitters/emitter.warship_08.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_08.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_08.fire_control/modulation_codes",
+        "/emitters/emitter.warship_08.fire_control/radar_role",
+        "/emitters/emitter.warship_08.fire_control/operating_mode",
+        "/emitters/emitter.warship_08.fire_control/power_class",
+        "/emitters/emitter.warship_08.fire_control/operating_period_s",
+        "/emitters/emitter.warship_08.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_09",
+      "field_paths": [
+        "/emitters/emitter.warship_09.navigation/domain",
+        "/emitters/emitter.warship_09.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_09.navigation/prf_band_hz",
+        "/emitters/emitter.warship_09.navigation/modulation_codes",
+        "/emitters/emitter.warship_09.navigation/radar_role",
+        "/emitters/emitter.warship_09.navigation/operating_mode",
+        "/emitters/emitter.warship_09.navigation/power_class",
+        "/emitters/emitter.warship_09.navigation/operating_period_s",
+        "/emitters/emitter.warship_09.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_09",
+      "field_paths": [
+        "/emitters/emitter.warship_09.air_search/domain",
+        "/emitters/emitter.warship_09.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_09.air_search/prf_band_hz",
+        "/emitters/emitter.warship_09.air_search/modulation_codes",
+        "/emitters/emitter.warship_09.air_search/radar_role",
+        "/emitters/emitter.warship_09.air_search/operating_mode",
+        "/emitters/emitter.warship_09.air_search/power_class",
+        "/emitters/emitter.warship_09.air_search/operating_period_s",
+        "/emitters/emitter.warship_09.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_09",
+      "field_paths": [
+        "/emitters/emitter.warship_09.fire_control/domain",
+        "/emitters/emitter.warship_09.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_09.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_09.fire_control/modulation_codes",
+        "/emitters/emitter.warship_09.fire_control/radar_role",
+        "/emitters/emitter.warship_09.fire_control/operating_mode",
+        "/emitters/emitter.warship_09.fire_control/power_class",
+        "/emitters/emitter.warship_09.fire_control/operating_period_s",
+        "/emitters/emitter.warship_09.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_10",
+      "field_paths": [
+        "/emitters/emitter.warship_10.navigation/domain",
+        "/emitters/emitter.warship_10.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_10.navigation/prf_band_hz",
+        "/emitters/emitter.warship_10.navigation/modulation_codes",
+        "/emitters/emitter.warship_10.navigation/radar_role",
+        "/emitters/emitter.warship_10.navigation/operating_mode",
+        "/emitters/emitter.warship_10.navigation/power_class",
+        "/emitters/emitter.warship_10.navigation/operating_period_s",
+        "/emitters/emitter.warship_10.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_10",
+      "field_paths": [
+        "/emitters/emitter.warship_10.air_search/domain",
+        "/emitters/emitter.warship_10.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_10.air_search/prf_band_hz",
+        "/emitters/emitter.warship_10.air_search/modulation_codes",
+        "/emitters/emitter.warship_10.air_search/radar_role",
+        "/emitters/emitter.warship_10.air_search/operating_mode",
+        "/emitters/emitter.warship_10.air_search/power_class",
+        "/emitters/emitter.warship_10.air_search/operating_period_s",
+        "/emitters/emitter.warship_10.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_10",
+      "field_paths": [
+        "/emitters/emitter.warship_10.fire_control/domain",
+        "/emitters/emitter.warship_10.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_10.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_10.fire_control/modulation_codes",
+        "/emitters/emitter.warship_10.fire_control/radar_role",
+        "/emitters/emitter.warship_10.fire_control/operating_mode",
+        "/emitters/emitter.warship_10.fire_control/power_class",
+        "/emitters/emitter.warship_10.fire_control/operating_period_s",
+        "/emitters/emitter.warship_10.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_11",
+      "field_paths": [
+        "/emitters/emitter.warship_11.navigation/domain",
+        "/emitters/emitter.warship_11.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_11.navigation/prf_band_hz",
+        "/emitters/emitter.warship_11.navigation/modulation_codes",
+        "/emitters/emitter.warship_11.navigation/radar_role",
+        "/emitters/emitter.warship_11.navigation/operating_mode",
+        "/emitters/emitter.warship_11.navigation/power_class",
+        "/emitters/emitter.warship_11.navigation/operating_period_s",
+        "/emitters/emitter.warship_11.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_11",
+      "field_paths": [
+        "/emitters/emitter.warship_11.air_search/domain",
+        "/emitters/emitter.warship_11.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_11.air_search/prf_band_hz",
+        "/emitters/emitter.warship_11.air_search/modulation_codes",
+        "/emitters/emitter.warship_11.air_search/radar_role",
+        "/emitters/emitter.warship_11.air_search/operating_mode",
+        "/emitters/emitter.warship_11.air_search/power_class",
+        "/emitters/emitter.warship_11.air_search/operating_period_s",
+        "/emitters/emitter.warship_11.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_11",
+      "field_paths": [
+        "/emitters/emitter.warship_11.fire_control/domain",
+        "/emitters/emitter.warship_11.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_11.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_11.fire_control/modulation_codes",
+        "/emitters/emitter.warship_11.fire_control/radar_role",
+        "/emitters/emitter.warship_11.fire_control/operating_mode",
+        "/emitters/emitter.warship_11.fire_control/power_class",
+        "/emitters/emitter.warship_11.fire_control/operating_period_s",
+        "/emitters/emitter.warship_11.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_12",
+      "field_paths": [
+        "/emitters/emitter.warship_12.navigation/domain",
+        "/emitters/emitter.warship_12.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_12.navigation/prf_band_hz",
+        "/emitters/emitter.warship_12.navigation/modulation_codes",
+        "/emitters/emitter.warship_12.navigation/radar_role",
+        "/emitters/emitter.warship_12.navigation/operating_mode",
+        "/emitters/emitter.warship_12.navigation/power_class",
+        "/emitters/emitter.warship_12.navigation/operating_period_s",
+        "/emitters/emitter.warship_12.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_12",
+      "field_paths": [
+        "/emitters/emitter.warship_12.air_search/domain",
+        "/emitters/emitter.warship_12.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_12.air_search/prf_band_hz",
+        "/emitters/emitter.warship_12.air_search/modulation_codes",
+        "/emitters/emitter.warship_12.air_search/radar_role",
+        "/emitters/emitter.warship_12.air_search/operating_mode",
+        "/emitters/emitter.warship_12.air_search/power_class",
+        "/emitters/emitter.warship_12.air_search/operating_period_s",
+        "/emitters/emitter.warship_12.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_12",
+      "field_paths": [
+        "/emitters/emitter.warship_12.fire_control/domain",
+        "/emitters/emitter.warship_12.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_12.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_12.fire_control/modulation_codes",
+        "/emitters/emitter.warship_12.fire_control/radar_role",
+        "/emitters/emitter.warship_12.fire_control/operating_mode",
+        "/emitters/emitter.warship_12.fire_control/power_class",
+        "/emitters/emitter.warship_12.fire_control/operating_period_s",
+        "/emitters/emitter.warship_12.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_13",
+      "field_paths": [
+        "/emitters/emitter.warship_13.navigation/domain",
+        "/emitters/emitter.warship_13.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_13.navigation/prf_band_hz",
+        "/emitters/emitter.warship_13.navigation/modulation_codes",
+        "/emitters/emitter.warship_13.navigation/radar_role",
+        "/emitters/emitter.warship_13.navigation/operating_mode",
+        "/emitters/emitter.warship_13.navigation/power_class",
+        "/emitters/emitter.warship_13.navigation/operating_period_s",
+        "/emitters/emitter.warship_13.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_13",
+      "field_paths": [
+        "/emitters/emitter.warship_13.air_search/domain",
+        "/emitters/emitter.warship_13.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_13.air_search/prf_band_hz",
+        "/emitters/emitter.warship_13.air_search/modulation_codes",
+        "/emitters/emitter.warship_13.air_search/radar_role",
+        "/emitters/emitter.warship_13.air_search/operating_mode",
+        "/emitters/emitter.warship_13.air_search/power_class",
+        "/emitters/emitter.warship_13.air_search/operating_period_s",
+        "/emitters/emitter.warship_13.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_13",
+      "field_paths": [
+        "/emitters/emitter.warship_13.fire_control/domain",
+        "/emitters/emitter.warship_13.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_13.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_13.fire_control/modulation_codes",
+        "/emitters/emitter.warship_13.fire_control/radar_role",
+        "/emitters/emitter.warship_13.fire_control/operating_mode",
+        "/emitters/emitter.warship_13.fire_control/power_class",
+        "/emitters/emitter.warship_13.fire_control/operating_period_s",
+        "/emitters/emitter.warship_13.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_14",
+      "field_paths": [
+        "/emitters/emitter.warship_14.navigation/domain",
+        "/emitters/emitter.warship_14.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_14.navigation/prf_band_hz",
+        "/emitters/emitter.warship_14.navigation/modulation_codes",
+        "/emitters/emitter.warship_14.navigation/radar_role",
+        "/emitters/emitter.warship_14.navigation/operating_mode",
+        "/emitters/emitter.warship_14.navigation/power_class",
+        "/emitters/emitter.warship_14.navigation/operating_period_s",
+        "/emitters/emitter.warship_14.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_14",
+      "field_paths": [
+        "/emitters/emitter.warship_14.air_search/domain",
+        "/emitters/emitter.warship_14.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_14.air_search/prf_band_hz",
+        "/emitters/emitter.warship_14.air_search/modulation_codes",
+        "/emitters/emitter.warship_14.air_search/radar_role",
+        "/emitters/emitter.warship_14.air_search/operating_mode",
+        "/emitters/emitter.warship_14.air_search/power_class",
+        "/emitters/emitter.warship_14.air_search/operating_period_s",
+        "/emitters/emitter.warship_14.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_14",
+      "field_paths": [
+        "/emitters/emitter.warship_14.fire_control/domain",
+        "/emitters/emitter.warship_14.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_14.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_14.fire_control/modulation_codes",
+        "/emitters/emitter.warship_14.fire_control/radar_role",
+        "/emitters/emitter.warship_14.fire_control/operating_mode",
+        "/emitters/emitter.warship_14.fire_control/power_class",
+        "/emitters/emitter.warship_14.fire_control/operating_period_s",
+        "/emitters/emitter.warship_14.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_15",
+      "field_paths": [
+        "/emitters/emitter.warship_15.navigation/domain",
+        "/emitters/emitter.warship_15.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_15.navigation/prf_band_hz",
+        "/emitters/emitter.warship_15.navigation/modulation_codes",
+        "/emitters/emitter.warship_15.navigation/radar_role",
+        "/emitters/emitter.warship_15.navigation/operating_mode",
+        "/emitters/emitter.warship_15.navigation/power_class",
+        "/emitters/emitter.warship_15.navigation/operating_period_s",
+        "/emitters/emitter.warship_15.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_15",
+      "field_paths": [
+        "/emitters/emitter.warship_15.air_search/domain",
+        "/emitters/emitter.warship_15.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_15.air_search/prf_band_hz",
+        "/emitters/emitter.warship_15.air_search/modulation_codes",
+        "/emitters/emitter.warship_15.air_search/radar_role",
+        "/emitters/emitter.warship_15.air_search/operating_mode",
+        "/emitters/emitter.warship_15.air_search/power_class",
+        "/emitters/emitter.warship_15.air_search/operating_period_s",
+        "/emitters/emitter.warship_15.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_15",
+      "field_paths": [
+        "/emitters/emitter.warship_15.fire_control/domain",
+        "/emitters/emitter.warship_15.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_15.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_15.fire_control/modulation_codes",
+        "/emitters/emitter.warship_15.fire_control/radar_role",
+        "/emitters/emitter.warship_15.fire_control/operating_mode",
+        "/emitters/emitter.warship_15.fire_control/power_class",
+        "/emitters/emitter.warship_15.fire_control/operating_period_s",
+        "/emitters/emitter.warship_15.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_16",
+      "field_paths": [
+        "/emitters/emitter.warship_16.navigation/domain",
+        "/emitters/emitter.warship_16.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_16.navigation/prf_band_hz",
+        "/emitters/emitter.warship_16.navigation/modulation_codes",
+        "/emitters/emitter.warship_16.navigation/radar_role",
+        "/emitters/emitter.warship_16.navigation/operating_mode",
+        "/emitters/emitter.warship_16.navigation/power_class",
+        "/emitters/emitter.warship_16.navigation/operating_period_s",
+        "/emitters/emitter.warship_16.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_16",
+      "field_paths": [
+        "/emitters/emitter.warship_16.air_search/domain",
+        "/emitters/emitter.warship_16.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_16.air_search/prf_band_hz",
+        "/emitters/emitter.warship_16.air_search/modulation_codes",
+        "/emitters/emitter.warship_16.air_search/radar_role",
+        "/emitters/emitter.warship_16.air_search/operating_mode",
+        "/emitters/emitter.warship_16.air_search/power_class",
+        "/emitters/emitter.warship_16.air_search/operating_period_s",
+        "/emitters/emitter.warship_16.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_16",
+      "field_paths": [
+        "/emitters/emitter.warship_16.fire_control/domain",
+        "/emitters/emitter.warship_16.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_16.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_16.fire_control/modulation_codes",
+        "/emitters/emitter.warship_16.fire_control/radar_role",
+        "/emitters/emitter.warship_16.fire_control/operating_mode",
+        "/emitters/emitter.warship_16.fire_control/power_class",
+        "/emitters/emitter.warship_16.fire_control/operating_period_s",
+        "/emitters/emitter.warship_16.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_17",
+      "field_paths": [
+        "/emitters/emitter.warship_17.navigation/domain",
+        "/emitters/emitter.warship_17.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_17.navigation/prf_band_hz",
+        "/emitters/emitter.warship_17.navigation/modulation_codes",
+        "/emitters/emitter.warship_17.navigation/radar_role",
+        "/emitters/emitter.warship_17.navigation/operating_mode",
+        "/emitters/emitter.warship_17.navigation/power_class",
+        "/emitters/emitter.warship_17.navigation/operating_period_s",
+        "/emitters/emitter.warship_17.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_17",
+      "field_paths": [
+        "/emitters/emitter.warship_17.air_search/domain",
+        "/emitters/emitter.warship_17.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_17.air_search/prf_band_hz",
+        "/emitters/emitter.warship_17.air_search/modulation_codes",
+        "/emitters/emitter.warship_17.air_search/radar_role",
+        "/emitters/emitter.warship_17.air_search/operating_mode",
+        "/emitters/emitter.warship_17.air_search/power_class",
+        "/emitters/emitter.warship_17.air_search/operating_period_s",
+        "/emitters/emitter.warship_17.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_17",
+      "field_paths": [
+        "/emitters/emitter.warship_17.fire_control/domain",
+        "/emitters/emitter.warship_17.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_17.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_17.fire_control/modulation_codes",
+        "/emitters/emitter.warship_17.fire_control/radar_role",
+        "/emitters/emitter.warship_17.fire_control/operating_mode",
+        "/emitters/emitter.warship_17.fire_control/power_class",
+        "/emitters/emitter.warship_17.fire_control/operating_period_s",
+        "/emitters/emitter.warship_17.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_18",
+      "field_paths": [
+        "/emitters/emitter.warship_18.navigation/domain",
+        "/emitters/emitter.warship_18.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_18.navigation/prf_band_hz",
+        "/emitters/emitter.warship_18.navigation/modulation_codes",
+        "/emitters/emitter.warship_18.navigation/radar_role",
+        "/emitters/emitter.warship_18.navigation/operating_mode",
+        "/emitters/emitter.warship_18.navigation/power_class",
+        "/emitters/emitter.warship_18.navigation/operating_period_s",
+        "/emitters/emitter.warship_18.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_18",
+      "field_paths": [
+        "/emitters/emitter.warship_18.air_search/domain",
+        "/emitters/emitter.warship_18.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_18.air_search/prf_band_hz",
+        "/emitters/emitter.warship_18.air_search/modulation_codes",
+        "/emitters/emitter.warship_18.air_search/radar_role",
+        "/emitters/emitter.warship_18.air_search/operating_mode",
+        "/emitters/emitter.warship_18.air_search/power_class",
+        "/emitters/emitter.warship_18.air_search/operating_period_s",
+        "/emitters/emitter.warship_18.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_18",
+      "field_paths": [
+        "/emitters/emitter.warship_18.fire_control/domain",
+        "/emitters/emitter.warship_18.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_18.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_18.fire_control/modulation_codes",
+        "/emitters/emitter.warship_18.fire_control/radar_role",
+        "/emitters/emitter.warship_18.fire_control/operating_mode",
+        "/emitters/emitter.warship_18.fire_control/power_class",
+        "/emitters/emitter.warship_18.fire_control/operating_period_s",
+        "/emitters/emitter.warship_18.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_19",
+      "field_paths": [
+        "/emitters/emitter.warship_19.navigation/domain",
+        "/emitters/emitter.warship_19.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_19.navigation/prf_band_hz",
+        "/emitters/emitter.warship_19.navigation/modulation_codes",
+        "/emitters/emitter.warship_19.navigation/radar_role",
+        "/emitters/emitter.warship_19.navigation/operating_mode",
+        "/emitters/emitter.warship_19.navigation/power_class",
+        "/emitters/emitter.warship_19.navigation/operating_period_s",
+        "/emitters/emitter.warship_19.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_19",
+      "field_paths": [
+        "/emitters/emitter.warship_19.air_search/domain",
+        "/emitters/emitter.warship_19.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_19.air_search/prf_band_hz",
+        "/emitters/emitter.warship_19.air_search/modulation_codes",
+        "/emitters/emitter.warship_19.air_search/radar_role",
+        "/emitters/emitter.warship_19.air_search/operating_mode",
+        "/emitters/emitter.warship_19.air_search/power_class",
+        "/emitters/emitter.warship_19.air_search/operating_period_s",
+        "/emitters/emitter.warship_19.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_19",
+      "field_paths": [
+        "/emitters/emitter.warship_19.fire_control/domain",
+        "/emitters/emitter.warship_19.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_19.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_19.fire_control/modulation_codes",
+        "/emitters/emitter.warship_19.fire_control/radar_role",
+        "/emitters/emitter.warship_19.fire_control/operating_mode",
+        "/emitters/emitter.warship_19.fire_control/power_class",
+        "/emitters/emitter.warship_19.fire_control/operating_period_s",
+        "/emitters/emitter.warship_19.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_20",
+      "field_paths": [
+        "/emitters/emitter.warship_20.navigation/domain",
+        "/emitters/emitter.warship_20.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_20.navigation/prf_band_hz",
+        "/emitters/emitter.warship_20.navigation/modulation_codes",
+        "/emitters/emitter.warship_20.navigation/radar_role",
+        "/emitters/emitter.warship_20.navigation/operating_mode",
+        "/emitters/emitter.warship_20.navigation/power_class",
+        "/emitters/emitter.warship_20.navigation/operating_period_s",
+        "/emitters/emitter.warship_20.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_20",
+      "field_paths": [
+        "/emitters/emitter.warship_20.air_search/domain",
+        "/emitters/emitter.warship_20.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_20.air_search/prf_band_hz",
+        "/emitters/emitter.warship_20.air_search/modulation_codes",
+        "/emitters/emitter.warship_20.air_search/radar_role",
+        "/emitters/emitter.warship_20.air_search/operating_mode",
+        "/emitters/emitter.warship_20.air_search/power_class",
+        "/emitters/emitter.warship_20.air_search/operating_period_s",
+        "/emitters/emitter.warship_20.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_20",
+      "field_paths": [
+        "/emitters/emitter.warship_20.fire_control/domain",
+        "/emitters/emitter.warship_20.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_20.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_20.fire_control/modulation_codes",
+        "/emitters/emitter.warship_20.fire_control/radar_role",
+        "/emitters/emitter.warship_20.fire_control/operating_mode",
+        "/emitters/emitter.warship_20.fire_control/power_class",
+        "/emitters/emitter.warship_20.fire_control/operating_period_s",
+        "/emitters/emitter.warship_20.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_21",
+      "field_paths": [
+        "/emitters/emitter.warship_21.navigation/domain",
+        "/emitters/emitter.warship_21.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_21.navigation/prf_band_hz",
+        "/emitters/emitter.warship_21.navigation/modulation_codes",
+        "/emitters/emitter.warship_21.navigation/radar_role",
+        "/emitters/emitter.warship_21.navigation/operating_mode",
+        "/emitters/emitter.warship_21.navigation/power_class",
+        "/emitters/emitter.warship_21.navigation/operating_period_s",
+        "/emitters/emitter.warship_21.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_21",
+      "field_paths": [
+        "/emitters/emitter.warship_21.air_search/domain",
+        "/emitters/emitter.warship_21.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_21.air_search/prf_band_hz",
+        "/emitters/emitter.warship_21.air_search/modulation_codes",
+        "/emitters/emitter.warship_21.air_search/radar_role",
+        "/emitters/emitter.warship_21.air_search/operating_mode",
+        "/emitters/emitter.warship_21.air_search/power_class",
+        "/emitters/emitter.warship_21.air_search/operating_period_s",
+        "/emitters/emitter.warship_21.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_21",
+      "field_paths": [
+        "/emitters/emitter.warship_21.fire_control/domain",
+        "/emitters/emitter.warship_21.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_21.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_21.fire_control/modulation_codes",
+        "/emitters/emitter.warship_21.fire_control/radar_role",
+        "/emitters/emitter.warship_21.fire_control/operating_mode",
+        "/emitters/emitter.warship_21.fire_control/power_class",
+        "/emitters/emitter.warship_21.fire_control/operating_period_s",
+        "/emitters/emitter.warship_21.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_25",
+      "field_paths": [
+        "/emitters/emitter.warship_25.navigation/domain",
+        "/emitters/emitter.warship_25.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_25.navigation/prf_band_hz",
+        "/emitters/emitter.warship_25.navigation/modulation_codes",
+        "/emitters/emitter.warship_25.navigation/radar_role",
+        "/emitters/emitter.warship_25.navigation/operating_mode",
+        "/emitters/emitter.warship_25.navigation/power_class",
+        "/emitters/emitter.warship_25.navigation/operating_period_s",
+        "/emitters/emitter.warship_25.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_25",
+      "field_paths": [
+        "/emitters/emitter.warship_25.air_search/domain",
+        "/emitters/emitter.warship_25.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_25.air_search/prf_band_hz",
+        "/emitters/emitter.warship_25.air_search/modulation_codes",
+        "/emitters/emitter.warship_25.air_search/radar_role",
+        "/emitters/emitter.warship_25.air_search/operating_mode",
+        "/emitters/emitter.warship_25.air_search/power_class",
+        "/emitters/emitter.warship_25.air_search/operating_period_s",
+        "/emitters/emitter.warship_25.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_25",
+      "field_paths": [
+        "/emitters/emitter.warship_25.fire_control/domain",
+        "/emitters/emitter.warship_25.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_25.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_25.fire_control/modulation_codes",
+        "/emitters/emitter.warship_25.fire_control/radar_role",
+        "/emitters/emitter.warship_25.fire_control/operating_mode",
+        "/emitters/emitter.warship_25.fire_control/power_class",
+        "/emitters/emitter.warship_25.fire_control/operating_period_s",
+        "/emitters/emitter.warship_25.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_26",
+      "field_paths": [
+        "/emitters/emitter.warship_26.navigation/domain",
+        "/emitters/emitter.warship_26.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_26.navigation/prf_band_hz",
+        "/emitters/emitter.warship_26.navigation/modulation_codes",
+        "/emitters/emitter.warship_26.navigation/radar_role",
+        "/emitters/emitter.warship_26.navigation/operating_mode",
+        "/emitters/emitter.warship_26.navigation/power_class",
+        "/emitters/emitter.warship_26.navigation/operating_period_s",
+        "/emitters/emitter.warship_26.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_26",
+      "field_paths": [
+        "/emitters/emitter.warship_26.air_search/domain",
+        "/emitters/emitter.warship_26.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_26.air_search/prf_band_hz",
+        "/emitters/emitter.warship_26.air_search/modulation_codes",
+        "/emitters/emitter.warship_26.air_search/radar_role",
+        "/emitters/emitter.warship_26.air_search/operating_mode",
+        "/emitters/emitter.warship_26.air_search/power_class",
+        "/emitters/emitter.warship_26.air_search/operating_period_s",
+        "/emitters/emitter.warship_26.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_26",
+      "field_paths": [
+        "/emitters/emitter.warship_26.fire_control/domain",
+        "/emitters/emitter.warship_26.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_26.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_26.fire_control/modulation_codes",
+        "/emitters/emitter.warship_26.fire_control/radar_role",
+        "/emitters/emitter.warship_26.fire_control/operating_mode",
+        "/emitters/emitter.warship_26.fire_control/power_class",
+        "/emitters/emitter.warship_26.fire_control/operating_period_s",
+        "/emitters/emitter.warship_26.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_27",
+      "field_paths": [
+        "/emitters/emitter.warship_27.navigation/domain",
+        "/emitters/emitter.warship_27.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_27.navigation/prf_band_hz",
+        "/emitters/emitter.warship_27.navigation/modulation_codes",
+        "/emitters/emitter.warship_27.navigation/radar_role",
+        "/emitters/emitter.warship_27.navigation/operating_mode",
+        "/emitters/emitter.warship_27.navigation/power_class",
+        "/emitters/emitter.warship_27.navigation/operating_period_s",
+        "/emitters/emitter.warship_27.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_27",
+      "field_paths": [
+        "/emitters/emitter.warship_27.air_search/domain",
+        "/emitters/emitter.warship_27.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_27.air_search/prf_band_hz",
+        "/emitters/emitter.warship_27.air_search/modulation_codes",
+        "/emitters/emitter.warship_27.air_search/radar_role",
+        "/emitters/emitter.warship_27.air_search/operating_mode",
+        "/emitters/emitter.warship_27.air_search/power_class",
+        "/emitters/emitter.warship_27.air_search/operating_period_s",
+        "/emitters/emitter.warship_27.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_27",
+      "field_paths": [
+        "/emitters/emitter.warship_27.fire_control/domain",
+        "/emitters/emitter.warship_27.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_27.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_27.fire_control/modulation_codes",
+        "/emitters/emitter.warship_27.fire_control/radar_role",
+        "/emitters/emitter.warship_27.fire_control/operating_mode",
+        "/emitters/emitter.warship_27.fire_control/power_class",
+        "/emitters/emitter.warship_27.fire_control/operating_period_s",
+        "/emitters/emitter.warship_27.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_28",
+      "field_paths": [
+        "/emitters/emitter.warship_28.navigation/domain",
+        "/emitters/emitter.warship_28.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_28.navigation/prf_band_hz",
+        "/emitters/emitter.warship_28.navigation/modulation_codes",
+        "/emitters/emitter.warship_28.navigation/radar_role",
+        "/emitters/emitter.warship_28.navigation/operating_mode",
+        "/emitters/emitter.warship_28.navigation/power_class",
+        "/emitters/emitter.warship_28.navigation/operating_period_s",
+        "/emitters/emitter.warship_28.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_28",
+      "field_paths": [
+        "/emitters/emitter.warship_28.air_search/domain",
+        "/emitters/emitter.warship_28.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_28.air_search/prf_band_hz",
+        "/emitters/emitter.warship_28.air_search/modulation_codes",
+        "/emitters/emitter.warship_28.air_search/radar_role",
+        "/emitters/emitter.warship_28.air_search/operating_mode",
+        "/emitters/emitter.warship_28.air_search/power_class",
+        "/emitters/emitter.warship_28.air_search/operating_period_s",
+        "/emitters/emitter.warship_28.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "civilians.json",
+      "profile_key": "warship_28",
+      "field_paths": [
+        "/emitters/emitter.warship_28.fire_control/domain",
+        "/emitters/emitter.warship_28.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_28.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_28.fire_control/modulation_codes",
+        "/emitters/emitter.warship_28.fire_control/radar_role",
+        "/emitters/emitter.warship_28.fire_control/operating_mode",
+        "/emitters/emitter.warship_28.fire_control/power_class",
+        "/emitters/emitter.warship_28.fire_control/operating_period_s",
+        "/emitters/emitter.warship_28.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_22",
+      "field_paths": [
+        "/emitters/emitter.warship_22.navigation/domain",
+        "/emitters/emitter.warship_22.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_22.navigation/prf_band_hz",
+        "/emitters/emitter.warship_22.navigation/modulation_codes",
+        "/emitters/emitter.warship_22.navigation/radar_role",
+        "/emitters/emitter.warship_22.navigation/operating_mode",
+        "/emitters/emitter.warship_22.navigation/power_class",
+        "/emitters/emitter.warship_22.navigation/operating_period_s",
+        "/emitters/emitter.warship_22.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_22",
+      "field_paths": [
+        "/emitters/emitter.warship_22.air_search/domain",
+        "/emitters/emitter.warship_22.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_22.air_search/prf_band_hz",
+        "/emitters/emitter.warship_22.air_search/modulation_codes",
+        "/emitters/emitter.warship_22.air_search/radar_role",
+        "/emitters/emitter.warship_22.air_search/operating_mode",
+        "/emitters/emitter.warship_22.air_search/power_class",
+        "/emitters/emitter.warship_22.air_search/operating_period_s",
+        "/emitters/emitter.warship_22.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_22",
+      "field_paths": [
+        "/emitters/emitter.warship_22.fire_control/domain",
+        "/emitters/emitter.warship_22.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_22.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_22.fire_control/modulation_codes",
+        "/emitters/emitter.warship_22.fire_control/radar_role",
+        "/emitters/emitter.warship_22.fire_control/operating_mode",
+        "/emitters/emitter.warship_22.fire_control/power_class",
+        "/emitters/emitter.warship_22.fire_control/operating_period_s",
+        "/emitters/emitter.warship_22.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_23",
+      "field_paths": [
+        "/emitters/emitter.warship_23.navigation/domain",
+        "/emitters/emitter.warship_23.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_23.navigation/prf_band_hz",
+        "/emitters/emitter.warship_23.navigation/modulation_codes",
+        "/emitters/emitter.warship_23.navigation/radar_role",
+        "/emitters/emitter.warship_23.navigation/operating_mode",
+        "/emitters/emitter.warship_23.navigation/power_class",
+        "/emitters/emitter.warship_23.navigation/operating_period_s",
+        "/emitters/emitter.warship_23.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_23",
+      "field_paths": [
+        "/emitters/emitter.warship_23.air_search/domain",
+        "/emitters/emitter.warship_23.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_23.air_search/prf_band_hz",
+        "/emitters/emitter.warship_23.air_search/modulation_codes",
+        "/emitters/emitter.warship_23.air_search/radar_role",
+        "/emitters/emitter.warship_23.air_search/operating_mode",
+        "/emitters/emitter.warship_23.air_search/power_class",
+        "/emitters/emitter.warship_23.air_search/operating_period_s",
+        "/emitters/emitter.warship_23.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_23",
+      "field_paths": [
+        "/emitters/emitter.warship_23.fire_control/domain",
+        "/emitters/emitter.warship_23.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_23.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_23.fire_control/modulation_codes",
+        "/emitters/emitter.warship_23.fire_control/radar_role",
+        "/emitters/emitter.warship_23.fire_control/operating_mode",
+        "/emitters/emitter.warship_23.fire_control/power_class",
+        "/emitters/emitter.warship_23.fire_control/operating_period_s",
+        "/emitters/emitter.warship_23.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_24",
+      "field_paths": [
+        "/emitters/emitter.warship_24.navigation/domain",
+        "/emitters/emitter.warship_24.navigation/frequency_band_hz",
+        "/emitters/emitter.warship_24.navigation/prf_band_hz",
+        "/emitters/emitter.warship_24.navigation/modulation_codes",
+        "/emitters/emitter.warship_24.navigation/radar_role",
+        "/emitters/emitter.warship_24.navigation/operating_mode",
+        "/emitters/emitter.warship_24.navigation/power_class",
+        "/emitters/emitter.warship_24.navigation/operating_period_s",
+        "/emitters/emitter.warship_24.navigation/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_24",
+      "field_paths": [
+        "/emitters/emitter.warship_24.air_search/domain",
+        "/emitters/emitter.warship_24.air_search/frequency_band_hz",
+        "/emitters/emitter.warship_24.air_search/prf_band_hz",
+        "/emitters/emitter.warship_24.air_search/modulation_codes",
+        "/emitters/emitter.warship_24.air_search/radar_role",
+        "/emitters/emitter.warship_24.air_search/operating_mode",
+        "/emitters/emitter.warship_24.air_search/power_class",
+        "/emitters/emitter.warship_24.air_search/operating_period_s",
+        "/emitters/emitter.warship_24.air_search/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "warships.json",
+      "profile_key": "warship_24",
+      "field_paths": [
+        "/emitters/emitter.warship_24.fire_control/domain",
+        "/emitters/emitter.warship_24.fire_control/frequency_band_hz",
+        "/emitters/emitter.warship_24.fire_control/prf_band_hz",
+        "/emitters/emitter.warship_24.fire_control/modulation_codes",
+        "/emitters/emitter.warship_24.fire_control/radar_role",
+        "/emitters/emitter.warship_24.fire_control/operating_mode",
+        "/emitters/emitter.warship_24.fire_control/power_class",
+        "/emitters/emitter.warship_24.fire_control/operating_period_s",
+        "/emitters/emitter.warship_24.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "diesel_alt",
+      "field_paths": [
+        "/emitters/emitter.diesel_alt.mast_radar/domain",
+        "/emitters/emitter.diesel_alt.mast_radar/frequency_band_hz",
+        "/emitters/emitter.diesel_alt.mast_radar/prf_band_hz",
+        "/emitters/emitter.diesel_alt.mast_radar/modulation_codes",
+        "/emitters/emitter.diesel_alt.mast_radar/radar_role",
+        "/emitters/emitter.diesel_alt.mast_radar/operating_mode",
+        "/emitters/emitter.diesel_alt.mast_radar/power_class",
+        "/emitters/emitter.diesel_alt.mast_radar/operating_period_s",
+        "/emitters/emitter.diesel_alt.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "aip_modern",
+      "field_paths": [
+        "/emitters/emitter.aip_modern.mast_radar/domain",
+        "/emitters/emitter.aip_modern.mast_radar/frequency_band_hz",
+        "/emitters/emitter.aip_modern.mast_radar/prf_band_hz",
+        "/emitters/emitter.aip_modern.mast_radar/modulation_codes",
+        "/emitters/emitter.aip_modern.mast_radar/radar_role",
+        "/emitters/emitter.aip_modern.mast_radar/operating_mode",
+        "/emitters/emitter.aip_modern.mast_radar/power_class",
+        "/emitters/emitter.aip_modern.mast_radar/operating_period_s",
+        "/emitters/emitter.aip_modern.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "ssn",
+      "field_paths": [
+        "/emitters/emitter.ssn.mast_radar/domain",
+        "/emitters/emitter.ssn.mast_radar/frequency_band_hz",
+        "/emitters/emitter.ssn.mast_radar/prf_band_hz",
+        "/emitters/emitter.ssn.mast_radar/modulation_codes",
+        "/emitters/emitter.ssn.mast_radar/radar_role",
+        "/emitters/emitter.ssn.mast_radar/operating_mode",
+        "/emitters/emitter.ssn.mast_radar/power_class",
+        "/emitters/emitter.ssn.mast_radar/operating_period_s",
+        "/emitters/emitter.ssn.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_01",
+      "field_paths": [
+        "/emitters/emitter.sub_01.mast_radar/domain",
+        "/emitters/emitter.sub_01.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_01.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_01.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_01.mast_radar/radar_role",
+        "/emitters/emitter.sub_01.mast_radar/operating_mode",
+        "/emitters/emitter.sub_01.mast_radar/power_class",
+        "/emitters/emitter.sub_01.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_01.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_02",
+      "field_paths": [
+        "/emitters/emitter.sub_02.mast_radar/domain",
+        "/emitters/emitter.sub_02.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_02.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_02.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_02.mast_radar/radar_role",
+        "/emitters/emitter.sub_02.mast_radar/operating_mode",
+        "/emitters/emitter.sub_02.mast_radar/power_class",
+        "/emitters/emitter.sub_02.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_02.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_03",
+      "field_paths": [
+        "/emitters/emitter.sub_03.mast_radar/domain",
+        "/emitters/emitter.sub_03.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_03.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_03.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_03.mast_radar/radar_role",
+        "/emitters/emitter.sub_03.mast_radar/operating_mode",
+        "/emitters/emitter.sub_03.mast_radar/power_class",
+        "/emitters/emitter.sub_03.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_03.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_04",
+      "field_paths": [
+        "/emitters/emitter.sub_04.mast_radar/domain",
+        "/emitters/emitter.sub_04.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_04.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_04.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_04.mast_radar/radar_role",
+        "/emitters/emitter.sub_04.mast_radar/operating_mode",
+        "/emitters/emitter.sub_04.mast_radar/power_class",
+        "/emitters/emitter.sub_04.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_04.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_05",
+      "field_paths": [
+        "/emitters/emitter.sub_05.mast_radar/domain",
+        "/emitters/emitter.sub_05.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_05.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_05.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_05.mast_radar/radar_role",
+        "/emitters/emitter.sub_05.mast_radar/operating_mode",
+        "/emitters/emitter.sub_05.mast_radar/power_class",
+        "/emitters/emitter.sub_05.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_05.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_06",
+      "field_paths": [
+        "/emitters/emitter.sub_06.mast_radar/domain",
+        "/emitters/emitter.sub_06.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_06.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_06.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_06.mast_radar/radar_role",
+        "/emitters/emitter.sub_06.mast_radar/operating_mode",
+        "/emitters/emitter.sub_06.mast_radar/power_class",
+        "/emitters/emitter.sub_06.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_06.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_07",
+      "field_paths": [
+        "/emitters/emitter.sub_07.mast_radar/domain",
+        "/emitters/emitter.sub_07.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_07.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_07.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_07.mast_radar/radar_role",
+        "/emitters/emitter.sub_07.mast_radar/operating_mode",
+        "/emitters/emitter.sub_07.mast_radar/power_class",
+        "/emitters/emitter.sub_07.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_07.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_08",
+      "field_paths": [
+        "/emitters/emitter.sub_08.mast_radar/domain",
+        "/emitters/emitter.sub_08.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_08.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_08.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_08.mast_radar/radar_role",
+        "/emitters/emitter.sub_08.mast_radar/operating_mode",
+        "/emitters/emitter.sub_08.mast_radar/power_class",
+        "/emitters/emitter.sub_08.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_08.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_09",
+      "field_paths": [
+        "/emitters/emitter.sub_09.mast_radar/domain",
+        "/emitters/emitter.sub_09.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_09.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_09.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_09.mast_radar/radar_role",
+        "/emitters/emitter.sub_09.mast_radar/operating_mode",
+        "/emitters/emitter.sub_09.mast_radar/power_class",
+        "/emitters/emitter.sub_09.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_09.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_10",
+      "field_paths": [
+        "/emitters/emitter.sub_10.mast_radar/domain",
+        "/emitters/emitter.sub_10.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_10.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_10.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_10.mast_radar/radar_role",
+        "/emitters/emitter.sub_10.mast_radar/operating_mode",
+        "/emitters/emitter.sub_10.mast_radar/power_class",
+        "/emitters/emitter.sub_10.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_10.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_11",
+      "field_paths": [
+        "/emitters/emitter.sub_11.mast_radar/domain",
+        "/emitters/emitter.sub_11.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_11.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_11.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_11.mast_radar/radar_role",
+        "/emitters/emitter.sub_11.mast_radar/operating_mode",
+        "/emitters/emitter.sub_11.mast_radar/power_class",
+        "/emitters/emitter.sub_11.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_11.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_12",
+      "field_paths": [
+        "/emitters/emitter.sub_12.mast_radar/domain",
+        "/emitters/emitter.sub_12.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_12.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_12.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_12.mast_radar/radar_role",
+        "/emitters/emitter.sub_12.mast_radar/operating_mode",
+        "/emitters/emitter.sub_12.mast_radar/power_class",
+        "/emitters/emitter.sub_12.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_12.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_13",
+      "field_paths": [
+        "/emitters/emitter.sub_13.mast_radar/domain",
+        "/emitters/emitter.sub_13.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_13.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_13.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_13.mast_radar/radar_role",
+        "/emitters/emitter.sub_13.mast_radar/operating_mode",
+        "/emitters/emitter.sub_13.mast_radar/power_class",
+        "/emitters/emitter.sub_13.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_13.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_14",
+      "field_paths": [
+        "/emitters/emitter.sub_14.mast_radar/domain",
+        "/emitters/emitter.sub_14.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_14.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_14.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_14.mast_radar/radar_role",
+        "/emitters/emitter.sub_14.mast_radar/operating_mode",
+        "/emitters/emitter.sub_14.mast_radar/power_class",
+        "/emitters/emitter.sub_14.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_14.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_15",
+      "field_paths": [
+        "/emitters/emitter.sub_15.mast_radar/domain",
+        "/emitters/emitter.sub_15.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_15.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_15.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_15.mast_radar/radar_role",
+        "/emitters/emitter.sub_15.mast_radar/operating_mode",
+        "/emitters/emitter.sub_15.mast_radar/power_class",
+        "/emitters/emitter.sub_15.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_15.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_16",
+      "field_paths": [
+        "/emitters/emitter.sub_16.mast_radar/domain",
+        "/emitters/emitter.sub_16.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_16.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_16.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_16.mast_radar/radar_role",
+        "/emitters/emitter.sub_16.mast_radar/operating_mode",
+        "/emitters/emitter.sub_16.mast_radar/power_class",
+        "/emitters/emitter.sub_16.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_16.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_17",
+      "field_paths": [
+        "/emitters/emitter.sub_17.mast_radar/domain",
+        "/emitters/emitter.sub_17.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_17.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_17.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_17.mast_radar/radar_role",
+        "/emitters/emitter.sub_17.mast_radar/operating_mode",
+        "/emitters/emitter.sub_17.mast_radar/power_class",
+        "/emitters/emitter.sub_17.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_17.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_18",
+      "field_paths": [
+        "/emitters/emitter.sub_18.mast_radar/domain",
+        "/emitters/emitter.sub_18.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_18.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_18.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_18.mast_radar/radar_role",
+        "/emitters/emitter.sub_18.mast_radar/operating_mode",
+        "/emitters/emitter.sub_18.mast_radar/power_class",
+        "/emitters/emitter.sub_18.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_18.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_19",
+      "field_paths": [
+        "/emitters/emitter.sub_19.mast_radar/domain",
+        "/emitters/emitter.sub_19.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_19.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_19.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_19.mast_radar/radar_role",
+        "/emitters/emitter.sub_19.mast_radar/operating_mode",
+        "/emitters/emitter.sub_19.mast_radar/power_class",
+        "/emitters/emitter.sub_19.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_19.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "subs.json",
+      "profile_key": "sub_20",
+      "field_paths": [
+        "/emitters/emitter.sub_20.mast_radar/domain",
+        "/emitters/emitter.sub_20.mast_radar/frequency_band_hz",
+        "/emitters/emitter.sub_20.mast_radar/prf_band_hz",
+        "/emitters/emitter.sub_20.mast_radar/modulation_codes",
+        "/emitters/emitter.sub_20.mast_radar/radar_role",
+        "/emitters/emitter.sub_20.mast_radar/operating_mode",
+        "/emitters/emitter.sub_20.mast_radar/power_class",
+        "/emitters/emitter.sub_20.mast_radar/operating_period_s",
+        "/emitters/emitter.sub_20.mast_radar/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "aircraft.json",
+      "profile_key": "su_25",
+      "field_paths": [
+        "/emitters/emitter.su_25.fire_control/domain",
+        "/emitters/emitter.su_25.fire_control/frequency_band_hz",
+        "/emitters/emitter.su_25.fire_control/prf_band_hz",
+        "/emitters/emitter.su_25.fire_control/modulation_codes",
+        "/emitters/emitter.su_25.fire_control/radar_role",
+        "/emitters/emitter.su_25.fire_control/operating_mode",
+        "/emitters/emitter.su_25.fire_control/power_class",
+        "/emitters/emitter.su_25.fire_control/operating_period_s",
+        "/emitters/emitter.su_25.fire_control/on_duration_s"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
     }
   ]
 }

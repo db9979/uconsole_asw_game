@@ -127,7 +127,7 @@ AUTOMATION = r"""
     let target = null;
     if (scene === "sonar") target = $("sonar-audition-mode");
     if (scene === "radio") target = $("radio-messages").lastElementChild || $("radio-messages");
-    if (scene === "multi") target = $("workstation-station");
+    if (scene === "multi") target = $("station-tabs");
     if (target) target.scrollIntoView({block: scene === "multi" ? "start" : "center"});
     else scrollTo(0, 0);
     positioned = true;
@@ -173,8 +173,8 @@ AUTOMATION = r"""
     }
 
     const section = $(`station-${expectedRole}`);
-    const selectedRole = $("workstation-station").value;
-    const selectorCount = $("workstation-station").options.length;
+    const selectedRole = document.querySelector(".station-tab[aria-selected='true']")?.dataset.station || "";
+    const selectorCount = $("station-tabs").children.length;
     const canvas = instrumentFor(expectedRole);
     const isPainted = painted(canvas);
     const sonarControls = scene !== "sonar" || ["sonar-audition-mode", "sonar-listen-band", "sonar-listen-notch"]

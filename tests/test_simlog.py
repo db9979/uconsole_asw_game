@@ -4,7 +4,9 @@ import json
 from contextlib import closing
 from dataclasses import replace
 import http.client
+import queue
 import time
+from types import SimpleNamespace
 
 import pygame
 import pytest
@@ -190,8 +192,8 @@ def test_in_game_simlog_view_draws_all_languages_and_large_text(game):
     game.simlog_view_open = False
 
 
-def test_options_menu_has_nine_rows_and_toggles_simlog(game):
-    assert len(game._options_row_rects()) == 9
+def test_options_menu_has_ten_rows_and_toggles_simlog(game):
+    assert len(game._options_row_rects()) == 10
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F10))
     assert game.options_open
     for _ in range(5):
@@ -215,7 +217,9 @@ def test_options_menu_toggles_night_mode_and_draw_applies_the_overlay(game):
     game.draw()  # must not crash with the overlay active
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
     assert game.preferences.night_mode is False
-    # Commander-Eintrag liegt jetzt hinter high_contrast auf Zeile 8.
+    # Commander-Eintrag liegt jetzt hinter high_contrast und Echtzeit-Verkehr
+    # auf Zeile 9.
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
@@ -297,7 +301,7 @@ def test_v2_simlog_requires_cookie_active_role_and_host_grant(server):
     assert request(server, "/api/v2/simlog", cookie=cookie)[0] == 200
 
 
-def test_remote_simlog_is_prior_exact_projection_not_local_truth(game, server):
+def test_remote_simlog_includes_host_granted_full_truth(game, server):
     hidden = Contact(1, 998877, "passiv", "sub")
     hidden.update_passive(47.0, .8, .8, "hidden-class", game.sim_t)
     game.sonar.contacts[hidden.target_id] = hidden
@@ -315,13 +319,13 @@ def test_remote_simlog_is_prior_exact_projection_not_local_truth(game, server):
     assert (body["session"], body["epoch"], body["role"]) == (
         prior["session"], prior["epoch"], "sonar")
     entry = body["entries"][-1]
-    assert set(entry) == {"seq", "t", "stamp", "state"}
+    assert set(entry) == {"seq", "t", "stamp", "state", "truth"}
     assert entry["t"] == 12.5 and entry["stamp"] == "00:01"
     assert entry["state"] == prior
-    encoded = json.dumps(body)
-    assert "998877" not in encoded and "hidden-class" not in encoded
+    assert entry["truth"] == game._simlog_state_data()
+    assert entry["truth"]["subs"][0]["id"] == game.subs[0].id
     assert not ({"subs", "surfaces", "enemy_torpedoes", "raiders"}
-                & set(entry["state"]))
+                & set(entry["state"]))  # normal station state remains redacted
 
 
 def test_remote_simlog_history_is_role_and_session_specific(game, server):
@@ -341,6 +345,7 @@ def test_remote_simlog_history_is_role_and_session_specific(game, server):
     assert bridge_log["entries"][-1]["state"] == bridge_prior
     assert sonar_log["entries"][-1]["state"] == sonar_prior
     assert bridge_log["entries"][-1]["state"] != sonar_log["entries"][-1]["state"]
+    assert bridge_log["entries"][-1]["truth"] == sonar_log["entries"][-1]["truth"]
     assert all(row["state"]["role"] == "bridge" for row in bridge_log["entries"])
     assert all(row["state"]["role"] == "sonar" for row in sonar_log["entries"])
 
@@ -430,3 +435,210 @@ def test_remote_simlog_publication_respects_byte_bound(
     entries = body["entries"]
     assert entries
     assert len(transport._json_bytes(body)) <= limit
+
+
+def _spawn_live_traffic(game):
+    """One live AIS ship and one live ADS-B aircraft in the running game."""
+    from src.world.projection import nm_to_lonlat
+
+    live = game.live_traffic
+    live._center = (8.0, 54.0)
+    live._size_nm = float(game.world.size_nm)
+    lon, lat = nm_to_lonlat(game.ship.x - 10.0, game.ship.y - 5.0,
+                            *live._center, live._size_nm)
+    live._ship_types[123456789] = 70
+    live._apply_ais_report(game, 123456789, {
+        "mmsi": 123456789, "lat": lat, "lon": lon, "cog": 45.0, "sog": 14.0,
+        "name": "MV LIVETEST", "callsign": "DLIVE", "imo": 9876543,
+        "ship_type": 70, "destination": "KIEL", "draught_m": 6.5,
+        "length_m": 110.0, "width_m": 18.0, "nav_status": 0,
+        "heading": 44, "position_accuracy": True})
+    now = time.time()
+    live.adsb_client = SimpleNamespace(snapshots=queue.Queue())
+    live.adsb_client.snapshots.put((now, [[
+        "3c6444", "DLH123  ", "DE", now, now, lon, lat, 10668.0, False,
+        230.0, 90.0, 0.0]]))
+    live._drain_adsb(game)
+    for aircraft in live.aircraft.values():
+        aircraft.advance(now)
+    return live.aircraft["3c6444"], game.civilians[-1]
+
+
+def test_state_snapshot_lists_live_ship_and_aircraft_in_their_rubrics(game):
+    aircraft, ship = _spawn_live_traffic(game)
+    data = game._simlog_state_data()
+    row = next(r for r in data["surfaces"] if r["id"] == ship.id)
+    assert row["kind"] == "civilian" and row["mmsi"] == 123456789
+    assert row["name"] == "MV LIVETEST"
+    assert row["callsign"] == "DLIVE" and row["imo"] == 9876543
+    assert row["destination"] == "KIEL" and row["ship_type"] == 70
+    assert (row["length_m"], row["width_m"], row["draught_m"]) == (
+        110.0, 18.0, 6.5)
+    assert row["nav_status"] == 0 and row["ais_heading"] == 44
+    assert row["position_accuracy"] is True
+    assert (row["course"], row["speed"]) == (45.0, 14.0)
+    simulated = [r for r in data["surfaces"] if r["id"] != ship.id]
+    assert simulated and all(r["mmsi"] is None for r in simulated)
+    live = [r for r in data["flights"] if r["kind"] == "live"]
+    assert len(live) == 1
+    assert live[0]["seq"] == aircraft.seq and live[0]["icao24"] == "3c6444"
+    assert live[0]["callsign"] == "DLH123"
+    assert live[0]["course"] == 90.0
+    assert live[0]["speed"] == round(230.0 * 1.9438445, 1)
+    assert live[0]["alt_m"] == 10668.0
+    # Simulated flights stay in the same rubric without live identifiers.
+    simulated_flights = [r for r in data["flights"] if r["kind"] != "live"]
+    assert len(simulated_flights) == len(game.flights.flights)
+    assert all(r["icao24"] is None and r["alt_m"] is None
+               for r in simulated_flights)
+    json.dumps(data, allow_nan=False)
+    # Destroyed aircraft leave the aircraft rubric.
+    game.live_traffic.mark_aircraft_destroyed("3c6444")
+    assert not [r for r in game._simlog_state_data()["flights"]
+                if r["kind"] == "live"]
+
+
+def test_simlog_view_shows_live_identifiers_in_english_and_german(game):
+    from src.core.i18n import Translator
+    from src.ui import simlog_view
+
+    _spawn_live_traffic(game)
+    for language in ("en", "de"):
+        tr = Translator(language).t
+        text = "\n".join(line for line, _ in simlog_view._build_lines(game, tr))
+        assert "MMSI" in text and "123456789" in text and "MV LIVETEST" in text
+        assert "DLIVE" in text and "9876543" in text and "KIEL" in text
+        assert "ICAO24" in text and "3c6444" in text and "DLH123" in text
+        assert "10668" in text
+
+
+def test_simlog_view_shows_distance_from_own_ship(game):
+    from src.core.i18n import Translator
+    from src.ui import simlog_view
+
+    game.ship.x, game.ship.y = 10.0, 20.0
+    game.subs[0].x, game.subs[0].y = 13.0, 24.0
+    lines = simlog_view._unit_tables(game._simlog_state_data(),
+                                     Translator("en").t)
+    sub_header = next(text for text, _ in lines if "Own NM" in text)
+    sub_row = lines[lines.index((sub_header, "dim")) + 1][0]
+    assert "Own NM" in sub_header
+    assert "5.0" in sub_row
+
+
+def test_sinking_a_live_ship_is_recorded_in_the_event_log(game):
+    from src.weapons.torpedo import Torpedo
+
+    _, ship = _spawn_live_traffic(game)
+    game.preferences = replace(game.preferences, simlog=True)
+    torpedo = Torpedo(ship.x, ship.y, 0.0, 5.0, ship, 1)
+    torpedo.state = "HIT"
+    game.torpedoes.append(torpedo)
+    game._update_player_torpedoes(0.0)
+    assert ship.sunk and game.incident
+    assert 123456789 not in game.live_traffic._ships
+    rows = [row for row in game.simlog if row["cat"] == "waffen"]
+    assert rows and rows[-1]["text"] == message("runtime.incident")
+
+
+def test_simlog_map_items_place_every_contact_group_including_live(game):
+    from src.ui import simlog_map
+
+    aircraft, ship = _spawn_live_traffic(game)
+    snap = game._simlog_state_data()
+    items = simlog_map.map_items(snap)
+    groups = {item["group"] for item in items}
+    assert {"own", "live_ships", "live_air"} <= groups
+    assert all(item["group"] in simlog_map.GROUPS for item in items)
+    by_group = {}
+    for item in items:
+        by_group.setdefault(item["group"], []).append(item)
+    assert len(by_group["own"]) == 1
+    assert len(by_group["live_ships"]) == 1
+    assert by_group["live_ships"][0]["label"] == str(ship.id)
+    assert by_group["live_air"][0]["label"] == f"A-{aircraft.seq}"
+    assert (by_group["live_air"][0]["x"], by_group["live_air"][0]["y"]) == \
+        (round(aircraft.x, 2), round(aircraft.y, 2))
+    expected = (1 + len(game.subs) + len(game.civilians) + len(game.warships)
+                + len(game.flights.flights) + len(game.live_traffic.aircraft)
+                + len(game.raiders) + len(game.animals) + len(game.torpedoes)
+                + len(game.enemy_torpedoes) + len(game.decoys) + len(game.asms)
+                + len(game.essms) + len(game.asrocs) + len(game.nixies)
+                + len(game.buoys) + (1 if game.helo.airborne else 0))
+    assert len(items) == expected
+    sim_ships = [i for g in ("civilians", "warships") for i in by_group.get(g, [])]
+    assert len(sim_ships) == len(game.civilians) + len(game.warships) - 1
+
+
+def test_simlog_map_marks_sunk_units_dead(game):
+    from src.ui import simlog_map
+
+    _, ship = _spawn_live_traffic(game)
+    ship.sunk = True
+    items = simlog_map.map_items(game._simlog_state_data())
+    live = next(i for i in items if i["group"] == "live_ships")
+    assert live["dead"] is True
+
+
+def test_simlog_map_keys_toggle_map_and_fit_without_leaking(game):
+    game.preferences = replace(game.preferences, simlog=True)
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F4))
+    assert game.simlog_view_open and not game.simlog_view_map
+    # F only acts on the map page.
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f))
+    assert game.simlog_map_fit == "world"
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_m))
+    assert game.simlog_view_map
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f))
+    assert game.simlog_map_fit == "units"
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f))
+    assert game.simlog_map_fit == "world"
+    scroll = game.simlog_view_scroll
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_PAGEDOWN))
+    assert game.simlog_view_scroll == scroll  # list scrolling is inert on the map
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_m))
+    assert not game.simlog_view_map
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_m))
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))
+    assert not game.simlog_view_open and not game.simlog_view_map
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F4))
+    assert game.simlog_view_open and not game.simlog_view_map  # reopens on the list
+
+
+def test_simlog_map_draws_in_all_languages_fits_and_large_text(game):
+    from src.core.i18n import Translator, pseudolocale
+    from src.ui import layout
+
+    _spawn_live_traffic(game)
+    game.preferences = replace(game.preferences, simlog=True)
+    game.simlog_view_open = True
+    game.simlog_view_map = True
+    for translator in (Translator("en"), Translator("de"),
+                        Translator("en", catalog=pseudolocale())):
+        for large in (False, True):
+            for fit in ("world", "units"):
+                game.translator = translator
+                game.tr = translator.t
+                game.simlog_map_fit = fit
+                game.preferences = replace(game.preferences,
+                                           large_text=large, simlog=True)
+                game._apply_text_size()
+                with layout.capture_geometry():
+                    game.draw()
+                assert game.screen.get_clip() == pygame.Rect(0, 0, 1280, 720)
+    game.simlog_view_open = False
+
+
+def test_simlog_map_is_read_only_and_does_not_advance_simulation(game):
+    from src.ui import simlog_map
+
+    _spawn_live_traffic(game)
+    game.preferences = replace(game.preferences, simlog=True)
+    game.simlog_view_open = True
+    game.simlog_view_map = True
+    before = json.dumps(game._simlog_state_data(), sort_keys=True)
+    sim_t = game.sim_t
+    game.draw()
+    assert game.sim_t == sim_t
+    assert json.dumps(game._simlog_state_data(), sort_keys=True) == before
+    assert simlog_map.map_items(game._simlog_state_data())

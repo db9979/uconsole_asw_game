@@ -5,7 +5,7 @@
   const prefix = "commander.web.";
   const domains = { UNKNOWN: "domain_unknown", SURFACE: "domain_surface", SUBSURFACE: "domain_subsurface", AIR: "domain_air" };
   const affiliations = { UNKNOWN: "aff_unknown", FRIEND: "aff_friend", NEUTRAL: "aff_neutral", HOSTILE: "aff_hostile" };
-  const classes = { U_BOOT: "class_submarine", KAMPFSCHIFF: "class_warship", BIOLOGISCH: "class_biological", FAHRZEUG: "class_vehicle" };
+  const classes = { U_BOOT: "class_submarine", KAMPFSCHIFF: "class_warship", BIOLOGISCH: "class_biological", FAHRZEUG: "class_vehicle", FLUGZEUG: "class_aircraft" };
   const phases = { live: "phase_live", paused: "phase_paused", menu: "phase_menu", blocked: "phase_blocked", ended: "phase_ended" };
   const damageStates = { OK: "damage_ok", FLUTEND: "damage_flooding", BESCHAEDIGT: "damage_damaged", ZERSTOERT: "damage_destroyed" };
   const heloStates = { HANGAR: "helo_stowed", AUF: "helo_airborne", ZURUECK: "helo_returning", VERLOREN: "helo_lost" };
@@ -86,6 +86,33 @@
   let polling = false;
   let pending = null;
   let v2State = null;
+  // Purely client-local presentation state; never sent to the host or saved.
+  const elokaFilters = {status: "OPERATIONAL", threat: "ALL", band: "ALL"};
+  const elokaThreatRank = {unknown: 0, low: 1, medium: 2, high: 3, critical: 4};
+  const elokaSignalRank = {LIVE: 0, RECENT: 1, MEMORY: 2, UNCONFIRMED: 3};
+  function filteredEloka(intercepts) {
+    const minimum = elokaFilters.threat === "ALL" ? -1 : elokaThreatRank[elokaFilters.threat.toLowerCase()];
+    return intercepts.filter((row) => {
+      if (row.jamming) return true;
+      if (elokaFilters.status === "OPERATIONAL" && !row.operational) return false;
+      if (["LIVE", "MEMORY"].includes(elokaFilters.status) && row.signal_state !== elokaFilters.status) return false;
+      if ((elokaThreatRank[row.threat] ?? 0) < minimum) return false;
+      return elokaFilters.band === "ALL" || row.frequency_band === elokaFilters.band;
+    }).sort((a, b) => Number(b.jamming) - Number(a.jamming) ||
+      (elokaThreatRank[b.threat] ?? 0) - (elokaThreatRank[a.threat] ?? 0) ||
+      (elokaSignalRank[a.signal_state] ?? 9) - (elokaSignalRank[b.signal_state] ?? 9) ||
+      b.quality - a.quality || a.age_s - b.age_s || a.label.localeCompare(b.label));
+  }
+  // Last accepted state per station. A station switch inside one world shows
+  // the target's cached picture at once (marked stale, commands disabled) until
+  // its fresh state arrives; a world/lease change clears every entry.
+  const roleCache = new Map();
+  let roleStale = false;
+  // Solo host surface: the published host view and the one host command in flight.
+  let hostView = null;
+  let hostPending = null;
+  let hostMessage = null;
+  let hostMessageTimer = null;
   let stationRenderSignature = null;
   let nextCommandSeq = 0;
   let stationMutation = false;
@@ -111,8 +138,11 @@
   let sonarAudioNextTime = 0;
   let sonarAudioSources = [];
   let sonarAudioGain = null;
-  let bridgeCavitationSource = null;
-  let bridgeCavitationGain = null;
+  let sonarAudioHighpass = null;
+  let sonarAudioLowpass = null;
+  let gameSoundContext = null;
+  let gameSoundHighWater = 0;
+  const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry"]);
   const view = { x: 0, y: 0, zoom: 1, follow: false, initialized: false };
   const canvas = $("chart");
   const ctx = canvas.getContext("2d");
@@ -138,8 +168,16 @@
   let eventHistory = [];
   let analysisError = false;
   let latestSimlogState = null;
-  const visualCanvasIds = ["role-map", "sonar-broadband", "sonar-lofar", "sonar-spectrum", "sonar-demon",
-    "sonar-tma-plot", "sonar-environment", "sonar-active", "damage-schematic",
+  const simlogMapCanvas = $("simlog-map");
+  const simlogMapCtx = simlogMapCanvas.getContext("2d");
+  let simlogMapData = null;
+  let simlogMapSeq = null;
+  let simlogMapLatest = false;
+  let simlogMapFit = "world";
+  let simlogMapDrawQueued = false;
+  const visualCanvasIds = ["role-map", "sonar-broadband", "sonar-lofar", "sonar-spectrum",
+    "sonar-band-low", "sonar-band-mid", "sonar-band-high", "sonar-demon", "sonar-demon-spectrum",
+    "sonar-tma-plot", "sonar-environment", "sonar-active", "sonar-a-scan", "damage-schematic",
     "engine-instruments", "eloka-scope", "weapons-system"];
   const mapRoles = new Set(["bridge", "weapons", "opz", "radio", "helicopter"]);
   const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
@@ -147,7 +185,13 @@
   const maxRoleMapHits = 512;
   let roleMapHits = [];
   let damageHits = [];
-  let sonarVisualPage = "broadband";
+  const defaultSonarPage = () => matchMedia("(min-width: 851px)").matches ? "overview" : "broadband";
+  let sonarVisualPage = defaultSonarPage();
+  // The browser runs on a desktop PC: on a wide screen the overview shows all six
+  // plots at once, otherwise the four that matter most.
+  const wideScreen = matchMedia("(min-width: 1800px) and (min-height: 850px)");
+  const overviewPlotList = () => wideScreen.matches ? ["broadband", "lofar", "demon", "tma", "environment", "active"] :
+    ["broadband", "lofar", "demon", "tma"];
   let visualDrawQueued = false;
   let weatherFrame = null;
   let weatherTimer = null;
@@ -160,6 +204,16 @@
   let fireConfirmation = null;
   let fireConfirmationTimer = null;
   let sonarAudioGeneration = 0;
+  const detachedSonarScope = new URLSearchParams(location.search).get("scope");
+  const sonarScopeNames = new Set(["broadband", "lofar", "demon", "tma", "environment", "active"]);
+  const sonarDisplay = {black: 0, contrast: 2.5, history: 300, palette: "green", demonCursor: null};
+  const sonarHistory = {context: null, broadband: new Map(), lofar: new Map(), demon: new Map()};
+  const sonarStream = {socket: null, connected: false, retry: null, generation: 0,
+    sequence: -1, lofarSpectrum: [], demonSpectrum: []};
+  if (sonarScopeNames.has(detachedSonarScope)) {
+    document.body.dataset.sonarScope = detachedSonarScope;
+    sonarVisualPage = detachedSonarScope;
+  }
 
   const t = (key, values = {}) => (catalog[prefix + key] || "").replace(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (_, name) => String(values[name] ?? ""));
   const finite = (value) => typeof value === "number" && Number.isFinite(value);
@@ -173,58 +227,68 @@
   const domainClass = (value) => `domain-${Object.hasOwn(domains, value) ? value.toLowerCase() : "unknown"}`;
   const selectedTrack = () => snapshot?.tracks.find((track) => track.ref === selected);
   const sameContext = (a, b) => a && b && a.session === b.session && a.epoch === b.epoch;
-  const chartMatches = (state) => chart && chartSession === state.session && chartEpoch === state.epoch &&
-    chartRole === state.role && chart.revision === state.chart_revision;
+  // Every assigned station receives the identical known chart, so a station
+  // switch keeps it; only the redacted (role-less) chart is a different picture.
+  const chartMatches = (state) => Boolean(state && chart) && chartSession === state.session && chartEpoch === state.epoch &&
+    (chartRole === state.role || (chartRole !== null && state.role !== null)) &&
+    chart.revision === state.chart_revision;
   const authenticated = () => session !== null;
 
   const sonarAudioAuthorized = () => connected && !document.hidden && navigator.onLine !== false &&
     session?.station === "sonar" && session.grants.sonar_audio === true && v2State?.role === "sonar" &&
     v2State.phase === "live" && v2State.clock?.time_scale === 1 && v2State.sonar?.settings?.station_down === false;
-  const sonarAudioStartLead = .3;
-  const sonarAudioTargetAhead = .65;
-  const sonarAudioMaxSources = 3;
+  // Blocks arrive at real-time rate, so the standing buffer is the start lead. It
+  // must outlast a browser main-thread stall or a Wi-Fi hiccup, otherwise every
+  // such hiccup is an audible gap; live listening tolerates the extra latency.
+  const sonarAudioStartLead = .8;
+  const sonarAudioTargetAhead = 1.6;
+  const sonarAudioMaxSources = 9;
   const sonarGainValue = () => {
     const value = Number($("volume").value) / 200;
     return finite(value) ? Math.max(0, Math.min(.5, value)) : 0;
   };
 
-  const bridgeCavitationAuthorized = () => soundEnabled && audio?.state === "running" &&
-    connected && !document.hidden && navigator.onLine !== false &&
-    session?.station === "bridge" && v2State?.role === "bridge" && v2State.phase === "live" &&
-    v2State.bridge?.orders?.cavitating === true && Number($("volume").value) > 0;
-
-  function stopBridgeCavitationAudio() {
-    const source = bridgeCavitationSource;
-    bridgeCavitationSource = null;
-    bridgeCavitationGain?.disconnect();
-    bridgeCavitationGain = null;
-    if (source) { source.onended = null; try { source.stop(); } catch (_) {} source.disconnect(); }
+  function playGameEffect(kind) {
+    if (!soundEnabled || !audio || audio.state !== "running" || document.hidden || !gameEffectKinds.has(kind)) return;
+    const volume = Math.max(0, Math.min(1, Number($("volume").value) / 100));
+    if (!volume) return;
+    const profile = {
+      sonar_ping: [720, 980, .62, .10, "sine"], esm_contact: [1040, 1320, .16, .10, "sine"],
+      torpedo_launch: [95, 38, .72, .16, "sawtooth"],
+      missile_launch: [150, 1250, .9, .13, "sawtooth"], gunfire: [115, 52, .42, .16, "square"],
+      explosion: [68, 25, 1.1, .20, "sawtooth"], water_entry: [260, 90, .58, .11, "triangle"],
+    }[kind];
+    const [startHz, endHz, duration, gainLevel, type] = profile;
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    const now = audio.currentTime;
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(startHz, now);
+    oscillator.frequency.setValueAtTime(endHz, now + duration);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(volume * gainLevel, now + .012);
+    gain.gain.linearRampToValueAtTime(0, now + duration);
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start(now);
+    oscillator.stop(now + duration + .02);
+    oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
   }
 
-  function syncBridgeCavitationAudio() {
-    if (!bridgeCavitationAuthorized()) { stopBridgeCavitationAudio(); return; }
-    const volume = Math.max(0, Math.min(1, Number($("volume").value) / 100));
-    if (bridgeCavitationSource) { bridgeCavitationGain.gain.value = volume * .16; return; }
-    const frames = Math.min(192000, Math.max(8000, Math.floor(audio.sampleRate * 2)));
-    const buffer = audio.createBuffer(1, frames, audio.sampleRate);
-    const channel = buffer.getChannelData(0);
-    let state = 0x6d2b79f5, rumble = 0;
-    for (let index = 0; index < frames; index++) {
-      state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
-      const noise = (state >>> 0) / 0xffffffff * 2 - 1;
-      rumble = rumble * .94 + noise * .06;
-      channel[index] = rumble * (.65 + .35 * Math.sin(index * .0017));
+  function syncGameAudio() {
+    // The general sound control plays bounded one-shot events only. Live sonar
+    // remains an explicit, separately authorized station function.
+    const stateAudio = v2State?.audio;
+    const context = v2State ? `${v2State.session}:${v2State.epoch}` : null;
+    const events = Array.isArray(stateAudio?.events) ? stateAudio.events : [];
+    const latest = events.length ? events.at(-1).seq : 0;
+    if (context !== gameSoundContext) {
+      gameSoundContext = context;
+      gameSoundHighWater = latest;
+    } else {
+      for (const event of events) if (event.seq > gameSoundHighWater) playGameEffect(event.cue);
+      gameSoundHighWater = Math.max(gameSoundHighWater, latest);
     }
-    const source = audio.createBufferSource();
-    const gain = audio.createGain();
-    source.buffer = buffer;
-    source.loop = true;
-    gain.gain.value = volume * .16;
-    source.connect(gain);
-    gain.connect(audio.destination);
-    bridgeCavitationSource = source;
-    bridgeCavitationGain = gain;
-    source.start();
   }
 
   function renderSonarAudio(key) {
@@ -248,6 +312,14 @@
     sonarAudioNextTime = 0;
     sonarAudioGain?.disconnect();
     sonarAudioGain = null;
+    if (typeof sonarAudioHighpass !== "undefined") {
+      sonarAudioHighpass?.disconnect();
+      sonarAudioHighpass = null;
+    }
+    if (typeof sonarAudioLowpass !== "undefined") {
+      sonarAudioLowpass?.disconnect();
+      sonarAudioLowpass = null;
+    }
     renderSonarAudio(key);
   }
 
@@ -335,7 +407,7 @@
       sonarAudioGain.gain.value = sonarGainValue();
       const start = sonarAudioNextTime > audio.currentTime + .03
         ? sonarAudioNextTime : audio.currentTime + sonarAudioStartLead;
-      if (start > audio.currentTime + 1.0) throw new Error("audio_protocol");
+      if (start > audio.currentTime + 2.5) throw new Error("audio_protocol");
       const source = audio.createBufferSource();
       source.buffer = buffer;
       source.connect(sonarAudioGain);
@@ -482,6 +554,7 @@
       ["source", row.source], ["affiliation", enumText(affiliations, row.affiliation)],
       ["bearing", unit(row.bearing, "\u00b0", 0)], ["range", unit(row.range_nm, "NM")],
       ["position", position(row)], ["course", unit(row.course, "\u00b0", 0)], ["speed", unit(row.speed_kn, "kn")],
+      ...(row.domain === "AIR" ? [["altitude", unit(row.altitude_m, "m", 0)]] : []),
       ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
       ["bearing_uncertainty", unit(row.bearing_uncertainty_deg, "\u00b0")],
       ["range_uncertainty", unit(row.range_uncertainty_nm, "NM")]];
@@ -788,15 +861,35 @@
   }
 
   function renderElokaStation(payload) {
-    stationRows($("eloka-intercepts"), payload.intercepts, (row) => [["reference", row.label],
+    const intercepts = filteredEloka(payload.intercepts);
+    metrics($("eloka-hardware"), [["df_sensors", number(payload.hardware.df_sensors, 0)],
+      ["broadband_sensors", number(payload.hardware.broadband_sensors, 0)],
+      ["ecm_channels", number(payload.hardware.ecm_channels, 0)],
+      ["frequency", `${unit(payload.hardware.frequency_min_hz, "Hz", 0)} - ${unit(payload.hardware.frequency_max_hz, "Hz", 0)}`],
+      ["reaction_time", unit(payload.hardware.reaction_s * 1000000, "\u00b5s", 1)]]);
+    $("eloka-filter-count").textContent = t("eloka_filter_count", {visible: intercepts.length, total: payload.intercepts.length});
+    stationRows($("eloka-intercepts"), intercepts, (row) => [["reference", row.label],
       ["bearing", unit(row.bearing, "\u00b0", 0)], ["bearing_uncertainty", unit(row.bearing_uncertainty_deg, "\u00b0")],
-      ["frequency", unit(row.frequency_hz, "Hz", 0)], ["prf", unit(row.prf_hz, "Hz", 0)],
+      ["frequency", unit(row.frequency_hz, "Hz", 0)], ["frequency_band", row.frequency_band.toUpperCase().replace("_", "/")], ["prf", unit(row.prf_hz, "Hz", 0)],
       ["modulation", row.modulation], ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
+      ["radar_type", row.radar_type || t("station_none")], ["threat", row.threat],
+      ["synthetic_assumption", yesNo(row.synthetic_assumption)],
+      ["jamming_effectiveness", row.jamming_effectiveness === null ? t("station_none") : number(row.jamming_effectiveness, 2)],
+      ["jamming_technique", row.jamming_technique === null ? t("station_none") : t(`ecm_${row.jamming_technique}`)],
+      ["ecm_power_draw", row.ecm_power_draw === null ? t("station_none") : number(row.ecm_power_draw, 2)],
+      ["ecm_lock", yesNo(row.is_locked_on)], ["hoj_risk", yesNo(row.hoj_risk)],
       ["annotation", row.annotation || t("station_none")],
       ["candidates", row.candidates.map((item) => `${item.name}: ${number(item.score, 2)}`).join(" / ") || t("station_none")],
       ["correlations", row.correlations.map((item) => `${item.ref} / ${item.source}: ${number(item.score, 2)} (${t(item.ambiguous ? "ambiguous" : "unambiguous")}); ${unit(item.evidence.bearing, "\u00b0", 0)} / ${unit(item.evidence.age_s, "s", 0)}`).join(" / ") || t("station_none")]],
       "station_none", (row) => [...row.candidates.map((candidate) => actionButton("eloka_annotate_candidate",
         "eloka_annotate", {ref: row.ref, candidate_ref: candidate.ref}, !payload.station_down, {candidate: candidate.name})),
+      actionButton(row.jamming ? "eloka_stop_jam" : "eloka_jam", "eloka_set_jamming",
+        {ref: row.ref, enabled: !row.jamming}, !payload.station_down),
+      ...["noise", "rgpo", "vgpo", "false_targets"].filter((technique) => technique !== row.jamming_technique)
+        .map((technique) => actionButton(`ecm_${technique}`, "eloka_set_technique",
+          {ref: row.ref, technique}, !payload.station_down)),
+      actionButton(row.auto_jamming ? "eloka_auto_off" : "eloka_auto_on", "eloka_set_auto",
+        {enabled: !row.auto_jamming}, !payload.station_down),
       actionButton("eloka_clear", "eloka_clear_annotation", {ref: row.ref}, !payload.station_down && row.annotation !== null)]);
     if (payload.station_down) $("eloka-intercepts").prepend(node("p", t("station_down_state"), "station-alert"));
   }
@@ -843,46 +936,139 @@
       height: Math.max(1, height - top - 30)};
   }
 
-  function heatmap(id, rows, frequencies = null) {
+  // One packed 0xAABBGGRR colour per quantised level, in the byte order the
+  // Uint32 view of ImageData uses on this platform.
+  const heatmapPalettes = new Map();
+  function heatmapPalette() {
+    if (heatmapPalettes.has(sonarDisplay.palette)) return heatmapPalettes.get(sonarDisplay.palette);
+    const little = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
+    const channels = {green: [68, 255, 154], amber: [255, 184, 62], cyan: [65, 225, 255]}[sonarDisplay.palette] || [68, 255, 154];
+    const lut = Uint32Array.from({length: 256}, (_, index) => {
+      const level = (index / 255) ** .72;
+      const r = Math.round(3 + level * channels[0]), g = Math.round(8 + level * channels[1]), b = Math.round(6 + level * channels[2]);
+      return little ? ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0 : ((r << 24) | (g << 16) | (b << 8) | 255) >>> 0;
+    });
+    heatmapPalettes.set(sonarDisplay.palette, lut);
+    return lut;
+  }
+  const heatmapRasters = new Map();
+
+  // A waterfall has tens of thousands of cells. Painting each with fillRect blocked
+  // the browser's main thread long enough to starve the live-sonar audio scheduler,
+  // so the cells are written into one pixel buffer and drawn with a single drawImage.
+  function heatmap(id, rows, frequencies = null, axisMaximum = null) {
     const plot = visualContext(id);
     if (!plot) return null;
+    rows = rows.filter((row) => row.age_s <= sonarDisplay.history);
     if (!rows.length || !rows.some((row) => row.bins.length)) { drawEmpty(plot); return null; }
     const maxAge = Math.max(20, ...rows.map((row) => row.age_s));
-    const area = plotAxes(plot, frequencies ? 300 : 360, maxAge, frequencies ? " Hz" : "°", "s");
+    const xmax = axisMaximum ?? (frequencies ? 300 : 360);
+    const area = plotAxes(plot, xmax, maxAge, frequencies ? " Hz" : "°", "s");
     const count = Math.max(...rows.map((row) => row.bins.length));
-    rows.forEach((row) => row.bins.forEach((value, x) => {
-      const level = Math.max(0, Math.min(1, value));
-      area.context.fillStyle = `rgb(${Math.round(7 + level ** .72 * 110)} ${Math.round(21 + level ** .72 * 200)} ${Math.round(28 + level ** .72 * 160)})`;
-      const start = frequencies ? frequencies[x] / 300 : x / count;
-      const end = frequencies ? (frequencies[x + 1] ?? 300) / 300 : (x + 1) / count;
-      area.context.fillRect(start * area.width, row.age_s / maxAge * area.height,
-        Math.max(1, (end - start) * area.width), Math.max(1, .25 / maxAge * area.height));
-    }));
+    const width = Math.max(1, Math.round(area.width)), height = Math.max(1, Math.round(area.height));
+    let raster = heatmapRasters.get(id);
+    if (!raster || raster.canvas.width !== width || raster.canvas.height !== height) {
+      const off = document.createElement("canvas");
+      off.width = width; off.height = height;
+      const context = off.getContext("2d");
+      const image = context.createImageData(width, height);
+      raster = {canvas: off, context, image, pixels: new Uint32Array(image.data.buffer)};
+      heatmapRasters.set(id, raster);
+    }
+    const pixels = raster.pixels;
+    const colors = heatmapPalette();
+    const background = colors[0];
+    pixels.fill(background);
+    const ages = rows.map((row) => row.age_s).sort((a, b) => a - b);
+    const gaps = ages.slice(1).map((age, index) => age - ages[index]).filter((gap) => gap > 0);
+    const samplePeriod = gaps.length ? gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : .25;
+    const cellHeight = Math.max(1, Math.round(samplePeriod / maxAge * height));
+    for (const row of rows) {
+      const y0 = Math.min(height - 1, Math.max(0, Math.floor(row.age_s / maxAge * height)));
+      const y1 = Math.min(height, y0 + cellHeight);
+      for (let x = 0; x < row.bins.length; x++) {
+        const raw = Math.max(0, Math.min(1, row.bins[x]));
+        const persistence = Math.exp(-row.age_s / Math.max(8, maxAge * .8));
+        const level = Math.max(0, Math.min(1, (raw - sonarDisplay.black) / Math.max(.01, 1 - sonarDisplay.black) * sonarDisplay.contrast * persistence));
+        const start = frequencies ? frequencies[x] / xmax : x / count;
+        const end = frequencies ? (frequencies[x + 1] ?? xmax) / xmax : (x + 1) / count;
+        const x0 = Math.min(width - 1, Math.max(0, Math.floor(start * width)));
+        const x1 = Math.min(width, Math.max(x0 + 1, Math.floor(end * width)));
+        const color = colors[Math.round(level * 255)];
+        for (let y = y0; y < y1; y++) pixels.fill(color, y * width + x0, y * width + x1);
+      }
+    }
+    raster.context.putImageData(raster.image, 0, 0);
+    area.context.imageSmoothingEnabled = false;
+    area.context.drawImage(raster.canvas, 0, 0, area.width, area.height);
     return area;
   }
 
-  function spectrum(id, values, markers = [], frequencies = null, xmax = 80) {
+  function spectrum(id, values, markers = [], frequencies = null, xmax = 80, xmin = 0) {
     let plot = visualContext(id);
     if (!plot) return;
     if (!values.length) { drawEmpty(plot); return; }
     const maximum = Math.max(1e-6, ...values.map((value) => Math.abs(value)));
-    plot = plotAxes(plot, xmax, maximum, " Hz", "rel.", 0, true);
+    plot = plotAxes(plot, xmax - xmin, maximum, " Hz", "rel.", xmin, true);
     plot.context.strokeStyle = palette().accent;
     plot.context.beginPath();
     values.forEach((value, index) => {
-      const x = frequencies ? frequencies[index] / xmax * plot.width : values.length === 1 ? 0 : index / (values.length - 1) * plot.width;
+      const x = frequencies ? (frequencies[index] - xmin) / (xmax - xmin) * plot.width : values.length === 1 ? 0 : index / (values.length - 1) * plot.width;
       const y = plot.height - Math.max(0, value) / maximum * (plot.height - 12);
       index ? plot.context.lineTo(x, y) : plot.context.moveTo(x, y);
     });
     plot.context.stroke();
     plot.context.fillStyle = palette().amber;
     for (const marker of markers.slice(0, 20)) plot.context.fillText(marker.text, Math.max(2, Math.min(plot.width - 50, marker.x * plot.width)), 14);
+    return plot;
   }
+
+  function drawBandLimits(plot, band, maximum = 300) {
+    if (!plot || !Array.isArray(band) || band.length !== 2) return;
+    plot.context.strokeStyle = palette().amber;
+    for (const frequency of band) {
+      const x = Math.max(0, Math.min(plot.width, frequency / maximum * plot.width));
+      plot.context.beginPath(); plot.context.moveTo(x, 0);
+      plot.context.lineTo(x, plot.height); plot.context.stroke();
+    }
+  }
+
+  function drawHarmonicGuides(plot, fundamental, maximum) {
+    if (!plot || !finite(fundamental) || fundamental <= 0) return;
+    plot.context.save();
+    plot.context.strokeStyle = palette().amber;
+    plot.context.fillStyle = palette().amber;
+    plot.context.setLineDash([3, 3]);
+    plot.context.font = "10px ui-monospace, monospace";
+    for (let order = 1; order <= 12 && fundamental * order <= maximum; order++) {
+      const hz = fundamental * order;
+      const x = hz / maximum * plot.width;
+      plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke();
+      plot.context.fillText(`${order}f`, Math.min(plot.width - 18, x + 2), 11);
+    }
+    plot.context.restore();
+  }
+
+  function bandSpectrum(id, visual, low, high) {
+    const pairs = visual.bin_frequencies_hz.map((frequency, index) =>
+      [frequency, visual.spectrum[index]]).filter(([frequency]) => frequency >= low && frequency <= high);
+    spectrum(id, pairs.map((pair) => pair[1]), [], pairs.map((pair) => pair[0]), high, low);
+  }
+
+  const broadbandVisible = () => sonarVisualPage === "broadband" || sonarVisualPage === "overview";
 
   function drawSonarVisuals() {
     const visual = v2State.sonar.visualization;
+    const historyRows = (name, fallback) => {
+      const now = v2State.clock.sim;
+      const rows = [...sonarHistory[name].values()].map((row) => ({...row, age_s: now - row.stamp}));
+      return rows.length ? rows.filter((row) => row.age_s >= 0 && row.age_s <= 600).sort((a, b) => a.age_s - b.age_s) : fallback;
+    };
     const focusedTrack = selectedTrack();
-    const broadband = heatmap("sonar-broadband", visual.broadband.history);
+    const broadbandHistory = historyRows("broadband", visual.broadband.history);
+    const lofarHistory = historyRows("lofar", visual.lofar.history);
+    const demonHistory = historyRows("demon", visual.demon.history);
+    const broadband = heatmap("sonar-broadband", broadbandHistory);
     if (broadband) {
       const bearing = visual.receiver.listen_bearing % 360;
       const half = visual.receiver.beam_width_deg / 2;
@@ -905,10 +1091,22 @@
         broadband.context.lineWidth = 1;
       }
     }
-    heatmap("sonar-lofar", visual.lofar.history, visual.lofar.bin_frequencies_hz);
-    spectrum("sonar-spectrum", visual.lofar.spectrum, [], visual.lofar.bin_frequencies_hz, 300);
+    const lofar = heatmap("sonar-lofar", lofarHistory, visual.lofar.bin_frequencies_hz);
+    const lofarSpectrum = spectrum("sonar-spectrum", visual.lofar.spectrum, [], visual.lofar.bin_frequencies_hz, 300);
+    drawBandLimits(lofar, v2State.sonar.settings.band_hz);
+    drawBandLimits(lofarSpectrum, v2State.sonar.settings.band_hz);
+    drawHarmonicGuides(lofar, v2State.sonar.settings.harmonic_hz, 300);
+    drawHarmonicGuides(lofarSpectrum, v2State.sonar.settings.harmonic_hz, 300);
+    bandSpectrum("sonar-band-low", visual.lofar, 0, 40);
+    bandSpectrum("sonar-band-mid", visual.lofar, 40, 100);
+    bandSpectrum("sonar-band-high", visual.lofar, 100, 300);
     const peak = visual.demon.analysis?.modulation_peak_hz;
-    spectrum("sonar-demon", visual.demon.spectrum, finite(peak) ? [{x: peak / 80, text: `${number(peak, 1)} Hz`}] : []);
+    const demonFrequencies = visual.demon.spectrum.map((_, index) => index + 1);
+    const demon = heatmap("sonar-demon", demonHistory.map((row) => ({...row, bins: row.bins.slice(0, 50)})), demonFrequencies.slice(0, 50), 50);
+    const demonSpectrum = spectrum("sonar-demon-spectrum", visual.demon.spectrum.slice(0, 50),
+      finite(peak) && peak <= 50 ? [{x: peak / 50, text: `${number(peak, 1)} Hz`}] : [], demonFrequencies.slice(0, 50), 50);
+    drawHarmonicGuides(demon, sonarDisplay.demonCursor, 50);
+    drawHarmonicGuides(demonSpectrum, sonarDisplay.demonCursor, 50);
     let tma = visualContext("sonar-tma-plot");
     if (tma) {
       const contacts = visual.tma.filter((row) => row.bearings.length);
@@ -955,17 +1153,40 @@
       for (const scale of [.25, .5, .75, 1]) { active.context.beginPath(); active.context.arc(cx, cy, radius * scale, 0, Math.PI * 2); active.context.stroke(); }
       const maxRange = Math.max(5, Math.ceil(Math.max(0, ...visual.active_echoes.map((echo) => echo.range_nm)) / 5) * 5);
       active.context.fillStyle = palette().muted; active.context.fillText(`N · ${number(maxRange, 0)} NM`, cx, 18);
+      if (visual.bt && finite(visual.bt.thermocline_m) && finite(visual.bt.water_depth_m)) {
+        const duct = Math.max(.15, Math.min(.9, visual.bt.thermocline_m / Math.max(1, visual.bt.water_depth_m)));
+        active.context.strokeStyle = `${palette().blue}88`;
+        active.context.setLineDash([5, 5]); active.context.beginPath(); active.context.arc(cx, cy, radius * duct, 0, Math.PI * 2); active.context.stroke(); active.context.setLineDash([]);
+      }
       for (const echo of visual.active_echoes) {
         const angle = echo.bearing * Math.PI / 180;
         const r = echo.range_nm / maxRange * radius;
-        active.context.fillStyle = palette().amber; active.context.beginPath();
-        active.context.arc(cx + Math.sin(angle) * r, cy - Math.cos(angle) * r, 3, 0, Math.PI * 2); active.context.fill();
+        const strength = Math.max(.12, Math.min(1, Math.exp(-echo.age_s / 12) * (.35 + Math.max(0, echo.snr_db) / 30)));
+        active.context.globalAlpha = strength; active.context.fillStyle = palette().amber; active.context.beginPath();
+        active.context.arc(cx + Math.sin(angle) * r, cy - Math.cos(angle) * r, 2 + strength * 3, 0, Math.PI * 2); active.context.fill();
       }
+      active.context.globalAlpha = 1;
       if (!visual.active_echoes.length) drawEmpty(active);
     }
-    $("sonar-broadband-text").textContent = t("sonar_broadband_equivalent", {rows: visual.broadband.history.length, bins: visual.broadband.history.at(-1)?.bins.length || 0});
-    $("sonar-lofar-text").textContent = t("sonar_lofar_equivalent", {rows: visual.lofar.history.length, bins: visual.lofar.spectrum.length, held: yesNo(visual.lofar.held)});
-    $("sonar-demon-text").textContent = t("sonar_demon_equivalent", {bins: visual.demon.spectrum.length, hypotheses: visual.demon.analysis?.hypotheses.length || 0});
+    let aScan = visualContext("sonar-a-scan");
+    if (aScan) {
+      const maxRange = Math.max(5, Math.ceil(Math.max(0, ...visual.active_echoes.map((echo) => echo.range_nm)) / 5) * 5);
+      aScan = plotAxes(aScan, maxRange, 1, " NM", "AMP", 0, true);
+      const samples = 256;
+      const trace = Array.from({length: samples}, (_, index) => .035 + .025 * (1 + Math.sin(index * 12.9898 + visual.active_echoes.length)));
+      for (const echo of visual.active_echoes) {
+        const center = echo.range_nm / maxRange * (samples - 1);
+        const width = Math.max(1, echo.range_uncertainty_nm / maxRange * samples);
+        const amplitude = Math.max(.08, Math.min(.95, .18 + echo.snr_db / 35)) * Math.exp(-echo.age_s / 12);
+        for (let index = 0; index < samples; index++) trace[index] += amplitude * Math.exp(-.5 * ((index - center) / width) ** 2);
+      }
+      aScan.context.strokeStyle = palette().accent; aScan.context.beginPath();
+      trace.forEach((value, index) => { const x = index / (samples - 1) * aScan.width; const y = aScan.height - Math.min(1, value) * (aScan.height - 8); index ? aScan.context.lineTo(x, y) : aScan.context.moveTo(x, y); });
+      aScan.context.stroke();
+    }
+    $("sonar-broadband-text").textContent = t("sonar_broadband_equivalent", {rows: broadbandHistory.length, bins: broadbandHistory.at(-1)?.bins.length || 0});
+    $("sonar-lofar-text").textContent = t("sonar_lofar_equivalent", {rows: lofarHistory.length, bins: visual.lofar.spectrum.length, held: yesNo(visual.lofar.held)});
+    $("sonar-demon-text").textContent = t("sonar_demon_equivalent", {rows: demonHistory.length, bins: visual.demon.spectrum.length, hypotheses: visual.demon.analysis?.hypotheses.length || 0});
     for (const item of visual.demon.analysis?.hypotheses || []) $("sonar-demon-text").append(node("p",
       t("sonar_rpm_hypothesis", {blades: item.blades, order: item.order, rpm: number(item.rpm, 1)})));
     $("sonar-tma-text").replaceChildren(...visual.tma.map((row) => node("p", t("sonar_tma_equivalent", {ref: row.ref, points: row.bearings.length, solution: row.solution ? `${position(row.solution)} / ${unit(row.solution.course, "\u00b0", 0)} / ${unit(row.solution.speed_kn, "kn")}` : t("station_none")}))));
@@ -986,16 +1207,45 @@
         ...(payload.waypoint ? [{...payload.waypoint, waypoint: true}] : [])], bearingLogs: [], fixes: []};
   }
 
+  // The sweep turns at a constant rate, but each published bearing is 0-0.6 s old
+  // when it arrives (publish cadence, poll phase, network). Restarting the strobe
+  // from every sample made it jump by up to rate * age. Instead keep one phase
+  // model. `target` is estimated from the samples: a sample can only be older than
+  // the truth, so it moves the estimate forward quickly and backward only very
+  // slowly, which converges on the least-delayed sample. The displayed `phase`
+  // then follows `target` with a capped slew, so corrections are never visible
+  // as a jump, only as a barely noticeable change of turning speed.
+  const wrap360 = (value) => ((value % 360) + 360) % 360;
+  const wrap180 = (value) => wrap360(value + 180) - 180;
+  const opzSweepMaxSlewDegPerS = 25;
+
   function currentOpzSweepBearing() {
-    if (!opzSweepSample) return null;
-    return (opzSweepSample.bearing + Math.max(0, performance.now() - opzSweepSample.receivedAt) / 1000 * opzSweepSample.rate) % 360;
+    const model = opzSweepSample;
+    if (!model) return null;
+    const now = performance.now();
+    const step = Math.max(0, now - model.readAt) / 1000 * opzSweepMaxSlewDegPerS;
+    model.phase = wrap360(model.phase + Math.max(-step, Math.min(step, wrap180(model.target - model.phase))));
+    model.readAt = now;
+    return wrap360(model.phase + now / 1000 * model.rate);
   }
 
   function updateOpzSweepSample(state) {
     const radar = state?.role === "opz" ? state.opz.radar : null;
     if (!radar || !finite(radar.sweep_bearing)) { opzSweepSample = null; stopOpzSweepAnimation(); return; }
-    opzSweepSample = {bearing: radar.sweep_bearing, receivedAt: performance.now(),
-      rate: finite(radar.sweep_rate_deg_s) ? radar.sweep_rate_deg_s : 90};
+    const now = performance.now();
+    const rate = finite(radar.sweep_rate_deg_s) ? radar.sweep_rate_deg_s : 90;
+    const implied = wrap360(radar.sweep_bearing - now / 1000 * rate);
+    if (!opzSweepSample || opzSweepSample.rate !== rate) {
+      opzSweepSample = {phase: implied, target: implied, rate, readAt: now};
+      return;
+    }
+    const error = wrap180(implied - opzSweepSample.target);
+    if (Math.abs(error) > rate * 1.2) {
+      // Far outside any plausible sample age: the sweep restarted, follow it.
+      opzSweepSample.target = opzSweepSample.phase = implied;
+    } else {
+      opzSweepSample.target = wrap360(opzSweepSample.target + error * (error > 0 ? .5 : .03));
+    }
   }
 
   function opzSweepActive() {
@@ -1035,6 +1285,15 @@
         x <= $("role-map").clientWidth + 26 && y <= $("role-map").clientHeight + 26) {
       roleMapHits.push({ref, x, y});
     }
+  }
+
+  function rayLengthToCanvasEdge(x, y, dx, dy, width, height) {
+    const candidates = [];
+    if (dx > 0) candidates.push((width - x) / dx);
+    else if (dx < 0) candidates.push(-x / dx);
+    if (dy > 0) candidates.push((height - y) / dy);
+    else if (dy < 0) candidates.push(-y / dy);
+    return Math.max(0, Math.min(...candidates.filter((value) => finite(value) && value >= 0)));
   }
 
   function drawRoleMap(role) {
@@ -1211,12 +1470,50 @@
   function drawElokaVisual() {
     const plot = visualContext("eloka-scope"), payload = v2State.eloka;
     if (!plot) return;
-    const radius = Math.min(plot.width, plot.height) * .42, cx = plot.width / 2, cy = plot.height / 2;
+    const intercepts = filteredEloka(payload.intercepts);
+    const simNow = finite(v2State.clock?.sim) ? v2State.clock.sim : 0;
+    const scopeWidth = plot.width * .43;
+    const radius = Math.min(scopeWidth, plot.height) * .38, cx = scopeWidth / 2, cy = plot.height / 2;
     plot.context.strokeStyle = palette().line; plot.context.beginPath(); plot.context.arc(cx, cy, radius, 0, Math.PI * 2); plot.context.stroke();
-    for (const row of payload.intercepts) { const angle = row.bearing * Math.PI / 180; plot.context.strokeStyle = palette().amber; plot.context.lineWidth = 2 + row.quality * 3; plot.context.beginPath(); plot.context.moveTo(cx, cy); plot.context.lineTo(cx + Math.sin(angle) * radius, cy - Math.cos(angle) * radius); plot.context.stroke(); }
-    if (!payload.intercepts.length) drawEmpty(plot);
-    $("eloka-scope-text").replaceChildren(...payload.intercepts.map((row) => node("p", t("eloka_equivalent", {ref: row.label, bearing: number(row.bearing, 0), frequency: number(row.frequency_hz, 0), prf: number(row.prf_hz, 0), modulation: row.modulation, candidates: row.candidates.map((item) => item.name).join(", ") || t("station_none"), correlations: row.correlations.map((item) => item.ref).join(", ") || t("station_none")}))));
-    if (!payload.intercepts.length) $("eloka-scope-text").textContent = t("visual_empty");
+    for (const row of intercepts) { const angle = row.bearing * Math.PI / 180; plot.context.save(); plot.context.globalAlpha = .2 + .8 * row.quality; plot.context.strokeStyle = palette().amber; plot.context.lineWidth = 2 + row.quality * 3; if (row.signal_state !== "LIVE") plot.context.setLineDash([5, 5]); plot.context.beginPath(); plot.context.moveTo(cx, cy); plot.context.lineTo(cx + Math.sin(angle) * radius, cy - Math.cos(angle) * radius); plot.context.stroke(); plot.context.restore(); }
+    const focused = intercepts[0];
+    const gx = scopeWidth + 12, gy = 16, gw = plot.width - gx - 12, gh = plot.height - 32;
+    plot.context.strokeStyle = palette().line; plot.context.lineWidth = 1; plot.context.strokeRect(gx, gy, gw, gh);
+    plot.context.beginPath(); plot.context.moveTo(gx, gy + gh * .52); plot.context.lineTo(gx + gw, gy + gh * .52); plot.context.stroke();
+    if (focused && gw > 40 && gh > 60) {
+      const motionNow = Math.min(simNow, simNow - focused.age_s + 2);
+      const rate = .35 + Math.min(2.4, Math.log10(Math.max(1, focused.prf_hz || 500)) * .38);
+      const techniqueRate = focused.jamming_technique === "vgpo" ? 1 + (focused.jamming_effectiveness || 0) * 1.8 : 1;
+      const phase = (((Math.round(focused.frequency_hz / 1e6) + Math.round(focused.prf_hz || 500)) % 360) * Math.PI / 180) + motionNow * rate * techniqueRate;
+      const pulses = Math.max(3, Math.min(12, Math.round(2 + Math.log10(Math.max(1, focused.prf_hz || 500)) * 2)));
+      const hop = focused.modulation === "frequency_agile" ? ((Math.floor(motionNow * 2) % 7) - 3) * .025 : 0;
+      const centers = (focused.modulation === "frequency_agile" ? [.28, .5, .72] : [.5]).map((value) => value + hop);
+      const width = focused.modulation === "continuous_wave" ? .035 : ["pulse_doppler", "frequency_agile"].includes(focused.modulation) ? .09 : .14;
+      plot.context.strokeStyle = palette().amber; plot.context.lineWidth = 2; plot.context.beginPath();
+      for (let i = 0; i < 40; i++) { const x = i / 39; let value = Math.max(...centers.map((center) => Math.exp(-Math.pow((x - center) / width, 2)))); if (focused.jamming_technique === "noise") value = Math.max(value, (.28 + .08 * Math.sin(i * .71 + motionNow * 5)) * (focused.jamming_effectiveness || 0)); if (focused.jamming_technique === "false_targets") value = Math.max(value, ...centers.map((center) => .55 * (focused.jamming_effectiveness || 0) * Math.exp(-Math.pow((x - center - .14) / width, 2)))); const px = gx + 6 + x * (gw - 12), py = gy + gh * .47 - value * focused.quality * gh * .34; if (i) plot.context.lineTo(px, py); else plot.context.moveTo(px, py); }
+      plot.context.stroke(); plot.context.strokeStyle = palette().accent; plot.context.beginPath();
+      for (let i = 0; i < 48; i++) { const x = i / 47; const movingX = (x + motionNow * rate * .08 + (focused.jamming_technique === "rgpo" ? motionNow * (focused.jamming_effectiveness || 0) * .03 : 0)) % 1; let value;
+        if (focused.modulation === "continuous_wave") value = Math.sin(Math.PI * 10 * x + phase);
+        else if (focused.modulation === "frequency_agile") { const steps = [-.75, .15, .7, -.25, .45, -.55, .85, 0]; value = steps[(Math.min(7, Math.floor(movingX * 8)) + Math.floor(motionNow * 2)) % 8]; }
+        else if (["pulse", "pulse_doppler"].includes(focused.modulation)) { const envelope = Math.max(0, 1 - ((movingX * pulses) % 1) / .16); value = envelope * 2 - .85; if (focused.modulation === "pulse_doppler") value *= .65 + .35 * Math.sin(Math.PI * 3 * pulses * movingX + phase); }
+        else value = .55 * Math.sin(Math.PI * 6 * x + phase) + .25 * Math.sin(Math.PI * 22 * x + phase * .37);
+        if (focused.jamming_technique === "noise") value = value * (1 - .45 * (focused.jamming_effectiveness || 0)) + Math.sin(i * 2.17 + motionNow * 11) * .55 * (focused.jamming_effectiveness || 0);
+        if (focused.jamming_technique === "false_targets") value += Math.sin(Math.PI * 6 * ((movingX + .14) % 1) + phase) * .35 * (focused.jamming_effectiveness || 0);
+        value *= focused.quality;
+        const px = gx + 6 + x * (gw - 12), py = gy + gh * .76 - value * gh * .17; if (i) plot.context.lineTo(px, py); else plot.context.moveTo(px, py); }
+      plot.context.stroke(); plot.context.fillStyle = palette().text; plot.context.textAlign = "left";
+      plot.context.fillText(`${focused.label} / ${focused.modulation}`, gx + 8, gy + 17, gw - 16);
+      plot.context.fillStyle = focused.signal_state === "LIVE" ? palette().accent : palette().amber; plot.context.textAlign = "right";
+      const signalLabel = focused.signal_state === "MEMORY" ? t("eloka_signal_memory", {age: number(focused.age_s, 0)}) : t(`eloka_signal_${focused.signal_state.toLowerCase()}`);
+      plot.context.fillText(signalLabel, gx + gw - 8, gy + 17, gw / 2);
+      plot.context.fillStyle = palette().text; plot.context.textAlign = "left";
+      plot.context.fillText(`${number(focused.frequency_hz / 1e9, 3)} GHz / ${number(focused.prf_hz, 0)} Hz`, gx + 8, gy + gh - 7, gw - 16);
+    }
+    if (!intercepts.length) drawEmpty(plot);
+    const equivalents = intercepts.map((row) => node("p", t("eloka_equivalent", {ref: row.label, bearing: number(row.bearing, 0), frequency: number(row.frequency_hz, 0), prf: number(row.prf_hz, 0), modulation: row.modulation, candidates: row.candidates.map((item) => item.name).join(", ") || t("station_none"), correlations: row.correlations.map((item) => item.ref).join(", ") || t("station_none")})));
+    if (focused) equivalents.push(node("p", t("eloka_signal_equivalent", {ref: focused.label, modulation: focused.modulation, frequency: number(focused.frequency_hz / 1e9, 3), prf: number(focused.prf_hz, 0)})));
+    $("eloka-scope-text").replaceChildren(...equivalents);
+    if (!intercepts.length) $("eloka-scope-text").textContent = t("visual_empty");
   }
 
   function drawWeaponsVisual() {
@@ -1264,7 +1561,10 @@
       const selectedPage = button.dataset.sonarVisual === sonarVisualPage;
       button.setAttribute("aria-selected", String(selectedPage)); button.tabIndex = selectedPage ? 0 : -1;
     }
-    for (const panel of document.querySelectorAll("[data-sonar-plot]")) panel.hidden = panel.dataset.sonarPlot !== sonarVisualPage;
+    const shownPlots = sonarVisualPage === "overview" ? overviewPlotList() : [sonarVisualPage];
+    $("sonar-plots").dataset.layout = sonarVisualPage !== "overview" ? "single" :
+      wideScreen.matches ? "overview-wide" : "overview";
+    for (const panel of document.querySelectorAll("[data-sonar-plot]")) panel.hidden = !shownPlots.includes(panel.dataset.sonarPlot);
     queueVisualDraw();
     syncOpzSweepAnimation();
   }
@@ -1326,7 +1626,10 @@
 
   function clearRoleState() {
     stopSonarAudio();
-    stopBridgeCavitationAudio();
+    stopSonarStream();
+    roleCache.clear();
+    roleStale = false;
+    document.body.removeAttribute("data-role-stale");
     document.body.classList.remove("workstation-mode");
     $("station-view").append($("role-visuals"));
     $("station-view").after($("bridge-orders"), $("opz-controls"), $("operations-workspace"));
@@ -1342,10 +1645,12 @@
     queuedSonarFocus = null;
     pending = null;
     v2State = null;
+    sonarHistory.context = null;
+    for (const name of ["broadband", "lofar", "demon"]) sonarHistory[name].clear();
     stationDrafts.clear();
     clearFireDrafts();
     stationRenderSignature = null;
-    sonarVisualPage = "broadband";
+    sonarVisualPage = defaultSonarPage();
     clearVisuals();
     for (const state of Object.values(roleMapViews)) { state.initialized = false; state.follow = false; }
     $("role-visuals").hidden = true;
@@ -1397,12 +1702,16 @@
     const assigned = session.station !== null;
     const simlog = simlogActive();
     $("pairing").hidden = true;
-    $("lobby").hidden = simlog || assigned && !stationPickerOpen;
+    $("lobby").hidden = simlog || assigned && !stationPickerOpen || session.host !== null && hostView?.phase === "menu";
     $("lobby-back").hidden = !assigned;
-    $("role-rail").hidden = !assigned || stationPickerOpen;
+    // A solo session holds every station, so there is nothing to add or release.
+    const solo = session.host !== null;
+    $("role-rail").hidden = !assigned || stationPickerOpen || solo;
     $("mobile-role").hidden = !assigned || stationPickerOpen;
+    for (const id of ["mobile-add-station", "mobile-release-station"]) $(id).hidden = solo;
     const rolePublished = v2State?.role === session.station;
-    $("operations").hidden = simlog || !assigned || stationPickerOpen || !rolePublished;
+    const hostMenu = session.host !== null && hostView?.phase === "menu";
+    $("operations").hidden = simlog || !assigned || stationPickerOpen || !rolePublished || hostMenu;
     $("simlog-view").hidden = !simlog;
     if (simlog) loadSimlog();
     document.body.dataset.remoteRole = assigned ? "assigned" : "lobby";
@@ -1447,7 +1756,7 @@
     const displayedStation = activatingStation && session.stations[activatingStation]?.status === "mine" ?
       activatingStation : session.station;
     const leasedStations = stationNames.filter((station) => session.stations[station].status === "mine");
-    for (const id of ["mobile-station", "workstation-station"]) {
+    for (const id of ["mobile-station"]) {
       const select = $(id);
       const signature = leasedStations.map((station) => `${station}:${t(`station_${station}`)}`).join("|");
       if (select.dataset.options !== signature) {
@@ -1461,7 +1770,40 @@
       if (document.activeElement !== select || stationMutation) select.value = displayedStation;
       select.disabled = stationMutation;
     }
+    renderStationTabs(leasedStations, displayedStation);
+    $("workstation-add-station").hidden = leasedStations.length === stationNames.length;
+    $("workstation-release").hidden = solo;
+    renderHost();
     renderDisabledReasons();
+  }
+
+  function switchRole(from, to) {
+    if (v2State?.role === from) roleCache.set(from, v2State);
+    stopSonarAudio();
+    stopSonarStream();
+    // Everything bound to the old station's authority is dropped: the pending
+    // command, armed fire, queued focus and the per-station feeds. Map views,
+    // selection, form contents and the sonar page belong to the operator and stay.
+    pending = null;
+    commandMessage = null;
+    queuedSonarFocus = null;
+    clearFireDrafts();
+    stationRenderSignature = null;
+    proposals = null;
+    eventContext = null;
+    eventHighWater = 0;
+    eventHistory = [];
+    renderEvents();
+    clearVisuals();
+    const cached = roleCache.get(to) ?? null;
+    v2State = cached;
+    snapshot = cached ? buildDisplayModel(cached) : null;
+    roleStale = true;
+    document.body.dataset.roleStale = "true";
+    if (snapshot && chart) {
+      // Paint immediately from the cache; the fresh state replaces it next poll.
+      renderSnapshot();
+    }
   }
 
   function acceptSession(next) {
@@ -1471,10 +1813,17 @@
       previous.station_generation !== next.station_generation ||
       previous.active_generation !== next.active_generation);
     const lostRole = previous?.station !== null && next.station === null;
-    if (changed) clearRoleState();
+    // A plain activation moves between leases this client already held under the
+    // same generations; any lease, grant or world change is a full reset.
+    const activation = changed && previous.station !== null && next.station !== null &&
+      previous.station !== next.station &&
+      stationNames.every((name) => previous.stations[name].status === next.stations[name].status &&
+        previous.stations[name].station_generation === next.stations[name].station_generation);
+    if (!activation && changed) clearRoleState();
     if (previous?.requested_station &&
         next.stations[previous.requested_station]?.status === "mine") stationPickerOpen = false;
     session = next;
+    if (activation) switchRole(previous.station, next.station);
     if (sonarAudioEnabled && !sonarAudioAuthorized()) stopSonarAudio("sonar_live_unavailable");
     nextCommandSeq = next.next_command_seq;
     lastSessionFetch = performance.now();
@@ -1508,7 +1857,11 @@
     } finally {
       if (context === generation) {
         stationMutation = false;
-        if (path === "/stations/activate") activatingStation = null;
+        if (path === "/stations/activate") {
+          activatingStation = null;
+          // Do not wait for the next 500 ms tick: fetch the new station now.
+          if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); }
+        }
         renderLobby();
       }
     }
@@ -1525,6 +1878,7 @@
     const record = session?.stations?.[station];
     if (!record || stationMutation || station === session.station) return;
     if (record.status === "mine") {
+      if (activeTab !== "operations") activateTab("operations", false);
       activatingStation = station;
       mutateStation("/stations/activate", {
         station, station_generation: record.station_generation,
@@ -1823,7 +2177,7 @@
     renderActionState();
     if (v2State?.role) renderRoleVisuals(v2State.role);
     if (sonarAudioEnabled && !sonarAudioAuthorized()) stopSonarAudio("sonar_live_unavailable");
-    syncBridgeCavitationAudio();
+    syncGameAudio();
   }
 
   function forgetSession(message = "connection_unpaired") {
@@ -1871,6 +2225,11 @@
     document.body.dataset.remoteRole = "";
     lobbyMessage = null;
     stationMutation = false;
+    hostView = null;
+    hostPending = null;
+    hostMessage = null;
+    $("host-screen").hidden = true;
+    $("host-bar").hidden = true;
     activateTab("operations", false);
     for (const id of ["track-list", "detail-label", "detail-badges", "detail-metrics", "mission-name", "objective", "mission-metrics", "proposal-status", "command-status", "snapshot-meta", "lookout-sea", "lookout-light", "lookout-own", "lookout-observations"]) $(id).replaceChildren();
     $("lookout-scope").dataset.light = "unknown";
@@ -1881,7 +2240,7 @@
   }
 
   function validateSession(value) {
-    const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "next_command_seq", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
+    const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "next_command_seq", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
     if (!value || typeof value !== "object" || Array.isArray(value) ||
         Object.keys(value).sort().join(",") !== fields.sort().join(",") || value.protocol !== 2 ||
         typeof value.client_id !== "string" || !value.client_id || value.client_id.length > 128 ||
@@ -1901,6 +2260,8 @@
         (value.grants.direct_fire && (!value.grants.command || !["weapons", "helicopter", "opz"].includes(value.station))) ||
         (value.grants.sonar_audio && value.station !== "sonar") ||
         typeof value.simlog !== "boolean" || value.grants.simlog !== value.simlog ||
+        (value.host !== null && (!exactKeys(value.host, ["generation"]) ||
+          !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
         value.active_station !== value.station ||
         !value.stations || typeof value.stations !== "object" || Array.isArray(value.stations) ||
         Object.keys(value.stations).join(",") !== stationNames.join(",")) throw new Error("session");
@@ -1956,7 +2317,7 @@
       if (!exactKeys(state, status)) throw new Error("protocol");
       return;
     }
-    const common = [...status, "clock", "environment", "mission", "autocrew"];
+    const common = [...status, "clock", "environment", "mission", "autocrew", "audio"];
     if (!stationNames.includes(state.role) || state.role !== session?.station ||
         !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "time_scale", "world"]) ||
         !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm"]) ||
@@ -1969,7 +2330,12 @@
         !finite(state.environment.visibility_nm) || state.environment.visibility_nm < .1 || state.environment.visibility_nm > 30 ||
         !exactKeys(state.autocrew, ["enabled", "status"]) || typeof state.autocrew.enabled !== "boolean" ||
         !["off", "active", "suspended_remote", "blocked_damage"].includes(state.autocrew.status) ||
-        !exactKeys(state.mission, ["name", "objective", "remaining_s"])) throw new Error("protocol");
+        !exactKeys(state.mission, ["name", "objective", "remaining_s"]) ||
+        !exactKeys(state.audio, ["events"]) ||
+        !boundedArray(state.audio.events, 16) ||
+        state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue"]) ||
+          !Number.isSafeInteger(event.seq) || event.seq < 1 || !gameEffectKinds.has(event.cue) ||
+          index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
     const payload = state[state.role];
     const shapes = {
       bridge: ["navigation", "orders", "threat", "systems", "tactical_summary"], sonar: ["observations", "settings", "visualization"],
@@ -1978,19 +2344,20 @@
       opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "designated_target_ref", "own_assets"],
       radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
       engine: ["propulsion", "machinery", "controls", "environment_effects"],
-      helicopter: ["asset", "waypoint", "buoys", "navigation", "tactical", "target_choices", "readiness"], eloka: ["intercepts", "station_down", "status"],
+      helicopter: ["asset", "waypoint", "buoys", "navigation", "tactical", "target_choices", "readiness"], eloka: ["intercepts", "station_down", "status", "hardware"],
     };
     if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
     const rowsExact = (rows, maximum, fields) => {
       if (!boundedArray(rows, maximum)) throw new Error("protocol");
       rows.forEach((row) => v2Observation(row, fields));
     };
-    const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"];
+    const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"];
     const tacticalRows = (rows, maximum, extraFields = []) => {
       if (!boundedArray(rows, maximum)) throw new Error("protocol");
       rows.forEach((row) => {
         v2Observation(row, [...tacticalFields, ...extraFields]);
         if (row.speed_kn !== null && !finite(row.speed_kn)) throw new Error("protocol");
+        if (row.altitude_m !== null && (!finite(row.altitude_m) || row.altitude_m < 0 || row.altitude_m > 30000)) throw new Error("protocol");
       });
     };
     const sonarFields = ["ref", "label", "source", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
@@ -2022,11 +2389,12 @@
       const visual = payload.visualization;
       if (!exactKeys(visual, ["broadband", "lofar", "demon", "tma", "bt", "active_echoes", "receiver"]) ||
           !exactKeys(visual.broadband, ["bearing_start_deg", "bearing_step_deg", "history"]) ||
-          !boundedArray(visual.broadband.history, 80) || visual.broadband.history.some((row) => !exactKeys(row, ["age_s", "bins"]) || !boundedArray(row.bins, 180)) ||
+          !boundedArray(visual.broadband.history, 120) || visual.broadband.history.some((row) => !exactKeys(row, ["age_s", "bins"]) || !boundedArray(row.bins, 180)) ||
           !exactKeys(visual.lofar, ["frequency_min_hz", "frequency_max_hz", "bin_frequencies_hz", "history", "spectrum", "held"]) ||
           !boundedArray(visual.lofar.bin_frequencies_hz, 256) || !boundedArray(visual.lofar.spectrum, 256) ||
           !boundedArray(visual.lofar.history, 80) || visual.lofar.history.some((row) => !exactKeys(row, ["age_s", "bearing", "bins"]) || !boundedArray(row.bins, 110)) || typeof visual.lofar.held !== "boolean" ||
-          !exactKeys(visual.demon, ["frequency_min_hz", "frequency_max_hz", "bin_step_hz", "spectrum", "analysis"]) || !boundedArray(visual.demon.spectrum, 80) ||
+          !exactKeys(visual.demon, ["frequency_min_hz", "frequency_max_hz", "bin_step_hz", "spectrum", "history", "analysis"]) || !boundedArray(visual.demon.spectrum, 80) ||
+          !boundedArray(visual.demon.history, 120) || visual.demon.history.some((row) => !exactKeys(row, ["age_s", "bins"]) || !boundedArray(row.bins, 80)) ||
           (visual.demon.analysis !== null && (!exactKeys(visual.demon.analysis, ["modulation_peak_hz", "detection_confidence", "cavitation", "tonal_hz", "hypotheses"]) || !boundedArray(visual.demon.analysis.hypotheses, 20) || visual.demon.analysis.hypotheses.some((row) => !exactKeys(row, ["blades", "order", "rpm"])))) ||
           !boundedArray(visual.tma, 32) || visual.tma.some((row) => !exactKeys(row, ["ref", "bearings", "solution"]) || !boundedArray(row.bearings, 24) || row.bearings.some((point) => !exactKeys(point, ["age_s", "bearing", "uncertainty_deg", "own_x", "own_y", "own_course"])) || row.solution !== null && !exactKeys(row.solution, ["x", "y", "course", "speed_kn", "quality", "age_s", "uncertainty_nm"])) ||
           (visual.bt !== null && (!exactKeys(visual.bt, ["age_s", "thermocline_m", "water_depth_m", "sea_state", "depths_m", "speeds_m_s", "cz_bands_nm"]) || !boundedArray(visual.bt.depths_m, 64) || !boundedArray(visual.bt.speeds_m_s, 64) || visual.bt.depths_m.length !== visual.bt.speeds_m_s.length || !boundedArray(visual.bt.cz_bands_nm, 8) || visual.bt.cz_bands_nm.some((band) => !boundedArray(band, 2) || band.length !== 2))) ||
@@ -2095,10 +2463,17 @@
       tacticalRows(payload.tactical, 128, ["classification", "released_to_opz"]);
       rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
     } else if (state.role === "eloka") {
-      if (!boundedArray(payload.intercepts, 64) || payload.intercepts.some((row) => !exactKeys(row, ["ref", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "prf_hz", "modulation", "quality", "age_s", "annotation", "candidates", "correlations"]) ||
+      if (!boundedArray(payload.intercepts, 64) || payload.intercepts.some((row) => !exactKeys(row, ["ref", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "frequency_band", "prf_hz", "modulation", "quality", "age_s", "radar_type", "threat", "signal_state", "operational", "ambiguous", "synthetic_assumption", "auto_jamming", "jamming", "jamming_effectiveness", "jamming_technique", "ecm_power_draw", "is_locked_on", "hoj_risk", "annotation", "candidates", "correlations"]) ||
+          typeof row.synthetic_assumption !== "boolean" || typeof row.auto_jamming !== "boolean" || typeof row.jamming !== "boolean" ||
+          typeof row.is_locked_on !== "boolean" || typeof row.hoj_risk !== "boolean" || !["a_c", "d", "e_f", "g_h", "i_j", "k"].includes(row.frequency_band) ||
+          (row.jamming_technique !== null && !["noise", "rgpo", "vgpo", "false_targets"].includes(row.jamming_technique)) ||
+          typeof row.ambiguous !== "boolean" || typeof row.operational !== "boolean" || !["LIVE", "RECENT", "MEMORY", "UNCONFIRMED"].includes(row.signal_state) || !["low", "medium", "high", "critical", "unknown"].includes(row.threat) ||
           !boundedArray(row.candidates, 5) || row.candidates.some((item) => !exactKeys(item, ["ref", "name", "score"])) ||
           !boundedArray(row.correlations, 8) || row.correlations.some((item) => !exactKeys(item, ["ref", "source", "score", "ambiguous", "evidence"]) || !exactKeys(item.evidence, ["bearing", "bearing_uncertainty_deg", "age_s", "position_available"])))) throw new Error("protocol");
       if (typeof payload.station_down !== "boolean" || !["down", "live"].includes(payload.status)) throw new Error("protocol");
+      if (!exactKeys(payload.hardware, ["df_sensors", "broadband_sensors", "ecm_channels", "frequency_min_hz", "frequency_max_hz", "reaction_s"]) ||
+          payload.hardware.df_sensors !== 4 || payload.hardware.broadband_sensors !== 1 || payload.hardware.ecm_channels !== 4 ||
+          !finite(payload.hardware.frequency_min_hz) || !finite(payload.hardware.frequency_max_hz) || !finite(payload.hardware.reaction_s)) throw new Error("protocol");
     }
     const arrays = [];
     for (const key of ["tactical_summary", "observations", "own_weapons", "compartments", "teams", "logged_fixes", "logged_bearings", "messages", "buoys", "intercepts"]) {
@@ -2117,9 +2492,115 @@
     inspect(state);
   }
 
+  function accumulateSonarHistory(state) {
+    if (state.role !== "sonar" || !finite(state.clock?.sim)) return;
+    const context = `${state.session}:${state.epoch}`;
+    if (sonarHistory.context !== context) {
+      sonarHistory.context = context;
+      for (const name of ["broadband", "lofar", "demon"]) sonarHistory[name].clear();
+    }
+    const visual = state.sonar.visualization;
+    for (const [name, rows] of [["broadband", visual.broadband.history], ["lofar", visual.lofar.history], ["demon", visual.demon.history]]) {
+      const history = sonarHistory[name];
+      for (const row of rows) {
+        const stamp = state.clock.sim - row.age_s;
+        if (!finite(stamp)) continue;
+        history.set(Math.round(stamp * 1000), {...row, stamp});
+      }
+      for (const [key, row] of history) if (row.stamp < state.clock.sim - 605 || row.stamp > state.clock.sim + .001) history.delete(key);
+      while (history.size > 3000) history.delete(history.keys().next().value);
+    }
+  }
+
+  function stopSonarStream() {
+    sonarStream.generation += 1;
+    clearTimeout(sonarStream.retry);
+    sonarStream.retry = null;
+    const socket = sonarStream.socket;
+    sonarStream.socket = null;
+    sonarStream.connected = false;
+    sonarStream.sequence = -1;
+    if (socket) socket.close(1000, "station context changed");
+  }
+
+  function storeSonarStreamRow(name, stamp, bins, bearing = null) {
+    if (!finite(stamp) || !Array.isArray(bins) || !bins.length) return;
+    const row = {stamp, age_s: 0, bins};
+    if (bearing !== null) row.bearing = bearing;
+    const history = sonarHistory[name];
+    history.set(Math.round(stamp * 1000), row);
+    while (history.size > 3000) history.delete(history.keys().next().value);
+  }
+
+  function acceptSonarStreamFrame(buffer) {
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 60 || !v2State || v2State.role !== "sonar") throw new Error("sonar_stream_protocol");
+    const view = new DataView(buffer);
+    if (view.getUint8(0) !== 85 || view.getUint8(1) !== 74 || view.getUint8(2) !== 83 || view.getUint8(3) !== 50 ||
+        view.getUint8(4) !== 1 || view.getUint8(5) !== 0 || view.getUint16(6, true) !== 60) throw new Error("sonar_stream_protocol");
+    const sequence = Number(view.getBigUint64(8, true));
+    const epoch = Number(view.getBigUint64(16, true));
+    const simTime = view.getFloat64(24, true);
+    const bearing = view.getFloat32(32, true);
+    const counts = [36, 38, 40, 42, 44].map((offset) => view.getUint16(offset, true));
+    const ages = [48, 52, 56].map((offset) => view.getFloat32(offset, true));
+    if (!Number.isSafeInteger(sequence) || sequence <= sonarStream.sequence || !Number.isSafeInteger(epoch) ||
+        epoch !== v2State.epoch || !finite(simTime) || !finite(bearing) || ages.some((age) => !finite(age) || age < 0) ||
+        counts[0] > 180 || counts[1] > 256 || counts[2] > 80 || counts[3] > 256 || counts[4] > 80 ||
+        60 + counts.reduce((sum, count) => sum + count, 0) !== buffer.byteLength) throw new Error("sonar_stream_protocol");
+    let offset = 60;
+    const take = (count) => { const values = Array.from(new Uint8Array(buffer, offset, count), (value) => value / 255); offset += count; return values; };
+    const broadband = take(counts[0]), lofar = take(counts[1]), demon = take(counts[2]);
+    sonarStream.lofarSpectrum = take(counts[3]);
+    sonarStream.demonSpectrum = take(counts[4]);
+    sonarStream.sequence = sequence;
+    storeSonarStreamRow("broadband", simTime - ages[0], broadband);
+    storeSonarStreamRow("lofar", simTime - ages[1], lofar, bearing);
+    storeSonarStreamRow("demon", simTime - ages[2], demon);
+    const visual = v2State.sonar.visualization;
+    visual.lofar.spectrum = sonarStream.lofarSpectrum;
+    visual.demon.spectrum = sonarStream.demonSpectrum;
+    queueVisualDraw();
+  }
+
+  function syncSonarStream() {
+    const allowed = authenticated() && connected && !document.hidden && session?.station === "sonar" &&
+      v2State?.role === "sonar" && ["live", "paused"].includes(v2State.phase);
+    if (!allowed) { if (sonarStream.socket) stopSonarStream(); return; }
+    if (sonarStream.socket) return;
+    const streamGeneration = ++sonarStream.generation;
+    const scheme = location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new window.WebSocket(`${scheme}//${location.host}/ws/v2/sonar`, "u-jagd-sonar-v2");
+    socket.binaryType = "arraybuffer";
+    sonarStream.socket = socket;
+    socket.addEventListener("open", () => {
+      if (streamGeneration !== sonarStream.generation || sonarStream.socket !== socket) { socket.close(); return; }
+      sonarStream.connected = true;
+    });
+    socket.addEventListener("message", (event) => {
+      if (streamGeneration !== sonarStream.generation || sonarStream.socket !== socket) return;
+      try { acceptSonarStreamFrame(event.data); }
+      catch (_) { socket.close(4002, "invalid sonar frame"); }
+    });
+    socket.addEventListener("close", () => {
+      if (sonarStream.socket === socket) sonarStream.socket = null;
+      sonarStream.connected = false;
+      if (streamGeneration === sonarStream.generation && authenticated()) {
+        sonarStream.retry = setTimeout(syncSonarStream, 1000);
+      }
+    });
+    socket.addEventListener("error", () => socket.close());
+  }
+
   function useV2State(state) {
+    accumulateSonarHistory(state);
     v2State = state;
+    if (state.role === "sonar" && sonarStream.connected) {
+      state.sonar.visualization.lofar.spectrum = sonarStream.lofarSpectrum;
+      state.sonar.visualization.demon.spectrum = sonarStream.demonSpectrum;
+    }
     updateOpzSweepSample(state);
+    syncGameAudio();
+    syncSonarStream();
   }
 
   function buildDisplayModel(state) {
@@ -2145,12 +2626,12 @@
     if (state.role === "radio") { Object.assign(ownship, payload.navigation); observations = payload.tactical; }
     if (state.role === "engine") { ownship.speed = payload.propulsion.speed; ownship.target_speed = payload.propulsion.target_speed; }
     if (state.role === "helicopter") { Object.assign(ownship, payload.navigation); ownship.helo = payload.asset; observations = payload.tactical; }
-    if (state.role === "eloka") observations = payload.intercepts;
+    if (state.role === "eloka") observations = filteredEloka(payload.intercepts);
     const tracks = observations.map((row) => ({ref: row.ref, label: row.label || row.ref,
       domain: row.domain || "UNKNOWN", source: row.source || (state.role === "eloka" ? "ESM" : "HFDF"),
       affiliation: row.affiliation || "UNKNOWN", classification: row.classification ?? null,
       bearing: row.bearing ?? null, range_nm: row.range_nm ?? null, x: row.x ?? null, y: row.y ?? null,
-      depth_m: row.depth_m ?? null, course: row.course ?? null, speed_kn: row.speed_kn ?? null,
+      depth_m: row.depth_m ?? null, altitude_m: row.altitude_m ?? null, course: row.course ?? null, speed_kn: row.speed_kn ?? null,
       observer_x: row.observer_x ?? null, observer_y: row.observer_y ?? null,
       released_to_opz: row.released_to_opz === true,
       quality: row.quality ?? null, age_s: row.age_s ?? null, fix_age_s: row.fix_age_s ?? null,
@@ -2325,7 +2806,10 @@
         renderLobby();
         return;
       }
-      let next = await request("/state");
+      if (session.host !== null) await pollHost(context);
+      if (context !== generation) return;
+      const stateRoute = sonarStream.connected && session.station === "sonar" ? "/state?sonar=stream" : "/state";
+      let next = await request(stateRoute);
       if (context !== generation) return;
       if (next?.role !== null && next?.role !== session.station) {
         const metadata = await request("/session");
@@ -2337,12 +2821,14 @@
       if (!chartMatches(next)) {
         // Chart has no session field. Sandwich it between matching snapshots;
         // never display a previous session with a new session's geography.
-        $("operations").hidden = true;
+        // Only a first load or a new world blanks the console; a re-fetch after
+        // a pause or station switch repaints in place.
+        if (!chart || chartSession !== next.session) $("operations").hidden = true;
         setConnection("syncing");
         const candidate = await request("/chart");
         if (context !== generation) return;
         validateChart(candidate, next);
-        let confirmed = await request("/state");
+        let confirmed = await request(stateRoute);
         if (context !== generation) return;
         validateState(confirmed);
         if (confirmed.role !== null) { useV2State(confirmed); confirmed = buildDisplayModel(confirmed); }
@@ -2370,7 +2856,8 @@
         useV2State(next);
         failures = 0;
         lastSuccess = performance.now();
-        setConnection("syncing");
+        // A solo host in the menu is not "syncing": the host screen is the view.
+        setConnection(session.host !== null && hostView?.phase === "menu" ? "connected" : "syncing");
         renderLobby();
         return;
       }
@@ -2409,9 +2896,14 @@
         }
       }
       snapshot = next;
+      roleStale = false;
+      document.body.removeAttribute("data-role-stale");
       await pollRoleFeeds(v2State, context);
       if (sonarAudioEnabled && !sonarAudioAuthorized()) stopSonarAudio("sonar_live_unavailable");
       if (pending) await pollV2Result(context);
+      // A station switch that landed while this poll awaited its feeds replaced
+      // the snapshot; this result belongs to the old station, drop it.
+      if (context !== generation || snapshot !== next) return;
       if (!view.initialized) fitChart();
       if (selected && !selectedTrack()) selected = null;
       failures = 0;
@@ -2482,10 +2974,15 @@
 
   function renderTracks() {
     const list = $("track-list");
+    const term = $("contact-filter").value.trim().toLocaleLowerCase(language).slice(0, 48);
+    const visibleTracks = snapshot.tracks.filter((track) => !term ||
+      (`${track.label} ${track.source} ${track.domain} ${enumText(domains, track.domain)} ` +
+       `${track.affiliation} ${enumText(affiliations, track.affiliation)} ${classificationText(track.classification)}`)
+        .toLocaleLowerCase(language).includes(term));
     const current = new Map([...list.children].filter((element) => element.dataset.ref).map((element) => [element.dataset.ref, element]));
-    const expected = new Set(snapshot.tracks.map((track) => track.ref));
+    const expected = new Set(visibleTracks.map((track) => track.ref));
     for (const child of [...list.children]) if (!expected.has(child.dataset.ref)) child.remove();
-    snapshot.tracks.forEach((track, index) => {
+    visibleTracks.forEach((track, index) => {
       let button = current.get(track.ref);
       if (!button) {
         button = node("button");
@@ -2509,8 +3006,8 @@
       // Preserve focused buttons across the two-Hz refresh, including reordering.
       if (list.children[index] !== button) list.insertBefore(button, list.children[index] || null);
     });
-    if (!snapshot.tracks.length) list.replaceChildren(node("p", t("no_contacts"), "empty"));
-    $("track-count").textContent = number(snapshot.tracks.length, 0);
+    if (!visibleTracks.length) list.replaceChildren(node("p", t(snapshot.tracks.length ? "contact_filter_empty" : "no_contacts"), "empty"));
+    $("track-count").textContent = term ? `${number(visibleTracks.length, 0)} / ${number(snapshot.tracks.length, 0)}` : number(snapshot.tracks.length, 0);
   }
 
   function renderDetail(resetDraft = false) {
@@ -2538,7 +3035,9 @@
         ["source", track.source], ["quality", number(track.quality, 2)],
         ["bearing", unit(track.bearing, "\u00b0", 0)], ["range", unit(track.range_nm, "NM")],
         ["depth", unit(track.depth_m, "m", 0)], ["course", unit(track.course, "\u00b0", 0)],
-        ["speed", unit(track.speed_kn, "kn")], ["age", unit(track.age_s, "s", 0)],
+        ["speed", unit(track.speed_kn, "kn")],
+        ...(track.domain === "AIR" ? [["altitude", unit(track.altitude_m, "m", 0)]] : []),
+        ["age", unit(track.age_s, "s", 0)],
         ["fix_age", unit(track.fix_age_s, "s", 0)], ["bearing_uncertainty", unit(track.bearing_uncertainty_deg, "\u00b0")],
         ["range_uncertainty", unit(track.range_uncertainty_nm, "NM")],
       ];
@@ -2767,7 +3266,7 @@
   }
 
   function stationActionAvailable() {
-    return connected && session?.grants.command === true &&
+    return connected && !roleStale && session?.grants.command === true &&
       v2State?.phase === "live" && chartMatches(snapshot) && !pending;
   }
 
@@ -2776,7 +3275,7 @@
   function stationUnavailableReason() {
     if (!session?.station) return unavailable("reason_role_revoked");
     if (!connected) return unavailable(linkState === "syncing" ? "connection_syncing" : "connection_stale", {age: 0});
-    if (!v2State || !chartMatches(snapshot)) return unavailable("connection_syncing");
+    if (!v2State || roleStale || !chartMatches(snapshot)) return unavailable("connection_syncing");
     if (session.grants.command !== true) return unavailable("reason_grant_revoked");
     if (v2State.phase !== "live") return unavailable("reason_phase_blocked");
     if (pending) return unavailable(pending.uncertain ? "command_uncertain" : "command_pending");
@@ -2817,9 +3316,10 @@
     if (["add-station", "mobile-add-station", "workstation-add-station"].includes(control.id)) {
       return unavailable(session?.requested_station ? "reason_station_request_pending" : "reason_station_change_pending");
     }
-    if (["release-station", "mobile-release-station", "mobile-station", "workstation-station"].includes(control.id)) {
+    if (["release-station", "mobile-release-station", "mobile-station"].includes(control.id)) {
       return unavailable("reason_station_change_pending");
     }
+    if (control.closest("#host-bar, #host-screen, #host-slot-dialog, #host-new-dialog")) return hostUnavailableReason(control);
     if (control.id === "follow") return unavailable("reason_position_unavailable");
     if (control.id === "sonar-live-toggle") return unavailable("reason_sonar_audio_grant");
     const shared = stationUnavailableReason();
@@ -2887,6 +3387,7 @@
     const active = session?.station === "opz";
     $("opz-controls").hidden = !active;
     $("opz-track-actions").hidden = !active;
+    $("track-id-form").hidden = !active;
     if (!active) return;
     const radar = v2State?.opz?.radar;
     const available = stationActionAvailable() && radar?.live === true;
@@ -2896,6 +3397,9 @@
     for (const id of ["opz-radar-surface", "opz-radar-air", "opz-range"]) $(id).disabled = !available;
     $("opz-create-fusion").disabled = !available || opzMarked.size < 2 || opzMarked.size > 8;
     const track = selectedTrack();
+    if (track && document.activeElement !== $("track-id")) $("track-id").value = track.label;
+    $("track-id").disabled = !available || !track;
+    $("apply-track-id").disabled = !available || !track;
     $("opz-mark").disabled = !track || track.source === "FUSION";
     $("opz-mark").setAttribute("aria-pressed", String(Boolean(track && opzMarked.has(track.ref))));
     $("opz-dissolve").disabled = !available || track?.source !== "FUSION";
@@ -2942,7 +3446,7 @@
   function bridgeOrderAvailable(kind) {
     const orders = v2State?.bridge?.orders;
     return session?.station === "bridge" &&
-      session.grants.command === true && connected && v2State?.phase === "live" &&
+      session.grants.command === true && connected && !roleStale && v2State?.phase === "live" &&
       chartMatches(snapshot) && !pending && orders && (kind !== "course" || !orders.station_down);
   }
 
@@ -3097,28 +3601,9 @@
   }
 
     // Hidden view (#simlog): complete bounded simulation log, read-only.
-  // Event rows carry localized text; state rows carry a structured snapshot
-  // of every unit, weapon and map item, summarized per role in the entry
-  // history and fully plottable via the snapshot map dialog.
-  const simlogStateSections = ["subs", "surfaces", "animals", "torpedoes", "enemy_torpedoes", "decoys", "asms", "essms", "asrocs", "nixies", "buoys", "flights", "raiders", "helo"];
-  const simlogCategoryKeys = {
-    subs: "simlog_cat_subs", surfaces: "simlog_cat_surfaces",
-    animals: "simlog_cat_animals", torpedoes: "simlog_cat_torps",
-    enemy_torpedoes: "simlog_cat_enemy_torps", decoys: "simlog_cat_decoys",
-    asms: "simlog_cat_asms", essms: "simlog_cat_essms",
-    asrocs: "simlog_cat_asrocs", nixies: "simlog_cat_nixies",
-    buoys: "simlog_cat_buoys", flights: "simlog_cat_flights",
-    raiders: "simlog_cat_raiders", helo: "simlog_cat_helo",
-  };
-  const simlogMapStyles = {
-    ship: ["SURFACE", "#a1e7cc"], subs: ["SUBSURFACE", "#ff9090"],
-    surfaces: ["SURFACE", "#f3c577"], animals: ["UNKNOWN", "#8fdfab"],
-    torpedoes: ["SUBSURFACE", "#81c5ff"], enemy_torpedoes: ["SUBSURFACE", "#ff6666"],
-    decoys: ["UNKNOWN", "#c89cff"], asms: ["AIR", "#ff9f6e"],
-    essms: ["AIR", "#8fcfff"], asrocs: ["AIR", "#f0dc85"],
-    nixies: ["SUBSURFACE", "#c89cff"], buoys: ["UNKNOWN", "#76d5b0"],
-    flights: ["AIR", "#d4c37b"], raiders: ["AIR", "#ff9090"], helo: ["AIR", "#a1e7cc"],
-  };
+  // Every entry carries its normal role context plus a detached full-truth
+  // diagnostic snapshot, fully tabulated and plottable on the snapshot map.
+  const simlogAffiliationColors = { FRIEND: "#81c5ff", NEUTRAL: "#8fdfab", HOSTILE: "#ff8080", UNKNOWN: "#f3cf79" };
   function simlogActive() { return location.hash === "#simlog" && authenticated(); }
   function applySimlogView() {
     const active = simlogActive();
@@ -3126,11 +3611,6 @@
     $("operations").hidden = active;
     if (session) renderLobby();
     if (active) { releaseCanvas(canvas); releaseCanvas(lookoutCanvas); }
-  }
-  function simlogSectionRows(section, data) {
-    if (Array.isArray(data[section])) return data[section];
-    if (section === "helo" && data.helo && typeof data.helo === "object" && !Array.isArray(data.helo)) return [data.helo];
-    return [];
   }
   function simlogMetricBlock(titleKey, entries) {
     const wrap = node("div", undefined, "simlog-metrics-wrap");
@@ -3144,18 +3624,18 @@
     wrap.append(dl);
     return wrap;
   }
-  function simlogMapItems(data) {
+  // Map items are supplied by the selected full-truth diagnostic snapshot.
+  function simlogMapItems(display) {
     const items = [];
-    const add = (section, value, index, label) => {
-      if (!hasPosition(value)) return;
-      const [domain, color] = simlogMapStyles[section];
-      const identity = value.id ?? value.seq ?? index + 1;
-      items.push({ section, value, domain, color, x: value.x, y: value.y,
-        label: label || `${t(simlogCategoryKeys[section])} ${identity}` });
-    };
-    if (data.ship && typeof data.ship === "object") add("ship", data.ship, 0, t("simlog_own"));
-    for (const section of simlogStateSections) {
-      simlogSectionRows(section, data).forEach((value, index) => add(section, value, index));
+    if (hasPosition(display.ownship)) {
+      items.push({ section: "ship", value: display.ownship, domain: "SURFACE", color: "#a1e7cc",
+        x: display.ownship.x, y: display.ownship.y, label: t("simlog_own") });
+    }
+    for (const track of display.tracks) {
+      if (!hasPosition(track)) continue;
+      items.push({ section: "track", value: track, domain: track.domain,
+        color: simlogAffiliationColors[track.affiliation] || simlogAffiliationColors.UNKNOWN,
+        x: track.x, y: track.y, label: track.label });
     }
     return items;
   }
@@ -3314,7 +3794,7 @@
       entry.style.setProperty("--unit-color", item.color);
       return entry;
     }));
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) { dialog.hidden = false; dialog.showModal(); }
     queueSimlogMapDraw();
   }
   async function loadSimlog() {
@@ -3355,20 +3835,119 @@
         value.role !== expected.role || !boundedArray(value.entries, 64)) throw new Error("simlog_schema");
     let previous = 0;
     for (const entry of value.entries) {
-      if (!exactKeys(entry, ["seq", "t", "stamp", "state"]) ||
+      if (!exactKeys(entry, ["seq", "t", "stamp", "state", "truth"]) ||
           !Number.isSafeInteger(entry.seq) || entry.seq <= previous || entry.seq < 1 ||
           !finite(entry.t) || entry.t < 0 || entry.t > 1e12 ||
           typeof entry.stamp !== "string" || !entry.stamp || entry.stamp.length > 32) throw new Error("simlog_schema");
       validateV2State(entry.state);
       if (entry.state.session !== value.session || entry.state.epoch !== value.epoch || entry.state.role !== value.role)
         throw new Error("simlog_schema");
+      validateSimlogTruth(entry.truth);
       previous = entry.seq;
     }
+  }
+
+  function validateSimlogTruth(value) {
+    const arrays = ["subs", "surfaces", "animals", "torpedoes", "enemy_torpedoes", "decoys",
+      "asms", "essms", "asrocs", "nixies", "buoys", "flights", "raiders"];
+    if (!exactKeys(value, ["mission_t", "timescale", "result", "world", "ship", "weapons", ...arrays,
+      "helo", "radars"]) || arrays.some((key) => !boundedArray(value[key], 1024)) ||
+      !value.ship || typeof value.ship !== "object" || !finite(value.ship.x) || !finite(value.ship.y))
+      throw new Error("simlog_schema");
+    const inspect = (item, depth = 0) => {
+      if (depth > 4) throw new Error("simlog_schema");
+      if (item === null || typeof item === "string" || typeof item === "boolean") return;
+      if (typeof item === "number") { if (!finite(item)) throw new Error("simlog_schema"); return; }
+      if (Array.isArray(item)) { item.forEach((child) => inspect(child, depth + 1)); return; }
+      if (!item || typeof item !== "object") throw new Error("simlog_schema");
+      Object.entries(item).forEach(([key, child]) => {
+        if (!key || key.length > 64) throw new Error("simlog_schema");
+        inspect(child, depth + 1);
+      });
+    };
+    inspect(value);
+  }
+
+  function simlogTruthDisplay(truth) {
+    const tracks = [];
+    const add = (rows, domain, affiliation, prefix) => rows.forEach((row) => {
+      tracks.push({...row, label: `${prefix}${row.id ?? row.seq ?? ""}`, domain, affiliation,
+        speed_kn: row.speed ?? null});
+    });
+    add(truth.subs, "SUBSURFACE", "HOSTILE", "S-");
+    add(truth.surfaces, "SURFACE", "UNKNOWN", "V-");
+    add(truth.animals, "SUBSURFACE", "NEUTRAL", "B-");
+    add(truth.torpedoes, "SUBSURFACE", "FRIEND", "T-");
+    add(truth.enemy_torpedoes, "SUBSURFACE", "HOSTILE", "T-");
+    add(truth.decoys, "SUBSURFACE", "UNKNOWN", "D-");
+    add(truth.asms, "AIR", "HOSTILE", "M-");
+    add(truth.essms, "AIR", "FRIEND", "M-");
+    add(truth.asrocs, "AIR", "FRIEND", "M-");
+    add(truth.nixies, "SUBSURFACE", "FRIEND", "N-");
+    add(truth.buoys, "SUBSURFACE", "FRIEND", "B-");
+    add(truth.flights, "AIR", "UNKNOWN", "A-");
+    add(truth.raiders, "AIR", "HOSTILE", "R-");
+    if (truth.helo.airborne) add([truth.helo], "AIR", "FRIEND", "H-");
+    return {ownship: truth.ship, tracks};
+  }
+
+  function simlogTruthTable(titleKey, rows, ownship) {
+    const wrap = node("div", undefined, "simlog-table-wrap");
+    wrap.tabIndex = 0;
+    wrap.append(node("h4", t(titleKey)));
+    const table = node("table", undefined, "simlog-table");
+    const keys = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+    if (rows.some((row) => finite(row.x) && finite(row.y))) keys.splice(Math.min(3, keys.length), 0, "distance_own");
+    const head = node("tr");
+    keys.forEach((key) => head.append(node("th", key === "distance_own" ? t(key) : key)));
+    table.append(head);
+    for (const value of rows) {
+      const row = node("tr");
+      keys.forEach((key) => {
+        let cell = value[key];
+        if (key === "distance_own") cell = finite(value.x) && finite(value.y)
+          ? `${number(Math.hypot(value.x - ownship.x, value.y - ownship.y), 1)} NM` : t("unavailable");
+        else if (cell && typeof cell === "object") cell = JSON.stringify(cell);
+        else if (cell === null || cell === undefined) cell = t("unavailable");
+        row.append(node("td", String(cell)));
+      });
+      table.append(row);
+    }
+    wrap.append(table);
+    return wrap;
+  }
+
+  function simlogTruthSummary(entry) {
+    const truth = entry.truth;
+    const root = node("div", undefined, "simlog-current-body");
+    root.append(simlogMetricBlock("simlog_own", Object.entries(truth.ship).map(([key, value]) =>
+      [key, value && typeof value === "object" ? JSON.stringify(value) : String(value)])));
+    root.append(simlogMetricBlock("simlog_world", [...Object.entries(truth.world),
+      ["mission_t", truth.mission_t], ["timescale", truth.timescale], ["result", truth.result ?? "-"]]));
+    root.append(simlogMetricBlock("simlog_weapons", Object.entries(truth.weapons)));
+    const display = simlogTruthDisplay(truth);
+    const mapButton = node("button", t("simlog_map_open"));
+    mapButton.type = "button";
+    mapButton.addEventListener("click", () => openSimlogMap(display, entry.stamp, entry.seq,
+      entry === latestSimlogState));
+    root.append(mapButton);
+    const sections = [["simlog_cat_subs", truth.subs], ["simlog_cat_surfaces", truth.surfaces],
+      ["simlog_cat_animals", truth.animals], ["simlog_cat_torps", truth.torpedoes],
+      ["simlog_cat_enemy_torps", truth.enemy_torpedoes], ["simlog_cat_decoys", truth.decoys],
+      ["simlog_cat_asms", truth.asms], ["simlog_cat_essms", truth.essms],
+      ["simlog_cat_asrocs", truth.asrocs], ["simlog_cat_nixies", truth.nixies],
+      ["simlog_cat_buoys", truth.buoys], ["simlog_cat_flights", truth.flights],
+      ["simlog_cat_raiders", truth.raiders], ["simlog_cat_helo", [truth.helo]]];
+    sections.filter(([, rows]) => rows.length).forEach(([title, rows]) =>
+      root.append(simlogTruthTable(title, rows, truth.ship)));
+    root.append(simlogTruthTable("simlog_world", [truth.radars], truth.ship));
+    return root;
   }
 
   function roleHistorySummary(entry, expanded = false) {
     const state = entry.state;
     const display = buildDisplayModel(state);
+    if (expanded) return simlogTruthSummary(entry);
     const root = node("div", undefined, "simlog-current-body");
     root.append(simlogMetricBlock("mission", [
       ["mission", state.mission.name],
@@ -3382,14 +3961,6 @@
       ["world_clock", finite(state.clock.world) ? `${String(Math.floor(state.clock.world) % 24).padStart(2, "0")}:${String(Math.floor(state.clock.world * 60) % 60).padStart(2, "0")}` : t("unavailable")],
       ["time_scale", unit(state.clock.time_scale, "x")],
     ]));
-    if (expanded && display.tracks.length) {
-      const list = node("ul", undefined, "visual-equivalent");
-      for (const track of display.tracks.slice(0, 16)) {
-        const position = hasPosition(track) ? `${unit(track.x, "NM")} / ${unit(track.y, "NM")}` : unit(track.bearing, "\u00b0", 0);
-        list.append(node("li", `${track.label}: ${position} / ${unit(track.age_s, "s", 0)}`));
-      }
-      root.append(list);
-    }
     return root;
   }
 
@@ -3414,6 +3985,10 @@
       const details = node("details", undefined, "simlog-snapshot");
       details.append(node("summary", `${entry.state.mission.name} / ${enumText(phases, entry.state.phase)}`),
         roleHistorySummary(entry));
+      details.addEventListener("toggle", () => {
+        // Full values (own ship, world, every observation) are built only when opened.
+        if (details.open) details.lastChild.replaceWith(roleHistorySummary(entry, true));
+      });
       item.append(details);
       return item;
     }));
@@ -3549,11 +4124,14 @@
       for (const fraction of [.25, .5, .75, 1]) {
         ctx.beginPath(); ctx.arc(ox, oy, radar.range_nm * fraction * scale, 0, Math.PI * 2); ctx.stroke();
       }
-      const sweep = currentOpzSweepBearing() * Math.PI / 180;
+      const displayedSweep = v2State?.phase === "live" ?
+        currentOpzSweepBearing() : radar.sweep_bearing;
+      const sweep = displayedSweep * Math.PI / 180;
+      const sweepDx = Math.sin(sweep), sweepDy = -Math.cos(sweep);
+      const sweepLength = rayLengthToCanvasEdge(ox, oy, sweepDx, sweepDy, width, height);
       ctx.strokeStyle = "#8de6c4";
       ctx.beginPath(); ctx.moveTo(ox, oy);
-      ctx.lineTo(ox + Math.sin(sweep) * radar.range_nm * scale,
-        oy - Math.cos(sweep) * radar.range_nm * scale); ctx.stroke();
+      ctx.lineTo(ox + sweepDx * sweepLength, oy + sweepDy * sweepLength); ctx.stroke();
       ctx.globalAlpha = 1;
     }
     // No integration, dead reckoning or animation of tracks: only published fixes.
@@ -3822,23 +4400,42 @@
     } finally { $("pair-submit").disabled = false; }
   });
   $("language").addEventListener("change", () => loadLanguage($("language").value === "de" ? "de" : "en"));
+  for (const [id, key] of [["eloka-status-filter", "status"], ["eloka-threat-filter", "threat"], ["eloka-band-filter", "band"]]) {
+    $(id).addEventListener("change", () => {
+      elokaFilters[key] = $(id).value;
+      if (v2State?.role === "eloka") {
+        snapshot = buildDisplayModel(v2State);
+        if (!selectedTrack()) selected = null;
+        renderSnapshot();
+      }
+    });
+  }
   $("volume").addEventListener("input", () => {
     if (sonarAudioGain) sonarAudioGain.gain.value = sonarGainValue();
-    syncBridgeCavitationAudio();
+    syncGameAudio();
   });
   $("analysis-filter").addEventListener("input", renderContactAnalysis);
+  $("contact-filter").addEventListener("input", renderTracks);
   $("analysis-category").addEventListener("change", renderContactAnalysis);
   // Pointer Events (not "click") so this canvas matches #chart/#role-map's
   // tap-vs-drag disambiguation: a touch that starts a scroll/pan gesture
   // must not also silently set the listen bearing.
   $("sonar-broadband").addEventListener("pointerdown", (event) => {
-    if (session?.station !== "sonar" || !stationActionAvailable() || sonarVisualPage !== "broadband"
+    if (session?.station !== "sonar" || !stationActionAvailable() || !broadbandVisible()
         || !event.isPrimary || event.button !== 0) return;
     const canvas = $("sonar-broadband");
     canvas.setPointerCapture(event.pointerId);
     sonarBroadbandDrag = {id: event.pointerId, x: event.clientX, y: event.clientY, moved: false};
   });
   $("sonar-broadband").addEventListener("pointermove", (event) => {
+    const canvas = $("sonar-broadband");
+    const bounds = canvas.getBoundingClientRect();
+    const area = plotArea(canvas.clientWidth, canvas.clientHeight);
+    const x = (event.clientX - bounds.left) * canvas.clientWidth / Math.max(1, bounds.width);
+    if (x >= area.left && x <= area.left + area.width) {
+      const bearing = (x - area.left) / area.width * 360;
+      $("sonar-cursor-readout").value = t("sonar_cursor_bearing", {bearing: number(bearing, 1)});
+    }
     if (!sonarBroadbandDrag || sonarBroadbandDrag.id !== event.pointerId) return;
     const dx = event.clientX - sonarBroadbandDrag.x;
     const dy = event.clientY - sonarBroadbandDrag.y;
@@ -3850,7 +4447,7 @@
     sonarBroadbandDrag = null;
     $("sonar-broadband").releasePointerCapture(event.pointerId);
     if (gesture.moved || session?.station !== "sonar" || !stationActionAvailable()
-        || sonarVisualPage !== "broadband") return;
+        || !broadbandVisible()) return;
     const canvas = $("sonar-broadband");
     const bounds = canvas.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
@@ -3859,14 +4456,71 @@
     const area = plotArea(canvas.clientWidth, canvas.clientHeight);
     if (x < area.left || x >= area.left + area.width ||
         y < area.top || y >= area.top + area.height) return;
-    sendStationAction("sonar_set_listen_bearing", {
-      bearing: (x - area.left) / area.width * 360,
-    });
+    const bearing = (x - area.left) / area.width * 360;
+    const observations = v2State?.sonar?.observations ?? [];
+    const nearest = observations.map((row) => ({row, delta: Math.abs(((row.bearing - bearing + 540) % 360) - 180)}))
+      .sort((a, b) => a.delta - b.delta)[0];
+    // Selecting an observed bearing locks its passive S-track and routes that
+    // beam to live audio. Empty-water clicks remain free beam steering.
+    if (nearest && nearest.delta <= Math.max(3, v2State.sonar.visualization.receiver.beam_width_deg / 2)) {
+      selected = nearest.row.ref;
+      sendStationAction("sonar_set_focus", {ref: nearest.row.ref});
+    } else sendStationAction("sonar_set_listen_bearing", {bearing});
   });
   $("sonar-broadband").addEventListener("pointercancel", (event) => {
     if (sonarBroadbandDrag?.id === event.pointerId) sonarBroadbandDrag = null;
   });
   $("sonar-broadband").addEventListener("lostpointercapture", () => { sonarBroadbandDrag = null; });
+  const sonarFrequencyAt = (canvas, event, maximum) => {
+    const bounds = canvas.getBoundingClientRect();
+    const area = plotArea(canvas.clientWidth, canvas.clientHeight);
+    const x = (event.clientX - bounds.left) * canvas.clientWidth / Math.max(1, bounds.width);
+    return x < area.left || x > area.left + area.width ? null : (x - area.left) / area.width * maximum;
+  };
+  $("sonar-lofar").addEventListener("pointermove", (event) => {
+    const hz = sonarFrequencyAt($("sonar-lofar"), event, 300);
+    const visual = v2State?.sonar?.visualization?.lofar;
+    if (hz === null || !visual?.spectrum?.length) return;
+    let bin = 0;
+    for (let index = 1; index < visual.bin_frequencies_hz.length; index++)
+      if (Math.abs(visual.bin_frequencies_hz[index] - hz) < Math.abs(visual.bin_frequencies_hz[bin] - hz)) bin = index;
+    const level = visual.spectrum[bin] || 0;
+    const db = 20 * Math.log10(Math.max(1e-6, level));
+    const fundamental = v2State.sonar.settings.harmonic_hz;
+    const order = finite(fundamental) && fundamental > 0 ? Math.max(1, Math.round(hz / fundamental)) : 1;
+    $("sonar-cursor-readout").value = t("sonar_cursor_frequency", {frequency: number(hz, 1), strength: number(db, 1), harmonic: order});
+  });
+  $("sonar-lofar").addEventListener("click", (event) => {
+    const hz = sonarFrequencyAt($("sonar-lofar"), event, 300);
+    if (hz !== null && session?.station === "sonar" && stationActionAvailable()) sendStationAction("sonar_set_harmonic", {frequency_hz: hz});
+  });
+  $("sonar-demon-spectrum").addEventListener("click", (event) => {
+    const hz = sonarFrequencyAt($("sonar-demon-spectrum"), event, 50);
+    if (hz === null) return;
+    if (sonarDisplay.demonCursor === null) {
+      sonarDisplay.demonCursor = hz;
+      $("sonar-cursor-readout").value = t("sonar_demon_cursor_first", {frequency: number(hz, 1)});
+    } else {
+      const spacing = Math.abs(hz - sonarDisplay.demonCursor);
+      sonarDisplay.demonCursor = spacing > .05 ? spacing : hz;
+      $("sonar-cursor-readout").value = t("sonar_demon_spacing", {spacing: number(spacing, 2), rpm: number(spacing * 60, 1)});
+    }
+    queueVisualDraw();
+  });
+  for (const id of ["sonar-palette", "sonar-black-level", "sonar-contrast", "sonar-history"]) {
+    $(id).addEventListener("input", () => {
+      sonarDisplay.palette = $("sonar-palette").value;
+      sonarDisplay.black = Number($("sonar-black-level").value);
+      sonarDisplay.contrast = Number($("sonar-contrast").value);
+      sonarDisplay.history = Number($("sonar-history").value);
+      queueVisualDraw();
+    });
+  }
+  $("sonar-detach").addEventListener("click", () => {
+    const scope = sonarVisualPage === "overview" ? "broadband" : sonarVisualPage;
+    if (!sonarScopeNames.has(scope)) return;
+    window.open(`${location.pathname}?scope=${encodeURIComponent(scope)}`, `ujagd-sonar-${scope}`, "popup,width=1280,height=800,noopener");
+  });
   // The dialog's own toolbar (close/fit-to-world/fit-to-units) was never
   // wired to the click handlers and view-fit modes it was built to control.
   $("simlog-map-close").addEventListener("click", closeSimlogMap);
@@ -3876,6 +4530,7 @@
     simlogMapData = null;
     simlogMapSeq = null;
     simlogMapLatest = false;
+    $("simlog-map-dialog").hidden = true;
     $("simlog-map-units").replaceChildren();
     releaseCanvas(simlogMapCanvas);
   });
@@ -3920,9 +4575,8 @@
     stationPickerOpen = false;
     renderLobby();
   });
-  for (const id of ["mobile-station", "workstation-station"]) {
-    $(id).addEventListener("change", () => chooseStation($(id).value));
-  }
+  wideScreen.addEventListener("change", () => { if (v2State?.role) renderRoleVisuals(v2State.role); });
+  $("mobile-station").addEventListener("change", () => chooseStation($("mobile-station").value));
   $("classification-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const classification = $("classification").value || null;
@@ -3940,6 +4594,13 @@
   $("affiliation-form").addEventListener("submit", (event) => {
     event.preventDefault();
     if (session?.station === "opz") sendStationAction("opz_affiliate", {ref: selected, affiliation: $("affiliation").value});
+  });
+  $("track-id-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!selected || !$("track-id-form").reportValidity()) return;
+    sendStationAction("opz_set_track_id", {
+      ref: selected, label: $("track-id").value.toUpperCase(),
+    });
   });
   $("opz-radar-surface").addEventListener("change", () => sendStationAction("opz_set_radar", {domain: "surface", enabled: $("opz-radar-surface").checked}));
   $("opz-radar-air").addEventListener("change", () => sendStationAction("opz_set_radar", {domain: "air", enabled: $("opz-radar-air").checked}));
@@ -3996,7 +4657,7 @@
   for (const button of $("sonar-page-tabs").querySelectorAll("button")) {
     button.addEventListener("click", () => {
       sonarVisualPage = button.dataset.sonarVisual;
-      $("sonar-control-page").value = ({environment: "array", active: "listen", broadband: "listen"}[sonarVisualPage] || "analysis");
+      $("sonar-control-page").value = ({environment: "array", active: "listen", broadband: "listen", overview: "listen"}[sonarVisualPage] || "analysis");
       renderSonarControlPage();
       renderRoleVisuals(v2State?.role);
     });
@@ -4130,7 +4791,6 @@
     try {
       if (soundEnabled) {
         soundEnabled = false;
-        stopBridgeCavitationAudio();
         if (!sonarAudioEnabled) await audio?.suspend();
       } else {
         const Audio = window.AudioContext || window.webkitAudioContext;
@@ -4140,8 +4800,8 @@
         soundEnabled = audio.state === "running";
       }
       renderSound();
-      syncBridgeCavitationAudio();
-    } catch (_) { soundEnabled = false; stopBridgeCavitationAudio(); renderSound(); $("sound").textContent = t("sound_unavailable"); }
+      syncGameAudio();
+    } catch (_) { soundEnabled = false; renderSound(); $("sound").textContent = t("sound_unavailable"); }
   });
   $("sonar-live-toggle").addEventListener("click", async () => {
     if (sonarAudioEnabled) { stopSonarAudio(); return; }
@@ -4154,13 +4814,32 @@
       if (audio.state !== "running" || !sonarAudioAuthorized()) throw new Error("audio");
       sonarAudioGain = audio.createGain();
       sonarAudioGain.gain.value = sonarGainValue();
-      sonarAudioGain.connect(audio.destination);
+      sonarAudioHighpass = audio.createBiquadFilter();
+      sonarAudioHighpass.type = "highpass";
+      sonarAudioHighpass.frequency.value = Number($("sonar-audio-highpass").value);
+      sonarAudioLowpass = audio.createBiquadFilter();
+      sonarAudioLowpass.type = "lowpass";
+      sonarAudioLowpass.frequency.value = Number($("sonar-audio-lowpass").value);
+      sonarAudioGain.connect(sonarAudioHighpass);
+      sonarAudioHighpass.connect(sonarAudioLowpass);
+      sonarAudioLowpass.connect(audio.destination);
       sonarAudioEnabled = true;
       sonarAudioNextTime = audio.currentTime;
       renderSonarAudio("sonar_live_waiting");
       scheduleSonarAudioPoll();
     } catch (_) { stopSonarAudio("sonar_live_unavailable"); }
   });
+  const updateSonarAudioFilters = () => {
+    const high = Number($("sonar-audio-highpass").value);
+    const low = Number($("sonar-audio-lowpass").value);
+    $("sonar-audio-highpass-value").value = `${number(high, 0)} Hz`;
+    $("sonar-audio-lowpass-value").value = `${number(low, 0)} Hz`;
+    if (sonarAudioHighpass && audio) sonarAudioHighpass.frequency.setTargetAtTime(high, audio.currentTime, .02);
+    if (sonarAudioLowpass && audio) sonarAudioLowpass.frequency.setTargetAtTime(low, audio.currentTime, .02);
+  };
+  $("sonar-audio-highpass").addEventListener("input", updateSonarAudioFilters);
+  $("sonar-audio-lowpass").addEventListener("input", updateSonarAudioFilters);
+  updateSonarAudioFilters();
   $("zoom-in").addEventListener("click", () => zoom(1.4));
   $("zoom-out").addEventListener("click", () => zoom(1 / 1.4));
   $("fit").addEventListener("click", fitChart);
@@ -4349,13 +5028,13 @@
     // A background tab's event batch is not a new audible alarm on return.
     if (document.hidden) eventBaselinePending = true;
     if (document.hidden) stopSonarAudio("sonar_live_unavailable");
-    if (document.hidden) stopBridgeCavitationAudio();
+    if (document.hidden) stopSonarStream(); else syncSonarStream();
     if (document.hidden && authenticated()) setConnection("stale");
     syncOpzSweepAnimation();
     syncWeatherAnimation();
   });
-  window.addEventListener("offline", () => { eventBaselinePending = true; stopSonarAudio("sonar_live_unavailable"); stopBridgeCavitationAudio(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
-  window.addEventListener("online", () => { syncOpzSweepAnimation(); if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); } });
+  window.addEventListener("offline", () => { eventBaselinePending = true; stopSonarAudio("sonar_live_unavailable"); stopSonarStream(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
+  window.addEventListener("online", () => { syncOpzSweepAnimation(); syncSonarStream(); if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); } });
   setInterval(() => {
     if (authenticated() && lastSuccess && performance.now() - lastSuccess > 4500) setConnection("stale");
     else if (linkState === "stale") renderConnection();
@@ -4364,6 +5043,334 @@
       renderActionState();
     }
   }, 1000);
+
+  // ---- Station tabs -----------------------------------------------------
+  // One tab per station this client holds, in fixed station order. The digit on
+  // a tab is its station number (1-9), also usable as a hotkey.
+  const stationTabText = {bridge: "tab_bridge", sonar: "tab_sonar", weapons: "tab_weapons", damage: "tab_damage",
+    opz: "tab_opz", radio: "tab_radio", engine: "tab_engine", helicopter: "tab_helicopter", eloka: "tab_eloka"};
+  function renderStationTabs(leased, shown) {
+    const bar = $("station-tabs");
+    const signature = leased.map((station) => `${station}:${t(stationTabText[station])}`).join("|");
+    if (bar.dataset.signature !== signature) {
+      bar.replaceChildren(...leased.map((station) => {
+        const tab = node("button", undefined, "station-tab");
+        tab.type = "button";
+        tab.id = `station-tab-${station}`;
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-controls", "panel-operations");
+        tab.dataset.station = station;
+        tab.setAttribute("aria-label", t(`station_${station}`));
+        tab.append(node("span", String(stationNames.indexOf(station) + 1), "station-key"),
+          node("span", t(stationTabText[station]), "station-name"));
+        tab.addEventListener("click", () => chooseStation(station));
+        tab.addEventListener("keydown", (event) => {
+          const tabs = [...bar.children];
+          let index = tabs.indexOf(tab);
+          if (event.key === "ArrowRight") index = (index + 1) % tabs.length;
+          else if (event.key === "ArrowLeft") index = (index - 1 + tabs.length) % tabs.length;
+          else if (event.key === "Home") index = 0;
+          else if (event.key === "End") index = tabs.length - 1;
+          else return;
+          event.preventDefault();
+          tabs[index].focus();
+          chooseStation(tabs[index].dataset.station);
+        });
+        return tab;
+      }));
+      bar.dataset.signature = signature;
+    }
+    for (const tab of bar.children) {
+      const on = tab.dataset.station === shown;
+      tab.setAttribute("aria-selected", String(on));
+      tab.tabIndex = on ? 0 : -1;
+      tab.title = `${t(`station_${tab.dataset.station}`)} \u00b7 ${t("station_tab_hint", {key: stationNames.indexOf(tab.dataset.station) + 1})}`;
+    }
+  }
+
+  function stepStation(delta) {
+    const held = stationNames.filter((station) => session?.stations[station].status === "mine");
+    if (held.length < 2) return;
+    const index = held.indexOf(activatingStation ?? session.station);
+    chooseStation(held[(index + delta + held.length) % held.length]);
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (!session?.station || event.ctrlKey || event.altKey || event.metaKey || event.isComposing ||
+        event.repeat || $("operations").hidden) return;
+    const target = event.target;
+    if (target instanceof Element && (target.closest("input, select, textarea, dialog[open]") ||
+        target.isContentEditable)) return;
+    if (/^[1-9]$/.test(event.key)) {
+      const station = stationNames[Number(event.key) - 1];
+      if (session.stations[station].status === "mine") { event.preventDefault(); chooseStation(station); }
+    } else if (event.key === "[" || event.key === "]") {
+      event.preventDefault();
+      stepStation(event.key === "]" ? 1 : -1);
+    }
+  });
+
+  // ---- Solo host surface --------------------------------------------------
+  const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppeljagd: "scenario_s2_doppeljagd",
+    s3_abfang: "scenario_s3_abfang", s4_zufall: "scenario_s4_zufall"};
+  const levelText = {leicht: "level_leicht", normal: "level_normal", harte: "level_harte", hardcore: "level_hardcore"};
+  const hostResultText = {ok: "host_result_ok", phase_blocked: "host_result_phase_blocked",
+    no_save: "host_result_no_save", save_failed: "host_result_save_failed",
+    session_revoked: "host_result_session_revoked", stale_world_session: "host_result_stale",
+    stale_world_epoch: "host_result_stale", stale_generation: "host_result_stale",
+    role_revoked: "host_result_revoked", expired: "host_result_stale",
+    context_invalidated: "host_result_stale"};
+
+  function validateHost(value) {
+    const fields = ["epoch", "level", "levels", "paused", "phase", "protocol", "scenario", "scenarios", "session", "slots", "time_scale", "world_mode"];
+    if (!exactKeys(value, fields) || value.protocol !== 2 || typeof value.session !== "string" ||
+        !Number.isSafeInteger(value.epoch) || value.epoch < 0 ||
+        !Object.hasOwn(phases, value.phase) || typeof value.paused !== "boolean" ||
+        !exactKeys(value.time_scale, ["index", "steps"]) || !Number.isSafeInteger(value.time_scale.index) ||
+        !boundedArray(value.time_scale.steps, 12) || !value.time_scale.steps.every((step) => Number.isSafeInteger(step) && step > 0) ||
+        value.time_scale.index < 0 || value.time_scale.index >= value.time_scale.steps.length ||
+        !["fixed", "procedural"].includes(value.world_mode) || typeof value.scenario !== "string" ||
+        typeof value.level !== "string" || !boundedArray(value.levels, 8) || !value.levels.every((level) => typeof level === "string") ||
+        !boundedArray(value.scenarios, 8) || !value.scenarios.every((row) => exactKeys(row, ["key", "level"]) &&
+          typeof row.key === "string" && (row.level === null || typeof row.level === "string")) ||
+        !boundedArray(value.slots, 8) || !value.slots.every((row) => exactKeys(row, ["slot", "saved", "modified"]) &&
+          Number.isSafeInteger(row.slot) && row.slot >= 1 && typeof row.saved === "boolean" &&
+          (row.modified === null || Number.isSafeInteger(row.modified)))) throw new Error("protocol");
+  }
+
+  async function pollHost(context) {
+    try {
+      const next = await request("/host", {guard: () => context === generation});
+      if (context !== generation) return;
+      validateHost(next);
+      hostView = next;
+    } catch (error) {
+      // The host surface can be withdrawn while the session lives: 403 only
+      // means "refresh the session", it is not an expired login.
+      if (error.status !== 403) throw error;
+      hostView = null;
+      lastSessionFetch = 0;
+    }
+    if (hostPending) await pollHostResult(context);
+  }
+
+  const hostPhaseAllows = (kind) => {
+    const phase = hostView?.phase;
+    return kind === "any" ? phase === "live" || phase === "paused" :
+      phase === "live" || phase === "paused" || phase === "menu" || phase === "ended";
+  };
+
+  function hostUnavailableReason(control) {
+    if (!hostView) return unavailable("connection_syncing");
+    if (hostPending) return unavailable("host_pending");
+    if (!connected) return unavailable("connection_stale", {age: 0});
+    if (hostView.phase === "blocked") return unavailable("host_blocked");
+    if (control.dataset.slot && !hostView.slots.find((row) => String(row.slot) === control.dataset.slot)?.saved) {
+      return unavailable("host_slot_empty");
+    }
+    return unavailable("host_phase");
+  }
+
+  function renderHost() {
+    const active = session?.host !== null && session !== null;
+    $("host-bar").hidden = !active;
+    const menu = active && hostView?.phase === "menu";
+    $("host-screen").hidden = !menu || simlogActive();
+    if (!active) return;
+    const ready = Boolean(hostView) && !hostPending && connected;
+    const any = ready && hostPhaseAllows("any");
+    const replacing = ready && hostPhaseAllows("replacing");
+    $("host-pause").disabled = !any;
+    $("host-pause").setAttribute("aria-pressed", String(hostView?.paused === true));
+    $("host-pause").textContent = t(hostView?.paused ? "host_resume" : "host_pause");
+    const select = $("host-time-scale");
+    const steps = hostView?.time_scale.steps ?? [];
+    const signature = steps.join(",");
+    if (select.dataset.steps !== signature) {
+      select.replaceChildren(...steps.map((step, index) => {
+        const option = node("option", `${step}×`);
+        option.value = String(index);
+        return option;
+      }));
+      select.dataset.steps = signature;
+    }
+    if (hostView && document.activeElement !== select) select.value = String(hostView.time_scale.index);
+    select.disabled = !any;
+    $("host-save").disabled = !any;
+    $("host-load").disabled = !replacing;
+    $("host-new").disabled = !replacing;
+    $("host-instructor").disabled = !any;
+    $("host-screen-new").disabled = !replacing;
+    $("host-screen-load").disabled = !replacing;
+    $("host-new-start").disabled = !replacing;
+    for (const button of $("host-slot-list").querySelectorAll("button")) {
+      button.disabled = !replacing || (button.dataset.mode === "load" &&
+        !hostView.slots.find((row) => String(row.slot) === button.dataset.slot)?.saved);
+    }
+    const text = hostMessage ? t(hostMessage.key, hostMessage.values ?? {}) : "";
+    for (const id of ["host-status", "host-screen-status"]) {
+      $(id).textContent = text;
+      $(id).dataset.status = hostMessage?.status ?? "";
+    }
+  }
+
+  function setHostMessage(message) {
+    hostMessage = message;
+    clearTimeout(hostMessageTimer);
+    if (message && message.status !== "pending") {
+      hostMessageTimer = setTimeout(() => { hostMessage = null; renderHost(); }, 6000);
+    }
+    renderHost();
+  }
+
+  async function sendHostAction(action, params) {
+    if (!session?.host || !hostView || hostPending || !connected) return;
+    let id;
+    try { id = secureId(); } catch (_) {
+      setHostMessage({key: "command_no_crypto", status: "rejected"});
+      return;
+    }
+    const body = Object.freeze({protocol: 2, id, seq: nextCommandSeq, station: "host",
+      station_generation: session.host.generation, active_generation: 0,
+      world_session: hostView.session, world_epoch: hostView.epoch, resource_revision: 0,
+      action, params: Object.freeze(params)});
+    hostPending = {id, seq: body.seq, action};
+    setHostMessage({key: "host_result_pending", status: "pending"});
+    const context = generation;
+    try {
+      await request("/commands", {method: "POST", body, expected: 202, csrf: session.csrf,
+        guard: () => context === generation && hostPending?.id === id});
+      nextCommandSeq += 1;
+      clearTimeout(pollTimer);
+      if (!polling) poll();
+    } catch (error) {
+      if (context !== generation || hostPending?.id !== id || error.message === "cancelled") return;
+      hostPending = null;
+      if (error.status === 401) forgetSession("connection_expired");
+      else if (error.status === 409 || error.status === 403) {
+        lastSessionFetch = 0;
+        setHostMessage({key: "host_result_stale", status: "rejected"});
+      } else setHostMessage({key: "host_result_rejected", status: "rejected"});
+    }
+  }
+
+  async function pollHostResult(context) {
+    const command = hostPending;
+    const payload = await request("/results", {guard: () => context === generation && hostPending === command});
+    if (context !== generation || hostPending !== command || !exactKeys(payload, ["protocol", "results"]) ||
+        payload.protocol !== 2 || !boundedArray(payload.results, 64)) throw new Error("results");
+    const result = payload.results.find((item) => exactKeys(item, ["id", "seq", "status", "reasoncode"]) &&
+      item.id === command.id && item.seq === command.seq && ["applied", "rejected"].includes(item.status) &&
+      typeof item.reasoncode === "string" && item.reasoncode.length <= 64);
+    if (!result) return;
+    hostPending = null;
+    setHostMessage({key: hostResultText[result.reasoncode] ?? "host_result_rejected",
+      status: result.status});
+  }
+
+  function closeHostDialog(dialog) { if (dialog.open) dialog.close(); }
+  for (const id of ["host-slot-dialog", "host-new-dialog", "instructor-dialog"]) {
+    $(id).addEventListener("close", () => { $(id).hidden = true; });
+  }
+  $("host-slot-cancel").addEventListener("click", () => closeHostDialog($("host-slot-dialog")));
+  $("host-new-cancel").addEventListener("click", () => closeHostDialog($("host-new-dialog")));
+  $("instructor-cancel").addEventListener("click", () => closeHostDialog($("instructor-dialog")));
+
+  function openSlotDialog(mode) {
+    if (!hostView) return;
+    const dialog = $("host-slot-dialog");
+    $("host-slot-title").textContent = t(mode === "save" ? "host_save_title" : "host_load_title");
+    $("host-slot-note").textContent = t(mode === "save" ? "host_save_note" : "host_load_note");
+    $("host-slot-list").replaceChildren(...hostView.slots.map((row) => {
+      const item = node("li");
+      const button = node("button", t(row.saved ? "host_slot_saved" : "host_slot_empty_label", {
+        slot: row.slot, time: row.modified === null ? "" : new Date(row.modified * 1000).toLocaleString(language)}));
+      button.type = "button";
+      button.dataset.slot = String(row.slot);
+      button.dataset.mode = mode;
+      button.disabled = mode === "load" && !row.saved;
+      button.addEventListener("click", () => {
+        closeHostDialog(dialog);
+        sendHostAction(mode === "save" ? "host_save" : "host_load", {slot: row.slot});
+      });
+      item.append(button);
+      return item;
+    }));
+    renderDisabledReasons();
+    dialog.hidden = false;
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelector("button:not(:disabled)")?.focus();
+  }
+
+  function syncNewGameLevel() {
+    const scenario = hostView?.scenarios.find((row) => row.key === $("host-new-scenario").value);
+    const free = scenario?.level === null;
+    $("host-new-level").disabled = !free;
+    $("host-new-scenario-note").textContent = scenario ? t(free ? "host_new_level_free" : "host_new_level_fixed",
+      {level: t(levelText[scenario.level] ?? "unknown")}) : "";
+    if (!free && scenario) $("host-new-level").value = scenario.level;
+  }
+
+  function openNewGameDialog() {
+    if (!hostView) return;
+    const dialog = $("host-new-dialog");
+    $("host-new-scenario").replaceChildren(...hostView.scenarios.map((row) => {
+      const option = node("option", t(scenarioText[row.key] ?? "unknown"));
+      option.value = row.key;
+      return option;
+    }));
+    $("host-new-level").replaceChildren(...hostView.levels.map((level) => {
+      const option = node("option", t(levelText[level] ?? "unknown"));
+      option.value = level;
+      return option;
+    }));
+    $("host-new-scenario").value = hostView.scenario;
+    $("host-new-world").value = hostView.world_mode;
+    $("host-new-level").value = hostView.level;
+    $("host-new-seed").value = "";
+    syncNewGameLevel();
+    renderDisabledReasons();
+    dialog.hidden = false;
+    if (!dialog.open) dialog.showModal();
+    $("host-new-scenario").focus();
+  }
+
+  $("host-new-scenario").addEventListener("change", syncNewGameLevel);
+  $("host-new-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!$("host-new-form").reportValidity()) return;
+    const params = {scenario: $("host-new-scenario").value, world_mode: $("host-new-world").value};
+    if (!$("host-new-level").disabled) params.level = $("host-new-level").value;
+    if ($("host-new-seed").value.trim()) params.seed = $("host-new-seed").valueAsNumber;
+    closeHostDialog($("host-new-dialog"));
+    sendHostAction("host_new_game", params);
+  });
+  $("host-pause").addEventListener("click", () => sendHostAction(hostView?.paused ? "host_resume" : "host_pause", {}));
+  $("host-time-scale").addEventListener("change", () => {
+    const index = Number($("host-time-scale").value);
+    if (Number.isSafeInteger(index)) sendHostAction("host_time_scale", {index});
+  });
+  for (const id of ["host-save"]) $(id).addEventListener("click", () => openSlotDialog("save"));
+  for (const id of ["host-load", "host-screen-load"]) $(id).addEventListener("click", () => openSlotDialog("load"));
+  for (const id of ["host-new", "host-screen-new"]) $(id).addEventListener("click", openNewGameDialog);
+  $("host-instructor").addEventListener("click", () => {
+    if (!hostView) return;
+    const dialog = $("instructor-dialog");
+    const sea = v2State?.environment?.sea_state;
+    $("instructor-sea-state").value = String(Number.isSafeInteger(sea) ? sea : 3);
+    $("instructor-event").value = "";
+    dialog.hidden = false;
+    if (!dialog.open) dialog.showModal();
+    $("instructor-sea-state").focus();
+  });
+  $("instructor-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const seaState = Number($("instructor-sea-state").value);
+    if (!Number.isSafeInteger(seaState) || seaState < 0 || seaState > 6) return;
+    closeHostDialog($("instructor-dialog"));
+    sendHostAction("host_instructor_environment", {sea_state: seaState,
+      event: $("instructor-event").value || null});
+  });
 
   async function bootstrap() {
     const resumed = await resumeSession();

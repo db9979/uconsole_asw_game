@@ -8,6 +8,7 @@ Fixes fuer eine fluessige Darstellung zwischen den ~15-30s REST-Polls.
 from __future__ import annotations
 
 import math
+import hashlib
 
 from src.core import config
 
@@ -34,7 +35,13 @@ class LiveAircraft:
         self.icao24 = icao24
         self.callsign = (callsign or "").strip() or None
         self.seq = seq
-        self.sensor_seed = hash(icao24) & 0xFFFFFFFF
+        # Python's hash is deliberately randomized between processes.  Live
+        # traffic still needs a stable seed because its radar activity is a
+        # transparent gameplay assumption, never a fact obtained from ADS-B.
+        self.sensor_seed = int.from_bytes(
+            hashlib.blake2s(icao24.lower().encode("ascii", "strict"),
+                            digest_size=4,
+                            person=b"ujagdair").digest(), "big")
         self.x = float(x)
         self.y = float(y)
         self.altitude_m = float(altitude_m)
@@ -54,6 +61,11 @@ class LiveAircraft:
         self._prev_fix = self._curr_fix
         self._curr_fix = _Fix(float(x), float(y), float(altitude_m),
                               float(course) % 360.0, float(speed_kn), t)
+
+    @property
+    def last_fix_at(self) -> float:
+        """Zeitstempel des zuletzt empfangenen ADS-B-Fixes (fuer Aging/Pruning)."""
+        return self._curr_fix.t
 
     def advance(self, now: float) -> None:
         """Interpoliert (oder extrapoliert) Position/Hoehe/Kurs auf ``now``."""

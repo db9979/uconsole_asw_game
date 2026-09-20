@@ -13,6 +13,7 @@ from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
+from src.sensors.esm import animated_signal_fingerprint, spectrum_band
 from src.ui import layout
 from src.ui import nato_symbols
 from src.ui import observations
@@ -459,7 +460,8 @@ def _helo_dip_contact_line(game) -> str:
     age = max(0.0, game.sim_t - selected.dip_last_seen)
     released = localize("common.yes" if selected.released_to_opz else "common.no")
     return message(
-        "helo.dip_contact_line", contact=selected.id,
+        "helo.dip_contact_line",
+        contact=observations.contact_display_id(game, selected),
         bearing=f"{selected.dip_bearing:05.1f}", age=f"{age:.0f}",
         count=len(contacts), released=released)
 
@@ -471,6 +473,7 @@ def _track_tooltip(game, track):
     displayed_range = observations.range_nm(track, ship)
     distance = f"{displayed_range:.1f}" if displayed_range is not None else "--"
     quality = track.display_quality(game.sim_t, game.air_picture.stale_s)
+    pending = game.live_engagement_pending_for_observation(track.track_id)
     return layout.tooltip_payload(
         message("opz.tooltip.track_title", track=track.label,
                 label=display_value("classification",
@@ -479,10 +482,13 @@ def _track_tooltip(game, track):
                 affiliation=display_value('affiliation', affiliation)),
         observations.format_bearing_pair(track, ship),
         message("opz.tooltip.range", range=distance),
+        message("opz.tooltip.altitude", altitude=f"{track.altitude_m:.0f}")
+        if getattr(track, "altitude_m", None) is not None else None,
         message("opz.tooltip.quality_age", quality=f"{quality:.0%}", age=f"{track.age(game.sim_t):.1f}"),
         message("observation.fix_age", age=f"{observations.position_age(track, game.sim_t):.1f}")
         if observations.position_age(track, game.sim_t) is not None else None,
         message("opz.tooltip.source", source=track.source),
+        message("runtime.cic.hostile_confirm_required", track=track.label) if pending else None,
         target_id=f"opz:track:{track.track_id}")
 
 
@@ -587,13 +593,17 @@ def station_hit_target(game, pos):
                         modulation=localize("eloka.modulation." + inspected.modulation_code)),
                 message("eloka.tooltip.annotation",
                         assignment=annotation or localize("common.unknown")),
-                "control.eloka",
+                message("control.eloka", audio=localize(
+                    "ui.on" if getattr(game, "eloka_audio_enabled", True)
+                    else "ui.off")),
                 target_id=f"eloka:{inspected.track_key}")
         return layout.tooltip_payload(
             "eloka.tooltip.picture_title",
             message("eloka.tooltip.track_count", count=len(game.eloka_tracks())),
             "eloka.tooltip.observation_limit",
-            "control.eloka",
+            message("control.eloka", audio=localize(
+                "ui.on" if getattr(game, "eloka_audio_enabled", True)
+                else "ui.off")),
             target_id="eloka:picture")
     if game.station is Station.BRIDGE:
         from src.core.commands import STATION_PAGES
@@ -789,11 +799,67 @@ def eloka_regions(station_rect=None, page=0) -> dict[str, pygame.Rect]:
 
 
 def _eloka_visible_tracks(game) -> tuple:
-    tracks = game.eloka_tracks()
+    tracks = game.eloka_visible_tracks()
     selected = next((index for index, track in enumerate(tracks)
                      if track.track_key == game.eloka_selected_track_key), 0)
     start = max(0, min(selected - 5, max(0, len(tracks) - 11)))
     return tracks[start:start + 11]
+
+
+def _draw_eloka_signal(surface, rect, track, now: float, channel=None) -> None:
+    """Draw normalized RF spectrum and modulation samples from observations."""
+    rect = pygame.Rect(rect)
+    if rect.w < 80 or rect.h < 70:
+        return
+    pygame.draw.rect(surface, (8, 18, 16), rect)
+    pygame.draw.rect(surface, config.COLOR_SONAR_RING, rect, 1)
+    title_h = 24
+    layout.blit_line(surface, "eloka.heading.signal_fingerprint",
+                     (rect.x + 7, rect.y + 3, rect.w - 14, title_h),
+                     config.COLOR_TEXT, size=16)
+    graph = pygame.Rect(rect.x + 7, rect.y + title_h + 3,
+                        rect.w - 14, rect.h - title_h - 9)
+    split = graph.y + graph.h // 2
+    for fraction in (.25, .5, .75):
+        x = graph.x + round(graph.w * fraction)
+        pygame.draw.line(surface, (24, 50, 44), (x, graph.y),
+                         (x, graph.bottom), 1)
+    pygame.draw.line(surface, (36, 72, 62), (graph.x, split),
+                     (graph.right, split), 1)
+    fingerprint = animated_signal_fingerprint(
+        track, now,
+        technique=None if channel is None else channel.technique,
+        effectiveness=0.0 if channel is None else channel.effectiveness,
+        samples=48, bins=40)
+    status = (message("eloka.signal.memory", age=f"{track.age(now):.0f}")
+              if fingerprint.memory_hold else localize("eloka.signal.live"))
+    layout.blit_line(surface, status,
+                     (rect.x + rect.w // 2, rect.y + 3,
+                      rect.w // 2 - 7, title_h),
+                     config.COLOR_TEXT_DIM if fingerprint.memory_hold
+                     else config.COLOR_OK, size=14, align="right")
+    def faded(color):
+        scale = .35 + .65 * fingerprint.intensity
+        return tuple(round(component * scale) for component in color)
+
+    spectrum_h = max(8, split - graph.y - 4)
+    spectrum_points = [(
+        graph.x + round(index * (graph.w - 1)
+                        / max(1, len(fingerprint.spectrum) - 1)),
+        split - 3 - round(value * spectrum_h))
+        for index, value in enumerate(fingerprint.spectrum)]
+    if len(spectrum_points) > 1:
+        pygame.draw.lines(surface, faded(config.COLOR_WARN), False,
+                          spectrum_points, 2)
+    wave_mid = split + max(4, (graph.bottom - split) // 2)
+    wave_amp = max(3, (graph.bottom - split) // 2 - 4)
+    wave_points = [(
+        graph.x + round(index * (graph.w - 1)
+                        / max(1, len(fingerprint.waveform) - 1)),
+        wave_mid - round(value * wave_amp))
+        for index, value in enumerate(fingerprint.waveform)]
+    if len(wave_points) > 1:
+        pygame.draw.lines(surface, faded(config.COLOR_OK), False, wave_points, 2)
 
 
 def eloka_track_at(game, pos, station_rect=None):
@@ -805,7 +871,7 @@ def eloka_track_at(game, pos, station_rect=None):
     regions = eloka_regions(station_rect, page=page)
     if not regions["picture"].collidepoint(pos):
         return None
-    row_y = regions["picture"].y + layout.font(18).get_linesize() + 16
+    row_y = regions["picture"].y + layout.font(18).get_linesize() + 58
     row_height = 40
     tracks = _eloka_visible_tracks(game)
     for index, track in enumerate(tracks):
@@ -835,8 +901,22 @@ def draw_eloka_view(game, tr=None) -> None:
                               color=config.COLOR_DANGER, size=18)
         else:
             row_h = max(42, layout.font(18).get_linesize() + 14)
-            capacity = max(1, (box[3] - row_h - 34) // row_h)
+            capacity = max(1, (box[3] - row_h - 76) // row_h)
             tracks = _eloka_visible_tracks(game)[:capacity]
+            total = len(game.eloka_tracks())
+            visible = len(game.eloka_visible_tracks())
+            layout.blit_line(surface, message(
+                "eloka.filter.summary", status=localize(
+                    "eloka.filter.status." + game.eloka_status_filter.lower()),
+                threat=localize(
+                    "eloka.filter.threat." + game.eloka_threat_filter.lower()),
+                band=localize("eloka.filter.band." + game.eloka_band_filter.lower())),
+                (bx, by, bw, 22), config.COLOR_TEXT_DIM, size=15)
+            by += 23
+            layout.blit_line(surface, message(
+                "eloka.filter.count", visible=visible, total=total),
+                (bx, by, bw, 20), config.COLOR_TEXT_DIM, size=14)
+            by += 23
             if not tracks:
                 layout.blit_block(surface, "eloka.state.empty", bx, by, bw, 48,
                                   color=config.COLOR_TEXT_DIM, size=17)
@@ -864,7 +944,11 @@ def draw_eloka_view(game, tr=None) -> None:
                     size=18)
                 by += row_h
             footer_y = box[1] + box[3] - 26
-            layout.blit_line(surface, "control.eloka",
+            layout.blit_line(surface, message(
+                                 "control.eloka",
+                                 audio=localize("ui.on" if getattr(
+                                     game, "eloka_audio_enabled", True)
+                                     else "ui.off")),
                              (bx, footer_y, bw, 22),
                              config.COLOR_TEXT_DIM, size=15)
     else:
@@ -878,58 +962,110 @@ def draw_eloka_view(game, tr=None) -> None:
         else:
             modulation = localize("eloka.modulation." + selected.modulation_code)
             prf = f"{selected.prf_hz:.0f} Hz" if selected.prf_hz is not None else "--"
+            analysis = game.eloka_analysis(selected)
+            channel = next((item for item in game.ecm_jammer.channels
+                            if item.track_key == selected.track_key), None)
             values = (
                 ("eloka.field.intercept", selected.track_key),
                 ("eloka.field.bearing", message("eloka.value.bearing",
                                                  bearing=f"{selected.bearing:05.1f}",
                                                  error=f"{selected.bearing_uncertainty_deg:.1f}")),
                 ("eloka.field.frequency", message("eloka.value.frequency",
-                                                   frequency=f"{selected.frequency_hz / 1e9:.3f}")),
+                                                   frequency=f"{selected.frequency_hz / 1e9:.3f}")
+                 + " / " + localize("eloka.band." + spectrum_band(
+                     selected.frequency_hz).value)),
                 ("eloka.field.prf", prf),
                 ("eloka.field.modulation", modulation),
                 ("eloka.field.quality_age", message(
                     "eloka.value.quality_age",
                     quality=f"{selected.display_quality(game.sim_t):.0%}",
                     age=f"{selected.age(game.sim_t):.1f}")),
+                ("eloka.field.radar_type", localize(
+                    "eloka.radar_type." + (analysis.radar_type.value
+                    if analysis is not None and analysis.radar_type is not None
+                    else "surface_search"))),
+                ("eloka.field.threat", localize(
+                    "eloka.threat." + (analysis.threat_level
+                    if analysis is not None else "unknown"))),
+                ("eloka.field.synthetic", localize(
+                    "eloka.value.synthetic" if selected.synthetic_assumption
+                    else "eloka.value.observed")),
+                ("eloka.field.ecm", localize("eloka.value.ecm_off") if channel is None
+                 else message("eloka.value.ecm_detail",
+                              technique=localize("eloka.technique." + channel.technique),
+                              effectiveness=f"{channel.effectiveness:.0%}",
+                              power=f"{channel.power_draw:.0%}",
+                              lock=localize("ui.on" if channel.is_locked_on else "ui.off"))),
                 ("eloka.field.annotation",
                  game.eloka_annotation_name(selected.track_key) or localize("common.unknown")),
             )
-            for label, value in values:
-                layout.status_line(surface, rx, ry, rw, label, value,
-                                   label_w=230, size=18)
-                ry += 32
-            ry += 6
-            layout.blit_line(surface, "eloka.heading.candidates", (rx, ry, rw, 24),
-                             config.COLOR_TEXT, size=17)
-            ry += 26
-            for candidate in game.eloka_candidates(selected)[:4]:
-                layout.blit_line(surface, message(
-                    "eloka.line.candidate",
-                    emitter=game.eloka_emitter_name(candidate.emitter_key)
-                    or candidate.emitter_key,
-                    score=f"{candidate.score:.0%}"), (rx, ry, rw, 24),
-                    config.COLOR_TEXT_DIM, size=16)
-                ry += 26
-            ry += 5
-            layout.blit_line(surface, "eloka.heading.correlations", (rx, ry, rw, 24),
-                             config.COLOR_TEXT, size=17)
-            ry += 26
-            correlations = game.eloka_correlations(selected)
-            if not correlations:
-                layout.blit_line(surface, "eloka.correlation.none", (rx, ry, rw, 24),
-                                 config.COLOR_TEXT_DIM, size=16)
-                ry += 26
-            else:
-                for correlation in correlations[:3]:
+            # Details and analysis used to be stacked into one column.  With
+            # radar type/threat/ECM added that exceeded the 510 px uConsole
+            # station height and painted over the footer.  Keep both columns
+            # inside one explicitly clipped content area instead.
+            footer_y = box[1] + box[3] - 26
+            content = pygame.Rect(rx, ry, rw, max(1, footer_y - ry - 8))
+            gap = 14
+            details_w = max(270, int(rw * .54))
+            analysis_x = rx + details_w + gap
+            analysis_w = max(1, rw - details_w - gap)
+            detail_step = max(27, layout.font(16).get_linesize() + 5)
+            with layout.clip_to(surface, content):
+                detail_y = ry
+                for label, value in values:
+                    if detail_y + detail_step > content.bottom:
+                        break
+                    layout.status_line(surface, rx, detail_y, details_w,
+                                       label, value, label_w=138, size=16)
+                    detail_y += detail_step
+
+                analysis_y = ry
+                signal_h = min(128, max(96, content.h // 3))
+                _draw_eloka_signal(
+                    surface, (analysis_x, analysis_y, analysis_w, signal_h),
+                    selected, game.sim_t, channel)
+                analysis_y += signal_h + 10
+                layout.blit_line(surface, "eloka.heading.candidates",
+                                 (analysis_x, analysis_y, analysis_w, 24),
+                                 config.COLOR_TEXT, size=17)
+                analysis_y += 28
+                for candidate in game.eloka_candidates(selected)[:3]:
                     layout.blit_line(surface, message(
-                        "eloka.line.correlation", source=correlation.source,
-                        track=correlation.track_id, score=f"{correlation.score:.0%}",
-                        ambiguity=localize("eloka.correlation.ambiguous")
-                        if correlation.ambiguous else ""),
-                        (rx, ry, rw, 24), config.COLOR_OK, size=16)
-                    ry += 26
+                        "eloka.line.candidate",
+                        emitter=game.eloka_emitter_name(candidate.emitter_key)
+                        or candidate.emitter_key,
+                        score=f"{candidate.score:.0%}"),
+                        (analysis_x, analysis_y, analysis_w, 25),
+                        config.COLOR_TEXT_DIM, size=16)
+                    analysis_y += 28
+                analysis_y += 8
+                layout.blit_line(surface, "eloka.heading.correlations",
+                                 (analysis_x, analysis_y, analysis_w, 24),
+                                 config.COLOR_TEXT, size=17)
+                analysis_y += 28
+                correlations = game.eloka_correlations(selected)
+                if not correlations:
+                    layout.blit_line(surface, "eloka.correlation.none",
+                                     (analysis_x, analysis_y, analysis_w, 25),
+                                     config.COLOR_TEXT_DIM, size=16)
+                else:
+                    for correlation in correlations[:2]:
+                        layout.blit_line(surface, message(
+                            "eloka.line.correlation", source=correlation.source,
+                            track=correlation.track_id,
+                            score=f"{correlation.score:.0%}",
+                            ambiguity=localize("eloka.correlation.ambiguous")
+                            if correlation.ambiguous else ""),
+                            (analysis_x, analysis_y, analysis_w, 25),
+                            config.COLOR_OK, size=16)
+                        analysis_y += 28
         footer_y = box[1] + box[3] - 26
-        layout.blit_line(surface, "control.eloka", (rx, footer_y, rw, 22),
+        layout.blit_line(surface, message(
+                             "control.eloka",
+                             audio=localize("ui.on" if getattr(
+                                 game, "eloka_audio_enabled", True)
+                                 else "ui.off")),
+                         (rx, footer_y, rw, 22),
                          config.COLOR_TEXT_DIM, size=15)
 
 
@@ -1416,10 +1552,12 @@ def draw_opz_view(game, tr=None) -> None:
                                     weather=localize(weather_key)),
                             label_w=70, size=15, color=weather_color)
         py += 26
-        ais_count = sum(1 for t in cic_tracks if t["kind"] == "AIS")
+        surface_count = sum(1 for t in cic_tracks
+                            if t["kind"] in ("SURFACE", "AIS"))
         hoj_count = sum(1 for t in cic_tracks if t["source"] == "HOJ")
         layout.status_line(s, x, py, w, "ui.picture",
-                            message("opz.line.picture", ais=ais_count, hoj=hoj_count),
+                            message("opz.line.picture", surface=surface_count,
+                                    hoj=hoj_count),
                             label_w=80, size=15)
         py += 26
         layout.status_line(s, x, py, w, "VLS:",
@@ -1438,16 +1576,22 @@ def draw_opz_view(game, tr=None) -> None:
         py += 30
         pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
         py += 8
-        layout.blit_block(s, "opz.tracks_heading", x, py, w, 22,
-                           color=config.COLOR_TEXT, size=16)
+        contact_filter = getattr(game, "opz_contact_filter", "ALL")
+        layout.blit_block(s, message(
+            "opz.tracks_heading_filtered",
+            filter=display_value("contact_filter", contact_filter)),
+            x, py, w, 22, color=config.COLOR_TEXT, size=16)
         py += 24
         content_bottom = regions["classify"].top - 7
         max_rows = max(0, (content_bottom - py) // 28)
-        selected_index = next((i for i, track in enumerate(cic_tracks)
+        register_tracks = (game.filtered_opz_tracks()
+                           if hasattr(game, "filtered_opz_tracks")
+                           else cic_tracks)
+        selected_index = next((i for i, track in enumerate(register_tracks)
                                if track["track_id"] == selected_id), 0)
         start = max(0, min(selected_index - max_rows // 2,
-                           max(0, len(cic_tracks) - max_rows)))
-        for track in cic_tracks[start:start + max_rows]:
+                           max(0, len(register_tracks) - max_rows)))
+        for track in register_tracks[start:start + max_rows]:
             affiliation = game.opz_affiliation(track["track_id"])
             domain = nato_symbols.domain_for_kind(track["kind"])
             color = nato_symbols.AFFILIATION_COLORS[affiliation]
@@ -1485,8 +1629,13 @@ def draw_opz_view(game, tr=None) -> None:
                  if observations.range_nm(selected, game.ship) is not None else "opz.line.range_unavailable"),
                 (message("opz.line.course_available", course=f"{selected.course:03.0f}")
                  if selected.course is not None else "opz.line.course_unavailable"),
-                (message("opz.line.depth_available", depth=f"{selected.depth_m:.0f}")
-                 if selected.depth_m is not None else "opz.line.depth_unavailable"),
+                ((message("opz.line.altitude_available",
+                          altitude=f"{selected.altitude_m:.0f}")
+                  if getattr(selected, "altitude_m", None) is not None
+                  else "opz.line.altitude_unavailable")
+                 if domain == "AIR" else
+                 (message("opz.line.depth_available", depth=f"{selected.depth_m:.0f}")
+                  if selected.depth_m is not None else "opz.line.depth_unavailable")),
                 (message("opz.line.speed_available", speed=f"{selected.speed_kn:.1f}")
                  if selected.speed_kn is not None else "opz.line.speed_unavailable"),
                 (message("opz.line.ages_quality", observation_age=f"{selected.age(game.sim_t):.0f}",

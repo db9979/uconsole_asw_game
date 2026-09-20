@@ -7,11 +7,13 @@ keine Workstation: kein Targeting, rein lesend, ohne Input-Effekt auf die
 Simulation.
 """
 
+import math
+
 import pygame
 
 from src.core import config
 from src.core.i18n import display_value, localize
-from src.ui import layout
+from src.ui import layout, simlog_map
 
 
 EVENT_TAIL = 80
@@ -42,6 +44,15 @@ def _b(value, tr):
     return tr("common.yes") if value else tr("common.no")
 
 
+def _distance_nm(row, ownship):
+    """Distance from own ship for a positioned SimLog truth row."""
+    values = (row.get("x"), row.get("y"), ownship.get("x"), ownship.get("y"))
+    if any(value is None for value in values):
+        return None
+    return math.hypot(float(values[0]) - float(values[2]),
+                      float(values[1]) - float(values[3]))
+
+
 def _table(title, headers, rows, danger=()):
     """Left-aligned monospace table; column width = widest cell per column.
 
@@ -68,111 +79,142 @@ def _unit_tables(snap, tr):
     col = {name: tr(f"simlog.view.col_{name}")
            for name in ("kind", "depth", "course", "speed", "state", "torps",
                         "damage", "sunk", "dead", "target", "life", "battery",
-                        "active", "jammer", "phase", "pending_asm")}
+                        "active", "jammer", "phase", "pending_asm", "name",
+                        "alt", "distance_own", "callsign", "imo", "ship_type",
+                        "destination", "draught", "length", "width",
+                        "nav_status", "ais_heading", "position_accuracy")}
+    distance = lambda row: _f(_distance_nm(row, snap["ship"]))
     out += _table(
         tr("simlog.view.subs"),
-        ("ID", "X", "Y", col["depth"], col["course"], col["speed"],
-         col["state"], col["torps"], col["sunk"]),
-        [(_i(s["id"]), _f(s["x"]), _f(s["y"]), _f(s["depth"]), _f(s["course"]),
-          _f(s["speed"]), str(s["state"]), _i(s["torps"]),
+        ("ID", "X", "Y", col["distance_own"], col["depth"], col["course"],
+         col["speed"], col["state"], col["torps"], col["sunk"]),
+        [(_i(s["id"]), _f(s["x"]), _f(s["y"]), distance(s), _f(s["depth"]),
+          _f(s["course"]), _f(s["speed"]), str(s["state"]), _i(s["torps"]),
           _b(s["sunk"], tr))
          for s in snap["subs"]],
         danger=[bool(s["sunk"]) for s in snap["subs"]],
     )
     out += _table(
         tr("simlog.view.surfaces"),
-        ("ID", "X", "Y", col["course"], col["speed"], col["damage"],
+        ("ID", col["kind"], col["name"], "MMSI", "X", "Y",
+         col["distance_own"], col["course"], col["speed"], col["damage"],
          col["sunk"]),
-        [(_i(w["id"]), _f(w["x"]), _f(w["y"]), _f(w["course"]),
+        [(_i(w["id"]), str(w["kind"]), w["name"] or "-", _i(w["mmsi"]),
+          _f(w["x"]), _f(w["y"]), distance(w), _f(w["course"]),
           _f(w["speed"]), _f(w["damage"]), _b(w["sunk"], tr))
          for w in snap["surfaces"]],
         danger=[bool(w["sunk"]) for w in snap["surfaces"]],
     )
+    ais_rows = [w for w in snap["surfaces"] if w["mmsi"] is not None]
+    out += _table(
+        tr("simlog.view.ais_identity"),
+        ("MMSI", col["name"], col["callsign"], col["imo"],
+         col["ship_type"], col["length"], col["width"]),
+        [(_i(w["mmsi"]), w["name"] or "-", w["callsign"] or "-",
+          _i(w["imo"]), _i(w["ship_type"]), _f(w["length_m"]),
+          _f(w["width_m"])) for w in ais_rows],
+    )
+    out += _table(
+        tr("simlog.view.ais_voyage"),
+        ("MMSI", col["destination"], col["draught"], col["nav_status"],
+         col["ais_heading"], col["position_accuracy"]),
+        [(_i(w["mmsi"]), w["destination"] or "-", _f(w["draught_m"]),
+          _i(w["nav_status"]), _f(w["ais_heading"]),
+          ("-" if w["position_accuracy"] is None
+           else _b(w["position_accuracy"], tr))) for w in ais_rows],
+    )
     out += _table(
         tr("simlog.view.torps"),
-        ("ID", "X", "Y", col["depth"], col["course"], col["state"],
-         col["target"]),
-        [(_i(t["id"]), _f(t["x"]), _f(t["y"]), _f(t["depth"]), _f(t["course"]),
-          str(t["state"]), _i(t["target"]))
+        ("ID", "X", "Y", col["distance_own"], col["depth"], col["course"],
+         col["state"], col["target"]),
+        [(_i(t["id"]), _f(t["x"]), _f(t["y"]), distance(t), _f(t["depth"]),
+          _f(t["course"]), str(t["state"]), _i(t["target"]))
          for t in snap["torpedoes"]],
     )
     out += _table(
         tr("simlog.view.enemy_torps"),
-        ("ID", "X", "Y", col["depth"], col["course"], col["state"]),
-        [(_i(t["id"]), _f(t["x"]), _f(t["y"]), _f(t["depth"]),
+        ("ID", "X", "Y", col["distance_own"], col["depth"], col["course"],
+         col["state"]),
+        [(_i(t["id"]), _f(t["x"]), _f(t["y"]), distance(t), _f(t["depth"]),
           _f(t["course"]), str(t["state"]))
          for t in snap["enemy_torpedoes"]],
     )
     out += _table(
         tr("simlog.view.decoys"),
-        ("ID", "X", "Y", col["depth"], col["life"], col["dead"]),
-        [(_i(d["id"]), _f(d["x"]), _f(d["y"]), _f(d["depth"]), _f(d["life"]),
-          _b(d["dead"], tr))
+        ("ID", "X", "Y", col["distance_own"], col["depth"], col["life"],
+         col["dead"]),
+        [(_i(d["id"]), _f(d["x"]), _f(d["y"]), distance(d), _f(d["depth"]),
+          _f(d["life"]), _b(d["dead"], tr))
          for d in snap["decoys"]],
         danger=[bool(d["dead"]) for d in snap["decoys"]],
     )
     out += _table(
         tr("simlog.view.asms"),
-        ("SEQ", "X", "Y", col["course"], col["state"], col["jammer"]),
-        [(_i(a["seq"]), _f(a["x"]), _f(a["y"]), _f(a["course"]),
-          str(a["state"]), _b(a["jammer"], tr))
+        ("SEQ", "X", "Y", col["distance_own"], col["course"], col["state"],
+         col["jammer"]),
+        [(_i(a["seq"]), _f(a["x"]), _f(a["y"]), distance(a),
+          _f(a["course"]), str(a["state"]), _b(a["jammer"], tr))
          for a in snap["asms"]],
     )
     out += _table(
         tr("simlog.view.essms"),
-        ("SEQ", "X", "Y", col["course"], col["state"]),
-        [(_i(e["seq"]), _f(e["x"]), _f(e["y"]), _f(e["course"]),
-          str(e["state"]))
+        ("SEQ", "X", "Y", col["distance_own"], col["course"], col["state"]),
+        [(_i(e["seq"]), _f(e["x"]), _f(e["y"]), distance(e),
+          _f(e["course"]), str(e["state"]))
          for e in snap["essms"]],
     )
     out += _table(
         tr("simlog.view.asrocs"),
-        ("SEQ", "X", "Y", col["course"], col["state"]),
-        [(_i(a["seq"]), _f(a["x"]), _f(a["y"]), _f(a["course"]),
-          str(a["state"]))
+        ("SEQ", "X", "Y", col["distance_own"], col["course"], col["state"]),
+        [(_i(a["seq"]), _f(a["x"]), _f(a["y"]), distance(a),
+          _f(a["course"]), str(a["state"]))
          for a in snap["asrocs"]],
     )
     out += _table(
         tr("simlog.view.nixies"),
-        ("SEQ", "X", "Y", col["depth"], col["dead"]),
-        [(_i(n["seq"]), _f(n["x"]), _f(n["y"]), _f(n["depth"]),
-          _b(n["dead"], tr))
+        ("SEQ", "X", "Y", col["distance_own"], col["depth"], col["dead"]),
+        [(_i(n["seq"]), _f(n["x"]), _f(n["y"]), distance(n),
+          _f(n["depth"]), _b(n["dead"], tr))
          for n in snap["nixies"]],
         danger=[bool(n["dead"]) for n in snap["nixies"]],
     )
     out += _table(
         tr("simlog.view.buoys"),
-        ("SEQ", "X", "Y", col["battery"], col["active"]),
-        [(_i(b["seq"]), _f(b["x"]), _f(b["y"]), _f(b["battery_s"]),
-          _b(b["active"], tr))
+        ("SEQ", "X", "Y", col["distance_own"], col["battery"], col["active"]),
+        [(_i(b["seq"]), _f(b["x"]), _f(b["y"]), distance(b),
+          _f(b["battery_s"]), _b(b["active"], tr))
          for b in snap["buoys"]],
     )
     out += _table(
         tr("simlog.view.flights"),
-        ("SEQ", "Kind", "X", "Y", col["course"]),
-        [(_i(f["seq"]), str(f["kind"]), _f(f["x"]), _f(f["y"]),
-          _f(f["course"]))
+        ("SEQ", col["kind"], col["name"], "ICAO24", "X", "Y",
+         col["distance_own"], col["course"], col["speed"], col["alt"]),
+        [(_i(f["seq"]), str(f["kind"]), f["callsign"] or "-",
+          f["icao24"] or "-", _f(f["x"]), _f(f["y"]), distance(f),
+          _f(f["course"]), _f(f["speed"]), _f(f["alt_m"], 0))
          for f in snap["flights"]],
     )
     out += _table(
         tr("simlog.view.raiders"),
-        ("SEQ", "X", "Y", col["course"], col["phase"], "HP",
-         col["pending_asm"]),
-        [(_i(r["seq"]), _f(r["x"]), _f(r["y"]), _f(r["course"]),
-          str(r["phase"]), _i(r["hp"]), _b(r["pending_asm"], tr))
+        ("SEQ", "X", "Y", col["distance_own"], col["course"], col["phase"],
+         "HP", col["pending_asm"]),
+        [(_i(r["seq"]), _f(r["x"]), _f(r["y"]), distance(r),
+          _f(r["course"]), str(r["phase"]), _i(r["hp"]),
+          _b(r["pending_asm"], tr))
          for r in snap["raiders"]],
     )
     helo = snap["helo"]
     out += _table(
         tr("simlog.view.helo"),
-        (col["state"], "X", "Y", col["active"]),
-        [(str(helo["state"]), _f(helo["x"]), _f(helo["y"]),
+        (col["state"], "X", "Y", col["distance_own"], col["active"]),
+        [(str(helo["state"]), _f(helo["x"]), _f(helo["y"]), distance(helo),
           _b(helo["airborne"], tr))],
     )
     out += _table(
         tr("simlog.view.animals"),
-        ("ID", "X", "Y", col["dead"]),
-        [(_i(a["id"]), _f(a["x"]), _f(a["y"]), _b(a["dead"], tr))
+        ("ID", "X", "Y", col["distance_own"], col["dead"]),
+        [(_i(a["id"]), _f(a["x"]), _f(a["y"]), distance(a),
+          _b(a["dead"], tr))
          for a in snap["animals"]],
         danger=[bool(a["dead"]) for a in snap["animals"]],
     )
@@ -256,22 +298,30 @@ def draw_simlog_view(game) -> None:
     footer_h = 36
     body = pygame.Rect(12, top.bottom + 4, config.SCREEN_W - 24,
                        config.SCREEN_H - top.bottom - footer_h - 12)
-    lines = _build_lines(game, tr)
-    visible = max(1, body.height // line_h)
-    max_scroll = max(0, len(lines) - visible)
-    game.simlog_view_scroll = min(game.simlog_view_scroll, max_scroll)
-    with layout.clip_to(s, body):
-        for index, (text, kind) in enumerate(
-                lines[game.simlog_view_scroll:
-                     game.simlog_view_scroll + visible]):
-            if not text:
-                continue
-            y = body.y + index * line_h
-            color = _COLORS.get(kind, config.COLOR_TEXT)
-            image = layout.font(15, bold=kind == SECTION).render(text, True,
-                                                                 color)
-            s.blit(image, (body.x, y))
-    hints = (f"{tr('simlog.view.close_hint')}   "
-             f"{tr('simlog.view.scroll_hint')}")
+    if game.simlog_view_map:
+        with layout.clip_to(s, body):
+            simlog_map.draw_map(game, tr, game._simlog_state_data(), body,
+                                game.simlog_map_fit)
+        hints = (f"{tr('simlog.view.close_hint')}   "
+                 f"{tr('simlog.view.map_hint')}")
+    else:
+        lines = _build_lines(game, tr)
+        visible = max(1, body.height // line_h)
+        max_scroll = max(0, len(lines) - visible)
+        game.simlog_view_scroll = min(game.simlog_view_scroll, max_scroll)
+        with layout.clip_to(s, body):
+            for index, (text, kind) in enumerate(
+                    lines[game.simlog_view_scroll:
+                         game.simlog_view_scroll + visible]):
+                if not text:
+                    continue
+                y = body.y + index * line_h
+                color = _COLORS.get(kind, config.COLOR_TEXT)
+                image = layout.font(15, bold=kind == SECTION).render(
+                    text, True, color)
+                s.blit(image, (body.x, y))
+        hints = (f"{tr('simlog.view.close_hint')}   "
+                 f"{tr('simlog.view.scroll_hint')}   "
+                 f"{tr('simlog.view.map_toggle_hint')}")
     hint = layout.font(13).render(hints, True, config.COLOR_TEXT_DIM)
     s.blit(hint, (16, config.SCREEN_H - footer_h + 8))

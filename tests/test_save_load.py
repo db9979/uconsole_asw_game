@@ -402,7 +402,8 @@ def test_public_slot_methods_reject_invalid_slots_before_path_use(
     assert list(tmp_saves.iterdir()) == []
 
 
-@pytest.mark.parametrize("version", [None, True, 0, 11, -1, 1.0, "10"])
+@pytest.mark.parametrize("version", [
+    None, True, 0, SAVE_VERSION + 1, -1, 1.0, str(SAVE_VERSION - 1)])
 def test_unsupported_or_non_integer_versions_are_rejected(version, tmp_saves):
     game = Game(seed=9004, start_menu=False)
     before = game.save_state()

@@ -110,6 +110,10 @@ class Flight:
             self.waypoint_idx = 0
         self.active = True
 
+    @property
+    def altitude_m(self) -> float:
+        return config.flight_altitude_m(self.seq)
+
     def update(self, dt: float, observation=None, *, ship_emitting=False,
                world=None) -> None:
         if not self.active:
@@ -204,6 +208,17 @@ class FlightManager:
         # (reine Geometrie, keine RNG-Ziehung).
         self._near = near
         self._spawn_initial()
+
+    def next_seq(self) -> int:
+        """Naechste Sequenznummer aus demselben Zaehler wie simulierte Fluege.
+
+        Reale ADS-B-Kontakte werden ueber diese Nummer genau wie simulierte
+        `Flight`-Objekte als "A-<seq>" gefuehrt: geteilter Zaehler statt
+        eigenem, damit Spieler Track-IDs niemals nutzen koennen, um echten
+        von simuliertem Luftverkehr zu unterscheiden.
+        """
+        self._seq += 1
+        return self._seq
 
     @staticmethod
     def _is_hostile_base(base: dict) -> bool:

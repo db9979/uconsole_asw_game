@@ -8,6 +8,7 @@ import random
 
 import pytest
 
+from src.commander import projections
 from src.enemies.surface import SurfaceShip
 from src.commander.projections import ROLE_NAMES, STATE_MAX_BYTES
 from src.core import config
@@ -36,7 +37,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     game, bridge, server = published
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
-              "autocrew"}
+              "autocrew", "audio"}
     assert set(server.v2_states) == {None, *ROLE_NAMES}
     assert server.v2_states[None] == dict(
         protocol=2, version=server.state["version"], session=bridge.status["session"],
@@ -59,10 +60,39 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
         }
         assert server.v2_states[role]["autocrew"] == {
             "enabled": False, "status": "off"}
+        assert server.v2_states[role]["audio"] == {"events": []}
     assert set(server.v2_charts[None]) == {
         "protocol", "revision", "size_nm", "landmasses", "disclaimer"}
     assert server.v2_charts[None]["landmasses"] == []
     assert all(server.v2_charts[role]["landmasses"] for role in ROLE_NAMES)
+
+
+def test_browser_audio_projection_is_bounded_detached_and_role_safe(published):
+    game, bridge, server = published
+    for kind in ("sonar_ping", "torpedo_launch", "missile_launch", "gunfire",
+                 "explosion", "water_entry"):
+        game._emit_sound(kind)
+    bridge.pump(game, server, now=11.0)
+
+    expected = [{"seq": index, "cue": kind} for index, kind in enumerate(
+        ("sonar_ping", "torpedo_launch", "missile_launch", "gunfire",
+         "explosion", "water_entry"), 1)]
+    for role in ROLE_NAMES:
+        projected = server.v2_states[role]["audio"]
+        assert projected == {"events": expected}
+    server.v2_states["bridge"]["audio"]["events"][0]["cue"] = "changed"
+    assert server.v2_states["sonar"]["audio"]["events"][0]["cue"] == "sonar_ping"
+
+
+def test_esm_first_detection_cue_is_visible_only_to_eloka(published):
+    game, bridge, server = published
+    game._emit_sound("esm_contact")
+    bridge.pump(game, server, now=11.0)
+
+    assert server.v2_states["eloka"]["audio"]["events"][-1]["cue"] == "esm_contact"
+    assert all(not any(event["cue"] == "esm_contact"
+                       for event in server.v2_states[role]["audio"]["events"])
+               for role in ROLE_NAMES if role != "eloka")
 
 
 def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
@@ -83,7 +113,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
         "engine": {"propulsion", "machinery", "controls", "environment_effects"},
         "helicopter": {"asset", "waypoint", "buoys", "readiness", "navigation",
                        "tactical", "target_choices"},
-        "eloka": {"intercepts", "station_down", "status"},
+        "eloka": {"intercepts", "station_down", "status", "hardware"},
     }
     encoded = json.dumps(list(server.v2_states.values()), sort_keys=True)
     for forbidden in ('"target_id"', '"track_id"', '"kind"', '"signature"',
@@ -141,6 +171,9 @@ def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
         game.sonar.lofar_history.append([index / 100] * config.LOFAR_BINS)
         game.sonar.lofar_times.append(stamp)
         game.sonar.lofar_bearings.append(72.0)
+    for index in range(config.SONAR_BROADBAND_LONG_ROWS + 5):
+        game.sonar.broadband_long_history.append([index / 200] * 180)
+        game.sonar.broadband_long_times.append(game.sim_t)
     contact.raw_bearings = [(game.sim_t - index, 72.0 + index / 10, 1.5)
                             for index in range(30, 0, -1)]
     game.sonar.echo_history = [dict(
@@ -161,16 +194,17 @@ def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
     assert set(visual["lofar"]) == {"frequency_min_hz", "frequency_max_hz",
         "bin_frequencies_hz", "history", "spectrum", "held"}
     assert set(visual["demon"]) == {"frequency_min_hz", "frequency_max_hz",
-        "bin_step_hz", "spectrum", "analysis"}
+        "bin_step_hz", "spectrum", "history", "analysis"}
     assert set(visual["receiver"]) == {"array", "listen_bearing",
         "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"}
-    assert len(visual["broadband"]["history"]) == config.LOFAR_HISTORY_COLS
-    assert visual["broadband"]["bearing_step_deg"] == 2.0
-    assert all(len(row["bins"]) == 180 for row in visual["broadband"]["history"])
+    assert len(visual["broadband"]["history"]) == config.SONAR_BROADBAND_LONG_ROWS
+    assert visual["broadband"]["bearing_step_deg"] == 4.0
+    assert all(len(row["bins"]) == 90 for row in visual["broadband"]["history"])
     assert len(visual["lofar"]["history"]) == config.LOFAR_HISTORY_COLS
     assert all(len(row["bins"]) <= 110 for row in visual["lofar"]["history"])
     assert len(visual["lofar"]["bin_frequencies_hz"]) == config.LOFAR_BINS
     assert len(visual["demon"]["spectrum"]) <= 80
+    assert len(visual["demon"]["history"]) <= config.SONAR_DEMON_HISTORY_ROWS
     assert len(visual["tma"]) <= 32
     assert all(len(row["bearings"]) <= 24 for row in visual["tma"])
     assert len(visual["active_echoes"]) <= 40
@@ -193,10 +227,21 @@ def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
     assert_finite_arrays(visual)
     snapshot = deepcopy(visual)
     visual["broadband"]["history"][0]["bins"][0] = 99
-    assert game.sonar.broadband_history[-config.LOFAR_HISTORY_COLS][0] != 99
+    assert game.sonar.broadband_long_history[-config.SONAR_BROADBAND_LONG_ROWS][0] != 99
     assert len(json.dumps(server.v2_states["sonar"]).encode("ascii")) \
         < STATE_MAX_BYTES // 2
     assert snapshot["bt"]["depths_m"] == [0.0, 100.0, 200.0]
+
+
+def test_broadband_long_scan_downsamples_all_360_degrees():
+    scan = [0.0] * 180
+    scan[0] = .4
+    scan[178] = .6
+    scan[179] = 1.0
+    bins = projections._mean_binned_series(scan, 90)
+    assert len(bins) == 90
+    assert bins[0] == pytest.approx(.2)
+    assert bins[-1] == pytest.approx(.8)
 
 
 def test_operational_projection_is_deterministic_for_unchanged_game(published):
@@ -223,6 +268,44 @@ def test_sonar_display_id_matches_native_contact_before_and_after_opz_release(pu
                       if row.source.startswith("SONAR"))
     assert opz_row["label"] == native_row.label == display_id
     assert sonar_row["ref"] == opz_row["ref"] != display_id
+
+
+def test_opz_track_id_change_is_shared_by_every_station_projection(published):
+    game, bridge, server = published
+    observe(game, "S-42", "SURFACE", "RADAR-S")
+    contact = next(iter(game.sonar.contacts.values()))
+    contact.released_to_opz = True
+    game.target = contact
+    observation = game.private_sonar_observations()[0]
+
+    assert game.set_opz_track_label(observation.observation_id, "SUB-ALFA") is True
+    bridge.pump(game, server, now=10.5)
+
+    labels = {
+        "sonar": server.v2_states["sonar"]["sonar"]["observations"][0]["label"],
+        "opz": next(row["label"] for row in
+                    server.v2_states["opz"]["opz"]["observations"]
+                    if row["ref"] == server.v2_states["sonar"]["sonar"]
+                    ["observations"][0]["ref"]),
+        "weapons": server.v2_states["weapons"]["weapons"]
+        ["designated_target"]["label"],
+        "helicopter": next(row["label"] for row in
+                           server.v2_states["helicopter"]["helicopter"]["tactical"]
+                           if row["source"].startswith("SONAR")),
+    }
+    assert labels == {role: "SUB-ALFA" for role in labels}
+    assert game.contact_display_id(contact) == "SUB-ALFA"
+
+    radar = next(item for item in game.opz_source_observations()
+                 if item.source.startswith("RADAR"))
+    assert game.set_opz_track_label(radar.observation_id, "SURF-7") is True
+    bridge.pump(game, server, now=11.0)
+    bridge_radar = next(row for row in
+                        server.v2_states["bridge"]["bridge"]["tactical_summary"]
+                        if row["source"].startswith("RADAR"))
+    opz_radar = next(row for row in server.v2_states["opz"]["opz"]["observations"]
+                     if row["ref"] == bridge_radar["ref"])
+    assert bridge_radar["label"] == opz_radar["label"] == "SURF-7"
 
 
 def test_known_chart_geography_is_bounded_detached_and_host_authored(published):
@@ -357,6 +440,9 @@ def test_remote_eloka_correlations_use_radar_evidence_only(published, monkeypatc
 
     bridge.pump(game, server, now=10.5)
     intercept = server.v2_states["eloka"]["eloka"]["intercepts"][0]
+    assert intercept["signal_state"] in {"LIVE", "RECENT", "MEMORY",
+                                         "UNCONFIRMED"}
+    assert type(intercept["operational"]) is bool
     assert intercept["correlations"] == []
 
     observe(game, "S-900", "SURFACE", "RADAR-S")

@@ -49,7 +49,7 @@ const check = (ok, label) => { if (!ok) throw new Error(label); };
     'X-U-Jagd-Audio-Sequence':'1', 'X-U-Jagd-Audio-Discontinuity':'0'}}));
   await pending;
   check(sonarAudioSequence === 1 && starts.length === 1, 'metadata refresh dropped valid audio');
-  check(starts[0] >= 1.25 && starts[0] <= 1.5, 'bounded startup jitter buffer');
+  check(starts[0] >= 1.75 && starts[0] <= 2.0, 'bounded startup jitter buffer');
   check(timers.has(sonarAudioTimer), 'audio poll not rescheduled');
   audio.currentTime = 1.1;
   fetch = async () => new Response(new Uint8Array(2048), {status:200, headers:{
@@ -70,13 +70,13 @@ const check = (ok, label) => { if (!ok) throw new Error(label); };
   await pollSonarAudio();
   check(sonarAudioEnabled && timers.has(sonarAudioTimer), 'temporary server error killed stream');
   for (const source of sonarAudioSources) source.onended();
-  audio.currentTime = 2.2;
+  audio.currentTime = 3.0;  // past the scheduled timeline: an underrun
   fetch = async () => new Response(new Uint8Array(2048), {status:200, headers:{
     'Content-Type':'audio/pcm', 'Content-Length':'2048', 'X-U-Jagd-PCM':'s16le',
     'X-U-Jagd-Sample-Rate':'4096', 'X-U-Jagd-Audio-Frames':'1024',
     'X-U-Jagd-Audio-Sequence':'3', 'X-U-Jagd-Audio-Discontinuity':'0'}});
   await pollSonarAudio();
-  check(starts.length === 3 && starts[2] >= 2.45 && starts[2] <= 2.7,
+  check(starts.length === 3 && starts[2] >= 3.75 && starts[2] <= 4.0,
     'underrun did not rebase to a fresh playout reserve');
   fetch = () => new Promise((resolve) => { deliver = resolve; });
   const revoked = pollSonarAudio();

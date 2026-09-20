@@ -291,7 +291,7 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 |--------|-------|-----|
 | **Surface radar** | Range 30 NM (nominal) × weather × rain; bearing ±0.8°; range ±1.5%; RCS aspect factor; terrain occlusion; 0.5 s epoch | `game.py:2949-2981`, `config.py:133-134,254-269` |
 | **Air radar** | Range 100 NM; same model; 0.5 s epoch | `game.py:3004-3040` |
-| **ESM** | Range 150 NM; bearing ±3°; frequency/PRF/modulation fingerprint; emitter ranking; 30 s stale; terrain occlusion | `esm.py`, `game.py:3634-3663` |
+| **ESM** | Range 150 NM; bearing ±3°; frequency/PRF/modulation fingerprint; emitter ranking; 300 s operator memory with quality decay and stable association across intermittent radar duty cycles; terrain occlusion | `esm.py`, `game.py` |
 | **HFDF** | Range 120 NM; bearing ±8°; cross-bearing fix with covariance; 0.5 s cadence | `game.py:3678-3794` |
 | **Lookout (visual)** | Surface 12 NM, sub 5 NM (only if <2 m depth), air 20 NM; night ×0.35; sea state loss; weather visibility cap | `game.py:2888-2947`, `config.py:160-170` |
 | **Track fusion (OPZ)** | Bounded picture (512 air, 64 ESM); smoothing (exponential, per-source τ); correlation gating; manual fusion; classification/affiliation | `tracks.py`, `fusion.py`, `game.py:3086-3111` |

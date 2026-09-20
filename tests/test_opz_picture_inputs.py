@@ -10,6 +10,7 @@ from src.air.raid import Raider
 from src.commander.bridge import CommanderBridge
 from src.core import config
 from src.core.game import Game
+from src.core.station import Station
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
 from test_commander_bridge import Server
@@ -78,6 +79,46 @@ def test_eloka_annotation_is_explicit_bearing_only_release(monkeypatch):
     assert track.classification == game.runtime_catalog.emitter_name(emitter_key)
     assert track.bearing == pytest.approx(intercept.bearing)
     assert track.bearing_uncertainty_deg == intercept.bearing_uncertainty_deg
+
+
+def test_first_esm_intercept_emits_local_cue_only_at_enabled_eloka(monkeypatch):
+    game = clean_game(1203)
+    actor = surface(game, 4.0)
+    actor.emitter = True
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+    alerts = []
+    monkeypatch.setattr(game.audio, "play_alert", alerts.append)
+
+    # The detached event remains available to the ELOKA browser role, but a
+    # uConsole operator at another station must not hear the workstation cue.
+    game.sim_t = .5
+    game._update_esm_picture()
+    assert alerts == []
+    assert not game._sound_events
+    game.sim_t = 1.5
+    game._update_esm_picture()
+    assert list(game._sound_events)[-1]["kind"] == "esm_contact"
+
+    game.sim_t = 2.0
+    game._update_esm_picture()
+    assert alerts == []
+    assert [row["kind"] for row in game._sound_events].count("esm_contact") == 1
+
+    game.esm_picture._tracks.clear()
+    game.station = Station.ELOKA
+    game.sim_t = 3.0
+    game._update_esm_picture()
+    game.sim_t = 4.0
+    game._update_esm_picture()
+    assert alerts == ["esm"]
+
+    game.esm_picture._tracks.clear()
+    game.eloka_audio_enabled = False
+    game.sim_t = 5.0
+    game._update_esm_picture()
+    game.sim_t = 6.0
+    game._update_esm_picture()
+    assert alerts == ["esm"]
 
 
 def test_eloka_clear_and_annotation_change_stop_old_release(monkeypatch):

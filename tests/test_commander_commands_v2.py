@@ -503,6 +503,7 @@ def test_bridge_and_action_callback_never_run_on_transport_thread(server):
     ("sonar", "sonar_classify", {"ref": "opaque", "classification": "U_BOOT"}),
     ("opz", "opz_classify", {"ref": "opaque", "classification": "KAMPFSCHIFF"}),
     ("opz", "opz_affiliate", {"ref": "opaque", "affiliation": "HOSTILE"}),
+    ("opz", "opz_set_track_id", {"ref": "opaque", "label": "SUB-ALFA"}),
     ("opz", "opz_create_fusion", {"refs": ["one", "two"]}),
     ("opz", "opz_dissolve_fusion", {"ref": "fusion"}),
     ("opz", "opz_set_radar", {"domain": "air", "enabled": False}),
@@ -538,6 +539,7 @@ def test_fusion_schema_rejects_duplicate_refs_and_action_role_mismatch(server):
     ("radio", "radio_capture_hfdf", {"ref": "opaque"}),
     ("eloka", "eloka_annotate", {"ref": "opaque", "candidate_ref": "choice"}),
     ("eloka", "eloka_clear_annotation", {"ref": "opaque"}),
+    ("eloka", "eloka_set_technique", {"ref": "opaque", "technique": "rgpo"}),
     ("sonar", "sonar_set_listen_bearing", {"bearing": 359.5}),
     ("sonar", "sonar_set_focus", {"ref": "opaque"}),
     ("sonar", "sonar_clear_focus", {}),
@@ -583,8 +585,11 @@ def test_remaining_nonlethal_action_schemas_are_exact(server, station, action, p
     ("sonar_set_audition_mode", {"mode": "NARROW"}),
     ("sonar_set_band_preset", {"preset": "CUSTOM"}),
     ("sonar_set_harmonic", {"frequency_hz": 0}),
+    ("opz_set_track_id", {"ref": "opaque", "label": "BAD ID"}),
+    ("opz_set_track_id", {"ref": "opaque", "label": "X" * 17}),
     ("helicopter_set_waypoint", {"x": -1, "y": 2}),
     ("helicopter_set_waypoint", {"x": 10**1000, "y": 2}),
+    ("eloka_set_technique", {"ref": "opaque", "technique": "barrage"}),
 ])
 def test_remaining_nonlethal_schemas_reject_invalid_values(server, action, params):
     station = next(iter(V2_ACTION_REGISTRY[action].stations))
@@ -1063,8 +1068,13 @@ def test_eloka_annotation_uses_opaque_intercept_and_candidate_refs(
             0)["reasoncode"] == "ok"
         assert len(game.eloka_annotations) == 1
         assert submit(game, bridge, server, cookie, session,
-                      "eloka_clear_annotation", {"ref": intercept["ref"]},
+                      "eloka_set_technique", {
+                          "ref": intercept["ref"], "technique": "vgpo"},
                       1)["reasoncode"] == "ok"
+        assert game.ecm_jammer.channels[0].technique == "vgpo"
+        assert submit(game, bridge, server, cookie, session,
+                      "eloka_clear_annotation", {"ref": intercept["ref"]},
+                      2)["reasoncode"] == "ok"
         assert game.eloka_annotations == {}
     finally:
         game.audio.shutdown()

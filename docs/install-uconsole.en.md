@@ -130,8 +130,10 @@ checkout. Contact and coastline data are included in the package configuration.
 
 In the game, `Esc` opens the quit dialog or closes the current input or
 administrative view. `Q`/`E` zoom only on the Bridge, Weapons, and Helicopter
-stations. Notices in the event feed are limited to the active station; the full
-context-sensitive controls are available under `F1`.
+stations. The event feed is shared across stations and retains operational
+reports, completed orders, and alerts; transient input and selection hints stay
+in the status banner. The full context-sensitive key map is available under
+`F1`.
 
 ## 6. Update
 

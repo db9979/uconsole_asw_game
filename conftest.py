@@ -26,9 +26,13 @@ def pytest_configure(config):
 @pytest.fixture(autouse=True)
 def isolated_saves(tmp_path, monkeypatch):
     from src.core import config
+    from src.core import preferences as preferences_module
 
     saves = tmp_path / "saves"
     saves.mkdir()
     monkeypatch.setattr(config, "SAVE_DIR", str(saves))
     monkeypatch.setattr(config, "SAVE_PATH", str(saves / "save.json"))
+    monkeypatch.setattr(
+        preferences_module, "default_preferences_path",
+        lambda: saves / "settings.json")
     return saves

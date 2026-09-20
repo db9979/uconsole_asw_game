@@ -1,7 +1,8 @@
-"""W0: Ereignis-Feed (Bottom-Panel): Sonar-, Funk-, Schaden-, Missionsmeldungen.
+"""W0: stationsübergreifender Ereignis-Feed für operative Meldungen.
 
-Ersetzt/erweitert das alte Teletype (nur Funk): kategorisiert, farbcodiert,
-lauffähig in der Bottom-Leiste. Max. FEED_MAX_ENTRIES Einträge.
+Ersetzt/erweitert das alte Teletype (nur Funk): Navigation, Funk, Sonar, Waffen,
+OPZ, Schaden, Mission und Weltzustand werden kategorisiert und farbcodiert in
+der Bottom-Leiste gehalten. Max. FEED_MAX_ENTRIES Einträge.
 """
 
 from src.core import config

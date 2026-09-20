@@ -136,8 +136,10 @@ einfachste Weg. Kontakt- und Küstendaten sind in der Paketkonfiguration enthalt
 
 Im Spiel öffnet `Esc` den Beenden-Dialog beziehungsweise schließt die laufende
 Eingabe oder Verwaltungsansicht. `Q`/`E` zoomen ausschließlich auf Brücke,
-Waffen- und Helikopterstation. Die Hinweise im Ereignis-Feed sind auf die aktive
-Station begrenzt; die vollständige kontextabhängige Belegung steht unter `F1`.
+Waffen- und Helikopterstation. Der Ereignis-Feed ist stationsübergreifend und
+bewahrt operative Meldungen, abgeschlossene Befehle und Alarme auf; kurzlebige
+Eingabe- und Auswahlhinweise bleiben im Statusbanner. Die vollständige
+kontextabhängige Tastenbelegung steht unter `F1`.
 
 ## 6. Aktualisieren
 

@@ -32,7 +32,8 @@ def test_waterfall_newest_top_and_frequency_increases_right():
     surface = view.waterfall_surface([[1., 0.], [0., .5]], 20, 20)
     assert surface.get_at((0, 0))[:3] == view.NAVY
     assert surface.get_at((19, 0)).g > view.NAVY[1]
-    assert surface.get_at((0, 19))[:3] == view.CYAN
+    assert surface.get_at((0, 19)).g > view.NAVY[1]
+    assert surface.get_at((0, 19)).g < view.CYAN[1]
     assert surface.get_at((19, 19))[:3] == view.NAVY
 
 
@@ -48,6 +49,16 @@ def test_gain_changes_intensity_not_orientation():
     gained = view.waterfall_surface(rows, 20, 20, 6.)
     assert gained.get_at((0, 0)).g > normal.get_at((0, 0)).g
     assert gained.get_at((19, 0))[:3] == view.NAVY
+
+
+def test_display_black_contrast_and_phosphor_palette_are_applied():
+    green = view.waterfall_surface([[.1]], 8, 8, contrast=2.0, palette="green")
+    amber = view.waterfall_surface([[.1]], 8, 8, contrast=2.0, palette="amber")
+    suppressed = view.waterfall_surface([[.1]], 8, 8, black_level=.2,
+                                        contrast=4.0, palette="green")
+    assert green.get_at((4, 4)).g > green.get_at((4, 4)).r
+    assert amber.get_at((4, 4)).r > amber.get_at((4, 4)).g
+    assert suppressed.get_at((4, 4))[:3] == view.NAVY
 
 
 def test_broadband_interpolation_is_circular_and_preserves_real_bins():
@@ -280,7 +291,7 @@ def test_demon_chart_uses_actual_envelope_bins_on_hz_axis(game, monkeypatch):
                         traces.append(np.asarray(values)))
     view._draw_demon(game, pygame.Rect(0, 0, 890, 386))
     assert len(traces) == 1
-    assert len(traces[0]) == 81
+    assert len(traces[0]) == 51
     assert np.argmax(traces[0]) == 20
     assert traces[0][20] == .8
 

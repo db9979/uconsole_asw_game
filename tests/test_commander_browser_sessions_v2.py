@@ -41,6 +41,7 @@ BROWSER_SESSION = r"""
 "use strict";
 const issued = [];
 let tones = 0;
+let gameEffects = 0;
 const consoleErrors = [];
 const nativeConsoleError = console.error.bind(console);
 console.error = (...args) => {
@@ -62,7 +63,12 @@ class TestAudio {
   constructor() { this.state = "suspended"; this.currentTime = 0; this.destination = {}; }
   async resume() { this.state = "running"; }
   async suspend() { this.state = "suspended"; }
-  createOscillator() { tones++; return {type: "sine", frequency: {setValueAtTime() {}}, connect() {}, disconnect() {}, start() {}, stop() { setTimeout(() => this.onended?.(), 1); }}; }
+  createOscillator() {
+    tones++;
+    let waveform = "sine";
+    return {get type() { return waveform; }, set type(value) { waveform = value; if (value === "square" || value === "triangle") gameEffects++; },
+      frequency: {setValueAtTime() {}}, connect() {}, disconnect() {}, start() {}, stop() { setTimeout(() => this.onended?.(), 1); }};
+  }
   createGain() { return {gain: {setValueAtTime() {}, linearRampToValueAtTime() {}}, connect() {}, disconnect() {}}; }
 }
 window.AudioContext = TestAudio;
@@ -163,10 +169,15 @@ async function run() {
   await until(() => $test("event-list").textContent.includes("Baseline warning"), "event baseline rendered");
   $test("sound").click();
   await until(() => $test("sound").getAttribute("aria-pressed") === "true", "sound enabled");
-  assert(tones === 0, "enabling sound does not replay the warning baseline");
+  assert(tones === 0, "enabling sound must not start ambient audio");
   await nativeFetch("/test/new-warning");
   await until(() => $test("event-list").textContent.includes("New warning") && tones === 1,
     "a subsequent warning is rendered and alerted once");
+  await nativeFetch("/test/new-sound");
+  await until(() => gameEffects === 1, "a new game sound is synthesized once");
+  await sleep(350);
+  assert(gameEffects === 1, "game sound sequences are deduplicated");
+  await nativeFetch("/test/allow-role-loss");
   $test("sonar-control-page").value = "analysis";
   $test("sonar-control-page").dispatchEvent(new Event("change", {bubbles: true}));
   $test("sonar-gain").value = "4";
@@ -298,18 +309,22 @@ async function run() {
         assert(visualBounds.top < innerHeight * .5, `instrument below fold: ${latestRole}`);
         assert(controlBounds.left >= visualBounds.right - 2, `controls not beside instrument: ${latestRole}`);
         if (trackRoles.has(latestRole)) {
-          const workspaceBounds = workspace.getBoundingClientRect();
-          const contactsBounds = workspace.querySelector(".contacts-panel").getBoundingClientRect();
-          const detailsBounds = workspace.querySelector(".details-panel").getBoundingClientRect();
-          assert(workspace.parentElement === station && workspaceBounds.left >= visualBounds.right - 2 &&
-            workspaceBounds.top >= controlBounds.bottom - 2,
-            `track workspace is not beside the full-height instrument: ${latestRole}`);
-          assert(contactsBounds.right <= detailsBounds.left + 2,
-            `contacts and details are not side by side: ${latestRole}`);
-          assert(workspaceBounds.bottom <= station.getBoundingClientRect().bottom + 1,
-            `track workspace exceeds station: ${latestRole} workspace=${workspaceBounds.bottom} station=${station.getBoundingClientRect().bottom}`);
-          assert(visualBounds.bottom >= workspaceBounds.bottom - 2,
+          // Console layout: contacts | full-height instrument | controls, with the
+          // contact detail under the controls. The workspace box itself has no
+          // geometry (display: contents); its panels are the station's grid items.
+          const contactsBounds = station.querySelector(".contacts-panel").getBoundingClientRect();
+          const detailsBounds = station.querySelector(".details-panel").getBoundingClientRect();
+          const stationBox = station.getBoundingClientRect();
+          assert(workspace.parentElement === station && contactsBounds.right <= visualBounds.left + 2,
+            `contacts are not left of the instrument: ${latestRole}`);
+          assert(detailsBounds.left >= visualBounds.right - 2 && detailsBounds.top >= controlBounds.bottom - 2,
+            `contact detail is not under the controls beside the instrument: ${latestRole}`);
+          assert(detailsBounds.bottom <= stationBox.bottom + 1 && contactsBounds.bottom <= stationBox.bottom + 1,
+            `track panels exceed station: ${latestRole}`);
+          assert(visualBounds.bottom >= detailsBounds.bottom - 2 && visualBounds.bottom >= contactsBounds.bottom - 2,
             `instrument does not use the full station height: ${latestRole}`);
+          assert(document.documentElement.scrollHeight <= innerHeight + 1,
+            `page scrolls instead of fitting one viewport: ${latestRole}`);
         }
       }
       const stationBounds = station.getBoundingClientRect();
@@ -341,9 +356,10 @@ async function run() {
       assert(populated.every((element) => element.getClientRects().length && element.getBoundingClientRect().height > 0),
         `station values hidden: ${latestRole}`);
       const textOverflow = [...station.querySelectorAll("h2, h3, h4, p, dt, dd, label, button, summary, output")]
-        .filter((element) => !element.hidden && getComputedStyle(element).display !== "none" && element.clientWidth > 0)
-        .some((element) => element.scrollWidth > element.clientWidth + 2);
-      assert(!textOverflow, `station text overflows horizontally: ${latestRole}`);
+        .filter((element) => !element.hidden && getComputedStyle(element).display !== "none" && element.clientWidth > 1)
+        .filter((element) => element.scrollWidth > element.clientWidth + 2)
+        .map((element) => `${element.tagName.toLowerCase()}#${element.id}.${element.className}`);
+      assert(!textOverflow.length, `station text overflows horizontally: ${latestRole} ${textOverflow.join(",")}`);
       const unexplained = [...station.querySelectorAll("button:disabled")]
         .filter((button) => !button.hidden && getComputedStyle(button).display !== "none" && !button.title);
       assert(unexplained.length === 0, `disabled controls lack reasons: ${latestRole} / ${unexplained.map((button) => button.id || button.textContent).join(",")}`);
@@ -388,7 +404,15 @@ async function run() {
           }));
           broadband.setPointerCapture = capture; broadband.releasePointerCapture = release;
         }
-        const tabs = [...document.querySelectorAll("[data-sonar-visual]")];
+        // "overview" is a layout mode showing several pages at once, not a page.
+        const overview = document.querySelector('[data-sonar-visual="overview"]');
+        if (!overview) throw new NativeError("sonar overview tab missing");
+        overview.click();
+        await sleep(25);
+        const shown = [...document.querySelectorAll("[data-sonar-plot]")].filter((panel) => !panel.hidden);
+        if (shown.length < 4) throw new NativeError(`sonar overview shows ${shown.length} plots`);
+        const tabs = [...document.querySelectorAll("[data-sonar-visual]")]
+          .filter((button) => button.dataset.sonarVisual !== "overview");
         for (const next of tabs.filter((button) => !sonarPages.has(button.dataset.sonarVisual))) {
           next.click();
           const page = next.dataset.sonarVisual;
@@ -499,16 +523,16 @@ const states = __STATES__;
 const chart = __CHART__;
 const commands = [];
 const stationActivations = [];
-let cavitationStarts = 0;
-let cavitationStops = 0;
+let backgroundStarts = 0;
+let backgroundStops = 0;
 class TestAudio {
   constructor() { this.state = "suspended"; this.currentTime = 0; this.sampleRate = 8000; this.destination = {}; }
   async resume() { this.state = "running"; }
   async suspend() { this.state = "suspended"; }
   createBuffer(_channels, frames) { const data = new Float32Array(frames); return {getChannelData: () => data}; }
   createBufferSource() {
-    return {loop: false, connect() {}, disconnect() {}, start() { cavitationStarts++; },
-      stop() { cavitationStops++; }, onended: null};
+    return {loop: false, connect() {}, disconnect() {}, start() { backgroundStarts++; },
+      stop() { backgroundStops++; }, onended: null};
   }
   createGain() { return {gain: {value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}}, connect() {}, disconnect() {}}; }
   createOscillator() { return {frequency: {setValueAtTime() {}}, connect() {}, disconnect() {}, start() {}, stop() {}}; }
@@ -618,11 +642,15 @@ async function terminal() {
     $test("station-command-status").textContent, "terminal result missing");
 }
 async function selectStation(id, role) {
-  const select = $test(id);
   const previousGeneration = session.active_generation;
-  select.value = role;
-  select.dispatchEvent(new Event("change", {bubbles: true}));
-  assert($test("workstation-station").value === role && $test("mobile-station").value === role,
+  if (id === "mobile-station") {
+    const select = $test(id);
+    select.value = role;
+    select.dispatchEvent(new Event("change", {bubbles: true}));
+  } else {
+    $test(`station-tab-${role}`).click();  // the desktop switcher is the station tab bar
+  }
+  assert($test(`station-tab-${role}`).getAttribute("aria-selected") === "true" && $test("mobile-station").value === role,
     `${id} did not retain the requested station while activation was pending`);
   await until(() => session.station === role && !$test(`station-${role}`).hidden,
     `${id} did not activate ${role}`);
@@ -634,10 +662,10 @@ async function selectStation(id, role) {
 async function run() {
   await until(() => !$test("shell").hidden, "translations missing");
   await until(() => !$test("station-weapons").hidden, "Weapons role missing");
-  const stableOption = $test("workstation-station").options[0];
+  const stableTab = $test("station-tab-weapons");
   await sleep(1200);
-  assert($test("workstation-station").options[0] === stableOption,
-    "station polling rebuilt an open selector");
+  assert($test("station-tab-weapons") === stableTab,
+    "station polling rebuilt the station tab bar");
   assert($test("weapons-fire-torpedo").disabled && $test("weapons-fire-status").textContent.includes(__REVOKED__), "direct-fire grant is not explicit");
   session.grants.direct_fire = true;
   session.stations.weapons.grants.direct_fire = true;
@@ -671,7 +699,7 @@ async function run() {
   exact(commands[2], "weapons_deploy_nixie", {}, "weapons");
   await sleep(1600);
   assert(commands.length === 3, "uncertain direct-fire command was retried");
-  await selectStation("workstation-station", "opz");
+  await selectStation("station-tabs", "opz");
   await until(() => !$test("station-opz").hidden && $test("station-weapons").hidden, "wrong-role controls survived role switch");
   assert($test("weapons-fire-target").value === "" && $test("weapons-fire-depth").value === "", "Weapons fire draft survived role switch");
   const roleMap = $test("role-map"), mapRect = roleMap.getBoundingClientRect();
@@ -749,7 +777,7 @@ async function run() {
   heloMap.setPointerCapture = heloCapture; heloMap.releasePointerCapture = heloRelease;
   await sleep(80);
   assert(commands.length === 6, "role-map drag above five pixels issued a waypoint");
-  await selectStation("workstation-station", "damage");
+  await selectStation("station-tabs", "damage");
   await until(() => !$test("station-damage").hidden && !$test("damage-team").disabled &&
     $test("damage-schematic").width > 1, "actionable damage schematic missing");
   const damageMap = $test("damage-schematic"), damageRect = damageMap.getBoundingClientRect();
@@ -766,23 +794,22 @@ async function run() {
   exact(commands[7], "damage_unassign_team", {team: 2, compartment: "engine"}, "damage");
   states.bridge.bridge.orders.cavitating = true;
   await selectStation("mobile-station", "bridge");
-  assert(cavitationStarts === 0, "Bridge cavitation started before sound opt-in");
   $test("sound").click();
-  await until(() => cavitationStarts === 1, "Bridge cavitation did not start after sound opt-in");
+  await until(() => $test("sound").getAttribute("aria-pressed") === "true", "sound did not enable");
   await sleep(1200);
-  assert(cavitationStarts === 1, "repeated Bridge snapshots duplicated cavitation audio");
+  assert(backgroundStarts === 0 && backgroundStops === 0,
+    "sound opt-in or repeated Bridge snapshots started background audio");
   states.bridge.bridge.orders.cavitating = false;
-  await until(() => cavitationStops === 1, "cavitation audio survived quiet propulsion");
+  await sleep(100);
   states.bridge.bridge.orders.cavitating = true;
-  await until(() => cavitationStarts === 2, "cavitation audio did not follow fresh Bridge state");
+  await sleep(100);
   $test("volume").value = "0";
   $test("volume").dispatchEvent(new Event("input", {bubbles: true}));
-  assert(cavitationStops === 2, "zero local volume did not stop cavitation audio");
   $test("volume").value = "50";
   $test("volume").dispatchEvent(new Event("input", {bubbles: true}));
-  assert(cavitationStarts === 3, "restored local volume did not restart cavitation audio");
-  await selectStation("workstation-station", "damage");
-  assert(cavitationStops === 3, "role switch did not stop Bridge cavitation audio");
+  await selectStation("station-tabs", "damage");
+  assert(backgroundStarts === 0 && backgroundStops === 0,
+    "state, volume, or role changes started background audio");
   assert(roleMapLeftLabels > 0, "left role-map coordinates were not drawn");
   assert(stationActivations.length === 5, "station selectors did not issue exactly one activation each");
   document.documentElement.dataset.directFire = "passed";
@@ -803,7 +830,8 @@ def _direct_fire_browser_states():
                                     wind_from_deg=245.0, wind_speed_kn=12.0,
                                     rain_intensity=.1, visibility_nm=24.0),
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
-                   autocrew=dict(enabled=False, status="off"))
+                   autocrew=dict(enabled=False, status="off"),
+                   audio=dict(events=[]))
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
                       yaw_rate=0.0)
@@ -815,7 +843,7 @@ def _direct_fire_browser_states():
                       bearing_uncertainty_deg=1.0, range_uncertainty_nm=.2)
     tactical_row = {key: value for key, value in weapon_row.items()
                     if key not in {"classification", "depth_m", "fix_age_s"}}
-    tactical_row.update(observer_x=250.0, observer_y=250.0)
+    tactical_row.update(observer_x=250.0, observer_y=250.0, altitude_m=None)
     weapons = dict(common, role="weapons", weapons=dict(
         inventory=dict(torpedoes=4, vls=8, ciws=200, aa=40,
                        chaff_ready=True, nixies=2),
@@ -885,7 +913,7 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
             "mine", station_generation=generation, command=True,
             direct_fire=station in {"opz", "helicopter"})
     session = dict(protocol=2, client_id="fire-client", name="Fire Watch",
-                   csrf="fire-csrf", ordinal=0, presence=1.0,
+                   csrf="fire-csrf", ordinal=0, presence=1.0, host=None,
                    next_command_seq=0, station="weapons", requested_station=None,
                    station_generation=1, active_station="weapons",
                    active_generation=1, simlog=False, stations=stations,
@@ -959,6 +987,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
     en, de = catalogs()
     legacy = browser_state()
     legacy["chart_revision"] = legacy["session"]
+    legacy["sound_events"] = [{"seq": 1, "cue": "explosion"}]
 
     def tactical_row(row):
         result = {key: row[key] for key in (
@@ -966,7 +995,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             "range_nm", "x", "y", "course", "speed_kn", "quality", "age_s",
             "bearing_uncertainty_deg", "range_uncertainty_nm")}
         result.update(observer_x=legacy["ownship"]["x"],
-                      observer_y=legacy["ownship"]["y"])
+                      observer_y=legacy["ownship"]["y"], altitude_m=None)
         return result
 
     def sonar_row(row):
@@ -991,6 +1020,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             wind_from_deg=220.0, wind_speed_kn=10.0,
             rain_intensity=0.0, visibility_nm=30.0)
         common["autocrew"] = {"enabled": False, "status": "off"}
+        common["audio"] = {"events": list(legacy["sound_events"])}
         if role == "bridge":
             common[role] = {"navigation": {key: legacy["ownship"][key] for key in (
                 "x", "y", "course", "speed", "target_course", "target_speed")},
@@ -1032,9 +1062,9 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                               "frequency_max_hz": 300.0,
                               "bin_frequencies_hz": [], "history": [],
                               "spectrum": [], "held": False},
-                    "demon": {"frequency_min_hz": 1.0,
-                              "frequency_max_hz": 80.0, "bin_step_hz": 1.0,
-                              "spectrum": [], "analysis": None},
+                        "demon": {"frequency_min_hz": 1.0,
+                                  "frequency_max_hz": 80.0, "bin_step_hz": 1.0,
+                                  "spectrum": [], "history": [], "analysis": None},
                     "tma": [], "bt": None, "active_echoes": [],
                         "receiver": {"array": "BOW", "listen_bearing": 25.0,
                                      "beam_width_deg": 30.0, "listen_mode": "BROADBAND",
@@ -1104,6 +1134,13 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 self.reply(200, {})
             elif self.path == "/test/new-warning":
                 type(self).publish_warning = True
+                self.reply(200, {})
+            elif self.path == "/test/new-sound":
+                legacy["sound_events"].append({"seq": 2, "cue": "gunfire"})
+                type(self).reload_polls = -100
+                self.reply(200, {})
+            elif self.path == "/test/allow-role-loss":
+                type(self).reload_polls = 1
                 self.reply(200, {})
             elif self.path == "/api/v2/session" and self.authenticated():
                 cls = type(self)
@@ -1176,7 +1213,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 cls.session = {"protocol": 2, "client_id": "client-1", "name": "Lobby Watch",
                                 "csrf": "csrf-1", "ordinal": 0, "presence": 1.0,
                                 "next_command_seq": 0, "active_station": None,
-                                "active_generation": 0, "simlog": False,
+                                "active_generation": 0, "simlog": False, "host": None,
                                 "station": None, "requested_station": None,
                                 "station_generation": 0,
                                 "grants": {"command": False, "direct_fire": False,

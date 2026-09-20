@@ -81,9 +81,10 @@ def projection_states(revision="chart"):
     common = dict(protocol=2, version="test", session=revision, epoch=0,
                    revision=0, seq=1, phase="live", chart_revision=revision,
                    clock={}, environment={}, mission={},
-                   autocrew={"enabled": False, "status": "off"})
+                   autocrew={"enabled": False, "status": "off"},
+                   audio={"events": []})
     return {None: {key: value for key, value in common.items()
-                    if key not in ("clock", "environment", "mission", "autocrew")} | {"role": None},
+                    if key not in ("clock", "environment", "mission", "autocrew", "audio")} | {"role": None},
             **{role: dict(common, role=role, **{role: {}})
                for role in transport.STATIONS}}
 
@@ -93,8 +94,9 @@ def assert_session(body, name):
         "protocol", "client_id", "name", "csrf", "station",
         "requested_station", "grants", "ordinal", "station_generation",
         "active_station", "active_generation", "simlog",
-        "next_command_seq", "presence", "stations",
+        "next_command_seq", "presence", "stations", "host",
     }
+    assert body["host"] is None
     assert body["protocol"] == 2
     assert isinstance(body["client_id"], str) and body["client_id"]
     assert body["name"] == name
@@ -120,7 +122,7 @@ def test_pair_sets_host_only_cookie_and_stores_digest_only(server):
     code = server.pairing_code
     set_cookie, cookie, token, body = pair_v2(server)
     assert set_cookie == (
-        f"{cookie}; Path=/api/v2; HttpOnly; SameSite=Strict")
+        f"{cookie}; Path=/; HttpOnly; SameSite=Strict")
     for forbidden in ("Domain=", "Secure", "Max-Age="):
         assert forbidden not in set_cookie
     assert token not in json.dumps(body)
@@ -289,7 +291,15 @@ def test_revocation_clears_role_event_and_simlog_publications(server):
     server.publish_simlog_v2(
         world_session="published", world_epoch=0,
         entries_by_role={role: [{"seq": 1, "t": 1.0, "stamp": "00:01",
-                                 "state": states[role]}]
+                                 "state": states[role],
+                                 "truth": {"mission_t": 1.0, "timescale": 0,
+                                     "result": None, "world": {}, "ship": {},
+                                     "weapons": {}, "subs": [], "surfaces": [],
+                                     "animals": [], "torpedoes": [],
+                                     "enemy_torpedoes": [], "decoys": [],
+                                     "asms": [], "essms": [], "asrocs": [],
+                                     "nixies": [], "buoys": [], "helo": {},
+                                     "flights": [], "raiders": [], "radars": {}}}]
                          for role in transport.STATIONS})
 
     server.revoke()
@@ -625,12 +635,14 @@ def test_sonar_audio_endpoint_is_bounded_context_bound_and_does_not_renew_presen
                    session["csrf"])[0] == 204
     assert server.client_statuses()[0]["presence"] == presence
 
-    blocks = [bytes([value]) * transport.SONAR_AUDIO_BYTES for value in (1, 2, 3)]
+    # More blocks than the ring holds: the oldest are dropped, newest are kept.
+    ring = transport.SONAR_AUDIO_RING_BLOCKS
+    blocks = [bytes([value]) * transport.SONAR_AUDIO_BYTES for value in range(1, ring + 4)]
     for pcm in blocks:
         assert server.publish_sonar_audio(
             pcm, world_session="world-a", world_epoch=7,
             station_generation=session["station_generation"])
-    assert len(server._sonar_audio) == 2
+    assert len(server._sonar_audio) == ring
     status, headers, payload = request(
         server, "/api/v2/sonar/audio", "POST", body, cookie, session["csrf"])
     assert status == 200 and payload == blocks[-1]
@@ -641,7 +653,7 @@ def test_sonar_audio_endpoint_is_bounded_context_bound_and_does_not_renew_presen
     assert headers["X-U-Jagd-PCM"] == "s16le"
     assert headers["X-U-Jagd-Sample-Rate"] == "4096"
     assert headers["X-U-Jagd-Audio-Frames"] == "1024"
-    assert headers["X-U-Jagd-Audio-Sequence"] == "3"
+    assert headers["X-U-Jagd-Audio-Sequence"] == str(len(blocks))
     assert headers["X-U-Jagd-Audio-Discontinuity"] == "0"
 
     body["after"] = 0

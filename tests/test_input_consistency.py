@@ -317,3 +317,16 @@ def test_joystick_open_hotplug_remove_and_device_failure(game, monkeypatch):
     monkeypatch.setattr(pygame.joystick, "Joystick", unavailable)
     event(game, pygame.JOYDEVICEADDED, device_index=1)
     assert game._joysticks == initial
+
+
+def test_compose_frame_survives_replaced_display_surface(game):
+    """X11/XWayland can swap pygame's display surface after the first event
+    pump; the stale reference becomes 0x0 and blitting to it used to crash
+    startup with "Surfaces must not be locked during blit"."""
+    game.display = pygame.Surface((0, 0))
+    game.screen.fill((10, 200, 30))
+    game.compose_frame()
+    live = pygame.display.get_surface()
+    assert game.display is live
+    x, y = live.get_width() // 2, live.get_height() // 2
+    assert live.get_at((x, y))[:3] != (0, 0, 0)

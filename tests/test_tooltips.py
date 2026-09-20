@@ -216,6 +216,7 @@ def test_opz_marker_hit_and_tooltip_share_position_bearing_after_ownship_move(mo
     track = Track()
     fake = NS(ship=NS(x=0.0, y=0.0, course=0.0), opz_tracks=lambda: [track],
               opz_affiliation=lambda _: "NEUTRAL", radar_range_nm=20.0,
+              live_engagement_pending_for_observation=lambda _: False,
               sim_t=10.0, air_picture=NS(stale_s=8.0), helo=None,
               tr=Translator("en").translate)
     ppi = stations_view.opz_ppi_rect()
@@ -255,6 +256,7 @@ def test_opz_track_tooltip_uses_observation_fields_only(monkeypatch):
 
     track = ObservedTrack()
     fake = NS(opz_affiliation=lambda track_id: "NEUTRAL", sim_t=20.0,
+              live_engagement_pending_for_observation=lambda _: False,
               air_picture=NS(stale_s=8.0))
     payload = stations_view._track_tooltip(fake, track)
     assert payload["id"] == "opz:track:S-4"

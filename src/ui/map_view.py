@@ -102,7 +102,8 @@ def map_hit_target(game, pos):
                          uncertainty=f"{fix['depth_uncertainty_m']:.0f}")
                  if fix["depth_m"] is not None else None)
         return layout.tooltip_payload(
-            message("map.tooltip.fix_title", contact=contact.id,
+            message("map.tooltip.fix_title",
+                    contact=observations.contact_display_id(game, contact),
                     source=fix["source"]),
             message("map.tooltip.fix_ages", measurement_age=f"{measurement_age:.0f}",
                     fix_age=f"{fix_age:.0f}"),
@@ -177,7 +178,8 @@ def map_hit_target(game, pos):
             sigma = getattr(contact, "range_sigma_nm", None)
             uncertainty = (f"+/-{float(sigma):.2f} NM" if sigma is not None else "--")
             return layout.tooltip_payload(
-                message("map.tooltip.sonar_title", contact=contact.id),
+                message("map.tooltip.sonar_title",
+                        contact=observations.contact_display_id(game, contact)),
                 observations.format_bearing_pair(contact, game.ship),
                 message("map.tooltip.contact_range", range=localize(distance), uncertainty=uncertainty),
                 message("map.tooltip.class_confidence", classification=display_value('classification', getattr(contact, 'player_class', None)), confidence=f"{getattr(contact, 'confidence', 0):.0%}"),
@@ -330,7 +332,7 @@ def draw_map_view(game, tr=None) -> None:
         tracks = game.radar_tracks()
 
         # Das Lagebild zeigt nur Sensortracks mit gemessener Position.
-        for track in (t for t in tracks if t["kind"] == "AIS"
+        for track in (t for t in tracks if t["kind"] in ("SURFACE", "AIS")
                       and observed_position(t)[0] is not None):
             tx, ty = observed_position(track)
             if not _in_rect(*view.world_to_screen(tx, ty), r):
@@ -405,7 +407,8 @@ def draw_map_view(game, tr=None) -> None:
             pygame.draw.line(s, color, (px - 6, py), (px + 6, py), 1)
             pygame.draw.line(s, color, (px, py - 6), (px, py + 6), 1)
             layout.blit_line(
-                s, message("map.line.sonar_fix", contact=contact.id,
+                s, message("map.line.sonar_fix",
+                           contact=observations.contact_display_id(game, contact),
                            source=fix["source"]),
                 (px + 9, py - 19, 180, 18), color, size=12)
 
@@ -430,7 +433,8 @@ def draw_map_view(game, tr=None) -> None:
                         "buoy": localize("map.source.buoy")}
                        .get(contact.range_source, "FIX"))
                 s.blit(game.font.render(localize(message(
-                    "map.line.contact_fix", contact=contact.id,
+                    "map.line.contact_fix",
+                    contact=observations.contact_display_id(game, contact),
                     range=f"{observations.range_nm(contact, game.ship):4.1f}", source=src)),
                     True, line_col), (int(tx) + 11, int(ty) - 22))
                 nato_symbols.draw_motion_vector(
@@ -442,7 +446,9 @@ def draw_map_view(game, tr=None) -> None:
                 ey = fy - 300 * math.cos(brg)
                 pygame.draw.line(s, config.COLOR_WARN, (int(fx), int(fy)),
                                  (int(ex), int(ey)), 1)
-                s.blit(game.font.render(message("map.line.bearing_only", contact=contact.id),
+                s.blit(game.font.render(message("map.line.bearing_only",
+                                                contact=observations.contact_display_id(
+                                                    game, contact)),
                                          True, config.COLOR_WARN),
                        (int(fx) + 14, int(fy) - 20))
 

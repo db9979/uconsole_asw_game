@@ -12,7 +12,17 @@ from src.core import config
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.commander.server import CHART_MAX_BYTES, STATE_MAX_BYTES, STATIONS
-from src.sensors.esm import ESMCorrelationEvidence, correlate_observations
+from src.sensors.esm import (
+    ESMCorrelationEvidence,
+    ESM_BROADBAND_SENSOR_COUNT,
+    ESM_DF_SENSOR_COUNT,
+    ESM_FREQUENCY_MAX_HZ,
+    ESM_FREQUENCY_MIN_HZ,
+    correlate_observations,
+    signal_state,
+    track_is_operational,
+    spectrum_band,
+)
 
 
 ROLE_NAMES = STATIONS
@@ -44,7 +54,7 @@ def _observation(row, fields):
 
 _TACTICAL_FIELDS = ("ref", "label", "domain", "source", "affiliation",
                     "bearing", "range_nm", "x", "y", "course", "speed_kn",
-                    "observer_x", "observer_y", "quality",
+                    "altitude_m", "observer_x", "observer_y", "quality",
                     "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm")
 _SONAR_FIELDS = ("ref", "label", "source", "classification", "bearing",
                  "range_nm", "x", "y", "depth_m", "course", "speed_kn",
@@ -57,6 +67,9 @@ _HELICOPTER_TACTICAL_FIELDS = _TACTICAL_FIELDS + ("classification", "released_to
 
 _HISTORY_ROWS_MAX = config.LOFAR_HISTORY_COLS
 _BROADBAND_BINS_MAX = 180
+_BROADBAND_LONG_ROWS_MAX = config.SONAR_BROADBAND_LONG_ROWS
+_BROADBAND_LONG_BINS_MAX = 90
+_DEMON_HISTORY_ROWS_MAX = config.SONAR_DEMON_HISTORY_ROWS
 _TMA_CONTACTS_MAX = 32
 _TMA_POINTS_MAX = 24
 _ECHOES_MAX = 40
@@ -73,6 +86,22 @@ def _series(values, maximum, stride=1):
         if number is None:
             return []
         result.append(number)
+    return result
+
+
+def _mean_binned_series(values, maximum):
+    """Downsample a circular power scan without dropping bearing sectors."""
+    source = _series(values, len(values)) if isinstance(values, (list, tuple)) else []
+    if not source or maximum < 1:
+        return []
+    if len(source) <= maximum:
+        return source
+    result = []
+    for index in range(maximum):
+        start = index * len(source) // maximum
+        stop = (index + 1) * len(source) // maximum
+        group = source[start:max(start + 1, stop)]
+        result.append(sum(group) / len(group))
     return result
 
 
@@ -121,7 +150,10 @@ def _common(game, status, role):
                      visibility_nm=_number(weather["visibility_nm"])),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
-                             remaining_s=_number(game.mission.remaining_s(game.mission_time))))
+                             remaining_s=_number(game.mission.remaining_s(game.mission_time))),
+                audio=dict(
+                    events=[dict(seq=int(row["seq"]), cue=str(row["kind"]))
+                            for row in list(game._sound_events)[-16:]]))
 
 
 def redacted_state(status):
@@ -148,11 +180,20 @@ def _sonar_visualization(game, rows, sonar_refs):
     sonar = game.sonar
     receiver = sonar.receiver
     broadband = []
-    bb_rows = list(sonar.broadband_history)[-_HISTORY_ROWS_MAX:]
-    bb_times = list(sonar.history_times)[-len(bb_rows):]
+    long_available = bool(getattr(sonar, "broadband_long_history", ()))
+    bb_source = (sonar.broadband_long_history if long_available
+                 else sonar.broadband_history)
+    bb_time_source = (sonar.broadband_long_times if long_available
+                      else sonar.history_times)
+    bb_limit = _BROADBAND_LONG_ROWS_MAX if long_available else _HISTORY_ROWS_MAX
+    bb_bins = _BROADBAND_LONG_BINS_MAX if long_available else _BROADBAND_BINS_MAX
+    bb_rows = list(bb_source)[-bb_limit:]
+    bb_times = list(bb_time_source)[-len(bb_rows):]
     for stamp, values in zip(bb_times, bb_rows):
+        source_bins = (_mean_binned_series(values, bb_bins) if long_available
+                       else _series(values, bb_bins))
         bins = [round(min(1.0, max(0.0, value * 10 ** (sonar.gain_db / 20))), 5)
-                for value in _series(values, _BROADBAND_BINS_MAX)]
+                for value in source_bins]
         age = _age(game.sim_t, stamp)
         if age is not None and bins:
             broadband.append(dict(age_s=age, bins=bins))
@@ -187,6 +228,15 @@ def _sonar_visualization(game, rows, sonar_refs):
             detection_confidence=_number(data.get("detection_confidence")),
             cavitation=_number(data.get("cavitation")),
             tonal_hz=_number(data.get("tonal_hz")), hypotheses=hypotheses)
+
+    demon_history = []
+    dm_rows = list(getattr(sonar, "demon_history", ()))[-_DEMON_HISTORY_ROWS_MAX:]
+    dm_times = list(getattr(sonar, "demon_times", ()))[-len(dm_rows):]
+    for stamp, values in zip(dm_times, dm_rows):
+        bins = [round(value, 5) for value in _series(values, 80)]
+        age = _age(game.sim_t, stamp)
+        if age is not None and bins:
+            demon_history.append(dict(age_s=age, bins=bins))
 
     tma = []
     for row in (row for row in rows if row["source"].startswith("SONAR")):
@@ -246,7 +296,8 @@ def _sonar_visualization(game, rows, sonar_refs):
                 array=str(echo.get("mode", ""))[:16]))
 
     return dict(
-        broadband=dict(bearing_start_deg=0.0, bearing_step_deg=2.0,
+        broadband=dict(bearing_start_deg=0.0,
+                       bearing_step_deg=360.0 / bb_bins,
                        history=broadband),
         lofar=dict(frequency_min_hz=0.0, frequency_max_hz=config.LOFAR_FMAX_HZ,
                    bin_frequencies_hz=[config.lofar_bin_freq(i)
@@ -254,7 +305,7 @@ def _sonar_visualization(game, rows, sonar_refs):
                    history=lofar, spectrum=spectrum, held=held),
         demon=dict(frequency_min_hz=1.0, frequency_max_hz=80.0,
                    bin_step_hz=1.0, spectrum=_series(receiver.demon_spectrum, 80),
-                   analysis=analysis),
+                   history=demon_history, analysis=analysis),
         tma=tma, bt=bt_data, active_echoes=echoes,
         receiver=dict(array=str(sonar._receiver_mode)[:16],
                       listen_bearing=_number(sonar.listen_bearing),
@@ -493,6 +544,10 @@ def _eloka(game, rows, esm_refs, candidate_refs):
                             score=_number(item.score))
                       for item in game.eloka_candidates(track)[:5]]
         annotation = game.eloka_annotation_name(track.track_key)
+        analysis = game.eloka_analysis(track)
+        channel = next((item for item in game.ecm_jammer.channels
+                        if item.track_key == track.track_key), None)
+        threat = "unknown" if analysis is None else analysis.threat_level
         correlations = []
         evidence_by_ref = {item.track_id: item for item in evidence}
         for item in correlate_observations(track, evidence, game.sim_t):
@@ -513,12 +568,38 @@ def _eloka(game, rows, esm_refs, candidate_refs):
             bearing=_number(track.bearing),
             bearing_uncertainty_deg=_number(track.bearing_uncertainty_deg),
             frequency_hz=_number(track.frequency_hz), prf_hz=_number(track.prf_hz),
+            frequency_band=spectrum_band(track.frequency_hz).value,
             modulation=track.modulation_code, quality=_number(track.display_quality(
                 game.sim_t, game.esm_picture.stale_s)), age_s=age,
+            radar_type=(None if analysis is None or analysis.radar_type is None
+                        else analysis.radar_type.value),
+            threat=threat,
+            signal_state=signal_state(track, game.sim_t, threat),
+            operational=track_is_operational(
+                track, game.sim_t, threat,
+                annotated=game.eloka_annotation(track.track_key) is not None,
+                jamming=channel is not None),
+            ambiguous=False if analysis is None else analysis.ambiguous,
+            synthetic_assumption=bool(track.synthetic_assumption),
+            auto_jamming=bool(game.ecm_jammer.auto_enabled),
+            jamming=channel is not None,
+            jamming_effectiveness=(None if channel is None else
+                                   _number(channel.effectiveness)),
+            jamming_technique=(None if channel is None else channel.technique),
+            ecm_power_draw=(None if channel is None else
+                            _number(channel.power_draw)),
+            is_locked_on=False if channel is None else bool(channel.is_locked_on),
+            hoj_risk=bool(channel is not None and channel.technique == "noise"),
             annotation=None if annotation is None else str(annotation)[:128],
             candidates=candidates, correlations=correlations))
     down = game.damage.station_down("opz")
     return dict(intercepts=intercepts, station_down=down,
+                hardware=dict(df_sensors=ESM_DF_SENSOR_COUNT,
+                              broadband_sensors=ESM_BROADBAND_SENSOR_COUNT,
+                              ecm_channels=game.ecm_jammer.MAX_CHANNELS,
+                              frequency_min_hz=ESM_FREQUENCY_MIN_HZ,
+                              frequency_max_hz=ESM_FREQUENCY_MAX_HZ,
+                              reaction_s=game.ecm_jammer.REACTION_DELAY_S),
                 status="down" if down else "live")
 
 
@@ -653,6 +734,11 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
     for role in ROLE_NAMES:
         state = deepcopy(common)
         state["role"] = role
+        if role != "eloka":
+            state["audio"]["events"] = [
+                event for event in state["audio"]["events"]
+                if event["cue"] != "esm_contact"
+            ]
         state["autocrew"] = dict(enabled=bool(game.autocrew.enabled[role]),
                                  status=game.autocrew.status(game, role))
         state[role] = operational[role]

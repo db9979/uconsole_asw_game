@@ -1,0 +1,726 @@
+"""Globale Konfiguration & Einheitenkonversionen.
+
+Einheiten: Nautische Meilen (NM) und Knoten (kn).
+1 kn = 1 NM/h.
+
+Layout: Widescreen-Grid 1280x720 (Top-Bar / 2x Hauptpanel / Bottom-Feed).
+"""
+
+import math
+import os
+
+from src.data.catalog import CATALOG
+
+
+def _required_catalog_profile(kind: str, key: str):
+    profiles = getattr(CATALOG, kind, None)
+    if profiles is None or key not in profiles:
+        raise RuntimeError(
+            f"Kontaktkatalog unvollstaendig: {kind}-Profil '{key}' fehlt")
+    return profiles[key]
+
+
+_DECOY_PROFILE = _required_catalog_profile("decoys", "decoy")
+_HELO_TORP_PROFILE = _required_catalog_profile("torpedoes", "helo_torp")
+
+# Display: virtuelles 1280x720-Canvas (uConsole: Stretch per FILL_SCREEN).
+SCREEN_W = 1280
+SCREEN_H = 720
+FPS = 60
+# Keep tactical circles and bearings geometrically correct on arbitrary windows.
+# Unused space is letterboxed instead of stretching the virtual canvas.
+FILL_SCREEN = False
+AUDIO_ENABLED = True
+AUDIO_SAMPLE_RATE = 22050
+AUDIO_UPDATE_S = 0.25
+# Solo Remote Crew: while the paired browser is live the uConsole only redraws a
+# small status screen (display only; the simulation is unaffected).
+ECO_REDRAW_S = 0.25
+ECO_PRESENCE_POLL_S = 0.5
+ECO_PRESENCE_MAX_AGE_S = 5.0
+# Pygame specifies its mixer buffer in samples. 512 samples are about 23 ms at
+# 22050 Hz. Longer scheduling gaps are handled in software: locally by the
+# AudioEngine's two-second buffered-sonar queue (SONAR_BUFFER_MAX_S), and for
+# Remote Crew by the server's 40-block ring buffer of 0.25 s blocks, ~10 s
+# (SONAR_AUDIO_RING_BLOCKS in src/commander/server.py).
+AUDIO_MIXER_BUFFER_SAMPLES = 512
+# Mono output: halves per-block synthesis, resampling and mixer workload on
+# the low-power uConsole; stereo bearing panning is skipped in mono.
+AUDIO_CHANNELS = 1
+# Bounded size of the optional U_JAGD_PERF_DEBUG main-loop timing log; see
+# Game._perf_debug_log. Mirrors AudioEngine.DEBUG_LOG_MAX_BYTES.
+PERF_DEBUG_LOG_MAX_BYTES = 1_000_000
+
+# M8: CRT-Scanline-Overlay (subtiler Phosphor-Look)
+CRT_SCANLINES = False
+# W2: Rotlicht-Nachtmodus (Preferences.night_mode) - Multiply-Blend-Farbe
+NIGHT_MODE_COLOR = (255, 60, 60)
+SCANLINE_ALPHA = 14
+
+# --- W0: 3-Teil-Grid (Widescreen 1280x720) ---
+TOP_BAR_H = 30                       # oberer Statusbalken
+BOTTOM_H = 180                       # Funk-Log & Telemetrie
+MAIN_TOP = TOP_BAR_H                 # 30
+MAIN_BOTTOM = SCREEN_H - BOTTOM_H    # 540
+MAP_RECT = (0, MAIN_TOP, 640, MAIN_BOTTOM - MAIN_TOP)          # (0,30,640,510)
+STATION_RECT = (640, MAIN_TOP, 640, MAIN_BOTTOM - MAIN_TOP)    # (640,30,640,510)
+STATION_PANEL_RECT = STATION_RECT
+FULL_STATION_RECT = (0, MAIN_TOP, SCREEN_W, MAIN_BOTTOM - MAIN_TOP)
+OPZ_STATION_RECT = (0, MAIN_TOP, SCREEN_W, SCREEN_H - MAIN_TOP)
+FEED_RECT = (0, MAIN_BOTTOM, 960, BOTTOM_H)                    # (0,540,960,180)
+TELEMETRY_RECT = (960, MAIN_BOTTOM, 320, BOTTOM_H)             # (960,540,320,180)
+
+# --- Zeitsteuerung: eine gemeinsame physikalische Simulationszeit ---
+# Bei 1x gilt strikt: 1 reale Sekunde = 1 Simulationssekunde. Der Faktor bleibt
+# als Kompatibilitaetsname bestehen, darf aber keine versteckte Kompression sein.
+TACTICAL_TIME_SCALE = 1.0
+# Spielminuten pro Simulationssekunde: ergibt eine reale 24-h-Uhr.
+GAME_TIME_PER_SEC = 1.0 / 60.0
+# Legacy save/protocol field: simulation always runs at real-time speed.
+TIME_SCALE_STEPS = (1,)
+TIME_SCALE_DEFAULT = 0
+PHYS_SUBSTEP_S = 0.05             # max. sim-Sekunden pro Physik-Substep (Anti-Tunneling:
+                                  # 45 kn legen in 0.05 s ca. 0.000625 NM zurueck)
+PHYS_SUBSTEP_MAX = 240
+MAP_ZOOM_MIN_PX_PER_NM = 1.0      # ganze Welt sichtbar (500 NM in 510 px)
+MAP_ZOOM_MAX_PX_PER_NM = 14.0     # Detail-Zoom (~36 NM in 510 px)
+MAP_ZOOM_DEFAULT_PX_PER_NM = 10.0 # Start-Zoom (~51 NM hoch, ~64 NM breit)
+MAP_ZOOM_WHEEL_FACTOR = 1.25      # stufenlos pro Mausrad-Schritt
+OPZ_MAP_DEFAULT_RADIUS_NM = 40.0
+OPZ_MAP_MAX_ZOOM_RADIUS_NM = 5.0
+
+# Welt
+WORLD_SIZE_NM = 500.0     # quadratische Welt in NM
+# W2: Meeresstroemung - raumabhaengiges, aber schwaches Feld (Schelfmeer-
+# Groessenordnung); wirkt als reiner Driftzusatz zur eigenen Fahrt.
+CURRENT_MAX_KN = 1.0
+NM_PER_PX_MAP = 1.0
+
+# Fregatte
+SHIP_SPEED_MIN_KN = 4.0
+SHIP_SPEED_MAX_KN = 25.0
+SHIP_SPEED_START_KN = 12.0
+SHIP_TUR_RATE_DEG_PER_S = 0.8         # max. Kurssatz des Schiffes
+SHIP_TURN_INPUT_DEG_PER_S = 75.0      # Zielkurs-Drehung bei gedrückter Taste
+SHIP_SPEED_RESP_KN_PER_S = 0.08       # ca. 2-4 min bis volle Fahrt (Legacy-Name)
+# W2: hydrodynamische Fahrtantwort - Exponential-Verzug statt fixer Rampe
+# (Schub/Widerstand-Gleichgewicht: schnelle Anfangsbeschleunigung, die sich
+# asymptotisch dem Zielwert naehert, statt linear bis zum Anschlag zu laufen).
+SHIP_SPEED_TAU_S = 40.0
+SHIP_SPEED_INPUT_KN_PER_S = 3.0       # Zielgeschw.-Anpassung bei gedrückter Taste
+
+# Sonar (Captain's Log §1)
+SONAR_PASSIVE_BASE_NM = 20.0          # Basis-Grundreichweite passiv
+SONAR_ACTIVE_BASE_NM = 18.0           # Basis-Grundreichweite aktiv (Ping)
+SONAR_PING_COOLDOWN_S = 30.0          # Sende-/Auswertezyklus
+SONAR_PING_FIX_MAX_AGE_S = 120.0      # Unsicherheit waechst danach stark
+SONAR_PING_HEAR_RANGE_NM = 60.0       # Intercept deutlich weiter als Echo
+SONAR_PING_RANGE_ERROR_NM = 0.18      # max. gleichverteilter Messfehler
+SONAR_PING_DEPTH_ERROR_M = 12.0       # max. gleichverteilter Messfehler
+SONAR_ECHO_HISTORY_MAX = 80           # persistente ACTIVE-Beobachtungen
+SONAR_THERMO_PASSIVE_ABOVE = 1.15     # Ziel über Thermokline: besser
+SONAR_THERMO_PASSIVE_BELOW = 0.55     # Ziel unter Thermokline: schlechter
+SONAR_THERMO_ACTIVE_BELOW = 0.35      # Ping in Schattenzone
+SONAR_PASSIVE_RANGE_ERR = 0.25        # passive Distanz-Schätzung +/-25 %
+SONAR_CONF_PASSIVE_PER_S = 0.012      # Verarbeitung braucht belastbare Historie
+SONAR_CONF_PING_BONUS = 0.30          # Konfidenz-Sprung pro Echo
+SONAR_CONF_DECAY_PER_S = 0.003        # langsames Auslaufen einer Spur
+SONAR_CONTACT_LOST_S = 120.0          # taktisch nutzbare Track-Historie
+
+# W1: SNR-/Peilmodell (faktorielle Dekomposition der passiven Reichweite)
+# SNR_dB = 20*log10(R_eff/d)  –  R_eff aus folgenden Faktoren:
+SONAR_SNR_DETECT_DB = 0.0            # Grenzwert: SNR >= 0 dB = detektiert
+SONAR_SNR_QUALITY_SPAN_DB = 14.0     # SNR bei dem Qualität=1.0 (0 dB = ~0)
+# (Peilfehler: siehe unten, Block "W1: TMA" – BEARING_ERR_*)
+
+# W2: Schallausbreitung (Captain's Log §1)
+SOUND_SPEED_M_S = 1500.0             # Schall in Salzwasser
+THERMO_SHADOW_BONUS_DB = 22.0        # Brechung an Sprungschicht: Schattenzone
+CZ_CONVERGENCE_GAIN_DB = 8.0         # Konvergenzzone: Fokus unterhalb/oberhalb
+
+# U-Boot-KI (M2: Patrouille + Ausweichen; sim-Sekunden)
+SUB_EVADE_DURATION_S = 240.0
+# W2: Tiefenaenderung mit Traegheit statt sofort voller Rate (Auftrieb/
+# Anstellwinkel-Ersatz) - begrenzt, wie schnell sich depth_rate_mps aendert.
+SUB_DEPTH_ACCEL_MPS2 = 0.15
+SUB_PATROL_TURN_PERIOD_S = 600.0
+# W2: Taktik-Erweiterung
+SUB_LUER_DURATION_S = (300.0, 900.0) # LAUER: still liegen + lauschen
+SUB_LUER_DIST_NM = 25.0              # LAUER nur, wenn Fregatte naeher
+SUB_TORPEDO_ALERT_NM = 35.0          # Torpedostart akustisch hörbar
+# W2: aggressive Boote riskieren gelegentlich einen aktiven Ping zur
+# Zielaufklärung - laut, sofort gehört, kein Dauerzustand (nur Peilung/Flash,
+# keine Feuerlösung).
+SUB_ACTIVE_PING_MIN_AGGRESSION = 0.6
+SUB_ACTIVE_PING_MAX_RANGE_NM = 15.0
+SUB_ACTIVE_PING_CHANCE_PER_S = 0.01
+SUB_ACTIVE_PING_COOLDOWN_S = 120.0
+# Kompatibilitaetsnamen; das geladene JSON-Profil ist die Laufzeitquelle.
+SUB_DECOY_CHANCE = _DECOY_PROFILE.chance
+SUB_DECOY_LIFE_S = _DECOY_PROFILE.life_s
+SUB_DECOY_COOLDOWN_S = _DECOY_PROFILE.cooldown_s
+SUB_DECOY_SPEED_KN = _DECOY_PROFILE.speed_kn
+
+# M4: Zivile Schiffe & Radar
+CIVILIAN_HIT_RADIUS_NM = 0.2   # Torpedo-Annäherung, die als Vorfall zählt
+RADAR_RANGE_NM = 40.0          # Kompatibilitaetswert
+RADAR_SURFACE_RANGE_NM = 30.0
+RADAR_AIR_RANGE_NM = 100.0
+
+# KAMPFSCHIFF (Kontakt-DB): feindliche Kriegsschiffe loiteren um ihre Basis
+# und feuern ASM-Salven, wenn die Fregatte in Reichweite ist.
+WARSHIP_ASM_RANGE_NM = 35.0    # Abstand, ab dem Salven möglich sind
+WARSHIP_TORPEDO_EVADE_S = 90.0  # W2: Torpedoalarm -> harte Wende, dann weiter
+
+# M5: Schadensmodell (Raten in sim-Sekunden)
+DMG_FLOOD_RATE = 0.10          # schwere Flutung: Minuten bis kritisch
+DMG_LEAK_RATE = 0.025          # stabilisierte Restleckage
+DMG_REPAIR_RATE = 0.12         # Abpumpung pro Reparaturteam
+DMG_DESTROY_FLOOD = 70.0       # % Flutung -> Kompartiment ZERSTOERT
+DMG_SHIP_SINK_TOTAL = 540.0    # 60 % mittlere Flutung über neun Räume
+DMG_SONAR_DEGRADED_FACTOR = 0.5  # Sonar-Reichweitenfaktor bei gestörter Sonarzentrale
+ENEMY_TORP_SPEED_KN = 28.0
+ENEMY_TORP_RANGE_NM = 30.0
+ENEMY_TORP_HIT_DIST_NM = 0.25
+ENEMY_TORP_QUIET = 0.10            # laut – passiv gut auffindbar
+SUB_ATTACK_COOLDOWN_S = 90.0
+
+# M9: Sensormatrix & manuelle Kontakt-Klassifizierung
+# Passiv (Geräusche): nur Peilung. Ping: Position+Tiefe. Radar: Position.
+# ESM: nur Peilung von Radargeräten ziviler Schiffe.
+ESM_RANGE_NM = 150.0            # ESM-"Reichweite" (Peilung von Radargeräten)
+ESM_BEARING_ERR_DEG = 3.0       # ESM-Peilungsfehler (± Grad)
+ESM_EMITTER_PROB = 0.6          # Anteil ziviler Schiffe mit aktivem Radargerät
+# Bridge lookout: explicit horizon/recognition assumptions. A submarine is
+# visually surfaced only at or above 2 m; snorkel-depth operation is excluded.
+LOOKOUT_SURFACE_RANGE_NM = 12.0
+LOOKOUT_SUB_RANGE_NM = 5.0
+LOOKOUT_AIR_RANGE_NM = 20.0
+LOOKOUT_SUB_SURFACED_MAX_DEPTH_M = 2.0
+LOOKOUT_NIGHT_FACTOR = 0.35
+LOOKOUT_SEA_STATE_LOSS = 0.08
+LOOKOUT_BEARING_ERR_DEG = 0.6
+LOOKOUT_RANGE_ERR_FRAC = 0.06
+LOOKOUT_EPOCH_S = 0.5
+CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
+PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG",
+                  "FLUGZEUG")
+PLAYER_CLASS_LABELS = {
+    "U_BOOT": "U-Boot",
+    "KAMPFSCHIFF": "Kampfschiff",
+    "BIOLOGISCH": "Biologisch",
+    "FAHRZEUG": "Fahrzeug",
+    "FLUGZEUG": "Flugzeug",
+}
+
+# OPZ/CIC: manuell gesetzte NATO-Zugehoerigkeit. Die Domaene (See, Luft,
+# Flugkoerper) stammt nur aus dem beobachteten Sensor-Track.
+NATO_AFFILIATIONS = ("UNKNOWN", "FRIEND", "NEUTRAL", "HOSTILE")
+NATO_AFFILIATION_LABELS = {
+    "UNKNOWN": "Unbekannt",
+    "FRIEND": "Freund",
+    "NEUTRAL": "Neutral",
+    "HOSTILE": "Feind",
+}
+OPZ_FUSION_MAX = 32
+OPZ_FUSION_MEMBER_MIN = 2
+OPZ_FUSION_MEMBER_MAX = 8
+
+# M10: Telegraph & Maschinenraum (diskrete Motorenbefehle)
+TELEGRAPH_ORDERS = (
+    ("STOP", 0.0),
+    ("SLOW", 6.0),
+    ("HALF", 10.0),
+    ("FULL", 16.0),
+    ("FLANK", 25.0),
+)
+TELEGRAPH_DEFAULT = 2           # Index (HALF)
+ASTERN_SPEED_KN = 3.0           # Fiktive Bergungsfahrt; separater Zustand
+SHIP_RPM_MIN = 20.0             # Leerlauf-RPM
+SHIP_RPM_PER_KN = 2.4
+SHIP_FUEL_CAPACITY_KG = 500_000.0
+SHIP_FUEL_HOTEL_KG_H = 400.0
+SHIP_FUEL_MAX_PROPULSION_KG_H = 7_400.0
+SHIP_FUEL_ASTERN_FACTOR = 1.15
+SHIP_MAX_RUDDER_DEG = 30.0
+SHIP_RUDDER_RATE_DEG_PER_S = 4.0
+SHIP_YAW_RESPONSE_S = 10.0
+SHIP_MAX_YAW_RATE_DEG_PER_S = 0.8
+SHIP_YAW_DAMPING = 2.0
+# Asymmetric flooding heels the ship toward the heavier side (list) and makes
+# it want to yaw that way, requiring constant rudder correction to hold a
+# straight course - a small, bounded game model of a real damage-control
+# effect, derived purely from the existing hull_left/hull_right flood state
+# (no new persisted ship state).
+SHIP_LIST_DEG_PER_FLOOD_PCT = 0.15
+SHIP_MAX_LIST_DEG = 15.0
+SHIP_LIST_YAW_GAIN = 0.05        # deg/s of persistent yaw pull per degree of list
+CAVITATION_KN = 15.0            # Schraubenkavitation ab dieser Fahrt
+CAVITATION_PASSIVE_FACTOR = 0.35   # passives Sonar bei Kavitation: Sensor "bricht"
+SEA_STATE_SONAR_FACTOR = 0.06     # passiver Reichweiten-Abzug pro Seegang-Grad
+
+# M11: Sonar-Suite (Bug-/Towed-Array, Konvergenzzone)
+SONAR_ARRAY_BOW_PASSIVE = 1.0
+SONAR_ARRAY_BOW_PING = 1.0
+SONAR_ARRAY_TOWED_PASSIVE = 1.4   # Towed-Array: besser, verliert aber mit Fahrt
+SONAR_ARRAY_TOWED_PING = 0.8
+SONAR_TOWED_SPEED_PENALTY = 0.03  # passiver Abzug pro kn bei Towed-Array
+SONAR_TOWED_DEPTH_M = 50.0        # Schleppsonar-Tiefe (SNR: Tiefe = stabiler)
+SONAR_TOWED_DEEP_BONUS = 1.25     # Towed: Ziel im Tiefenband 30-250 m = besser
+SONAR_TOWED_DEPTH_MIN_M = 20.0
+SONAR_TOWED_DEPTH_MAX_M = 260.0
+SONAR_TOWED_DEPTH_RATE_M_S = 4.0
+SONAR_TOWED_SPEED_SHALLOW_M_PER_KN = 4.0
+SONAR_TOWED_DEPLOY_S = 360.0
+SONAR_TOWED_RETRIEVE_S = 480.0
+SONAR_TOWED_HANDLING_MIN_KN = 3.0
+SONAR_TOWED_HANDLING_MAX_KN = 12.0
+SONAR_TOWED_MAX_SAFE_KN = 20.0
+SONAR_TOWED_AVAILABLE_PAYOUT = 0.95
+SONAR_TOWED_SETTLE_S = 30.0
+SONAR_TOWED_HEADING_LAG_S = 45.0
+SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
+SONAR_FUSION_CONFIRM_DEG = 5.0
+SONAR_FUSION_DIVERGENT_DEG = 9.0
+SONAR_BT_COOLDOWN_S = 60.0
+SONAR_PAGE_COUNT = 6
+CZ_BANDS = ((40.0, 70.0), (90.0, 130.0))  # Konvergenzzonen (NM, vom Schallfenster)
+CZ_BONUS_NM = 25.0              # zusätzliche passive Reichweite in der Zone
+
+# W1: LOFAR-Wasserfall (hohe Auflösung im niedrigen Hz-Bereich)
+LOFAR_FMAX_HZ = 300.0
+LOFAR_BINS = 110               # 0-40 Hz @1 Hz, 40-100 Hz @2 Hz, 100-300 Hz @5 Hz
+LOFAR_HISTORY_COLS = 80
+LOFAR_SAMPLE_S = 0.25          # sim-Sekunden pro Wasserfall-Spalte
+# Display-only, decimated histories.  The fine receiver history remains the
+# save-compatible 20 s buffer above; these bounded rings provide operator time
+# context without changing detections or the v10 save schema.
+SONAR_BROADBAND_LONG_SAMPLE_S = 2.0
+SONAR_BROADBAND_LONG_ROWS = 120       # four minutes
+SONAR_DEMON_HISTORY_ROWS = 120        # thirty seconds at receiver cadence
+
+# M12: OPZ / EMCON
+RADAR_ON_DEFAULT = True
+RADAR_RANGE_SCALES_NM = (10.0, 20.0, 40.0, 80.0, 120.0)
+RADAR_RANGE_DEFAULT_NM = 40.0
+RADAR_SWEEP_DEG_PER_S = 90.0
+RADAR_AFTERGLOW_S = 3.2
+RADAR_WEATHER_THRESHOLD = 5
+RADAR_SURFACE_WEATHER_LOSS = 0.25
+RADAR_AIR_WEATHER_LOSS = 0.10
+RADAR_WEATHER_ERROR_GAIN = 1.5
+RADAR_TRACK_STALE_S = 30.0
+RADAR_BEARING_ERR_DEG = 0.8
+RADAR_RANGE_ERR_FRAC = 0.015
+# Air-search radar height estimate: a game model of a 3D radar's altitude
+# channel, noisier than range (fraction of altitude plus a fixed floor).
+RADAR_ALTITUDE_ERR_FRAC = 0.04
+RADAR_ALTITUDE_ERR_M = 60.0
+OBS_ALTITUDE_SMOOTH = 0.35
+# Observation filters operate on sensor epochs, not render/physics substeps.
+OBS_RADAR_EPOCH_S = 0.5
+OBS_BEARING_EPOCH_S = 5.0
+OBS_RADAR_SMOOTH_TAU_S = 1.5
+OBS_BEARING_SMOOTH_TAU_S = 4.0
+# 12 fixes at the 0.5s epoch above is only a 6s regression window - far too
+# short for bearing/range noise to average out against typical contact
+# displacement (the raw slope's noise scales with window_span^-1.5), which is
+# what made the derived course/speed swing wildly between re-fits. 60 fixes
+# (30s) keeps a still-responsive window while cutting that noise by roughly
+# an order of magnitude.
+OBS_HISTORY_MAX = 60
+# Presentation-only slew cap for the derived (bearing-only) contact course:
+# real hulls turn at well under 1.5 deg/s (see motion_limits()), so capping
+# the DISPLAYED course at this rate keeps it stable between per-fix least
+# squares re-fits without ever lagging behind an actual maneuver noticeably.
+OBS_DERIVED_COURSE_MAX_RATE_DEG_S = 3.0
+# Same idea for the derived (bearing-only) contact speed: every simulated
+# contact type that ever goes through this path (ships, flights, ASMs) flies
+# at a constant true speed once spawned/launched - there is no real maneuver
+# to keep up with - so a per-fix noise-driven jump here is pure display
+# jitter and can be damped hard without ever lagging a genuine change.
+OBS_DERIVED_SPEED_MAX_RATE_KN_S = 5.0
+MOTION_VECTOR_WINDOW_MIN = 3.0
+
+# M13: Funkraum / HFDF
+SNOCKEL_TRANSMIT_NOISE = -0.20  # Lärmänderung beim Senden (negativ = lauter)
+HFDF_RANGE_NM = 120.0
+HFDF_BEARING_ERR_DEG = 8.0
+WEATHER_BULLETIN_PERIOD_S = 1800.0
+WEATHER_SHIFT_PERIOD_S = 3600.0
+WEATHER_TRANSITION_S = 600.0
+WEATHER_WIND_MAX_KN = 60.0
+WEATHER_VISIBILITY_MIN_NM = 0.25
+WEATHER_VISIBILITY_MAX_NM = 30.0
+RADAR_RAIN_SURFACE_LOSS = 0.10
+RADAR_RAIN_AIR_LOSS = 0.20
+RADAR_RAIN_ERROR_GAIN = 0.75
+# Own radar antenna/mast height for the geometric radar horizon (standard
+# "4/3 Earth radius" refraction constant). Sea-skimming threats at very low
+# altitude/height stay below this horizon until they close to short range,
+# regardless of the nominal power-limited radar range above.
+RADAR_ANTENNA_HEIGHT_M = 20.0
+# Target-side heights for the same horizon term, applied to contacts that
+# previously used only the flat power-limited range (civilians/warships/
+# regular air traffic) - raiders already used this via their own altitude_m.
+RADAR_SURFACE_TARGET_HEIGHT_M = 10.0
+FLIGHT_RADAR_ALTITUDE_M = 3000.0
+FLIGHT_ALTITUDE_SPREAD = 0.6    # per-flight altitude 0.7x..1.3x of the above
+
+
+def flight_altitude_m(seq: int) -> float:
+    """Deterministic per-flight altitude (no RNG draw, save-compatible)."""
+    unit = (int(seq) * 7919 % 101) / 100.0
+    return FLIGHT_RADAR_ALTITUDE_M * (
+        1.0 - FLIGHT_ALTITUDE_SPREAD / 2.0 + FLIGHT_ALTITUDE_SPREAD * unit)
+
+
+def measure_altitude_m(rng, altitude_m: float, error_scale: float = 1.0) -> float:
+    """Noisy radar altitude estimate from a caller-owned RNG stream."""
+    fraction = RADAR_ALTITUDE_ERR_FRAC * error_scale
+    return max(0.0, altitude_m * (1.0 + rng.uniform(-fraction, fraction))
+               + rng.uniform(-RADAR_ALTITUDE_ERR_M, RADAR_ALTITUDE_ERR_M))
+HELO_LAUNCH_WIND_MAX_KN = 32.0
+HELO_LAUNCH_CROSSWIND_MAX_KN = 22.0
+HELO_LAUNCH_VISIBILITY_MIN_NM = 2.0
+HELO_LAUNCH_SEA_STATE_MAX = 5.0
+HELO_DIP_WIND_MAX_KN = 30.0
+HELO_DIP_VISIBILITY_MIN_NM = 1.0
+HELO_DIP_SEA_STATE_MAX = 5.0
+ROE_DEFAULT = "STD"             # STD: geortet+klassifiziert | FREE: nur klassifiziert
+ROE_FREE_LAUNCH_RANGE_NM = 10.0 # FREE: Schätzweite ohne Ping beim Abschuss
+
+# M14: Brand (Schadens-2.0)
+DMG_FIRE_RATE = 0.08            # Brandentwicklung über Minuten
+DMG_FIRE_REPAIR_RATE = 0.14     # %/s pro Lösch-Team
+DMG_FIRE_SPREAD_PPS = 0.0002    # Nachbarbrand-Risiko pro Sekunde
+DMG_FIRE_START_CHANCE = 0.35    # Brand-Chance je Treffer
+DMG_FIRE_START = (20.0, 40.0)
+DMG_FIRE_KILL = 100.0           # Brand > 100 % -> Kompartiment ZERSTOERT
+
+# M15: Waffensystem 2.0 (Drahttorpedo, Doktrin, Hubschrauber)
+TORP_DOCTRINE = "SHOOT_LOOK_SHOOT"
+TORP_MAX_IN_AIR = {"SHOOT_LOOK_SHOOT": 2, "SEMI_CONTINUOUS": 4}
+TORP_HOME_RANGE_NM = 1.2        # darunter: Homing, sonst Serpentin-Suchlauf
+TORP_MIDCOURSE_UPDATE_S = 0.5   # Draht-Mittelkurs-Update (Serpentin)
+TORP_SPOOLUP_S = 2.0            # Anlaufzeit bis Marschgeschwindigkeit
+TORP_SPOOLUP_MIN_FRAC = 0.25    # Anfangsgeschwindigkeit als Bruchteil (Rohrabschuss)
+TORP_RUNNING_NOISE_RANGE_NM = 6.0  # passive Eigenlaerm-Reichweite eines laufenden Torpedos
+HELO_FUEL_S = 7200.0
+HELO_FUEL_RESERVE_S = 1200.0
+HELO_RETURN_DIST_NM = 0.3
+HELO_TORPS = 2                  # Leichttorpedos pro Start
+HELO_DIP_DEPTH_MIN_M = 15.0
+HELO_DIP_DEPTH_DEFAULT_M = 75.0
+HELO_DIP_DEPTH_MAX_M = 300.0
+HELO_DIP_DEPTH_RATE_M_S = 2.5
+HELO_DIP_BOTTOM_CLEARANCE_M = 10.0
+HELO_DIP_PASSIVE_RANGE_NM = 18.0
+HELO_DIP_ACTIVE_RANGE_NM = 14.0
+HELO_DIP_PING_COOLDOWN_S = 30.0
+HELO_DIP_BEARING_ERR_DEG = 2.0
+BUOY_COUNT = 5
+BUOY_SPACING_NM = 3.0
+BUOY_RANGE_NM = 8.0
+BUOY_BATTERY_S = 3600.0
+BUOY_PING_COOLDOWN_S = 30.0
+HELO_TORP_SPEED_KN = _HELO_TORP_PROFILE.speed_kn
+
+# M16: Fliegerabwehr (physikalische Geschwindigkeiten)
+ASM_SPAWN_DIST_NM = (30.0, 40.0)
+ASM_SPAWN_FIRST_S = 600.0
+ASM_SPAWN_INTERVAL_S = 1200.0
+
+# R20: Luftangriffs-Wellen (feindliche Jagdbomber vs. Fregatte)
+RAID_FIRST_WAVE_S = 1500.0
+RAID_WAVE_INTERVAL_S = 900.0
+RAID_WAVE_SIZE = (1, 2)
+RAID_SPAWN_DIST_NM = (110.0, 140.0)
+RAID_MAX_CONCURRENT = 3
+RAIDER_ATTACK_WINDOW_S = 90.0
+RAIDER_TURN_DEG_S = 4.0
+
+# M15: HSP-5 (Sea Lynx)
+HELO_SPEED_KN = 120.0
+
+# W3: Luftfahrt & Airbases (physikalische Knoten)
+FLIGHT_SPEED_KN = 200.0
+FLIGHT_CIVIL_SPEED_KN = 450.0
+FLIGHT_LOITER_NM = (15.0, 30.0) # Patrouillen-Kreis um Airbase
+FLIGHT_ATTACK_RANGE_NM = 35.0   # Abschussentfernung für ASM
+# Zivile Routen werden geometrisch an die Fregatte angebunden, damit sie
+# radar-einsehbar bleiben: liegt die Gerade Basis->Ziel innerhalb von
+# FLIGHT_CIVIL_PASS_NM an ihr, bleibt die Route direkt; sonst lenkt ein
+# Weichpunkt sie auf FLIGHT_CIVIL_VIA_NM an (reine Geometrie, keine RNG).
+FLIGHT_CIVIL_PASS_NM = 60.0
+FLIGHT_CIVIL_VIA_NM = 30.0
+
+# W1: TMA (Peilungs-Tracking -> Position + Geschwindigkeit)
+TMA_MIN_PTS = 4                 # minimal Peilungen
+TMA_MIN_SPAN_S = 180.0          # mehrere Minuten Peilungsbaseline
+TMA_RESOLVE_EVERY_S = 4.0       # max. TMA-Re-Solve-Rate pro Ziel (sim-s, CPU-Schutz)
+TMA_MIN_COURSE_CHG_DEG = 6.0    # Fregatte muss manövrieren (Beobachtbarkeit)
+TMA_MAX_RANGE_NM = 45.0         # Lösungsraum
+TMA_SEARCH_STEP_S = 1.5         # Zeit-Schritt der Geschwindigkeits-Suche
+TMA_QUALITY_DB = 8.0            # Peil-RMSE (°), ab dem Qualität 0 wird
+TMA_RANGE_MIN_QUALITY = 0.35    # TMA-Range erst ab dieser Qualität nutzen
+TMA_FINE_COURSE_STEP_DEG = 3
+TMA_FINE_SPEED_STEP_KN = 0.5
+TMA_PRESENTATION_ALPHA = 0.35
+TMA_HYSTERESIS_RMSE_MARGIN_DEG = 1.0  # keep the previous solve unless a fresh
+                                       # candidate fits the bearings clearly
+                                       # better - stops re-solves from hopping
+                                       # between near-tied local optima
+TMA_DEFAULT_BEARING_SIGMA_DEG = 3.5
+TMA_ROBUST_SIGMA = 2.5          # Huber-Grenze in Mess-Standardabweichungen
+BEARING_TRACK_MAX_PTS = 80      # 4-s-Fenster umfasst gut fünf Minuten
+BEARING_TRACK_MIN_INTERVAL_S = 4.0  # unabhaengige TMA-Peilungen
+BEARING_ERR_BOW_DEG = 6.0           # Peilfehler Basis: Bug-Array (±)
+BEARING_ERR_TOWED_DEG = 2.0         # Peilfehler Basis: Schleppsonar (±)
+BEARING_ERR_SPEED_FACTOR = 0.12     # relativer Aufschlag pro kn Eigenfahrt
+BEARING_ERR_QUALITY_SPAN = 0.9      # Fehlerfaktor: 1.4 - SPAN*quality
+SONAR_BEARING_NOISE_EPOCH_S = 2.0
+SONAR_BEARING_DISPLAY_TAU_S = 7.0
+SONAR_BEARING_RATE_MAX_DEG_S = 8.0
+
+# M7: Schwierigkeitslevel (GDD §9)
+# quiet_mult: Faktor auf U-Boot-Stillheit (<1 = lauter/easier zu finden)
+# repair_mult: Faktor auf Reparaturrate | torp_total: Munitionsbestand
+# kill_dist/kill_depth: Treffer-Toleranz der eigenen Torpedos
+# enemy_attack_mult / enemy_cooldown_s: Gegenangriff der U-Boote
+# second_sub_prob: Chance für ein zusätzliches AIP/SSN-Boot (0.0 -> RNG-Sequenz
+#   der M2–M6-Spawns bleibt unverändert)
+LEVELS = {
+    "leicht": dict(
+        label="Leicht", desc="lauter, treffsicher, schnellere Reparatur",
+        quiet_mult=0.8, repair_mult=1.5,
+        torp_total=6, kill_dist_nm=0.20, kill_depth_m=20.0,
+        enemy_attack_mult=0.7, enemy_cooldown_s=1200.0,
+        second_sub_prob=0.0,
+        second_sub_pool=["aip_modern", "ssn"]),
+    "normal": dict(
+        label="Normal", desc="Ausgewogene Jagd",
+        quiet_mult=1.0, repair_mult=1.0,
+        torp_total=6, kill_dist_nm=0.135, kill_depth_m=15.0,
+        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+        second_sub_prob=0.0,
+        second_sub_pool=["aip_modern", "ssn"]),
+    "harte": dict(
+        label="Hart", desc="wenig Munition, schnelle Konter, AIP-Boote",
+        quiet_mult=1.0, repair_mult=1.0,
+        torp_total=4, kill_dist_nm=0.135, kill_depth_m=15.0,
+        enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
+        second_sub_prob=0.85,
+        second_sub_pool=["aip_modern", "ssn", "aip_modern"]),
+    # W2: vierte, rein optionale Realismus-Stufe - keine leichtere Munitions-/
+    # Treffertoleranz als "harte", nur enger; siehe hardcore-Verhaltensgates
+    # in game.py (Klassifizierungs-Vorschau, TMA-Fehlertoleranz, Kartenpunkte).
+    "hardcore": dict(
+        label="Hardcore", desc="minimale Munition, engste Trefftoleranz, keine Hilfen",
+        quiet_mult=1.0, repair_mult=0.7,
+        torp_total=3, kill_dist_nm=0.10, kill_depth_m=10.0,
+        enemy_attack_mult=1.7, enemy_cooldown_s=480.0,
+        second_sub_prob=0.9,
+        second_sub_pool=["aip_modern", "ssn", "aip_modern"]),
+}
+LEVEL_ORDER = ["leicht", "normal", "harte", "hardcore"]
+# i18n-Schlüsselsuffix je Level (level.<x> / level.<x>_desc)
+LEVEL_I18N_KEY = {"leicht": "easy", "normal": "normal", "harte": "hard",
+                  "hardcore": "hardcore"}
+DEFAULT_LEVEL = "normal"
+
+# M6: Missions-System
+SAVE_DIR = os.path.expanduser("~/.u-jagd")
+SAVE_PATH = os.path.join(SAVE_DIR, "save.json")   # Legacy (v1)
+SAVE_SLOTS = 5
+MISSION_ESCAPE_RADIUS_NM = 150.0   # Ziel-Boot gilt als entkommen ab dieser Distanz zum Startpunkt
+SCORE_SUNK = 1000                  # pro versenktem Ziel-U-Boot
+SCORE_AMMO_BONUS = 200             # pro ungenutztem Torpedo (Sieg)
+SCORE_CIVIL_BONUS = 500            # keine zivilen Verluste (Sieg)
+SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
+
+# Missionstypen: Zeitfenster in Echtzeit-Simulationssekunden.
+# Lange Einsatzfenster lassen Zeit für Aufmerksamkeits- und Suchphasen.
+# win = "sink" (Ziel versenken) oder "survive" (Zeitlimit überstehen)
+MISSION_TYPES = {
+    "patrouille": dict(
+        name="Patrouille", weight=40, subs=1,
+        sub_types=["diesel_alt", "aip_modern", "ssn"],
+        animals=(2, 4), civilians=(2, 3), asm=(0, 1), warships=(0, 1),
+        time_limit_s=10800, win="sink"),
+    "doppeljagd": dict(
+        name="Doppeljagd", weight=25, subs=2,
+        sub_types=["diesel_alt", "aip_modern", "ssn"],
+        animals=(2, 3), civilians=(1, 2), asm=(1, 2), warships=(1, 2),
+        time_limit_s=18000, win="sink"),
+    "konvoi": dict(
+        name="Konvoi-Schutz", weight=20, subs=2,
+        sub_types=["aip_modern", "ssn"],
+        animals=(1, 3), civilians=(3, 4), asm=(0, 1), warships=(1, 2),
+        time_limit_s=14400, win="survive"),
+    "nuklearer_abfang": dict(
+        name="Nuklearer-Abfang", weight=15, subs=1,
+        sub_types=["ssn"],
+        animals=(0, 2), civilians=(1, 2), asm=(1, 2), warships=(0, 1),
+        time_limit_s=10800, win="sink"),
+}
+
+# W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
+SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall")
+SCENARIOS = {
+    "s1_patrouille": dict(
+        title="Patrouille",
+        level="leicht",
+        mission_type="patrouille",
+        ship_start=(300.0, 380.0), ship_course=300.0,
+        # Kein Seename hier: Welt/Seed sind im Menü frei wählbar (W/R), die
+        # tatsächliche Karte kann von jeder Namensnennung abweichen.
+        briefing=("Auftrag: Zugewiesenen Einsatzsektor überwachen. Ein alter Diesel- "
+                  "Jäger wurde im westlichen Sektor gemeldet. Ziel: Identifizieren, "
+                  "klassifizieren und versenken – ohne zivile Verluste."),
+        win_text="Ziel-U-Boot versenkt",
+        lose_text="Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust",
+    ),
+    "s2_doppeljagd": dict(
+        title="Doppeljagd",
+        level="normal",
+        mission_type="doppeljagd",
+        ship_start=(250.0, 300.0), ship_course=0.0,
+        briefing=("Auftrag: Zwei U-Boote operieren im Einsatzsektor (eines davon "
+                  "möglicherweise AIP – nahezu stumm). Belegungen: ESM-Wellen "
+                  "werden erwartet. Ziel: Beide Boote versenken, zivile Schifffahrt "
+                  "schützen, ASM-Wellen abwehren."),
+        win_text="Beide Ziel-U-Boote versenkt",
+        lose_text="Ziel entkommt / Zeitlimit / Fregatte gesunken / ziviler Verlust",
+    ),
+    "s3_abfang": dict(
+        title="Nuklearer Abfang",
+        level="harte",
+        mission_type="nuklearer_abfang",
+        ship_start=(320.0, 250.0), ship_course=270.0,
+        briefing=("Auftrag: Hochwertiges nukleares U-Boot (SSN) dringt in den "
+                  "Sektor ein – extrem leise, taucht tief unter die Thermokline, "
+                  "kontert aktiv. Nur 4 Torpedos an Bord. Ziel: Versenken, bevor es "
+                  "die Zone verlässt. ASM-Abwehr ist überlebenswichtig."),
+        win_text="SSN vor Zeitablauf versenkt",
+        lose_text="SSN entkommt / Zeitlimit / Fregatte gesunken",
+    ),
+    "s4_zufall": dict(
+        title="Freie Jagd (Zufall)",
+        level=None,          # Level-Auswahlmenü danach
+        mission_type=None,   # seed-basierter Missions-Typ
+        ship_start=None, ship_course=None,
+        briefing="Zufällige Mission – Typ und Schwierigkeit nach Auswahl.",
+        win_text="",
+        lose_text="",
+    ),
+}
+
+# Farben (CRT-Grün-Theme)
+COLOR_BG = (8, 14, 10)
+# Gemeinsamer geografischer Hintergrund fuer Karte und PPI.
+COLOR_GEO_BG = (5, 18, 34)
+COLOR_GRID = (20, 38, 28)
+COLOR_GEO_GRID = (18, 49, 72)
+COLOR_TEXT = (140, 230, 160)
+COLOR_TEXT_DIM = (105, 158, 126)
+COLOR_WARN = (230, 190, 60)
+COLOR_DANGER = (230, 80, 70)
+COLOR_OK = (90, 210, 120)
+COLOR_SONAR_RING = (40, 90, 60)
+COLOR_CONTACT = (255, 255, 255)
+COLOR_CONTACT_ZIVIL = (90, 200, 120)
+COLOR_CONTACT_WARSHIP = (230, 120, 60)
+COLOR_CONTACT_UNBEST = (230, 200, 80)
+COLOR_CONTACT_UBOOT = (230, 90, 70)
+COLOR_CONTACT_BIO = (110, 200, 200)
+COLOR_LAND = (25, 43, 55)
+COLOR_LAND_EDGE = (76, 126, 153)
+COLOR_SHALLOW = (12, 43, 68)
+COLOR_DEEP = (4, 24, 48)
+COLOR_ESM = (140, 150, 220)
+COLOR_HFDF = (200, 140, 220)
+COLOR_FLIGHT = (220, 180, 90)
+# W2: OPZ-Domänenfarbe für Flugkörper/Torpedo - eigene Farbe, da COLOR_DANGER
+# und COLOR_CONTACT_UBOOT (Unterwasser-Domäne) sonst fast ununterscheidbar sind.
+COLOR_CONTACT_MISSILE = (235, 70, 180)
+
+# W3: Feed-Kategorien (Farbe, Kürzel)
+FEED_CATEGORIES = {
+    "navigation": (COLOR_TEXT, "NAV"),
+    "funk": (COLOR_ESM, "FUNK"),
+    "sonar": (COLOR_OK, "SONAR"),
+    "waffen": (COLOR_WARN, "WAF"),
+    "opz": (COLOR_ESM, "OPZ"),
+    "schaden": (COLOR_DANGER, "SCH"),
+    "mission": (COLOR_CONTACT, "MIS"),
+    "welt": (COLOR_TEXT_DIM, "WET"),
+}
+FEED_MAX_ENTRIES = 200
+
+# Simulationsprotokoll (Option, versteckte Commander-Ansicht):
+# Feed-Events plus alle SIMLOG_INTERVAL_S Simulationssekunden ein vollstaendiger
+# Zustandssnapshot aller Einheiten/Waffen/Welt für Monitoring und Verifikation.
+SIMLOG_MAX_ENTRIES = 256
+SIMLOG_INTERVAL_S = 10.0
+
+
+def aspect_rcs_factor(course_target: float, bearing_from_frigate: float) -> float:
+    """M12: Radar-RCS-Aspect: Breitseite zur Fregatte = stärkste Rückmeldung
+    (0.55 = Spitzseiten-Aspect, 1.0 = Breitseite). Kanten sind in nautischen
+    Grad (0° = Nord, im Uhrzeigersinn)."""
+    rel = math.radians(bearing_from_frigate - course_target)
+    return 0.55 + 0.45 * abs(math.sin(rel))
+
+
+def radar_horizon_nm(height_a_m: float, height_b_m: float) -> float:
+    """Geometric two-way radar horizon (standard 4/3-Earth-radius refraction):
+    2.2256 * (sqrt(h_a) + sqrt(h_b)) in NM for heights in metres. A game
+    model of the real effect that low-altitude/low-freeboard targets (a
+    sea-skimming missile, a periscope) are invisible to radar until they
+    close inside this range, independent of the sensor's nominal power-
+    limited range."""
+    return 2.2256 * (math.sqrt(max(0.0, height_a_m)) + math.sqrt(max(0.0, height_b_m)))
+
+
+def nm_to_px(nm: float, nm_per_px: float = NM_PER_PX_MAP) -> float:
+    return nm / nm_per_px
+
+
+def km_to_nm(km: float) -> float:
+    return km / 1.852
+
+
+def kn_to_nm_per_s(kn: float) -> float:
+    """Knoten -> NM pro (Spiel-)Sekunde."""
+    return kn / 3600.0
+
+
+def clamp(v: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, v))
+
+
+def angle_diff_deg(a: float, b: float) -> float:
+    """Kleinste Winkel-Differenz (grad) zwischen zwei Kursen."""
+    d = (a - b + 540.0) % 360.0 - 180.0
+    return d
+
+
+# --- W1: LOFAR-Bin-Indexierung (fein im niedrigen Hz-Bereich) ---
+
+def lofar_bin(freq_hz: float) -> int:
+    """Frequenz (Hz) -> LOFAR-Bin (0..LOFAR_BINS-1)."""
+    if freq_hz <= 40.0:
+        return int(max(0.0, min(40.0, freq_hz)))
+    if freq_hz <= 100.0:
+        return 40 + int((freq_hz - 40.0) / 2.0)
+    return min(LOFAR_BINS - 1, 40 + 30 + int((freq_hz - 100.0) / 5.0))
+
+
+def lofar_bin_freq(b: int) -> float:
+    """Mittlere Frequenz eines LOFAR-Bins (Hz)."""
+    if b < 40:
+        return b + 0.5
+    if b < 70:
+        return 40.0 + (b - 40) * 2.0 + 1.0
+    return 100.0 + (b - 70) * 5.0 + 2.5

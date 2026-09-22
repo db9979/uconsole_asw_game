@@ -1,0 +1,1 @@
+"""Fregatte-Modell."""

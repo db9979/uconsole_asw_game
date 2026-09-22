@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "key": "user.training_decoy",
+  "profile_kind": "decoy",
+  "name": "Training decoy",
+  "life_s": 45.0,
+  "speed_kn": 8.0,
+  "cooldown_s": 60.0,
+  "chance": 0.5,
+  "lines": [[120.0, 0.9, 8.0]],
+  "signature_text": "Editor template"
+}

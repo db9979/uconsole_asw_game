@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "key": "user.training_surface",
+  "profile_kind": "surface",
+  "name": "Training surface ship",
+  "category": "KAMPFSCHIFF",
+  "hostile": true,
+  "speed_kn": [10.0, 25.0],
+  "callsigns": ["TS ALPHA"],
+  "esm_prob": 1.0,
+  "asm_salvo": [1, 2],
+  "asm_cooldown_s": 900.0,
+  "loiter_nm": 20.0,
+  "spawn_weight": 1.0,
+  "acoustic": {
+    "label": "Training surface ship",
+    "propulsion": "diesel",
+    "blades": [4, 5],
+    "rpm_range": [150.0, 500.0],
+    "tonal_band_hz": [20.0, 180.0],
+    "cavitation_tendency": 0.6,
+    "category": "KAMPFSCHIFF",
+    "secondary_tonals": [],
+    "broadband": [0.5, 40.0, 300.0],
+    "signature_text": "Editor template"
+  }
+}

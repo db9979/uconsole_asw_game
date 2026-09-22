@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "key": "user.training_aircraft",
+  "profile_kind": "aircraft",
+  "name": "Training aircraft",
+  "nation": "HANSE",
+  "aircraft_kind": "military",
+  "speed_kn": 220.0,
+  "esm": true,
+  "esm_range_nm": 60.0,
+  "loiter_nm": [15.0, 30.0],
+  "spawn_weight": 1.0,
+  "signature_text": "Editor template"
+}

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; font-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>U-Jagd Web Host</title>
+  <link rel="stylesheet" href="/admin.css">
+  <script src="/admin.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <h1>U-Jagd <span data-i18n="admin_title"></span></h1>
+    </div>
+    <div class="header-actions">
+      <nav><a class="play-link" href="/" data-i18n="admin_play"></a></nav>
+      <label class="language"><span data-i18n="language"></span>
+        <select id="language"><option value="en">English</option><option value="de">Deutsch</option></select>
+      </label>
+    </div>
+  </header>
+  <p id="message" class="status" role="status" aria-live="polite"></p>
+
+  <div class="auth-layout">
+    <section id="setup" class="auth-card" hidden>
+      <h2 data-i18n="admin_setup"></h2>
+      <form id="setup-form">
+        <label for="setup-code" data-i18n="admin_setup_code"></label>
+        <input id="setup-code" autocomplete="off" required>
+        <label for="setup-password" data-i18n="admin_password"></label>
+        <input id="setup-password" type="password" minlength="12" maxlength="256" autocomplete="new-password" required>
+        <button class="primary" type="submit" data-i18n="admin_setup_submit"></button>
+      </form>
+    </section>
+    <section id="login" class="auth-card" hidden>
+      <h2 data-i18n="admin_login"></h2>
+      <form id="login-form">
+        <label for="login-password" data-i18n="admin_password"></label>
+        <input id="login-password" type="password" autocomplete="current-password" required>
+        <button class="primary" type="submit" data-i18n="admin_login_submit"></button>
+      </form>
+    </section>
+  </div>
+
+  <main id="room" class="dashboard" hidden>
+    <section class="card room-card">
+      <h2 data-i18n="admin_room"></h2>
+      <div class="room-code"><span data-i18n="admin_room_code"></span><strong id="room-code"></strong></div>
+      <button id="rotate-code" type="button" data-i18n="admin_rotate_code"></button>
+    </section>
+    <section class="card proposal-card">
+      <h2 data-i18n="admin_proposals"></h2>
+      <div id="proposals"></div>
+    </section>
+    <section class="card crew-card">
+      <h2 data-i18n="admin_clients"></h2>
+      <div id="clients"></div>
+    </section>
+    <section class="card options-card">
+      <h2 data-i18n="admin_options"></h2>
+      <form id="options-form">
+        <div class="option-grid">
+          <div class="field">
+            <label for="option-language" data-i18n="language"></label>
+            <select id="option-language"><option value="en">English</option><option value="de">Deutsch</option></select>
+          </div>
+          <label class="toggle"><input id="option-simlog" type="checkbox"><span data-i18n="admin_simlog"></span></label>
+          <label class="toggle"><input id="option-voice" type="checkbox"><span data-i18n="admin_voice"></span></label>
+          <div class="feed-field"><label class="toggle"><input id="option-ais" type="checkbox"><span data-i18n="admin_live_ais"></span></label><p id="option-ais-status" class="feed-status" role="status"></p></div>
+          <div class="feed-field"><label class="toggle"><input id="option-adsb" type="checkbox"><span data-i18n="admin_live_adsb"></span></label><p id="option-adsb-status" class="feed-status" role="status"></p></div>
+          <div class="field">
+            <label for="option-ais-key" data-i18n="admin_ais_key"></label>
+            <div class="field-actions"><input id="option-ais-key" type="password" maxlength="256" autocomplete="off"><button id="clear-ais-key" type="button" data-i18n="admin_clear_key"></button></div>
+          </div>
+          <div class="field">
+            <label for="option-opensky-key" data-i18n="admin_opensky_key"></label>
+            <div class="field-actions"><input id="option-opensky-key" type="password" maxlength="256" autocomplete="off"><button id="clear-opensky-key" type="button" data-i18n="admin_clear_key"></button></div>
+          </div>
+        </div>
+        <div class="form-footer"><button class="primary" type="submit" data-i18n="admin_options_save"></button><p id="options-status" role="status"></p></div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

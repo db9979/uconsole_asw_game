@@ -1,0 +1,971 @@
+{
+  "version": 2,
+  "entries": [
+    {
+      "key": "warship_22",
+      "name": "Kirov-Kreuzer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Kirov-Kreuzer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          193.0,
+          693.0
+        ],
+        "tonal_band_hz": [
+          17.25,
+          189.25
+        ],
+        "cavitation_tendency": 0.51,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kr\u00e4ftige Gasturbinen-Tonals"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Kirow-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "warship_23",
+      "name": "Udaloy-Zerstoerer",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Udaloy-Zerstoerer",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          200.0,
+          700.0
+        ],
+        "tonal_band_hz": [
+          18.75,
+          190.75
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kr\u00e4ftige Gasturbinen-Tonals"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Udaloy-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "warship_24",
+      "name": "Admiral-Gorshkov-Fregatte",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        12.0,
+        28.0
+      ],
+      "callsigns": [],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 900.0,
+      "loiter_nm": 20.0,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Admiral-Gorshkov-Fregatte",
+        "propulsion": "Diesel/Gasturbine",
+        "blades": [
+          4,
+          5,
+          6
+        ],
+        "rpm_range": [
+          207.0,
+          707.0
+        ],
+        "tonal_band_hz": [
+          20.25,
+          192.25
+        ],
+        "cavitation_tendency": 0.5900000000000001,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            25.0,
+            0.25,
+            2.0
+          ]
+        ],
+        "broadband": [
+          0.55,
+          40.0,
+          300.0
+        ],
+        "signature_text": "kr\u00e4ftige Gasturbinen-Tonals"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Admiral-Gorschkow-Klasse_(2006)",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "warship_29",
+      "name": "Projekt 20380 (Stereguschtschi-Klasse)",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        14.0,
+        27.0
+      ],
+      "callsigns": [
+        "RFS STEREGUSHCHIY",
+        "RFS SOOBRAZITELNY",
+        "RFS BOIKY",
+        "RFS STOIKY"
+      ],
+      "esm_prob": 0.9,
+      "asm_salvo": [
+        4,
+        8
+      ],
+      "asm_cooldown_s": 420.0,
+      "loiter_nm": 25.0,
+      "spawn_weight": 1.2,
+      "wiki_url": "https://de.wikipedia.org/wiki/Stereguschtschi-Klasse",
+      "default_faction": "FEIND",
+      "rcs_m2": 500.0,
+      "acoustic": {
+        "label": "Projekt 20380 (Stereguschtschi-Klasse)",
+        "propulsion": "Diesel (CODAD, 4x16D49)",
+        "blades": [
+          5,
+          6
+        ],
+        "rpm_range": [
+          200.0,
+          420.0
+        ],
+        "tonal_band_hz": [
+          16.0,
+          95.0
+        ],
+        "cavitation_tendency": 0.55,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            52.0,
+            0.35,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.5,
+          40.0,
+          400.0
+        ],
+        "signature_text": "vier Diesel im CODAD-Verbund, mittlere Kavitation ab Marschfahrt",
+        "lofar_base_freq_hz": [
+          16.7,
+          33.4,
+          50.1
+        ],
+        "cavitation_speed_knots": 16.0,
+        "audio_sample_id": "snd_engine_korvette_20380"
+      }
+    },
+    {
+      "key": "warship_30",
+      "name": "Brandenburg-Klasse (F123) - Fregatte F217 Bayern",
+      "category": "KAMPFSCHIFF",
+      "hostile": true,
+      "speed_kn": [
+        18.0,
+        29.0
+      ],
+      "callsigns": [
+        "DRAF BAYERN"
+      ],
+      "esm_prob": 1.0,
+      "asm_salvo": [
+        2,
+        4
+      ],
+      "asm_cooldown_s": 420.0,
+      "loiter_nm": 0.0,
+      "spawn_weight": 0.0,
+      "wiki_url": "https://de.wikipedia.org/wiki/Brandenburg-Klasse_(1994)",
+      "default_faction": "FREUND",
+      "rcs_m2": 900.0,
+      "acoustic": {
+        "label": "Brandenburg-Klasse (F123) - F217 Bayern",
+        "propulsion": "CODOG (2x Gasturbine, 2x Diesel)",
+        "blades": [
+          5
+        ],
+        "rpm_range": [
+          180.0,
+          380.0
+        ],
+        "tonal_band_hz": [
+          15.0,
+          85.0
+        ],
+        "cavitation_tendency": 0.45,
+        "category": "KAMPFSCHIFF",
+        "secondary_tonals": [
+          [
+            48.0,
+            0.3,
+            3.0
+          ]
+        ],
+        "broadband": [
+          0.4,
+          40.0,
+          350.0
+        ],
+        "signature_text": "CODOG-Fregatte; Bewaffnung: 76mm Oto Melara, 2x4 Harpoon, Mk41-VLS (Sea Sparrow/ESSM), 2x21 RAM, 2x MLG27, MU90/Mk46-Leichtgewichtstorpedos; FL1800S ESM/ECM, MASS-Taeuschkoerper, DSQS-23BZ-Bugsonar",
+        "lofar_base_freq_hz": [
+          15.0,
+          30.0,
+          45.0
+        ],
+        "cavitation_speed_knots": 20.0,
+        "audio_sample_id": "snd_engine_brandenburg_f123"
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "profile_key": "warship_22",
+      "reference_key": "reference.warship_22",
+      "machine_key": "machine.warship_22",
+      "sensor_keys": [
+        "sensor.warship_22.radar",
+        "sensor.warship_22.sonar"
+      ],
+      "emitter_keys": [
+        "emitter.warship_22.radar",
+        "emitter.warship_22.navigation",
+        "emitter.warship_22.air_search",
+        "emitter.warship_22.fire_control"
+      ],
+      "launcher_keys": [
+        "launcher.warship_22.asm"
+      ],
+      "magazine_keys": [
+        "magazine.warship_22.asm"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.warship_22.softkill"
+      ]
+    },
+    {
+      "profile_key": "warship_23",
+      "reference_key": "reference.warship_23",
+      "machine_key": "machine.warship_23",
+      "sensor_keys": [
+        "sensor.warship_23.radar",
+        "sensor.warship_23.sonar"
+      ],
+      "emitter_keys": [
+        "emitter.warship_23.radar",
+        "emitter.warship_23.navigation",
+        "emitter.warship_23.air_search",
+        "emitter.warship_23.fire_control"
+      ],
+      "launcher_keys": [
+        "launcher.warship_23.asm"
+      ],
+      "magazine_keys": [
+        "magazine.warship_23.asm"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.warship_23.softkill"
+      ]
+    },
+    {
+      "profile_key": "warship_24",
+      "reference_key": "reference.warship_24",
+      "machine_key": "machine.warship_24",
+      "sensor_keys": [
+        "sensor.warship_24.radar",
+        "sensor.warship_24.sonar"
+      ],
+      "emitter_keys": [
+        "emitter.warship_24.radar",
+        "emitter.warship_24.navigation",
+        "emitter.warship_24.air_search",
+        "emitter.warship_24.fire_control"
+      ],
+      "launcher_keys": [
+        "launcher.warship_24.asm"
+      ],
+      "magazine_keys": [
+        "magazine.warship_24.asm"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.warship_24.softkill"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.warship_22",
+      "hull_type": "unknown",
+      "length_m": null
+    },
+    {
+      "key": "reference.warship_23",
+      "hull_type": "unknown",
+      "length_m": null
+    },
+    {
+      "key": "reference.warship_24",
+      "hull_type": "unknown",
+      "length_m": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.warship_22",
+      "cruise_speed_kn": 28,
+      "maximum_speed_kn": 28,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel",
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          17.25,
+          1,
+          2
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          189.25,
+          1,
+          2
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40,
+        300
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40,
+        300
+      ]
+    },
+    {
+      "key": "machine.warship_23",
+      "cruise_speed_kn": 28,
+      "maximum_speed_kn": 28,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel",
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          18.75,
+          1,
+          2
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          190.75,
+          1,
+          2
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40,
+        300
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40,
+        300
+      ]
+    },
+    {
+      "key": "machine.warship_24",
+      "cruise_speed_kn": 28,
+      "maximum_speed_kn": 28,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel",
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          20.25,
+          1,
+          2
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          192.25,
+          1,
+          2
+        ]
+      ],
+      "cruise_broadband": [
+        0.55,
+        40,
+        300
+      ],
+      "high_speed_broadband": [
+        0.55,
+        40,
+        300
+      ]
+    }
+  ],
+  "sensors": [
+    {
+      "key": "sensor.warship_22.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.warship_22.radar",
+      "synthetic_range_nm": 250,
+      "sensitivity_db": -90,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 1,
+      "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_22.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": -100,
+      "cadence_s": 1,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 25
+    },
+    {
+      "key": "sensor.warship_23.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.warship_23.radar",
+      "synthetic_range_nm": 250,
+      "sensitivity_db": -90,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 1,
+      "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_23.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": -100,
+      "cadence_s": 1,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 25
+    },
+    {
+      "key": "sensor.warship_24.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.warship_24.radar",
+      "synthetic_range_nm": 250,
+      "sensitivity_db": -90,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 1,
+      "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.warship_24.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 40,
+      "sensitivity_db": -100,
+      "cadence_s": 1,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 25
+    }
+  ],
+  "emitters": [
+    {
+      "key": "emitter.warship_22.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        2000000000,
+        12000000000
+      ],
+      "prf_band_hz": [
+        300,
+        1200
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "pulse_doppler"
+      ],
+      "radar_role": "multi_function",
+      "operating_mode": "combined_search",
+      "power_class": "high",
+      "operating_period_s": 10.0,
+      "on_duration_s": 8.0
+    },
+    {
+      "key": "emitter.warship_23.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        2000000000,
+        12000000000
+      ],
+      "prf_band_hz": [
+        300,
+        1200
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "pulse_doppler"
+      ],
+      "radar_role": "multi_function",
+      "operating_mode": "combined_search",
+      "power_class": "high",
+      "operating_period_s": 10.0,
+      "on_duration_s": 8.0
+    },
+    {
+      "key": "emitter.warship_24.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        2000000000,
+        12000000000
+      ],
+      "prf_band_hz": [
+        300,
+        1200
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "pulse_doppler"
+      ],
+      "radar_role": "multi_function",
+      "operating_mode": "combined_search",
+      "power_class": "high",
+      "operating_period_s": 10.0,
+      "on_duration_s": 8.0
+    },
+    {
+      "key": "emitter.warship_22.navigation",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        500,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "navigation",
+      "power_class": "low",
+      "operating_period_s": 30.0,
+      "on_duration_s": 18.0
+    },
+    {
+      "key": "emitter.warship_22.air_search",
+      "domain": "radar",
+      "frequency_band_hz": [
+        1000000000.0,
+        4000000000.0
+      ],
+      "prf_band_hz": [
+        200,
+        900
+      ],
+      "modulation_codes": [
+        "pulse_doppler"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "air_search",
+      "power_class": "high",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.warship_22.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "continuous_wave"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "weapon_support",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
+    },
+    {
+      "key": "emitter.warship_23.navigation",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        500,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "navigation",
+      "power_class": "low",
+      "operating_period_s": 30.0,
+      "on_duration_s": 18.0
+    },
+    {
+      "key": "emitter.warship_23.air_search",
+      "domain": "radar",
+      "frequency_band_hz": [
+        1000000000.0,
+        4000000000.0
+      ],
+      "prf_band_hz": [
+        200,
+        900
+      ],
+      "modulation_codes": [
+        "pulse_doppler"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "air_search",
+      "power_class": "high",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.warship_23.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "continuous_wave"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "weapon_support",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
+    },
+    {
+      "key": "emitter.warship_24.navigation",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        500,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "navigation",
+      "power_class": "low",
+      "operating_period_s": 30.0,
+      "on_duration_s": 18.0
+    },
+    {
+      "key": "emitter.warship_24.air_search",
+      "domain": "radar",
+      "frequency_band_hz": [
+        1000000000.0,
+        4000000000.0
+      ],
+      "prf_band_hz": [
+        200,
+        900
+      ],
+      "modulation_codes": [
+        "pulse_doppler"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "air_search",
+      "power_class": "high",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.warship_24.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "continuous_wave"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "weapon_support",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
+    }
+  ],
+  "weapons": [
+    {
+      "key": "weapon.warship_22.asm",
+      "weapon_type": "asm",
+      "target_domains": [
+        "surface"
+      ],
+      "runtime_profile_key": null,
+      "maximum_speed_kn": 500,
+      "engagement_range_nm": [
+        0,
+        35
+      ],
+      "seeker_type": "radar_active",
+      "guidance_type": "terminal_homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.warship_23.asm",
+      "weapon_type": "asm",
+      "target_domains": [
+        "surface"
+      ],
+      "runtime_profile_key": null,
+      "maximum_speed_kn": 500,
+      "engagement_range_nm": [
+        0,
+        35
+      ],
+      "seeker_type": "radar_active",
+      "guidance_type": "terminal_homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.warship_24.asm",
+      "weapon_type": "asm",
+      "target_domains": [
+        "surface"
+      ],
+      "runtime_profile_key": null,
+      "maximum_speed_kn": 500,
+      "engagement_range_nm": [
+        0,
+        35
+      ],
+      "seeker_type": "radar_active",
+      "guidance_type": "terminal_homing",
+      "payload_type": "high_explosive"
+    }
+  ],
+  "launchers": [
+    {
+      "key": "launcher.warship_22.asm",
+      "launcher_type": "rail",
+      "mount_count": 1,
+      "ready_count": 1,
+      "reload_s": 900,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.warship_22.asm"
+      ]
+    },
+    {
+      "key": "launcher.warship_23.asm",
+      "launcher_type": "rail",
+      "mount_count": 1,
+      "ready_count": 1,
+      "reload_s": 900,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.warship_23.asm"
+      ]
+    },
+    {
+      "key": "launcher.warship_24.asm",
+      "launcher_type": "rail",
+      "mount_count": 1,
+      "ready_count": 1,
+      "reload_s": 900,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.warship_24.asm"
+      ]
+    }
+  ],
+  "magazines": [
+    {
+      "key": "magazine.warship_22.asm",
+      "weapon_key": "weapon.warship_22.asm",
+      "mission_count": 4
+    },
+    {
+      "key": "magazine.warship_23.asm",
+      "weapon_key": "weapon.warship_23.asm",
+      "mission_count": 4
+    },
+    {
+      "key": "magazine.warship_24.asm",
+      "weapon_key": "weapon.warship_24.asm",
+      "mission_count": 4
+    }
+  ],
+  "countermeasures": [
+    {
+      "key": "countermeasure.warship_22.softkill",
+      "effect_type": "rf_softkill",
+      "payload_key": null,
+      "mission_count": 12,
+      "ready_count": 4,
+      "reload_s": 30
+    },
+    {
+      "key": "countermeasure.warship_23.softkill",
+      "effect_type": "rf_softkill",
+      "payload_key": null,
+      "mission_count": 12,
+      "ready_count": 4,
+      "reload_s": 30
+    },
+    {
+      "key": "countermeasure.warship_24.softkill",
+      "effect_type": "rf_softkill",
+      "payload_key": null,
+      "mission_count": 12,
+      "ready_count": 4,
+      "reload_s": 30
+    }
+  ]
+}

@@ -167,6 +167,111 @@ window.addEventListener("DOMContentLoaded", () => run().catch((error) => {
 """
 
 
+@pytest.mark.parametrize("width,height", [(1280, 720), (390, 844), (320, 568)])
+def test_simlog_and_map_stay_inside_web_viewport(tmp_path, width, height):
+    chromium = shutil.which("chromium") or shutil.which("chromium-browser")
+    if not chromium:
+        pytest.skip("Optional SimLog layout regression: no installed Chromium")
+    html = ASSETS.joinpath("index.html").read_text().replace(
+        '<script src="./app.js" defer></script>',
+        '<script src="./simlog-layout.js" defer></script>')
+    probe = r"""
+document.body.classList.add("workstation-mode");
+document.body.dataset.remoteRole = "assigned";
+document.getElementById("shell").hidden = false;
+document.getElementById("bootstrap").hidden = true;
+document.getElementById("pairing").hidden = true;
+const simlog = document.getElementById("simlog-view");
+simlog.hidden = false;
+const entry = document.createElement("li");
+entry.className = "simlog-entry";
+entry.innerHTML = '<span class="simlog-stamp">2026-09-22 12:00</span><span class="simlog-cat">SONAR</span><details class="simlog-snapshot"><summary>'
+  + "Long mission name ".repeat(24) + '</summary></details>';
+document.getElementById("simlog-list").append(entry);
+const dialog = document.getElementById("simlog-map-dialog");
+dialog.hidden = false;
+dialog.showModal();
+requestAnimationFrame(() => {
+  const rect = (element) => {
+    const box = element.getBoundingClientRect();
+    return {left: box.left, right: box.right, top: box.top, bottom: box.bottom,
+      width: box.width, height: box.height};
+  };
+  parent.postMessage({simlogLayout: {
+    viewport: {width: innerWidth, height: innerHeight},
+    shell: rect(document.getElementById("shell")), simlog: rect(simlog),
+    panel: rect(document.querySelector(".simlog-panel")),
+    current: rect(document.getElementById("simlog-current")),
+    entry: rect(entry), list: rect(document.getElementById("simlog-list")),
+    dialog: rect(dialog), plot: rect(document.querySelector(".simlog-map-plot"))
+  }}, location.origin);
+});
+"""
+
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *_args):
+            pass
+
+        def do_GET(self):
+            if self.path == "/":
+                outer = (f'<!doctype html><html><body style="margin:0">'
+                         f'<iframe src="/app" width="{width}" height="{height}" '
+                         f'style="border:0"></iframe><script>'
+                         f'window.addEventListener("message", event => {{'
+                         f'if (event.origin === location.origin && event.data?.simlogLayout) '
+                         f'document.documentElement.dataset.simlogLayout = '
+                         f'JSON.stringify(event.data.simlogLayout); }});'
+                         f'</script></body></html>')
+                body, mime = outer.encode(), "text/html"
+            elif self.path == "/app":
+                body, mime = html.encode(), "text/html"
+            elif self.path == "/style.css":
+                body, mime = ASSETS.joinpath("style.css").read_bytes(), "text/css"
+            elif self.path == "/simlog-layout.js":
+                body, mime = probe.encode(), "text/javascript"
+            else:
+                self.send_error(404)
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        result = subprocess.run(
+            [chromium, "--headless", "--no-sandbox", "--disable-gpu",
+             "--disable-background-networking", "--no-first-run",
+             "--no-default-browser-check", "--disable-dev-shm-usage",
+             f"--user-data-dir={tmp_path / 'simlog-browser'}",
+             f"--window-size={max(width, 500)},{height}", "--virtual-time-budget=1000",
+             "--dump-dom", f"http://127.0.0.1:{server.server_port}/"],
+            capture_output=True, text=True, timeout=20,
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+    assert result.returncode == 0, result.stderr
+    root = next((attrs for tag, attrs in Document(result.stdout).elements if tag == "html"), {})
+    assert "data-simlog-layout" in root, result.stdout[-1500:] + result.stderr[-1000:]
+    layout_data = json.loads(root["data-simlog-layout"])
+    viewport = layout_data["viewport"]
+    simlog = layout_data["simlog"]
+    assert simlog["width"] >= viewport["width"] - 2, layout_data
+    assert simlog["left"] >= -1 and simlog["right"] <= viewport["width"] + 1, layout_data
+    assert simlog["bottom"] <= viewport["height"] + 1, layout_data
+    assert layout_data["panel"]["right"] <= simlog["right"] + 1, layout_data
+    assert layout_data["current"]["right"] <= layout_data["panel"]["right"] + 1, layout_data
+    assert layout_data["entry"]["right"] <= layout_data["list"]["right"] + 1, layout_data
+    assert layout_data["dialog"]["right"] <= viewport["width"] + 1, layout_data
+    assert layout_data["plot"]["width"] > 0 and layout_data["plot"]["height"] > 0, layout_data
+    assert layout_data["plot"]["right"] <= layout_data["dialog"]["right"] + 1, layout_data
+
+
 def test_station_dashboards_have_bounded_responsive_layout_rules():
     css = ASSETS.joinpath("style.css").read_text()
     assert re.search(r"\.station-grid \{[^}]*grid-template-columns:[^}]*auto-fit", css)

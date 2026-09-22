@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>U-Jagd Sprachfunk-Demo</title>
+<style>
+  body { font: 18px system-ui; max-width: 35rem; margin: 2rem auto; padding: 0 1rem; background: #101d24; color: #eef4f0; }
+  label { display: block; margin: 1rem 0; }
+  input, select, button { font: inherit; padding: .65rem; }
+  button { min-height: 4rem; touch-action: none; cursor: pointer; }
+  button:disabled { cursor: default; opacity: .5; }
+  #ptt[aria-pressed="true"] { background: #efb942; }
+  #status { min-height: 2.5rem; }
+</style>
+<h1>Sprachfunk</h1>
+<label>Station <select id="station">
+  <option value="bridge">Brücke</option><option value="sonar">Sonar</option>
+  <option value="navigation">Navigation</option><option value="weapons">Waffen</option>
+  <option value="radio">Funk</option><option value="esm">EloKa</option>
+  <option value="engine">Maschine</option><option value="damage">Schaden</option>
+  <option value="helicopter">Hubschrauber</option>
+</select></label>
+<label>Funkcode <input id="code" type="password" autocomplete="off"></label>
+<button id="connect">Verbinden und Mikrofon freigeben</button>
+<p id="status" role="status" aria-live="polite">Nicht verbunden</p>
+<button id="ptt" disabled aria-pressed="false">Zum Sprechen halten (F)</button>
+<script type="module" src="app.js"></script>
+</html>

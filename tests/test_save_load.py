@@ -41,6 +41,19 @@ def test_default_save_paths_are_isolated(tmp_path):
     assert g.load_game()
 
 
+def test_accelerated_legacy_save_resumes_at_realtime_speed():
+    source = Game(seed=2024, start_menu=False, audio_enabled=False)
+    saved = json.loads(json.dumps(source.save_state()))
+    saved["time_scale_idx"] = 3
+    restored = Game(seed=2025, start_menu=False, audio_enabled=False)
+    assert restored._load_save_data(saved)
+    assert restored.time_scale == 1
+    assert restored.save_state()["time_scale_idx"] == 0
+    for invalid in (False, 6, -1, 1.5):
+        malformed = dict(saved, time_scale_idx=invalid)
+        assert not restored._load_save_data(malformed)
+
+
 def test_roundtrip_preserves_state(tmp_saves):
     g = Game(seed=2024, start_menu=False)
     pump(g, 240)
@@ -218,6 +231,21 @@ def test_invalid_world_mode_is_rejected_without_replacing_live_game(tmp_saves):
 
     assert game.load_from_slot(2) is False
     assert (game.seed, game.world_mode, game.ship.x, game.ship.y) == before
+
+
+def test_fixed_real_sector_roundtrip_keeps_selected_coast_and_airbases(tmp_saves):
+    game = Game(seed=23, start_menu=False)
+    game.world_mode = "real_fixed"
+    game.reset(23)
+    original = game.world.coast.to_dict()
+    game.save_to_slot(1)
+    game.world_mode = "fixed"
+    game.reset(24)
+
+    assert game.load_from_slot(1)
+    assert game.world_mode == "real_fixed"
+    assert game.world.coast.to_dict() == original
+    assert len(game.world.coast.airbases) >= 4
 
 
 def test_v10_preserves_tas_ping_echo_and_operator_state(tmp_saves):

@@ -20,7 +20,6 @@ TWO_PAGE_STATIONS = {
     Station.OPZ: ("OPZ_PICTURE", "OPZ_TARGET"),
     Station.RADIO: ("RADIO_HFDF", "RADIO_MESSAGES"),
     Station.ENGINE: ("ENGINE_TELEGRAPH", "ENGINE_SYSTEMS"),
-    Station.HELICOPTER: ("HELO_STATUS", "HELO_MISSION"),
     Station.ELOKA: ("ELOKA_INTERCEPTS", "ELOKA_EVIDENCE"),
 }
 
@@ -28,6 +27,7 @@ TWO_PAGE_STATIONS = {
 def test_page_metadata_covers_every_canonical_station():
     assert set(STATION_PAGES) == set(Station)
     assert STATION_PAGES[Station.SONAR] == SONAR_PAGES
+    assert STATION_PAGES[Station.HELICOPTER] == ("HELO_STATUS", "HELO_MISSION", "HELO_SONAR", "HELO_ACOUSTIC")
     for station, pages in TWO_PAGE_STATIONS.items():
         assert STATION_PAGES[station] == pages
 
@@ -36,7 +36,14 @@ def test_page_metadata_covers_every_canonical_station():
         assert isinstance(pages, tuple)
         assert pages
         assert all(isinstance(page, str) and page for page in pages)
-        assert len(pages) == (6 if station is Station.SONAR else 2)
+        assert len(pages) == (6 if station is Station.SONAR else
+                              4 if station is Station.HELICOPTER else 2)
+
+
+def test_helicopter_sonar_page_wraps():
+    assert station_page_step(Station.HELICOPTER, 1, 1) == 2
+    assert station_page_step(Station.HELICOPTER, 2, 1) == 3
+    assert station_page_step(Station.HELICOPTER, 3, 1) == 0
 
 
 @pytest.mark.parametrize(

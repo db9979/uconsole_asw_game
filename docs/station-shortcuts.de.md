@@ -68,7 +68,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `N` | Eigenantriebs-Notchfilter ein- oder ausschalten. |
 | `K` | Erkannte Harmonik-Hypothese wählen oder löschen. |
 | `Leertaste` | LOFAR-Peak-Hold ein- oder ausschalten. |
-| `T / C / G / M` | TMA umschalten / klassifizieren / an OPZ freigeben / als Waffenziel setzen. |
+| `T / C / G / M` | TMA umschalten / klassifizieren / gewählten Sonarkontakt an OPZ freigeben oder zurückziehen / als Waffenziel setzen. Die Klassifizierung allein meldet nichts. |
 | `Maus` | Seitentab oder Kontakt wählen; im Broadband-Wasserfall Horchpeilung setzen. |
 
 ## 3  Waffen
@@ -148,13 +148,24 @@ Berechtigungsprüfungen bleiben wirksam.
 | `M` | Sonarkontakt als Lufttorpedoziel setzen. |
 | `B` | Sonarboje an aktueller Position absetzen. |
 | `C` | Gewählten Tauchsonarkontakt klassifizieren. |
-| `G / Umschalt+G` | Nächsten Tauchsonarkontakt wählen / an OPZ freigeben oder zurückziehen. |
+| `G / Umschalt+G` | Nächsten Tauchsonarkontakt wählen / dessen Tauchsonarmeldung an OPZ freigeben oder zurückziehen; unabhängig von der Schiffssonarmeldung. |
 | `Y` | Tauchsonar ausbringen oder einholen. |
 | `U / V` | Tauchsonar-Solltiefe um 10 m heben / senken. |
 | `A` | Aktiven Tauchsonar-Ping senden. |
 | `D / Strg+Enter` | Leichttorpedo abwerfen. |
 | `Q / E / K` | Kartenzoom heraus / hinein / Verfolgung umschalten. |
 | `Klick in freie Karte` | Wegpunkt direkt setzen; Objektklick wählt stattdessen Objekt/Tooltip. |
+
+Auf der vierten Helikopterseite füllen Breitband, LOFAR und DEMON die Sonarkonsole:
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `Bild↑ / Bild↓` oder Klick auf die Reiter | Breitband, LOFAR oder DEMON als großes Analysefeld wählen. |
+| `T` | Zwischen Tauchsonar und verfügbaren passiven Sonarbojen als Hörquelle wechseln. |
+| `← / →`, `R` | Hörpeilung um 5° ändern oder automatische Peilung wiederherstellen. |
+| `Umschalt+D`, `Umschalt+F` | Hörmodus beziehungsweise Frequenzband wechseln. |
+| `I / O`, `N` | Verstärkung senken / erhöhen beziehungsweise Kerbfilter umschalten. |
+| `, / .`, `J` | Kopfhörerlautstärke senken / erhöhen beziehungsweise Live-Sonar ein- oder ausschalten. |
 
 ## 9  EloKa / ESM
 
@@ -164,7 +175,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `F` | Statusfilter (OPERATIV, LIVE, SPEICHER, ALLE) wechseln. |
 | `Umschalt+F` | Mindestbedrohung wechseln. |
 | `B` | Frequenzbandfilter wechseln. |
-| `C` | Manuelle Radarart-Zuordnung wechseln. |
+| `C` | Manuelle Radarart-Zuordnung wechseln. Eine gültige Zuordnung gibt aktuelle ELOKA-Peilungen an OPZ frei; Löschen zieht die Freigabe zurück. |
 | `J` | Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben. |
 | `Umschalt+J` | ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln. |
 | `A` | Automatische ECM-Priorisierung und Softkill-Kopplung umschalten. |

@@ -6,8 +6,8 @@ import zlib
 import numpy as np
 import pytest
 
-from tools.gen_contact_analysis_images import (_plot, check, generate,
-                                               spectral_x)
+from tools.gen_contact_analysis_images import (LABEL_COLOR, _plot, check,
+                                               generate, spectral_x)
 from src.data.contact_analysis import project_contact_catalog
 
 
@@ -89,6 +89,22 @@ def test_composite_diagrams_have_fixed_log_spectrum_and_separate_demon_hypothese
         "/", 1)[-1]).read_bytes())
     assert not np.any(np.all(no_demon_pixels[134:170] == (77, 190, 219), axis=2))
     assert not np.any(np.all(no_demon_pixels[134:170] == (229, 174, 71), axis=2))
+
+
+def test_diagrams_label_relative_level_and_both_frequency_scales():
+    machine = {"cruise_lines": [], "cruise_broadband": None,
+               "shaft_rpm": None, "blade_count": None}
+    pixels = decode(_plot(machine, "cruise"))
+    label = np.array(LABEL_COLOR)
+    # Tick numbers are part of the packaged image, shared by the native and
+    # browser analyzer. These locations correspond to the plotted grid lines.
+    for x, y in ((19, 8), (19, 59), (19, 110),
+                 (24, 117), (50, 117), (136, 117),
+                 (222, 117), (308, 117),
+                 (24, 173), (95, 173), (166, 173),
+                 (237, 173), (308, 173)):
+        nearby = pixels[y:y + 5, max(0, x - 13):min(320, x + 2)]
+        assert np.any(np.all(nearby == label, axis=2)), (x, y)
 
 
 def test_every_profiles_tonal_columns_are_exact_and_distinct(tmp_path):

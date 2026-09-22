@@ -1,5 +1,8 @@
 # Commander-LAN-Koop (0.2.2)
 
+Für einen vollständig browserbasierten Raum mit Web-Spielleitung siehe
+[U-Jagd als Webspiel im LAN](web-host.de.md).
+
 [English](commander-coop.md)
 
 Remote Crew belässt die Autorität beim uConsole-Prozess, während authentifizierte
@@ -138,11 +141,11 @@ Schadensstatus und Teamstärke, verfügbare eigene Waffen sowie die Position des
 fliegenden Hubschraubers werden angezeigt. Ein im Hangar befindlicher oder
 verlorener Hubschrauber wird nicht als aktuelles Luftfahrzeug eingezeichnet.
 Missions-, Bedrohungs- und Schadensalarme basieren auf Beobachtungen. Wähle die
-Sound-Schaltfläche, um Browser-Töne und das synthetisierte
-Eigenschiff-Kavitationsgeräusch der Brücke zu aktivieren; Lautstärke und
-Stummschaltung sind vom uConsole-Audio unabhängig. Das Kavitationsgeräusch verwendet
-nur die Brückenprojektion und endet bei ruhiger Fahrt, veralteter Verbindung,
-Rollenwechsel, Pause, versteckter Seite oder Stummschaltung. Autoplay kann vom
+Sound-Schaltfläche, um Browser-Töne (synthetisierte Alarm- und
+Gefechtseffekt-Signale) und, sofern separat freigegeben, den Live-Sonar-/
+Hubschrauber-Audiostream zu aktivieren; Lautstärke und Stummschaltung sind vom
+uConsole-Audio unabhängig. Es gibt kein dauerhaftes Eigenschiff-Ambientgeräusch,
+weder lokal noch im Browser. Autoplay kann vom
 Browser bis zu dieser Geste gesperrt werden. Visuelle Alarme bleiben immer
 verfügbar. Eine neue Verbindung setzt eine neue Ton-Ausgangsbasis, statt Alarme
 erneut abzuspielen.
@@ -184,7 +187,7 @@ erhält `session_limit`, bis der erste im Roster entfernt wird), und Leases verf
 nicht. Ein Moduswechsel widerruft alle Sitzungen und rotiert den Code.
 
 Der Solo-Browser erhält zusätzlich eine **Spielsteuerungsleiste**: Pause/Fortsetzen,
-Zeitfaktor (1x-120x), Speichern und Laden (Slots 1-5) sowie Neues Spiel (Szenario,
+Speichern und Laden (Slots 1-5) sowie Neues Spiel (Szenario,
 Welt, Schwierigkeit, optionaler Seed). Laden oder ein neues Spiel ersetzt die Welt,
 der Browser bleibt aber gekoppelt; alles, was er für die alte Welt vorbereitet hatte,
 scheitert geschlossen. Im Hauptmenü der uConsole zeigt der Browser einen Startbildschirm.

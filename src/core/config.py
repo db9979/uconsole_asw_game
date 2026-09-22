@@ -39,11 +39,17 @@ ECO_REDRAW_S = 0.25
 ECO_PRESENCE_POLL_S = 0.5
 ECO_PRESENCE_MAX_AGE_S = 5.0
 # Pygame specifies its mixer buffer in samples. 512 samples are about 23 ms at
-# 22050 Hz; longer scheduling gaps use the engine's bounded last-block hold.
+# 22050 Hz. Longer scheduling gaps are handled in software: locally by the
+# AudioEngine's two-second buffered-sonar queue (SONAR_BUFFER_MAX_S), and for
+# Remote Crew by the server's 40-block ring buffer of 0.25 s blocks, ~10 s
+# (SONAR_AUDIO_RING_BLOCKS in src/commander/server.py).
 AUDIO_MIXER_BUFFER_SAMPLES = 512
 # Mono output: halves per-block synthesis, resampling and mixer workload on
 # the low-power uConsole; stereo bearing panning is skipped in mono.
 AUDIO_CHANNELS = 1
+# Bounded size of the optional U_JAGD_PERF_DEBUG main-loop timing log; see
+# Game._perf_debug_log. Mirrors AudioEngine.DEBUG_LOG_MAX_BYTES.
+PERF_DEBUG_LOG_MAX_BYTES = 1_000_000
 
 # M8: CRT-Scanline-Overlay (subtiler Phosphor-Look)
 CRT_SCANLINES = False
@@ -70,12 +76,12 @@ TELEMETRY_RECT = (960, MAIN_BOTTOM, 320, BOTTOM_H)             # (960,540,320,18
 TACTICAL_TIME_SCALE = 1.0
 # Spielminuten pro Simulationssekunde: ergibt eine reale 24-h-Uhr.
 GAME_TIME_PER_SEC = 1.0 / 60.0
-# Zeitraffer beschleunigt die gesamte Simulation bewusst und genau einmal.
-TIME_SCALE_STEPS = (1, 5, 15, 30, 60, 120)
-TIME_SCALE_DEFAULT = 0            # Index (1x = Echtzeit-Baseline)
+# Legacy save/protocol field: simulation always runs at real-time speed.
+TIME_SCALE_STEPS = (1,)
+TIME_SCALE_DEFAULT = 0
 PHYS_SUBSTEP_S = 0.05             # max. sim-Sekunden pro Physik-Substep (Anti-Tunneling:
                                   # 45 kn legen in 0.05 s ca. 0.000625 NM zurueck)
-PHYS_SUBSTEP_MAX = 240            # haelt auch 0.1-s-Frames bei 120x stabil
+PHYS_SUBSTEP_MAX = 240
 MAP_ZOOM_MIN_PX_PER_NM = 1.0      # ganze Welt sichtbar (500 NM in 510 px)
 MAP_ZOOM_MAX_PX_PER_NM = 14.0     # Detail-Zoom (~36 NM in 510 px)
 MAP_ZOOM_DEFAULT_PX_PER_NM = 10.0 # Start-Zoom (~51 NM hoch, ~64 NM breit)
@@ -417,6 +423,7 @@ BUOY_COUNT = 5
 BUOY_SPACING_NM = 3.0
 BUOY_RANGE_NM = 8.0
 BUOY_BATTERY_S = 3600.0
+BUOY_PING_COOLDOWN_S = 30.0
 HELO_TORP_SPEED_KN = _HELO_TORP_PROFILE.speed_kn
 
 # M16: Fliegerabwehr (physikalische Geschwindigkeiten)
@@ -532,9 +539,8 @@ SCORE_AMMO_BONUS = 200             # pro ungenutztem Torpedo (Sieg)
 SCORE_CIVIL_BONUS = 500            # keine zivilen Verluste (Sieg)
 SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
 
-# Missionstypen: Zeitfenster in Simulationssekunden; bei 1x identisch zu real.
-# Lange Einsatzfenster: Aufmerksamkeits-/Suchphasen sollen bei 1x nicht nach
-# wenigen Minuten enden. Zeitraffer bleibt für die operative Beschleunigung.
+# Missionstypen: Zeitfenster in Echtzeit-Simulationssekunden.
+# Lange Einsatzfenster lassen Zeit für Aufmerksamkeits- und Suchphasen.
 # win = "sink" (Ziel versenken) oder "survive" (Zeitlimit überstehen)
 MISSION_TYPES = {
     "patrouille": dict(

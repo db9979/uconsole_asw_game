@@ -2,38 +2,37 @@
 
 import os
 import time
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from collections.abc import Callable
-from copy import deepcopy
+import threading
+import weakref
 
 import numpy as np
 import pygame
 
 from src.audio.receiver import smooth_limit
 from src.audio.synthesis import (active_sonar_ping, combat_effect,
-                                 helicopter_block, propeller_block,
-                                 ship_ambience_block, stereo_bearing, tone)
+                                 stereo_bearing, tone)
 from src.core import config
+from src.core.debuglog import append_bounded_log
 
 
 class AudioEngine:
     """Audioausgabe; bei fehlendem Audiogeraet wird lautlos weiter simuliert."""
 
     DEBUG_LOG_MAX_BYTES = 1_000_000
-    ENGINE_CHANNEL = 0
     SONAR_CHANNEL = 1
     PING_CHANNEL = 2
     ALERT_CHANNEL = 3
-    HELICOPTER_CHANNEL = 4
     FADE_MS = 35
     SONAR_HOLD_MAX = 2
+    SONAR_BUFFER_S = 1.0
+    SONAR_BUFFER_MAX_S = 2.0
 
     # Post-limiter per-channel PCM ceilings, NOT input volume caps. The gains
-    # keep all five reserved buses below full scale even at coincident peaks.
-    SOURCE_LIMITS = {"engine": .18, "sonar": .55, "ping": .40,
-                     "alert": .32, "helicopter": .18}
-    CHANNEL_GAINS = {"engine": .45, "sonar": .58, "ping": .58,
-                     "alert": .58, "helicopter": .50}
+    # keep all three reserved buses below full scale even at coincident peaks.
+    SOURCE_LIMITS = {"sonar": .55, "ping": .40, "alert": .32}
+    CHANNEL_GAINS = {"sonar": .58, "ping": .58, "alert": .58}
 
     def __init__(self, sample_rate: int = 22050,
                  channels: int = config.AUDIO_CHANNELS,
@@ -46,38 +45,43 @@ class AudioEngine:
         self.fatal_error = False
         self._cache_size = max(0, cache_size)
         self._cache: OrderedDict[tuple, pygame.mixer.Sound] = OrderedDict()
-        self._engine_channel = None
         self._sonar_channel = None
         self._ping_channel = None
         self._alert_channel = None
-        self._helicopter_channel = None
-        self._engine_phase = 0.0
-        self._engine_shaft_phase = 0.0
-        self._engine_blocks = 0
-        self._engine_rng = np.random.default_rng(17)
-        self._engine_filter_state = np.zeros(5, dtype=np.float64)
-        self._engine_fading = False
-        self._ambience_phase = 0.0
-        self._helicopter_phase = 0.0
-        self._helicopter_fading = False
-        self._helicopter_blocks = 0
         self._sonar_fading = False
         self._sonar_rate = None
         self._sonar_input_count = 0
         self._sonar_output_count = 0
         self._sonar_previous = None
         self._sonar_last_sound = None
+        self._sonar_repeat_signal = None
+        self._sonar_repeat_sound = None
+        self._sonar_neutral_sound = None
+        self._sonar_last_fresh_at = None
+        self.sonar_stale = False
+        self.sonar_local_underruns = 0
+        self.sonar_neutral_blocks = 0
         self._sonar_hold_streak = 0
+        self._sonar_buffer = deque()
+        self._sonar_buffer_duration = 0.0
+        self._sonar_buffered = False
+        self._sonar_primed = False
+        self._sonar_lock = threading.RLock()
+        self._sonar_wake = threading.Event()
+        self._sonar_exit = threading.Event()
+        self._sonar_worker = None
+        self._sonar_finalizer = weakref.finalize(
+            self, AudioEngine._stop_orphaned_worker,
+            self._sonar_exit, self._sonar_wake)
         self._preview_sound = None
         self._preview_channel = None
         self.sonar_holds = 0
-        self.engine_dropped_blocks = 0
-        self.engine_underruns = 0
         self.sonar_dropped_blocks = 0
         self.alert_dropped_events = 0
         self._audio_debug_enabled = (
             os.environ.get("U_JAGD_AUDIO_DEBUG", "") not in ("", "0"))
         self._audio_debug_due = 0.0
+        self._audio_debug_receiver_last = None
         if not self.enabled:
             return
         try:
@@ -95,20 +99,15 @@ class AudioEngine:
             if sample_format != -16 or self.channels not in (1, 2):
                 self.enabled = False
                 return
-            if pygame.mixer.get_num_channels() < 5:
-                pygame.mixer.set_num_channels(5)
-            pygame.mixer.set_reserved(5)
-            self._engine_channel = pygame.mixer.Channel(self.ENGINE_CHANNEL)
+            if pygame.mixer.get_num_channels() < 4:
+                pygame.mixer.set_num_channels(4)
+            pygame.mixer.set_reserved(4)
             self._sonar_channel = pygame.mixer.Channel(self.SONAR_CHANNEL)
             self._ping_channel = pygame.mixer.Channel(self.PING_CHANNEL)
             self._alert_channel = pygame.mixer.Channel(self.ALERT_CHANNEL)
-            self._helicopter_channel = pygame.mixer.Channel(
-                self.HELICOPTER_CHANNEL)
-            for name, channel in (("engine", self._engine_channel),
-                                  ("sonar", self._sonar_channel),
+            for name, channel in (("sonar", self._sonar_channel),
                                   ("ping", self._ping_channel),
-                                  ("alert", self._alert_channel),
-                                  ("helicopter", self._helicopter_channel)):
+                                  ("alert", self._alert_channel)):
                 channel.set_volume(self.CHANNEL_GAINS[name])
             self.available = True
         except (pygame.error, TypeError, ValueError, OverflowError):
@@ -205,44 +204,6 @@ class AudioEngine:
         except (TypeError, ValueError, OverflowError):
             return False
 
-    def update_helicopter(self, distance_nm: float, bearing_deg: float,
-                          listener_bearing_deg: float, airborne: bool) -> bool:
-        """Queue a nearby rotor block; distance limits work and channel use."""
-        if (not self.enabled or not self.available
-                or self._helicopter_channel is None):
-            return False
-        try:
-            distance = float(distance_nm)
-            if (not airborne or not np.isfinite(distance) or distance >= 4.0):
-                self.stop_helicopter()
-                return True
-            if (self._helicopter_channel.get_busy()
-                    and self._helicopter_channel.get_queue() is not None):
-                return False
-            proximity = 1.0 - np.clip(distance / 4.0, 0.0, 1.0)
-            volume = self.SOURCE_LIMITS["helicopter"] * (.18 + .82 * proximity**2)
-            signal = helicopter_block(self.sample_rate, volume,
-                                      self._helicopter_phase)
-            if self.channels == 2:
-                signal = stereo_bearing(signal, bearing_deg,
-                                        listener_bearing_deg)
-            sound = self._make_sound(signal, "helicopter")
-            if self._helicopter_channel.get_busy():
-                self._helicopter_channel.queue(sound)
-            else:
-                self._helicopter_channel.play(sound, fade_ms=self.FADE_MS)
-            self._helicopter_phase = (
-                self._helicopter_phase + 2 * np.pi * 4.8 * 4
-                * len(signal) / self.sample_rate) % (2 * np.pi)
-            self._helicopter_blocks += 1
-            self._helicopter_fading = False
-            return True
-        except pygame.error:
-            self._latch_device_error()
-            return False
-        except (TypeError, ValueError, OverflowError):
-            return False
-
     def play_alert(self, kind: str = "danger") -> bool:
         """Kurze priorisierte Meldung fuer Stations- und Gefahrenaudio."""
         tones = {
@@ -277,83 +238,23 @@ class AudioEngine:
             return False
         return True
 
-    def update_engine(self, rpm: float, blade_count: int = 5,
-                      cavitation: float = 0.0, volume: float = 0.15,
-                      sea_state: float | None = None, rain: float = 0.0) -> bool:
-        """Queue a machine block; callers should feed it at approximately 4 Hz."""
-        if not self.enabled or not self.available or self._engine_channel is None:
-            return False
-        try:
-            volume = float(volume)
-            if not np.isfinite(volume):
-                return False
-            volume = float(np.clip(volume, 0.0, self.SOURCE_LIMITS["engine"]))
-            if volume == 0.0:
-                self.stop_engine()
-                return True
-            busy = self._engine_channel.get_busy()
-            if busy and self._engine_channel.get_queue() is not None:
-                self.engine_dropped_blocks += 1
-                return False
-            if not busy and self._engine_blocks:
-                self.engine_underruns += 1
-            blade_hz = max(.1, rpm / 60 * max(1, blade_count))
-            count = max(1, int(.25 * self.sample_rate))
-            next_filter = self._engine_filter_state.copy()
-            rng_state = deepcopy(self._engine_rng.bit_generator.state)
-            try:
-                signal = propeller_block(
-                    rpm, blade_count, self.sample_rate, amplitude=volume,
-                    cavitation=cavitation, phase=self._engine_phase,
-                    rng=self._engine_rng, filter_state=next_filter,
-                    shaft_phase=self._engine_shaft_phase)
-                if sea_state is not None:
-                    signal = signal + ship_ambience_block(
-                        self.sample_rate, sea_state, rain,
-                        amplitude=min(.045, volume * .32),
-                        phase=self._ambience_phase)
-                sound = self._make_sound(signal, "engine")
-                if busy:
-                    self._engine_channel.queue(sound)
-                else:
-                    self._engine_channel.play(sound, fade_ms=self.FADE_MS)
-            except (pygame.error, TypeError, ValueError, OverflowError):
-                self._engine_rng.bit_generator.state = rng_state
-                raise
-            self._engine_filter_state = next_filter
-            self._engine_phase = (self._engine_phase + 2 * np.pi * blade_hz
-                                   * count / self.sample_rate) % (2 * np.pi)
-            self._engine_shaft_phase = (
-                self._engine_shaft_phase + 2 * np.pi * blade_hz / max(1, blade_count)
-                * count / self.sample_rate) % (2 * np.pi)
-            self._ambience_phase = (
-                self._ambience_phase + 2 * np.pi * 31.0
-                * count / self.sample_rate) % (2 * np.pi)
-            self._engine_blocks += 1
-            self._engine_fading = False
-        except pygame.error:
-            self._latch_device_error()
-            return False
-        except (TypeError, ValueError, OverflowError):
-            return False
-        return True
-
     def play_sonar(self, samples: np.ndarray, sample_rate: int,
                    volume: float = 0.4, bearing_deg: float | None = None,
                    listener_bearing_deg: float = 0.0,
-                   hold: bool = False) -> bool:
+                   hold: bool = False, buffered: bool = False) -> bool:
         """Play a mono float32 block once; False means invalid or queue full.
 
         With hold=True an idle channel re-plays the previous block (bounded to
         SONAR_HOLD_MAX consecutive holds) before the new one, so simulation
         clock lag does not open a silent gap at the 4 Hz block boundary.
-        Only the current and one pending sound are retained, never cached.
+        Buffered local listening retains at most two seconds of sounds. The
+        mixer still holds only its current and next sound.
         Volume spans 0..1 before the bus limiter. Linear streaming resampling
         delays by one source sample, so interpolation never predicts a future
         sample or replaces the start of every block with a constant crossfade.
-        On a sequence gap/preview discontinuity call stop_sonar(immediate=True)
-        first. False never advances resampler state: retry the same block, not
-        its successor.
+        An intentional stream change calls stop_sonar(immediate=True); a lost
+        receiver block calls discontinue_sonar_input() so queued audio survives.
+        False never advances resampler state: retry the same block, not its successor.
         """
         if not self.enabled or not self.available or self._sonar_channel is None:
             return False
@@ -372,11 +273,16 @@ class AudioEngine:
         if count < 2:
             return False
         try:
-            if self._sonar_channel.get_queue() is not None:
-                self.sonar_dropped_blocks += 1
-                return False
+            with self._sonar_lock:
+                if buffered:
+                    if self._sonar_buffer_duration + samples.size / sample_rate > self.SONAR_BUFFER_MAX_S + 1e-6:
+                        self.sonar_dropped_blocks += 1
+                        return False
+                elif self._sonar_channel.get_queue() is not None:
+                    self.sonar_dropped_blocks += 1
+                    return False
             source_rate = int(sample_rate)
-            if self._sonar_rate != source_rate:
+            if self._sonar_rate != source_rate or self.sonar_stale:
                 input_start = output_start = 0
                 previous = None
             else:
@@ -403,7 +309,21 @@ class AudioEngine:
             if self.channels == 2 and bearing_deg is not None:
                 signal = stereo_bearing(signal, bearing_deg, listener_bearing_deg)
             sound = self._make_sound(signal, "sonar")
-            if self._sonar_channel.get_busy():
+            if buffered:
+                with self._sonar_lock:
+                    self._sonar_buffered = True
+                    self._sonar_buffer.append((sound, count / self.sample_rate,
+                                               signal.copy()))
+                    self._sonar_buffer_duration += count / self.sample_rate
+                    if self._sonar_worker is None:
+                        self._sonar_worker = threading.Thread(
+                            target=AudioEngine._pump_sonar,
+                            args=(weakref.ref(self), self._sonar_wake,
+                                  self._sonar_exit),
+                            name="u-jagd-sonar-audio", daemon=True)
+                        self._sonar_worker.start()
+                    self._sonar_wake.set()
+            elif self._sonar_channel.get_busy():
                 self._sonar_channel.queue(sound)
                 self._sonar_hold_streak = 0
             elif (hold and self._sonar_last_sound is not None
@@ -429,6 +349,80 @@ class AudioEngine:
             return False
         return True
 
+    @staticmethod
+    def _stop_orphaned_worker(exit_event, wake):
+        exit_event.set()
+        wake.set()
+
+    @staticmethod
+    def _pump_sonar(reference, wake, exit_event) -> None:
+        """Feed the reserved mixer channel while the simulation thread stalls."""
+        while not exit_event.is_set():
+            engine = reference()
+            if engine is None:
+                return
+            active = engine._sonar_buffered and engine._sonar_primed
+            del engine
+            wake.wait(.02 if active else None)
+            wake.clear()
+            engine = reference()
+            if engine is None:
+                return
+            engine._pump_sonar_once()
+            del engine
+
+    def _pump_sonar_once(self) -> None:
+        with self._sonar_lock:
+            if (not self._sonar_buffered or not self.available
+                    or pygame.mixer.get_init() is None):
+                return
+            try:
+                if not self._sonar_primed:
+                    if self._sonar_buffer_duration < self.SONAR_BUFFER_S - 1e-6:
+                        return
+                    self._sonar_primed = True
+                if self._sonar_channel.get_queue() is not None:
+                    return
+                if self._sonar_buffer:
+                    sound, duration, signal = self._sonar_buffer.popleft()
+                    self._sonar_buffer_duration = max(0.0, self._sonar_buffer_duration - duration)
+                    self._sonar_repeat_signal = signal
+                    self._sonar_repeat_sound = None
+                    self._sonar_last_fresh_at = time.monotonic()
+                    self.sonar_stale = False
+                elif self._sonar_last_fresh_at is None:
+                    return
+                elif time.monotonic() - self._sonar_last_fresh_at < 2.0:
+                    if self._sonar_repeat_sound is None:
+                        signal = self._sonar_repeat_signal.copy()
+                        fade = min(len(signal), max(2, round(self.sample_rate * .01)))
+                        weight = np.linspace(0.0, 1.0, fade)
+                        if signal.ndim == 2:
+                            weight = weight[:, None]
+                        signal[:fade] = signal[-1] * (1 - weight) + signal[:fade] * weight
+                        self._sonar_repeat_sound = self._make_sound(signal, "sonar")
+                    sound = self._sonar_repeat_sound
+                    self.sonar_holds += 1
+                    self.sonar_local_underruns += 1
+                else:
+                    self.sonar_stale = True
+                    self._sonar_previous = None
+                    if self._sonar_neutral_sound is None:
+                        count = max(2, round(self.sample_rate * .25))
+                        noise = np.random.default_rng(1701).uniform(-.006, .006, count)
+                        fade = min(count // 2, max(2, round(self.sample_rate * .01)))
+                        noise[:fade] *= np.linspace(0.0, 1.0, fade)
+                        noise[-fade:] *= np.linspace(1.0, 0.0, fade)
+                        self._sonar_neutral_sound = self._make_sound(noise, "sonar")
+                    sound = self._sonar_neutral_sound
+                    self.sonar_neutral_blocks += 1
+                if self._sonar_channel.get_busy():
+                    self._sonar_channel.queue(sound)
+                else:
+                    self._sonar_channel.play(sound, fade_ms=self.FADE_MS)
+            except pygame.error:
+                self._latch_device_error()
+
     def stop_sonar(self, *, immediate: bool = False) -> None:
         """Fade a normal stop; discard queued old-beam audio on discontinuity.
 
@@ -437,22 +431,33 @@ class AudioEngine:
         The immediate hard stop is latched: repeat calls while the channel is
         already idle only reset the stream state, they never re-issue stop().
         """
-        if immediate:
-            if not self._sonar_fading:
-                self._hard_stop(self._sonar_channel)
-            self._sonar_fading = True
-        elif self._sonar_channel is not None and not self._sonar_fading:
-            try:
-                if self._sonar_channel.get_busy():
-                    self._sonar_channel.fadeout(self.FADE_MS)
+        with self._sonar_lock:
+            if immediate or self._sonar_buffered:
+                if not self._sonar_fading:
+                    self._hard_stop(self._sonar_channel)
                 self._sonar_fading = True
-            except pygame.error:
-                pass
-        self._reset_sonar_stream()
+            elif self._sonar_channel is not None and not self._sonar_fading:
+                try:
+                    if self._sonar_channel.get_busy():
+                        self._sonar_channel.fadeout(self.FADE_MS)
+                    self._sonar_fading = True
+                except pygame.error:
+                    pass
+            self._reset_sonar_stream()
+
+    def discontinue_sonar_input(self) -> None:
+        """Restart resampling after a lost receiver block without cutting playback."""
+        with self._sonar_lock:
+            self._sonar_rate = None
+            self._sonar_input_count = 0
+            self._sonar_output_count = 0
+            self._sonar_previous = None
+            self._sonar_last_sound = None
+            self._sonar_hold_streak = 0
 
     def hold_sonar(self) -> bool:
         """Replay one retained block when a 1x producer has no new block."""
-        if (not self.enabled or not self.available or self._sonar_channel is None
+        if (self._sonar_buffered or not self.enabled or not self.available or self._sonar_channel is None
                 or self._sonar_last_sound is None
                 or self._sonar_hold_streak >= self.SONAR_HOLD_MAX):
             return False
@@ -469,36 +474,23 @@ class AudioEngine:
             return False
 
     def _reset_sonar_stream(self) -> None:
+        self._sonar_buffer.clear()
+        self._sonar_buffer_duration = 0.0
+        self._sonar_buffered = False
+        self._sonar_primed = False
         self._sonar_rate = None
         self._sonar_input_count = 0
         self._sonar_output_count = 0
         self._sonar_previous = None
         self._sonar_last_sound = None
+        self._sonar_repeat_signal = None
+        self._sonar_repeat_sound = None
+        self._sonar_last_fresh_at = None
+        self.sonar_stale = False
         self._sonar_hold_streak = 0
-
-    def stop_engine(self) -> None:
-        """Fade normal engine transitions without repeatedly restarting the fade."""
-        if self._engine_channel is not None and not self._engine_fading:
-            try:
-                if self._engine_channel.get_busy():
-                    self._engine_channel.fadeout(self.FADE_MS)
-                self._engine_fading = True
-            except pygame.error:
-                pass
-
-    def stop_helicopter(self) -> None:
-        if self._helicopter_channel is not None and not self._helicopter_fading:
-            try:
-                if self._helicopter_channel.get_busy():
-                    self._helicopter_channel.fadeout(self.FADE_MS)
-                self._helicopter_fading = True
-            except pygame.error:
-                pass
 
     def stop(self) -> None:
         self.stop_sonar()
-        self.stop_engine()
-        self.stop_helicopter()
         self._hard_stop(self._ping_channel)
         self._hard_stop(self._alert_channel)
 
@@ -580,38 +572,22 @@ class AudioEngine:
             return
         self._audio_debug_due %= 1.0
         evictions = getattr(receiver, "evicted_blocks", 0)
-        line = ("t={t:.1f} engine_drops={ed} underruns={u} "
-                "sonar_drops={sd} sonar_holds={sh} alert_drops={ad} "
-                "evictions={ev} rate={r} ch={c}\n").format(
-            t=time.monotonic(), ed=self.engine_dropped_blocks,
-            u=self.engine_underruns, sd=self.sonar_dropped_blocks,
+        receiver_blocks = getattr(receiver, "sequence", -1) + 1
+        produced = (0 if self._audio_debug_receiver_last is None else
+                    max(0, receiver_blocks - self._audio_debug_receiver_last))
+        self._audio_debug_receiver_last = receiver_blocks
+        line = ("t={t:.1f} receiver_blocks_per_s={rb} sonar_drops={sd} "
+                "sonar_holds={sh} alert_drops={ad} "
+                "sonar_underruns={su} sonar_neutral={sn} sonar_stale={ss} "
+                "buffer_s={bs:.2f} evictions={ev} rate={r} ch={c}\n").format(
+            t=time.monotonic(), sd=self.sonar_dropped_blocks,
             sh=self.sonar_holds, ad=self.alert_dropped_events, ev=evictions,
+            rb=produced,
+            su=self.sonar_local_underruns, sn=self.sonar_neutral_blocks,
+            ss=int(self.sonar_stale), bs=self._sonar_buffer_duration,
             r=self.sample_rate, c=self.channels)
-        try:
-            root = os.path.abspath(os.path.expanduser(os.fspath(config.SAVE_DIR)))
-            if os.path.lexists(root) and os.path.islink(root):
-                return
-            os.makedirs(root, mode=0o700, exist_ok=True)
-            if os.path.islink(root) or not os.path.isdir(root):
-                return
-            path = os.path.join(root, "audio_debug.log")
-            directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
-            directory_flags |= getattr(os, "O_NOFOLLOW", 0)
-            directory = os.open(root, directory_flags)
-            flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
-            flags |= getattr(os, "O_NOFOLLOW", 0)
-            try:
-                descriptor = os.open(os.path.basename(path), flags, 0o600,
-                                     dir_fd=directory)
-                with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
-                    if os.fstat(handle.fileno()).st_size >= self.DEBUG_LOG_MAX_BYTES:
-                        handle.seek(0)
-                        handle.truncate()
-                    handle.write(line)
-            finally:
-                os.close(directory)
-        except OSError:
-            pass
+        append_bounded_log(config.SAVE_DIR, "audio_debug.log", line,
+                           self.DEBUG_LOG_MAX_BYTES)
 
     @staticmethod
     def _hard_stop(channel) -> None:
@@ -627,9 +603,12 @@ class AudioEngine:
             pass
 
     def shutdown(self) -> None:
-        for channel in (self._engine_channel, self._sonar_channel,
-                        self._ping_channel, self._alert_channel,
-                        self._helicopter_channel):
+        self._sonar_exit.set()
+        self._sonar_wake.set()
+        if self._sonar_worker is not None:
+            self._sonar_worker.join(timeout=1.0)
+        for channel in (self._sonar_channel, self._ping_channel,
+                        self._alert_channel):
             self._hard_stop(channel)
         self.stop_preview()
         self._reset_sonar_stream()

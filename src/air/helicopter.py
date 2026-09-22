@@ -207,14 +207,15 @@ class Helicopter:
             and not world.on_land(self.x, self.y)
             and getattr(world, "depth_m", lambda x, y: 1000.0)(self.x, self.y) > 5.0))
 
-    def deploy_buoy(self, seq: int, world=None) -> Sonobuoy | None:
+    def deploy_buoy(self, seq: int, world=None,
+                    mode: str = "PASSIVE") -> Sonobuoy | None:
         """Drop one buoy at the helicopter's measured current position."""
         if not self.airborne or self.buoys_left <= 0:
             return None
         if not self.water_entry_clear(world):
             return None
         self.buoys_left -= 1
-        return Sonobuoy(self.x, self.y, seq)
+        return Sonobuoy(self.x, self.y, seq, mode)
 
     def release_datum_from_ship_observation(
             self, ship, observed_bearing_deg: float, observed_range_nm: float,

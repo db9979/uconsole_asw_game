@@ -38,7 +38,7 @@ def catalogs():
 
 
 def test_commander_resources_are_self_contained_and_csp_safe():
-    assert all(ASSETS.joinpath(name).is_file() for name in ("__init__.py", "index.html", "app.js", "style.css"))
+    assert all(ASSETS.joinpath(name).is_file() for name in ("__init__.py", "index.html", "app.js", "style.css", "voice.js", "voice-worklet.js", "sonar-audio-worklet.js"))
     html = ASSETS.joinpath("index.html").read_text()
     js = ASSETS.joinpath("app.js").read_text()
     css = ASSETS.joinpath("style.css").read_text()
@@ -74,8 +74,10 @@ def test_commander_resources_are_self_contained_and_csp_safe():
         assert tag not in {"iframe", "img", "object", "embed", "style"}
         for key in ("src", "href"):
             if key in attrs:
-                assert (attrs[key] in {"./app.js", "./style.css"}
-                        or key == "href" and attrs[key].startswith("#guide-"))
+                assert (attrs[key] in {"./app.js", "./voice.js", "./style.css"}
+                        or key == "href" and attrs[key].startswith("#guide-")
+                        or key == "href" and attrs.get("id") == "web-admin-link"
+                        and attrs[key] == "/admin" and "hidden" in attrs)
     csp = next(attrs["content"] for _, attrs in document.elements if attrs.get("http-equiv") == "Content-Security-Policy")
     assert "default-src 'none'" in csp
     assert "connect-src 'self'" in csp
@@ -129,16 +131,21 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     sonar_toggle = next(attrs for _, attrs in document.elements
                         if attrs.get("id") == "sonar-live-toggle")
     assert sonar_toggle["type"] == "button" and sonar_toggle["aria-pressed"] == "false"
-    assert js.count('fetch("/api/v2/sonar/audio"') == 1
-    assert "if (!sonarAudioEnabled || sonarAudioController) return" in js
+    assert '"/api/v2/sonar/audio"' in js
+    assert '"/api/v2/helicopter/audio"' in js
+    assert "if (!sonarAudioEnabled || sonarAudioController || sonarAudioSocket?.readyState" in js
+    assert 'new AudioWorkletNode(audio, "sonar-audio-v2"' in js
+    assert '"u-jagd-audio-v2"' in js
     assert "sonarAudioSources.length >= sonarAudioMaxSources" in js
     assert "queuedAhead >= sonarAudioTargetAhead" in js
-    assert "start > audio.currentTime + 2.5" in js
+    assert "start > audio.currentTime + 7.0" in js
     assert "raster = {canvas: off, context, image, pixels:" in js
     assert "const image = raster.context.createImageData" not in js
-    assert 'response.headers.get("content-length") !== "2048"' in js
+    assert "offset + value.byteLength > output.byteLength" in js
+    assert "offset !== output.byteLength" in js
     assert 'response.headers.get("x-u-jagd-pcm") !== "s16le"' in js
-    assert "sonarAudioController?.abort()" in js and "flushSonarAudioQueue()" in js
+    assert "sonarAudioController?.abort()" in js
+    assert "flushSonarAudioQueue()" not in js
     toggle_handler = js.split('$("sonar-live-toggle").addEventListener("click"', 1)[1]
     assert "new Audio()" in toggle_handler and "scheduleSonarAudioPoll()" in toggle_handler
     assert "machine.cruise_lines" in analyzer_renderer
@@ -229,8 +236,10 @@ def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
     for function, fields in {
         "drawSonarVisuals": ("broadband", "lofar", "demon", "tma", "bt",
                              "active_echoes", "receiver"),
-        "drawRoleMap": ("landmasses", "range_uncertainty_nm", "bearingLogs",
-                        "fixes", "assets", "members", "sweep_bearing"),
+            "drawRoleMap": ("landmasses", "range_uncertainty_nm", "bearingLogs",
+                            "fixes", "assets", "members", "drawOpzSweepOverlay"),
+            "drawOpzSweepOverlay": ("sweep_bearing", "rayLengthToCanvasEdge",
+                                     "roleMapSweepCtx"),
         "drawDamageVisual": ("compartments", "flood", "fire", "trend", "teams"),
         "drawEngineVisual": ("telegraph", "rpm", "speed", "noise",
                              "effective_speed_cap", "roll", "pitch"),

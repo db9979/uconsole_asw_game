@@ -125,6 +125,9 @@ class Contact:
         self.tma_quality = 0.0
         self.tma_seen = None
         self.buoy_fixes = []  # raw (t, x, y, quality), not ownship passive bearings
+        self.buoy_reports = {}  # buoy sequence -> detached measured report
+        self.helo_qualified = False
+        self.buoy_released_to_opz = False
         self.fixes = {}
         self.ping_pos = None
         self.observed_x = None
@@ -149,6 +152,9 @@ class Contact:
         self.dip_last_seen = None
         self.dip_observer_x = None
         self.dip_observer_y = None
+        self.dip_released_to_opz = False
+        self.ship_observer_x = None
+        self.ship_observer_y = None
 
     def update_passive(self, bearing: float, confidence: float,
                        quality: float, signature: str, t: float,
@@ -983,6 +989,7 @@ class SonarSystem:
             c = self._get_contact(tgt)
             c._fx, c._fy = frigate.x, frigate.y
             c.observer_x, c.observer_y = frigate.x, frigate.y
+            c.ship_observer_x, c.ship_observer_y = frigate.x, frigate.y
             c.passive_source = "SONAR-BRG"
             c.array_observations.update(observations)
             c.array_observations = {
@@ -1054,14 +1061,25 @@ class SonarSystem:
                     source["broadband"] = broadband
                 sources.append(source)
 
-        # Bojen messen von ihrer eigenen Position. Erst zwei Peilstrahlen
-        # liefern eine an die Fregatte übertragbare Positionslösung.
+        # Measurements belong to the helicopter. Keep each buoy's own ray;
+        # only two independent passive rays or an active echo provide a fix.
         active_buoys = [b for b in buoys if getattr(b, "active", False)]
+        for contact in self.contacts.values():
+            contact.buoy_reports = {
+                seq: report for seq, report in contact.buoy_reports.items()
+                if t - report["measured_at"] < config.SONAR_CONTACT_LOST_S
+                and any(b.seq == seq for b in active_buoys)}
+        ping_epoch = int(t // config.BUOY_PING_COOLDOWN_S)
+        ping_buoys = {b.seq for b in active_buoys
+                      if getattr(b, "mode", "PASSIVE") == "ACTIVE"
+                      and getattr(b, "last_ping_epoch", -1) < ping_epoch}
         for tgt in targets if active_buoys else ():
             if tgt_gone(tgt):
                 continue
             reports = []
             for b in active_buoys:
+                if getattr(b, "mode", "PASSIVE") == "ACTIVE" and b.seq not in ping_buoys:
+                    continue
                 dist = math.hypot(tgt.x - b.x, tgt.y - b.y)
                 if dist >= config.BUOY_RANGE_NM:
                     continue
@@ -1079,8 +1097,30 @@ class SonarSystem:
                 rng = random.Random(getattr(tgt, "sensor_seed", tgt.id) * 1543
                                     + b.seq * 7919 + int(t // 2.0))
                 error = 2.0 + 5.0 * (1.0 - quality)
-                reports.append((b, (true_bearing + rng.uniform(-error, error))
-                                % 360.0, quality))
+                bearing = (true_bearing + rng.uniform(-error, error)) % 360.0
+                contact = self._get_contact(tgt)
+                measured_range = None
+                observed_x = observed_y = None
+                if getattr(b, "mode", "PASSIVE") == "ACTIVE":
+                    measured_range = max(0.0, dist + rng.uniform(-.25, .25))
+                    angle = math.radians(bearing)
+                    observed_x = b.x + measured_range * math.sin(angle)
+                    observed_y = b.y - measured_range * math.cos(angle)
+                    contact._fx, contact._fy = frigate.x, frigate.y
+                    contact.update_buoy(observed_x, observed_y, quality, t)
+                else:
+                    reports.append((b, bearing, quality))
+                contact.buoy_reports[b.seq] = dict(
+                    mode=getattr(b, "mode", "PASSIVE"), bearing=bearing,
+                    bearing_uncertainty_deg=error / math.sqrt(3),
+                    quality=quality, measured_at=t, observer_x=b.x,
+                    observer_y=b.y, range_nm=measured_range,
+                    x=observed_x, y=observed_y)
+                contact.confidence = min(1.0, contact.confidence
+                                         + config.SONAR_CONF_PASSIVE_PER_S * dt)
+                contact.quality = max(contact.quality, quality)
+                contact.last_seen = t
+                detected_ids.add(tgt.id)
             if len(reports) < 2:
                 continue
             best = None
@@ -1106,6 +1146,9 @@ class SonarSystem:
                 c.last_seen = t
             c.update_buoy(fx, fy, quality, t)
             detected_ids.add(tgt.id)
+        for b in active_buoys:
+            if b.seq in ping_buoys:
+                b.last_ping_epoch = ping_epoch
 
         # M9: Kontakte ohne neue Detektion verfallen
         for cid in list(self.contacts):

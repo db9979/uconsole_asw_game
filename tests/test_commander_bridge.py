@@ -128,6 +128,64 @@ def test_refs_and_generic_labels_are_opaque_neutral_and_stable(game):
     assert server.v2_states["opz"]["opz"]["observations"][0]["ref"] == refs[1]
 
 
+def test_helicopter_dip_projection_uses_its_own_bearing_and_active_fix(game):
+    current = contact(game)
+    current.update_dip_passive(123.0, game.sim_t, 20.0, 30.0, 1.5)
+    current._fx, current._fy = 20.0, 30.0
+    current.observer_x, current.observer_y = 20.0, 30.0
+    current.update_ping(125.0, 4.0, 55.0, .9, game.sim_t,
+                        fix_source="DIPPING")
+    before = deepcopy(current.__dict__)
+    _, server = publish(game)
+    rows = server.v2_states["helicopter"]["helicopter"]["dip_observations"]
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["bearing"] == pytest.approx(123.0)
+    assert row["active_bearing"] == pytest.approx(125.0)
+    assert row["range_nm"] == pytest.approx(4.0)
+    assert row["range_uncertainty_nm"] is not None
+    assert row["depth_m"] == pytest.approx(55.0)
+    assert row["depth_uncertainty_m"] is not None
+    tactical = server.v2_states["helicopter"]["helicopter"]["tactical"][0]
+    assert tactical["bearing"] == pytest.approx(123.0)
+    assert tactical["observer_x"] == pytest.approx(20.0)
+    assert tactical["observer_y"] == pytest.approx(30.0)
+    assert tactical["range_nm"] is None
+    assert current.__dict__ == before
+
+    current.dip_last_seen = game.sim_t - config.SONAR_CONTACT_LOST_S
+    _, server = publish(game)
+    row = server.v2_states["helicopter"]["helicopter"]["dip_observations"][0]
+    assert row["bearing"] is None and row["range_nm"] == pytest.approx(4.0)
+
+
+def test_helicopter_dip_projection_excludes_ship_only_contact(game):
+    contact(game)
+    _, server = publish(game)
+    assert server.v2_states["helicopter"]["helicopter"]["dip_observations"] == []
+    assert server.v2_states["helicopter"]["helicopter"]["tactical"] == []
+
+
+def test_opz_web_projection_keeps_ship_and_dip_bearing_origins_separate(game):
+    current = contact(game)
+    current.observer_x, current.observer_y = game.ship.x, game.ship.y
+    current.update_dip_passive(180.0, game.sim_t,
+                               game.ship.x + 5.0, game.ship.y - 5.0, 1.5)
+    current.released_to_opz = True
+    current.dip_released_to_opz = True
+    _, server = publish(game)
+    rows = [row for row in server.v2_states["opz"]["opz"]["observations"]
+            if row["source"].startswith("SONAR")]
+    assert len(rows) == 2
+    ship = next(row for row in rows if row["source"] == "SONAR-BRG")
+    dip = next(row for row in rows if row["source"] == "SONAR-DIP-BRG")
+    assert ship["ref"] != dip["ref"]
+    assert (ship["observer_x"], ship["observer_y"]) == (game.ship.x, game.ship.y)
+    assert (dip["observer_x"], dip["observer_y"]) == (game.ship.x + 5.0, game.ship.y - 5.0)
+    assert ship["bearing"] == pytest.approx(90.0)
+    assert dip["bearing"] == pytest.approx(180.0)
+
+
 @pytest.mark.parametrize("source", ["ping", "tma", "buoy"])
 def test_stale_sonar_fix_never_falls_back_to_mirrored_geometry(game, source):
     game.sim_t = 300.0

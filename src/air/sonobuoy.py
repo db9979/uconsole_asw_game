@@ -6,10 +6,15 @@ from src.core import config
 class Sonobuoy:
     """Wird vom HSP-5 ausgesetzt; hört Ziele im Umkreis (Sonar-Update)."""
 
-    def __init__(self, x_nm: float, y_nm: float, seq: int):
+    def __init__(self, x_nm: float, y_nm: float, seq: int,
+                 mode: str = "PASSIVE"):
+        if mode not in ("PASSIVE", "ACTIVE"):
+            raise ValueError("invalid sonobuoy mode")
         self.x = x_nm
         self.y = y_nm
         self.seq = seq
+        self.mode = mode
+        self.last_ping_epoch = -1
         self.battery_s = config.BUOY_BATTERY_S
 
     @property

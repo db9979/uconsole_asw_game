@@ -61,14 +61,13 @@ def test_lost_sonar_fix_is_not_retained_by_common_picture():
     (Station.BRIDGE, pygame.K_RIGHT, "target_course"),
     (Station.WEAPONS, pygame.K_UP, "torpedo_depth"),
 ])
-def test_held_operator_adjustment_uses_wall_not_accelerated_time(station, key, field):
+def test_held_operator_adjustment_uses_realtime_step(station, key, field):
     game = Game(seed=10, audio_enabled=False)
     game.station = station
     game._update_sim = lambda dt: None
     game._update_audio = lambda dt: None
     results = []
-    for scale in (1, 120):
-        game.time_scale_idx = config.TIME_SCALE_STEPS.index(scale)
+    for _ in range(2):
         game.ship.target_course = 0.
         game.torpedo_depth = 60.
         game.held = {key}
@@ -106,7 +105,6 @@ def test_audio_drains_two_blocks_in_order_and_retries_queue_backpressure(monkeyp
     accept = iter((True, False, True))
     monkeypatch.setattr(game.audio, "play_sonar", lambda samples, *args, **kwargs:
                         calls.append(samples.copy()) or next(accept))
-    monkeypatch.setattr(game.audio, "update_engine", lambda *args, **kwargs: None)
     game._update_audio(.016)
     assert game._sonar_audio_sequence == blocks[0][0]
     game._update_audio(.016)
@@ -115,28 +113,28 @@ def test_audio_drains_two_blocks_in_order_and_retries_queue_backpressure(monkeyp
     np.testing.assert_array_equal(calls[1], calls[2])
 
 
-def test_accelerated_audio_discards_blocks_without_playback(monkeypatch):
+def test_realtime_audio_plays_available_blocks_without_acceleration(monkeypatch):
     game = Game(seed=10, audio_enabled=False)
     game.station = Station.SONAR
-    game.time_scale_idx = config.TIME_SCALE_STEPS.index(5)
     game.sonar.listen_bearing = 75.
     game._sonar_audio_sequence = 0
     for _ in range(5):
         game.sonar.receiver.update([], 75, 12, .2, 2, 6)
-    stops, calls, text = [], [], []
+    stops, discontinuities, calls, text = [], [], [], []
     monkeypatch.setattr(game.audio, "stop_sonar", lambda **kw: stops.append(kw))
+    monkeypatch.setattr(game.audio, "discontinue_sonar_input",
+                        lambda: discontinuities.append(True))
     monkeypatch.setattr(game.audio, "play_sonar", lambda samples, *args, **kwargs:
                         calls.append(kwargs) or True)
-    monkeypatch.setattr(game.audio, "update_engine", lambda *args, **kwargs: None)
     game._update_audio(.1)
-    assert not calls
+    assert len(calls) == 2
     game._update_audio(.15)
-    assert not calls
+    assert len(calls) == 2
     assert game._sonar_audio_sequence == game.sonar.receiver.sequence
-    assert stops == [{"immediate": True}]
+    assert stops == [] and discontinuities == [True]
     monkeypatch.setattr(sonar_view, "_text", lambda screen, value, *a, **kw: text.append(value))
     sonar_view.draw_sonar_view(game)
-    assert any("5x" in str(value) for value in text)
+    assert not any("5x" in str(value) for value in text)
 
 
 def test_hfdf_fix_uses_raw_measurement_and_range_scaled_covariance():

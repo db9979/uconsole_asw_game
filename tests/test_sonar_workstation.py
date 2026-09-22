@@ -196,7 +196,6 @@ def test_sonar_audio_uses_receiver_samples_and_only_new_blocks(game, monkeypatch
     expected = game.sonar.listening_samples().copy()
     monkeypatch.setattr(game.audio, "play_sonar", lambda samples, rate, volume, **kwargs:
                         calls.append((samples.copy(), rate, volume)) or True)
-    monkeypatch.setattr(game.audio, "update_engine", lambda *args, **kwargs: None)
     game._update_audio(.25)
     game._update_audio(.25)
     assert len(calls) == 1

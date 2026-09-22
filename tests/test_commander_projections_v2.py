@@ -111,8 +111,9 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
                    "station_down", "navigation", "tactical"},
         "engine": {"propulsion", "machinery", "controls", "environment_effects"},
-        "helicopter": {"asset", "waypoint", "buoys", "readiness", "navigation",
-                       "tactical", "target_choices"},
+        "helicopter": {"asset", "waypoint", "buoys", "buoy_observations", "acoustic", "readiness", "navigation",
+                       "tactical", "target_choices", "dip_observations",
+                       "dip_environment"},
         "eloka": {"intercepts", "station_down", "status", "hardware"},
     }
     encoded = json.dumps(list(server.v2_states.values()), sort_keys=True)
@@ -274,6 +275,8 @@ def test_opz_track_id_change_is_shared_by_every_station_projection(published):
     game, bridge, server = published
     observe(game, "S-42", "SURFACE", "RADAR-S")
     contact = next(iter(game.sonar.contacts.values()))
+    contact.update_dip_passive(80.0, game.sim_t, game.ship.x + 2.0,
+                               game.ship.y, 1.5)
     contact.released_to_opz = True
     game.target = contact
     observation = game.private_sonar_observations()[0]
@@ -326,7 +329,11 @@ def test_known_chart_geography_is_bounded_detached_and_host_authored(published):
 
 
 def test_map_roles_only_receive_shared_published_tactical_rows(published):
-    _, _, server = published
+    game, bridge, server = published
+    contact = next(iter(game.sonar.contacts.values()))
+    contact.update_dip_passive(80.0, game.sim_t, game.ship.x + 2.0,
+                               game.ship.y, 1.5)
+    bridge.pump(game, server, now=10.5)
     opz = server.v2_states["opz"]["opz"]
     released = {row["ref"] for row in opz["observations"] + opz["fusions"]}
     weapons = server.v2_states["weapons"]["weapons"]
@@ -354,6 +361,41 @@ def test_map_roles_only_receive_shared_published_tactical_rows(published):
     sonar_only = sonar_refs - released
     assert not sonar_only.intersection(row["ref"] for row in weapons["tactical"])
     assert sonar_only and sonar_only <= {row["ref"] for row in helicopter["tactical"]}
+
+
+def test_unreleased_buoy_fix_stays_in_helicopter_view(published):
+    game, bridge, server = published
+    contact = next(iter(game.sonar.contacts.values()))
+    buoy = Sonobuoy(game.ship.x + 2, game.ship.y + 1, 1, "ACTIVE")
+    game.buoys = [buoy]
+    contact.buoy_reports[1] = dict(
+        mode="ACTIVE", bearing=90.0, bearing_uncertainty_deg=2.0,
+        quality=.8, measured_at=game.sim_t, observer_x=buoy.x,
+        observer_y=buoy.y, range_nm=3.0, x=buoy.x + 3, y=buoy.y)
+    contact.update_buoy(buoy.x + 3, buoy.y, .8, game.sim_t)
+    bridge.pump(game, server, now=10.5)
+    assert server.v2_states["helicopter"]["helicopter"]["buoy_observations"]
+    sonar_rows = server.v2_states["sonar"]["sonar"]["observations"]
+    assert all(not row["source"].startswith("SONAR-BUOY") for row in sonar_rows)
+    assert all(not any(fix["source"] == "SONOBUOY" for fix in row["fixes"])
+               for row in sonar_rows)
+    assert not any(row["source"].startswith("SONAR-BUOY") for row in
+                   server.v2_states["opz"]["opz"]["observations"])
+
+
+def test_helicopter_acoustic_projection_has_bounded_analysis_channels(published):
+    game, bridge, server = published
+    game.helo_spectra = [tuple([.2] * config.LOFAR_BINS)] * 70
+    game.helo_broadband_history = [tuple([.3] * 180)] * 70
+    game.helo_demon_history = [tuple([.4] * 80)] * 70
+    bridge.pump(game, server, now=10.5)
+    acoustic = server.v2_states["helicopter"]["helicopter"]["acoustic"]
+    assert len(acoustic["history"]) == 64
+    assert len(acoustic["broadband_history"]) == 64
+    assert len(acoustic["demon_history"]) == 64
+    assert len(acoustic["bin_frequencies_hz"]) == config.LOFAR_BINS
+    assert len(acoustic["broadband"]) == 180
+    assert len(acoustic["demon"]) == 80
 
 
 def test_direct_fire_refs_are_role_scoped_and_chaff_uses_ready_inventory(published):

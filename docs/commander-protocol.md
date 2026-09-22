@@ -30,6 +30,8 @@ or trigger sensor/TMA work. Candidate-load methods have no network side effects.
 | POST /api/v2/stations/request, /activate, /release | Strict lease operations |
 | POST /api/v2/commands | Strict action envelope; 202 means queued, not applied |
 | POST /api/v2/sonar/audio | Separately granted live Sonar audio polling |
+| POST /api/v2/helicopter/audio | Separately granted live helicopter audio polling |
+| GET /ws/v2/sonar/audio, /ws/v2/helicopter/audio | Leased, read-only binary PCM stream (WebSocket upgrade) |
 | GET /ws/v2/sonar | Active-Sonar-role binary display stream (WebSocket upgrade) |
 | POST /api/v2/logout | Revokes the current session and clears its cookie |
 
@@ -91,12 +93,29 @@ response is never reported as successful before its terminal result.
 V2 sessions, clients, leases, histories, queues, polling, and projection sizes
 are hard-bounded. Sonar audio is live-only, separately granted, bound to the
 active sonar generation, and filtered on the main thread using the projected
-Sonar audition mode, band, notch, and gain. The server keeps the last eight blocks
-(two seconds) so a briefly stalled client catches up in order; older blocks are dropped
-and reported as a discontinuity. The browser starts playback 0.8 s behind the newest
-block so a main-thread stall or Wi-Fi hiccup does not become an audible gap. Bridge cavitation noise is synthesized
-locally in the browser after sound opt-in from the already allowlisted own-ship
-cavitation boolean; it adds no endpoint, grant, command, or host-audio control.
+Sonar audition mode, band, notch, and gain. The server keeps the last 40 blocks
+(ten seconds) so a briefly stalled client catches up in order; older blocks are dropped
+and reported as a discontinuity. The browser starts playback about one second behind the newest
+block. Its AudioWorklet repeats the last block for at most two seconds after fresh data ends,
+then plays quiet neutral noise and marks the stream stale. The uConsole mixer worker uses the
+same one-second lead and two-second continuation. A transient
+state-poll failure or HTTP 503 does not discard queued audio; the audio endpoint
+still checks session and station authority on each request. A restarted stream
+rebases a browser cursor that is ahead of its new sequence. There is no continuous
+own-ship ambience sound, locally or in the browser; sound opt-in only enables
+synthesized alert/combat-effect cues and this live sonar/helicopter stream.
+The optional audio WebSocket uses subprotocol `u-jagd-audio-v2`, the HttpOnly session
+cookie, exact Origin, active station and audio grant. Each 2060-byte binary message is
+`UJA2`, a little-endian unsigned 64-bit sequence, and 1024 mono signed 16-bit
+samples at 4096 Hz. Sequence gaps signal dropped blocks; the server sends at most
+the newest four pending blocks after a slow client. HTTP audio polling remains the
+fallback. Neither transport accepts browser audio or simulation commands.
+For on-device diagnosis, `U_JAGD_AUDIO_DEBUG=1` writes bounded, contact-free
+receiver block rate, mixer underruns, queue fill and loss counters to
+`~/.u-jagd/audio_debug.log`. Browser developer tools can read the bounded
+`window.uJagdAudioDiagnostics` snapshot (buffer seconds, sequence gaps,
+dropped blocks, repeats, stale state and transport). Neither is persisted in
+game saves.
 The Sonar role receives only bounded own-ship speed and TAS handling limits needed
 to explain a disabled array control; hover reasons never inspect hidden entities.
 

@@ -32,6 +32,9 @@ class CommanderConsole:
         self.network_mode = "lan"
         # Solo is a per-launch host decision, never persisted.
         self.solo = False
+        self.web_mode = False
+        self.web_auth = None
+        self.public_origin = None
         self._eco_present = False
         self._eco_polled = float("-inf")
         self.hosts = ("127.0.0.1",)
@@ -334,7 +337,7 @@ class CommanderConsole:
             self._close_confirmation()
             return
         now = time.monotonic()
-        if hasattr(self.server, "resolve_station_request"):
+        if not self.web_mode and hasattr(self.server, "resolve_station_request"):
             self.admission.sync(game, self)
         self.connected = self.server.connected
         self.active_crew = False
@@ -352,9 +355,37 @@ class CommanderConsole:
         # Remote proposals remain staging requests; final decisions stay local.
         if self.server.connected and not self.bridge.allowed:
             self.bridge.allowed = True
-        self.bridge.pump(game, self.server, now=now)
+        self.bridge.pump(game, self.server)
+        if self.web_mode:
+            if self.bridge._identity != (id(game.world), id(game.sonar)):
+                self.server.reject_web_admin_pending()
+            else:
+                self._pump_web_admin(game)
+            self.server.web_reclaim_available()
+            prefs = game.preferences
+            traffic = game.live_traffic
+            live_world = traffic._center is not None
+            self.server.publish_web_options({
+                "language": prefs.language, "simlog": prefs.simlog,
+                "voice_enabled": self.server.voice_enabled,
+                "voice_talker": self.server.voice_talker,
+                "live_ais_enabled": prefs.live_ais_enabled,
+                "live_adsb_enabled": prefs.live_adsb_enabled,
+                "aisstream_api_key_set": bool(prefs.aisstream_api_key),
+                "opensky_credentials_set": bool(prefs.opensky_credentials),
+                "live_ais_status": self._web_live_status(
+                    prefs.live_ais_enabled, live_world, traffic.ais_client,
+                    missing_key=not bool(prefs.aisstream_api_key.strip())),
+                "live_adsb_status": self._web_live_status(
+                    prefs.live_adsb_enabled, live_world, traffic.adsb_client),
+            })
+            self.server.publish_web_proposals({
+                "target": self.bridge.proposal,
+                "navigation": self.bridge.navigation_proposal,
+            })
         self.pairing_code = self.server.pairing_code
-        self._sync_confirmation(game)
+        if not self.web_mode:
+            self._sync_confirmation(game)
         sequence = self.bridge.proposal_sequence
         proposal = self.bridge.proposal
         navigation = self.bridge.navigation_proposal
@@ -368,6 +399,85 @@ class CommanderConsole:
             game.flash(message("commander.local.notice" if self._pending(proposal)
                                else "commander.local.navigation.notice"), 3.0)
             game.audio.play_alert("danger")
+
+    @staticmethod
+    def _web_live_status(enabled, world_available, client, *, missing_key=False):
+        if not enabled:
+            return "disabled"
+        if not world_available:
+            return "no_geography"
+        if missing_key:
+            return "no_key"
+        if client is None:
+            return "unavailable"
+        if client.connected:
+            return "connected"
+        error = client.last_error or ""
+        if "429" in error:
+            return "rate_limited"
+        if "401" in error or "403" in error:
+            return "auth_error"
+        return "error" if error else "connecting"
+
+    def _pump_web_admin(self, game):
+        server = self.server
+        items = server.drain_web_admin()
+        for request_id, digest, body in items:
+            with server._lock:
+                current = digest == server._web_host_digest
+                host = server._sessions_v2.get(digest)
+                host_id = host["client_id"] if host is not None else None
+            if not current:
+                server.finish_web_admin(request_id, False)
+                continue
+            action = body["action"]
+            if action == "option":
+                name, value = body["name"], body["value"]
+                if name == "voice_enabled":
+                    server.set_voice_enabled(value)
+                    server.finish_web_admin(request_id, {"ok": True})
+                    continue
+                if getattr(game.preferences, name) == value:
+                    server.finish_web_admin(request_id, {"ok": True})
+                    continue
+                game._set_preference(name, value)
+                if name.startswith("live_") or name in (
+                        "aisstream_api_key", "opensky_credentials"):
+                    game.live_traffic.configure(game, game.world, game.preferences)
+                server.finish_web_admin(request_id, {"ok": True})
+                continue
+            client_id = body["client_id"]
+            station = body["station"]
+            value = body["value"]
+            if action == "assign":
+                ok = server.grant_station(client_id, station)
+                if ok and client_id == host_id:
+                    server.set_client_grant(client_id, station, "direct_fire",
+                                            station in ("weapons", "opz", "helicopter"))
+                    server.set_client_grant(client_id, station, "sonar_audio", station in ("sonar", "helicopter"))
+            elif action == "revoke":
+                ok = server.revoke_station(station)
+            elif action == "revoke_client":
+                ok = client_id != host_id and server.revoke_client(client_id)
+            elif action in ("command", "direct_fire", "sonar_audio"):
+                ok = server.set_client_grant(client_id, station, action, value)
+            elif action == "simlog":
+                ok = server.set_client_grant(client_id, "simlog", value)
+            elif action == "rotate_code":
+                with server._lock:
+                    server._rotate_code_locked()
+                ok = True
+            elif action == "accept_target":
+                ok = not game.paused and self.bridge.accept_proposal(game)
+            elif action == "reject_target":
+                ok = self.bridge.reject_proposal(game)
+            elif action == "accept_navigation":
+                ok = not game.paused and self.bridge.accept_navigation(game)
+            elif action == "reject_navigation":
+                ok = self.bridge.reject_navigation(game)
+            else:
+                ok = False
+            server.finish_web_admin(request_id, ok)
 
     def cycle_confirmation(self):
         """Cycle pending proposal types in deterministic target/navigation order."""
@@ -486,7 +596,8 @@ class CommanderConsole:
         if self.server is None:
             self.server = CommanderServer(
                 translations=self._translations,
-                contact_analysis_assets=self._contact_analysis_assets)
+                contact_analysis_assets=self._contact_analysis_assets,
+                web_auth=self.web_auth, public_origin=self.public_origin)
             if self.solo:
                 self.server.set_solo_mode(True)
 
@@ -531,6 +642,16 @@ class CommanderConsole:
         except (ImportError, OSError, ValueError, RuntimeError):
             self.deactivate()
             self.error = "commander.local.error.start"
+
+    def start_web(self, web_auth, public_origin, port, bind_host="127.0.0.1"):
+        """Start an opt-in browser-only room behind an HTTPS proxy."""
+        self.web_mode = True
+        self.web_auth = web_auth
+        self.public_origin = public_origin
+        self.port = port
+        self.host = bind_host
+        self._prepare_transport()
+        self._start_transport(self.host)
 
     def _start_transport(self, host):
         self._prepare_transport()

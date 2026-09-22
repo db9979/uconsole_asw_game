@@ -2,6 +2,10 @@
 
 # U-Jagd
 
+Optionaler Browserbetrieb für einen vollständigen LAN-Spielraum: siehe
+[Webspiel im LAN](docs/web-host.de.md). Der Modus startet mit `--web-host` und
+benötigt einen eigenen HTTPS-Reverse-Proxy.
+
 U-Jagd ist ein Echtzeit-Taktikspiel zur U-Boot-Jagd für Linux, das für die
 Arbeitsfläche von 1280 x 720 Pixeln der ClockworkPi uConsole entwickelt wurde.
 Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
@@ -58,8 +62,7 @@ Commander-Browser: [OPZ/CIC mit 1920 x 1080](docs/screenshots/commander-v2-de-op
 
 - Neun Stationen: Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk,
   Maschinenraum, Helikopterdeck und Elektronische Kampfführung/ESM.
-- Vier integrierte Szenarien, drei Schwierigkeitsgrade, Pause sowie 1x-, 5x-,
-  15x-, 30x-, 60x- und 120x-Zeitraffer.
+- Vier integrierte Szenarien, drei Schwierigkeitsgrade, Pause und Echtzeitsimulation.
 - Passives HMS und Schleppsonar, aktives Sonar, Breitband- und LOFAR-Anzeigen,
   DEMON-Analyse, Bathythermografmessungen und rein peilungsbasierte TMA.
 - Seeziel- und Luftraumradar, AIS, ESM, HFDF, manuelle Klassifikation und
@@ -147,9 +150,10 @@ Das Hauptmenü enthält Einträge für ein neues Spiel, Laden, Missionseditor,
 Einheiteneditor, Optionen und Beenden. Bei einem neuen Spiel folgen die Auswahl
 des Szenarios und, beim Zufallsszenario, die Auswahl des Schwierigkeitsgrads.
 
-- `W` wechselt zwischen dem durch den Seed gewählten realen Sektor und der
-  festen klassischen Referenzkarte.
-- `R` erzeugt einen neuen Seed.
+- `W` wechselt zwischen dem durch den Seed gewählten realen Sektor, der
+  festen klassischen Referenzkarte und einem fest wählbaren realen Sektor.
+- Im festen realen Modus wählen `Bild auf`/`Bild ab` den Küstenabschnitt.
+- `R` erzeugt einen neuen Seed; im festen realen Modus bleibt der Abschnitt erhalten.
 - `F` schaltet im Menü den Vollbildmodus um.
 - Mit den Pfeiltasten wird ein Eintrag ausgewählt; `Enter` oder `Space`
   bestätigt ihn.
@@ -186,7 +190,6 @@ Die wichtigsten globalen Bedienelemente sind:
 | `F10` | Optionen; während der Pause öffnet auch `O` die Optionen |
 | `F9` | Lokale Commander-LAN-Verwaltung |
 | `S` / `L` | Speichern / Laden über die Plätze 1 bis 5; in der OPZ ist `L` der kontextbezogene Fusionsbefehl |
-| `Z` / `X` oder `[` / `]` | Zeitraffer verlangsamen / beschleunigen |
 | `+` / `-` | Maschinentelegraf |
 | `Alt+Enter` | Vollbildmodus umschalten |
 | `Ctrl+Enter` | Primäre Waffenaktion an den Stationen Waffen, OPZ/CIC oder Helikopter; die normalen Bereitschaftsprüfungen gelten |
@@ -204,12 +207,12 @@ Bedeutung hat.
 In der Hilfe wechselt Links/Rechts die Kategorie; Auf/Ab oder Page Up/Page Down
 scrollt den Inhalt. Bestehende stationsbezogene Tastenkürzel für Waffen bleiben
 verfügbar. Gedrückt gehaltene Kurs- und Torpedotiefensteuerungen verwenden
-Echtzeit und nicht den gewählten Simulationsfaktor.
+Echtzeit.
 
 Der Ereignis-Feed am unteren Rand gilt stationsübergreifend. Er bewahrt operative
 Meldungen, abgeschlossene Befehle und Alarme auf, darunter Missionsergebnis,
-Waffen- und Abwehrereignisse, Schaden, Funkverkehr, Navigation sowie Pause und
-Zeitraffer. Kurzlebige Eingabe-, Fehler-, Auswahl- und Anzeigehinweise bleiben im
+Waffen- und Abwehrereignisse, Schaden, Funkverkehr, Navigation sowie Pause.
+Kurzlebige Eingabe-, Fehler-, Auswahl- und Anzeigehinweise bleiben im
 Statusbanner, damit sie die operative Historie nicht verdrängen.
 
 Klicken Sie bei der Schadensabwehr auf eine Zone oder deren Beschriftung, um sie
@@ -239,12 +242,10 @@ Geometrie; eine getrennte auslaufende Welle und das Abfangen durch einen bewegte
 Empfänger werden nicht simuliert, und Ping-Warnungen für U-Boote erfolgen
 weiterhin sofort.
 
-Bei 1x verarbeitet die Sonar-Wiedergabe die begrenzte Blockübergabe des
+Die Sonar-Wiedergabe verarbeitet die begrenzte Blockübergabe des
 Empfängers der Reihe nach und versucht einen nicht angenommenen Block erneut,
 wenn die Wiedergabewarteschlange voll ist. Bei einem Überlauf startet der Stream
-neu, statt unzusammenhängende Abtastwerte zu verbinden. Oberhalb von 1x ist die
-Sonar-Wiedergabe stumm; Empfängerblöcke werden verworfen und nicht später
-nachgespielt. Die Analyse bleibt unabhängig von Wiedergabeverfügbarkeit und
+neu, statt unzusammenhängende Abtastwerte zu verbinden. Die Analyse bleibt unabhängig von Wiedergabeverfügbarkeit und
 Lautstärke. Nach dem Laden eines Spielstands durchläuft DSP bewusst erneut seine
 Anlaufphase; gespeicherte taktische Beobachtungen bleiben erhalten.
 

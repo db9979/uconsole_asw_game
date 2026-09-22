@@ -79,7 +79,7 @@ def test_audition_accepts_only_a_complete_mixed_receiver_block():
         sonar.listening_samples(np.zeros(100, dtype=np.float32), block_id=1)
 
 
-def test_audio_status_separates_device_local_and_acceleration():
+def test_audio_status_separates_device_and_local_controls():
     game = Game(seed=1401, start_menu=False, audio_enabled=False)
     game.station = Station.SONAR
     game.sonar_audio_enabled = True
@@ -89,8 +89,8 @@ def test_audio_status_separates_device_local_and_acceleration():
     assert status["device_available"] is False
     assert status["local_enabled"] is True
     assert status["mode"] == "HETERODYNE" and not status["audible"]
-    game.time_scale_idx = 1
-    assert game.sonar_audio_status()["muted_above_1x"] is True
+    assert game.time_scale == 1
+    assert game.sonar_audio_status()["muted_above_1x"] is False
 
 
 def test_independent_fixes_coexist_have_separate_ages_and_expire_without_draw():

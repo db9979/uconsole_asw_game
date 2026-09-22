@@ -108,6 +108,28 @@ def test_menu_can_select_fixed_or_procedural_world_and_reroll_seed(monkeypatch):
     assert game.seed == old_seed + 1
 
 
+def test_fixed_real_sector_selection_and_seed_reroll(monkeypatch):
+    game = Game(seed=22, start_menu=True)
+    game._handle_menu_key(pygame.K_w)
+    game._handle_menu_key(pygame.K_w)
+    assert game.world_mode == "real_fixed"
+    game._handle_menu_key(pygame.K_PAGEDOWN)
+    assert game.seed % 128 == 23
+    monkeypatch.setattr(random, "SystemRandom", lambda: type(
+        "FixedRandom", (), {"randrange": lambda self, start, stop: start})())
+    game._handle_menu_key(pygame.K_r)
+    assert game.seed != 23
+    assert game.seed % 128 == 23
+    game.main_menu = False
+    game.menu_screen = "briefing"
+    game._handle_menu_key(pygame.K_RETURN)
+    assert game.world.coast.metadata["sector_id"] == "real-023"
+    assert len(game.world.coast.airbases) >= 4
+    center = game.world.coast.metadata["center"]
+    assert game.live_traffic._center == (center["longitude"], center["latitude"])
+    assert game.flights.coast is game.world.coast
+
+
 @pytest.mark.parametrize("main_menu,screen", [
     (True, "scenario"),
     (False, "scenario"),

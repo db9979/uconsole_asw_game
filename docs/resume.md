@@ -986,3 +986,16 @@ Der Kandidat ist uncommitted und wurde nicht gepusht oder veröffentlicht.
 
 Offen bleibt ausschließlich die physische Hotspot-, Mehrgeräte-, Audio-,
 Lesbarkeits-, Last- und Thermalabnahme auf der uConsole.
+
+## Optionaler Webspiel-Modus (2026-09-21)
+
+`--web-host --public-origin https://...` startet einen fensterlosen Raum hinter
+einem eigenen HTTPS-Proxy auf Loopback. `--web-bind PRIVATE_IP` erlaubt einen
+Proxy auf einem anderen Gerät im vertrauenswürdigen LAN. Ein einmaliger Terminal-Code richtet das
+dauerhafte Host-Passwort ein. Das Host-Konto verwaltet Crew-Leases und Freigaben
+im Browser, nutzt die neun vorhandenen v2-Stationen und die Solo-Spielsteuerung.
+Die Weboptionen halten Live-Daten-Schlüssel aus Antworten heraus. Der Host-Ausfall pausiert das Spiel nach 15 Sekunden. Der neue Modus ist
+optional; bestehender Commander LAN und v10-Spielstände bleiben unverändert.
+
+Offene Abnahme: echter HTTPS-Proxy mit mehreren Geräten, Audio/WebSocket im LAN,
+Lesbarkeit bei Zoom und Last/Temperatur auf dem Zielgerät.

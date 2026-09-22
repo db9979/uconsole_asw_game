@@ -24,6 +24,18 @@ SPECTRUM_MIN_HZ = 5.0
 SPECTRUM_MAX_HZ = 10_000.0
 PLOT_LEFT = 24
 PLOT_RIGHT = PLOT_SIZE[0] - 12
+LABEL_COLOR = (160, 188, 193)
+_DIGITS = {
+    "0": ("111", "101", "101", "101", "111"),
+    "1": ("010", "110", "010", "010", "111"),
+    "2": ("111", "001", "111", "100", "111"),
+    "4": ("101", "101", "111", "001", "001"),
+    "5": ("111", "100", "111", "001", "111"),
+    "6": ("111", "100", "111", "101", "111"),
+    "8": ("111", "101", "111", "101", "111"),
+    ".": ("000", "000", "000", "000", "010"),
+    "k": ("100", "101", "110", "101", "101"),
+}
 
 
 def _chunk(kind, payload):
@@ -64,6 +76,22 @@ def _line(pixels, width, height, x0, y0, x1, y1, color):
         if twice <= dx:
             error += dx
             y0 += sy
+
+
+def _label(pixels, width, height, value, x, y, *, align="center"):
+    """Draw fixed numeric ticks into the shared PNG for both UIs."""
+    label_width = len(value) * 4 - 1
+    if align == "center":
+        x -= label_width // 2
+    elif align == "right":
+        x -= label_width
+    for character in value:
+        for row, bits in enumerate(_DIGITS[character]):
+            for column, bit in enumerate(bits):
+                if bit == "1":
+                    _pixel(pixels, width, height, x + column, y + row,
+                           LABEL_COLOR)
+        x += 4
 
 
 def spectral_x(frequency):
@@ -128,12 +156,29 @@ def _plot(machine, speed, *, include_hypotheses=False):
     _line(pixels, width, height, left, top, left, spectral_bottom, (96, 135, 141))
     _line(pixels, width, height, left, spectral_bottom, right, spectral_bottom,
           (96, 135, 141))
+    for value, y in (("1", top), (".5", (top + spectral_bottom) // 2),
+                     ("0", spectral_bottom)):
+        _label(pixels, width, height, value, left - 5, y - 2,
+               align="right")
+    for frequency, value in ((5, "5"), (10, "10"), (100, "100"),
+                             (1000, "1k"), (10000, "10k")):
+        x = spectral_x(frequency)
+        _label(pixels, width, height, value,
+               min(right - 1, max(left, x)), spectral_bottom + 5,
+               align="right" if frequency == 10000 else "center")
 
     # This is a derived hypothesis region, not spectral evidence. Profile-wide
     # shaft/BPF assumptions are rendered once, on the cruise reference image.
     for y in range(demon_top, demon_bottom + 1):
         if y in (demon_top, demon_bottom):
             _line(pixels, width, height, left, y, right, y, (62, 91, 99))
+    for frequency in (0, 20, 40, 60, 80):
+        x = left + round((right - left) * frequency / 80)
+        _line(pixels, width, height, x, demon_bottom - 3, x,
+              demon_bottom, (96, 135, 141))
+        _label(pixels, width, height, str(frequency), x,
+               demon_bottom + 4,
+               align="right" if frequency == 80 else "center")
     shaft = machine["shaft_rpm"] if include_hypotheses else None
     if shaft is not None:
         def demon_x(frequency):

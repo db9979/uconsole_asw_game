@@ -1,7 +1,7 @@
 """Smoke-Test W0-W4: Headless-Run mit Simulation (SDL_VIDEODRIVER=dummy).
 
 Prueft: Game-Start, Update-Loop ueber alle Stationen, Ping, TMA-Bildung,
-LOFAR-Wasserfall, Zeitraffer, Save-Slots, Dekoy-Abwurf, Land-Kollision.
+LOFAR-Wasserfall, Echtzeit, Save-Slots, Dekoy-Abwurf, Land-Kollision.
 """
 
 import os
@@ -42,14 +42,11 @@ def _run_smoke() -> None:
     g = Game(seed=1234, start_menu=False)
     assert g.in_menu is False
 
-    # --- W0: Zeitraffer + Sub-Stepping ---
+    # --- W0: Echtzeit + Sub-Stepping ---
     assert g.time_scale == 1
-    g.cycle_time_scale(1)
-    assert g.time_scale == 5
-    g.cycle_time_scale(1)
-    assert g.time_scale == 15
-    g.cycle_time_scale(-3)
-    assert g.time_scale == 1
+    before = g.sim_t
+    g.update(.05)
+    assert abs(g.sim_t - before - .05) < 1e-9
 
     # --- Update ueber alle Stationen ---
     for st in Station:
@@ -199,6 +196,10 @@ def _run_smoke() -> None:
     g.draw()
     print("Endpanel-Draw OK")
 
+    # A wet helicopter receiver can keep the background sonar mixer worker
+    # active; stop both Game-owned workers before pygame.quit tears down SDL.
+    g.audio.shutdown()
+    g2.audio.shutdown()
     print("SMOKE-OK")
 
 

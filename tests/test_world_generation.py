@@ -7,6 +7,7 @@ import pytest
 
 from src.core import config
 from src.world.coastline import Coastline
+from src.world.real_coast import load_catalog, sector_for_seed
 from src.world.world import World
 
 
@@ -33,6 +34,19 @@ def test_generation_is_exactly_deterministic_and_seed_varied():
     assert _snapshot(first) == _snapshot(again)
     assert _snapshot(first) != _snapshot(different)
     assert first.metadata["sector_id"] != different.metadata["sector_id"]
+
+
+def test_distant_coast_strips_are_excluded_without_losing_airbases():
+    raw = load_catalog()["sectors"]
+    assert any(land["name"] == "Anguilla" for land in raw[6]["landmasses"])
+    removed = 0
+    for seed, source in enumerate(raw):
+        cleaned, _ = sector_for_seed(seed)
+        removed += len(source["landmasses"]) - len(cleaned["landmasses"])
+        coast = Coastline.generate(seed)
+        assert all(coast.landmass_at(base["x"], base["y"]) is not None
+                   for base in coast.airbases)
+    assert removed == 37
 
 
 def test_current_vec_is_deterministic_bounded_and_varies_with_position():

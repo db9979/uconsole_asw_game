@@ -16,6 +16,7 @@ import queue
 import random
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -25,6 +26,22 @@ TOKEN_URL = ("https://auth.opensky-network.org/auth/realms/opensky-network/"
 _MAX_BACKOFF_S = 60.0
 _MIN_BACKOFF_S = 5.0
 _REQUEST_TIMEOUT_S = 10.0
+_RATE_LIMIT_FALLBACK_S = 900.0
+
+
+def _rate_limit_wait_seconds(headers) -> float:
+    """Honor OpenSky's refill hint without spinning on an exhausted quota."""
+    for name in ("X-Rate-Limit-Retry-After-Seconds", "Retry-After"):
+        raw = headers.get(name) if headers is not None else None
+        if raw is None:
+            continue
+        try:
+            seconds = float(raw)
+        except (TypeError, ValueError):
+            continue
+        if 0.0 < seconds <= 86400.0:
+            return max(60.0, seconds)
+    return _RATE_LIMIT_FALLBACK_S
 
 
 class OpenSkyClient:
@@ -37,11 +54,16 @@ class OpenSkyClient:
     """
 
     def __init__(self, credentials: str, bounding_box, *,
-                 interval_s: float = 20.0, jitter_s: float = 5.0) -> None:
+                 interval_s: float | None = None, jitter_s: float = 5.0) -> None:
         self.credentials = (credentials or "").strip()
         self.bounding_box = bounding_box
-        self.interval_s = interval_s
+        # Even a bounded 500 NM sector may cost several credits per request.
+        # Leave room in the daily allowance for other clients on the account.
+        self.interval_s = (180.0 if ":" in self.credentials else 900.0)
+        if interval_s is not None:
+            self.interval_s = interval_s
         self.jitter_s = jitter_s
+        self._bbox_lock = threading.Lock()
         self.snapshots: "queue.Queue[tuple[float, list]]" = queue.Queue(maxsize=4)
         self.connected = False
         self.last_error: str | None = None
@@ -74,6 +96,16 @@ class OpenSkyClient:
                 self.last_error = None
                 backoff = _MIN_BACKOFF_S
                 self._publish(states)
+            except urllib.error.HTTPError as exc:
+                self.connected = False
+                self.last_error = f"HTTP {exc.code}"
+                if exc.code == 429:
+                    self._stop.wait(_rate_limit_wait_seconds(exc.headers))
+                    backoff = _MIN_BACKOFF_S
+                    continue
+                self._stop.wait(backoff)
+                backoff = min(_MAX_BACKOFF_S, backoff * 2.0)
+                continue
             except Exception as exc:
                 self.connected = False
                 self.last_error = str(exc)
@@ -97,8 +129,14 @@ class OpenSkyClient:
             except queue.Full:
                 pass
 
+    def set_bounding_box(self, bounding_box) -> None:
+        """Use the latest ship-centered area on the next scheduled poll."""
+        with self._bbox_lock:
+            self.bounding_box = bounding_box
+
     def _fetch_states(self) -> list:
-        (lat_min, lon_min), (lat_max, lon_max) = self.bounding_box
+        with self._bbox_lock:
+            (lat_min, lon_min), (lat_max, lon_max) = self.bounding_box
         params = urllib.parse.urlencode({
             "lamin": lat_min, "lomin": lon_min,
             "lamax": lat_max, "lomax": lon_max,

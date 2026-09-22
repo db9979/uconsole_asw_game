@@ -60,7 +60,8 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
         wheel_names = set(archive.namelist())
     for name in TEMPLATE_NAMES:
         assert f"data/editor_templates/{name}" in wheel_names
-    for name in ("index.html", "app.js", "style.css"):
+    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
+                 "sonar-audio-worklet.js"):
         assert f"data/commander/{name}" in wheel_names
     for name in CONTACT_NAMES:
         assert f"data/contacts/{name}" in wheel_names
@@ -84,7 +85,8 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
         source_names = set(archive.getnames())
     for name in TEMPLATE_NAMES:
         assert any(path.endswith(f"/data/editor_templates/{name}") for path in source_names)
-    for name in ("index.html", "app.js", "style.css"):
+    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
+                 "sonar-audio-worklet.js"):
         assert any(path.endswith(f"/data/commander/{name}") for path in source_names)
     for name in CONTACT_NAMES:
         assert any(path.endswith(f"/data/contacts/{name}") for path in source_names)

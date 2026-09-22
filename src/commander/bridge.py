@@ -105,10 +105,22 @@ def _sonar_classify(game, params, bindings):
     return game.classify_sonar_contact(binding[2], params["classification"])
 
 
-def _sonar_set_release(game, params, bindings):
+def _sonar_set_release(game, params, bindings, role="sonar"):
     contact = _sonar_contact(bindings, params["ref"])
     return ("unknown_ref" if contact is None else
-            game.release_sonar_contact(contact, params["released"]))
+            game.release_sonar_contact(contact, params["released"], source=role))
+
+
+def _helicopter_qualify(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None else
+            game.qualify_helicopter_contact(contact, params["enabled"]))
+
+
+def _helicopter_buoy_release(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None else
+            game.release_sonar_contact(contact, params["released"], source="buoy"))
 
 
 def _opz_id(bindings, ref):
@@ -322,6 +334,38 @@ def _helicopter_deploy_buoy(game, params, _bindings):
     return game.deploy_helicopter_buoy()
 
 
+def _helicopter_set_buoy_mode(game, params, _bindings):
+    return game.set_helicopter_buoy_mode(params["mode"])
+
+
+def _helicopter_set_listen_source(game, params, _bindings):
+    return game.set_helicopter_listen_source(params["source"])
+
+
+def _helicopter_set_listen_bearing(game, params, _bindings):
+    return game.set_helicopter_listen_bearing(params["bearing"])
+
+
+def _helicopter_clear_listen_bearing(game, _params, _bindings):
+    return game.set_helicopter_listen_bearing(None)
+
+
+def _helicopter_set_audio_mode(game, params, _bindings):
+    return game.set_helicopter_audio_mode(params["mode"])
+
+
+def _helicopter_set_audio_band(game, params, _bindings):
+    return game.set_helicopter_audio_band(params["preset"])
+
+
+def _helicopter_set_audio_gain(game, params, _bindings):
+    return game.set_helicopter_audio_gain(params["gain_db"])
+
+
+def _helicopter_set_audio_notch(game, params, _bindings):
+    return game.set_helicopter_audio_notch(params["enabled"])
+
+
 def _helicopter_set_dipping(game, params, _bindings):
     return game.set_helicopter_dipping(params["deployed"])
 
@@ -384,6 +428,8 @@ _V2_ACTION_HANDLERS = {
     "bridge_set_speed": _bridge_set_speed,
     "sonar_classify": _sonar_classify,
     "sonar_set_release": _sonar_set_release,
+    "helicopter_qualify": _helicopter_qualify,
+    "helicopter_buoy_release": _helicopter_buoy_release,
     "opz_classify": _opz_classify,
     "opz_affiliate": _opz_affiliate,
     "opz_set_track_id": _opz_set_track_id,
@@ -424,6 +470,14 @@ _V2_ACTION_HANDLERS = {
     "helicopter_return": _helicopter_return,
     "helicopter_set_waypoint": _helicopter_set_waypoint,
     "helicopter_deploy_buoy": _helicopter_deploy_buoy,
+    "helicopter_set_buoy_mode": _helicopter_set_buoy_mode,
+    "helicopter_set_listen_source": _helicopter_set_listen_source,
+    "helicopter_set_listen_bearing": _helicopter_set_listen_bearing,
+    "helicopter_clear_listen_bearing": _helicopter_clear_listen_bearing,
+    "helicopter_set_audio_mode": _helicopter_set_audio_mode,
+    "helicopter_set_audio_band": _helicopter_set_audio_band,
+    "helicopter_set_audio_gain": _helicopter_set_audio_gain,
+    "helicopter_set_audio_notch": _helicopter_set_audio_notch,
     "helicopter_set_dipping": _helicopter_set_dipping,
     "helicopter_set_dip_depth": _helicopter_set_dip_depth,
     "helicopter_dipping_ping": _helicopter_dipping_ping,
@@ -441,13 +495,6 @@ def _host_pause(game, params):
 
 def _host_resume(game, params):
     return game.set_paused(False)
-
-
-def _host_time_scale(game, params):
-    delta = params["index"] - game.time_scale_idx
-    if delta:
-        game.cycle_time_scale(delta)
-    return True
 
 
 def _host_save(game, params):
@@ -503,7 +550,6 @@ def _host_instructor_event(game, params):
 _HOST_ACTION_HANDLERS = {
     "host_pause": _host_pause,
     "host_resume": _host_resume,
-    "host_time_scale": _host_time_scale,
     "host_save": _host_save,
     "host_load": _host_load,
     "host_new_game": _host_new_game,
@@ -783,7 +829,9 @@ class CommanderBridge:
                        bearing_uncertainty_deg=_number(track.bearing_uncertainty_deg),
                          range_uncertainty_nm=None, fixes=[], can_classify=contact is not None,
                          can_propose=contact is not None, _opz=key in opz_ids)
-            if source.startswith("SONAR"):
+            dip_report = source in ("SONAR-DIP-BRG", "SONAR-DIPPING")
+            buoy_report = source.startswith("SONAR-BUOY-")
+            if source.startswith("SONAR") and not dip_report and not buoy_report:
                 # Never trust a mirrored sonar fix after its source evidence dies.
                 for field in ("range_nm", "x", "y", "course", "fix_age_s"):
                     row[field] = None
@@ -793,15 +841,19 @@ class CommanderBridge:
             if contact is not None:
                 row["classification"] = (contact.player_class
                     if contact.player_class in config.PLAYER_CLASSES else None)
-                row["bearing"] = _number(contact.passive_bearing
-                    if contact.passive_bearing is not None else contact.bearing)
-                row["age_s"] = _age(game.sim_t, contact.last_seen)
+                if not dip_report and not buoy_report:
+                    row["bearing"] = _number(contact.passive_bearing
+                        if contact.passive_bearing is not None else contact.bearing)
+                row["age_s"] = _age(game.sim_t, track.last_seen)
                 row["quality"] = _number(max(contact.quality, contact.confidence))
-                row["bearing_uncertainty_deg"] = _number(contact.bearing_uncertainty_deg)
-                row["observer_x"] = _number(contact.observer_x)
-                row["observer_y"] = _number(contact.observer_y)
-                row["released_to_opz"] = bool(contact.released_to_opz)
-            if fix_contact is not None:
+                if not dip_report and not buoy_report:
+                    row["bearing_uncertainty_deg"] = _number(contact.bearing_uncertainty_deg)
+                    row["observer_x"] = _number(track.observer_x)
+                    row["observer_y"] = _number(track.observer_y)
+                    row["released_to_opz"] = bool(contact.released_to_opz)
+                else:
+                    row["released_to_opz"] = bool(contact.dip_released_to_opz)
+            if fix_contact is not None and not dip_report and not buoy_report:
                 row["fixes"] = [dict(
                     source=fix["source"], x=_number(fix["x"]), y=_number(fix["y"]),
                     measured_at=_number(fix["measured_at"]),
@@ -812,13 +864,15 @@ class CommanderBridge:
                     depth_m=_number(fix["depth_m"]),
                     depth_uncertainty_m=_number(fix["depth_uncertainty_m"]),
                     quality=_number(fix["quality"]))
-                    for fix in fix_contact.active_fixes(game.sim_t)]
-            if contact is not None:
+                    for fix in fix_contact.active_fixes(game.sim_t)
+                    if fix["source"] not in ("DIPPING", "SONOBUOY")]
+            if contact is not None and not buoy_report:
                 fix_lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
                                 if contact.range_source == "ping"
                                 else config.SONAR_CONTACT_LOST_S)
                 row["fix_age_s"] = _age(game.sim_t, contact.range_seen)
-                if (contact.range_source in ("ping", "tma", "buoy")
+                if (contact.range_source in ("ping", "tma")
+                        and row["fixes"]
                         and _fresh(game.sim_t, contact.range_seen, fix_lifetime)):
                     latest_fix = max(row["fixes"], key=lambda item: (
                         item["measured_at"], item["source"])) if row["fixes"] else None
@@ -835,7 +889,9 @@ class CommanderBridge:
                     row["course"] = _number(contact.tma_course)
                     row["speed_kn"] = _number(contact.tma_speed)
             if row["x"] is not None and row["y"] is not None:
-                dx, dy = row["x"] - game.ship.x, row["y"] - game.ship.y
+                observer_x = (row["observer_x"] if dip_report or buoy_report else game.ship.x)
+                observer_y = (row["observer_y"] if dip_report or buoy_report else game.ship.y)
+                dx, dy = row["x"] - observer_x, row["y"] - observer_y
                 row["bearing"] = math.degrees(math.atan2(dx, -dy)) % 360.0
                 row["range_nm"] = math.hypot(dx, dy)
             else:
@@ -872,7 +928,9 @@ class CommanderBridge:
             binding = bindings[row["ref"]]
             candidates = []
             if binding[2] is not None and binding[1].startswith("SONAR"):
-                candidates.extend((role, "sonar") for role in ("weapons", "helicopter"))
+                roles = (("helicopter",) if binding[1].startswith("SONAR-BUOY-")
+                         else ("weapons", "helicopter"))
+                candidates.extend((role, "sonar") for role in roles)
             track = asm_tracks.get(id(binding[4]))
             if (track is not None and row.get("_opz") and row["domain"] == "AIR"
                     and row["source"] != "FUSION" and row["x"] is not None
@@ -935,10 +993,12 @@ class CommanderBridge:
         self._chart["revision"] = self._session
 
     @staticmethod
-    def _apply_v2_action(game, action, params, bindings):
+    def _apply_v2_action(game, action, params, bindings, role=None):
         handler = _V2_ACTION_HANDLERS.get(action)
         if handler is None:
             return False
+        if action == "sonar_set_release":
+            return handler(game, params, bindings, role)
         return handler(game, params, bindings)
 
     def _apply_proposal_v2(self, envelope, action, params, rows, bindings):
@@ -978,25 +1038,32 @@ class CommanderBridge:
             return True
         return False
 
-    def _commands_v2(self, game, server, now, phase):
+    def _commands_v2(self, game, server, now, phase, *, realtime=False):
         if not hasattr(server, "drain_commands_v2"):
             return False
         drained = False
         bridge_course = None
         identity = (id(game.world), id(game.sonar))
-        for envelope in server.drain_commands_v2():
+        envelopes = server.drain_commands_v2()
+        # One timestamp for the detached batch keeps freshness independent of
+        # station ordering and the cost of earlier commands in this frame.
+        apply_now = time.monotonic() if realtime and envelopes else now
+        for envelope in envelopes:
             drained = True
+            # HTTP workers may enqueue after this frame's projection clock was
+            # sampled. Recheck age after detaching the batch, while explicit
+            # test clocks remain reproducible.
             if (id(game.world), id(game.sonar)) != identity:
                 # An earlier command in this frame replaced the world. Anything
                 # prepared for the old world fails closed, never on the new one.
                 server.apply_command_v2(
-                    envelope, now=now, phase="blocked", world_session=self._session,
+                    envelope, now=apply_now, phase="blocked", world_session=self._session,
                     world_epoch=self._epoch, resource_revision=self._revision,
                     apply=lambda action, params: False)
                 continue
             if envelope.role == HOST_ROLE:
                 server.apply_command_v2(
-                    envelope, now=now, phase=phase, world_session=self._session,
+                    envelope, now=apply_now, phase=phase, world_session=self._session,
                     world_epoch=self._epoch, resource_revision=self._revision,
                     apply=lambda action, params: (
                         _HOST_ACTION_HANDLERS[action](game, params)
@@ -1022,13 +1089,14 @@ class CommanderBridge:
                     result = self._apply_proposal_v2(
                         envelope, action, params, rows, bindings)
                 else:
-                    result = self._apply_v2_action(game, action, params, bindings)
+                    result = self._apply_v2_action(
+                        game, action, params, bindings, envelope.role)
                 if action == "bridge_set_course" and result in (True, "ok"):
                     bridge_course = params["course"]
                 return result
 
             server.apply_command_v2(
-                envelope, now=now, phase=phase, world_session=self._session,
+                envelope, now=apply_now, phase=phase, world_session=self._session,
                 world_epoch=self._epoch, resource_revision=self._revision,
                 apply=apply_action)
         if bridge_course is not None:
@@ -1062,6 +1130,7 @@ class CommanderBridge:
     def pump(self, game, server, now=None):
         """Project and drain at most four commands; publish at 2 Hz/no catchup."""
         self._main_thread()
+        realtime = now is None
         now = time.monotonic() if now is None else now
         if _number(now) is None or now < 0:
             raise ValueError("now must be finite monotonic seconds")
@@ -1075,7 +1144,9 @@ class CommanderBridge:
                 game.opz_fusion.clear()
                 game.opz_selected_track_id = None
                 self.allowed = False
-                if getattr(server, "solo_mode", False) is True:
+                if getattr(server, "web_auth", None) is not None:
+                    server.web_rebase()
+                elif getattr(server, "solo_mode", False) is True:
                     # The solo browser is the console: keep its session and
                     # re-lease every station under fresh generations.
                     server.solo_rebase()
@@ -1113,6 +1184,7 @@ class CommanderBridge:
         connected = bool(server.connected)
         self._settle_gate(game, server, phase)
         self._publish_sonar_audio(game, server, phase)
+        self._publish_helicopter_audio(game, server, phase)
         self._status.update(phase=phase, connected=connected,
                             commands_allowed=self.allowed is True and connected and phase == "live")
         redacted = (game.in_menu or game.main_menu
@@ -1151,7 +1223,7 @@ class CommanderBridge:
                 and (not connected or not self.allowed
                      or not server.authority_current_v2(self._navigation_lease))):
             self._proposal_status("expired", navigation=True)
-        drained = self._commands_v2(game, server, now, phase)
+        drained = self._commands_v2(game, server, now, phase, realtime=realtime)
         if (id(game.world), id(game.sonar)) != self._identity:
             # A host command replaced the world: never publish it under the old
             # session. The next pump rebases (solo) before anything is shown.
@@ -1289,7 +1361,8 @@ class CommanderBridge:
             charts = {None: redacted_chart(self._status)}
             charts.update({role: known_v2_chart for role in ROLE_NAMES})
         server.publish_v2(states, charts)
-        if (getattr(server, "solo_mode", False) is True
+        if ((getattr(server, "solo_mode", False) is True
+             or getattr(server, "web_auth", None) is not None)
                 and hasattr(server, "publish_host_v2")):
             server.publish_host_v2(self._host_view(game, phase, now))
         server.publish_proposals_v2(
@@ -1326,7 +1399,7 @@ class CommanderBridge:
         return dict(
             protocol=2, session=self._session, epoch=self._epoch, phase=phase,
             paused=bool(game.paused),
-            time_scale=dict(index=game.time_scale_idx,
+            time_scale=dict(index=config.TIME_SCALE_DEFAULT,
                             steps=list(config.TIME_SCALE_STEPS)),
             world_mode=game.world_mode, scenario=game.scenario_key,
             level=game.level,
@@ -1338,8 +1411,7 @@ class CommanderBridge:
     def _publish_sonar_audio(self, game, server, phase):
         """Copy only complete mixed receiver blocks on the main thread."""
         receiver = game.sonar.receiver
-        eligible = (phase == "live" and game.time_scale == 1
-                    and not game.damage.station_down("sonar")
+        eligible = (phase == "live" and not game.damage.station_down("sonar")
                     and hasattr(server, "prepare_sonar_audio")
                     and hasattr(server, "publish_sonar_audio"))
         if not eligible:
@@ -1377,6 +1449,52 @@ class CommanderBridge:
                 pcm, world_session=self._session, world_epoch=self._epoch,
                 station_generation=generation)
             self._audio_receiver_sequence = sequence
+
+    def _publish_helicopter_audio(self, game, server, phase):
+        receiver = game.helo_receiver
+        eligible = (phase == "live" and not game.damage.station_down("sonar")
+                    and game.helicopter_audio_ready()
+                    and hasattr(server, "prepare_helicopter_audio")
+                    and hasattr(server, "publish_helicopter_audio"))
+        if not eligible:
+            if hasattr(server, "clear_helicopter_audio"):
+                server.clear_helicopter_audio()
+            self._helicopter_audio_context = None
+            self._helicopter_audio_receiver_sequence = receiver.sequence
+            self._helicopter_audio_filter = None
+            return
+        generation = server.prepare_helicopter_audio(
+            world_session=self._session, world_epoch=self._epoch)
+        context = (id(receiver), game.helo_listen_source, self._session,
+                   self._epoch, generation)
+        if generation is None or context != getattr(self, "_helicopter_audio_context", None):
+            if generation is not None and hasattr(server, "clear_helicopter_audio"):
+                server.clear_helicopter_audio()
+                generation = server.prepare_helicopter_audio(
+                    world_session=self._session, world_epoch=self._epoch)
+                context = (id(receiver), game.helo_listen_source, self._session,
+                           self._epoch, generation)
+            self._helicopter_audio_context = context if generation is not None else None
+            self._helicopter_audio_receiver_sequence = receiver.sequence
+            self._helicopter_audio_filter = (SonarSystem(seed=0, acoustic_profiles=())
+                                             if generation is not None else None)
+            return
+        for sequence, samples in receiver.blocks_since(
+                self._helicopter_audio_receiver_sequence):
+            audition = self._helicopter_audio_filter
+            if sequence != self._helicopter_audio_receiver_sequence + 1:
+                audition.reset_audition_audio()
+            controls = game.helo_audition
+            audition.audition_mode = controls.audition_mode
+            audition.band_low_hz = controls.band_low_hz
+            audition.band_high_hz = controls.band_high_hz
+            audition.notch_enabled = controls.notch_enabled
+            audition.gain_db = controls.gain_db
+            server.publish_helicopter_audio(
+                sonar_pcm_s16le(audition.listening_samples(samples, block_id=sequence)),
+                world_session=self._session,
+                world_epoch=self._epoch, station_generation=generation)
+            self._helicopter_audio_receiver_sequence = sequence
 
     def _publish_role_simlog(self, server, game, redacted) -> None:
         """Publish host-granted diagnostics with role context and full truth."""

@@ -34,6 +34,7 @@
    own panel. The compact single-column fallback is the max-width: 850px block. */
 body.workstation-mode[data-remote-role="assigned"] #shell { grid-template-columns: minmax(0, 1fr); }
 body.workstation-mode[data-remote-role="assigned"] #operations { grid-column: 1; }
+body.workstation-mode[data-remote-role="assigned"] #simlog-view { grid-column: 1; }
 body.workstation-mode .role-rail, body.workstation-mode .mobile-role { display: none; }
 body.workstation-mode .masthead { padding: .2rem .7rem; min-height: 0; gap: .8rem; }
 body.workstation-mode .masthead .volume { display: flex; align-items: center; }
@@ -89,6 +90,7 @@ body.workstation-mode .visual-heading { padding-bottom: .2rem; }
 body.workstation-mode .visual-panel:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 body.workstation-mode #map-visual:not([hidden]) { flex-grow: 2.2; }
 body.workstation-mode .role-canvas { flex: 1; height: auto; min-height: 6rem; }
+body.workstation-mode .role-map-frame { flex: 1; height: auto; min-height: 6rem; }
 body.workstation-mode .spectrum-canvas { flex: 0 0 5rem; min-height: 5rem; }
 body.workstation-mode .sonar-band-plots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 0 0 6rem; gap: .3rem; min-height: 0; }
 body.workstation-mode .band-canvas { height: 6rem; min-height: 0; }
@@ -124,7 +126,7 @@ body.workstation-mode .annotation-form { margin: .35rem 0; }
 body.workstation-mode #operations-workspace .station-row-actions { padding-top: .4rem; }
 body.workstation-mode #bridge-orders, body.workstation-mode #opz-controls { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; margin: 0; padding: .5rem; }
 body.workstation-mode .bridge-order-heading p, body.workstation-mode #bridge-order-values { display: none; }
-body.workstation-mode .station-grid > :has(#bridge-tactical), body.workstation-mode .station-grid > :has(#sonar-observations), body.workstation-mode .station-grid > :has(#opz-observations), body.workstation-mode .station-grid > :has(#radio-observations), body.workstation-mode .station-grid > :has(#eloka-intercepts) { display: none; }
+body.workstation-mode .station-grid > :has(#bridge-tactical), body.workstation-mode .station-grid > :has(#sonar-observations), body.workstation-mode .station-grid > :has(#opz-observations), body.workstation-mode .station-grid > :has(#radio-observations) { display: none; }
 body.workstation-mode .station-card-view summary { cursor: pointer; padding: .45rem; }
 body.workstation-mode .station-card-view summary h3 { display: inline; font-size: var(--font-md); }
 body.workstation-mode .station-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -166,6 +168,7 @@ body[data-sonar-scope][data-remote-role="assigned"] .sonar-plots > section:not([
   body.workstation-mode #detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body.workstation-mode .role-canvas { height: 22rem; }
   body.workstation-mode .track-workstation .role-canvas { flex: none; height: 22rem; }
+  body.workstation-mode .role-map-frame, body.workstation-mode .track-workstation .role-map-frame { flex: none; height: 22rem; }
   body.workstation-mode .spectrum-canvas, body.workstation-mode .track-workstation .spectrum-canvas { flex: none; height: 8rem; min-height: 8rem; }
   body.workstation-mode .sonar-plots[data-layout="overview"] { display: flex; flex-direction: column; }
   body.workstation-mode .mission-strip { flex-wrap: wrap; }
@@ -212,6 +215,10 @@ p { line-height: 1.55; }
 .language { display: flex; align-items: center; gap: .65rem; min-width: 0; max-width: 100%; }
 .volume { display: grid; gap: .2rem; font-size: .7rem; }
 .volume input { width: 7rem; accent-color: var(--accent); min-height: 1.5rem; }
+.voice-controls { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; max-width: 19rem; }
+.voice-controls button { min-height: 2.6rem; touch-action: none; }
+.voice-controls #voice-ptt[aria-pressed="true"] { background: var(--amber); color: #101d24; }
+.voice-controls #voice-status { font-size: var(--font-xs); color: var(--muted); width: 100%; }
 .connection { background: #182d31; border-bottom: 1px solid #385b53; color: var(--accent); padding: .5rem 1.7rem; font-size: .82rem; }
 #toast-region { position: fixed; top: 1rem; right: 1rem; z-index: 40; display: flex; flex-direction: column; gap: .5rem; max-width: min(90vw, 26rem); pointer-events: none; }
 .toast { padding: .6rem .9rem; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font-size: var(--font-sm); box-shadow: 0 .3rem .9rem rgba(0, 0, 0, .35); }
@@ -373,6 +380,9 @@ main { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; min
 .visual-toolbar button { min-height: 2.4rem; padding: .35rem .55rem; font-size: var(--font-xs); }
 .visual-toolbar output { margin-left: auto; color: var(--muted); font: var(--font-xs) ui-monospace, monospace; }
 .role-canvas { display: block; width: 100%; height: clamp(14rem, 42vh, 28rem); min-width: 0; border: 1px solid var(--line); background: #07151c; touch-action: none; }
+.role-map-frame { position: relative; width: 100%; height: clamp(14rem, 42vh, 28rem); min-width: 0; overflow: hidden; border: 1px solid var(--line); background: #07151c; }
+#role-map, #role-map-sweep { position: absolute; inset: 0; display: block; width: 100%; height: 100%; min-height: 0; border: 0; flex: none; }
+#role-map-sweep { pointer-events: none; }
 .actionable-canvas { cursor: pointer; }
 .damage-visual-controls { display: grid; grid-template-columns: auto minmax(8rem, 16rem); gap: .55rem; align-items: center; padding-bottom: .45rem; }
 .damage-visual-controls label { color: var(--muted); font-size: var(--font-xs); }
@@ -550,6 +560,7 @@ footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem
   .detail-metrics { grid-template-columns: minmax(0, 1fr); }
   .visual-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .role-canvas { height: min(54svh, 22rem); }
+  .role-map-frame { height: min(54svh, 22rem); }
   .opz-controls > div:first-child, .opz-controls > .fine { grid-column: 1 / -1; }
   .session { text-align: left; max-width: none; }
   .metrics { gap: .8rem 1.2rem; }
@@ -628,7 +639,7 @@ footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem
 }
 /* Hidden simulation-log view (#simlog fragment) */
 #simlog-view { min-height: 0; overflow: hidden; display: grid; grid-template-rows: minmax(0, 1fr); }
-.simlog-panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.simlog-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .simlog-current-section { min-height: 0; margin: .5rem 0 0; }
 .simlog-current-section h3 { color: var(--accent); font-size: var(--font-md); margin: 0 0 .2rem; }
 .simlog-section-heading { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
@@ -645,11 +656,11 @@ footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem
 .simlog-table th { color: var(--muted); text-align: left; font-weight: 600; padding: .18rem .5rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .simlog-table td { color: var(--text); padding: .18rem .5rem; border-bottom: 1px solid #1c2c34; white-space: nowrap; }
 .simlog-table tr.simlog-flag-row td { color: var(--red); }
-.simlog-snapshot { border-bottom: 1px solid var(--line); }
-.simlog-snapshot summary { display: flex; gap: .75rem; align-items: baseline; padding: .35rem 0; font-size: .83rem; cursor: pointer; list-style-position: outside; }
+.simlog-snapshot { min-width: 0; border-bottom: 1px solid var(--line); }
+.simlog-snapshot summary { display: flex; gap: .75rem; align-items: baseline; padding: .35rem 0; font-size: .83rem; cursor: pointer; list-style-position: outside; overflow-wrap: anywhere; }
 .simlog-snapshot .simlog-current-body { grid-template-columns: 1fr; margin-top: .4rem; }
-.simlog-list { list-style: none; margin: .5rem 0; padding: 6px; flex: 1; min-height: 0; overflow: auto; }
-.simlog-entry { display: flex; gap: .75rem; align-items: baseline; padding: .35rem 0; border-bottom: 1px solid var(--line); font-size: .83rem; line-height: 1.45; }
+.simlog-list { list-style: none; margin: .5rem 0; padding: 6px; flex: 1; min-width: 0; min-height: 0; overflow: auto; }
+.simlog-entry { display: grid; grid-template-columns: 11ch 5ch minmax(0, 1fr); gap: .75rem; align-items: baseline; min-width: 0; padding: .35rem 0; border-bottom: 1px solid var(--line); font-size: .83rem; line-height: 1.45; }
 .simlog-stamp { flex: 0 0 auto; min-width: 11ch; font: .7rem ui-monospace, monospace; color: var(--accent); }
 .simlog-cat { flex: 0 0 auto; min-width: 5ch; font: .65rem ui-monospace, monospace; color: var(--muted); text-transform: uppercase; }
 .simlog-text { min-width: 0; overflow-wrap: anywhere; }
@@ -722,3 +733,31 @@ button.danger:hover:not(:disabled) { background: var(--red); color: #170c0c; }
   button, select, input[type="text"], input[type="number"] { min-height: 2.75rem; }
   .station-tab, .host-bar button, .host-bar select, #workstation-add-station { min-height: 2.75rem; }
 }
+#helicopter-dip-canvas { display: block; width: 100%; max-width: 640px; height: auto; margin: .75rem auto; border: 1px solid var(--line, #42645e); }
+body.workstation-mode #station-helicopter #helicopter-dip-display { flex: 1 1 40%; min-height: 0; overflow-y: auto; }
+body.workstation-mode #station-helicopter #map-visual:not([hidden]) { flex: 1 1 60%; }
+body.workstation-mode #station-helicopter .role-map-frame { min-height: 8rem; }
+body.workstation-mode #station-helicopter #helicopter-dip-canvas { max-width: 520px; margin: .35rem auto; }
+.helicopter-visual-tabs { display: flex; gap: .4rem; margin-bottom: .4rem; }
+.helicopter-visual-tabs button { flex: 1; min-height: 2.5rem; }
+.helicopter-visual-tabs button[aria-selected="true"] { color: var(--accent); border-color: var(--accent); background: #173029; }
+.helicopter-acoustic-visual { min-width: 0; min-height: 0; overflow: auto; }
+.helicopter-acoustic-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; }
+.helicopter-acoustic-controls select { min-width: 8rem; flex: 1; }
+.helicopter-acoustic-controls input[type="range"] { min-width: 7rem; flex: 1; }
+.helicopter-acoustic-controls output { min-width: 3.5rem; color: var(--accent); font: var(--font-xs) ui-monospace, monospace; }
+.helicopter-inline-form { display: flex; flex: 1; align-items: center; gap: .4rem; }
+.helicopter-inline-form input { width: 7rem; }
+#helicopter-audio-controls { border: 1px solid var(--line); padding: .3rem .5rem; }
+#helicopter-audio-controls summary { cursor: pointer; color: var(--accent); }
+#helicopter-audio-controls[open] { max-height: 13rem; overflow: auto; }
+#helicopter-audio-controls .helicopter-acoustic-controls { margin-top: .4rem; }
+.helicopter-acoustic-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(15rem, 25%); gap: .55rem; flex: 1; min-height: 0; }
+.helicopter-acoustic-plots { display: flex; min-height: 0; }
+.helicopter-acoustic-plots > div:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.helicopter-acoustic-plots .role-canvas { flex: 1; height: auto; min-height: 14rem; }
+.helicopter-acoustic-plots .helicopter-spectrum-canvas { flex: none; height: 6rem; min-height: 6rem; margin-bottom: .4rem; }
+.helicopter-acoustic-rail { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); padding: .35rem; }
+#helicopter-buoy-observations { flex: 1; min-height: 0; overflow: auto; }
+@media (max-width: 760px) { .helicopter-acoustic-workspace { display: flex; flex-direction: column; } .helicopter-acoustic-plots { min-height: 16rem; } .helicopter-acoustic-rail { min-height: 7rem; max-height: 13rem; } }
+@media (max-height: 750px) { .helicopter-acoustic-visual { overflow: auto; } .helicopter-acoustic-workspace { flex: none; min-height: min(50vh, 22rem); } }

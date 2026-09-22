@@ -8,8 +8,7 @@ import pygame
 import pytest
 
 from src.audio.engine import AudioEngine
-from src.audio.receiver import AcousticReceiver, directional_gain, smooth_limit
-from src.audio.synthesis import propeller_block
+from src.audio.receiver import AcousticReceiver, directional_gain
 
 
 def update(receiver, sources=(), bearing=0, **kwargs):
@@ -24,7 +23,7 @@ def source(lines=(), seed=0, level=1, bearing=0, **kwargs):
 
 @pytest.fixture
 def playback(monkeypatch):
-    channels = [Mock() for _ in range(5)]
+    channels = [Mock() for _ in range(4)]
     for channel in channels:
         channel.get_busy.return_value = False
         channel.get_queue.return_value = None
@@ -349,42 +348,19 @@ def test_real_postlimiter_pcm_bus_and_composite_ceiling(playback, monkeypatch, b
     if hostile:
         # Force coincident over-range peaks through actual public playback paths.
         import src.audio.engine as module
-        for name in ("propeller_block", "active_sonar_ping", "tone",
-                     "helicopter_block"):
+        for name in ("active_sonar_ping", "tone"):
             monkeypatch.setattr(module, name, lambda *a, **k: np.full(5512, 1e6))
-    assert engine.update_engine(247.3, cavitation=.7, volume=1)
     assert engine.play_sonar(np.full(1024, 1e6, dtype=np.float32), 4096,
                              volume=1, bearing_deg=bearing)
     assert engine.play_ping(volume=1)
     assert engine.play_alert("damage")
-    assert engine.update_helicopter(0, 90, 0, True)
-    buses = dict(zip(("engine", "sonar", "ping", "alert", "helicopter"),
+    buses = dict(zip(("sonar", "ping", "alert"),
                      (call.args[0].astype(float) / 32767 for call in capture.call_args_list)))
     length = min(map(len, buses.values()))
     composite = np.zeros((length, 2))
     for name, pcm in buses.items():
         assert np.max(np.abs(pcm)) <= engine.SOURCE_LIMITS[name]
         composite += pcm[:length] * engine.CHANNEL_GAINS[name]
-    assert np.max(np.abs(composite)) <= .908
+    assert np.max(np.abs(composite)) <= .737
     if hostile and bearing in (None, 90, 270):
-        assert np.max(composite) > .817  # exercise the ceiling, not a quiet mix
-
-
-def test_engine_wrapped_blade_and_shaft_phases_match_unwrapped_reference(playback):
-    engine, channels, capture = playback
-    phase = 0
-    shaft_phase = 0
-    for rpm, blades in [(183, 5)] * 8 + [(217.3, 5), (91.7, 7), (103.1, 3)]:
-        assert engine.update_engine(rpm, blades, cavitation=0, volume=.12)
-        count = int(.25 * engine.sample_rate)
-        reference = propeller_block(rpm, blades, engine.sample_rate, amplitude=.12,
-                                     phase=phase, shaft_phase=shaft_phase)
-        expected = smooth_limit(reference, knee=.135, ceiling=.18)
-        expected = (expected * 32767).astype(np.int16)
-        np.testing.assert_array_equal(capture.call_args.args[0][:, 0], expected)
-        blade_hz = rpm / 60 * blades
-        phase += 2 * np.pi * blade_hz * count / engine.sample_rate
-        shaft_phase += 2 * np.pi * blade_hz / blades * count / engine.sample_rate
-        assert 0 <= engine._engine_phase < 2 * np.pi
-        assert 0 <= engine._engine_shaft_phase < 2 * np.pi
-        channels[0].get_busy.return_value = True
+        assert np.max(composite) > .66  # exercise the ceiling, not a quiet mix

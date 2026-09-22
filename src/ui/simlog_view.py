@@ -260,7 +260,7 @@ def _build_lines(game, tr):
     lines.append((f"  {tr('simlog.view.world_time')} {_f(world['hour'])}  "
                   f"{tr('simlog.view.sea_state')} {world['sea_state']}  "
                   f"{tr('simlog.view.night')}: {_b(world['night'], tr)}  "
-                  f"T+{snap['mission_t']:.0f}s  x{game.time_scale}  "
+                  f"T+{snap['mission_t']:.0f}s  "
                   f"{tr('simlog.view.result')}: {snap['result'] or '-'}", ROW))
     lines.append(("", ROW))
     lines.append((tr("simlog.view.weapons"), SECTION))

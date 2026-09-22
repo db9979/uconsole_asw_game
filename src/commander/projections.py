@@ -239,7 +239,9 @@ def _sonar_visualization(game, rows, sonar_refs):
             demon_history.append(dict(age_s=age, bins=bins))
 
     tma = []
-    for row in (row for row in rows if row["source"].startswith("SONAR")):
+    for row in (row for row in rows if row["source"].startswith("SONAR")
+                and not row["source"].startswith("SONAR-BUOY-")
+                and row["source"] not in ("SONAR-DIP-BRG", "SONAR-DIPPING")):
         contact = sonar_refs.get(row["ref"])
         if contact is None:
             continue
@@ -321,7 +323,9 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
     presets = {"FULL": (0.0, 300.0), "LOW": (4.0, 80.0),
                "SHAFT": (8.0, 55.0), "MID": (20.0, 120.0)}
     return dict(observations=[_observation(row, _SONAR_FIELDS) for row in rows
-                              if row["source"].startswith("SONAR")],
+                              if row["source"].startswith("SONAR")
+                              and not row["source"].startswith("SONAR-BUOY-")
+                              and row["source"] not in ("SONAR-DIP-BRG", "SONAR-DIPPING")],
                 settings=dict(mode=game.sonar_mode, page=game.sonar_page,
                               listen_bearing=_number(game.sonar.listen_bearing),
                               focus_ref=focus_ref if game.sonar.focus_locked else None,
@@ -454,7 +458,8 @@ def _radio(game, rows, ref_by_track):
                             if row["source"] == "HFDF"][:_MAP_ROWS_MAX])
 
 
-def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None):
+def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
+                sonar_refs=None, asset_only=False):
     helo = game.helo
     flight_weather = game.helicopter_weather()
     airborne = bool(helo.airborne)
@@ -468,22 +473,156 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None):
                  dip_depth_target_m=_number(helo.dip_depth_target_m),
                  dip_water_depth_m=_number(helo.dip_water_depth_m),
                  dip_ping_ready=bool(helo.dip_ping_ready),
-                 dip_ping_cooldown_s=_number(helo.dip_ping_cooldown))
+                 dip_ping_cooldown_s=_number(helo.dip_ping_cooldown),
+                 buoy_mode=game.helo_buoy_mode)
+    if asset_only:
+        asset.pop("buoy_mode")
+        return {"asset": asset}
+    water_available = airborne and helo.water_entry_clear(game.world)
+    water_depth = (float(game.world.depth_m(helo.x, helo.y))
+                   if water_available else None)
+    thermocline = (float(game.world.thermocline_depth_m(helo.x, helo.y))
+                   if water_available else None)
+    dip_environment = dict(
+        water_depth_m=_number(water_depth),
+        thermocline_m=_number(thermocline),
+        depth_limit_m=(None if water_depth is None else _number(min(
+            config.HELO_DIP_DEPTH_MAX_M,
+            max(0.0, water_depth - config.HELO_DIP_BOTTOM_CLEARANCE_M)))),
+        bottom_clearance_m=(None if water_depth is None or helo.dip_state == "STOWED"
+                            else _number(max(0.0, water_depth - helo.dip_depth_m))),
+        winch_rate_m_s=_number(config.HELO_DIP_DEPTH_RATE_M_S),
+        below_thermocline=(None if thermocline is None
+                           or helo.dip_state == "STOWED" else
+                           bool(helo.dip_depth_m >= thermocline)))
     waypoint = (dict(x=_number(helo.waypoint_x), y=_number(helo.waypoint_y))
                  if helo.waypoint_x is not None
                  and helo.waypoint_y is not None else None)
     buoys = [dict(ref=asset_refs[("buoy", id(buoy))],
                    label=buoy_labels[("buoy", id(buoy))],
                    x=_number(buoy.x), y=_number(buoy.y),
-                   battery_s=_number(buoy.battery_s), active=bool(buoy.active))
+                   battery_s=_number(buoy.battery_s), active=bool(buoy.active),
+                   mode=buoy.mode)
              for buoy in sorted(game.buoys, key=lambda item: item.seq)[:64]]
     distance = (math.hypot(helo.x - game.ship.x, helo.y - game.ship.y)
                 if airborne else None)
     # The helicopter's own sonar picture is not gated on OPZ release - unlike
     # every other map role, it must be able to see, classify and release what
     # only its own dip has found, the same way the local Helicopter station can.
-    tactical = [row for row in rows if row["ref"] in (direct_refs or {})]
+    # The dip display uses the helicopter's independent measurements. Generic
+    # sonar rows may carry a ship bearing even when this contact was dipped.
+    dip_observations = []
+    buoy_observations = []
+    tactical = []
+    for row in rows:
+        if row["source"].startswith("SONAR-BUOY-"):
+            contact = (sonar_refs or {}).get(row["ref"])
+            if contact is None:
+                continue
+            try:
+                seq = int(row["source"].split("-")[2])
+            except (IndexError, ValueError):
+                continue
+            report = contact.buoy_reports.get(seq)
+            if report is None:
+                continue
+            buoy_observations.append(dict(
+                ref=row["ref"], label=row["label"],
+                buoy_label=next((buoy_labels[("buoy", id(b))]
+                                 for b in game.buoys if b.seq == seq),
+                                f"SB{seq:02d}"), mode=report["mode"],
+                bearing=_number(report["bearing"]),
+                bearing_uncertainty_deg=_number(report["bearing_uncertainty_deg"]),
+                range_nm=_number(report["range_nm"]),
+                x=_number(report["x"]), y=_number(report["y"]),
+                observer_x=_number(report["observer_x"]),
+                observer_y=_number(report["observer_y"]),
+                age_s=_age(game.sim_t, report["measured_at"]),
+                quality=_number(report["quality"]),
+                qualified=bool(contact.helo_qualified),
+                released_to_opz=bool(contact.buoy_released_to_opz)))
+            tactical.append(dict(row))
+            continue
+        if row["ref"] not in (direct_refs or {}):
+            continue
+        contact = (sonar_refs or {}).get(row["ref"])
+        if contact is None:
+            continue
+        fixes = [fix for fix in contact.active_fixes(game.sim_t)
+                 if fix["source"] == "DIPPING"]
+        fix = max(fixes, key=lambda item: item["fixed_at"]) if fixes else None
+        passive = (contact.dip_bearing is not None and contact.dip_last_seen is not None
+                   and 0 <= game.sim_t - contact.dip_last_seen
+                   < config.SONAR_CONTACT_LOST_S)
+        if not passive and fix is None:
+            continue
+        origin_x = contact.dip_observer_x if passive else contact.observer_x
+        origin_y = contact.dip_observer_y if passive else contact.observer_y
+        fix_origin_x, fix_origin_y = contact.observer_x, contact.observer_y
+        measured_range = (None if fix is None else _number(math.hypot(
+            fix["x"] - fix_origin_x, fix["y"] - fix_origin_y)))
+        active_bearing = (None if fix is None else _number(math.degrees(
+            math.atan2(fix["x"] - fix_origin_x,
+                       -(fix["y"] - fix_origin_y))) % 360))
+        dip_observations.append(dict(
+            ref=row["ref"], label=row["_display_id"],
+            bearing=_number(contact.dip_bearing) if passive else None,
+            bearing_uncertainty_deg=(_number(contact.dip_bearing_uncertainty_deg)
+                                     if passive else None),
+            age_s=_age(game.sim_t, contact.dip_last_seen) if passive else None,
+            range_nm=measured_range,
+            active_bearing=active_bearing,
+            range_uncertainty_nm=(None if fix is None else
+                                  _number(fix["uncertainty_nm"])),
+            depth_m=None if fix is None else _number(fix["depth_m"]),
+            depth_uncertainty_m=(None if fix is None else
+                                 _number(fix["depth_uncertainty_m"])),
+            fix_age_s=None if fix is None else _age(game.sim_t, fix["measured_at"]),
+            classification=row["classification"],
+            qualified=bool(contact.helo_qualified),
+            released_to_opz=bool(contact.dip_released_to_opz)))
+        tactical_row = dict(row)
+        tactical_row.update(
+            source="SONAR-DIP-BRG" if passive else "SONAR-DIPPING",
+            bearing=(_number(contact.dip_bearing) if passive else active_bearing),
+            range_nm=None if passive else measured_range,
+            x=None if passive else _number(fix["x"]),
+            y=None if passive else _number(fix["y"]),
+            observer_x=_number(origin_x), observer_y=_number(origin_y),
+            age_s=(_age(game.sim_t, fix["measured_at"]) if fix is not None
+                   else _age(game.sim_t, contact.dip_last_seen)),
+            bearing_uncertainty_deg=(_number(contact.dip_bearing_uncertainty_deg)
+                                     if passive else None),
+            range_uncertainty_nm=(None if fix is None else _number(fix["uncertainty_nm"])))
+        tactical_row["released_to_opz"] = bool(contact.dip_released_to_opz)
+        tactical.append(tactical_row)
+        if len(dip_observations) >= _MAP_ROWS_MAX:
+            break
     return dict(asset=asset, waypoint=waypoint, buoys=buoys,
+                buoy_observations=buoy_observations[:_MAP_ROWS_MAX],
+                acoustic=dict(source=game.helo_listen_source,
+                              ready=game.helicopter_audio_ready(),
+                              listen_bearing=_number(game.helo_listen_bearing),
+                              audition_mode=game.helo_audition.audition_mode,
+                              band_preset=game.helo_audio_band,
+                              gain_db=_number(game.helo_audition.gain_db),
+                              notch=bool(game.helo_audition.notch_enabled),
+                              sources=["DIP", *(f"SB{b.seq}" for b in
+                                  sorted(game.buoys, key=lambda item: item.seq))],
+                              bin_frequencies_hz=[config.lofar_bin_freq(i)
+                                                  for i in range(config.LOFAR_BINS)],
+                              spectrum=_series(game.helo_receiver.spectrum,
+                                               config.LOFAR_BINS),
+                              history=[_series(row, config.LOFAR_BINS)
+                                       for row in game.helo_spectra[-64:]],
+                              broadband=_series(game.helo_receiver.broadband, 180),
+                              broadband_history=[_series(row, 180)
+                                                 for row in game.helo_broadband_history[-64:]],
+                              demon=_series(game.helo_receiver.demon_spectrum, 80),
+                              demon_history=[_series(row, 80)
+                                             for row in game.helo_demon_history[-64:]]),
+                dip_environment=dip_environment,
+                dip_observations=dip_observations,
                 navigation=_own_navigation(game), tactical=[
                     _observation(row, _HELICOPTER_TACTICAL_FIELDS)
                     for row in tactical[:_MAP_ROWS_MAX]],
@@ -686,7 +825,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                           for row in rows) else None),
                       own_assets=dict(ship=_own_navigation(game),
                                        helicopter=_helicopter(
-                                           game, rows, asset_refs, buoy_labels)["asset"])),
+                                           game, rows, asset_refs, buoy_labels,
+                                           asset_only=True)["asset"])),
         "radio": _radio(game, rows, ref_by_track),
         "engine": dict(propulsion=dict(course=_number(game.ship.course),
                     target_course=_number(game.ship.target_course),
@@ -727,7 +867,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                               tas_performance=_number(
                                                   game.sonar.tow_performance))),
         "helicopter": _helicopter(game, rows, asset_refs, buoy_labels,
-                                   direct_fire_refs["helicopter"]),
+                                   direct_fire_refs["helicopter"], sonar_refs),
         "eloka": _eloka(game, rows, esm_refs, candidate_refs),
     }
     result = {}

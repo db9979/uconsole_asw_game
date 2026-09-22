@@ -13,7 +13,6 @@ _GLOBAL_HELP = (
         ("9", "help.global.stations_3"),
         ("help.key.station_number", "help.repeat_station"),
         ("P", "help.pause"),
-        ("help.key.time_scale", "help.time_scale"),
         ("help.key.arrows", "help.station_control"),
         ("U / V", "help.global.course_speed"),
         ("+ / -", "help.global.telegraph"),

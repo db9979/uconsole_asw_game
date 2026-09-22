@@ -462,6 +462,7 @@ def test_eloka_accessors_resolve_annotations_to_platform_names(monkeypatch):
 
 def test_eloka_view_renders_platform_names_not_emitter_keys(monkeypatch):
     from src.ui import layout, stations_view
+    from src.core.i18n import Translator
 
     game, _ = emitting_game(monkeypatch)
     game.sim_t = .5
@@ -477,6 +478,7 @@ def test_eloka_view_renders_platform_names_not_emitter_keys(monkeypatch):
     text = "\n".join(item["text"] for item in rendered)
     assert "emitter." not in text
     assert name[:7] in text
+    assert Translator(game.preferences.language).t("eloka.release.active") in text
 
 
 @pytest.mark.parametrize("language", ["en", "de"])

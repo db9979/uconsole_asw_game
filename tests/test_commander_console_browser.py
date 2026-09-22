@@ -109,16 +109,17 @@ async function run() {
   await until(() => !$("host-pause").disabled, "host controls stayed locked after pause");
   $("host-pause").click();
   await until(() => $("host-pause").getAttribute("aria-pressed") === "false", "resume not reflected");
-  await until(() => !$("host-time-scale").disabled, "time scale locked");
-  $("host-time-scale").value = "2";
-  $("host-time-scale").dispatchEvent(new Event("change", {bubbles: true}));
-  await until(() => /15[.,]0/.test($("mission-metrics").textContent), "time scale not applied");
+  assert(!document.getElementById("host-time-scale"), "time compression control remains visible");
 
   await until(() => !$("host-save").disabled, "save locked");
   $("host-save").click();
   await until(() => $("host-slot-dialog").open, "save dialog did not open");
+  await until(() => !document.querySelector('#host-slot-list button[data-slot="3"]').disabled &&
+    !$("host-save").disabled, "save slot unavailable");
   document.querySelector('#host-slot-list button[data-slot="3"]').click();
-  await until(() => $("host-status").textContent && !$("host-save").disabled, "save result missing");
+  assert($("host-status").dataset.status === "pending", "save command was not submitted");
+  await until(() => $("host-status").dataset.status === "applied" &&
+    !$("host-save").disabled, "save result missing");
 
   await until(() => !$("host-new").disabled, "new game locked");
   $("host-new").click();
@@ -173,7 +174,10 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
         '<script src="./console-test.js" defer></script><script src="./app.js" defer>')
     for name, payload in (("index.html", html),
                           ("app.js", ASSETS.joinpath("app.js").read_text()),
-                          ("style.css", ASSETS.joinpath("style.css").read_text())):
+                          ("style.css", ASSETS.joinpath("style.css").read_text()),
+                          ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()),
+                          ("voice.js", ASSETS.joinpath("voice.js").read_text()),
+                          ("voice-worklet.js", ASSETS.joinpath("voice-worklet.js").read_text())):
         (tmp_path / name).write_text(payload, encoding="utf-8")
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)
 

@@ -53,7 +53,7 @@ def test_update_passes_unclamped_wall_dt_to_audio(monkeypatch):
     game.audio.shutdown()
 
 
-def test_sonar_audio_is_silent_and_drained_across_time_scale(monkeypatch):
+def test_sonar_audio_continues_at_fixed_realtime_speed(monkeypatch):
     game = Game(seed=85, audio_enabled=False)
     game.station = Station.SONAR
     game.sonar_audio_enabled = True
@@ -63,39 +63,64 @@ def test_sonar_audio_is_silent_and_drained_across_time_scale(monkeypatch):
     monkeypatch.setattr(game.audio, "play_sonar", spy)
     stop = Mock()
     monkeypatch.setattr(game.audio, "stop_sonar", stop)
-    game.time_scale_idx = config.TIME_SCALE_STEPS.index(5)
     game._update_audio(0.25)
-    assert not spy.called
+    assert spy.call_count == 1
     assert game._sonar_audio_sequence == receiver.sequence
     stop.assert_called_once_with(immediate=True)
     receiver.update([], 0, 12, .2, 2, 6)
     game._update_audio(0.25)
-    assert not spy.called
+    assert spy.call_count == 2
     assert game._sonar_audio_sequence == receiver.sequence
     stop.assert_called_once()
-
-    game.time_scale_idx = config.TIME_SCALE_STEPS.index(1)
-    game._update_audio(0.25)
-    assert not spy.called
-    assert game._sonar_audio_sequence == receiver.sequence
-    receiver.update([], 0, 12, .2, 2, 6)
-    game._update_audio(0.25)
-    spy.assert_called_once()
+    assert game.time_scale == 1
     game.audio.shutdown()
 
 
-def test_runtime_audio_does_not_play_machinery_or_helicopter_loops(monkeypatch):
-    game = Game(seed=86, audio_enabled=False)
-    machinery = Mock()
-    helicopter = Mock()
-    monkeypatch.setattr(game.audio, "update_engine", machinery)
-    monkeypatch.setattr(game.audio, "update_helicopter", helicopter)
+def test_legacy_time_keys_do_not_change_simulation_rate():
+    game = Game(seed=85, start_menu=False, audio_enabled=False)
+    for key in (pygame.K_z, pygame.K_x, pygame.K_LEFTBRACKET,
+                pygame.K_RIGHTBRACKET):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key, mod=0))
+    before = game.sim_t
+    game.update(.1)
+    assert game.time_scale == 1
+    assert game.time_scale_idx == 0
+    assert game.sim_t == pytest.approx(before + .1)
 
-    game._update_audio(config.AUDIO_UPDATE_S * 2)
 
-    machinery.assert_not_called()
-    helicopter.assert_not_called()
+def test_perf_debug_log_is_opt_in_throttled_and_does_not_affect_sim(
+        monkeypatch, tmp_path):
+    monkeypatch.delenv("U_JAGD_PERF_DEBUG", raising=False)
+    disabled_root = tmp_path / "disabled"
+    monkeypatch.setattr(config, "SAVE_DIR", str(disabled_root))
+    game = Game(seed=87, start_menu=False, audio_enabled=False)
+    assert not game._perf_debug_enabled
+    game.update(.1, audio_dt=.1)
+    game._perf_debug_log(2.0)
+    assert not disabled_root.exists()
     game.audio.shutdown()
+
+    monkeypatch.setenv("U_JAGD_PERF_DEBUG", "1")
+    debug_root = tmp_path / "debug"
+    monkeypatch.setattr(config, "SAVE_DIR", str(debug_root))
+    debug = Game(seed=88, start_menu=False, audio_enabled=False)
+    assert debug._perf_debug_enabled
+    debug.update(.1, audio_dt=.1)
+    debug._perf_debug_log(0.6)
+    assert not debug_root.exists()
+    debug.update(.1, audio_dt=.1)
+    debug._perf_debug_log(0.5)
+    assert debug.sim_t == pytest.approx(.2)
+    lines = (debug_root / "perf_debug.log").read_text().splitlines()
+    assert len(lines) == 1
+    assert "fps=2" in lines[0]
+    assert "sim_ms=" in lines[0] and "audio_ms=" in lines[0]
+    assert "commander_ms=" in lines[0] and "draw_ms=" in lines[0]
+    debug._perf_debug_log(0.8)
+    assert len((debug_root / "perf_debug.log").read_text().splitlines()) == 1
+    debug._perf_debug_log(0.3)
+    assert len((debug_root / "perf_debug.log").read_text().splitlines()) == 2
+    debug.audio.shutdown()
 
 
 def test_audio_replacement_and_run_shutdown_old_engines(monkeypatch):

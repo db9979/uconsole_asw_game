@@ -180,8 +180,10 @@ class AisStreamClient:
         mmsi = _integer(meta.get("MMSI", message.get("UserID")), 1, 999999999)
         if mmsi is None:
             return False
-        raw_latitude = meta.get("latitude", message.get("Latitude"))
-        raw_longitude = meta.get("longitude", message.get("Longitude"))
+        raw_latitude = (meta["Latitude"] if "Latitude" in meta else
+                        meta.get("latitude", message.get("Latitude")))
+        raw_longitude = (meta["Longitude"] if "Longitude" in meta else
+                         meta.get("longitude", message.get("Longitude")))
         latitude = _number(raw_latitude, -90.0, 90.0)
         longitude = _number(raw_longitude, -180.0, 180.0)
         if ((raw_latitude is not None and latitude is None)

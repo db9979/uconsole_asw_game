@@ -119,6 +119,8 @@ DISPLAY_KEYS = {
         "ENGINE_SYSTEMS": "station.page.engine_systems",
         "HELO_STATUS": "station.page.helo_status",
         "HELO_MISSION": "station.page.helo_mission",
+        "HELO_SONAR": "station.page.helo_sonar",
+        "HELO_ACOUSTIC": "station.page.helo_acoustic",
         "ELOKA_INTERCEPTS": "station.page.eloka_intercepts",
         "ELOKA_EVIDENCE": "station.page.eloka_evidence",
     },

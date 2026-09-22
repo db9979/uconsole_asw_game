@@ -63,4 +63,25 @@ def load_catalog(path: str = CATALOG_PATH) -> dict:
 
 def sector_for_seed(seed: int) -> tuple[dict, dict]:
     catalog = load_catalog()
-    return catalog["sectors"][int(seed) % SECTOR_COUNT], catalog["provenance"]
+    sector = catalog["sectors"][int(seed) % SECTOR_COUNT]
+    # The pinned generator's rectangular clip can turn a distant polygon into
+    # an interior, coast-to-coast strip. Keep the source catalog intact while
+    # excluding these unambiguous projection artifacts from playable geometry.
+    landmasses = [land for land in sector["landmasses"]
+                  if not _is_spurious_strip(land["points"])]
+    if len(landmasses) == len(sector["landmasses"]):
+        return sector, catalog["provenance"]
+    countries = sorted({land["nation"] for land in landmasses})
+    return dict(sector, landmasses=landmasses, countries=countries,
+                name=" / ".join(countries[:3]) + " coastal waters"), catalog["provenance"]
+
+
+def _is_spurious_strip(points: list) -> bool:
+    """Recognize an interior horizontal edge spanning the entire 500 NM chart."""
+    for first, second in zip(points, points[1:] + points[:1]):
+        if (abs(first[0] - second[0]) >= 490.0
+                and abs(first[1] - second[1]) <= 2.0
+                and 1.0 < first[1] < 499.0
+                and 1.0 < second[1] < 499.0):
+            return True
+    return False

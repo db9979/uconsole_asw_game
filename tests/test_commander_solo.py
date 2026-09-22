@@ -95,7 +95,7 @@ def test_solo_pairing_leases_every_station_with_full_grants(server):
         assert row["grants"] == {
             "command": True,
             "direct_fire": station in ("weapons", "helicopter", "opz"),
-            "sonar_audio": station == "sonar"}
+            "sonar_audio": station in ("sonar", "helicopter")}
     # Generations are independent per-station counters.
     assert {row["station_generation"] for row in session["stations"].values()} == {1}
 
@@ -371,7 +371,7 @@ def host_view(s):
 def test_host_view_is_published_only_to_a_solo_session(solo):
     view = host_view(solo)
     assert view["protocol"] == 2 and view["phase"] == "live" and view["paused"] is False
-    assert view["time_scale"] == {"index": 0, "steps": [1, 5, 15, 30, 60, 120]}
+    assert view["time_scale"] == {"index": 0, "steps": [1]}
     assert [row["key"] for row in view["scenarios"]] == [
         "s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall"]
     assert view["levels"] == ["leicht", "normal", "harte", "hardcore"]
@@ -394,17 +394,15 @@ def test_crew_sessions_have_no_host_surface(server, game):
                    session["csrf"])[0] == 403
 
 
-def test_host_pause_resume_and_time_scale_use_the_local_paths(solo):
+def test_host_pause_resume_use_the_local_paths(solo):
     assert host(solo, "host_pause", {}, "p1")["reasoncode"] == "ok"
     assert solo.game.paused is True and host_view(solo)["paused"] is True
     # A paused game still accepts host controls, and the epoch moved on.
-    assert host(solo, "host_time_scale", {"index": 3}, "t1")["reasoncode"] == "ok"
-    assert solo.game.time_scale_idx == 3 and host_view(solo)["time_scale"]["index"] == 3
+    assert host_view(solo)["time_scale"] == {"index": 0, "steps": [1]}
     assert host(solo, "host_resume", {}, "r1")["reasoncode"] == "ok"
     assert solo.game.paused is False
     # Idempotent by construction.
     assert host(solo, "host_resume", {}, "r2")["reasoncode"] == "ok"
-    assert host(solo, "host_time_scale", {"index": 0}, "t2")["reasoncode"] == "ok"
     assert solo.game.time_scale_idx == 0
 
 
@@ -551,13 +549,13 @@ def test_revoking_the_solo_session_removes_the_host_surface_and_queued_commands(
 
 
 def test_a_replayed_host_command_id_is_applied_once(solo):
-    body = host_body(solo, "host_time_scale", {"index": 1}, "dup")
+    body = host_body(solo, "host_pause", {}, "dup")
     assert send(solo, body)[0] == 202
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
-    assert solo.game.time_scale_idx == 1
-    solo.game.time_scale_idx = 0
+    assert solo.game.paused is True
+    solo.game.set_paused(False)
     status, _, replay = send(solo, body)
     assert (status, replay["status"]) == (200, "applied")
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
-    assert solo.game.time_scale_idx == 0
-    assert send(solo, dict(body, params={"index": 2}))[0] == 409
+    assert solo.game.paused is False
+    assert send(solo, dict(body, action="host_resume"))[0] == 409

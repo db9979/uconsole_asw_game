@@ -503,9 +503,8 @@ def test_remote_lease_locks_matching_uconsole_station_but_preserves_host_keys(ga
     assert game.commander_open
 
 
-@pytest.mark.parametrize(("solo", "expected_step"), [(False, 0), (True, 1)])
-def test_solo_keeps_time_scale_keys_alive_under_the_station_lock(
-        game, solo, expected_step):
+@pytest.mark.parametrize("solo", [False, True])
+def test_time_scale_keys_cannot_change_speed_under_the_station_lock(game, solo):
     game.commander.server = RosterTransport((roster_client(
         "crew", "Crew", 0, station="bridge", command=True),))
     game.commander.solo = solo
@@ -514,7 +513,7 @@ def test_solo_keeps_time_scale_keys_alive_under_the_station_lock(
     before = game.time_scale_idx
 
     key(game, pygame.K_x, mod=0)
-    assert game.time_scale_idx == before + expected_step
+    assert game.time_scale_idx == before == 0
     key(game, pygame.K_PLUS, mod=0)
     assert game.ship.telegraph == telegraph  # station input stays locked either way
 

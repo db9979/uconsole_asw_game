@@ -2,6 +2,9 @@
 
 # U-Jagd
 
+An optional browser-only LAN room is available with `--web-host` behind a
+separate HTTPS reverse proxy. See the [German web-host guide](docs/web-host.de.md).
+
 U-Jagd is a real-time anti-submarine warfare tactics game for Linux, designed
 around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
@@ -54,8 +57,7 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 
 - Nine stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,
   Engineering, Helicopter Deck, and Electronic Warfare/ESM.
-- Four built-in scenarios, three difficulty levels, pause, and 1x, 5x, 15x,
-  30x, 60x, and 120x time acceleration.
+- Four built-in scenarios, three difficulty levels, pause, and real-time simulation.
 - Passive HMS and towed-array sonar, active sonar, broadband and LOFAR
   displays, DEMON analysis, bathythermograph readings, and bearing-only TMA.
 - Surface and air radar, AIS, ESM, HFDF, manual classification and affiliation,
@@ -80,7 +82,7 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
   same observation-led controls, and use separately granted direct fire.
   The browser console is a one-viewport desktop layout with a station tab bar.
   `python main.py --solo-crew` (or the F9 "Crew mode" row) lets one browser run
-  all nine stations plus pause, time scale, save/load and new game while the
+  all nine stations plus pause, save/load and new game while the
   uConsole stays the simulation server; see [Remote Crew setup](docs/commander-coop.md).
 - Conservative station Autocrew with local `F2` control and an `F3` overview.
   Remote Crew temporarily suspends Autocrew only for the leased station.
@@ -143,9 +145,10 @@ The main menu provides new game, load, mission editor, unit editor, options,
 and quit entries. A new game leads through scenario selection and, for the
 random scenario, difficulty selection.
 
-- `W` switches between the seed-selected real sector and the fixed legacy
-  reference map.
-- `R` generates a new seed.
+- `W` cycles through the seed-selected real sector, the fixed legacy reference
+  map, and a fixed selectable real sector.
+- `Page Up`/`Page Down` select the coast in the fixed real-sector mode.
+- `R` generates a new seed while retaining the selected fixed real sector.
 - `F` toggles fullscreen from the menu.
 - Arrow keys select an entry; `Enter` or `Space` confirms it.
 
@@ -180,7 +183,6 @@ most important global controls are:
 | `F10` | Options; while paused, `O` also opens options |
 | `F9` | Local Commander LAN administration |
 | `S` / `L` | Save / load using slots 1 to 5; at OPZ/CIC, `L` is the contextual fusion command |
-| `Z` / `X` or `[` / `]` | Slower / faster time acceleration |
 | `+` / `-` | Engine telegraph |
 | `Alt+Enter` | Toggle fullscreen |
 | `Ctrl+Enter` | Primary weapon action at Weapons, OPZ/CIC, or Helicopter; normal readiness checks apply |
@@ -226,11 +228,9 @@ Historical plot tooltips inspect the displayed sample. Active returns retain
 frozen transmit-time geometry; the separate outbound wave and moving-receiver
 intercept are not simulated, and submarine ping warnings remain immediate.
 
-At 1x, sonar audition consumes the receiver's bounded block handoff in order and
+Sonar audition consumes the receiver's bounded block handoff in order and
 retries an unaccepted block when the playback queue is full. An overrun restarts
-the stream rather than joining discontinuous samples. Above 1x, sonar audition is
-muted and receiver blocks are
-discarded rather than replayed later. Analysis remains independent of playback
+the stream rather than joining discontinuous samples. Analysis remains independent of playback
 availability and volume. DSP deliberately warms up again after loading a save;
 saved tactical observations are retained.
 
@@ -343,9 +343,10 @@ Hover over an unavailable browser control to see its current localized reason,
 such as a missing grant, damaged station, cooldown, empty inventory, pending
 order, or the TAS handling-speed limit.
 
-**Security:** HTTP is unencrypted. Use only a trusted LAN. No Internet hosting,
-wildcard binding, CDN, remote ROE/time/save controls, or hidden entity data are
-exposed. See [Remote Crew setup](docs/commander-coop.md) and
+**Commander LAN security:** HTTP is unencrypted. Use only a trusted LAN. This
+mode does not expose Internet hosting, wildcard binding, CDN, or remote crew
+control of ROE/time/save. The separate web-host mode requires an HTTPS proxy
+and a host login. See [Remote Crew setup](docs/commander-coop.md) and
 [protocol/security](docs/commander-protocol.md).
 
 ## Editors and Current Limits

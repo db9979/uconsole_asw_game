@@ -1,5 +1,4 @@
-"""Haupt-Game-Loop: Widescreen-Grid (Karte + Station + Feed + Telemetrie),
-Zeitraffer 1x-30x, Szenarien, Multi-Slot-Save (W0-W4)."""
+"""Haupt-Game-Loop: Widescreen-Grid, Echtzeit, Szenarien und Multi-Slot-Save."""
 
 import copy
 import hashlib
@@ -7,6 +6,7 @@ import json
 import math
 import os
 import threading
+import time
 from collections import deque
 from dataclasses import replace
 from types import SimpleNamespace
@@ -14,12 +14,14 @@ from types import SimpleNamespace
 import pygame
 
 from src.audio.engine import AudioEngine
+from src.audio.receiver import AcousticReceiver
 from src.audio.preview import unit_sonar_preview
 from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.autocrew import AutocrewController, station_key
 from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
                                station_page_step, toggle_tas)
+from src.core.debuglog import append_bounded_log
 from src.core.i18n import (Translator, display_value, localized, localize,
                            message, raw_text)
 from src.core.preferences import Preferences, save_preferences
@@ -40,7 +42,7 @@ from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
 from src.enemies.endurance import SubmarineEndurance
 from src.enemies.surface import SurfaceShip
-from src.nations.nations import NATIONS, get_nation
+from src.nations.nations import reference_summary
 from src.sensors.tracks import TrackPicture
 from src.sensors.fusion import OPZFusionPicture, OPZObservation, source_classification
 from src.sensors.esm import (
@@ -83,7 +85,7 @@ from src.ui.stations_view import (draw_autocrew_overview, draw_bridge_view,
                                   draw_radio_view,
                                    draw_helicopter_view, station_hit_target)
 from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
-                                    opz_action_at, opz_ppi_rect,
+                                    helicopter_acoustic_hit, opz_action_at, opz_ppi_rect,
                                     station_page_tab_at)
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
@@ -231,7 +233,11 @@ class Game:
                   start_menu: bool = False, fullscreen: bool = None,
                  window_size: tuple = None, show_splash: bool = False,
                   audio_enabled: bool = None, preferences: Preferences = None,
-                  language: str = None):
+                  language: str = None, web_mode: bool = False):
+        self.web_mode = bool(web_mode)
+        if self.web_mode:
+            os.environ["SDL_VIDEODRIVER"] = "dummy"
+            os.environ["SDL_AUDIODRIVER"] = "dummy"
         requested_fullscreen = (preferences.fullscreen
                                 if preferences is not None and fullscreen is None
                                 else bool(fullscreen))
@@ -239,6 +245,8 @@ class Game:
                            if preferences is not None and audio_enabled is None
                            else (config.AUDIO_ENABLED if audio_enabled is None
                                  else bool(audio_enabled)))
+        if self.web_mode:
+            requested_audio = False
         self.preferences = preferences or Preferences(
             language=language or Preferences.defaults().language,
             fullscreen=requested_fullscreen, audio=requested_audio)
@@ -276,6 +284,15 @@ class Game:
         self.audio = AudioEngine(sample_rate=config.AUDIO_SAMPLE_RATE,
                                  enabled=requested_audio)
         self._audio_timer = 0.0
+        self._perf_debug_enabled = (
+            os.environ.get("U_JAGD_PERF_DEBUG", "") not in ("", "0"))
+        self._perf_debug_due = 0.0
+        self._perf_frames = 0
+        self._perf_sim_s = 0.0
+        self._perf_substeps = 0
+        self._perf_audio_s = 0.0
+        self._perf_commander_s = 0.0
+        self._perf_draw_s = 0.0
         self._sound_event_seq = 0
         self._sound_events = deque(maxlen=16)
         self._eco_drawn_at = float("-inf")
@@ -369,13 +386,13 @@ class Game:
 
         coast = Coastline.load() if self.world_mode == "fixed" else None
         self.world = World(seed=seed, coast=coast)
-        self.live_traffic.configure(self, self.world, self.preferences)
         start = sc["ship_start"] or (250.0, 250.0)
         course = sc["ship_course"]
         if course is None:
             course = 90.0
         sx, sy = self.world.nearest_safe_hull(start[0], start[1], course)
         self.ship = Ship(x_nm=sx, y_nm=sy, course_deg=course)
+        self.live_traffic.configure(self, self.world, self.preferences)
         self.sonar = SonarSystem(
             seed=seed, acoustic_profiles=self.runtime_catalog.acoustic_profiles)
         self._last_tow_state = self.sonar.tow_state
@@ -529,6 +546,7 @@ class Game:
         self.sonar_mode = "BOW"                      # "BOW" | "TOWED"
         self.sonar_page = 0
         self.station_page = 0
+        self.helo_acoustic_page = 1
         self.sonar_harmonic_hz = None
         # Display-only CRT controls are intentionally transient: they affect no
         # observation, simulation or v10 save contract.
@@ -537,6 +555,7 @@ class Game:
         self.sonar_display_contrast = 1.6
         self.sonar_display_history = 1.0
         self.sonar_audio_enabled = True
+        self.helo_audio_enabled = True
         self.sonar_volume = 0.5
         self._sonar_audio_sequence = -1
         self._sonar_audio_suspended = False
@@ -555,6 +574,17 @@ class Game:
                 self.runtime_catalog.runtime_bindings["helicopter_torpedo"]])
         self.buoys = []
         self.buoy_seq = 0
+        self.helo_buoy_mode = "PASSIVE"
+        self.helo_sensor_source = "DIP"
+        self.helo_listen_source = "DIP"
+        self.helo_listen_bearing = None
+        self.helo_audio_band = "FULL"
+        self.helo_audition = SonarSystem(seed=seed + 45678, acoustic_profiles=())
+        self.helo_receiver = AcousticReceiver(seed=seed + 45677)
+        self.helo_spectra = []
+        self.helo_broadband_history = []
+        self.helo_demon_history = []
+        self._helo_receiver_timer = 0.0
         self.asms = []
         self.essms = []
         self._air_defense_loadout = copy.deepcopy(air_defense_loadout())
@@ -852,13 +882,7 @@ class Game:
 
     @property
     def time_scale(self) -> int:
-        return config.TIME_SCALE_STEPS[self.time_scale_idx]
-
-    def cycle_time_scale(self, delta: int) -> None:
-        self.time_scale_idx = config.clamp(
-            self.time_scale_idx + delta, 0, len(config.TIME_SCALE_STEPS) - 1)
-        notice = message("status.speed", speed=self.time_scale)
-        self.announce(notice, "welt", 1.5)
+        return 1
 
     def set_paused(self, paused: bool) -> bool:
         """Manual pause, exactly like the P key; used by the solo host command."""
@@ -881,7 +905,7 @@ class Game:
         host-approved caller can never pin a seed by accident.
         """
         if (scenario_key not in config.SCENARIOS
-                or world_mode not in ("fixed", "procedural")
+                or world_mode not in ("fixed", "procedural", "real_fixed")
                 or level is not None and level not in config.LEVELS
                 or seed is not None and not (
                     type(seed) is int and 1 <= seed < 1_000_000_000)):
@@ -1478,7 +1502,7 @@ class Game:
         ship = self.ship
         snap = {
             "mission_t": r2(self.mission_time),
-            "timescale": self.time_scale_idx,
+            "timescale": config.TIME_SCALE_DEFAULT,
             "result": self.mission_result,
             "world": {"hour": r1(self.world.hour),
                       "sea_state": self.world.sea_state,
@@ -1660,6 +1684,7 @@ class Game:
     def _stop_sonar_audio(self) -> None:
         self.audio.stop_sonar(immediate=True)
         self.sonar.reset_audition_audio()
+        self.helo_audition.reset_audition_audio()
         self._sonar_audio_sequence = -1
         self._sonar_audio_suspended = False
 
@@ -1668,6 +1693,9 @@ class Game:
         self._clear_controls()
         self.input_mode = None
         self.input_buffer = ""
+        if name == "nations":
+            self._nations_summary = reference_summary(self.world.coast,
+                                                      self.runtime_catalog)
         self.help_open = name == "help"
         self.nations_open = name == "nations"
         self.quit_confirm = name == "quit"
@@ -1891,11 +1919,16 @@ class Game:
         """Return a virtual-canvas pointer only when the map is visible."""
         pos = event_pos if event_pos is not None else pygame.mouse.get_pos()
         canvas = self._window_to_canvas(pos)
-        if canvas is None or self.station not in MAP_STATIONS:
+        if canvas is None or not self._map_station_visible():
             return None
         if not pygame.Rect(config.MAP_RECT).collidepoint(canvas):
             return None
         return canvas
+
+    def _map_station_visible(self) -> bool:
+        return (self.station in MAP_STATIONS
+                and not (self.station is Station.HELICOPTER
+                         and self.station_page == 3))
 
     def _opz_map_pointer(self, event_pos=None):
         """Return a canvas pointer only over the native OPZ chart."""
@@ -1915,12 +1948,12 @@ class Game:
             return None
         previous = config.STATION_RECT
         config.STATION_RECT = (config.STATION_PANEL_RECT
-                               if self.station in MAP_STATIONS else
+                               if self._map_station_visible() else
                                config.OPZ_STATION_RECT
                                if self.station is Station.OPZ else
                                config.FULL_STATION_RECT)
         try:
-            if (self.station in MAP_STATIONS
+            if (self._map_station_visible()
                     and pygame.Rect(config.MAP_RECT).collidepoint(canvas_pos)):
                 return map_hit_target(self, canvas_pos)
             if self.station is Station.SONAR:
@@ -2213,7 +2246,9 @@ class Game:
             if e.key == pygame.K_F4:
                 self._open_simlog_view()
                 return
-            if e.key == pygame.K_n and self.station is not Station.SONAR:
+            if (e.key == pygame.K_n and self.station is not Station.SONAR
+                    and not (self.station is Station.HELICOPTER
+                             and self.station_page == 3)):
                 self._open_administration("nations")
                 return
             if e.key in (pygame.K_s, pygame.K_l) and not (
@@ -2240,7 +2275,8 @@ class Game:
                 else:
                     self._clear_controls()
                     self.station = destination
-                    self.station_page = 0
+                    self.station_page = (2 if destination is Station.HELICOPTER
+                                         else 0)
                 return
             if e.key == pygame.K_TAB:
                 self._clear_controls()
@@ -2249,7 +2285,8 @@ class Game:
                 order = list(Station)
                 step = -1 if getattr(e, "mod", 0) & pygame.KMOD_SHIFT else 1
                 self.station = order[(order.index(self.station) + step) % len(order)]
-                self.station_page = 0
+                self.station_page = (2 if self.station is Station.HELICOPTER
+                                     else 0)
                 return
             if self.game_over:
                 if e.key == pygame.K_r:
@@ -2258,13 +2295,6 @@ class Game:
             if self.paused:
                 return
             if self._local_station_input_locked():
-                # In solo mode the browser owns every station, but the game clock
-                # remains a host control that must not die with the station lock.
-                if (getattr(self.commander, "solo", False)
-                        and e.key in (pygame.K_LEFTBRACKET, pygame.K_z,
-                                      pygame.K_RIGHTBRACKET, pygame.K_x)):
-                    self.cycle_time_scale(
-                        -1 if e.key in (pygame.K_LEFTBRACKET, pygame.K_z) else 1)
                 return
             if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                     and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
@@ -2277,6 +2307,11 @@ class Game:
                 if self.station is Station.HELICOPTER:
                     self.launch_helo_torpedo()
                     return
+            if (self.station is Station.HELICOPTER and self.station_page == 3
+                    and e.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN)):
+                step = 1 if e.key == pygame.K_PAGEDOWN else -1
+                self.helo_acoustic_page = (self.helo_acoustic_page + step) % 3
+                return
             if self.station is Station.SONAR:
                 mods = getattr(e, "mod", 0)
                 if e.key == pygame.K_c and mods & pygame.KMOD_SHIFT:
@@ -2412,11 +2447,10 @@ class Game:
                     and self.station is Station.OPZ:
                 self.confirm_live_engagement()
                 return
-            if e.key in (pygame.K_LEFTBRACKET, pygame.K_z):
-                self.cycle_time_scale(-1)
-            elif e.key in (pygame.K_RIGHTBRACKET, pygame.K_x):
-                self.cycle_time_scale(1)
-            elif e.key == pygame.K_n:
+            if e.key == pygame.K_n and self.station is Station.HELICOPTER and self.station_page == 3:
+                self.set_helicopter_audio_notch(not self.helo_audition.notch_enabled)
+                return
+            if e.key == pygame.K_n:
                 if self.station is Station.SONAR:
                     self.set_sonar_notch(not self.sonar.notch_enabled)
                     self.flash(message("runtime.notch.on" if self.sonar.notch_enabled
@@ -2436,6 +2470,20 @@ class Game:
                     self._create_opz_fusion()
             elif e.key == pygame.K_j and self.station is Station.OPZ:
                 self._begin_track_id_input()
+            elif e.key == pygame.K_j and self.station is Station.HELICOPTER:
+                if not self.helo_audio_enabled and not self.helicopter_audio_ready():
+                    self.flash(message("runtime.sonar_audio.receiver_required"))
+                    return
+                self.helo_audio_enabled = not self.helo_audio_enabled
+                self._stop_sonar_audio()
+                self.flash(message("runtime.sonar_audio.on" if self.helo_audio_enabled
+                                   else "runtime.sonar_audio.off"))
+            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
+                    and self.station is Station.HELICOPTER and self.station_page == 3:
+                self.sonar_volume = round(config.clamp(self.sonar_volume +
+                    (.1 if e.key == pygame.K_PERIOD else -.1), 0.0, 1.0), 1)
+                self.flash(message("runtime.listen.volume",
+                                   volume=f"{self.sonar_volume:.0%}"))
             elif e.key == pygame.K_BACKSPACE and self.station is Station.OPZ:
                 self.opz_fusion.marked.clear()
             elif e.key == pygame.K_DELETE and self.station is Station.OPZ:
@@ -2448,6 +2496,9 @@ class Game:
                 self.flash(message("runtime.telegraph", order=self.ship.telegraph), 1.5)
             elif e.key in (pygame.K_i, pygame.K_o) and self.station is Station.SONAR:
                 self._adjust_sonar_gain(-3.0 if e.key == pygame.K_i else 3.0)
+            elif e.key in (pygame.K_i, pygame.K_o) and self.station is Station.HELICOPTER and self.station_page == 3:
+                self.set_helicopter_audio_gain(config.clamp(
+                    self.helo_audition.gain_db + (-3.0 if e.key == pygame.K_i else 3.0), -12.0, 24.0))
             elif e.key == pygame.K_i and self.station is Station.OPZ:
                 if self.set_ciws_authorized(not self.ciws_authorized) is True:
                     self.flash(message(
@@ -2481,6 +2532,8 @@ class Game:
                     domain = ("air" if getattr(e, "mod", 0)
                               & pygame.KMOD_SHIFT else "surface")
                     self.toggle_radar(domain)
+                elif self.station is Station.HELICOPTER and self.station_page == 3:
+                    self.set_helicopter_listen_bearing(None)
             elif e.key == pygame.K_m:
                 if self.station in (Station.SONAR, Station.WEAPONS,
                                     Station.HELICOPTER):
@@ -2506,7 +2559,11 @@ class Game:
                     n = len(self.damage.compartments)
                     self.dmg_cursor = (self.dmg_cursor - 1) % n
                 elif self.station is Station.HELICOPTER:
-                    self._adjust_helo_waypoint(bearing_delta=-15.0)
+                    if self.station_page == 3:
+                        self.set_helicopter_listen_bearing(
+                            ((self.helo_listen_bearing or 0.0) - 5.0) % 360.0)
+                    else:
+                        self._adjust_helo_waypoint(bearing_delta=-15.0)
             elif e.key == pygame.K_RIGHT:
                 if self.station is Station.BRIDGE:
                     self.held.add(e.key)
@@ -2518,7 +2575,11 @@ class Game:
                     n = len(self.damage.compartments)
                     self.dmg_cursor = (self.dmg_cursor + 1) % n
                 elif self.station is Station.HELICOPTER:
-                    self._adjust_helo_waypoint(bearing_delta=15.0)
+                    if self.station_page == 3:
+                        self.set_helicopter_listen_bearing(
+                            ((self.helo_listen_bearing or 0.0) + 5.0) % 360.0)
+                    else:
+                        self._adjust_helo_waypoint(bearing_delta=15.0)
             elif e.key == pygame.K_c:
                 if self.station in (Station.SONAR, Station.HELICOPTER):
                     self._cycle_classification()
@@ -2552,7 +2613,13 @@ class Game:
                 if self.station is Station.SONAR:
                     self._cycle_sonar_mode()
                 elif self.station in (Station.WEAPONS, Station.HELICOPTER):
-                    self.deploy_buoys()
+                    if self.station is Station.HELICOPTER and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        self.set_helicopter_buoy_mode(
+                            "ACTIVE" if self.helo_buoy_mode == "PASSIVE" else "PASSIVE")
+                        self.flash(message("helo.buoy_mode.active" if self.helo_buoy_mode == "ACTIVE"
+                                           else "helo.buoy_mode.passive"))
+                    else:
+                        self.deploy_buoys()
                 elif self.station is Station.ELOKA:
                     self._cycle_eloka_filter("band")
             elif e.key == pygame.K_y:
@@ -2579,7 +2646,13 @@ class Game:
                 self.opz_selected_track_id = None
             elif e.key == pygame.K_d:
                 if self.station in (Station.WEAPONS, Station.HELICOPTER):
-                    self.launch_helo_torpedo()
+                    if self.station is Station.HELICOPTER and self.station_page == 3 \
+                            and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        modes = ("BROADBAND", "FILTERED", "HETERODYNE")
+                        self.set_helicopter_audio_mode(modes[
+                            (modes.index(self.helo_audition.audition_mode) + 1) % len(modes)])
+                    else:
+                        self.launch_helo_torpedo()
             elif e.key == pygame.K_v and self.station is Station.WEAPONS:
                 self.deploy_nixie()
             elif e.key in (pygame.K_u, pygame.K_v) \
@@ -2594,7 +2667,7 @@ class Game:
             elif e.key == pygame.K_e:
                 if self.station in (Station.OPZ, Station.RADAR):
                     self.launch_essm()
-                elif self.station in MAP_STATIONS:
+                elif self._map_station_visible():
                     self.map_view.set_rect(config.MAP_RECT)
                     self.map_view.zoom(config.MAP_ZOOM_WHEEL_FACTOR)
             elif e.key == pygame.K_g and self.station in (Station.OPZ,
@@ -2614,6 +2687,27 @@ class Game:
                     self.set_sonar_tma_enabled(not self.sonar.tma_enabled)
                     self.flash(message("runtime.tma.on" if self.sonar.tma_enabled
                                        else "runtime.tma.off"), 1.5)
+                elif self.station is Station.HELICOPTER:
+                    if self.station_page == 3:
+                        sources = ["DIP", *(f"SB{b.seq}" for b in self.buoys
+                                            if b.active and b.mode == "PASSIVE")]
+                        current = sources.index(self.helo_listen_source) \
+                            if self.helo_listen_source in sources else -1
+                        self.set_helicopter_listen_source(sources[(current + 1) % len(sources)])
+                        return
+                    self.helo_sensor_source = ("BUOY" if self.helo_sensor_source == "DIP"
+                                               else "DIP")
+                    if self.helo_sensor_source == "BUOY":
+                        seq = next((seq for seq in sorted(
+                            getattr(self.selected_contact, "buoy_reports", {}))
+                            if any(b.seq == seq for b in self.buoys)),
+                            self.buoys[0].seq if self.buoys else None)
+                        if seq is not None:
+                            self.set_helicopter_listen_source(f"SB{seq}")
+                    else:
+                        self.set_helicopter_listen_source("DIP")
+                    self.flash(message("helo.source.buoy" if self.helo_sensor_source == "BUOY"
+                                       else "helo.source.dip"))
             elif e.key == pygame.K_f:
                 if self.station is Station.SONAR:
                     self._cycle_sonar_band()
@@ -2631,6 +2725,20 @@ class Game:
                         self.flash(message(
                             "runtime.flak.authorized" if self.flak_authorized
                             else "runtime.flak.withheld"), 1.5)
+                elif self.station is Station.HELICOPTER:
+                    if self.station_page == 3 and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        bands = tuple(SONAR_BAND_PRESETS)
+                        self.set_helicopter_audio_band(bands[
+                            (bands.index(self.helo_audio_band) + 1) % len(bands)])
+                        return
+                    if self.selected_contact is None:
+                        return
+                    contact = self.selected_contact
+                    result = self.qualify_helicopter_contact(
+                        contact, not contact.helo_qualified)
+                    if result is True:
+                        self.flash(message("helo.contact.confirmed" if contact.helo_qualified
+                                           else "helo.contact.unconfirmed", contact=contact.id))
             elif e.key == pygame.K_k:
                 if self.station is Station.OPZ:
                     self.opz_map_follow = not self.opz_map_follow
@@ -2641,11 +2749,11 @@ class Game:
                         self.opz_map_view.clamp_center()
                     self.flash(message("runtime.map_follow.on" if self.opz_map_follow
                                        else "runtime.map_follow.off"), 1.5)
-                elif self.station in MAP_STATIONS:
+                elif self._map_station_visible():
                     self.map_follow = not self.map_follow
                     self.flash(message("runtime.map_follow.on" if self.map_follow
                                        else "runtime.map_follow.off"), 1.5)
-            elif e.key == pygame.K_q and self.station in MAP_STATIONS:
+            elif e.key == pygame.K_q and self._map_station_visible():
                 self.map_view.set_rect(config.MAP_RECT)
                 self.map_view.zoom(1.0 / config.MAP_ZOOM_WHEEL_FACTOR)
             elif e.key == pygame.K_v and self.station in (Station.BRIDGE,
@@ -2694,12 +2802,29 @@ class Game:
             self.map_view.zoom(factor, pivot=pointer)
         elif e.type == pygame.MOUSEBUTTONDOWN:
             if e.button == 1 and not self.in_menu and not self.game_over:
+                if self.station is Station.HELICOPTER and self.station_page == 3:
+                    canvas = self._window_to_canvas(getattr(e, "pos", None))
+                    hit = helicopter_acoustic_hit(self, canvas)
+                    if hit is not None:
+                        if hit[0] == "page":
+                            self.helo_acoustic_page = hit[1]
+                        elif hit[0] == "deck":
+                            self.station_page = 2
+                        elif hit[0] == "contact":
+                            self.selected_contact = next(
+                                (contact for contact in self.sonar.active_contacts()
+                                 if contact.id == hit[1]), None)
+                        else:
+                            self.set_helicopter_listen_bearing(hit[1])
+                        return
                 if (self.station is not Station.SONAR
+                        and not (self.station is Station.HELICOPTER
+                                 and self.station_page == 3)
                         and len(STATION_PAGES[self.station]) > 1
                         and not self.autocrew_overview_open):
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
                     station_rect = (config.STATION_PANEL_RECT
-                                    if self.station in MAP_STATIONS else
+                                    if self._map_station_visible() else
                                     config.OPZ_STATION_RECT
                                     if self.station is Station.OPZ else
                                     config.FULL_STATION_RECT)
@@ -2939,17 +3064,16 @@ class Game:
 
     def sonar_audio_status(self) -> dict:
         status = self.audio.availability_status()
-        muted_above_1x = self.time_scale != 1
         locally_ready = (self.station is Station.SONAR and self.sonar_audio_enabled
                          and not self.damage.station_down("sonar"))
         return dict(status, local_enabled=bool(self.sonar_audio_enabled),
                     mode=self.sonar.audition_mode, gain_db=self.sonar.gain_db,
                     band_hz=[self.sonar.band_low_hz, self.sonar.band_high_hz],
                     notch=bool(self.sonar.notch_enabled), volume=self.sonar_volume,
-                    muted_above_1x=muted_above_1x,
+                    muted_above_1x=False,
+                    stale=bool(self.audio.sonar_stale),
                     audible=bool(status["global_enabled"]
-                                 and status["device_available"] and locally_ready
-                                 and not muted_above_1x))
+                                 and status["device_available"] and locally_ready))
 
     def _cycle_sonar_band(self) -> None:
         bands = tuple(SONAR_BAND_PRESETS.values())
@@ -3146,12 +3270,84 @@ class Game:
         if self.helo.buoys_left <= 0:
             return "no_buoys"
         next_sequence = self.buoy_seq + 1
-        buoy = self.helo.deploy_buoy(next_sequence, world=self.world)
+        buoy = self.helo.deploy_buoy(next_sequence, world=self.world,
+                                    mode=getattr(self, "helo_buoy_mode", "PASSIVE"))
         if buoy is None:
             return "not_ready"
         self.buoy_seq = next_sequence
         self.buoys.append(buoy)
+        if buoy.mode == "PASSIVE" and not self.helicopter_audio_ready():
+            self.set_helicopter_listen_source(f"SB{buoy.seq}")
         return True
+
+    def set_helicopter_buoy_mode(self, mode: str):
+        if mode not in ("PASSIVE", "ACTIVE") or type(mode) is not str:
+            return "invalid_value"
+        self.helo_buoy_mode = mode
+        return True
+
+    def set_helicopter_listen_source(self, source: str):
+        if source != "DIP":
+            if (type(source) is not str or not source.startswith("SB")
+                    or not source[2:].isdigit() or len(source) > 5):
+                return "invalid_value"
+            seq = int(source[2:])
+            if not any(b.seq == seq and b.active for b in self.buoys):
+                return "stale_ref"
+        if source != self.helo_listen_source:
+            self.helo_listen_source = source
+            self.helo_receiver.reset()
+            self.helo_audition.reset_audition_audio()
+            self.helo_spectra.clear()
+            self.helo_broadband_history.clear()
+            self.helo_demon_history.clear()
+            self._helo_receiver_timer = 0.0
+        return True
+
+    def set_helicopter_listen_bearing(self, bearing):
+        if bearing is not None and (type(bearing) not in (int, float)
+                                    or not math.isfinite(bearing)
+                                    or not 0 <= bearing < 360):
+            return "invalid_value"
+        self.helo_listen_bearing = bearing
+        return True
+
+    def set_helicopter_audio_mode(self, mode: str):
+        if type(mode) is not str or not self.helo_audition.set_audition_mode(mode):
+            return "invalid_value"
+        return True
+
+    def set_helicopter_audio_band(self, preset: str):
+        band = SONAR_BAND_PRESETS.get(preset) if type(preset) is str else None
+        if band is None:
+            return "invalid_value"
+        self.helo_audition.band_low_hz, self.helo_audition.band_high_hz = band
+        self.helo_audio_band = preset
+        return True
+
+    def set_helicopter_audio_gain(self, gain_db):
+        if type(gain_db) not in (int, float) or not math.isfinite(gain_db) \
+                or not -12 <= gain_db <= 24:
+            return "invalid_value"
+        self.helo_audition.gain_db = float(gain_db)
+        return True
+
+    def set_helicopter_audio_notch(self, enabled):
+        if type(enabled) is not bool:
+            return "invalid_value"
+        self.helo_audition.notch_enabled = enabled
+        return True
+
+    def helicopter_audio_ready(self) -> bool:
+        """The selected helicopter hydrophone must be in the water."""
+        source = self.helo_listen_source
+        if source == "DIP":
+            return self.helo.dip_available and self.helo.dip_depth_m > 0.0
+        if not source.startswith("SB") or not source[2:].isdigit():
+            return False
+        seq = int(source[2:])
+        return any(b.seq == seq and b.active and b.mode == "PASSIVE"
+                   for b in self.buoys)
 
     def launch_helo_torpedo(self) -> None:
         """Leichttorpedo vom HSP-5 (eigene Munition, nicht Fregatten-Rohre)."""
@@ -3727,35 +3923,47 @@ class Game:
                     < config.SONAR_CONTACT_LOST_S):
                 continue
             observation_id = self._opz_observation_id("sonar", contact.target_id)
-            fixes = contact.active_fixes(self.sim_t)
+            fixes = tuple(fix for fix in contact.active_fixes(self.sim_t)
+                          if fix["source"] not in ("DIPPING", "SONOBUOY"))
+            ship_passive_seen = (contact._bearing_filter_t
+                                 if contact._bearing_filter_t is not None
+                                 else contact.last_seen)
+            ship_passive_current = (contact.passive_bearing is not None
+                                    and 0 <= self.sim_t - ship_passive_seen
+                                    < config.SONAR_CONTACT_LOST_S)
+            if released_only and not ship_passive_current and not fixes:
+                continue
             fix_by_source = {item["source"]: item for item in fixes}
             fix = max(fixes, key=lambda item: (item["fixed_at"], item["source"])) \
                 if fixes else None
             x = fix["x"] if fix is not None else None
             y = fix["y"] if fix is not None else None
-            observer_x, observer_y = contact.observer_x, contact.observer_y
+            observer_x = (contact.ship_observer_x
+                          if ship_passive_current and contact.ship_observer_x is not None
+                          else self.ship.x if ship_passive_current
+                          else contact.observer_x)
+            observer_y = (contact.ship_observer_y
+                          if ship_passive_current and contact.ship_observer_y is not None
+                          else self.ship.y if ship_passive_current
+                          else contact.observer_y)
             bearing_uncertainty_deg = contact.bearing_uncertainty_deg
             if x is not None and y is not None:
                 dx, dy = x - self.ship.x, y - self.ship.y
                 bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
                 range_nm = math.hypot(dx, dy)
                 source = "SONAR-" + fix["source"]
-            elif contact.passive_bearing is not None:
+            elif ship_passive_current:
                 bearing = contact.passive_bearing
                 range_nm = None
                 source = contact.passive_source
-            elif contact.dip_bearing is not None:
-                # Ship's own sonar never heard this one - only the helicopter's
-                # dip did, so the ray must originate from the helo, not the ship.
+            elif not released_only and contact.dip_bearing is not None:
                 bearing = contact.dip_bearing
                 range_nm = None
                 source = "SONAR-DIP-BRG"
                 observer_x, observer_y = contact.dip_observer_x, contact.dip_observer_y
                 bearing_uncertainty_deg = contact.dip_bearing_uncertainty_deg
             else:
-                bearing = contact.bearing
-                range_nm = None
-                source = contact.passive_source
+                continue
             course = contact.tma_course if "TMA" in fix_by_source else None
             speed = contact.tma_speed if "TMA" in fix_by_source else None
             depth = (contact.depth_est
@@ -3763,7 +3971,10 @@ class Game:
                      else None)
             observation = OPZObservation(
                 observation_id, source, "UNKNOWN", bearing, range_nm, x, y, course,
-                max(contact.quality, contact.confidence), contact.last_seen,
+                max(contact.quality, contact.confidence),
+                (fix["measured_at"] if fix is not None
+                 else ship_passive_seen if ship_passive_current
+                 else contact.last_seen),
                 self.opz_track_label(observation_id, f"K{contact.id:02d}"), (contact.player_class
                                       if contact.player_class in config.PLAYER_CLASSES
                                       else None),
@@ -3777,8 +3988,75 @@ class Game:
         return observations
 
     def private_sonar_observations(self) -> tuple[OPZObservation, ...]:
-        """All fresh hearing contacts for the private Sonar role projection."""
-        return tuple(self._sonar_opz_observations(False))
+        """Fresh private acoustic reports for role-specific projections."""
+        return tuple((*self._sonar_opz_observations(False),
+                      *self._buoy_opz_observations(released_only=False)))
+
+    def _helicopter_opz_observations(self) -> list[OPZObservation]:
+        """The helicopter's separately released, measured dip reports."""
+        reports = []
+        for _, contact in sorted(self.sonar.contacts.items()):
+            if not contact.dip_released_to_opz:
+                continue
+            passive = (contact.dip_bearing is not None
+                       and contact.dip_last_seen is not None
+                       and 0 <= self.sim_t - contact.dip_last_seen
+                       < config.SONAR_CONTACT_LOST_S)
+            fixes = [fix for fix in contact.active_fixes(self.sim_t)
+                     if fix["source"] == "DIPPING"]
+            fix = max(fixes, key=lambda item: item["fixed_at"]) if fixes else None
+            if not passive and fix is None:
+                continue
+            origin_x = contact.dip_observer_x if passive else contact.observer_x
+            origin_y = contact.dip_observer_y if passive else contact.observer_y
+            bearing = (contact.dip_bearing if passive else math.degrees(
+                math.atan2(fix["x"] - origin_x, -(fix["y"] - origin_y))) % 360.0)
+            range_nm = (None if passive else math.hypot(
+                fix["x"] - origin_x, fix["y"] - origin_y))
+            observation_id = self._opz_observation_id("sonar-dip", contact.target_id)
+            reports.append(OPZObservation(
+                observation_id,
+                "SONAR-DIP-BRG" if passive else "SONAR-DIPPING",
+                "UNKNOWN", bearing, range_nm,
+                None if passive else fix["x"],
+                None if passive else fix["y"], None,
+                max(contact.quality, contact.confidence),
+                max(contact.dip_last_seen if passive else 0.0,
+                    fix["measured_at"] if fix is not None else 0.0),
+                self.opz_track_label(observation_id, f"K{contact.id:02d} H"),
+                contact.player_class if contact.player_class in config.PLAYER_CLASSES
+                else None,
+                contact.dip_bearing_uncertainty_deg if passive else None,
+                fix["measured_at"] if not passive else None,
+                depth_m=fix["depth_m"] if not passive else None,
+                observer_x=origin_x, observer_y=origin_y,
+                released_to_opz=True))
+            self._opz_source_bindings[observation_id] = contact
+        return reports
+
+    def _buoy_opz_observations(self, released_only=True) -> list[OPZObservation]:
+        reports = []
+        for _, contact in sorted(self.sonar.contacts.items()):
+            if released_only and (not contact.helo_qualified
+                                  or not contact.buoy_released_to_opz):
+                continue
+            for seq, row in sorted(contact.buoy_reports.items()):
+                if not 0 <= self.sim_t - row["measured_at"] < config.SONAR_CONTACT_LOST_S:
+                    continue
+                observation_id = self._opz_observation_id(
+                    f"sonar-buoy-{seq}", contact.target_id)
+                reports.append(OPZObservation(
+                    observation_id, f"SONAR-BUOY-{seq:02d}-{row['mode']}", "UNKNOWN",
+                    row["bearing"], row["range_nm"], row["x"], row["y"],
+                    None, row["quality"], row["measured_at"],
+                    self.opz_track_label(observation_id, f"B{seq:02d} K{contact.id:02d}"),
+                    contact.player_class, row["bearing_uncertainty_deg"],
+                    row["measured_at"] if row["x"] is not None else None,
+                    observer_x=row["observer_x"], observer_y=row["observer_y"],
+                    released_to_opz=bool(contact.helo_qualified
+                                         and contact.buoy_released_to_opz)))
+                self._opz_source_bindings[observation_id] = contact
+        return reports
 
     def opz_source_observations(self) -> tuple[OPZObservation, ...]:
         if id(self.world) != self._opz_world_identity:
@@ -3788,6 +4066,8 @@ class Game:
             self._opz_world_identity = id(self.world)
         observations = self._detached_air_observations()
         observations.extend(self._sonar_opz_observations(True))
+        observations.extend(self._helicopter_opz_observations())
+        observations.extend(self._buoy_opz_observations())
         return tuple(sorted(observations, key=lambda item: item.observation_id))
 
     def opz_published_observations(self) -> tuple[OPZObservation, ...]:
@@ -3924,8 +4204,10 @@ class Game:
         contact.player_class = classification
         return True
 
-    def release_sonar_contact(self, contact, released: bool):
+    def release_sonar_contact(self, contact, released: bool, *, source="sonar"):
         if type(released) is not bool:
+            return "invalid_value"
+        if source not in ("sonar", "helicopter", "buoy"):
             return "invalid_value"
         if self.damage.station_down("sonar"):
             return "sonar_down"
@@ -3934,7 +4216,50 @@ class Game:
                 or not 0 <= self.sim_t - contact.last_seen
                 < config.SONAR_CONTACT_LOST_S):
             return "stale_ref"
-        contact.released_to_opz = released
+        if source == "helicopter":
+            dip_current = (contact.dip_last_seen is not None
+                           and 0 <= self.sim_t - contact.dip_last_seen
+                           < config.SONAR_CONTACT_LOST_S)
+            dip_fix = any(fix["source"] == "DIPPING"
+                          for fix in contact.active_fixes(self.sim_t))
+            if not dip_current and not dip_fix:
+                return "stale_ref"
+            if released and not contact.helo_qualified:
+                return "not_qualified"
+            contact.dip_released_to_opz = released
+        elif source == "buoy":
+            if not any(0 <= self.sim_t - row["measured_at"] < config.SONAR_CONTACT_LOST_S
+                       for row in contact.buoy_reports.values()):
+                return "stale_ref"
+            if released and not contact.helo_qualified:
+                return "not_qualified"
+            contact.buoy_released_to_opz = released
+        else:
+            contact.released_to_opz = released
+        return True
+
+    def qualify_helicopter_contact(self, contact, qualified: bool):
+        if type(qualified) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if (not isinstance(contact, Contact)
+                or self.sonar.contacts.get(contact.target_id) is not contact
+                or not 0 <= self.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S):
+            return "stale_ref"
+        if not (any(0 <= self.sim_t - row["measured_at"]
+                    < config.SONAR_CONTACT_LOST_S
+                    for row in contact.buoy_reports.values())
+                or contact.dip_last_seen is not None
+                and 0 <= self.sim_t - contact.dip_last_seen
+                < config.SONAR_CONTACT_LOST_S
+                or any(fix["source"] == "DIPPING"
+                       for fix in contact.active_fixes(self.sim_t))):
+            return "stale_ref"
+        contact.helo_qualified = qualified
+        if not qualified:
+            contact.dip_released_to_opz = False
+            contact.buoy_released_to_opz = False
         return True
 
     def classify_opz_observation(self, observation_id: str, classification):
@@ -5036,8 +5361,14 @@ class Game:
         own active/passive picture, independent of the ship's sonar picture -
         so the operator can select one and release it to CIC from here."""
         cs = sorted((c for c in self.sonar.contacts.values()
-                     if c.dip_last_seen is not None
-                     and self.sim_t - c.dip_last_seen < config.SONAR_CONTACT_LOST_S),
+                     if (c.dip_last_seen is not None
+                         and 0 <= self.sim_t - c.dip_last_seen
+                         < config.SONAR_CONTACT_LOST_S)
+                     or any(fix["source"] == "DIPPING"
+                            for fix in c.active_fixes(self.sim_t))
+                     or any(0 <= self.sim_t - row["measured_at"]
+                            < config.SONAR_CONTACT_LOST_S
+                            for row in c.buoy_reports.values())),
                     key=lambda c: c.id)
         if not cs:
             self.selected_contact = None
@@ -5070,8 +5401,14 @@ class Game:
         if contact is None:
             self.flash(message("runtime.contact.none_selected"))
             return
-        released = not contact.released_to_opz
-        if self.release_sonar_contact(contact, released) is not True:
+        helicopter = self.station is Station.HELICOPTER
+        buoy = helicopter and self.helo_sensor_source == "BUOY"
+        released = not (contact.buoy_released_to_opz if buoy else
+                        contact.dip_released_to_opz if helicopter
+                        else contact.released_to_opz)
+        if self.release_sonar_contact(contact, released,
+                                      source="buoy" if buoy else
+                                      "helicopter" if helicopter else "sonar") is not True:
             return
         self.flash(message("runtime.sonar.release" if released
                            else "runtime.sonar.withdraw",
@@ -5242,11 +5579,7 @@ class Game:
                                  time_since_launch=0.0))
 
     def update(self, dt: float, audio_dt: float | None = None) -> None:
-        """W0: Zeitraffer – sim_dt = dt * time_scale, Sub-Stepping gegen
-        Tunneling (Torpedos/CIWS) bei hohen Faktoren. Kosmetische Timer
-        (Flash, Scanline) bleiben reele Zeit (self._t). Die Audio-Cadence
-        laeuft auf audio_dt (ungeklemmte Reelle Zeit aus dem Main-Loop);
-        ohne audio_dt gilt der geklemmte dt-Rahmen."""
+        """Advance simulation in real time with bounded physics substeps."""
         wall_dt = audio_dt if audio_dt is not None else dt
         self.audio.debug_log(wall_dt, receiver=getattr(self.sonar, "receiver", None))
         if self.splash_active:
@@ -5271,14 +5604,18 @@ class Game:
             depth_dir = int(pygame.K_UP in self.held) - int(pygame.K_DOWN in self.held)
             self.torpedo_depth = config.clamp(
                 self.torpedo_depth + depth_dir * 20.0 * dt, 10.0, 300.0)
-        sim_dt = dt * self.time_scale
+        sim_dt = dt
         n = max(1, int(math.ceil(sim_dt / config.PHYS_SUBSTEP_S)))
         n = min(n, config.PHYS_SUBSTEP_MAX)
         step = sim_dt / n
+        sim_started = time.perf_counter() if self._perf_debug_enabled else None
         for _ in range(n):
             self._update_sim(step)
             if self.game_over:
                 break
+        if sim_started is not None:
+            self._perf_sim_s += time.perf_counter() - sim_started
+            self._perf_substeps += n
         self.map_view.set_rect(config.MAP_RECT)
         if self.map_follow:
             self.map_view.cx, self.map_view.cy = self.ship.x, self.ship.y
@@ -5288,47 +5625,45 @@ class Game:
             self.opz_map_view.cx, self.opz_map_view.cy = self.ship.x, self.ship.y
             self.opz_map_view.clamp_center()
         if not self.game_over:
+            audio_started = time.perf_counter() if self._perf_debug_enabled else None
             self._update_audio(wall_dt)
+            if audio_started is not None:
+                self._perf_audio_s += time.perf_counter() - audio_started
         else:
             self.audio.stop()
             self._sonar_audio_sequence = -1
 
     def _update_audio(self, dt: float) -> None:
-        """Stream opt-in sonar at 1x; continuous ambience is intentionally off."""
-        receiver = self.sonar.receiver
-        listening = (self.station is Station.SONAR and self.sonar_audio_enabled
+        """Stream opt-in sonar; there is no continuous own-ship ambience."""
+        helicopter = self.station is Station.HELICOPTER
+        receiver = self.helo_receiver if helicopter else self.sonar.receiver
+        listening = (self.helo_audio_enabled and self.helicopter_audio_ready()
+                     if helicopter else self.station is Station.SONAR
+                     and self.sonar_audio_enabled
                      and not self.damage.station_down("sonar"))
-        accelerated = self.time_scale != 1
-        if accelerated:
-            if not self._sonar_audio_suspended:
-                self.audio.stop_sonar(immediate=True)
-                self.sonar.reset_audition_audio()
-            self._sonar_audio_suspended = True
-            self._sonar_audio_sequence = receiver.sequence
+        if not listening:
+            self._stop_sonar_audio()
         else:
-            if self._sonar_audio_suspended:
-                self.audio.stop_sonar(immediate=True)
-                self.sonar.reset_audition_audio()
-                self._sonar_audio_sequence = receiver.sequence
-                self._sonar_audio_suspended = False
-            if not listening:
-                self._stop_sonar_audio()
-            else:
-                blocks = receiver.blocks_since(self._sonar_audio_sequence)
-                if not blocks:
-                    self.audio.hold_sonar()
-                for sequence, samples in blocks:
-                    if (self._sonar_audio_sequence < 0
-                            or sequence != self._sonar_audio_sequence + 1):
+            blocks = receiver.blocks_since(self._sonar_audio_sequence)
+            if not blocks:
+                self.audio.hold_sonar()
+            for sequence, samples in blocks:
+                if (self._sonar_audio_sequence < 0
+                        or sequence != self._sonar_audio_sequence + 1):
+                    if self._sonar_audio_sequence < 0:
                         self.audio.stop_sonar(immediate=True)
-                        self.sonar.reset_audition_audio()
-                    if not self.audio.play_sonar(
-                            self.sonar.listening_samples(samples, block_id=sequence),
-                            receiver.sample_rate, self.sonar_volume,
-                            bearing_deg=self.sonar.listen_bearing,
-                            listener_bearing_deg=self.ship.course):
-                        break
-                    self._sonar_audio_sequence = sequence
+                    else:
+                        self.audio.discontinue_sonar_input()
+                    (self.helo_audition if helicopter else self.sonar).reset_audition_audio()
+                if not self.audio.play_sonar(
+                        (self.helo_audition if helicopter else self.sonar).listening_samples(
+                            samples, block_id=sequence),
+                        receiver.sample_rate, self.sonar_volume,
+                        bearing_deg=0 if helicopter else self.sonar.listen_bearing,
+                        listener_bearing_deg=0 if helicopter else self.ship.course,
+                        buffered=True):
+                    break
+                self._sonar_audio_sequence = sequence
 
     def _emit_sound(self, kind: str) -> None:
         """Play locally and publish a bounded, detached browser sound cue."""
@@ -5813,6 +6148,63 @@ class Game:
                                           contact=torpedo.target.id))
         self.torpedoes = alive
 
+    def _update_helicopter_audio(self, dt: float, targets) -> None:
+        """Synthesize only presently measured helicopter channels, at 4 Hz."""
+        if (self.station is not Station.HELICOPTER
+                and not self.commander.station_leased(Station.HELICOPTER)):
+            return
+        if not self.helicopter_audio_ready():
+            return
+        self._helo_receiver_timer += dt
+        if self._helo_receiver_timer + 1e-9 < self.helo_receiver.block_s:
+            return
+        seq = (int(self.helo_listen_source[2:])
+               if self.helo_listen_source.startswith("SB") else None)
+        reports = []
+        for target in targets:
+            contact = self.sonar.contacts.get(target.id)
+            if contact is None:
+                continue
+            if seq is None:
+                if (not self.helo.dip_available or contact.dip_last_seen is None
+                        or not 0 <= self.sim_t - contact.dip_last_seen < 2.0):
+                    continue
+                bearing = contact.dip_bearing
+                quality = contact.quality
+            else:
+                row = contact.buoy_reports.get(seq)
+                if row is None or not 0 <= self.sim_t - row["measured_at"] < 2.0:
+                    continue
+                bearing = row["bearing"]
+                quality = row["quality"]
+            if bearing is None:
+                continue
+            source = dict(bearing=bearing, level=quality,
+                          lines=target.lofar_lines(self.sim_t),
+                          seed=getattr(target, "sensor_seed", target.id))
+            broadband = getattr(target, "broadband", lambda: {})()
+            if isinstance(broadband, dict) and broadband.get("level", 0) > 0:
+                source["broadband"] = broadband
+            reports.append((contact, source))
+        selected = next((row for contact, row in reports
+                         if contact is self.selected_contact), None)
+        listen_bearing = (self.helo_listen_bearing if self.helo_listen_bearing is not None
+                          else (selected or reports[0][1])["bearing"] if reports else 0.0)
+        while self._helo_receiver_timer + 1e-9 >= self.helo_receiver.block_s:
+            self._helo_receiver_timer = max(0.0, self._helo_receiver_timer
+                                            - self.helo_receiver.block_s)
+            self.helo_receiver.update(
+                [row for _, row in reports], listen_bearing, 18.0,
+                .2 if seq is None else .05,
+                getattr(self.world, "effective_sea_state", self.world.sea_state),
+                0.0)
+            self.helo_spectra.append(tuple(self.helo_receiver.spectrum))
+            del self.helo_spectra[:-128]
+            self.helo_broadband_history.append(tuple(self.helo_receiver.broadband))
+            del self.helo_broadband_history[:-128]
+            self.helo_demon_history.append(tuple(self.helo_receiver.demon_spectrum))
+            del self.helo_demon_history[:-128]
+
     def _update_sensors(self, dt: float) -> None:
         """Aktualisiert Sonar-Kontakte, TMA und Kontaktfeed."""
         if self.target is not None and self.target.target_id not in self.sonar.contacts:
@@ -5830,6 +6222,10 @@ class Game:
                 self.sonar.broadband_long_history.clear()
                 self.sonar.broadband_long_times.clear()
                 self.sonar._broadband_long_accumulator.clear()
+            self.sonar.update_dipping_passive(
+                dt, self.sim_t, self.helo, targets, self.world,
+                range_factor=self._sonar_range_factor())
+            self._update_helicopter_audio(dt, targets)
             return
         focus = (self._find_target(self.selected_contact.target_id)
                  if self.selected_contact else None)
@@ -5842,6 +6238,7 @@ class Game:
         self.sonar.update_dipping_passive(
             dt, self.sim_t, self.helo, targets, self.world,
             range_factor=self._sonar_range_factor())
+        self._update_helicopter_audio(dt, targets)
         for contact in self.sonar.active_contacts():
             bearing = (contact.passive_bearing
                        if contact.passive_bearing is not None else contact.bearing)
@@ -6151,7 +6548,7 @@ class Game:
                            weather_shift_timer=self.world.weather_shift_timer,
                            mode=self.world_mode,
                            generator=("natural-earth-v1"
-                                      if self.world_mode == "procedural"
+                                      if self.world_mode in ("procedural", "real_fixed")
                                       else "fixed-reference-v1"),
                            coast=self.world.coast.to_dict()),
             "sonar_mode": self.sonar_mode,
@@ -6359,7 +6756,8 @@ class Game:
                             target_id=(e.target.seq if e.target is not None
                                        and e.target.seq in asm_ids else None))
                       for e in self.essms],
-            "buoys": [dict(x=b.x, y=b.y, seq=b.seq, battery_s=b.battery_s)
+            "buoys": [dict(x=b.x, y=b.y, seq=b.seq, battery_s=b.battery_s,
+                           mode=b.mode, last_ping_epoch=b.last_ping_epoch)
                       for b in self.buoys],
             "flights": {
                 "seq": self.flights._seq,
@@ -6395,6 +6793,9 @@ class Game:
                         depth_est=c.depth_est, depth_sigma_m=c.depth_sigma_m,
                         player_class=c.player_class,
                         released_to_opz=c.released_to_opz,
+                        dip_released_to_opz=c.dip_released_to_opz,
+                        ship_observer_x=c.ship_observer_x,
+                        ship_observer_y=c.ship_observer_y,
                         passive_source=c.passive_source,
                         observer_x=c.observer_x, observer_y=c.observer_y,
                         signature=c.signature, snr=c.snr,
@@ -6416,6 +6817,10 @@ class Game:
                         tma_pos=c.tma_pos, tma_course=c.tma_course,
                         tma_speed=c.tma_speed, tma_quality=c.tma_quality,
                         tma_seen=c.tma_seen, buoy_fixes=list(c.buoy_fixes[-80:]),
+                        buoy_reports={str(seq): dict(report)
+                                      for seq, report in c.buoy_reports.items()},
+                        helo_qualified=c.helo_qualified,
+                        buoy_released_to_opz=c.buoy_released_to_opz,
                         fixes=[dict(fix) for fix in c.active_fixes(self.sim_t)],
                         dip_bearing=c.dip_bearing,
                         dip_bearing_uncertainty_deg=c.dip_bearing_uncertainty_deg,
@@ -6467,7 +6872,7 @@ class Game:
                 "bt_cooldown": self.sonar.bt_cooldown,
             },
             "sim_t": self.sim_t,
-            "time_scale_idx": self.time_scale_idx,
+            "time_scale_idx": config.TIME_SCALE_DEFAULT,
             "scenario_key": self.scenario_key,
             "ui": dict(
                 station=self.station.name,
@@ -6559,7 +6964,6 @@ class Game:
         coast = Coastline(coast_data, float(coast_data["world_nm"]))
         self.world_mode = w["mode"]
         self.world = World(seed=seed, coast=coast)
-        self.live_traffic.configure(self, self.world, self.preferences)
         self.world.hour = w["hour"]
         self.world.sea_state = w["sea_state"]
         self.world.weather_shift_timer = w["weather_shift_timer"]
@@ -6575,6 +6979,7 @@ class Game:
             near=(ship["x"], ship["y"]))
         self.ship = Ship(x_nm=ship["x"], y_nm=ship["y"],
                          course_deg=ship["course"])
+        self.live_traffic.configure(self, self.world, self.preferences)
         self.ship.target_course = ship["target_course"]
         self.ship.speed = ship["speed"]
         self.ship.target_speed = ship["target_speed"]
@@ -6614,8 +7019,7 @@ class Game:
         self.score = data["score"]
         self.incident = data["incident"]
         self.sim_t = data["sim_t"]
-        saved_scale_idx = data["time_scale_idx"]
-        self.time_scale_idx = saved_scale_idx
+        self.time_scale_idx = config.TIME_SCALE_DEFAULT
         self.scenario_key = data["scenario_key"]
         self.level = data["level"]
         tp = data["torpedoes"]
@@ -6739,6 +7143,19 @@ class Game:
         self.messages = [tuple(m) for m in data["messages"]]
         self.buoys = []
         self.buoy_seq = data["buoy_seq"]
+        self.helo_buoy_mode = "PASSIVE"
+        self.helo_sensor_source = "DIP"
+        self.helo_listen_source = "DIP"
+        self.helo_listen_bearing = None
+        self.helo_audio_enabled = True
+        self.helo_audio_band = "FULL"
+        self.helo_acoustic_page = 1
+        self.helo_audition = SonarSystem(seed=self.seed + 45678, acoustic_profiles=())
+        self.helo_receiver = AcousticReceiver(seed=seed + 45677)
+        self.helo_spectra = []
+        self.helo_broadband_history = []
+        self.helo_demon_history = []
+        self._helo_receiver_timer = 0.0
         self.asms = []
         self.essms = []
         self.chaff_cd = data["chaff_cd"]
@@ -7013,9 +7430,15 @@ class Game:
             self.essms.append(essm)
         self.asm_seq = data["asm_seq"]
         for bd in data["buoys"]:
-            b = Sonobuoy(bd["x"], bd["y"], bd["seq"])
+            b = Sonobuoy(bd["x"], bd["y"], bd["seq"], bd.get("mode", "PASSIVE"))
             b.battery_s = bd["battery_s"]
+            b.last_ping_epoch = bd.get("last_ping_epoch", -1)
             self.buoys.append(b)
+        if not self.helicopter_audio_ready():
+            passive = next((b for b in sorted(self.buoys, key=lambda item: item.seq)
+                            if b.active and b.mode == "PASSIVE"), None)
+            if passive is not None:
+                self.helo_listen_source = f"SB{passive.seq}"
         flight_data = data["flights"]
         bases = {b["id"]: b for b in self.world.coast.airbases}
         restored = []
@@ -7064,6 +7487,9 @@ class Game:
                 c.depth_sigma_m = cd.get("depth_sigma_m")
                 c.player_class = cd.get("player_class")
                 c.released_to_opz = cd["released_to_opz"]
+                c.dip_released_to_opz = cd.get("dip_released_to_opz", False)
+                c.ship_observer_x = cd.get("ship_observer_x")
+                c.ship_observer_y = cd.get("ship_observer_y")
                 c.passive_source = cd["passive_source"]
                 c.observer_x, c.observer_y = cd["observer_x"], cd["observer_y"]
                 c.signature = cd.get("signature", "")
@@ -7093,6 +7519,10 @@ class Game:
                 c.tma_quality = cd.get("tma_quality", 0.0)
                 c.tma_seen = cd.get("tma_seen", c.range_seen if c.range_source == "tma" else None)
                 c.buoy_fixes = [tuple(row) for row in cd.get("buoy_fixes", [])]
+                c.buoy_reports = {int(seq): dict(row) for seq, row in
+                                  cd.get("buoy_reports", {}).items()}
+                c.helo_qualified = cd.get("helo_qualified", False)
+                c.buoy_released_to_opz = cd.get("buoy_released_to_opz", False)
                 c.fixes = {fix["source"]: dict(fix) for fix in cd["fixes"]}
                 c.dip_bearing = cd.get("dip_bearing")
                 c.dip_bearing_uncertainty_deg = cd.get("dip_bearing_uncertainty_deg")
@@ -7567,6 +7997,44 @@ class Game:
             contact.update(dip_bearing=None, dip_bearing_uncertainty_deg=None,
                           dip_last_seen=None, dip_observer_x=None,
                           dip_observer_y=None)
+        return upgraded
+
+    @staticmethod
+    def _upgrade_pre_dip_release_v10(data):
+        """Canonicalize exact earlier rows without independent sensor origins."""
+        if not isinstance(data, dict):
+            return data
+        sonar = data.get("sonar")
+        contacts = sonar.get("contacts") if isinstance(sonar, dict) else None
+        if not isinstance(contacts, dict) or not contacts:
+            return data
+        current_fields = {
+            "contact_id", "target_id", "origin", "kind", "bearing",
+            "range_est", "range_sigma_nm", "range_source", "range_seen",
+            "confidence", "quality", "last_seen", "depth_est",
+            "depth_sigma_m", "player_class", "signature", "snr",
+            "passive_bearing", "raw_bearing", "raw_bearings", "passive_epoch",
+            "bearing_filter_t", "bearing_filter_rate_deg_s",
+            "bearing_filter_uncertainty_deg", "bearing_uncertainty_deg",
+            "ping_pos", "observed_x", "observed_y", "array_observations",
+            "fusion_status", "fusion_delta_deg", "fused_quality", "tma_pos",
+            "tma_course", "tma_speed", "tma_quality", "tma_seen",
+            "buoy_fixes", "fixes", "released_to_opz", "passive_source",
+            "observer_x", "observer_y", "dip_bearing",
+            "dip_bearing_uncertainty_deg", "dip_last_seen",
+            "dip_observer_x", "dip_observer_y",
+        }
+        # The existing upgrader above has supplied the five dip measurement
+        # fields. Earlier rows lack the separate release and ship-origin fields.
+        if (any(not isinstance(row, dict) or set(row) not in (
+                    current_fields, current_fields | {"dip_released_to_opz"})
+                       for row in contacts.values())):
+            return data
+        upgraded = copy.deepcopy(data)
+        for row in upgraded["sonar"]["contacts"].values():
+            row.setdefault("dip_released_to_opz", False)
+            row["ship_observer_x"] = row["observer_x"] if row["passive_bearing"] is not None else None
+            row["ship_observer_y"] = row["observer_y"] if row["passive_bearing"] is not None else None
         return upgraded
 
     @staticmethod
@@ -8533,13 +9001,19 @@ class Game:
         buoy_ids = set()
         for buoy in buoys:
             if (not isinstance(buoy, dict)
-                    or set(buoy) != {"x", "y", "seq", "battery_s"}
+                    or set(buoy) not in ({"x", "y", "seq", "battery_s"},
+                                         {"x", "y", "seq", "battery_s",
+                                          "mode", "last_ping_epoch"})
                     or not bounded(buoy.get("x"), -1_000_000, 1_000_000)
                     or not bounded(buoy.get("y"), -1_000_000, 1_000_000)
                     or not identity(buoy.get("seq"))
                     or buoy["seq"] in buoy_ids
                     or not bounded(buoy.get("battery_s"), .000001,
-                                   config.BUOY_BATTERY_S)):
+                                   config.BUOY_BATTERY_S)
+                    or buoy.get("mode", "PASSIVE") not in ("PASSIVE", "ACTIVE")
+                    or type(buoy.get("last_ping_epoch", -1)) is not int
+                    or not -1 <= buoy.get("last_ping_epoch", -1)
+                    <= int(save_sim_t // config.BUOY_PING_COOLDOWN_S)):
                 return False
             buoy_ids.add(buoy["seq"])
         if (isinstance(helo, dict)
@@ -8727,9 +9201,9 @@ class Game:
         world_fields = {"hour", "sea_state", "weather_shift_timer", "mode",
                         "generator", "coast"}
         if (not isinstance(world, dict) or set(world) != world_fields
-                or world["mode"] not in ("fixed", "procedural")
+                or world["mode"] not in ("fixed", "procedural", "real_fixed")
                 or world["generator"] != (
-                    "natural-earth-v1" if world["mode"] == "procedural"
+                    "natural-earth-v1" if world["mode"] in ("procedural", "real_fixed")
                     else "fixed-reference-v1")
                 or not bounded(world["hour"], 0.0, 24.0)
                 or world["hour"] == 24.0
@@ -8825,10 +9299,44 @@ class Game:
             if not isinstance(contact, dict):
                 return False
             if (type(contact.get("released_to_opz")) is not bool
+                    or type(contact.get("dip_released_to_opz", False)) is not bool
+                    or type(contact.get("helo_qualified", False)) is not bool
+                    or type(contact.get("buoy_released_to_opz", False)) is not bool
+                    or ((contact.get("ship_observer_x") is None)
+                        != (contact.get("ship_observer_y") is None))
+                    or (contact.get("ship_observer_x") is not None
+                        and (not bounded(contact["ship_observer_x"], -1_000_000, 1_000_000)
+                             or not bounded(contact["ship_observer_y"], -1_000_000, 1_000_000)))
                     or contact.get("passive_source") not in (
                         "SONAR-BRG", "SONAR-DIP-BRG")
                     or not bounded(contact.get("observer_x"), -1_000_000, 1_000_000)
                     or not bounded(contact.get("observer_y"), -1_000_000, 1_000_000)):
+                return False
+            buoy_reports = contact.get("buoy_reports", {})
+            report_fields = {"mode", "bearing", "bearing_uncertainty_deg",
+                             "quality", "measured_at", "observer_x", "observer_y",
+                             "range_nm", "x", "y"}
+            if (not isinstance(buoy_reports, dict)
+                    or len(buoy_reports) > config.BUOY_COUNT
+                    or any(type(key) is not str or not key.isdecimal()
+                           or int(key) not in buoy_ids
+                           or not isinstance(row, dict) or set(row) != report_fields
+                           or row["mode"] not in ("PASSIVE", "ACTIVE")
+                           or not bounded(row["bearing"], 0, 360)
+                           or row["bearing"] == 360
+                           or not bounded(row["bearing_uncertainty_deg"], 0, 180)
+                           or not bounded(row["quality"], 0, 1)
+                           or not bounded(row["measured_at"], 0, save_sim_t)
+                           or not bounded(row["observer_x"], -1_000_000, 1_000_000)
+                           or not bounded(row["observer_y"], -1_000_000, 1_000_000)
+                           or (row["mode"] == "PASSIVE" and any(
+                               row[field] is not None for field in ("range_nm", "x", "y")))
+                           or (row["mode"] == "ACTIVE" and any(
+                               not bounded(row[field], -1_000_000, 1_000_000)
+                               for field in ("x", "y")))
+                           or (row["mode"] == "ACTIVE" and not bounded(
+                               row["range_nm"], 0, config.BUOY_RANGE_NM + .25))
+                           for key, row in buoy_reports.items())):
                 return False
             reports = contact.get("array_observations", {})
             if not isinstance(reports, dict) or not set(reports) <= {"BOW", "TOWED"}:
@@ -9041,10 +9549,38 @@ class Game:
                 data = self._upgrade_pre_ownship_fuel_v10(data)
                 data = self._upgrade_pre_autocrew_v10(data)
                 data = self._upgrade_pre_helo_dip_bearing_v10(data)
+                data = self._upgrade_pre_dip_release_v10(data)
                 data = self._upgrade_pre_torpedo_spoolup_v10(data)
                 data = self._upgrade_pre_depth_inertia_v10(data)
+            # Exact same-version predecessor: no helicopter buoy receiver state.
+            if isinstance(data, dict) and isinstance(data.get("sonar"), dict):
+                contacts = data["sonar"].get("contacts")
+                buoys = data.get("buoys")
+                added_contact = {"buoy_reports", "helo_qualified",
+                                 "buoy_released_to_opz"}
+                if (isinstance(contacts, dict) and all(isinstance(row, dict)
+                        and not (set(row) & added_contact)
+                        for row in contacts.values())
+                        and isinstance(buoys, list) and all(isinstance(row, dict)
+                        and not (set(row) & {"mode", "last_ping_epoch"})
+                        for row in buoys)):
+                    data = copy.deepcopy(data)
+                    for row in data["sonar"]["contacts"].values():
+                        row.update(buoy_reports={}, helo_qualified=False,
+                                   buoy_released_to_opz=False)
+                    for row in data["buoys"]:
+                        row.update(mode="PASSIVE", last_ping_epoch=-1)
             data = self._upgrade_pre_opz_map_current_save(data)
+            if (not isinstance(data, dict)
+                    or type(data.get("time_scale_idx")) is not int
+                    or not 0 <= data["time_scale_idx"] < 6):
+                return False
             runtime_catalog = self._catalog_for_save(data)
+            # Earlier saves may have been written while accelerated. Keep the
+            # save shape, but resume every accepted game at real-time speed.
+            if set(data) == SAVE_ROOT_FIELDS and data["time_scale_idx"] > 0:
+                data = copy.deepcopy(data)
+                data["time_scale_idx"] = config.TIME_SCALE_DEFAULT
         except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
             return False
         legacy_esm_fields = {
@@ -9197,6 +9733,17 @@ class Game:
 
         upper = 1_000_000_000
         rng = random.SystemRandom()
+        if self.world_mode == "real_fixed":
+            # Change the mission seed while keeping the selected sector.
+            sector = self.seed % 128
+            low = 1 if sector == 0 else 0
+            high = (upper - 1 - sector) // 128 + 1
+            old_seed = self.seed
+            candidate = rng.randrange(low, high - 1)
+            if sector + 128 * candidate >= old_seed:
+                candidate += 1
+            self.seed = sector + 128 * candidate
+            return
         if 1 <= self.seed < upper:
             candidate = rng.randrange(1, upper - 1)
             if candidate >= self.seed:
@@ -9231,8 +9778,18 @@ class Game:
             self.toggle_fullscreen()
             return
         if key == pygame.K_w:
-            self.world_mode = ("fixed" if self.world_mode == "procedural"
-                               else "procedural")
+            self.world_mode = {"procedural": "fixed", "fixed": "real_fixed",
+                               "real_fixed": "procedural"}[self.world_mode]
+            return
+        if self.world_mode == "real_fixed" and key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+            delta = -1 if key == pygame.K_PAGEUP else 1
+            sector = (self.seed % 128 + delta) % 128
+            candidate = self.seed - self.seed % 128 + sector
+            if candidate == 0:
+                candidate += 128
+            elif candidate >= 1_000_000_000:
+                candidate -= 128
+            self.seed = candidate
             return
         if key == pygame.K_r:
             self._reroll_menu_seed()
@@ -9379,10 +9936,13 @@ class Game:
             center(self.tr("menu.start_hint"), 520,
                    color=config.COLOR_TEXT_DIM)
 
-        if self.world_mode == "procedural":
+        if self.world_mode in ("procedural", "real_fixed"):
             from src.world.real_coast import sector_for_seed
             sector, _ = sector_for_seed(self.seed)
             world_label = sector["name"]
+            if self.world_mode == "real_fixed":
+                center(self.tr("menu.real_fixed_hint", sector=sector["id"]),
+                       config.SCREEN_H - 95, color=config.COLOR_TEXT_DIM)
         else:
             world_label = self.tr("menu.fixed_chart")
         center(self.tr("menu.world_status", world=world_label, seed=self.seed),
@@ -9467,8 +10027,7 @@ class Game:
         else:
             self.draw_top_bar()
             map_station = (not self.autocrew_overview_open
-                           and self.station in (Station.BRIDGE, Station.WEAPONS,
-                                                Station.HELICOPTER))
+                           and self._map_station_visible())
             previous_rect = config.STATION_RECT
             try:
                 config.STATION_RECT = (config.STATION_PANEL_RECT if map_station else
@@ -9582,16 +10141,9 @@ class Game:
                       course=f"{self.ship.course:4.0f}")
         if self.paused:
             txt += "   || PAUSE"
-        x = 920
-        layout.blit_line(s, txt, (10, 4, x - 24, config.TOP_BAR_H - 8),
+        layout.blit_line(s, txt, (10, 4, config.SCREEN_W - 20,
+                                  config.TOP_BAR_H - 8),
                          config.COLOR_TEXT, size=18)
-        for i, ts in enumerate(config.TIME_SCALE_STEPS):
-            col = config.COLOR_TEXT if i == self.time_scale_idx \
-                else config.COLOR_TEXT_DIM
-            layout.blit_line(s, f"{ts}x", (x + i * 50, 4, 48, config.TOP_BAR_H - 8),
-                             col, size=16)
-        layout.blit_line(s, "control.help.time_keys", (x + len(config.TIME_SCALE_STEPS) * 50, 4,
-                                   40, config.TOP_BAR_H - 8), config.COLOR_TEXT_DIM, size=14)
 
     @localized
     def draw_bottom_feed(self) -> None:
@@ -9645,7 +10197,6 @@ class Game:
              f"{self.vls_loadout_total} / {self.chaff_cd:.0f}s"),
             ("telemetry.helo_roe", ("AN" if self.helo.airborne else "Hangar")
                           + f"  |  ROE {self.roe}"),
-            ("telemetry.time_scale", f"x{self.time_scale}  ([ / ])"),
         ]
         ly = y + 26
         for label, val in rows:
@@ -9706,28 +10257,42 @@ class Game:
         by = (config.SCREEN_H - bh) // 2
         pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
-        s.blit(self.menu_font_big.render(localize("NATIONEN & EINHEITEN"), True, config.COLOR_TEXT),
-               (bx + 18, by + 12))
+        layout.blit_line(s, "panel.nations", (bx + 18, by + 12, bw - 36, 38),
+                         config.COLOR_TEXT, size=30)
+        summary = getattr(self, "_nations_summary", None)
+        if summary is None:
+            summary = reference_summary(self.world.coast, self.runtime_catalog)
+            self._nations_summary = summary
+        legacy_country_names = {
+            "HANSE": "nations.country.hanse",
+            "BOREN": "nations.country.boren",
+            "SKANDIA": "nations.country.skandia",
+        }
+        countries = ", ".join(self.tr(legacy_country_names[c])
+                              if c in legacy_country_names else c
+                              for c in summary["countries"]) or self.tr("nations.none")
+        cards = (
+            ("nations.area", self.tr("nations.countries", countries=countries)
+             + "\n\n" + self.tr("nations.reference_note"), config.COLOR_FLIGHT),
+            ("nations.friendly", "\n".join(summary["friendly"]), config.COLOR_OK),
+            ("nations.hostile", self.tr("nations.subs", count=len(summary["hostile_subs"]))
+             + "\n" + ", ".join(summary["hostile_subs"])
+             + "\n\n" + self.tr("nations.surfaces", count=len(summary["hostile_surfaces"]))
+             + "\n" + ", ".join(summary["hostile_surfaces"]), config.COLOR_DANGER),
+            ("nations.other", self.tr("nations.neutral_military", count=summary["neutral_military"])
+             + "\n\n" + self.tr("nations.civilian", count=summary["civilian"])
+             + "\n\n" + self.tr("nations.catalog_hint"), config.COLOR_CONTACT_ZIVIL),
+        )
         cw, ch = 520, 260
-        for i, key in enumerate(list(NATIONS.keys())[:4]):
-            n = NATIONS[key]
+        for i, (title, body, color) in enumerate(cards):
             cx = bx + 18 + (i % 2) * (cw + 14)
             cyy = by + 52 + (i // 2) * (ch + 12)
             pygame.draw.rect(s, (14, 24, 18), (cx, cyy, cw, ch))
-            pygame.draw.rect(s, n["color"], (cx, cyy, cw, ch), 1)
-            layout.blit_line(s, message(
-                "nations.card_title", flag=n["flag"], name=localize(n["name"]),
-                status=self.tr("nations.hostile") if n["hostile"] else ""),
-                (cx + 12, cyy + 8, cw - 24, 36), n["color"], size=24)
-            layout.blit_block(s, n["desc"], cx + 12, cyy + 50, cw - 24, 124,
+            pygame.draw.rect(s, color, (cx, cyy, cw, ch), 1)
+            layout.blit_line(s, title, (cx + 12, cyy + 8, cw - 24, 36), color, size=24)
+            layout.blit_block(s, body, cx + 12, cyy + 50, cw - 24, ch - 58,
                               color=config.COLOR_TEXT, size=18)
-            layout.blit_line(s, message(
-                "nations.radar_value", radar=localize(n["radar"])),
-                (cx + 12, cyy + 190, cw - 24, 24), config.COLOR_TEXT_DIM, size=18)
-            layout.blit_line(s, message(
-                "nations.submarine_count", count=n["submarines"]),
-                (cx + 12, cyy + 216, cw - 24, 24), config.COLOR_TEXT_DIM, size=18)
-        layout.blit_line(s, "N: schließen", (bx + bw - 160, by + bh - 30, 140, 24),
+        layout.blit_line(s, "nations.close", (bx + bw - 160, by + bh - 30, 140, 24),
                          config.COLOR_TEXT_DIM, size=16, align="right")
 
     @localized
@@ -9970,6 +10535,46 @@ class Game:
 
     # --- Main loop ---
 
+    def _perf_debug_log(self, wall_dt: float) -> None:
+        """Optional 1 Hz diagnostics line, enabled via U_JAGD_PERF_DEBUG=1.
+
+        Appends bounded per-frame-average phase timings (physics substeps,
+        audio publish, Remote Crew pump, draw/compose) to perf_debug.log
+        inside the save directory, for on-device (uConsole) CPU diagnosis.
+        Purely measures wall time already spent in existing calls; never
+        alters simulation timing, input, or rendering. No-op unless enabled.
+        """
+        if not self._perf_debug_enabled:
+            return
+        try:
+            wall_dt = float(wall_dt)
+        except (TypeError, ValueError, OverflowError):
+            return
+        if not math.isfinite(wall_dt) or wall_dt <= 0.0:
+            return
+        self._perf_frames += 1
+        self._perf_debug_due += wall_dt
+        if self._perf_debug_due < 1.0:
+            return
+        self._perf_debug_due %= 1.0
+        frames = self._perf_frames
+        line = ("t={t:.1f} fps={fps} substeps_avg={sub:.2f} sim_ms={sim:.2f} "
+                "audio_ms={audio:.2f} commander_ms={cmd:.2f} "
+                "draw_ms={draw:.2f}\n").format(
+            t=time.monotonic(), fps=frames, sub=self._perf_substeps / frames,
+            sim=1000 * self._perf_sim_s / frames,
+            audio=1000 * self._perf_audio_s / frames,
+            cmd=1000 * self._perf_commander_s / frames,
+            draw=1000 * self._perf_draw_s / frames)
+        append_bounded_log(config.SAVE_DIR, "perf_debug.log", line,
+                           config.PERF_DEBUG_LOG_MAX_BYTES)
+        self._perf_frames = 0
+        self._perf_sim_s = 0.0
+        self._perf_substeps = 0
+        self._perf_audio_s = 0.0
+        self._perf_commander_s = 0.0
+        self._perf_draw_s = 0.0
+
     def run(self) -> None:
         try:
             while self.running:
@@ -9981,16 +10586,31 @@ class Game:
                 dt = min(wall_dt, 0.1)
                 self._t += dt
                 for e in pygame.event.get():
-                    self.handle_event(e)
-                    if e.type in _ECO_REFRESH_EVENTS:
-                        self._eco_drawn_at = float("-inf")
+                    if not self.web_mode:
+                        self.handle_event(e)
+                        if e.type in _ECO_REFRESH_EVENTS:
+                            self._eco_drawn_at = float("-inf")
+                commander_started = (time.perf_counter()
+                                     if self._perf_debug_enabled else None)
                 self.commander.pump(self)
+                if commander_started is not None:
+                    self._perf_commander_s += time.perf_counter() - commander_started
+                if (self.web_mode and not self.in_menu and not self.main_menu
+                        and not self.game_over and self.commander.server is not None
+                        and not self.commander.server.web_host_present()):
+                    self.set_paused(True)
                 self.live_traffic.pump(self)
                 self.update(dt, audio_dt=wall_dt)
+                self._perf_debug_log(wall_dt)
+                if self.web_mode:
+                    continue
                 if self._skip_eco_frame():
                     continue
+                draw_started = time.perf_counter() if self._perf_debug_enabled else None
                 self.draw()
                 self.compose_frame()
+                if draw_started is not None:
+                    self._perf_draw_s += time.perf_counter() - draw_started
         finally:
             try:
                 self.commander.stop()

@@ -16,57 +16,6 @@ def tone(frequency_hz: float, duration_s: float, sample_rate: int,
     return np.clip(signal * amplitude * envelope, -1.0, 1.0).astype(np.float32)
 
 
-def propeller_block(rpm: float, blade_count: int, sample_rate: int,
-                     duration_s: float = 0.25, amplitude: float = 0.12,
-                     cavitation: float = 0.0, phase: float = 0.0,
-                     seed: int = 17,
-                     rng: np.random.Generator | None = None,
-                     filter_state: np.ndarray | None = None,
-                     shaft_phase: float | None = None) -> np.ndarray:
-    """Synthese aus Blattfrequenz, Obertoenen und gefilterter Kavitation.
-
-    ``phase`` ist die Blattphasenlage am Blockanfang. Fuer lueckenlose Folgen
-    wird sie je Block um ``2*pi*blade_hz*len(block)/sample_rate`` erhoeht.
-    Wrapped blade phase needs an independent ``shaft_phase`` advanced by
-    ``2*pi*(blade_hz/blade_count)*len(block)/sample_rate``. If omitted, phase
-    must be unwrapped (the historical one-shot/continuous synthesis API).
-    """
-    count = max(1, int(duration_s * sample_rate))
-    t = np.arange(count, dtype=np.float64) / sample_rate
-    blade_hz = max(0.1, rpm / 60.0 * max(1, blade_count))
-    blade_phase = 2.0 * math.pi * blade_hz * t + phase
-    # Uneven harmonic strengths and slow loading variation sound less static
-    # while every component remains phase-continuous at block boundaries.
-    signal = np.sin(blade_phase)
-    signal += 0.34 * np.sin(2.0 * blade_phase + 0.2)
-    signal += 0.16 * np.sin(3.0 * blade_phase - 0.35)
-    shaft = (blade_phase / max(1, blade_count) if shaft_phase is None else
-             2 * math.pi * blade_hz / max(1, blade_count) * t + shaft_phase)
-    signal *= 0.92 + 0.08 * np.sin(shaft + 0.7)
-    if cavitation > 0.0:
-        taps = np.array([.08, .16, .24, .24, .16, .08])
-        if rng is None:
-            noise = np.random.default_rng(seed).normal(0.0, 1.0, count + 8)
-            noise = np.convolve(noise, taps, mode="valid")[:count]
-        else:
-            raw = rng.normal(0.0, 1.0, count)
-            history = np.zeros(taps.size - 1) if filter_state is None \
-                else np.asarray(filter_state, dtype=np.float64)
-            if history.shape != (taps.size - 1,):
-                raise ValueError("filter_state has an incompatible shape")
-            noise = np.convolve(np.concatenate((history, raw)), taps,
-                                mode="valid")
-            if filter_state is not None:
-                filter_state[:] = np.concatenate((history, raw))[-history.size:]
-        # A short FIR removes the brittle white-noise edge while retaining
-        # the impulsive broadband character of cavitation.
-        bursts = np.maximum(0.0, np.sin(blade_phase - 0.8)) ** 3
-        signal += min(0.7, cavitation) * noise * (0.35 + 0.65 * bursts)
-    # A fixed gain, rather than per-block normalization, preserves amplitude
-    # and waveform continuity when adjacent blocks have different extrema.
-    return np.clip(signal * amplitude / 1.75, -1.0, 1.0).astype(np.float32)
-
-
 def fm_chirp(start_hz: float, end_hz: float, duration_s: float,
              sample_rate: int, amplitude: float = 0.2,
              modulation_hz: float = 0.0, modulation_depth_hz: float = 0.0,
@@ -179,40 +128,6 @@ def combat_effect(kind: str, sample_rate: int,
     edge = min(count // 2, max(1, round(.006 * sample_rate)))
     signal[:edge] *= np.linspace(0.0, 1.0, edge)
     signal[-edge:] *= np.linspace(1.0, 0.0, edge)
-    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
-
-
-def helicopter_block(sample_rate: int, amplitude: float = .12,
-                     phase: float = 0.0, rotor_hz: float = 4.8,
-                     duration_s: float = .25) -> np.ndarray:
-    """Phase-continuous rotor/gearbox block for a nearby helicopter."""
-    count = max(1, int(duration_s * sample_rate))
-    t = np.arange(count, dtype=np.float64) / sample_rate
-    blade_phase = 2 * np.pi * rotor_hz * 4 * t + phase
-    slap = np.sin(blade_phase) + .42 * np.sin(2 * blade_phase + .25)
-    slap += .18 * np.sin(3 * blade_phase - .4)
-    loading = .82 + .18 * np.sin(blade_phase / 4 + .7)
-    gearbox = .16 * np.sin(2 * np.pi * 690.0 * t + phase * .13)
-    signal = amplitude * (slap * loading / 1.6 + gearbox)
-    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
-
-
-def ship_ambience_block(sample_rate: int, sea_state: float = 0.0,
-                        rain: float = 0.0, amplitude: float = .04,
-                        phase: float = 0.0,
-                        duration_s: float = .25) -> np.ndarray:
-    """Phase-continuous hull, ventilation, sea and rain ambience."""
-    count = max(1, int(duration_s * sample_rate))
-    t = np.arange(count, dtype=np.float64) / sample_rate
-    sea = float(np.clip(sea_state, 0.0, 6.0)) / 6.0
-    rain_level = float(np.clip(rain, 0.0, 1.0))
-    base = 2 * np.pi * 31.0 * t + phase
-    ventilation = .55 * np.sin(base) + .25 * np.sin(base * 1.47 + .8)
-    hull = sea * (.42 * np.sin(base * .31 + 1.1)
-                  + .26 * np.sin(base * .73 - .4))
-    weather = rain_level * (.25 * np.sin(base * 13.7 + .2)
-                            + .18 * np.sin(base * 21.3 - .6))
-    signal = amplitude * (ventilation + hull + weather)
     return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
 
 

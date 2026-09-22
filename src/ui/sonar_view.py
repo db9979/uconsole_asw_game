@@ -1476,7 +1476,7 @@ def draw_sonar_view(game, tr=None) -> None:
             local_enabled=bool(getattr(game, "sonar_audio_enabled", False)),
             mode=getattr(sonar, "audition_mode", "BROADBAND"),
             volume=float(getattr(game, "sonar_volume", 0.0)),
-            muted_above_1x=getattr(game, "time_scale", 1) != 1,
+            muted_above_1x=False,
             audible=False))
         statuses = (
             localize(message("sonar.status.array", array=display_value("array", mode),
@@ -1497,12 +1497,9 @@ def draw_sonar_view(game, tr=None) -> None:
                              device=localize("ui.on" if audio["device_available"] else "ui.off"),
                              local_state=localize("ui.on" if audio["local_enabled"] else "ui.off"),
                              volume=f"{audio['volume']:.0%}",
-                              state=localize(message(
-                                  "sonar.audio.muted_accelerated",
-                                  scale=f"{getattr(game, 'time_scale', 1):g}"))
-                              if audio["muted_above_1x"] else localize(
-                                  "sonar.audio.audible" if audio["audible"]
-                                  else "sonar.audio.silent"))),
+                              state=localize("sonar.audio.stale" if audio.get("stale")
+                                             else "sonar.audio.audible" if audio["audible"]
+                                             else "sonar.audio.silent"))),
         )
         status_w = (station.w - 28) // len(statuses)
         for i, status in enumerate(statuses):

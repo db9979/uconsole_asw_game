@@ -136,10 +136,15 @@
   let sonarAudioTimer = null;
   let sonarAudioSequence = null;
   let sonarAudioNextTime = 0;
+  let helicopterAudioSource = null;
   let sonarAudioSources = [];
   let sonarAudioGain = null;
   let sonarAudioHighpass = null;
   let sonarAudioLowpass = null;
+  let sonarAudioWorklet = null;
+  let sonarAudioSocket = null;
+  let sonarAudioReconnect = null;
+  let sonarAudioMetrics = {buffered: 0, gaps: 0, repeats: 0, stale: false};
   let gameSoundContext = null;
   let gameSoundHighWater = 0;
   const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry"]);
@@ -170,15 +175,18 @@
   let latestSimlogState = null;
   const simlogMapCanvas = $("simlog-map");
   const simlogMapCtx = simlogMapCanvas.getContext("2d");
+  const roleMapSweepCanvas = $("role-map-sweep");
+  const roleMapSweepCtx = roleMapSweepCanvas.getContext("2d");
   let simlogMapData = null;
   let simlogMapSeq = null;
   let simlogMapLatest = false;
   let simlogMapFit = "world";
   let simlogMapDrawQueued = false;
-  const visualCanvasIds = ["role-map", "sonar-broadband", "sonar-lofar", "sonar-spectrum",
+  const visualCanvasIds = ["role-map", "role-map-sweep", "sonar-broadband", "sonar-lofar", "sonar-spectrum",
     "sonar-band-low", "sonar-band-mid", "sonar-band-high", "sonar-demon", "sonar-demon-spectrum",
     "sonar-tma-plot", "sonar-environment", "sonar-active", "sonar-a-scan", "damage-schematic",
-    "engine-instruments", "eloka-scope", "weapons-system"];
+    "engine-instruments", "eloka-scope", "weapons-system", "helicopter-broadband-canvas",
+    "helicopter-lofar-canvas", "helicopter-demon-canvas"];
   const mapRoles = new Set(["bridge", "weapons", "opz", "radio", "helicopter"]);
   const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
   const roleMapViews = Object.fromEntries([...mapRoles].map((role) => [role, {x: 250, y: 250, zoom: 1}]));
@@ -187,6 +195,8 @@
   let damageHits = [];
   const defaultSonarPage = () => matchMedia("(min-width: 851px)").matches ? "overview" : "broadband";
   let sonarVisualPage = defaultSonarPage();
+  let helicopterVisualPage = "acoustic";
+  let helicopterPlot = "lofar";
   // The browser runs on a desktop PC: on a wide screen the overview shows all six
   // plots at once, otherwise the four that matter most.
   const wideScreen = matchMedia("(min-width: 1800px) and (min-height: 850px)");
@@ -234,18 +244,30 @@
     chart.revision === state.chart_revision;
   const authenticated = () => session !== null;
 
-  const sonarAudioAuthorized = () => connected && !document.hidden && navigator.onLine !== false &&
-    session?.station === "sonar" && session.grants.sonar_audio === true && v2State?.role === "sonar" &&
-    v2State.phase === "live" && v2State.clock?.time_scale === 1 && v2State.sonar?.settings?.station_down === false;
+  // State polling and browser network hints can fail while the dedicated audio
+  // request still works. The audio endpoint rechecks the session on every block.
+  const sonarAudioAuthorized = () => !document.hidden &&
+    ["sonar", "helicopter"].includes(session?.station) && session.grants.sonar_audio === true &&
+    v2State?.role === session.station && v2State.phase === "live" &&
+    v2State.sonar?.settings?.station_down !== true &&
+    (session.station !== "helicopter" || v2State.helicopter?.acoustic?.ready === true);
   // Blocks arrive at real-time rate, so the standing buffer is the start lead. It
   // must outlast a browser main-thread stall or a Wi-Fi hiccup, otherwise every
   // such hiccup is an audible gap; live listening tolerates the extra latency.
-  const sonarAudioStartLead = .8;
-  const sonarAudioTargetAhead = 1.6;
-  const sonarAudioMaxSources = 9;
+  const sonarAudioStartLead = 1.0;
+  const sonarAudioTargetAhead = 1.5;
+  const sonarAudioMaxSources = 12;
   const sonarGainValue = () => {
     const value = Number($("volume").value) / 200;
-    return finite(value) ? Math.max(0, Math.min(.5, value)) : 0;
+    const helicopterLevel = session?.station === "helicopter"
+      ? Number($("helicopter-audio-volume").value) / 100 : 1;
+    return finite(value) && finite(helicopterLevel)
+      ? Math.max(0, Math.min(.5, value * helicopterLevel)) : 0;
+  };
+  const sonarFilterValues = () => {
+    const prefix = session?.station === "helicopter" ? "helicopter" : "sonar";
+    return [Number($(`${prefix}-audio-highpass`).value),
+      Number($(`${prefix}-audio-lowpass`).value)];
   };
 
   function playGameEffect(kind) {
@@ -295,17 +317,32 @@
     const button = $("sonar-live-toggle");
     button.textContent = t(sonarAudioEnabled ? "sonar_live_stop" : "sonar_live_start");
     button.setAttribute("aria-pressed", String(sonarAudioEnabled));
-    button.disabled = !sonarAudioEnabled && !(session?.station === "sonar" && session?.grants.sonar_audio === true);
-    $("sonar-live-status").textContent = t(key || (sonarAudioEnabled ? "sonar_live_waiting" : "sonar_live_off"));
+    button.disabled = !sonarAudioEnabled && !(["sonar", "helicopter"].includes(session?.station) && session?.grants.sonar_audio === true &&
+      (session.station !== "helicopter" || v2State?.helicopter?.acoustic?.ready === true));
+    const receiverRequired = session?.station === "helicopter" && v2State?.helicopter?.acoustic?.ready !== true;
+    $("sonar-live-status").textContent = t(receiverRequired ? "sonar_live_receiver_required" :
+      sonarAudioEnabled && sonarAudioMetrics.stale ? "sonar_live_stale" :
+      key || (sonarAudioEnabled ? "sonar_live_waiting" : "sonar_live_off"));
   }
 
   function stopSonarAudio(key = "sonar_live_off") {
     sonarAudioGeneration += 1;
     sonarAudioEnabled = false;
+    sonarAudioMetrics = {buffered: 0, gaps: 0, repeats: 0, stale: false};
+    window.uJagdAudioDiagnostics = Object.freeze({bufferedSeconds: 0,
+      sequenceGaps: 0, droppedBlocks: 0, repeatedBlocks: 0,
+      stale: false, transport: "off"});
     clearTimeout(sonarAudioTimer);
     sonarAudioTimer = null;
     sonarAudioController?.abort();
     sonarAudioController = null;
+    clearTimeout(sonarAudioReconnect);
+    sonarAudioReconnect = null;
+    sonarAudioSocket?.close();
+    sonarAudioSocket = null;
+    sonarAudioWorklet?.port.postMessage({type: "reset"});
+    sonarAudioWorklet?.disconnect();
+    sonarAudioWorklet = null;
     for (const source of sonarAudioSources) { try { source.stop(); } catch (_) {} source.disconnect(); }
     sonarAudioSources = [];
     sonarAudioSequence = null;
@@ -325,17 +362,78 @@
 
   function scheduleSonarAudioPoll(delay = 0) {
     clearTimeout(sonarAudioTimer);
-    if (sonarAudioEnabled) sonarAudioTimer = setTimeout(pollSonarAudio, delay);
+    if (sonarAudioEnabled && !sonarAudioSocket) sonarAudioTimer = setTimeout(pollSonarAudio, delay);
   }
 
-  function flushSonarAudioQueue() {
-    for (const source of sonarAudioSources) { try { source.stop(); } catch (_) {} source.disconnect(); }
-    sonarAudioSources = [];
-    sonarAudioNextTime = audio?.currentTime || 0;
+  function openSonarAudioSocket() {
+    if (!sonarAudioEnabled || !sonarAudioWorklet || sonarAudioSocket || !sonarAudioAuthorized()) return;
+    const role = session.station;
+    const client = session.client_id;
+    const lease = session.station_generation;
+    const active = session.active_generation;
+    const world = v2State.session;
+    const epoch = v2State.epoch;
+    const streamGeneration = sonarAudioGeneration;
+    const current = () => sonarAudioEnabled && streamGeneration === sonarAudioGeneration &&
+      session?.client_id === client && session?.station === role &&
+      session?.station_generation === lease && session?.active_generation === active &&
+      v2State?.session === world && v2State?.epoch === epoch;
+    let socket;
+    try {
+      const scheme = location.protocol === "https:" ? "wss:" : "ws:";
+      socket = new WebSocket(`${scheme}//${location.host}/ws/v2/${role}/audio`, "u-jagd-audio-v2");
+    } catch (_) { scheduleSonarAudioPoll(0); return; }
+    socket.binaryType = "arraybuffer";
+    sonarAudioSocket = socket;
+    socket.onopen = () => { if (!current()) socket.close(); else clearTimeout(sonarAudioTimer); };
+    socket.onmessage = ({data}) => {
+      if (!current() || !(data instanceof ArrayBuffer) || data.byteLength !== 2060) { socket.close(); return; }
+      const view = new DataView(data);
+      if (view.getUint32(0, false) !== 0x554a4132) { socket.close(); return; }
+      const sequence = Number(view.getBigUint64(4, true));
+      if (!Number.isSafeInteger(sequence) || sequence < 1) { socket.close(); return; }
+      sonarAudioSequence = sequence;
+      const bytes = data.slice(12);
+      sonarAudioWorklet.port.postMessage({type: "pcm", sequence,
+        bytes}, [bytes]);
+      if (!sonarAudioMetrics.stale) renderSonarAudio("sonar_live_playing");
+    };
+    socket.onclose = () => {
+      if (sonarAudioSocket === socket) sonarAudioSocket = null;
+      if (current()) {
+        scheduleSonarAudioPoll(0);
+        sonarAudioReconnect = setTimeout(openSonarAudioSocket, 2000);
+      }
+    };
+    socket.onerror = () => socket.close();
+  }
+
+  async function readSonarPcm(response) {
+    const reader = response.body?.getReader?.();
+    if (!reader) throw new Error("audio_protocol");
+    const output = new Uint8Array(2048);
+    let offset = 0;
+    let complete = false;
+    try {
+      while (true) {
+        const {done, value} = await reader.read();
+        if (done) break;
+        if (!(value instanceof Uint8Array) || offset + value.byteLength > output.byteLength)
+          throw new Error("audio_protocol");
+        output.set(value, offset);
+        offset += value.byteLength;
+      }
+      if (offset !== output.byteLength) throw new Error("audio_protocol");
+      complete = true;
+      return output.buffer;
+    } finally {
+      if (!complete) await reader.cancel().catch(() => {});
+      reader.releaseLock();
+    }
   }
 
   async function pollSonarAudio() {
-    if (!sonarAudioEnabled || sonarAudioController) return;
+    if (!sonarAudioEnabled || sonarAudioController || sonarAudioSocket?.readyState === WebSocket.OPEN) return;
     if (!sonarAudioAuthorized()) { stopSonarAudio("sonar_live_unavailable"); return; }
     sonarAudioSources = sonarAudioSources.filter((source) => !source.__ended);
     const queuedAhead = Math.max(0, sonarAudioNextTime - audio.currentTime);
@@ -359,7 +457,7 @@
     const timeout = setTimeout(() => controller.abort(), 2000);
     let response;
     try {
-      response = await fetch("/api/v2/sonar/audio", {
+      response = await fetch(session?.station === "helicopter" ? "/api/v2/helicopter/audio" : "/api/v2/sonar/audio", {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", mode: "same-origin",
         signal: controller.signal,
         headers: {Accept: "audio/pcm", "Content-Type": "application/json", "X-U-Jagd-CSRF": expectedSession.csrf},
@@ -369,28 +467,33 @@
       });
       if (!currentStream()) return;
       if (response.status === 204) {
-        if (response.headers.get("content-length") !== "0") throw new Error("audio_protocol");
+        if (![null, "0"].includes(response.headers.get("content-length"))) throw new Error("audio_protocol");
         renderSonarAudio("sonar_live_waiting");
         scheduleSonarAudioPoll(60);
         return;
       }
-      if ([401, 403, 409, 503].includes(response.status)) { stopSonarAudio("sonar_live_unavailable"); return; }
+      if ([401, 403, 409].includes(response.status)) { stopSonarAudio("sonar_live_unavailable"); return; }
       if (response.status >= 500 || response.status === 429) {
         renderSonarAudio("sonar_live_waiting");
         return;
       }
       const sequence = Number(response.headers.get("x-u-jagd-audio-sequence"));
       const discontinuity = response.headers.get("x-u-jagd-audio-discontinuity");
-      if (response.status !== 200 || response.headers.get("content-type") !== "audio/pcm" ||
+      const contentType = (response.headers.get("content-type") || "").split(";", 1)[0].trim().toLowerCase();
+      if (response.status !== 200 || contentType !== "audio/pcm" ||
           response.headers.get("x-u-jagd-pcm") !== "s16le" || response.headers.get("x-u-jagd-sample-rate") !== "4096" ||
-          response.headers.get("x-u-jagd-audio-frames") !== "1024" || response.headers.get("content-length") !== "2048" ||
+          response.headers.get("x-u-jagd-audio-frames") !== "1024" ||
           !Number.isSafeInteger(sequence) || sequence < 1 || !["0", "1"].includes(discontinuity)) throw new Error("audio_protocol");
-      const bytes = await response.arrayBuffer();
+      const bytes = await readSonarPcm(response);
       if (!currentStream()) return;
       if (bytes.byteLength !== 2048) throw new Error("audio_protocol");
       const gap = discontinuity === "1" || sonarAudioSequence !== null && sequence !== sonarAudioSequence + 1;
-      if (gap) flushSonarAudioQueue();
       sonarAudioSequence = sequence;
+      if (sonarAudioWorklet) {
+        sonarAudioWorklet.port.postMessage({type: "pcm", sequence, bytes}, [bytes]);
+        if (!sonarAudioMetrics.stale) renderSonarAudio("sonar_live_playing");
+        return;
+      }
       const view = new DataView(bytes);
       const outputFrames = Math.max(1, Math.round(1024 * audio.sampleRate / 4096));
       const buffer = audio.createBuffer(1, outputFrames, audio.sampleRate);
@@ -402,12 +505,16 @@
         const fraction = position - left;
         channel[index] = (view.getInt16(left * 2, true) * (1 - fraction) + view.getInt16(right * 2, true) * fraction) / 32768;
       }
+      // An overrun skips old data, but audio already queued is still valid.
+      // Keep its timeline and soften the first samples of the new block.
+      if (gap) for (let index = 0; index < Math.min(channel.length, Math.round(audio.sampleRate * .01)); index++)
+        channel[index] *= index / Math.max(1, Math.round(audio.sampleRate * .01));
       sonarAudioSources = sonarAudioSources.filter((source) => !source.__ended);
       if (sonarAudioSources.length >= sonarAudioMaxSources) throw new Error("audio_protocol");
       sonarAudioGain.gain.value = sonarGainValue();
       const start = sonarAudioNextTime > audio.currentTime + .03
         ? sonarAudioNextTime : audio.currentTime + sonarAudioStartLead;
-      if (start > audio.currentTime + 2.5) throw new Error("audio_protocol");
+      if (start > audio.currentTime + 7.0) throw new Error("audio_protocol");
       const source = audio.createBufferSource();
       source.buffer = buffer;
       source.connect(sonarAudioGain);
@@ -699,12 +806,8 @@
     $("sonar-tas").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state !== "FAULT");
     $("sonar-depth-submit").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state === "STREAMED");
     $("sonar-depth").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state === "STREAMED");
-    stationRows($("sonar-observations"), payload.observations, sonarEntries, "station_none", (row) => [
-      actionButton("sonar_focus", "sonar_set_focus", {ref: row.ref}, live),
-      actionButton("sonar_designate", "sonar_designate_target", {ref: row.ref}, live),
-      actionButton(row.released_to_opz ? "sonar_withdraw_opz" : "sonar_release_to_opz",
-        "sonar_set_release", {ref: row.ref, released: !row.released_to_opz}, live),
-    ]);
+    stationRows($("sonar-observations"), payload.observations, (row) => [...sonarEntries(row),
+      ["opz_release_status", t(row.released_to_opz ? "opz_release_active" : "opz_release_private")]]);
   }
 
   function renderWeaponsStation(payload) {
@@ -819,6 +922,31 @@
 
   function renderHelicopterStation(payload) {
     const asset = payload.asset;
+    if (helicopterAudioSource !== null && helicopterAudioSource !== payload.acoustic.source && sonarAudioEnabled)
+      stopSonarAudio("sonar_live_waiting");
+    helicopterAudioSource = payload.acoustic.source;
+    if (!stationDrafts.has("helicopter-buoy-mode")) $("helicopter-buoy-mode").value = asset.buoy_mode;
+    const listen = $("helicopter-listen-source");
+    if (listen.options.length !== payload.acoustic.sources.length ||
+        payload.acoustic.sources.some((source, index) => listen.options[index]?.value !== source)) {
+      listen.replaceChildren(...payload.acoustic.sources.map((source) => {
+        const option = node("option", source === "DIP" ? t("helicopter_dip_picture") : source);
+        option.value = source;
+        return option;
+      }));
+    }
+    listen.value = payload.acoustic.source;
+    if (document.activeElement !== $("helicopter-listen-bearing"))
+      $("helicopter-listen-bearing").value = payload.acoustic.listen_bearing ?? "";
+    $("helicopter-audition-mode").value = payload.acoustic.audition_mode;
+    $("helicopter-audio-band").value = payload.acoustic.band_preset;
+    $("helicopter-audio-notch").checked = payload.acoustic.notch;
+    if (document.activeElement !== $("helicopter-audio-gain"))
+      $("helicopter-audio-gain").value = payload.acoustic.gain_db;
+    $("helicopter-audio-gain-value").value = `${number(payload.acoustic.gain_db, 0)} dB`;
+    $("helicopter-acoustic-text").textContent = t("helicopter_acoustic_equivalent", {
+      rows: payload.acoustic.history.length, bearings: payload.acoustic.broadband.length,
+      bins: payload.acoustic.demon.length});
     metrics($("helicopter-asset"), [["state", enumText(heloStates, asset.state)], ["airborne", yesNo(asset.airborne)],
       ["position", position(asset)], ["course", unit(asset.course, "\u00b0", 0)], ["fuel", unit(asset.fuel_s, "s", 0)],
       ["torpedoes", number(asset.torpedoes, 0)], ["buoys", number(asset.buoys, 0)],
@@ -827,6 +955,14 @@
       ["helicopter_dip_water", unit(asset.dip_water_depth_m, "m", 0)],
       ["helicopter_dip_cooldown", unit(asset.dip_ping_cooldown_s, "s", 0)]]);
     metrics($("helicopter-waypoint"), [["position", payload.waypoint ? position(payload.waypoint) : t("station_none")]]);
+    const environment = payload.dip_environment;
+    metrics($("helicopter-dip-environment"), [
+      ["helicopter_dip_water", unit(environment.water_depth_m, "m", 0)],
+      ["helicopter_dip_thermocline", unit(environment.thermocline_m, "m", 0)],
+      ["helicopter_dip_limit", unit(environment.depth_limit_m, "m", 0)],
+      ["helicopter_dip_clearance", unit(environment.bottom_clearance_m, "m", 0)],
+      ["helicopter_dip_winch_rate", unit(environment.winch_rate_m_s, "m/s", 1)],
+      ["helicopter_dip_below_layer", environment.below_thermocline === null ? t("station_none") : yesNo(environment.below_thermocline)]]);
     const ready = payload.readiness;
     metrics($("helicopter-readiness"), [["flightdeck_down", yesNo(ready.flightdeck_down)],
       ["helicopter_can_launch", yesNo(ready.can_launch)], ["helicopter_can_return", yesNo(ready.can_return)],
@@ -857,7 +993,73 @@
     fillFireTargets("helicopter-fire-target", payload.target_choices);
     if (!stationDrafts.has("helicopter-fire-depth")) $("helicopter-fire-depth").value = "80";
     stationRows($("helicopter-buoys"), payload.buoys, (row) => [["reference", row.label], ["position", position(row)],
-      ["battery", unit(row.battery_s, "s", 0)], ["active", yesNo(row.active)]]);
+      ["battery", unit(row.battery_s, "s", 0)], ["active", yesNo(row.active)],
+      ["helicopter_buoy_mode", t(row.mode === "ACTIVE" ? "helicopter_buoy_active" : "helicopter_buoy_passive")]]);
+    stationRows($("helicopter-buoy-observations"), payload.buoy_observations, (row) => [
+      ["reference", `${row.buoy_label} / ${row.label}`],
+      ["helicopter_buoy_mode", t(row.mode === "ACTIVE" ? "helicopter_buoy_active" : "helicopter_buoy_passive")],
+      ["bearing", unit(row.bearing, "°", 1)],
+      ["bearing_uncertainty", unit(row.bearing_uncertainty_deg, "°", 1)],
+      ["range", unit(row.range_nm, "NM", 1)], ["age", unit(row.age_s, "s", 0)],
+      ["helicopter_qualified", yesNo(row.qualified)],
+      ["opz_release_status", t(row.released_to_opz ? "opz_release_active" : "opz_release_private")]],
+      "helicopter_dip_empty");
+    stationRows($("helicopter-dip-observations"), payload.dip_observations, (row) => [
+      ["reference", row.label], ["helicopter_dip_passive_bearing", unit(row.bearing, "°", 1)],
+      ["bearing_uncertainty", unit(row.bearing_uncertainty_deg, "°", 1)],
+      ["age", unit(row.age_s, "s", 0)],
+      ["helicopter_dip_active_range", unit(row.range_nm, "NM", 1)],
+      ["range_uncertainty", unit(row.range_uncertainty_nm, "NM", 2)],
+      ["depth", unit(row.depth_m, "m", 0)],
+      ["helicopter_dip_depth_uncertainty", unit(row.depth_uncertainty_m, "m", 0)],
+      ["fix_age", unit(row.fix_age_s, "s", 0)],
+      ["opz_release_status", t(row.released_to_opz ? "opz_release_active" : "opz_release_private")]],
+      "helicopter_dip_empty");
+    drawHelicopterDip(payload.dip_observations);
+  }
+
+  function drawHelicopterDip(rows) {
+    const canvas = $("helicopter-dip-canvas"), ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const {width: w, height: h} = canvas;
+    ctx.fillStyle = "#091b1a"; ctx.fillRect(0, 0, w, h);
+    const cx = w / 2, cy = h / 2, radius = Math.min(w, h) * .43;
+    ctx.strokeStyle = "#42645e"; ctx.lineWidth = 1;
+    for (const scale of [.5, 1]) { ctx.beginPath(); ctx.arc(cx, cy, radius * scale, 0, Math.PI * 2); ctx.stroke(); }
+    for (const angle of [0, 90, 180, 270]) {
+      const a = angle * Math.PI / 180;
+      ctx.beginPath(); ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.sin(a) * radius, cy - Math.cos(a) * radius); ctx.stroke();
+    }
+    for (const row of rows) {
+      if (finite(row.bearing)) {
+        const a = row.bearing * Math.PI / 180;
+        if (finite(row.bearing_uncertainty_deg)) {
+          ctx.strokeStyle = "#4e8f7d"; ctx.lineWidth = 1;
+          for (const edge of [-1, 1]) {
+            const b = (row.bearing + edge * row.bearing_uncertainty_deg) * Math.PI / 180;
+            ctx.beginPath(); ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + Math.sin(b) * radius, cy - Math.cos(b) * radius); ctx.stroke();
+          }
+        }
+        ctx.strokeStyle = "#79d8a7"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.sin(a) * radius, cy - Math.cos(a) * radius); ctx.stroke();
+      }
+      if (finite(row.active_bearing) && finite(row.range_nm)) {
+        const a = row.active_bearing * Math.PI / 180;
+        const dx = Math.sin(a), dy = -Math.cos(a);
+        const r = Math.min(radius, radius * row.range_nm / 20);
+        if (finite(row.range_uncertainty_nm)) {
+          ctx.strokeStyle = "#ffcc70"; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(cx + dx * r, cy + dy * r,
+            Math.max(3, Math.min(radius, radius * row.range_uncertainty_nm / 20)), 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.fillStyle = "#ffcc70"; ctx.beginPath(); ctx.arc(cx + dx * r, cy + dy * r, 5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.fillStyle = "#a8c3bc"; ctx.font = "14px sans-serif";
+    ctx.fillText(t("helicopter_dip_scale"), 12, h - 12);
   }
 
   function renderElokaStation(payload) {
@@ -879,6 +1081,7 @@
       ["ecm_power_draw", row.ecm_power_draw === null ? t("station_none") : number(row.ecm_power_draw, 2)],
       ["ecm_lock", yesNo(row.is_locked_on)], ["hoj_risk", yesNo(row.hoj_risk)],
       ["annotation", row.annotation || t("station_none")],
+      ["opz_release_status", t(row.annotation ? "opz_release_annotated" : "opz_release_unannotated")],
       ["candidates", row.candidates.map((item) => `${item.name}: ${number(item.score, 2)}`).join(" / ") || t("station_none")],
       ["correlations", row.correlations.map((item) => `${item.ref} / ${item.source}: ${number(item.score, 2)} (${t(item.ambiguous ? "ambiguous" : "unambiguous")}); ${unit(item.evidence.bearing, "\u00b0", 0)} / ${unit(item.evidence.age_s, "s", 0)}`).join(" / ") || t("station_none")]],
       "station_none", (row) => [...row.candidates.map((candidate) => actionButton("eloka_annotate_candidate",
@@ -1261,12 +1464,12 @@
   }
 
   function syncOpzSweepAnimation() {
-    if (!opzSweepActive()) { stopOpzSweepAnimation(); return; }
+    if (!opzSweepActive()) { stopOpzSweepAnimation(); drawOpzSweepOverlay(); return; }
     if (opzSweepFrame !== null) return;
     const animate = () => {
       opzSweepFrame = null;
       if (!opzSweepActive()) return;
-      drawRoleMap("opz");
+      drawOpzSweepOverlay();
       opzSweepFrame = requestAnimationFrame(animate);
     };
     opzSweepFrame = requestAnimationFrame(animate);
@@ -1294,6 +1497,35 @@
     if (dy > 0) candidates.push((height - y) / dy);
     else if (dy < 0) candidates.push(-y / dy);
     return Math.max(0, Math.min(...candidates.filter((value) => finite(value) && value >= 0)));
+  }
+
+  function drawOpzSweepOverlay() {
+    const width = roleMapSweepCanvas.clientWidth;
+    const height = roleMapSweepCanvas.clientHeight;
+    if (!width || !height || !chart || $("role-map-sweep").closest("[hidden]")) {
+      releaseCanvas(roleMapSweepCanvas);
+      return;
+    }
+    resizeCanvas(roleMapSweepCanvas, roleMapSweepCtx, width, height);
+    roleMapSweepCtx.clearRect(0, 0, width, height);
+    const radar = v2State?.role === "opz" ? v2State.opz.radar : null;
+    const own = v2State?.role === "opz" ? v2State.opz.own_assets.ship : null;
+    if (!radar?.live || !(radar.surface || radar.air) || !hasPosition(own)) return;
+    const geometry = roleMapGeometry("opz", width, height);
+    if (!geometry) return;
+    const [ox, oy] = geometry.point(own.x, own.y);
+    const bearing = v2State.phase === "live" && connected ?
+      currentOpzSweepBearing() ?? radar.sweep_bearing : radar.sweep_bearing;
+    if (!finite(bearing)) return;
+    const angle = bearing * Math.PI / 180;
+    const dx = Math.sin(angle), dy = -Math.cos(angle);
+    const length = rayLengthToCanvasEdge(ox, oy, dx, dy, width, height);
+    roleMapSweepCtx.strokeStyle = palette().accent;
+    roleMapSweepCtx.lineWidth = 1.5;
+    roleMapSweepCtx.beginPath();
+    roleMapSweepCtx.moveTo(ox, oy);
+    roleMapSweepCtx.lineTo(ox + dx * length, oy + dy * length);
+    roleMapSweepCtx.stroke();
   }
 
   function drawRoleMap(role) {
@@ -1411,8 +1643,6 @@
     if (role === "opz" && hasPosition(data.own)) {
       if (payload.radar.live && (payload.radar.surface || payload.radar.air)) {
         for (const range of [payload.radar.surface_effective_range_nm, payload.radar.air_effective_range_nm]) if (finite(range)) { plot.context.strokeStyle = "#365d69"; plot.context.beginPath(); plot.context.arc(ox, oy, range * scale, 0, Math.PI * 2); plot.context.stroke(); }
-        const sweepBearing = currentOpzSweepBearing() ?? payload.radar.sweep_bearing;
-        if (finite(sweepBearing)) { const angle = sweepBearing * Math.PI / 180; plot.context.strokeStyle = palette().accent; plot.context.beginPath(); plot.context.moveTo(ox, oy); plot.context.lineTo(ox + Math.sin(angle) * payload.radar.range_nm * scale, oy - Math.cos(angle) * payload.radar.range_nm * scale); plot.context.stroke(); }
       }
       const byRef = new Map(data.observations.map((row) => [row.ref, row]));
       for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = "#697f88"; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
@@ -1423,6 +1653,7 @@
     equivalent.push(...data.observations.map((row) => t("role_map_observation", {ref: row.ref, bearing: number(row.bearing, 0), position: hasPosition(row) ? position(row) : t("bearing_only")})));
     equivalent.push(...data.fixes.map((row) => t("role_map_fix", {ref: row.ref, position: position(row), uncertainty: number(row.uncertainty_nm, 1)})));
     $("role-map-text").replaceChildren(...equivalent.slice(0, 256).map((text) => node("li", text)));
+    if (role === "opz") drawOpzSweepOverlay();
   }
 
   function gauge(context, x, y, radius, value, maximum, label) {
@@ -1532,10 +1763,29 @@
       role === "engine" ? payload.machinery.station_state === "ZERSTOERT" : role === "eloka" ? payload.station_down : false;
   }
 
+  function drawHelicopterAcoustic() {
+    const acoustic = v2State?.helicopter?.acoustic;
+    if (!acoustic || $("helicopter-buoy-console").hidden) return;
+    const aged = (rows) => rows.map((bins, index) => ({bins, age_s: (rows.length - 1 - index) * .25}));
+    const broadband = heatmap("helicopter-broadband-canvas", aged(acoustic.broadband_history));
+    if (broadband && finite(acoustic.listen_bearing)) {
+      broadband.context.strokeStyle = palette().amber;
+      const x = acoustic.listen_bearing / 360 * broadband.width;
+      broadband.context.beginPath(); broadband.context.moveTo(x, 0);
+      broadband.context.lineTo(x, broadband.height); broadband.context.stroke();
+    }
+    spectrum("helicopter-spectrum-canvas", acoustic.spectrum,
+      [], acoustic.bin_frequencies_hz, 300);
+    heatmap("helicopter-lofar-canvas", aged(acoustic.history), acoustic.bin_frequencies_hz);
+    spectrum("helicopter-demon-canvas", acoustic.demon,
+      [], acoustic.demon.map((_, index) => index + 1), 80);
+  }
+
   function drawRoleVisuals() {
     const role = v2State?.role;
     if (!role || $("role-visuals").hidden) return;
-    if (mapRoles.has(role)) drawRoleMap(role);
+    if (mapRoles.has(role) && $("map-visual").hidden === false) drawRoleMap(role);
+    if (role === "helicopter") drawHelicopterAcoustic();
     if (role === "sonar") drawSonarVisuals();
     if (role === "damage") drawDamageVisual();
     if (role === "engine") drawEngineVisual();
@@ -1551,7 +1801,17 @@
 
   function renderRoleVisuals(role) {
     $("role-visuals").hidden = !role;
-    for (const [id, active] of [["map-visual", mapRoles.has(role)], ["sonar-visual", role === "sonar"],
+    $("helicopter-visual-tabs").hidden = role !== "helicopter";
+    $("helicopter-buoy-console").hidden = role !== "helicopter" || helicopterVisualPage !== "acoustic";
+    $("helicopter-dip-display").hidden = role !== "helicopter" || helicopterVisualPage !== "map";
+    for (const mode of ["acoustic", "map"])
+      $(`helicopter-visual-${mode}`).setAttribute("aria-selected", String(helicopterVisualPage === mode));
+    for (const plot of ["broadband", "lofar", "demon"]) {
+      $(`helicopter-plot-${plot}`).hidden = helicopterPlot !== plot;
+      $(`helicopter-acoustic-plot-tabs`).querySelector(`[data-helicopter-plot-tab="${plot}"]`)
+        .setAttribute("aria-selected", String(helicopterPlot === plot));
+    }
+    for (const [id, active] of [["map-visual", mapRoles.has(role) && (role !== "helicopter" || helicopterVisualPage === "map")], ["sonar-visual", role === "sonar"],
       ["damage-visual", role === "damage"], ["engine-visual", role === "engine"],
       ["eloka-visual", role === "eloka"], ["weapons-visual", role === "weapons"]]) $(id).hidden = !active;
     if (!role) { clearVisuals(); return; }
@@ -1593,6 +1853,14 @@
         grid.prepend($("helicopter-dipping-controls"));
         $("helicopter-dipping-controls").hidden = false;
       }
+      if (active === "helicopter" && $("helicopter-dip-display").parentElement !== $("role-visuals"))
+        $("role-visuals").insertBefore($("helicopter-dip-display"), $("map-visual"));
+      if (active === "helicopter" && $("helicopter-buoy-console").parentElement !== $("role-visuals"))
+        $("role-visuals").insertBefore($("helicopter-buoy-console"), $("map-visual"));
+      if (active === "helicopter" && $("sonar-live-toggle").parentElement?.parentElement !== $("helicopter-buoy-console"))
+        $("helicopter-buoy-console").prepend($("sonar-live-toggle").parentElement);
+      if (active === "sonar" && $("sonar-live-toggle").parentElement?.parentElement !== $("sonar-visual"))
+        $("sonar-visual").prepend($("sonar-live-toggle").parentElement);
       if (trackRoles.has(active) && $("operations-workspace").parentElement !== section)
         section.insertBefore($("operations-workspace"), grid);
       const controls = grid.querySelector(":scope > .station-controls");
@@ -1688,7 +1956,7 @@
     for (const id of ["detail-label", "detail-badges", "detail-metrics", "mission-name", "objective",
       "mission-metrics", "chart-disclaimer", "proposal-status", "command-status", "snapshot-meta", "lookout-sea",
       "lookout-light", "lookout-own", "lookout-observations", "bridge-order-values",
-      "bridge-order-status", "opz-mark-status", "sonar-release-status", "station-command-status",
+      "bridge-order-status", "opz-mark-status", "opz-release-status", "station-command-status",
       "autocrew-status", "bridge-weather-text"]) $(id).replaceChildren();
     $("simlog-list").replaceChildren();
     $("simlog-current").replaceChildren();
@@ -1740,7 +2008,9 @@
       heading.textContent = t(`station_${station}`);
       occupancy.textContent = t(`occupancy_${state}`);
       button.textContent = record.requested ? t("station_requested") : t("station_request");
-      button.disabled = stationMutation || requested !== null || state !== "available";
+      // The web host initially holds every station and may transfer any of them.
+      button.disabled = stationMutation || requested !== null ||
+        (state !== "available" && !webHostAvailable);
     });
     if (!assigned) { renderDisabledReasons(); return; }
     const role = t(`station_${session.station}`);
@@ -1869,7 +2139,7 @@
 
   function requestStation(station) {
     if (!stationNames.includes(station) ||
-        session?.stations[station]?.status !== "available" ||
+        (session?.stations[station]?.status !== "available" && !webHostAvailable) ||
         session.requested_station !== null) return;
     mutateStation("/stations/request", { station });
   }
@@ -2134,6 +2404,9 @@
       language = nextLanguage;
       document.documentElement.lang = language;
       $("language").value = language;
+      window.dispatchEvent(new CustomEvent("u-jagd-language", {
+        detail: {language, translations}
+      }));
       for (const element of document.querySelectorAll("[data-i18n]")) element.textContent = t(element.dataset.i18n);
       for (const element of document.querySelectorAll("[data-i18n-aria]")) element.setAttribute("aria-label", t(element.dataset.i18nAria));
       for (const element of document.querySelectorAll("[data-i18n-placeholder]")) element.placeholder = t(element.dataset.i18nPlaceholder);
@@ -2175,6 +2448,7 @@
     connected = state === "connected";
     renderConnection();
     renderActionState();
+    renderHost();
     if (v2State?.role) renderRoleVisuals(v2State.role);
     if (sonarAudioEnabled && !sonarAudioAuthorized()) stopSonarAudio("sonar_live_unavailable");
     syncGameAudio();
@@ -2258,7 +2532,7 @@
         Object.values(value.grants).some((grant) => typeof grant !== "boolean") ||
         (value.grants.command && value.station === null) ||
         (value.grants.direct_fire && (!value.grants.command || !["weapons", "helicopter", "opz"].includes(value.station))) ||
-        (value.grants.sonar_audio && value.station !== "sonar") ||
+        (value.grants.sonar_audio && !["sonar", "helicopter"].includes(value.station)) ||
         typeof value.simlog !== "boolean" || value.grants.simlog !== value.simlog ||
         (value.host !== null && (!exactKeys(value.host, ["generation"]) ||
           !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
@@ -2276,7 +2550,7 @@
           Object.values(record.grants).some((grant) => typeof grant !== "boolean") ||
           (record.status === "mine") !== (record.station_generation !== null) ||
           record.grants.direct_fire && (!record.grants.command || !["weapons", "helicopter", "opz"].includes(station)) ||
-          record.grants.sonar_audio && station !== "sonar") throw new Error("session");
+          record.grants.sonar_audio && !["sonar", "helicopter"].includes(station)) throw new Error("session");
     }
     const mine = stationNames.filter((station) => value.stations[station].status === "mine");
     if ((value.station === null) !== (mine.length === 0) ||
@@ -2344,7 +2618,7 @@
       opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "designated_target_ref", "own_assets"],
       radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
       engine: ["propulsion", "machinery", "controls", "environment_effects"],
-      helicopter: ["asset", "waypoint", "buoys", "navigation", "tactical", "target_choices", "readiness"], eloka: ["intercepts", "station_down", "status", "hardware"],
+      helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"], eloka: ["intercepts", "station_down", "status", "hardware"],
     };
     if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
     const rowsExact = (rows, maximum, fields) => {
@@ -2453,14 +2727,39 @@
           payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
           !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");
     } else if (state.role === "helicopter") {
-      if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"]) ||
+      if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode"]) ||
           (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
-          !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label)) ||
+          !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active", "mode"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label) || !["ACTIVE", "PASSIVE"].includes(row.mode)) ||
           !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"]) ||
           !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
           [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping, payload.readiness.weather_launch_safe, payload.readiness.weather_dipping_safe].some((value) => typeof value !== "boolean") ||
           !finite(payload.readiness.crosswind_kn) || payload.readiness.crosswind_kn < 0 || payload.readiness.crosswind_kn > 80) throw new Error("protocol");
       tacticalRows(payload.tactical, 128, ["classification", "released_to_opz"]);
+      rowsExact(payload.dip_observations, 128, ["ref", "label", "bearing", "bearing_uncertainty_deg", "age_s", "range_nm", "active_bearing", "range_uncertainty_nm", "depth_m", "depth_uncertainty_m", "fix_age_s", "classification", "qualified", "released_to_opz"]);
+      rowsExact(payload.buoy_observations, 128, ["ref", "label", "buoy_label", "mode", "bearing", "bearing_uncertainty_deg", "range_nm", "x", "y", "observer_x", "observer_y", "age_s", "quality", "qualified", "released_to_opz"]);
+      if (!exactKeys(payload.acoustic, ["source", "sources", "spectrum", "history", "ready",
+          "bin_frequencies_hz", "broadband", "broadband_history", "demon", "demon_history",
+          "listen_bearing", "audition_mode", "band_preset", "gain_db", "notch"]) ||
+          typeof payload.acoustic.ready !== "boolean" ||
+          !(payload.acoustic.listen_bearing === null || finite(payload.acoustic.listen_bearing) &&
+            payload.acoustic.listen_bearing >= 0 && payload.acoustic.listen_bearing < 360) ||
+          !["BROADBAND", "FILTERED", "HETERODYNE"].includes(payload.acoustic.audition_mode) ||
+          !["FULL", "LOW", "SHAFT", "MID"].includes(payload.acoustic.band_preset) ||
+          !finite(payload.acoustic.gain_db) || payload.acoustic.gain_db < -12 || payload.acoustic.gain_db > 24 ||
+          typeof payload.acoustic.notch !== "boolean" ||
+          !boundedArray(payload.acoustic.sources, 6) || !payload.acoustic.sources.includes(payload.acoustic.source) ||
+          !boundedArray(payload.acoustic.spectrum, 256) || !boundedArray(payload.acoustic.bin_frequencies_hz, 256) ||
+          payload.acoustic.spectrum.length !== payload.acoustic.bin_frequencies_hz.length ||
+          !boundedArray(payload.acoustic.broadband, 180) || !boundedArray(payload.acoustic.demon, 80) ||
+          !["spectrum", "bin_frequencies_hz", "broadband", "demon"].every((key) =>
+            payload.acoustic[key].every((value) => finite(value))) ||
+          !["history", "broadband_history", "demon_history"].every((key) =>
+            boundedArray(payload.acoustic[key], 64) && payload.acoustic[key].every((row) =>
+              boundedArray(row, 256) && row.every((value) => finite(value))))) throw new Error("protocol");
+      if (!exactKeys(payload.dip_environment, ["water_depth_m", "thermocline_m", "depth_limit_m", "bottom_clearance_m", "winch_rate_m_s", "below_thermocline"]) ||
+          Object.entries(payload.dip_environment).some(([key, value]) => value !== null &&
+            (key === "below_thermocline" ? typeof value !== "boolean" : !finite(value))) ||
+          payload.dip_environment.winch_rate_m_s <= 0) throw new Error("protocol");
       rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
     } else if (state.role === "eloka") {
       if (!boundedArray(payload.intercepts, 64) || payload.intercepts.some((row) => !exactKeys(row, ["ref", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "frequency_band", "prf_hz", "modulation", "quality", "age_s", "radar_type", "threat", "signal_state", "operational", "ambiguous", "synthetic_assumption", "auto_jamming", "jamming", "jamming_effectiveness", "jamming_technique", "ecm_power_draw", "is_locked_on", "hoj_risk", "annotation", "candidates", "correlations"]) ||
@@ -2634,6 +2933,7 @@
       depth_m: row.depth_m ?? null, altitude_m: row.altitude_m ?? null, course: row.course ?? null, speed_kn: row.speed_kn ?? null,
       observer_x: row.observer_x ?? null, observer_y: row.observer_y ?? null,
       released_to_opz: row.released_to_opz === true,
+      eloka_annotated: state.role === "eloka" && Boolean(row.annotation),
       quality: row.quality ?? null, age_s: row.age_s ?? null, fix_age_s: row.fix_age_s ?? null,
       bearing_uncertainty_deg: row.bearing_uncertainty_deg ?? null,
       range_uncertainty_nm: row.range_uncertainty_nm ?? null, fixes: row.fixes || [],
@@ -2999,6 +3299,10 @@
       body.append(node("span", `${unit(track.bearing, "\u00b0", 0)} / ${unit(track.range_nm, "NM")} / ${unit(track.age_s, "s", 0)}`, "track-info"));
       const flags = [];
       if (track.ref === selected) flags.push(t("selected"));
+      if (["sonar", "helicopter"].includes(session?.station))
+        flags.push(t(track.released_to_opz ? "opz_release_active" : "opz_release_private"));
+      if (session?.station === "eloka")
+        flags.push(t(track.eloka_annotated ? "opz_release_active" : "opz_release_private"));
       if (opzMarked.has(track.ref)) flags.push(t("opz_marked"));
       if (opzSuppressed.has(track.ref)) flags.push(t("opz_suppressed"));
       if (flags.length) body.append(node("span", flags.join(" / "), "track-flags"));
@@ -3012,7 +3316,7 @@
 
   function renderDetail(resetDraft = false) {
     const track = selectedTrack();
-    $("classification-form").hidden = !["sonar", "opz"].includes(session?.station);
+    $("classification-form").hidden = !["sonar", "helicopter", "opz"].includes(session?.station);
     $("affiliation-form").hidden = session?.station !== "opz";
     $("no-selection").hidden = Boolean(track);
     $("track-detail").hidden = !track;
@@ -3020,15 +3324,13 @@
       let stationActions = document.getElementById("selection-station-actions");
       if (!stationActions) { stationActions = node("div", undefined, "station-row-actions"); stationActions.id = "selection-station-actions"; $("track-detail").append(stationActions); }
       if (session?.station === "sonar") {
-        const key = `${track.ref}:${track.released_to_opz}:${stationActionAvailable()}:${language}`;
+        const key = `${track.ref}:${stationActionAvailable()}:${language}`;
         if (stationActions.dataset.key !== key) {
           stationActions.replaceChildren(actionButton("sonar_focus", "sonar_set_focus", {ref: track.ref}),
-            actionButton("sonar_designate", "sonar_designate_target", {ref: track.ref}),
-            actionButton(track.released_to_opz ? "sonar_withdraw_opz" : "sonar_release_to_opz",
-              "sonar_set_release", {ref: track.ref, released: !track.released_to_opz}));
+            actionButton("sonar_designate", "sonar_designate_target", {ref: track.ref}));
           stationActions.dataset.key = key;
         }
-      } else stationActions.replaceChildren();
+      } else { stationActions.replaceChildren(); delete stationActions.dataset.key; }
       $("detail-label").textContent = track.label;
       $("detail-badges").replaceChildren(node("span", enumText(domains, track.domain), "badge"), node("span", enumText(affiliations, track.affiliation), `badge ${affClass(track.affiliation)}`), node("span", classificationText(track.classification), "badge"));
       const detailEntries = [
@@ -3051,11 +3353,35 @@
         $("affiliation").value = Object.hasOwn(affiliations, track.affiliation) ? track.affiliation : "UNKNOWN";
       }
       if (session?.station === "sonar" || session?.station === "helicopter") {
-        $("sonar-release-status").hidden = false;
-        $("sonar-release-status").textContent = t(track.released_to_opz ? "sonar_released" : "sonar_withdrawn");
-        $("sonar-release").hidden = false;
+        const buoyContact = session.station === "helicopter" &&
+          v2State?.helicopter?.buoy_observations.some((row) => row.ref === track.ref);
+        const dipContact = session.station === "helicopter" &&
+          v2State?.helicopter?.dip_observations.some((row) => row.ref === track.ref);
+        const heliContact = buoyContact || dipContact;
+        const qualified = Boolean(v2State?.helicopter?.buoy_observations.find((row) => row.ref === track.ref)?.qualified ||
+          v2State?.helicopter?.dip_observations.find((row) => row.ref === track.ref)?.qualified);
+        $("helicopter-qualify").hidden = !heliContact;
+        $("helicopter-qualify").textContent = t(qualified ? "helicopter_unqualify" : "helicopter_qualify");
+        $("helicopter-buoy-release").hidden = !buoyContact;
+        $("helicopter-buoy-release").textContent = t(track.released_to_opz ? "sonar_withdraw_opz" : "sonar_release_to_opz");
+        $("opz-release-status").hidden = false;
+        const reportStatus = dipContact
+          ? (track.released_to_opz ? "dip_released" : "dip_withdrawn")
+          : buoyContact
+            ? (track.released_to_opz ? "buoy_released" : "buoy_withdrawn")
+            : (track.released_to_opz ? "sonar_released" : "sonar_withdrawn");
+        $("opz-release-status").textContent = t(reportStatus);
+        $("sonar-release").hidden = session.station === "helicopter" && !dipContact;
         $("sonar-release").textContent = t(track.released_to_opz ? "sonar_withdraw_opz" : "sonar_release_to_opz");
-      } else { $("sonar-release-status").hidden = true; $("sonar-release").hidden = true; }
+      } else if (session?.station === "eloka") {
+        $("helicopter-qualify").hidden = true;
+        $("helicopter-buoy-release").hidden = true;
+        $("opz-release-status").hidden = false;
+        $("opz-release-status").textContent = t(track.eloka_annotated
+          ? "opz_release_annotated" : "opz_release_unannotated");
+        $("sonar-release").hidden = true;
+      } else { $("opz-release-status").hidden = true; $("sonar-release").hidden = true;
+        $("helicopter-qualify").hidden = true; $("helicopter-buoy-release").hidden = true; }
     }
     renderActionState();
   }
@@ -3073,7 +3399,13 @@
     $("apply-classification").disabled = !(sonarAction || opzAction && track?.can_classify === true);
     $("classification").disabled = $("apply-classification").disabled;
     $("apply-classification").textContent = t("apply");
-    $("sonar-release").disabled = !(sonarAction && track);
+    const dipReport = v2State?.helicopter?.dip_observations.find((row) => row.ref === track?.ref);
+    const buoyReport = v2State?.helicopter?.buoy_observations.find((row) => row.ref === track?.ref);
+    $("sonar-release").disabled = !(sonarAction && track &&
+      (session.station !== "helicopter" || dipReport && (dipReport.qualified || dipReport.released_to_opz)));
+    $("helicopter-qualify").disabled = !(stationEnabled && session.station === "helicopter" && track);
+    $("helicopter-buoy-release").disabled = !(stationEnabled && session.station === "helicopter" &&
+      buoyReport && (buoyReport.qualified || buoyReport.released_to_opz));
     $("apply-affiliation").disabled = !(opzAction && track);
     $("affiliation").disabled = $("apply-affiliation").disabled;
     const proposalAvailable = stationEnabled && proposals && contextKey(proposals) === contextKey(v2State);
@@ -3419,7 +3751,6 @@
     metrics($("mission-metrics"), [
       ["remaining", unit(snapshot.mission.remaining_s, "s", 0)],
       ["mission_clock", unit(snapshot.clock.mission, "s", 0)],
-      ["time_scale", unit(snapshot.clock.time_scale, "x")],
       ["world_clock", finite(snapshot.clock.world) ? `${String(Math.floor(snapshot.clock.world) % 24).padStart(2, "0")}:${String(Math.floor(snapshot.clock.world * 60) % 60).padStart(2, "0")}` : t("unavailable")],
     ]);
     renderStationView();
@@ -3959,7 +4290,6 @@
       ["role_assigned", t(`station_${state.role}`)],
       ["contacts", number(display.tracks.length, 0)],
       ["world_clock", finite(state.clock.world) ? `${String(Math.floor(state.clock.world) % 24).padStart(2, "0")}:${String(Math.floor(state.clock.world * 60) % 60).padStart(2, "0")}` : t("unavailable")],
-      ["time_scale", unit(state.clock.time_scale, "x")],
     ]));
     return root;
   }
@@ -4591,6 +4921,17 @@
       ref: track.ref, released: !track.released_to_opz,
     });
   });
+  $("helicopter-qualify").addEventListener("click", () => {
+    const rows = [...(v2State?.helicopter?.buoy_observations || []),
+      ...(v2State?.helicopter?.dip_observations || [])];
+    const row = rows.find((item) => item.ref === selected);
+    if (row) sendStationAction("helicopter_qualify", {ref: selected, enabled: !row.qualified});
+  });
+  $("helicopter-buoy-release").addEventListener("click", () => {
+    const row = v2State?.helicopter?.buoy_observations.find((item) => item.ref === selected);
+    if (row) sendStationAction("helicopter_buoy_release", {ref: selected,
+      released: !row.released_to_opz});
+  });
   $("affiliation-form").addEventListener("submit", (event) => {
     event.preventDefault();
     if (session?.station === "opz") sendStationAction("opz_affiliate", {ref: selected, affiliation: $("affiliation").value});
@@ -4715,6 +5056,47 @@
     if (finite(x) && finite(y) && x >= 0 && x <= 1000 && y >= 0 && y <= 1000) sendStationAction("helicopter_set_waypoint", {x, y});
   });
   $("helicopter-buoy").addEventListener("click", () => sendStationAction("helicopter_deploy_buoy", {}));
+  for (const mode of ["acoustic", "map"]) $(
+    `helicopter-visual-${mode}`).addEventListener("click", () => {
+      helicopterVisualPage = mode;
+      renderRoleVisuals("helicopter");
+    });
+  for (const button of $("helicopter-acoustic-plot-tabs").querySelectorAll("button"))
+    button.addEventListener("click", () => {
+      helicopterPlot = button.dataset.helicopterPlotTab;
+      renderRoleVisuals("helicopter");
+    });
+  $("helicopter-broadband-canvas").addEventListener("click", (event) => {
+    if (session?.station !== "helicopter" || !stationActionAvailable()) return;
+    const canvas = event.currentTarget, area = plotArea(canvas.clientWidth, canvas.clientHeight);
+    const x = event.clientX - canvas.getBoundingClientRect().left - area.left;
+    if (x >= 0 && x < area.width) sendStationAction("helicopter_set_listen_bearing",
+      {bearing: Math.max(0, Math.min(359.9, x / area.width * 360))});
+  });
+  $("helicopter-buoy-mode").addEventListener("change", () => sendStationAction(
+    "helicopter_set_buoy_mode", {mode: $("helicopter-buoy-mode").value}));
+  $("helicopter-listen-source").addEventListener("change", () => sendStationAction(
+    "helicopter_set_listen_source", {source: $("helicopter-listen-source").value}));
+  $("helicopter-listen-bearing-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!event.currentTarget.reportValidity()) return;
+    const bearing = $("helicopter-listen-bearing").valueAsNumber;
+    if (finite(bearing) && bearing >= 0 && bearing < 360)
+      sendStationAction("helicopter_set_listen_bearing", {bearing});
+  });
+  $("helicopter-listen-auto").addEventListener("click", () => sendStationAction(
+    "helicopter_clear_listen_bearing", {}));
+  $("helicopter-audition-mode").addEventListener("change", () => sendStationAction(
+    "helicopter_set_audio_mode", {mode: $("helicopter-audition-mode").value}));
+  $("helicopter-audio-band").addEventListener("change", () => sendStationAction(
+    "helicopter_set_audio_band", {preset: $("helicopter-audio-band").value}));
+  $("helicopter-audio-notch").addEventListener("change", () => sendStationAction(
+    "helicopter_set_audio_notch", {enabled: $("helicopter-audio-notch").checked}));
+  $("helicopter-audio-gain").addEventListener("input", () => {
+    $("helicopter-audio-gain-value").value = `${$("helicopter-audio-gain").value} dB`;
+  });
+  $("helicopter-audio-gain").addEventListener("change", () => sendStationAction(
+    "helicopter_set_audio_gain", {gain_db: Number($("helicopter-audio-gain").value)}));
   $("helicopter-dip-toggle").addEventListener("click", () => sendStationAction("helicopter_set_dipping", {
     deployed: $("helicopter-dip-toggle").dataset.deployed !== "true",
   }));
@@ -4805,7 +5187,7 @@
   });
   $("sonar-live-toggle").addEventListener("click", async () => {
     if (sonarAudioEnabled) { stopSonarAudio(); return; }
-    if (!(session?.station === "sonar" && session.grants.sonar_audio === true)) return;
+    if (!(["sonar", "helicopter"].includes(session?.station) && session.grants.sonar_audio === true)) return;
     try {
       const Audio = window.AudioContext || window.webkitAudioContext;
       if (!Audio) throw new Error("audio");
@@ -4816,29 +5198,59 @@
       sonarAudioGain.gain.value = sonarGainValue();
       sonarAudioHighpass = audio.createBiquadFilter();
       sonarAudioHighpass.type = "highpass";
-      sonarAudioHighpass.frequency.value = Number($("sonar-audio-highpass").value);
+      sonarAudioHighpass.frequency.value = sonarFilterValues()[0];
       sonarAudioLowpass = audio.createBiquadFilter();
       sonarAudioLowpass.type = "lowpass";
-      sonarAudioLowpass.frequency.value = Number($("sonar-audio-lowpass").value);
+      sonarAudioLowpass.frequency.value = sonarFilterValues()[1];
       sonarAudioGain.connect(sonarAudioHighpass);
       sonarAudioHighpass.connect(sonarAudioLowpass);
       sonarAudioLowpass.connect(audio.destination);
+      if (audio.audioWorklet && window.AudioWorkletNode) {
+        try {
+          await audio.audioWorklet.addModule("/sonar-audio-worklet.js");
+          sonarAudioWorklet = new AudioWorkletNode(audio, "sonar-audio-v2", {outputChannelCount: [1]});
+          sonarAudioWorklet.connect(sonarAudioGain);
+          sonarAudioWorklet.port.onmessage = ({data}) => {
+            if (!sonarAudioEnabled) return;
+            if (data?.type === "metrics") {
+              sonarAudioMetrics = data;
+              window.uJagdAudioDiagnostics = Object.freeze({
+                bufferedSeconds: Math.max(0, Math.min(6, data.buffered * .25)),
+                sequenceGaps: data.gaps, droppedBlocks: data.evictions,
+                repeatedBlocks: data.repeats,
+                stale: data.stale, transport: sonarAudioSocket ? "websocket" : "http"});
+            }
+            if (data?.type === "stale") {
+              sonarAudioMetrics.stale = data.value;
+              renderSonarAudio(data.value ? "sonar_live_stale" : "sonar_live_playing");
+            }
+          };
+        } catch (_) { sonarAudioWorklet?.disconnect(); sonarAudioWorklet = null; }
+      }
       sonarAudioEnabled = true;
       sonarAudioNextTime = audio.currentTime;
       renderSonarAudio("sonar_live_waiting");
-      scheduleSonarAudioPoll();
+      if (sonarAudioWorklet) openSonarAudioSocket();
+      else scheduleSonarAudioPoll();
     } catch (_) { stopSonarAudio("sonar_live_unavailable"); }
   });
   const updateSonarAudioFilters = () => {
-    const high = Number($("sonar-audio-highpass").value);
-    const low = Number($("sonar-audio-lowpass").value);
-    $("sonar-audio-highpass-value").value = `${number(high, 0)} Hz`;
-    $("sonar-audio-lowpass-value").value = `${number(low, 0)} Hz`;
+    for (const prefix of ["sonar", "helicopter"]) {
+      $(`${prefix}-audio-highpass-value`).value = `${number(Number($(`${prefix}-audio-highpass`).value), 0)} Hz`;
+      $(`${prefix}-audio-lowpass-value`).value = `${number(Number($(`${prefix}-audio-lowpass`).value), 0)} Hz`;
+    }
+    const [high, low] = sonarFilterValues();
     if (sonarAudioHighpass && audio) sonarAudioHighpass.frequency.setTargetAtTime(high, audio.currentTime, .02);
     if (sonarAudioLowpass && audio) sonarAudioLowpass.frequency.setTargetAtTime(low, audio.currentTime, .02);
   };
   $("sonar-audio-highpass").addEventListener("input", updateSonarAudioFilters);
   $("sonar-audio-lowpass").addEventListener("input", updateSonarAudioFilters);
+  $("helicopter-audio-highpass").addEventListener("input", updateSonarAudioFilters);
+  $("helicopter-audio-lowpass").addEventListener("input", updateSonarAudioFilters);
+  $("helicopter-audio-volume").addEventListener("input", () => {
+    $("helicopter-audio-volume-value").value = `${$("helicopter-audio-volume").value} %`;
+    if (sonarAudioGain) sonarAudioGain.gain.value = sonarGainValue();
+  });
   updateSonarAudioFilters();
   $("zoom-in").addEventListener("click", () => zoom(1.4));
   $("zoom-out").addEventListener("click", () => zoom(1 / 1.4));
@@ -5033,7 +5445,7 @@
     syncOpzSweepAnimation();
     syncWeatherAnimation();
   });
-  window.addEventListener("offline", () => { eventBaselinePending = true; stopSonarAudio("sonar_live_unavailable"); stopSonarStream(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
+  window.addEventListener("offline", () => { eventBaselinePending = true; stopSonarStream(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
   window.addEventListener("online", () => { syncOpzSweepAnimation(); syncSonarStream(); if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); } });
   setInterval(() => {
     if (authenticated() && lastSuccess && performance.now() - lastSuccess > 4500) setConnection("stale");
@@ -5129,7 +5541,7 @@
         !exactKeys(value.time_scale, ["index", "steps"]) || !Number.isSafeInteger(value.time_scale.index) ||
         !boundedArray(value.time_scale.steps, 12) || !value.time_scale.steps.every((step) => Number.isSafeInteger(step) && step > 0) ||
         value.time_scale.index < 0 || value.time_scale.index >= value.time_scale.steps.length ||
-        !["fixed", "procedural"].includes(value.world_mode) || typeof value.scenario !== "string" ||
+        !["fixed", "procedural", "real_fixed"].includes(value.world_mode) || typeof value.scenario !== "string" ||
         typeof value.level !== "string" || !boundedArray(value.levels, 8) || !value.levels.every((level) => typeof level === "string") ||
         !boundedArray(value.scenarios, 8) || !value.scenarios.every((row) => exactKeys(row, ["key", "level"]) &&
           typeof row.key === "string" && (row.level === null || typeof row.level === "string")) ||
@@ -5171,31 +5583,27 @@
     return unavailable("host_phase");
   }
 
+  let webHostAvailable = false;
   function renderHost() {
     const active = session?.host !== null && session !== null;
     $("host-bar").hidden = !active;
+    $("web-admin-link").hidden = !active || !webHostAvailable;
     const menu = active && hostView?.phase === "menu";
     $("host-screen").hidden = !menu || simlogActive();
-    if (!active) return;
+    if (!active) {
+      for (const id of ["host-pause", "host-save", "host-load", "host-new",
+                        "host-instructor", "host-screen-new", "host-screen-load",
+                        "host-new-start"]) $(id).disabled = true;
+      for (const button of $("host-slot-list").querySelectorAll("button"))
+        button.disabled = true;
+      return;
+    }
     const ready = Boolean(hostView) && !hostPending && connected;
     const any = ready && hostPhaseAllows("any");
     const replacing = ready && hostPhaseAllows("replacing");
     $("host-pause").disabled = !any;
     $("host-pause").setAttribute("aria-pressed", String(hostView?.paused === true));
     $("host-pause").textContent = t(hostView?.paused ? "host_resume" : "host_pause");
-    const select = $("host-time-scale");
-    const steps = hostView?.time_scale.steps ?? [];
-    const signature = steps.join(",");
-    if (select.dataset.steps !== signature) {
-      select.replaceChildren(...steps.map((step, index) => {
-        const option = node("option", `${step}×`);
-        option.value = String(index);
-        return option;
-      }));
-      select.dataset.steps = signature;
-    }
-    if (hostView && document.activeElement !== select) select.value = String(hostView.time_scale.index);
-    select.disabled = !any;
     $("host-save").disabled = !any;
     $("host-load").disabled = !replacing;
     $("host-new").disabled = !replacing;
@@ -5346,10 +5754,6 @@
     sendHostAction("host_new_game", params);
   });
   $("host-pause").addEventListener("click", () => sendHostAction(hostView?.paused ? "host_resume" : "host_pause", {}));
-  $("host-time-scale").addEventListener("change", () => {
-    const index = Number($("host-time-scale").value);
-    if (Number.isSafeInteger(index)) sendHostAction("host_time_scale", {index});
-  });
   for (const id of ["host-save"]) $(id).addEventListener("click", () => openSlotDialog("save"));
   for (const id of ["host-load", "host-screen-load"]) $(id).addEventListener("click", () => openSlotDialog("load"));
   for (const id of ["host-new", "host-screen-new"]) $(id).addEventListener("click", openNewGameDialog);
@@ -5373,6 +5777,15 @@
   });
 
   async function bootstrap() {
+    if (location.protocol === "https:") {
+      fetch("/api/v2/web/status", {cache: "no-store"})
+        .then((response) => {
+          webHostAvailable = response.ok;
+          renderHost();
+          if (session) renderLobby();
+        })
+        .catch(() => {});
+    }
     const resumed = await resumeSession();
     let delay = 1000;
     while (!await loadLanguage(language)) {

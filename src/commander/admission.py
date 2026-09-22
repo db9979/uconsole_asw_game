@@ -69,7 +69,7 @@ class StationAdmission:
             station = self.request["requested_station"]
             if capability == "direct_fire" and station not in ("weapons", "opz", "helicopter"):
                 return
-            if capability == "sonar_audio" and station != "sonar":
+            if capability == "sonar_audio" and station not in ("sonar", "helicopter"):
                 return
             self.grants[capability] = not self.grants[capability]
         elif index == 4:

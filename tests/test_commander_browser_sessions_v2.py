@@ -228,7 +228,8 @@ const stationActions = [];
 const visualDraws = new Set();
 const visualCanvasIds = new Set(["role-map", "sonar-broadband", "sonar-lofar", "sonar-demon",
   "sonar-tma-plot", "sonar-environment", "sonar-active", "damage-schematic",
-  "engine-instruments", "eloka-scope", "weapons-system"]);
+  "engine-instruments", "eloka-scope", "weapons-system", "helicopter-lofar-canvas",
+  "helicopter-broadband-canvas", "helicopter-demon-canvas"]);
 for (const method of ["fillRect", "stroke", "arc"]) {
   const native = CanvasRenderingContext2D.prototype[method];
   CanvasRenderingContext2D.prototype[method] = function(...args) {
@@ -285,10 +286,10 @@ async function run() {
   let previousRole = null;
   const visualFor = {bridge: "role-map", sonar: "sonar-broadband", opz: "role-map",
     eloka: "eloka-scope", engine: "engine-instruments", damage: "damage-schematic",
-    radio: "role-map", helicopter: "role-map", weapons: "weapons-system"};
+    radio: "role-map", helicopter: "helicopter-lofar-canvas", weapons: "weapons-system"};
   const equivalentFor = {bridge: "role-map-text", sonar: "sonar-broadband-text", opz: "role-map-text",
     eloka: "eloka-scope-text", engine: "engine-instruments-text", damage: "damage-schematic-text",
-    radio: "role-map-text", helicopter: "role-map-text", weapons: "weapons-system-text"};
+    radio: "role-map-text", helicopter: "helicopter-acoustic-text", weapons: "weapons-system-text"};
   let commandSent = false;
   let fusionSent = false;
   let opzDiagnostic = "";
@@ -368,8 +369,10 @@ async function run() {
       const canvas = document.getElementById(visualFor[latestRole]);
       const equivalent = document.getElementById(equivalentFor[latestRole]);
       if (innerWidth >= 1000 && visualFor[latestRole] === "role-map") {
+        for (let attempt = 0; attempt < 10 && canvas.getBoundingClientRect().height < 120; attempt++)
+          await sleep(20);
         assert(canvas.getBoundingClientRect().height >= 120,
-          `role map is not large enough: ${latestRole}`);
+          `role map is not large enough: ${latestRole} ${canvas.getBoundingClientRect().height}px / frame ${canvas.parentElement.getBoundingClientRect().height}px`);
       }
       if (canvas.width > 1 && canvas.height > 1 && equivalent.textContent.trim() && visualDraws.has(canvas.id) &&
           !document.getElementById("role-visuals").hidden) visualRendered.add(latestRole);
@@ -380,6 +383,10 @@ async function run() {
       }
       previousRole = latestRole;
       if (latestRole === "sonar") {
+        assert(!document.querySelector('[data-station-action="sonar_set_release"]'),
+          "Sonar has a duplicate CIC release button outside contact detail");
+        assert(document.querySelectorAll("#sonar-release").length === 1,
+          "Sonar contact detail must own one CIC release button");
         const tas = document.getElementById("sonar-tas");
         const explain = document.getElementById("disabled-control-explain");
         if (tas.disabled && tas.title.includes("12") && tas.dataset.disabledReason === tas.title && !explain.hidden) {
@@ -425,6 +432,34 @@ async function run() {
         }
         if (sonarPages.size === 6 && !document.getElementById("role-visuals").hidden)
           visualRendered.add("sonar");
+      }
+      if (latestRole === "helicopter") {
+        assert(canvas.getBoundingClientRect().height >= 200,
+          "Helicopter LOFAR view is too small");
+        for (const plot of ["broadband", "demon"]) {
+          document.querySelector(`[data-helicopter-plot-tab="${plot}"]`).click();
+          const plotCanvas = document.getElementById(`helicopter-${plot}-canvas`);
+          await until(() => plotCanvas.getBoundingClientRect().height >= 200 &&
+            visualDraws.has(plotCanvas.id),
+            `Helicopter ${plot} view is too small or not drawn: ${plotCanvas.getBoundingClientRect().height}px, drawn=${visualDraws.has(plotCanvas.id)}`);
+        }
+        document.querySelector('[data-helicopter-plot-tab="lofar"]').click();
+        document.getElementById("helicopter-visual-map").click();
+        for (let attempt = 0; attempt < 20 && document.getElementById("role-map").getBoundingClientRect().height < 120; attempt++)
+          await sleep(20);
+        const heliMap = document.getElementById("role-map");
+        assert(heliMap.getBoundingClientRect().height >= 120,
+          `Helicopter tactical map is too small after switching views: ${heliMap.getBoundingClientRect().height}px, panel ${heliMap.closest("#map-visual").getBoundingClientRect().height}px, hidden=${heliMap.closest("#map-visual").hidden}`);
+        document.getElementById("helicopter-visual-acoustic").click();
+        assert(!document.getElementById("classification-form").hidden,
+          "Dipping-sonar classification is hidden in contact detail");
+        assert(!document.querySelector('[data-station-action="sonar_set_release"]'),
+          "Helicopter has a duplicate CIC release button");
+      }
+      if (latestRole === "eloka") {
+        const intercepts = document.getElementById("eloka-intercepts");
+        assert(getComputedStyle(intercepts.closest(".station-card-view")).display !== "none",
+          "ESM annotation controls are hidden in the workstation");
       }
     }
     const submit = document.getElementById("bridge-course-submit");
@@ -539,7 +574,25 @@ class TestAudio {
 }
 window.AudioContext = TestAudio;
 let roleMapLeftLabels = 0;
+let roleMapSweepEndpoint = null;
+let roleMapShipOrigin = null;
+let roleMapSweepOrigin = null;
 const nativeFillText = CanvasRenderingContext2D.prototype.fillText;
+const nativeLineTo = CanvasRenderingContext2D.prototype.lineTo;
+const nativeMoveTo = CanvasRenderingContext2D.prototype.moveTo;
+const nativeTranslate = CanvasRenderingContext2D.prototype.translate;
+CanvasRenderingContext2D.prototype.translate = function(x, y) {
+  if (this.canvas.id === "role-map") roleMapShipOrigin = {x, y};
+  return nativeTranslate.call(this, x, y);
+};
+CanvasRenderingContext2D.prototype.moveTo = function(x, y) {
+  if (this.canvas.id === "role-map-sweep") roleMapSweepOrigin = {x, y};
+  return nativeMoveTo.call(this, x, y);
+};
+CanvasRenderingContext2D.prototype.lineTo = function(x, y) {
+  if (this.canvas.id === "role-map-sweep") roleMapSweepEndpoint = {x, y};
+  return nativeLineTo.call(this, x, y);
+};
 CanvasRenderingContext2D.prototype.fillText = function(text, x, y, ...rest) {
   if (this.canvas.id === "role-map" && /^\d+$/.test(text) && x <= 4) {
     assert(this.textAlign === "left", "left map coordinate is not left aligned");
@@ -557,7 +610,7 @@ const browserErrors = [];
 window.addEventListener("error", (event) => browserErrors.push(event.message));
 window.addEventListener("unhandledrejection", (event) => browserErrors.push(String(event.reason)));
 const nativeConsoleError = console.error.bind(console);
-console.error = (...args) => { browserErrors.push(args.map(String).join(" ")); nativeConsoleError(...args); };
+console.error = (...args) => { browserErrors.push(args.map((item) => item?.stack || String(item)).join(" ")); nativeConsoleError(...args); };
 function switchRole(role) {
   session.active_station = role;
   session.active_generation += 1;
@@ -702,26 +755,42 @@ async function run() {
   await selectStation("station-tabs", "opz");
   await until(() => !$test("station-opz").hidden && $test("station-weapons").hidden, "wrong-role controls survived role switch");
   assert($test("weapons-fire-target").value === "" && $test("weapons-fire-depth").value === "", "Weapons fire draft survived role switch");
-  const roleMap = $test("role-map"), mapRect = roleMap.getBoundingClientRect();
+  const roleMap = $test("role-map"), sweepLayer = $test("role-map-sweep"), mapRect = roleMap.getBoundingClientRect();
   await until(() => roleMap.width > 1 && mapRect.width > 100, "OPZ role map missing");
-  const sweepFrame = roleMap.toDataURL();
-  await until(() => roleMap.toDataURL() !== sweepFrame, "published OPZ sweep does not animate between samples");
+  await until(() => sweepLayer.width > 1 && roleMapSweepEndpoint, "OPZ sweep overlay missing");
+  const sweepFrame = sweepLayer.toDataURL();
+  await until(() => sweepLayer.toDataURL() !== sweepFrame, "published OPZ sweep does not animate between samples");
+  const edge = roleMapSweepEndpoint;
+  assert(Math.min(Math.abs(edge.x), Math.abs(edge.y),
+    Math.abs(edge.x - sweepLayer.clientWidth), Math.abs(edge.y - sweepLayer.clientHeight)) < 2,
+    "OPZ sweep stops before the map edge");
+  const sweepRect = sweepLayer.getBoundingClientRect();
+  assert(roleMapShipOrigin && roleMapSweepOrigin &&
+    Math.abs(mapRect.left + roleMapShipOrigin.x - sweepRect.left - roleMapSweepOrigin.x) < 2 &&
+    Math.abs(mapRect.top + roleMapShipOrigin.y - sweepRect.top - roleMapSweepOrigin.y) < 2,
+    `OPZ sweep does not start at the ship: ship=${JSON.stringify(roleMapShipOrigin)} sweep=${JSON.stringify(roleMapSweepOrigin)} map=${JSON.stringify(mapRect)} layer=${JSON.stringify(sweepRect)}`);
+  let baseRedraws = 0;
+  const baseObserver = new MutationObserver(() => { baseRedraws++; });
+  baseObserver.observe($test("role-map-text"), {childList: true});
+  await sleep(120);
+  baseObserver.disconnect();
+  assert(baseRedraws <= 1, "OPZ redraws the whole map on every sweep frame");
   states.opz.phase = "paused";
   await until(() => $test("role-visual-state").textContent.includes("Paused") ||
     $test("role-visual-state").textContent.includes("Pausiert"), "paused OPZ state missing");
   await sleep(80);
-  const pausedFrame = roleMap.toDataURL();
+  const pausedFrame = sweepLayer.toDataURL();
   await sleep(120);
-  assert(roleMap.toDataURL() === pausedFrame, "OPZ sweep continues while paused");
+  assert(sweepLayer.toDataURL() === pausedFrame, "OPZ sweep continues while paused");
   states.opz.phase = "live";
   await until(() => !$test("opz-fire-target").disabled, "OPZ did not resume");
   states.opz.opz.radar.surface = false; states.opz.opz.radar.air = false;
   await until(() => !$test("opz-radar-surface").checked && !$test("opz-radar-air").checked,
     "radars-off state missing");
   await sleep(80);
-  const radarsOffFrame = roleMap.toDataURL();
+  const radarsOffFrame = sweepLayer.toDataURL();
   await sleep(120);
-  assert(roleMap.toDataURL() === radarsOffFrame, "OPZ sweep continues with both radars off");
+  assert(sweepLayer.toDataURL() === radarsOffFrame, "OPZ sweep continues with both radars off");
   states.opz.opz.radar.surface = true; states.opz.opz.radar.air = true;
   await until(() => $test("opz-radar-surface").checked && $test("opz-radar-air").checked,
     "radars did not resume");
@@ -749,7 +818,16 @@ async function run() {
   await until(() => $test("station-command-status").textContent.includes(__NOT_READY__), "localized terminal reason missing");
   await selectStation("mobile-station", "helicopter");
   await until(() => !$test("station-helicopter").hidden && !$test("helicopter-fire-target").disabled, "Helicopter release view missing");
-  assert($test("role-map-follow").textContent.includes("helicopter") ||
+  assert(!$test("helicopter-buoy-console").hidden && $test("helicopter-dip-display").hidden,
+    "Helicopter acoustic analysis is not the primary workstation view");
+  $test("helicopter-visual-map").click();
+  const dipDisplay = $test("helicopter-dip-display");
+  const dipRect = dipDisplay.getBoundingClientRect();
+  assert(!dipDisplay.hidden && dipDisplay.parentElement === $test("role-visuals") &&
+    dipRect.width > 100 && dipRect.height > 100 &&
+    dipRect.top < $test("map-visual").getBoundingClientRect().top,
+    "Helicopter map view does not show the dipping sonar picture");
+  await until(() => $test("role-map-follow").textContent.includes("helicopter") ||
     $test("role-map-follow").textContent.includes("Hubschrauber"),
     "Helicopter map does not identify its follow target");
   const buoyNames = [...$test("helicopter-buoys").querySelectorAll("h4")].map((item) => item.textContent);
@@ -780,6 +858,7 @@ async function run() {
   await selectStation("station-tabs", "damage");
   await until(() => !$test("station-damage").hidden && !$test("damage-team").disabled &&
     $test("damage-schematic").width > 1, "actionable damage schematic missing");
+  assert($test("helicopter-dip-display").hidden, "Helicopter sonar remains visible at another station");
   const damageMap = $test("damage-schematic"), damageRect = damageMap.getBoundingClientRect();
   damageMap.dispatchEvent(new MouseEvent("click", {bubbles: true,
     clientX: damageRect.left + damageRect.width * .2, clientY: damageRect.top + damageRect.height * .5}));
@@ -871,12 +950,24 @@ def _direct_fire_browser_states():
         source_classifications=[], designated_target_ref=None,
         own_assets=dict(ship=navigation, helicopter=helicopter_asset)))
     helicopter = dict(common, role="helicopter", helicopter=dict(
-        asset=helicopter_asset, waypoint=None,
+        asset=dict(helicopter_asset, buoy_mode="PASSIVE"), waypoint=None,
         buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,
-                    battery_s=500.0, active=True),
+                    battery_s=500.0, active=True, mode="PASSIVE"),
                dict(ref="opaque-buoy-reference-two", label="SB02", x=253.0, y=247.0,
-                    battery_s=400.0, active=False)], navigation=navigation,
-        tactical=[], target_choices=[weapon_row],
+                    battery_s=400.0, active=False, mode="PASSIVE")],
+        buoy_observations=[], acoustic=dict(source="DIP", sources=["DIP", "SB1", "SB2"], ready=False,
+            spectrum=[], history=[], bin_frequencies_hz=[], broadband=[], broadband_history=[],
+            demon=[], demon_history=[], listen_bearing=None, audition_mode="BROADBAND",
+            band_preset="FULL", gain_db=0.0, notch=False), navigation=navigation,
+        tactical=[], target_choices=[weapon_row], dip_observations=[dict(
+            ref="dip-ref", label="K01", bearing=123.0,
+            bearing_uncertainty_deg=1.5, age_s=2.0, range_nm=4.0,
+            active_bearing=125.0, range_uncertainty_nm=.2,
+            depth_m=55.0, depth_uncertainty_m=3.0, fix_age_s=3.0,
+            classification=None, qualified=False, released_to_opz=False)],
+        dip_environment=dict(water_depth_m=200.0, thermocline_m=60.0,
+                             depth_limit_m=190.0, bottom_clearance_m=None,
+                             winch_rate_m_s=2.5, below_thermocline=None),
         readiness=dict(flightdeck_down=False, deck_state="OK", can_launch=False,
                         can_return=True, can_set_waypoint=True, can_deploy_buoy=True,
                          can_set_dipping=True, can_set_dip_depth=False,
@@ -900,7 +991,8 @@ def _direct_fire_browser_states():
             "damage": damage, "bridge": bridge}
 
 
-def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromium(tmp_path):
+@pytest.mark.parametrize("width,height", [(500, 844), (1280, 720), (1920, 1080)])
+def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromium(tmp_path, width, height):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
     if not chromium:
         pytest.skip("Optional direct-fire browser contract: no installed Chromium")
@@ -963,10 +1055,11 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
     try:
         result = subprocess.run(
             [chromium, "--headless", "--no-sandbox", "--disable-gpu",
-             "--disable-background-networking", "--no-first-run",
-             "--no-default-browser-check", "--disable-dev-shm-usage",
-             f"--user-data-dir={tmp_path / 'direct-fire-browser'}",
-             "--virtual-time-budget=30000", "--dump-dom",
+                 "--disable-background-networking", "--no-first-run",
+                 "--no-default-browser-check", "--disable-dev-shm-usage",
+                 f"--user-data-dir={tmp_path / 'direct-fire-browser'}",
+                 f"--window-size={width},{height}",
+                 "--virtual-time-budget=30000", "--dump-dom",
              f"http://127.0.0.1:{server.server_port}/"],
             capture_output=True, text=True, timeout=45)
     finally:
@@ -1297,6 +1390,9 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
         ("index.html", html),
         ("app.js", ASSETS.joinpath("app.js").read_text()),
         ("style.css", ASSETS.joinpath("style.css").read_text()),
+        ("voice.js", ASSETS.joinpath("voice.js").read_text()),
+        ("voice-worklet.js", ASSETS.joinpath("voice-worklet.js").read_text()),
+        ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()),
     ):
         (tmp_path / name).write_text(payload, encoding="utf-8")
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)
@@ -1306,7 +1402,7 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F9))
     assert game.commander_open and game.administration_open
     console.activate(game)
-    assert console.address is not None
+    assert console.address is not None, console.error
     script = REAL_ROLE_SESSION.replace("__CODE__", json.dumps(console.pairing_code))
     (tmp_path / "real-role-test.js").write_text(script, encoding="utf-8")
     # CommanderServer loads its immutable assets at start; add only the test hook

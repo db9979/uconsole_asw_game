@@ -17,7 +17,8 @@ from src.commander import server as transport
 
 @pytest.fixture
 def server(tmp_path, monkeypatch):
-    for name in ("index.html", "app.js", "style.css"):
+    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
+                 "sonar-audio-worklet.js"):
         (tmp_path / name).write_text(name, encoding="utf-8")
     monkeypatch.setattr(transport.resources, "files", lambda package: tmp_path)
     instance = CommanderServer()
@@ -637,6 +638,7 @@ def test_sonar_audio_endpoint_is_bounded_context_bound_and_does_not_renew_presen
 
     # More blocks than the ring holds: the oldest are dropped, newest are kept.
     ring = transport.SONAR_AUDIO_RING_BLOCKS
+    assert ring * transport.SONAR_AUDIO_FRAMES / transport.SONAR_AUDIO_RATE == 10.0
     blocks = [bytes([value]) * transport.SONAR_AUDIO_BYTES for value in range(1, ring + 4)]
     for pcm in blocks:
         assert server.publish_sonar_audio(
@@ -660,6 +662,19 @@ def test_sonar_audio_endpoint_is_bounded_context_bound_and_does_not_renew_presen
     status, headers, payload = request(
         server, "/api/v2/sonar/audio", "POST", body, cookie, session["csrf"])
     assert status == 200 and payload == blocks[-1]
+    assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
+    # A stream restarted under the same world context must rebase an old
+    # browser cursor rather than reply 204 forever.
+    body["after"] = len(blocks)
+    server.clear_sonar_audio()
+    server.prepare_sonar_audio(world_session="world-a", world_epoch=7)
+    assert server.publish_sonar_audio(
+        blocks[0], world_session="world-a", world_epoch=7,
+        station_generation=session["station_generation"])
+    status, headers, payload = request(
+        server, "/api/v2/sonar/audio", "POST", body, cookie, session["csrf"])
+    assert status == 200 and payload == blocks[0]
+    assert headers["X-U-Jagd-Audio-Sequence"] == "1"
     assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
     assert lock_checks and all(lock_checks), "audio socket writes must not block the main-thread lock"
 
@@ -697,3 +712,34 @@ def test_sonar_audio_fails_closed_for_auth_schema_role_grant_and_context(server)
                    assigned["csrf"])[0] == 409
     assert server.set_client_grant(paired["client_id"], "sonar_audio", False)
     assert not server._sonar_audio and server._sonar_audio_context is None
+
+
+def test_helicopter_audio_is_private_from_sonar_and_revoked_with_grant(server):
+    _, helo_cookie, _, helo = pair_v2(server, "Helicopter")
+    _, sonar_cookie, _, sonar = pair_v2(server, "Sonar")
+    assert server.grant_station(helo["client_id"], "helicopter")
+    assert server.grant_station(sonar["client_id"], "sonar")
+    assert server.set_client_grant(helo["client_id"], "helicopter", "sonar_audio", True)
+    helo_session = request(server, "/api/v2/session", cookie=helo_cookie)[2]
+    sonar_session = request(server, "/api/v2/session", cookie=sonar_cookie)[2]
+    body = {"protocol": 2, "after": None, "world_session": "world-a",
+            "world_epoch": 0, "station_generation": helo_session["station_generation"],
+            "active_generation": helo_session["active_generation"]}
+    route = "/api/v2/helicopter/audio"
+    assert request(server, route, "POST", body, helo_cookie,
+                   helo_session["csrf"])[0] == 503
+    assert server.prepare_helicopter_audio(
+        world_session="world-a", world_epoch=0) == body["station_generation"]
+    pcm = b"\x01" * transport.SONAR_AUDIO_BYTES
+    assert server.publish_helicopter_audio(
+        pcm, world_session="world-a", world_epoch=0,
+        station_generation=body["station_generation"])
+    assert request(server, route, "POST", body, helo_cookie,
+                   helo_session["csrf"])[2] == pcm
+    assert request(server, route, "POST", dict(body,
+                   station_generation=sonar_session["station_generation"]),
+                   sonar_cookie, sonar_session["csrf"])[0] == 403
+    assert request(server, "/api/v2/sonar/audio", "POST", body,
+                   helo_cookie, helo_session["csrf"])[0] == 403
+    assert server.set_client_grant(helo["client_id"], "helicopter", "sonar_audio", False)
+    assert not server._helicopter_audio and server._helicopter_audio_context is None

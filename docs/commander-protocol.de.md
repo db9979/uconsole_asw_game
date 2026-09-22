@@ -32,6 +32,8 @@ Methoden zum Laden eines Kandidaten haben keine Netzwerknebenwirkungen.
 | POST /api/v2/stations/request, /activate, /release | Strikte Lease-Operationen |
 | POST /api/v2/commands | Strikter Aktionsumschlag; 202 bedeutet eingereiht, nicht angewendet |
 | POST /api/v2/sonar/audio | Separat freigegebene Live-Sonaraudio-Abfrage |
+| POST /api/v2/helicopter/audio | Separat freigegebene Live-Helikopteraudio-Abfrage |
+| GET /ws/v2/sonar/audio, /ws/v2/helicopter/audio | Geleaster, nur lesender binaerer PCM-Strom (WebSocket-Upgrade) |
 | GET /ws/v2/sonar | Binärer Anzeigestrom der aktiven Sonarrollen-Lease (WebSocket-Upgrade) |
 | POST /api/v2/logout | Widerruft die aktuelle Sitzung und löscht ihr Cookie |
 
@@ -103,14 +105,38 @@ Projektionsgrößen sind strikt begrenzt. Sonar-Audio ist ausschließlich live
 verfügbar, wird separat freigegeben, ist an die aktive `station_generation` von
 Sonar gebunden und
 wird im Hauptthread anhand des projizierten Sonar-Abhörmodus sowie der Einstellungen
-für Band, Notch und Gain gefiltert. Der Server hält die letzten acht Blöcke (zwei
+für Band, Notch und Gain gefiltert. Der Server hält die letzten 40 Blöcke (zehn
 Sekunden), damit ein kurz stockender Client der Reihe nach aufholt; ältere Blöcke
 werden verworfen und als Diskontinuität gemeldet. Der Browser startet die Wiedergabe
-0,8 s hinter dem neuesten Block, damit ein Hänger des Hauptthreads oder ein
-WLAN-Aussetzer keine hörbare Lücke wird. Das Kavitationsgeräusch der Brücke wird nach
-lokaler Tonfreigabe im Browser ausschließlich aus dem bereits freigegebenen
-Eigenschiff-Kavitations-Boolean synthetisiert. Es ergänzt weder Endpunkt, Freigabe,
-Befehl noch uConsole-Audiosteuerung. Die Sonarrollenprojektion erhält nur die
+etwa eine Sekunde hinter dem neuesten Block. Das AudioWorklet wiederholt den
+letzten Block höchstens zwei Sekunden nach dem Ende frischer Daten; danach spielt
+es leises neutrales Rauschen und kennzeichnet den Strom als veraltet. Der
+uConsole-Mixer-Worker nutzt ebenfalls eine Sekunde Vorlauf und zwei Sekunden
+Ersatzwiedergabe. Ein vorübergehender Fehler der
+Zustandsabfrage oder HTTP 503 verwirft gepuffertes Audio nicht; der Audio-Endpunkt
+prüft Sitzung und Stationsrecht weiterhin bei jeder Anfrage.
+Ein neu gestarteter Stream setzt eine gegenüber seiner Blocknummer vorauseilende
+Browser-Blocknummer zurück. Es gibt kein dauerhaftes Eigenschiff-Ambientgeräusch,
+weder lokal noch im Browser; die Tonfreigabe aktiviert nur synthetisierte
+Alarm-/Gefechtseffekt-Signale und diesen Live-Sonar-/Hubschrauber-Stream.
+
+Der zusaetzliche Audio-WebSocket verwendet das Subprotokoll `u-jagd-audio-v2`,
+das HttpOnly-Sitzungscookie, den genauen Origin sowie aktive Station und
+Audiofreigabe. Jede binaere Nachricht mit 2060 Byte enthaelt `UJA2`, eine
+Little-Endian-Sequenznummer mit 64 Bit und 1024 Mono-PCM-Samples mit 16 Bit
+bei 4096 Hz. Sequenzluecken zeigen verworfene Bloecke an. Nach einem langsamen
+Client sendet der Server hoechstens die neuesten vier ausstehenden Bloecke.
+Die HTTP-Abfrage bleibt der Fallback. Beide Transporte nehmen weder Browseraudio
+noch Simulationsbefehle an.
+
+Für die Diagnose auf dem Gerät schreibt `U_JAGD_AUDIO_DEBUG=1` begrenzte,
+kontaktfreie Werte zu Receiver-Blockrate, Mixer-Unterläufen, Pufferstand und
+Verlusten nach `~/.u-jagd/audio_debug.log`. Im Browser zeigen die
+Entwicklerwerkzeuge `window.uJagdAudioDiagnostics` mit Puffersekunden,
+Sequenzlücken, verworfenen und wiederholten Blöcken, Veraltet-Zustand und
+Transport. Beides bleibt außerhalb der Spielstände.
+
+Die Sonarrollenprojektion erhält nur die
 begrenzte Eigenschifffahrt und die TAS-Handhabungsgrenzen, die zur Erklärung eines
 deaktivierten Array-Bedienelements nötig sind; Hovergründe prüfen niemals
 verborgene Einheiten.

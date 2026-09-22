@@ -208,10 +208,9 @@ def test_native_opz_bearing_ray_starts_at_released_helicopter_origin():
     game = Game(seed=907, start_menu=False, audio_enabled=False)
     game.sonar.contacts.clear()
     contact = Contact(1, 99002, "dipping-passiv", "sub")
-    contact.update_passive(0.0, .8, .8, "hidden", game.sim_t)
-    contact.passive_source = "SONAR-DIP-BRG"
-    contact.observer_x, contact.observer_y = game.ship.x + 5.0, game.ship.y
-    contact.released_to_opz = True
+    contact.update_dip_passive(0.0, game.sim_t, game.ship.x + 5.0,
+                               game.ship.y, 1.5)
+    contact.dip_released_to_opz = True
     game.sonar.contacts[contact.target_id] = contact
     report = game.opz_tracks()[0]
     ppi = pygame.Rect(0, 0, 400, 400)
@@ -221,6 +220,62 @@ def test_native_opz_bearing_ray_starts_at_released_helicopter_origin():
     assert start[0] > ppi.centerx
     assert start[1] == pytest.approx(ppi.centery)
     assert end[1] < start[1]
+
+
+def test_ship_and_helicopter_release_create_two_independent_opz_bearings():
+    game = Game(seed=911, start_menu=False, audio_enabled=False)
+    game.sonar.contacts.clear()
+    contact = Contact(1, 99003, "passiv", "sub")
+    contact.update_passive(90.0, .8, .8, "hidden", game.sim_t)
+    contact.observer_x, contact.observer_y = game.ship.x, game.ship.y
+    contact.ship_observer_x, contact.ship_observer_y = game.ship.x, game.ship.y
+    contact.update_dip_passive(180.0, game.sim_t, game.ship.x + 5.0,
+                               game.ship.y - 5.0, 1.5)
+    game.sonar.contacts[contact.target_id] = contact
+
+    assert game.release_sonar_contact(contact, True) is True
+    assert len(game.opz_tracks()) == 1
+    assert game.release_sonar_contact(contact, True, source="helicopter") == "not_qualified"
+    assert game.qualify_helicopter_contact(contact, True) is True
+    assert game.release_sonar_contact(contact, True, source="helicopter") is True
+    tracks = game.opz_tracks()
+    assert len(tracks) == 2
+    ship = next(track for track in tracks if track.source == "SONAR-BRG")
+    dip = next(track for track in tracks if track.source == "SONAR-DIP-BRG")
+    assert ship.observation_id != dip.observation_id
+    assert (ship.observer_x, ship.observer_y) == (game.ship.x, game.ship.y)
+    assert (dip.observer_x, dip.observer_y) == (game.ship.x + 5.0, game.ship.y - 5.0)
+    assert (ship.bearing, dip.bearing) == (90.0, 180.0)
+    chart = pygame.Rect(0, 0, 400, 400)
+    ship_ray = stations_view._opz_bearing_ray(game, ship, chart, 20.0)
+    dip_ray = stations_view._opz_bearing_ray(game, dip, chart, 20.0)
+    assert ship_ray[0] == pytest.approx((200.0, 200.0))
+    assert dip_ray[0] == pytest.approx((250.0, 150.0))
+    game.ship.x += 1.0
+    # Both rays keep their measured origins when the frigate moves.
+    assert stations_view._opz_bearing_ray(game, ship, chart, 20.0)[0] == \
+        pytest.approx((190.0, 200.0))
+    assert stations_view._opz_bearing_ray(game, dip, chart, 20.0)[0] == \
+        pytest.approx((240.0, 150.0))
+    game.ship.x -= 1.0
+
+    contact._fx, contact._fy = game.ship.x + 5.0, game.ship.y - 5.0
+    contact.observer_x, contact.observer_y = contact._fx, contact._fy
+    contact.update_ping(180.0, 5.0, 60.0, .9, game.sim_t,
+                        fix_source="DIPPING")
+    tracks_after_ping = game.opz_tracks()
+    assert {track.source for track in tracks_after_ping} == {
+        "SONAR-BRG", "SONAR-DIP-BRG"}
+    ship_after_ping = next(track for track in tracks_after_ping
+                           if track.source == "SONAR-BRG")
+    assert (ship_after_ping.observer_x, ship_after_ping.observer_y) == (
+        game.ship.x, game.ship.y)
+
+    assert game.release_sonar_contact(contact, False, source="helicopter") is True
+    assert [track.observation_id for track in game.opz_tracks()] == [ship.observation_id]
+    assert game.release_sonar_contact(contact, True, source="helicopter") is True
+    assert game.release_sonar_contact(contact, False) is True
+    assert [track.observation_id for track in game.opz_tracks()] == [dip.observation_id]
 
 
 def test_same_v10_upgrader_recognizes_only_prior_exact_release_shape():
@@ -235,9 +290,11 @@ def test_same_v10_upgrader_recognizes_only_prior_exact_release_shape():
                 "dip_water_depth_m", "dip_ping_cooldown"):
         del old["helo"][key]
     for row in old["sonar"]["contacts"].values():
-        for key in ("released_to_opz", "passive_source", "observer_x", "observer_y",
+        for key in ("released_to_opz", "dip_released_to_opz", "ship_observer_x", "ship_observer_y",
+                    "passive_source", "observer_x", "observer_y",
                     "dip_bearing", "dip_bearing_uncertainty_deg", "dip_last_seen",
-                    "dip_observer_x", "dip_observer_y"):
+                    "dip_observer_x", "dip_observer_y", "buoy_reports",
+                    "helo_qualified", "buoy_released_to_opz"):
             del row[key]
 
     restored = Game(seed=903, start_menu=False, audio_enabled=False)
@@ -268,6 +325,8 @@ def test_v10_roundtrip_preserves_dip_release_and_pending_echo(monkeypatch):
     assert game.sonar._pending_pings
     contact = game.sonar._get_contact(target)
     contact.released_to_opz = True
+    contact.dip_released_to_opz = True
+    contact.ship_observer_x, contact.ship_observer_y = game.ship.x, game.ship.y
 
     state = json.loads(json.dumps(game.save_state(), allow_nan=False))
     restored = Game(seed=905, start_menu=False, audio_enabled=False)
@@ -277,6 +336,10 @@ def test_v10_roundtrip_preserves_dip_release_and_pending_echo(monkeypatch):
     assert restored.helo.dip_depth_m == 50.0
     assert restored.helo.dip_ping_cooldown == 12.0
     assert restored.sonar.contacts[target.id].released_to_opz
+    assert restored.sonar.contacts[target.id].dip_released_to_opz
+    assert (restored.sonar.contacts[target.id].ship_observer_x,
+            restored.sonar.contacts[target.id].ship_observer_y) == (
+                game.ship.x, game.ship.y)
     assert restored.sonar._pending_pings[0]["mode"] == "DIPPING"
     assert restored.sonar._pending_pings[0]["snapshot"] == \
         state["sonar"]["pending_pings"][0]["snapshot"]
@@ -331,15 +394,18 @@ def test_helicopter_station_can_cycle_and_release_its_own_dip_plot():
     assert game.selected_contact is None
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_g, mod=0))
     assert game.selected_contact is dip_found
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_f, mod=0))
+    assert dip_found.helo_qualified
 
     game.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
-    assert dip_found.released_to_opz is True
+    assert dip_found.dip_released_to_opz is True
+    assert dip_found.released_to_opz is False
     assert ship_only.released_to_opz is False
 
     game.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_g, mod=pygame.KMOD_SHIFT))
-    assert dip_found.released_to_opz is False
+    assert dip_found.dip_released_to_opz is False
 
 
 def test_helicopter_view_shows_only_the_helicopters_own_dip_plot():
@@ -362,7 +428,43 @@ def test_helicopter_view_shows_only_the_helicopters_own_dip_plot():
     game.screen = surface
     game.station = Station.HELICOPTER
     stations_view.draw_helicopter_view(game)  # must not crash
+    game.station_page = 2
+    stations_view.draw_helicopter_view(game)
+
+
+def test_entering_helicopter_station_opens_sonar_console():
+    game = Game(seed=909, start_menu=False, audio_enabled=False)
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_8, mod=0))
+    assert game.station is Station.HELICOPTER
+    assert game.station_page == 2
+
+    game.station = Station.ENGINE
+    game.station_page = 1
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_TAB, mod=0))
+    assert game.station is Station.HELICOPTER
+    assert game.station_page == 2
     pygame.quit()
+
+
+def test_helicopter_can_select_active_only_dip_echo():
+    game = Game(seed=910, start_menu=False, audio_enabled=False)
+    game.sonar.contacts.clear()
+    contact = Contact(1, 90202, "ping", "sub")
+    contact._fx, contact._fy = 5.0, 6.0
+    contact.observer_x, contact.observer_y = 5.0, 6.0
+    contact.update_ping(90.0, 3.0, 40.0, .8, game.sim_t,
+                        fix_source="DIPPING")
+    game.sonar.contacts[contact.target_id] = contact
+    assert stations_view.helo_dip_contacts(game) == [contact]
+    game._cycle_helo_contact(1)
+    assert game.selected_contact is contact
+    assert "090.0" in stations_view._helo_dip_contact_line(game)
+    assert game.qualify_helicopter_contact(contact, True) is True
+    assert game.release_sonar_contact(contact, True, source="helicopter") is True
+    reports = game.opz_tracks()
+    assert len(reports) == 1 and reports[0].source == "SONAR-DIPPING"
+    assert reports[0].range_nm == pytest.approx(3.0)
+    assert (reports[0].observer_x, reports[0].observer_y) == (5.0, 6.0)
 
 
 def test_helicopter_station_can_classify_its_own_selected_contact():
@@ -398,7 +500,7 @@ def test_helicopter_only_contact_reports_its_own_origin_to_opz():
     origin_x, origin_y = game.ship.x + 5.0, game.ship.y + 2.0
     contact.update_dip_passive(15.0, game.sim_t, origin_x, origin_y, 1.5)
     contact.last_seen = game.sim_t
-    contact.released_to_opz = True
+    contact.dip_released_to_opz = True
     game.sonar.contacts[contact.target_id] = contact
 
     report = game.opz_tracks()[0]

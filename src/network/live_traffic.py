@@ -43,8 +43,10 @@ _AIS_MIN_MOVING_SOG_KN = 0.1      # AIS-Aufloesung: 0.0 kn bedeutet Stillstand
 
 _AIRCRAFT_RELEVANCE_NM = 150.0
 _AIRCRAFT_RELEASE_NM = 200.0
-_AIRCRAFT_STALE_S = 90.0          # mehrere verpasste ~20s-Polls -> vergessen
+_AIRCRAFT_STALE_S = 450.0         # mehrere verpasste ~180s-Polls -> vergessen
 _MAX_LIVE_AIRCRAFT = 40
+_ADSB_QUERY_MARGIN_NM = 25.0
+_ADSB_REBIND_NM = 25.0
 
 _AIS_METADATA_FIELDS = (
     "name", "callsign", "imo", "ship_type", "destination", "draught_m",
@@ -106,6 +108,7 @@ class LiveTrafficManager:
         self._aircraft_seq: dict[str, int] = {}
         self._center: tuple[float, float] | None = None
         self._size_nm: float = 0.0
+        self._adsb_anchor: tuple[float, float] | None = None
 
     # --- Lebenszyklus ---------------------------------------------------
 
@@ -123,6 +126,7 @@ class LiveTrafficManager:
         self._aircraft_seq.clear()
         self.aircraft.clear()
         self._center = None
+        self._adsb_anchor = None
         metadata = getattr(world.coast, "metadata", None)
         center = metadata.get("center") if metadata else None
         if center is None:
@@ -135,8 +139,10 @@ class LiveTrafficManager:
                 preferences.aisstream_api_key.strip(), bbox_latlon)
             self.ais_client.start()
         if preferences.live_adsb_enabled:
+            self._adsb_anchor = (float(game.ship.x), float(game.ship.y))
             self.adsb_client = OpenSkyClient(
-                preferences.opensky_credentials.strip(), bbox_latlon)
+                preferences.opensky_credentials.strip(),
+                self._adsb_bounding_box(*self._adsb_anchor))
             self.adsb_client.start()
 
     def stop(self) -> None:
@@ -156,6 +162,35 @@ class LiveTrafficManager:
         lat_min, lat_max = sorted((lat_a, lat_b))
         lon_min, lon_max = sorted((lon_a, lon_b))
         return ((lat_min, lon_min), (lat_max, lon_max))
+
+    def _adsb_bounding_box(self, x_nm: float, y_nm: float):
+        """Query the ship's sensor neighborhood, clipped to the real sector."""
+        radius = _AIRCRAFT_RELEVANCE_NM + _ADSB_QUERY_MARGIN_NM
+        x_min = max(0.0, x_nm - radius)
+        x_max = min(self._size_nm, x_nm + radius)
+        y_min = max(0.0, y_nm - radius)
+        y_max = min(self._size_nm, y_nm + radius)
+        center_lon, center_lat = self._center
+        lon_min, lat_min = nm_to_lonlat(
+            x_min, y_max, center_lon, center_lat, self._size_nm)
+        lon_max, lat_max = nm_to_lonlat(
+            x_max, y_min, center_lon, center_lat, self._size_nm)
+        if lon_min > lon_max:
+            # A single OpenSky box cannot wrap across the antimeridian.
+            # Cover both sides until the ship moves back into a normal box.
+            lon_min, lon_max = -180.0, 180.0
+        return ((lat_min, lon_min), (lat_max, lon_max))
+
+    def _refresh_adsb_bounding_box(self, game) -> None:
+        client = self.adsb_client
+        if client is None:
+            return
+        position = (float(game.ship.x), float(game.ship.y))
+        anchor = self._adsb_anchor
+        if anchor is None or math.hypot(position[0] - anchor[0],
+                                         position[1] - anchor[1]) >= _ADSB_REBIND_NM:
+            client.set_bounding_box(self._adsb_bounding_box(*position))
+            self._adsb_anchor = position
 
     # --- Zerstoerung ------------------------------------------------------
 
@@ -182,6 +217,7 @@ class LiveTrafficManager:
     def pump(self, game) -> None:
         if self._center is None:
             return
+        self._refresh_adsb_bounding_box(game)
         self._drain_ais(game)
         self._drain_adsb(game)
         now = time.time()

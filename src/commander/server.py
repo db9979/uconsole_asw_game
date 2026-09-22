@@ -1,8 +1,9 @@
 """Bounded HTTP transport for Remote Crew protocol v2.
 
-HTTP is unencrypted and trusted-LAN-only. Credentials and pairing codes must
-not cross an untrusted network. This module neither imports simulation code
-nor starts on import.
+The original Commander listener is unencrypted and trusted-LAN-only. The
+optional web-host configuration binds to an explicit trusted LAN address behind
+an exact HTTPS proxy.
+This module neither imports simulation code nor starts on import.
 """
 
 from collections import OrderedDict, deque
@@ -22,13 +23,17 @@ import struct
 import threading
 import time
 import re
+import select
 import unicodedata
+from urllib.parse import urlsplit
+
+from src.commander.web_auth import WebHostAuth
+from src.commander.voice import PCM_BYTES as VOICE_PCM_BYTES, VoicePeer, read_frames
 
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
                              HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M,
-                             LEVEL_ORDER, SAVE_SLOTS, SCENARIO_ORDER,
-                             TIME_SCALE_STEPS)
+                             LEVEL_ORDER, SAVE_SLOTS, SCENARIO_ORDER)
 _log = logging.getLogger(__name__)
 _CONNECTION_DEADLINE_S = 3.0
 _CONTACT_ASSET_ROUTE = re.compile(
@@ -37,6 +42,8 @@ _MAX_PREBUILT_ROUTES = 256  # 2 PNG routes/profile + 1 JSON route; headroom abov
 _MAX_PREBUILT_FILE_BYTES = 4 * 1024 * 1024
 _MAX_PREBUILT_BYTES = 32 * 1024 * 1024
 _V2_COOKIE = "ujagd_remote_v2"
+_WEB_REQUEST_ID = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}").fullmatch
 _V2_SESSION_IDLE_S = 8 * 60 * 60
 _V2_STATION_LEASE_S = 15.0
 _V2_SESSION_LIMIT = 12
@@ -50,12 +57,15 @@ STATE_MAX_BYTES = 512 * 1024
 CHART_MAX_BYTES = 2 * 1024 * 1024
 _V2_STATION_CAPABILITIES = ("command", "direct_fire", "sonar_audio")
 SONAR_AUDIO_BYTES = 2048
-# Two seconds of blocks: a client that stalls for a moment catches up in order
+# Ten seconds of blocks: a client that stalls for a moment catches up in order
 # instead of losing audio; older blocks are dropped and reported as a discontinuity.
-SONAR_AUDIO_RING_BLOCKS = 8
+SONAR_AUDIO_RING_BLOCKS = 40
 SONAR_AUDIO_FRAMES = 1024
 SONAR_AUDIO_RATE = 4096
 SONAR_STREAM_ROUTE = "/ws/v2/sonar"
+SONAR_AUDIO_STREAM_ROUTES = {"/ws/v2/sonar/audio": "sonar",
+                            "/ws/v2/helicopter/audio": "helicopter"}
+VOICE_STREAM_ROUTE = "/ws/v2/voice"
 SONAR_STREAM_MAGIC = b"UJS2"
 SONAR_STREAM_VERSION = 1
 SONAR_STREAM_HEADER_BYTES = 60
@@ -74,7 +84,7 @@ _V2_COMMAND_FIELDS = {"protocol", "id", "seq", "station", "station_generation",
 _V2_COMMAND_GLOBAL_LIMIT = 64
 _V2_COMMAND_CLIENT_LIMIT = 8
 _V2_COMMAND_HISTORY_LIMIT = 64
-_V2_COMMAND_MAX_AGE_S = 2.0
+_V2_COMMAND_MAX_AGE_S = 5.0
 _COOKIE_NAME = re.compile(r"[!#$%&'*+\-.^_`|~0-9A-Za-z]+").fullmatch
 _COOKIE_VALUE = re.compile(r"[!#$%&'()*+\-./:<=>?@\[\]^_`{|}~0-9A-Za-z]*").fullmatch
 
@@ -322,12 +332,6 @@ def _slot_params(params):
             and type(params["slot"]) is int and 1 <= params["slot"] <= SAVE_SLOTS)
 
 
-def _time_scale_params(params):
-    return (type(params) is dict and set(params) == {"index"}
-            and type(params["index"]) is int
-            and 0 <= params["index"] < len(TIME_SCALE_STEPS))
-
-
 def _instructor_environment_params(params):
     return (type(params) is dict and set(params) == {"sea_state", "event"}
             and type(params["sea_state"]) is int
@@ -344,7 +348,7 @@ def _new_game_params(params):
         return False
     return (type(params["scenario"]) is str and params["scenario"] in SCENARIO_ORDER
             and type(params["world_mode"]) is str
-            and params["world_mode"] in ("fixed", "procedural")
+            and params["world_mode"] in ("fixed", "procedural", "real_fixed")
             and ("level" not in params or type(params["level"]) is str
                  and params["level"] in LEVEL_ORDER)
             and ("seed" not in params or type(params["seed"]) is int
@@ -361,7 +365,6 @@ V2_ACTION_REGISTRY = {
     # surface, and each action states the exact phases it may run in.
     "host_pause": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_ANY),
     "host_resume": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_ANY),
-    "host_time_scale": V2Action(_HOST_STATIONS, _time_scale_params, phases=_HOST_ANY),
     "host_save": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_ANY),
     "host_load": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_REPLACING),
     "host_new_game": V2Action(_HOST_STATIONS, _new_game_params,
@@ -374,6 +377,8 @@ V2_ACTION_REGISTRY = {
                                     _navigation_proposal_params),
     "sonar_classify": V2Action(frozenset({"sonar", "helicopter"}), _classification_params),
     "sonar_set_release": V2Action(frozenset({"sonar", "helicopter"}), _release_params),
+    "helicopter_qualify": V2Action(frozenset({"helicopter"}), _ref_enabled_params),
+    "helicopter_buoy_release": V2Action(frozenset({"helicopter"}), _release_params),
     "propose_target": V2Action(frozenset({"sonar"}), _single_ref_params),
     "clear_target_proposal": V2Action(frozenset({"sonar"}), _no_params),
     "opz_classify": V2Action(frozenset({"opz"}), _classification_params),
@@ -430,6 +435,26 @@ V2_ACTION_REGISTRY = {
     "helicopter_set_waypoint": V2Action(frozenset({"helicopter"}),
                                         _waypoint_params),
     "helicopter_deploy_buoy": V2Action(frozenset({"helicopter"}), _no_params),
+    "helicopter_set_buoy_mode": V2Action(frozenset({"helicopter"}),
+        _enum_params("mode", ("PASSIVE", "ACTIVE"))),
+    "helicopter_set_listen_source": V2Action(frozenset({"helicopter"}),
+        lambda params: (type(params) is dict and set(params) == {"source"}
+                        and type(params["source"]) is str
+                        and (params["source"] == "DIP" or
+                             params["source"].startswith("SB")
+                             and params["source"][2:].isdigit()
+                             and len(params["source"]) <= 5))),
+    "helicopter_set_listen_bearing": V2Action(frozenset({"helicopter"}),
+        _bounded_number_params("bearing", 0.0, 359.99999999999994)),
+    "helicopter_clear_listen_bearing": V2Action(frozenset({"helicopter"}), _no_params),
+    "helicopter_set_audio_mode": V2Action(frozenset({"helicopter"}),
+        _enum_params("mode", ("BROADBAND", "FILTERED", "HETERODYNE"))),
+    "helicopter_set_audio_band": V2Action(frozenset({"helicopter"}),
+        _enum_params("preset", ("FULL", "LOW", "SHAFT", "MID"))),
+    "helicopter_set_audio_gain": V2Action(frozenset({"helicopter"}),
+        _bounded_number_params("gain_db", -12.0, 24.0)),
+    "helicopter_set_audio_notch": V2Action(frozenset({"helicopter"}),
+        _bool_params("enabled")),
     "helicopter_set_dipping": V2Action(frozenset({"helicopter"}),
                                         _bool_params("deployed")),
     "helicopter_set_dip_depth": V2Action(frozenset({"helicopter"}),
@@ -520,10 +545,28 @@ class CommanderServer:
     remain stable for this server object, and allow five misses per rolling
     minute across all clients. A security lockout or explicit new-session
     ``revoke()`` rotates the code; ordinary stop/start and pairing do not.
-    Starting requires the three packaged ``data.commander`` assets.
+    Starting requires the packaged ``data.commander`` assets.
     """
 
-    def __init__(self, translations=None, contact_analysis_assets=None):
+    def __init__(self, translations=None, contact_analysis_assets=None,
+                 web_auth: WebHostAuth | None = None, public_origin: str | None = None):
+        if (web_auth is None) != (public_origin is None):
+            raise ValueError("web auth and public origin must be configured together")
+        if public_origin is not None:
+            parsed = urlsplit(public_origin)
+            if (parsed.scheme != "https" or not parsed.hostname or parsed.path
+                    or parsed.query or parsed.fragment or parsed.username
+                    or parsed.password or public_origin.endswith("/")):
+                raise ValueError("an exact HTTPS origin is required")
+        self.web_auth = web_auth
+        self.public_origin = public_origin
+        self._web_host_digest = None
+        self._web_admin_queue = deque(maxlen=32)
+        self._web_admin_results = OrderedDict()
+        self._web_admin_seen = OrderedDict()
+        self._web_admin_inflight = set()
+        self._web_options_state = _json_bytes({})
+        self._web_proposals = {"target": None, "navigation": None}
         self._lock = threading.RLock()
         self._lifecycle = threading.Lock()
         self._http = None
@@ -539,11 +582,19 @@ class CommanderServer:
         self._sonar_audio = deque(maxlen=SONAR_AUDIO_RING_BLOCKS)
         self._sonar_audio_context = None
         self._sonar_audio_sequence = 0
+        self._helicopter_audio = deque(maxlen=SONAR_AUDIO_RING_BLOCKS)
+        self._helicopter_audio_context = None
+        self._helicopter_audio_sequence = 0
+        self._audio_condition = threading.Condition(self._lock)
+        self._audio_clients = {}
         self._sonar_stream_sequence = 0
         self._sonar_stream_context = None
         self._sonar_stream_payload = None
         self._sonar_stream_condition = threading.Condition(self._lock)
         self._sonar_stream_clients = {}
+        self._voice_enabled = False
+        self._voice_peers = {}
+        self._voice_talker = None
         self._v2_proposals = {}
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._v2_events = {}
@@ -613,8 +664,26 @@ class CommanderServer:
                     ("/", "index.html", "text/html; charset=utf-8"),
                     ("/app.js", "app.js", "text/javascript; charset=utf-8"),
                     ("/style.css", "style.css", "text/css; charset=utf-8"),
+                    ("/sonar-audio-worklet.js", "sonar-audio-worklet.js", "text/javascript; charset=utf-8"),
                 )
             }
+            if self.web_auth is not None:
+                assets.update({
+                    route: (content_type, root.joinpath(name).read_bytes())
+                    for route, name, content_type in (
+                        ("/admin", "admin.html", "text/html; charset=utf-8"),
+                        ("/admin.js", "admin.js", "text/javascript; charset=utf-8"),
+                        ("/admin.css", "admin.css", "text/css; charset=utf-8"),
+                        ("/voice-worklet.js", "voice-worklet.js", "text/javascript; charset=utf-8"),
+                        ("/voice.js", "voice.js", "text/javascript; charset=utf-8"),
+                    )
+                })
+            else:
+                # The local uConsole crew listener has no web-admin voice option.
+                mime, page = assets["/"]
+                page = page.replace(b'<script src="./voice.js" defer></script>', b'')
+                page = re.sub(rb'\s*<div class="voice-controls"[^\n]*</div>', b'', page)
+                assets["/"] = (mime, page)
             if assets.keys() & self._prebuilt_assets.keys():
                 raise ValueError("duplicate Commander asset route")
             assets.update(self._prebuilt_assets)
@@ -641,6 +710,7 @@ class CommanderServer:
             with self._lock:
                 http, thread = self._http, self._thread
                 self._running = False
+                self._voice_enabled = False
                 self._http = self._thread = None
                 self._revoke_locked()
             if http is not None:
@@ -687,7 +757,10 @@ class CommanderServer:
             chr(65 + letters // divisor % 26) for divisor in (26**2, 26, 1))
 
     def _revoke_locked(self, *, rotate_code=False):
+        self._voice_talker = None
+        self._voice_peers.clear()
         self._clear_sonar_audio_locked()
+        self._clear_helicopter_audio_locked()
         self._sonar_stream_sequence += 1
         self._sonar_stream_context = None
         self._sonar_stream_payload = None
@@ -696,6 +769,11 @@ class CommanderServer:
         for session in self._sessions_v2.values():
             self._clear_session_authority_locked(session, "session_revoked")
         self._sessions_v2.clear()
+        self._web_host_digest = None
+        self._web_admin_queue.clear()
+        self._web_admin_inflight.clear()
+        self._web_admin_seen.clear()
+        self._web_admin_results.clear()
         self._v2_proposals.clear()
         self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
         self._v2_events.clear()
@@ -708,6 +786,13 @@ class CommanderServer:
         self._sonar_audio.clear()
         self._sonar_audio_context = None
         self._sonar_audio_sequence = 0
+        self._audio_condition.notify_all()
+
+    def _clear_helicopter_audio_locked(self):
+        self._helicopter_audio.clear()
+        self._helicopter_audio_context = None
+        self._helicopter_audio_sequence = 0
+        self._audio_condition.notify_all()
 
     @staticmethod
     def _station_grants(station=None):
@@ -722,8 +807,14 @@ class CommanderServer:
             return False
         if session["active_station"] == station:
             return True
+        peer = next((candidate for candidate in self._voice_peers.values()
+                     if candidate.session is session), None)
+        if peer is not None:
+            self._voice_disconnect_locked(peer)
         if "sonar" in (session["active_station"], station):
             self._clear_sonar_audio_locked()
+        if "helicopter" in (session["active_station"], station):
+            self._clear_helicopter_audio_locked()
         session["active_station"] = station
         session["active_generation"] += 1
         session["held_commands"].clear()
@@ -746,9 +837,15 @@ class CommanderServer:
         if lease is None:
             session["requests"].pop(station, None)
             return False
+        peer = next((candidate for candidate in self._voice_peers.values()
+                     if candidate.session is session and candidate.station == station), None)
+        if peer is not None:
+            self._voice_disconnect_locked(peer)
         self._reject_station_commands_locked(session, station, reason)
         if station == "sonar":
             self._clear_sonar_audio_locked()
+        if station == "helicopter":
+            self._clear_helicopter_audio_locked()
         del session["leases"][station]
         session["requests"].pop(station, None)
         self._station_generations[station] += 1
@@ -857,6 +954,203 @@ class CommanderServer:
                 # A solo session has no competing client to free stations for;
                 # direct fire still requires fresh presence at apply time.
                 self._clear_session_authority_locked(session, "role_revoked")
+        if self._web_host_digest not in self._sessions_v2:
+            self._web_host_digest = None
+
+    def _new_session_locked(self, name: str, *, web_host=False):
+        token = secrets.token_urlsafe(32)
+        session = {
+            "client_id": secrets.token_urlsafe(18),
+            "name": name,
+            "csrf": secrets.token_urlsafe(32),
+            "ordinal": self._next_v2_ordinal,
+            "requests": {},
+            "next_request_generation": 0,
+            "leases": {},
+            "active_station": None,
+            "active_generation": 0,
+            "simlog": False,
+            "solo_host": False,
+            "web_host": web_host,
+            "host_generation": 0,
+            "presence": time.monotonic(),
+            "last_get": time.monotonic(),
+            "last_command_seq": -1,
+            "command_queue": deque(),
+            "command_ids": OrderedDict(),
+            "command_results": deque(maxlen=_V2_COMMAND_HISTORY_LIMIT),
+            "held_commands": {},
+        }
+        self._next_v2_ordinal += 1
+        digest = hashlib.sha256(token.encode("ascii")).digest()
+        self._sessions_v2[digest] = session
+        if web_host:
+            self._web_host_digest = digest
+            session["solo_host"] = True
+            session["host_generation"] += 1
+            session["simlog"] = True
+            self._web_grant_available_locked(session)
+        elif self._solo:
+            self._solo_grant_all_locked(session)
+        return token, session
+
+    def web_host_present(self, max_age=15.0):
+        with self._lock:
+            self._expire_locked()
+            session = self._sessions_v2.get(self._web_host_digest)
+            return bool(session and time.monotonic() - session["presence"] <= max_age)
+
+    def web_host_session(self):
+        with self._lock:
+            self._expire_locked()
+            return self._sessions_v2.get(self._web_host_digest)
+
+    def _web_grant_available_locked(self, session):
+        for station in STATIONS:
+            if not any(station in candidate["leases"]
+                       for candidate in self._sessions_v2.values()):
+                self._station_generations[station] += 1
+                session["leases"][station] = {
+                    "generation": self._station_generations[station],
+                    "grants": self._solo_grants(station),
+                }
+        if session["active_station"] not in session["leases"]:
+            self._set_active_station_locked(session, next(iter(session["leases"]), None))
+
+    def web_rebase(self):
+        """Keep authenticated clients, clear old commands and crew authority."""
+        with self._lock:
+            while self._web_admin_queue:
+                request_id, _, _ = self._web_admin_queue.popleft()
+                self.finish_web_admin(request_id, {"ok": False, "error": "world_replaced"})
+            for session in self._sessions_v2.values():
+                self._clear_session_authority_locked(session)
+            host = self._sessions_v2.get(self._web_host_digest)
+            if host is not None:
+                host["solo_host"] = True
+                host["host_generation"] += 1
+                host["simlog"] = True
+                self._web_grant_available_locked(host)
+            self._v2_proposals.clear()
+            self._v2_events.clear()
+            self._v2_private_events.clear()
+            self._v2_simlogs.clear()
+
+    def web_reclaim_available(self):
+        with self._lock:
+            host = self._sessions_v2.get(self._web_host_digest)
+            if host is not None:
+                self._web_grant_available_locked(host)
+
+    def drain_web_admin(self):
+        with self._lock:
+            items = list(self._web_admin_queue)
+            self._web_admin_queue.clear()
+            self._web_admin_inflight.update(row[0] for row in items)
+            return items
+
+    def reject_web_admin_pending(self, reason="world_replaced"):
+        with self._lock:
+            while self._web_admin_queue:
+                request_id, _, _ = self._web_admin_queue.popleft()
+                self.finish_web_admin(request_id, {"ok": False, "error": reason})
+
+    def finish_web_admin(self, request_id, ok):
+        with self._lock:
+            self._web_admin_inflight.discard(request_id)
+            if request_id not in self._web_admin_seen:
+                return
+            self._web_admin_results[request_id] = ok
+            while len(self._web_admin_results) > 8:
+                self._web_admin_results.popitem(last=False)
+
+    def _enqueue_web_admin_locked(self, digest, body, request_id):
+        if request_id is None or _WEB_REQUEST_ID(request_id) is None:
+            return 400, {"error": "invalid_request_id"}
+        encoded = _json_bytes(body)
+        previous = self._web_admin_seen.get(request_id)
+        if previous is not None:
+            if previous != encoded:
+                return 409, {"error": "duplicate_id_conflict"}
+            if request_id in self._web_admin_results:
+                return 200, {"id": request_id,
+                             "result": self._web_admin_results[request_id]}
+            if (request_id in self._web_admin_inflight
+                    or any(row[0] == request_id for row in self._web_admin_queue)):
+                return 202, {"id": request_id}
+            return 409, {"error": "result_expired"}
+        if len(self._web_admin_queue) >= 32:
+            return 429, {"error": "queue_full"}
+        self._web_admin_queue.append((request_id, digest, body))
+        self._web_admin_seen[request_id] = encoded
+        while len(self._web_admin_seen) > 64:
+            pending = self._web_admin_inflight | {
+                row[0] for row in self._web_admin_queue}
+            oldest = next((key for key in self._web_admin_seen if key not in pending), None)
+            if oldest is None:
+                break
+            del self._web_admin_seen[oldest]
+        return 202, {"id": request_id}
+
+    def publish_web_options(self, snapshot):
+        payload = _json_bytes(snapshot)
+        if len(payload) > 4096:
+            raise ValueError("web options snapshot too large")
+        with self._lock:
+            self._web_options_state = payload
+
+    @property
+    def voice_talker(self):
+        """Detached station label for an optional Pygame status display."""
+        with self._lock:
+            peer = self._voice_talker
+            return None if peer is None else peer.station
+
+    @property
+    def voice_enabled(self):
+        with self._lock:
+            return self._voice_enabled
+
+    def set_voice_enabled(self, enabled):
+        if type(enabled) is not bool or self.web_auth is None:
+            raise ValueError("web-host voice option requires a bool")
+        with self._lock:
+            self._voice_enabled = enabled
+            if not enabled:
+                self._voice_talker = None
+                for peer in self._voice_peers.values():
+                    peer.outgoing.clear()
+
+    def _voice_valid_locked(self, peer):
+        session = self._sessions_v2.get(peer.digest)
+        lease = None if session is None else session["leases"].get(peer.station)
+        return (self._running and self._voice_enabled
+                and self._voice_peers.get(peer.digest) is peer
+                and session is peer.session and lease is not None
+                and lease["generation"] == peer.lease_generation
+                and session["active_station"] == peer.station
+                and session["active_generation"] == peer.active_generation)
+
+    def _voice_status_locked(self):
+        talker = self._voice_talker
+        payload = _json_bytes({"type": "talker",
+                               "station": None if talker is None else talker.station})
+        for peer in self._voice_peers.values():
+            peer.outgoing.append((1, payload))
+
+    def _voice_disconnect_locked(self, peer):
+        if self._voice_peers.get(peer.digest) is peer:
+            del self._voice_peers[peer.digest]
+        if self._voice_talker is peer:
+            self._voice_talker = None
+            self._voice_status_locked()
+
+    def publish_web_proposals(self, snapshot):
+        payload = _json_bytes(snapshot)
+        if len(payload) > 4096:
+            raise ValueError("web proposals too large")
+        with self._lock:
+            self._web_proposals = snapshot
 
     def revoke(self):
         """Begin a new game/server security session and rotate its join code."""
@@ -903,7 +1197,7 @@ class CommanderServer:
         return {
             "command": True,
             "direct_fire": station in ("weapons", "helicopter", "opz"),
-            "sonar_audio": station == "sonar",
+            "sonar_audio": station in ("sonar", "helicopter"),
         }
 
     def _solo_grant_all_locked(self, session, active=None):
@@ -934,6 +1228,7 @@ class CommanderServer:
         with self._lock:
             self._expire_locked()
             self._clear_sonar_audio_locked()
+            self._clear_helicopter_audio_locked()
             self._v2_proposals.clear()
             self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
             self._v2_events.clear()
@@ -1032,7 +1327,7 @@ class CommanderServer:
         if grants is not None and (
                 not grants["command"]
                 or grants["direct_fire"] and station not in ("weapons", "helicopter", "opz")
-                or grants["sonar_audio"] and station != "sonar"):
+                or grants["sonar_audio"] and station not in ("sonar", "helicopter")):
             return False
         with self._lock:
             self._expire_locked()
@@ -1134,7 +1429,7 @@ class CommanderServer:
                     not lease["grants"]["command"]
                     or station not in ("weapons", "helicopter", "opz")):
                 return False
-            if capability == "sonar_audio" and enabled and station != "sonar":
+            if capability == "sonar_audio" and enabled and station not in ("sonar", "helicopter"):
                 return False
             changed = lease["grants"][capability] != enabled
             lease["grants"][capability] = enabled
@@ -1147,7 +1442,10 @@ class CommanderServer:
             elif capability == "direct_fire" and not enabled:
                 self._reject_direct_fire_commands_locked(session, station)
             elif capability == "sonar_audio" and not enabled:
-                self._clear_sonar_audio_locked()
+                if station == "helicopter":
+                    self._clear_helicopter_audio_locked()
+                else:
+                    self._clear_sonar_audio_locked()
             return True
 
     def activate_station(self, client_id, station, station_generation) -> bool:
@@ -1174,6 +1472,8 @@ class CommanderServer:
         if type(reason) is not str or not reason:
             raise ValueError("invalid command invalidation reason")
         with self._lock:
+            self._clear_sonar_audio_locked()
+            self._clear_helicopter_audio_locked()
             for session in self._sessions_v2.values():
                 self._reject_session_commands_locked(session, reason)
 
@@ -1525,6 +1825,58 @@ class CommanderServer:
         with self._lock:
             self._clear_sonar_audio_locked()
 
+    def clear_helicopter_audio(self):
+        with self._lock:
+            self._clear_helicopter_audio_locked()
+
+    def prepare_helicopter_audio(self, *, world_session: str, world_epoch: int):
+        if threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("helicopter audio preparation requires the main thread")
+        with self._lock:
+            self._expire_locked()
+            holder = next(((digest, session) for digest, session
+                           in self._sessions_v2.items()
+                           if "helicopter" in session["leases"]
+                           and session["active_station"] == "helicopter"), None)
+            if (holder is None or not holder[1]["leases"]["helicopter"]
+                    ["grants"]["sonar_audio"]):
+                self._clear_helicopter_audio_locked()
+                return None
+            generation = holder[1]["leases"]["helicopter"]["generation"]
+            context = (holder[0], generation, holder[1]["active_generation"],
+                       world_session, world_epoch)
+            if context != self._helicopter_audio_context:
+                self._clear_helicopter_audio_locked()
+                self._helicopter_audio_context = context
+            return generation
+
+    def publish_helicopter_audio(self, pcm: bytes, *, world_session: str,
+                                 world_epoch: int, station_generation: int):
+        if threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("helicopter audio publication requires the main thread")
+        if type(pcm) is not bytes or len(pcm) != SONAR_AUDIO_BYTES:
+            raise ValueError("invalid helicopter audio block")
+        with self._lock:
+            self._expire_locked()
+            holder = next(((digest, session) for digest, session
+                           in self._sessions_v2.items()
+                           if "helicopter" in session["leases"]
+                           and session["active_station"] == "helicopter"), None)
+            if holder is None:
+                self._clear_helicopter_audio_locked()
+                return False
+            context = (holder[0], station_generation,
+                       holder[1]["active_generation"], world_session, world_epoch)
+            if (not holder[1]["leases"]["helicopter"]["grants"]["sonar_audio"]
+                    or holder[1]["leases"]["helicopter"]["generation"]
+                    != station_generation or context != self._helicopter_audio_context):
+                self._clear_helicopter_audio_locked()
+                return False
+            self._helicopter_audio_sequence += 1
+            self._helicopter_audio.append((self._helicopter_audio_sequence, pcm))
+            self._audio_condition.notify_all()
+            return True
+
     def prepare_sonar_audio(self, *, world_session: str, world_epoch: int):
         """Bind an empty stream to the current granted sonar holder."""
         if threading.current_thread() is not threading.main_thread():
@@ -1581,6 +1933,7 @@ class CommanderServer:
                 self._sonar_audio_context = context
             self._sonar_audio_sequence += 1
             self._sonar_audio.append((self._sonar_audio_sequence, pcm))
+            self._audio_condition.notify_all()
             return True
 
 _OVERLOAD_RESPONSE = (
@@ -1590,7 +1943,8 @@ _OVERLOAD_RESPONSE = (
     b"\r\n"
 )
 # Up to 9 stations poll at 2 Hz plus a sonar audio stream; headroom above that.
-_CONNECTION_SLOT_LIMIT = 16
+# Nine voice sockets, a sonar stream and short HTTP polls need separate slots.
+_CONNECTION_SLOT_LIMIT = 28
 
 class _HTTPServer(HTTPServer):
     allow_reuse_address = True
@@ -1608,6 +1962,9 @@ class _HTTPServer(HTTPServer):
         self.hosts = {f"{host}:{port}"}
         if ipaddress.IPv4Address(host).is_loopback:
             self.hosts.add(f"localhost:{port}")
+        if owner.public_origin is not None:
+            self.hosts.add(urlsplit(owner.public_origin).netloc)
+        self.expected_origin = owner.public_origin or f"http://{host}:{port}"
 
     def process_request(self, request, client_address):
         deadline = time.monotonic() + _CONNECTION_DEADLINE_S
@@ -1700,7 +2057,7 @@ class _Handler(BaseHTTPRequestHandler):
             ("Connection", "close"), ("Cache-Control", "no-store"),
             ("X-Content-Type-Options", "nosniff"), ("X-Frame-Options", "DENY"),
             ("Referrer-Policy", "no-referrer"),
-            ("Permissions-Policy", "camera=(), microphone=(), geolocation=()"),
+            ("Permissions-Policy", "camera=(), microphone=(self), geolocation=()"),
             ("Content-Security-Policy", "default-src 'none'; script-src 'self'; "
              "style-src 'self'; img-src 'self'; connect-src 'self'; "
              "base-uri 'none'; frame-ancestors 'none'; form-action 'self'"),
@@ -1782,6 +2139,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.close_connection = True
         for name in ("Host", "Origin", "Content-Length", "Content-Type",
                      "Authorization", "Cookie", "X-U-Jagd-CSRF", "Upgrade",
+                     "X-U-Jagd-Request-ID",
                      "Sec-WebSocket-Key", "Sec-WebSocket-Version",
                      "Sec-WebSocket-Protocol"):
             if len(self.headers.get_all(name, [])) > 1:
@@ -1792,7 +2150,9 @@ class _Handler(BaseHTTPRequestHandler):
         if host not in self.server.hosts:
             self.send_error(403)
             return
-        if (origin is not None and origin != f"http://{host}") or (self.command == "POST" and origin is None):
+        expected_origin = (self.server.expected_origin if self.server.owner.public_origin
+                           else f"http://{host}")
+        if (origin is not None and origin != expected_origin) or (self.command == "POST" and origin is None):
             self.send_error(403)
             return
         if "Transfer-Encoding" in self.headers or "Expect" in self.headers:
@@ -1917,14 +2277,14 @@ class _Handler(BaseHTTPRequestHandler):
             session["last_get"] = time.monotonic()
         return session, digest, True
 
-    @staticmethod
-    def _v2_cookie(token):
-        return f"{_V2_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict"
+    def _v2_cookie(self, token):
+        secure = "; Secure" if self.server.owner.public_origin else ""
+        return f"{_V2_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict{secure}"
 
-    @staticmethod
-    def _clear_v2_cookie():
+    def _clear_v2_cookie(self):
+        secure = "; Secure" if self.server.owner.public_origin else ""
         return (f"{_V2_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; "
-                "Max-Age=0")
+                f"Max-Age=0{secure}")
 
     def _v2_unauthorized(self, presented):
         self._reply(401, {"error": "unauthorized"},
@@ -1933,7 +2293,9 @@ class _Handler(BaseHTTPRequestHandler):
     def _sonar_websocket(self):
         """Stream immutable projected samples to one active Sonar client."""
         owner = self.server.owner
-        if (self.headers.get("Origin") != f"http://{self.headers.get('Host')}"
+        expected_origin = (self.server.expected_origin if owner.public_origin
+                           else f"http://{self.headers.get('Host')}")
+        if (self.headers.get("Origin") != expected_origin
                 or self.headers.get("Upgrade", "").lower() != "websocket"
                 or "upgrade" not in {item.strip().lower() for item in
                                       self.headers.get("Connection", "").split(",")}
@@ -2021,10 +2383,276 @@ class _Handler(BaseHTTPRequestHandler):
                 pass
         self.close_connection = True
 
+    def _audio_websocket(self, role):
+        """Send detached PCM to the current audio lease; never read game state."""
+        owner = self.server.owner
+        expected_origin = (self.server.expected_origin if owner.public_origin
+                           else f"http://{self.headers.get('Host')}")
+        if (self.headers.get("Origin") != expected_origin
+                or self.headers.get("Upgrade", "").lower() != "websocket"
+                or "upgrade" not in {part.strip().lower() for part in
+                                      self.headers.get("Connection", "").split(",")}
+                or self.headers.get("Sec-WebSocket-Version") != "13"
+                or self.headers.get("Sec-WebSocket-Protocol") != "u-jagd-audio-v2"):
+            self.send_error(400)
+            return
+        key = self.headers.get("Sec-WebSocket-Key")
+        try:
+            valid_key = len(base64.b64decode(key or "", validate=True)) == 16
+        except (ValueError, TypeError):
+            valid_key = False
+        if not valid_key:
+            self.send_error(400)
+            return
+        marker = object()
+        with owner._audio_condition:
+            owner._expire_locked()
+            try:
+                session, digest, presented = self._authenticated_v2_locked(renew=True)
+            except (UnicodeEncodeError, ValueError):
+                self.send_error(400)
+                return
+            if session is None:
+                self._v2_unauthorized(presented)
+                return
+            lease = session["leases"].get(role)
+            context = (owner._sonar_audio_context if role == "sonar"
+                       else owner._helicopter_audio_context)
+            if (session["active_station"] != role or lease is None
+                    or not lease["grants"]["sonar_audio"] or context is None
+                    or context[:3] != (digest, lease["generation"],
+                                       session["active_generation"])):
+                self.send_error(403)
+                return
+            client_key = (digest, role)
+            if client_key in owner._audio_clients:
+                self._reply(409, {"error": "stream_exists"})
+                return
+            owner._audio_clients[client_key] = marker
+        accept = base64.b64encode(hashlib.sha1(
+            key.encode("ascii") + _WEBSOCKET_GUID).digest()).decode("ascii")
+        self.send_response_only(101)
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", accept)
+        self.send_header("Sec-WebSocket-Protocol", "u-jagd-audio-v2")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if not self.server.mark_upgraded():
+            with owner._audio_condition:
+                owner._audio_clients.pop(client_key, None)
+            return
+        last_sequence = None
+        try:
+            while True:
+                with owner._audio_condition:
+                    owner._expire_locked()
+                    current = owner._sessions_v2.get(digest)
+                    lease = None if current is None else current["leases"].get(role)
+                    audio_context = (owner._sonar_audio_context if role == "sonar"
+                                     else owner._helicopter_audio_context)
+                    if (not owner._running or current is not session
+                            or owner._audio_clients.get(client_key) is not marker
+                            or current["active_station"] != role or lease is None
+                            or not lease["grants"]["sonar_audio"]
+                            or audio_context != context):
+                        break
+                    blocks = (owner._sonar_audio if role == "sonar"
+                              else owner._helicopter_audio)
+                    available = [entry for entry in blocks
+                                 if last_sequence is None or entry[0] > last_sequence]
+                    if not available:
+                        owner._audio_condition.wait(timeout=.5)
+                        continue
+                    # A slow socket skips old samples; never build an unbounded
+                    # per-client backlog or hold the simulation lock while sending.
+                    sequence, pcm = available[-4] if len(available) > 4 else available[0]
+                    last_sequence = sequence
+                    current["last_get"] = time.monotonic()
+                self.connection.sendall(_websocket_frame(
+                    b"UJA2" + struct.pack("<Q", sequence) + pcm))
+        except (OSError, TimeoutError, ValueError):
+            pass
+        finally:
+            with owner._audio_condition:
+                if owner._audio_clients.get(client_key) is marker:
+                    del owner._audio_clients[client_key]
+            try:
+                self.connection.sendall(_websocket_frame(
+                    struct.pack("!H", 1008), opcode=8))
+            except OSError:
+                pass
+        self.close_connection = True
+
+    def _voice_websocket(self):
+        """Relay authenticated, leased PTT audio without touching simulation."""
+        owner = self.server.owner
+        expected_origin = (self.server.expected_origin if owner.public_origin
+                           else f"http://{self.headers.get('Host')}")
+        protocols = [item.strip() for item in
+                     self.headers.get("Sec-WebSocket-Protocol", "").split(",")]
+        if (owner.web_auth is None or self.headers.get("Origin") != expected_origin
+                or self.headers.get("Upgrade", "").lower() != "websocket"
+                or "upgrade" not in {item.strip().lower() for item in
+                                      self.headers.get("Connection", "").split(",")}
+                or self.headers.get("Sec-WebSocket-Version") != "13"
+                or len(protocols) != 2 or protocols[0] != "u-jagd-voice-v2"
+                or not protocols[1].startswith("ujagd-csrf.")):
+            self.send_error(400)
+            return
+        key = self.headers.get("Sec-WebSocket-Key")
+        try:
+            decoded_key = base64.b64decode(key or "", validate=True)
+        except (ValueError, TypeError):
+            decoded_key = b""
+        if len(decoded_key) != 16:
+            self.send_error(400)
+            return
+        with owner._lock:
+            try:
+                session, digest, presented = self._authenticated_v2_locked(renew=True)
+            except (UnicodeEncodeError, ValueError):
+                self.send_error(400)
+                return
+            if session is None:
+                self._v2_unauthorized(presented)
+                return
+            if not secrets.compare_digest(protocols[1][len("ujagd-csrf."):],
+                                          session["csrf"]):
+                self.send_error(403)
+                return
+            station = session["active_station"]
+            lease = session["leases"].get(station)
+            if (not owner._voice_enabled or station not in STATIONS or lease is None):
+                self.send_error(403)
+                return
+            if digest in owner._voice_peers:
+                self._reply(409, {"error": "stream_exists"})
+                return
+            peer = VoicePeer(digest, session, station, lease["generation"],
+                             session["active_generation"])
+            owner._voice_peers[digest] = peer
+            peer.enqueue(1, _json_bytes({
+                "type": "ready", "station": station,
+                "talker": (None if owner._voice_talker is None
+                           else owner._voice_talker.station)}))
+        accept = base64.b64encode(hashlib.sha1(
+            key.encode("ascii") + _WEBSOCKET_GUID).digest()).decode("ascii")
+        self.send_response_only(101)
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", accept)
+        self.send_header("Sec-WebSocket-Protocol", "u-jagd-voice-v2")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if not self.server.mark_upgraded():
+            with owner._lock:
+                owner._voice_disconnect_locked(peer)
+            return
+        self.connection.settimeout(0.2)
+        try:
+            while True:
+                with owner._lock:
+                    owner._expire_locked()
+                    if not owner._voice_valid_locked(peer):
+                        break
+                    pending = list(peer.outgoing)
+                    peer.outgoing.clear()
+                for opcode, payload in pending:
+                    self.connection.sendall(_websocket_frame(payload, opcode=opcode))
+                readable, _, _ = select.select([self.connection], [], [], 0.025)
+                if not readable:
+                    continue
+                chunk = self.connection.recv(4096)
+                if not chunk:
+                    break
+                peer.incoming.extend(chunk)
+                for opcode, payload in read_frames(peer.incoming):
+                    if opcode == 8:
+                        return
+                    if opcode == 9:
+                        self.connection.sendall(_websocket_frame(payload, opcode=10))
+                        continue
+                    with owner._lock:
+                        if not owner._voice_valid_locked(peer):
+                            return
+                        if opcode == 1 and payload == b"down":
+                            if owner._voice_talker is None:
+                                owner._voice_talker = peer
+                                owner._voice_status_locked()
+                        elif opcode == 1 and payload == b"up":
+                            if owner._voice_talker is peer:
+                                owner._voice_talker = None
+                                owner._voice_status_locked()
+                        elif opcode == 2 and len(payload) == VOICE_PCM_BYTES:
+                            if owner._voice_talker is peer:
+                                frame = bytes((STATIONS.index(peer.station),)) + payload
+                                for other in owner._voice_peers.values():
+                                    if other is not peer:
+                                        other.enqueue(2, frame)
+                        else:
+                            return
+                # A TCP read can contain several valid frames. Bound only the
+                # unparsed remainder, never the complete batch before parsing.
+                if len(peer.incoming) > 4096:
+                    break
+        except (OSError, ValueError, TimeoutError):
+            pass
+        finally:
+            with owner._lock:
+                owner._voice_disconnect_locked(peer)
+            try:
+                self.connection.sendall(_websocket_frame(struct.pack("!H", 1008), opcode=8))
+            except OSError:
+                pass
+            self.close_connection = True
+
     def _get(self):
         owner = self.server.owner
-        if self.path == SONAR_STREAM_ROUTE:
+        if owner.web_auth is not None and self.path == "/api/v2/web/status":
+            self._reply(200, {"configured": owner.web_auth.configured})
+        elif owner.web_auth is not None and self.path == "/api/v2/web/room":
+            with owner._lock:
+                session, _, presented = self._authenticated_v2_locked(renew=True)
+                if session is None or not session.get("web_host"):
+                    self._v2_unauthorized(presented)
+                    return
+                session["presence"] = time.monotonic()
+                body = {
+                    "csrf": session["csrf"], "code": owner._code,
+                    "clients": [row for row in owner.client_statuses()
+                                if row["client_id"] != session["client_id"]],
+                    "results": dict(owner._web_admin_results),
+                    "proposals": dict(owner._web_proposals),
+                }
+            self._reply(200, body)
+        elif owner.web_auth is not None and self.path == "/api/v2/web/options":
+            with owner._lock:
+                session, digest, presented = self._authenticated_v2_locked(renew=True)
+                if session is None or digest != owner._web_host_digest:
+                    self._v2_unauthorized(presented)
+                    return
+                body = owner._web_options_state
+            self._reply(200, body)
+        elif owner.web_auth is not None and self.path == "/api/v2/voice/status":
+            with owner._lock:
+                session, _, presented = self._authenticated_v2_locked(renew=True)
+                if session is None:
+                    self._v2_unauthorized(presented)
+                    return
+                station = session["active_station"]
+                body = {"enabled": owner._voice_enabled,
+                        "station": station if station in session["leases"] else None,
+                        "csrf": session["csrf"],
+                        "talker": (None if owner._voice_talker is None
+                                   else owner._voice_talker.station)}
+            self._reply(200, body)
+        elif self.path == SONAR_STREAM_ROUTE:
             self._sonar_websocket()
+        elif self.path in SONAR_AUDIO_STREAM_ROUTES:
+            self._audio_websocket(SONAR_AUDIO_STREAM_ROUTES[self.path])
+        elif self.path == VOICE_STREAM_ROUTE:
+            self._voice_websocket()
         elif self.path in SONAR_SCOPE_ROUTES:
             content_type, body = self.server.assets["/"]
             self._reply(200, body, content_type)
@@ -2105,7 +2733,107 @@ class _Handler(BaseHTTPRequestHandler):
         audio_reply = None
         with owner._lock:
             owner._expire_locked()
-            if self.path == "/api/v2/pair":
+            if owner.web_auth is not None and self.path == "/api/v2/web/setup":
+                if (type(body) is not dict or set(body) != {"code", "password"}
+                        or type(body["code"]) is not str
+                        or type(body["password"]) is not str):
+                    status, response = 400, {"error": "invalid_request"}
+                elif owner.web_auth.configured:
+                    status, response = 409, {"error": "already_configured"}
+                elif owner.web_auth.setup(body["code"], body["password"]):
+                    status, response = 200, {"status": "configured"}
+                else:
+                    status, response = 403, {"error": "setup_failed"}
+            elif owner.web_auth is not None and self.path == "/api/v2/web/login":
+                if (type(body) is not dict or set(body) != {"password"}
+                        or type(body["password"]) is not str):
+                    status, response = 400, {"error": "invalid_request"}
+                elif not owner.web_auth.verify(body["password"]):
+                    status, response = 403, {"error": "invalid_credentials"}
+                else:
+                    old = owner._sessions_v2.pop(owner._web_host_digest, None)
+                    if old is not None:
+                        owner._clear_session_authority_locked(old)
+                    owner._web_admin_queue.clear()
+                    owner._web_admin_inflight.clear()
+                    owner._web_admin_seen.clear()
+                    owner._web_admin_results.clear()
+                    token, session = owner._new_session_locked("Host", web_host=True)
+                    self._reply(200, self._session_v2_body(session, owner._sessions_v2),
+                                set_cookie=self._v2_cookie(token))
+                    return
+            elif owner.web_auth is not None and self.path == "/api/v2/web/admin":
+                try:
+                    session, digest, presented = self._authenticated_v2_locked(renew=True)
+                except (UnicodeEncodeError, ValueError):
+                    status, response = 400, {"error": "invalid_request"}
+                else:
+                    if session is None or digest != owner._web_host_digest:
+                        self._v2_unauthorized(presented)
+                        return
+                    csrf = self.headers.get("X-U-Jagd-CSRF")
+                    if (csrf is None or not secrets.compare_digest(
+                            csrf.encode("utf-8", errors="surrogatepass"),
+                            session["csrf"].encode("ascii"))):
+                        status, response = 403, {"error": "forbidden"}
+                    elif (type(body) is not dict or set(body) != {"action", "client_id", "station", "value"}
+                          or type(body["action"]) is not str
+                          or body["action"] not in {
+                              "assign", "revoke", "revoke_client", "command", "direct_fire",
+                              "sonar_audio", "simlog", "rotate_code", "accept_target",
+                              "reject_target", "accept_navigation", "reject_navigation"}
+                          or type(body["client_id"]) is not str
+                          or len(body["client_id"]) > 64
+                          or type(body["station"]) is not str
+                          or body["station"] not in (*STATIONS, "")
+                          or type(body["value"]) is not bool):
+                        status, response = 400, {"error": "invalid_request"}
+                    elif ((body["action"] in {"assign", "revoke", "command",
+                                                 "direct_fire", "sonar_audio"}
+                           and (not body["client_id"] or body["station"] not in STATIONS))
+                          or (body["action"] in {"revoke_client", "simlog"}
+                              and (not body["client_id"] or body["station"] != ""))
+                          or (body["action"] in {"rotate_code", "accept_target",
+                                                 "reject_target", "accept_navigation",
+                                                 "reject_navigation"}
+                              and (body["client_id"] or body["station"] or body["value"]))
+                          or (body["action"] in {"assign", "revoke", "revoke_client"}
+                              and body["value"])):
+                        status, response = 400, {"error": "invalid_request"}
+                    else:
+                        status, response = owner._enqueue_web_admin_locked(
+                            digest, dict(body), self.headers.get("X-U-Jagd-Request-ID"))
+            elif owner.web_auth is not None and self.path == "/api/v2/web/options":
+                try:
+                    session, digest, presented = self._authenticated_v2_locked(renew=True)
+                except (UnicodeEncodeError, ValueError):
+                    status, response = 400, {"error": "invalid_request"}
+                else:
+                    if session is None or digest != owner._web_host_digest:
+                        self._v2_unauthorized(presented)
+                        return
+                    csrf = self.headers.get("X-U-Jagd-CSRF")
+                    bool_names = {"simlog", "live_ais_enabled", "live_adsb_enabled",
+                                  "voice_enabled"}
+                    string_names = {"aisstream_api_key", "opensky_credentials"}
+                    if (csrf is None or not secrets.compare_digest(
+                            csrf.encode("utf-8", errors="surrogatepass"),
+                            session["csrf"].encode("ascii"))):
+                        status, response = 403, {"error": "forbidden"}
+                    elif (type(body) is not dict or set(body) != {"name", "value"}
+                          or type(body["name"]) is not str
+                          or (body["name"] not in bool_names | string_names | {"language"})
+                          or (body["name"] in bool_names and type(body["value"]) is not bool)
+                          or (body["name"] in string_names and (
+                              type(body["value"]) is not str or len(body["value"]) > 256))
+                          or (body["name"] == "language" and body["value"] not in ("en", "de"))):
+                        status, response = 400, {"error": "invalid_request"}
+                    else:
+                        status, response = owner._enqueue_web_admin_locked(
+                            digest, {"action": "option", "name": body["name"],
+                                     "value": body["value"]},
+                            self.headers.get("X-U-Jagd-Request-ID"))
+            elif self.path == "/api/v2/pair":
                 if not owner._running:
                     status, response = 503, {"error": "unavailable"}
                 elif len(owner._pair_failures) >= 5:
@@ -2130,32 +2858,7 @@ class _Handler(BaseHTTPRequestHandler):
                             owner._rotate_code_locked()
                         status, response = 403, {"error": "invalid_code"}
                     else:
-                        token = secrets.token_urlsafe(32)
-                        session = {
-                            "client_id": secrets.token_urlsafe(18),
-                            "name": name,
-                            "csrf": secrets.token_urlsafe(32),
-                            "ordinal": owner._next_v2_ordinal,
-                            "requests": {},
-                            "next_request_generation": 0,
-                            "leases": {},
-                            "active_station": None,
-                            "active_generation": 0,
-                            "simlog": False,
-                            "solo_host": False,
-                            "host_generation": 0,
-                            "presence": time.monotonic(),
-                            "last_get": time.monotonic(),
-                            "last_command_seq": -1,
-                            "command_queue": deque(),
-                            "command_ids": OrderedDict(),
-                            "command_results": deque(maxlen=_V2_COMMAND_HISTORY_LIMIT),
-                            "held_commands": {},
-                        }
-                        if owner._solo:
-                            owner._solo_grant_all_locked(session)
-                        owner._next_v2_ordinal += 1
-                        owner._sessions_v2[hashlib.sha256(token.encode("ascii")).digest()] = session
+                        token, session = owner._new_session_locked(name)
                         self._reply(200, self._session_v2_body(session, owner._sessions_v2),
                                     set_cookie=self._v2_cookie(token))
                         return
@@ -2290,7 +2993,9 @@ class _Handler(BaseHTTPRequestHandler):
                             session["last_command_seq"] = body["seq"]
                             owner._trim_command_history_locked(session)
                             status, response = 202, {"status": "pending", "id": body["id"]}
-            elif self.path == "/api/v2/sonar/audio":
+            elif self.path in ("/api/v2/sonar/audio", "/api/v2/helicopter/audio"):
+                audio_role = ("helicopter" if self.path == "/api/v2/helicopter/audio"
+                              else "sonar")
                 try:
                     session, digest, presented = self._authenticated_v2_locked(renew=True)
                 except (UnicodeEncodeError, ValueError):
@@ -2317,30 +3022,41 @@ class _Handler(BaseHTTPRequestHandler):
                           or type(body["active_generation"]) is not int
                           or not 0 <= body["active_generation"] <= _SAFE_INTEGER_MAX):
                         status, response = 400, {"error": "invalid_request"}
-                    elif (session["active_station"] != "sonar"
-                          or "sonar" not in session["leases"]
-                          or not session["leases"]["sonar"]["grants"]["sonar_audio"]):
+                    elif (session["active_station"] != audio_role
+                          or audio_role not in session["leases"]
+                          or not session["leases"][audio_role]["grants"]["sonar_audio"]):
                         status, response = 403, {"error": "forbidden"}
                     elif (body["station_generation"]
-                          != session["leases"]["sonar"]["generation"]):
+                          != session["leases"][audio_role]["generation"]):
                         status, response = 409, {"error": "stale_context"}
                     elif body["active_generation"] != session["active_generation"]:
                         status, response = 409, {"error": "stale_context"}
                     else:
-                        context = (digest, session["leases"]["sonar"]["generation"],
+                        context = (digest, session["leases"][audio_role]["generation"],
                                    session["active_generation"],
                                    body["world_session"], body["world_epoch"])
-                        if owner._sonar_audio_context != context:
+                        audio_context = (owner._helicopter_audio_context if audio_role == "helicopter"
+                                         else owner._sonar_audio_context)
+                        audio_blocks = (owner._helicopter_audio if audio_role == "helicopter"
+                                        else owner._sonar_audio)
+                        if audio_context != context:
                             status, response = 503, {"error": "unavailable"}
                         else:
                             after = body["after"]
-                            available = [block for block in owner._sonar_audio
+                            available = [block for block in audio_blocks
                                          if after is None or block[0] > after]
-                            if not available:
+                            if (not available and after is not None and audio_blocks
+                                    and after > audio_blocks[-1][0]):
+                                # The publisher restarted its sequence within
+                                # the same world context. Rebase the listener
+                                # instead of returning 204 forever.
+                                sequence, pcm = audio_blocks[-1]
+                                audio_reply = (200, pcm, sequence, True)
+                            elif not available:
                                 audio_reply = (204, b"", None, False)
                             else:
-                                overrun = (after is not None and owner._sonar_audio
-                                           and after < owner._sonar_audio[0][0] - 1)
+                                overrun = (after is not None and audio_blocks
+                                           and after < audio_blocks[0][0] - 1)
                                 sequence, pcm = available[-1] if after is None or overrun else available[0]
                                 audio_reply = (200, pcm, sequence, bool(overrun))
         if audio_reply is not None:

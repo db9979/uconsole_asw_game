@@ -16,7 +16,8 @@ from src.commander import server as transport
 
 @pytest.fixture
 def assets(tmp_path, monkeypatch):
-    for name in ("index.html", "app.js", "style.css"):
+    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
+                 "sonar-audio-worklet.js"):
         (tmp_path / name).write_text(f"fixture {name}", encoding="utf-8")
     calls = []
 
@@ -136,7 +137,8 @@ def test_reject_invalid_ports(port, assets):
 
 
 def test_static_resources_cached_and_security_headers(server, assets):
-    for name in ("index.html", "app.js", "style.css"):
+    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
+                 "sonar-audio-worklet.js"):
         (assets[0] / name).unlink()
     for route, name in (("/", "index.html"), ("/app.js", "app.js"),
                         ("/style.css", "style.css")):
@@ -152,6 +154,7 @@ def test_static_resources_cached_and_security_headers(server, assets):
         assert "Server" not in headers
         assert server.pairing_code.encode() not in body
     assert assets[1] == ["data.commander"]
+    assert request(server, "/voice.js")[0] == 404
 
 
 def test_detached_sonar_scopes_are_exact_static_routes(server):

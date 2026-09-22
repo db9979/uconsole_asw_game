@@ -6,6 +6,8 @@ import os
 import socket
 import struct
 
+import pytest
+
 from src.commander import server as transport
 from test_commander_sessions_v2 import pair_v2, projection_states, server
 
@@ -96,3 +98,70 @@ def test_websocket_requires_session_and_active_sonar_lease(server):
             frame += connection.recv(4096)
         assert frame[offset:offset + 4] == b"UJS2"
         assert length <= transport.SONAR_STREAM_MAX_BYTES
+
+
+@pytest.mark.parametrize("role", ("sonar", "helicopter"))
+def test_audio_websocket_is_leased_sequenced_and_revoked(server, role):
+    _, cookie, _, paired = pair_v2(server, "Audio stream")
+    client_id = paired["client_id"]
+    assert server.grant_station(client_id, role)
+    assert server.set_client_grant(client_id, role, "sonar_audio", True)
+    prepare = (server.prepare_sonar_audio if role == "sonar"
+               else server.prepare_helicopter_audio)
+    publish = (server.publish_sonar_audio if role == "sonar"
+               else server.publish_helicopter_audio)
+    generation = prepare(world_session="audio-world", world_epoch=3)
+    assert generation is not None
+    pcm = bytes(transport.SONAR_AUDIO_BYTES)
+    for _ in range(6):
+        assert publish(pcm, world_session="audio-world",
+                       world_epoch=3, station_generation=generation)
+    host, port = server.address
+    key = base64.b64encode(os.urandom(16)).decode("ascii")
+
+    def handshake(cookie_value):
+        cookie_header = f"Cookie: {cookie_value}\r\n" if cookie_value else ""
+        return (f"GET /ws/v2/{role}/audio HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                f"Origin: http://{host}:{port}\r\nUpgrade: websocket\r\n"
+                f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\n"
+                "Sec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: u-jagd-audio-v2\r\n"
+                f"{cookie_header}"
+                "\r\n").encode("ascii")
+
+    with socket.create_connection(server.address, timeout=3) as unauthorized:
+        unauthorized.sendall(handshake(""))
+        assert unauthorized.recv(1024).startswith(b"HTTP/1.1 401")
+    with socket.create_connection(server.address, timeout=3) as connection:
+        connection.settimeout(3)
+        connection.sendall(handshake(cookie))
+        received = bytearray()
+        while b"\r\n\r\n" not in received:
+            received.extend(connection.recv(4096))
+        headers, frame = bytes(received).split(b"\r\n\r\n", 1)
+        assert headers.startswith(b"HTTP/1.1 101")
+        while len(frame) < 4:
+            frame += connection.recv(4096)
+        assert frame[0] == 0x82 and frame[1] == 126
+        size = struct.unpack("!H", frame[2:4])[0]
+        while len(frame) < size + 4:
+            frame += connection.recv(4096)
+        payload = frame[4:4 + size]
+        assert len(payload) == 2060 and payload[:4] == b"UJA2"
+        assert struct.unpack("<Q", payload[4:12])[0] == 3
+        assert payload[12:] == pcm
+        assert server.set_client_grant(client_id, role, "sonar_audio", False)
+        # Already queued frames may arrive first. The worker must close after
+        # its next bounded lease check rather than keep streaming indefinitely.
+        while connection.recv(4096):
+            pass
+    assert server.set_client_grant(client_id, role, "sonar_audio", True)
+    generation = prepare(world_session="audio-world", world_epoch=3)
+    assert publish(pcm, world_session="audio-world", world_epoch=3,
+                   station_generation=generation)
+    with socket.create_connection(server.address, timeout=3) as reconnected:
+        reconnected.settimeout(3)
+        reconnected.sendall(handshake(cookie))
+        response = bytearray()
+        while b"\r\n\r\n" not in response:
+            response.extend(reconnected.recv(4096))
+        assert response.startswith(b"HTTP/1.1 101")

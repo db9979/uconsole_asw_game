@@ -8,16 +8,40 @@ import logging
 import random
 import threading
 import time
+from types import SimpleNamespace
 
 import pytest
 
+from src.commander import bridge as bridge_module
 from src.commander.bridge import CommanderBridge
+from src.commander import server as server_module
 from src.commander.server import (CommanderServer, STATIONS, V2_ACTION_REGISTRY,
                                   V2CommandEnvelope)
 from src.core import config
 from src.core.game import Game
 from src.enemies.surface import SurfaceShip
 from src.sonar.sonar import Contact
+
+
+def test_helicopter_listening_actions_are_scoped_and_bounded():
+    valid = {
+        "helicopter_set_listen_bearing": {"bearing": 217.5},
+        "helicopter_clear_listen_bearing": {},
+        "helicopter_set_audio_mode": {"mode": "HETERODYNE"},
+        "helicopter_set_audio_band": {"preset": "LOW"},
+        "helicopter_set_audio_gain": {"gain_db": 12.0},
+        "helicopter_set_audio_notch": {"enabled": True},
+    }
+    for name, params in valid.items():
+        action = V2_ACTION_REGISTRY[name]
+        assert action.stations == frozenset({"helicopter"})
+        assert action.validate_params(params)
+    assert not V2_ACTION_REGISTRY["helicopter_set_listen_bearing"].validate_params(
+        {"bearing": 360})
+    assert not V2_ACTION_REGISTRY["helicopter_set_audio_gain"].validate_params(
+        {"gain_db": float("nan")})
+    assert not V2_ACTION_REGISTRY["helicopter_set_audio_notch"].validate_params(
+        {"enabled": 1})
 
 
 @pytest.fixture
@@ -278,7 +302,7 @@ def test_main_thread_rechecks_age_phase_generation_and_grant(server):
         assert post(server, cookie, session, command(
             session, command_id=str(seq), seq=seq))[0] == 202
         cases.append(server.drain_commands_v2()[0])
-    assert server.apply_command_v2(cases[0], now=cases[0].received_at + 2.001,
+    assert server.apply_command_v2(cases[0], now=cases[0].received_at + 5.001,
         phase="live", world_session="world", world_epoch=3, resource_revision=5,
         apply=lambda *_: True)
     assert server.apply_command_v2(cases[1], now=cases[1].received_at,
@@ -299,6 +323,44 @@ def test_main_thread_rechecks_age_phase_generation_and_grant(server):
     assert [row["reasoncode"] for row in results(server, cookie)] == [
         "expired", "phase_blocked", "stale_generation",
         "stale_active_generation", "grant_revoked"]
+
+
+def test_normal_command_survives_short_host_delay_but_still_expires(server):
+    cookie, session = pair(server, "Delayed engine", "engine")
+    assert post(server, cookie, session, command(session, command_id="slow"))[0] == 202
+    envelope = server.drain_commands_v2()[0]
+    assert server.apply_command_v2(
+        envelope, now=envelope.received_at + 2.5, phase="live",
+        world_session="world", world_epoch=3, resource_revision=5,
+        apply=lambda *_: True)
+    assert results(server, cookie)[-1]["reasoncode"] == "ok"
+    assert post(server, cookie, session, command(
+        session, command_id="too-old", seq=1))[0] == 202
+    envelope = server.drain_commands_v2()[0]
+    assert server.apply_command_v2(
+        envelope, now=envelope.received_at + server_module._V2_COMMAND_MAX_AGE_S + .001,
+        phase="live", world_session="world", world_epoch=3,
+        resource_revision=5, apply=lambda *_: True)
+    assert results(server, cookie)[-1]["reasoncode"] == "expired"
+
+
+def test_command_arriving_during_projection_uses_application_clock(server, monkeypatch):
+    game = Game(seed=412, start_menu=False, audio_enabled=False, language="en")
+    bridge = CommanderBridge()
+    try:
+        bridge.pump(game, server, now=time.monotonic())
+        cookie, session = pair(server, "Midframe bridge", "bridge")
+        status = bridge.status
+        body = command(session, world_session=status["session"],
+                       world_epoch=status["epoch"], resource_revision=status["revision"])
+        assert post(server, cookie, session, body)[0] == 202
+        received_at = next(iter(server._sessions_v2.values()))["command_queue"][0].received_at
+        ticks = iter((received_at - .1, received_at + .1))
+        monkeypatch.setattr(bridge_module, "time", SimpleNamespace(monotonic=lambda: next(ticks)))
+        bridge.pump(game, server)
+        assert results(server, cookie)[-1]["reasoncode"] == "ok"
+    finally:
+        game.audio.shutdown()
 
 
 def test_main_thread_rechecks_detached_session_identity(server):
@@ -798,8 +860,16 @@ def test_helicopter_role_can_classify_and_release_its_own_dip_only_contact(serve
 
         assert submit(game, bridge, server, helo_cookie, helo_session,
                       "sonar_set_release", {"ref": ref, "released": True},
-                      1)["reasoncode"] == "ok"
-        assert contact.released_to_opz is True
+                      1)["reasoncode"] == "action_rejected"
+        assert submit(game, bridge, server, helo_cookie, helo_session,
+                      "helicopter_qualify", {"ref": ref, "enabled": True},
+                      2)["reasoncode"] == "ok"
+
+        assert submit(game, bridge, server, helo_cookie, helo_session,
+                      "sonar_set_release", {"ref": ref, "released": True},
+                      3)["reasoncode"] == "ok"
+        assert contact.dip_released_to_opz is True
+        assert contact.released_to_opz is False
 
         state = request(server, "/api/v2/state", cookie=helo_cookie)[2]
         assert state["helicopter"]["tactical"][0]["released_to_opz"] is True
@@ -807,8 +877,12 @@ def test_helicopter_role_can_classify_and_release_its_own_dip_only_contact(serve
         opz_cookie, _ = pair(server, "Remote OPZ", "opz")
         bridge.pump(game, server, now=time.monotonic())
         opz_picture = request(server, "/api/v2/state", cookie=opz_cookie)[2]["opz"]
-        assert any(row["ref"] == ref for row in opz_picture["observations"])
-        assert any(item["ref"] == ref and item["classification"] == "U_BOOT"
+        dip_reports = [row for row in opz_picture["observations"]
+                       if row["source"] == "SONAR-DIP-BRG"]
+        assert len(dip_reports) == 1
+        assert dip_reports[0]["observer_x"] == contact.dip_observer_x
+        assert any(item["ref"] == dip_reports[0]["ref"]
+                   and item["classification"] == "U_BOOT"
                    for item in opz_picture["source_classifications"])
     finally:
         game.audio.shutdown()

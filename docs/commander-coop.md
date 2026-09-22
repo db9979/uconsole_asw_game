@@ -1,5 +1,8 @@
 # Commander LAN Co-op (0.2.2)
 
+For a browser-only room with a web host account, see the
+[web-host guide](web-host.de.md).
+
 [Deutsch](commander-coop.de.md)
 
 Remote Crew keeps the uConsole process authoritative while authenticated crew
@@ -114,10 +117,10 @@ bearing. LOFAR and the other analysis plots do not steer the listening beam.
 Damage status and team count, available own weapons and airborne helicopter
 position are displayed. A hangared or lost helicopter is not plotted as a current
 aircraft. Mission/threat/damage alerts are observation-led. Select the sound button
-to enable browser tones and the Bridge's synthesized own-ship cavitation noise;
-volume and mute are independent of uConsole audio. Cavitation sound uses only the
-Bridge projection and stops on quiet propulsion, stale connection, role change,
-pause, hidden page, or mute.
+to enable browser tones (synthesized alert and combat-effect cues) and, where
+separately host-granted, the live Sonar/Helicopter audio stream; volume and mute
+are independent of uConsole audio. There is no continuous own-ship ambience
+sound, locally or in the browser.
 Autoplay may be blocked by the browser until this gesture. Visual alarms always
 remain available. Reconnection establishes a new sound baseline, not alarm replay.
 
@@ -153,8 +156,8 @@ nine stations with command, direct fire, sonar audio and SimLog, only one browse
 may pair (a second gets `session_limit` until you remove the first in the roster),
 and leases do not lapse. Changing the mode revokes every session and rotates the code.
 
-The solo browser also gets a **game control bar**: pause/resume, time scale
-(1x-120x), save and load (slots 1-5) and new game (scenario, world, difficulty,
+The solo browser also gets a **game control bar**: pause/resume,
+save and load (slots 1-5) and new game (scenario, world, difficulty,
 optional seed). Loading or starting a game replaces the world but keeps the browser
 paired; anything it had prepared for the old world fails closed. At the uConsole main
 menu the browser shows a start screen. Editors, options, network administration,

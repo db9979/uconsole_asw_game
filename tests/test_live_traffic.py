@@ -66,6 +66,66 @@ def test_bounding_box_contains_center():
     assert lon_min < 8.0 < lon_max
 
 
+def test_adsb_query_covers_sensor_range_with_smaller_credit_area():
+    manager = LiveTrafficManager()
+    manager.configure(_fake_game(), _fake_world(), Preferences())
+    area = manager._adsb_bounding_box(250.0, 250.0)
+    world = manager._bounding_box_latlon()
+    area_sqdeg = (area[1][0] - area[0][0]) * (area[1][1] - area[0][1])
+    world_sqdeg = (world[1][0] - world[0][0]) * (world[1][1] - world[0][1])
+    assert area_sqdeg <= 100.0 < world_sqdeg
+    for x, y in ((100.0, 250.0), (400.0, 250.0),
+                 (250.0, 100.0), (250.0, 400.0)):
+        lon, lat = nm_to_lonlat(x, y, 8.0, 54.0)
+        assert area[0][0] <= lat <= area[1][0]
+        assert area[0][1] <= lon <= area[1][1]
+
+
+def test_adsb_client_starts_with_ownship_area(monkeypatch):
+    created = []
+
+    class FakeOpenSky:
+        def __init__(self, _credentials, bounding_box):
+            self.bounding_box = bounding_box
+            created.append(self)
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+    monkeypatch.setattr(live_traffic_module, "OpenSkyClient", FakeOpenSky)
+    manager = LiveTrafficManager()
+    game = _fake_game(ship_x=100.0, ship_y=200.0)
+    manager.configure(game, _fake_world(), Preferences(live_adsb_enabled=True))
+    assert created[0].bounding_box == manager._adsb_bounding_box(100.0, 200.0)
+
+
+def test_adsb_query_moves_only_after_ship_crosses_margin():
+    manager = LiveTrafficManager()
+    game = _fake_game()
+    manager.configure(game, _fake_world(), Preferences())
+    changed = []
+    manager.adsb_client = SimpleNamespace(
+        set_bounding_box=lambda box: changed.append(box))
+    manager._adsb_anchor = (250.0, 250.0)
+    game.ship.x = 274.0
+    manager._refresh_adsb_bounding_box(game)
+    assert changed == []
+    game.ship.x = 275.0
+    manager._refresh_adsb_bounding_box(game)
+    assert changed == [manager._adsb_bounding_box(275.0, 250.0)]
+    assert manager._adsb_anchor == (275.0, 250.0)
+
+
+def test_adsb_query_handles_antimeridian_with_single_complete_box():
+    manager = LiveTrafficManager()
+    manager.configure(_fake_game(), _fake_world(center_lon=179.5), Preferences())
+    box = manager._adsb_bounding_box(350.0, 250.0)
+    assert box[0][1] == -180.0 and box[1][1] == 180.0
+
+
 def test_first_ais_contact_spawns_neutral_ship_and_applies_kinematics():
     manager = LiveTrafficManager()
     world = _fake_world()

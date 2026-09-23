@@ -668,6 +668,7 @@ def test_ciws_failure_spends_ammo_with_one_second_cadence(game, monkeypatch):
                              observer_x=game.ship.x, observer_y=game.ship.y,
                              course=None, quality=1, now=game.sim_t, label="ASM")
     game.rng_asm.random = lambda: 1.0
+    game.ciws_mount_deg = 90.0  # mount already on the east bearing
     ammo = game.ciws_ammo
     game._update_air_defense(0.1, publish_picture=False)
     burst = game._air_defense_loadout["ciws"]["rounds_per_attempt"]

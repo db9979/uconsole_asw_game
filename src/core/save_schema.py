@@ -20,7 +20,8 @@ SAVE_ROOT_FIELDS = frozenset({
     "hfdf_fixes", "hfdf_log", "radio_picture", "air_picture",
     "opz_affiliations", "air_threat_reported", "esm", "next_entity_ids",
     "asm_spawned", "asm_seq", "warship_asm_seq", "torpedo_seq", "buoy_seq",
-    "ciws_cooldown_s", "schedulers", "rngs", "ui",
+    "ciws_cooldown_s", "ciws_mount_deg", "chaff_clouds", "chaff_seq",
+    "schedulers", "rngs", "ui",
     "autocrew", "ais",
 })
 

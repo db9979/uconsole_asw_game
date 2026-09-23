@@ -36,9 +36,9 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Hostile torpedo | 28 kn, 30 NM, homes from 3 NM |
 | Nixie towed decoy | 2 per mission, 600 s, 0.2 NM cable (10 m at 15 kn, deeper when slower, parts above 25 kn), 60 s reload |
 | ESSM | 6 missiles, 30 NM, 2 fire channels |
-| CIWS | 1.5 NM, 180 rounds, needs release |
+| CIWS | 1.5 NM, 180 rounds, needs release; 115 deg/s slew, own track radar inside 3 NM |
 | AA gun | 240 rounds, needs release |
-| Chaff | 6 rounds, 8 NM, 40 % break-lock |
+| Chaff | 6 rounds, 8 NM, 40 % break-lock when bloomed; cloud drifts with the wind for 90 s |
 
 ## Own ship {#ref-ship}
 

@@ -36,9 +36,9 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Feindtorpedo | 28 kn, 30 sm, zielsuchend ab 3 sm |
 | Nixie-Schlepptäuschkörper | 2 je Mission, 600 s, 0,2-sm-Kabel (10 m bei 15 kn, langsamer tiefer, reißt über 25 kn), 60 s Nachladen |
 | ESSM | 6 Flugkörper, 30 sm, 2 Feuerkanäle |
-| CIWS | 1,5 sm, 180 Schuss, braucht Freigabe |
+| CIWS | 1,5 sm, 180 Schuss, braucht Freigabe; 115 Grad/s Schwenken, eigenes Folgeradar innerhalb 3 sm |
 | Flak-Geschütz | 240 Schuss, braucht Freigabe |
-| Düppel | 6 Ladungen, 8 sm, 40 % Zielverlust |
+| Düppel | 6 Ladungen, 8 sm, 40 % Zielverlust nach dem Aufblühen; Wolke treibt 90 s mit dem Wind |
 
 ## Eigenes Schiff {#ref-ship}
 

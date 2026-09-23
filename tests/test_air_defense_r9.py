@@ -28,6 +28,9 @@ def game():
     result = Game(seed=909, start_menu=False, audio_enabled=False)
     result.sim_t = 10.0
     result.mission.asm_count = 0
+    # Test missiles sit due east; start with the CIWS mount already slewed
+    # there so single-update engagements are not waiting on the mount.
+    result.ciws_mount_deg = 90.0
     return result
 
 
@@ -425,3 +428,19 @@ def test_integrated_softkill_and_datalink_split_run(game, monkeypatch):
     assert current_track.source in ("DATALINK", "RADAR-L")
     assert restored_track == current_track
     assert restored.save_state()["rngs"]["asm"] == game.save_state()["rngs"]["asm"]
+
+
+def test_ciws_mount_must_slew_onto_the_track_before_firing(game):
+    missile = ASM(game.ship.x + 1, game.ship.y, 0, 1, game.rng_asm)
+    missile.speed_kn = 0
+    game.asms = [missile]
+    observe_asm(game, missile)
+    game.rng_asm.random = lambda: 1.0
+    game.ciws_mount_deg = 270.0          # pointing the wrong way
+    before = game.ciws_ammo
+    game._update_air_defense(.1, publish_picture=False)
+    assert game.ciws_ammo == before and game.ciws_mount_deg != 270.0
+    for _ in range(20):                  # 180 deg at 115 deg/s
+        observe_asm(game, missile)
+        game._update_air_defense(.1, publish_picture=False)
+    assert game.ciws_ammo < before

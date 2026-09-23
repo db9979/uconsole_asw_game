@@ -8,7 +8,7 @@ import pygame
 import pytest
 
 from src.air.asm import ASM
-from src.air.raid import RaidPhase, Raider
+from src.air.raid import FC_LOCK_S, POPUP_ALTITUDE_M, RaidPhase, Raider
 from src.core import config
 from src.core.game import Game
 from src.core.station import Station
@@ -64,7 +64,17 @@ def test_raider_lifecycle_approach_attack_retreat_despawn():
         if raider.phase is not RaidPhase.APPROACH:
             break
     assert raider.phase is RaidPhase.ATTACK
-    assert raider.pending_asm >= profile["salvo"][0]
+    # Pop-up: climb, lock with the fire-control radar, then release.
+    fc_seen = False
+    for _ in range(30):
+        raider.update(1.0, ship)
+        fc_seen = fc_seen or raider.fc_radar_on
+        if raider.pending_asm:
+            break
+    assert fc_seen and raider.pending_asm >= profile["salvo"][0]
+    for _ in range(40):
+        raider.update(1.0, ship)
+    assert raider.altitude_m == pytest.approx(profile["altitude_m"])
     for _ in range(5000):
         raider.update(1.0, ship)
         if raider.phase is not RaidPhase.ATTACK:
@@ -88,7 +98,9 @@ def test_raider_turn_rate_is_bounded():
         course = raider.course
         raider.update(1.0, ship)
         assert abs(config.angle_diff_deg(raider.course, course)) <= \
-            config.RAIDER_TURN_DEG_S + 0.01
+            raider.turn_deg_s + 0.01
+    # Coordinated turn at the bank limit: g tan(56 deg) / v ~ 4 deg/s at 400 kn.
+    assert raider.turn_deg_s == pytest.approx(4.0, abs=.1)
 
 
 def test_shot_down_raider_stops_moving():
@@ -289,6 +301,9 @@ def test_raider_salvo_drains_into_attack_asms(game):
                     game.rng_raid, profile["raider"])
     raider.phase = RaidPhase.ATTACK
     raider.salto_cd = 0.0
+    # Already popped up and about to complete the fire-control lock.
+    raider.altitude_m = POPUP_ALTITUDE_M
+    raider.popup_t = FC_LOCK_S - 0.05
     game.raiders = [raider]
     game.raid_seq = 1
     game._update_raiders(0.1, publish_picture=False)

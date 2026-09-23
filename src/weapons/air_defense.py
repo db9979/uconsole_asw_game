@@ -169,7 +169,11 @@ def _valid_raider_row(row, loadout):
     profile = loadout["raider"]
     if (not isinstance(row, dict)
             or set(row) != {"x", "y", "course", "seq", "phase", "hp",
-                            "salvo_cd", "pending_asm", "attack_t"}):
+                            "salvo_cd", "pending_asm", "attack_t",
+                            "altitude_m", "popup_t"}):
+        return False
+    if (not _is_finite(row["altitude_m"]) or not 0 <= row["altitude_m"] <= 20_000
+            or not _is_finite(row["popup_t"]) or not -1 <= row["popup_t"] <= 3600):
         return False
     if (not _is_finite(row["x"]) or not _is_finite(row["y"])
             or not bounded_range(row["x"], -1_000_000, 1_000_000)

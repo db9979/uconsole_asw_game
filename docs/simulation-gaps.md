@@ -121,11 +121,11 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
 | ~~**No ship hydrodynamics**~~ | **Closed (Phase 6).** Speed lag from the catalog, Nomoto-linear turning, and added resistance in waves lowering attainable speed by hull length (small hulls lose more). | — |
-| ~~**No radar horizon**~~ | **Fixed (2026-09).** Surface detection now uses `min(effective_range × aspect, radar_horizon_nm(RADAR_ANTENNA_HEIGHT_M, RADAR_SURFACE_TARGET_HEIGHT_M))` for both civilians and warships (`game.py`, `_update_air_picture`), the same formula already used for raiders. | — |
+| ~~**No radar horizon**~~ | **Closed (Phase 12).** The ASM body has its own altitude (20 m cruise, 5 m terminal); radar detection and the HOJ bearing both require line of sight over the horizon. | — |
 | ~~**No countermeasures**~~ | **Closed (Phase 9 / Phase 12).** Hostile combatants stream acoustic decoys (saved store of 2) when they hear a torpedo launch; missile defence (ship chaff/CIWS) is modelled on the own ship in Phase 12. | — |
 | ~~**No damage propagation**~~ | **Closed (Phases 8/10).** Shock-factor damage (near misses no longer sink), progressive flooding above 30 %, radar lost above 60 % and missile launch above 75 % damage. | — |
 | ~~**No evasive manoeuvres**~~ | **Closed.** Combatants turn away at flank speed on a heard launch (W2, state saved in Phase 0) and stream decoys (Phase 9). | — |
-| **No weapon systems modelling** | ASM/ASROC are simple projectiles; no fire-control solution error | Guidance accuracy, warhead proximity fuze, multi-target saturation |
+| ~~**No weapon systems modelling**~~ | **Closed (Phases 8/12).** Warship ASMs fly to the datum of the launcher's own (noisy) sensor contact, so fire-control error carries into the shot; 3-DOF missile with seeker FOV, lock delay and PN; torpedo and ASROC proximity fuze with shock-factor damage; salvos saturate the two ESSM fire channels and the CIWS mount. | — |
 
 ### 3.3 Data structures touched
 
@@ -217,19 +217,19 @@ All closed in Phase 9:
 
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
-| **No flight dynamics** | Fixed altitude, constant speed, rate-limited turn | Climb/dive rate, speed- altitude coupling, turn rate vs speed, engine-out |
+| ~~**No flight dynamics**~~ | **Closed (Phase 12).** Raiders fly coordinated turns at a 56 deg bank limit (rate = g tan(bank)/v) and climb/descend at a limited vertical speed; missiles are 3-DOF point masses (boost, sustainer, altitude control, g-limited turns). Civil/military transit flights keep standard-rate turns at constant altitude (their cruise profile); engine failures are out of scope. | — |
 | ~~**No radar horizon**~~ | **Fixed (2026-09) for airframes.** Raiders already used `radar_horizon_nm()`; regular civil/military `flights` now use it too (flat `FLIGHT_RADAR_ALTITUDE_M`). **Still open for the ASM body itself** (see below): its own search-radar detection in `game.py._update_air_picture` uses flat `air_eff` with no altitude/horizon term, so a sea-skimmer is currently seen by search radar at the same range as a 60 m-altitude aircraft. | — |
-| **No ASM boost phase** | ASM flies at constant speed from launch | Boost motor (first seconds), then cruise; speed affects intercept geometry |
-| **No seeker physics** | ESSM/ASM homing itself is a range gate + turn-rate limit (unchanged) | Seeker FOV, lock-on delay, jamming resistance (burn-through is binary) |
+| ~~**No ASM boost phase**~~ | **Closed (Phase 12).** Launched rounds boost from the launcher's speed at 60 m/s^2, then the sustainer holds cruise; the saved age is bounded by the powered flight time (range at cruise plus boost). | — |
+| ~~**No seeker physics**~~ | **Closed (Phase 12).** ASM: inertial mid-course to the launch datum, active seeker with a +/-30 deg field of view and 1.5 s lock, then proportional navigation (N = 4) limited to 15 g. ESSM: PN on the seeker LOS rate within its airframe turn limit. | — |
 | ~~**No ESM warning for inbound ASM**~~ | **Fixed (2026-09).** ASM `seeker_active()` stays silent mid-course (INS-only) and radiates once inside `seeker_active_range_nm` (18 NM); the seeker's own fingerprint (9.0-9.5 GHz, pulse-Doppler) feeds `_update_esm_picture` as a distinct RWR track, independent of the existing HOJ/jammer path (`asm.py`, `game.py._asm_seeker_emitter`). Not yet catalogued for classification in `data/contacts/*` emitters, so `rank_emitters()` won't positively ID it as "missile" — an intentional ambiguity, but worth revisiting. | — |
-| **ASM body ignores radar horizon** | Regular (non-jamming) radar detection of the missile airframe uses flat `air_eff` range (`game.py:3141`), unlike raiders/warships/civilians/flights which all use `radar_horizon_nm()` | Give ASM a low `altitude_m` (~10-20 m) and route its radar branch through the same horizon formula, so search radar only picks it up very late, consistent with the new ESM early warning |
-| **Raider has no attack-altitude profile** | `altitude_m` is a fixed profile constant across APPROACH/ATTACK/RETREAT | Brief pop-up (e.g. 60 m → few hundred m) during ATTACK for target acquisition before missile release, then back down; ties into `radar_horizon_nm()` (a visible radar "spike") and could feed a raider fire-control-radar ESM emission during the pop-up window |
-| **No CIWS physics** | CIWS is a probability roll per cycle with range falloff | Gun barrel elevation/traverse rate; radar-illuminated tracking; round-in-air time |
-| **No chaff physics** | Chaff is a timer (`chaff_left`); ASM goes straight or breaks | Chaff cloud drift, radar reflectivity, seeker discrimination |
-| **No ECM on own ship** | Only chaff (soft-kill) and CIWS/ESSM (hard-kill) | Radar jamming, GPS spoofing (less relevant 1970s but modern) |
-| **Helicopter: no hover dynamics** | Hovering = zero motion; no wind drift | Wind drift, rotor downwash, fuel consumption in hover |
-| **Sonobuoy: no drift** | Fixed position after deployment | Current drift; battery decay already present |
-| **No air-to-air threat** | Only ASM + raiders; no friendly CAP, no air-to-air | Out of scope for U-Jagd but noted |
+| ~~**ASM body ignores radar horizon**~~ | **Closed (Phase 12).** See radar horizon above: a sea-skimmer appears at about 20 NM (15 NM in the terminal phase). | — |
+| ~~**Raider has no attack-altitude profile**~~ | **Closed (Phase 12).** Each salvo needs a pop-up to 300 m and a 4 s fire-control lock; the fire-control radar is an ESM emission only during the pop-up, and the higher raider crosses the radar horizon earlier. | — |
+| ~~**No CIWS physics**~~ | **Closed (Phase 12).** Mount slews at 115 deg/s and fires only on target; the fire control uses its own latest measurement; the CIWS radar holds missiles inside 3 NM; burst kill from dispersion (2 mrad) and prediction error over the rounds' time of flight; bursts that would arrive after impact cannot kill. Calibrated to the 1.0.0 leak rate. | — |
+| ~~**No chaff physics**~~ | **Closed (Phase 12).** Up to 8 saved chaff clouds laid off the threat axis, blooming over 3 s, drifting with the wind and falling out after 90 s; seduction is the Swerling-1 contest between cloud and ship echo, reduced when the cloud has not bloomed by the missile's arrival; a seduced missile steers to the cloud. | — |
+| ~~**No ECM on own ship**~~ | **Closed.** The ELOKA station's ECM jammer (noise, RGPO/VGPO, false targets) acts on missile seekers; GPS spoofing is out of scope for this setting. | — |
+| ~~**Helicopter: no hover dynamics**~~ | **Closed (Phase 12).** Hover burns fuel 1.3x faster; wind pushes the aircraft off its (saved) hover point against the pilot's position hold; launch and recovery wait for a deck-motion window (roll 8 deg, pitch 3.5 deg). | — |
+| ~~**Sonobuoy: no drift**~~ | **Closed (Phase 12).** Buoys drift with the surface current (which carries the wind drift) plus 2 % windage. | — |
+| **No air-to-air threat** | **Out of scope (by design).** U-Jagd is an ASW frigate simulation without fighters or CAP; hostile aircraft are engaged only by own ship air defence. | — |
 
 ### 6.3 Data structures touched
 

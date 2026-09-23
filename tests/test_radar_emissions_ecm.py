@@ -189,15 +189,19 @@ def test_noise_exposes_home_on_jam_while_rgpo_breaks_guidance():
     game = Game(seed=8032, audio_enabled=False)
     profile = game._air_defense_loadout["asm"]
     from src.air.asm import ASM
-    noise = ASM(game.ship.x + 5, game.ship.y, 0, 1, random.Random(10), profile)
-    rgpo = ASM(game.ship.x + 5, game.ship.y, 0, 2, random.Random(10), profile)
-    noise.jammer = rgpo.jammer = False
+    # ECM acts on a seeker in terminal lock: both missiles close on the ship
+    # (due west) 20 deg off the line of sight with the seeker locked.
+    noise = ASM(game.ship.x + 5, game.ship.y, 250, 1, random.Random(10), profile)
+    rgpo = ASM(game.ship.x + 5, game.ship.y, 250, 2, random.Random(10), profile)
+    for missile in (noise, rgpo):
+        missile.jammer = False
+        missile.locked, missile.los_prev = True, 270.0
     noise.update(.1, game.ship, ecm_effect=ECMEffect(
         .7, "noise", hoj_exposure=True))
     rgpo.update(.1, game.ship, ecm_effect=ECMEffect(
         .7, "rgpo", range_error_nm=1.0))
-    assert noise.course != 0.0
-    assert rgpo.course == 0.0
+    assert noise.course != 250.0
+    assert rgpo.course == 250.0
 
 
 def test_ecm_auto_couples_terminal_threat_to_finite_softkill(monkeypatch):

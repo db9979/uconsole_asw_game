@@ -44,6 +44,8 @@ from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
 from src.physics import torpedo_dyn
 from src.physics import ship_dynamics
+from src.physics import missile as missile_physics
+from src.weapons import ciws as ciws_physics
 from src.ship import damage as damage_physics
 from src.sensors.platform import MAST_DEPTH_M
 from src.world.ocean import OceanEnvironment
@@ -112,7 +114,9 @@ from src.ui.viewport import Viewport
 from src.ui.weapons_view import (draw_weapons_overlay, draw_weapons_panel,
                                  weapons_hit_target)
 from src.air.asm import ASM, ESSM
+from src.air import chaff as chaff_physics
 from src.air.helicopter import Helicopter
+from src.air import helicopter as helicopter_physics
 from src.air.flights import Flight, FlightManager
 from src.air.raid import RaidPhase, Raider
 from src.air.sonobuoy import Sonobuoy
@@ -638,6 +642,9 @@ class Game:
         self.essm_seq = 0
         self.softkill_store = make_softkill_store(self._air_defense_loadout)
         self.chaff_cd = 0.0
+        self.chaff_clouds: list = []
+        self.chaff_seq = 0
+        self.ciws_mount_deg = 0.0
         self.rng_asm = random.Random(seed + 31337)
         self.asm_spawned = 0
         self.asm_seq = 0
@@ -3307,11 +3314,14 @@ class Game:
             and crosswind <= config.HELO_LAUNCH_CROSSWIND_MAX_KN
             and weather["visibility_nm"] >= config.HELO_LAUNCH_VISIBILITY_MIN_NM
             and weather["sea_state"] <= config.HELO_LAUNCH_SEA_STATE_MAX)
+        # Launch and recovery also need a deck-motion window (own ship).
+        deck_safe = helicopter_physics.deck_within_limits(self.ship.roll, self.ship.pitch)
+        launch_safe = launch_safe and deck_safe
         dipping_safe = (
             weather["wind_speed_kn"] <= config.HELO_DIP_WIND_MAX_KN
             and weather["visibility_nm"] >= config.HELO_DIP_VISIBILITY_MIN_NM
             and weather["sea_state"] <= config.HELO_DIP_SEA_STATE_MAX)
-        return dict(weather, crosswind_kn=crosswind,
+        return dict(weather, crosswind_kn=crosswind, deck_safe=deck_safe,
                     launch_safe=launch_safe, dipping_safe=dipping_safe)
 
     def launch_helicopter(self):
@@ -3602,7 +3612,18 @@ class Game:
                     "sam"]["observation_max_age_s"]
                 and track.range_nm <= profile["range_nm"]
                 and self.softkill_store.fire()):
-            broke = a.launch_chaff(self.rng_asm, profile)
+            self.chaff_seq += 1
+            threat = math.degrees(math.atan2(a.x - self.ship.x,
+                                             -(a.y - self.ship.y))) % 360.0
+            cloud = chaff_physics.ChaffCloud(
+                self.chaff_seq, *chaff_physics.lay_position(
+                    self.ship.x, self.ship.y, threat, self.chaff_seq))
+            self.chaff_clouds = (self.chaff_clouds + [cloud])[
+                -chaff_physics.MAX_CLOUDS:]
+            arrival = (math.hypot(a.x - cloud.x, a.y - cloud.y)
+                       / max(config.kn_to_nm_per_s(a.speed_kn), 1e-9))
+            broke = a.launch_chaff(self.rng_asm, profile, cloud_seq=cloud.seq,
+                                   arrival_s=arrival)
             self.chaff_cd = min(self.softkill_store.loading, default=0.0)
             self.announce(message("runtime.chaff.decoyed" if broke
                                   else "runtime.chaff.jammed"), "waffen")
@@ -3952,6 +3973,10 @@ class Game:
             if a.state not in ("LAUF", "CHAFF"):
                 continue
             dist = a.distance_nm(self.ship)
+            # A sea-skimmer is below the radar (and radio) horizon until close.
+            if dist > config.radar_horizon_nm(config.RADAR_ANTENNA_HEIGHT_M,
+                                              a.altitude_m):
+                continue
             if (a.jamming(self.ship) and dist <= config.ESM_RANGE_NM
                     and not self.world.land_blocks_line(
                         self.ship.x, self.ship.y, a.x, a.y)):
@@ -5089,7 +5114,7 @@ class Game:
                 for raider in sorted(self.raiders, key=lambda item: item.seq):
                     signals = self._radar_signals(
                         raider, "su_25", enabled=not raider.despawned,
-                        fire_control=raider.phase is RaidPhase.ATTACK)
+                        fire_control=raider.fc_radar_on)
                     yield from self._signal_measurements(raider, signals)
                 for asm in self.asms:
                     emitter = self._asm_seeker_emitter(asm.profile)
@@ -5272,9 +5297,13 @@ class Game:
                                                       -(w.sensor_contact[1] - y))) % 360.0
                               if w.sensor_contact is not None else w.course)
                     self.warship_asm_seq += 1
+                    # Ship-launched: booster from the launcher's speed; the
+                    # launcher's sensor contact is the inertial datum.
                     self.asms.append(ASM(
                         x, y, course, self._next_asm_sequence(), self.rng_asm,
-                        self._air_defense_loadout["asm"]))
+                        self._air_defense_loadout["asm"],
+                        launch_speed_kn=w.speed, altitude_m=10.0,
+                        datum=w.sensor_contact))
 
     def _next_asm_sequence(self) -> int:
         self.asm_seq += 1
@@ -5297,8 +5326,11 @@ class Game:
         y = config.clamp(self.ship.y + d * math.sin(math.radians(ang)),
                          0.0, self.world.size_nm)
         course = math.degrees(math.atan2(self.ship.x - x, -(self.ship.y - y))) % 360.0
+        # A wave appears already in cruise flight, aimed by its (unseen)
+        # launcher at the ship's position at that moment.
         self.asms.append(ASM(x, y, course, self._next_asm_sequence(), self.rng_asm,
-                              self._air_defense_loadout["asm"]))
+                              self._air_defense_loadout["asm"],
+                              datum=(self.ship.x, self.ship.y)))
 
     # --- R20: Luftangriff (feindliche Angriffsflugzeug-Wellen) ---
 
@@ -5432,9 +5464,13 @@ class Game:
             pending, raider.pending_asm = raider.pending_asm, 0
             for _ in range(pending):
                 course = raider.course_to_frigate(self.ship)
+                # Air-launched at the raider's speed and pop-up height; its
+                # fire-control radar supplied the datum.
                 self.asms.append(ASM(
                     raider.x, raider.y, course, self._next_asm_sequence(),
-                    self.rng_asm, self._air_defense_loadout["asm"]))
+                    self.rng_asm, self._air_defense_loadout["asm"],
+                    launch_speed_kn=raider.speed_kn, altitude_m=raider.altitude_m,
+                    datum=(self.ship.x, self.ship.y)))
 
     # --- Waffenzentrale ---
 
@@ -6112,9 +6148,11 @@ class Game:
                 and not self.helicopter_weather()["dipping_safe"]):
             self.helo.set_dipping(False, self.world)
         self.helo.update(dt, self.ship, self.world,
-                         recovery_available=not self.damage.station_down("flightdeck"))
+                         recovery_available=not self.damage.station_down("flightdeck")
+                         and helicopter_physics.deck_within_limits(
+                             self.ship.roll, self.ship.pitch))
         for buoy in self.buoys:
-            buoy.update(dt)
+            buoy.update(dt, self.world)
         self.buoys = [buoy for buoy in self.buoys if buoy.active]
         self.softkill_store.update(dt)
         self.chaff_cd = min(self.softkill_store.loading, default=0.0)
@@ -6138,9 +6176,14 @@ class Game:
         self._auto_ecm_softkill()
         # Softkill state is resolved by ASM.update before layered hardkill.
         self.ciws_cooldown_s = max(0.0, getattr(self, "ciws_cooldown_s", 0.0) - dt)
+        for cloud in self.chaff_clouds:
+            cloud.update(dt, self.world.wind_from_deg, self.world.wind_speed_kn)
+        self.chaff_clouds = [cloud for cloud in self.chaff_clouds if cloud.active]
+        clouds = {cloud.seq: cloud for cloud in self.chaff_clouds}
         for asm in self.asms:
             asm.update(dt, self.ship, self.world,
-                       ecm_effect=self._ecm_effect_against_asm(asm))
+                       ecm_effect=self._ecm_effect_against_asm(asm),
+                       chaff_target=clouds.get(asm.chaff_cloud))
             if asm.state == "TREFFER":
                 hit = self.damage.missile_hit(*self._hull_impact(asm.x, asm.y))
                 self._emit_sound("explosion")
@@ -6158,6 +6201,21 @@ class Game:
                 essm.guidance_x, essm.guidance_y = track.x, track.y
             essm.update(dt, candidates=self.asms, world=self.world)
         ciws = profiles["ciws"]
+        # CIWS fire control works on its latest own measurement, not on the
+        # smoothed OPZ track range.
+        def fc_range(track):
+            return (track.raw_range_nm if track.raw_range_nm is not None
+                    else track.range_nm)
+
+        # The mount slews towards the nearest fresh close-in missile track.
+        close_tracks = sorted(
+            (fc_range(track), track.track_id, track) for track in observed_asms.values()
+            if fc_range(track) is not None and fc_range(track) <= ciws["range_nm"]
+            and track.position_seen is not None
+            and self.sim_t - track.position_seen <= ciws["observation_max_age_s"])
+        if self.ciws_authorized and close_tracks:
+            self.ciws_mount_deg = ciws_physics.slew(
+                self.ciws_mount_deg, close_tracks[0][2].bearing, dt)
         for asm in self.asms:
             track = observed_asms.get(asm.seq)
             if (self.ciws_authorized
@@ -6169,23 +6227,26 @@ class Game:
                     and self.sim_t - track.position_seen
                     <= ciws["observation_max_age_s"]
                     and self.ciws_ammo >= ciws["rounds_per_attempt"]
-                    and track.range_nm is not None
-                    and track.range_nm <= ciws["range_nm"]
+                    and fc_range(track) is not None
+                    and fc_range(track) <= ciws["range_nm"]
                     and self.ciws_cooldown_s <= 0.0
+                    and ciws_physics.on_target(self.ciws_mount_deg, track.bearing)
                     and not self.damage.station_down("opz")
                     and not self.world.land_blocks_line(
                         self.ship.x, self.ship.y, track.x, track.y)):
                 self.ciws_ammo -= ciws["rounds_per_attempt"]
                 self.ciws_cooldown_s = ciws["cycle_s"]
                 self._emit_sound("gunfire")
-                # Pk composes base kill probability with a range falloff (a
-                # closing missile is an easier hard-kill target) and a penalty
-                # while the missile is actively jamming our fire control.
-                distance_factor = 1.0 - 0.4 * config.clamp(
-                    track.range_nm / max(0.01, ciws["range_nm"]), 0.0, 1.0)
-                target_jamming = 0.35 if asm.jamming(self.ship) else 0.0
-                if (self.rng_asm.random()
-                        < ciws["kill_probability"] * distance_factor * (1.0 - target_jamming)):
+                # Burst physics at the true geometry: dispersion and
+                # prediction error over the rounds' time of flight; a missile
+                # that arrives first cannot be stopped by this burst.
+                distance = asm.distance_nm(self.ship)
+                time_to_go = distance / max(config.kn_to_nm_per_s(asm.speed_kn), 1e-9)
+                kill = (0.0 if time_to_go <= ciws_physics.time_of_flight_s(distance)
+                        else ciws_physics.burst_kill_probability(
+                            distance, ciws["rounds_per_attempt"],
+                            asm.jamming(self.ship), ciws["kill_probability"]))
+                if self.rng_asm.random() < kill:
                     asm.state = "ABGEFANGEN"
                     self.audio.play_alert("defense")
                     self.announce(message("runtime.ciws.intercepted"),
@@ -6807,7 +6868,8 @@ class Game:
                                   phase=r.phase.value, hp=r.hp,
                                   salvo_cd=r.salto_cd,
                                   pending_asm=r.pending_asm,
-                                  attack_t=r.attack_t)
+                                  attack_t=r.attack_t,
+                                  altitude_m=r.altitude_m, popup_t=r.popup_t)
                              for r in self.raiders],
                 "raider_seq": self.raid_seq,
                 "waves_spawned": self.raid_waves_spawned,
@@ -6873,6 +6935,9 @@ class Game:
             "vls_cells": self.vls_cells,
             "ciws_ammo": self.ciws_ammo,
             "ciws_cooldown_s": self.ciws_cooldown_s,
+            "ciws_mount_deg": self.ciws_mount_deg,
+            "chaff_clouds": [cloud.to_dict() for cloud in self.chaff_clouds],
+            "chaff_seq": self.chaff_seq,
             "air_picture": self.air_picture.serialize(),
             "opz_affiliations": dict(self.opz_affiliations),
             "esm": {
@@ -6913,7 +6978,8 @@ class Game:
                            dip_depth_m=self.helo.dip_depth_m,
                            dip_depth_target_m=self.helo.dip_depth_target_m,
                            dip_water_depth_m=self.helo.dip_water_depth_m,
-                           dip_ping_cooldown=self.helo.dip_ping_cooldown),
+                           dip_ping_cooldown=self.helo.dip_ping_cooldown,
+                           hover_x=self.helo.hover_x, hover_y=self.helo.hover_y),
             "subs": [dict(id=s.id, x=s.x, y=s.y, depth=s.depth, course=s.course,
                            state=s.state, speed=s.speed, damage=s.damage,
                            torpedoes_left=s.torpedoes_left, heard_ping=s.heard_ping,
@@ -7063,7 +7129,11 @@ class Game:
                             profile_key=a.profile_key,
                             state=a.state, jammer=a.jammer,
                            age_s=a.age_s, travel=a.travel,
-                          chaff_left=a.chaff_left, broken=a.broken)
+                          chaff_left=a.chaff_left, broken=a.broken,
+                          speed_kn=a.speed_kn, boosting=a.boosting,
+                          altitude_m=a.altitude_m, datum_x=a.datum_x,
+                          datum_y=a.datum_y, lock_s=a.lock_s, locked=a.locked,
+                          los_prev=a.los_prev, chaff_cloud=a.chaff_cloud)
                      for a in self.asms],
             "essms": [dict(x=e.x, y=e.y, course=e.course, seq=e.seq,
                              profile_key=e.profile_key,
@@ -7073,7 +7143,8 @@ class Game:
                             seeker_acquired=(e.seeker_acquired and e.target is not None
                                              and e.target.seq in asm_ids),
                             target_id=(e.target.seq if e.target is not None
-                                       and e.target.seq in asm_ids else None))
+                                       and e.target.seq in asm_ids else None),
+                            los_prev=e.los_prev)
                       for e in self.essms],
             "buoys": [dict(x=b.x, y=b.y, seq=b.seq, battery_s=b.battery_s,
                            mode=b.mode, last_ping_epoch=b.last_ping_epoch)
@@ -7397,6 +7468,8 @@ class Game:
             raider.salto_cd = row["salvo_cd"]
             raider.pending_asm = row["pending_asm"]
             raider.attack_t = row["attack_t"]
+            raider.altitude_m = row["altitude_m"]
+            raider.popup_t = row["popup_t"]
             self.raiders.append(raider)
         self.target = None
         self.selected_contact = None
@@ -7457,6 +7530,10 @@ class Game:
         self.vls_cells = data["vls_cells"]
         self.ciws_ammo = data["ciws_ammo"]
         self.ciws_cooldown_s = data["ciws_cooldown_s"]
+        self.ciws_mount_deg = data["ciws_mount_deg"]
+        self.chaff_clouds = [chaff_physics.ChaffCloud(**row)
+                             for row in data["chaff_clouds"]]
+        self.chaff_seq = data["chaff_seq"]
         self.air_picture = TrackPicture(
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
         self.air_picture.restore(data["air_picture"])
@@ -7541,6 +7618,7 @@ class Game:
         self.helo.dip_depth_target_m = hd["dip_depth_target_m"]
         self.helo.dip_water_depth_m = hd["dip_water_depth_m"]
         self.helo.dip_ping_cooldown = hd["dip_ping_cooldown"]
+        self.helo.hover_x, self.helo.hover_y = hd["hover_x"], hd["hover_y"]
         # U-Boote (Phase 2: vollstaendiger KI-Zustand)
         self.subs = []
         for sd in data["subs"]:
@@ -7799,6 +7877,9 @@ class Game:
             asm.broken = a["broken"]
             asm.age_s = a["age_s"]
             asm.travel = a["travel"]
+            for key in ("speed_kn", "boosting", "altitude_m", "datum_x", "datum_y",
+                        "lock_s", "locked", "los_prev", "chaff_cloud"):
+                setattr(asm, key, a[key])
             self.asms.append(asm)
         self.warship_asm_seq = data["warship_asm_seq"]
         self.essms = []
@@ -7813,6 +7894,7 @@ class Game:
             essm.travel = e["travel"]
             essm.state = e["state"]
             essm.seeker_acquired = e["seeker_acquired"]
+            essm.los_prev = e["los_prev"]
             self.essms.append(essm)
         self.asm_seq = data["asm_seq"]
         for bd in data["buoys"]:
@@ -8944,6 +9026,17 @@ class Game:
                 return False
         if not bounded(data.get("ciws_cooldown_s", 0), 0, 1):
             return False
+        mount = data.get("ciws_mount_deg")
+        clouds = data.get("chaff_clouds")
+        if (not bounded(mount, 0, 360) or mount == 360
+                or type(data.get("chaff_seq")) is not int
+                or not 0 <= data["chaff_seq"] <= 2**63 - 1
+                or not isinstance(clouds, list)
+                or len(clouds) > chaff_physics.MAX_CLOUDS
+                or not all(chaff_physics.valid_row(row) for row in clouds)
+                or len({row["seq"] for row in clouds}) != len(clouds)
+                or any(row["seq"] > data["chaff_seq"] for row in clouds)):
+            return False
         if type(data.get("air_threat_reported", False)) is not bool:
             return False
         flights = data.get("flights", {})
@@ -8980,9 +9073,14 @@ class Game:
                 "state", "x", "y", "course", "torps", "torpedo_profile_key",
                 "buoys_left", "fuel_s", "waypoint_x", "waypoint_y",
                 "dip_state", "dip_depth_m", "dip_depth_target_m",
-                "dip_water_depth_m", "dip_ping_cooldown",
+                "dip_water_depth_m", "dip_ping_cooldown", "hover_x", "hover_y",
             }
             if set(helo) != required_helo:
+                return False
+            if ((helo["hover_x"] is None) != (helo["hover_y"] is None)
+                    or (helo["hover_x"] is not None and (
+                        not bounded(helo["hover_x"], -1_000_000, 1_000_000)
+                        or not bounded(helo["hover_y"], -1_000_000, 1_000_000)))):
                 return False
             if (helo.get("state") not in ("HANGAR", "AUF", "ZURUECK", "VERLOREN")
                     or not bounded(helo.get("x"), -1_000_000, 1_000_000)
@@ -9095,7 +9193,21 @@ class Game:
             asm_ids.add(seq)
             asm_profile = data["air_defense"]["loadout"]["asm"]
             if (set(asm) != {"x", "y", "course", "seq", "profile_key", "state",
-                             "jammer", "age_s", "travel", "chaff_left", "broken"}
+                             "jammer", "age_s", "travel", "chaff_left", "broken",
+                             "speed_kn", "boosting", "altitude_m", "datum_x",
+                             "datum_y", "lock_s", "locked", "los_prev",
+                             "chaff_cloud"}
+                    or not bounded(asm.get("speed_kn"), 0, asm_profile["speed_kn"])
+                    or type(asm.get("boosting")) is not bool
+                    or type(asm.get("locked")) is not bool
+                    or not bounded(asm.get("altitude_m"), 0, 20_000)
+                    or not bounded(asm.get("datum_x"), -1_000_000, 1_000_000)
+                    or not bounded(asm.get("datum_y"), -1_000_000, 1_000_000)
+                    or not bounded(asm.get("lock_s"), 0, 3600)
+                    or (asm.get("los_prev") is not None
+                        and not bounded(asm.get("los_prev"), 0, 360))
+                    or (asm.get("chaff_cloud") is not None
+                        and not identity(asm.get("chaff_cloud")))
                     or asm.get("profile_key") != asm_profile["key"]
                     or not bounded(asm.get("x"), -1_000_000, 1_000_000)
                     or not bounded(asm.get("y"), -1_000_000, 1_000_000)
@@ -9105,8 +9217,10 @@ class Game:
                         "LAUF", "CHAFF", "ABGEFANGEN", "TREFFER", "VERLOREN")
                     or type(asm.get("jammer")) is not bool
                     or type(asm.get("broken")) is not bool
+                    # Powered flight time: range at cruise plus the boost.
                     or not bounded(asm.get("age_s", 0), 0,
-                                   asm_profile["range_nm"] / config.kn_to_nm_per_s(
+                                   missile_physics.flight_time_bound_s(
+                                       asm_profile["range_nm"],
                                        asm_profile["speed_kn"]))
                     or not bounded(asm.get("travel", 0), 0, asm_profile["range_nm"])
                     or not bounded(asm.get("chaff_left"), -3600, 3600)):
@@ -9224,7 +9338,10 @@ class Game:
             sam_profile = data["air_defense"]["loadout"]["sam"]
             if (set(essm) != {"x", "y", "course", "seq", "profile_key", "state",
                               "travel", "guidance_x", "guidance_y",
-                              "track_target_id", "seeker_acquired", "target_id"}
+                              "track_target_id", "seeker_acquired", "target_id",
+                              "los_prev"}
+                    or (essm.get("los_prev") is not None
+                        and not bounded(essm.get("los_prev"), 0, 360))
                     or essm.get("profile_key") != sam_profile["key"]
                     or (target_id is not None and (not identity(target_id)
                                             or target_id not in asm_ids))

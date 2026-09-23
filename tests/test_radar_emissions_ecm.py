@@ -257,24 +257,18 @@ def test_submarine_mast_radar_requires_shallow_tactical_state(monkeypatch):
     assert analysis.radar_type is SignalType.NAVIGATION
 
 
-def test_same_v10_pre_ecm_shape_loads_with_ecm_off():
+def test_pre_ecm_esm_shape_is_rejected():
     game = Game(seed=806, audio_enabled=False)
     state = game.save_state()
     state["esm"]["version"] = 1
     del state["esm"]["ecm"]
-    new_fields = {"radar_role", "operating_mode", "power_class",
-                  "operating_period_s", "on_duration_s"}
-    for components in state["catalog_snapshot"]["components"].values():
-        for emitter in components["emitters"]:
-            for field in new_fields:
-                del emitter[field]
     restored = Game(seed=1, audio_enabled=False)
-    assert restored._load_save_data(copy.deepcopy(state))
-    assert restored.ecm_jammer.channels == []
-    assert restored.ecm_jammer.auto_enabled is False
+    before = restored.save_state()
+    assert not restored._load_save_data(copy.deepcopy(state))
+    assert restored.save_state() == before
 
 
-def test_same_v10_ecm_v2_shape_restores_as_noise_channels():
+def test_two_channel_ecm_v2_shape_is_rejected():
     game = Game(seed=807, audio_enabled=False)
     game.esm_picture.observe_batch([ESMMeasurement(
         0, 0, 90, 1, 9e9, 1000, "pulse", .9, game.sim_t)], game.sim_t)
@@ -287,6 +281,4 @@ def test_same_v10_ecm_v2_shape_restores_as_noise_channels():
                     "is_locked_on"):
             del channel[key]
     restored = Game(seed=1, audio_enabled=False)
-    assert restored._load_save_data(copy.deepcopy(state))
-    assert len(restored.ecm_jammer.channels) == 1
-    assert restored.ecm_jammer.channels[0].technique == "noise"
+    assert not restored._load_save_data(copy.deepcopy(state))

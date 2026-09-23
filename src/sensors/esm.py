@@ -601,25 +601,18 @@ class ECMJammer:
         return {"auto_enabled": self.auto_enabled,
                 "channels": [asdict(channel) for channel in self.channels]}
 
-    def restore(self, state: dict, valid_track_keys: set[str], now: float,
-                *, version: int = ESM_STATE_VERSION) -> None:
+    def restore(self, state: dict, valid_track_keys: set[str],
+                now: float) -> None:
         if not isinstance(state, dict) or set(state) != {"auto_enabled", "channels"}:
             raise ValueError("invalid ECM state")
         if type(state["auto_enabled"]) is not bool or not isinstance(state["channels"], list):
             raise ValueError("invalid ECM state")
-        legacy_limit = 2 if version == 2 else self.MAX_CHANNELS
-        if len(state["channels"]) > legacy_limit:
+        if len(state["channels"]) > self.MAX_CHANNELS:
             raise ValueError("too many ECM channels")
         fields = set(ECMChannel.__dataclass_fields__)
         channels = []
         keys = set()
         for row in state["channels"]:
-            if version == 2 and isinstance(row, dict):
-                row = dict(row)
-                row.update(technique=ECMTechnique.NOISE.value,
-                           tuned_bearing_deg=0.0,
-                           power_draw=self.TECHNIQUE_POWER[ECMTechnique.NOISE.value],
-                           is_locked_on=row.get("effectiveness", 0.0) > 0.0)
             if not isinstance(row, dict) or set(row) != fields:
                 raise ValueError("invalid ECM channel")
             channel = ECMChannel(**row)
@@ -953,17 +946,11 @@ def correlate_observations(track: ESMTrack, evidence,
 
 def valid_esm_state(state, now: float, emitters: Mapping[str, object]) -> bool:
     """Validate the exact ESM envelope in the canonical save schema."""
-    if not isinstance(state, dict) or set(state) not in ({
-            "version", "track_seq", "picture", "selected_track_key", "annotations"}, {
+    if not isinstance(state, dict) or set(state) != {
             "version", "track_seq", "picture", "selected_track_key", "annotations",
-            "ecm"}):
+            "ecm"}:
         return False
-    if type(state["version"]) is not int or state["version"] not in (
-            1, 2, ESM_STATE_VERSION):
-        return False
-    if state["version"] == 1 and "ecm" in state:
-        return False
-    if state["version"] in (2, ESM_STATE_VERSION) and "ecm" not in state:
+    if type(state["version"]) is not int or state["version"] != ESM_STATE_VERSION:
         return False
     track_seq = state["track_seq"]
     if type(track_seq) is not int or not 0 <= track_seq <= 2**63 - 1:
@@ -991,13 +978,10 @@ def valid_esm_state(state, now: float, emitters: Mapping[str, object]) -> bool:
                 or emitter is None or getattr(emitter, "domain", None) != "radar"):
             return False
         previous = track_key
-    if "ecm" in state:
-        try:
-            jammer = ECMJammer()
-            jammer.restore(state["ecm"], set(picture._tracks), now,
-                           version=state["version"])
-        except (TypeError, ValueError, OverflowError):
-            return False
+    try:
+        ECMJammer().restore(state["ecm"], set(picture._tracks), now)
+    except (TypeError, ValueError, OverflowError):
+        return False
     return True
 
 

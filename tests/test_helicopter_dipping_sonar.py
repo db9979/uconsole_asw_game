@@ -278,7 +278,7 @@ def test_ship_and_helicopter_release_create_two_independent_opz_bearings():
     assert [track.observation_id for track in game.opz_tracks()] == [dip.observation_id]
 
 
-def test_same_v10_upgrader_recognizes_only_prior_exact_release_shape():
+def test_prior_release_shape_is_rejected_without_upgrader():
     game = Game(seed=902, start_menu=False, audio_enabled=False)
     contact = Contact(1, game.subs[0].id, "passiv", "sub")
     contact.update_passive(45.0, .8, .8, "hidden", game.sim_t)
@@ -298,14 +298,9 @@ def test_same_v10_upgrader_recognizes_only_prior_exact_release_shape():
             del row[key]
 
     restored = Game(seed=903, start_menu=False, audio_enabled=False)
-    assert restored._load_save_data(old, allow_pre_r9=True)
-    upgraded = restored.sonar.contacts[contact.target_id]
-    assert upgraded.released_to_opz and upgraded.player_class == "U_BOOT"
-    assert restored.helo.dip_state == "STOWED"
-
-    malformed = copy.deepcopy(old)
-    malformed["helo"]["dip_state"] = "STOWED"
-    assert not restored._load_save_data(malformed, allow_pre_r9=True)
+    before = restored.save_state()
+    assert not restored._load_save_data(old)
+    assert restored.save_state() == before
 
 
 def test_v10_roundtrip_preserves_dip_release_and_pending_echo(monkeypatch):

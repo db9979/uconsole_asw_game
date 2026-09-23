@@ -1,5 +1,9 @@
 # Simulation Realism Gap Analysis — U-Jagd 0.2.2
 
+> **Status (physics upgrade, save v12):** rows are marked *Closed (Phase N)* as the
+> phased upgrade on branch `sim-gaps-v12` lands. Calibration against the 1.0.0
+> behaviour is enforced by `tools/calibrate.py --check` (`tests/calibration/`).
+
 Analysis date: 2026-07-15
 Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
@@ -306,7 +310,7 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 | **No ECCM / jamming effect on radar** | Jamming only produces a HOJ bearing (bearing-only, no range) | Radar jamming: range-gate pull-off, angle deception, burn-through; radar self-protection |
 | **ESM: no signal strength** | Detection is binary (in range or not); no amplitude | Signal level vs distance; frequency-agile waveform detection; dwell time |
 | **HFDF: no frequency** | Only bearing; no frequency measurement | HF frequency → rough distance via ionospheric model; or at least frequency for emitter ID |
-| **No AIS decoding** | AIS gives name/callsign but no MMSI, no SOG/COG from signal | AIS message types (position, SAR, vessel type); MMSI-based identity |
+| ~~**No AIS decoding**~~ | **Closed (Phase 0).** `src/sensors/ais.py` is a simulated own-ship AIS receiver: ITU-R M.1371 class-A dynamic reports (COG/SOG every 2-10 s, 3 min at anchor) and static reports (name every 6 min), received only inside VHF line of sight and not through land. Radar observations of civilians no longer carry the true name/course (an observation-boundary leak); both come from the latest decoded report. MMSI is deliberately not shown to the player, so live and simulated traffic stay indistinguishable. Decoded reports are saved (save v12). | — |
 | **Lookout: no silhouette / size** | Visual detection is a range gate; no target size effect | Target height, silhouette against sea/sky; searchlight; smoke |
 
 ### 8.3 Data structures touched

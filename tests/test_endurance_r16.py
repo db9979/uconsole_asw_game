@@ -443,28 +443,16 @@ def _prior_r16_save(game):
     return prior
 
 
-def test_exact_prior_r16_v10_shape_upgrades_and_canonicalizes(tmp_path):
+def test_exact_prior_r16_shape_is_rejected_transactionally(tmp_path):
     source = Game(seed=1612, start_menu=False, audio_enabled=False)
     prior = _prior_r16_save(source)
-    frozen_component_fields = {
-        "version", "profiles", "references", "machines", "sensors",
-        "emitters", "weapons", "launchers", "magazines", "countermeasures",
-    }
-    assert all(set(component) == frozen_component_fields
-               for component in prior["catalog_snapshot"]["components"].values())
     assert all("endurance" not in row for row in prior["subs"])
-    assert not source._load_save_data(copy.deepcopy(prior))
     path = tmp_path / "r15-v10.json"
     path.write_text(json.dumps(prior), encoding="utf-8")
     restored = Game(seed=1, start_menu=False, audio_enabled=False)
-    assert restored.load_game(str(path))
-    assert restored.save_state()["catalog_snapshot"] == catalog.CATALOG.runtime_snapshot()
-    for sub in restored.subs:
-        expected = catalog.CATALOG.endurances.get(f"endurance.{sub.stype.key}")
-        assert (sub.endurance is None) == (expected is None)
-        if expected is not None:
-            assert sub.endurance.battery_kwh == expected.battery_capacity_kwh
-            assert sub.endurance.aip_energy_kwh == (expected.aip_energy_kwh or 0)
+    before = restored.save_state()
+    assert not restored.load_game(str(path))
+    assert restored.save_state() == before
 
 
 @pytest.mark.parametrize("mutation", [
@@ -480,7 +468,7 @@ def test_prior_r16_near_misses_are_rejected_transactionally(mutation):
     prior = _prior_r16_save(game)
     mutation(prior)
     before = game.save_state()
-    assert not game._load_save_data(prior, allow_pre_r9=True)
+    assert not game._load_save_data(prior)
     assert game.save_state() == before
 
 
@@ -496,46 +484,8 @@ def test_prior_r16_snapshot_numeric_types_are_exact_and_transactional(mutation):
     prior = _prior_r16_save(game)
     mutation(prior)
     before = game.save_state()
-    assert not game._load_save_data(prior, allow_pre_r9=True)
+    assert not game._load_save_data(prior)
     assert game.save_state() == before
-
-
-def test_prior_r16_snockel_resumes_without_patrol_or_rng_draw(tmp_path):
-    source = Game(seed=1615, start_menu=False, audio_enabled=False)
-    prior = _prior_r16_save(source)
-    row = next(item for item in prior["subs"]
-               if f"endurance.{item['stype']}" in catalog.CATALOG.endurances)
-    row["state"] = "SNOCKEL"
-    row["depth"] = 20.0
-    row["target_depth"] = 8.0
-    row["evac_left"] = 12.5
-    path = tmp_path / "r15-snockel-v10.json"
-    path.write_text(json.dumps(prior), encoding="utf-8")
-    restored = Game(seed=1, start_menu=False, audio_enabled=False)
-    assert restored.load_game(str(path))
-    sub = next(item for item in restored.subs if item.id == row["id"])
-    before_rng = sub.rng.getstate()
-    before_battery = sub.endurance.battery_kwh
-    sub.update(.5, None, Ocean())
-    assert sub.state == "PATROLLE"
-    assert sub.evac_left == 0.0
-    assert sub.endurance.phase == "RADIO"
-    assert sub.endurance.radio_left_s == pytest.approx(12.0)
-    assert sub.endurance.battery_kwh < before_battery
-    assert sub.rng.getstate() == before_rng
-
-
-@pytest.mark.parametrize("legacy_state", [
-    "PATROLLE", "EVADE", "LAUER", "SINKING", "SUNK",
-])
-def test_prior_r16_other_submarine_states_map_exactly(legacy_state):
-    game = Game(seed=1616, start_menu=False, audio_enabled=False)
-    prior = _prior_r16_save(game)
-    prior["subs"][0]["state"] = legacy_state
-    prior["subs"][0]["evac_left"] = 7.25
-    upgraded = Game._upgrade_pre_r16_v10(prior)
-    assert upgraded["subs"][0]["state"] == legacy_state
-    assert upgraded["subs"][0]["evac_left"] == 7.25
 
 
 def test_v10_endurance_transition_continues_identically_through_save():

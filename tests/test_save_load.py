@@ -1,4 +1,4 @@
-"""Save/load roundtrips and strict save-v11 rejection behavior."""
+"""Save/load roundtrips and strict save-v12 rejection behavior."""
 
 import json
 from pathlib import Path
@@ -159,7 +159,7 @@ def test_obsolete_save_versions_are_rejected(tmp_saves, version):
     assert g.save_state() == before
 
 
-def test_v11_requires_exact_schema_and_every_root_field():
+def test_v12_requires_exact_schema_and_every_root_field():
     game = Game(seed=100, start_menu=False)
     state = game.save_state()
 
@@ -184,7 +184,7 @@ def test_v11_requires_exact_schema_and_every_root_field():
     lambda state: state["sonar"].update(unknown=None),
     lambda state: state["civilians"][0].pop("id"),
 ])
-def test_v11_rejects_noncanonical_nested_shapes(mutation):
+def test_v12_rejects_noncanonical_nested_shapes(mutation):
     game = Game(seed=101, start_menu=False)
     before = game.save_state()
     malformed = json.loads(json.dumps(before))
@@ -194,7 +194,7 @@ def test_v11_rejects_noncanonical_nested_shapes(mutation):
     assert game.save_state() == before
 
 
-def test_v11_sonar_contact_sequence_must_exceed_existing_contacts():
+def test_v12_sonar_contact_sequence_must_exceed_existing_contacts():
     game = Game(seed=102, start_menu=False)
     target = game.subs[0]
     game.sonar.contacts[target.id] = Contact(7, target.id, "passiv", "sub")
@@ -247,7 +247,7 @@ def test_fixed_real_sector_roundtrip_keeps_selected_coast_and_airbases(tmp_saves
     assert len(game.world.coast.airbases) >= 4
 
 
-def test_v11_preserves_tas_ping_echo_and_operator_state(tmp_saves):
+def test_v12_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     game = Game(seed=188, start_menu=False)
     game.sonar.toggle_tow(6.0)
     game.sonar.tow_payout = .42
@@ -271,7 +271,7 @@ def test_v11_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     assert restored.tooltips_enabled is False
 
 
-def test_v11_split_run_preserves_scheduler_phase():
+def test_v12_split_run_preserves_scheduler_phase():
     uninterrupted = Game(seed=189, start_menu=False, audio_enabled=False)
     uninterrupted._sensor_acc = .13
     uninterrupted._radio_acc = .31
@@ -308,7 +308,7 @@ def test_v11_split_run_preserves_scheduler_phase():
                        uninterrupted._slow_acc))
 
 
-def test_v11_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
+def test_v12_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
     uninterrupted = Game(seed=190, start_menu=False, audio_enabled=False)
     target = uninterrupted.subs[0]
     contact = Contact(41, target.id, "passiv", "sub")

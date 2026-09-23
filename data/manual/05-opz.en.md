@@ -19,7 +19,7 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 - **Surface radar:** 30 NM, limited by the radar horizon (20 m mast) and target height; submerged submarines are invisible.
 - **Air radar:** 100 NM for aircraft and anti-ship missiles (ASM).
 - Weather reduces range; from sea state 5 clutter and measurement errors increase. Rain costs further range.
-- **AIS:** civilian ships broadcast identity and position; optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
+- **AIS:** civilian ships broadcast course and speed every 2-10 s (3 min at anchor) and their name about every 6 min. The VHF receiver hears them only within line of sight (about 20 NM). A radar track of a civilian shows name and course only after the matching AIS report has been received; radar alone gives position only. Optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
 - **Fusion:** mark 2-8 raw reports (`Space`) and fuse them (`L`) into one operator track; `Shift+L` dissolves it.
 - **Suppression:** `Delete` hides a report locally; `H` shows suppressed reports again.
 

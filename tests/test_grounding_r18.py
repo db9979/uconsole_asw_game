@@ -270,7 +270,7 @@ def test_contact_save_split_recovery_continuation_is_deterministic():
     assert restored.save_state()["rngs"] == game.save_state()["rngs"]
 
 
-def test_current_roundtrip_and_exact_pre_r18_upgrade_preserve_bathymetry(tmp_path):
+def test_current_roundtrip_preserves_bathymetry_and_pre_r18_shape_is_rejected(tmp_path):
     game = Game(seed=818, start_menu=False, audio_enabled=False)
     current = game.save_state()
     clone = Game(seed=1, start_menu=False, audio_enabled=False)
@@ -282,13 +282,14 @@ def test_current_roundtrip_and_exact_pre_r18_upgrade_preserve_bathymetry(tmp_pat
     old = copy.deepcopy(current)
     for key in ("astern", "hull", "grounding", "fuel_kg", "fuel_capacity_kg"):
         old["ship"].pop(key)
-    bathymetry = copy.deepcopy(old["world"]["coast"]["bathymetry"])
+    assert clone.world.coast.to_dict()["bathymetry"] == \
+        current["world"]["coast"]["bathymetry"]
     path = tmp_path / "old.json"
     path.write_text(json.dumps(old))
-    assert clone.load_game(str(path))
-    assert clone.world.coast.to_dict()["bathymetry"] == bathymetry
-    assert not clone.ship.grounded and not clone.ship.astern
-    assert clone.ship.last_safe_pose == (clone.ship.x, clone.ship.y, clone.ship.course)
+    before = clone.save_state()
+    # v12 has no same-version upgraders: the older ship shape is rejected.
+    assert not clone.load_game(str(path))
+    assert clone.save_state() == before
 
     near_miss = copy.deepcopy(old)
     near_miss["ship"]["almost_grounding"] = None
@@ -318,7 +319,7 @@ def test_world_snapshot_is_strictly_rejected_before_restore(pre_r18, mutation):
     mutation(malformed["world"]["coast"])
     before = game.save_state()
 
-    assert not game._load_save_data(malformed, allow_pre_r9=True)
+    assert not game._load_save_data(malformed)
     assert game.save_state() == before
 
 

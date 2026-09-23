@@ -366,7 +366,7 @@ def test_sam_sequence_must_match_consumed_inventory(game, offset):
     assert game.save_state() == before
 
 
-def test_exact_pre_r9_v10_file_upgrades_without_mutating_input(game, tmp_path):
+def test_exact_pre_r9_shape_is_rejected_without_mutating_input(game, tmp_path):
     current = game.save_state()
     legacy = copy.deepcopy(current)
     del legacy["air_defense"]
@@ -378,11 +378,12 @@ def test_exact_pre_r9_v10_file_upgrades_without_mutating_input(game, tmp_path):
     path = tmp_path / "pre-r9-v10.json"
     path.write_text(json.dumps(legacy), encoding="utf-8")
 
+    before = game.save_state()
     assert not game._load_save_data(legacy)
-    assert game.load_game(str(path))
+    assert not game.load_game(str(path))
 
     assert legacy == original
-    assert game.save_state()["air_defense"]["sam_remaining"] == legacy["vls_cells"]
+    assert game.save_state() == before
 
 
 def test_integrated_softkill_and_datalink_split_run(game, monkeypatch):

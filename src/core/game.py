@@ -35,6 +35,10 @@ from src.core.mission import Mission
 from src.core.mission_definition import static_preview, validate_mission
 from src.core.station import Station
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
+from src.sensors.ais import AISReceiver
+from src.core.save_schema import (
+    COMPARTMENT_FIELDS, COMPARTMENT_STATES, DAMAGE_FIELDS, RNG_STREAMS,
+    SAVE_ROOT_FIELDS, SHIP_FIELDS, WORLD_FIELDS)
 from src.data import fingerprint as fingerprint_mod
 from src.data.catalog import CATALOG, EmitterProfile, catalog_from_runtime_snapshot
 from src.enemies.animal import Animal
@@ -142,22 +146,6 @@ SONAR_BAND_PRESETS = {
     "LOW": (4.0, 80.0),
     "SHAFT": (8.0, 55.0),
     "MID": (20.0, 120.0),
-}
-SAVE_ROOT_FIELDS = {
-    "version", "save_schema", "platform_state_version", "catalog_snapshot",
-    "seed", "level", "mission_type", "scenario_key", "mission_name",
-    "mission_runtime", "world", "sim_t", "mission_time", "time_scale_idx",
-    "score", "mission_result", "result_reason", "ship", "torpedoes",
-    "chaff_cd", "vls_cells", "ciws_ammo", "roe", "sonar_mode", "radars",
-    "asm_sel", "radio_sel", "hq_timer", "damage", "dmg_cursor", "dmg_team",
-    "incident", "subs", "animals", "civilians", "warships", "decoys",
-    "torpedoes_in_flight", "enemy_torpedoes", "asw", "air_defense", "asms", "essms",
-    "buoys", "helo", "flights", "sonar_controls", "sonar", "messages",
-    "hfdf_fixes", "hfdf_log", "radio_picture", "air_picture",
-    "opz_affiliations", "air_threat_reported", "esm", "next_entity_ids",
-    "asm_spawned", "asm_seq", "warship_asm_seq", "torpedo_seq", "buoy_seq",
-    "ciws_cooldown_s", "schedulers", "rngs", "ui",
-    "autocrew",
 }
 
 
@@ -635,6 +623,7 @@ class Game:
         self.asm_sel = 0
         self.air_picture = TrackPicture(
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
+        self.ais = AISReceiver(seed)
         self.opz_selected_track_id = None
         self.opz_contact_filter = "ALL"
         self.opz_affiliations = {}
@@ -3730,6 +3719,7 @@ class Game:
         air_live = self.air_radar_on and station_live
         surface_eff = self.radar_effective_range("surface")
         air_eff = self.radar_effective_range("air")
+        self.ais.update(self.sim_t, self.civilians, self.ship, self.world)
         error_scale = 1.0 + (config.RADAR_WEATHER_ERROR_GAIN
                              * self.radar_weather_severity()
                              + config.RADAR_RAIN_ERROR_GAIN
@@ -3752,10 +3742,13 @@ class Game:
                 range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
+                # Radar measures position only. Name and course of a civilian
+                # are known only from AIS reports the receiver has decoded.
                 self.air_picture.observe(track_id=f"S-{c.id}", kind="SURFACE",
                     target_id=c.id, source="RADAR-S", bearing=brg,
                     range_nm=measured, observer_x=self.ship.x, observer_y=self.ship.y,
-                    course=c.course, quality=.95, now=self.sim_t, label=c.name,
+                    course=self.ais.course_for(c.id, self.sim_t), quality=.95,
+                    now=self.sim_t, label=self.ais.label_for(c.id) or f"S-{c.id}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
         for w in self.warships:
             if w.sunk:
@@ -6523,6 +6516,7 @@ class Game:
                 key: max(cls._next_id, max((e.id + 1 for e in entities), default=0))
                 for key, (cls, entities) in entity_groups.items()},
             "autocrew": self.autocrew.serialize(),
+            "ais": self.ais.serialize(),
             "seed": self.seed,
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
@@ -6692,6 +6686,7 @@ class Game:
                            fingerprint=s.fingerprint.to_dict(),
                           torpedo_alerted=s.torpedo_alerted,
                            decoy_cd=s._decoy_cd,
+                           active_ping_cd=s._active_ping_cd,
                            turn_left=s.turn_left, turn_delta=s.turn_delta,
                            target_course=s.target_course,
                            target_depth=s.target_depth,
@@ -6728,6 +6723,8 @@ class Game:
                                  sensor_contact=c.sensor_contact,
                                  sensor_contact_age=c.sensor_contact_age,
                                  sunk_score_awarded=c.sunk_score_awarded,
+                                 torpedo_evade_left=c._torpedo_evade_left,
+                                 torpedo_threat_bearing=c._torpedo_threat_bearing,
                                  sensor_seed=c.sensor_seed,
                                  fingerprint=c.fingerprint.to_dict(),
                                  platform=c.sensor_suite.serialize())
@@ -6745,6 +6742,8 @@ class Game:
                                 sensor_contact=w.sensor_contact,
                                 sensor_contact_age=w.sensor_contact_age,
                                 sunk_score_awarded=w.sunk_score_awarded,
+                                torpedo_evade_left=w._torpedo_evade_left,
+                                torpedo_threat_bearing=w._torpedo_threat_bearing,
                                  pending_asm=list(w.pending_asm),
                                  asroc_battery=(w.asroc_battery.serialize()
                                                 if w.asroc_battery is not None
@@ -7167,6 +7166,8 @@ class Game:
         self.air_picture = TrackPicture(
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
         self.air_picture.restore(data["air_picture"])
+        self.ais = AISReceiver(data["seed"])
+        self.ais.restore(data["ais"])
         self._raider_visible_last = any(
             track.track_id.startswith("R-")
             for track in self.air_picture.tracks(self.sim_t, ("FLG",)))
@@ -7181,10 +7182,9 @@ class Game:
         self.eloka_annotations = {}
         esm = data["esm"]
         self.esm_picture.restore(esm["picture"], esm["track_seq"], self.sim_t)
-        if esm["version"] in (2, ESM_STATE_VERSION):
-            self.ecm_jammer.restore(esm["ecm"], {
-                track.track_key for track in self.esm_picture.tracks(self.sim_t)},
-                self.sim_t, version=esm["version"])
+        self.ecm_jammer.restore(esm["ecm"], {
+            track.track_key for track in self.esm_picture.tracks(self.sim_t)},
+            self.sim_t)
         self.eloka_selected_track_key = esm["selected_track_key"]
         self.eloka_annotations = {
             row["track_key"]: row["emitter_key"]
@@ -7282,6 +7282,7 @@ class Game:
             s.attack_left = sd["attack_left"]
             s.torpedo_alerted = sd["torpedo_alerted"]
             s._decoy_cd = sd["decoy_cd"]
+            s._active_ping_cd = sd["active_ping_cd"]
             s.turn_left = sd["turn_left"]
             s.turn_delta = sd["turn_delta"]
             s.target_course = sd["target_course"]
@@ -7348,6 +7349,8 @@ class Game:
                                 if cd["sensor_contact"] is not None else None)
             c.sensor_contact_age = cd["sensor_contact_age"]
             c.sunk_score_awarded = cd["sunk_score_awarded"]
+            c._torpedo_evade_left = cd["torpedo_evade_left"]
+            c._torpedo_threat_bearing = cd["torpedo_threat_bearing"]
             c.sensor_seed = cd["sensor_seed"]
             c.fingerprint = fingerprint_mod.Fingerprint.from_dict(
                 cd["fingerprint"])
@@ -7380,6 +7383,8 @@ class Game:
                                 if wd["sensor_contact"] is not None else None)
             w.sensor_contact_age = wd["sensor_contact_age"]
             w.sunk_score_awarded = wd["sunk_score_awarded"]
+            w._torpedo_evade_left = wd["torpedo_evade_left"]
+            w._torpedo_threat_bearing = wd["torpedo_threat_bearing"]
             w.pending_asm = [tuple(row) for row in wd["pending_asm"]]
             if wd["asroc_battery"] is not None:
                 w.asroc_battery = WeaponBattery.restore(wd["asroc_battery"])
@@ -7738,7 +7743,7 @@ class Game:
             data = _read_save_document(path)
         except (OSError, ValueError, RecursionError):
             return False
-        return self._load_save_data(data, allow_pre_r9=True)
+        return self._load_save_data(data)
 
     @staticmethod
     def _catalog_for_save(data):
@@ -7746,458 +7751,6 @@ class Game:
                 or data.get("save_schema") != SAVE_SCHEMA):
             raise ValueError("unsupported save version")
         return catalog_from_runtime_snapshot(data["catalog_snapshot"])
-
-    @staticmethod
-    def _upgrade_pre_r9_v10(data):
-        """Upgrade only the exact R8 v10 shape that existed before R9."""
-        if not isinstance(data, dict) or "air_defense" in data:
-            return data
-        if set(data) not in (SAVE_ROOT_FIELDS - {"air_defense"},
-                             SAVE_ROOT_FIELDS - {"air_defense", "autocrew"}):
-            return data
-        old_asm = {"x", "y", "course", "seq", "state", "jammer", "age_s",
-                   "travel", "chaff_left", "broken"}
-        old_essm = {"x", "y", "course", "seq", "state", "travel",
-                    "guidance_x", "guidance_y", "track_target_id",
-                    "seeker_acquired", "target_id"}
-        if (not isinstance(data.get("asms"), list)
-                or not isinstance(data.get("essms"), list)
-                or any(not isinstance(row, dict) or set(row) != old_asm
-                       for row in data["asms"])
-                or any(not isinstance(row, dict) or set(row) != old_essm
-                       for row in data["essms"])):
-            return data
-        upgraded = copy.deepcopy(data)
-        loadout = copy.deepcopy(air_defense_loadout())
-        store = make_softkill_store(loadout)
-        cooldown = upgraded.get("chaff_cd")
-        if isinstance(cooldown, (int, float)) and not isinstance(cooldown, bool) \
-                and math.isfinite(cooldown) and cooldown > 0.0:
-            store.fire()
-            store.loading = [float(cooldown)]
-        spent = loadout["vls"]["sam_loadout"] - upgraded.get("vls_cells", -1)
-        upgraded["air_defense"] = {
-            "version": AIR_DEFENSE_STATE_VERSION,
-            "loadout": loadout,
-            "sam_remaining": upgraded.get("vls_cells"),
-            "essm_seq": spent,
-            "softkill": store.serialize(),
-            "aa_ammo": loadout["aa_gun"]["ammo"],
-            "aa_cooldown_s": 0.0,
-            "raiders": [],
-            "raider_seq": 0,
-            "waves_spawned": 0,
-        }
-        for row in upgraded["asms"]:
-            row["profile_key"] = loadout["asm"]["key"]
-        for row in upgraded["essms"]:
-            row["profile_key"] = loadout["sam"]["key"]
-        import random
-        upgraded["rngs"]["raid"] = Game._rng_state(
-            random.Random(upgraded.get("seed", 0) + 40424))
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_r14_v10(data):
-        """Upgrade only the exact canonical R13 sonar sub-shape."""
-        controls_fields = {"gain_db", "band_low_hz", "band_high_hz",
-                           "notch_enabled", "peak_hold", "focus_locked",
-                           "tma_enabled", "listen_bearing", "listen_filtered",
-                           "sonar_page", "audio_enabled", "volume"}
-        controls = data.get("sonar_controls") if isinstance(data, dict) else None
-        sonar = data.get("sonar") if isinstance(data, dict) else None
-        contacts = sonar.get("contacts") if isinstance(sonar, dict) else None
-        if (not isinstance(controls, dict) or set(controls) != controls_fields
-                or not isinstance(contacts, dict)
-                or any(not isinstance(contact, dict) or "fixes" in contact
-                       for contact in contacts.values())):
-            return data
-        upgraded = copy.deepcopy(data)
-        controls = upgraded["sonar_controls"]
-        controls["audition_mode"] = ("FILTERED" if controls["listen_filtered"]
-                                     else "BROADBAND")
-        for contact in upgraded["sonar"]["contacts"].values():
-            fixes = []
-            source = contact.get("range_source")
-            x, y, measured = (contact.get("observed_x"), contact.get("observed_y"),
-                              contact.get("range_seen"))
-            if source in ("ping", "tma", "buoy") and None not in (x, y, measured):
-                fixes.append(dict(
-                    source={"ping": "PING", "tma": "TMA",
-                            "buoy": "SONOBUOY"}[source],
-                    measured_at=measured, fixed_at=measured, x=x, y=y,
-                    uncertainty_nm=contact.get("range_sigma_nm") or .1,
-                    depth_m=contact.get("depth_est") if source == "ping" else None,
-                    depth_uncertainty_m=(contact.get("depth_sigma_m")
-                                         if source == "ping" else None),
-                    quality=contact.get("quality", 0.0)))
-            contact["fixes"] = fixes
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_r16_v10(data):
-        """Upgrade only the exact canonical R15 endurance-free save shape."""
-        if (not isinstance(data, dict) or set(data) not in (
-                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})):
-            return data
-        subs = data.get("subs")
-        prior_sub_fields = {
-            "id", "x", "y", "depth", "course", "state", "speed", "damage",
-            "torpedoes_left", "heard_ping", "asw_battery",
-            "countermeasure_store", "stype", "start_pos", "evac_left",
-            "sink_left", "quiet_mult", "attack_mult", "attack_cooldown",
-            "attack_left", "fingerprint", "torpedo_alerted", "decoy_cd",
-            "turn_left", "turn_delta", "target_course", "target_depth",
-            "evade_offset", "sensor_seed", "memory", "pending_torpedoes",
-            "pending_decoys", "decision_reason", "platform",
-        }
-        if (not isinstance(subs, list)
-                or any(not isinstance(row, dict) or set(row) != prior_sub_fields
-                       for row in subs)):
-            return data
-        snapshot = data.get("catalog_snapshot")
-        current_snapshot = CATALOG.runtime_snapshot()
-        prior_snapshot = copy.deepcopy(current_snapshot)
-        for component in prior_snapshot["components"].values():
-            del component["endurances"]
-        if not _same_save_value_strict(snapshot, prior_snapshot):
-            return data
-
-        upgraded = copy.deepcopy(data)
-        upgraded["catalog_snapshot"] = current_snapshot
-        for row in upgraded["subs"]:
-            profile = CATALOG.endurances.get(f"endurance.{row['stype']}")
-            endurance = (SubmarineEndurance(profile)
-                         if profile is not None else None)
-            if row["state"] == "SNOCKEL" and endurance is not None:
-                endurance.phase = "RADIO"
-                endurance.return_depth_m = max(
-                    row["depth"], endurance.profile.snorkel_depth_m)
-                endurance.radio_left_s = float(row["evac_left"])
-                row["state"] = "PATROLLE"
-                row["evac_left"] = 0.0
-            row["endurance"] = (endurance.serialize()
-                                if endurance is not None else None)
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_r18_v10(data):
-        """Upgrade only the exact canonical same-v10 pre-grounding ship shape."""
-        old_ship_fields = {
-            "x", "y", "course", "target_course", "speed", "target_speed",
-            "order_idx", "turn_rate_scale", "rudder_angle", "yaw_rate",
-            "roll", "pitch", "quiet_mode", "clock",
-        }
-        if (not isinstance(data, dict) or set(data) not in (
-                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})
-                or not isinstance(data.get("ship"), dict)
-                or set(data["ship"]) != old_ship_fields):
-            return data
-        ship = data["ship"]
-        pose = [ship.get("x"), ship.get("y"), ship.get("course")]
-        if any(type(value) not in (int, float) or isinstance(value, bool)
-               or not math.isfinite(value) for value in pose):
-            return data
-        upgraded = copy.deepcopy(data)
-        upgraded["ship"].update(
-            astern=False, hull=DEFAULT_HULL_SPEC.to_dict(),
-            grounding={"latched": False, "last_safe_pose": pose,
-                       "contact": None})
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_r20_v10(data):
-        """Upgrade only the exact canonical same-v10 pre-raid shape.
-
-        Pre-raid saves hold an air_defense state version 1 whose embedded
-        loadout is version 1 (no raider/aa_gun) and an rngs map without the
-        raid stream. Everything else stays untouched.
-        """
-        if not isinstance(data, dict):
-            return data
-        air = data.get("air_defense")
-        loadout = air.get("loadout") if isinstance(air, dict) else None
-        old_state_fields = {"version", "loadout", "sam_remaining",
-                            "essm_seq", "softkill"}
-        old_loadout_fields = {"version", "asm", "sam", "vls", "ciws",
-                              "softkill"}
-        if (not isinstance(air, dict) or set(air) != old_state_fields
-                or air.get("version") != 1
-                or not isinstance(loadout, dict)
-                or set(loadout) != old_loadout_fields
-                or loadout.get("version") != 1):
-            return data
-        rngs = data.get("rngs")
-        if (not isinstance(rngs, dict) or "raid" in rngs
-                or set(rngs) != {"world", "world_weather", "asm", "damage",
-                                 "helo", "sonar", "flight", "asw"}):
-            return data
-        import random
-        current = air_defense_loadout()
-        upgraded = copy.deepcopy(data)
-        upgraded["air_defense"]["loadout"].update(
-            raider=copy.deepcopy(current["raider"]),
-            aa_gun=copy.deepcopy(current["aa_gun"]))
-        upgraded["air_defense"]["loadout"]["version"] = 2
-        upgraded["air_defense"].update(
-            version=AIR_DEFENSE_STATE_VERSION,
-            aa_ammo=current["aa_gun"]["ammo"], aa_cooldown_s=0.0,
-            raiders=[], raider_seq=0, waves_spawned=0)
-        upgraded["rngs"]["raid"] = Game._rng_state(
-            random.Random(upgraded.get("seed", 0) + 40424))
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_dipping_v10(data):
-        """Upgrade only the exact pre-dipping/release canonical v10 sub-shapes."""
-        if (not isinstance(data, dict) or set(data) not in (
-                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})):
-            return data
-        old_helo_fields = {
-            "state", "x", "y", "torpedo_profile_key", "course", "torps",
-            "buoys_left", "fuel_s", "waypoint_x", "waypoint_y",
-        }
-        old_contact_fields = {
-            "contact_id", "target_id", "origin", "kind", "bearing",
-            "range_est", "range_sigma_nm", "range_source", "range_seen",
-            "confidence", "quality", "last_seen", "depth_est",
-            "depth_sigma_m", "player_class", "signature", "snr",
-            "passive_bearing", "raw_bearing", "raw_bearings", "passive_epoch",
-            "bearing_filter_t", "bearing_filter_rate_deg_s",
-            "bearing_filter_uncertainty_deg", "bearing_uncertainty_deg",
-            "ping_pos", "observed_x", "observed_y", "array_observations",
-            "fusion_status", "fusion_delta_deg", "fused_quality", "tma_pos",
-            "tma_course", "tma_speed", "tma_quality", "tma_seen",
-            "buoy_fixes", "fixes",
-        }
-        helo = data.get("helo")
-        sonar = data.get("sonar")
-        contacts = sonar.get("contacts") if isinstance(sonar, dict) else None
-        if (not isinstance(helo, dict) or set(helo) != old_helo_fields
-                or not isinstance(contacts, dict)
-                or any(not isinstance(row, dict) or set(row) != old_contact_fields
-                       for row in contacts.values())):
-            return data
-        upgraded = copy.deepcopy(data)
-        upgraded["helo"].update(
-            dip_state="STOWED", dip_depth_m=0.0,
-            dip_depth_target_m=config.HELO_DIP_DEPTH_DEFAULT_M,
-            dip_water_depth_m=0.0, dip_ping_cooldown=0.0)
-        observer_x = upgraded["ship"]["x"]
-        observer_y = upgraded["ship"]["y"]
-        for contact in upgraded["sonar"]["contacts"].values():
-            contact.update(
-                released_to_opz=contact.get("player_class") in config.PLAYER_CLASSES,
-                passive_source="SONAR-BRG", observer_x=observer_x,
-                observer_y=observer_y)
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_ownship_fuel_v10(data):
-        """Upgrade only the exact canonical same-v10 pre-fuel ship shape."""
-        old_ship_fields = {
-            "x", "y", "course", "target_course", "speed", "target_speed",
-            "order_idx", "astern", "hull", "grounding", "turn_rate_scale",
-            "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "clock",
-        }
-        if (not isinstance(data, dict) or set(data) not in (
-                SAVE_ROOT_FIELDS, SAVE_ROOT_FIELDS - {"autocrew"})
-                or not isinstance(data.get("ship"), dict)
-                or set(data["ship"]) != old_ship_fields):
-            return data
-        upgraded = copy.deepcopy(data)
-        upgraded["ship"].update(
-            fuel_capacity_kg=config.SHIP_FUEL_CAPACITY_KG,
-            fuel_kg=config.SHIP_FUEL_CAPACITY_KG)
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_autocrew_v10(data):
-        """Upgrade only the exact canonical same-v10 pre-Autocrew root shape."""
-        if (not isinstance(data, dict)
-                or set(data) != SAVE_ROOT_FIELDS - {"autocrew"}):
-            return data
-        upgraded = copy.deepcopy(data)
-        upgraded["autocrew"] = AutocrewController().serialize()
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_helo_dip_bearing_v10(data):
-        """Upgrade only the exact canonical same-v10 pre-dip-bearing shape.
-
-        W2: adds the helicopter's own independent dip-passive bearing track
-        (dip_bearing/dip_bearing_uncertainty_deg/dip_last_seen/
-        dip_observer_x/dip_observer_y), which used to share state with the
-        ship's own passive_bearing/observer_x/observer_y - the reported bug
-        where a helicopter dip silently overwrote the frigate's own bearing.
-        """
-        old_contact_fields = {
-            "contact_id", "target_id", "origin", "kind", "bearing",
-            "range_est", "range_sigma_nm", "range_source", "range_seen",
-            "confidence", "quality", "last_seen", "depth_est",
-            "depth_sigma_m", "player_class", "signature", "snr",
-            "passive_bearing", "raw_bearing", "raw_bearings", "passive_epoch",
-            "bearing_filter_t", "bearing_filter_rate_deg_s",
-            "bearing_filter_uncertainty_deg", "bearing_uncertainty_deg",
-            "ping_pos", "observed_x", "observed_y", "array_observations",
-            "fusion_status", "fusion_delta_deg", "fused_quality", "tma_pos",
-            "tma_course", "tma_speed", "tma_quality", "tma_seen",
-            "buoy_fixes", "fixes", "released_to_opz", "passive_source",
-            "observer_x", "observer_y",
-        }
-        if not isinstance(data, dict):
-            return data
-        sonar = data.get("sonar")
-        contacts = sonar.get("contacts") if isinstance(sonar, dict) else None
-        if (not isinstance(contacts, dict)
-                or any(not isinstance(row, dict) or set(row) != old_contact_fields
-                       for row in contacts.values())):
-            return data
-        upgraded = copy.deepcopy(data)
-        for contact in upgraded["sonar"]["contacts"].values():
-            contact.update(dip_bearing=None, dip_bearing_uncertainty_deg=None,
-                          dip_last_seen=None, dip_observer_x=None,
-                          dip_observer_y=None)
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_dip_release_v10(data):
-        """Canonicalize exact earlier rows without independent sensor origins."""
-        if not isinstance(data, dict):
-            return data
-        sonar = data.get("sonar")
-        contacts = sonar.get("contacts") if isinstance(sonar, dict) else None
-        if not isinstance(contacts, dict) or not contacts:
-            return data
-        current_fields = {
-            "contact_id", "target_id", "origin", "kind", "bearing",
-            "range_est", "range_sigma_nm", "range_source", "range_seen",
-            "confidence", "quality", "last_seen", "depth_est",
-            "depth_sigma_m", "player_class", "signature", "snr",
-            "passive_bearing", "raw_bearing", "raw_bearings", "passive_epoch",
-            "bearing_filter_t", "bearing_filter_rate_deg_s",
-            "bearing_filter_uncertainty_deg", "bearing_uncertainty_deg",
-            "ping_pos", "observed_x", "observed_y", "array_observations",
-            "fusion_status", "fusion_delta_deg", "fused_quality", "tma_pos",
-            "tma_course", "tma_speed", "tma_quality", "tma_seen",
-            "buoy_fixes", "fixes", "released_to_opz", "passive_source",
-            "observer_x", "observer_y", "dip_bearing",
-            "dip_bearing_uncertainty_deg", "dip_last_seen",
-            "dip_observer_x", "dip_observer_y",
-        }
-        # The existing upgrader above has supplied the five dip measurement
-        # fields. Earlier rows lack the separate release and ship-origin fields.
-        if (any(not isinstance(row, dict) or set(row) not in (
-                    current_fields, current_fields | {"dip_released_to_opz"})
-                       for row in contacts.values())):
-            return data
-        upgraded = copy.deepcopy(data)
-        for row in upgraded["sonar"]["contacts"].values():
-            row.setdefault("dip_released_to_opz", False)
-            row["ship_observer_x"] = row["observer_x"] if row["passive_bearing"] is not None else None
-            row["ship_observer_y"] = row["observer_y"] if row["passive_bearing"] is not None else None
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_torpedo_spoolup_v10(data):
-        """Upgrade only the exact canonical pre-launch-ramp torpedo rows.
-
-        W2: adds `time_since_launch`, used for a short deterministic
-        motor-spoolup ramp at launch. Legacy in-flight torpedoes are treated
-        as already at cruise speed (the pre-existing behaviour).
-        """
-        old_player_fields = {
-            "x", "y", "course", "depth", "travel", "state", "idx",
-            "target_depth", "target_id", "speed_kn", "range_nm",
-            "terminal_active", "guidance_x", "guidance_y", "seeker_acquired",
-            "profile_key", "launch_origin", "launch_platform_id",
-            "launch_weapon_key", "search_phase", "midcourse",
-            "midcourse_timer", "kill_dist_nm", "kill_depth_m",
-        }
-        old_enemy_fields = {
-            "id", "x", "y", "course", "depth", "travel", "idx", "profile_key",
-            "guidance_x", "guidance_y", "terminal_active", "seeker_acquired",
-            "launch_platform_id", "launch_weapon_key", "seeker_target",
-        }
-        if not isinstance(data, dict):
-            return data
-        player_rows = data.get("torpedoes_in_flight")
-        enemy_rows = data.get("enemy_torpedoes")
-        if (not isinstance(player_rows, list)
-                or any(not isinstance(row, dict) or set(row) != old_player_fields
-                       for row in player_rows)
-                or not isinstance(enemy_rows, list)
-                or any(not isinstance(row, dict) or set(row) != old_enemy_fields
-                       for row in enemy_rows)):
-            return data
-        upgraded = copy.deepcopy(data)
-        for row in upgraded["torpedoes_in_flight"]:
-            row["time_since_launch"] = config.TORP_SPOOLUP_S
-        for row in upgraded["enemy_torpedoes"]:
-            row["time_since_launch"] = config.TORP_SPOOLUP_S
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_depth_inertia_v10(data):
-        """Upgrade only the exact canonical pre-depth-inertia sub rows.
-
-        W2: adds `depth_rate_mps`, the signed vertical rate carried between
-        ticks for the acceleration-limited depth approach. Legacy subs
-        backfill to 0.0 (stationary vertical rate) - equivalent to how the
-        old linear-rate model always started a fresh clamp each tick.
-        """
-        old_sub_fields = {
-            "id", "x", "y", "depth", "course", "state", "speed", "damage",
-            "torpedoes_left", "heard_ping", "asw_battery",
-            "countermeasure_store", "stype", "start_pos", "evac_left",
-            "sink_left", "quiet_mult", "attack_mult", "attack_cooldown",
-            "attack_left", "fingerprint", "torpedo_alerted", "decoy_cd",
-            "turn_left", "turn_delta", "target_course", "target_depth",
-            "evade_offset", "sensor_seed", "memory", "pending_torpedoes",
-            "pending_decoys", "decision_reason", "endurance", "platform",
-        }
-        if not isinstance(data, dict):
-            return data
-        rows = data.get("subs")
-        if (not isinstance(rows, list)
-                or any(not isinstance(row, dict) or set(row) != old_sub_fields
-                       for row in rows)):
-            return data
-        upgraded = copy.deepcopy(data)
-        for row in upgraded["subs"]:
-            row["depth_rate_mps"] = 0.0
-        return upgraded
-
-    @staticmethod
-    def _upgrade_pre_opz_map_current_save(data):
-        """Add the optional native-OPZ camera to an otherwise current save UI."""
-        if not isinstance(data, dict) or not isinstance(data.get("ui"), dict):
-            return data
-        ui = data["ui"]
-        fields = {"opz_map_cx", "opz_map_cy", "opz_map_scale",
-                  "opz_map_follow"}
-        if fields & set(ui):
-            return data
-        ship = data.get("ship")
-        if not isinstance(ship, dict):
-            return data
-        chart = opz_ppi_rect(config.OPZ_STATION_RECT)
-        world = data.get("world")
-        coast = world.get("coast") if isinstance(world, dict) else None
-        world_size = (coast.get("world_nm") if isinstance(coast, dict)
-                      else config.WORLD_SIZE_NM)
-        default_scale = min(chart.w, chart.h) / (
-            2.0 * config.OPZ_MAP_DEFAULT_RADIUS_NM)
-        if isinstance(world_size, (int, float)) and not isinstance(world_size, bool) \
-                and math.isfinite(world_size) and world_size > 0.0:
-            default_scale = max(default_scale,
-                                min(chart.w, chart.h) / world_size)
-        upgraded = copy.deepcopy(data)
-        upgraded["ui"].update(
-            opz_map_cx=ship.get("x"), opz_map_cy=ship.get("y"),
-            opz_map_scale=default_scale,
-            opz_map_follow=True)
-        return upgraded
 
     @staticmethod
     def _valid_save_document(data, runtime_catalog=None) -> bool:
@@ -8236,6 +7789,11 @@ class Game:
                 or data.get("save_schema") != SAVE_SCHEMA):
             return False
         if set(data) != SAVE_ROOT_FIELDS:
+            return False
+        if not AISReceiver.valid_state(
+                data.get("ais"), data.get("sim_t"),
+                {row.get("id") for row in data.get("civilians", ())
+                 if isinstance(row, dict)}):
             return False
         if not AutocrewController.valid_state(data.get("autocrew"), data.get("sim_t")):
             return False
@@ -8344,11 +7902,7 @@ class Game:
                 chaff_cd=data.get("chaff_cd"))):
             return False
         rng_data = data.get("rngs")
-        rng_keys = {
-            "world", "world_weather", "asm", "damage", "helo", "sonar",
-            "flight", "asw", "raid",
-        }
-        if not isinstance(rng_data, dict) or set(rng_data) != rng_keys:
+        if not isinstance(rng_data, dict) or set(rng_data) != RNG_STREAMS:
             return False
         for raw_rng in rng_data.values():
             try:
@@ -8478,13 +8032,7 @@ class Game:
                        for track_id, value in affiliations.items())):
             return False
         ship = data.get("ship")
-        ship_fields = {
-            "x", "y", "course", "target_course", "speed", "target_speed",
-            "order_idx", "astern", "hull", "grounding", "turn_rate_scale",
-            "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "clock",
-            "fuel_capacity_kg", "fuel_kg",
-        }
-        if not isinstance(ship, dict) or set(ship) != ship_fields:
+        if not isinstance(ship, dict) or set(ship) != SHIP_FIELDS:
             return False
         radars = data.get("radars")
         if (not isinstance(radars, dict)
@@ -8539,22 +8087,26 @@ class Game:
         from src.ship.damage import COMPARTMENTS
         compartment_keys = {key for key, _ in COMPARTMENTS}
         damage = data.get("damage")
-        if not isinstance(damage, dict):
+        if not isinstance(damage, dict) or set(damage) != DAMAGE_FIELDS:
             return False
-        teams = damage.get("teams")
-        compartments = damage.get("compartments")
+        teams = damage["teams"]
+        compartments = damage["compartments"]
         if not isinstance(teams, dict) or not isinstance(compartments, dict):
             return False
-        if any(key not in {str(i) for i in range(1, DamageModel.TEAM_COUNT + 1)}
-               or (room is not None and (not isinstance(room, str)
-                                         or room not in compartment_keys))
-               for key, room in teams.items()):
+        if not bounded(damage["repair_mult"], 0.1, 10.0):
             return False
-        if any(key not in compartment_keys or not isinstance(room, dict)
-               or room.get("state") not in ("OK", "FLUTEND", "BESCHAEDIGT", "ZERSTOERT")
-               or not bounded(room.get("flood"), 0, 1000)
-               or not bounded(room.get("fire", 0), 0, 1000)
-               for key, room in compartments.items()):
+        if (set(teams) != {str(i) for i in range(1, DamageModel.TEAM_COUNT + 1)}
+                or any(room is not None and (not isinstance(room, str)
+                                             or room not in compartment_keys)
+                       for room in teams.values())):
+            return False
+        if set(compartments) != compartment_keys or any(
+                not isinstance(room, dict) or set(room) != COMPARTMENT_FIELDS
+                or room["state"] not in COMPARTMENT_STATES
+                or not bounded(room["flood"], 0, config.DMG_DESTROY_FLOOD)
+                # A lethal fire may overshoot the kill threshold by one step.
+                or not bounded(room["fire"], 0, config.DMG_FIRE_KILL + 5.0)
+                for room in compartments.values()):
             return False
 
         groups = {"sub": ("subs",), "animal": ("animals",),
@@ -8724,6 +8276,11 @@ class Game:
                         awarded = entry.get("sunk_score_awarded", False)
                         if type(awarded) is not bool or (awarded and not entry.get("sunk", False)):
                             return False
+                        if (not bounded(entry.get("torpedo_evade_left"), 0.0,
+                                        config.WARSHIP_TORPEDO_EVADE_S)
+                                or not bounded(entry.get("torpedo_threat_bearing"),
+                                               0.0, 359.999999999)):
+                            return False
                         if name == "warships":
                             if not {
                                     "asroc_battery", "pending_asroc",
@@ -8799,6 +8356,9 @@ class Game:
                         if not {
                                 "asw_battery", "countermeasure_store",
                                 "endurance"} <= set(entry):
+                            return False
+                        if not bounded(entry.get("active_ping_cd"), 0.0,
+                                       config.SUB_ACTIVE_PING_COOLDOWN_S):
                             return False
                         endurance_profile = runtime_catalog.endurances.get(
                             f"endurance.{profile_key}")
@@ -9272,9 +8832,7 @@ class Game:
                     "sam_loadout"] - data["vls_cells"]):
             return False
         world = data.get("world")
-        world_fields = {"hour", "sea_state", "weather_shift_timer", "mode",
-                        "generator", "coast"}
-        if (not isinstance(world, dict) or set(world) != world_fields
+        if (not isinstance(world, dict) or set(world) != WORLD_FIELDS
                 or world["mode"] not in ("fixed", "procedural", "real_fixed")
                 or world["generator"] != (
                     "natural-earth-v1" if world["mode"] in ("procedural", "real_fixed")
@@ -9611,40 +9169,8 @@ class Game:
             return False
         return True
 
-    def _load_save_data(self, data: dict, *, allow_pre_r9: bool = False) -> bool:
+    def _load_save_data(self, data: dict) -> bool:
         try:
-            if allow_pre_r9:
-                data = self._upgrade_pre_r9_v10(data)
-                data = self._upgrade_pre_r14_v10(data)
-                data = self._upgrade_pre_r16_v10(data)
-                data = self._upgrade_pre_r18_v10(data)
-                data = self._upgrade_pre_r20_v10(data)
-                data = self._upgrade_pre_dipping_v10(data)
-                data = self._upgrade_pre_ownship_fuel_v10(data)
-                data = self._upgrade_pre_autocrew_v10(data)
-                data = self._upgrade_pre_helo_dip_bearing_v10(data)
-                data = self._upgrade_pre_dip_release_v10(data)
-                data = self._upgrade_pre_torpedo_spoolup_v10(data)
-                data = self._upgrade_pre_depth_inertia_v10(data)
-            # Exact same-version predecessor: no helicopter buoy receiver state.
-            if isinstance(data, dict) and isinstance(data.get("sonar"), dict):
-                contacts = data["sonar"].get("contacts")
-                buoys = data.get("buoys")
-                added_contact = {"buoy_reports", "helo_qualified",
-                                 "buoy_released_to_opz"}
-                if (isinstance(contacts, dict) and all(isinstance(row, dict)
-                        and not (set(row) & added_contact)
-                        for row in contacts.values())
-                        and isinstance(buoys, list) and all(isinstance(row, dict)
-                        and not (set(row) & {"mode", "last_ping_epoch"})
-                        for row in buoys)):
-                    data = copy.deepcopy(data)
-                    for row in data["sonar"]["contacts"].values():
-                        row.update(buoy_reports={}, helo_qualified=False,
-                                   buoy_released_to_opz=False)
-                    for row in data["buoys"]:
-                        row.update(mode="PASSIVE", last_ping_epoch=-1)
-            data = self._upgrade_pre_opz_map_current_save(data)
             if (not isinstance(data, dict)
                     or type(data.get("time_scale_idx")) is not int
                     or not 0 <= data["time_scale_idx"] < 6):
@@ -9657,31 +9183,6 @@ class Game:
                 data["time_scale_idx"] = config.TIME_SCALE_DEFAULT
         except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
             return False
-        legacy_esm_fields = {
-            "version", "track_seq", "picture", "selected_track_key", "annotations"}
-        esm_state = data.get("esm") if isinstance(data, dict) else None
-        if (isinstance(esm_state, dict) and set(esm_state) == legacy_esm_fields
-                and esm_state.get("version") == 1):
-            # The sole accepted same-save-version compatibility shape: the
-            # pre-ECM ESM envelope.  Canonicalize only after the catalog and
-            # exact legacy keys have validated structurally.
-            data = copy.deepcopy(data)
-            data["esm"]["version"] = ESM_STATE_VERSION
-            data["esm"]["ecm"] = {"auto_enabled": False, "channels": []}
-            data["catalog_snapshot"] = runtime_catalog.runtime_snapshot()
-        elif (isinstance(esm_state, dict) and esm_state.get("version") == 2
-              and valid_esm_state(esm_state, data.get("sim_t", -1.0),
-                                  runtime_catalog.emitters)):
-            # Canonicalize the earlier two-channel ECM envelope while keeping
-            # the outer save schema unchanged.
-            legacy_jammer = ECMJammer()
-            legacy_jammer.restore(
-                esm_state["ecm"],
-                {row["track_key"] for row in esm_state["picture"]},
-                data["sim_t"], version=2)
-            data = copy.deepcopy(data)
-            data["esm"]["version"] = ESM_STATE_VERSION
-            data["esm"]["ecm"] = legacy_jammer.serialize()
         if not self._valid_save_document(data, runtime_catalog):
             return False
         candidate = copy.copy(self)
@@ -9750,7 +9251,7 @@ class Game:
             data = _read_save_document(path)
         except (OSError, ValueError, RecursionError):
             return False
-        if not self._load_save_data(data, allow_pre_r9=True):
+        if not self._load_save_data(data):
             return False
         self.announce(message("status.loaded", slot=slot), "mission", 2.0)
         return True

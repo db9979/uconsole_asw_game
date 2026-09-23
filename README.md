@@ -282,7 +282,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v11 game saves for deterministic restoration of existing sessions.
+in v12 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -385,10 +385,11 @@ Validated does not mean runtime-effective. In release 1.0.0:
 
 ## Saves and User Data
 
-Release 1.0.0 writes and loads save format **v11** only. V11 requires the exact
-`u-jagd-save-v11` schema, including the current runtime catalog snapshot and all
-deterministic continuation state. Older, newer, malformed, or incomplete saves
-are rejected without replacing the running game.
+This build writes and loads save format **v12** only. V12 requires the exact
+`u-jagd-save-v12` schema, including the current runtime catalog snapshot and all
+deterministic continuation state. Older (including every 1.0.0 v11 save),
+newer, malformed, or incomplete saves are rejected without replacing the
+running game; there is no migration.
 
 The five slots are `~/.u-jagd/slot1.json` through `slot5.json`. Saves include a
 snapshot of coastline geometry and synthetic bathymetry so an existing game is

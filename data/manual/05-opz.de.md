@@ -19,7 +19,7 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 - **Überwasserradar:** 30 sm, begrenzt durch Radarhorizont (20-m-Mast) und Zielhöhe; getauchte U-Boote sind unsichtbar.
 - **Luftradar:** 100 sm für Flugzeuge und Seezielflugkörper (ASM).
 - Wetter verringert die Reichweite; ab Seegang 5 nehmen Clutter und Messfehler zu. Regen kostet weitere Reichweite.
-- **AIS:** zivile Schiffe senden Identität und Position; optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
+- **AIS:** zivile Schiffe senden Kurs und Fahrt alle 2-10 s (vor Anker alle 3 min) und ihren Namen etwa alle 6 min. Der UKW-Empfänger hört sie nur in Sichtlinie (etwa 20 NM). Ein Radartrack eines Zivilschiffs zeigt Name und Kurs erst, wenn die passende AIS-Meldung empfangen wurde; Radar allein liefert nur die Position. Optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
 - **Fusion:** 2-8 Rohmeldungen markieren (`Leertaste`) und zu einem Bedienertrack fusionieren (`L`); `Shift+L` löst ihn auf.
 - **Unterdrückung:** `Entf` blendet eine Meldung lokal aus; `H` zeigt unterdrückte Meldungen wieder.
 

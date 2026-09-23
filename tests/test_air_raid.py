@@ -413,7 +413,7 @@ def test_raid_state_roundtrips_save_load(game):
     assert restored.raid_seq == 7 and restored.raid_waves_spawned == 3
 
 
-def test_pre_r20_save_upgrades_to_raid_shape(game):
+def test_pre_r20_save_shape_is_rejected(game):
     state = json.loads(json.dumps(game.save_state(), allow_nan=False))
     ad = state["air_defense"]
     loadout = ad["loadout"]
@@ -424,18 +424,10 @@ def test_pre_r20_save_upgrades_to_raid_shape(game):
         del ad[key]
     ad["version"] = 1
     del state["rngs"]["raid"]
-    # ohne Upgrade-Pfad: abgelehnt
-    assert not game._load_save_data(copy.deepcopy(state))
     restored = Game(seed=1, start_menu=False, audio_enabled=False)
-    assert restored._load_save_data(copy.deepcopy(state), allow_pre_r9=True)
-    out = restored.save_state()["air_defense"]
-    assert out["version"] == AIR_DEFENSE_STATE_VERSION == 2
-    assert out["loadout"]["version"] == 2
-    assert out["loadout"]["raider"] == air_defense_loadout()["raider"]
-    assert out["aa_ammo"] == out["loadout"]["aa_gun"]["ammo"]
-    assert out["raiders"] == [] and out["raider_seq"] == 0
-    assert out["waves_spawned"] == 0
-    assert "raid" in restored.save_state()["rngs"]
+    before = restored.save_state()
+    assert not restored._load_save_data(copy.deepcopy(state))
+    assert restored.save_state() == before
 
 
 @pytest.mark.parametrize("mutate", [

@@ -297,7 +297,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v11 gespeichert.
+v12 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -372,7 +372,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.0.0**, API-Protokoll **v2** und Speicherformat **v11** sind
+Anwendungsversion **1.0.0**, API-Protokoll **v2** und Speicherformat **v12** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -424,11 +424,12 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Version 1.0.0 schreibt und lädt ausschließlich das Speicherformat **v11**. V11
-verlangt das exakte Schema `u-jagd-save-v11` einschließlich des aktuellen
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v12**. V12
+verlangt das exakte Schema `u-jagd-save-v12` einschließlich des aktuellen
 Schnappschusses des Laufzeitkatalogs und des gesamten Zustands für die
-deterministische Fortsetzung. Ältere, neuere, fehlerhafte oder unvollständige
-Spielstände werden abgelehnt, ohne das laufende Spiel zu ersetzen.
+deterministische Fortsetzung. Ältere (auch alle v11-Spielstände von 1.0.0),
+neuere, fehlerhafte oder unvollständige Spielstände werden ohne Migration
+abgelehnt, ohne das laufende Spiel zu ersetzen.
 
 Die fünf Speicherplätze sind `~/.u-jagd/slot1.json` bis `slot5.json`.
 Spielstände enthalten einen Schnappschuss der Küstengeometrie und der

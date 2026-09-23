@@ -8,6 +8,7 @@ import math
 import random
 
 from src.core import config
+from src.physics import submarine as sub_physics
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
 from src.sensors.platform import (
@@ -114,8 +115,16 @@ class Sub:
         # W2: signed vertical rate (+ = descending), acceleration-limited so
         # depth changes have inertia instead of snapping to the full rate.
         self.depth_rate_mps = 0.0
+        # Physics state (saved): one emergency blow, blow in progress, loud
+        # transient timer (launch/blow) and pressure-hull fatigue (0..1).
+        self.blow_available = True
+        self.emergency_ascent = False
+        self.transient_left = 0.0
+        self.hull_fatigue = 0.0
         self.speed = rng.uniform(self.stype.speed_min_kn,
                                  min(self.stype.speed_kn, 8.0))
+        self.speed_order = self.speed
+        self._last_actual_speed = self.speed
         self.state = "PATROLLE"
         self.evac_left = 0.0
         self.turn_left = rng.uniform(300.0, 900.0)
@@ -308,6 +317,9 @@ class Sub:
                                        if self.weapon_battery is not None
                                        else self.torpedoes_left - launched)
                 self.attack_left = self.attack_cooldown
+                # Tube discharge: a loud, short launch transient.
+                self.transient_left = max(self.transient_left,
+                                          sub_physics.LAUNCH_TRANSIENT_S)
 
     def _maybe_active_ping(self, dt: float) -> bool:
         """W2: ein aggressives Boot mit frischem Kontakt riskiert selten einen
@@ -339,6 +351,42 @@ class Sub:
 
     # --- Physik/KI ---
 
+    # --- physics: planes, hull stress, cavitation, source level ---------------
+
+    def _update_hull_stress(self, dt: float) -> None:
+        """Pressure-hull fatigue below test depth; collapse beyond crush depth."""
+        test = self.stype.max_depth_m
+        if self.depth >= sub_physics.crush_depth_m(test):
+            self.damage = 100.0
+        self.hull_fatigue += sub_physics.fatigue_rate_per_s(self.depth, test) * dt
+        if self.hull_fatigue >= 1.0:
+            self.hull_fatigue -= 1.0
+            self.damage = min(100.0, self.damage + 20.0)
+        if self.damage >= 100.0 and self.state != "SINKING":
+            self.state = "SINKING"
+            self.sink_left = 20.0
+
+    def cavitation_onset_kn(self) -> float:
+        acoustic = self.stype.acoustic
+        onset = getattr(acoustic, "cavitation_speed_knots", None)
+        if onset is None:
+            tendency = getattr(acoustic, "cavitation_tendency", 0.5)
+            onset = self.stype.speed_kn * (1.0 - 0.5 * tendency)
+        return sub_physics.cavitation_speed_kn(onset, 0.0) if onset else 99.0
+
+    @property
+    def cavitating(self) -> bool:
+        return self.speed > sub_physics.cavitation_speed_kn(
+            self.cavitation_onset_kn(), self.depth)
+
+    def source_level_offset_db(self) -> float:
+        """Radiated-level change from speed, cavitation and transients."""
+        level = sub_physics.source_speed_db(
+            self.speed, sub_physics.SUBMARINE_REFERENCE_SPEED_KN, self.cavitating)
+        if self.transient_left > 0.0:
+            level += sub_physics.LAUNCH_TRANSIENT_DB
+        return level
+
     def _advance_depth(self, target_depth: float, max_rate: float, dt: float) -> None:
         """Acceleration-limited depth approach (closed-form, no overshoot).
 
@@ -355,6 +403,8 @@ class Sub:
         _update_surface_cycle, which has its own independent, deliberately-
         still-linear depth stepping (see there).
         """
+        # Hydroplane lift scales with dynamic pressure (v^2).
+        max_rate *= sub_physics.plane_authority(self.speed)
         desired_rate = (max_rate if target_depth > self.depth
                         else -max_rate if target_depth < self.depth else 0.0)
         accel = config.SUB_DEPTH_ACCEL_MPS2 * dt
@@ -370,10 +420,34 @@ class Sub:
             self.depth_rate_mps = new_rate
 
     def update(self, dt: float, observation, world) -> None:
-        """dt in Simulationssekunden; bei 1x identisch zu Echtzeit."""
+        """dt in Simulationssekunden; bei 1x identisch zu Echtzeit.
+
+        The AI below reads and writes ``self.speed`` as the *ordered* speed;
+        the hull follows it at its acceleration limit (surge) and everyone
+        outside the update sees the actual speed."""
         self.pinged_this_tick = False
         if self.sunk:
             return
+        if self.speed != self._last_actual_speed:
+            # Set from outside (spawn, scenario, test): order and actual.
+            self.speed_order = self.speed
+        self._actual_speed = self.speed
+        self._surged = False
+        self.speed = self.speed_order
+        try:
+            self._update_inner(dt, observation, world)
+        finally:
+            if not self._surged:
+                self.speed_order = config.clamp(
+                    self.speed, 0.0, self.motion.maximum_speed_kn)
+                self.speed = self._actual_speed
+            if self.state in ("SINKING", "SUNK"):
+                self.speed = self.speed_order = 0.0
+            self._last_actual_speed = self.speed
+
+    def _update_inner(self, dt: float, observation, world) -> None:
+        start_speed = self._actual_speed
+        self.transient_left = max(0.0, self.transient_left - dt)
         depth_at = getattr(world, "depth_m", lambda x, y: 1000.0)
         bottom = depth_at(self.x, self.y)
         safe_depth = min(self.stype.max_depth_m, max(0.0, bottom - 25.0))
@@ -423,6 +497,16 @@ class Sub:
             return
 
         self.speed = config.clamp(self.speed, 0.0, self.motion.maximum_speed_kn)
+        self._update_hull_stress(dt)
+        if self.state == "SINKING":
+            return
+        if (self.blow_available and not self.emergency_ascent
+                and self.damage >= sub_physics.EMERGENCY_BLOW_DAMAGE
+                and self.depth > 30.0):
+            # Flooding: blow main ballast with the high-pressure air store.
+            self.blow_available = False
+            self.emergency_ascent = True
+            self.transient_left = max(self.transient_left, 20.0)
 
         # Retain only a bounded local acoustic observation, never a live ship
         # reference. Ping memory does not continuously refresh hidden motion.
@@ -514,7 +598,18 @@ class Sub:
             self.evac_left -= dt
             self.target_depth = min(thermo + 15.0, safe_depth)
             self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
-            self.speed = max(1.0, self.speed - .08 * dt)
+            # Station keeping: stem the current at bare steerage way instead
+            # of a fixed crawl, so the boat hovers over its ambush point.
+            current = getattr(world, "current_vec", None)
+            cu, cv = current(self.x, self.y) if current is not None else (0.0, 0.0)
+            drift = math.hypot(cu, cv)
+            if drift > 0.05:
+                self.target_course = math.degrees(math.atan2(-cu, cv)) % 360.0
+                diff = config.angle_diff_deg(self.target_course, self.course)
+                self.course = (self.course + config.clamp(
+                    diff, -self.motion.turn_rate_deg_s * dt,
+                    self.motion.turn_rate_deg_s * dt)) % 360.0
+            self.speed = min(2.0, drift)
             if self.evac_left <= 0:
                 self.state = "PATROLLE"
                 self.speed = min(6.0, self.speed_for_state())
@@ -543,6 +638,21 @@ class Sub:
             if self.stype.profile.requires_air and self.depth > 55.0:
                 self.rng.random()
 
+        if self.emergency_ascent:
+            self.depth = max(10.0, old_depth - sub_physics.EMERGENCY_BLOW_RATE_MPS * dt)
+            self.target_depth = self.depth
+            self.depth_rate_mps = -sub_physics.EMERGENCY_BLOW_RATE_MPS
+            if self.depth <= 10.0 + 1e-9:
+                self.emergency_ascent = False
+                self.depth_rate_mps = 0.0
+        # Surge: the ordered speed is reached at the hull's acceleration
+        # limit (propeller thrust against drag and mass), faster when slowing.
+        ordered = config.clamp(self.speed, 0.0, self.motion.maximum_speed_kn)
+        accel = self.motion.acceleration_kn_s * dt
+        self.speed = start_speed + config.clamp(ordered - start_speed,
+                                                -2.0 * accel, accel)
+        self.speed_order = ordered
+        self._surged = True
         motion_dt = dt
         if self.endurance is not None:
             motion_dt = self.endurance.time_until_surface_operation(

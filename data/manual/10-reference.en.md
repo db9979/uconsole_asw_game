@@ -73,6 +73,8 @@ All values are the defaults of the current game version. Custom difficulty and m
 
 Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less.
 
+Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded boat blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking boat holds its position against the current. Surface ships lose top speed in heavy seas (small ships more).
+
 ## Mission and scoring {#ref-mission}
 
 - Scenarios: 1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Random (custom difficulty). User missions start from the Mission Editor (`F5` in its browser).

@@ -76,15 +76,15 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 | Gap | Current behaviour | Would need for realism |
 |-----|-------------------|------------------------|
-| ~~**No depth dynamics**~~ | **Partially fixed (2026-09).** `Sub._advance_depth()` now approaches `target_depth` with an acceleration-limited (inertial) rate instead of an instant full-rate clamp, for the EVADE/LAUER/PATROLLE states. `_update_surface_cycle`'s snorkel-cycle depth stepping deliberately stays linear (its analytic event-timing depends on it). Still open: no buoyancy/plane-angle model, no depth overshoot beyond the inertial ramp itself. | Buoyancy control; plane effectiveness at low speed |
-| **No cavitation model on subs** | Cavitation tendency is a static acoustic parameter; no speed-dependent cavitation threshold | Propeller cavitation onset at critical RPM/speed; noise spike; loss of propulsive efficiency |
-| **No pressure / hull limits** | `max_depth_m` is a hard clamp; no structural stress, no crush | Pressure-hull fatigue, emergency blows, maximum crush depth with margin |
-| **Speed vs noise coupling is indirect** | Noise derived from `speed / max_speed` ratio + state modifier; no RPM or blade-rate physics | Shaft RPM → blade-pass frequency → cavitation onset; engine RPM for diesel; electrical motor hum |
-| **No propeller-wake / bubble effects** | None | Propeller race affects local sonar performance and torpedo launch conditions |
-| **Evasive manoeuvre is kinematic** | EVADE: turn at `2.5 × turn_rate`, speed up to `0.9 × max`; no dynamic limit | Real evasive depth change + hard turn; dynamic pressure on hull; possible cavitation from hard turn at speed |
-| **LAUER is a speed brake, not a tactic** | Speed forced to 0.5–1 kn; no station-keeping, no drift | Station-keeping in current; drift modelling |
+| ~~**No depth dynamics**~~ | **Closed (Phases W2 + 6).** Inertial depth changes; hydroplane authority ~ v^2 (ballast-only rate below ~4 kn); one emergency blow from a bounded HP-air store at 4 m/s. | — |
+| ~~**No cavitation model on subs**~~ | **Closed (Phase 6).** Onset speed from the catalog (or tendency) rising with depth as sqrt(1 + z/10.3); cavitation adds 8 dB source level. | — |
+| ~~**No pressure / hull limits**~~ | **Closed (Phase 6).** Fatigue accumulates beyond 0.9 x test depth (saved) and converts to damage; 1.5 x test depth crushes the hull. | — |
+| ~~**Speed vs noise coupling is indirect**~~ | **Closed (Phase 6).** Source level ~40 log v relative to the patrol reference (subs 6 kn, ships their cruise speed), plus cavitation and launch/blow transients, in all passive sonar paths (own, dipping, buoys, NPC). | — |
+| ~~**No propeller-wake / bubble effects**~~ | **Closed (Phases 2/6/8).** Own wake ring masks the hull array astern; submarine screw transients and cavitation raise source level; torpedo bubble trails in Phase 8. | — |
+| ~~**Evasive manoeuvre is kinematic**~~ | **Closed (Phase 6).** Evasion speeds are reached at the hull's acceleration limit, deep dives are limited by plane authority, and a hard sprint cavitates and becomes loud. | — |
+| ~~**LAUER is a speed brake, not a tactic**~~ | **Closed (Phase 6).** The lurking boat heads into the current at bare steerage way and holds station. | — |
 | ~~**No current / drift**~~ | **Fixed (2026-09).** `World.current_vec(x, y)` provides a deterministic current field, already applied to ship/sub/surface ships (`world.py:217-224`), and now also to torpedoes (both classes) and the free-drift enemy decoy. | — |
-| **Torpedo launch is instantaneous** | Torpedo appears at sub position with chosen course and depth; no tube-pressurisation, no water jet | Launch delay, initial depth offset, wire letout before free-running |
+| ~~**Torpedo launch is instantaneous**~~ | **Closed (Phases W2 + 6).** Motor spool-up, launch depth, and a loud 8 s tube-discharge transient on the firing boat. | — |
 | **No active sonar use by subs** | Subs only use passive detection (or legacy `snapshot_observation`) | Active ping capability with its own trade-offs (reveals position) |
 | **No ESM/ESB use by subs** | ESM sensor exists in catalog but `legacy_observation_model` short-circuits it for most profiles | Full `PlatformSensorSuite` path for subs when `propulsor_type != "unknown"` |
 | **No ASW coordination** | Each sub acts independently; no data-link between hostile subs | Friendly datalink (already exists in `PlatformSensorSuite` for "blue" side but not used for hostile subs) |
@@ -120,7 +120,7 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
-| **No ship hydrodynamics** | Constant speed or linear approach; no drag, no trim | Same as frigate: speed-dependent resistance, turning at speed |
+| ~~**No ship hydrodynamics**~~ | **Closed (Phase 6).** Speed lag from the catalog, Nomoto-linear turning, and added resistance in waves lowering attainable speed by hull length (small hulls lose more). | — |
 | ~~**No radar horizon**~~ | **Fixed (2026-09).** Surface detection now uses `min(effective_range × aspect, radar_horizon_nm(RADAR_ANTENNA_HEIGHT_M, RADAR_SURFACE_TARGET_HEIGHT_M))` for both civilians and warships (`game.py`, `_update_air_picture`), the same formula already used for raiders. | — |
 | **No countermeasures** | Warships do not deploy chaff/flare | ASM jamming, chaff, hard-kill CIWS on enemy ships |
 | **No damage propagation** | Single scalar `damage`; one torpedo = 34 damage → 3 hits to sink | Compartment flooding, fire, loss of specific capabilities |

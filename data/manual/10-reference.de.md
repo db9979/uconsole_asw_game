@@ -73,6 +73,8 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 
 U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus, können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger.
 
+U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes Boot hält seine Position gegen die Strömung. Überwasserschiffe verlieren bei schwerer See Höchstfahrt (kleine Schiffe mehr).
+
 ## Mission und Wertung {#ref-mission}
 
 - Szenarien: 1 Patrouille, 2 Doppeljagd, 3 Nuklear-Abfang, 4 Zufall (eigene Schwierigkeit). Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser).

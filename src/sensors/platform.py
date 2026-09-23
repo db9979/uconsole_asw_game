@@ -298,7 +298,9 @@ class PlatformSensorSuite:
                     candidate.y, target_depth, frequency)
                 terms = equation.passive_terms(
                     frequency_hz=frequency, distance_nm=distance,
-                    target_bonus=1.0 + 0.8 * config.clamp(source_noise, 0.0, 1.0),
+                    target_bonus=(1.0 + 0.8 * config.clamp(source_noise, 0.0, 1.0))
+                    * (10.0 ** (candidate.source_level_offset_db() / 20.0)
+                       if hasattr(candidate, "source_level_offset_db") else 1.0),
                     excess_path_loss_db=(ray if ray is not None else
                                          result.best_path.loss_db
                                          - 20.0 * math.log10(1.0 + distance)),

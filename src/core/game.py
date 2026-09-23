@@ -6720,6 +6720,11 @@ class Game:
                           torpedo_alerted=s.torpedo_alerted,
                            decoy_cd=s._decoy_cd,
                            active_ping_cd=s._active_ping_cd,
+                           speed_order=s.speed_order,
+                           blow_available=s.blow_available,
+                           emergency_ascent=s.emergency_ascent,
+                           transient_left=s.transient_left,
+                           hull_fatigue=s.hull_fatigue,
                            turn_left=s.turn_left, turn_delta=s.turn_delta,
                            target_course=s.target_course,
                            target_depth=s.target_depth,
@@ -7333,6 +7338,12 @@ class Game:
             s.torpedo_alerted = sd["torpedo_alerted"]
             s._decoy_cd = sd["decoy_cd"]
             s._active_ping_cd = sd["active_ping_cd"]
+            s.speed_order = sd["speed_order"]
+            s._last_actual_speed = s.speed
+            s.blow_available = sd["blow_available"]
+            s.emergency_ascent = sd["emergency_ascent"]
+            s.transient_left = sd["transient_left"]
+            s.hull_fatigue = sd["hull_fatigue"]
             s.turn_left = sd["turn_left"]
             s.turn_delta = sd["turn_delta"]
             s.target_course = sd["target_course"]
@@ -8435,6 +8446,14 @@ class Game:
                             return False
                         if not bounded(entry.get("active_ping_cd"), 0.0,
                                        config.SUB_ACTIVE_PING_COOLDOWN_S):
+                            return False
+                        if (type(entry.get("blow_available")) is not bool
+                                or type(entry.get("emergency_ascent")) is not bool
+                                or (entry["emergency_ascent"]
+                                    and entry["blow_available"])
+                                or not bounded(entry.get("transient_left"), 0.0, 60.0)
+                                or not bounded(entry.get("hull_fatigue"), 0.0, 1.0)
+                                or not bounded(entry.get("speed_order"), 0.0, 100.0)):
                             return False
                         endurance_profile = runtime_catalog.endurances.get(
                             f"endurance.{profile_key}")

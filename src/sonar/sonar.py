@@ -93,6 +93,12 @@ DOPPLER_SIGMA_HZ = 0.02
 DOPPLER_MIN_QUALITY = 0.3
 
 
+def source_level_factor(tgt) -> float:
+    """Amplitude factor of a target's speed/cavitation/transient source level."""
+    offset = getattr(tgt, "source_level_offset_db", None)
+    return 10.0 ** (offset() / 20.0) if offset is not None else 1.0
+
+
 def doppler_factor(tgt, observer) -> float:
     """Received/emitted frequency ratio from the closing speed (knots)."""
     dx, dy = observer.x - tgt.x, observer.y - tgt.y
@@ -953,7 +959,7 @@ class SonarSystem:
         # (target bonus 1, reference sea state) becomes a self-noise level.
         own_factor = frigate.passive_sonar_range_nm(
             1.0, int(equation.REFERENCE_SEA_STATE)) / config.SONAR_PASSIVE_BASE_NM
-        target_bonus = 1.0 + 0.8 * (1.0 - tgt.quiet_factor())
+        target_bonus = (1.0 + 0.8 * (1.0 - tgt.quiet_factor())) * source_level_factor(tgt)
         thermo = world.thermocline_depth_m(tgt.x, tgt.y)
         sensor_depth = self.towed_depth_m if mode == "TOWED" else 5.0
         same_layer = (sensor_depth < thermo) == (tgt.depth < thermo)
@@ -1038,7 +1044,8 @@ class SonarSystem:
                 continue
             dx, dy = tgt.x - helicopter.x, tgt.y - helicopter.y
             distance = math.hypot(dx, dy)
-            target_bonus = 1.0 + 0.8 * (1.0 - tgt.quiet_factor())
+            target_bonus = ((1.0 + 0.8 * (1.0 - tgt.quiet_factor()))
+                            * source_level_factor(tgt))
             sea_state = float(getattr(world, "effective_sea_state", world.sea_state))
             midpoint_x = (helicopter.x + tgt.x) * .5
             midpoint_y = (helicopter.y + tgt.y) * .5
@@ -1339,7 +1346,8 @@ class SonarSystem:
                            else 0.0)
                 terms = equation.passive_terms(
                     frequency_hz=frequency, distance_nm=dist,
-                    target_bonus=1.0 + 0.8 * (1.0 - tgt.quiet_factor()),
+                    target_bonus=(1.0 + 0.8 * (1.0 - tgt.quiet_factor()))
+                    * source_level_factor(tgt),
                     excess_path_loss_db=ray,
                     absorption_db_per_km=equation.francois_garrison_db_per_km(
                         frequency, _surface_temperature(world)),

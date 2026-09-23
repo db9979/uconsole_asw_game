@@ -8,6 +8,7 @@ import math
 import random
 
 from src.core import config
+from src.physics import submarine as sub_physics
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
 from src.sensors.platform import (
@@ -116,6 +117,19 @@ class SurfaceShip:
     def speed_cap_kn(self) -> float:
         """Propulsion damage caps top speed, mirroring Sub's degradation."""
         return self.motion.maximum_speed_kn * (1.0 - 0.25 * self.damage / 100.0)
+
+    @property
+    def hull_length_m(self) -> float:
+        catalog = self.runtime_catalog
+        systems = catalog.profile_systems.get(self.signature_key)
+        reference = (catalog.references.get(systems.reference_key)
+                     if systems is not None and systems.reference_key else None)
+        return float(reference.length_m) if reference and reference.length_m else 120.0
+
+    def source_level_offset_db(self) -> float:
+        """Radiated level versus the catalog cruise speed (40 log v)."""
+        return sub_physics.source_speed_db(
+            self.speed, max(self.motion.cruise_speed_kn, 1.0))
 
     @property
     def radar_emitting(self) -> bool:
@@ -278,18 +292,25 @@ class SurfaceShip:
                     if offset:
                         self.target_course = course
                     break
-        # W2: Ruderwirkung skaliert mit Staudruck (~v^2), wie beim Spielerschiff.
-        speed_factor = config.clamp((self.speed / 10.0) ** 2, 0.0, 1.5)
+        # Nomoto steering as on the own ship: steady turn rate grows linearly
+        # with speed (constant turning circle), no turning without way on.
+        speed_factor = config.clamp(self.speed / 10.0, 0.0, 1.5)
         diff = config.angle_diff_deg(self.target_course, self.course)
         effective_rate = max_rate * speed_factor
         self.course = (self.course + config.clamp(
             diff, -effective_rate * dt, effective_rate * dt)) % 360.0
         # W2: Schub/Widerstand-Gleichgewicht als Exponential-Verzug (geschlossene
         # Form -> dt-unabhaengig, siehe Ship.update()).
-        if abs(self.target_speed - self.speed) <= 0.05:
-            self.speed = self.target_speed
+        # Added resistance in waves lowers the attainable speed.
+        sea_state = float(getattr(world, "effective_sea_state",
+                                  getattr(world, "sea_state", 0.0))) if world else 0.0
+        cap = self.speed_cap_kn * sub_physics.wave_speed_fraction(
+            sea_state, self.hull_length_m, self.hull_length_m / 8.0)
+        target = min(self.target_speed, cap)
+        if abs(target - self.speed) <= 0.05:
+            self.speed = target
         else:
-            self.speed = self.target_speed + (self.speed - self.target_speed) \
+            self.speed = target + (self.speed - target) \
                 * math.exp(-dt / self.speed_tau_s)
         self.speed = config.clamp(self.speed, 0.0, self.speed_cap_kn)
 

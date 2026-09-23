@@ -328,7 +328,9 @@ def test_patrol_speed_resumes_when_descent_completes():
     sub.update(.05, None, Ocean())
 
     assert sub.endurance.phase == "SUBMERGED"
-    assert sub.speed == pytest.approx(min(6.0, sub.speed_for_state()))
+    # The patrol speed is ordered at once; the hull then accelerates to it.
+    assert sub.speed_order == pytest.approx(min(6.0, sub.speed_for_state()))
+    assert 0.0 <= sub.speed <= sub.speed_order
 
 
 @pytest.mark.parametrize("state", ["PATROLLE", "EVADE", "LAUER"])
@@ -363,7 +365,10 @@ def test_subsecond_reserve_transition_has_stable_motion_and_stores(parts):
         sub = Sub(100, 100, 60, 90, "diesel_alt", random.Random(1606))
         sub.state = "EVADE"
         sub.evac_left = 1000
-        sub.speed = 6
+        # Start at the evasion speed so the hull does not accelerate: this
+        # test is about reserve transitions at a steady speed.
+        sub.speed = max(6.0, min(sub.speed_for_state(),
+                                 max(10.0, sub.stype.speed_kn * .9)))
         load_rate = sub.endurance.load_kw(
             sub.speed, sub.motion.maximum_speed_kn) / 3600
         reserve = (sub.endurance.profile.battery_capacity_kwh

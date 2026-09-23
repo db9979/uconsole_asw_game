@@ -171,7 +171,13 @@ aufzuklären.
 
 ## Steuerung
 
-Drücken Sie im Spiel `F1`, um die kontextsensitive Hilfe aufzurufen. Eine
+Drücken Sie im Spiel `F1` (oder `?`), um die kontextsensitive Hilfe aufzurufen;
+ihre vierte Kategorie ist das vollständige Spielerhandbuch (Schnellstart, ein
+Kapitel je Station mit Anzeigen, Tasten, Standardablauf und Tipps sowie
+Referenzdaten). Dasselbe Handbuch liegt als
+[`docs/manual/manual.de.md`](docs/manual/manual.de.md) /
+[`manual.en.md`](docs/manual/manual.en.md) vor und wird von Remote Crew unter
+`/manual-de` und `/manual-en` ausgeliefert. Eine
 vollständige druckbare Übersicht der lokalen Tastenkürzel steht als
 [`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf) bereit; die
 Textquelle ist [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md).

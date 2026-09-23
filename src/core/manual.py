@@ -21,7 +21,7 @@ import re
 import textwrap
 from dataclasses import dataclass
 from functools import lru_cache
-from importlib import resources
+from importlib.resources import files as _resource_files
 
 from src.core.help import (_GLOBAL_HELP, _WEB_HELP, STATION_HELP, STATION_SOP)
 from src.core.i18n import Translator
@@ -68,7 +68,7 @@ def chapter_filename(chapter: str, lang: str) -> str:
 def load_source(chapter: str, lang: str) -> str:
     if chapter not in CHAPTERS or lang not in LANGUAGES:
         raise ManualError(f"unknown manual chapter {chapter!r}/{lang!r}")
-    root = resources.files("data.manual")
+    root = _resource_files("data.manual")
     return root.joinpath(chapter_filename(chapter, lang)).read_text(encoding="utf-8")
 
 
@@ -316,7 +316,7 @@ def markdown(lang: str) -> str:
     for chapter in CHAPTERS:
         for block in chapter_blocks(chapter, lang):
             if block.kind == "heading":
-                out += [f"{'#' * (block.level + 1)} {block.text} {{#{block.anchor}}}", ""]
+                out += [f"{'#' * (block.level + 1)} {block.text}", ""]
             elif block.kind == "para":
                 out += [block.text, ""]
             elif block.kind == "note":
@@ -397,6 +397,7 @@ def _chapter_html(blocks) -> list:
     return out
 
 
+@lru_cache(maxsize=len(LANGUAGES))
 def html_page(lang: str) -> str:
     """Self-contained, script-free manual page for the Remote Crew server."""
     if lang not in LANGUAGES:

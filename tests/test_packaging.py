@@ -19,6 +19,8 @@ TEMPLATE_NAMES = {
     "unit_surface.json",
     "unit_torpedo.json",
 }
+MANUAL_NAMES = {path.name for path in (ROOT / "data" / "manual").glob("*.md")}
+
 CONTACT_NAMES = {
     "acoustics.json", "aircraft.json", "animals.json", "civilians.json",
     "decoys.json", "sources.json", "subs.json", "torpedoes.json", "warships.json",
@@ -61,8 +63,10 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
     for name in TEMPLATE_NAMES:
         assert f"data/editor_templates/{name}" in wheel_names
     for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+                 "sonar-audio-worklet.js", "manual.css"):
         assert f"data/commander/{name}" in wheel_names
+    for name in MANUAL_NAMES:
+        assert f"data/manual/{name}" in wheel_names
     for name in CONTACT_NAMES:
         assert f"data/contacts/{name}" in wheel_names
     for name in LOADOUT_NAMES:
@@ -86,8 +90,10 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
     for name in TEMPLATE_NAMES:
         assert any(path.endswith(f"/data/editor_templates/{name}") for path in source_names)
     for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+                 "sonar-audio-worklet.js", "manual.css"):
         assert any(path.endswith(f"/data/commander/{name}") for path in source_names)
+    for name in MANUAL_NAMES:
+        assert any(path.endswith(f"/data/manual/{name}") for path in source_names)
     for name in CONTACT_NAMES:
         assert any(path.endswith(f"/data/contacts/{name}") for path in source_names)
     for name in LOADOUT_NAMES:
@@ -126,6 +132,8 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
          "from src.core.version import APP_VERSION; assert APP_VERSION == '1.0.0'; "
           "from src.commander.server import CommanderServer; "
           "server=CommanderServer(); server.start('127.0.0.1',0); server.stop(); "
+          "from src.core import manual; page=manual.html_page('de'); assert 'station-sonar' in page; "
+          "server=CommanderServer(manual_pages={'de': page}); server.start('127.0.0.1',0); server.stop(); "
           "assert resources.files('data.commander').joinpath('app.js').is_file(); "
            "assert resources.files('data.contacts').joinpath('sources.json').is_file(); "
             "assert resources.files('data.loadouts').joinpath('ownship.json').is_file(); "

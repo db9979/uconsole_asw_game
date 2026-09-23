@@ -29,8 +29,6 @@ from urllib.parse import urlsplit
 
 from src.commander.web_auth import WebHostAuth
 from src.commander.voice import PCM_BYTES as VOICE_PCM_BYTES, VoicePeer, read_frames
-from src.core import manual
-
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
                              HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M,
@@ -563,7 +561,8 @@ class CommanderServer:
     """
 
     def __init__(self, translations=None, contact_analysis_assets=None,
-                 web_auth: WebHostAuth | None = None, public_origin: str | None = None):
+                 web_auth: WebHostAuth | None = None, public_origin: str | None = None,
+                 manual_pages=None):
         if (web_auth is None) != (public_origin is None):
             raise ValueError("web auth and public origin must be configured together")
         if public_origin is not None:
@@ -649,6 +648,17 @@ class CommanderServer:
         if prebuilt and "/api/v2/contacts" not in prebuilt:
             raise ValueError("contact projection route required")
         self._prebuilt_assets = prebuilt
+        # Pre-rendered, script-free player manual (src/core/manual.py) per language.
+        pages = {} if manual_pages is None else manual_pages
+        if not isinstance(pages, dict) or not set(pages) <= {"en", "de"}:
+            raise ValueError("invalid manual pages")
+        self._manual_pages = {}
+        for lang, page in pages.items():
+            if (not isinstance(page, str) or not page
+                    or len(page.encode("utf-8")) > _MAX_PREBUILT_FILE_BYTES):
+                raise ValueError("invalid manual page")
+            self._manual_pages[f"/manual-{lang}"] = ("text/html; charset=utf-8",
+                                                    page.encode("utf-8"))
         translations = translations or {}
         self._translations = {
             lang: _json_bytes({key: value for key, value in translations.get(lang, {}).items()
@@ -682,12 +692,7 @@ class CommanderServer:
                     ("/manual.css", "manual.css", "text/css; charset=utf-8"),
                 )
             }
-            # Static, script-free player manual; key tables come from src/core/help.py.
-            assets.update({
-                f"/manual-{lang}": ("text/html; charset=utf-8",
-                                    manual.html_page(lang).encode("utf-8"))
-                for lang in manual.LANGUAGES
-            })
+            assets.update(self._manual_pages)
             if self.web_auth is not None:
                 assets.update({
                     route: (content_type, root.joinpath(name).read_bytes())

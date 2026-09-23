@@ -134,7 +134,7 @@ def test_detached_broadband_scope_renders_live_energy_in_chromium(tmp_path, monk
     for name, payload in (("index.html", html),
                           ("app.js", ASSETS.joinpath("app.js").read_text()),
                           ("style.css", ASSETS.joinpath("style.css").read_text()),
-                          ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text())):
+                          ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()), ("manual.css", ASSETS.joinpath("manual.css").read_text())):
         (tmp_path / name).write_text(payload, encoding="utf-8")
     monkeypatch.setattr(server.resources, "files", lambda _package: tmp_path)
     console.activate(game)

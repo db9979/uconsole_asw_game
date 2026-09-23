@@ -4,4 +4,7 @@ include packaging/uconsole/u-jagd-hotspot-helper
 include docs/station-shortcuts.de.md
 include docs/station-shortcuts.de.pdf
 include docs/web-host.de.md
+include docs/manual/manual.de.md
+include docs/manual/manual.en.md
+include tools/build_manual.py
 include tools/build_station_shortcuts_pdf.py

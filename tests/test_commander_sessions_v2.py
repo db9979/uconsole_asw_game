@@ -18,7 +18,7 @@ from src.commander import server as transport
 @pytest.fixture
 def server(tmp_path, monkeypatch):
     for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+                 "sonar-audio-worklet.js", "manual.css"):
         (tmp_path / name).write_text(name, encoding="utf-8")
     monkeypatch.setattr(transport.resources, "files", lambda package: tmp_path)
     instance = CommanderServer()

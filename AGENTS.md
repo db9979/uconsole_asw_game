@@ -51,6 +51,12 @@
 - All new user-visible prose needs matching keys in `data/i18n/en.json` and `de.json`. English is the reference/fallback; catalogs require exact key parity and identical named placeholders. Use named placeholders only.
 - Route rendering through `Translator`, `localize`, `translation_scope`, and bounded layout helpers. Do not add direct `Font.render` prose; the test allowlist is technical labels only. Verify English, German, large text where relevant, and the pseudolocale/layout tests.
 
+## Player documentation
+
+- `src/core/help.py` is the single source for key bindings (`STATION_HELP`, `_GLOBAL_HELP`, `_WEB_HELP`) and per-station standard procedures (`STATION_SOP`, `help.sop.*` keys). The F1 overlay, the in-game manual reader (F1 category 4), the Remote Crew `/manual-en|de` pages, and `docs/manual/` all render from it.
+- Manual prose lives in `data/manual/<nn>-<chapter>.{en,de}.md` (small Markdown subset parsed by `src/core/manual.py`; every heading needs an explicit `{#anchor}`; key tables and procedures only via `<!-- keys:… -->` / `<!-- sop:… -->` markers). EN and DE must keep identical block structure, anchors, and markers.
+- Every change to controls, stations, mechanics, or documented numbers updates `help.py`, both manual languages, and the catalogs in the same change, then runs `python tools/build_manual.py` (CI: `--check`) and `pytest tests/test_manual.py`. Document only implemented behavior; list gaps under "Not modelled".
+
 ## Persistence and user content
 
 - Runtime root is `~/.u-jagd/`: `settings.json`; `slot1.json` through `slot5.json`; editor files in `missions/` and `units/`. Tests replace save paths with temporary directories; never write real user paths from tests. `.u-jagd/`, build products, caches, and egg metadata stay untracked.
@@ -103,6 +109,7 @@ Use Python 3.11+ from the repository root:
 python -m pip install -e '.[dev]'
 pytest
 python tools/gen_contacts.py --check
+python tools/build_manual.py --check
 python tools/smoke_full.py
 python -m build
 ```

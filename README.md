@@ -166,7 +166,12 @@ picture with onboard sensors.
 
 ## Controls
 
-Press `F1` in the game for context-sensitive help. A printable complete local
+Press `F1` (or `?`) in the game for context-sensitive help; its fourth category
+is the full player manual (quickstart, one chapter per station with displays,
+keys, standard procedure and tips, plus reference data). The same manual is
+exported to [`docs/manual/manual.en.md`](docs/manual/manual.en.md) /
+[`manual.de.md`](docs/manual/manual.de.md) and served by Remote Crew at
+`/manual-en` and `/manual-de`. A printable complete local
 keyboard reference is available as
 [`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf), with its text
 source at [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md). The

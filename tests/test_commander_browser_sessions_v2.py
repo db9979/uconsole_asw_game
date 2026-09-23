@@ -14,6 +14,7 @@ import pygame
 from src.commander import server as commander_transport
 from src.core.game import Game
 from src.sonar.sonar import Contact
+from src.core import manual
 from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
                                    browser_state, catalogs)
 
@@ -1387,6 +1388,7 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
         "de": {key: value for key, value in de.items() if key.startswith(PREFIX)},
     }
     console._contact_analysis_assets = {}
+    console._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
     html = ASSETS.joinpath("index.html").read_text().replace(
         '<script src="./app.js" defer>',
         '<script src="./real-role-test.js" defer></script><script src="./app.js" defer>')
@@ -1396,7 +1398,7 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
         ("style.css", ASSETS.joinpath("style.css").read_text()),
         ("voice.js", ASSETS.joinpath("voice.js").read_text()),
         ("voice-worklet.js", ASSETS.joinpath("voice-worklet.js").read_text()),
-        ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()),
+        ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()), ("manual.css", ASSETS.joinpath("manual.css").read_text()),
     ):
         (tmp_path / name).write_text(payload, encoding="utf-8")
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)

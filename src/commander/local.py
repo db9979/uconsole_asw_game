@@ -17,7 +17,7 @@ from src.commander.access_point import HotspotController
 from src.commander.bridge import CommanderBridge
 from src.commander.admission import StationAdmission
 from src.commander.server import CommanderServer, STATIONS
-from src.core import config
+from src.core import config, manual
 from src.core.i18n import load_catalog, message, raw_text, translation_scope
 from src.data.contact_analysis import load_contact_analysis_assets
 from src.ui import layout, qr
@@ -49,6 +49,7 @@ class CommanderConsole:
         self._prepared = False
         self._translations = None
         self._contact_analysis_assets = None
+        self._manual_pages = None
         self._notice_seq = None
         self._last_notice = float("-inf")
         self._confirm_signature = None
@@ -593,11 +594,14 @@ class CommanderConsole:
                 for lang in ("en", "de")}
         if self._contact_analysis_assets is None:
             self._contact_analysis_assets = load_contact_analysis_assets()
+        if self._manual_pages is None:
+            self._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
         if self.server is None:
             self.server = CommanderServer(
                 translations=self._translations,
                 contact_analysis_assets=self._contact_analysis_assets,
-                web_auth=self.web_auth, public_origin=self.public_origin)
+                web_auth=self.web_auth, public_origin=self.public_origin,
+                manual_pages=self._manual_pages)
             if self.solo:
                 self.server.set_solo_mode(True)
 

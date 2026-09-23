@@ -1,6 +1,8 @@
 # U-Jagd 1.0.0 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
+Das vollständige Spielerhandbuch mit Tastentabellen aus `src/core/help.py`
+steht in [`manual/manual.de.md`](manual/manual.de.md).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
 Tasten sind kontextabhängig; normale Bereitschafts-, Schadens- und
 Berechtigungsprüfungen bleiben wirksam.

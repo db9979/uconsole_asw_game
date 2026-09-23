@@ -17,7 +17,7 @@ from src.commander import server as transport
 @pytest.fixture
 def assets(tmp_path, monkeypatch):
     for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+                 "sonar-audio-worklet.js", "manual.css"):
         (tmp_path / name).write_text(f"fixture {name}", encoding="utf-8")
     calls = []
 
@@ -138,7 +138,7 @@ def test_reject_invalid_ports(port, assets):
 
 def test_static_resources_cached_and_security_headers(server, assets):
     for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+                 "sonar-audio-worklet.js", "manual.css"):
         (assets[0] / name).unlink()
     for route, name in (("/", "index.html"), ("/app.js", "app.js"),
                         ("/style.css", "style.css")):

@@ -18,7 +18,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Sensor | Range | Accuracy / note |
 |---|---|---|
 | Passive sonar (base) | 20 NM | bearing only; HMS +/-6 deg, TAS +/-2 deg |
-| Active ping | 18 NM | range +/-0.18 NM, depth +/-12 m; 30 s cooldown; heard to 60 NM |
+| Active ping | 18 NM (reference target, broadside-quarter aspect) | CW or LFM (`W`); range accuracy from pulse and SNR, depth +/-12 m; 30 s cooldown; heard to 60 NM |
 | Dipping sonar | 18 NM passive / 14 NM active | +/-2 deg |
 | Sonobuoy | 8 NM | 60 min battery |
 | Surface radar | 30 NM | radar horizon; no submerged contacts |

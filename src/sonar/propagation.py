@@ -21,6 +21,9 @@ MAX_SEGMENTS_PER_PATH = 3
 PROFILE_SAMPLES = 21
 PROFILE_MAX_DEPTH_M = 400.0
 REPRESENTATIVE_PASSIVE_BAND_HZ = 100.0
+# Historical per-band absorption folded into path loss; the sonar equation
+# replaces it with Francois-Garrison (src/sonar/equation.py).
+ABSORPTION_DB_PER_NM = {100.0: .012, 400.0: .025, 1600.0: .055, 6400.0: .12}
 CANONICAL_FREQUENCY_BANDS_HZ = (100.0, 400.0, 1600.0, 6400.0)
 
 
@@ -201,8 +204,7 @@ def propagate(source_x_nm: float, source_y_nm: float, source_depth_m: float,
         PathKind.SURFACE: 5.0 + .6 * sea_state,
         PathKind.BOTTOM: 7.0,
     }
-    absorption_db_nm = {100.0: .012, 400.0: .025,
-                        1600.0: .055, 6400.0: .12}[frequency]
+    absorption_db_nm = ABSORPTION_DB_PER_NM[frequency]
     paths = []
     for order, (kind, points) in enumerate(candidates):
         segments = tuple(_segment(first, second, profile, terrain_blocked)

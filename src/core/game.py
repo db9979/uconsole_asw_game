@@ -36,6 +36,7 @@ from src.core.mission_definition import static_preview, validate_mission
 from src.core.station import Station
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
+from src.sonar import equation as sonar_equation
 from src.physics import ship_dynamics
 from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
@@ -2380,6 +2381,11 @@ class Game:
                     self.sonar_page = station_page_step(
                         Station.SONAR,
                         self.sonar_page, 1 if e.key == pygame.K_PAGEDOWN else -1)
+                    return
+                if e.key == pygame.K_w:
+                    pulse = self.sonar.cycle_pulse()
+                    self.flash(message("runtime.sonar.pulse",
+                                       pulse=message(f"sonar.pulse.{pulse.lower()}")))
                     return
                 if e.key == pygame.K_e:
                     if self.measure_sonar_bt() is True:
@@ -5801,6 +5807,11 @@ class Game:
             self.feed.add(self.world.format_time(), "navigation",
                           message("runtime.grounding.feed", kind=notice))
 
+    def _shipping_noise_contacts(self) -> int:
+        """Merchant traffic within 50 NM that feeds distant-shipping noise."""
+        return sum(1 for ship in self.civilians
+                   if not ship.sunk and ship.distance_nm(self.ship) <= 50.0)
+
     def _update_platform_sensors(self, dt: float) -> None:
         """Run independent NPC sensors before any actor makes a decision."""
         ship_target = SimpleNamespace(
@@ -6286,6 +6297,7 @@ class Game:
             return
         focus = (self._find_target(self.selected_contact.target_id)
                  if self.selected_contact else None)
+        self.sonar.shipping_contacts = self._shipping_noise_contacts()
         self.sonar.update(dt, self.sim_t, self.ship, targets, self.world,
                           range_factor=self._sonar_range_factor(),
                           mode=self.sonar_mode, buoys=self.buoys,
@@ -6327,6 +6339,12 @@ class Game:
                 bearing_uncertainty_deg=contact.bearing_uncertainty_deg)
         while self.sonar.echo_events:
             echo = self.sonar.echo_events.pop(0)
+            if echo["contact_id"] == 0:
+                self.feed.add(self.world.format_time(), "sonar",
+                              message("runtime.echo.unassociated",
+                                      bearing=f"{echo['bearing']:05.1f}",
+                                      range=f"{echo['range_nm']:.1f}"))
+                continue
             self.feed.add(self.world.format_time(), "sonar",
                           message("runtime.echo.feed", contact=echo["contact_id"],
                                   bearing=f"{echo['bearing']:05.1f}",
@@ -6940,6 +6958,10 @@ class Game:
                 "echo_history": list(self.sonar.echo_history),
                 "bt_profile": self.sonar.bt_profile,
                 "bt_cooldown": self.sonar.bt_cooldown,
+                "ping_pulse": self.sonar.ping_pulse,
+                "pending_clutter": [dict(ready_at=item["ready_at"], mode=item["mode"],
+                                         snapshot=dict(item["snapshot"]))
+                                    for item in self.sonar._pending_clutter],
             },
             "sim_t": self.sim_t,
             "time_scale_idx": config.TIME_SCALE_DEFAULT,
@@ -7673,6 +7695,11 @@ class Game:
                 for target_id, next_t in sn.get("tma_next", {}).items()
                 if int(target_id) in self.sonar._tracks
             }
+            self.sonar.ping_pulse = sn["ping_pulse"]
+            self.sonar._pending_clutter = [
+                dict(ready_at=item["ready_at"], mode=item["mode"],
+                     snapshot=dict(item["snapshot"]))
+                for item in sn["pending_clutter"]]
             for pd in sn.get("pending_pings", []):
                 target = by_id.get(pd.get("target_id"))
                 if target is not None:
@@ -9183,6 +9210,20 @@ class Game:
                 or any(contact.get("bearing_filter_t") is not None
                        and contact["bearing_filter_t"] > sim_t
                        for contact in contacts.values())):
+            return False
+        if sonar.get("ping_pulse") not in sonar_equation.PULSES:
+            return False
+        clutter = sonar.get("pending_clutter")
+        if (not isinstance(clutter, list)
+                or len(clutter) > SonarSystem.MAX_PENDING_CLUTTER
+                or any(not isinstance(item, dict)
+                       or set(item) != {"ready_at", "mode", "snapshot"}
+                       or item["mode"] not in ("BOW", "TOWED", "DIPPING")
+                       or not SonarSystem.valid_ping_snapshot(item["snapshot"])
+                       or not bounded(item["ready_at"], 0, 1e12)
+                       or not item["snapshot"]["t"] <= sim_t
+                       or not 0 <= item["ready_at"] - item["snapshot"]["t"] <= 25000
+                       for item in clutter)):
             return False
         pending_pings = sonar.get("pending_pings", [])
         # 25000 s covers two-way propagation across the 10000 NM snapshot bound.

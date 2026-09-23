@@ -42,7 +42,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 ## Unterwasserakustik in fünf Minuten {#qs-acoustics}
 
 - **Passives Sonar liefert nur Peilung.** Jeder Kontakt beginnt als Peillinie. Entfernung liefern aktiver Ping, TMA, Sonarbojen oder Kreuzpeilung.
-- **Ortung heißt Signal gegen Rauschen.** SNR = 20 log10(wirksame Reichweite / Abstand). Ab SNR >= 0 dB gilt ein Kontakt als geortet. Leise Ziele und hoher Seegang verkürzen die wirksame Reichweite.
+- **Ortung heißt Signal gegen Rauschen.** Es entscheidet die passive Sonargleichung SE = SL - TL - NL + DI - DT: Quellpegel des Ziels (lauter = weiter), Übertragungsverlust (Ausbreitung, Absorption, Schicht- und Pfadverluste), Rauschen (eigenes Rauschen plus Wind, Regen und Schiffsverkehr in der Nähe) und Gewinn der Antenne. Ab SE >= 0 dB gilt ein Kontakt als geortet. Wind und Regen wirken am stärksten, wenn Sie langsam und leise fahren; bei hoher Eigenfahrt dominiert das eigene Rauschen.
 - **Eigene Fahrt ist eigener Lärm.** Der Eigenlärm steigt von 4 kn bis 25 kn. Ab 15 kn kavitieren die Schrauben, die Passivreichweite fällt auf etwa ein Drittel.
 - **Die Sprungschicht (Thermokline) teilt das Wasser.** Liegen Sensor und Ziel auf verschiedenen Seiten, gehen etwa 6,5 dB verloren. Ein Ping in die Schattenzone unter der Schicht erreicht nur 35 % seiner Reichweite.
 - **Konvergenzzonen** bei etwa 40-70 sm und 90-130 sm bringen Schall aus großer Entfernung zurück (+8 dB).

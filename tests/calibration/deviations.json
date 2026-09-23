@@ -18,5 +18,25 @@
   "phase": 2,
   "reason": "Phase 2: first-order Nomoto steering, r = K (V/L) delta, makes the steady turn rate linear in speed, so the turning circle is nearly constant; calibrated at FULL (1.2 deg/s), HALF becomes 0.75 deg/s.",
   "value": 0.75
+ },
+ "sonar.passive_nm.BOW.sea4.own18.d150": {
+  "phase": 3,
+  "reason": "Phase 3: the passive sonar equation power-sums wind/shipping ambient noise with own-ship self noise. At cavitating own speeds self noise dominates, so a higher sea state costs less range than the flat 1.0.0 sea-state factor.",
+  "value": 3.576355
+ },
+ "sonar.passive_nm.BOW.sea4.own18.d30": {
+  "phase": 3,
+  "reason": "Phase 3: the passive sonar equation power-sums wind/shipping ambient noise with own-ship self noise. At cavitating own speeds self noise dominates, so a higher sea state costs less range than the flat 1.0.0 sea-state factor.",
+  "value": 7.554507
+ },
+ "sonar.passive_nm.BOW.sea4.own25.d150": {
+  "phase": 3,
+  "reason": "Phase 3: the passive sonar equation power-sums wind/shipping ambient noise with own-ship self noise. At cavitating own speeds self noise dominates, so a higher sea state costs less range than the flat 1.0.0 sea-state factor.",
+  "value": 2.831818
+ },
+ "sonar.passive_nm.BOW.sea4.own25.d30": {
+  "phase": 3,
+  "reason": "Phase 3: the passive sonar equation power-sums wind/shipping ambient noise with own-ship self noise. At cavitating own speeds self noise dominates, so a higher sea state costs less range than the flat 1.0.0 sea-state factor.",
+  "value": 5.983241
  }
 }

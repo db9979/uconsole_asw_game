@@ -3234,5 +3234,10 @@
   "help.manual.action": "Action",
   "help.manual.hint": "Chapter {chapter}/{chapters} | Lines {first}-{last}/{total} | , / . or [ / ]: chapter | 0-9: quickstart/stations | Up/Down, PageUp/PageDown: scroll | Left/Right/Tab: category | F1/Esc: back",
   "commander.web.guide_manual_link": "Open the full manual (new tab)",
-  "commander.web.workstation_manual": "Manual chapter for this station"
+  "commander.web.workstation_manual": "Manual chapter for this station",
+  "runtime.echo.unassociated": "Sonar: unassociated echo {bearing} deg / {range} NM (seabed object?)",
+  "runtime.sonar.pulse": "Active pulse: {pulse}",
+  "sonar.pulse.cw": "CW (Doppler, 1 s)",
+  "sonar.pulse.lfm": "LFM (100 Hz sweep, fine range)",
+  "help.control.pulse": "Active pulse CW / LFM"
 }

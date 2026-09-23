@@ -42,7 +42,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 ## Underwater acoustics in five minutes {#qs-acoustics}
 
 - **Passive sonar gives bearing only.** Every contact starts as a line of bearing. Range comes from active ping, TMA, sonobuoys or a cross-fix.
-- **Detection is signal against noise.** SNR = 20 log10(effective range / distance). A contact is detected at SNR >= 0 dB. Quiet targets and high sea state shrink the effective range.
+- **Detection is signal against noise.** The passive sonar equation SE = SL - TL - NL + DI - DT decides: the target's source level (louder = farther), transmission loss (spreading, absorption, layer and path losses), noise (own self noise plus wind, rain and nearby shipping), and the array gain. A contact is detected at SE >= 0 dB. Wind and rain matter most when you run slow and quiet; at high own speed your own noise dominates.
 - **Own speed is own noise.** Self-noise rises from 4 kn to 25 kn. Above 15 kn the propellers cavitate and passive range drops to about a third.
 - **The layer (thermocline) splits the water.** Sensor and target on different sides of the layer lose about 6.5 dB. A ping into the shadow zone below the layer reaches only 35 % of its range.
 - **Convergence zones** at roughly 40-70 NM and 90-130 NM return sound from far away (+8 dB).

@@ -102,8 +102,13 @@ def game():
     contact.buoy_fixes = [(16, game.ship.x + 5, game.ship.y, .6),
                           (18, game.ship.x + 6, game.ship.y, .7)]
     game.sonar.contacts[sub.id] = contact
+    # A bow-on torpedo is a weak echo (target strength about -11 dB, lost in
+    # reverberation at 8 NM). This fixture only needs a pending echo to save,
+    # so it gives the weapon a strong reflector.
+    game.enemy_torpedoes[0].extra_ts_db = 40.0
     game.sonar.queue_ping(
         game.ship, [game.enemy_torpedoes[0]], game.world, game.sim_t)
+    del game.enemy_torpedoes[0].extra_ts_db
     assert game.sonar._pending_pings
     game.sonar._pending_pings[0]["ready_at"] = 25
     return game

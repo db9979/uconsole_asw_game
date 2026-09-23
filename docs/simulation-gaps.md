@@ -263,15 +263,15 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
-| **No full sonar equation** | Detection threshold is SNR ≥ 0 dB against a pre-computed R_eff; no separate source level, transmission loss, noise, detection threshold terms | `SL - TL + DI - NL - DT` with per-frequency terms; target strength (TS) from aspect and frequency |
-| **No source-level model** | Target "quiet" factor is a 0-1 scalar from catalog; no frequency-dependent source level | Per-band source level (line noise, broadband, cavitation) as dB re 1 µPa @ 1 m |
-| **No receiver noise model** | Own-ship noise is a single level; sea state adds a flat penalty | Ambient noise spectrum (wind, rain, shipping, biological); receiver self-noise; array noise floor |
-| **No target strength (TS)** | No frequency-dependent reflection; active ping range is fixed × thermocline factor | TS as function of frequency, aspect, target size; bubble-cloud effects |
+| ~~**No full sonar equation**~~ | **Closed (Phase 3).** `src/sonar/equation.py`: passive SE = SL - TL - NL + DI - DT per band; active SE = SL - 2TL + TS - max(NL - PG, RL - Doppler rejection). Calibrated so 1.0.0 detection ranges hold (`tools/calibrate.py`). Own sonar, dipping sonar and NPC platform sonars use it. | — |
+| ~~**No source-level model**~~ | **Closed (Phase 3; speed/cavitation terms Phase 6).** Source level in dB from the catalog quietness; NPC passive sonars hear loud targets farther (up to +5 dB). | — |
+| ~~**No receiver noise model**~~ | **Closed (Phase 3).** Wenz/Knudsen wind noise (flat below 500 Hz), distant shipping from nearby merchant count, heavy-rain noise, thermal floor, hull-array self-noise floor plus speed/cavitation self noise, own wake astern; NPC receiver sensitivity from the catalog. | — |
+| ~~**No target strength (TS)**~~ | **Closed (Phase 3).** Aspect- and length-dependent target strength (beam highlight ~20 log(L/10)+8 dB, bow/stern 15 dB lower). | — |
 | **Propagation: fixed 4 paths** | Direct, refracted (thermocline midpoint), surface, bottom — no full ray tracing | Multi-path with reflection/refraction at boundaries; mode propagation; no normal-mode solution needed but more rays |
 | **Propagation: no frequency dependence in path loss** | Absorption is per-band constant; path geometry is frequency-independent | Frequency-dependent ray paths (higher freq → less refracted); dispersion |
 | **No Doppler** | Bearing measurements have no Doppler shift information | Doppler = f₀ · (v·r̂)/c; useful for speed estimation and classification |
-| **No interference / clutter** | Only terrain blocking; no seafloor reverberation, surface clutter, multipath interference | Reverberation level from bottom type; surface clutter in active sonar; scintillation |
-| **Ping: no pulse parameters** | Ping is instantaneous with fixed error; no pulse width, bandwidth, or processing gain | Ping duration → range resolution; bandwidth → frequency content; matched-filter gain |
+| ~~**No interference / clutter**~~ | **Closed (Phase 3).** Boundary (Lambert bottom by sediment, wind-dependent surface) and volume reverberation with absorption; CW Doppler rejection grows with radial speed; charted wrecks return unassociated echoes (saved pending clutter). | — |
+| ~~**Ping: no pulse parameters**~~ | **Closed (Phase 3).** Selectable CW (1 s) / LFM (1 s, 100 Hz) pulse (`W`, saved): resolution c*tau/2 or c/2B, Cramer-Rao range accuracy, LFM processing gain against noise, CW Doppler against reverberation. | — |
 | **TMA: fixed grid** | 24 × 10 = 240 candidates + 9 local; no adaptive grid | Coarse-to-fine search; Gauss-Newton refinement; covariance tracking |
 | **No multi-static sonar** | Each platform has independent sensors; no multi-static TDOA/BIARRING fusion | Datalink fusion of passive bearings from multiple platforms (already partially in `PlatformSensorSuite` but not exploited for TMA) |
 | **No sonar array beampforming** | Bearing is a scalar with Gaussian-like error; no beam pattern, no side lobes, no spatial sampling | Array geometry → beam pattern; grating lobes; adaptive beamforming |

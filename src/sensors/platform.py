@@ -8,7 +8,7 @@ import random
 from dataclasses import asdict, dataclass
 
 from src.core import config
-from src.sonar import propagation
+from src.sonar import equation, propagation
 
 
 SIDES = ("friendly", "neutral", "hostile")
@@ -240,7 +240,11 @@ class PlatformSensorSuite:
             if rcs is not None:
                 availability *= config.clamp((rcs / 500.0) ** 0.25, 0.5, 1.5)
         maximum = (profile.synthetic_range_nm or 0.0) * availability
-        if maximum <= 0.0 or distance > maximum:
+        # A passive sonar hears a loud target beyond its reference range
+        # (source level up to +5 dB); the sonar equation decides below.
+        reach = maximum * (1.8 if profile.domain == "sonar"
+                           and "active" not in profile.modes else 1.0)
+        if maximum <= 0.0 or distance > reach:
             return
         if getattr(world, "land_blocks_line", lambda *args: False)(
                 owner.x, owner.y, candidate.x, candidate.y):
@@ -267,22 +271,58 @@ class PlatformSensorSuite:
                 thermo = (float(thermo_at(mx, my)) if thermo_at is not None
                           else min(100.0, water_depth))
                 water_depth = max(water_depth, thermo)
+                frequency = propagation.representative_frequency_hz(
+                    _candidate_acoustic_signature(candidate))
+                sea_state = float(getattr(world, "effective_sea_state",
+                                          getattr(world, "sea_state", 0)))
                 result = propagation.propagate(
                     owner.x, owner.y, source_depth,
-                    candidate.x, candidate.y, target_depth,
-                    propagation.representative_frequency_hz(
-                        _candidate_acoustic_signature(candidate)),
-                     thermo, water_depth, sea_state=getattr(
-                         world, "effective_sea_state", getattr(world, "sea_state", 0)),
+                    candidate.x, candidate.y, target_depth, frequency,
+                    thermo, water_depth, sea_state=sea_state,
                     terrain_blocked=getattr(world, "sonar_path_blocked", None))
-                maximum *= propagation.passive_range_factor(result, distance)
-                if maximum <= 0.0 or distance > maximum:
+                if result.best_path is None:
                     return
             source_noise = (candidate.noise_level()
                             if hasattr(candidate, "noise_level") else
                             1.0 - getattr(candidate, "quiet_factor", lambda: 0.0)())
-            received_signal = max(0.0, source_noise) * max(
-                0.0, 1.0 - distance / maximum)
+            if "passive" in profile.modes and not active_sonar:
+                # Passive sonar equation: the catalog synthetic range is the
+                # figure of merit against a silent reference target; a
+                # louder target raises source level, the platform's own
+                # radiated noise raises its self noise.
+                owner_noise = (owner.noise_level() if hasattr(owner, "noise_level")
+                               else 1.0 - getattr(owner, "quiet_factor",
+                                                  lambda: 1.0)())
+                terms = equation.passive_terms(
+                    frequency_hz=frequency, distance_nm=distance,
+                    target_bonus=1.0 + 0.8 * config.clamp(source_noise, 0.0, 1.0),
+                    excess_path_loss_db=(result.best_path.loss_db
+                                         - 20.0 * math.log10(1.0 + distance)),
+                    absorption_db_per_km=equation.francois_garrison_db_per_km(
+                        frequency, 10.0, min(water_depth, 200.0)),
+                    legacy_absorption_db=result.best_path.distance_nm
+                    * propagation.ABSORPTION_DB_PER_NM[frequency],
+                    # The catalog range already includes self noise at a
+                    # typical operating level; only louder operation deafens.
+                    own_range_factor=min(1.0, (1.0 - 0.8 * config.clamp(
+                        owner_noise, 0.0, 1.0)) / (1.0 - 0.8 * NPC_REFERENCE_NOISE)),
+                    array_range_factor=maximum / config.SONAR_PASSIVE_BASE_NM,
+                    sea_state=sea_state,
+                    rain=float(getattr(world, "rain_intensity", 0.0)),
+                    shipping_contacts=equation.REFERENCE_SHIPPING_CONTACTS,
+                    # Receiver sensitivity relative to the catalog reference
+                    # (-100 dB): a more sensitive receiver gains directivity.
+                    sensitivity_db=config.clamp(
+                        NPC_REFERENCE_SENSITIVITY_DB - profile.sensitivity_db,
+                        -12.0, 12.0) if profile.sensitivity_db is not None else 0.0)
+                excess = terms.signal_excess_db
+                if excess <= 0.0:
+                    return
+                received_signal = config.clamp(
+                    excess / config.SONAR_SNR_QUALITY_SPAN_DB, 0.0, 2.0)
+            else:
+                received_signal = max(0.0, source_noise) * max(
+                    0.0, 1.0 - distance / maximum)
             if received_signal <= 0.01:
                 return
         token = _candidate_token(candidate)
@@ -424,6 +464,11 @@ def exchange_friendly_datalink(
 def side_datalink_group(side: str) -> str | None:
     """W2: same-side datalink group key - hostile units coordinate like blue does."""
     return {"friendly": "blue", "hostile": "red"}.get(side)
+
+
+# Own radiated-noise level at which catalog passive ranges were tuned.
+NPC_REFERENCE_NOISE = 0.8
+NPC_REFERENCE_SENSITIVITY_DB = -100.0
 
 
 def motion_limits(catalog, profile_key: str, *, cruise_speed: float,

@@ -62,7 +62,7 @@ The display shows measured modulation, not certain identity. The analysis window
 
 - **TMA** solves range, course and speed from a bearing series of the focused contact. It needs at least 4 bearings over 180 s and an own course change of at least 6 degrees; range is trusted from quality 0.35. It does not estimate depth.
 - **UMWELT / FUSION** shows the bathythermograph (`E`, 60 s cooldown): measured layer depth, sound-speed profile and convergence-zone bands, plus the HMS/TAS comparison. Bearings within 5 degrees confirm each other; 9 degrees or more apart are flagged as a possible ghost contact. The layer is not fixed: afternoon sun makes it shallower (about 8 m), strong wind mixes it deeper over hours, and internal waves move it a few metres. Repeat the BT after a few hours or a weather change. The measured profile is the real temperature-driven sound speed (Mackenzie equation), so it drops below the layer.
-- **ACTIVE** lists echoes of the last 120 s: bearing, range (+/-0.18 NM) and depth (+/-12 m). A ping fix ages out after 120 s.
+- **ACTIVE** lists echoes of the last 120 s: bearing, range and depth (+/-12 m). A ping fix ages out after 120 s. `W` selects the pulse: **CW** (1 s tone) gives coarse range (about 0.1-0.3 NM) but its Doppler separates a moving target from seabed reverberation; **LFM** (100 Hz sweep) measures range to a few metres and gains 20 dB against noise, but a slow or stationary target stays inside the reverberation. The echo strength depends on the target's aspect (broadside about 15 dB stronger than bow-on) and size. Rocky ground reverberates far more than mud; charted wrecks return real echoes that no contact owns ("unassociated echo").
 
 ## Hull sonar versus towed array {#sonar-arrays}
 

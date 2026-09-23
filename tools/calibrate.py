@@ -217,14 +217,25 @@ def measure_sonar() -> dict:
                            f"own{int(own_speed)}.d{int(depth)}")
                     out[key] = _metric(_detection_range(game, target, mode),
                                        "range")
-    # Active range for a target above and below the layer.
+    # Active detection range (signal excess zero) for a target above and
+    # below the layer, broadside-ish geometry fixed by the target course.
     _set_sea(game.world, 1)
     for depth in (30.0, 250.0):
         target.depth = depth
-        target.x, target.y = ship.x + 5.0, ship.y
-        out[f"sonar.active_nm.BOW.d{int(depth)}"] = _metric(
-            game.sonar._active_range_nm(target, game.world, 1.0, "BOW"),
-            "range")
+
+        def excess(dist):
+            target.x, target.y = ship.x + dist, ship.y
+            return (game.sonar._active_range_nm(target, game.world, 1.0, "BOW",
+                                                ship) - dist)
+        low, high = 0.05, 60.0
+        for _ in range(40):
+            mid = 0.5 * (low + high)
+            if excess(mid) > 0.0:
+                low = mid
+            else:
+                high = mid
+        out[f"sonar.active_nm.BOW.d{int(depth)}"] = _metric(0.5 * (low + high),
+                                                           "range")
     from src.sonar.sonar import bearing_error_deg
     for mode in ("BOW", "TOWED"):
         for speed in (6.0, 12.0):

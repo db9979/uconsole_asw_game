@@ -18,7 +18,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Sensor | Reichweite | Genauigkeit / Hinweis |
 |---|---|---|
 | Passivsonar (Basis) | 20 sm | nur Peilung; HMS +/-6 Grad, TAS +/-2 Grad |
-| Aktiver Ping | 18 sm | Entfernung +/-0,18 sm, Tiefe +/-12 m; 30 s Abklingzeit; hörbar bis 60 sm |
+| Aktiver Ping | 18 sm (Referenzziel, schräger Aspekt) | CW oder LFM (`W`); Entfernungsgenauigkeit aus Puls und SNR, Tiefe +/-12 m; 30 s Abklingzeit; hörbar bis 60 sm |
 | Tauchsonar | 18 sm passiv / 14 sm aktiv | +/-2 Grad |
 | Sonarboje | 8 sm | 60 min Batterie |
 | Überwasserradar | 30 sm | Radarhorizont; keine getauchten Kontakte |

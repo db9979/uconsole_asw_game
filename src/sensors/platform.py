@@ -293,15 +293,20 @@ class PlatformSensorSuite:
                 owner_noise = (owner.noise_level() if hasattr(owner, "noise_level")
                                else 1.0 - getattr(owner, "quiet_factor",
                                                   lambda: 1.0)())
+                ray = propagation.ray_excess_db(
+                    world, owner.x, owner.y, source_depth, candidate.x,
+                    candidate.y, target_depth, frequency)
                 terms = equation.passive_terms(
                     frequency_hz=frequency, distance_nm=distance,
                     target_bonus=1.0 + 0.8 * config.clamp(source_noise, 0.0, 1.0),
-                    excess_path_loss_db=(result.best_path.loss_db
+                    excess_path_loss_db=(ray if ray is not None else
+                                         result.best_path.loss_db
                                          - 20.0 * math.log10(1.0 + distance)),
                     absorption_db_per_km=equation.francois_garrison_db_per_km(
                         frequency, 10.0, min(water_depth, 200.0)),
-                    legacy_absorption_db=result.best_path.distance_nm
-                    * propagation.ABSORPTION_DB_PER_NM[frequency],
+                    legacy_absorption_db=(0.0 if ray is not None else
+                                          result.best_path.distance_nm
+                                          * propagation.ABSORPTION_DB_PER_NM[frequency]),
                     # The catalog range already includes self noise at a
                     # typical operating level; only louder operation deafens.
                     own_range_factor=min(1.0, (1.0 - 0.8 * config.clamp(

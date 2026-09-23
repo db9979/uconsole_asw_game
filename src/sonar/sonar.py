@@ -961,6 +961,11 @@ class SonarSystem:
             excess = result.best_path.loss_db - 20.0 * math.log10(1.0 + dist_nm)
             legacy_absorption = result.best_path.distance_nm \
                 * propagation.ABSORPTION_DB_PER_NM[frequency]
+            ray = propagation.ray_excess_db(
+                world, frigate.x, frigate.y, sensor_depth, tgt.x, tgt.y,
+                float(getattr(tgt, "depth", 0.0)), frequency)
+            if ray is not None:
+                excess, legacy_absorption = ray, 0.0
             absorption = equation.francois_garrison_db_per_km(
                 frequency, _surface_temperature(world),
                 min(water_depth, 200.0))
@@ -1003,16 +1008,21 @@ class SonarSystem:
                 terrain_blocked=getattr(world, "sonar_path_blocked", None))
             if result.best_path is None:
                 continue
+            ray = propagation.ray_excess_db(
+                world, helicopter.x, helicopter.y, sensor_depth, tgt.x, tgt.y,
+                float(getattr(tgt, "depth", 0.0)), frequency)
             terms = equation.passive_terms(
                 frequency_hz=frequency, distance_nm=distance,
                 target_bonus=target_bonus,
-                excess_path_loss_db=(result.best_path.loss_db
+                excess_path_loss_db=(ray if ray is not None else
+                                     result.best_path.loss_db
                                      - 20.0 * math.log10(1.0 + distance)),
                 absorption_db_per_km=equation.francois_garrison_db_per_km(
                     frequency, _surface_temperature(world),
                     min(water_depth, 200.0)),
-                legacy_absorption_db=result.best_path.distance_nm
-                * propagation.ABSORPTION_DB_PER_NM[frequency],
+                legacy_absorption_db=(0.0 if ray is not None else
+                                      result.best_path.distance_nm
+                                      * propagation.ABSORPTION_DB_PER_NM[frequency]),
                 own_range_factor=1.0,
                 array_range_factor=(config.HELO_DIP_PASSIVE_RANGE_NM
                                     / config.SONAR_PASSIVE_BASE_NM) * range_factor,

@@ -44,8 +44,8 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 - **Passive sonar gives bearing only.** Every contact starts as a line of bearing. Range comes from active ping, TMA, sonobuoys or a cross-fix.
 - **Detection is signal against noise.** The passive sonar equation SE = SL - TL - NL + DI - DT decides: the target's source level (louder = farther), transmission loss (spreading, absorption, layer and path losses), noise (own self noise plus wind, rain and nearby shipping), and the array gain. A contact is detected at SE >= 0 dB. Wind and rain matter most when you run slow and quiet; at high own speed your own noise dominates.
 - **Own speed is own noise.** Self-noise rises from 4 kn to 25 kn. Above 15 kn the propellers cavitate and passive range drops to about a third.
-- **The layer (thermocline) splits the water.** Sensor and target on different sides of the layer lose about 6.5 dB. A ping into the shadow zone below the layer reaches only 35 % of its range.
-- **Convergence zones** at roughly 40-70 NM and 90-130 NM return sound from far away (+8 dB).
+- **The layer (thermocline) bends sound.** Passive propagation is ray traced through the real sound-speed profile: above the layer a surface duct carries sound far, below it lies a shadow zone a few miles wide. In deep water the shadow is strong; in water of a few hundred metres, bottom bounce and multipath fill it beyond about 10 NM, so hiding below the layer mainly works close in. A ping into the shadow zone reaches only 35 % of its range.
+- **Seabed and surface matter.** Rock and gravel reflect sound well, silt and mud absorb it; a rough sea scatters high frequencies. **Convergence zones** appear only where the water is deep enough for rays to turn back up.
 - **Baffles:** own-ship noise is a soft 70 degree lobe astern of the hull array (and along the cable of the towed array). It masks, it does not blank.
 
 ```text

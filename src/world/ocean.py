@@ -88,24 +88,31 @@ def mackenzie_sound_speed(temperature_c: float, salinity_psu: float,
             - 1.025e-2 * t * (s - 35.0) - 7.139e-13 * t * d ** 3)
 
 
+def temperature_profile_c(depth_m: float, mld_m: float, sst_c: float) -> float:
+    """Isothermal mixed layer over an exponential thermocline."""
+    if depth_m <= mld_m:
+        return sst_c - 0.002 * depth_m
+    surface = sst_c - 0.002 * mld_m
+    return DEEP_TEMPERATURE_C + (surface - DEEP_TEMPERATURE_C) * math.exp(
+        -(depth_m - mld_m) / THERMOCLINE_SCALE_M)
+
+
 def rayleigh_bottom_loss_db(sediment: str, grazing_deg: float) -> float:
-    """Plane-wave fluid-fluid reflection loss at a sediment interface (dB)."""
+    """Plane-wave fluid-fluid reflection loss of a lossy sediment (dB).
+
+    R = (m sin t - sqrt(n^2 - cos^2 t)) / (m sin t + sqrt(n^2 - cos^2 t))
+    with density ratio m, and a complex index of refraction
+    n = (c1/c2) / (1 + i delta) from the sediment attenuation (dB per
+    wavelength), so reflection below the critical angle is not lossless.
+    """
     rho, nu, attenuation, _mu = SEDIMENTS[sediment]
     theta = math.radians(max(0.01, min(90.0, grazing_deg)))
     cos_t, sin_t = math.cos(theta), math.sin(theta)
-    # R = (m sin t - sqrt(n^2 - cos^2 t)) / (m sin t + sqrt(n^2 - cos^2 t))
-    # with m = rho2/rho1 and n = c1/c2; below the critical grazing angle
-    # (cos t > n) the reflection is total.
-    n = 1.0 / nu
-    radicand = n * n - cos_t * cos_t
-    if radicand <= 0.0:
-        loss = 0.0
-    else:
-        root = math.sqrt(radicand)
-        r = abs((rho * sin_t - root) / (rho * sin_t + root))
-        loss = -20.0 * math.log10(max(r, 1e-6))
-    # Sediment absorption adds a small grazing-dependent loss.
-    return loss + 0.35 * attenuation * math.sin(theta)
+    delta = attenuation / (40.0 * math.pi * math.log10(math.e))
+    n = (1.0 / nu) / complex(1.0, delta)
+    root = (n * n - cos_t * cos_t) ** 0.5     # principal branch, Re >= 0
+    r = abs((rho * sin_t - root) / (rho * sin_t + root))
+    return -20.0 * math.log10(max(min(r, 1.0), 1e-6))
 
 
 class OceanEnvironment:
@@ -245,13 +252,9 @@ class OceanEnvironment:
             2.0 * math.pi * (hour - MLD_DIURNAL_PEAK_HOUR) / 24.0)
         return SST_MEAN_C + seasonal + diurnal
 
-    def temperature_c(self, depth_m: float, mld_m: float, sst_c: float) -> float:
-        if depth_m <= mld_m:
-            # Nearly isothermal surface layer.
-            return sst_c - 0.002 * depth_m
-        surface = sst_c - 0.002 * mld_m
-        return DEEP_TEMPERATURE_C + (surface - DEEP_TEMPERATURE_C) * math.exp(
-            -(depth_m - mld_m) / THERMOCLINE_SCALE_M)
+    @staticmethod
+    def temperature_c(depth_m: float, mld_m: float, sst_c: float) -> float:
+        return temperature_profile_c(depth_m, mld_m, sst_c)
 
     def sound_speed_m_s(self, depth_m: float, mld_m: float, hour: float) -> float:
         sst = self.sea_surface_temperature_c(hour)

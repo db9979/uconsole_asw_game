@@ -1445,6 +1445,14 @@ def draw_opz_view(game, tr=None) -> None:
         pygame.draw.line(s, config.COLOR_SONAR_RING,
                          (int(own_x), int(own_y - radar_radius)),
                          (int(own_x), int(own_y + radar_radius)), 1)
+        # Range labels at the top of each ring, beside the north axis.
+        for ring_index in range(1, 5):
+            rr = radar_radius * ring_index / 4.0
+            layout.blit_line(
+                s, message("map.tooltip.range_value",
+                           range=f"{max_nm * ring_index / 4.0:g}"),
+                (int(own_x) + 4, int(own_y - rr) + 1, 80, 18),
+                config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT)
 
         if station_live and game.surface_radar_on:
             coast_range = min(max_nm, game.radar_effective_range("surface"))

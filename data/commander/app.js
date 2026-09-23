@@ -2777,8 +2777,9 @@
           payload.dip_environment.winch_rate_m_s <= 0) throw new Error("protocol");
       rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
     } else if (state.role === "eloka") {
-      if (!boundedArray(payload.intercepts, 64) || payload.intercepts.some((row) => !exactKeys(row, ["ref", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "frequency_band", "prf_hz", "modulation", "quality", "age_s", "radar_type", "threat", "signal_state", "operational", "ambiguous", "synthetic_assumption", "auto_jamming", "jamming", "jamming_effectiveness", "jamming_technique", "ecm_power_draw", "is_locked_on", "hoj_risk", "annotation", "candidates", "correlations"]) ||
+      if (!boundedArray(payload.intercepts, 64) || payload.intercepts.some((row) => !exactKeys(row, ["ref", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "frequency_band", "prf_hz", "modulation", "quality", "age_s", "radar_type", "threat", "signal_state", "operational", "ambiguous", "synthetic_assumption", "auto_jamming", "jamming", "jamming_effectiveness", "jamming_technique", "ecm_power_draw", "is_locked_on", "hoj_risk", "annotation", "candidates", "correlations", "signal_db", "range_estimate_nm", "scan_period_s"]) ||
           typeof row.synthetic_assumption !== "boolean" || typeof row.auto_jamming !== "boolean" || typeof row.jamming !== "boolean" ||
+          !finite(row.signal_db) || [row.range_estimate_nm, row.scan_period_s].some((value) => value !== null && (!finite(value) || value < 0)) ||
           typeof row.is_locked_on !== "boolean" || typeof row.hoj_risk !== "boolean" || !["a_c", "d", "e_f", "g_h", "i_j", "k"].includes(row.frequency_band) ||
           (row.jamming_technique !== null && !["noise", "rgpo", "vgpo", "false_targets"].includes(row.jamming_technique)) ||
           typeof row.ambiguous !== "boolean" || typeof row.operational !== "boolean" || !["LIVE", "RECENT", "MEMORY", "UNCONFIRMED"].includes(row.signal_state) || !["low", "medium", "high", "critical", "unknown"].includes(row.threat) ||
@@ -4469,6 +4470,15 @@
       for (const fraction of [.25, .5, .75, 1]) {
         ctx.beginPath(); ctx.arc(ox, oy, radar.range_nm * fraction * scale, 0, Math.PI * 2); ctx.stroke();
       }
+      // Range labels at the top of each ring, beside the north axis.
+      ctx.save();
+      ctx.globalAlpha = .9; ctx.fillStyle = "#8fbfb0"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      for (const fraction of [.25, .5, .75, 1]) {
+        const ringRange = radar.range_nm * fraction;
+        ctx.fillText(t("radar_ring", {range: number(ringRange, Number.isInteger(ringRange) ? 0 : 1)}),
+          ox + 4, oy - ringRange * scale + 2);
+      }
+      ctx.restore();
       const displayedSweep = v2State?.phase === "live" ?
         currentOpzSweepBearing() : radar.sweep_bearing;
       const sweep = displayedSweep * Math.PI / 180;

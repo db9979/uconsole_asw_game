@@ -3251,5 +3251,6 @@
   "radio.hfdf.mode.SKY": "Raumwelle",
   "commander.web.signal_level": "Signalpegel",
   "commander.web.range_estimate": "Entfernungsschaetzung",
-  "commander.web.scan_period": "Antennenumlauf"
+  "commander.web.scan_period": "Antennenumlauf",
+  "commander.web.radar_ring": "{range} NM"
 }

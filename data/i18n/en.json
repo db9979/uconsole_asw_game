@@ -3251,5 +3251,6 @@
   "radio.hfdf.mode.SKY": "sky wave",
   "commander.web.signal_level": "Signal level",
   "commander.web.range_estimate": "Range estimate",
-  "commander.web.scan_period": "Antenna scan period"
+  "commander.web.scan_period": "Antenna scan period",
+  "commander.web.radar_ring": "{range} NM"
 }

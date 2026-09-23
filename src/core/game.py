@@ -37,6 +37,8 @@ from src.core.station import Station
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
 from src.sonar import equation as sonar_equation
+from src.sonar import propagation as sonar_propagation
+from src.physics import torpedo_dyn
 from src.physics import ship_dynamics
 from src.sensors.platform import MAST_DEPTH_M
 from src.world.ocean import OceanEnvironment
@@ -241,6 +243,10 @@ _ECO_REFRESH_EVENTS = frozenset(
         "KEYDOWN", "MOUSEBUTTONDOWN", "VIDEOEXPOSE", "VIDEORESIZE", "WINDOWSHOWN",
         "WINDOWEXPOSED", "WINDOWRESIZED", "WINDOWSIZECHANGED", "WINDOWRESTORED",
         "WINDOWFOCUSGAINED", "WINDOWFOCUSLOST") if hasattr(pygame, name))
+
+
+TORPEDO_WAKE_VISIBLE_NM = 1.5
+TORPEDO_WAKE_VISIBLE_DEPTH_M = 15.0
 
 
 class Game:
@@ -3691,6 +3697,16 @@ class Game:
 
     def _update_lookout_picture(self) -> None:
         """Publish bounded visual fixes without correlating sensor identities."""
+        # A shallow-running torpedo leaves a visible bubble track by day in a
+        # moderate sea.
+        if (not self.world.is_night()
+                and getattr(self.world, "effective_sea_state", self.world.sea_state) <= 3.0):
+            for torpedo in sorted(self.enemy_torpedoes, key=lambda item: item.id):
+                if (torpedo.state == "RUN" and torpedo.depth <= TORPEDO_WAKE_VISIBLE_DEPTH_M
+                        and math.hypot(torpedo.x - self.ship.x, torpedo.y - self.ship.y)
+                        <= TORPEDO_WAKE_VISIBLE_NM):
+                    self._lookout_observe(torpedo, "torpedo-wake", "TORP",
+                                          TORPEDO_WAKE_VISIBLE_NM, torpedo.id)
         for actor in sorted(self.civilians + self.warships,
                             key=lambda item: item.id):
             if not actor.sunk:
@@ -6145,13 +6161,44 @@ class Game:
             return "stern"
         return "starboard" if relative > 0.0 else "port"
 
+    def _sub_hears_torpedo(self, sub, torpedo, distance_nm: float) -> bool:
+        """Passive sonar equation for a running torpedo heard by a boat.
+
+        The figure of merit reproduces TORP_RUNNING_NOISE_RANGE_NM for a
+        quiet boat and a torpedo at cruise speed; propagation, ambient noise,
+        the boat's own noise and the torpedo's speed-dependent level decide."""
+        if distance_nm > 3.0 * config.TORP_RUNNING_NOISE_RANGE_NM:
+            return False
+        frequency = torpedo_dyn.RUNNING_NOISE_BAND_HZ
+        excess = sonar_propagation.ray_excess_db(
+            self.world, sub.x, sub.y, max(sub.depth, 1.0), torpedo.x, torpedo.y,
+            max(torpedo.depth, 1.0), frequency)
+        absorption = sonar_equation.francois_garrison_db_per_km(frequency)
+        terms = sonar_equation.passive_terms(
+            frequency_hz=frequency, distance_nm=max(distance_nm, 0.01),
+            target_bonus=10.0 ** (torpedo.source_level_offset_db() / 20.0),
+            excess_path_loss_db=(0.0 if excess is None else excess
+                                 - sonar_propagation.ray_reference_excess_db(
+                                     config.TORP_RUNNING_NOISE_RANGE_NM, frequency))
+            # Absorption is part of the reference-range figure of merit too.
+            - absorption * config.TORP_RUNNING_NOISE_RANGE_NM * 1.852,
+            absorption_db_per_km=absorption,
+            legacy_absorption_db=0.0,
+            own_range_factor=max(0.2, 1.0 - 0.8 * sub.noise_level()),
+            array_range_factor=(config.TORP_RUNNING_NOISE_RANGE_NM
+                                / config.SONAR_PASSIVE_BASE_NM),
+            sea_state=float(getattr(self.world, "effective_sea_state",
+                                    self.world.sea_state)),
+            rain=float(getattr(self.world, "rain_intensity", 0.0)),
+            shipping_contacts=self.sonar.shipping_contacts)
+        return terms.signal_excess_db > 0.0
+
     def _update_player_torpedoes(self, dt: float) -> None:
         """Bewegt eigene Torpedos und verarbeitet Treffer/Fehlkontakte."""
         for sub in self.subs:
             if (sub.sunk or sub.state == "SINKING"
                     or sub.memory["last_torpedo_age"] < config.SUB_EVADE_DURATION_S):
                 continue
-            notice_range = sub.torpedo_notice_range_nm()
             for torpedo in self.torpedoes:
                 if torpedo.state != "RUN":
                     continue
@@ -6165,7 +6212,7 @@ class Game:
                 # W2: graduated passive notice of a running torpedo's own
                 # noise, between pure terminal homing and the loud one-time
                 # launch transient - additive, does not replace either.
-                if (dist <= notice_range
+                if (self._sub_hears_torpedo(sub, torpedo, dist)
                         and not self.world.sonar_path_blocked(
                             torpedo.x, torpedo.y, torpedo.depth,
                             sub.x, sub.y, sub.depth)):
@@ -6178,6 +6225,9 @@ class Game:
             if (solution_fresh and contact.observed_x is not None
                     and contact.observed_y is not None):
                 torpedo.wire_update(contact.observed_x, contact.observed_y)
+            if torpedo.launch_origin == "frigate":
+                torpedo.wire_tension_update(dt, self.ship.speed,
+                                            self.ship.yaw_rate)
             torpedo.update(dt, seeker_candidates=(
                 [s for s in self.subs if not s.sunk]
                 + [d for d in self.decoys if not d.dead]
@@ -6831,7 +6881,10 @@ class Game:
                      search_phase=t._search_phase, midcourse=t._midcourse,
                      midcourse_timer=t._midcourse_timer,
                      kill_dist_nm=t.kill_dist_nm, kill_depth_m=t.kill_depth_m,
-                     time_since_launch=t.time_since_launch)
+                     time_since_launch=t.time_since_launch,
+                     energy_s=t.energy_s, motor_fraction=t.motor_fraction,
+                     depth_rate=t.depth_rate, wire_ship_out_nm=t.wire_ship_out_nm,
+                     wire_stress_s=t.wire_stress_s)
                 for t in self.torpedoes],
             "enemy_torpedoes": [
                 dict(id=t.id, x=t.x, y=t.y, course=t.course, depth=t.depth,
@@ -6844,7 +6897,9 @@ class Game:
                        seeker_target=("ship" if t._seeker_target is self.ship else
                                      f"nixie:{t._seeker_target.seq}"
                                      if t._seeker_target in self.nixies else None),
-                       time_since_launch=t.time_since_launch)
+                       time_since_launch=t.time_since_launch,
+                       energy_s=t.energy_s, motor_fraction=t.motor_fraction,
+                       depth_rate=t.depth_rate, target_depth=t.target_depth)
                 for t in self.enemy_torpedoes],
             "asms": [dict(x=a.x, y=a.y, course=a.course, seq=a.seq,
                             profile_key=a.profile_key,
@@ -7526,6 +7581,11 @@ class Game:
             t._search_phase = td["search_phase"]
             t._midcourse = td["midcourse"]
             t._midcourse_timer = td["midcourse_timer"]
+            t.energy_s = td["energy_s"]
+            t.motor_fraction = td["motor_fraction"]
+            t.depth_rate = td["depth_rate"]
+            t.wire_ship_out_nm = td["wire_ship_out_nm"]
+            t.wire_stress_s = td["wire_stress_s"]
             self.torpedoes.append(t)
         for ed in data["enemy_torpedoes"]:
             enemy_key = ed["profile_key"]
@@ -7542,6 +7602,10 @@ class Game:
             self.enemy_torpedoes[-1].id = ed["id"]
             self.enemy_torpedoes[-1].terminal_active = ed["terminal_active"]
             self.enemy_torpedoes[-1].seeker_acquired = ed["seeker_acquired"]
+            self.enemy_torpedoes[-1].energy_s = ed["energy_s"]
+            self.enemy_torpedoes[-1].motor_fraction = ed["motor_fraction"]
+            self.enemy_torpedoes[-1].depth_rate = ed["depth_rate"]
+            self.enemy_torpedoes[-1].target_depth = ed["target_depth"]
             seeker_target = ed["seeker_target"]
             self.enemy_torpedoes[-1]._seeker_target = (
                 (self.ship if seeker_target == "ship" else
@@ -8801,6 +8865,21 @@ class Game:
             return False
         if len(asms) + pending_missiles > Game.MAX_SAVED_ASMS:
             return False
+        # Phase 8 torpedo physics state.
+        for row in torpedoes:
+            if (not bounded(row.get("energy_s"), 0.0, 1e6)
+                    or not bounded(row.get("motor_fraction"), 0.0, 1.0)
+                    or not bounded(row.get("depth_rate"), -20.0, 20.0)
+                    or not bounded(row.get("wire_ship_out_nm"), 0.0, 1e4)
+                    or not bounded(row.get("wire_stress_s"), 0.0, 1e6)):
+                return False
+        for row in data.get("enemy_torpedoes", []):
+            if (not isinstance(row, dict)
+                    or not bounded(row.get("energy_s"), 0.0, 1e6)
+                    or not bounded(row.get("motor_fraction"), 0.0, 1.0)
+                    or not bounded(row.get("depth_rate"), -20.0, 20.0)
+                    or not bounded(row.get("target_depth"), 0.0, 10000.0)):
+                return False
         asm_ids = set()
         for asm in asms:
             seq = asm.get("seq")

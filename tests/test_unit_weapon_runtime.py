@@ -90,10 +90,15 @@ def test_torpedo_notice_ranges_are_ordered_between_homing_and_launch_alert():
             < config.SUB_TORPEDO_ALERT_NM)
 
 
-def test_quiet_sub_notices_running_torpedo_before_homing_range(game):
+def test_quiet_sub_notices_running_torpedo_before_homing_range(game, monkeypatch):
     """Between TORP_HOME_RANGE_NM and the launch transient, a sub can still
     passively notice a running torpedo - scaled by how much its own noise
     masks its listening."""
+    # Heard through the passive sonar equation; calm, dry weather so rain
+    # and wind noise do not mask the reference range.
+    monkeypatch.setattr(game.world, "weather_values", lambda: dict(
+        wind_speed_kn=6.0, rain_intensity=0.0, visibility_nm=10.0,
+        wind_from_deg=0.0, sea_state=1.0))
     torpedo = Torpedo(game.ship.x + config.TORP_RUNNING_NOISE_RANGE_NM - 1.0,
                       game.ship.y, 90.0, 50.0, None, 1)
     game.torpedoes = [torpedo]
@@ -297,11 +302,13 @@ def test_terminal_depth_tracking_loss_and_reacquisition():
     torpedo.update(1.0, [first])
     assert torpedo.seeker_acquired
     assert torpedo.target_depth == 100
-    assert torpedo.depth == 15.0
+    # Fin-limited vertical acceleration: diving, never faster than 10 m/s.
+    first_depth = torpedo.depth
+    assert 5.0 < first_depth <= 15.0
     first.depth = 200
     torpedo.update(1.0, [first])
     assert torpedo.target_depth == 200
-    assert torpedo.depth == 25.0
+    assert first_depth < torpedo.depth <= first_depth + 10.0
     first.x = 200
     torpedo.update(0.1, [first])
     assert not torpedo.seeker_acquired

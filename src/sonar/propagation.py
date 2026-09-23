@@ -337,3 +337,15 @@ def ray_excess_db(world, sensor_x: float, sensor_y: float, sensor_depth_m: float
     tl = raytrace.lookup_tl_db(table, frequency_hz, distance,
                                min(target_depth_m, key[3]), key[3])
     return tl - _spherical_db(distance) - ray_anchor_db()
+
+
+def ray_reference_excess_db(range_nm: float, frequency_hz: float) -> float:
+    """Ray excess of the reference environment at ``range_nm`` (relative to
+    the 20 NM anchor). Subtract it to re-anchor a short-range figure of
+    merit at its own calibration range."""
+    from src.sonar import raytrace
+
+    table = raytrace.cached_table(RAY_REFERENCE_KEY, _profile_from_key)
+    return (raytrace.lookup_tl_db(table, frequency_hz, range_nm,
+                                  RAY_REFERENCE_RECEIVER_M, RAY_REFERENCE_KEY[3])
+            - _spherical_db(range_nm) - ray_anchor_db())

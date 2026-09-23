@@ -141,10 +141,11 @@ class SurfaceShip:
 
     # --- Torpedo-Treffer ---
 
-    def hit(self) -> None:
+    def hit(self, amount: float | None = None) -> None:
+        """Warhead damage (shock-factor amount from the fuze, else legacy)."""
         if self.sunk:
             return
-        self.damage = min(100.0, self.damage + 34.0)
+        self.damage = min(100.0, self.damage + (34.0 if amount is None else amount))
         if self.damage >= 100.0:
             self.sunk = True
 

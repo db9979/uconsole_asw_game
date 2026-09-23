@@ -64,10 +64,14 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 - Aus etwa 6-8 sm oder näher schießen: mit 45 kn braucht der Torpedo 8 Minuten für 6 sm, und das U-Boot hört den Abschuss bis 35 sm und weicht aus.
 - Das Datum vor ein fahrendes Ziel legen, indem TMA weiterläuft; der Draht folgt der Beobachtung, nicht der Wahrheit.
 - Während der Lenkung unter der Kavitationsgrenze bleiben; Kontaktverlust heißt Verlust des Draht-Datums.
+- Der Draht ist ein echtes Kabel: er reißt, wenn das Schiff etwa 5 s lang schneller als 20 kn läuft oder schneller als 1,5 Grad/s dreht, wenn die schiffsseitige Spule (5 sm eigener Weg) abgelaufen ist oder wenn der Torpedo das 1,25-fache seiner Reichweite gelaufen ist.
+- Die Torpedoreichweite kommt aus der Batterie: bei voller Fahrt läuft er die Katalogreichweite, harte Manöver drosseln ihn und sparen Energie; ist die Batterie leer, läuft er einige Sekunden aus und geht verloren. Direkt nach dem Ausstoß dreht er langsamer (fester Drehkreis), und Tiefenänderungen brauchen einen Moment.
+- Der Gefechtskopf hat einen Annäherungszünder: er zündet bei der größten Annäherung innerhalb seines Radius, der Schaden fällt mit dem Abstand (Schockfaktor). Ein knapper Fehlschuss kann ein U-Boot beschädigt entkommen lassen.
+- Ein laufender Torpedo wird vom Ziel über die Sonargleichung gehört: leise Boote hören ihn bei ruhiger See auf einige Meilen, Regen und eigene Fahrt überdecken ihn.
 - Nur zwei Nixies je Mission: den ersten ausbringen, wenn ein Torpedo wahrscheinlich ist, den zweiten für den nächsten Angriff aufheben.
 
 ## Nicht modelliert {#weapons-limits}
 
 - Keine Wasserbomben, U-Jagd-Raketen oder vom Schiff gestartetes ASROC (ASROC nutzen nur befreundete KI-Kriegsschiffe).
-- Kein wählbares Torpedo-Suchmuster (Helix, Leiter) und kein manueller Aktivierungspunkt: Schlangensuche und Sucheraktivierung bei 1,2 sm sind fest.
+- Kein wählbares Torpedo-Suchmuster und kein manueller Aktivierungspunkt: Schlangensuche und Sucheraktivierung bei 1,2 sm sind fest (befreundete ASROC-Nutzlasten suchen in einer Helix um ihren Eintauchpunkt).
 - Ein Torpedotyp für das Schiff und einer für den Helikopter; keine wählbare Salvendoktrin.

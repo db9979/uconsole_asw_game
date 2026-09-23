@@ -243,11 +243,16 @@ class Sub:
         self.decision_reason = f"{action}: {scores[action]:.2f}"
         return action
 
-    def hit(self) -> None:
-        """Torpedotreffer: Schaden; bei 100 % Sinkbeginn (Captain's Log §3)."""
+    def hit(self, amount: float | None = None) -> None:
+        """Torpedotreffer: Schaden; bei 100 % Sinkbeginn (Captain's Log §3).
+
+        ``amount`` is the warhead's shock-factor damage from the proximity
+        fuze; without it the historical 60-100 draw applies."""
         if self.sunk or self.state == "SINKING":
             return
-        self.damage = min(100.0, self.damage + self.rng.uniform(60.0, 100.0))
+        if amount is None:
+            amount = self.rng.uniform(60.0, 100.0)
+        self.damage = min(100.0, self.damage + amount)
         if self.damage >= 100.0:
             self.state = "SINKING"
             self.sink_left = 20.0

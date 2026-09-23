@@ -157,17 +157,17 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
-| ~~**No launch dynamics**~~ | **Partially fixed (2026-09).** Torpedoes now spool up from a reduced initial speed to cruise speed over `TORP_SPOOLUP_S` (both player and enemy classes; ASROC water-entry too). Still open: no initial depth offset from ship draft/tube, no water-jet impulse or wake effects. | Initial depth offset; water-jet impulse; wake effects |
-| **No acceleration phase** | Constant speed from launch | Motor spool-up (0 → cruise in seconds), speed-dependent range |
-| **No depth inertia** | Depth changes at fixed 10 m/s toward target | Buoyancy + plane angle + drag; overshoot; depth hold with oscillation |
-| **No hydrodynamic turn limit** | Fixed 8°/s (player), 6°/s (enemy) turn rate; throttle penalty is heuristic | Turn radius from rudder geometry, speed, and depth; cavitation limit on turn |
-| **No wire dynamics** | Wire is abstracted as a timer (stale/broken) | Wire payout length limits range; wire drag; wire tension; spool dynamics |
-| **No propeller noise model** | Static LOFAR lines from catalog | Speed-dependent blade rate; cavitation at high speed; motor harmonics |
-| **Kill is binary** | Distance + depth threshold → instant hit or miss | Warhead proximity fuze with lethal radius; damage proportional to standoff; no partial hits |
+| ~~**No launch dynamics**~~ | **Closed (Phases W2 + 6 + 8).** Spool-up, launch-depth offset and tube transient on the firing boat, speed-dependent turning and depth response right after launch. | — |
+| ~~**No acceleration phase**~~ | **Closed.** Spool-up (W2) plus an energy store: power ~ v^3, range emerges from the battery and grows when running slower. | — |
+| ~~**No depth inertia**~~ | **Closed (Phase 8).** Fin-limited vertical acceleration (~ dynamic pressure) with a proportional depth command (saved rate, small overshoot); hostile torpedoes now have depth control too (run depth, keel depth when homing). | — |
+| ~~**No hydrodynamic turn limit**~~ | **Closed (Phase 8).** Constant turning radius: turn rate proportional to speed, for both torpedo classes. | — |
+| ~~**No wire dynamics**~~ | **Closed (Phase 8).** Two finite spools (torpedo 1.25 x range, ship 5 NM of own track) and tension breaks from ship overspeed (> 20 kn) or hard turns (> 1.5 deg/s) held for 5 s; the old timers remain as datalink latency. | — |
+| ~~**No propeller noise model**~~ | **Closed (Phase 8).** Speed-dependent propulsor lines (both classes) and a 60 log v source level; the target hears a running torpedo through the passive sonar equation (ray excess, ambient, own noise). | — |
+| ~~**Kill is binary**~~ | **Closed (Phase 8).** Proximity fuze at closest approach; damage from the shock factor sqrt(W)/R (250 kg), so near misses damage without sinking. | — |
 | ~~**No target reaction to torpedo**~~ | **Closed (Phases W2 + 7 + 8).** Launch-transient and homing alerts, crew recognition delay (per-boat lognormal 2-15 s, saved countdown), evasive dive across the layer; Phase 8 makes the running-torpedo notice a sonar-equation detection. | — |
-| **No self-destruction timing** | SASE at max range or terrain block; no time-based self-destruct | Motor burn time; battery depletion |
-| **No wake / trail signature** | None | Torpedo wake detectable by passive sonar at close range |
-| **ASROC payload depth** | Fixed `target_depth_m` from observation (default 60 m) | No depth-keeping logic; no terminal dive |
+| ~~**No self-destruction timing**~~ | **Closed (Phase 8).** Battery exhaustion stops the motor; the weapon coasts (dv/dt = -k v^2) and is lost below 30 % speed. | — |
+| ~~**No wake / trail signature**~~ | **Closed (Phase 8).** Shallow hostile torpedoes leave a bubble track visible to the lookout by day up to 1.5 NM; hostile torpedoes can home on the own-ship wake. | — |
+| ~~**ASROC payload depth**~~ | **Closed (Phase 8).** The payload flies a helix search at its splash point while its depth controller descends to the search depth. | — |
 
 ### 4.3 Data structures touched
 

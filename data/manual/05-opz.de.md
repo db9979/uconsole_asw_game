@@ -1,0 +1,59 @@
+# 5 OPZ / CIC {#station-opz}
+
+## Zweck {#opz-purpose}
+
+Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser- und Luftradar, AIS, freigegebene Sonar- und ESM-Peilungen, manuelle Fusion von Meldungen, NATO-Zugehörigkeit und Luftverteidigung. Sie übergibt bezeichnete Tracks an Sonar und Waffenzentrale.
+
+## Anzeigen und Instrumente {#opz-displays}
+
+Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt).
+
+```text
+ NATO-Rahmenfarben (Bedienervermerk, keine Wahrheit)
+   gelb = UNBEKANNT  blau = FREUND  grün = NEUTRAL  rot = FEIND
+
+ Meldungsquellen: Radar  AIS  Sonar(freigegeben)  ESM  HFDF  Ausguck
+ Trackliste:  ID  Quelle  Peilung  Entfernung  Kurs/Fahrt  Alter  Klasse
+```
+
+- **Überwasserradar:** 30 sm, begrenzt durch Radarhorizont (20-m-Mast) und Zielhöhe; getauchte U-Boote sind unsichtbar.
+- **Luftradar:** 100 sm für Flugzeuge und Seezielflugkörper (ASM).
+- Wetter verringert die Reichweite; ab Seegang 5 nehmen Clutter und Messfehler zu. Regen kostet weitere Reichweite.
+- **AIS:** zivile Schiffe senden Identität und Position; optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
+- **Fusion:** 2-8 Rohmeldungen markieren (`Leertaste`) und zu einem Bedienertrack fusionieren (`L`); `Shift+L` löst ihn auf.
+- **Unterdrückung:** `Entf` blendet eine Meldung lokal aus; `H` zeigt unterdrückte Meldungen wieder.
+
+## Tasten {#opz-keys}
+
+<!-- keys:opz -->
+
+## Standardablauf {#opz-sop}
+
+<!-- sop:opz -->
+
+Ablauf Luftverteidigung (Flugkörper im Anflug):
+
+```text
+  40 sm  ASM erfasst (Luftradar / ESM-Sucherpeilung)
+  30 sm  ESSM-Bereich           -> E / Strg+Enter (2 Feuerkanäle)
+   8 sm  Düppelkegel            -> G (40 % Zielverlust, kurz blind)
+ 1,5 sm  CIWS                   -> muss mit I freigegeben sein
+```
+
+1. Luftradar ein (`Shift+R`), ASM-Track wählen (`Links`/`Rechts`).
+2. Erst Düppel und Manöver, dann ESSM. Nur 6 ESSM sind geladen.
+3. CIWS freigegeben lassen, solange Flugkörper anfliegen; zurückgehaltenes CIWS feuert nie.
+
+## Tipps für Profis {#opz-tips}
+
+- Radar ist eine Aussendung, die feindliches ESM auffassen kann. Radare abschalten (EMCON), wenn Tarnung wichtiger ist als das Luftlagebild.
+- Störende Flugkörper jenseits 20 sm liefern nur eine Home-on-Jam-Peilung (HOJ); Entfernung kommt später.
+- Zugehörigkeit ist Ihr Vermerk. Ein als FREUND oder NEUTRAL markierter Kontakt sperrt jeden Torpedoschuss darauf.
+- `J` vergibt eine gemeinsame Track-ID, die die ganze Crew (und Remote-Crew-Browser) sieht.
+- `Enter` bestätigt einen Angriff auf einen Live-Kontakt (echter Verkehr), nachdem Sie ihn als feindlich klassifiziert haben; auf unklassifizierte Kontakte wird nie automatisch gefeuert.
+
+## Nicht modelliert {#opz-limits}
+
+- Keine Sonarbojenverwaltung hier: Bojen gehören zur Helikopterstation.
+- Keine automatische sensorübergreifende Korrelation; Fusion ist manuell.
+- Keine Link-gestützte Luftraumführung befreundeter Flugzeuge.

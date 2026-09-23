@@ -1,0 +1,390 @@
+import random
+import json
+from unittest.mock import Mock
+
+import numpy as np
+import pygame
+import pytest
+
+import src.core.game as game_module
+from src.core import config
+from src.core.game import Game
+from src.core.station import Station
+from src.core.i18n import RawText, Translator, localize, message
+from src.core.mission_definition import default_mission
+from src.core.preferences import Preferences
+from src.enemies.surface import SurfaceShip
+from src.enemies.sub import Sub
+from src.sonar.sonar import Contact
+
+
+def test_mixer_preinit_precedes_pygame_init(monkeypatch):
+    calls = []
+    pre_init = pygame.mixer.pre_init
+    init = pygame.init
+    monkeypatch.setattr(pygame.mixer, "pre_init",
+                        lambda *args, **kwargs: (calls.append(("pre", kwargs)),
+                                                pre_init(*args, **kwargs))[1])
+    monkeypatch.setattr(pygame, "init",
+                        lambda: (calls.append(("init", {})), init())[1])
+    game = Game(seed=80, audio_enabled=False)
+    assert [name for name, _ in calls[:2]] == ["pre", "init"]
+    assert calls[0][1] == {
+        "frequency": game_module.config.AUDIO_SAMPLE_RATE,
+        "size": -16,
+        "channels": game_module.config.AUDIO_CHANNELS,
+        "buffer": game_module.config.AUDIO_MIXER_BUFFER_SAMPLES,
+    }
+    game.audio.shutdown()
+
+
+def test_update_passes_unclamped_wall_dt_to_audio(monkeypatch):
+    """Der Main-Loop klemmt Sim-dt auf 0.1 s; die Audio-Cadence darf nicht."""
+    game = Game(seed=84, audio_enabled=False)
+    seen = []
+    debug = Mock()
+    monkeypatch.setattr(game.audio, "debug_log", debug)
+    monkeypatch.setattr(game, "_update_audio", seen.append)
+    game.update(0.1, audio_dt=0.35)
+    assert seen == [0.35]
+    game.update(0.1)
+    assert seen == [0.35, 0.1]
+    assert [call.args[0] for call in debug.call_args_list] == [0.35, 0.1]
+    game.audio.shutdown()
+
+
+def test_sonar_audio_continues_at_fixed_realtime_speed(monkeypatch):
+    game = Game(seed=85, audio_enabled=False)
+    game.station = Station.SONAR
+    game.sonar_audio_enabled = True
+    receiver = game.sonar.receiver
+    receiver.update([], 0, 12, .2, 2, 6)
+    spy = Mock(return_value=True)
+    monkeypatch.setattr(game.audio, "play_sonar", spy)
+    stop = Mock()
+    monkeypatch.setattr(game.audio, "stop_sonar", stop)
+    game._update_audio(0.25)
+    assert spy.call_count == 1
+    assert game._sonar_audio_sequence == receiver.sequence
+    stop.assert_called_once_with(immediate=True)
+    receiver.update([], 0, 12, .2, 2, 6)
+    game._update_audio(0.25)
+    assert spy.call_count == 2
+    assert game._sonar_audio_sequence == receiver.sequence
+    stop.assert_called_once()
+    assert game.time_scale == 1
+    game.audio.shutdown()
+
+
+def test_legacy_time_keys_do_not_change_simulation_rate():
+    game = Game(seed=85, start_menu=False, audio_enabled=False)
+    for key in (pygame.K_z, pygame.K_x, pygame.K_LEFTBRACKET,
+                pygame.K_RIGHTBRACKET):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key, mod=0))
+    before = game.sim_t
+    game.update(.1)
+    assert game.time_scale == 1
+    assert game.time_scale_idx == 0
+    assert game.sim_t == pytest.approx(before + .1)
+
+
+def test_perf_debug_log_is_opt_in_throttled_and_does_not_affect_sim(
+        monkeypatch, tmp_path):
+    monkeypatch.delenv("U_JAGD_PERF_DEBUG", raising=False)
+    disabled_root = tmp_path / "disabled"
+    monkeypatch.setattr(config, "SAVE_DIR", str(disabled_root))
+    game = Game(seed=87, start_menu=False, audio_enabled=False)
+    assert not game._perf_debug_enabled
+    game.update(.1, audio_dt=.1)
+    game._perf_debug_log(2.0)
+    assert not disabled_root.exists()
+    game.audio.shutdown()
+
+    monkeypatch.setenv("U_JAGD_PERF_DEBUG", "1")
+    debug_root = tmp_path / "debug"
+    monkeypatch.setattr(config, "SAVE_DIR", str(debug_root))
+    debug = Game(seed=88, start_menu=False, audio_enabled=False)
+    assert debug._perf_debug_enabled
+    debug.update(.1, audio_dt=.1)
+    debug._perf_debug_log(0.6)
+    assert not debug_root.exists()
+    debug.update(.1, audio_dt=.1)
+    debug._perf_debug_log(0.5)
+    assert debug.sim_t == pytest.approx(.2)
+    lines = (debug_root / "perf_debug.log").read_text().splitlines()
+    assert len(lines) == 1
+    assert "fps=2" in lines[0]
+    assert "sim_ms=" in lines[0] and "audio_ms=" in lines[0]
+    assert "commander_ms=" in lines[0] and "draw_ms=" in lines[0]
+    debug._perf_debug_log(0.8)
+    assert len((debug_root / "perf_debug.log").read_text().splitlines()) == 1
+    debug._perf_debug_log(0.3)
+    assert len((debug_root / "perf_debug.log").read_text().splitlines()) == 2
+    debug.audio.shutdown()
+
+
+def test_audio_replacement_and_run_shutdown_old_engines(monkeypatch):
+    game = Game(seed=81, audio_enabled=False)
+    initial = game.audio
+    monkeypatch.setattr(initial, "shutdown", Mock(wraps=initial.shutdown))
+    replacement = Mock(available=False)
+    monkeypatch.setattr(game_module, "AudioEngine", Mock(return_value=replacement))
+    monkeypatch.setattr(game_module, "save_preferences", Mock())
+    game._set_preference("audio", True)
+    old = game_module.AudioEngine.return_value
+    assert game.audio is old
+    initial.shutdown.assert_called_once()
+
+    # The engine present before replacement was shut down by the transition.
+    # Use a second transition to make that ownership directly observable.
+    newer = Mock(available=False)
+    game_module.AudioEngine.return_value = newer
+    game._set_preference("audio", False)
+    old.shutdown.assert_called_once()
+    assert game._sonar_audio_sequence == -1
+
+    game.running = False
+    monkeypatch.setattr(pygame, "quit", Mock())
+    game.run()
+    newer.shutdown.assert_called_once()
+
+
+def test_options_apply_global_tooltip_preference_and_language_state(monkeypatch):
+    game = Game(seed=82, audio_enabled=False,
+                preferences=Preferences(language="en", tooltips=True))
+    save = Mock()
+    monkeypatch.setattr(game_module, "save_preferences", save)
+    game.pinned_tooltip = {"title": "old", "lines": []}
+    game._set_preference("tooltips", False)
+    assert not game.tooltips_enabled and not game.preferences.tooltips
+    assert game.pinned_tooltip is None
+    save.assert_called_with(game.preferences)
+
+    game.pinned_tooltip = {"title": "old", "lines": []}
+    game._set_preference("language", "de")
+    assert game.pinned_tooltip is None
+    assert "Deutsch" in localize(game.msg, game.tr)
+    assert pygame.display.get_caption()[0] == game.tr("app.title")
+
+
+def test_runtime_notices_are_structured_for_bt_listening_and_launches(monkeypatch):
+    game = Game(seed=86, audio_enabled=False)
+    game.station = game_module.Station.SONAR
+    game.sonar.bt_profile = {"thermocline_m": 75.0}
+    monkeypatch.setattr(game.sonar, "measure_environment", lambda *_: True)
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, mod=0))
+    assert game.msg["__u_jagd_i18n__"] == "runtime.bt.measured"
+    assert game.feed.entries[-1].text["__u_jagd_i18n__"] == "runtime.bt.feed"
+
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_d, mod=0))
+    assert game.msg["__u_jagd_i18n__"] == "runtime.listen.filtered"
+
+    game.helo.state = "HANGAR"
+    game.toggle_helo()
+    assert game.msg["__u_jagd_i18n__"] == "runtime.helo.launch"
+
+    target = game.subs[0]
+    contact = Contact(1, target.id, "ping", "sub")
+    contact.player_class = "U_BOOT"
+    contact.range_est = 4.0
+    contact.range_source = "ping"
+    contact.range_seen = contact.last_seen = game.sim_t
+    contact.bearing = 0.0
+    game.target = contact
+    game.sonar.contacts[target.id] = contact
+    game.launch_torpedo()
+    assert game.msg["__u_jagd_i18n__"] == "runtime.torpedo.launched"
+    assert game.feed.entries[-1].text["__u_jagd_i18n__"] == "runtime.torpedo.feed"
+
+
+def test_runtime_language_switch_retranslates_feeds_and_keeps_legacy_strings(monkeypatch):
+    game = Game(seed=87, audio_enabled=False,
+                preferences=Preferences(language="en"))
+    monkeypatch.setattr(game_module, "save_preferences", Mock())
+    structured = message("runtime.helo.return")
+    game.feed.add("12:00", "mission", structured)
+    game.feed.add("12:01", "mission", "Saved")
+    game.messages.extend((("12:00", structured), ("12:01", "Saved")))
+
+    game._set_preference("language", "de")
+
+    assert len(game.feed.entries) >= 2
+    assert localize(game.feed.entries[-2].text, game.tr) == "HSP-5: Rückkehr befohlen"
+    assert localize(game.feed.entries[-1].text, game.tr) == "Gespeichert"
+    assert game.messages[-1] == ("12:01", "Saved")
+
+
+def test_initial_threat_intel_is_coarse_static_and_visible_to_radio():
+    game = Game(seed=87, audio_enabled=False,
+                preferences=Preferences(language="en"))
+    report = game.messages[-1][1]
+    params = report["params"]
+    target = min(game.subs, key=lambda item: np.hypot(
+        item.x - game.ship.x, item.y - game.ship.y))
+    exact_range = np.hypot(target.x - game.ship.x, target.y - game.ship.y)
+
+    assert report["__u_jagd_i18n__"] == "runtime.hq.threat_underwater"
+    assert int(params["bearing"]) % 45 == 0
+    assert params["range"] % 5 == 0
+    assert abs(params["range"] - exact_range) <= 2.5
+    assert set(params) == {"bearing", "range"}
+    assert game.feed.entries[-1].category == "funk"
+    assert game.feed.entries[-1].text is report
+    initial = json.dumps(report, sort_keys=True)
+    target.x += 100
+    game.update(.1)
+    assert json.dumps(game.messages[2][1], sort_keys=True) == initial
+
+
+def test_custom_runtime_mission_text_is_opaque():
+    game = Game(seed=88, audio_enabled=False,
+                preferences=Preferences(language="de"))
+    game.custom_mission_definition = {"description": "Saved {verbatim}"}
+    game.mission.name = "Save"
+
+    assert isinstance(game.mission_name_display(), RawText)
+    assert localize(game.mission_name_display(), Translator("de").t) == "Save"
+    assert localize(game.mission_description_display(), Translator("de").t) == \
+        "Saved {verbatim}"
+
+
+@pytest.mark.parametrize(
+    "objective_type,retained_type,english,german",
+    (("sink", "konvoi", "Sink all submarines", "Alle U-Boote versenken"),
+     ("survive", "nuklearer_abfang", "Convoy: survive the time limit",
+      "Konvoi: Zeitlimit durchhalten")),
+)
+def test_custom_objective_and_start_feed_ignore_random_mission_type(
+        objective_type, retained_type, english, german):
+    game = Game(seed=89, audio_enabled=False,
+                preferences=Preferences(language="en"))
+    definition = default_mission("user.objective")
+    definition["name"] = "Saved"
+    definition["objective"]["type"] = objective_type
+
+    assert game.start_custom_mission(definition)
+    game.mission.type_key = retained_type
+    objective = game.mission_objective_display()
+    started = next(entry.text for entry in reversed(game.feed.entries)
+                   if entry.category == "mission")
+    json.dumps(started)
+
+    assert localize(objective, Translator("en").t) == english
+    assert localize(objective, Translator("de").t) == german
+    assert localize(started, Translator("en").t) == \
+        f"Mission: Saved (Custom) - {english}"
+    assert localize(started, Translator("de").t) == \
+        f"Mission: Saved (Individuell) - {german}"
+    assert game.messages[-1][1]["__u_jagd_i18n__"] == "runtime.hq.threat_unknown"
+
+
+def test_sensor_picture_uses_generic_evidence_not_platform_truth(monkeypatch):
+    game = Game(seed=83, audio_enabled=False)
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+    warship = SurfaceShip(game.ship.x + 4.0, game.ship.y,
+                          random.Random(830), hostile=True)
+    warship.emitter = True
+    game.warships = [warship]
+    game.civilians = []
+    game.flights.flights = []
+    game.asms = []
+    game._update_air_picture()
+    track = game.air_picture._tracks[f"W-{warship.id}"]
+    assert track.label == f"W-{warship.id}"
+    assert track.course is None and track.hostile is False
+    assert warship.name not in track.label
+
+    contact = Contact(7, warship.id, "ping", "surface")
+    contact.last_seen = game.sim_t
+    contact.confidence = contact.quality = 1.0
+    contact.player_class = None
+    contact.passive_bearing = 270.0
+    contact.range_est = 99.0
+    contact.range_source = "ping"
+    contact.range_seen = game.sim_t
+    contact.observed_x = game.ship.x + 3.0
+    contact.observed_y = game.ship.y - 4.0
+    monkeypatch.setattr(game.sonar, "update", Mock())
+    monkeypatch.setattr(game.sonar, "active_contacts", lambda: [contact])
+    game._update_sensors(.25)
+    sonar_track = game.air_picture._tracks[f"U-{warship.id}"]
+    assert (sonar_track.raw_x, sonar_track.raw_y) == pytest.approx(
+        (contact.observed_x, contact.observed_y))
+    assert sonar_track.label == "K7" and sonar_track.hostile is False
+    assert sonar_track.course is None
+
+
+def test_surface_radar_detection_is_capped_by_geometric_horizon(monkeypatch):
+    """A surface contact stays below the radar horizon until it closes, even
+    though it is well inside the nominal power-limited surface radar range."""
+    game = Game(seed=85, audio_enabled=False)
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+    game.civilians = []
+    game.flights.flights = []
+    game.asms = []
+    horizon = config.radar_horizon_nm(
+        config.RADAR_ANTENNA_HEIGHT_M, config.RADAR_SURFACE_TARGET_HEIGHT_M)
+    assert horizon < config.RADAR_SURFACE_RANGE_NM  # the case this test guards
+
+    beyond_horizon = SurfaceShip(game.ship.x + horizon + 5.0, game.ship.y,
+                                 random.Random(850), hostile=True)
+    beyond_horizon.emitter = True
+    game.warships = [beyond_horizon]
+    game._update_air_picture()
+    assert f"W-{beyond_horizon.id}" not in game.air_picture._tracks
+
+    within_horizon = SurfaceShip(game.ship.x + horizon - 5.0, game.ship.y,
+                                 random.Random(851), hostile=True)
+    within_horizon.emitter = True
+    game.warships = [within_horizon]
+    game._update_air_picture()
+    assert f"W-{within_horizon.id}" in game.air_picture._tracks
+
+
+def test_weapon_datum_uses_canonical_observed_position(monkeypatch):
+    game = Game(seed=84, audio_enabled=False)
+    target = game.subs[0]
+    contact = Contact(1, target.id, "ping", "sub")
+    contact.player_class = "U_BOOT"
+    contact.range_est = 12.0
+    contact.range_source = "ping"
+    contact.range_seen = contact.last_seen = game.sim_t
+    contact.bearing = 180.0
+    contact.ping_pos = (game.ship.x + 8.0, game.ship.y)
+    contact.tma_pos = (game.ship.x - 8.0, game.ship.y)
+    contact.observed_x, contact.observed_y = game.ship.x, game.ship.y - 6.0
+    game.target = contact
+    game.sonar.contacts[target.id] = contact
+    game.launch_torpedo()
+    assert (game.torpedoes[-1].guidance_x, game.torpedoes[-1].guidance_y) == (
+        contact.observed_x, contact.observed_y)
+
+    update = Mock(return_value=True)
+    monkeypatch.setattr(game.torpedoes[-1], "wire_update", update)
+    game._update_player_torpedoes(0.1)
+    update.assert_called_with(contact.observed_x, contact.observed_y)
+
+
+def test_hfdf_noise_uses_sim_clock_and_is_smooth(monkeypatch):
+    game = Game(seed=85, audio_enabled=False)
+    sub = Sub(game.ship.x + 4.0, game.ship.y, 8.0, 0.0, "diesel_alt",
+              random.Random(85), runtime_catalog=game.runtime_catalog)
+    sub.endurance.phase = "RADIO"
+    sub.endurance.radio_left_s = 10.0
+    sub.x, sub.y = game.ship.x + 4.0, game.ship.y
+    game.subs = [sub]
+    monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
+
+    game.sim_t, game._t = 9.99, 1.0
+    game._update_radio_picture()
+    first = game.radio_picture._tracks[f"H-{sub.id}"].raw_bearing
+    game.radio_picture._tracks.clear()
+    game._t = 10000.0
+    game._update_radio_picture()
+    assert game.radio_picture._tracks[f"H-{sub.id}"].raw_bearing == first
+
+    game.radio_picture._tracks.clear()
+    game.sim_t = 10.01
+    game._update_radio_picture()
+    second = game.radio_picture._tracks[f"H-{sub.id}"].raw_bearing
+    assert abs(game_module.config.angle_diff_deg(second, first)) < .1

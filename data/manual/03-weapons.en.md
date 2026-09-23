@@ -1,0 +1,73 @@
+# 3 Weapons {#station-weapons}
+
+## Purpose {#weapons-purpose}
+
+Weapons control turns a sonar contact into a firing solution. It launches the frigate's wire-guided torpedoes, manages the helicopter's stores (buoys, lightweight torpedoes), streams the Nixie towed decoy and releases the AA gun.
+
+## Displays and instruments {#weapons-displays}
+
+Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state and helicopter stores.
+
+The readiness line is checked top to bottom; the first failed check is shown:
+
+```text
+ BLOCKED: NO TARGET            select or take a contact (M)
+ BLOCKED: AFFILIATION ...      operator marked it FRIEND/NEUTRAL
+ BLOCKED: NO RANGE             ROE STD needs ping/TMA/buoy range
+ BLOCKED: NOT CLASSIFIED       classify as submarine or warship (Sonar C)
+ BLOCKED: NO TORPEDOES / NO TUBE READY / SALVO LIMIT
+ BLOCKED: WEAPONS ROOM DAMAGED
+ WEAPONS FREE                  -> T or Ctrl+Enter
+```
+
+Torpedo run, seen from above:
+
+```text
+ frigate ==wire==> . . . . . /\/\/\/\  ( datum )
+                    mid-course      snake search   seeker on
+                    to datum        +/-15 deg      inside 1.2 NM
+                    (wire update                   -> homes on nearest
+                     every 0.5 s)                     candidate
+```
+
+- Frigate torpedo: 45 kn, 12 NM, two tubes, 60 s reload. Stock per mission is set by the scenario (default 6).
+- Preset depth 10-300 m (default 60 m). A wrong depth is a miss: take depth from a ping, not from TMA.
+- The wire updates the datum from the contact's observed position. Without updates it becomes STALE after 3 s and BROKEN after 12 s; the torpedo then continues to the last datum.
+- The seeker homes on the nearest candidate: that can be a decoy, a whale or a merchant ship. A civilian hit ends the mission.
+- Salvo doctrine SHOOT-LOOK-SHOOT: at most 2 own torpedoes running.
+
+## Keys {#weapons-keys}
+
+<!-- keys:weapons -->
+
+## Standard procedure {#weapons-sop}
+
+<!-- sop:weapons -->
+
+Combat situation:
+
+1. Enemy torpedo reported: stream the Nixie at once (`V`). It lasts 600 s, trails 0.2 NM astern at 10 m; one ready, a second after 60 s.
+2. Keep the counter-attack going: a fresh contact keeps the wire datum on the submarine.
+3. With the helicopter airborne, a lightweight torpedo (`D`) can reach a distant contact faster than the ship's torpedo.
+
+## Rules of engagement {#weapons-roe}
+
+| ROE | Requirement |
+|---|---|
+| STD (start) | Current range (ping, TMA or buoy) and classification submarine or warship |
+| FREE | Classification only; without range the torpedo is aimed 10 NM down the bearing |
+
+HQ switches to FREE by radio after the first hostile submarine is sunk; the player cannot change ROE. A contact marked FRIEND or NEUTRAL in Operations can never be engaged.
+
+## Pro tips {#weapons-tips}
+
+- Fire from inside about 6-8 NM: at 45 kn the torpedo needs 8 minutes for 6 NM, and the submarine hears the launch out to 35 NM and starts evading.
+- Aim the datum ahead of a moving target by keeping TMA running; the wire follows the observation, not the truth.
+- Keep own speed below cavitation while guiding; losing the contact means losing the wire datum.
+- Only two Nixies per mission: stream the first when a torpedo is likely, keep the second for the next attack.
+
+## Not modelled {#weapons-limits}
+
+- No depth charges, ASW rockets or ship-launched ASROC (ASROC is used only by friendly AI warships).
+- No selectable torpedo search pattern (helix, ladder) and no manual enable point: the snake search and the 1.2 NM seeker switch-on are fixed.
+- One torpedo type for the ship and one for the helicopter; no selectable salvo doctrine.

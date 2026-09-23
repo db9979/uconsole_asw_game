@@ -1,0 +1,59 @@
+# 5 Operations / CIC {#station-opz}
+
+## Purpose {#opz-purpose}
+
+Operations (OPZ / CIC) builds the tactical picture above the water: surface and air radar, AIS, released sonar and ESM bearings, manual fusion of reports, NATO affiliation and air defence. It hands designated tracks to Sonar and Weapons.
+
+## Displays and instruments {#opz-displays}
+
+Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `PgUp`/`PgDn`), independent of the chart zoom (wheel, down to 5 NM radius; drag pans; `K` follows).
+
+```text
+ NATO frame colours (operator annotation, not truth)
+   yellow = UNKNOWN   blue = FRIEND   green = NEUTRAL   red = HOSTILE
+
+ report sources:  radar  AIS  sonar(released)  ESM  HFDF  lookout
+ track list:  ID  source  bearing  range  course/speed  age  class
+```
+
+- **Surface radar:** 30 NM, limited by the radar horizon (20 m mast) and target height; submerged submarines are invisible.
+- **Air radar:** 100 NM for aircraft and anti-ship missiles (ASM).
+- Weather reduces range; from sea state 5 clutter and measurement errors increase. Rain costs further range.
+- **AIS:** civilian ships broadcast identity and position; optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
+- **Fusion:** mark 2-8 raw reports (`Space`) and fuse them (`L`) into one operator track; `Shift+L` dissolves it.
+- **Suppression:** `Delete` hides a report locally; `H` shows suppressed reports again.
+
+## Keys {#opz-keys}
+
+<!-- keys:opz -->
+
+## Standard procedure {#opz-sop}
+
+<!-- sop:opz -->
+
+Air defence sequence (missile inbound):
+
+```text
+  40 NM  ASM detected (air radar / ESM seeker bearing)
+  30 NM  ESSM envelope          -> E / Ctrl+Enter (2 fire channels)
+   8 NM  chaff cone             -> G (40 % break-lock, short blindness)
+ 1.5 NM  CIWS                   -> must be released with I
+```
+
+1. Air radar on (`Shift+R`), select the ASM track (`Left`/`Right`).
+2. Chaff and manoeuvre first, then ESSM. Only 6 ESSM are loaded.
+3. Keep CIWS released while missiles are inbound; withheld CIWS never fires.
+
+## Pro tips {#opz-tips}
+
+- Radar is a transmission that hostile ESM can intercept. Switch radars off (EMCON) when stealth matters more than the air picture.
+- Jamming missiles beyond 20 NM give only a home-on-jam (HOJ) bearing; expect range later.
+- Affiliation is your annotation. Marking a contact FRIEND or NEUTRAL blocks every torpedo shot on it.
+- `J` gives a track a shared ID that the whole crew (and Remote Crew browsers) sees.
+- `Enter` confirms an engagement against a live (real-world traffic) contact after you classified it hostile; nothing fires automatically on unclassified contacts.
+
+## Not modelled {#opz-limits}
+
+- No sonobuoy management here: buoys belong to the helicopter station.
+- No automatic track correlation across sensors; fusion is manual.
+- No link-based air control of friendly aircraft.

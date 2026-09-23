@@ -1,0 +1,100 @@
+{
+  "version": 2,
+  "entries": [
+    {
+      "key": "decoy",
+      "name": "Akustischer Dekoy",
+      "life_s": 45.0,
+      "speed_kn": 8.0,
+      "cooldown_s": 60.0,
+      "chance": 0.5,
+      "lines": [
+        [
+          120.0,
+          0.9,
+          8.0
+        ],
+        [
+          75.0,
+          0.4,
+          3.0
+        ]
+      ],
+      "signature_text": "kurzes lautes Rauschen"
+    }
+  ],
+  "profiles": [
+    {
+      "profile_key": "decoy",
+      "reference_key": "reference.decoy",
+      "machine_key": "machine.decoy",
+      "sensor_keys": [],
+      "emitter_keys": [],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.decoy",
+      "hull_type": "unknown",
+      "length_m": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.decoy",
+      "cruise_speed_kn": 8.0,
+      "maximum_speed_kn": 8.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "other"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          120.0,
+          0.9,
+          8.0
+        ],
+        [
+          75.0,
+          0.4,
+          3.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          120.0,
+          0.9,
+          8.0
+        ],
+        [
+          75.0,
+          0.4,
+          3.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.8,
+        40.0,
+        300.0
+      ],
+      "high_speed_broadband": [
+        0.8,
+        40.0,
+        300.0
+      ]
+    }
+  ],
+  "sensors": [],
+  "emitters": [],
+  "weapons": [],
+  "launchers": [],
+  "magazines": [],
+  "countermeasures": []
+}

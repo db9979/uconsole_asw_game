@@ -1,0 +1,328 @@
+#!/usr/bin/python3
+"""Privileged, fixed-purpose NetworkManager helper for U-Jagd Remote Crew."""
+
+import fcntl
+import ipaddress
+import json
+import os
+import select
+import secrets
+import signal
+import stat
+import sys
+import time
+
+
+BUS_NAME = "org.freedesktop.NetworkManager"
+NM_PATH = "/org/freedesktop/NetworkManager"
+NM_IFACE = "org.freedesktop.NetworkManager"
+NM_DEVICE_IFACE = "org.freedesktop.NetworkManager.Device"
+NM_WIRELESS_IFACE = "org.freedesktop.NetworkManager.Device.Wireless"
+NM_ACTIVE_IFACE = "org.freedesktop.NetworkManager.Connection.Active"
+NM_IP4_IFACE = "org.freedesktop.NetworkManager.IP4Config"
+NM_SETTINGS_IFACE = "org.freedesktop.NetworkManager.Settings"
+NM_CONNECTION_IFACE = "org.freedesktop.NetworkManager.Settings.Connection"
+PROPERTIES_IFACE = "org.freedesktop.DBus.Properties"
+SETTINGS_PATH = "/org/freedesktop/NetworkManager/Settings"
+CONNECTION_ID = "u-jagd-hotspot-runtime"
+CONNECTION_UUID = "5d32b4ae-2939-4dc8-80e1-7564746a6167"
+LOCK_PATH = "/run/u-jagd-hotspot.lock"
+WIFI_DEVICE_TYPE = 2
+ACTIVE_ACTIVATED = 2
+WIFI_REQUIRED_CAPABILITIES = 0x08 | 0x20 | 0x40 | 0x200  # CCMP, RSN, AP, 2.4 GHz
+PRIVATE_NETWORKS = tuple(ipaddress.IPv4Network(value) for value in (
+    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"))
+
+
+class HotspotError(Exception):
+    def __init__(self, code):
+        super().__init__(code)
+        self.code = code
+
+
+def emit(payload):
+    sys.stdout.write(json.dumps(payload, ensure_ascii=True, separators=(",", ":")) + "\n")
+    sys.stdout.flush()
+
+
+def acquire_lock():
+    flags = os.O_CREAT | os.O_RDWR | os.O_CLOEXEC
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(LOCK_PATH, flags, 0o600)
+        metadata = os.fstat(descriptor)
+        if (not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != 0
+                or metadata.st_nlink != 1 or metadata.st_mode & 0o077):
+            raise OSError("unsafe hotspot lock")
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return descriptor
+    except OSError:
+        try:
+            os.close(descriptor)
+        except (NameError, OSError):
+            pass
+        raise HotspotError("busy") from None
+
+
+class NetworkManagerHotspot:
+    def __init__(self, dbus_module):
+        self.dbus = dbus_module
+        self.bus = dbus_module.SystemBus()
+        self.nm_object = self.bus.get_object(BUS_NAME, NM_PATH)
+        self.nm = dbus_module.Interface(self.nm_object, NM_IFACE)
+        settings_object = self.bus.get_object(BUS_NAME, SETTINGS_PATH)
+        self.settings = dbus_module.Interface(settings_object, NM_SETTINGS_IFACE)
+        self.device_path = None
+        self.previous_connection = None
+        self.connection_path = None
+        self.active_path = None
+
+    def _properties(self, path):
+        obj = self.bus.get_object(BUS_NAME, path)
+        return self.dbus.Interface(obj, PROPERTIES_IFACE)
+
+    def _get(self, path, interface, name):
+        return self._properties(path).Get(interface, name)
+
+    def _active_connections(self):
+        return tuple(self._get(NM_PATH, NM_IFACE, "ActiveConnections"))
+
+    def _active_for_device(self, device_path, *, exclude=None):
+        for active_path in self._active_connections():
+            try:
+                devices = tuple(self._get(active_path, NM_ACTIVE_IFACE, "Devices"))
+                connection = str(self._get(active_path, NM_ACTIVE_IFACE, "Connection"))
+                if device_path in devices and connection != exclude:
+                    return str(active_path), connection
+            except Exception:
+                continue
+        return None, None
+
+    def _wifi_device(self):
+        try:
+            path = str(self.nm.GetDeviceByIpIface("wlan0"))
+            device_type = int(self._get(path, NM_DEVICE_IFACE, "DeviceType"))
+            interface = str(self._get(path, NM_DEVICE_IFACE, "Interface"))
+        except Exception:
+            raise HotspotError("no_wifi") from None
+        if device_type != WIFI_DEVICE_TYPE or interface != "wlan0":
+            raise HotspotError("no_wifi")
+        try:
+            capabilities = int(self._get(
+                path, NM_WIRELESS_IFACE, "WirelessCapabilities"))
+        except Exception:
+            raise HotspotError("unsupported") from None
+        if capabilities & WIFI_REQUIRED_CAPABILITIES != WIFI_REQUIRED_CAPABILITIES:
+            raise HotspotError("unsupported")
+        return path, interface
+
+    def _delete_stale_profiles(self):
+        for path in self.settings.ListConnections():
+            try:
+                connection = self.dbus.Interface(
+                    self.bus.get_object(BUS_NAME, path), NM_CONNECTION_IFACE)
+                values = connection.GetSettings().get("connection", {})
+                unsaved = bool(self._get(path, NM_CONNECTION_IFACE, "Unsaved"))
+                if (unsaved and str(values.get("id", "")) == CONNECTION_ID
+                        and str(values.get("uuid", "")) == CONNECTION_UUID
+                        and str(values.get("type", "")) == "802-11-wireless"):
+                    for active_path in self._active_connections():
+                        active_connection = str(self._get(
+                            active_path, NM_ACTIVE_IFACE, "Connection"))
+                        if active_connection == str(path):
+                            self.nm.DeactivateConnection(active_path)
+                    connection.Delete()
+            except Exception:
+                continue
+
+    def _settings(self, interface, ssid, password):
+        dbus = self.dbus
+        dictionary = lambda values: dbus.Dictionary(values, signature="sv")
+        return dbus.Dictionary({
+            "connection": dictionary({
+                "id": dbus.String(CONNECTION_ID),
+                "uuid": dbus.String(CONNECTION_UUID),
+                "type": dbus.String("802-11-wireless"),
+                "interface-name": dbus.String(interface),
+                "autoconnect": dbus.Boolean(False),
+            }),
+            "802-11-wireless": dictionary({
+                "ssid": dbus.ByteArray(ssid.encode("ascii")),
+                "mode": dbus.String("ap"),
+                "band": dbus.String("bg"),
+            }),
+            "802-11-wireless-security": dictionary({
+                "key-mgmt": dbus.String("wpa-psk"),
+                "psk": dbus.String(password),
+                "proto": dbus.Array([dbus.String("rsn")], signature="s"),
+                "pairwise": dbus.Array([dbus.String("ccmp")], signature="s"),
+                "group": dbus.Array([dbus.String("ccmp")], signature="s"),
+            }),
+            "ipv4": dictionary({"method": dbus.String("shared")}),
+            "ipv6": dictionary({"method": dbus.String("disabled")}),
+        }, signature="sa{sv}")
+
+    def _wait_for_address(self, timeout=20.0):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                state = int(self._get(self.active_path, NM_ACTIVE_IFACE, "State"))
+                ip_path = str(self._get(self.active_path, NM_ACTIVE_IFACE, "Ip4Config"))
+                if state == ACTIVE_ACTIVATED and ip_path != "/":
+                    for item in self._get(ip_path, NM_IP4_IFACE, "AddressData"):
+                        address = ipaddress.IPv4Address(str(item.get("address", "")))
+                        if any(address in network for network in PRIVATE_NETWORKS):
+                            return str(address)
+            except (ValueError, TypeError):
+                pass
+            except Exception:
+                if self.active_path not in self._active_connections():
+                    break
+            time.sleep(0.1)
+        raise HotspotError("no_address")
+
+    def active(self):
+        try:
+            return (self.active_path in self._active_connections()
+                    and int(self._get(self.active_path, NM_ACTIVE_IFACE, "State"))
+                    == ACTIVE_ACTIVATED)
+        except Exception:
+            return False
+
+    def _wait_inactive(self, timeout=2.0):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if self.active_path not in self._active_connections():
+                return True
+            time.sleep(0.05)
+        return False
+
+    def _wait_activated(self, active_path, timeout=6.0):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            try:
+                if int(self._get(active_path, NM_ACTIVE_IFACE, "State")) == ACTIVE_ACTIVATED:
+                    return True
+                if active_path not in self._active_connections():
+                    return False
+            except Exception:
+                return False
+            time.sleep(0.1)
+        return False
+
+    def start(self):
+        self._delete_stale_profiles()
+        self.device_path, interface = self._wifi_device()
+        _, self.previous_connection = self._active_for_device(self.device_path)
+        suffix_alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        password_alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        ssid = "U-Jagd-" + "".join(secrets.choice(suffix_alphabet) for _ in range(4))
+        password = "".join(secrets.choice(password_alphabet) for _ in range(18))
+        options = self.dbus.Dictionary(
+            {"persist": self.dbus.String("volatile"),
+             "bind-activation": self.dbus.String("dbus-client")}, signature="sv")
+        try:
+            connection, active, _ = self.nm.AddAndActivateConnection2(
+                self._settings(interface, ssid, password), self.device_path, "/", options)
+        except Exception as exc:
+            name = getattr(exc, "get_dbus_name", lambda: "")()
+            if "NotAuthorized" in name or "PermissionDenied" in name:
+                raise HotspotError("authorization") from None
+            raise HotspotError("start") from None
+        self.connection_path = str(connection)
+        self.active_path = str(active)
+        address = self._wait_for_address()
+        return dict(status="running", ssid=ssid, password=password,
+                    address=address, interface=interface)
+
+    def cleanup(self):
+        clean = True
+        if self.active_path is not None:
+            try:
+                if self.active_path in self._active_connections():
+                    self.nm.DeactivateConnection(self.active_path)
+                if not self._wait_inactive():
+                    clean = False
+            except Exception:
+                clean = False
+        if self.previous_connection is not None and self.device_path is not None:
+            try:
+                current_active, current = self._active_for_device(
+                    self.device_path, exclude=self.connection_path)
+                if current is None:
+                    current_active = str(self.nm.ActivateConnection(
+                        self.previous_connection, self.device_path, "/"))
+                    current = self.previous_connection
+                if (current == self.previous_connection
+                        and not self._wait_activated(current_active)):
+                    clean = False
+            except Exception:
+                clean = False
+        return clean
+
+
+def run_service(dbus_module):
+    hotspot = NetworkManagerHotspot(dbus_module)
+    started = False
+    clean = True
+    valid_command = False
+    try:
+        details = hotspot.start()
+        started = True
+        emit(details)
+        while True:
+            readable, _, _ = select.select([sys.stdin.buffer], [], [], 0.25)
+            if readable:
+                command = sys.stdin.buffer.readline(64)
+                valid_command = command in (b"", b"stop\n")
+                break
+            if not hotspot.active():
+                valid_command = False
+                break
+    except HotspotError as exc:
+        emit({"status": "error", "code": exc.code})
+        return 1
+    except KeyboardInterrupt:
+        valid_command = True
+    except Exception:
+        emit({"status": "error", "code": "start"})
+        return 1
+    finally:
+        if (started or hotspot.device_path is not None or hotspot.active_path is not None
+                or hotspot.connection_path is not None):
+            clean = hotspot.cleanup()
+    return 0 if valid_command and clean else 1
+
+
+def main():
+    if os.geteuid() != 0 or sys.argv != [sys.argv[0], "serve"]:
+        emit({"status": "error", "code": "authorization"})
+        return 2
+    try:
+        import dbus
+    except ImportError:
+        emit({"status": "error", "code": "dependency"})
+        return 2
+    try:
+        lock_descriptor = acquire_lock()
+    except HotspotError as exc:
+        emit({"status": "error", "code": exc.code})
+        return 2
+
+    def interrupt(*_):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, interrupt)
+    signal.signal(signal.SIGINT, interrupt)
+    try:
+        return run_service(dbus)
+    except Exception:
+        emit({"status": "error", "code": "start"})
+        return 1
+    finally:
+        os.close(lock_descriptor)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

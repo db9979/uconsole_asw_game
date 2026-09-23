@@ -1,0 +1,391 @@
+{
+  "version": 2,
+  "entries": [
+    {
+      "key": "mil_patrol",
+      "name": "Suchoi Su-33 (Flanker-D)",
+      "nation": "BOREN",
+      "kind": "military",
+      "speed_kn": 480.0,
+      "esm": true,
+      "esm_range_nm": 60.0,
+      "loiter_nm": [
+        15.0,
+        30.0
+      ],
+      "spawn_weight": 1.0,
+      "signature_text": "traegergestuetzter Abfangjaeger, Seepatrouille",
+      "wiki_url": "https://de.wikipedia.org/wiki/Suchoi_Su-33",
+      "default_faction": "FEIND",
+      "rcs_m2": 12.0
+    },
+    {
+      "key": "civil_transit",
+      "name": "Mittelstreckenjet (Airbus-A320-Familie)",
+      "nation": "HANSE",
+      "kind": "civil",
+      "speed_kn": 450.0,
+      "esm": false,
+      "esm_range_nm": 0.0,
+      "loiter_nm": [
+        0.0,
+        0.0
+      ],
+      "spawn_weight": 1.0,
+      "signature_text": "ziviler Transport, nur Radar",
+      "wiki_url": "https://de.wikipedia.org/wiki/Airbus_A320",
+      "default_faction": "NEUTRAL",
+      "rcs_m2": 60.0
+    },
+    {
+      "key": "su_25",
+      "name": "Suchoi Su-25 (Frogfoot)",
+      "nation": "BOREN",
+      "kind": "military",
+      "speed_kn": 380.0,
+      "esm": false,
+      "esm_range_nm": 0.0,
+      "loiter_nm": [
+        10.0,
+        20.0
+      ],
+      "spawn_weight": 0.6,
+      "signature_text": "gepanzertes Erdkampfflugzeug, tiefer Anflug",
+      "wiki_url": "https://de.wikipedia.org/wiki/Suchoi_Su-25",
+      "default_faction": "FEIND",
+      "rcs_m2": 8.0
+    }
+  ],
+  "profiles": [
+    {
+      "profile_key": "mil_patrol",
+      "reference_key": "reference.mil_patrol",
+      "machine_key": "machine.mil_patrol",
+      "sensor_keys": [
+        "sensor.mil_patrol.radar",
+        "sensor.mil_patrol.esm"
+      ],
+      "emitter_keys": [
+        "emitter.mil_patrol.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "civil_transit",
+      "reference_key": "reference.civil_transit",
+      "machine_key": "machine.civil_transit",
+      "sensor_keys": [
+        "sensor.civil_transit.radar",
+        "sensor.civil_transit.ais"
+      ],
+      "emitter_keys": [
+        "emitter.civil_transit.radar"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    },
+    {
+      "profile_key": "su_25",
+      "reference_key": "reference.su_25",
+      "machine_key": "machine.su_25",
+      "sensor_keys": [
+        "sensor.su_25.radar"
+      ],
+      "emitter_keys": [
+        "emitter.su_25.radar",
+        "emitter.su_25.fire_control"
+      ],
+      "launcher_keys": [],
+      "magazine_keys": [],
+      "countermeasure_keys": []
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.mil_patrol",
+      "hull_type": "fixed_wing_aircraft",
+      "length_m": null
+    },
+    {
+      "key": "reference.civil_transit",
+      "hull_type": "fixed_wing_aircraft",
+      "length_m": null
+    },
+    {
+      "key": "reference.su_25",
+      "hull_type": "fixed_wing_aircraft",
+      "length_m": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.mil_patrol",
+      "cruise_speed_kn": 480.0,
+      "maximum_speed_kn": 480.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "other",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          90.0,
+          1.0,
+          4.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          180.0,
+          1.0,
+          6.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ]
+    },
+    {
+      "key": "machine.civil_transit",
+      "cruise_speed_kn": 450.0,
+      "maximum_speed_kn": 450.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "other",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          110.0,
+          1.0,
+          5.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          220.0,
+          1.0,
+          8.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.65,
+        100.0,
+        2500.0
+      ],
+      "high_speed_broadband": [
+        0.65,
+        100.0,
+        2500.0
+      ]
+    },
+    {
+      "key": "machine.su_25",
+      "cruise_speed_kn": 380.0,
+      "maximum_speed_kn": 380.0,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "gas_turbine"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": null,
+      "propulsor_type": "other",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          95.0,
+          1.0,
+          4.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          190.0,
+          1.0,
+          6.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ],
+      "high_speed_broadband": [
+        0.6,
+        80.0,
+        2000.0
+      ]
+    }
+  ],
+  "sensors": [
+    {
+      "key": "sensor.mil_patrol.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.mil_patrol.radar",
+      "synthetic_range_nm": 80.0,
+      "sensitivity_db": -80.0,
+      "cadence_s": 2.0,
+      "bearing_uncertainty_deg": 1.0,
+      "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.mil_patrol.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 60.0,
+      "sensitivity_db": -90.0,
+      "cadence_s": 1.0,
+      "bearing_uncertainty_deg": 2.0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.civil_transit.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.civil_transit.radar",
+      "synthetic_range_nm": 40.0,
+      "sensitivity_db": -75.0,
+      "cadence_s": 5.0,
+      "bearing_uncertainty_deg": 2.0,
+      "range_uncertainty_nm": 0.5,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.civil_transit.ais",
+      "domain": "ais",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 200.0,
+      "sensitivity_db": null,
+      "cadence_s": 5.0,
+      "bearing_uncertainty_deg": null,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.su_25.radar",
+      "domain": "radar",
+      "modes": [
+        "active"
+      ],
+      "emits": true,
+      "emitter_key": "emitter.su_25.radar",
+      "synthetic_range_nm": 40.0,
+      "sensitivity_db": -80.0,
+      "cadence_s": 2.0,
+      "bearing_uncertainty_deg": 1.0,
+      "range_uncertainty_nm": 0.2,
+      "depth_uncertainty_m": null
+    }
+  ],
+  "emitters": [
+    {
+      "key": "emitter.mil_patrol.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": null,
+      "modulation_codes": [
+        "unknown"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "mission_search",
+      "power_class": "medium",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.civil_transit.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": null,
+      "modulation_codes": [
+        "unknown"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "weather_navigation",
+      "power_class": "low",
+      "operating_period_s": 40.0,
+      "on_duration_s": 8.0
+    },
+    {
+      "key": "emitter.su_25.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": null,
+      "modulation_codes": [
+        "unknown"
+      ],
+      "radar_role": "air_search",
+      "operating_mode": "mission_search",
+      "power_class": "medium",
+      "operating_period_s": 12.0,
+      "on_duration_s": 9.0
+    },
+    {
+      "key": "emitter.su_25.fire_control",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        18000000000.0
+      ],
+      "prf_band_hz": [
+        1000,
+        5000
+      ],
+      "modulation_codes": [
+        "frequency_agile",
+        "pulse_doppler"
+      ],
+      "radar_role": "fire_control",
+      "operating_mode": "attack",
+      "power_class": "high",
+      "operating_period_s": 4.0,
+      "on_duration_s": 3.0
+    }
+  ],
+  "weapons": [],
+  "launchers": [],
+  "magazines": [],
+  "countermeasures": []
+}

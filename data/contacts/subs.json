@@ -1,0 +1,5012 @@
+{
+  "version": 2,
+  "entries": [
+    {
+      "key": "diesel_alt",
+      "name": "Altmetall (Diesel, \u00e4lter)",
+      "speed_kn": [
+        6.0,
+        11.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.75,
+      "aggression": 0.5,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Altmetall (Diesel, \u00e4lter)",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich h\u00f6rbar"
+      }
+    },
+    {
+      "key": "aip_modern",
+      "name": "Geisterschw\u00e4rmer (AIP-modern)",
+      "speed_kn": [
+        7.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.85,
+      "aggression": 0.7,
+      "spawn_weight": 1.0,
+      "acoustic": {
+        "label": "Geisterschw\u00e4rmer (AIP-modern)",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "ssn",
+      "name": "Knochenbrecher (Nuklear)",
+      "speed_kn": [
+        12.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 1.0,
+      "spawn_weight": 0.8,
+      "acoustic": {
+        "label": "Knochenbrecher (Nuklear)",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_01",
+      "name": "Type 212CD",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Type 212CD",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_02",
+      "name": "Type 214",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Type 214",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_03",
+      "name": "Virginia-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 1.0,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Virginia-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_04",
+      "name": "Los-Angeles-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.9,
+      "aggression": 0.9,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Los-Angeles-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_05",
+      "name": "Seawolf-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.93,
+      "aggression": 1.0,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Seawolf-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_06",
+      "name": "Astute-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 0.9,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Astute-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_07",
+      "name": "Trafalgar-Klasse",
+      "speed_kn": [
+        8.0,
+        12.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.82,
+      "aggression": 0.6,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Trafalgar-Klasse",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich h\u00f6rbar"
+      }
+    },
+    {
+      "key": "sub_08",
+      "name": "Rubis-Klasse",
+      "speed_kn": [
+        8.0,
+        12.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.8,
+      "aggression": 0.6,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Rubis-Klasse",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich h\u00f6rbar"
+      }
+    },
+    {
+      "key": "sub_09",
+      "name": "Suffren-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 0.9,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Suffren-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_10",
+      "name": "Scorpene-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.86,
+      "aggression": 0.6,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Scorpene-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_11",
+      "name": "Kilo-Klasse",
+      "speed_kn": [
+        8.0,
+        12.0
+      ],
+      "max_depth_m": 200.0,
+      "torpedoes": 4,
+      "quiet": 0.78,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Kilo-Klasse",
+        "propulsion": "Diesel-elektrisch",
+        "blades": [
+          4,
+          5
+        ],
+        "rpm_range": [
+          90.0,
+          220.0
+        ],
+        "tonal_band_hz": [
+          8.0,
+          22.0
+        ],
+        "cavitation_tendency": 0.65,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.4,
+          30.0,
+          250.0
+        ],
+        "signature_text": "Diesel-Propeller, deutlich h\u00f6rbar"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Kilo-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "sub_12",
+      "name": "Improved-Kilo",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.86,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Improved-Kilo",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Kilo-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "sub_13",
+      "name": "Lada-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.86,
+      "aggression": 0.7,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Lada-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Lada-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "sub_14",
+      "name": "Yasen-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.94,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Yasen-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Jassen-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "sub_15",
+      "name": "Oscar-II-Klasse",
+      "speed_kn": [
+        12.0,
+        16.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 12,
+      "quiet": 0.88,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Oscar-II-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Oscar-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "sub_16",
+      "name": "Akula-Klasse",
+      "speed_kn": [
+        12.0,
+        16.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 12,
+      "quiet": 0.88,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Akula-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Akula-Klasse_(U-Boot)",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "sub_17",
+      "name": "Borei-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.95,
+      "aggression": 1.0,
+      "spawn_weight": 0.5,
+      "acoustic": {
+        "label": "Borei-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      },
+      "wiki_url": "https://de.wikipedia.org/wiki/Borei-Klasse",
+      "default_faction": "FEIND"
+    },
+    {
+      "key": "sub_18",
+      "name": "Collins-Klasse",
+      "speed_kn": [
+        14.0,
+        18.0
+      ],
+      "max_depth_m": 400.0,
+      "torpedoes": 8,
+      "quiet": 0.92,
+      "aggression": 0.9,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Collins-Klasse",
+        "propulsion": "elektrisch/Kernantrieb",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          120.0,
+          360.0
+        ],
+        "tonal_band_hz": [
+          12.0,
+          40.0
+        ],
+        "cavitation_tendency": 0.2,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.15,
+          30.0,
+          250.0
+        ],
+        "signature_text": "sehr leise, gleichm\u00e4\u00dfig (Kern?)"
+      }
+    },
+    {
+      "key": "sub_19",
+      "name": "Soryu-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Soryu-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    },
+    {
+      "key": "sub_20",
+      "name": "Taigei-Klasse",
+      "speed_kn": [
+        10.0,
+        13.0
+      ],
+      "max_depth_m": 250.0,
+      "torpedoes": 5,
+      "quiet": 0.88,
+      "aggression": 0.7,
+      "spawn_weight": 0.0,
+      "acoustic": {
+        "label": "Taigei-Klasse",
+        "propulsion": "elektrisch/AIP",
+        "blades": [
+          5,
+          7
+        ],
+        "rpm_range": [
+          45.0,
+          150.0
+        ],
+        "tonal_band_hz": [
+          6.0,
+          25.0
+        ],
+        "cavitation_tendency": 0.15,
+        "category": "U_BOOT",
+        "secondary_tonals": [],
+        "broadband": [
+          0.1,
+          25.0,
+          180.0
+        ],
+        "signature_text": "leise, elektrischer Antrieb"
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "profile_key": "diesel_alt",
+      "reference_key": "reference.diesel_alt",
+      "machine_key": "machine.diesel_alt",
+      "sensor_keys": [
+        "sensor.diesel_alt.sonar",
+        "sensor.diesel_alt.esm"
+      ],
+      "emitter_keys": [
+        "emitter.diesel_alt.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.diesel_alt.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.diesel_alt.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.diesel_alt.decoy"
+      ]
+    },
+    {
+      "profile_key": "aip_modern",
+      "reference_key": "reference.aip_modern",
+      "machine_key": "machine.aip_modern",
+      "sensor_keys": [
+        "sensor.aip_modern.sonar",
+        "sensor.aip_modern.esm"
+      ],
+      "emitter_keys": [
+        "emitter.aip_modern.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.aip_modern.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.aip_modern.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.aip_modern.decoy"
+      ]
+    },
+    {
+      "profile_key": "ssn",
+      "reference_key": "reference.ssn",
+      "machine_key": "machine.ssn",
+      "sensor_keys": [
+        "sensor.ssn.sonar",
+        "sensor.ssn.esm"
+      ],
+      "emitter_keys": [
+        "emitter.ssn.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.ssn.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.ssn.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.ssn.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_01",
+      "reference_key": "reference.sub_01",
+      "machine_key": "machine.sub_01",
+      "sensor_keys": [
+        "sensor.sub_01.sonar",
+        "sensor.sub_01.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_01.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_01.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_01.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_01.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_02",
+      "reference_key": "reference.sub_02",
+      "machine_key": "machine.sub_02",
+      "sensor_keys": [
+        "sensor.sub_02.sonar",
+        "sensor.sub_02.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_02.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_02.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_02.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_02.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_03",
+      "reference_key": "reference.sub_03",
+      "machine_key": "machine.sub_03",
+      "sensor_keys": [
+        "sensor.sub_03.sonar",
+        "sensor.sub_03.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_03.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_03.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_03.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_03.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_04",
+      "reference_key": "reference.sub_04",
+      "machine_key": "machine.sub_04",
+      "sensor_keys": [
+        "sensor.sub_04.sonar",
+        "sensor.sub_04.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_04.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_04.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_04.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_04.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_05",
+      "reference_key": "reference.sub_05",
+      "machine_key": "machine.sub_05",
+      "sensor_keys": [
+        "sensor.sub_05.sonar",
+        "sensor.sub_05.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_05.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_05.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_05.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_05.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_06",
+      "reference_key": "reference.sub_06",
+      "machine_key": "machine.sub_06",
+      "sensor_keys": [
+        "sensor.sub_06.sonar",
+        "sensor.sub_06.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_06.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_06.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_06.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_06.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_07",
+      "reference_key": "reference.sub_07",
+      "machine_key": "machine.sub_07",
+      "sensor_keys": [
+        "sensor.sub_07.sonar",
+        "sensor.sub_07.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_07.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_07.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_07.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_07.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_08",
+      "reference_key": "reference.sub_08",
+      "machine_key": "machine.sub_08",
+      "sensor_keys": [
+        "sensor.sub_08.sonar",
+        "sensor.sub_08.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_08.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_08.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_08.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_08.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_09",
+      "reference_key": "reference.sub_09",
+      "machine_key": "machine.sub_09",
+      "sensor_keys": [
+        "sensor.sub_09.sonar",
+        "sensor.sub_09.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_09.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_09.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_09.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_09.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_10",
+      "reference_key": "reference.sub_10",
+      "machine_key": "machine.sub_10",
+      "sensor_keys": [
+        "sensor.sub_10.sonar",
+        "sensor.sub_10.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_10.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_10.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_10.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_10.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_11",
+      "reference_key": "reference.sub_11",
+      "machine_key": "machine.sub_11",
+      "sensor_keys": [
+        "sensor.sub_11.sonar",
+        "sensor.sub_11.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_11.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_11.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_11.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_11.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_12",
+      "reference_key": "reference.sub_12",
+      "machine_key": "machine.sub_12",
+      "sensor_keys": [
+        "sensor.sub_12.sonar",
+        "sensor.sub_12.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_12.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_12.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_12.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_12.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_13",
+      "reference_key": "reference.sub_13",
+      "machine_key": "machine.sub_13",
+      "sensor_keys": [
+        "sensor.sub_13.sonar",
+        "sensor.sub_13.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_13.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_13.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_13.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_13.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_14",
+      "reference_key": "reference.sub_14",
+      "machine_key": "machine.sub_14",
+      "sensor_keys": [
+        "sensor.sub_14.sonar",
+        "sensor.sub_14.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_14.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_14.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_14.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_14.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_15",
+      "reference_key": "reference.sub_15",
+      "machine_key": "machine.sub_15",
+      "sensor_keys": [
+        "sensor.sub_15.sonar",
+        "sensor.sub_15.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_15.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_15.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_15.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_15.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_16",
+      "reference_key": "reference.sub_16",
+      "machine_key": "machine.sub_16",
+      "sensor_keys": [
+        "sensor.sub_16.sonar",
+        "sensor.sub_16.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_16.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_16.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_16.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_16.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_17",
+      "reference_key": "reference.sub_17",
+      "machine_key": "machine.sub_17",
+      "sensor_keys": [
+        "sensor.sub_17.sonar",
+        "sensor.sub_17.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_17.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_17.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_17.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_17.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_18",
+      "reference_key": "reference.sub_18",
+      "machine_key": "machine.sub_18",
+      "sensor_keys": [
+        "sensor.sub_18.sonar",
+        "sensor.sub_18.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_18.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_18.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_18.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_18.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_19",
+      "reference_key": "reference.sub_19",
+      "machine_key": "machine.sub_19",
+      "sensor_keys": [
+        "sensor.sub_19.sonar",
+        "sensor.sub_19.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_19.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_19.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_19.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_19.decoy"
+      ]
+    },
+    {
+      "profile_key": "sub_20",
+      "reference_key": "reference.sub_20",
+      "machine_key": "machine.sub_20",
+      "sensor_keys": [
+        "sensor.sub_20.sonar",
+        "sensor.sub_20.esm"
+      ],
+      "emitter_keys": [
+        "emitter.sub_20.mast_radar"
+      ],
+      "launcher_keys": [
+        "launcher.sub_20.tubes"
+      ],
+      "magazine_keys": [
+        "magazine.sub_20.torpedoes"
+      ],
+      "countermeasure_keys": [
+        "countermeasure.sub_20.decoy"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "key": "reference.diesel_alt",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.aip_modern",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.ssn",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_01",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_02",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_03",
+      "hull_type": "submarine",
+      "length_m": 114.8
+    },
+    {
+      "key": "reference.sub_04",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_05",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_06",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_07",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_08",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_09",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_10",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_11",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_12",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_13",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_14",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_15",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_16",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_17",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_18",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_19",
+      "hull_type": "submarine",
+      "length_m": null
+    },
+    {
+      "key": "reference.sub_20",
+      "hull_type": "submarine",
+      "length_m": null
+    }
+  ],
+  "machines": [
+    {
+      "key": "machine.diesel_alt",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 11,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel",
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        90,
+        220
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          8,
+          1.0,
+          1.5
+        ],
+        [
+          16,
+          0.5,
+          1.2
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          22,
+          1.0,
+          2.0
+        ],
+        [
+          44,
+          0.5,
+          1.5
+        ]
+      ],
+      "cruise_broadband": [
+        0.4,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.65,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.aip_modern",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    },
+    {
+      "key": "machine.ssn",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 18,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_01",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    },
+    {
+      "key": "machine.sub_02",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    },
+    {
+      "key": "machine.sub_03",
+      "cruise_speed_kn": 12,
+      "maximum_speed_kn": 35,
+      "quiet_speed_kn": 12,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        85,
+        240
+      ],
+      "propulsor_type": "pumpjet",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          10,
+          1.0,
+          0.2
+        ],
+        [
+          20,
+          0.75,
+          0.3
+        ],
+        [
+          40,
+          0.653,
+          0.5
+        ],
+        [
+          80,
+          0.582,
+          0.8
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          0.8
+        ],
+        [
+          50,
+          0.596,
+          1.2
+        ],
+        [
+          100,
+          0.355,
+          1.8
+        ],
+        [
+          200,
+          0.257,
+          2.5
+        ]
+      ],
+      "cruise_broadband": [
+        0.042,
+        10,
+        400
+      ],
+      "high_speed_broadband": [
+        0.158,
+        10,
+        400
+      ]
+    },
+    {
+      "key": "machine.sub_04",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 18,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_05",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 18,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_06",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 18,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_07",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 12,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel",
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        90,
+        220
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          8,
+          1.0,
+          1.5
+        ],
+        [
+          16,
+          0.5,
+          1.2
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          22,
+          1.0,
+          2.0
+        ],
+        [
+          44,
+          0.5,
+          1.5
+        ]
+      ],
+      "cruise_broadband": [
+        0.4,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.65,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_08",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 12,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel",
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        90,
+        220
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          8,
+          1.0,
+          1.5
+        ],
+        [
+          16,
+          0.5,
+          1.2
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          22,
+          1.0,
+          2.0
+        ],
+        [
+          44,
+          0.5,
+          1.5
+        ]
+      ],
+      "cruise_broadband": [
+        0.4,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.65,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_09",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 18,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_10",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    },
+    {
+      "key": "machine.sub_11",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 12,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "diesel",
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        90,
+        220
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          8,
+          1.0,
+          1.5
+        ],
+        [
+          16,
+          0.5,
+          1.2
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          22,
+          1.0,
+          2.0
+        ],
+        [
+          44,
+          0.5,
+          1.5
+        ]
+      ],
+      "cruise_broadband": [
+        0.4,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.65,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_12",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    },
+    {
+      "key": "machine.sub_13",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    },
+    {
+      "key": "machine.sub_14",
+      "cruise_speed_kn": 14,
+      "maximum_speed_kn": 30,
+      "quiet_speed_kn": 14,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        90,
+        220
+      ],
+      "propulsor_type": "propeller",
+      "blade_count": 7,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          0.3
+        ],
+        [
+          24,
+          0.708,
+          0.4
+        ],
+        [
+          48,
+          0.55,
+          0.7
+        ],
+        [
+          96,
+          0.451,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          28,
+          1.0,
+          1.0
+        ],
+        [
+          56,
+          0.501,
+          1.5
+        ],
+        [
+          112,
+          0.299,
+          2.0
+        ],
+        [
+          224,
+          0.182,
+          3.0
+        ]
+      ],
+      "cruise_broadband": [
+        0.05,
+        10,
+        400
+      ],
+      "high_speed_broadband": [
+        0.126,
+        10,
+        400
+      ]
+    },
+    {
+      "key": "machine.sub_15",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 16,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_16",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 16,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_17",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 18,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_18",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 18,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "nuclear_steam"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        120,
+        360
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          12,
+          1.0,
+          1.2
+        ],
+        [
+          24,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          40,
+          1.0,
+          1.8
+        ],
+        [
+          80,
+          0.5,
+          1.4
+        ]
+      ],
+      "cruise_broadband": [
+        0.15,
+        30,
+        250
+      ],
+      "high_speed_broadband": [
+        0.3,
+        30,
+        250
+      ]
+    },
+    {
+      "key": "machine.sub_19",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    },
+    {
+      "key": "machine.sub_20",
+      "cruise_speed_kn": 8,
+      "maximum_speed_kn": 13,
+      "quiet_speed_kn": null,
+      "propulsion_codes": [
+        "electric"
+      ],
+      "motor_rpm": null,
+      "shaft_rpm": [
+        45,
+        150
+      ],
+      "propulsor_type": "unknown",
+      "blade_count": null,
+      "cruise_lines": [
+        [
+          6,
+          1.0,
+          1.2
+        ],
+        [
+          12,
+          0.5,
+          1.0
+        ]
+      ],
+      "high_speed_lines": [
+        [
+          25,
+          1.0,
+          1.5
+        ],
+        [
+          50,
+          0.5,
+          1.2
+        ]
+      ],
+      "cruise_broadband": [
+        0.1,
+        25,
+        180
+      ],
+      "high_speed_broadband": [
+        0.25,
+        25,
+        180
+      ]
+    }
+  ],
+  "endurances": [
+    {
+      "key": "endurance.diesel_alt",
+      "battery_capacity_kwh": 4000,
+      "hotel_load_kw": 120,
+      "propulsion_max_kw": 1600,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 1000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.aip_modern",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_01",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_02",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_07",
+      "battery_capacity_kwh": 4000,
+      "hotel_load_kw": 120,
+      "propulsion_max_kw": 1600,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 1000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_08",
+      "battery_capacity_kwh": 4000,
+      "hotel_load_kw": 120,
+      "propulsion_max_kw": 1600,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 1000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_10",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_11",
+      "battery_capacity_kwh": 4000,
+      "hotel_load_kw": 120,
+      "propulsion_max_kw": 1600,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 1000,
+      "aip_power_kw": null,
+      "aip_energy_kwh": null,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_12",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_13",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_19",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    },
+    {
+      "key": "endurance.sub_20",
+      "battery_capacity_kwh": 5000,
+      "hotel_load_kw": 100,
+      "propulsion_max_kw": 1400,
+      "propulsion_exponent": 3,
+      "generator_power_kw": 900,
+      "aip_power_kw": 250,
+      "aip_energy_kwh": 10000,
+      "reserve_start_fraction": 0.2,
+      "reserve_stop_fraction": 0.8,
+      "snorkel_depth_m": 8,
+      "radio_duration_s": 30
+    }
+  ],
+  "sensors": [
+    {
+      "key": "sensor.diesel_alt.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.diesel_alt.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.aip_modern.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.aip_modern.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.ssn.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.ssn.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_01.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_01.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_02.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_02.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_03.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 60,
+      "sensitivity_db": -112,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 1.5,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_03.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_04.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_04.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_05.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_05.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_06.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_06.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_07.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_07.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_08.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_08.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_09.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_09.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_10.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_10.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_11.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_11.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_12.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_12.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_13.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_13.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_14.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 55,
+      "sensitivity_db": -108,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 1.8,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 18
+    },
+    {
+      "key": "sensor.sub_14.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 90,
+      "sensitivity_db": -98,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2.5,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_15.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_15.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_16.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_16.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_17.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_17.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_18.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_18.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_19.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_19.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    },
+    {
+      "key": "sensor.sub_20.sonar",
+      "domain": "sonar",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 20,
+      "sensitivity_db": -100,
+      "cadence_s": 0.5,
+      "bearing_uncertainty_deg": 0,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": 15
+    },
+    {
+      "key": "sensor.sub_20.esm",
+      "domain": "esm",
+      "modes": [
+        "passive"
+      ],
+      "emits": false,
+      "emitter_key": null,
+      "synthetic_range_nm": 100,
+      "sensitivity_db": -100,
+      "cadence_s": 2,
+      "bearing_uncertainty_deg": 2,
+      "range_uncertainty_nm": null,
+      "depth_uncertainty_m": null
+    }
+  ],
+  "emitters": [
+    {
+      "key": "emitter.diesel_alt.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.aip_modern.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.ssn.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_01.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_02.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_03.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_04.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_05.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_06.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_07.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_08.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_09.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_10.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_11.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_12.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_13.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_14.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_15.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_16.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_17.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_18.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_19.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    },
+    {
+      "key": "emitter.sub_20.mast_radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        8000000000.0,
+        12000000000.0
+      ],
+      "prf_band_hz": [
+        400,
+        1200
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "navigation",
+      "operating_mode": "mast_navigation",
+      "power_class": "low",
+      "operating_period_s": 60.0,
+      "on_duration_s": 6.0
+    }
+  ],
+  "weapons": [
+    {
+      "key": "weapon.diesel_alt.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.aip_modern.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.ssn.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_01.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_02.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_03.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_04.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_05.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_06.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_07.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_08.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_09.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_10.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_11.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_12.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_13.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_14.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_15.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_16.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_17.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_18.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_19.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    },
+    {
+      "key": "weapon.sub_20.torpedo",
+      "weapon_type": "torpedo",
+      "target_domains": [
+        "subsurface",
+        "surface"
+      ],
+      "runtime_profile_key": "enemy_torp",
+      "maximum_speed_kn": 50,
+      "engagement_range_nm": [
+        0,
+        25
+      ],
+      "seeker_type": "acoustic_active",
+      "guidance_type": "homing",
+      "payload_type": "high_explosive"
+    }
+  ],
+  "launchers": [
+    {
+      "key": "launcher.diesel_alt.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 4,
+      "ready_count": 4,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.diesel_alt.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.aip_modern.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.aip_modern.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.ssn.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.ssn.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_01.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_01.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_02.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_02.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_03.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 4,
+      "ready_count": 4,
+      "reload_s": 60,
+      "arc_center_deg": 0,
+      "arc_width_deg": 90,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_03.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_04.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_04.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_05.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_05.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_06.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_06.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_07.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 4,
+      "ready_count": 4,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_07.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_08.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 4,
+      "ready_count": 4,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_08.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_09.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_09.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_10.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_10.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_11.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 4,
+      "ready_count": 4,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_11.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_12.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_12.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_13.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_13.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_14.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 60,
+      "arc_center_deg": 0,
+      "arc_width_deg": 120,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_14.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_15.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 12,
+      "ready_count": 12,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_15.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_16.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 12,
+      "ready_count": 12,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_16.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_17.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_17.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_18.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 8,
+      "ready_count": 8,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_18.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_19.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_19.torpedo"
+      ]
+    },
+    {
+      "key": "launcher.sub_20.tubes",
+      "launcher_type": "torpedo_tube",
+      "mount_count": 5,
+      "ready_count": 5,
+      "reload_s": 0,
+      "arc_center_deg": 0,
+      "arc_width_deg": 360,
+      "vls_cells": null,
+      "weapon_keys": [
+        "weapon.sub_20.torpedo"
+      ]
+    }
+  ],
+  "magazines": [
+    {
+      "key": "magazine.diesel_alt.torpedoes",
+      "weapon_key": "weapon.diesel_alt.torpedo",
+      "mission_count": 4
+    },
+    {
+      "key": "magazine.aip_modern.torpedoes",
+      "weapon_key": "weapon.aip_modern.torpedo",
+      "mission_count": 5
+    },
+    {
+      "key": "magazine.ssn.torpedoes",
+      "weapon_key": "weapon.ssn.torpedo",
+      "mission_count": 8
+    },
+    {
+      "key": "magazine.sub_01.torpedoes",
+      "weapon_key": "weapon.sub_01.torpedo",
+      "mission_count": 5
+    },
+    {
+      "key": "magazine.sub_02.torpedoes",
+      "weapon_key": "weapon.sub_02.torpedo",
+      "mission_count": 5
+    },
+    {
+      "key": "magazine.sub_03.torpedoes",
+      "weapon_key": "weapon.sub_03.torpedo",
+      "mission_count": 24
+    },
+    {
+      "key": "magazine.sub_04.torpedoes",
+      "weapon_key": "weapon.sub_04.torpedo",
+      "mission_count": 8
+    },
+    {
+      "key": "magazine.sub_05.torpedoes",
+      "weapon_key": "weapon.sub_05.torpedo",
+      "mission_count": 8
+    },
+    {
+      "key": "magazine.sub_06.torpedoes",
+      "weapon_key": "weapon.sub_06.torpedo",
+      "mission_count": 8
+    },
+    {
+      "key": "magazine.sub_07.torpedoes",
+      "weapon_key": "weapon.sub_07.torpedo",
+      "mission_count": 4
+    },
+    {
+      "key": "magazine.sub_08.torpedoes",
+      "weapon_key": "weapon.sub_08.torpedo",
+      "mission_count": 4
+    },
+    {
+      "key": "magazine.sub_09.torpedoes",
+      "weapon_key": "weapon.sub_09.torpedo",
+      "mission_count": 8
+    },
+    {
+      "key": "magazine.sub_10.torpedoes",
+      "weapon_key": "weapon.sub_10.torpedo",
+      "mission_count": 5
+    },
+    {
+      "key": "magazine.sub_11.torpedoes",
+      "weapon_key": "weapon.sub_11.torpedo",
+      "mission_count": 4
+    },
+    {
+      "key": "magazine.sub_12.torpedoes",
+      "weapon_key": "weapon.sub_12.torpedo",
+      "mission_count": 5
+    },
+    {
+      "key": "magazine.sub_13.torpedoes",
+      "weapon_key": "weapon.sub_13.torpedo",
+      "mission_count": 5
+    },
+    {
+      "key": "magazine.sub_14.torpedoes",
+      "weapon_key": "weapon.sub_14.torpedo",
+      "mission_count": 32
+    },
+    {
+      "key": "magazine.sub_15.torpedoes",
+      "weapon_key": "weapon.sub_15.torpedo",
+      "mission_count": 12
+    },
+    {
+      "key": "magazine.sub_16.torpedoes",
+      "weapon_key": "weapon.sub_16.torpedo",
+      "mission_count": 12
+    },
+    {
+      "key": "magazine.sub_17.torpedoes",
+      "weapon_key": "weapon.sub_17.torpedo",
+      "mission_count": 8
+    },
+    {
+      "key": "magazine.sub_18.torpedoes",
+      "weapon_key": "weapon.sub_18.torpedo",
+      "mission_count": 8
+    },
+    {
+      "key": "magazine.sub_19.torpedoes",
+      "weapon_key": "weapon.sub_19.torpedo",
+      "mission_count": 5
+    },
+    {
+      "key": "magazine.sub_20.torpedoes",
+      "weapon_key": "weapon.sub_20.torpedo",
+      "mission_count": 5
+    }
+  ],
+  "countermeasures": [
+    {
+      "key": "countermeasure.diesel_alt.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.aip_modern.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.ssn.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_01.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_02.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_03.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_04.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_05.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_06.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_07.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_08.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_09.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_10.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_11.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_12.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_13.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_14.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_15.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_16.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_17.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_18.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_19.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    },
+    {
+      "key": "countermeasure.sub_20.decoy",
+      "effect_type": "acoustic_decoy",
+      "payload_key": "decoy",
+      "mission_count": 12,
+      "ready_count": 2,
+      "reload_s": 60
+    }
+  ]
+}

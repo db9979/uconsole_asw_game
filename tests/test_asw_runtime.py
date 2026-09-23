@@ -153,16 +153,31 @@ def test_asroc_rejects_land_or_out_of_range_datum():
 
 
 def test_towed_acoustic_decoy_is_bounded_to_ownship_and_finite():
-    ship = SimpleNamespace(x=10.0, y=10.0, course=90.0)
+    ship = SimpleNamespace(x=10.0, y=10.0, course=90.0, speed=15.0)
     decoy = TowedAcousticDecoy(1, ship, life_s=10, tether_nm=.2, depth_m=10)
-    assert (decoy.x, decoy.y) == pytest.approx((9.8, 10.0))
+    # At the design tow speed it streams at its design depth, almost the
+    # full cable length astern.
+    assert decoy.depth == pytest.approx(10.0)
+    assert decoy.x == pytest.approx(9.8, abs=1e-3) and decoy.y == pytest.approx(10.0)
     ship.x, ship.course = 20, 0
     decoy.update(5, ship, ocean())
-    assert (decoy.x, decoy.y) == pytest.approx((20, 10.2))
+    # The cable lags the turn: still mostly astern of the old heading.
+    assert decoy.x < 20.0 and decoy.y > 10.0
     decoy.update(5, ship, ocean())
     assert decoy.dead and decoy.state == "SASE"
     assert TowedAcousticDecoy.restore(decoy.serialize(), ship).serialize() \
         == decoy.serialize()
+
+
+def test_towed_decoy_depth_follows_speed_and_cable_parts_when_overspeeding():
+    slow = SimpleNamespace(x=0.0, y=0.0, course=0.0, speed=5.0)
+    fast = SimpleNamespace(x=0.0, y=0.0, course=0.0, speed=20.0)
+    deep = TowedAcousticDecoy(1, slow, life_s=60, tether_nm=.2, depth_m=10)
+    shallow = TowedAcousticDecoy(2, fast, life_s=60, tether_nm=.2, depth_m=10)
+    assert deep.depth > 3 * shallow.depth
+    fast.speed = 27.0
+    shallow.update(1.0, fast, ocean())
+    assert shallow.dead
 
 
 def test_enemy_torpedo_uses_datum_until_terminal_search():

@@ -26,11 +26,11 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
              4           15        25
 ```
 
-- Own noise rises linearly from 4 kn to 25 kn. From 15 kn the propellers cavitate: noise is at least 0.85 and passive sonar range is cut to 35 %.
+- Own noise rises linearly from 4 kn to 25 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
 - QUIET mode reduces own noise to 65 % and limits speed to 12 kn.
-- Shaft RPM is about 20 + 2.4 x speed. The own shaft line on LOFAR moves with speed.
+- Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.
 - Machinery damage caps speed at 15 kn (damaged) or 8 kn (destroyed).
-- Fuel burn grows with speed. With empty tanks the shaft stops and no engine order is accepted.
+- Fuel burn follows the power the propellers deliver: at steady speed it grows with the cube of speed, accelerating and braking cost extra. A lighter ship (burnt fuel) accelerates slightly faster; floodwater makes it slower and deeper. Heavy seas add resistance and cost up to about 1 kn at FULL. With empty tanks the shaft stops and no engine order is accepted.
 
 ## Keys {#engine-keys}
 

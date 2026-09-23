@@ -6,6 +6,7 @@ import random
 
 from src.core import config
 from src.world.coastline import Coastline
+from src.world.ocean import OceanEnvironment
 from src.world.grounding import (DEFAULT_HULL_SPEC, grounding_contact,
                                  hull_is_safe, swept_grounding)
 
@@ -50,6 +51,10 @@ class World:
                            for _ in range(grid_n)]
         self._current_v = [[current_rng.uniform(-1.0, 1.0) for _ in range(grid_n)]
                            for _ in range(grid_n)]
+        # Physics upgrade: time-varying ocean (tides, mixed layer, sound
+        # speed, wind drift, seabed, hazards). Built from stateless seeded
+        # draws, so no existing RNG sequence moves.
+        self.ocean = OceanEnvironment(seed, self.size_nm, self.charted_depth_m)
 
     @staticmethod
     def _weather_endpoint(rng_state, sea_state: int) -> dict:
@@ -172,15 +177,35 @@ class World:
         d = field[y1][x1]
         return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty
 
-    def depth_m(self, x_nm: float, y_nm: float) -> float:
+    def charted_depth_m(self, x_nm: float, y_nm: float) -> float:
+        """Chart datum depth: bathymetry without tide or hazards."""
         if self.coast.has_bathymetry:
             return self.coast.depth_m(x_nm, y_nm)
         return self._cell(x_nm, y_nm, self._depth)
 
+    def _actual(self, charted: float, x_nm: float, y_nm: float) -> float:
+        if charted <= 0.0:
+            return charted
+        depth = charted + self.ocean.tide_m(x_nm, y_nm, charted)
+        rock = self.ocean.rock_top_depth_m(x_nm, y_nm)
+        if rock is not None:
+            depth = min(depth, rock)
+        return max(0.0, depth)
+
+    def tide_m(self, x_nm: float, y_nm: float) -> float:
+        """Current tidal height above chart datum at this position."""
+        return self.ocean.tide_m(x_nm, y_nm, self.charted_depth_m(x_nm, y_nm))
+
+    def depth_m(self, x_nm: float, y_nm: float) -> float:
+        """Actual water depth now: chart datum + tide, shoaled by rocks."""
+        return self._actual(self.charted_depth_m(x_nm, y_nm), x_nm, y_nm)
+
     def physical_depth_m(self, x_nm: float, y_nm: float) -> float:
         if self.coast.has_bathymetry:
-            return self.coast.physical_depth_m(x_nm, y_nm)
-        return self._cell(x_nm, y_nm, self._depth)
+            charted = self.coast.physical_depth_m(x_nm, y_nm)
+        else:
+            charted = self._cell(x_nm, y_nm, self._depth)
+        return self._actual(charted, x_nm, y_nm)
 
     def grounding_contact(self, x_nm, y_nm, course_deg,
                           hull=DEFAULT_HULL_SPEC):
@@ -211,8 +236,19 @@ class World:
         raise ValueError("no hull-safe start found")
 
     def thermocline_depth_m(self, x_nm: float, y_nm: float) -> float:
-        measured = self._cell(x_nm, y_nm, self._thermo)
+        """Mixed-layer depth now: seasonal base, diurnal heating, wind
+        mixing and internal waves; capped above the bottom."""
+        base = self._cell(x_nm, y_nm, self._thermo)
+        measured = self.ocean.mixed_layer_depth_m(base, self.hour, x_nm, y_nm)
         return min(measured, max(10.0, self.depth_m(x_nm, y_nm) - 20.0))
+
+    def sound_speed_m_s(self, depth_m: float, x_nm: float, y_nm: float) -> float:
+        """Mackenzie sound speed from the modelled temperature profile."""
+        return self.ocean.sound_speed_m_s(
+            depth_m, self.thermocline_depth_m(x_nm, y_nm), self.hour)
+
+    def seabed_at(self, x_nm: float, y_nm: float) -> str:
+        return self.ocean.sediment_at(x_nm, y_nm)
 
     def current_vec(self, x_nm: float, y_nm: float) -> tuple[float, float]:
         """W2: Meeresstroemung in kn (u=Ost/+x, v=Nord/-y - Positionskonvention).
@@ -222,7 +258,9 @@ class World:
         Thermokline)."""
         u = self._cell(x_nm, y_nm, self._current_u) * config.CURRENT_MAX_KN
         v = self._cell(x_nm, y_nm, self._current_v) * config.CURRENT_MAX_KN
-        return u, v
+        # Wind-driven surface drift (3 % of wind, deflected to the right).
+        du, dv = self.ocean.wind_drift_kn(self.wind_from_deg, self.wind_speed_kn)
+        return u + du, v + dv
 
     # --- W3: Land / Küsten ---
 
@@ -251,9 +289,21 @@ class World:
 
     # --- W2: Schallfeld ---
 
-    def echo_delay_s(self, dist_nm: float) -> float:
-        """Echolatenz eines Pings: 2*R / Schallgeschwindigkeit (Salzwasser)."""
-        return (dist_nm * 1852.0 * 2.0) / config.SOUND_SPEED_M_S
+    def echo_delay_s(self, dist_nm: float, x_nm: float | None = None,
+                     y_nm: float | None = None) -> float:
+        """Echolatenz eines Pings: 2*R / Schallgeschwindigkeit (Salzwasser).
+
+        With a position, the modelled mean sound speed of the upper 200 m
+        at that point is used; without one, the nominal constant."""
+        speed = (config.SOUND_SPEED_M_S if x_nm is None or y_nm is None
+                 else self.mean_sound_speed_m_s(x_nm, y_nm))
+        return (dist_nm * 1852.0 * 2.0) / speed
+
+    def mean_sound_speed_m_s(self, x_nm: float, y_nm: float) -> float:
+        depth = max(10.0, min(200.0, self.depth_m(x_nm, y_nm)))
+        samples = [self.sound_speed_m_s(depth * (i + 0.5) / 4.0, x_nm, y_nm)
+                   for i in range(4)]
+        return sum(samples) / len(samples)
 
     # --- Wetter / Tageszyklus ---
 
@@ -261,6 +311,7 @@ class World:
         # Eine Simulationssekunde ist bei 1x eine reale Sekunde.
         self.hour = (self.hour + dt * config.GAME_TIME_PER_SEC / 60.0) % 24.0
         self.weather_shift_timer += dt
+        self.ocean.update(dt, self.wind_speed_kn)
         while self.weather_shift_timer >= config.WEATHER_SHIFT_PERIOD_S:
             self.weather_shift_timer -= config.WEATHER_SHIFT_PERIOD_S
             d = self.rng.choice([-1, 0, 0, 1])

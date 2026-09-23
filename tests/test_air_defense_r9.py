@@ -28,6 +28,9 @@ def game():
     result = Game(seed=909, start_menu=False, audio_enabled=False)
     result.sim_t = 10.0
     result.mission.asm_count = 0
+    # Test missiles sit due east; start with the CIWS mount already slewed
+    # there so single-update engagements are not waiting on the mount.
+    result.ciws_mount_deg = 90.0
     return result
 
 
@@ -158,7 +161,7 @@ def test_fresh_own_radar_supersedes_retained_stale_datalink(game, monkeypatch):
     for controller in sender.sensor_suite.controllers.values():
         controller.next_scan_s = 11.0
     game._update_platform_sensors(.25)
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     track = game.air_picture._tracks[f"M-{missile.seq}"]
     assert track.source == "RADAR-L"
@@ -180,7 +183,7 @@ def test_equal_time_own_radar_supersedes_datalink(game, monkeypatch):
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
 
     game._update_platform_sensors(.25)
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     track = game.air_picture._tracks[f"M-{missile.seq}"]
     assert track.source == "RADAR-L"
@@ -366,7 +369,7 @@ def test_sam_sequence_must_match_consumed_inventory(game, offset):
     assert game.save_state() == before
 
 
-def test_exact_pre_r9_v10_file_upgrades_without_mutating_input(game, tmp_path):
+def test_exact_pre_r9_shape_is_rejected_without_mutating_input(game, tmp_path):
     current = game.save_state()
     legacy = copy.deepcopy(current)
     del legacy["air_defense"]
@@ -378,11 +381,12 @@ def test_exact_pre_r9_v10_file_upgrades_without_mutating_input(game, tmp_path):
     path = tmp_path / "pre-r9-v10.json"
     path.write_text(json.dumps(legacy), encoding="utf-8")
 
+    before = game.save_state()
     assert not game._load_save_data(legacy)
-    assert game.load_game(str(path))
+    assert not game.load_game(str(path))
 
     assert legacy == original
-    assert game.save_state()["air_defense"]["sam_remaining"] == legacy["vls_cells"]
+    assert game.save_state() == before
 
 
 def test_integrated_softkill_and_datalink_split_run(game, monkeypatch):
@@ -424,3 +428,19 @@ def test_integrated_softkill_and_datalink_split_run(game, monkeypatch):
     assert current_track.source in ("DATALINK", "RADAR-L")
     assert restored_track == current_track
     assert restored.save_state()["rngs"]["asm"] == game.save_state()["rngs"]["asm"]
+
+
+def test_ciws_mount_must_slew_onto_the_track_before_firing(game):
+    missile = ASM(game.ship.x + 1, game.ship.y, 0, 1, game.rng_asm)
+    missile.speed_kn = 0
+    game.asms = [missile]
+    observe_asm(game, missile)
+    game.rng_asm.random = lambda: 1.0
+    game.ciws_mount_deg = 270.0          # pointing the wrong way
+    before = game.ciws_ammo
+    game._update_air_defense(.1, publish_picture=False)
+    assert game.ciws_ammo == before and game.ciws_mount_deg != 270.0
+    for _ in range(20):                  # 180 deg at 115 deg/s
+        observe_asm(game, missile)
+        game._update_air_defense(.1, publish_picture=False)
+    assert game.ciws_ammo < before

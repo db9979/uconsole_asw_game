@@ -170,6 +170,7 @@ RADAR_AIR_RANGE_NM = 100.0
 # KAMPFSCHIFF (Kontakt-DB): feindliche Kriegsschiffe loiteren um ihre Basis
 # und feuern ASM-Salven, wenn die Fregatte in Reichweite ist.
 WARSHIP_ASM_RANGE_NM = 35.0    # Abstand, ab dem Salven möglich sind
+WARSHIP_TORPEDO_DECOYS = 2       # acoustic decoys a combatant can stream
 WARSHIP_TORPEDO_EVADE_S = 90.0  # W2: Torpedoalarm -> harte Wende, dann weiter
 
 # M5: Schadensmodell (Raten in sim-Sekunden)
@@ -255,6 +256,7 @@ SHIP_YAW_DAMPING = 2.0
 SHIP_LIST_DEG_PER_FLOOD_PCT = 0.15
 SHIP_MAX_LIST_DEG = 15.0
 SHIP_LIST_YAW_GAIN = 0.05        # deg/s of persistent yaw pull per degree of list
+TAS_AMBIGUITY_RESOLVE_DEG = 20.0   # own turn that resolves TAS left/right
 CAVITATION_KN = 15.0            # Schraubenkavitation ab dieser Fahrt
 CAVITATION_PASSIVE_FACTOR = 0.35   # passives Sonar bei Kavitation: Sensor "bricht"
 SEA_STATE_SONAR_FACTOR = 0.06     # passiver Reichweiten-Abzug pro Seegang-Grad
@@ -438,7 +440,6 @@ RAID_WAVE_SIZE = (1, 2)
 RAID_SPAWN_DIST_NM = (110.0, 140.0)
 RAID_MAX_CONCURRENT = 3
 RAIDER_ATTACK_WINDOW_S = 90.0
-RAIDER_TURN_DEG_S = 4.0
 
 # M15: HSP-5 (Sea Lynx)
 HELO_SPEED_KN = 120.0

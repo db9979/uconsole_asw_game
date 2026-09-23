@@ -34,6 +34,9 @@ class SensorTrack:
     derived_course: float | None = None
     derived_speed: float | None = None
     altitude_m: float | None = None
+    # HF intercepts: measured carrier frequency and propagation mode.
+    frequency_hz: float | None = None
+    propagation: str | None = None
 
     def age(self, now: float) -> float:
         return max(0.0, now - self.last_seen)
@@ -126,7 +129,9 @@ class TrackPicture:
                 hostile: bool = False, jamming: bool = False,
                 position_time: float | None = None,
                 bearing_uncertainty_deg: float | None = None,
-                altitude_m: float | None = None) -> SensorTrack:
+                altitude_m: float | None = None,
+                frequency_hz: float | None = None,
+                propagation: str | None = None) -> SensorTrack:
         raw_bearing = bearing % 360.0
         x = y = None
         if range_nm is not None:
@@ -155,7 +160,8 @@ class TrackPicture:
                 position_seen=(position_time if position_time is not None else now)
                 if x is not None else None,
                 bearing_uncertainty_deg=bearing_uncertainty_deg,
-                altitude_m=altitude_m)
+                altitude_m=altitude_m, frequency_hz=frequency_hz,
+                propagation=propagation)
             measurement["track_bearing"] = track.bearing
             self._tracks[track_id] = track
         else:
@@ -179,6 +185,8 @@ class TrackPicture:
             track.raw_x, track.raw_y = x, y
             track.raw_course = course
             track.bearing_uncertainty_deg = bearing_uncertainty_deg
+            track.frequency_hz = frequency_hz
+            track.propagation = propagation
             if altitude_m is not None:
                 track.altitude_m = (
                     altitude_m if track.altitude_m is None

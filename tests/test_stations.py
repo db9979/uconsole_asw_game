@@ -145,7 +145,7 @@ def test_save_load_restores_navigation_ui_state():
     assert restored.map_view.scale == 4.0
 
 
-def test_save_load_restores_independent_opz_map_and_accepts_prior_ui():
+def test_save_load_restores_independent_opz_map_and_rejects_prior_ui():
     game = Game(seed=31415, start_menu=False)
     game.opz_map_follow = False
     game.opz_map_view.cx = 210.0
@@ -163,10 +163,8 @@ def test_save_load_restores_independent_opz_map_and_accepts_prior_ui():
                 "opz_map_follow"):
         del data["ui"][key]
     legacy = Game(seed=1000, start_menu=False)
-    legacy.load_state(data)
-    assert legacy.opz_map_follow is True
-    assert (legacy.opz_map_view.cx, legacy.opz_map_view.cy) == pytest.approx(
-        (legacy.ship.x, legacy.ship.y))
+    with pytest.raises(ValueError):
+        legacy.load_state(data)
 
 
 def test_escape_requires_explicit_quit_confirmation():

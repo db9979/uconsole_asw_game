@@ -12,14 +12,26 @@ Zeiten in sim-Sekunden, Distanzen in NM.
 import math
 
 from src.core import config
+from src.sonar import tma_lm
+
+# A refinement replaces the grid solution only when it fits clearly better
+# (or uses Doppler); flat bearing-only minima otherwise make it wander.
+LM_ACCEPT_COST_RATIO = 0.8
+LM_MIN_MANOEUVRE = 0.5
+DOPPLER_OBSERVABLE_SPREAD_HZ = 0.05
 
 
 class BearingPoint:
-    __slots__ = ("t", "bearing", "fx", "fy", "fcourse", "uncertainty_deg")
+    __slots__ = ("t", "bearing", "fx", "fy", "fcourse", "uncertainty_deg",
+                 "freq_hz", "fspeed")
 
     def __init__(self, t: float, bearing: float, fx: float, fy: float,
-                 fcourse: float, uncertainty_deg: float = None):
+                 fcourse: float, uncertainty_deg: float = None,
+                 freq_hz: float | None = None, fspeed: float = 0.0):
         self.t = t
+        # Measured (Doppler-shifted) tonal frequency and observer speed.
+        self.freq_hz = freq_hz
+        self.fspeed = fspeed
         self.bearing = bearing % 360.0
         self.fx = fx
         self.fy = fy
@@ -35,12 +47,13 @@ class BearingTrack:
         self.version = 0  # laeuft hoch bei jeder Aenderung -> TMA-Re-Solve-Gate
 
     def add(self, t: float, bearing: float, fx: float, fy: float,
-            fcourse: float, uncertainty_deg: float = None) -> None:
+            fcourse: float, uncertainty_deg: float = None,
+            freq_hz: float | None = None, fspeed: float = 0.0) -> None:
         if self.pts and \
                 t - self.pts[-1].t < config.BEARING_TRACK_MIN_INTERVAL_S:
             return
         self.pts.append(BearingPoint(
-            t, bearing, fx, fy, fcourse, uncertainty_deg))
+            t, bearing, fx, fy, fcourse, uncertainty_deg, freq_hz, fspeed))
         if len(self.pts) > config.BEARING_TRACK_MAX_PTS:
             self.pts.pop(0)
         self.version += 1
@@ -55,12 +68,23 @@ class BearingTrack:
         return max(abs(config.angle_diff_deg(a.fcourse, b.fcourse))
                    for i, a in enumerate(self.pts) for b in self.pts[i + 1:])
 
+    def doppler_observable(self) -> bool:
+        """Enough frequency measurements with a real spread to fix range."""
+        freqs = [p.freq_hz for p in self.pts if p.freq_hz is not None]
+        return (len(freqs) >= tma_lm.MIN_DOPPLER_POINTS
+                and max(freqs) - min(freqs) >= DOPPLER_OBSERVABLE_SPREAD_HZ)
+
 
 class TMASolution:
-    __slots__ = ("pos", "course", "speed", "quality", "rmse_deg", "n_pts")
+    __slots__ = ("pos", "course", "speed", "quality", "rmse_deg", "n_pts",
+                 "ellipse", "f0_hz")
 
     def __init__(self, pos: tuple, course: float, speed: float,
-                 quality: float, rmse_deg: float, n_pts: int):
+                 quality: float, rmse_deg: float, n_pts: int,
+                 ellipse: tuple | None = None, f0_hz: float | None = None):
+        # (semi-major NM, semi-minor NM, orientation deg) at 1 sigma.
+        self.ellipse = ellipse
+        self.f0_hz = f0_hz
         self.pos = pos            # (x, y) NM – Zielposition (letzte Peilung)
         self.course = course      # Zielkurs (°)
         self.speed = speed        # Zielfahrt (kn)
@@ -173,7 +197,8 @@ def solve_tma(track: BearingTrack,
         return None
     if track.span_s() < config.TMA_MIN_SPAN_S:
         return None
-    if track.course_span_deg() < config.TMA_MIN_COURSE_CHG_DEG:
+    doppler = track.doppler_observable()
+    if track.course_span_deg() < config.TMA_MIN_COURSE_CHG_DEG and not doppler:
         return None
     max_range_nm = max_range_nm or config.TMA_MAX_RANGE_NM
 
@@ -225,15 +250,38 @@ def solve_tma(track: BearingTrack,
     rmse, course, speed, pos, quality = best
     # Heading changes alone (including turns in place) do not resolve range.
     # Scale confidence by the actual departure from constant ownship velocity,
-    # relative to angular measurement error at the solved range. This is an
-    # observability heuristic, not a covariance estimate.
+    # relative to angular measurement error at the solved range.
     first, last = pts[0], pts[-1]
     deviation = max(math.hypot(
         p.fx - (first.fx + (last.fx - first.fx) * (p.t - t0) / track.span_s()),
         p.fy - (first.fy + (last.fy - first.fy) * (p.t - t0) / track.span_s()))
         for p in pts)
-    distance = math.hypot(pos[0] - last.fx, pos[1] - last.fy)
     angular_noise = math.radians(sum(p.uncertainty_deg for p in pts) / len(pts))
-    quality *= min(1.0, deviation / max(1e-6, distance * angular_noise))
+
+    def manoeuvre_of(position):
+        distance = math.hypot(position[0] - last.fx, position[1] - last.fy)
+        return min(1.0, deviation / max(1e-6, distance * angular_noise))
+
+    # Levenberg-Marquardt refinement with Doppler and the state covariance;
+    # accepted only where the geometry (own manoeuvre or Doppler) makes range
+    # observable, otherwise flat minima would let it wander.
+    covariance = None
+    f0 = None
+    refined = tma_lm.refine(pts, course, speed, pos)
+    if refined is not None and (
+            refined[7] or (manoeuvre_of(refined[0]) >= LM_MIN_MANOEUVRE
+                           and refined[6] < LM_ACCEPT_COST_RATIO)):
+        pos, course, speed, covariance, f0, rmse = refined[:6]
+        quality = max(0.0, 1.0 - rmse / config.TMA_QUALITY_DB) * min(
+            1.0, len(pts) / (config.TMA_MIN_PTS + 4.0))
+    if covariance is None:
+        covariance = tma_lm.covariance_at(pts, course, speed, pos)
+    ellipse = (tma_lm.ellipse(covariance) if covariance is not None else None)
+    distance = math.hypot(pos[0] - last.fx, pos[1] - last.fy)
+    manoeuvre = manoeuvre_of(pos)
+    if doppler and ellipse is not None:
+        # Doppler observability: judge by the solved range uncertainty.
+        manoeuvre = max(manoeuvre, min(1.0, 1.0 - ellipse[0] / max(distance, 1e-3)))
+    quality *= manoeuvre
     return TMASolution(pos=pos, course=course, speed=speed, quality=quality,
-                       rmse_deg=rmse, n_pts=len(pts))
+                       rmse_deg=rmse, n_pts=len(pts), ellipse=ellipse, f0_hz=f0)

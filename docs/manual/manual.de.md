@@ -77,10 +77,10 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 ### Unterwasserakustik in fünf Minuten
 
 - **Passives Sonar liefert nur Peilung.** Jeder Kontakt beginnt als Peillinie. Entfernung liefern aktiver Ping, TMA, Sonarbojen oder Kreuzpeilung.
-- **Ortung heißt Signal gegen Rauschen.** SNR = 20 log10(wirksame Reichweite / Abstand). Ab SNR >= 0 dB gilt ein Kontakt als geortet. Leise Ziele und hoher Seegang verkürzen die wirksame Reichweite.
+- **Ortung heißt Signal gegen Rauschen.** Es entscheidet die passive Sonargleichung SE = SL - TL - NL + DI - DT: Quellpegel des Ziels (lauter = weiter), Übertragungsverlust (Ausbreitung, Absorption, Schicht- und Pfadverluste), Rauschen (eigenes Rauschen plus Wind, Regen und Schiffsverkehr in der Nähe) und Gewinn der Antenne. Ab SE >= 0 dB gilt ein Kontakt als geortet. Wind und Regen wirken am stärksten, wenn Sie langsam und leise fahren; bei hoher Eigenfahrt dominiert das eigene Rauschen.
 - **Eigene Fahrt ist eigener Lärm.** Der Eigenlärm steigt von 4 kn bis 25 kn. Ab 15 kn kavitieren die Schrauben, die Passivreichweite fällt auf etwa ein Drittel.
-- **Die Sprungschicht (Thermokline) teilt das Wasser.** Liegen Sensor und Ziel auf verschiedenen Seiten, gehen etwa 6,5 dB verloren. Ein Ping in die Schattenzone unter der Schicht erreicht nur 35 % seiner Reichweite.
-- **Konvergenzzonen** bei etwa 40-70 sm und 90-130 sm bringen Schall aus großer Entfernung zurück (+8 dB).
+- **Die Sprungschicht (Thermokline) beugt den Schall.** Die passive Ausbreitung wird als Strahlverfolgung durch das echte Schallgeschwindigkeitsprofil gerechnet: über der Schicht trägt ein Oberflächenkanal den Schall weit, darunter liegt eine einige Meilen breite Schattenzone. In tiefem Wasser ist der Schatten stark; in einigen hundert Metern Wassertiefe füllen Bodenreflexionen und Mehrwege ihn ab etwa 10 sm auf, das Verstecken unter der Schicht wirkt dort vor allem auf kurze Distanz. Ein Ping in die Schattenzone erreicht nur 35 % seiner Reichweite.
+- **Meeresboden und Oberfläche zählen.** Fels und Kies reflektieren gut, Schluff und Schlick schlucken; rauer Seegang streut hohe Frequenzen. **Konvergenzzonen** entstehen nur dort, wo das Wasser tief genug ist, damit die Strahlen wieder nach oben umkehren.
 - **Baffles:** Eigenlärm ist eine weiche 70-Grad-Keule achteraus der Bugsonaranlage (beim Schleppsonar entlang des Kabels). Sie überdeckt, sie blendet nicht vollständig aus.
 
 ```text
@@ -182,10 +182,14 @@ Gefechtslage:
 ### Tipps für Profis
 
 - TMA braucht eine echte Änderung der eigenen Geschwindigkeit. Eine Wende um 30-60 Grad mit anschließend mehreren Minuten ruhigem Schlag liefert die beste Entfernungsschätzung. Drehen auf der Stelle hilft nicht.
-- Das Schiff dreht höchstens 0,8 Grad pro Sekunde und braucht Minuten für Fahrtänderungen. Ausweichmanöver früh beginnen.
+- Die Drehrate wächst mit der Fahrt (etwa 0,75 Grad/s bei 10 kn, 1,2 bei 16 kn, 1,9 bei 25 kn), der Drehkreis bleibt deshalb bei etwa 0,4 NM. Ein gestopptes Schiff kann nicht drehen. Fahrtänderungen brauchen Minuten: etwa 90 s bis 90 % von FULL; ein Stopp aus FULL nutzt Umsteuerung der Propellersteigung und dauert etwa 90 s. Ausweichmanöver früh beginnen.
+- In einer harten Wende mit Fahrt krängt das Schiff einige Grad nach außen; bei schwerer See dämpfen die Flossenstabilisatoren das Rollen, aber nur mit Fahrt durchs Wasser.
+- Im Flachwasser sackt der Rumpf ab (Squat): bei 25 kn wächst der Tiefgang um bis zu 3 m, wenn das Wasser weniger als etwa fünf Tiefgänge tief ist. Im Flachwasser Fahrt reduzieren.
 - Sprint und Drift: mit FULL an eine neue Position, dann auf 4-6 kn gehen und horchen.
 - Starke einseitige Flutung bewirkt Krängung und einen stetigen Drehzug; mit Ruder ausgleichen.
 - Das Schiff kann nicht auf Land fahren (es wird zurückgeschoben), aber Flachwasser begrenzt die Tauchtiefe des Helikoptersonars (10 m Bodenabstand).
+- Die Wassertiefe folgt der Gezeit (halbtägig, etwa 12,4 h, im Flachwasser bis zu einigen Metern). Eine Passage, die bei Hochwasser sicher ist, kann bei Niedrigwasser zur Grundberührung führen; das HQ-Wetterbulletin meldet die aktuelle Gezeit am Schiff.
+- Wind treibt das Oberflächenwasser: etwa 3 % der Windgeschwindigkeit, 20 Grad rechts von der Windrichtung, zusätzlich zur ständigen Meeresströmung.
 
 ### Nicht modelliert
 
@@ -255,9 +259,9 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 
 #### TMA, Umwelt und Aktiv
 
-- **TMA** löst Entfernung, Kurs und Fahrt aus einer Peilungsreihe des fokussierten Kontakts. Nötig sind mindestens 4 Peilungen über 180 s und eine eigene Kursänderung von mindestens 6 Grad; die Entfernung gilt ab Qualität 0,35. Tiefe schätzt TMA nicht.
-- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert.
-- **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung (+/-0,18 sm) und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s.
+- **TMA** löst Entfernung, Kurs und Fahrt aus einer Peilungsreihe des fokussierten Kontakts. Nötig sind mindestens 4 Peilungen über 180 s und eine eigene Kursänderung von mindestens 6 Grad; die Entfernung gilt ab Qualität 0,35. Tiefe schätzt TMA nicht. Eine Gittersuche findet den Bereich, eine Levenberg-Marquardt-Anpassung verfeinert ihn; die Detailzeile zeigt die 1-Sigma-Unsicherheitsellipse. Das stärkste Tonal wird mit seiner Dopplerverschiebung gemessen ("Tonal (Doppler)"): ein nah vorbeiziehendes Ziel verschiebt seine Frequenz, das legt die Entfernung auch ohne eigene Wende fest. Sonobojen-Peilungen gehen mit der Boje als Beobachter in dieselbe Schätzung ein, ein Bojenfeld liefert deshalb schnell Entfernung.
+- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert. Die Schicht ist nicht fest: Nachmittagssonne macht sie flacher (etwa 8 m), starker Wind mischt sie über Stunden tiefer, und interne Wellen verschieben sie um einige Meter. Den BT nach einigen Stunden oder einem Wetterwechsel wiederholen. Das gemessene Profil ist die echte temperaturabhängige Schallgeschwindigkeit (Mackenzie-Gleichung) und fällt deshalb unterhalb der Schicht ab.
+- **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s. `W` wählt den Puls: **CW** (1-s-Ton) misst die Entfernung grob (etwa 0,1-0,3 sm), trennt aber über den Doppler ein bewegtes Ziel vom Nachhall des Meeresbodens; **LFM** (100-Hz-Sweep) misst die Entfernung auf wenige Meter und gewinnt 20 dB gegen Rauschen, ein langsames oder stehendes Ziel bleibt aber im Nachhall. Die Echostärke hängt vom Aspekt (breitseits etwa 15 dB stärker als von vorn) und der Größe des Ziels ab. Felsgrund hallt viel stärker nach als Schlick; kartierte Wracks liefern echte Echos ohne zugehörigen Kontakt ("nicht zugeordnetes Echo").
 
 ### Bugsonar und Schleppsonar
 
@@ -293,6 +297,7 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 | `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
 | `2` | 2 erneut druecken, um die Sonarseite weiterzuschalten |
 | `E` | Bathythermograph: lokales Schallprofil messen |
+| `W` | Aktivpuls CW / LFM |
 | `U / V` | TAS/VDS-Solltiefe um 10 m heben / senken |
 | `R` | Hoerpeilung direkt: 000 bis 359.9 Grad rechtweisend |
 | `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
@@ -336,6 +341,7 @@ Gefechtslage:
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
 - Die TMA-Seite zeigt die aus der Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
+- Die Schleppantenne ist eine Linie: sie kann eine Peilung nicht von ihrem Spiegelbild zum Kabel unterscheiden. Ein nur auf der TAS gehörter Kontakt wird als "TAS links/rechts mehrdeutig" mit Spiegelpeilung markiert und speist keine TMA; die angezeigte Seite stimmt nur in der Hälfte der Fälle. 20 Grad drehen (oder den Kontakt auf die HMS bekommen), dann fällt die falsche Seite weg. Peilungen zu den Kabelenden (Endfire) sind zudem ungenauer als querab.
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
 
 ### Nicht modelliert
@@ -343,7 +349,6 @@ Gefechtslage:
 - Keine manuelle TMA (Punktstapel, manuelle Lösungseingabe); nur der automatische Löser, geschaltet mit `T`.
 - Keine wählbare Split-Window-Normalisierung (TPSW); stattdessen Verstärkung, Schwarzwert und Kontrast nutzen.
 - Kein harter blinder Baffle-Sektor; Eigenlärm ist eine weiche Keule.
-- Keine akustische Dopplerverschiebung tonaler Linien; die Annäherungsrate kommt nur aus der TMA-Lösung.
 - Kein vom TAS getrenntes Tiefensonar (VDS).
 
 ## 3 Waffenzentrale
@@ -410,7 +415,7 @@ Torpedolauf von oben:
 
 Gefechtslage:
 
-1. Feindtorpedo gemeldet: sofort Nixie ausbringen (`V`). Er hält 600 s, läuft 0,2 sm achteraus in 10 m Tiefe; einer bereit, ein zweiter nach 60 s.
+1. Feindtorpedo gemeldet: sofort Nixie ausbringen (`V`). Er hält 600 s an einem 0,2-sm-Kabel; einer bereit, ein zweiter nach 60 s. Bei 15 kn läuft er in 10 m Tiefe, bei langsamer Fahrt tiefer und näher achteraus, über 25 kn reißt das Kabel. In einer Wende läuft das Kabel hinterher.
 2. Den Gegenangriff fortsetzen: ein frischer Kontakt hält das Draht-Datum auf dem U-Boot.
 3. Ist der Helikopter in der Luft, erreicht ein Leichttorpedo (`D`) einen entfernten Kontakt schneller als der Schiffstorpedo.
 
@@ -428,12 +433,17 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 - Aus etwa 6-8 sm oder näher schießen: mit 45 kn braucht der Torpedo 8 Minuten für 6 sm, und das U-Boot hört den Abschuss bis 35 sm und weicht aus.
 - Das Datum vor ein fahrendes Ziel legen, indem TMA weiterläuft; der Draht folgt der Beobachtung, nicht der Wahrheit.
 - Während der Lenkung unter der Kavitationsgrenze bleiben; Kontaktverlust heißt Verlust des Draht-Datums.
+- Der Draht ist ein echtes Kabel: er reißt, wenn das Schiff etwa 5 s lang schneller als 20 kn läuft oder schneller als 1,5 Grad/s dreht, wenn die schiffsseitige Spule (5 sm eigener Weg) abgelaufen ist oder wenn der Torpedo das 1,25-fache seiner Reichweite gelaufen ist.
+- Die Torpedoreichweite kommt aus der Batterie: bei voller Fahrt läuft er die Katalogreichweite, harte Manöver drosseln ihn und sparen Energie; ist die Batterie leer, läuft er einige Sekunden aus und geht verloren. Direkt nach dem Ausstoß dreht er langsamer (fester Drehkreis), und Tiefenänderungen brauchen einen Moment.
+- Der Gefechtskopf hat einen Annäherungszünder: er zündet bei der größten Annäherung innerhalb seines Radius, der Schaden fällt mit dem Abstand (Schockfaktor). Ein knapper Fehlschuss kann ein U-Boot beschädigt entkommen lassen.
+- Ein laufender Torpedo wird vom Ziel über die Sonargleichung gehört: leise Boote hören ihn bei ruhiger See auf einige Meilen, Regen und eigene Fahrt überdecken ihn.
 - Nur zwei Nixies je Mission: den ersten ausbringen, wenn ein Torpedo wahrscheinlich ist, den zweiten für den nächsten Angriff aufheben.
+- Zielsuchköpfe halten den lautesten Kandidaten und wechseln nur, wenn ein anderer deutlich (6 dB) lauter ist. Echos ohne Doppler ignorieren sie, ein schwebendes Ziel ist daher schwer zu finden; ein Torpedo, der einen Täuschkörper ohne Rumpftreffer überläuft, merkt ihn sich und greift erneut an. Täuschkörper gegnerischer U-Boote werden mit leerer werdender Batterie leiser; gegnerische Kriegsschiffe bringen eigene Täuschkörper aus, wenn sie Ihren Torpedostart hören.
 
 ### Nicht modelliert
 
 - Keine Wasserbomben, U-Jagd-Raketen oder vom Schiff gestartetes ASROC (ASROC nutzen nur befreundete KI-Kriegsschiffe).
-- Kein wählbares Torpedo-Suchmuster (Helix, Leiter) und kein manueller Aktivierungspunkt: Schlangensuche und Sucheraktivierung bei 1,2 sm sind fest.
+- Kein wählbares Torpedo-Suchmuster und kein manueller Aktivierungspunkt: Schlangensuche und Sucheraktivierung bei 1,2 sm sind fest (befreundete ASROC-Nutzlasten suchen in einer Helix um ihren Eintauchpunkt).
 - Ein Torpedotyp für das Schiff und einer für den Helikopter; keine wählbare Salvendoktrin.
 
 ## 4 Schadensabwehr
@@ -456,13 +466,16 @@ Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand,
   Zustand: OK -> BESCHÄDIGT / FLUTEND -> ZERSTÖRT     Trupps: 1 2 3
 ```
 
-- **FLUTEND:** das Wasser steigt (0,10 % je Sekunde), bis ein Trupp lenzt. Bei 70 % ist die Abteilung ZERSTÖRT.
-- **BESCHÄDIGT:** stabilisierte Restleckage (0,025 % je Sekunde); braucht weiterhin einen Trupp bis OK.
-- **Brand:** ein Treffer entfacht mit 35 % Wahrscheinlichkeit ein Feuer. Es wächst von selbst und kann auf Nachbarräume übergreifen; bei 100 % ist die Abteilung zerstört.
-- **Gesamtflutung:** das Schiff sinkt bei 540 Punkten, also 60 % mittlerer Flutung über alle neun Abteilungen.
-- **Krängung:** ungleiche Flutung zwischen Backbord- und Steuerbordrumpf lässt das Schiff krängen (bis 15 Grad) und zieht es zu einer Seite.
+- **FLUTEND:** durch ein Leck unter der Wasserlinie dringt Wasser ein. Der Zufluss folgt dem Wasserdruck: anfangs schnell, dann langsamer, je näher der Wasserstand innen der Wasserlinie außen kommt. Hoch liegende Räume (Brücke) fluten durch ein Leck nicht. Bei 70 % ist die Abteilung ZERSTÖRT.
+- **BESCHÄDIGT:** das Leck ist abgedichtet; eine kleine Restleckage bleibt, bis ein Trupp den Raum lenzt.
+- **Leckabdichtsätze:** jedes Abdichten verbraucht einen von 8 Sätzen. Ohne Sätze kann ein Trupp nur gegen das offene Leck lenzen.
+- **Trefferort:** der Einschlagpunkt des Torpedos bestimmt die Abteilung; eine nahe Detonation reißt ein größeres Leck als eine entfernte. Flugkörper treffen über der Wasserlinie und verursachen vor allem Brände.
+- **Brand:** wächst mit der Brandlast des Raums (Maschine, Flugdeck und Magazin brennen am stärksten) und wird von steigendem Wasser erstickt. Ein Raum, der etwa 30 s heiß bleibt, entzündet seine Nachbarn. Eine geflutete Schalttafel (Sonar, OPZ, Funk, Maschine) schließt kurz und löst einen Elektrobrand aus. Ein Brand über 90 % in der Waffenzentrale bringt das Magazin zur Explosion: der Raum ist zerstört, die Nachbarräume sind leckgeschlagen.
+- **Stabilität:** Flutwasser macht das Schiff schwerer, und freie Wasseroberflächen verringern die metazentrische Höhe (GM). Das Schiff sinkt, wenn das Flutwasser die Reserveverdrängung übersteigt, und kentert, wenn GM verloren geht oder die Krängung 35 Grad überschreitet.
+- **Krängung:** außermittiges Flutwasser lässt das Schiff zu dieser Seite krängen und zieht es vom Kurs.
+- **Rudermaschine und Stabilisatoren:** die Rudermaschine liegt achtern unter dem Flugdeck. Ist dieser Raum zerstört, klemmt das Ruder in der letzten Lage, bis der Raum repariert ist. Ein zerstörter Rumpfraum auf einer Seite legt die Flossenstabilisatoren lahm, das Schiff rollt dann im Seegang stärker. Flutwasser macht das Schiff schwerer: es liegt tiefer und beschleunigt langsamer.
 
-Auswirkungen auf Stationen: eine beschädigte Sonarzentrale halbiert die Sonarreichweite; eine beschädigte Maschine begrenzt die Fahrt auf 15 kn, eine zerstörte auf 8 kn; eine beschädigte oder zerstörte Waffenzentrale sperrt Torpedostarts; ein zerstörtes Flugdeck verhindert Start und Landung des Helikopters; eine zerstörte OPZ legt auch ESM lahm.
+Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem Raum stufenlos an Leistung (Sonar- und Radarreichweite sinken allmählich); ein zerstörter Raum legt sie lahm. Eine beschädigte Maschine begrenzt die Fahrt auf 15 kn, eine zerstörte auf 8 kn; eine beschädigte oder zerstörte Waffenzentrale sperrt Torpedostarts; ein zerstörtes Flugdeck verhindert Start und Landung des Helikopters; eine zerstörte OPZ legt auch ESM lahm.
 
 ### Tasten
 
@@ -487,14 +500,14 @@ Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten 
 
 ### Tipps für Profis
 
-- Ein Trupp lenzt 0,12 % je Sekunde, mehr als eine flutende Abteilung zunimmt. Zwei Trupps in einem Raum halbieren die Zeit.
-- Unter 35 % Flutung wechselt ein Raum von FLUTEND auf BESCHÄDIGT; das ist der Moment, einen Trupp zum nächsten Notfall zu schicken.
-- Trupps können keiner zerstörten Abteilung zugewiesen werden. Nicht dort verschwenden.
+- Trupps starten in der OPZ und brauchen je Abteilung etwa 20 s Weg; wirksam sind sie erst nach der Ankunft. Einen Trupp nahe Maschine und Waffenzentrale halten.
+- Ein Trupp dichtet zuerst das Leck ab, dann lenzt er. Leckabdichtsätze sind begrenzt: für Räume unter der Wasserlinie verwenden, nicht für Räume, die schon nicht mehr fluten.
+- Zwei Trupps in einem Raum halbieren die Zeit. Trupps können keiner zerstörten Abteilung zugewiesen werden.
 - Brand neben Maschine oder Waffenzentrale ist am gefährlichsten: er greift auf einsatzkritische Räume über.
 
 ### Nicht modelliert
 
-- Keine einzelnen Besatzungsmitglieder, Verwundeten oder Munitionsexplosionen.
+- Keine einzelnen Besatzungsmitglieder oder Verwundeten; keine Längstrimmung durch Flutung.
 - Kein Gegenfluten; Krängung mit Reparatur und Ruder ausgleichen.
 
 ## 5 OPZ / CIC
@@ -517,8 +530,8 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 
 - **Überwasserradar:** 30 sm, begrenzt durch Radarhorizont (20-m-Mast) und Zielhöhe; getauchte U-Boote sind unsichtbar.
 - **Luftradar:** 100 sm für Flugzeuge und Seezielflugkörper (ASM).
-- Wetter verringert die Reichweite; ab Seegang 5 nehmen Clutter und Messfehler zu. Regen kostet weitere Reichweite.
-- **AIS:** zivile Schiffe senden Identität und Position; optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
+- Die Antenne dreht sich alle 4 s einmal: ein Kontakt wird nur aktualisiert, wenn der Strahl über ihn streicht, und jeder Umlauf erfasst ihn mit einer Wahrscheinlichkeit, die mit der Entfernung sinkt (50 % bei Nennreichweite für ein Schiff in Breitseite; Ziele mit spitzem Aspekt werden später gesehen, schwankende Echos können einen Umlauf verfehlen). Seegangsclutter wächst mit dem Seegang (etwa -5 % bei Seegang 4, -25 % bei 6), Regen dämpft das Echo (-10 % Überwasser, -20 % Luft); ab Seegang 5 nehmen Messfehler zu. Innerhalb 3 sm hält das Such-/Folgeradar des CIWS einen anfliegenden Flugkörper ununterbrochen, solange das CIWS freigegeben ist.
+- **AIS:** zivile Schiffe senden Kurs und Fahrt alle 2-10 s (vor Anker alle 3 min) und ihren Namen etwa alle 6 min. Der UKW-Empfänger hört sie nur in Sichtlinie (etwa 20 NM). Ein Radartrack eines Zivilschiffs zeigt Name und Kurs erst, wenn die passende AIS-Meldung empfangen wurde; Radar allein liefert nur die Position. Optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
 - **Fusion:** 2-8 Rohmeldungen markieren (`Leertaste`) und zu einem Bedienertrack fusionieren (`L`); `Shift+L` löst ihn auf.
 - **Unterdrückung:** `Entf` blendet eine Meldung lokal aus; `H` zeigt unterdrückte Meldungen wieder.
 
@@ -569,7 +582,8 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 ### Tipps für Profis
 
 - Radar ist eine Aussendung, die feindliches ESM auffassen kann. Radare abschalten (EMCON), wenn Tarnung wichtiger ist als das Luftlagebild.
-- Störende Flugkörper jenseits 20 sm liefern nur eine Home-on-Jam-Peilung (HOJ); Entfernung kommt später.
+- Seezielflugkörper fliegen in etwa 20 m Höhe (auf den letzten 5 sm in 5 m): das Radar sieht sie erst innerhalb etwa 20 sm, und ein störender Flugkörper liefert bis zum Durchbrennen nur eine Home-on-Jam-Peilung (HOJ). Flugkörper fliegen trägheitsgelenkt zu ihrem Startdatum; dann muss der Suchkopf das Schiff 1,5 s in seinem Kegel haben, bevor er ansteuert. Angriffsflugzeuge steigen vor jeder Salve für einige Sekunden auf etwa 300 m, um ihr Feuerleitradar aufzuschalten (eine ESM-Warnung und ein früher Radarkontakt).
+- Düppel legt neben dem Schiff eine Wolke, die in etwa 3 s aufblüht und mit dem Wind treibt; früh genug werfen, damit die Wolke aufblühen kann. Das CIWS muss erst auf den Flugkörper schwenken und trifft meist auf den letzten paar hundert Metern.
 - Zugehörigkeit ist Ihr Vermerk. Ein als FREUND oder NEUTRAL markierter Kontakt sperrt jeden Torpedoschuss darauf.
 - `J` vergibt eine gemeinsame Track-ID, die die ganze Crew (und Remote-Crew-Browser) sieht.
 - `Enter` bestätigt einen Angriff auf einen Live-Kontakt (echter Verkehr), nachdem Sie ihn als feindlich klassifiziert haben; auf unklassifizierte Kontakte wird nie automatisch gefeuert.
@@ -601,7 +615,8 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
    Pos B *------------------/
 ```
 
-- Der Peilfehler beträgt +/-8 Grad; Signale älter als 30 s lassen sich nicht mehr protokollieren.
+- Der Peilfehler beträgt +/-8 Grad bei Bodenwelle und +/-16 Grad bei Raumwelle; Signale älter als 30 s lassen sich nicht mehr protokollieren.
+- Jedes Signal zeigt Frequenz und Ausbreitung. Ein U-Boot, das eine ferne Landstation ruft, wählt tagsüber eine hohe Frequenz (Bodenwelle bis etwa 95 sm hörbar) und nachts eine niedrigere (etwa 150 sm). Jenseits der Sprungdistanz, einige hundert sm entfernt, kommt stattdessen die Raumwelle an.
 - Protokollierte Linien und Kreuzpeilungen erscheinen auf den Karten von Brücke, Waffenzentrale und Helikopter.
 - Eine zweite Peilung desselben Signals ergibt eine Kreuzpeilung, wenn sie mindestens 1 sm entfernt von der ersten und innerhalb von 300 s genommen wird.
 - Der Fernschreiber bringt außerdem alle 30 Minuten den Wetterbericht und HQ-Meldungen (Bedrohungswarnungen, ROE FREI).
@@ -630,7 +645,7 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
 ### Nicht modelliert
 
 - Keine eigenen Funksprüche oder Meldungen an das HQ; kein Fernmeldeplan und keine Kryptierung.
-- Keine Frequenzabstimmung: HFDF listet die erfassten Signale direkt.
+- Keine Frequenzabstimmung: HFDF überwacht das ganze KW-Band und listet die erfassten Signale mit ihrer Frequenz.
 
 ## 7 Maschinenraum
 
@@ -660,11 +675,11 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
              4           15        25
 ```
 
-- Der Eigenlärm steigt linear von 4 kn bis 25 kn. Ab 15 kn kavitieren die Schrauben: der Lärm liegt bei mindestens 0,85, die passive Sonarreichweite fällt auf 35 %.
+- Der Eigenlärm steigt linear von 4 kn bis 25 kn. Die Schrauben kavitieren, wenn die Flügelspitzengeschwindigkeit für den Wasserdruck an den Schrauben zu hoch ist: bei ruhiger See ab 15 kn, bei schwerer See früher, wenn das Stampfen das Heck anhebt. Kavitation hebt den Lärm auf mindestens 0,85 und senkt die passive Sonarreichweite auf 35 %.
 - Modus LEISE senkt den Eigenlärm auf 65 % und begrenzt die Fahrt auf 12 kn.
-- Die Wellendrehzahl beträgt etwa 20 + 2,4 x Fahrt. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
+- Die Wellendrehzahl folgt dem Festpropeller: bei konstanter Fahrt etwa 5,8 U/min je Knoten (146 U/min bei 25 kn). Beim Beschleunigen hält das Fahrprogramm die Welle höchstens etwa 11 U/min vor der aktuellen Fahrt; beim Abbremsen wird die Steigung umgesteuert und die Welle läuft mit 20 U/min im Leerlauf. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
 - Maschinenschaden begrenzt die Fahrt auf 15 kn (beschädigt) oder 8 kn (zerstört).
-- Der Kraftstoffverbrauch steigt mit der Fahrt. Mit leeren Tanks steht die Welle, und kein Maschinenbefehl wird angenommen.
+- Der Kraftstoffverbrauch folgt der abgegebenen Propellerleistung: bei konstanter Fahrt wächst er mit der dritten Potenz der Fahrt, Beschleunigen und Bremsen kosten zusätzlich. Ein leichteres Schiff (verbrauchter Kraftstoff) beschleunigt etwas schneller; Flutwasser macht es langsamer und tiefer. Schwere See erhöht den Widerstand und kostet bei FULL bis etwa 1 kn. Mit leeren Tanks steht die Welle, und kein Maschinenbefehl wird angenommen.
 
 ### Tasten
 
@@ -722,10 +737,10 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
    AKTIV: Entfernung + Peilung alle 30 s            aktiv  14 sm
 ```
 
-- **Kraftstoff:** 2 Stunden. Der Helikopter kehrt automatisch zurück, wenn nur noch die 20-Minuten-Reserve bleibt. Leerfliegen vor der Landung kostet die Maschine.
-- **Startgrenzen:** Wind bis 32 kn, Seitenwind bis 22 kn, Sicht mindestens 2 sm, Seegang höchstens 5, einsatzbereites Flugdeck.
+- **Kraftstoff:** 2 Stunden im Vorwärtsflug; im Schwebeflug (Tauchsonar) verbraucht er 1,3-mal so schnell. Der Helikopter kehrt automatisch zurück, wenn nur noch die 20-Minuten-Reserve bleibt. Leerfliegen vor der Landung kostet die Maschine. Im Schwebeflug drückt ihn der Wind etwas von seinem Schwebepunkt nach Lee.
+- **Startgrenzen:** Wind bis 32 kn, Seitenwind bis 22 kn, Sicht mindestens 2 sm, Seegang höchstens 5, einsatzbereites Flugdeck und ein ruhiges Deckfenster (Rollen höchstens 8 Grad, Stampfen höchstens 3,5 Grad). Auch die Landung wartet auf ein solches Fenster; gegen die See gedreht stampft das Schiff weniger.
 - **Tauchsonar:** Tiefe 15-300 m (Standard 75 m, mindestens 10 m über Grund), passiv 18 sm mit +/-2 Grad, aktiver Ping 14 sm mit 30 s Abklingzeit. Tauchen braucht Wind bis 30 kn und 1 sm Sicht.
-- **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
+- **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie; sie treiben mit der Strömung und etwas mit dem Wind. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
 ### Tasten
@@ -810,6 +825,7 @@ Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfa
 ```
 
 - Die Peilgenauigkeit beträgt etwa +/-3 Grad. Erfassungen sind Peilungen, keine Positionen.
+- Ein drehendes Suchradar trifft die ESM-Antenne einmal je Umlauf mit der Hauptkeule; seine Nebenkeulen sind nur aus der Nähe hörbar. Die Belegseite zeigt den Spitzenpegel, eine Entfernungsschätzung unter Annahme der Leistungsklasse des besten Kandidaten (ein falscher Kandidat ergibt eine falsche Entfernung) und die gemessene Antennenumlaufzeit.
 - Kandidaten werden nur aus beobachteter Frequenz, PRF und Modulation gerankt. Ein Gleichstand ist keine Identifizierung.
 - Die Korrelation mit Radar- oder Sonartracks nutzt vereinbare Zeit, Peilung und beobachtete Position, nie verborgene Identität.
 - ESM läuft aus der OPZ-Abteilung: eine zerstörte OPZ legt es lahm.
@@ -851,6 +867,7 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 - Wechselt eine Erfassung bei stehender Peilung von Suche auf einen Puls-Doppler-Sucher mit hoher PRF, steht ein Flugkörperangriff bevor: sofort die OPZ warnen.
 - Das Zuordnen eines Radartyps (`C`) gibt die Peilung an die OPZ frei; das Löschen der Zuordnung zieht sie zurück.
 - Stören ist eine Aussendung. Gezielt einsetzen, nicht dauerhaft.
+- Das eigene Radar wird ebenfalls gehört: ein U-Boot auf Sehrohrtiefe (Mast oben, etwa 18 m) fängt es mit seinem ESM auf und kann die Peilung über seinen Datalink an andere Gegner weitergeben. Tief getauchte Boote hören weder Radar noch empfangen sie den Datalink.
 
 ### Nicht modelliert
 
@@ -877,39 +894,50 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Sensor | Reichweite | Genauigkeit / Hinweis |
 |---|---|---|
 | Passivsonar (Basis) | 20 sm | nur Peilung; HMS +/-6 Grad, TAS +/-2 Grad |
-| Aktiver Ping | 18 sm | Entfernung +/-0,18 sm, Tiefe +/-12 m; 30 s Abklingzeit; hörbar bis 60 sm |
+| Aktiver Ping | 18 sm (Referenzziel, schräger Aspekt) | CW oder LFM (`W`); Entfernungsgenauigkeit aus Puls und SNR, Tiefe +/-12 m; 30 s Abklingzeit; hörbar bis 60 sm |
 | Tauchsonar | 18 sm passiv / 14 sm aktiv | +/-2 Grad |
 | Sonarboje | 8 sm | 60 min Batterie |
-| Überwasserradar | 30 sm | Radarhorizont; keine getauchten Kontakte |
-| Luftradar | 100 sm | Flugzeuge und Flugkörper |
-| ESM | 150 sm | +/-3 Grad Peilung |
-| HFDF | 120 sm | +/-8 Grad Peilung |
-| Ausguck | 12 sm Überwasser, 5 sm aufgetauchtes U-Boot, 20 sm Luft | x0,35 bei Nacht |
+| Überwasserradar | 30 sm (50 % je Umlauf) | 4 s Antennenumlauf; Radarhorizont; keine getauchten Kontakte |
+| Luftradar | 100 sm (50 % je Umlauf) | Flugzeuge und Flugkörper; Störer werden aus der Nähe durchbrannt |
+| ESM | 150 sm (Hauptkeule) | +/-3 Grad Peilung; Pegel und Entfernungsschätzung |
+| HFDF | 120 sm Bodenwelle bei 15 MHz (je nach Frequenz etwa 95-150 sm) | +/-8 Grad Peilung (Raumwelle +/-16) |
+| Ausguck | 12 sm Überwasser, 5 sm aufgetauchtes U-Boot, 20 sm Luft | x0,25 (Neumond) bis x0,45 (Vollmond) bei Nacht; Nebel und Seegang verkürzen |
 
 ### Waffen und Gegenmaßnahmen
 
 | System | Daten |
 |---|---|
-| Fregattentorpedo | 45 kn, 12 sm, drahtgelenkt, 2 Rohre, 60 s Nachladen, Tiefe 10-300 m |
+| Fregattentorpedo | 45 kn, 12 sm (Batterie), drahtgelenkt (Schiff <= 20 kn, <= 1,5 Grad/s, 5 sm Spule), 2 Rohre, 60 s Nachladen, Tiefe 10-300 m, Annäherungszünder |
 | Helikoptertorpedo | 55 kn, 12 sm, 2 je Einsatz, ohne Draht |
 | Feindtorpedo | 28 kn, 30 sm, zielsuchend ab 3 sm |
-| Nixie-Schlepptäuschkörper | 2 je Mission, 600 s, 0,2 sm achteraus, 60 s Nachladen |
+| Nixie-Schlepptäuschkörper | 2 je Mission, 600 s, 0,2-sm-Kabel (10 m bei 15 kn, langsamer tiefer, reißt über 25 kn), 60 s Nachladen |
 | ESSM | 6 Flugkörper, 30 sm, 2 Feuerkanäle |
-| CIWS | 1,5 sm, 180 Schuss, braucht Freigabe |
+| CIWS | 1,5 sm, 180 Schuss, braucht Freigabe; 115 Grad/s Schwenken, eigenes Folgeradar innerhalb 3 sm |
 | Flak-Geschütz | 240 Schuss, braucht Freigabe |
-| Düppel | 6 Ladungen, 8 sm, 40 % Zielverlust |
+| Düppel | 6 Ladungen, 8 sm, 40 % Zielverlust nach dem Aufblühen; Wolke treibt 90 s mit dem Wind |
 
 ### Eigenes Schiff
 
 | Merkmal | Wert |
 |---|---|
 | Fahrt | 4-25 kn; Telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 25 kn |
-| Drehrate | bis 0,8 Grad/s |
-| Kavitation | ab 15 kn; Passivreichweite x0,35 |
+| Drehrate | etwa 0,075 Grad/s je Knoten (1,2 Grad/s bei 16 kn); Drehkreis etwa 0,4 NM |
+| Kavitation | ab 15 kn bei ruhiger See, bei schwerer See früher; Passivreichweite x0,35 |
 | Modus LEISE | Lärm x0,65, max. 12 kn |
 | TAS-Handhabung | 3-12 kn, ausbringen 360 s, einholen 480 s, Defekt über 20 kn |
 | TAS-Tiefe | 20-260 m, minus 4 m je Knoten |
-| Schaden | 9 Abteilungen, 3 Trupps; sinkt bei 60 % mittlerer Flutung |
+| Schaden | 9 Abteilungen, 3 Trupps (etwa 20 s Weg je Abteilung), 8 Leckabdichtsätze; sinkt jenseits der Reserveverdrängung, kentert bei 35 Grad Krängung oder verlorenem GM |
+
+### Umwelt
+
+| Vorgang | Modell |
+|---|---|
+| Gezeit | M2 (12,42 h) + S2 (12 h), 0,4-1,4 m Amplitude, im Flachwasser größer |
+| Deckschicht | jahreszeitliche Grundtiefe; nachmittags etwa 8 m flacher; vertieft sich bei Wind über 12 kn; interne Wellen +/-6 m |
+| Schallgeschwindigkeit | Mackenzie-Gleichung aus dem Temperaturprofil (Oberfläche 8-18 Grad C je nach Jahreszeit) |
+| Strömung | festes Feld bis 1 kn plus 3 % des Windes, 20 Grad rechts der Windrichtung |
+| Meeresboden | Fels, Kies, Sand, Schluff oder Schlick; beeinflusst die Bodenreflexion |
+| Hindernisse | bis zu 64 kartierte Wracks und Unterwasserfelsen (Spitzen mindestens 15 m tief) |
 
 ### Gegnerische U-Boote
 
@@ -920,6 +948,8 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Nuklear-Jagd-U-Boot | 0,92 | 400 m | 8 |
 
 U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus, können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger.
+
+U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes Boot hält seine Position gegen die Strömung. U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung erst nach eigenen TMA-Schlägen (einige Minuten), ESM nur mit ausgefahrenem Mast, den Datalink nur auf Masttiefe oder beim Schnorcheln, und ein Torpedoalarm braucht einige Sekunden Reaktionszeit der Besatzung (2-15 s), bevor das Boot ausweicht. Überwasserschiffe verlieren bei schwerer See Höchstfahrt (kleine Schiffe mehr).
 
 ### Mission und Wertung
 

@@ -25,7 +25,7 @@ CONTACT_NAMES = {
     "acoustics.json", "aircraft.json", "animals.json", "civilians.json",
     "decoys.json", "sources.json", "subs.json", "torpedoes.json", "warships.json",
 }
-LOADOUT_NAMES = {"air_defense.json", "ownship.json"}
+LOADOUT_NAMES = {"air_defense.json", "ownship.json", "ownship_hull.json"}
 CONTACT_ANALYSIS_MANIFEST = json.loads(
     (ROOT / "data/contact_analysis/manifest.json").read_text(encoding="utf-8"))
 CONTACT_ANALYSIS_NAMES = {
@@ -82,7 +82,7 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
                 (ROOT / "data/contact_analysis" / name).read_bytes()
     assert any(name.endswith(".dist-info/licenses/THIRD_PARTY_NOTICES.md")
                for name in wheel_names)
-    assert any(name.endswith("-1.0.0.dist-info/METADATA") for name in wheel_names)
+    assert any(name.endswith("-1.1.0.dist-info/METADATA") for name in wheel_names)
 
     source = next(tmp_path.glob("u_jagd-*.tar.gz"))
     with tarfile.open(source) as archive:
@@ -129,7 +129,7 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
         [sys.executable, "-c",
          "from importlib import resources; "
          "assert resources.files('data.editor_templates').joinpath('mission.json').is_file(); "
-         "from src.core.version import APP_VERSION; assert APP_VERSION == '1.0.0'; "
+         "from src.core.version import APP_VERSION; assert APP_VERSION == '1.1.0'; "
           "from src.commander.server import CommanderServer; "
           "server=CommanderServer(); server.start('127.0.0.1',0); server.stop(); "
           "from src.core import manual; page=manual.html_page('de'); assert 'station-sonar' in page; "

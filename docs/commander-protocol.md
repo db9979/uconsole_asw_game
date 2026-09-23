@@ -2,7 +2,7 @@
 
 [Deutsch](commander-protocol.de.md)
 
-Application 1.0.0, API protocol 2, save format v11-only. These versions are independent.
+Application 1.0.0, API protocol 2, save format v12-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
 persistence.
@@ -188,8 +188,11 @@ The ELOKA v2 intercept row additionally carries derived `signal_state`
 (`LIVE`, `RECENT`, `MEMORY`, or `UNCONFIRMED`) and boolean `operational` fields.
 Browser status, minimum-threat, and frequency-band filters are client-local and
 apply one identical subset to the intercept list, contacts, scope, and accessible
-text alternative. Active ECM targets remain visible. No range or hidden emitter
-identity is projected or filterable.
+text alternative. Active ECM targets remain visible. Rows also carry the
+measured peak `signal_db`, the measured antenna `scan_period_s` (or null) and a
+`range_estimate_nm` derived only from that level and the power class of the
+best catalog hypothesis (or null); no true range or hidden emitter identity is
+projected or filterable.
 
 Commands carry protocol, cryptographic request ID, client sequence, station,
 station and active generations, world session/epoch, resource revision, action,

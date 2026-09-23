@@ -8,7 +8,7 @@ import pygame
 import pytest
 
 from src.air.asm import ASM
-from src.air.raid import RaidPhase, Raider
+from src.air.raid import FC_LOCK_S, POPUP_ALTITUDE_M, RaidPhase, Raider
 from src.core import config
 from src.core.game import Game
 from src.core.station import Station
@@ -64,7 +64,17 @@ def test_raider_lifecycle_approach_attack_retreat_despawn():
         if raider.phase is not RaidPhase.APPROACH:
             break
     assert raider.phase is RaidPhase.ATTACK
-    assert raider.pending_asm >= profile["salvo"][0]
+    # Pop-up: climb, lock with the fire-control radar, then release.
+    fc_seen = False
+    for _ in range(30):
+        raider.update(1.0, ship)
+        fc_seen = fc_seen or raider.fc_radar_on
+        if raider.pending_asm:
+            break
+    assert fc_seen and raider.pending_asm >= profile["salvo"][0]
+    for _ in range(40):
+        raider.update(1.0, ship)
+    assert raider.altitude_m == pytest.approx(profile["altitude_m"])
     for _ in range(5000):
         raider.update(1.0, ship)
         if raider.phase is not RaidPhase.ATTACK:
@@ -88,7 +98,9 @@ def test_raider_turn_rate_is_bounded():
         course = raider.course
         raider.update(1.0, ship)
         assert abs(config.angle_diff_deg(raider.course, course)) <= \
-            config.RAIDER_TURN_DEG_S + 0.01
+            raider.turn_deg_s + 0.01
+    # Coordinated turn at the bank limit: g tan(56 deg) / v ~ 4 deg/s at 400 kn.
+    assert raider.turn_deg_s == pytest.approx(4.0, abs=.1)
 
 
 def test_shot_down_raider_stops_moving():
@@ -289,6 +301,9 @@ def test_raider_salvo_drains_into_attack_asms(game):
                     game.rng_raid, profile["raider"])
     raider.phase = RaidPhase.ATTACK
     raider.salto_cd = 0.0
+    # Already popped up and about to complete the fire-control lock.
+    raider.altitude_m = POPUP_ALTITUDE_M
+    raider.popup_t = FC_LOCK_S - 0.05
     game.raiders = [raider]
     game.raid_seq = 1
     game._update_raiders(0.1, publish_picture=False)
@@ -317,7 +332,10 @@ def test_raider_salvo_asms_hit_the_frigate_and_damage_compartments(game, monkeyp
     asm.speed_kn = 0.0  # Treffer-Zeitpunkt kontrollieren
     game._update_air_defense(0.1, publish_picture=False)
     assert asm.state == "TREFFER"
-    assert any(c.flood > 0.0 for c in game.damage.compartments.values())
+    # A missile strikes above the waterline: mainly fire, flooding only if
+    # the blast holes a room low enough.
+    assert any(c.fire > 0.0 or c.flood > 0.0 or c.state != "OK"
+               for c in game.damage.compartments.values())
 
 
 # --- Air Picture ---
@@ -329,13 +347,13 @@ def test_raider_publishes_as_anonymous_flg_track(game, monkeypatch):
                     game.rng_raid, profile["raider"])
     game.raiders = [raider]
     game.raid_seq = 3
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     track = game.air_picture._tracks.get("R-3")
     assert track is not None and track.kind == "FLG"
     assert track.source == "RADAR-L" and track.hostile is False
     game.air_radar_on = False
     game.air_picture._tracks.clear()
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert "R-3" not in game.air_picture._tracks
 
 
@@ -352,14 +370,14 @@ def test_raider_radar_detection_is_capped_by_geometric_horizon(game, monkeypatch
                             game.rng_raid, profile["raider"])
     game.raiders = [beyond_horizon]
     game.raid_seq = 4
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert "R-4" not in game.air_picture._tracks
 
     within_horizon = Raider(game.ship.x + horizon - 5.0, game.ship.y, 0.0, 5,
                             game.rng_raid, profile["raider"])
     game.raiders = [within_horizon]
     game.raid_seq = 5
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     track = game.air_picture._tracks.get("R-5")
     assert track is not None and track.source == "RADAR-L"
 
@@ -371,7 +389,7 @@ def test_raider_first_contact_flashes_once(game, monkeypatch):
                     game.rng_raid, profile["raider"])
     game.raiders = [raider]
     game.raid_seq = 1
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     flashes = []
     monkeypatch.setattr(game, "flash",
                         lambda text, seconds=3.0: flashes.append(text))
@@ -413,7 +431,7 @@ def test_raid_state_roundtrips_save_load(game):
     assert restored.raid_seq == 7 and restored.raid_waves_spawned == 3
 
 
-def test_pre_r20_save_upgrades_to_raid_shape(game):
+def test_pre_r20_save_shape_is_rejected(game):
     state = json.loads(json.dumps(game.save_state(), allow_nan=False))
     ad = state["air_defense"]
     loadout = ad["loadout"]
@@ -424,18 +442,10 @@ def test_pre_r20_save_upgrades_to_raid_shape(game):
         del ad[key]
     ad["version"] = 1
     del state["rngs"]["raid"]
-    # ohne Upgrade-Pfad: abgelehnt
-    assert not game._load_save_data(copy.deepcopy(state))
     restored = Game(seed=1, start_menu=False, audio_enabled=False)
-    assert restored._load_save_data(copy.deepcopy(state), allow_pre_r9=True)
-    out = restored.save_state()["air_defense"]
-    assert out["version"] == AIR_DEFENSE_STATE_VERSION == 2
-    assert out["loadout"]["version"] == 2
-    assert out["loadout"]["raider"] == air_defense_loadout()["raider"]
-    assert out["aa_ammo"] == out["loadout"]["aa_gun"]["ammo"]
-    assert out["raiders"] == [] and out["raider_seq"] == 0
-    assert out["waves_spawned"] == 0
-    assert "raid" in restored.save_state()["rngs"]
+    before = restored.save_state()
+    assert not restored._load_save_data(copy.deepcopy(state))
+    assert restored.save_state() == before
 
 
 @pytest.mark.parametrize("mutate", [

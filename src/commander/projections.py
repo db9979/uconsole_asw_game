@@ -720,6 +720,9 @@ def _eloka(game, rows, esm_refs, candidate_refs):
                 jamming=channel is not None),
             ambiguous=False if analysis is None else analysis.ambiguous,
             synthetic_assumption=bool(track.synthetic_assumption),
+            signal_db=_number(track.signal_db),
+            range_estimate_nm=_number(game.eloka_range_estimate(track)),
+            scan_period_s=_number(track.revisit_s) if track.revisit_s > 0.0 else None,
             auto_jamming=bool(game.ecm_jammer.auto_enabled),
             jamming=channel is not None,
             jamming_effectiveness=(None if channel is None else

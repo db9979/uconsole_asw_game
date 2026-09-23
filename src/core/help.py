@@ -50,6 +50,7 @@ STATION_HELP = {
         [("Shift+A", "help.control.active_ping"), ("Shift+B", "help.control.array"),
          ("Y", "help.control.tas"), ("help.key.page_spaced", "help.control.pages"),
          ("2", "help.control.repeat_sonar_page"), ("E", "help.control.bt"),
+         ("W", "help.control.pulse"),
          ("U / V", "help.control.tas_depth"), ("R", "help.control.listen_input"),
          ("<- / ->", "help.control.bearing_step"), ("help.key.up_down", "help.control.contact_select"),
          ("Enter", "help.control.track_bearing"), ("J | , / .", "help.control.audio"),

@@ -21,6 +21,7 @@ import numpy as np
 
 from src.audio.hydroacoustics import analytic_envelope
 from src.core import config
+from src.physics import ship_dynamics
 
 _BROADBAND_GAIN = 0.04      # rms-Skalierung der Bandrauschaudio
 _OWN_CAV_GAIN = 0.10        # rms-Skalierung der Eigen-Kavitation
@@ -68,6 +69,16 @@ def directional_gain(bearing_deg: float, center_deg: float,
     """Gaussian amplitude gain used for displayed and simulated lobes."""
     delta = (center_deg - bearing_deg + 180.0) % 360.0 - 180.0
     gain = np.exp(-4.0 * math.log(2.0) * (delta / width_deg) ** 2)
+    return float(gain) if np.ndim(gain) == 0 else gain
+
+
+def beam_pattern_gain(bearing_deg, center_deg: float, width_deg: float):
+    """Uniform line-aperture beam: |sinc| main lobe of the given amplitude
+    FWHM with the first side lobes at -13 dB, so a loud source leaks into
+    neighbouring beams (grating/side-lobe response of a real array)."""
+    delta = (center_deg - np.asarray(bearing_deg, dtype=float) + 180.0) % 360.0 - 180.0
+    x = 1.2067 * delta / max(width_deg, 1e-6)
+    gain = np.abs(np.sinc(x))
     return float(gain) if np.ndim(gain) == 0 else gain
 
 
@@ -328,7 +339,8 @@ class AcousticReceiver:
         audio += shaft
         self.ownship_tonals = [{
             "label": "OWN SHAFT", "frequency_hz": shaft_hz,
-            "rpm": speed * config.SHIP_RPM_PER_KN + config.SHIP_RPM_MIN,
+            "rpm": max(ship_dynamics.HULL.idle_rpm, ship_dynamics.HULL.steady_rps(
+                speed * ship_dynamics.KN) * 60.0),
         }] if speed > 0 else []
         # Shaft frequency is machinery/RPM evidence, not a bearing return.
         scan = np.full(180, (ambient_rms**2 + np.mean(shaft**2)) / .25**2)
@@ -439,11 +451,11 @@ class AcousticReceiver:
             if key in entries:
                 next_states[key] = (direction, state, bb_ola, bb_params)
                 next_spectral_states[key] = curve
-            audio += source_audio * directional_gain(bearing, direction, width)
+            audio += source_audio * beam_pattern_gain(bearing, direction, width)
             # Actual unsteered block energy, not source presence or current beam
             # amplitude. Incoherent source powers add; normalize all terms alike.
             scan += (np.mean(source_audio**2) / .25**2
-                     * directional_gain(self._angles, direction, width)**2)
+                     * beam_pattern_gain(self._angles, direction, width)**2)
         self._source_states = next_states
         self._spectral_states = next_spectral_states
         if own_cav > 0:

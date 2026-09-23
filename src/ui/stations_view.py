@@ -15,11 +15,18 @@ from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
+from src.ship.ship import Ship
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
 from src.ui import layout
 from src.ui import nato_symbols
 from src.ui import observations
 
+
+
+def _hfdf_error_deg(report) -> float:
+    """Half-width of the HFDF bearing error (uniform sigma x sqrt(3))."""
+    sigma = getattr(report, "bearing_uncertainty_deg", None)
+    return (sigma * math.sqrt(3.0) if sigma else config.HFDF_BEARING_ERR_DEG)
 
 def message(key, **values):
     return localize(structured_message(key, **values))
@@ -688,7 +695,12 @@ def station_hit_target(game, pos):
                         message("radio.tooltip.hfdf_title",
                                 label=game.hfdf_display_id(report)),
                         observations.format_bearing_pair(report, game.ship),
-                        message("radio.tooltip.error", error=f"{config.HFDF_BEARING_ERR_DEG:.0f}"),
+                        message("radio.tooltip.error", error=f"{_hfdf_error_deg(report):.0f}"),
+                        message("radio.hfdf.frequency",
+                                frequency=(f"{report.frequency_hz / 1e3:.0f}"
+                                           if report.frequency_hz else "--"),
+                                mode=localize("radio.hfdf.mode." + report.propagation)
+                                if report.propagation in ("GROUND", "SKY") else ""),
                         message("radio.tooltip.age", age=f"{report.age(game.sim_t):.0f}"),
                         "control.radio_tooltip",
                         target_id=f"radio:{game.hfdf_display_id(report)}")
@@ -979,6 +991,12 @@ def draw_eloka_view(game, tr=None) -> None:
                     "eloka.value.quality_age",
                     quality=f"{selected.display_quality(game.sim_t):.0%}",
                     age=f"{selected.age(game.sim_t):.1f}")),
+                ("eloka.field.signal", message(
+                    "eloka.value.signal", level=f"{selected.signal_db:.0f}",
+                    range=(f"{estimate:.0f}" if (estimate := game.eloka_range_estimate(
+                        selected)) is not None else "--"),
+                    scan=(f"{selected.revisit_s:.1f}" if selected.revisit_s > 0.0
+                          else "--"))),
                 ("eloka.field.radar_type", localize(
                     "eloka.radar_type." + (analysis.radar_type.value
                     if analysis is not None and analysis.radar_type is not None
@@ -1763,7 +1781,7 @@ def draw_radio_view(game, tr=None) -> None:
                     s, message("radio.line.signal", prefix='>' if selected else ' ',
                                 label=game.hfdf_display_id(report),
                                 bearing=observations.format_bearing(report, game.ship),
-                               error=f"{config.HFDF_BEARING_ERR_DEG:.0f}", age=f"{age:.0f}"),
+                               error=f"{_hfdf_error_deg(report):.0f}", age=f"{age:.0f}"),
                     (lx, ly, lw, row_h - 8),
                     config.COLOR_WARN if selected else
                     config.COLOR_TEXT if age < 30 else config.COLOR_TEXT_DIM,
@@ -1846,7 +1864,7 @@ def draw_engine_view(game, tr=None) -> None:
                            label_w=140, size=20)
         py += 40
         bar_w = int(pw * 0.72)
-        max_rpm = config.SHIP_RPM_MIN + config.SHIP_SPEED_MAX_KN * config.SHIP_RPM_PER_KN
+        max_rpm = Ship.max_rpm()
         frac = min(1.0, ship.rpm() / max_rpm)
         pygame.draw.rect(s, config.COLOR_GRID, (px, py, bar_w, 16))
         pygame.draw.rect(s, config.COLOR_TEXT, (px, py, int(bar_w * frac), 16))

@@ -1273,6 +1273,17 @@ def _detail_rows(game, page):
             delta = getattr(contact, "fusion_delta_deg", None)
             if delta is not None:
                 lines += [message("sonar.line.array_delta", delta=f"{delta:.1f}")]
+            mirror = getattr(contact, "mirror_bearing", None)
+            if getattr(contact, "towed_ambiguous", False) and mirror is not None:
+                lines += [message("sonar.line.tas_mirror", mirror=f"{mirror:05.1f}")]
+            tonal = getattr(contact, "tonal_hz", None)
+            if tonal is not None:
+                lines += [message("sonar.line.tonal", frequency=f"{tonal:.2f}")]
+            ellipse = getattr(contact, "tma_ellipse", None)
+            if ellipse is not None:
+                lines += [message("sonar.line.tma_ellipse", major=f"{ellipse[0]:.1f}",
+                                  minor=f"{ellipse[1]:.1f}",
+                                  orientation=f"{ellipse[2]:03.0f}")]
         rows.extend((line, DIM, 13) for line in lines)
         return rows
     if page == 5:

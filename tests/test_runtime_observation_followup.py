@@ -53,6 +53,14 @@ def observed_target(game, target_id):
     return contact
 
 
+def esm_revolution(game, steps=12):
+    """Rotating search radars reach the ESM mast with their main beam only
+    once per revolution (up to 5 s); sample the picture over one."""
+    for _ in range(steps):
+        game.sim_t += .5
+        game._update_esm_picture()
+
+
 @pytest.mark.parametrize("kind", ["sub", "civilian", "animal", "decoy", "missing"])
 @pytest.mark.parametrize("launcher", ["launch_torpedo", "launch_helo_torpedo"])
 def test_launch_authorization_is_observation_equivalent_across_hidden_categories(game, kind, launcher):
@@ -270,7 +278,7 @@ def test_aircraft_receiver_capability_does_not_make_it_an_emitter(game):
     civil.esm = True
     game.flights.flights = [civil]
     game.radar_on = False
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     game._update_esm_picture()
     assert not game.air_picture.tracks(game.sim_t)
     assert not game.eloka_tracks()
@@ -280,7 +288,7 @@ def test_aircraft_receiver_capability_does_not_make_it_an_emitter(game):
     military.esm = False
     military.esm_range_nm = 1  # Its receiver range is not the player's receiver range.
     game.flights.flights = [military]
-    game._update_esm_picture()
+    esm_revolution(game)
     assert len(game.eloka_tracks()) == 1
     assert not game.air_picture.tracks(game.sim_t)
 

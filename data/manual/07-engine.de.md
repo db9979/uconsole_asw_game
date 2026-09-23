@@ -26,11 +26,11 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
              4           15        25
 ```
 
-- Der Eigenlärm steigt linear von 4 kn bis 25 kn. Ab 15 kn kavitieren die Schrauben: der Lärm liegt bei mindestens 0,85, die passive Sonarreichweite fällt auf 35 %.
+- Der Eigenlärm steigt linear von 4 kn bis 25 kn. Die Schrauben kavitieren, wenn die Flügelspitzengeschwindigkeit für den Wasserdruck an den Schrauben zu hoch ist: bei ruhiger See ab 15 kn, bei schwerer See früher, wenn das Stampfen das Heck anhebt. Kavitation hebt den Lärm auf mindestens 0,85 und senkt die passive Sonarreichweite auf 35 %.
 - Modus LEISE senkt den Eigenlärm auf 65 % und begrenzt die Fahrt auf 12 kn.
-- Die Wellendrehzahl beträgt etwa 20 + 2,4 x Fahrt. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
+- Die Wellendrehzahl folgt dem Festpropeller: bei konstanter Fahrt etwa 5,8 U/min je Knoten (146 U/min bei 25 kn). Beim Beschleunigen hält das Fahrprogramm die Welle höchstens etwa 11 U/min vor der aktuellen Fahrt; beim Abbremsen wird die Steigung umgesteuert und die Welle läuft mit 20 U/min im Leerlauf. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
 - Maschinenschaden begrenzt die Fahrt auf 15 kn (beschädigt) oder 8 kn (zerstört).
-- Der Kraftstoffverbrauch steigt mit der Fahrt. Mit leeren Tanks steht die Welle, und kein Maschinenbefehl wird angenommen.
+- Der Kraftstoffverbrauch folgt der abgegebenen Propellerleistung: bei konstanter Fahrt wächst er mit der dritten Potenz der Fahrt, Beschleunigen und Bremsen kosten zusätzlich. Ein leichteres Schiff (verbrauchter Kraftstoff) beschleunigt etwas schneller; Flutwasser macht es langsamer und tiefer. Schwere See erhöht den Widerstand und kostet bei FULL bis etwa 1 kn. Mit leeren Tanks steht die Welle, und kein Maschinenbefehl wird angenommen.
 
 ## Tasten {#engine-keys}
 

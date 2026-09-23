@@ -8,7 +8,7 @@ import pygame
 import pytest
 
 from src.audio.engine import AudioEngine
-from src.audio.receiver import AcousticReceiver, directional_gain
+from src.audio.receiver import AcousticReceiver, beam_pattern_gain
 
 
 def update(receiver, sources=(), bearing=0, **kwargs):
@@ -128,7 +128,7 @@ def test_scan_is_actual_unsteered_power_not_presence_or_listening_bearing(lines,
         np.testing.assert_array_equal(on.broadband, off.broadband)
         signal = on.samples.astype(float) - background.samples
         expected = (np.mean(signal**2) / .25**2
-                    * directional_gain(np.arange(180) * 2, 0, 24)**2)
+                    * beam_pattern_gain(np.arange(180) * 2, 0, 24)**2)
         np.testing.assert_allclose(np.array(on.broadband) - background.broadband,
                                    expected, atol=2e-9)
     if not lines or all(line[1] == 0 for line in lines):

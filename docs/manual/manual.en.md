@@ -77,10 +77,10 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 ### Underwater acoustics in five minutes
 
 - **Passive sonar gives bearing only.** Every contact starts as a line of bearing. Range comes from active ping, TMA, sonobuoys or a cross-fix.
-- **Detection is signal against noise.** SNR = 20 log10(effective range / distance). A contact is detected at SNR >= 0 dB. Quiet targets and high sea state shrink the effective range.
+- **Detection is signal against noise.** The passive sonar equation SE = SL - TL - NL + DI - DT decides: the target's source level (louder = farther), transmission loss (spreading, absorption, layer and path losses), noise (own self noise plus wind, rain and nearby shipping), and the array gain. A contact is detected at SE >= 0 dB. Wind and rain matter most when you run slow and quiet; at high own speed your own noise dominates.
 - **Own speed is own noise.** Self-noise rises from 4 kn to 25 kn. Above 15 kn the propellers cavitate and passive range drops to about a third.
-- **The layer (thermocline) splits the water.** Sensor and target on different sides of the layer lose about 6.5 dB. A ping into the shadow zone below the layer reaches only 35 % of its range.
-- **Convergence zones** at roughly 40-70 NM and 90-130 NM return sound from far away (+8 dB).
+- **The layer (thermocline) bends sound.** Passive propagation is ray traced through the real sound-speed profile: above the layer a surface duct carries sound far, below it lies a shadow zone a few miles wide. In deep water the shadow is strong; in water of a few hundred metres, bottom bounce and multipath fill it beyond about 10 NM, so hiding below the layer mainly works close in. A ping into the shadow zone reaches only 35 % of its range.
+- **Seabed and surface matter.** Rock and gravel reflect sound well, silt and mud absorb it; a rough sea scatters high frequencies. **Convergence zones** appear only where the water is deep enough for rays to turn back up.
 - **Baffles:** own-ship noise is a soft 70 degree lobe astern of the hull array (and along the cable of the towed array). It masks, it does not blank.
 
 ```text
@@ -182,10 +182,14 @@ Combat situation:
 ### Pro tips
 
 - TMA needs a real change of own velocity. A 30-60 degree turn followed by a steady leg of several minutes gives the best range estimate. Turning on the spot does not help.
-- The ship turns at no more than 0.8 degrees per second and needs minutes to change speed. Start evasive turns early.
+- The turn rate grows with speed (about 0.75 deg/s at 10 kn, 1.2 at 16 kn, 1.9 at 25 kn), so the turning circle stays near 0.4 NM. A stopped ship cannot turn. Speed changes take minutes: about 90 s to 90 % of FULL, and a stop from FULL uses reverse propeller pitch and takes about 90 s. Start evasive turns early.
+- In a hard turn at speed the ship heels outward a few degrees; in heavy seas the fin stabilizers damp the roll, but only with steerage way.
+- In shallow water the hull squats: at 25 kn the draft grows by up to 3 m when the water is less than about five draughts deep. Slow down in shoal water.
 - Sprint-and-drift: sprint at FULL to a new position, then slow to 4-6 kn and listen.
 - Heavy flooding on one side gives a list and a steady yaw pull; correct with rudder.
 - The ship cannot run aground onto land; it is pushed back, but shallow water limits the helicopter dipping depth (10 m bottom clearance).
+- Water depth follows the tide (semi-diurnal, about 12.4 h, up to a few metres in shallow water). A passage that is safe at high water can ground the hull at low water; the HQ weather bulletin reports the current tide at the ship.
+- Wind pushes the surface water: about 3 % of the wind speed, 20 degrees to the right of downwind, on top of the steady ocean current.
 
 ### Not modelled
 
@@ -254,9 +258,9 @@ The display shows measured modulation, not certain identity. The analysis window
 
 #### TMA, environment and active
 
-- **TMA** solves range, course and speed from a bearing series of the focused contact. It needs at least 4 bearings over 180 s and an own course change of at least 6 degrees; range is trusted from quality 0.35. It does not estimate depth.
-- **UMWELT / FUSION** shows the bathythermograph (`E`, 60 s cooldown): measured layer depth, sound-speed profile and convergence-zone bands, plus the HMS/TAS comparison. Bearings within 5 degrees confirm each other; 9 degrees or more apart are flagged as a possible ghost contact.
-- **ACTIVE** lists echoes of the last 120 s: bearing, range (+/-0.18 NM) and depth (+/-12 m). A ping fix ages out after 120 s.
+- **TMA** solves range, course and speed from a bearing series of the focused contact. It needs at least 4 bearings over 180 s and an own course change of at least 6 degrees; range is trusted from quality 0.35. It does not estimate depth. A grid search finds the basin and a Levenberg-Marquardt fit refines it; the detail line shows the 1-sigma uncertainty ellipse. The strongest tonal is measured with its Doppler shift ("Tonal (Doppler)"): a target crossing close by sweeps its frequency, which fixes range even without an own turn. Sonobuoy bearings enter the same estimate with the buoy as observer, so a buoy field gives range quickly.
+- **UMWELT / FUSION** shows the bathythermograph (`E`, 60 s cooldown): measured layer depth, sound-speed profile and convergence-zone bands, plus the HMS/TAS comparison. Bearings within 5 degrees confirm each other; 9 degrees or more apart are flagged as a possible ghost contact. The layer is not fixed: afternoon sun makes it shallower (about 8 m), strong wind mixes it deeper over hours, and internal waves move it a few metres. Repeat the BT after a few hours or a weather change. The measured profile is the real temperature-driven sound speed (Mackenzie equation), so it drops below the layer.
+- **ACTIVE** lists echoes of the last 120 s: bearing, range and depth (+/-12 m). A ping fix ages out after 120 s. `W` selects the pulse: **CW** (1 s tone) gives coarse range (about 0.1-0.3 NM) but its Doppler separates a moving target from seabed reverberation; **LFM** (100 Hz sweep) measures range to a few metres and gains 20 dB against noise, but a slow or stationary target stays inside the reverberation. The echo strength depends on the target's aspect (broadside about 15 dB stronger than bow-on) and size. Rocky ground reverberates far more than mud; charted wrecks return real echoes that no contact owns ("unassociated echo").
 
 ### Hull sonar versus towed array
 
@@ -292,6 +296,7 @@ The display shows measured modulation, not certain identity. The analysis window
 | `Page Up / Down` | Broadband / LOFAR / DEMON / TMA / Environment / ACTIVE |
 | `2` | Press 2 again to advance the sonar page |
 | `E` | Bathythermograph: measure local sound profile |
+| `W` | Active pulse CW / LFM |
 | `U / V` | Raise / lower TAS/VDS target depth by 10 m |
 | `R` | Direct listening bearing: 000 to 359.9 degrees true |
 | `<- / ->` | Bearing +/-0.5 degrees; Shift: 5, Ctrl: 0.1 |
@@ -335,6 +340,7 @@ Combat situation:
 - Put the TAS below the measured layer to hear deep targets; keep the HMS for shallow ones. Both arrays run in parallel.
 - The TMA page shows the closing rate derived from the solution: positive means the target is closing.
 - If the TAS and HMS disagree by 9 degrees or more, treat the contact as a possible ghost (the display flags it) and turn to resolve it.
+- The towed array is a line: it cannot tell a bearing from its mirror about the cable. A contact heard only on the TAS is marked "TAS left/right ambiguous" with its mirror bearing and does not feed TMA; the shown side is right only half the time. Turn 20 degrees (or get the contact on the HMS) and the wrong side drops out. Bearings toward the cable ends (endfire) are also less accurate than broadside.
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
 
 ### Not modelled
@@ -342,7 +348,6 @@ Combat situation:
 - No manual TMA (dot stack, manual solution entry); only the automatic solver, switched with `T`.
 - No selectable split-window normalisation (TPSW); use gain, black level and contrast instead.
 - No hard blind baffle sector; own noise is a soft lobe.
-- No acoustic Doppler shift of tonal lines; closing rate comes from the TMA solution only.
 - No variable-depth sonar separate from the TAS.
 
 ## 3 Weapons
@@ -409,7 +414,7 @@ Torpedo run, seen from above:
 
 Combat situation:
 
-1. Enemy torpedo reported: stream the Nixie at once (`V`). It lasts 600 s, trails 0.2 NM astern at 10 m; one ready, a second after 60 s.
+1. Enemy torpedo reported: stream the Nixie at once (`V`). It lasts 600 s on a 0.2 NM cable; one ready, a second after 60 s. It runs at 10 m at 15 kn, deeper and closer astern when you slow down, and its cable parts above 25 kn. In a turn the cable lags behind.
 2. Keep the counter-attack going: a fresh contact keeps the wire datum on the submarine.
 3. With the helicopter airborne, a lightweight torpedo (`D`) can reach a distant contact faster than the ship's torpedo.
 
@@ -427,12 +432,17 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 - Fire from inside about 6-8 NM: at 45 kn the torpedo needs 8 minutes for 6 NM, and the submarine hears the launch out to 35 NM and starts evading.
 - Aim the datum ahead of a moving target by keeping TMA running; the wire follows the observation, not the truth.
 - Keep own speed below cavitation while guiding; losing the contact means losing the wire datum.
+- The wire is a physical cable: it snaps if the ship runs faster than 20 kn or turns faster than 1.5 deg/s for about 5 s, when the ship-side spool (5 NM of own track) runs out, or when the torpedo has run 1.25 x its range.
+- Torpedo range comes from its battery: at full speed it runs the catalogue range, hard manoeuvring throttles it and saves energy; when the battery is empty it coasts for a few seconds and is lost. Turning is slower right after launch (constant turning circle), and depth changes need a moment to build up.
+- The warhead has a proximity fuze: it fires at the closest approach inside its radius, and the damage falls with distance (shock factor). A near miss can leave a submarine damaged but able to escape.
+- A running torpedo is heard by the target through the sonar equation: quiet boats in calm water hear it from a few miles, rain and their own speed mask it.
 - Only two Nixies per mission: stream the first when a torpedo is likely, keep the second for the next attack.
+- Homing seekers lock on the loudest candidate and only switch when another is clearly (6 dB) louder. They ignore echoes without Doppler, so a hovering target is hard to find; a torpedo that overruns a decoy without a hull hit remembers it and re-attacks. Hostile submarine decoys fade as their battery drains; hostile warships stream their own decoys when they hear your torpedo launch.
 
 ### Not modelled
 
 - No depth charges, ASW rockets or ship-launched ASROC (ASROC is used only by friendly AI warships).
-- No selectable torpedo search pattern (helix, ladder) and no manual enable point: the snake search and the 1.2 NM seeker switch-on are fixed.
+- No selectable torpedo search pattern and no manual enable point: the snake search and the 1.2 NM seeker switch-on are fixed (friendly ASROC payloads use a helix search at their splash point).
 - One torpedo type for the ship and one for the helicopter; no selectable salvo doctrine.
 
 ## 4 Damage control
@@ -455,13 +465,16 @@ Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fi
   state: OK -> DAMAGED / FLOODING -> DESTROYED     teams: 1 2 3
 ```
 
-- **FLOODING:** water rises (0.10 % per second) until a team pumps it down. At 70 % the compartment is DESTROYED.
-- **DAMAGED:** stabilised residual leak (0.025 % per second); still needs a team to reach OK.
-- **Fire:** a hit starts a fire with 35 % chance. Fire grows by itself and can spread to neighbouring rooms; at 100 % the compartment is destroyed.
-- **Total flooding:** the ship sinks at 540 points, which is 60 % average flooding over all nine compartments.
-- **Heel:** uneven flooding between port and starboard hull lists the ship (up to 15 degrees) and pulls it to one side.
+- **FLOODING:** a hole below the waterline lets water in. The inflow follows the water pressure: fast at first, slower as the water inside rises towards the outside waterline. Rooms high in the ship (bridge) do not flood through a hole. At 70 % the compartment is DESTROYED.
+- **DAMAGED:** the hole is patched; a small residual leak remains until a team pumps the room dry.
+- **Patch kits:** plugging a hole uses one of 8 patch kits. Without kits a team can only pump against the open hole.
+- **Hit location:** the torpedo's impact point decides the compartment; a close burst tears a bigger hole than a distant one. Missiles hit above the waterline and mostly start fires.
+- **Fire:** grows with the room's fuel load (engine, flight deck and magazine burn fiercest) and is smothered by rising water. A room that stays hot for about 30 s ignites its neighbours. A flooded switchboard (sonar, operations, radio, engine) shorts and starts an electrical fire. A fire above 90 % in the weapons room cooks off the magazine: the room is destroyed and the neighbouring rooms are holed.
+- **Stability:** floodwater adds weight, and loose water surfaces reduce the metacentric height (GM). The ship sinks when the floodwater exceeds its reserve buoyancy, and capsizes when GM is lost or the heel passes 35 degrees.
+- **Heel:** off-centre floodwater lists the ship to that side and pulls it off course.
+- **Steering gear and stabilizers:** the steering gear sits aft under the flight deck. If that compartment is destroyed, the rudder jams at its last angle until the room is repaired. A destroyed hull compartment on either side knocks out the fin stabilizers, so the ship rolls more in a seaway. Floodwater adds weight: the ship sits deeper and accelerates more slowly.
 
-Station effects: a damaged sonar room halves sonar range; a damaged engine room caps speed at 15 kn, a destroyed one at 8 kn; a damaged or destroyed weapons room blocks torpedo launches; a destroyed flight deck prevents helicopter launch and recovery; a destroyed operations room also disables ESM.
+Station effects: a station loses capability continuously with flooding and fire in its room (sonar and radar range shrink gradually); a destroyed room disables it. A damaged engine room caps speed at 15 kn, a destroyed one at 8 kn; a damaged or destroyed weapons room blocks torpedo launches; a destroyed flight deck prevents helicopter launch and recovery; a destroyed operations room also disables ESM.
 
 ### Keys
 
@@ -486,14 +499,14 @@ On the uConsole the joystick buttons 1-3 assign team 1-3 directly to the selecte
 
 ### Pro tips
 
-- One team pumps 0.12 % per second, more than a flooding room gains. Two teams on one room halve the time.
-- A room below 35 % flooding changes from FLOODING to DAMAGED; that is the moment to move a team to the next emergency.
-- Teams cannot be assigned to a destroyed compartment. Do not waste them there.
+- Teams start in the operations room and need about 20 s per compartment to walk to their job; a team is only effective once it has arrived. Keep a team near the engine and weapons rooms.
+- A team first patches the hole, then pumps. Patch kits are limited: spend them on rooms below the waterline, not on rooms that already stopped flooding.
+- Two teams on one room halve the time. Teams cannot be assigned to a destroyed compartment.
 - Fire in a room next to the engine or the weapons room is the most dangerous: it spreads into mission-critical spaces.
 
 ### Not modelled
 
-- No individual crew members, casualties or ammunition cook-off.
+- No individual crew members or casualties; no longitudinal trim from flooding.
 - No counter-flooding order; correct heel with repairs and rudder.
 
 ## 5 Operations / CIC
@@ -516,8 +529,8 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 
 - **Surface radar:** 30 NM, limited by the radar horizon (20 m mast) and target height; submerged submarines are invisible.
 - **Air radar:** 100 NM for aircraft and anti-ship missiles (ASM).
-- Weather reduces range; from sea state 5 clutter and measurement errors increase. Rain costs further range.
-- **AIS:** civilian ships broadcast identity and position; optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
+- The antenna turns once every 4 s: a contact is updated only when the beam sweeps past it, and each sweep detects it with a probability that falls with range (50 % at the nominal range for a broadside ship; bow-on targets are seen later, fluctuating echoes can miss a sweep). Sea clutter grows with sea state (about -5 % at sea state 4, -25 % at 6) and rain attenuates the echo (-10 % surface, -20 % air); from sea state 5 measurement errors increase. Inside 3 NM the CIWS search/track radar holds an inbound missile continuously while CIWS is released.
+- **AIS:** civilian ships broadcast course and speed every 2-10 s (3 min at anchor) and their name about every 6 min. The VHF receiver hears them only within line of sight (about 20 NM). A radar track of a civilian shows name and course only after the matching AIS report has been received; radar alone gives position only. Optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
 - **Fusion:** mark 2-8 raw reports (`Space`) and fuse them (`L`) into one operator track; `Shift+L` dissolves it.
 - **Suppression:** `Delete` hides a report locally; `H` shows suppressed reports again.
 
@@ -568,7 +581,8 @@ Air defence sequence (missile inbound):
 ### Pro tips
 
 - Radar is a transmission that hostile ESM can intercept. Switch radars off (EMCON) when stealth matters more than the air picture.
-- Jamming missiles beyond 20 NM give only a home-on-jam (HOJ) bearing; expect range later.
+- Anti-ship missiles skim at about 20 m (5 m in the last 5 NM): radar sees them only inside about 20 NM, and a jamming missile gives only a home-on-jam (HOJ) bearing until it burns through. Missiles fly inertially to their launch datum, then their seeker needs the ship inside its cone for 1.5 s before homing; attack aircraft pop up to about 300 m for a few seconds to lock their fire-control radar before each salvo (an ESM warning and an early radar contact).
+- Chaff lays a cloud beside the ship that blooms in about 3 s and drifts with the wind; fire it early enough for the cloud to bloom. CIWS must first slew onto the missile and kills mostly in the last few hundred metres.
 - Affiliation is your annotation. Marking a contact FRIEND or NEUTRAL blocks every torpedo shot on it.
 - `J` gives a track a shared ID that the whole crew (and Remote Crew browsers) sees.
 - `Enter` confirms an engagement against a live (real-world traffic) contact after you classified it hostile; nothing fires automatically on unclassified contacts.
@@ -600,7 +614,8 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
    pos B *------------------/
 ```
 
-- Bearing error is +/-8 degrees; signals older than 30 s can no longer be logged.
+- Bearing error is +/-8 degrees for a ground wave and +/-16 degrees for a sky wave; signals older than 30 s can no longer be logged.
+- Each signal shows its frequency and propagation. A submarine calling a distant shore station picks a high frequency by day (ground wave heard to about 95 NM) and a lower one at night (about 150 NM). Beyond the skip distance, several hundred NM away, the sky wave arrives instead.
 - Logged lines and cross-fixes appear on the charts of Bridge, Weapons and Helicopter.
 - A second bearing of the same signal gives a cross-fix if it is taken at least 1 NM away from the first and within 300 s.
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
@@ -629,7 +644,7 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 ### Not modelled
 
 - No own radio transmissions or reports to HQ; no communication plan or crypto.
-- No frequency tuning: HFDF lists the detected signals directly.
+- No frequency tuning: HFDF monitors the whole HF band and lists the detected signals with their frequency.
 
 ## 7 Engine room
 
@@ -659,11 +674,11 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
              4           15        25
 ```
 
-- Own noise rises linearly from 4 kn to 25 kn. From 15 kn the propellers cavitate: noise is at least 0.85 and passive sonar range is cut to 35 %.
+- Own noise rises linearly from 4 kn to 25 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
 - QUIET mode reduces own noise to 65 % and limits speed to 12 kn.
-- Shaft RPM is about 20 + 2.4 x speed. The own shaft line on LOFAR moves with speed.
+- Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.
 - Machinery damage caps speed at 15 kn (damaged) or 8 kn (destroyed).
-- Fuel burn grows with speed. With empty tanks the shaft stops and no engine order is accepted.
+- Fuel burn follows the power the propellers deliver: at steady speed it grows with the cube of speed, accelerating and braking cost extra. A lighter ship (burnt fuel) accelerates slightly faster; floodwater makes it slower and deeper. Heavy seas add resistance and cost up to about 1 kn at FULL. With empty tanks the shaft stops and no engine order is accepted.
 
 ### Keys
 
@@ -721,10 +736,10 @@ The station has four pages (`8` again cycles them); it opens on page 3.
    ACTIVE: range + bearing every 30 s               active  14 NM
 ```
 
-- **Fuel:** 2 hours. The helicopter returns automatically when only the 20-minute reserve remains. Running dry before landing loses the aircraft.
-- **Launch limits:** wind up to 32 kn, crosswind up to 22 kn, visibility at least 2 NM, sea state 5 or less, working flight deck.
+- **Fuel:** 2 hours in forward flight; hovering (dipping) burns 1.3 times as fast. The helicopter returns automatically when only the 20-minute reserve remains. Running dry before landing loses the aircraft. In the hover the wind pushes it slightly downwind of its hover point.
+- **Launch limits:** wind up to 32 kn, crosswind up to 22 kn, visibility at least 2 NM, sea state 5 or less, working flight deck, and a deck-motion window (roll within 8 degrees, pitch within 3.5 degrees). Landing also waits for such a window; turning into the sea reduces pitching.
 - **Dipping sonar:** depth 15-300 m (default 75 m, at least 10 m above the seabed), passive 18 NM with +/-2 degrees, active ping 14 NM with 30 s cooldown. Dipping needs wind up to 30 kn and visibility of 1 NM.
-- **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
+- **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery; they drift with the current and a little with the wind. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
 ### Keys
@@ -809,6 +824,7 @@ Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (f
 ```
 
 - Bearing accuracy is about +/-3 degrees. Intercepts are bearings, not positions.
+- A rotating search radar reaches the ESM antenna with its main beam once per revolution; its side lobes are heard only close in. The evidence page shows the peak signal level, a range estimate that assumes the power class of the best candidate (a wrong candidate gives a wrong range) and the measured antenna scan period.
 - Candidates are ranked only from observed frequency, PRF and modulation. A tie is not an identification.
 - Correlation with radar or sonar tracks uses compatible time, bearing and observed position, never hidden identity.
 - ESM runs from the operations compartment: a destroyed operations room disables it.
@@ -850,6 +866,7 @@ Automatic mode (`A`) picks targets and techniques and couples jamming with soft-
 - An intercept that changes from search to a high PRF pulse-doppler seeker at a steady bearing is a missile about to attack: warn Operations immediately.
 - Assigning a radar type (`C`) releases the bearing to CIC; clearing the assignment withdraws it again.
 - Jamming is a transmission. Use it deliberately, not continuously.
+- Your own radar is heard too: a submarine at periscope depth (mast up, about 18 m) intercepts it on its ESM and can pass the bearing to other hostile units over its datalink. Deep boats neither hear radar nor receive the datalink.
 
 ### Not modelled
 
@@ -876,39 +893,50 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Sensor | Range | Accuracy / note |
 |---|---|---|
 | Passive sonar (base) | 20 NM | bearing only; HMS +/-6 deg, TAS +/-2 deg |
-| Active ping | 18 NM | range +/-0.18 NM, depth +/-12 m; 30 s cooldown; heard to 60 NM |
+| Active ping | 18 NM (reference target, broadside-quarter aspect) | CW or LFM (`W`); range accuracy from pulse and SNR, depth +/-12 m; 30 s cooldown; heard to 60 NM |
 | Dipping sonar | 18 NM passive / 14 NM active | +/-2 deg |
 | Sonobuoy | 8 NM | 60 min battery |
-| Surface radar | 30 NM | radar horizon; no submerged contacts |
-| Air radar | 100 NM | aircraft and missiles |
-| ESM | 150 NM | +/-3 deg bearing |
-| HFDF | 120 NM | +/-8 deg bearing |
-| Lookout | 12 NM surface, 5 NM surfaced sub, 20 NM air | x0.35 at night |
+| Surface radar | 30 NM (50 % per sweep) | 4 s antenna revolution; radar horizon; no submerged contacts |
+| Air radar | 100 NM (50 % per sweep) | aircraft and missiles; jammers burn through close in |
+| ESM | 150 NM (main beam) | +/-3 deg bearing; level and range estimate |
+| HFDF | 120 NM ground wave at 15 MHz (about 95-150 NM by frequency) | +/-8 deg bearing (sky wave +/-16) |
+| Lookout | 12 NM surface, 5 NM surfaced sub, 20 NM air | x0.25 (new moon) to x0.45 (full moon) at night; fog and sea state reduce |
 
 ### Weapons and countermeasures
 
 | System | Data |
 |---|---|
-| Frigate torpedo | 45 kn, 12 NM, wire-guided, 2 tubes, 60 s reload, depth 10-300 m |
+| Frigate torpedo | 45 kn, 12 NM (battery), wire-guided (ship <= 20 kn, <= 1.5 deg/s, 5 NM spool), 2 tubes, 60 s reload, depth 10-300 m, proximity fuze |
 | Helicopter torpedo | 55 kn, 12 NM, 2 per sortie, no wire |
 | Hostile torpedo | 28 kn, 30 NM, homes from 3 NM |
-| Nixie towed decoy | 2 per mission, 600 s, 0.2 NM astern, 60 s reload |
+| Nixie towed decoy | 2 per mission, 600 s, 0.2 NM cable (10 m at 15 kn, deeper when slower, parts above 25 kn), 60 s reload |
 | ESSM | 6 missiles, 30 NM, 2 fire channels |
-| CIWS | 1.5 NM, 180 rounds, needs release |
+| CIWS | 1.5 NM, 180 rounds, needs release; 115 deg/s slew, own track radar inside 3 NM |
 | AA gun | 240 rounds, needs release |
-| Chaff | 6 rounds, 8 NM, 40 % break-lock |
+| Chaff | 6 rounds, 8 NM, 40 % break-lock when bloomed; cloud drifts with the wind for 90 s |
 
 ### Own ship
 
 | Item | Value |
 |---|---|
 | Speed | 4-25 kn; telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 25 kn |
-| Turn rate | up to 0.8 deg/s |
-| Cavitation | from 15 kn; passive range x0.35 |
+| Turn rate | about 0.075 deg/s per knot (1.2 deg/s at 16 kn); turning circle about 0.4 NM |
+| Cavitation | from 15 kn in calm water, earlier in heavy seas; passive range x0.35 |
 | QUIET mode | noise x0.65, max 12 kn |
 | TAS handling | 3-12 kn, stream 360 s, recover 480 s, fault above 20 kn |
 | TAS depth | 20-260 m, minus 4 m per knot |
-| Damage | 9 compartments, 3 teams; sinks at 60 % mean flooding |
+| Damage | 9 compartments, 3 teams (about 20 s walk per compartment), 8 patch kits; sinks beyond reserve buoyancy, capsizes at 35 degrees heel or lost GM |
+
+### Environment
+
+| Process | Model |
+|---|---|
+| Tide | M2 (12.42 h) + S2 (12 h), 0.4-1.4 m amplitude, larger in shallow water |
+| Surface layer | seasonal base depth; about 8 m shallower in the afternoon; deepens in wind above 12 kn; internal waves +/-6 m |
+| Sound speed | Mackenzie equation from the temperature profile (sea surface 8-18 deg C by season) |
+| Current | steady field up to 1 kn plus 3 % of the wind, 20 deg right of downwind |
+| Seabed | rock, gravel, sand, silt or mud; affects bottom reflection |
+| Hazards | up to 64 charted wrecks and submerged rocks (tops at least 15 m deep) |
 
 ### Opposing submarines
 
@@ -919,6 +947,8 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Nuclear attack | 0.92 | 400 m | 8 |
 
 Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less.
+
+Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded boat blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking boat holds its position against the current. Submarines sense like you do: passive bearings from their own sonar, a range only after their own TMA legs (a few minutes), ESM only with the mast up, the datalink only at mast depth or snorkelling, and a torpedo alarm takes the crew a few seconds (2-15 s) before the boat evades. Surface ships lose top speed in heavy seas (small ships more).
 
 ### Mission and scoring
 

@@ -3,6 +3,7 @@
 import math
 
 from src.core import config
+from src.physics import torpedo_dyn
 from src.data.catalog import CATALOG
 
 
@@ -39,6 +40,76 @@ def underwater_path_blocked(world, x0, y0, depth0, x1, y1, depth1):
     return False
 
 
+ASROC_HELIX_DEG_PER_S = 6.0
+# Seeker discrimination: a new candidate must be this much louder than the
+# held one to steal the lock; echoes without Doppler (stationary objects)
+# are suppressed; overrun decoys are remembered and ignored.
+SEEKER_LOCK_HYSTERESIS_DB = 6.0
+SEEKER_NO_DOPPLER_DB = 10.0
+SEEKER_DOPPLER_MIN_KN = 1.0
+SEEKER_REJECT_MAX = 4
+
+
+def seeker_level_db(weapon, candidate) -> float:
+    """Received level of a candidate at a homing seeker (relative dB).
+
+    Source level from the candidate's quietness/radiated level (a decoy's
+    designed emission), spherical spreading, a depth-mismatch penalty and the
+    Doppler gate against echoes from stationary objects."""
+    distance = max(0.01, math.hypot(candidate.x - weapon.x, candidate.y - weapon.y))
+    level = getattr(candidate, "acoustic_level_db", None)
+    if level is None:
+        quiet = getattr(candidate, "quiet_factor", None)
+        level = (20.0 * math.log10(1.0 + 0.8 * (1.0 - quiet()))
+                 if callable(quiet) else 0.0)
+        offset = getattr(candidate, "source_level_offset_db", None)
+        if callable(offset):
+            level += offset()
+    level -= 20.0 * math.log10(distance)
+    depth = getattr(candidate, "depth", None)
+    if depth is not None:
+        level -= abs(depth - weapon.depth) / 10.0
+    speed = getattr(candidate, "speed_kn", None)
+    if speed is None and hasattr(candidate, "stype"):
+        speed = getattr(candidate, "speed", None)
+    if speed is not None and speed < SEEKER_DOPPLER_MIN_KN:
+        level -= SEEKER_NO_DOPPLER_DB
+    return level
+
+
+def choose_seeker_target(weapon, viable, current):
+    """Loudest viable candidate, holding the current lock unless a new one
+    is louder by the hysteresis margin."""
+    if not viable:
+        return None
+    scored = [(seeker_level_db(weapon, candidate), index, candidate)
+              for index, candidate in enumerate(viable)]
+    best_level, _index, best = max(scored, key=lambda item: (item[0], -item[1]))
+    if current is not None:
+        held = next((item for item in scored if item[2] is current), None)
+        if held is not None and best_level < held[0] + SEEKER_LOCK_HYSTERESIS_DB:
+            return current
+    return best
+WAKE_HOMING_THRESHOLD = 0.15
+
+
+def _apply_warhead(body, slant_m: float) -> None:
+    """Deliver shock-factor damage; fall back to the legacy hit call."""
+    if getattr(body, "signature_key", None) is not None:
+        amount = torpedo_dyn.surface_damage(slant_m)
+    else:
+        amount = torpedo_dyn.submarine_damage(slant_m)
+    try:
+        body.hit(amount)
+    except TypeError:
+        body.hit()
+
+
+def radiated_source_db(speed_fraction: float) -> float:
+    """Torpedo self noise: ~60 log v (cavitating propulsor at depth)."""
+    return 60.0 * math.log10(max(speed_fraction, 0.05))
+
+
 class Torpedo:
     # Exact speeds, envelopes, rates and timing below are gameplay tuning
     # values. They do not describe real weapon performance or doctrine.
@@ -47,6 +118,7 @@ class Torpedo:
     KILL_DIST_NM = _FRIGATE_TORP_PROFILE.hit_dist_nm
     KILL_DEPTH_M = 15.0    # Tiefentoleranz
     TURN_DEG_PER_S = 8.0
+    HOMING_TURN_DEG_PER_S = 15.0
     DEPTH_RATE_M_PER_S = 10.0
     WIRE_UPDATE_CADENCE_S = config.TORP_MIDCOURSE_UPDATE_S
     WIRE_STALE_S = 3.0
@@ -89,6 +161,16 @@ class Torpedo:
         # sites pass time_since_launch=0.0 for the ramp-up.
         self.time_since_launch = (config.TORP_SPOOLUP_S if time_since_launch is None
                                   else time_since_launch)
+        # Phase 8 physics state (saved): energy store in cruise seconds, motor
+        # speed fraction (1 while powered, falling while coasting), vertical
+        # rate, and the wire's ship-side payout/tension.
+        self.energy_s = torpedo_dyn.energy_budget_s(self.range_nm, self.speed_kn)
+        self.motor_fraction = 1.0
+        self.depth_rate = 0.0
+        self.wire_ship_out_nm = 0.0
+        self.wire_stress_s = 0.0
+        self.last_miss_m = None
+        self.rejected_ids: list[int] = []
         self._search_phase = 0.0     # M15: Serpentin-Phase
         self._midcourse = course_deg % 360.0  # M15: Draht-Mittelkurs
         # The persisted timer also carries wire age.
@@ -134,6 +216,24 @@ class Torpedo:
             return "STALE"
         return "ACTIVE"
 
+    def speed_fraction(self) -> float:
+        """Current speed as a fraction of the catalog cruise speed."""
+        return self._spoolup_factor() * self.motor_fraction
+
+    def wire_tension_update(self, dt: float, ship_speed_kn: float,
+                            ship_yaw_deg_s: float) -> None:
+        """Pay out the ship-side spool and break the wire on overload."""
+        if self.state != "RUN" or self.wire_state == "BROKEN":
+            return
+        self.wire_ship_out_nm += config.kn_to_nm_per_s(max(0.0, ship_speed_kn)) * dt
+        overload = (ship_speed_kn > torpedo_dyn.WIRE_MAX_SHIP_KN
+                    or abs(ship_yaw_deg_s) > torpedo_dyn.WIRE_MAX_SHIP_YAW_DEG_S)
+        self.wire_stress_s = (self.wire_stress_s + dt) if overload else 0.0
+        if (self.wire_stress_s >= torpedo_dyn.WIRE_TENSION_BREAK_S
+                or self.wire_ship_out_nm >= torpedo_dyn.WIRE_SHIP_SPOOL_NM
+                or self.travel >= self.range_nm * torpedo_dyn.WIRE_TORPEDO_SPOOL_FACTOR):
+            self.break_wire()
+
     def break_wire(self) -> None:
         """Permanently reject further command updates for this run."""
         self._midcourse_timer = self.WIRE_BREAK_S
@@ -168,10 +268,10 @@ class Torpedo:
             if underwater_path_blocked(world, self.x, self.y, self.depth,
                     candidate.x, candidate.y, getattr(candidate, "depth", self.target_depth)):
                 continue
-            depth_error = abs(getattr(candidate, "depth", self.target_depth)
-                              - self.depth)
-            viable.append((distance + depth_error / 1000.0, candidate))
-        return min(viable, key=lambda item: item[0])[1] if viable else None
+            if getattr(candidate, "id", None) in self.rejected_ids:
+                continue
+            viable.append(candidate)
+        return choose_seeker_target(self, viable, self._seeker_target)
 
     def _bearing_to(self, x_nm: float, y_nm: float) -> float:
         return math.degrees(math.atan2(x_nm - self.x,
@@ -202,6 +302,10 @@ class Torpedo:
         desired = None
         wobble = 0.0
         turn = self.TURN_DEG_PER_S
+        if self.launch_origin == "asroc" and not self.seeker_acquired:
+            # Air-dropped payload: helical search around the splash point
+            # while descending to the search depth.
+            self.terminal_active = True
         # Normal activation is based on the commanded datum, never hidden truth.
         seeker_active = self.guidance_distance_nm() <= config.TORP_HOME_RANGE_NM
         if self.guidance_x is None or self.guidance_y is None:
@@ -227,7 +331,9 @@ class Torpedo:
         if self.seeker_acquired and target_alive:
             desired = self._bearing_to(sub.x, sub.y)
             self.target_depth = max(0.0, sub.depth)
-            turn = 15.0
+            turn = self.HOMING_TURN_DEG_PER_S
+        elif self.launch_origin == "asroc" and self.guidance_distance_nm() < 0.5:
+            desired = (self.course + ASROC_HELIX_DEG_PER_S) % 360.0
         else:
             # Vor der Eigenortung folgt der Torpedo nur Drahtdaten und sucht
             # um deren Kurs. Die wahre Zielposition korrigiert ihn hier nicht.
@@ -244,16 +350,18 @@ class Torpedo:
         # um in Zieltiefe zu treffen (lineares Tauchen kam zu spat an).
         old_depth = self.depth
         d_target = max(0.0, self.target_depth + wobble)
-        d_diff = d_target - self.depth
-        self.depth += config.clamp(
-            d_diff, -self.DEPTH_RATE_M_PER_S * dt,
-            self.DEPTH_RATE_M_PER_S * dt)
+        fraction = self.speed_fraction()
+        self.depth, self.depth_rate = torpedo_dyn.depth_step(
+            self.depth, self.depth_rate, d_target, fraction, dt,
+            self.DEPTH_RATE_M_PER_S)
 
         throttle = 1.0
         if desired is not None:
             diff = config.angle_diff_deg(desired, self.course)
+            # Constant turning radius: the rate scales with speed.
+            rate = torpedo_dyn.turn_rate_deg_s(turn, fraction)
             self.course = (self.course + config.clamp(
-                diff, -turn * dt, turn * dt)) % 360.0
+                diff, -rate * dt, rate * dt)) % 360.0
             # M15: bei starkem Ruderbedarf krabbeln, damit der Torpedo
             # nicht um das Ziel kreist: Kurs erst richten, dann anrennen.
             if abs(diff) > 60.0:
@@ -261,10 +369,21 @@ class Torpedo:
             else:
                 throttle = 1.0 - 0.5 * max(
                     0.0, min(1.0, (abs(diff) - 30.0) / 30.0))
+        # Energy: power ~ v^3; an empty store stops the motor and the weapon
+        # coasts against drag until it is lost.
+        effective = self._spoolup_factor() * throttle * self.motor_fraction
+        if self.motor_fraction >= 1.0:
+            self.energy_s -= torpedo_dyn.energy_rate(
+                self._spoolup_factor() * throttle) * dt
+            if self.energy_s <= 0.0:
+                self.energy_s = 0.0
+                self.motor_fraction = 1.0 - 1e-9
+        else:
+            self.motor_fraction = torpedo_dyn.coast_step(self.motor_fraction, dt)
+            effective = self._spoolup_factor() * self.motor_fraction
         # Bewegung (Anti-Tunneling: Swept-Check über den ganzen Schritt)
         ox, oy = self.x, self.y
-        step = min(self.speed_nm_per_s * dt * throttle * self._spoolup_factor(),
-                   max(0.0, self.range_nm - self.travel))
+        step = self.speed_nm_per_s * dt * effective
         self.x += step * math.sin(math.radians(self.course))
         self.y -= step * math.cos(math.radians(self.course))
         self.travel += step
@@ -290,21 +409,48 @@ class Torpedo:
             if (not underwater_path_blocked(world, ox, oy, old_depth, hx, hy, hd)
                     and not underwater_path_blocked(world, hx, hy, hd,
                                                      body.x, body.y, body.depth)):
-                self.x, self.y, self.depth = hx, hy, hd
-                self.travel -= step * (1.0 - fraction)
-                self.target = body
                 if callable(getattr(body, "hit", None)):
+                    self.x, self.y, self.depth = hx, hy, hd
+                    self.travel -= step * (1.0 - fraction)
+                    self.target = body
+                    # Proximity fuze at closest approach: shock-factor damage.
+                    horizontal = self._swept_dist(body, ox, oy) * 1852.0
+                    slant = math.hypot(horizontal, getattr(body, "depth", hd) - hd)
+                    self.last_miss_m = slant
                     self.state = "HIT"
-                    body.hit()
+                    _apply_warhead(body, slant)
                 else:
-                    # A decoy/contact consumes the terminal run but is not a
-                    # reportable target hit.
-                    self.state = "SASE"
+                    # Overran a decoy: no hull, no detonation. Remember it and
+                    # re-attack with the energy that is left.
+                    identity = getattr(body, "id", None)
+                    if identity is not None:
+                        self.rejected_ids = (self.rejected_ids + [identity])[
+                            -SEEKER_REJECT_MAX:]
+                    self._seeker_target = None
+                    self.seeker_acquired = False
+                    self.target = None
+                    continue
                 return
         if (underwater_path_blocked(world, ox, oy, old_depth,
                                     self.x, self.y, self.depth)
-                or self.travel >= self.range_nm):
+                or self.motor_fraction < torpedo_dyn.COAST_SINK_FRACTION):
             self.state = "SASE"
+
+    # --- radiated noise (heard by the target's sonar) ---------------------
+
+    def source_level_offset_db(self) -> float:
+        return radiated_source_db(self.speed_fraction())
+
+    def quiet_factor(self) -> float:
+        return config.ENEMY_TORP_QUIET
+
+    def lofar_lines(self, t_sim: float = 0.0) -> list:
+        """Propulsor tonals scale with motor speed."""
+        if self.state != "RUN":
+            return []
+        f = 180.0 * max(0.1, self.speed_fraction())
+        amplitude = min(1.0, 0.9 * self.speed_fraction())
+        return [(f * 0.5, 0.4 * amplitude, 5.0), (f, amplitude, 8.0)]
 
     def _swept_hit_fraction(self, target, ox, oy, old_depth, radius):
         """First overlap of the horizontal hit circle and vertical tolerance."""
@@ -387,9 +533,20 @@ class EnemyTorpedo:
         # sites pass time_since_launch=0.0 for the ramp-up.
         self.time_since_launch = (config.TORP_SPOOLUP_S if time_since_launch is None
                                   else time_since_launch)
+        # Phase 8 physics state (saved).
+        self.energy_s = torpedo_dyn.energy_budget_s(self.range_nm, self.speed_kn)
+        self.motor_fraction = 1.0
+        self.depth_rate = 0.0
+        self.target_depth = depth_m
 
     def _spoolup_factor(self) -> float:
         return Torpedo._spoolup_factor(self)
+
+    def speed_fraction(self) -> float:
+        return self._spoolup_factor() * self.motor_fraction
+
+    def source_level_offset_db(self) -> float:
+        return radiated_source_db(self.speed_fraction())
 
     @property
     def dead(self) -> bool:
@@ -410,9 +567,8 @@ class EnemyTorpedo:
                     world, self.x, self.y, self.depth, candidate.x, candidate.y,
                     getattr(candidate, "depth", 5.0)):
                 continue
-            stable = getattr(candidate, "seq", getattr(candidate, "id", index))
-            viable.append((distance, type(candidate).__name__, stable, candidate))
-        return min(viable, key=lambda item: item[:3])[3] if viable else None
+            viable.append(candidate)
+        return choose_seeker_target(self, viable, self._seeker_target)
 
     def update(self, dt: float, ship, world=None, seeker_candidates=()) -> None:
         if self.state != "RUN":
@@ -436,15 +592,35 @@ class EnemyTorpedo:
                 self._seeker_target = candidate
                 self.seeker_acquired = True
         target = self._seeker_target
+        fraction = self.speed_fraction()
+        desired = None
         if target is not None:
             desired = math.degrees(math.atan2(
                 target.x - self.x, -(target.y - self.y))) % 360.0
+            # Homing on a surface ship: run up to keel depth.
+            self.target_depth = min(self.target_depth,
+                                    max(3.0, getattr(target, "depth", 5.0) + 1.0))
+        else:
+            wake = getattr(ship, "wake_strength_at", None)
+            if wake is not None and wake(self.x, self.y) >= WAKE_HOMING_THRESHOLD:
+                # Wake homing: follow the bubble trail toward its young end.
+                desired = self._wake_course(ship)
+        if desired is not None:
             diff = config.angle_diff_deg(desired, self.course)
+            rate = torpedo_dyn.turn_rate_deg_s(self.TURN_DEG_PER_S, fraction)
             self.course = (self.course + config.clamp(
-                diff, -6.0 * dt, 6.0 * dt)) % 360.0
+                diff, -rate * dt, rate * dt)) % 360.0
+        self.depth, self.depth_rate = torpedo_dyn.depth_step(
+            self.depth, self.depth_rate, self.target_depth, fraction, dt)
+        if self.motor_fraction >= 1.0:
+            self.energy_s -= torpedo_dyn.energy_rate(self._spoolup_factor()) * dt
+            if self.energy_s <= 0.0:
+                self.energy_s = 0.0
+                self.motor_fraction = 1.0 - 1e-9
+        else:
+            self.motor_fraction = torpedo_dyn.coast_step(self.motor_fraction, dt)
         ox, oy = self.x, self.y
-        step = min(self.speed_nm_per_s * dt * self._spoolup_factor(),
-                   max(0.0, self.range_nm - self.travel))
+        step = self.speed_nm_per_s * dt * self.speed_fraction()
         self.x += step * math.sin(math.radians(self.course))
         self.y -= step * math.cos(math.radians(self.course))
         self.travel += step
@@ -470,8 +646,19 @@ class EnemyTorpedo:
                 if hasattr(target, "dead"):
                     target.dead = True
                     target.state = "SASE"
-        elif self.travel >= self.range_nm:
+        elif self.motor_fraction < torpedo_dyn.COAST_SINK_FRACTION:
             self.state = "SASE"
+
+    TURN_DEG_PER_S = 6.0
+
+    def _wake_course(self, ship) -> float:
+        """Course along the wake toward its youngest sampled point."""
+        points = getattr(ship, "wake", ())
+        if not points:
+            return self.course
+        youngest = points[-1]
+        return math.degrees(math.atan2(youngest[0] - self.x,
+                                       -(youngest[1] - self.y))) % 360.0
 
     # --- Duck-Type-Interface wie Sub/Animal (passives Sonar) ---
 
@@ -487,13 +674,15 @@ class EnemyTorpedo:
         return config.ENEMY_TORP_QUIET
 
     def lofar_lines(self, t_sim: float = 0.0) -> list:
-        """Kreisch-Linie: 150->90 Hz ueber die Laufstrecke, plus
-        Unterharmonische (45-75 Hz) im DEMON-Trennbereich."""
+        """Propulsor whine: frequency and level follow the motor speed as the
+        battery sags over the run (150 -> 90 Hz), plus the subharmonic."""
         if self.state != "RUN":
             return []
-        frac = min(1.0, self.travel / max(0.001, self.range_nm))
-        f = 150.0 - 60.0 * frac
-        return [(f * 0.5, 0.35, 5.0), (f, 0.90, 8.0)]
+        used = 1.0 - self.energy_s / max(
+            torpedo_dyn.energy_budget_s(self.range_nm, self.speed_kn), 1e-9)
+        f = (150.0 - 60.0 * min(1.0, max(0.0, used))) * max(0.1, self.speed_fraction())
+        amplitude = min(1.0, 0.9 * self.speed_fraction())
+        return [(f * 0.5, 0.39 * amplitude, 5.0), (f, amplitude, 8.0)]
 
     def broadband(self) -> dict:
         prof = self.profile

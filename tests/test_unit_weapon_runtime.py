@@ -58,6 +58,11 @@ def assign_contact(game, target_id=9001):
     return contact
 
 
+def alarmed(sub):
+    """Alarm raised: immediate reaction or the crew's recognition countdown."""
+    return sub.torpedo_alerted or sub.torpedo_alarm_left > 0.0
+
+
 def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(
         game, monkeypatch):
     """A launch is a loud, one-time acoustic event: subs react to it from much
@@ -75,8 +80,8 @@ def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(
     monkeypatch.setattr(game.audio, "play_effect", effects.append)
     assert game.launch_torpedo_at(contact, 50.0) is True
 
-    assert near.torpedo_alerted is True
-    assert far.torpedo_alerted is False
+    assert alarmed(near) is True
+    assert alarmed(far) is False
     assert effects == ["torpedo_launch"]
 
 
@@ -85,10 +90,15 @@ def test_torpedo_notice_ranges_are_ordered_between_homing_and_launch_alert():
             < config.SUB_TORPEDO_ALERT_NM)
 
 
-def test_quiet_sub_notices_running_torpedo_before_homing_range(game):
+def test_quiet_sub_notices_running_torpedo_before_homing_range(game, monkeypatch):
     """Between TORP_HOME_RANGE_NM and the launch transient, a sub can still
     passively notice a running torpedo - scaled by how much its own noise
     masks its listening."""
+    # Heard through the passive sonar equation; calm, dry weather so rain
+    # and wind noise do not mask the reference range.
+    monkeypatch.setattr(game.world, "weather_values", lambda: dict(
+        wind_speed_kn=6.0, rain_intensity=0.0, visibility_nm=10.0,
+        wind_from_deg=0.0, sea_state=1.0))
     torpedo = Torpedo(game.ship.x + config.TORP_RUNNING_NOISE_RANGE_NM - 1.0,
                       game.ship.y, 90.0, 50.0, None, 1)
     game.torpedoes = [torpedo]
@@ -99,7 +109,7 @@ def test_quiet_sub_notices_running_torpedo_before_homing_range(game):
 
     game._update_player_torpedoes(0.0)
 
-    assert quiet_sub.torpedo_alerted is True
+    assert alarmed(quiet_sub) is True
 
 
 def test_loud_sub_does_not_notice_running_torpedo_at_the_same_distance(game):
@@ -113,7 +123,7 @@ def test_loud_sub_does_not_notice_running_torpedo_at_the_same_distance(game):
 
     game._update_player_torpedoes(0.0)
 
-    assert loud_sub.torpedo_alerted is False
+    assert alarmed(loud_sub) is False
 
 
 def test_launch_torpedo_at_starts_the_motor_spoolup_ramp(game):
@@ -281,8 +291,8 @@ def test_torpedo_warning_is_local_and_not_selected_target_telepathy(game, monkey
     game.torpedoes = [Torpedo(100.5, 100, 90, 50, far, 1,
                               speed_kn=0, guidance_x=120, guidance_y=100)]
     game._update_player_torpedoes(0.1)
-    assert near.torpedo_alerted is not blocked
-    assert far.torpedo_alerted is False
+    assert alarmed(near) is not blocked
+    assert alarmed(far) is False
 
 
 def test_terminal_depth_tracking_loss_and_reacquisition():
@@ -292,11 +302,13 @@ def test_terminal_depth_tracking_loss_and_reacquisition():
     torpedo.update(1.0, [first])
     assert torpedo.seeker_acquired
     assert torpedo.target_depth == 100
-    assert torpedo.depth == 15.0
+    # Fin-limited vertical acceleration: diving, never faster than 10 m/s.
+    first_depth = torpedo.depth
+    assert 5.0 < first_depth <= 15.0
     first.depth = 200
     torpedo.update(1.0, [first])
     assert torpedo.target_depth == 200
-    assert torpedo.depth == 25.0
+    assert first_depth < torpedo.depth <= first_depth + 10.0
     first.x = 200
     torpedo.update(0.1, [first])
     assert not torpedo.seeker_acquired
@@ -656,6 +668,7 @@ def test_ciws_failure_spends_ammo_with_one_second_cadence(game, monkeypatch):
                              observer_x=game.ship.x, observer_y=game.ship.y,
                              course=None, quality=1, now=game.sim_t, label="ASM")
     game.rng_asm.random = lambda: 1.0
+    game.ciws_mount_deg = 90.0  # mount already on the east bearing
     ammo = game.ciws_ammo
     game._update_air_defense(0.1, publish_picture=False)
     burst = game._air_defense_loadout["ciws"]["rounds_per_attempt"]

@@ -75,6 +75,18 @@ THREAT_LEVELS = {
     SignalType.MISSILE_SEEKER: "critical",
 }
 POWER_CLASS_RANGE_NM = {"low": 60.0, "medium": 100.0, "high": 150.0}
+# Rotating search antennas illuminate the ESM mast only when their main beam
+# passes (one-way level 20 log10(R_class / R)); between passes only the
+# side lobes reach it.  Tracking/fire-control and seeker radars point at
+# their target.  Periods are generic rotation rates per radar role.
+ANTENNA_SCAN_PERIOD_S = {"navigation": 2.5, "surface_search": 2.5,
+                         "air_search": 5.0, "multi_function": 2.0}
+MAIN_BEAM_WIDTH_DEG = 2.0
+SIDELOBE_DB = -25.0
+ESM_DWELL_S = 0.5
+ESM_LEVEL_NOISE_DB = 2.0
+ESM_SIGNAL_DB_RANGE = (-60.0, 200.0)
+ESM_LIVE_SCAN_CAP_S = 7.5
 THREAT_ORDER = {"unknown": 0, "low": 1, "medium": 2, "high": 3,
                 "critical": 4}
 ESM_STATUS_FILTERS = ("OPERATIONAL", "LIVE", "MEMORY", "ALL")
@@ -188,6 +200,7 @@ class ESMMeasurement:
     quality: float
     observed_at: float
     synthetic_assumption: bool = False
+    signal_db: float = 0.0
 
 
 @dataclass(slots=True)
@@ -204,12 +217,28 @@ class ESMTrack:
     first_seen: float
     last_seen: float
     synthetic_assumption: bool = False
+    # Peak received level over the ESM sensitivity (dB) and the measured
+    # interval between intercepts (antenna scan period, 0 until measured).
+    signal_db: float = 0.0
+    revisit_s: float = 0.0
 
     def age(self, now: float) -> float:
         return max(0.0, now - self.last_seen)
 
     def display_quality(self, now: float, stale_s: float = ESM_STALE_S) -> float:
         return max(0.0, self.quality * (1.0 - self.age(now) / stale_s))
+
+
+def live_window_s(track: ESMTrack) -> float:
+    """A scanning emitter is still live until one missed revolution."""
+    return max(ECM_SIGNAL_FRESH_S,
+               1.5 * min(track.revisit_s, ESM_LIVE_SCAN_CAP_S))
+
+
+def estimated_range_nm(track: ESMTrack, power_class: str) -> float:
+    """Range implied by the peak level for an assumed emitter power class."""
+    reference = POWER_CLASS_RANGE_NM.get(power_class, POWER_CLASS_RANGE_NM["medium"])
+    return reference * 10.0 ** (-track.signal_db / 20.0)
 
 
 def signal_state(track: ESMTrack, now: float, threat_level: str) -> str:
@@ -219,7 +248,7 @@ def signal_state(track: ESMTrack, now: float, threat_level: str) -> str:
     if not confirmed:
         return "UNCONFIRMED"
     age = track.age(now)
-    if age <= ECM_SIGNAL_FRESH_S:
+    if age <= live_window_s(track):
         return "LIVE"
     if age <= ESM_ASSOCIATION_MAX_GAP_S:
         return "RECENT"
@@ -601,25 +630,18 @@ class ECMJammer:
         return {"auto_enabled": self.auto_enabled,
                 "channels": [asdict(channel) for channel in self.channels]}
 
-    def restore(self, state: dict, valid_track_keys: set[str], now: float,
-                *, version: int = ESM_STATE_VERSION) -> None:
+    def restore(self, state: dict, valid_track_keys: set[str],
+                now: float) -> None:
         if not isinstance(state, dict) or set(state) != {"auto_enabled", "channels"}:
             raise ValueError("invalid ECM state")
         if type(state["auto_enabled"]) is not bool or not isinstance(state["channels"], list):
             raise ValueError("invalid ECM state")
-        legacy_limit = 2 if version == 2 else self.MAX_CHANNELS
-        if len(state["channels"]) > legacy_limit:
+        if len(state["channels"]) > self.MAX_CHANNELS:
             raise ValueError("too many ECM channels")
         fields = set(ECMChannel.__dataclass_fields__)
         channels = []
         keys = set()
         for row in state["channels"]:
-            if version == 2 and isinstance(row, dict):
-                row = dict(row)
-                row.update(technique=ECMTechnique.NOISE.value,
-                           tuned_bearing_deg=0.0,
-                           power_draw=self.TECHNIQUE_POWER[ECMTechnique.NOISE.value],
-                           is_locked_on=row.get("effectiveness", 0.0) > 0.0)
             if not isinstance(row, dict) or set(row) != fields:
                 raise ValueError("invalid ECM channel")
             channel = ECMChannel(**row)
@@ -788,6 +810,7 @@ class ESMPicture:
                 first_seen=measurement.observed_at,
                 last_seen=measurement.observed_at,
                 synthetic_assumption=measurement.synthetic_assumption,
+                signal_db=measurement.signal_db,
             )
         while len(self._tracks) > self.maximum:
             evicted = min(self._tracks.values(), key=lambda track: (
@@ -812,6 +835,16 @@ class ESMPicture:
         track.prf_hz = measurement.prf_hz
         track.modulation_code = measurement.modulation_code
         track.quality = measurement.quality
+        gap = measurement.observed_at - track.last_seen
+        if gap > 0.0:
+            gap = min(gap, ESM_ASSOCIATION_MAX_GAP_S)
+            track.revisit_s = (gap if track.revisit_s <= 0.0
+                               else track.revisit_s + (gap - track.revisit_s) * alpha)
+        # Peak-hold amplitude that relaxes slowly (side lobes read low).
+        if measurement.signal_db >= track.signal_db:
+            track.signal_db = measurement.signal_db
+        else:
+            track.signal_db += (measurement.signal_db - track.signal_db) * 0.05
         track.last_seen = measurement.observed_at
         track.synthetic_assumption = measurement.synthetic_assumption
 
@@ -827,11 +860,8 @@ class ESMPicture:
         restored = {}
         previous = None
         for row in rows:
-            if not isinstance(row, dict) or set(row) not in (
-                    fields, fields - {"synthetic_assumption"}):
+            if not isinstance(row, dict) or set(row) != fields:
                 raise ValueError("invalid ESM track fields")
-            if "synthetic_assumption" not in row:
-                row = {**row, "synthetic_assumption": False}
             track = ESMTrack(**row)
             _validate_track(track, now, track_seq)
             if track.track_key in restored or (previous is not None
@@ -883,11 +913,31 @@ def analyze_signal(track: ESMTrack, emitters: Mapping[str, object],
                        candidates, ambiguous)
 
 
+def antenna_main_beam_on(signal: RadarSignal, bearing_to_observer: float,
+                         now: float, dwell_s: float) -> bool:
+    """Did the emitter's main beam sweep the observer during the dwell?"""
+    period = ANTENNA_SCAN_PERIOD_S.get(getattr(signal.signal_type, "value",
+                                               signal.signal_type))
+    if period is None:
+        return True
+    offset = _stable_u64(signal.signal_id, "azimuth") % 3600 / 10.0
+    azimuth = (offset + now * 360.0 / period) % 360.0
+    swept = 360.0 * dwell_s / period + MAIN_BEAM_WIDTH_DEG
+    if swept >= 360.0:
+        return True
+    return (azimuth - bearing_to_observer + MAIN_BEAM_WIDTH_DEG / 2.0) % 360.0 < swept
+
+
 def scan_for_signals(signals, *, observer_x: float, observer_y: float,
                      now: float, maximum_range_nm: float,
                      bearing_error_deg: float, noise_for,
-                     line_of_sight=lambda _signal: True) -> tuple[ESMMeasurement, ...]:
-    """Convert internal emissions to detached bearing-only ESM measurements."""
+                     line_of_sight=lambda _signal: True,
+                     dwell_s: float = ESM_DWELL_S,
+                     level_noise_for=None) -> tuple[ESMMeasurement, ...]:
+    """Convert internal emissions to detached bearing-only ESM measurements.
+
+    The one-way received level decides the intercept: main beam out to the
+    power-class range, side lobes (-25 dB) only close in."""
     received = []
     for signal in signals:
         if not isinstance(signal, RadarSignal) or signal.emitted_at > now:
@@ -900,15 +950,25 @@ def scan_for_signals(signals, *, observer_x: float, observer_y: float,
         noise = max(-1.0, min(1.0, float(noise_for(signal))))
         effective_range = min(maximum_range_nm, POWER_CLASS_RANGE_NM.get(
             signal.power_class, POWER_CLASS_RANGE_NM["medium"]))
-        if distance > effective_range:
+        level = 20.0 * math.log10(effective_range / max(distance, 1e-3))
+        if not antenna_main_beam_on(signal, (true_bearing + 180.0) % 360.0,
+                                    now, dwell_s):
+            level += SIDELOBE_DB
+        if level < 0.0:
             continue
-        quality = max(.05, min(1.0, 1.0 - .65 * distance / effective_range))
+        # Quality follows the received level (legacy 1 - .65 R/R_eff for the
+        # main beam).
+        quality = max(.05, min(1.0, 1.0 - .65 * 10.0 ** (-level / 20.0)))
+        level_noise = (0.0 if level_noise_for is None
+                       else max(-3.0, min(3.0, float(level_noise_for(signal)))))
+        measured_level = max(ESM_SIGNAL_DB_RANGE[0], min(
+            ESM_SIGNAL_DB_RANGE[1], level + level_noise * ESM_LEVEL_NOISE_DB))
         received.append(ESMMeasurement(
             observer_x, observer_y,
             (true_bearing + noise * bearing_error_deg) % 360.0,
             bearing_error_deg / math.sqrt(3.0), signal.frequency_hz,
             signal.prf_hz, signal.modulation_code, quality, signal.emitted_at,
-            signal.synthetic_assumption))
+            signal.synthetic_assumption, measured_level))
     return tuple(sorted(received, key=_measurement_sort_key)[:ESM_MAX_TRACKS])
 
 
@@ -953,17 +1013,11 @@ def correlate_observations(track: ESMTrack, evidence,
 
 def valid_esm_state(state, now: float, emitters: Mapping[str, object]) -> bool:
     """Validate the exact ESM envelope in the canonical save schema."""
-    if not isinstance(state, dict) or set(state) not in ({
-            "version", "track_seq", "picture", "selected_track_key", "annotations"}, {
+    if not isinstance(state, dict) or set(state) != {
             "version", "track_seq", "picture", "selected_track_key", "annotations",
-            "ecm"}):
+            "ecm"}:
         return False
-    if type(state["version"]) is not int or state["version"] not in (
-            1, 2, ESM_STATE_VERSION):
-        return False
-    if state["version"] == 1 and "ecm" in state:
-        return False
-    if state["version"] in (2, ESM_STATE_VERSION) and "ecm" not in state:
+    if type(state["version"]) is not int or state["version"] != ESM_STATE_VERSION:
         return False
     track_seq = state["track_seq"]
     if type(track_seq) is not int or not 0 <= track_seq <= 2**63 - 1:
@@ -991,13 +1045,10 @@ def valid_esm_state(state, now: float, emitters: Mapping[str, object]) -> bool:
                 or emitter is None or getattr(emitter, "domain", None) != "radar"):
             return False
         previous = track_key
-    if "ecm" in state:
-        try:
-            jammer = ECMJammer()
-            jammer.restore(state["ecm"], set(picture._tracks), now,
-                           version=state["version"])
-        except (TypeError, ValueError, OverflowError):
-            return False
+    try:
+        ECMJammer().restore(state["ecm"], set(picture._tracks), now)
+    except (TypeError, ValueError, OverflowError):
+        return False
     return True
 
 
@@ -1019,6 +1070,8 @@ def _validate_measurement(measurement: ESMMeasurement, now: float) -> None:
             or not 0.0 <= measurement.observed_at <= now
             or measurement.modulation_code not in ESM_MODULATIONS
             or type(measurement.synthetic_assumption) is not bool
+            or not _finite_number(measurement.signal_db)
+            or not ESM_SIGNAL_DB_RANGE[0] <= measurement.signal_db <= ESM_SIGNAL_DB_RANGE[1]
             or (measurement.prf_hz is not None and (
                 not _finite_number(measurement.prf_hz)
                 or not 1.0 <= measurement.prf_hz <= 1e7))):
@@ -1034,9 +1087,12 @@ def _validate_track(track: ESMTrack, now: float, track_seq: int) -> None:
         frequency_hz=track.frequency_hz, prf_hz=track.prf_hz,
         modulation_code=track.modulation_code, quality=track.quality,
         observed_at=track.last_seen,
-        synthetic_assumption=track.synthetic_assumption)
+        synthetic_assumption=track.synthetic_assumption,
+        signal_db=track.signal_db)
     _validate_measurement(measurement, now)
     if (sequence is None or sequence > track_seq
+            or not _finite_number(track.revisit_s)
+            or not 0.0 <= track.revisit_s <= ESM_ASSOCIATION_MAX_GAP_S
             or not _finite_number(track.first_seen)
             or not 0.0 <= track.first_seen <= track.last_seen):
         raise ValueError("invalid ESM track")

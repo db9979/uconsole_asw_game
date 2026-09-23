@@ -1,9 +1,13 @@
 """Fregatte-Modell: Position, Kurs, Geschwindigkeit, Lärmpegel."""
 
+import dataclasses
 import math
 
 from src.core import config
+from src.physics import ship_dynamics as dyn
 from src.world.grounding import DEFAULT_HULL_SPEC, HullSpec
+
+KN = dyn.KN
 
 
 class Ship:
@@ -31,7 +35,16 @@ class Ship:
         self.last_impact_speed_kn = 0.0
         self.roll = 0.0
         self.pitch = 0.0
+        self.roll_rate = 0.0
+        self.pitch_rate = 0.0
         self._clock = 0.0
+        # Derived each tick from damage control (not saved state).
+        self.flood_percent = 0.0
+        self.steering_jammed = False
+        self.stabilizers_ok = True
+        self.sea_state = 0.0
+        # Wake ring: [x_nm, y_nm, clock_s, speed_kn], newest last.
+        self.wake: list[list[float]] = []
 
     # --- Steuerung (dt = reelle Sekunden, turn_dir/speed_dir in -1/0/+1) ---
 
@@ -74,26 +87,76 @@ class Ship:
     def grounded(self) -> bool:
         return self.grounding_latched
 
+    # --- propulsion state (pure functions of the saved state) -------------
+
+    def effective_target_kn(self) -> float:
+        target = min(self.target_speed, self.speed_cap,
+                     12.0 if self.quiet_mode else self.speed_cap)
+        if self.fuel_kg <= 0.0 or (self.grounding_latched and not self.astern):
+            return 0.0
+        return max(0.0, target)
+
+    def mass_kg(self) -> float:
+        """Displacement: design load less burnt fuel plus floodwater."""
+        hull = dyn.HULL
+        return (hull.mass_design_kg - (self.fuel_capacity_kg - self.fuel_kg)
+                + hull.flood_kg_per_percent * max(0.0, self.flood_percent))
+
+    def _propulsion(self) -> tuple[float, float, bool]:
+        """(shaft rev/s, thrust N, braking) for the current state."""
+        hull = dyn.HULL
+        target = self.effective_target_kn() * KN
+        v = self.speed * KN
+        if v > target + 0.15:
+            return 0.0, hull.brake_thrust_n, True
+        c = hull.rpm_per_mps / 60.0
+        rps = min(hull.steady_rps(target), c * v + hull.load_up_rps)
+        return rps, hull.thrust_n(rps, v), False
+
+    @property
+    def shaft_immersion_m(self) -> float:
+        """Propeller depth; a bow-down pitch lifts the stern screws."""
+        hull = dyn.HULL
+        return hull.shaft_immersion_m + 0.5 * hull.length_m * math.sin(
+            math.radians(self.pitch))
+
     @property
     def cavitating(self) -> bool:
-        """M10: Schraubenkavitation (ab CAVITATION_KN deutlich lauter)."""
-        return self.speed >= config.CAVITATION_KN
+        """Blade-tip cavitation from the cavitation number (sigma).
+
+        Calibrated to start at CAVITATION_KN in calm water; heavy pitching
+        that lifts the propellers makes it start earlier."""
+        if self.fuel_kg <= 0.0:
+            return False
+        rps, _thrust, braking = self._propulsion()
+        if braking:
+            rps = dyn.HULL.steady_rps(self.speed * KN)
+        sigma = dyn.HULL.cavitation_number(rps, self.speed * KN,
+                                           self.shaft_immersion_m)
+        return sigma <= dyn.HULL.cavitation_sigma + 1e-12
 
     def rpm(self) -> float:
-        """M10: Wellendrehzahl für die Maschinenraum-Anzeige."""
+        """Shaft revolutions for the engine-room display."""
         if self.fuel_kg <= 0.0:
             return 0.0
-        return config.SHIP_RPM_MIN + self.speed * config.SHIP_RPM_PER_KN
+        rps, _thrust, braking = self._propulsion()
+        return max(dyn.HULL.idle_rpm, 0.0 if braking else rps * 60.0)
+
+    @staticmethod
+    def max_rpm() -> float:
+        return dyn.HULL.steady_rps(config.SHIP_SPEED_MAX_KN * KN) * 60.0
 
     def fuel_burn_kg_h(self) -> float:
-        """Current hotel plus propulsion consumption for the ordered load."""
+        """Hotel load plus fuel for the power the propellers deliver now."""
         if self.fuel_kg <= 0.0:
             return 0.0
-        ordered_speed = min(
-            self.target_speed, self.speed_cap,
-            12.0 if self.quiet_mode else self.speed_cap)
-        load = config.clamp(ordered_speed / config.SHIP_SPEED_MAX_KN, 0.0, 1.0)
-        propulsion = config.SHIP_FUEL_MAX_PROPULSION_KG_H * load ** 3
+        hull = dyn.HULL
+        rps, thrust, braking = self._propulsion()
+        if braking:
+            power = thrust * max(self.speed * KN, 1.0) / hull.propulsive_efficiency
+        else:
+            power = hull.shaft_power_w(max(0.0, thrust), rps)
+        propulsion = hull.sfc_kg_per_j * power * 3600.0
         if self.astern:
             propulsion *= config.SHIP_FUEL_ASTERN_FACTOR
         return config.SHIP_FUEL_HOTEL_KG_H + propulsion
@@ -126,40 +189,43 @@ class Ship:
         """
 
         start_pose = (self.x, self.y, self.course)
-        # Kurs: Ruder, Giergeschwindigkeit und Kurs bauen sich nacheinander auf.
+        hull = dyn.HULL
+        if world is not None:
+            self.sea_state = float(getattr(world, "effective_sea_state",
+                                           getattr(world, "sea_state", 0.0)))
+        # Steering: the rudder slews toward the autopilot order unless the
+        # steering gear is disabled; yaw follows the first-order Nomoto model
+        # r_ss = K (V/L) delta, so the turning circle is nearly speed
+        # independent and a stopped ship does not turn.
         diff = config.angle_diff_deg(self.target_course, self.course)
         desired_rudder = config.clamp(
             diff * 0.75 - self.yaw_rate * config.SHIP_YAW_DAMPING,
             -config.SHIP_MAX_RUDDER_DEG, config.SHIP_MAX_RUDDER_DEG)
-        rudder_step = config.SHIP_RUDDER_RATE_DEG_PER_S * self.turn_rate_scale * dt
-        self.rudder_angle += config.clamp(
-            desired_rudder - self.rudder_angle, -rudder_step, rudder_step)
-        # W2: Ruderwirkung skaliert mit Staudruck (~v^2), nicht linear -
-        # ein liegen gebliebenes Schiff hat kaum Anstroemung am Ruderblatt.
-        speed_factor = config.clamp((self.speed / 10.0) ** 2, 0.0, 1.5)
-        max_yaw = config.SHIP_MAX_YAW_RATE_DEG_PER_S * speed_factor \
-            * self.turn_rate_scale
-        # Scaled by speed_factor too: a stopped ship has no flow over the
-        # rudder/hull, so a list alone should not spin it in place.
-        desired_yaw = ((self.rudder_angle / config.SHIP_MAX_RUDDER_DEG) * max_yaw
-                       + list_bias_deg * config.SHIP_LIST_YAW_GAIN * speed_factor)
-        yaw_step = max_yaw * dt / config.SHIP_YAW_RESPONSE_S if max_yaw else dt
-        self.yaw_rate += config.clamp(desired_yaw - self.yaw_rate,
-                                      -yaw_step, yaw_step)
+        if not self.steering_jammed:
+            rudder_step = config.SHIP_RUDDER_RATE_DEG_PER_S * self.turn_rate_scale * dt
+            self.rudder_angle += config.clamp(
+                desired_rudder - self.rudder_angle, -rudder_step, rudder_step)
+        v_mps = self.speed * KN
+        steady_yaw = math.degrees(
+            hull.nomoto_k * (v_mps / hull.length_m)
+            * math.radians(self.rudder_angle)) * self.turn_rate_scale
+        # Damage list pulls the bow toward the low side, again scaled by
+        # the flow past the hull (no spin in place).
+        steady_yaw += list_bias_deg * config.SHIP_LIST_YAW_GAIN * min(
+            1.5, self.speed / 10.0)
+        tau = config.clamp(hull.nomoto_t_s * (config.TELEGRAPH_ORDERS[3][1] * KN)
+                           / max(v_mps, 0.5), config.SHIP_YAW_RESPONSE_S * 0.5,
+                           config.SHIP_YAW_RESPONSE_S * 6.0)
+        self.yaw_rate = steady_yaw + (self.yaw_rate - steady_yaw) * math.exp(-dt / tau)
         self.course = (self.course + self.yaw_rate * dt) % 360.0
 
-        # Geschwindigkeit: Schub/Widerstand-Gleichgewicht als Exponential-Verzug
-        # (geschlossene Form -> dt-unabhaengig: ein Aufruf mit grossem dt liefert
-        # exakt dasselbe Ergebnis wie viele kleine Teilschritte).
-        effective_target = min(self.target_speed, self.speed_cap,
-                               12.0 if self.quiet_mode else self.speed_cap)
-        if self.grounding_latched and not self.astern:
-            effective_target = 0.0
-        if abs(effective_target - self.speed) <= 0.05:
-            self.speed = effective_target
-        else:
-            self.speed = effective_target + (self.speed - effective_target) \
-                * math.exp(-dt / config.SHIP_SPEED_TAU_S)
+        # Surge: thrust against resistance (exact Riccati integration).
+        effective_target = self.effective_target_kn()
+        extra = hull.added_resistance_n(self.sea_state)
+        speed_mps, _rps, _braking = dyn.surge_step(
+            hull, self.speed * KN, effective_target * KN, self.mass_kg(), dt,
+            extra_resistance=extra)
+        self.speed = min(config.SHIP_SPEED_MAX_KN, speed_mps / KN)
 
         # Physikalische Bewegung (W3: Land-Rueckstoss)
         # Nautisch: 0° = Nord/-y, 90° = Ost/+x (konsistent zu Peilungen)
@@ -173,8 +239,49 @@ class Ship:
             nx += config.kn_to_nm_per_s(cu) * dt
             ny -= config.kn_to_nm_per_s(cv) * dt
         contact = self._advance(start_pose, nx, ny, world)
-        self._update_roll_pitch(dt, world)
+        self._update_roll_pitch(dt, world, list_bias_deg)
+        self._update_wake(dt)
         return contact
+
+    # --- sinkage ---------------------------------------------------------------
+
+    def dynamic_draft_m(self, water_depth_m: float | None = None) -> float:
+        """Hydrostatic draft from displacement plus squat in shallow water."""
+        hull = dyn.HULL
+        draft = dyn.hydrostatic_draft_m(hull, self.mass_kg())
+        if water_depth_m is not None:
+            draft += dyn.squat_m(hull, self.speed, water_depth_m, draft)
+        return draft
+
+    @property
+    def trim_deg(self) -> float:
+        """Dynamic trim by the stern, growing with Froude number squared."""
+        froude = self.speed * KN / math.sqrt(dyn.G * dyn.HULL.length_m)
+        return 1.2 * froude * froude
+
+    # --- wake ----------------------------------------------------------------
+
+    def _update_wake(self, dt: float) -> None:
+        hull = dyn.HULL
+        last = self.wake[-1][2] if self.wake else -1e9
+        if self.speed >= 3.0 and self._clock - last >= hull.wake_sample_s:
+            self.wake.append([self.x, self.y, self._clock, self.speed])
+            del self.wake[:-hull.wake_max_points]
+        cutoff = self._clock - 4.0 * hull.wake_decay_s
+        while self.wake and self.wake[0][2] < cutoff:
+            self.wake.pop(0)
+
+    def wake_strength_at(self, x_nm: float, y_nm: float,
+                         radius_nm: float = 0.15) -> float:
+        """0..1 bubble density of the own wake near a point."""
+        hull = dyn.HULL
+        decay = hull.wake_decay_s / (1.0 + 0.25 * self.sea_state)
+        best = 0.0
+        for px, py, t, speed in self.wake:
+            if math.hypot(px - x_nm, py - y_nm) <= radius_nm:
+                best = max(best, (speed / config.SHIP_SPEED_MAX_KN)
+                           * math.exp(-(self._clock - t) / decay))
+        return min(1.0, best)
 
     def _advance(self, start_pose, nx: float, ny: float, world):
         """Advance to the first safe swept pose and latch physical contact."""
@@ -186,8 +293,13 @@ class Ship:
             self.x, self.y, self.course = self.last_safe_pose
             self.speed = 0.0
             return None
+        depth_query = getattr(world, "depth_m", None)
+        hull = self.hull_spec
+        if depth_query is not None:
+            draft = self.dynamic_draft_m(depth_query(start_pose[0], start_pose[1]))
+            hull = dataclasses.replace(self.hull_spec, draft_m=max(0.5, draft))
         result = world.swept_grounding(
-            start_pose, (nx, ny, self.course), self.hull_spec)
+            start_pose, (nx, ny, self.course), hull)
         self.x, self.y, self.course = (result.safe_x_nm, result.safe_y_nm,
                                        result.safe_course_deg)
         self.last_safe_pose = (self.x, self.y, self.course)
@@ -207,13 +319,19 @@ class Ship:
 
     # --- M10: Roll/Pitch aus Seegang + Fahrt (Anzeige) ---
 
-    def _update_roll_pitch(self, dt: float, world) -> None:
-        sea = (getattr(world, "effective_sea_state", world.sea_state)
-               if world is not None else 0)
-        amp = 0.4 + 0.30 * sea + 0.02 * self.speed
+    def _update_roll_pitch(self, dt: float, world, list_deg: float = 0.0) -> None:
+        wind_from = float(getattr(world, "wind_from_deg", 0.0)) if world else 0.0
+        seed = int(getattr(getattr(world, "ocean", None), "seed", 0)) if world else 0
+        start = self._clock
         self._clock += dt
-        self.roll = amp * math.sin(self._clock * 0.23)
-        self.pitch = amp * 0.7 * math.sin(self._clock * 0.31 + 1.3)
+        (self.roll, self.roll_rate, self.pitch,
+         self.pitch_rate) = dyn.seakeeping_step(
+            dyn.HULL, self.roll, self.roll_rate, self.pitch, self.pitch_rate,
+            dt=dt, clock_s=start, seed=seed, sea_state=self.sea_state,
+            wave_relative_deg=wind_from - self.course,
+            speed_mps=self.speed * KN,
+            yaw_rate_rad=math.radians(self.yaw_rate), list_deg=list_deg,
+            stabilizers=self.stabilizers_ok)
 
     # --- Akustik (vereinfacht, Captain's Log §1.1) ---
 
@@ -254,6 +372,11 @@ class Ship:
     @property
     def time_to_course_s(self) -> float:
         return abs(self.course_error_deg) / max(abs(self.yaw_rate), 0.05)
+
+    @property
+    def heel_deg(self) -> float:
+        return math.degrees(dyn.turn_heel_rad(
+            dyn.HULL, self.speed * KN, math.radians(self.yaw_rate)))
 
     @property
     def turn_radius_nm(self) -> float:

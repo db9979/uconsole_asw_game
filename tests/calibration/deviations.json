@@ -1,0 +1,97 @@
+{
+ "ship.rpm_eq.FLANK": {
+  "phase": 2,
+  "reason": "Phase 2: shaft revolutions now follow a fixed-pitch propeller with a linear K_T(J) curve (steady rpm proportional to speed, 146 rpm at 25 kn). The 1.0.0 values were a cosmetic 20 + 2.4*v display line that is not physically consistent with a 4.2 m propeller.",
+  "value": 145.8176
+ },
+ "ship.rpm_eq.FULL": {
+  "phase": 2,
+  "reason": "Phase 2: shaft revolutions now follow a fixed-pitch propeller with a linear K_T(J) curve (steady rpm proportional to speed, 146 rpm at 25 kn). The 1.0.0 values were a cosmetic 20 + 2.4*v display line that is not physically consistent with a 4.2 m propeller.",
+  "value": 93.3233
+ },
+ "ship.rpm_eq.HALF": {
+  "phase": 2,
+  "reason": "Phase 2: shaft revolutions now follow a fixed-pitch propeller with a linear K_T(J) curve (steady rpm proportional to speed, 146 rpm at 25 kn). The 1.0.0 values were a cosmetic 20 + 2.4*v display line that is not physically consistent with a 4.2 m propeller.",
+  "value": 58.327
+ },
+ "ship.yaw_steady_deg_s.HALF": {
+  "phase": 2,
+  "reason": "Phase 2: first-order Nomoto steering, r = K (V/L) delta, makes the steady turn rate linear in speed, so the turning circle is nearly constant; calibrated at FULL (1.2 deg/s), HALF becomes 0.75 deg/s.",
+  "value": 0.75
+ },
+ "sonar.passive_nm.BOW.sea1.own12.d150": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 23.403145
+ },
+ "sonar.passive_nm.BOW.sea1.own18.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",
+  "value": 6.418866
+ },
+ "sonar.passive_nm.BOW.sea1.own25.d150": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",
+  "value": 2.101524
+ },
+ "sonar.passive_nm.BOW.sea1.own25.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",
+  "value": 4.461446
+ },
+ "sonar.passive_nm.BOW.sea1.own6.d150": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 23.934195
+ },
+ "sonar.passive_nm.BOW.sea4.own12.d150": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 19.257926
+ },
+ "sonar.passive_nm.BOW.sea4.own18.d150": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",
+  "value": 4.28814
+ },
+ "sonar.passive_nm.BOW.sea4.own18.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",
+  "value": 6.239193
+ },
+ "sonar.passive_nm.BOW.sea4.own25.d150": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",
+  "value": 2.037872
+ },
+ "sonar.passive_nm.BOW.sea4.own25.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",
+  "value": 4.350308
+ },
+ "sonar.passive_nm.BOW.sea4.own6.d150": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 19.75497
+ },
+ "sonar.passive_nm.TOWED.sea1.own12.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 25.974515
+ },
+ "sonar.passive_nm.TOWED.sea1.own6.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 30.470364
+ },
+ "sonar.passive_nm.TOWED.sea4.own12.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 20.833156
+ },
+ "sonar.passive_nm.TOWED.sea4.own6.d30": {
+  "phase": 4,
+  "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
+  "value": 24.435873
+ }
+}

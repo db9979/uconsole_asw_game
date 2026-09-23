@@ -139,7 +139,10 @@ def test_bathymetry_is_seeded_and_deepens_away_from_coast():
     assert coast.depth_m(*land_point) == 0.0
 
     world = World(seed=44)
-    assert world.depth_m(250.0, 250.0) == coast.depth_m(250.0, 250.0)
+    assert world.charted_depth_m(250.0, 250.0) == coast.depth_m(250.0, 250.0)
+    # Actual depth is chart datum plus the current tide.
+    assert world.depth_m(250.0, 250.0) == pytest.approx(
+        coast.depth_m(250.0, 250.0) + world.tide_m(250.0, 250.0))
 
 
 def test_legacy_load_remains_fixed(tmp_path):

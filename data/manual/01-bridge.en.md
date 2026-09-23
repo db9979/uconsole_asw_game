@@ -49,10 +49,14 @@ Combat situation:
 ## Pro tips {#bridge-tips}
 
 - TMA needs a real change of own velocity. A 30-60 degree turn followed by a steady leg of several minutes gives the best range estimate. Turning on the spot does not help.
-- The ship turns at no more than 0.8 degrees per second and needs minutes to change speed. Start evasive turns early.
+- The turn rate grows with speed (about 0.75 deg/s at 10 kn, 1.2 at 16 kn, 1.9 at 25 kn), so the turning circle stays near 0.4 NM. A stopped ship cannot turn. Speed changes take minutes: about 90 s to 90 % of FULL, and a stop from FULL uses reverse propeller pitch and takes about 90 s. Start evasive turns early.
+- In a hard turn at speed the ship heels outward a few degrees; in heavy seas the fin stabilizers damp the roll, but only with steerage way.
+- In shallow water the hull squats: at 25 kn the draft grows by up to 3 m when the water is less than about five draughts deep. Slow down in shoal water.
 - Sprint-and-drift: sprint at FULL to a new position, then slow to 4-6 kn and listen.
 - Heavy flooding on one side gives a list and a steady yaw pull; correct with rudder.
 - The ship cannot run aground onto land; it is pushed back, but shallow water limits the helicopter dipping depth (10 m bottom clearance).
+- Water depth follows the tide (semi-diurnal, about 12.4 h, up to a few metres in shallow water). A passage that is safe at high water can ground the hull at low water; the HQ weather bulletin reports the current tide at the ship.
+- Wind pushes the surface water: about 3 % of the wind speed, 20 degrees to the right of downwind, on top of the steady ocean current.
 
 ## Not modelled {#bridge-limits}
 

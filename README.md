@@ -10,7 +10,22 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.0.0**
+Current release: **1.1.0**
+
+Release 1.1.0 replaces the remaining kinematic shortcuts with physical models
+while keeping the 1.0.0 gameplay balance (checked by a calibration harness):
+force-based own-ship hydrodynamics and seakeeping; a time-varying ocean with
+tides, mixed layer, sediments and wrecks; passive/active sonar equations with
+ray-traced propagation; towed-array left/right ambiguity, Doppler and a
+covariance TMA; submarine and torpedo physics (energy, fins, wire, proximity
+fuze); decoy discrimination; compartment flooding, stability, fire and repair
+logistics; the radar equation with a rotating antenna, ESM amplitude, HF
+propagation and a moonlit lookout; and missile flight physics with chaff
+clouds, CIWS ballistics, pop-up raiders, helicopter hover/deck limits and
+drifting buoys. Hostile submarines now need their own TMA before they know
+your range. **Saves are now format v12; 1.0.0 (v11) saves are rejected.** The
+Remote Crew v2 protocol is unchanged apart from new ELOKA intercept fields.
+See [docs/simulation-gaps.md](docs/simulation-gaps.md) for the full record.
 
 Release 1.0.0 splits every workstation into two tabbed sub-pages, adds manual
 CIWS and FLAK release authorization alongside the existing automatic gates,
@@ -287,7 +302,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v11 game saves for deterministic restoration of existing sessions.
+in v12 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -390,10 +405,11 @@ Validated does not mean runtime-effective. In release 1.0.0:
 
 ## Saves and User Data
 
-Release 1.0.0 writes and loads save format **v11** only. V11 requires the exact
-`u-jagd-save-v11` schema, including the current runtime catalog snapshot and all
-deterministic continuation state. Older, newer, malformed, or incomplete saves
-are rejected without replacing the running game.
+This build writes and loads save format **v12** only. V12 requires the exact
+`u-jagd-save-v12` schema, including the current runtime catalog snapshot and all
+deterministic continuation state. Older (including every 1.0.0 v11 save),
+newer, malformed, or incomplete saves are rejected without replacing the
+running game; there is no migration.
 
 The five slots are `~/.u-jagd/slot1.json` through `slot5.json`. Saves include a
 snapshot of coastline geometry and synthetic bathymetry so an existing game is

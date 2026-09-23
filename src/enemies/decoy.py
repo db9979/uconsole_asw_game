@@ -11,6 +11,10 @@ from src.data.catalog import CATALOG
 from src.weapons.torpedo import underwater_path_blocked
 
 
+DECOY_SWEEP_FRACTION = 0.02
+DECOY_SWEEP_PERIOD_S = 30.0
+
+
 class Decoy:
     """Sonar-Objekt wie Sub/Animal (Duck-Typing), aber ohne KI-Fahrplan."""
 
@@ -71,6 +75,17 @@ class Decoy:
         # Lautes, leichtes Rauschen: maskiert das U-Boot im LOFAR
         return 0.15
 
+    @property
+    def speed_kn(self) -> float:
+        return self.speed * 3600.0
+
+    def battery_fraction(self) -> float:
+        return max(0.0, min(1.0, self.life / max(self.profile.life_s, 1e-6)))
+
+    def source_level_offset_db(self) -> float:
+        """Emission weakens as the battery drains (amplifier voltage)."""
+        return 20.0 * math.log10(max(0.1, math.sqrt(self.battery_fraction())))
+
     def acoustic_signature(self) -> str:
         if self.dead:
             return ""
@@ -78,9 +93,15 @@ class Decoy:
         return f"mechanisch · {text} (Dekoy?)"
 
     def lofar_lines(self, t_sim: float = 0.0) -> list:
+        """Replica tonals with a slow frequency modulation (+/-2 %, 30 s) and
+        a level that follows the battery."""
         if self.dead:
             return []
-        return [tuple(v) for v in self.profile.lines]
+        sweep = 1.0 + DECOY_SWEEP_FRACTION * math.sin(
+            2.0 * math.pi * t_sim / DECOY_SWEEP_PERIOD_S
+            + (self.sensor_seed % 360) * math.pi / 180.0)
+        level = math.sqrt(self.battery_fraction())
+        return [(v[0] * sweep, v[1] * level, *v[2:]) for v in self.profile.lines]
 
     def broadband(self) -> dict:
         if self.dead:

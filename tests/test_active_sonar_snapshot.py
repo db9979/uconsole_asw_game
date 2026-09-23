@@ -1,4 +1,4 @@
-"""Frozen active evidence and transactional save-v11 validation."""
+"""Frozen active evidence and transactional save-v12 validation."""
 
 import copy
 import json

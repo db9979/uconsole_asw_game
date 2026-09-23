@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 1.0.0 (`src/core/version.py`); current saves are v12-only. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 1.1.0 (`src/core/version.py`); current saves are v12-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-0.1.8.md` and `docs/resume.md`.
@@ -28,6 +28,8 @@
 - Paused, menu, game-over, splash, editor, and administrative states must not accidentally advance simulation. Cosmetic/UI timers and audio cadence use wall time where the code says so.
 - Same seed, world mode, and input/update sequence must produce the same state. Use explicit local `random.Random` streams, stable hashes, stable iteration/order, and saved RNG states. Never introduce simulation dependence on global randomness, hash randomization, rendering frequency, audio availability, or wall clock.
 - Save/load must preserve deterministic continuation, entity ID progression, generated coastline/bathymetry snapshots, pending sensor/projectile state, and operator focus. When adding random draws, consider stream/order compatibility and update determinism and round-trip tests.
+- New random draws should use the stateless counter-based `src/core/detrand.py` (`u01`/`normal` keyed by seed, tag, entity and tick) so they need no saved stream and never shift existing `random.Random` sequences.
+- Physics lives in pure modules (`src/physics/`, `src/sonar/equation.py`/`raytrace.py`, `src/sensors/radar.py`/`visual.py`/`hfdf.py`, `src/weapons/ciws.py`) anchored so the 1.0.0 behaviour appears at its reference point. `python tools/calibrate.py --check` compares 77 gameplay metrics with `tests/calibration/golden.json` (recorded on 1.0.0); intentional deviations go in `tests/calibration/deviations.json` with a reason. Caches in these paths must be pure and bounded (results may never depend on call order).
 
 ## Input ownership and precedence
 
@@ -103,6 +105,7 @@ Use Python 3.11+ from the repository root:
 python -m pip install -e '.[dev]'
 pytest
 python tools/gen_contacts.py --check
+python tools/calibrate.py --check
 python tools/smoke_full.py
 python -m build
 ```

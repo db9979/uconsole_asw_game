@@ -78,7 +78,7 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
                 (ROOT / "data/contact_analysis" / name).read_bytes()
     assert any(name.endswith(".dist-info/licenses/THIRD_PARTY_NOTICES.md")
                for name in wheel_names)
-    assert any(name.endswith("-1.0.0.dist-info/METADATA") for name in wheel_names)
+    assert any(name.endswith("-1.1.0.dist-info/METADATA") for name in wheel_names)
 
     source = next(tmp_path.glob("u_jagd-*.tar.gz"))
     with tarfile.open(source) as archive:
@@ -123,7 +123,7 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
         [sys.executable, "-c",
          "from importlib import resources; "
          "assert resources.files('data.editor_templates').joinpath('mission.json').is_file(); "
-         "from src.core.version import APP_VERSION; assert APP_VERSION == '1.0.0'; "
+         "from src.core.version import APP_VERSION; assert APP_VERSION == '1.1.0'; "
           "from src.commander.server import CommanderServer; "
           "server=CommanderServer(); server.start('127.0.0.1',0); server.stop(); "
           "assert resources.files('data.commander').joinpath('app.js').is_file(); "

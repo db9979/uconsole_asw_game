@@ -4707,10 +4707,26 @@ class Game:
         return (() if track is None else
                 rank_emitters(track, self.runtime_catalog.emitters))
 
+    ELOKA_ANALYSIS_CACHE_MAX = 256
+
     def eloka_analysis(self, track=None):
         track = track or self.selected_eloka_track()
-        return (None if track is None else
-                analyze_signal(track, self.runtime_catalog.emitters))
+        if track is None:
+            return None
+        # The ranking depends only on the measured fingerprint and the
+        # immutable runtime catalog; memoize it (bounded, never saved).
+        emitters = self.runtime_catalog.emitters
+        if self.__dict__.get("_eloka_analysis_owner") is not emitters:
+            self._eloka_analysis_owner = emitters
+            self._eloka_analysis_cache = {}
+        key = (track.frequency_hz, track.prf_hz, track.modulation_code)
+        cache = self._eloka_analysis_cache
+        result = cache.get(key)
+        if result is None:
+            if len(cache) >= self.ELOKA_ANALYSIS_CACHE_MAX:
+                cache.clear()
+            result = cache[key] = analyze_signal(track, emitters)
+        return result
 
     def eloka_range_estimate(self, track=None) -> float | None:
         """Range implied by the intercept's peak level, assuming the power

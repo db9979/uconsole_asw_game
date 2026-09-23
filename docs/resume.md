@@ -1037,3 +1037,24 @@ angepasst werden.
 Softwareverifikation: volle Suite zweimal 2933/2934 bestanden, 26 abgelöst,
 0 Fehler; Katalogvalidator 111 akustische Profile; `smoke_full.py`
 SMOKE-OK.
+
+## Physik-Upgrade 1.1.0 / Save v12 (2026-09-23, Branch `sim-gaps-v12`)
+
+Alle Luecken aus `docs/simulation-gaps.md` sind in den Phasen 0-12 geschlossen
+(Abschlussprotokoll mit Commit je Zeile in `docs/simulation-gaps.md`). Save v12
+ist exakt; v11-Staende von 1.0.0 werden abgelehnt. Versioniert als 1.1.0.
+
+- Kalibrierung: `python tools/calibrate.py --check` (77 Metriken gegen den
+  1.0.0-Stand, Abweichungen begruendet in `tests/calibration/deviations.json`).
+  Der Abschnitt `air` wurde mit derselben Sonde auf dem 1.0.0-Baum gemessen.
+- Performance: ein 0,1-s-Simulationsschritt kostet auf dem ARM-Entwicklungshost
+  im Mittel 6,7 ms (drei Seeds, wie 1.0.0). Groesster Einzelposten war die
+  ELOKA-Emitterbewertung; sie ist jetzt pro Fingerabdruck begrenzt gecacht.
+  Raytrace-Tabellen (LRU), Radar-Reichweitenbrueche und ESM-Analysen sind reine,
+  begrenzte Caches.
+- Offen fuer die Hardwareabnahme auf der uConsole (1280x720): Bildrate bei
+  maximaler Zeitraffung mit Luftangriff und mehreren Torpedos, Lesbarkeit der
+  neuen ELOKA-Zeile (Pegel/Entfernung/Umlauf) und der HFDF-Frequenz, sowie das
+  Verhalten der 4-s-Radarumlaeufe auf dem OPZ-Bild.
+- Merge: der Branch entstand parallel zu einer Handbuch-Session auf `main`
+  (AGENTS.md, README, Handbuch); beim Zusammenfuehren diese Dateien pruefen.

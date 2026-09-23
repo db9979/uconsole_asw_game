@@ -222,3 +222,14 @@ def test_ciws_track_radar_holds_close_in_missiles_between_sweeps(monkeypatch):
     game.radar_scan_pending_deg = 10.0
     game._update_air_picture()
     assert not game.asm_tracks()
+
+
+def test_eloka_analysis_cache_matches_direct_ranking_and_is_bounded():
+    game = Game(seed=1107, start_menu=False, audio_enabled=False)
+    tracks = [esm.ESMTrack(f"E{index + 1:016x}", 0.0, 0.0, 90.0, 1.0,
+                           2e9 + index * 1e6, 800.0, "pulse", .8, 0.0, 0.0)
+              for index in range(game.ELOKA_ANALYSIS_CACHE_MAX + 20)]
+    for track in tracks:
+        assert game.eloka_analysis(track) == esm.analyze_signal(
+            track, game.runtime_catalog.emitters)
+    assert len(game._eloka_analysis_cache) <= game.ELOKA_ANALYSIS_CACHE_MAX

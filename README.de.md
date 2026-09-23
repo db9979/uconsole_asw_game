@@ -12,7 +12,25 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.0.0**
+Aktuelle Version: **1.1.0**
+
+Version 1.1.0 ersetzt die verbliebenen kinematischen Vereinfachungen durch
+physikalische Modelle und hält dabei die Spielbalance von 1.0.0 (geprüft durch
+einen Kalibrierungs-Harness): kraftbasierte Schiffshydrodynamik und
+Seegangsbewegungen; ein zeitlich veränderlicher Ozean mit Gezeiten,
+Deckschicht, Sedimenten und Wracks; passive/aktive Sonargleichungen mit
+Strahlverfolgung; Seiten-Mehrdeutigkeit der Schleppantenne, Doppler und TMA mit
+Kovarianz; U-Boot- und Torpedophysik (Energie, Flossen, Draht,
+Annäherungszünder); Täuschkörper-Diskriminierung; Abteilungsflutung,
+Stabilität, Brand und Reparaturlogistik; die Radargleichung mit drehender
+Antenne, ESM-Pegel, KW-Ausbreitung und ein Ausguck mit Mondlicht; sowie
+Flugkörper-Flugphysik mit Düppelwolken, CIWS-Ballistik, Pop-up-Angriffen,
+Helikopter-Schwebeflug/Decklimits und treibenden Bojen. Feindliche U-Boote
+brauchen jetzt eine eigene TMA, bevor sie Ihre Entfernung kennen.
+**Spielstände haben jetzt das Format v12; Spielstände von 1.0.0 (v11) werden
+abgelehnt.** Das Remote-Crew-v2-Protokoll bleibt bis auf neue ELOKA-Felder
+unverändert. Die vollständige Übersicht steht in
+[docs/simulation-gaps.md](docs/simulation-gaps.md).
 
 Version 1.0.0 teilt jede Arbeitsstation in zwei per Tab wählbare Unterseiten,
 ergänzt manuelle Freigabeschalter für CIWS und FLAK neben den bestehenden

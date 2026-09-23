@@ -10,7 +10,22 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.0.0**
+Current release: **1.1.0**
+
+Release 1.1.0 replaces the remaining kinematic shortcuts with physical models
+while keeping the 1.0.0 gameplay balance (checked by a calibration harness):
+force-based own-ship hydrodynamics and seakeeping; a time-varying ocean with
+tides, mixed layer, sediments and wrecks; passive/active sonar equations with
+ray-traced propagation; towed-array left/right ambiguity, Doppler and a
+covariance TMA; submarine and torpedo physics (energy, fins, wire, proximity
+fuze); decoy discrimination; compartment flooding, stability, fire and repair
+logistics; the radar equation with a rotating antenna, ESM amplitude, HF
+propagation and a moonlit lookout; and missile flight physics with chaff
+clouds, CIWS ballistics, pop-up raiders, helicopter hover/deck limits and
+drifting buoys. Hostile submarines now need their own TMA before they know
+your range. **Saves are now format v12; 1.0.0 (v11) saves are rejected.** The
+Remote Crew v2 protocol is unchanged apart from new ELOKA intercept fields.
+See [docs/simulation-gaps.md](docs/simulation-gaps.md) for the full record.
 
 Release 1.0.0 splits every workstation into two tabbed sub-pages, adds manual
 CIWS and FLAK release authorization alongside the existing automatic gates,

@@ -23,6 +23,7 @@ Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand,
 - **Brand:** ein Treffer entfacht mit 35 % Wahrscheinlichkeit ein Feuer. Es wächst von selbst und kann auf Nachbarräume übergreifen; bei 100 % ist die Abteilung zerstört.
 - **Gesamtflutung:** das Schiff sinkt bei 540 Punkten, also 60 % mittlerer Flutung über alle neun Abteilungen.
 - **Krängung:** ungleiche Flutung zwischen Backbord- und Steuerbordrumpf lässt das Schiff krängen (bis 15 Grad) und zieht es zu einer Seite.
+- **Rudermaschine und Stabilisatoren:** die Rudermaschine liegt achtern unter dem Flugdeck. Ist dieser Raum zerstört, klemmt das Ruder in der letzten Lage, bis der Raum repariert ist. Ein zerstörter Rumpfraum auf einer Seite legt die Flossenstabilisatoren lahm, das Schiff rollt dann im Seegang stärker. Flutwasser macht das Schiff schwerer: es liegt tiefer und beschleunigt langsamer.
 
 Auswirkungen auf Stationen: eine beschädigte Sonarzentrale halbiert die Sonarreichweite; eine beschädigte Maschine begrenzt die Fahrt auf 15 kn, eine zerstörte auf 8 kn; eine beschädigte oder zerstörte Waffenzentrale sperrt Torpedostarts; ein zerstörtes Flugdeck verhindert Start und Landung des Helikopters; eine zerstörte OPZ legt auch ESM lahm.
 

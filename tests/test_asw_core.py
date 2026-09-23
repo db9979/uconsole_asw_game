@@ -1,3 +1,4 @@
+import pytest
 """Fokustests fuer mathematische ASW-Grundmechaniken."""
 
 import random
@@ -147,13 +148,19 @@ def test_ship_helm_state_survives_save_load():
     assert other.ship.yaw_rate == game.ship.yaw_rate
 
 
-def test_ship_fuel_uses_simulation_time_and_ordered_load():
-    ship = Ship(0.0, 0.0, speed_kn=12.0)
+def test_ship_fuel_uses_simulation_time_and_delivered_power():
+    ship = Ship(0.0, 0.0, speed_kn=15.0)
     ship.target_speed = 15.0
+    # At steady speed the delivered power is the effective power k v^3 / eta,
+    # which reproduces the 1.0.0 cubic load law exactly.
     expected_burn = (config.SHIP_FUEL_HOTEL_KG_H
                      + config.SHIP_FUEL_MAX_PROPULSION_KG_H
                      * (15.0 / config.SHIP_SPEED_MAX_KN) ** 3)
-    assert ship.fuel_burn_kg_h() == expected_burn
+    assert ship.fuel_burn_kg_h() == pytest.approx(expected_burn, rel=1e-9)
+    accelerating = Ship(0.0, 0.0, speed_kn=8.0)
+    accelerating.target_speed = 15.0
+    assert accelerating.fuel_burn_kg_h() > config.SHIP_FUEL_HOTEL_KG_H
+    expected_burn = ship.fuel_burn_kg_h()
     ship.update_fuel(3600.0)
     assert abs(ship.fuel_kg - (config.SHIP_FUEL_CAPACITY_KG - expected_burn)) < 1e-9
     assert ship.fuel_endurance_h() > 100.0

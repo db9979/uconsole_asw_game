@@ -45,8 +45,8 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Item | Value |
 |---|---|
 | Speed | 4-25 kn; telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 25 kn |
-| Turn rate | up to 0.8 deg/s |
-| Cavitation | from 15 kn; passive range x0.35 |
+| Turn rate | about 0.075 deg/s per knot (1.2 deg/s at 16 kn); turning circle about 0.4 NM |
+| Cavitation | from 15 kn in calm water, earlier in heavy seas; passive range x0.35 |
 | QUIET mode | noise x0.65, max 12 kn |
 | TAS handling | 3-12 kn, stream 360 s, recover 480 s, fault above 20 kn |
 | TAS depth | 20-260 m, minus 4 m per knot |

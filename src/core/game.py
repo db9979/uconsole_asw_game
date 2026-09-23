@@ -36,6 +36,7 @@ from src.core.mission_definition import static_preview, validate_mission
 from src.core.station import Station
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
+from src.physics import ship_dynamics
 from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
     COMPARTMENT_FIELDS, COMPARTMENT_STATES, DAMAGE_FIELDS, RNG_STREAMS,
@@ -5773,6 +5774,13 @@ class Game:
         self.ship.turn_rate_scale = (
             0.5 if self.damage.station_degraded("bridge") else 1.0)
         self.ship.speed_cap = self.damage.engine_speed_cap()
+        # Steering gear sits aft under the flight deck; a destroyed room
+        # jams the rudder where it is. Stabilizer fins are lost with either
+        # hull side destroyed. Floodwater adds displacement.
+        self.ship.steering_jammed = self.damage.station_down("flightdeck")
+        self.ship.stabilizers_ok = not (self.damage.station_down("hull_left")
+                                        or self.damage.station_down("hull_right"))
+        self.ship.flood_percent = self.damage.total
         self.ship.update_fuel(dt)
         self.world.update(dt)
         contact = self.ship.update(dt, self.world, self.damage.list_deg())
@@ -6550,6 +6558,9 @@ class Game:
                          rudder_angle=self.ship.rudder_angle,
                          yaw_rate=self.ship.yaw_rate,
                           roll=self.ship.roll, pitch=self.ship.pitch,
+                          roll_rate=self.ship.roll_rate,
+                          pitch_rate=self.ship.pitch_rate,
+                          wake=[list(point) for point in self.ship.wake],
                           quiet_mode=self.ship.quiet_mode,
                           fuel_capacity_kg=self.ship.fuel_capacity_kg,
                           fuel_kg=self.ship.fuel_kg,
@@ -7056,6 +7067,9 @@ class Game:
         self.ship.yaw_rate = ship["yaw_rate"]
         self.ship.roll = ship["roll"]
         self.ship.pitch = ship["pitch"]
+        self.ship.roll_rate = ship["roll_rate"]
+        self.ship.pitch_rate = ship["pitch_rate"]
+        self.ship.wake = [list(point) for point in ship["wake"]]
         self.ship.quiet_mode = ship["quiet_mode"]
         self.ship.fuel_capacity_kg = ship["fuel_capacity_kg"]
         self.ship.fuel_kg = ship["fuel_kg"]
@@ -8038,6 +8052,19 @@ class Game:
             return False
         ship = data.get("ship")
         if not isinstance(ship, dict) or set(ship) != SHIP_FIELDS:
+            return False
+        wake = ship["wake"]
+        if (any(not bounded(ship[key], -100.0, 100.0)
+                for key in ("roll_rate", "pitch_rate"))
+                or not bounded(ship["clock"], 0.0, 1e12)
+                or not isinstance(wake, list)
+                or len(wake) > ship_dynamics.HULL.wake_max_points
+                or any(not isinstance(point, list) or len(point) != 4
+                       or not all(bounded(value, -1_000_000, 1_000_000)
+                                  for value in point)
+                       or not 0.0 <= point[2] <= ship["clock"]
+                       or not 0.0 <= point[3] <= config.SHIP_SPEED_MAX_KN
+                       for point in wake)):
             return False
         radars = data.get("radars")
         if (not isinstance(radars, dict)

@@ -15,6 +15,7 @@ from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
+from src.ship.ship import Ship
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
 from src.ui import layout
 from src.ui import nato_symbols
@@ -1846,7 +1847,7 @@ def draw_engine_view(game, tr=None) -> None:
                            label_w=140, size=20)
         py += 40
         bar_w = int(pw * 0.72)
-        max_rpm = config.SHIP_RPM_MIN + config.SHIP_SPEED_MAX_KN * config.SHIP_RPM_PER_KN
+        max_rpm = Ship.max_rpm()
         frac = min(1.0, ship.rpm() / max_rpm)
         pygame.draw.rect(s, config.COLOR_GRID, (px, py, bar_w, 16))
         pygame.draw.rect(s, config.COLOR_TEXT, (px, py, int(bar_w * frac), 16))

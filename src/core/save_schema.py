@@ -33,7 +33,7 @@ SHIP_FIELDS = frozenset({
     "x", "y", "course", "target_course", "speed", "target_speed",
     "order_idx", "astern", "hull", "grounding", "turn_rate_scale",
     "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "clock",
-    "fuel_capacity_kg", "fuel_kg",
+    "fuel_capacity_kg", "fuel_kg", "roll_rate", "pitch_rate", "wake",
 })
 
 WORLD_FIELDS = frozenset({

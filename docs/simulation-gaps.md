@@ -30,16 +30,16 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 | Gap | Current behaviour | Would need for realism |
 |-----|-------------------|------------------------|
-| **Hydrodynamic resistance** | Speed approaches target linearly at fixed rate regardless of hull shape, loading, sea state | Drag polynomial `F_D(v) = C_D · ρ · A · v²` with speed-dependent thrust from shaft power; sea-state drag penalty |
-| **Propeller/shaft physics** | Speed is a kinematic variable; no torque, no shaft RPM coupling to noise except a linear `SHIP_RPM_PER_KN` | Propeller thrust curve, shaft RPM as independent state, cavitation threshold from `n ∝ √(T/ρ)` not fixed kn |
+| ~~**Hydrodynamic resistance**~~ | **Closed (Phase 2).** `src/physics/ship_dynamics.py`: resistance R = k v^2 (k from installed power and propulsive efficiency) plus added resistance in waves (Hs^2 B^2/L); thrust from a linear K_T(J) propeller; exact Riccati integration so any step size gives the same speed. | — |
+| ~~**Propeller/shaft physics**~~ | **Closed (Phase 2).** Shaft revolutions from the propeller (steady rpm proportional to speed), a propulsion control programme limiting load-up, reverse-pitch braking, and cavitation from the cavitation number sigma at the screw depth (calibrated to 15 kn in calm water; earlier when pitching lifts the stern). | — |
 | ~~**Rudder effectiveness vs speed**~~ | **Fixed (2026-09).** `speed_factor = clamp((speed/10)^2, 0, 1.5)` — already quadratic (dynamic-pressure-like), not linear. `ship.py:139`. | — |
-| **Turn radius** | Implicit from yaw-rate limit; no explicit radius computation | `R = v / (g·tan φ / v)` or from rudder angle; depends on Froude number |
-| **Trim / sink at speed** | None; ship always at "surface" depth = 5 m for sonar | Longitudinal trim from propeller wash + rudder; affects drag, freeboard, radar horizon |
-| **Sea-state effect on motion** | Only cosmetic roll/pitch; no effect on speed loss or rudder authority | Added resistance in waves, heave/pitch coupling to rudder lift, spray-on-deck at high speed in rough seas |
-| **Draft / under-keel clearance** | Fixed `draft_m = 7.5` + `keel_reserve_m = 1.5`; no squat effect | Squat ∝ v² in shallow water; draft varies with fuel/buoyancy |
-| **Fuel → mass → performance** | Fuel depletes but does not affect speed, draught, or noise | Mass reduction changes inertia and speed polar |
-| ~~**Damage → hydrodynamics**~~ | **Partially fixed (2026-09).** `DamageModel.list_deg()` already derives list angle from `hull_left`/`hull_right` flood asymmetry and feeds a persistent yaw bias into `Ship.update()`, scaled by the same speed factor above. Still open: no rudder loss, no loss of stabilisers. | Rudder loss; loss of stabilisers |
-| **Wake signature** | None | Surface wake / turbulence behind ship affects sonar and torpedo performance |
+| ~~**Turn radius**~~ | **Closed (Phase 2).** First-order Nomoto steering r = K (V/L) delta with T proportional to L/V, calibrated to 1.2 deg/s at FULL; turning circle about 0.4 NM at all speeds. | — |
+| ~~**Trim / sink at speed**~~ | **Closed (Phase 2).** Hydrostatic draft from displacement (fuel burnt, floodwater), Barrass squat in shallow water feeding swept grounding, dynamic trim by the stern ~ Fn^2. | — |
+| ~~**Sea-state effect on motion**~~ | **Closed (Phase 2).** Added resistance in waves; 1-DOF roll and pitch oscillators driven by an 8-component Pierson-Moskowitz wave slope relative to the wave direction, turn heel, damage list and speed-dependent fin stabilizer damping. | — |
+| ~~**Draft / under-keel clearance**~~ | **Closed (Phase 2).** Dynamic draft (displacement + squat) is passed to `swept_grounding`; the tide (Phase 1) changes the water depth. | — |
+| ~~**Fuel → mass → performance**~~ | **Closed (Phase 2).** Displacement = design load - burnt fuel + floodwater drives surge inertia and draft; fuel burn follows delivered shaft power (steady values reproduce the 1.0.0 cubic law). | — |
+| ~~**Damage → hydrodynamics**~~ | **Closed (Phase 2).** List yaw bias (existing), jammed rudder when the aft steering-gear compartment (flight deck) is destroyed, fin stabilizers lost with a destroyed hull compartment, floodwater mass. | — |
+| ~~**Wake signature**~~ | **Closed (Phase 2 model).** Bounded, saved wake ring (48 points, one per 10 s) with sea-state-dependent bubble decay and `Ship.wake_strength_at()`; consumed by own-sonar and wake-homing weapons in later phases. | — |
 
 ### 1.3 Data structures / interfaces that would be touched
 

@@ -23,6 +23,7 @@ Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fi
 - **Fire:** a hit starts a fire with 35 % chance. Fire grows by itself and can spread to neighbouring rooms; at 100 % the compartment is destroyed.
 - **Total flooding:** the ship sinks at 540 points, which is 60 % average flooding over all nine compartments.
 - **Heel:** uneven flooding between port and starboard hull lists the ship (up to 15 degrees) and pulls it to one side.
+- **Steering gear and stabilizers:** the steering gear sits aft under the flight deck. If that compartment is destroyed, the rudder jams at its last angle until the room is repaired. A destroyed hull compartment on either side knocks out the fin stabilizers, so the ship rolls more in a seaway. Floodwater adds weight: the ship sits deeper and accelerates more slowly.
 
 Station effects: a damaged sonar room halves sonar range; a damaged engine room caps speed at 15 kn, a destroyed one at 8 kn; a damaged or destroyed weapons room blocks torpedo launches; a destroyed flight deck prevents helicopter launch and recovery; a destroyed operations room also disables ESM.
 

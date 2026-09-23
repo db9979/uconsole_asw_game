@@ -21,6 +21,7 @@ import numpy as np
 
 from src.audio.hydroacoustics import analytic_envelope
 from src.core import config
+from src.physics import ship_dynamics
 
 _BROADBAND_GAIN = 0.04      # rms-Skalierung der Bandrauschaudio
 _OWN_CAV_GAIN = 0.10        # rms-Skalierung der Eigen-Kavitation
@@ -328,7 +329,8 @@ class AcousticReceiver:
         audio += shaft
         self.ownship_tonals = [{
             "label": "OWN SHAFT", "frequency_hz": shaft_hz,
-            "rpm": speed * config.SHIP_RPM_PER_KN + config.SHIP_RPM_MIN,
+            "rpm": max(ship_dynamics.HULL.idle_rpm, ship_dynamics.HULL.steady_rps(
+                speed * ship_dynamics.KN) * 60.0),
         }] if speed > 0 else []
         # Shaft frequency is machinery/RPM evidence, not a bearing return.
         scan = np.full(180, (ambient_rms**2 + np.mean(shaft**2)) / .25**2)

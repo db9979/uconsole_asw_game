@@ -45,8 +45,8 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Merkmal | Wert |
 |---|---|
 | Fahrt | 4-25 kn; Telegraph STOP 0, SLOW 6, HALF 10, FULL 16, FLANK 25 kn |
-| Drehrate | bis 0,8 Grad/s |
-| Kavitation | ab 15 kn; Passivreichweite x0,35 |
+| Drehrate | etwa 0,075 Grad/s je Knoten (1,2 Grad/s bei 16 kn); Drehkreis etwa 0,4 NM |
+| Kavitation | ab 15 kn bei ruhiger See, bei schwerer See früher; Passivreichweite x0,35 |
 | Modus LEISE | Lärm x0,65, max. 12 kn |
 | TAS-Handhabung | 3-12 kn, ausbringen 360 s, einholen 480 s, Defekt über 20 kn |
 | TAS-Tiefe | 20-260 m, minus 4 m je Knoten |

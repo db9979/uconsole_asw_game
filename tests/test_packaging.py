@@ -23,7 +23,7 @@ CONTACT_NAMES = {
     "acoustics.json", "aircraft.json", "animals.json", "civilians.json",
     "decoys.json", "sources.json", "subs.json", "torpedoes.json", "warships.json",
 }
-LOADOUT_NAMES = {"air_defense.json", "ownship.json"}
+LOADOUT_NAMES = {"air_defense.json", "ownship.json", "ownship_hull.json"}
 CONTACT_ANALYSIS_MANIFEST = json.loads(
     (ROOT / "data/contact_analysis/manifest.json").read_text(encoding="utf-8"))
 CONTACT_ANALYSIS_NAMES = {

@@ -21,11 +21,11 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Active ping | 18 NM (reference target, broadside-quarter aspect) | CW or LFM (`W`); range accuracy from pulse and SNR, depth +/-12 m; 30 s cooldown; heard to 60 NM |
 | Dipping sonar | 18 NM passive / 14 NM active | +/-2 deg |
 | Sonobuoy | 8 NM | 60 min battery |
-| Surface radar | 30 NM | radar horizon; no submerged contacts |
-| Air radar | 100 NM | aircraft and missiles |
-| ESM | 150 NM | +/-3 deg bearing |
-| HFDF | 120 NM | +/-8 deg bearing |
-| Lookout | 12 NM surface, 5 NM surfaced sub, 20 NM air | x0.35 at night |
+| Surface radar | 30 NM (50 % per sweep) | 4 s antenna revolution; radar horizon; no submerged contacts |
+| Air radar | 100 NM (50 % per sweep) | aircraft and missiles; jammers burn through close in |
+| ESM | 150 NM (main beam) | +/-3 deg bearing; level and range estimate |
+| HFDF | about 95-150 NM ground wave | +/-8 deg bearing (sky wave +/-16) |
+| Lookout | 12 NM surface, 5 NM surfaced sub, 20 NM air | x0.25 (new moon) to x0.45 (full moon) at night; fog and sea state reduce |
 
 ## Weapons and countermeasures {#ref-weapons}
 

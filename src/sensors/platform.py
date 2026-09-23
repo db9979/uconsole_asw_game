@@ -8,6 +8,7 @@ import random
 from dataclasses import asdict, dataclass
 
 from src.core import config
+from src.sensors import radar as radar_physics
 from src.sonar import equation, propagation
 
 
@@ -229,20 +230,14 @@ class PlatformSensorSuite:
         if profile.domain == "radar":
             sea_state = getattr(world, "effective_sea_state",
                                 getattr(world, "sea_state", 0.0))
-            sea = config.clamp(
-                (sea_state - (config.RADAR_WEATHER_THRESHOLD - 1)) / 2.0,
-                0.0, 1.0)
             rain = config.clamp(getattr(world, "rain_intensity", 0.0), 0.0, 1.0)
-            sea_loss = (config.RADAR_AIR_WEATHER_LOSS
-                        if target_domain == "air"
-                        else config.RADAR_SURFACE_WEATHER_LOSS)
-            rain_loss = (config.RADAR_RAIN_AIR_LOSS
-                         if target_domain == "air"
-                         else config.RADAR_RAIN_SURFACE_LOSS)
-            availability *= (1.0 - sea_loss * sea) * (1.0 - rain_loss * rain)
-            # Radar cross-section is catalog metadata, not a physics model: a
-            # small, bounded scaling factor around a ~500 m2 reference target,
-            # not a rewrite of the range-based detection formula.
+            # Radar equation: sea clutter and rain attenuation shorten the
+            # Pd = 0.5 range of this radar.
+            availability *= radar_physics.detection_fraction(
+                "air" if target_domain == "air" else "surface", sea_state,
+                rain, max(profile.synthetic_range_nm or 1.0, 1.0))
+            # Radar equation: detection range scales with RCS^(1/4) around a
+            # ~500 m2 reference target (bounded for catalog outliers).
             rcs = getattr(getattr(candidate, "profile", None), "rcs_m2", None)
             if rcs is not None:
                 availability *= config.clamp((rcs / 500.0) ** 0.25, 0.5, 1.5)

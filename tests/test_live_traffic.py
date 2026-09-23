@@ -38,6 +38,14 @@ def _fake_game(ship_x=250.0, ship_y=250.0):
                            ship=SimpleNamespace(x=ship_x, y=ship_y))
 
 
+def esm_revolution(game, steps=12):
+    """Rotating search radars reach the ESM mast with their main beam only
+    once per revolution (up to 5 s); sample the picture over one."""
+    for _ in range(steps):
+        game.sim_t += .5
+        game._update_esm_picture()
+
+
 def test_category_for_ais_type_mapping():
     assert _category_for_ais_type(65) == "PASSAGIER"
     assert _category_for_ais_type(70) == "FRACHT"
@@ -596,7 +604,7 @@ def test_live_ship_is_not_published_without_simulated_sensor_detection(game):
     game.air_picture = TrackPicture(game.air_picture.stale_s)
     game.surface_radar_on = False
 
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     assert not [track for track in game.air_picture.tracks(game.sim_t)
                 if track.target_id == live_ship.id]
@@ -608,7 +616,7 @@ def test_live_ship_is_radar_observed_and_manually_classifiable(game, monkeypatch
     game.surface_radar_on = True
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
 
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     track = next(track for track in game.air_picture.tracks(game.sim_t)
                  if track.target_id == live_ship.id)
@@ -635,7 +643,7 @@ def test_live_ship_participates_in_lookout_and_eloka(game, monkeypatch):
                for track in game.air_picture.tracks(game.sim_t))
 
     live_ship.emitter = True
-    game._update_esm_picture()
+    esm_revolution(game)
     assert game.eloka_tracks()
 
 

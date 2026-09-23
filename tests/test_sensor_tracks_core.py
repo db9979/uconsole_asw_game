@@ -190,7 +190,7 @@ def test_correlated_bearing_sources_have_continuous_displayed_steps(monkeypatch)
     displayed = {"ESM": [], "HOJ": [], "HFDF": []}
     for now in (9.5, 10.0, 10.5):
         game.sim_t = now
-        game._update_air_picture()
+        game._update_air_picture(full_scan=True)
         game._update_esm_picture()
         game._update_radio_picture()
         displayed["ESM"].append(game.eloka_tracks()[0].bearing)
@@ -287,12 +287,12 @@ def test_hoj_noise_uses_simulation_time_not_cosmetic_time():
     game.warships = []
     game.flights.flights = []
     game.sim_t, game._t = 7.0, 1.0
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     first = game.air_picture._tracks["M-17"].raw_bearing
 
     game.air_picture._tracks.clear()
     game._t = 10000.0
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     assert game.air_picture._tracks["M-17"].raw_bearing == first
 

@@ -21,11 +21,11 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Aktiver Ping | 18 sm (Referenzziel, schräger Aspekt) | CW oder LFM (`W`); Entfernungsgenauigkeit aus Puls und SNR, Tiefe +/-12 m; 30 s Abklingzeit; hörbar bis 60 sm |
 | Tauchsonar | 18 sm passiv / 14 sm aktiv | +/-2 Grad |
 | Sonarboje | 8 sm | 60 min Batterie |
-| Überwasserradar | 30 sm | Radarhorizont; keine getauchten Kontakte |
-| Luftradar | 100 sm | Flugzeuge und Flugkörper |
-| ESM | 150 sm | +/-3 Grad Peilung |
-| HFDF | 120 sm | +/-8 Grad Peilung |
-| Ausguck | 12 sm Überwasser, 5 sm aufgetauchtes U-Boot, 20 sm Luft | x0,35 bei Nacht |
+| Überwasserradar | 30 sm (50 % je Umlauf) | 4 s Antennenumlauf; Radarhorizont; keine getauchten Kontakte |
+| Luftradar | 100 sm (50 % je Umlauf) | Flugzeuge und Flugkörper; Störer werden aus der Nähe durchbrannt |
+| ESM | 150 sm (Hauptkeule) | +/-3 Grad Peilung; Pegel und Entfernungsschätzung |
+| HFDF | etwa 95-150 sm Bodenwelle | +/-8 Grad Peilung (Raumwelle +/-16) |
+| Ausguck | 12 sm Überwasser, 5 sm aufgetauchtes U-Boot, 20 sm Luft | x0,25 (Neumond) bis x0,45 (Vollmond) bei Nacht; Nebel und Seegang verkürzen |
 
 ## Waffen und Gegenmaßnahmen {#ref-weapons}
 

@@ -18,6 +18,7 @@ from src.audio.receiver import AcousticReceiver
 from src.audio.preview import unit_sonar_preview
 from src.commander.local import CommanderConsole
 from src.core import config
+from src.core import detrand
 from src.core.autocrew import AutocrewController, station_key
 from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
                                station_page_step, toggle_tas)
@@ -36,6 +37,9 @@ from src.core.mission_definition import static_preview, validate_mission
 from src.core.station import Station
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
+from src.sensors import radar as radar_physics
+from src.sensors import visual as visual_physics
+from src.sensors import hfdf as hf_physics
 from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
 from src.physics import torpedo_dyn
@@ -70,6 +74,7 @@ from src.sensors.esm import (
     scan_for_signals,
     analyze_signal,
     correlate_observations,
+    estimated_range_nm,
     filter_and_sort_tracks,
     rank_emitters,
     valid_esm_state,
@@ -248,6 +253,14 @@ _ECO_REFRESH_EVENTS = frozenset(
 
 TORPEDO_WAKE_VISIBLE_NM = 1.5
 TORPEDO_WAKE_VISIBLE_DEPTH_M = 15.0
+# Close-in weapon system: own Ku-band search/track radar that keeps an
+# inbound missile under continuous track inside this range.
+CIWS_TRACK_RANGE_NM = 3.0
+# Koschmieder lookout model anchored to the 1.0.0 day/calm/clear ranges.
+LOOKOUT_MODEL = visual_physics.LookoutModel(
+    {"SURFACE": config.LOOKOUT_SURFACE_RANGE_NM, "SUB": config.LOOKOUT_SUB_RANGE_NM,
+     "FLG": config.LOOKOUT_AIR_RANGE_NM, "TORP": TORPEDO_WAKE_VISIBLE_NM},
+    config.WEATHER_VISIBILITY_MAX_NM)
 
 
 class Game:
@@ -657,6 +670,10 @@ class Game:
         self.hfdf_fixes = {}
         self.ciws_ammo = self._air_defense_loadout["ciws"]["ammo"]
         self.ciws_cooldown_s = 0.0
+        # Rotating search antenna in simulation time (saved): targets are
+        # looked at only when the beam sweeps past them.
+        self.radar_scan_phase = 0.0
+        self.radar_scan_pending_deg = 0.0
         self.ciws_authorized = True  # session-only fire-release gate, OPZ "I"
         self.aa_ammo = self._air_defense_loadout["aa_gun"]["ammo"]
         self.aa_cooldown_s = 0.0
@@ -3214,22 +3231,52 @@ class Game:
         return config.clamp(getattr(self.world, "rain_intensity", 0.0), 0.0, 1.0)
 
     def radar_effective_range(self, domain: str) -> float:
-        loss = (config.RADAR_AIR_WEATHER_LOSS if domain == "air"
-                else config.RADAR_SURFACE_WEATHER_LOSS)
+        """Range of Pd = 0.5 per look for a reference target (radar equation
+        with sea clutter, rain attenuation and console damage)."""
         nominal = (config.RADAR_AIR_RANGE_NM if domain == "air"
                    else config.RADAR_SURFACE_RANGE_NM)
-        rain_loss = (config.RADAR_RAIN_AIR_LOSS if domain == "air"
-                     else config.RADAR_RAIN_SURFACE_LOSS)
+        conditions = self._radar_conditions()
+        return nominal * radar_physics.detection_fraction(
+            domain, conditions["sea_state"], conditions["rain_intensity"],
+            nominal, conditions["capability"])
+
+    def _asm_jammer_to_noise(self, asm, distance: float) -> float:
+        """Self-screening noise jammer of a missile, solved from its profiled
+        burn-through range (J/S ~ R^2): inside it the skin echo wins."""
+        if not asm.jammer:
+            return 0.0
+        burn_through = asm.profile["jam_break_nm"]
+        skin = radar_physics.snr(burn_through, config.RADAR_AIR_RANGE_NM)
+        return radar_physics.jammer_to_noise(distance, burn_through, skin)
+
+    def _radar_conditions(self) -> dict:
         # Damage to the operations room (radar consoles, power) degrades the
         # radar continuously rather than only at destruction.
         capability = (1.0 if not self.damage.station_degraded("opz")
                       else 0.5 + 0.5 * self.damage.capability("opz"))
-        return (nominal * (1.0 - loss * self.radar_weather_severity())
-                * (1.0 - rain_loss * self.radar_rain_severity()) * capability)
+        return dict(
+            sea_state=getattr(self.world, "effective_sea_state", self.world.sea_state),
+            rain_intensity=self.radar_rain_severity(), capability=capability)
+
+    def _radar_look(self, domain: str, key: int, distance: float, bearing: float,
+                    *, swept_deg: float, rcs_factor: float = 1.0,
+                    jnr: float = 0.0) -> bool:
+        """One antenna look: the beam must have passed the bearing and the
+        Swerling-1/CFAR detector must declare the echo (deterministic draw)."""
+        if not radar_physics.swept(bearing, self.radar_scan_phase, swept_deg):
+            return False
+        nominal = (config.RADAR_AIR_RANGE_NM if domain == "air"
+                   else config.RADAR_SURFACE_RANGE_NM)
+        sinr = radar_physics.sinr(distance, nominal, rcs_factor=rcs_factor,
+                                  domain=domain, jnr=jnr,
+                                  **self._radar_conditions())
+        tick = math.floor(self.sim_t * 4.0 + 1e-6)
+        return (detrand.u01(self.seed, "radar-look-" + domain, key, tick)
+                < radar_physics.pd_from_sinr(sinr))
 
     def radar_sweep_bearing(self) -> float:
         """Nautische Peilung: zunehmende Werte drehen Nord -> Ost rechtsherum."""
-        return (self._t * config.RADAR_SWEEP_DEG_PER_S) % 360.0
+        return self.radar_scan_phase
 
     def toggle_helo(self) -> None:
         if self.helo.airborne:
@@ -3664,20 +3711,27 @@ class Game:
         value = f"{self.seed}:{namespace}:{identity}".encode("utf-8")
         return hashlib.blake2b(value, digest_size=8).hexdigest().upper()
 
+    def moon_illumination(self) -> float:
+        """Illuminated lunar fraction; the lunar age is seeded per world and
+        advances with simulation time."""
+        age = (detrand.u01(self.seed, "lunar-age") * visual_physics.SYNODIC_MONTH_D
+               + self.sim_t / 86400.0)
+        return visual_physics.moon_illumination(age)
+
     def _lookout_observe(self, actor, namespace: str, kind: str,
-                         base_range_nm: float, seed: int) -> None:
+                         seed: int, altitude_m: float | None = None) -> None:
         import random
 
-        if self.world.is_night():
-            base_range_nm *= config.LOOKOUT_NIGHT_FACTOR
-        base_range_nm *= max(0.0, 1.0 - getattr(
-            self.world, "effective_sea_state", self.world.sea_state)
-                             * config.LOOKOUT_SEA_STATE_LOSS)
-        base_range_nm = min(base_range_nm, getattr(
-            self.world, "visibility_nm", config.WEATHER_VISIBILITY_MAX_NM))
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
         distance = math.hypot(dx, dy)
-        if (distance > base_range_nm or self.world.land_blocks_line(
+        margin = LOOKOUT_MODEL.margin(
+            kind, distance,
+            visibility_nm=getattr(self.world, "visibility_nm",
+                                  config.WEATHER_VISIBILITY_MAX_NM),
+            night=self.world.is_night(), illumination=self.moon_illumination(),
+            sea_state=getattr(self.world, "effective_sea_state", self.world.sea_state),
+            altitude_m=altitude_m)
+        if (margin < 1.0 or self.world.land_blocks_line(
                 self.ship.x, self.ship.y, actor.x, actor.y)):
             return
         bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
@@ -3688,8 +3742,8 @@ class Game:
             config.LOOKOUT_BEARING_ERR_DEG)) % 360.0
         measured_range = max(0.0, distance * (1.0 + rng.uniform(
             -config.LOOKOUT_RANGE_ERR_FRAC, config.LOOKOUT_RANGE_ERR_FRAC)))
-        quality = config.clamp(.95 - .45 * distance / max(base_range_nm, .01),
-                               .5, .95)
+        # Contrast margin: just above threshold is a doubtful sighting.
+        quality = config.clamp(.5 + .45 * (1.0 - 1.0 / margin), .5, .95)
         identity = getattr(actor, "id", getattr(actor, "seq", 0))
         self.air_picture.observe(
             track_id="L-" + self._observation_key(namespace, identity),
@@ -3711,44 +3765,46 @@ class Game:
                         and math.hypot(torpedo.x - self.ship.x, torpedo.y - self.ship.y)
                         <= TORPEDO_WAKE_VISIBLE_NM):
                     self._lookout_observe(torpedo, "torpedo-wake", "TORP",
-                                          TORPEDO_WAKE_VISIBLE_NM, torpedo.id)
+                                          torpedo.id)
         for actor in sorted(self.civilians + self.warships,
                             key=lambda item: item.id):
             if not actor.sunk:
                 self._lookout_observe(
-                    actor, "surface", "SURFACE",
-                    config.LOOKOUT_SURFACE_RANGE_NM, actor.sensor_seed)
+                    actor, "surface", "SURFACE", actor.sensor_seed)
         for actor in sorted(self.subs, key=lambda item: item.id):
             if (not actor.sunk and actor.state != "SINKING"
                     and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):
-                self._lookout_observe(
-                    actor, "sub", "SUB", config.LOOKOUT_SUB_RANGE_NM,
-                    actor.sensor_seed)
+                self._lookout_observe(actor, "sub", "SUB", actor.sensor_seed)
         for actor in sorted(self.flights.flights, key=lambda item: item.seq):
             if actor.active:
                 self._lookout_observe(
-                    actor, "flight", "FLG", config.LOOKOUT_AIR_RANGE_NM,
-                    actor.sensor_seed + 200_000)
+                    actor, "flight", "FLG", actor.sensor_seed + 200_000,
+                    altitude_m=actor.altitude_m)
         for actor in sorted(self.raiders, key=lambda item: item.seq):
             if not actor.despawned and actor.hp > 0:
                 self._lookout_observe(
-                    actor, "raider", "FLG", config.LOOKOUT_AIR_RANGE_NM,
-                    actor.seq + 400_000)
+                    actor, "raider", "FLG", actor.seq + 400_000,
+                    altitude_m=getattr(actor, "altitude_m", 0.0))
         for actor in sorted(self.live_traffic.aircraft.values(),
                             key=lambda item: item.seq):
             if not actor.despawned:
                 self._lookout_observe(
-                    actor, "live_air", "FLG", config.LOOKOUT_AIR_RANGE_NM,
-                    actor.seq + 800_000)
+                    actor, "live_air", "FLG", actor.seq + 800_000,
+                    altitude_m=getattr(actor, "altitude_m", 0.0))
 
-    def _update_air_picture(self) -> None:
-        """Create noisy observations; consumers never receive world objects."""
+    def _update_air_picture(self, full_scan: bool = False) -> None:
+        """Create noisy observations; consumers never receive world objects.
+
+        Radar contacts are looked at only where the rotating antenna swept
+        since the previous publication (``full_scan`` treats the call as one
+        complete revolution) and only when the detector declares the echo.
+        """
         import random
         station_live = not self.damage.station_down("opz")
         surface_live = self.surface_radar_on and station_live
         air_live = self.air_radar_on and station_live
-        surface_eff = self.radar_effective_range("surface")
-        air_eff = self.radar_effective_range("air")
+        swept_deg = 360.0 if full_scan else self.radar_scan_pending_deg
+        self.radar_scan_pending_deg = 0.0
         self.ais.update(self.sim_t, self.civilians, self.ship, self.world)
         error_scale = 1.0 + (config.RADAR_WEATHER_ERROR_GAIN
                              * self.radar_weather_severity()
@@ -3762,7 +3818,10 @@ class Game:
             aspect = config.aspect_rcs_factor(c.course, bearing)
             horizon = config.radar_horizon_nm(
                 config.RADAR_ANTENNA_HEIGHT_M, config.RADAR_SURFACE_TARGET_HEIGHT_M)
-            radar_eligible = surface_live and dist <= min(surface_eff * aspect, horizon)
+            radar_eligible = (surface_live and dist <= horizon
+                              and self._radar_look("surface", c.sensor_seed, dist,
+                                                   bearing, swept_deg=swept_deg,
+                                                   rcs_factor=aspect ** 4))
             radar_clear = radar_eligible and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, c.x, c.y)
             if radar_eligible and radar_clear:
@@ -3788,7 +3847,10 @@ class Game:
             aspect = config.aspect_rcs_factor(w.course, bearing)
             horizon = config.radar_horizon_nm(
                 config.RADAR_ANTENNA_HEIGHT_M, config.RADAR_SURFACE_TARGET_HEIGHT_M)
-            radar_eligible = surface_live and dist <= min(surface_eff * aspect, horizon)
+            radar_eligible = (surface_live and dist <= horizon
+                              and self._radar_look("surface", w.sensor_seed, dist,
+                                                   bearing, swept_deg=swept_deg,
+                                                   rcs_factor=aspect ** 4))
             radar_clear = radar_eligible and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, w.x, w.y)
             if radar_eligible and radar_clear:
@@ -3809,7 +3871,9 @@ class Game:
             bearing = f.bearing_to_frigate(self.ship)
             horizon = config.radar_horizon_nm(
                 config.RADAR_ANTENNA_HEIGHT_M, f.altitude_m)
-            radar_eligible = air_live and dist <= min(air_eff, horizon)
+            radar_eligible = (air_live and dist <= horizon
+                              and self._radar_look("air", f.seq + 10000, dist,
+                                                   bearing, swept_deg=swept_deg))
             radar_clear = radar_eligible and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, f.x, f.y)
             if radar_eligible and radar_clear:
@@ -3831,7 +3895,9 @@ class Game:
             bearing = r.bearing_from_frigate(self.ship)
             horizon = config.radar_horizon_nm(
                 config.RADAR_ANTENNA_HEIGHT_M, getattr(r, "altitude_m", 0.0))
-            radar_eligible = air_live and dist <= min(air_eff, horizon)
+            radar_eligible = (air_live and dist <= horizon
+                              and self._radar_look("air", r.seq + 60000, dist,
+                                                   bearing, swept_deg=swept_deg))
             radar_clear = radar_eligible and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, r.x, r.y)
             if radar_eligible and radar_clear:
@@ -3857,7 +3923,9 @@ class Game:
             bearing = live.bearing_from_frigate(self.ship)
             horizon = config.radar_horizon_nm(
                 config.RADAR_ANTENNA_HEIGHT_M, getattr(live, "altitude_m", 0.0))
-            radar_eligible = air_live and dist <= min(air_eff, horizon)
+            radar_eligible = (air_live and dist <= horizon
+                              and self._radar_look("air", live.seq + 90000, dist,
+                                                   bearing, swept_deg=swept_deg))
             radar_clear = radar_eligible and not self.world.land_blocks_line(
                 self.ship.x, self.ship.y, live.x, live.y)
             if radar_eligible and radar_clear:
@@ -3879,6 +3947,7 @@ class Game:
                     quality=.85, now=self.sim_t, label=f"A-{live.seq}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0),
                     altitude_m=altitude)
+        ciws_track = station_live and self.ciws_authorized
         for a in self.asms:
             if a.state not in ("LAUF", "CHAFF"):
                 continue
@@ -3895,7 +3964,14 @@ class Game:
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.55, now=self.sim_t, label=f"A-{a.seq}",
                     jamming=True, bearing_uncertainty_deg=5.0 / math.sqrt(3.0))
-            elif (air_live and dist <= air_eff
+            elif ((air_live or ciws_track)
+                  and self._radar_look(
+                      "air", a.seq + 120000, dist, a.bearing_to_frigate(self.ship),
+                      # The CIWS search/track radar holds close-in missiles
+                      # continuously; beyond it only the rotating antenna looks.
+                      swept_deg=(360.0 if ciws_track and dist <= CIWS_TRACK_RANGE_NM
+                                 else swept_deg if air_live else 0.0),
+                      jnr=self._asm_jammer_to_noise(a, dist))
                   and not self.world.land_blocks_line(
                       self.ship.x, self.ship.y, a.x, a.y)):
                 rng = random.Random(a.seq * 7919 + int(self.sim_t * 2.0))
@@ -4611,6 +4687,17 @@ class Game:
         return (None if track is None else
                 analyze_signal(track, self.runtime_catalog.emitters))
 
+    def eloka_range_estimate(self, track=None) -> float | None:
+        """Range implied by the intercept's peak level, assuming the power
+        class of the best-ranked catalog hypothesis (never emitter truth)."""
+        track = track or self.selected_eloka_track()
+        analysis = self.eloka_analysis(track)
+        if analysis is None or not analysis.candidates or track.signal_db <= 0.0:
+            return None
+        emitter = self.runtime_catalog.emitters.get(
+            analysis.candidates[0].emitter_key)
+        return estimated_range_nm(track, getattr(emitter, "power_class", "medium"))
+
     def deploy_jamming(self, track, technique=None):
         if self.damage.station_down("opz"):
             return "opz_down"
@@ -4911,7 +4998,10 @@ class Game:
                 seed * 1009 + int(signal.signal_id[1:9], 16),
                 self.sim_t, 5.0),
             line_of_sight=lambda signal: not self.world.land_blocks_line(
-                self.ship.x, self.ship.y, signal.x, signal.y))
+                self.ship.x, self.ship.y, signal.x, signal.y),
+            level_noise_for=lambda signal: detrand.normal(
+                self.seed, "esm-level", int(signal.signal_id[1:9], 16),
+                math.floor(self.sim_t * 2.0 + 1e-6)))
 
     def _ecm_effect_against_asm(self, asm):
         if not asm.seeker_active(self.ship) or not self.ecm_jammer.channels:
@@ -5044,23 +5134,34 @@ class Game:
         if self.damage.station_down("radio"):
             self.radio_picture.expire(self.sim_t)
             return
+        night = self.world.is_night()
         for sub in self.subs:
             if not sub.transmitting:
                 continue
             dist = sub.distance_nm(self.ship)
-            if dist > config.HFDF_RANGE_NM:
+            seed = getattr(sub, "sensor_seed", sub.id)
+            # One call keeps its frequency; a new 5-minute schedule window
+            # may pick another one for the path to the shore station.
+            frequency = hf_physics.transmit_frequency_mhz(
+                seed, math.floor(self.sim_t / 300.0), night)
+            mode = hf_physics.propagation_mode(
+                dist, frequency, night, config.HFDF_RANGE_NM)
+            if mode is None:
                 continue
-            if self.world.land_blocks_line(self.ship.x, self.ship.y, sub.x, sub.y):
+            if (mode == "GROUND" and self.world.land_blocks_line(
+                    self.ship.x, self.ship.y, sub.x, sub.y)):
                 continue
-            seed = getattr(sub, "sensor_seed", sub.id) * 777
-            noise = self._smooth_sensor_noise(seed, self.sim_t, 10.0)
-            brg = (sub.bearing_from_frigate(self.ship)
-                   + noise * config.HFDF_BEARING_ERR_DEG) % 360.0
+            error = config.HFDF_BEARING_ERR_DEG * (
+                hf_physics.SKY_WAVE_BEARING_FACTOR if mode == "SKY" else 1.0)
+            noise = self._smooth_sensor_noise(seed * 777, self.sim_t, 10.0)
+            brg = (sub.bearing_from_frigate(self.ship) + noise * error) % 360.0
             self.radio_picture.observe(track_id=f"H-{sub.id}", kind="HF",
                 target_id=sub.id, source="HFDF", bearing=brg, range_nm=None,
                 observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-                quality=.55, now=self.sim_t, label=f"SIG-{sub.id:02d}",
-                bearing_uncertainty_deg=config.HFDF_BEARING_ERR_DEG / math.sqrt(3.0))
+                quality=.55 if mode == "GROUND" else .4, now=self.sim_t,
+                label=f"SIG-{sub.id:02d}",
+                bearing_uncertainty_deg=error / math.sqrt(3.0),
+                frequency_hz=round(frequency * 1e6, -2), propagation=mode)
         self.radio_picture.expire(self.sim_t)
 
     def _cycle_hfdf(self, delta: int) -> None:
@@ -5128,7 +5229,9 @@ class Game:
         # Angular errors projected at the two measurement origins. This assumes
         # a stationary emitter throughout the bounded observation span.
         b1, b2 = math.radians(previous["bearing"]), math.radians(row["bearing"])
-        sigma_rad = math.radians(config.HFDF_BEARING_ERR_DEG) / math.sqrt(3.0)
+        # Sky-wave intercepts carry the larger ionospheric-tilt uncertainty.
+        sigma_rad = math.radians(report.bearing_uncertainty_deg
+                                 or config.HFDF_BEARING_ERR_DEG / math.sqrt(3.0))
         v1 = sigma_rad ** 2 * ((x - previous["observer_x"]) ** 2
                               + (y - previous["observer_y"]) ** 2)
         v2 = sigma_rad ** 2 * ((x - row["observer_x"]) ** 2
@@ -6493,6 +6596,9 @@ class Game:
                 self.flash(notice, 3.0)
                 self.feed.add(self.world.format_time(), "sonar", notice)
             self._last_tow_state = self.sonar.tow_state
+        sweep = config.RADAR_SWEEP_DEG_PER_S * dt
+        self.radar_scan_phase = (self.radar_scan_phase + sweep) % 360.0
+        self.radar_scan_pending_deg = min(360.0, self.radar_scan_pending_deg + sweep)
         self._sensor_acc += dt
         publish_picture = self._sensor_acc >= .25
         if publish_picture:
@@ -6753,7 +6859,9 @@ class Game:
                 volume=self.sonar_volume),
             "radars": dict(surface=self.surface_radar_on,
                            air=self.air_radar_on,
-                           range_nm=self.opz_range_nm),
+                           range_nm=self.opz_range_nm,
+                           scan_phase=self.radar_scan_phase,
+                           scan_pending_deg=self.radar_scan_pending_deg),
             "roe": self.roe,
             "asm_spawned": self.asm_spawned,
             "air_threat_reported": self.air_threat_reported,
@@ -7341,6 +7449,8 @@ class Game:
         self.surface_radar_on = radars["surface"]
         self.air_radar_on = radars["air"]
         self.opz_range_nm = radars["range_nm"]
+        self.radar_scan_phase = radars["scan_phase"]
+        self.radar_scan_pending_deg = radars["scan_pending_deg"]
         self.roe = data["roe"]
         self.asm_spawned = data["asm_spawned"]
         self.air_threat_reported = data["air_threat_reported"]
@@ -8272,10 +8382,15 @@ class Game:
             return False
         radars = data.get("radars")
         if (not isinstance(radars, dict)
-                or set(radars) != {"surface", "air", "range_nm"}
+                or set(radars) != {"surface", "air", "range_nm", "scan_phase",
+                                   "scan_pending_deg"}
                 or type(radars["surface"]) is not bool
                 or type(radars["air"]) is not bool
-                or radars["range_nm"] not in config.RADAR_RANGE_SCALES_NM):
+                or radars["range_nm"] not in config.RADAR_RANGE_SCALES_NM
+                or type(radars["scan_phase"]) is not float
+                or not 0.0 <= radars["scan_phase"] < 360.0
+                or type(radars["scan_pending_deg"]) is not float
+                or not 0.0 <= radars["scan_pending_deg"] <= 360.0):
             return False
         order = ship.get("order_idx", config.TELEGRAPH_DEFAULT)
         hull = ship.get("hull")

@@ -119,7 +119,7 @@ def test_radar_track_has_no_truth_name_or_course_until_ais_report():
     civil = _civilian_near(game, 4.0)
     game.ais.reports.clear()
     game.ais.update = lambda *args, **kwargs: None   # receiver silent
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     track = game.air_picture._tracks[f"S-{civil.id}"]
     assert track.label == f"S-{civil.id}"
     assert track.course is None

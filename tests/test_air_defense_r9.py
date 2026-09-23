@@ -158,7 +158,7 @@ def test_fresh_own_radar_supersedes_retained_stale_datalink(game, monkeypatch):
     for controller in sender.sensor_suite.controllers.values():
         controller.next_scan_s = 11.0
     game._update_platform_sensors(.25)
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     track = game.air_picture._tracks[f"M-{missile.seq}"]
     assert track.source == "RADAR-L"
@@ -180,7 +180,7 @@ def test_equal_time_own_radar_supersedes_datalink(game, monkeypatch):
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
 
     game._update_platform_sensors(.25)
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     track = game.air_picture._tracks[f"M-{missile.seq}"]
     assert track.source == "RADAR-L"

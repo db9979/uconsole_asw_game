@@ -21,6 +21,7 @@ Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (f
 ```
 
 - Bearing accuracy is about +/-3 degrees. Intercepts are bearings, not positions.
+- A rotating search radar reaches the ESM antenna with its main beam once per revolution; its side lobes are heard only close in. The evidence page shows the peak signal level, a range estimate that assumes the power class of the best candidate (a wrong candidate gives a wrong range) and the measured antenna scan period.
 - Candidates are ranked only from observed frequency, PRF and modulation. A tie is not an identification.
 - Correlation with radar or sonar tracks uses compatible time, bearing and observed position, never hidden identity.
 - ESM runs from the operations compartment: a destroyed operations room disables it.

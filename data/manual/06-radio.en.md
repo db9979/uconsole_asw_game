@@ -19,7 +19,8 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
    pos B *------------------/
 ```
 
-- Bearing error is +/-8 degrees; signals older than 30 s can no longer be logged.
+- Bearing error is +/-8 degrees for a ground wave and +/-16 degrees for a sky wave; signals older than 30 s can no longer be logged.
+- Each signal shows its frequency and propagation. A submarine calling a distant shore station picks a high frequency by day (ground wave heard to about 95 NM) and a lower one at night (about 150 NM). Beyond the skip distance, several hundred NM away, the sky wave arrives instead.
 - Logged lines and cross-fixes appear on the charts of Bridge, Weapons and Helicopter.
 - A second bearing of the same signal gives a cross-fix if it is taken at least 1 NM away from the first and within 300 s.
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
@@ -41,4 +42,4 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 ## Not modelled {#radio-limits}
 
 - No own radio transmissions or reports to HQ; no communication plan or crypto.
-- No frequency tuning: HFDF lists the detected signals directly.
+- No frequency tuning: HFDF monitors the whole HF band and lists the detected signals with their frequency.

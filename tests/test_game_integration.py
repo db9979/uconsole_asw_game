@@ -288,7 +288,7 @@ def test_sensor_picture_uses_generic_evidence_not_platform_truth(monkeypatch):
     game.civilians = []
     game.flights.flights = []
     game.asms = []
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     track = game.air_picture._tracks[f"W-{warship.id}"]
     assert track.label == f"W-{warship.id}"
     assert track.course is None and track.hostile is False
@@ -330,14 +330,14 @@ def test_surface_radar_detection_is_capped_by_geometric_horizon(monkeypatch):
                                  random.Random(850), hostile=True)
     beyond_horizon.emitter = True
     game.warships = [beyond_horizon]
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert f"W-{beyond_horizon.id}" not in game.air_picture._tracks
 
     within_horizon = SurfaceShip(game.ship.x + horizon - 5.0, game.ship.y,
                                  random.Random(851), hostile=True)
     within_horizon.emitter = True
     game.warships = [within_horizon]
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert f"W-{within_horizon.id}" in game.air_picture._tracks
 
 

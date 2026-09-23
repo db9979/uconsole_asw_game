@@ -221,8 +221,12 @@ Die ELOKA-Auffassungszeile von v2 enthält zusätzlich die abgeleiteten Felder
 `signal_state` (`LIVE`, `RECENT`, `MEMORY` oder `UNCONFIRMED`) und `operational`.
 Die Browserfilter für Status, Mindestbedrohung und Frequenzband bleiben
 clientlokal und verwenden für Auffassungsliste, Kontakte, Scope und barrierefreie
-Textalternative dieselbe Teilmenge. Aktive ECM-Ziele bleiben sichtbar. Entfernung
-und verborgene Senderidentität werden weder projiziert noch filterbar gemacht.
+Textalternative dieselbe Teilmenge. Aktive ECM-Ziele bleiben sichtbar. Die Zeilen
+tragen außerdem den gemessenen Spitzenpegel `signal_db`, die gemessene
+Antennenumlaufzeit `scan_period_s` (oder null) und eine `range_estimate_nm`, die
+nur aus diesem Pegel und der Leistungsklasse der besten Katalog-Hypothese
+abgeleitet ist (oder null); wahre Entfernung und verborgene Senderidentität werden
+weder projiziert noch filterbar gemacht.
 
 Befehle enthalten `protocol`, kryptografische Anfrage-ID, Clientsequenz, Station,
 Stations- und Aktivgeneration, Weltsitzung/-epoche, Ressourcenrevision, Aktion und

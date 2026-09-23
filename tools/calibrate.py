@@ -285,7 +285,11 @@ def measure_radar() -> dict:
                                           altitude_m=100.0)
             before = len(game.air_picture._tracks)
             game.sim_t += 10.0
-            game._lookout_observe(actor, namespace, kind, base, 12345 + step)
+            try:
+                game._lookout_observe(actor, namespace, kind, 12345 + step,
+                                      altitude_m=100.0 if kind == "FLG" else None)
+            except TypeError:   # 1.0.0 signature (golden recording)
+                game._lookout_observe(actor, namespace, kind, base, 12345 + step)
             seen = len(game.air_picture._tracks) > before
             if seen:
                 low = mid
@@ -391,6 +395,64 @@ def measure_damage() -> dict:
     return out
 
 
+# --------------------------------------------------------------------------
+# Air defence (added with phase 11; golden values measured on the 1.0.0
+# tree with this same probe)
+
+
+def _air_game(seed):
+    from src.core import config
+    from src.core.game import Game
+    game = Game(seed=seed, start_menu=False, audio_enabled=False)
+    game.world.land_blocks_line = lambda *args: False
+    game.subs, game.warships, game.civilians, game.raiders = [], [], [], []
+    game.flights.flights = []
+    game.mission.asm_count = 0
+    game.ship.speed = game.ship.target_speed = 0.0
+    game.ship.order_idx = next(i for i, item in enumerate(config.TELEGRAPH_ORDERS)
+                               if item[1] == 0.0)
+    game.paused = False
+    return game
+
+
+def _air_run(seed, *, ciws, chaff_at=None, distance=30.0, max_s=400.0, dt=0.1):
+    from src.air.asm import ASM
+
+    game = _air_game(seed)
+    game.ciws_authorized = ciws
+    asm = ASM(game.ship.x + distance, game.ship.y, 270.0, 1, game.rng_asm,
+              game._air_defense_loadout["asm"])
+    asm.jammer = False
+    game.asms = [asm]
+    elapsed, chaffed = 0.0, False
+    while elapsed < max_s:
+        if (chaff_at is not None and not chaffed
+                and math.hypot(asm.x - game.ship.x, asm.y - game.ship.y) <= chaff_at):
+            tracks = game.asm_tracks()
+            if tracks:
+                game.launch_chaff_at(tracks[0])
+                chaffed = True
+        game._update_sim(dt)
+        elapsed += dt
+        if asm.state in ("TREFFER", "ABGEFANGEN", "VERLOREN"):
+            break
+    return asm.state, elapsed
+
+
+def measure_air() -> dict:
+    out = {}
+    _state, elapsed = _air_run(1, ciws=False)
+    out["air.asm.time_to_impact_s.30nm"] = _metric(elapsed, "transient")
+    samples = 40
+    leaks = sum(_air_run(100 + seed, ciws=True)[0] == "TREFFER"
+                for seed in range(samples))
+    out["air.ciws.leak_fraction"] = _metric(leaks / samples, "statistic")
+    leaks = sum(_air_run(300 + seed, ciws=False, chaff_at=7.0)[0] == "TREFFER"
+                for seed in range(samples))
+    out["air.chaff.leak_fraction"] = _metric(leaks / samples, "statistic")
+    return out
+
+
 SECTIONS = {
     "ship": measure_ship,
     "sonar": measure_sonar,
@@ -398,6 +460,7 @@ SECTIONS = {
     "torpedo": measure_torpedo,
     "sub": measure_sub,
     "damage": measure_damage,
+    "air": measure_air,
 }
 
 

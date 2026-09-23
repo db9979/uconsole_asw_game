@@ -1936,10 +1936,10 @@
   "help.note.nato": "NATO frames: friendly blue, neutral green, hostile red, unknown yellow.",
   "help.note.ciws": "CIWS intercepts automatically inside 1.5 NM (limited ammunition).",
   "help.note.jammer": "Jammer ASMs beyond 20 NM provide only a HOJ bearing.",
-  "help.note.clutter": "Radar clutter and measurement interference begin at sea state 5.",
+  "help.note.clutter": "The antenna sweeps every 4 s; sea clutter grows with sea state and rain attenuates, so a contact may miss a sweep.",
   "help.note.chaff": "Chaff makes a missile break lock (40%) or blinds it briefly.",
   "help.note.air_defense": "Use chaff and maneuver first, then engage with ESSM. VLS cells are scarce.",
-  "help.note.hfdf": "HFDF gives bearings (+/-8 degrees) to transmitting submarines (snorkel, HF).",
+  "help.note.hfdf": "HFDF gives bearings and frequency of transmitting submarines (+/-8 degrees ground wave, +/-16 sky wave).",
   "help.note.teletype": "Teletype carries HQ bulletins, weather, and ROE changes.",
   "help.note.hfdf_map": "Logged bearing lines and cross-fixes appear on the chart.",
   "help.note.hfdf_tactic": "Combine an HFDF bearing with a sonar bearing for a position cross-fix.",
@@ -3243,5 +3243,13 @@
   "enum.fusion.ambiguous": "TAS left/right ambiguous",
   "sonar.line.tas_mirror": "TAS mirror bearing {mirror} - turn 20 deg to resolve",
   "sonar.line.tonal": "Tonal (Doppler) {frequency} Hz",
-  "sonar.line.tma_ellipse": "TMA 1-sigma {major} x {minor} NM, axis {orientation}"
+  "sonar.line.tma_ellipse": "TMA 1-sigma {major} x {minor} NM, axis {orientation}",
+  "eloka.field.signal": "Level / range est. / scan",
+  "eloka.value.signal": "+{level} dB / ~{range} NM / {scan}s",
+  "radio.hfdf.frequency": "{frequency} kHz {mode}",
+  "radio.hfdf.mode.GROUND": "ground wave",
+  "radio.hfdf.mode.SKY": "sky wave",
+  "commander.web.signal_level": "Signal level",
+  "commander.web.range_estimate": "Range estimate",
+  "commander.web.scan_period": "Antenna scan period"
 }

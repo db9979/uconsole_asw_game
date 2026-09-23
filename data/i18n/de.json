@@ -1936,10 +1936,10 @@
   "help.note.nato": "NATO-Rahmen: Freund blau, Neutral gruen, Feind rot, Unbekannt gelb.",
   "help.note.ciws": "CIWS: automatisch abfangend < 1.5 NM (begrenzt).",
   "help.note.jammer": "JAMMER-ASMs: jenseits 20 NM nur HOJ-Peilung (Bearing-only).",
-  "help.note.clutter": "Radarclutter und Messstoerung beginnen erst bei Seegang 5.",
+  "help.note.clutter": "Die Antenne dreht alle 4 s; Seegangsclutter w\u00e4chst mit dem Seegang und Regen d\u00e4mpft, daher kann ein Kontakt einen Umlauf verfehlen.",
   "help.note.chaff": "Chaff: Rakete bricht ab (40 %) oder wird kurz blind.",
   "help.note.air_defense": "Erst Chaff + Man\u00f6ver, dann ESSM gezielt. VLS-Zellen sind knapp.",
-  "help.note.hfdf": "HFDF: Peilung (\u00b18\u00b0) sendender U-Boote (Schnorchel, HF).",
+  "help.note.hfdf": "HFDF: Peilung und Frequenz sendender U-Boote (\u00b18\u00b0 Bodenwelle, \u00b116\u00b0 Raumwelle).",
   "help.note.teletype": "Teletype: HQ-Bulletins, Wetter, ROE-\u00c4nderungen.",
   "help.note.hfdf_map": "Protokollierte Peilstriche und Kreuzpeilungen erscheinen auf der Karte.",
   "help.note.hfdf_tactic": "HFDF-Peilung + Sonar-Peilung -> Kreuzpeilung zur Positionssch\u00e4tzung.",
@@ -3243,5 +3243,13 @@
   "enum.fusion.ambiguous": "TAS links/rechts mehrdeutig",
   "sonar.line.tas_mirror": "TAS-Spiegelpeilung {mirror} - 20 Grad drehen zum Auflösen",
   "sonar.line.tonal": "Tonal (Doppler) {frequency} Hz",
-  "sonar.line.tma_ellipse": "TMA 1-Sigma {major} x {minor} sm, Achse {orientation}"
+  "sonar.line.tma_ellipse": "TMA 1-Sigma {major} x {minor} sm, Achse {orientation}",
+  "eloka.field.signal": "Pegel / Entf.-Schaetzung / Umlauf",
+  "eloka.value.signal": "+{level} dB / ~{range} sm / {scan}s",
+  "radio.hfdf.frequency": "{frequency} kHz {mode}",
+  "radio.hfdf.mode.GROUND": "Bodenwelle",
+  "radio.hfdf.mode.SKY": "Raumwelle",
+  "commander.web.signal_level": "Signalpegel",
+  "commander.web.range_estimate": "Entfernungsschaetzung",
+  "commander.web.scan_period": "Antennenumlauf"
 }

@@ -1074,6 +1074,8 @@
       ["bearing", unit(row.bearing, "\u00b0", 0)], ["bearing_uncertainty", unit(row.bearing_uncertainty_deg, "\u00b0")],
       ["frequency", unit(row.frequency_hz, "Hz", 0)], ["frequency_band", row.frequency_band.toUpperCase().replace("_", "/")], ["prf", unit(row.prf_hz, "Hz", 0)],
       ["modulation", row.modulation], ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
+      ["signal_level", unit(row.signal_db, "dB", 0)], ["range_estimate", row.range_estimate_nm === null ? t("station_none") : unit(row.range_estimate_nm, "NM", 0)],
+      ["scan_period", row.scan_period_s === null ? t("station_none") : unit(row.scan_period_s, "s", 1)],
       ["radar_type", row.radar_type || t("station_none")], ["threat", row.threat],
       ["synthetic_assumption", yesNo(row.synthetic_assumption)],
       ["jamming_effectiveness", row.jamming_effectiveness === null ? t("station_none") : number(row.jamming_effectiveness, 2)],

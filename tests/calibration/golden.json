@@ -1,5 +1,17 @@
 {
  "metrics": {
+  "air.asm.time_to_impact_s.30nm": {
+   "kind": "transient",
+   "value": 214.9
+  },
+  "air.chaff.leak_fraction": {
+   "kind": "statistic",
+   "value": 0.65
+  },
+  "air.ciws.leak_fraction": {
+   "kind": "statistic",
+   "value": 0.175
+  },
   "damage.flood_total_1800s_two_hits.mean": {
    "kind": "statistic",
    "value": 203.0
@@ -297,6 +309,6 @@
    "value": 8.0
   }
  },
- "note": "Kinematic U-Jagd 1.0.0 reference behaviour.",
+ "note": "Kinematic U-Jagd 1.0.0 reference behaviour. air.* metrics measured on the 1.0.0 tree (3b3753c) with the phase-11 air probe.",
  "recorded_from_commit": "3b3753cf4e79927103cb03e44d0fc4b50dd8c6cb"
 }

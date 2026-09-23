@@ -46,7 +46,7 @@ Torpedo run, seen from above:
 
 Combat situation:
 
-1. Enemy torpedo reported: stream the Nixie at once (`V`). It lasts 600 s, trails 0.2 NM astern at 10 m; one ready, a second after 60 s.
+1. Enemy torpedo reported: stream the Nixie at once (`V`). It lasts 600 s on a 0.2 NM cable; one ready, a second after 60 s. It runs at 10 m at 15 kn, deeper and closer astern when you slow down, and its cable parts above 25 kn. In a turn the cable lags behind.
 2. Keep the counter-attack going: a fresh contact keeps the wire datum on the submarine.
 3. With the helicopter airborne, a lightweight torpedo (`D`) can reach a distant contact faster than the ship's torpedo.
 
@@ -69,6 +69,7 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 - The warhead has a proximity fuze: it fires at the closest approach inside its radius, and the damage falls with distance (shock factor). A near miss can leave a submarine damaged but able to escape.
 - A running torpedo is heard by the target through the sonar equation: quiet boats in calm water hear it from a few miles, rain and their own speed mask it.
 - Only two Nixies per mission: stream the first when a torpedo is likely, keep the second for the next attack.
+- Homing seekers lock on the loudest candidate and only switch when another is clearly (6 dB) louder. They ignore echoes without Doppler, so a hovering target is hard to find; a torpedo that overruns a decoy without a hull hit remembers it and re-attacks. Hostile submarine decoys fade as their battery drains; hostile warships stream their own decoys when they hear your torpedo launch.
 
 ## Not modelled {#weapons-limits}
 

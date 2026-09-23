@@ -41,6 +41,55 @@ def underwater_path_blocked(world, x0, y0, depth0, x1, y1, depth1):
 
 
 ASROC_HELIX_DEG_PER_S = 6.0
+# Seeker discrimination: a new candidate must be this much louder than the
+# held one to steal the lock; echoes without Doppler (stationary objects)
+# are suppressed; overrun decoys are remembered and ignored.
+SEEKER_LOCK_HYSTERESIS_DB = 6.0
+SEEKER_NO_DOPPLER_DB = 10.0
+SEEKER_DOPPLER_MIN_KN = 1.0
+SEEKER_REJECT_MAX = 4
+
+
+def seeker_level_db(weapon, candidate) -> float:
+    """Received level of a candidate at a homing seeker (relative dB).
+
+    Source level from the candidate's quietness/radiated level (a decoy's
+    designed emission), spherical spreading, a depth-mismatch penalty and the
+    Doppler gate against echoes from stationary objects."""
+    distance = max(0.01, math.hypot(candidate.x - weapon.x, candidate.y - weapon.y))
+    level = getattr(candidate, "acoustic_level_db", None)
+    if level is None:
+        quiet = getattr(candidate, "quiet_factor", None)
+        level = (20.0 * math.log10(1.0 + 0.8 * (1.0 - quiet()))
+                 if callable(quiet) else 0.0)
+        offset = getattr(candidate, "source_level_offset_db", None)
+        if callable(offset):
+            level += offset()
+    level -= 20.0 * math.log10(distance)
+    depth = getattr(candidate, "depth", None)
+    if depth is not None:
+        level -= abs(depth - weapon.depth) / 10.0
+    speed = getattr(candidate, "speed_kn", None)
+    if speed is None and hasattr(candidate, "stype"):
+        speed = getattr(candidate, "speed", None)
+    if speed is not None and speed < SEEKER_DOPPLER_MIN_KN:
+        level -= SEEKER_NO_DOPPLER_DB
+    return level
+
+
+def choose_seeker_target(weapon, viable, current):
+    """Loudest viable candidate, holding the current lock unless a new one
+    is louder by the hysteresis margin."""
+    if not viable:
+        return None
+    scored = [(seeker_level_db(weapon, candidate), index, candidate)
+              for index, candidate in enumerate(viable)]
+    best_level, _index, best = max(scored, key=lambda item: (item[0], -item[1]))
+    if current is not None:
+        held = next((item for item in scored if item[2] is current), None)
+        if held is not None and best_level < held[0] + SEEKER_LOCK_HYSTERESIS_DB:
+            return current
+    return best
 WAKE_HOMING_THRESHOLD = 0.15
 
 
@@ -121,6 +170,7 @@ class Torpedo:
         self.wire_ship_out_nm = 0.0
         self.wire_stress_s = 0.0
         self.last_miss_m = None
+        self.rejected_ids: list[int] = []
         self._search_phase = 0.0     # M15: Serpentin-Phase
         self._midcourse = course_deg % 360.0  # M15: Draht-Mittelkurs
         # The persisted timer also carries wire age.
@@ -218,10 +268,10 @@ class Torpedo:
             if underwater_path_blocked(world, self.x, self.y, self.depth,
                     candidate.x, candidate.y, getattr(candidate, "depth", self.target_depth)):
                 continue
-            depth_error = abs(getattr(candidate, "depth", self.target_depth)
-                              - self.depth)
-            viable.append((distance + depth_error / 1000.0, candidate))
-        return min(viable, key=lambda item: item[0])[1] if viable else None
+            if getattr(candidate, "id", None) in self.rejected_ids:
+                continue
+            viable.append(candidate)
+        return choose_seeker_target(self, viable, self._seeker_target)
 
     def _bearing_to(self, x_nm: float, y_nm: float) -> float:
         return math.degrees(math.atan2(x_nm - self.x,
@@ -359,10 +409,10 @@ class Torpedo:
             if (not underwater_path_blocked(world, ox, oy, old_depth, hx, hy, hd)
                     and not underwater_path_blocked(world, hx, hy, hd,
                                                      body.x, body.y, body.depth)):
-                self.x, self.y, self.depth = hx, hy, hd
-                self.travel -= step * (1.0 - fraction)
-                self.target = body
                 if callable(getattr(body, "hit", None)):
+                    self.x, self.y, self.depth = hx, hy, hd
+                    self.travel -= step * (1.0 - fraction)
+                    self.target = body
                     # Proximity fuze at closest approach: shock-factor damage.
                     horizontal = self._swept_dist(body, ox, oy) * 1852.0
                     slant = math.hypot(horizontal, getattr(body, "depth", hd) - hd)
@@ -370,9 +420,16 @@ class Torpedo:
                     self.state = "HIT"
                     _apply_warhead(body, slant)
                 else:
-                    # A decoy/contact consumes the terminal run but is not a
-                    # reportable target hit.
-                    self.state = "SASE"
+                    # Overran a decoy: no hull, no detonation. Remember it and
+                    # re-attack with the energy that is left.
+                    identity = getattr(body, "id", None)
+                    if identity is not None:
+                        self.rejected_ids = (self.rejected_ids + [identity])[
+                            -SEEKER_REJECT_MAX:]
+                    self._seeker_target = None
+                    self.seeker_acquired = False
+                    self.target = None
+                    continue
                 return
         if (underwater_path_blocked(world, ox, oy, old_depth,
                                     self.x, self.y, self.depth)
@@ -510,9 +567,8 @@ class EnemyTorpedo:
                     world, self.x, self.y, self.depth, candidate.x, candidate.y,
                     getattr(candidate, "depth", 5.0)):
                 continue
-            stable = getattr(candidate, "seq", getattr(candidate, "id", index))
-            viable.append((distance, type(candidate).__name__, stable, candidate))
-        return min(viable, key=lambda item: item[:3])[3] if viable else None
+            viable.append(candidate)
+        return choose_seeker_target(self, viable, self._seeker_target)
 
     def update(self, dt: float, ship, world=None, seeker_candidates=()) -> None:
         if self.state != "RUN":

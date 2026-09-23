@@ -170,6 +170,7 @@ RADAR_AIR_RANGE_NM = 100.0
 # KAMPFSCHIFF (Kontakt-DB): feindliche Kriegsschiffe loiteren um ihre Basis
 # und feuern ASM-Salven, wenn die Fregatte in Reichweite ist.
 WARSHIP_ASM_RANGE_NM = 35.0    # Abstand, ab dem Salven möglich sind
+WARSHIP_TORPEDO_DECOYS = 2       # acoustic decoys a combatant can stream
 WARSHIP_TORPEDO_EVADE_S = 90.0  # W2: Torpedoalarm -> harte Wende, dann weiter
 
 # M5: Schadensmodell (Raten in sim-Sekunden)

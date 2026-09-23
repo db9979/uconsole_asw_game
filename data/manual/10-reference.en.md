@@ -34,7 +34,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Frigate torpedo | 45 kn, 12 NM (battery), wire-guided (ship <= 20 kn, <= 1.5 deg/s, 5 NM spool), 2 tubes, 60 s reload, depth 10-300 m, proximity fuze |
 | Helicopter torpedo | 55 kn, 12 NM, 2 per sortie, no wire |
 | Hostile torpedo | 28 kn, 30 NM, homes from 3 NM |
-| Nixie towed decoy | 2 per mission, 600 s, 0.2 NM astern, 60 s reload |
+| Nixie towed decoy | 2 per mission, 600 s, 0.2 NM cable (10 m at 15 kn, deeper when slower, parts above 25 kn), 60 s reload |
 | ESSM | 6 missiles, 30 NM, 2 fire channels |
 | CIWS | 1.5 NM, 180 rounds, needs release |
 | AA gun | 240 rounds, needs release |

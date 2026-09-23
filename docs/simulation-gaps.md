@@ -122,9 +122,9 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 |-----|-------------------|------------|
 | ~~**No ship hydrodynamics**~~ | **Closed (Phase 6).** Speed lag from the catalog, Nomoto-linear turning, and added resistance in waves lowering attainable speed by hull length (small hulls lose more). | — |
 | ~~**No radar horizon**~~ | **Fixed (2026-09).** Surface detection now uses `min(effective_range × aspect, radar_horizon_nm(RADAR_ANTENNA_HEIGHT_M, RADAR_SURFACE_TARGET_HEIGHT_M))` for both civilians and warships (`game.py`, `_update_air_picture`), the same formula already used for raiders. | — |
-| **No countermeasures** | Warships do not deploy chaff/flare | ASM jamming, chaff, hard-kill CIWS on enemy ships |
+| ~~**No countermeasures**~~ | **Closed (Phase 9 / Phase 12).** Hostile combatants stream acoustic decoys (saved store of 2) when they hear a torpedo launch; missile defence (ship chaff/CIWS) is modelled on the own ship in Phase 12. | — |
 | **No damage propagation** | Single scalar `damage`; one torpedo = 34 damage → 3 hits to sink | Compartment flooding, fire, loss of specific capabilities |
-| **No evasive manoeuvres** | Loiter pattern only; no evasive when torpedo detected | Evasive turns, smoke, decoys |
+| ~~**No evasive manoeuvres**~~ | **Closed.** Combatants turn away at flank speed on a heard launch (W2, state saved in Phase 0) and stream decoys (Phase 9). | — |
 | **No weapon systems modelling** | ASM/ASROC are simple projectiles; no fire-control solution error | Guidance accuracy, warhead proximity fuze, multi-target saturation |
 
 ### 3.3 Data structures touched
@@ -190,11 +190,13 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 ### 5.2 Gaps and simplifications
 
-- No self-noise model (decoys are "loud" with fixed quiet factor)
-- No towed-decoy cable dynamics (drag, sway, depth variation)
-- No frequency/content modulation of decoy signal
-- No decoy effectiveness model (why does it fool the torpedo? just proximity + being a candidate)
-- No multiple-decoy confusion logic
+All closed in Phase 9:
+
+- ~~No self-noise model~~ — decoy emission fades with its battery (`source_level_offset_db`); the Nixie has a designed emission 12 dB above a quiet hull.
+- ~~No towed-decoy cable dynamics~~ — quasi-static cable equilibrium: depth ~ design depth x (15 kn / v)^2 (bounded), layback from the cable length, tow bearing lagging the ship's course (saved), cable parts above 25 kn.
+- ~~No frequency/content modulation~~ — replica tonals with a slow +/-2 % sweep and battery-dependent level.
+- ~~No decoy effectiveness model~~ — seekers score candidates by received level (source level, spreading, depth mismatch) with a Doppler gate against stationary echoes; the moving towed Nixie passes the gate.
+- ~~No multiple-decoy confusion logic~~ — lock hysteresis (6 dB), and a torpedo that overruns a decoy remembers it (bounded, saved) and re-attacks with its remaining energy.
 
 ---
 

@@ -108,6 +108,9 @@ class SurfaceShip:
         # W2: Torpedo-Alarm -> harte Wende weg von der Bedrohung
         self._torpedo_evade_left = 0.0
         self._torpedo_threat_bearing = 0.0
+        # Acoustic torpedo decoys carried by combatants (saved).
+        self.countermeasures_left = (config.WARSHIP_TORPEDO_DECOYS
+                                     if doctrine == "surface_combatant" else 0)
 
     @property
     def hostile(self) -> bool:

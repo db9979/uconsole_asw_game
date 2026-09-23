@@ -34,7 +34,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Fregattentorpedo | 45 kn, 12 sm (Batterie), drahtgelenkt (Schiff <= 20 kn, <= 1,5 Grad/s, 5 sm Spule), 2 Rohre, 60 s Nachladen, Tiefe 10-300 m, Annäherungszünder |
 | Helikoptertorpedo | 55 kn, 12 sm, 2 je Einsatz, ohne Draht |
 | Feindtorpedo | 28 kn, 30 sm, zielsuchend ab 3 sm |
-| Nixie-Schlepptäuschkörper | 2 je Mission, 600 s, 0,2 sm achteraus, 60 s Nachladen |
+| Nixie-Schlepptäuschkörper | 2 je Mission, 600 s, 0,2-sm-Kabel (10 m bei 15 kn, langsamer tiefer, reißt über 25 kn), 60 s Nachladen |
 | ESSM | 6 Flugkörper, 30 sm, 2 Feuerkanäle |
 | CIWS | 1,5 sm, 180 Schuss, braucht Freigabe |
 | Flak-Geschütz | 240 Schuss, braucht Freigabe |

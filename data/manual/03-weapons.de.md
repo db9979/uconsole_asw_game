@@ -46,7 +46,7 @@ Torpedolauf von oben:
 
 Gefechtslage:
 
-1. Feindtorpedo gemeldet: sofort Nixie ausbringen (`V`). Er hält 600 s, läuft 0,2 sm achteraus in 10 m Tiefe; einer bereit, ein zweiter nach 60 s.
+1. Feindtorpedo gemeldet: sofort Nixie ausbringen (`V`). Er hält 600 s an einem 0,2-sm-Kabel; einer bereit, ein zweiter nach 60 s. Bei 15 kn läuft er in 10 m Tiefe, bei langsamer Fahrt tiefer und näher achteraus, über 25 kn reißt das Kabel. In einer Wende läuft das Kabel hinterher.
 2. Den Gegenangriff fortsetzen: ein frischer Kontakt hält das Draht-Datum auf dem U-Boot.
 3. Ist der Helikopter in der Luft, erreicht ein Leichttorpedo (`D`) einen entfernten Kontakt schneller als der Schiffstorpedo.
 
@@ -69,6 +69,7 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 - Der Gefechtskopf hat einen Annäherungszünder: er zündet bei der größten Annäherung innerhalb seines Radius, der Schaden fällt mit dem Abstand (Schockfaktor). Ein knapper Fehlschuss kann ein U-Boot beschädigt entkommen lassen.
 - Ein laufender Torpedo wird vom Ziel über die Sonargleichung gehört: leise Boote hören ihn bei ruhiger See auf einige Meilen, Regen und eigene Fahrt überdecken ihn.
 - Nur zwei Nixies je Mission: den ersten ausbringen, wenn ein Torpedo wahrscheinlich ist, den zweiten für den nächsten Angriff aufheben.
+- Zielsuchköpfe halten den lautesten Kandidaten und wechseln nur, wenn ein anderer deutlich (6 dB) lauter ist. Echos ohne Doppler ignorieren sie, ein schwebendes Ziel ist daher schwer zu finden; ein Torpedo, der einen Täuschkörper ohne Rumpftreffer überläuft, merkt ihn sich und greift erneut an. Täuschkörper gegnerischer U-Boote werden mit leerer werdender Batterie leiser; gegnerische Kriegsschiffe bringen eigene Täuschkörper aus, wenn sie Ihren Torpedostart hören.
 
 ## Nicht modelliert {#weapons-limits}
 

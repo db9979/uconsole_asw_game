@@ -5610,6 +5610,16 @@ class Game:
                     self.ship.x - warship.x,
                     -(self.ship.y - warship.y))) % 360.0
                 warship.alert_torpedo(bearing)
+                if (warship.countermeasures_left > 0 and warship.side == "hostile"
+                        and len(self.decoys) < MAX_DECOYS):
+                    # Stream an acoustic decoy while turning away.
+                    warship.countermeasures_left -= 1
+                    decoy_profile = self.runtime_catalog.decoys[
+                        self.runtime_catalog.runtime_bindings["submarine_decoy"]]
+                    self.decoys.append(Decoy(
+                        warship.x, warship.y, 10.0, self.rng_asw, decoy_profile,
+                        self.runtime_catalog.acoustic_for(decoy_profile.key),
+                        source_id=warship.id))
         self._emit_sound("torpedo_launch")
         self.flash(message("runtime.torpedo.launched", torpedo=self.torpedo_seq), 2.0)
         self.feed.add(self.world.format_time(), "waffen",
@@ -6844,6 +6854,7 @@ class Game:
                                 sensor_contact_age=w.sensor_contact_age,
                                 sunk_score_awarded=w.sunk_score_awarded,
                                 torpedo_evade_left=w._torpedo_evade_left,
+                                countermeasures_left=w.countermeasures_left,
                                 torpedo_threat_bearing=w._torpedo_threat_bearing,
                                  pending_asm=list(w.pending_asm),
                                  asroc_battery=(w.asroc_battery.serialize()
@@ -6884,7 +6895,8 @@ class Game:
                      time_since_launch=t.time_since_launch,
                      energy_s=t.energy_s, motor_fraction=t.motor_fraction,
                      depth_rate=t.depth_rate, wire_ship_out_nm=t.wire_ship_out_nm,
-                     wire_stress_s=t.wire_stress_s)
+                     wire_stress_s=t.wire_stress_s,
+                     rejected_ids=list(t.rejected_ids))
                 for t in self.torpedoes],
             "enemy_torpedoes": [
                 dict(id=t.id, x=t.x, y=t.y, course=t.course, depth=t.depth,
@@ -7522,6 +7534,7 @@ class Game:
             w.sensor_contact_age = wd["sensor_contact_age"]
             w.sunk_score_awarded = wd["sunk_score_awarded"]
             w._torpedo_evade_left = wd["torpedo_evade_left"]
+            w.countermeasures_left = wd["countermeasures_left"]
             w._torpedo_threat_bearing = wd["torpedo_threat_bearing"]
             w.pending_asm = [tuple(row) for row in wd["pending_asm"]]
             if wd["asroc_battery"] is not None:
@@ -7586,6 +7599,7 @@ class Game:
             t.depth_rate = td["depth_rate"]
             t.wire_ship_out_nm = td["wire_ship_out_nm"]
             t.wire_stress_s = td["wire_stress_s"]
+            t.rejected_ids = list(td["rejected_ids"])
             self.torpedoes.append(t)
         for ed in data["enemy_torpedoes"]:
             enemy_key = ed["profile_key"]
@@ -8345,7 +8359,8 @@ class Game:
                                                "speed", "life", "sensor_seed",
                                                "profile_key", "source_id"}
                                 or not identity(source_id)
-                                or source_id not in group_ids["sub"]
+                                or (source_id not in group_ids["sub"]
+                                    and source_id not in group_ids["surface"])
                                 or not bounded(entry.get("depth"), 0, 10000)
                                 or not bounded(entry.get("course"), 0, 360)
                                 or entry.get("course") == 360
@@ -8459,6 +8474,13 @@ class Game:
                                     "asroc_battery", "pending_asroc",
                                     "asw_last_seen"} <= set(entry):
                                 return False
+                            left = entry.get("countermeasures_left")
+                            if (type(left) is not int
+                                    or not 0 <= left <= config.WARSHIP_TORPEDO_DECOYS):
+                                return False
+                            if entity_id is not None:
+                                spent_decoys[entity_id] = (
+                                    config.WARSHIP_TORPEDO_DECOYS - left)
                             battery = entry.get("asroc_battery")
                             expected_battery = WeaponBattery.from_catalog(
                                 runtime_catalog, profile_key, "asroc")
@@ -8871,7 +8893,10 @@ class Game:
                     or not bounded(row.get("motor_fraction"), 0.0, 1.0)
                     or not bounded(row.get("depth_rate"), -20.0, 20.0)
                     or not bounded(row.get("wire_ship_out_nm"), 0.0, 1e4)
-                    or not bounded(row.get("wire_stress_s"), 0.0, 1e6)):
+                    or not bounded(row.get("wire_stress_s"), 0.0, 1e6)
+                    or not isinstance(row.get("rejected_ids"), list)
+                    or len(row["rejected_ids"]) > 4
+                    or any(not identity(item) for item in row["rejected_ids"])):
                 return False
         for row in data.get("enemy_torpedoes", []):
             if (not isinstance(row, dict)

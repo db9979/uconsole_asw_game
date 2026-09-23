@@ -40,6 +40,7 @@ from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
 from src.physics import torpedo_dyn
 from src.physics import ship_dynamics
+from src.ship import damage as damage_physics
 from src.sensors.platform import MAST_DEPTH_M
 from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
@@ -3219,8 +3220,12 @@ class Game:
                    else config.RADAR_SURFACE_RANGE_NM)
         rain_loss = (config.RADAR_RAIN_AIR_LOSS if domain == "air"
                      else config.RADAR_RAIN_SURFACE_LOSS)
+        # Damage to the operations room (radar consoles, power) degrades the
+        # radar continuously rather than only at destruction.
+        capability = (1.0 if not self.damage.station_degraded("opz")
+                      else 0.5 + 0.5 * self.damage.capability("opz"))
         return (nominal * (1.0 - loss * self.radar_weather_severity())
-                * (1.0 - rain_loss * self.radar_rain_severity()))
+                * (1.0 - rain_loss * self.radar_rain_severity()) * capability)
 
     def radar_sweep_bearing(self) -> float:
         """Nautische Peilung: zunehmende Werte drehen Nord -> Ost rechtsherum."""
@@ -5630,8 +5635,11 @@ class Game:
     # --- Update ---
 
     def _sonar_range_factor(self) -> float:
+        """Continuous sonar-room capability: an undamaged room keeps full
+        range, a degraded one falls to DMG_SONAR_DEGRADED_FACTOR and below."""
         if self.damage.station_degraded("sonar"):
-            return config.DMG_SONAR_DEGRADED_FACTOR
+            return config.DMG_SONAR_DEGRADED_FACTOR * (
+                0.5 + 0.5 * self.damage.capability("sonar"))
         return 1.0
 
     def _sonar_targets(self) -> list:
@@ -5813,7 +5821,8 @@ class Game:
         self.ship.steering_jammed = self.damage.station_down("flightdeck")
         self.ship.stabilizers_ok = not (self.damage.station_down("hull_left")
                                         or self.damage.station_down("hull_right"))
-        self.ship.flood_percent = self.damage.total
+        self.ship.flood_percent = (self.damage.flood_mass_kg()
+                                   / ship_dynamics.HULL.flood_kg_per_percent)
         self.ship.update_fuel(dt)
         self.world.update(dt)
         contact = self.ship.update(dt, self.world, self.damage.list_deg())
@@ -6030,7 +6039,7 @@ class Game:
             asm.update(dt, self.ship, self.world,
                        ecm_effect=self._ecm_effect_against_asm(asm))
             if asm.state == "TREFFER":
-                hit = self.damage.torpedo_hit()
+                hit = self.damage.missile_hit(*self._hull_impact(asm.x, asm.y))
                 self._emit_sound("explosion")
                 self.announce(message("runtime.hit.asm", compartments=", ".join(
                     self.damage.compartments[k].name for k in hit)),
@@ -6115,7 +6124,12 @@ class Game:
                            seeker_candidates=self.nixies)
         for torpedo in self.enemy_torpedoes:
             if torpedo.state == "HIT":
-                hit = self.damage.torpedo_hit(self._incoming_hit_zone(torpedo))
+                distance_m = max(1.0, math.hypot(torpedo.x - self.ship.x,
+                                                 torpedo.y - self.ship.y) * 1852.0)
+                # Shock factor sets the hole size relative to a 20 m burst.
+                hit = self.damage.torpedo_hit(
+                    impact=self._hull_impact(torpedo.x, torpedo.y),
+                    hole_scale=config.clamp(20.0 / distance_m, 0.5, 3.0))
                 self._emit_sound("explosion")
                 text = ", ".join(self.damage.compartments[k].name for k in hit)
                 self.flash(message("runtime.hit.torpedo", compartments=text), 5.0)
@@ -6160,6 +6174,21 @@ class Game:
         self.asrocs = survivors
         # A launch decision consumes this substep before flight begins.
         self._drain_asrocs()
+
+    def _hull_impact(self, x_nm: float, y_nm: float) -> tuple[float, float]:
+        """Impact point in hull coordinates (bow/starboard positive, -1..1)."""
+        dx, dy = (x_nm - self.ship.x) * 1852.0, (y_nm - self.ship.y) * 1852.0
+        heading = math.radians(self.ship.course)
+        forward = dx * math.sin(heading) - dy * math.cos(heading)
+        starboard = dx * math.cos(heading) + dy * math.sin(heading)
+        half_length = self.ship.hull_spec.length_m / 2.0
+        half_beam = self.ship.hull_spec.beam_m / 2.0
+        if math.hypot(forward, starboard) < 1e-6:
+            return 0.0, 0.0
+        # Project onto the hull outline along the approach direction.
+        scale = max(abs(forward) / half_length, abs(starboard) / half_beam, 1.0)
+        return (config.clamp(forward / scale / half_length, -1.0, 1.0),
+                config.clamp(starboard / scale / half_beam, -1.0, 1.0))
 
     def _incoming_hit_zone(self, torpedo) -> str:
         """Naehert die getroffene Schiffszone aus der Angriffsrichtung an."""
@@ -6442,7 +6471,7 @@ class Game:
 
     def _update_damage_and_mission(self, dt: float) -> None:
         """Fortschritt von Schaden, Flugverkehr und Missionszielen."""
-        self.damage.update(dt)
+        self.damage.update(dt, draft_m=self.ship.dynamic_draft_m())
         self.flights.update(dt, world=self.world,
                             near=(self.ship.x, self.ship.y))
         self._check_mission_end()
@@ -6687,9 +6716,18 @@ class Game:
                 difficulty=dict(self.difficulty)),
             "damage": dict(
                 repair_mult=self.damage.repair_mult,
-                compartments={k: dict(state=c.state, flood=c.flood, fire=c.fire)
+                compartments={k: dict(state=c.state, flood=c.flood, fire=c.fire,
+                                      hole_m2=c.hole_m2, heat_s=c.heat_s,
+                                      shorted=c.shorted)
                               for k, c in self.damage.compartments.items()},
-                teams={str(k): v for k, v in self.damage.teams.items()}),
+                teams={str(k): v for k, v in self.damage.teams.items()},
+                team_position={str(k): v for k, v
+                               in self.damage.team_position.items()},
+                team_eta={str(k): v for k, v in self.damage.team_eta.items()},
+                patch_kits=self.damage.patch_kits,
+                cooked_off=self.damage.cooked_off,
+                capsized=self.damage.capsized,
+                draft_m=self.damage.draft_m),
             "world": dict(hour=self.world.hour,
                            sea_state=self.world.sea_state,
                            weather_shift_timer=self.world.weather_shift_timer,
@@ -7266,9 +7304,20 @@ class Game:
             self.damage.compartments[k].state = c["state"]
             self.damage.compartments[k].flood = c["flood"]
             self.damage.compartments[k].fire = c["fire"]
+            self.damage.compartments[k].hole_m2 = c["hole_m2"]
+            self.damage.compartments[k].heat_s = c["heat_s"]
+            self.damage.compartments[k].shorted = c["shorted"]
         self.damage.teams.update({int(k): v for k, v in dmg["teams"].items()})
+        self.damage.team_position.update(
+            {int(k): v for k, v in dmg["team_position"].items()})
+        self.damage.team_eta.update({int(k): v for k, v in dmg["team_eta"].items()})
+        self.damage.patch_kits = dmg["patch_kits"]
+        self.damage.cooked_off = dmg["cooked_off"]
+        self.damage.capsized = dmg["capsized"]
+        self.damage.draft_m = dmg["draft_m"]
         self.damage.total = sum(c.flood for c in self.damage.compartments.values())
-        self.damage.ship_sunk = self.damage.total >= config.DMG_SHIP_SINK_TOTAL
+        self.damage.ship_sunk = (self.damage.capsized or self.damage.flood_mass_kg()
+                                 >= damage_physics.RESERVE_BUOYANCY_KG)
         # M10–M16
         self.sonar_mode = data["sonar_mode"]
         self.sonar_harmonic_hz = None
@@ -8282,6 +8331,21 @@ class Game:
             return False
         if not bounded(damage["repair_mult"], 0.1, 10.0):
             return False
+        team_keys = {str(i) for i in range(1, DamageModel.TEAM_COUNT + 1)}
+        if (not isinstance(damage["team_position"], dict)
+                or set(damage["team_position"]) != team_keys
+                or any(room not in compartment_keys
+                       for room in damage["team_position"].values())
+                or not isinstance(damage["team_eta"], dict)
+                or set(damage["team_eta"]) != team_keys
+                or any(not bounded(value, 0.0, 3600.0)
+                       for value in damage["team_eta"].values())
+                or type(damage["patch_kits"]) is not int
+                or not 0 <= damage["patch_kits"] <= damage_physics.PATCH_KITS
+                or type(damage["cooked_off"]) is not bool
+                or type(damage["capsized"]) is not bool
+                or not bounded(damage["draft_m"], 1.0, 20.0)):
+            return False
         if (set(teams) != {str(i) for i in range(1, DamageModel.TEAM_COUNT + 1)}
                 or any(room is not None and (not isinstance(room, str)
                                              or room not in compartment_keys)
@@ -8293,6 +8357,9 @@ class Game:
                 or not bounded(room["flood"], 0, config.DMG_DESTROY_FLOOD)
                 # A lethal fire may overshoot the kill threshold by one step.
                 or not bounded(room["fire"], 0, config.DMG_FIRE_KILL + 5.0)
+                or not bounded(room["hole_m2"], 0.0, 10.0)
+                or not bounded(room["heat_s"], 0.0, 1e6)
+                or type(room["shorted"]) is not bool
                 for room in compartments.values()):
             return False
 

@@ -556,6 +556,10 @@ class Sub:
             return
 
         self.speed = config.clamp(self.speed, 0.0, self.motion.maximum_speed_kn)
+        if 30.0 < self.damage < 100.0 and not self.emergency_ascent:
+            # Holed pressure hull: progressive flooding until blown or lost.
+            self.damage = min(100.0, self.damage + 0.01 * dt
+                              * (self.damage - 30.0) / 70.0)
         self._update_hull_stress(dt)
         if self.state == "SINKING":
             return

@@ -88,7 +88,7 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 | ~~**No active sonar use by subs**~~ | **Closed.** `Sub._maybe_active_ping` (aggressive boats, fresh contact, cooldown saved since Phase 0); the ping is heard by the frigate. | — |
 | ~~**No ESM/ESB use by subs**~~ | **Closed (Phase 7).** All submarines use their `PlatformSensorSuite` (legacy snapshot gate removed); ESM works only with the mast up (<= 18 m); range from their own passive TMA with TMA legs (saved track). | — |
 | ~~**No ASW coordination**~~ | **Closed (Phase 7).** Hostile red-group datalink shares tracks; a submerged boat only exchanges at mast depth or while snorkelling/transmitting, which makes the latency physical. | — |
-| **Damage model is scalar** | `self.damage: float` 0-100; affects speed (`speed_for_state`), noise, and sinking | Compartment flooding on subs; loss of specific systems; trim change; rudder damage |
+| ~~**Damage model is scalar**~~ | **Closed (Phases 6/10).** Shock-factor hits, progressive flooding while holed, emergency blow, fatigue; damage throttles speed and raises noise. Subs keep a lumped damage value by design (no player-visible compartments). | — |
 
 ### 2.3 Data structures / interfaces that would be touched
 
@@ -123,7 +123,7 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 | ~~**No ship hydrodynamics**~~ | **Closed (Phase 6).** Speed lag from the catalog, Nomoto-linear turning, and added resistance in waves lowering attainable speed by hull length (small hulls lose more). | — |
 | ~~**No radar horizon**~~ | **Fixed (2026-09).** Surface detection now uses `min(effective_range × aspect, radar_horizon_nm(RADAR_ANTENNA_HEIGHT_M, RADAR_SURFACE_TARGET_HEIGHT_M))` for both civilians and warships (`game.py`, `_update_air_picture`), the same formula already used for raiders. | — |
 | ~~**No countermeasures**~~ | **Closed (Phase 9 / Phase 12).** Hostile combatants stream acoustic decoys (saved store of 2) when they hear a torpedo launch; missile defence (ship chaff/CIWS) is modelled on the own ship in Phase 12. | — |
-| **No damage propagation** | Single scalar `damage`; one torpedo = 34 damage → 3 hits to sink | Compartment flooding, fire, loss of specific capabilities |
+| ~~**No damage propagation**~~ | **Closed (Phases 8/10).** Shock-factor damage (near misses no longer sink), progressive flooding above 30 %, radar lost above 60 % and missile launch above 75 % damage. | — |
 | ~~**No evasive manoeuvres**~~ | **Closed.** Combatants turn away at flank speed on a heard launch (W2, state saved in Phase 0) and stream decoys (Phase 9). | — |
 | **No weapon systems modelling** | ASM/ASROC are simple projectiles; no fire-control solution error | Guidance accuracy, warhead proximity fuze, multi-target saturation |
 
@@ -328,26 +328,25 @@ All closed in Phase 9:
 
 ### 9.1 What is currently modeled
 
-- 9 compartments: bridge, sonar, weapons, OPZ, radio, engine, flightdeck, hull L/R
-- Torpedo hit: 1–2 compartments randomly selected (weighted by hit zone); 10-30% initial flood; 35% chance of fire start
-- Flooding: 0.10%/s (flooded) or 0.025%/s (damaged); repair 0.12%/s per team
-- Fire: 0.08%/s growth; 0.14%/s per team extinguish; 0.02%/s spread to adjacent; 35% start chance on hit; kill at 100%
-- Compartment destroyed at 70% flood or 100% fire
-- Ship sinks at 540% total flood (60% avg over 9 compartments)
+- 9 compartments with volume, centroid, floor height, fuel load and electrical load
+- Torpedo hit: impact point → compartment, hole area from warhead stand-off; ASM hit: above-waterline fire
+- Flooding: orifice law against the outside waterline; teams patch (8 kits) then pump
+- Stability: displacement, free-surface GM, heel; sinking beyond reserve buoyancy, capsize at lost GM / 35° heel
+- Fire: fuel × oxygen growth, smothering, heat-timer spread, electrical shorts, magazine cook-off
+- Continuous station capability; teams with walking time (20 s per compartment)
 - Grounding: impact energy → localized flooding (deterministic, no RNG)
-- 3 repair teams; cycle or assign
 
 ### 9.2 Gaps and simplifications
 
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
-| **No hit-location physics** | Torpedo zone (bow/stern/port/starboard/center) from approach bearing; random within zone | Torpedo impact point on hull → specific compartment; warhead burst → localised damage |
-| **No flooding dynamics** | Compartment flood % changes linearly; no free-flood, no list, no change in centre of gravity | Compartment interconnection; free-flood moment of inertia; list → affects sonar, radar, helicopter ops |
-| **No fire propagation physics** | Fire spreads to adjacent with fixed probability per second | Compartment fire based on material, fuel type; water ingress suppresses fire; electrical fire |
-| **No systems degradation** | Station is binary: OK → DEGRADED → DOWN | Gradual performance loss: sonar sensitivity ↓, radar range ↓, engine power ↓, comm range ↓ |
-| **No damage repair realism** | Repair rate is constant; no consumables, no time-to-repair estimate | Repair teams need time to travel; materials limited; some damage irreparable |
-| **No secondary damage** | Only flooding + fire | Structural failure, magazine detonation, electrical short-circuit cascade |
-| **Torpedo damage to subs** | `Sub.hit()`: +60-100% damage; at 100% → SINKING (20 s) | Compartment damage on sub; loss of specific systems; emergency blow; controlled sink |
+| ~~**No hit-location physics**~~ | **Closed (Phase 10).** The torpedo's impact point on the hull (`_hull_impact`) selects the compartment; hole area scales with the warhead stand-off (20 m / distance, 0.5-3x); ASM hits above the waterline and mainly starts fires. | — |
+| ~~**No flooding dynamics**~~ | **Closed (Phase 10).** Orifice inflow Q = Cd A sqrt(2 g h) against the outside waterline (dynamic draft + heel), so flooding slows as levels equalize and high rooms stay dry; floodwater mass, free-surface GM loss and transverse moment give draft and list; the ship sinks beyond reserve buoyancy and capsizes at lost GM or 35 deg heel. | — |
+| ~~**No fire propagation physics**~~ | **Closed (Phase 10).** Growth from compartment fuel load x oxygen, smothered by flooding and cooled by water; deterministic spread after a bulkhead has stayed hot (heat timer, saved); flooded switchboards short and start electrical fires. | — |
+| ~~**No systems degradation**~~ | **Closed (Phase 10).** Continuous `capability()` per compartment from flooding and fire scales sonar and radar range; destroyed rooms still disable their station. | — |
+| ~~**No damage repair realism**~~ | **Closed (Phase 10).** Teams walk the compartment graph (20 s per hop, ETA saved) and act only on arrival; holes must be patched first with one of 8 patch kits, leaving a small leak. | — |
+| ~~**No secondary damage**~~ | **Closed (Phase 10).** Magazine cook-off above 90 % fire destroys the weapons room and holes its neighbours; electrical short-circuit fires; capsize as structural stability failure. | — |
+| ~~**Torpedo damage to subs**~~ | **Closed (Phases 6/8/10).** Shock-factor damage, one emergency blow, hull fatigue, and progressive flooding of a holed boat (30-100 % damage) that ends in sinking unless it surfaces. | — |
 
 ---
 

@@ -317,7 +317,10 @@ def test_raider_salvo_asms_hit_the_frigate_and_damage_compartments(game, monkeyp
     asm.speed_kn = 0.0  # Treffer-Zeitpunkt kontrollieren
     game._update_air_defense(0.1, publish_picture=False)
     assert asm.state == "TREFFER"
-    assert any(c.flood > 0.0 for c in game.damage.compartments.values())
+    # A missile strikes above the waterline: mainly fire, flooding only if
+    # the blast holes a room low enough.
+    assert any(c.fire > 0.0 or c.flood > 0.0 or c.state != "OK"
+               for c in game.damage.compartments.values())
 
 
 # --- Air Picture ---

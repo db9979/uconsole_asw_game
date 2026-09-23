@@ -5,7 +5,7 @@ import random
 import pytest
 
 from src.core import config
-from src.ship.damage import Compartment, DamageModel
+from src.ship.damage import CAPSIZE_HEEL_DEG, HIT_HOLE_M2, TEAM_HOP_S, Compartment, DamageModel
 
 
 class FixedRng:
@@ -43,29 +43,43 @@ def test_repeated_hit_does_not_revive_destroyed_compartment():
     assert compartment.flood == config.DMG_DESTROY_FLOOD
 
 
+def _arrive(model):
+    for team in model.team_eta:
+        model.team_eta[team] = 0.0
+
+
 def test_repair_is_applied_before_flood_destruction():
-    compartment = Compartment("engine", "Maschinerie")
+    model = DamageModel(random.Random(3))
+    compartment = model.compartments["engine"]
     compartment.state = "FLUTEND"
     compartment.flood = config.DMG_DESTROY_FLOOD - 1.0
+    compartment.hole_m2 = HIT_HOLE_M2
+    model.patch_kits = 0
+    model.assign_team(1, "engine")
+    _arrive(model)
+    trend = model.compartment_trend("engine")["flood_rate"]
 
-    compartment.update(1.0, repaired=True)
+    model.update(1.0)
 
     assert compartment.state == "FLUTEND"
     assert compartment.flood == pytest.approx(
-        config.DMG_DESTROY_FLOOD - 1.0
-        + config.DMG_FLOOD_RATE - config.DMG_REPAIR_RATE)
+        config.DMG_DESTROY_FLOOD - 1.0 + trend, rel=1e-6)
 
 
 def test_fire_growth_and_suppression_are_net_before_destruction():
-    compartment = Compartment("weapons", "Waffenzentrale")
-    compartment.fire = config.DMG_FIRE_KILL - 1.0
+    model = DamageModel(random.Random(3))
+    compartment = model.compartments["engine"]
+    compartment.fire = config.DMG_FIRE_KILL - 5.0
+    compartment.state = "BESCHAEDIGT"
+    model.assign_team(1, "engine")
+    _arrive(model)
+    growth = config.DMG_FIRE_RATE * compartment.geometry["fuel"]
 
-    compartment.update(1.0, repaired=True, fire_teams=1)
+    model.update(1.0)
 
-    assert compartment.state == "OK"
+    assert compartment.state != "ZERSTOERT"
     assert compartment.fire == pytest.approx(
-        config.DMG_FIRE_KILL - 1.0
-        + config.DMG_FIRE_RATE - config.DMG_FIRE_REPAIR_RATE)
+        config.DMG_FIRE_KILL - 5.0 + growth - config.DMG_FIRE_REPAIR_RATE)
 
 
 def test_fire_only_spreads_to_explicit_neighbors(monkeypatch):
@@ -87,6 +101,10 @@ def test_multiple_teams_can_share_a_repairable_compartment():
 
     assert model.assign_team(1, "engine") is True
     assert model.assign_team(2, "engine") is True
+    # Teams walk from damage control: working only after the transit.
+    assert model.teams_on("engine") == []
+    assert model.team_eta[1] == pytest.approx(2 * TEAM_HOP_S)
+    model.update(2 * TEAM_HOP_S)
     assert model.teams_on("engine") == [1, 2]
 
 
@@ -97,6 +115,7 @@ def test_fully_repaired_compartment_releases_all_teams():
     compartment.flood = 1.0
     model.assign_team(1, "engine")
     model.assign_team(2, "engine")
+    _arrive(model)
 
     model.update(7.0)
 
@@ -111,16 +130,19 @@ def test_list_deg_reflects_flood_asymmetry_and_is_bounded():
     assert model.list_deg() == 0.0
 
     model.compartments["hull_right"].flood = 20.0
-    assert model.list_deg() == pytest.approx(
-        20.0 * config.SHIP_LIST_DEG_PER_FLOOD_PCT)
+    starboard = model.list_deg()
+    # Off-centre floodwater moment over displacement x effective GM.
+    assert 1.0 < starboard < 6.0
 
     model.compartments["hull_left"].flood = 20.0
-    assert model.list_deg() == 0.0  # symmetric flooding: no net list
+    assert model.list_deg() == pytest.approx(0.0, abs=1e-9)
 
     model.compartments["hull_left"].flood = 0.0
     model.compartments["hull_right"].flood = 1000.0
-    assert model.list_deg() == config.SHIP_MAX_LIST_DEG  # clamped
+    assert model.list_deg() == CAPSIZE_HEEL_DEG  # clamped at downflooding
 
     model.compartments["hull_right"].flood = 0.0
     model.compartments["hull_left"].flood = 1000.0
-    assert model.list_deg() == -config.SHIP_MAX_LIST_DEG
+    assert model.list_deg() == -CAPSIZE_HEEL_DEG
+
+

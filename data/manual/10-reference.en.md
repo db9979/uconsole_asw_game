@@ -50,7 +50,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 | QUIET mode | noise x0.65, max 12 kn |
 | TAS handling | 3-12 kn, stream 360 s, recover 480 s, fault above 20 kn |
 | TAS depth | 20-260 m, minus 4 m per knot |
-| Damage | 9 compartments, 3 teams; sinks at 60 % mean flooding |
+| Damage | 9 compartments, 3 teams (about 20 s walk per compartment), 8 patch kits; sinks beyond reserve buoyancy, capsizes at 35 degrees heel or lost GM |
 
 ## Environment {#ref-environment}
 

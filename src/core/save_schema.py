@@ -41,6 +41,9 @@ WORLD_FIELDS = frozenset({
     "ocean",
 })
 
-DAMAGE_FIELDS = frozenset({"repair_mult", "compartments", "teams"})
-COMPARTMENT_FIELDS = frozenset({"state", "flood", "fire"})
+DAMAGE_FIELDS = frozenset({"repair_mult", "compartments", "teams",
+                           "team_position", "team_eta", "patch_kits",
+                           "cooked_off", "capsized", "draft_m"})
+COMPARTMENT_FIELDS = frozenset({"state", "flood", "fire", "hole_m2", "heat_s",
+                                "shorted"})
 COMPARTMENT_STATES = ("OK", "FLUTEND", "BESCHAEDIGT", "ZERSTOERT")

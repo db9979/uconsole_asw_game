@@ -50,7 +50,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Modus LEISE | Lärm x0,65, max. 12 kn |
 | TAS-Handhabung | 3-12 kn, ausbringen 360 s, einholen 480 s, Defekt über 20 kn |
 | TAS-Tiefe | 20-260 m, minus 4 m je Knoten |
-| Schaden | 9 Abteilungen, 3 Trupps; sinkt bei 60 % mittlerer Flutung |
+| Schaden | 9 Abteilungen, 3 Trupps (etwa 20 s Weg je Abteilung), 8 Leckabdichtsätze; sinkt jenseits der Reserveverdrängung, kentert bei 35 Grad Krängung oder verlorenem GM |
 
 ## Umwelt {#ref-environment}
 

@@ -9,6 +9,13 @@ import random
 
 from src.core import config
 from src.physics import submarine as sub_physics
+
+# Hostile-hull damage effects (percent): radar and missile systems are lost,
+# and progressive flooding runs above the threshold.
+NPC_RADAR_LOST_DAMAGE = 60.0
+NPC_WEAPONS_LOST_DAMAGE = 75.0
+NPC_FLOOD_THRESHOLD = 30.0
+NPC_FLOOD_RATE = 0.01          # %/s at full damage
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
 from src.sensors.platform import (
@@ -136,7 +143,8 @@ class SurfaceShip:
 
     @property
     def radar_emitting(self) -> bool:
-        return not self.sunk and self.emitter
+        return (not self.sunk and self.emitter
+                and self.damage < NPC_RADAR_LOST_DAMAGE)
 
     @property
     def ais_transmitting(self) -> bool:
@@ -152,6 +160,14 @@ class SurfaceShip:
         if self.damage >= 100.0:
             self.sunk = True
 
+    def _progressive_flooding(self, dt: float) -> None:
+        """A holed hull keeps taking water in proportion to its damage."""
+        if NPC_FLOOD_THRESHOLD < self.damage < 100.0:
+            self.damage = min(100.0, self.damage + NPC_FLOOD_RATE * dt * (
+                self.damage - NPC_FLOOD_THRESHOLD) / (100.0 - NPC_FLOOD_THRESHOLD))
+            if self.damage >= 100.0:
+                self.sunk = True
+
     def alert_torpedo(self, bearing_deg: float) -> None:
         """W2: Torpedostart gehört -> Wende weg von der Bedrohung, Flankfahrt."""
         if self.sunk:
@@ -162,6 +178,9 @@ class SurfaceShip:
     # --- Bewegung ---
 
     def update(self, dt: float, observation, world, asw_observation=None) -> None:
+        if self.sunk:
+            return
+        self._progressive_flooding(dt)
         if self.sunk:
             return
         if self.doctrine == "surface_combatant":
@@ -343,7 +362,8 @@ class SurfaceShip:
             self.y = config.clamp(self.y, 0.0, world_size)
 
     def _maybe_asm(self, dt: float) -> None:
-        if self.side != "hostile" or self.profile.asm_salvo[0] <= 0:
+        if (self.side != "hostile" or self.profile.asm_salvo[0] <= 0
+                or self.damage >= NPC_WEAPONS_LOST_DAMAGE):
             return
         self.attack_left -= dt
         if self.attack_left > 0.0:

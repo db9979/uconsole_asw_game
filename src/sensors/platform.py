@@ -174,6 +174,9 @@ class PlatformSensorSuite:
                 float(now) + phase)
         self.local_picture = ObservationPicture(30.0, MAX_LOCAL_TRACKS)
         self.datalink_picture = ObservationPicture(30.0, MAX_DATALINK_TRACKS)
+        # Radio reachability for the datalink this tick (a submerged boat
+        # only exchanges with its antenna at mast depth); set by the owner.
+        self.datalink_reachable = True
 
     @property
     def datalink_id(self) -> str:
@@ -213,7 +216,11 @@ class PlatformSensorSuite:
         target_domain = getattr(candidate, "sensor_domain", "surface")
         owner_domain = getattr(owner, "sensor_domain", "surface")
         if profile.domain in ("radar", "esm", "ais") and owner_domain == "subsurface":
-            return
+            # Masts only work at periscope/snorkel depth: ESM needs the
+            # antenna above the surface; a submerged boat's radar/AIS never.
+            if (profile.domain != "esm"
+                    or getattr(owner, "depth", 0.0) > MAST_DEPTH_M):
+                return
         if ((profile.domain in ("radar", "esm", "ais")
              and target_domain == "subsurface")
                 or (profile.domain == "ais" and target_domain != "surface")
@@ -438,7 +445,8 @@ def exchange_friendly_datalink(
     never across groups.
     """
     eligible = sorted(
-        (suite for suite in suites if suite.datalink_group is not None),
+        (suite for suite in suites if suite.datalink_group is not None
+         and suite.datalink_reachable),
         key=lambda suite: suite.datalink_id)
     reports = {
         suite.datalink_id: tuple(
@@ -475,6 +483,7 @@ def side_datalink_group(side: str) -> str | None:
 
 # Own radiated-noise level at which catalog passive ranges were tuned.
 NPC_REFERENCE_NOISE = 0.8
+MAST_DEPTH_M = 18.0
 NPC_REFERENCE_SENSITIVITY_DB = -100.0
 
 

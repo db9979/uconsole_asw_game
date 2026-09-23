@@ -50,6 +50,7 @@ Automatic mode (`A`) picks targets and techniques and couples jamming with soft-
 - An intercept that changes from search to a high PRF pulse-doppler seeker at a steady bearing is a missile about to attack: warn Operations immediately.
 - Assigning a radar type (`C`) releases the bearing to CIC; clearing the assignment withdraws it again.
 - Jamming is a transmission. Use it deliberately, not continuously.
+- Your own radar is heard too: a submarine at periscope depth (mast up, about 18 m) intercepts it on its ESM and can pass the bearing to other hostile units over its datalink. Deep boats neither hear radar nor receive the datalink.
 
 ## Not modelled {#eloka-limits}
 

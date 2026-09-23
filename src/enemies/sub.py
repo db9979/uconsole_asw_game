@@ -9,6 +9,8 @@ import random
 
 from src.core import config
 from src.physics import submarine as sub_physics
+from src.core import detrand
+from src.sonar.tma import BearingTrack, solve_tma
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
 from src.sensors.platform import (
@@ -28,6 +30,11 @@ DECOY_PROFILE = CATALOG.get_decoy("decoy")
 if DECOY_PROFILE is None:
     raise RuntimeError(
         "Kontaktkatalog unvollstaendig: Dekoy-Profil 'decoy' fehlt")
+
+
+SUB_REACTION_MEDIAN_S = 5.0
+SUB_TMA_RESOLVE_S = 30.0
+SUB_TMA_LEG_TURN_DEG = 35.0
 
 
 class SubType:
@@ -97,10 +104,9 @@ class Sub:
         self.endurance = (SubmarineEndurance(endurance_profile)
                           if endurance_profile is not None else None)
         systems = runtime_catalog.profile_systems.get(source.key)
-        self.legacy_observation_model = bool(
-            systems is not None and systems.machine_key is not None
-            and runtime_catalog.machines[
-                systems.machine_key].propulsor_type == "unknown")
+        # Every submarine now senses through its own sensor suite (passive
+        # bearings, own TMA, ESM at periscope depth, hostile datalink).
+        self.legacy_observation_model = False
         self.quiet_mult = quiet_mult        # M7: Level-Faktor (leicht = lauter)
         self.attack_mult = attack_mult      # M7: Level-Faktor Gegenangriff
         self.attack_cooldown = (config.SUB_ATTACK_COOLDOWN_S
@@ -118,6 +124,11 @@ class Sub:
         # Physics state (saved): one emergency blow, blow in progress, loud
         # transient timer (launch/blow) and pressure-hull fatigue (0..1).
         self.blow_available = True
+        # Own passive TMA on one bearing-only contact and crew reaction.
+        self.tma_track = BearingTrack()
+        self.tma_track_id = None
+        self.tma_next_t = 0.0
+        self.torpedo_alarm_left = -1.0
         self.emergency_ascent = False
         self.transient_left = 0.0
         self.hull_fatigue = 0.0
@@ -175,8 +186,26 @@ class Sub:
             self.evade_offset = self.rng.uniform(-30.0, 30.0)
             self.decision_reason = "Aktives Sonar gehoert: Ausweichen"
 
+    def reaction_delay_s(self) -> float:
+        """Crew recognition time for a torpedo alarm (per boat, lognormal)."""
+        spread = detrand.normal(self.sensor_seed, "crew-reaction")
+        return config.clamp(math.exp(math.log(SUB_REACTION_MEDIAN_S) + 0.5 * spread),
+                            2.0, 15.0)
+
     def alert_torpedo(self) -> None:
+        """Torpedo heard: after the crew's recognition time, evade hard."""
+        if self.sunk or self.state == "SINKING":
+            return
+        if self.state == "EVADE" or self.torpedo_alarm_left == 0.0:
+            # Already evading, or the recognition time has elapsed.
+            self._react_to_torpedo()
+            return
+        if self.torpedo_alarm_left < 0.0:
+            self.torpedo_alarm_left = self.reaction_delay_s()
+
+    def _react_to_torpedo(self) -> None:
         """W2: Feindtorpedo gehört -> harte Ausweichreaktion + ggf. Dekoy."""
+        self.torpedo_alarm_left = -1.0
         if not self.sunk and self.state != "SINKING":
             self.torpedo_alerted = True
             self.heard_ping = True
@@ -353,6 +382,27 @@ class Sub:
 
     # --- physics: planes, hull stress, cavitation, source level ---------------
 
+    def _ingest_bearing(self, observation) -> None:
+        """Own passive TMA from bearings of one tracked contact."""
+        if observation.track_id != self.tma_track_id:
+            self.tma_track = BearingTrack()
+            self.tma_track_id = observation.track_id
+        self.tma_track.add(observation.last_seen, observation.bearing, self.x,
+                           self.y, self.course,
+                           max(0.5, observation.bearing_uncertainty_deg or 0.5),
+                           None, self.speed)
+        if observation.last_seen < self.tma_next_t:
+            return
+        self.tma_next_t = observation.last_seen + SUB_TMA_RESOLVE_S
+        solution = solve_tma(self.tma_track)
+        if solution is None or solution.quality < config.TMA_RANGE_MIN_QUALITY:
+            return
+        self.memory["contact"] = dict(
+            x=solution.pos[0], y=solution.pos[1], speed=solution.speed,
+            course=solution.course, noise=observation.signal)
+        self.memory["contact_age"] = 0.0
+        self.memory["contact_bearing"] = observation.bearing
+
     def _update_hull_stress(self, dt: float) -> None:
         """Pressure-hull fatigue below test depth; collapse beyond crush depth."""
         test = self.stype.max_depth_m
@@ -428,6 +478,10 @@ class Sub:
         self.pinged_this_tick = False
         if self.sunk:
             return
+        if self.torpedo_alarm_left > 0.0:
+            self.torpedo_alarm_left = max(0.0, self.torpedo_alarm_left - dt)
+            if self.torpedo_alarm_left == 0.0:
+                self._react_to_torpedo()
         if self.speed != self._last_actual_speed:
             # Set from outside (spawn, scenario, test): order and actual.
             self.speed_order = self.speed
@@ -515,7 +569,11 @@ class Sub:
         fresh_observation = (observation is not None and (
             observation.track_id in ("LEGACY", "MEMORY")
             or observation.last_seen > self.sensor_suite.last_consumed_s))
-        if fresh_observation:
+        if fresh_observation and observation.x is None and observation.domain == "sonar":
+            self._ingest_bearing(observation)
+        if fresh_observation and not (observation.x is None
+                                      and self.memory["contact"] is not None
+                                      and observation.domain == "sonar"):
             self.memory["contact"] = (
                 dict(x=observation.x, y=observation.y,
                      speed=observation.speed_kn or 0.0,
@@ -617,6 +675,11 @@ class Sub:
                 self.turn_delta = 0.0
         else:
             # Patrouille: lange, ruhige Legs statt dauernder Kreisfahrt.
+            if (self.memory["contact"] is None and len(self.tma_track.pts) >= 4
+                    and self.tma_track.course_span_deg()
+                    < config.TMA_MIN_COURSE_CHG_DEG):
+                # Bearing-only contact without range: open a TMA leg.
+                self.target_course = (self.course + SUB_TMA_LEG_TURN_DEG) % 360.0
             self.turn_left -= dt
             if self.turn_left <= 0:
                 self.turn_left = self.rng.uniform(300.0, 900.0)

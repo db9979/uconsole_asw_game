@@ -85,9 +85,9 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 | ~~**LAUER is a speed brake, not a tactic**~~ | **Closed (Phase 6).** The lurking boat heads into the current at bare steerage way and holds station. | — |
 | ~~**No current / drift**~~ | **Fixed (2026-09).** `World.current_vec(x, y)` provides a deterministic current field, already applied to ship/sub/surface ships (`world.py:217-224`), and now also to torpedoes (both classes) and the free-drift enemy decoy. | — |
 | ~~**Torpedo launch is instantaneous**~~ | **Closed (Phases W2 + 6).** Motor spool-up, launch depth, and a loud 8 s tube-discharge transient on the firing boat. | — |
-| **No active sonar use by subs** | Subs only use passive detection (or legacy `snapshot_observation`) | Active ping capability with its own trade-offs (reveals position) |
-| **No ESM/ESB use by subs** | ESM sensor exists in catalog but `legacy_observation_model` short-circuits it for most profiles | Full `PlatformSensorSuite` path for subs when `propulsor_type != "unknown"` |
-| **No ASW coordination** | Each sub acts independently; no data-link between hostile subs | Friendly datalink (already exists in `PlatformSensorSuite` for "blue" side but not used for hostile subs) |
+| ~~**No active sonar use by subs**~~ | **Closed.** `Sub._maybe_active_ping` (aggressive boats, fresh contact, cooldown saved since Phase 0); the ping is heard by the frigate. | — |
+| ~~**No ESM/ESB use by subs**~~ | **Closed (Phase 7).** All submarines use their `PlatformSensorSuite` (legacy snapshot gate removed); ESM works only with the mast up (<= 18 m); range from their own passive TMA with TMA legs (saved track). | — |
+| ~~**No ASW coordination**~~ | **Closed (Phase 7).** Hostile red-group datalink shares tracks; a submerged boat only exchanges at mast depth or while snorkelling/transmitting, which makes the latency physical. | — |
 | **Damage model is scalar** | `self.damage: float` 0-100; affects speed (`speed_for_state`), noise, and sinking | Compartment flooding on subs; loss of specific systems; trim change; rudder damage |
 
 ### 2.3 Data structures / interfaces that would be touched
@@ -164,7 +164,7 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 | **No wire dynamics** | Wire is abstracted as a timer (stale/broken) | Wire payout length limits range; wire drag; wire tension; spool dynamics |
 | **No propeller noise model** | Static LOFAR lines from catalog | Speed-dependent blade rate; cavitation at high speed; motor harmonics |
 | **Kill is binary** | Distance + depth threshold → instant hit or miss | Warhead proximity fuze with lethal radius; damage proportional to standoff; no partial hits |
-| ~~**No target reaction to torpedo**~~ | **Partially fixed (2026-09).** Beyond the existing 35 NM one-time launch-transient alert and the 1.2 NM homing-triggered alert, subs now also get a graduated, noise-scaled notice (`Sub.torpedo_notice_range_nm()`, up to `TORP_RUNNING_NOISE_RANGE_NM`) of a running torpedo's own machinery noise, scaled by the sub's own self-noise. Still open: no explicit reaction-time delay, no dedicated evasive-depth-change behaviour beyond the existing EVADE state. | Reaction-time delay; dedicated evasive depth change |
+| ~~**No target reaction to torpedo**~~ | **Closed (Phases W2 + 7 + 8).** Launch-transient and homing alerts, crew recognition delay (per-boat lognormal 2-15 s, saved countdown), evasive dive across the layer; Phase 8 makes the running-torpedo notice a sonar-equation detection. | — |
 | **No self-destruction timing** | SASE at max range or terrain block; no time-based self-destruct | Motor burn time; battery depletion |
 | **No wake / trail signature** | None | Torpedo wake detectable by passive sonar at close range |
 | **ASROC payload depth** | Fixed `target_depth_m` from observation (default 60 m) | No depth-keeping logic; no terminal dive |

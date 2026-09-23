@@ -38,6 +38,7 @@ from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
 from src.sonar import equation as sonar_equation
 from src.physics import ship_dynamics
+from src.sensors.platform import MAST_DEPTH_M
 from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
     COMPARTMENT_FIELDS, COMPARTMENT_STATES, DAMAGE_FIELDS, RNG_STREAMS,
@@ -5841,6 +5842,10 @@ class Game:
                 degraded = {"radar", "esm", "sonar", "ais"}
             candidates = [candidate for candidate in all_candidates
                           if getattr(candidate, "side", None) != actor.side]
+            suite.datalink_reachable = not (
+                isinstance(actor, Sub) and actor.depth > MAST_DEPTH_M
+                and getattr(getattr(actor, "endurance", None), "phase", "")
+                not in ("SNORKEL", "RADIO"))
             suite.update(
                 self.sim_t, actor, candidates, self.world, self.runtime_catalog,
                 emcon={"radar": getattr(actor, "radar_emitting", False),
@@ -6721,6 +6726,14 @@ class Game:
                            decoy_cd=s._decoy_cd,
                            active_ping_cd=s._active_ping_cd,
                            speed_order=s.speed_order,
+                           tma_track=[dict(t=p.t, bearing=p.bearing, fx=p.fx, fy=p.fy,
+                                           fcourse=p.fcourse,
+                                           uncertainty_deg=p.uncertainty_deg,
+                                           fspeed=p.fspeed)
+                                      for p in s.tma_track.pts],
+                           tma_track_id=s.tma_track_id,
+                           tma_next_t=s.tma_next_t,
+                           torpedo_alarm_left=s.torpedo_alarm_left,
                            blow_available=s.blow_available,
                            emergency_ascent=s.emergency_ascent,
                            transient_left=s.transient_left,
@@ -7339,6 +7352,15 @@ class Game:
             s._decoy_cd = sd["decoy_cd"]
             s._active_ping_cd = sd["active_ping_cd"]
             s.speed_order = sd["speed_order"]
+            s.tma_track = BearingTrack()
+            s.tma_track.pts = [BearingPoint(p["t"], p["bearing"], p["fx"], p["fy"],
+                                            p["fcourse"], p["uncertainty_deg"],
+                                            None, p["fspeed"])
+                               for p in sd["tma_track"]]
+            s.tma_track.version = len(s.tma_track.pts)
+            s.tma_track_id = sd["tma_track_id"]
+            s.tma_next_t = sd["tma_next_t"]
+            s.torpedo_alarm_left = sd["torpedo_alarm_left"]
             s._last_actual_speed = s.speed
             s.blow_available = sd["blow_available"]
             s.emergency_ascent = sd["emergency_ascent"]
@@ -8453,7 +8475,21 @@ class Game:
                                     and entry["blow_available"])
                                 or not bounded(entry.get("transient_left"), 0.0, 60.0)
                                 or not bounded(entry.get("hull_fatigue"), 0.0, 1.0)
-                                or not bounded(entry.get("speed_order"), 0.0, 100.0)):
+                                or not bounded(entry.get("speed_order"), 0.0, 100.0)
+                                or not isinstance(entry.get("tma_track"), list)
+                                or len(entry["tma_track"]) > config.BEARING_TRACK_MAX_PTS
+                                or any(not isinstance(point, dict) or set(point) != {
+                                    "t", "bearing", "fx", "fy", "fcourse",
+                                    "uncertainty_deg", "fspeed"}
+                                       or not all(bounded(value, -1_000_000, 1e12)
+                                                  for value in point.values())
+                                       or not 0.05 <= point["uncertainty_deg"] <= 180.0
+                                       for point in entry["tma_track"])
+                                or (entry.get("tma_track_id") is not None
+                                    and (not isinstance(entry["tma_track_id"], str)
+                                         or len(entry["tma_track_id"]) > 64))
+                                or not bounded(entry.get("tma_next_t"), 0.0, 1e12)
+                                or not bounded(entry.get("torpedo_alarm_left"), -1.0, 15.0)):
                             return False
                         endurance_profile = runtime_catalog.endurances.get(
                             f"endurance.{profile_key}")

@@ -58,6 +58,11 @@ def assign_contact(game, target_id=9001):
     return contact
 
 
+def alarmed(sub):
+    """Alarm raised: immediate reaction or the crew's recognition countdown."""
+    return sub.torpedo_alerted or sub.torpedo_alarm_left > 0.0
+
+
 def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(
         game, monkeypatch):
     """A launch is a loud, one-time acoustic event: subs react to it from much
@@ -75,8 +80,8 @@ def test_torpedo_launch_transient_alerts_subs_well_beyond_its_own_seeker_range(
     monkeypatch.setattr(game.audio, "play_effect", effects.append)
     assert game.launch_torpedo_at(contact, 50.0) is True
 
-    assert near.torpedo_alerted is True
-    assert far.torpedo_alerted is False
+    assert alarmed(near) is True
+    assert alarmed(far) is False
     assert effects == ["torpedo_launch"]
 
 
@@ -99,7 +104,7 @@ def test_quiet_sub_notices_running_torpedo_before_homing_range(game):
 
     game._update_player_torpedoes(0.0)
 
-    assert quiet_sub.torpedo_alerted is True
+    assert alarmed(quiet_sub) is True
 
 
 def test_loud_sub_does_not_notice_running_torpedo_at_the_same_distance(game):
@@ -113,7 +118,7 @@ def test_loud_sub_does_not_notice_running_torpedo_at_the_same_distance(game):
 
     game._update_player_torpedoes(0.0)
 
-    assert loud_sub.torpedo_alerted is False
+    assert alarmed(loud_sub) is False
 
 
 def test_launch_torpedo_at_starts_the_motor_spoolup_ramp(game):
@@ -281,8 +286,8 @@ def test_torpedo_warning_is_local_and_not_selected_target_telepathy(game, monkey
     game.torpedoes = [Torpedo(100.5, 100, 90, 50, far, 1,
                               speed_kn=0, guidance_x=120, guidance_y=100)]
     game._update_player_torpedoes(0.1)
-    assert near.torpedo_alerted is not blocked
-    assert far.torpedo_alerted is False
+    assert alarmed(near) is not blocked
+    assert alarmed(far) is False
 
 
 def test_terminal_depth_tracking_loss_and_reacquisition():

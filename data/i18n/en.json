@@ -1965,7 +1965,7 @@
   "editor.runtime_unsupported": "Mission uses fields not supported by the runtime",
   "runtime.hq.roe": "HQ: ROE {roe} - ping and classify before firing.",
   "runtime.hq.weather": "HQ: Weather: sea {sea_state}, wind from {wind_from} deg at {wind_speed} kn, rain {rain}, visibility {visibility} NM.",
-  "runtime.hq.profile": "HQ: Sea {sea_state}, wind from {wind_from} deg at {wind_speed} kn, rain {rain}, visibility {visibility} NM, thermocline {depth} m.",
+  "runtime.hq.profile": "HQ: Sea {sea_state}, wind from {wind_from} deg at {wind_speed} kn, rain {rain}, visibility {visibility} NM, thermocline {depth} m, tide {tide} m, water {sst} °C.",
   "runtime.hq.threat_underwater": "HQ: Initial intelligence reports possible underwater activity near bearing {bearing} deg, approximately {range} NM from your start position. Position unconfirmed; begin the search in that sector.",
   "runtime.hq.threat_surface": "HQ: Initial intelligence reports possible hostile surface activity near bearing {bearing} deg, approximately {range} NM from your start position. Position unconfirmed; investigate that sector.",
   "runtime.hq.threat_unknown": "HQ: No reliable initial threat position is available. Patrol the assigned mission sector and develop the picture with onboard sensors.",

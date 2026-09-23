@@ -366,13 +366,13 @@ Scope: Ship dynamics, weapons, enemy AI, air, sonar/sensors, world/environment.
 
 | Gap | Current behaviour | Would need |
 |-----|-------------------|------------|
-| **No ocean currents** | None; all entities move by own propulsion only | Current field (speed/direction) affecting drift of all floating objects, torpedoes, buoys |
-| **No tides** | Water depth is static | Tidal variation affecting under-keel clearance, buoy depth, thermocline |
-| **No thermocline dynamics** | Thermocline depth is static per grid cell | Diurnal warming/cooling; frontal structure; internal waves |
-| **No wind/current interaction** | Wind is independent of surface drift | Wind-driven surface current (3% rule); affects sonar surface path |
-| **No seasonal / diurnal sound-speed variation** | Sound speed is fixed by depth only | SST variation → sound-speed changes; diurnal thermocline deepening |
-| **Seabed composition** | Only depth; no sediment type | Bottom type affects sonar reflection (hard vs soft), torpedo ground effect, ASW channel |
-| **No underwater geography beyond depth** | No rocks, reefs, shipwrecks, cable routes | Sonar clutter from fixed underwater objects; navigation hazards |
+| ~~**No ocean currents**~~ | **Closed.** Static seeded current field (`World.current_vec`) applied to ship, subs, surface ships, torpedoes and decoys; Phase 1 adds the wind-driven component. | — |
+| ~~**No tides**~~ | **Closed (Phase 1).** `src/world/ocean.py`: M2 + S2 constituents, seeded amplitude/phase and a spatial phase gradient, Green's-law shoaling. `World.depth_m`/`physical_depth_m` = chart datum + tide, so grounding and sub safe depth follow the tide. | — |
+| ~~**No thermocline dynamics**~~ | **Closed (Phase 1).** Mixed-layer depth = seasonal cell base + diurnal heating (-8 m at 15:00, zero 24-h mean) + wind-mixing deepening (saved first-order relaxation, fast deepening / slow restratification) + three internal-wave components. | — |
+| ~~**No wind/current interaction**~~ | **Closed (Phase 1).** 3 % of wind speed, deflected 20 deg to the right of downwind, added to `current_vec`. | — |
+| ~~**No seasonal / diurnal sound-speed variation**~~ | **Closed (Phase 1).** Seeded season, SST with seasonal and diurnal terms, exponential thermocline temperature profile and the Mackenzie (1981) equation. Used by the bathythermograph and ping echo latency; the ray tracer (Phase 4) samples the same profile. | — |
+| ~~**Seabed composition**~~ | **Closed (Phase 1 model).** Seeded 12x12 sediment grid (rock/gravel/sand/silt/mud) from depth and slope with Hamilton-style geoacoustic parameters and a Rayleigh fluid-fluid bottom-loss function; consumed by the sonar equation (Phase 3) and ray tracer (Phase 4). | — |
+| ~~**No underwater geography beyond depth**~~ | **Closed (Phase 1 model).** Up to 64 seeded wrecks and submerged rocks. Rocks shoal `depth_m` (tops at least 15 m, a hazard to submarines and weapons, never to surface keels); wrecks become active-sonar clutter in Phase 3. | — |
 
 ---
 

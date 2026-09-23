@@ -1965,7 +1965,7 @@
   "editor.runtime_unsupported": "Mission verwendet Felder, die zur Laufzeit nicht unterstuetzt werden",
   "runtime.hq.roe": "HQ: ROE {roe} \u2013 erst pingen + klassifizieren, dann schie\u00dfen.",
   "runtime.hq.weather": "HQ: Wetter: See {sea_state}, Wind aus {wind_from} Grad mit {wind_speed} kn, Regen {rain}, Sicht {visibility} NM.",
-  "runtime.hq.profile": "HQ: See {sea_state}, Wind aus {wind_from} Grad mit {wind_speed} kn, Regen {rain}, Sicht {visibility} NM, Thermokline {depth} m.",
+  "runtime.hq.profile": "HQ: See {sea_state}, Wind aus {wind_from} Grad mit {wind_speed} kn, Regen {rain}, Sicht {visibility} NM, Thermokline {depth} m, Gezeit {tide} m, Wasser {sst} °C.",
   "runtime.hq.threat_underwater": "HQ: Erste Aufklaerung meldet moegliche Unterwasseraktivitaet bei Peilung {bearing} Grad, etwa {range} NM von der Startposition. Position unbestaetigt; Suche in diesem Sektor beginnen.",
   "runtime.hq.threat_surface": "HQ: Erste Aufklaerung meldet moegliche feindliche Oberflaechenaktivitaet bei Peilung {bearing} Grad, etwa {range} NM von der Startposition. Position unbestaetigt; diesen Sektor untersuchen.",
   "runtime.hq.threat_unknown": "HQ: Keine verlaessliche anfaengliche Bedrohungsposition verfuegbar. Zugewiesenen Missionssektor patrouillieren und Lagebild mit Bordsensoren aufbauen.",

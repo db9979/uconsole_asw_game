@@ -53,6 +53,8 @@ Combat situation:
 - Sprint-and-drift: sprint at FULL to a new position, then slow to 4-6 kn and listen.
 - Heavy flooding on one side gives a list and a steady yaw pull; correct with rudder.
 - The ship cannot run aground onto land; it is pushed back, but shallow water limits the helicopter dipping depth (10 m bottom clearance).
+- Water depth follows the tide (semi-diurnal, about 12.4 h, up to a few metres in shallow water). A passage that is safe at high water can ground the hull at low water; the HQ weather bulletin reports the current tide at the ship.
+- Wind pushes the surface water: about 3 % of the wind speed, 20 degrees to the right of downwind, on top of the steady ocean current.
 
 ## Not modelled {#bridge-limits}
 

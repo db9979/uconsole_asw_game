@@ -52,6 +52,17 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | TAS-Tiefe | 20-260 m, minus 4 m je Knoten |
 | Schaden | 9 Abteilungen, 3 Trupps; sinkt bei 60 % mittlerer Flutung |
 
+## Umwelt {#ref-environment}
+
+| Vorgang | Modell |
+|---|---|
+| Gezeit | M2 (12,42 h) + S2 (12 h), 0,4-1,4 m Amplitude, im Flachwasser größer |
+| Deckschicht | jahreszeitliche Grundtiefe; nachmittags etwa 8 m flacher; vertieft sich bei Wind über 12 kn; interne Wellen +/-6 m |
+| Schallgeschwindigkeit | Mackenzie-Gleichung aus dem Temperaturprofil (Oberfläche 8-18 Grad C je nach Jahreszeit) |
+| Strömung | festes Feld bis 1 kn plus 3 % des Windes, 20 Grad rechts der Windrichtung |
+| Meeresboden | Fels, Kies, Sand, Schluff oder Schlick; beeinflusst die Bodenreflexion |
+| Hindernisse | bis zu 64 kartierte Wracks und Unterwasserfelsen (Spitzen mindestens 15 m tief) |
+
 ## Gegnerische U-Boote {#ref-subs}
 
 | Klasse | Leisheit | Max. Tiefe | Torpedos |

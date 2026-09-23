@@ -52,6 +52,17 @@ All values are the defaults of the current game version. Custom difficulty and m
 | TAS depth | 20-260 m, minus 4 m per knot |
 | Damage | 9 compartments, 3 teams; sinks at 60 % mean flooding |
 
+## Environment {#ref-environment}
+
+| Process | Model |
+|---|---|
+| Tide | M2 (12.42 h) + S2 (12 h), 0.4-1.4 m amplitude, larger in shallow water |
+| Surface layer | seasonal base depth; about 8 m shallower in the afternoon; deepens in wind above 12 kn; internal waves +/-6 m |
+| Sound speed | Mackenzie equation from the temperature profile (sea surface 8-18 deg C by season) |
+| Current | steady field up to 1 kn plus 3 % of the wind, 20 deg right of downwind |
+| Seabed | rock, gravel, sand, silt or mud; affects bottom reflection |
+| Hazards | up to 64 charted wrecks and submerged rocks (tops at least 15 m deep) |
+
 ## Opposing submarines {#ref-subs}
 
 | Class | Quietness | Max depth | Torpedoes |

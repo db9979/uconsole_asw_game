@@ -36,6 +36,7 @@ from src.core.mission_definition import static_preview, validate_mission
 from src.core.station import Station
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
+from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
     COMPARTMENT_FIELDS, COMPARTMENT_STATES, DAMAGE_FIELDS, RNG_STREAMS,
     SAVE_ROOT_FIELDS, SHIP_FIELDS, WORLD_FIELDS)
@@ -75,7 +76,6 @@ from src.sensors.platform import (
 )
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
-from src.sonar import propagation
 from src.sonar.sonar import Contact, SonarSystem, TowState
 from src.sonar.tma import BearingPoint, BearingTrack
 from src.ui import layout
@@ -1409,7 +1409,8 @@ class Game:
     def _feed_ping(self, tgt, contact) -> None:
         """W1/W2: Ping-Echo-Feed inkl. Echolatenz (W3: Salzwasser-Schallfeld)."""
         dist = tgt.distance_nm(self.ship)
-        latenz = self.world.echo_delay_s(dist)
+        mx, my = (self.ship.x + tgt.x) * .5, (self.ship.y + tgt.y) * .5
+        latenz = self.world.echo_delay_s(dist, mx, my)
         klass = {"diesel_alt": "Diesel", "aip_modern": "AIP",
                  "ssn": "Nuclear propulsion?"}.get(
             getattr(tgt, "stype", None) and tgt.stype.key or "",
@@ -1421,7 +1422,7 @@ class Game:
                               bearing=f"{contact.bearing:4.0f}",
                               range=f"{contact.range_est:4.1f}",
                               latency=f"{latenz:3.1f}",
-                              speed=f"{config.SOUND_SPEED_M_S:.0f}",
+                              speed=f"{self.world.mean_sound_speed_m_s(mx, my):.0f}",
                               classification=klass))
 
     # --- Display (M8): Letterbox-Scaling + Vollbild ---
@@ -6391,6 +6392,8 @@ class Game:
             self.hq_msg(message(
                 "runtime.hq.profile", sea_state=f"{weather['sea_state']:.1f}",
                 depth=f"{self.world.thermocline_depth_m(self.ship.x, self.ship.y):.0f}",
+                tide=f"{self.world.tide_m(self.ship.x, self.ship.y):+.1f}",
+                sst=f"{self.world.ocean.sea_surface_temperature_c(self.world.hour):.1f}",
                 wind_from=f"{weather['wind_from_deg']:.0f}",
                 wind_speed=f"{weather['wind_speed_kn']:.0f}",
                 rain=f"{weather['rain_intensity']:.0%}",
@@ -6596,6 +6599,7 @@ class Game:
             "world": dict(hour=self.world.hour,
                            sea_state=self.world.sea_state,
                            weather_shift_timer=self.world.weather_shift_timer,
+                           ocean=self.world.ocean.serialize(),
                            mode=self.world_mode,
                            generator=("natural-earth-v1"
                                       if self.world_mode in ("procedural", "real_fixed")
@@ -7022,6 +7026,7 @@ class Game:
         self.world.hour = w["hour"]
         self.world.sea_state = w["sea_state"]
         self.world.weather_shift_timer = w["weather_shift_timer"]
+        self.world.ocean.restore(w["ocean"])
         self.seed = seed
         self.sonar = SonarSystem(
             seed=seed, acoustic_profiles=self.runtime_catalog.acoustic_profiles)
@@ -8843,10 +8848,13 @@ class Game:
                 or not 0 <= world["sea_state"] <= 6
                 or not bounded(world["weather_shift_timer"], 0.0,
                                config.WEATHER_SHIFT_PERIOD_S)
+                or not OceanEnvironment.valid_state(world["ocean"])
                 or not Coastline.valid_snapshot(world["coast"])):
             return False
         validation_coast = Coastline.from_dict(world["coast"])
         validation_world = World(seed=data["seed"], coast=validation_coast)
+        validation_world.hour = world["hour"]
+        validation_world.ocean.restore(world["ocean"])
         validation_hull = HullSpec(**hull)
         if grounding["latched"]:
             saved_contact = GroundingContact(**contact)
@@ -8912,9 +8920,7 @@ class Game:
             expected_depths = [maximum * index / 20 for index in range(21)]
             if (any(abs(depth - expected) > 1e-9
                     for depth, expected in zip(depths, expected_depths))
-                    or any(abs(speed - propagation.synthetic_sound_speed_m_s(
-                        depth, thermocline)) > .150000001
-                           for depth, speed in zip(depths, speeds))):
+                    or any(not 1400.0 <= speed <= 1600.0 for speed in speeds)):
                 return False
         contacts = sonar.get("contacts", {})
         if not isinstance(contacts, dict):

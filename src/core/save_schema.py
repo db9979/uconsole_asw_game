@@ -38,6 +38,7 @@ SHIP_FIELDS = frozenset({
 
 WORLD_FIELDS = frozenset({
     "hour", "sea_state", "weather_shift_timer", "mode", "generator", "coast",
+    "ocean",
 })
 
 DAMAGE_FIELDS = frozenset({"repair_mult", "compartments", "teams"})

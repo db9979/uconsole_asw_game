@@ -62,7 +62,7 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 ### TMA, Umwelt und Aktiv {#sonar-tma-env}
 
 - **TMA** löst Entfernung, Kurs und Fahrt aus einer Peilungsreihe des fokussierten Kontakts. Nötig sind mindestens 4 Peilungen über 180 s und eine eigene Kursänderung von mindestens 6 Grad; die Entfernung gilt ab Qualität 0,35. Tiefe schätzt TMA nicht.
-- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert.
+- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert. Die Schicht ist nicht fest: Nachmittagssonne macht sie flacher (etwa 8 m), starker Wind mischt sie über Stunden tiefer, und interne Wellen verschieben sie um einige Meter. Den BT nach einigen Stunden oder einem Wetterwechsel wiederholen. Das gemessene Profil ist die echte temperaturabhängige Schallgeschwindigkeit (Mackenzie-Gleichung) und fällt deshalb unterhalb der Schicht ab.
 - **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung (+/-0,18 sm) und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s.
 
 ## Bugsonar und Schleppsonar {#sonar-arrays}

@@ -105,7 +105,8 @@ def test_damage_zone_biases_expected_compartment():
 def test_active_ping_echo_is_delayed_by_sound_travel_time():
     world = World(seed=3)
     frigate = Ship(250.0, 250.0, speed_kn=4.0)
-    sub = Sub(265.0, 250.0, 60.0, 180.0, "diesel_alt", random.Random(3))
+    # Shallow target: stays in the surface layer whatever the diurnal layer.
+    sub = Sub(265.0, 250.0, 30.0, 180.0, "diesel_alt", random.Random(3))
     sonar = SonarSystem(seed=3)
     sonar.queue_ping(frigate, [sub], world, 0.0)
     assert sub.state == "EVADE"
@@ -185,7 +186,7 @@ def test_ship_fuel_survives_save_load():
 def test_focused_sonar_track_exposes_signature_analysis():
     world = World(seed=6)
     frigate = Ship(250.0, 250.0, speed_kn=4.0)
-    sub = Sub(255.0, 250.0, 60.0, 180.0, "diesel_alt", random.Random(6))
+    sub = Sub(255.0, 250.0, 30.0, 180.0, "diesel_alt", random.Random(6))
     sonar = SonarSystem(seed=6)
     sonar.set_listen_bearing(90.0)
     sonar.update(1.0, 1.0, frigate, [sub], world, focus_tgt=sub)

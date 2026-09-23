@@ -33,6 +33,14 @@ def snr_db(passive_range_nm: float, dist_nm: float) -> float:
                              / max(dist_nm, 1e-6))
 
 
+def _echo_delay(world, distance_nm: float, frigate, target) -> float:
+    """Two-way echo latency with the modelled sound speed on the path."""
+    if hasattr(world, "mean_sound_speed_m_s"):
+        return world.echo_delay_s(distance_nm, (frigate.x + target.x) * .5,
+                                  (frigate.y + target.y) * .5)
+    return world.echo_delay_s(distance_nm)
+
+
 def _target_acoustic_signature(tgt):
     """Best-effort TargetSignature lookup across the different contact types."""
     for attr in ("acoustic", "stype", "profile"):
@@ -580,8 +588,13 @@ class SonarSystem:
         max_depth = min(water_depth, 400.0)
         depths = np.linspace(0.0, max_depth, 21)
         speeds = []
+        true_speed = getattr(world, "sound_speed_m_s", None)
         for depth in depths:
-            speed = propagation.synthetic_sound_speed_m_s(depth, measured_thermo)
+            # The probe measures the real modelled temperature profile
+            # (Mackenzie sound speed) with a small sensor noise.
+            speed = (true_speed(float(depth), frigate.x, frigate.y)
+                     if true_speed is not None else
+                     propagation.synthetic_sound_speed_m_s(depth, measured_thermo))
             speeds.append(speed + self.rng.uniform(-.15, .15))
         self.bt_profile = dict(t=t, x=frigate.x, y=frigate.y,
                                thermocline_m=measured_thermo,
@@ -776,7 +789,8 @@ class SonarSystem:
                 "frigate": frigate,
                 "world": world,
                 "sent_at": t_real,
-                "ready_at": t_real + world.echo_delay_s(distance),
+                "ready_at": t_real + _echo_delay(world, distance,
+                                                 frigate, target),
                 "range_factor": range_factor,
                 "mode": mode,
                 "snapshot": snapshot,

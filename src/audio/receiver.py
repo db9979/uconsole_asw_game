@@ -72,6 +72,16 @@ def directional_gain(bearing_deg: float, center_deg: float,
     return float(gain) if np.ndim(gain) == 0 else gain
 
 
+def beam_pattern_gain(bearing_deg, center_deg: float, width_deg: float):
+    """Uniform line-aperture beam: |sinc| main lobe of the given amplitude
+    FWHM with the first side lobes at -13 dB, so a loud source leaks into
+    neighbouring beams (grating/side-lobe response of a real array)."""
+    delta = (center_deg - np.asarray(bearing_deg, dtype=float) + 180.0) % 360.0 - 180.0
+    x = 1.2067 * delta / max(width_deg, 1e-6)
+    gain = np.abs(np.sinc(x))
+    return float(gain) if np.ndim(gain) == 0 else gain
+
+
 class AcousticReceiver:
     """4096 Hz mono receiver, advanced by exactly .25 s per update.
 
@@ -441,11 +451,11 @@ class AcousticReceiver:
             if key in entries:
                 next_states[key] = (direction, state, bb_ola, bb_params)
                 next_spectral_states[key] = curve
-            audio += source_audio * directional_gain(bearing, direction, width)
+            audio += source_audio * beam_pattern_gain(bearing, direction, width)
             # Actual unsteered block energy, not source presence or current beam
             # amplitude. Incoherent source powers add; normalize all terms alike.
             scan += (np.mean(source_audio**2) / .25**2
-                     * directional_gain(self._angles, direction, width)**2)
+                     * beam_pattern_gain(self._angles, direction, width)**2)
         self._source_states = next_states
         self._spectral_states = next_spectral_states
         if own_cav > 0:

@@ -71,6 +71,7 @@ DISPLAY_KEYS = {
         "KEINE DATEN": "enum.fusion.none", "KEINE FUSION": "enum.fusion.none",
         "BESTAETIGT": "enum.fusion.confirmed", "DIVERGENT": "enum.fusion.divergent",
         "MOEGLICHER GEISTERKONTAKT": "enum.fusion.ghost",
+        "TAS L/R?": "enum.fusion.ambiguous",
     },
     "weapon_mode": {"DRAHT": "enum.weapon.wire", "SUCHER": "enum.weapon.seeker"},
     "profile_kind": {

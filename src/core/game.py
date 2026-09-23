@@ -6904,7 +6904,15 @@ class Game:
                         fused_quality=c.fused_quality,
                         tma_pos=c.tma_pos, tma_course=c.tma_course,
                         tma_speed=c.tma_speed, tma_quality=c.tma_quality,
-                        tma_seen=c.tma_seen, buoy_fixes=list(c.buoy_fixes[-80:]),
+                        tma_seen=c.tma_seen,
+                        tma_ellipse=(list(c.tma_ellipse)
+                                     if c.tma_ellipse is not None else None),
+                        towed_ambiguous=c.towed_ambiguous,
+                        towed_resolved=c.towed_resolved,
+                        ambiguity_axis=c.ambiguity_axis,
+                        mirror_bearing=c.mirror_bearing,
+                        tonal_hz=c.tonal_hz,
+                        buoy_fixes=list(c.buoy_fixes[-80:]),
                         buoy_reports={str(seq): dict(report)
                                       for seq, report in c.buoy_reports.items()},
                         helo_qualified=c.helo_qualified,
@@ -6925,7 +6933,8 @@ class Game:
                     str(target_id): [
                         dict(t=p.t, bearing=p.bearing, fx=p.fx, fy=p.fy,
                              fcourse=p.fcourse,
-                             uncertainty_deg=p.uncertainty_deg)
+                             uncertainty_deg=p.uncertainty_deg,
+                             freq_hz=p.freq_hz, fspeed=p.fspeed)
                         for p in track.pts]
                     for target_id, track in self.sonar._tracks.items()},
                 "track_versions": {
@@ -7625,6 +7634,13 @@ class Game:
                 c.tma_speed = cd.get("tma_speed")
                 c.tma_quality = cd.get("tma_quality", 0.0)
                 c.tma_seen = cd.get("tma_seen", c.range_seen if c.range_source == "tma" else None)
+                c.tma_ellipse = (tuple(cd["tma_ellipse"])
+                                 if cd["tma_ellipse"] is not None else None)
+                c.towed_ambiguous = cd["towed_ambiguous"]
+                c.towed_resolved = cd["towed_resolved"]
+                c.ambiguity_axis = cd["ambiguity_axis"]
+                c.mirror_bearing = cd["mirror_bearing"]
+                c.tonal_hz = cd["tonal_hz"]
                 c.buoy_fixes = [tuple(row) for row in cd.get("buoy_fixes", [])]
                 c.buoy_reports = {int(seq): dict(row) for seq, row in
                                   cd.get("buoy_reports", {}).items()}
@@ -7681,7 +7697,8 @@ class Game:
                 track = BearingTrack()
                 track.pts = [BearingPoint(p["t"], p["bearing"], p["fx"],
                                           p["fy"], p["fcourse"],
-                                          p.get("uncertainty_deg"))
+                                          p.get("uncertainty_deg"),
+                                          p["freq_hz"], p["fspeed"])
                              for p in points[-config.BEARING_TRACK_MAX_PTS:]]
                 track.version = track_versions.get(target_id, len(track.pts))
                 self.sonar._tracks[int(target_id)] = track
@@ -9144,6 +9161,22 @@ class Game:
                     or contact.get("dip_observer_x") is None
                     or contact.get("dip_observer_y") is None):
                 return False
+            ellipse = contact.get("tma_ellipse")
+            if ellipse is not None and (
+                    not isinstance(ellipse, list) or len(ellipse) != 3
+                    or not bounded(ellipse[0], 0.0, 1e6)
+                    or not bounded(ellipse[1], 0.0, ellipse[0] + 1e-9)
+                    or not bounded(ellipse[2], 0.0, 180.0)):
+                return False
+            if (type(contact.get("towed_ambiguous")) is not bool
+                    or type(contact.get("towed_resolved")) is not bool
+                    or (contact["towed_ambiguous"] and contact["towed_resolved"])
+                    or (contact["towed_ambiguous"] and (
+                        not bounded(contact.get("ambiguity_axis"), 0.0, 360.0)
+                        or not bounded(contact.get("mirror_bearing"), 0.0, 360.0)))
+                    or (contact.get("tonal_hz") is not None
+                        and not bounded(contact["tonal_hz"], 0.1, 20000.0))):
+                return False
         echoes = sonar.get("echo_history", [])
         if any(not isinstance(item, dict)
                or not finite_number(item.get("t"))
@@ -9165,6 +9198,9 @@ class Game:
                        or ("uncertainty_deg" in point
                            and (not finite_number(point["uncertainty_deg"])
                                 or not 0.05 <= point["uncertainty_deg"] <= 180.0))
+                       or (point.get("freq_hz") is not None
+                           and not bounded(point["freq_hz"], 0.1, 20000.0))
+                       or not bounded(point.get("fspeed"), 0.0, 60.0)
                        for point in points)
                for points in tracks.values()):
             return False

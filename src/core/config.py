@@ -255,6 +255,7 @@ SHIP_YAW_DAMPING = 2.0
 SHIP_LIST_DEG_PER_FLOOD_PCT = 0.15
 SHIP_MAX_LIST_DEG = 15.0
 SHIP_LIST_YAW_GAIN = 0.05        # deg/s of persistent yaw pull per degree of list
+TAS_AMBIGUITY_RESOLVE_DEG = 20.0   # own turn that resolves TAS left/right
 CAVITATION_KN = 15.0            # Schraubenkavitation ab dieser Fahrt
 CAVITATION_PASSIVE_FACTOR = 0.35   # passives Sonar bei Kavitation: Sensor "bricht"
 SEA_STATE_SONAR_FACTOR = 0.06     # passiver Reichweiten-Abzug pro Seegang-Grad

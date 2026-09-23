@@ -60,7 +60,7 @@ The display shows measured modulation, not certain identity. The analysis window
 
 ### TMA, environment and active {#sonar-tma-env}
 
-- **TMA** solves range, course and speed from a bearing series of the focused contact. It needs at least 4 bearings over 180 s and an own course change of at least 6 degrees; range is trusted from quality 0.35. It does not estimate depth.
+- **TMA** solves range, course and speed from a bearing series of the focused contact. It needs at least 4 bearings over 180 s and an own course change of at least 6 degrees; range is trusted from quality 0.35. It does not estimate depth. A grid search finds the basin and a Levenberg-Marquardt fit refines it; the detail line shows the 1-sigma uncertainty ellipse. The strongest tonal is measured with its Doppler shift ("Tonal (Doppler)"): a target crossing close by sweeps its frequency, which fixes range even without an own turn. Sonobuoy bearings enter the same estimate with the buoy as observer, so a buoy field gives range quickly.
 - **UMWELT / FUSION** shows the bathythermograph (`E`, 60 s cooldown): measured layer depth, sound-speed profile and convergence-zone bands, plus the HMS/TAS comparison. Bearings within 5 degrees confirm each other; 9 degrees or more apart are flagged as a possible ghost contact. The layer is not fixed: afternoon sun makes it shallower (about 8 m), strong wind mixes it deeper over hours, and internal waves move it a few metres. Repeat the BT after a few hours or a weather change. The measured profile is the real temperature-driven sound speed (Mackenzie equation), so it drops below the layer.
 - **ACTIVE** lists echoes of the last 120 s: bearing, range and depth (+/-12 m). A ping fix ages out after 120 s. `W` selects the pulse: **CW** (1 s tone) gives coarse range (about 0.1-0.3 NM) but its Doppler separates a moving target from seabed reverberation; **LFM** (100 Hz sweep) measures range to a few metres and gains 20 dB against noise, but a slow or stationary target stays inside the reverberation. The echo strength depends on the target's aspect (broadside about 15 dB stronger than bow-on) and size. Rocky ground reverberates far more than mud; charted wrecks return real echoes that no contact owns ("unassociated echo").
 
@@ -109,6 +109,7 @@ Combat situation:
 - Put the TAS below the measured layer to hear deep targets; keep the HMS for shallow ones. Both arrays run in parallel.
 - The TMA page shows the closing rate derived from the solution: positive means the target is closing.
 - If the TAS and HMS disagree by 9 degrees or more, treat the contact as a possible ghost (the display flags it) and turn to resolve it.
+- The towed array is a line: it cannot tell a bearing from its mirror about the cable. A contact heard only on the TAS is marked "TAS left/right ambiguous" with its mirror bearing and does not feed TMA; the shown side is right only half the time. Turn 20 degrees (or get the contact on the HMS) and the wrong side drops out. Bearings toward the cable ends (endfire) are also less accurate than broadside.
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
 
 ## Not modelled {#sonar-limits}
@@ -116,5 +117,4 @@ Combat situation:
 - No manual TMA (dot stack, manual solution entry); only the automatic solver, switched with `T`.
 - No selectable split-window normalisation (TPSW); use gain, black level and contrast instead.
 - No hard blind baffle sector; own noise is a soft lobe.
-- No acoustic Doppler shift of tonal lines; closing rate comes from the TMA solution only.
 - No variable-depth sonar separate from the TAS.

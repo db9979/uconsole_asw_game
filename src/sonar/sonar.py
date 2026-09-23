@@ -88,6 +88,30 @@ def _lambert_mu_db(world, x_nm: float, y_nm: float) -> float:
     return SEDIMENTS[seabed(x_nm, y_nm)][3]
 
 
+SOUND_SPEED_KN = config.SOUND_SPEED_M_S * 3600.0 / 1852.0
+DOPPLER_SIGMA_HZ = 0.02
+DOPPLER_MIN_QUALITY = 0.3
+
+
+def doppler_factor(tgt, observer) -> float:
+    """Received/emitted frequency ratio from the closing speed (knots)."""
+    dx, dy = observer.x - tgt.x, observer.y - tgt.y
+    distance = math.hypot(dx, dy)
+    if distance < 1e-6:
+        return 1.0
+    ux, uy = dx / distance, dy / distance
+    speed_t = getattr(tgt, "speed", None)
+    if speed_t is None:
+        speed_t = getattr(tgt, "speed_kn", 0.0)
+    course_t = math.radians(getattr(tgt, "course", 0.0))
+    course_o = math.radians(getattr(observer, "course", 0.0))
+    speed_o = getattr(observer, "speed", 0.0) or 0.0
+    vx = speed_t * math.sin(course_t) - speed_o * math.sin(course_o)
+    vy = -speed_t * math.cos(course_t) + speed_o * math.cos(course_o)
+    closing = vx * ux + vy * uy
+    return 1.0 + closing / SOUND_SPEED_KN
+
+
 def _surface_temperature(world) -> float:
     ocean = getattr(world, "ocean", None)
     if ocean is None:
@@ -193,6 +217,14 @@ class Contact:
         self.tma_course = None
         self.tma_speed = None
         self.tma_quality = 0.0
+        self.tma_ellipse = None   # (major NM, minor NM, orientation deg)
+        # Towed-array left/right ambiguity: the line array cannot tell a
+        # bearing from its mirror about the array axis until resolved.
+        self.towed_ambiguous = False
+        self.ambiguity_axis = None     # tow heading when the ambiguity began
+        self.mirror_bearing = None
+        self.tonal_hz = None           # measured (Doppler-shifted) tonal
+        self.towed_resolved = False
         self.tma_seen = None
         self.buoy_fixes = []  # raw (t, x, y, quality), not ownship passive bearings
         self.buoy_reports = {}  # buoy sequence -> detached measured report
@@ -395,6 +427,7 @@ class Contact:
                 or self.tma_speed is not None) and (tma_seen is None or
                 t - tma_seen > config.SONAR_CONTACT_LOST_S):
             self.tma_pos = self.tma_course = self.tma_speed = None
+            self.tma_ellipse = None
             self.tma_quality = 0.0
             self.tma_seen = None
         max_age = (config.SONAR_PING_FIX_MAX_AGE_S
@@ -416,7 +449,9 @@ class Contact:
             key: value for key, value in self.array_observations.items()
             if t - value["last_seen"] <= 4.0}
         if len(self.array_observations) < 2:
-            self.fusion_status = ("NUR " + next(iter(self.array_observations))
+            self.fusion_status = ("TAS L/R?" if self.towed_ambiguous
+                                  and set(self.array_observations) == {"TOWED"}
+                                  else "NUR " + next(iter(self.array_observations))
                                   if self.array_observations else "KEINE DATEN")
             self.fusion_delta_deg = None
             self.fused_quality = max((report["quality"] for report in
@@ -452,6 +487,15 @@ class Contact:
         self.range_seen = t
         self.origin = "bojenkreuzpeilung"
 
+    def tma_range_sigma_nm(self, quality: float) -> float:
+        """1-sigma position uncertainty: the covariance semi-major axis, never
+        more optimistic than the observability-based quality heuristic (the
+        linearized covariance is overconfident in poor geometry)."""
+        heuristic = max(0.1, (1.0 - quality) * 12.0)
+        if self.tma_ellipse is not None:
+            return config.clamp(max(self.tma_ellipse[0], heuristic), 0.1, 12.0)
+        return heuristic
+
     def update_tma(self, sol, t: float, fixed_at: float = None):
         """TMA-Estimate übernehmen (nur, solange kein frischerer Ping)."""
         self.expire_ping_fix(t)
@@ -479,10 +523,12 @@ class Contact:
                 self.tma_speed += (sol.speed - self.tma_speed) * alpha
             self.tma_quality += (sol.quality - self.tma_quality) * alpha
         self.tma_seen = t
+        self.tma_ellipse = (tuple(float(v) for v in sol.ellipse)
+                            if getattr(sol, "ellipse", None) is not None else None)
+        sigma = self.tma_range_sigma_nm(sol.quality)
         if sol.quality >= config.TMA_RANGE_MIN_QUALITY:
             self._publish_fix("TMA", t, t if fixed_at is None else fixed_at,
-                              self.tma_pos[0], self.tma_pos[1],
-                              max(0.1, (1.0 - sol.quality) * 12.0),
+                              self.tma_pos[0], self.tma_pos[1], sigma,
                               self.tma_quality)
         if self.range_source not in ("ping", "buoy") and \
                 sol.quality >= config.TMA_RANGE_MIN_QUALITY:
@@ -491,7 +537,7 @@ class Contact:
                 self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
             self.range_est = math.hypot(self.observed_x - self._fx,
                                         self.observed_y - self._fy)
-            self.range_sigma_nm = max(0.1, (1.0 - sol.quality) * 12.0)
+            self.range_sigma_nm = sigma
             self.range_source = "tma"
             self.range_seen = t
             self.bearing_uncertainty_deg = None
@@ -1139,6 +1185,8 @@ class SonarSystem:
                     tgt, true_bearing, frigate, quality, array_mode, t)
                 uncertainty = bearing_error_deg(
                     array_mode, frigate.speed, quality) / math.sqrt(3.0)
+                if array_mode == "TOWED":
+                    uncertainty *= self._endfire_factor(true_bearing)
                 observations[array_mode] = dict(
                     bearing=bearing, quality=quality, snr=s_db, last_seen=t,
                     uncertainty_deg=uncertainty)
@@ -1191,6 +1239,30 @@ class SonarSystem:
                 c.fusion_status = "NUR " + next(iter(observations))
                 c.fusion_delta_deg = None
                 c.fused_quality = quality
+            ambiguous = False
+            if bow is not None and "BOW" in observations:
+                # The hull array is unambiguous: it resolves the towed side.
+                if c.towed_ambiguous:
+                    c.towed_ambiguous, c.towed_resolved = False, True
+                    c.mirror_bearing = c.ambiguity_axis = None
+            elif set(observations) == {"TOWED"}:
+                axis = self.tow_heading_deg
+                if not c.towed_ambiguous and not c.towed_resolved:
+                    c.towed_ambiguous, c.ambiguity_axis = True, axis
+                if c.towed_ambiguous and abs(config.angle_diff_deg(
+                        axis, c.ambiguity_axis)) >= config.TAS_AMBIGUITY_RESOLVE_DEG:
+                    # After an own turn only one side stays consistent.
+                    c.towed_ambiguous, c.towed_resolved = False, True
+                    c.mirror_bearing = c.ambiguity_axis = None
+                if c.towed_ambiguous:
+                    mirror = (2.0 * axis - bearing) % 360.0
+                    # Without other evidence the display takes the starboard
+                    # candidate; it is the true one only half of the time.
+                    if config.angle_diff_deg(bearing, axis) < 0.0:
+                        bearing, mirror = mirror, bearing
+                    c.mirror_bearing = mirror
+                    c.fusion_status = "TAS L/R?"
+                    ambiguous = True
             sig = ""
             if c.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt \
                     >= config.CONTACT_SIG_CONF:
@@ -1203,17 +1275,23 @@ class SonarSystem:
                 t=t,
                 snr=s_db,
                 bearing_uncertainty_deg=uncertainty)
-            # W1: Peilungs-Track (TMA-Datenbasis)
+            # W1: Peilungs-Track (TMA-Datenbasis). Side-ambiguous towed
+            # bearings stay out of TMA until the ambiguity is resolved.
             tr = self._tracks.setdefault(tgt.id, BearingTrack())
-            tr.add(t, bearing, frigate.x, frigate.y, frigate.course,
-                   uncertainty)
+            if not ambiguous and (not tr.pts or t - tr.pts[-1].t
+                                  >= config.BEARING_TRACK_MIN_INTERVAL_S):
+                c.tonal_hz = self._measure_tonal(tgt, frigate, quality, t)
+                tr.add(t, bearing, frigate.x, frigate.y, frigate.course,
+                       uncertainty, c.tonal_hz, frigate.speed)
             detected_ids.add(tgt.id)
             listen_observation = observations.get(mode)
             if sample_due and listen_observation is not None:
                 broadband = getattr(tgt, "broadband", lambda: {})()
                 source = {"bearing": listen_observation["bearing"],
                           "level": listen_observation["quality"],
-                          "lines": tgt.lofar_lines(t),
+                          "lines": [(line[0] * doppler_factor(tgt, frigate),)
+                                    + tuple(line[1:])
+                                    for line in tgt.lofar_lines(t)],
                           "seed": getattr(tgt, "sensor_seed", tgt.id),
                           "spectral_gains": spectral_by_mode.get(
                               mode, ((100.0, 1.0),))}
@@ -1241,17 +1319,43 @@ class SonarSystem:
                 if getattr(b, "mode", "PASSIVE") == "ACTIVE" and b.seq not in ping_buoys:
                     continue
                 dist = math.hypot(tgt.x - b.x, tgt.y - b.y)
-                if dist >= config.BUOY_RANGE_NM:
+                if dist >= config.BUOY_RANGE_NM * 1.8:
                     continue
                 if (hasattr(world, "sonar_path_blocked")
                         and world.sonar_path_blocked(
                             b.x, b.y, 5.0, tgt.x, tgt.y,
                             getattr(tgt, "depth", 0.0))):
                     continue
-                quality = config.clamp(1.0 - dist / config.BUOY_RANGE_NM,
+                # Passive sonar equation for the buoy hydrophone: ambient
+                # limited, small aperture, ray-traced path from its depth.
+                buoy_depth = float(getattr(b, "hydrophone_depth_m", 30.0))
+                frequency = representative_frequency_hz(tgt)
+                ray = propagation.ray_excess_db(
+                    world, b.x, b.y, buoy_depth, tgt.x, tgt.y,
+                    float(getattr(tgt, "depth", 0.0)), frequency)
+                if ray is None:
+                    ray = (6.5 if (tgt.depth > world.thermocline_depth_m(b.x, b.y))
+                           != (buoy_depth > world.thermocline_depth_m(b.x, b.y))
+                           else 0.0)
+                terms = equation.passive_terms(
+                    frequency_hz=frequency, distance_nm=dist,
+                    target_bonus=1.0 + 0.8 * (1.0 - tgt.quiet_factor()),
+                    excess_path_loss_db=ray,
+                    absorption_db_per_km=equation.francois_garrison_db_per_km(
+                        frequency, _surface_temperature(world)),
+                    legacy_absorption_db=0.0, own_range_factor=1.0,
+                    array_range_factor=config.BUOY_RANGE_NM
+                    / config.SONAR_PASSIVE_BASE_NM,
+                    sea_state=float(getattr(world, "effective_sea_state",
+                                            world.sea_state)),
+                    rain=float(getattr(world, "rain_intensity", 0.0)),
+                    shipping_contacts=self.shipping_contacts,
+                    hull_self_noise=False)
+                excess = terms.signal_excess_db
+                if excess <= 0.0:
+                    continue
+                quality = config.clamp(excess / config.SONAR_SNR_QUALITY_SPAN_DB,
                                        .2, .9)
-                if tgt.depth > world.thermocline_depth_m(b.x, b.y):
-                    quality *= .55
                 true_bearing = math.degrees(
                     math.atan2(tgt.x - b.x, -(tgt.y - b.y))) % 360.0
                 rng = random.Random(getattr(tgt, "sensor_seed", tgt.id) * 1543
@@ -1270,6 +1374,10 @@ class SonarSystem:
                     contact.update_buoy(observed_x, observed_y, quality, t)
                 else:
                     reports.append((b, bearing, quality))
+                    # Multi-static TMA: the buoy bearing joins the contact's
+                    # bearing track with the buoy as the observer.
+                    track = self._tracks.setdefault(tgt.id, BearingTrack())
+                    track.add(t, bearing, b.x, b.y, 0.0, error / math.sqrt(3))
                 contact.buoy_reports[b.seq] = dict(
                     mode=getattr(b, "mode", "PASSIVE"), bearing=bearing,
                     bearing_uncertainty_deg=error / math.sqrt(3),
@@ -1631,10 +1739,31 @@ class SonarSystem:
         del self.echo_history[:-config.SONAR_ECHO_HISTORY_MAX]
         return c
 
+    def _measure_tonal(self, tgt, frigate, quality: float, t: float):
+        """Doppler-shifted frequency of the strongest tonal (None if weak)."""
+        if quality < DOPPLER_MIN_QUALITY:
+            return None
+        lines = [line for line in (tgt.lofar_lines(t) or ()) if line[0] > 1.0]
+        if not lines:
+            return None
+        frequency = max(lines, key=lambda line: (line[1], -line[0]))[0]
+        seed = getattr(tgt, "sensor_seed", tgt.id)
+        noise = (DOPPLER_SIGMA_HZ * (1.4 - 0.8 * quality)
+                 * _correlated_uniform(seed, t, 10.0, 613))
+        return frequency * doppler_factor(tgt, frigate) + noise
+
+    def _endfire_factor(self, true_bearing: float) -> float:
+        """Line-array bearing accuracy degrades as 1/sqrt(sin) toward endfire
+        (beam broadening; Cramer-Rao ~ 1/sin of the angle off the axis)."""
+        off_axis = abs(math.sin(math.radians(true_bearing - self.tow_heading_deg)))
+        return 1.0 / math.sqrt(max(off_axis, 0.25))
+
     def _observed_bearing(self, tgt, true_bearing: float, frigate,
                           quality: float, mode: str, t: float) -> float:
         """Peilung mit deterministisch korreliertem, glatt interpoliertem Fehler."""
         err = bearing_error_deg(mode, frigate.speed, quality)
+        if mode == "TOWED":
+            err *= self._endfire_factor(true_bearing)
         seed = getattr(tgt, "sensor_seed", tgt.id)
         salt = 17 if mode == "TOWED" else 0
         return (true_bearing + err * _correlated_uniform(

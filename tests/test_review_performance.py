@@ -134,6 +134,8 @@ def test_tma_precomputes_once_per_solve_and_preserves_tie_order(monkeypatch):
         return 1.0, course, speed, (260.0, 230.0), .5
 
     monkeypatch.setattr(tma, "_try_candidate", tied)
+    # Grid tie order only: keep the LM refinement out of this synthetic tie.
+    monkeypatch.setattr(tma.tma_lm, "refine", lambda *args: None)
     result = tma.solve_tma(track)
     assert (result.course, result.speed) == (0, 0.0)
     assert calls[:240] == [(course, speed) for course in range(0, 360, 15)

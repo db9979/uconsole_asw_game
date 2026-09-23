@@ -61,7 +61,7 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 
 ### TMA, Umwelt und Aktiv {#sonar-tma-env}
 
-- **TMA** löst Entfernung, Kurs und Fahrt aus einer Peilungsreihe des fokussierten Kontakts. Nötig sind mindestens 4 Peilungen über 180 s und eine eigene Kursänderung von mindestens 6 Grad; die Entfernung gilt ab Qualität 0,35. Tiefe schätzt TMA nicht.
+- **TMA** löst Entfernung, Kurs und Fahrt aus einer Peilungsreihe des fokussierten Kontakts. Nötig sind mindestens 4 Peilungen über 180 s und eine eigene Kursänderung von mindestens 6 Grad; die Entfernung gilt ab Qualität 0,35. Tiefe schätzt TMA nicht. Eine Gittersuche findet den Bereich, eine Levenberg-Marquardt-Anpassung verfeinert ihn; die Detailzeile zeigt die 1-Sigma-Unsicherheitsellipse. Das stärkste Tonal wird mit seiner Dopplerverschiebung gemessen ("Tonal (Doppler)"): ein nah vorbeiziehendes Ziel verschiebt seine Frequenz, das legt die Entfernung auch ohne eigene Wende fest. Sonobojen-Peilungen gehen mit der Boje als Beobachter in dieselbe Schätzung ein, ein Bojenfeld liefert deshalb schnell Entfernung.
 - **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert. Die Schicht ist nicht fest: Nachmittagssonne macht sie flacher (etwa 8 m), starker Wind mischt sie über Stunden tiefer, und interne Wellen verschieben sie um einige Meter. Den BT nach einigen Stunden oder einem Wetterwechsel wiederholen. Das gemessene Profil ist die echte temperaturabhängige Schallgeschwindigkeit (Mackenzie-Gleichung) und fällt deshalb unterhalb der Schicht ab.
 - **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s. `W` wählt den Puls: **CW** (1-s-Ton) misst die Entfernung grob (etwa 0,1-0,3 sm), trennt aber über den Doppler ein bewegtes Ziel vom Nachhall des Meeresbodens; **LFM** (100-Hz-Sweep) misst die Entfernung auf wenige Meter und gewinnt 20 dB gegen Rauschen, ein langsames oder stehendes Ziel bleibt aber im Nachhall. Die Echostärke hängt vom Aspekt (breitseits etwa 15 dB stärker als von vorn) und der Größe des Ziels ab. Felsgrund hallt viel stärker nach als Schlick; kartierte Wracks liefern echte Echos ohne zugehörigen Kontakt ("nicht zugeordnetes Echo").
 
@@ -110,6 +110,7 @@ Gefechtslage:
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
 - Die TMA-Seite zeigt die aus der Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
+- Die Schleppantenne ist eine Linie: sie kann eine Peilung nicht von ihrem Spiegelbild zum Kabel unterscheiden. Ein nur auf der TAS gehörter Kontakt wird als "TAS links/rechts mehrdeutig" mit Spiegelpeilung markiert und speist keine TMA; die angezeigte Seite stimmt nur in der Hälfte der Fälle. 20 Grad drehen (oder den Kontakt auf die HMS bekommen), dann fällt die falsche Seite weg. Peilungen zu den Kabelenden (Endfire) sind zudem ungenauer als querab.
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
 
 ## Nicht modelliert {#sonar-limits}
@@ -117,5 +118,4 @@ Gefechtslage:
 - Keine manuelle TMA (Punktstapel, manuelle Lösungseingabe); nur der automatische Löser, geschaltet mit `T`.
 - Keine wählbare Split-Window-Normalisierung (TPSW); stattdessen Verstärkung, Schwarzwert und Kontrast nutzen.
 - Kein harter blinder Baffle-Sektor; Eigenlärm ist eine weiche Keule.
-- Keine akustische Dopplerverschiebung tonaler Linien; die Annäherungsrate kommt nur aus der TMA-Lösung.
 - Kein vom TAS getrenntes Tiefensonar (VDS).

@@ -117,7 +117,7 @@ Zustände: `PATROLLE` → (Kontakt) → `EVALUATION` → (`VERMEIDUNG` | `LAUER`
   synthetischer Bathymetrie ein. Das Laden hängt damit nicht von einer späteren
   Generator- oder Katalogversion ab.
 
-## 9. Schwierigkeit (implementiert in M7, `config.LEVELS`)
+## 9. Schwierigkeit (implementiert in M7, `config.LEVELS`) — historisch, siehe §25
 - `LEICHT`: U-Boote lauter (quiet_mult 0.8), Torpedos toleranter
   (Treffer-Radius 0,20 NM / 20 m Tiefe), Reparatur ×1,5, Gegnerangriff gedämpft
 - `NORMAL`: Baseline (6 Torpedos, 0,135 NM / 15 m, Standard-Cooldown 90 s)
@@ -226,7 +226,7 @@ Jeder Meilenstein ist fertig, wenn:
    Flucht, Zeitlimit, Save/Load-Roundtrip, Game-Loop) – alle grün,
    M2–M5 ohne Regression.
 
-## 17. Implementierungsstatus M7 (Schwierigkeitslevel & Startmenü)
+## 17. Implementierungsstatus M7 (Schwierigkeitslevel & Startmenü) — historisch, siehe §25
 - **Level-Config** (`config.LEVELS`, `LEVEL_ORDER`, `DEFAULT_LEVEL`):
   `leicht` / `normal` / `harte` mit `quiet_mult`, `repair_mult`, `torp_total`,
   `kill_dist_nm` / `kill_depth_m`, `enemy_attack_mult`, `enemy_cooldown_s`,
@@ -492,3 +492,29 @@ Jeder Meilenstein ist fertig, wenn:
 - Save v7 speichert den kanonischen Welt-Snapshot einschließlich Geometrie,
   Stützpunkten, Provenienzmetadaten und Bathymetrie. Ein gespeicherter Sektor
   wird beim Laden direkt restauriert und nicht neu generiert.
+
+## 25. Custom Difficulty (ersetzt M7)
+
+- Die vier festen Level aus §9/§17 (`config.LEVELS`) wurden durch
+  `config.DIFFICULTY_FIELDS` ersetzt: 16 einzeln einstellbare Achsen (8
+  Kampf-Balance-Werte wie zuvor in `LEVELS`, plus 8 Missions-Zusammensetzungs-
+  Werte wie zuvor in `MISSION_TYPES`/dem Welt-RNG) mit fester Reihenfolge,
+  Typ, Bereich und Schrittweite je Achse.
+- Kampf-Balance: `quiet_mult`, `repair_mult`, `torpedo_count`, `kill_dist_nm`,
+  `kill_depth_m`, `enemy_attack_mult`, `enemy_cooldown_s`, `second_sub_prob`.
+- Missions-Zusammensetzung (nur bei der freien Mission `s4_zufall` wirksam):
+  `sea_state_start`, `sub_count`, `warship_count`, `civilian_count`,
+  `animal_count`, `air_raid_count`, `air_raid_freq_mult`, `time_limit_s`.
+- Die drei festen Szenarien (`s1_patrouille`, `s2_doppeljagd`, `s3_abfang`)
+  bleiben als Presets bestehen: sie hinterlegen weiterhin einen festen
+  `difficulty`-Dict (nur Kampf-Balance-Achsen) statt eines Level-Schlüssels
+  und überspringen den Konfigurationsbildschirm. Nur `s4_zufall` öffnet ihn.
+- uConsole-Menü und Remote-Crew-Web-Host-Dialog iterieren über dieselbe
+  `config.DIFFICULTY_FIELDS`-Tabelle (der Web-Host bekommt sie zusätzlich als
+  `difficulty_fields` in der `/host`-Ansicht veröffentlicht) - eine Änderung
+  an Grenzen/Schrittweite wirkt identisch auf beiden Oberflächen.
+- Speicherformat bleibt exakt v11: die gewählten Werte landen in
+  `mission_runtime["difficulty"]` (ein bereits generisch geprüftes Feld) statt
+  in einem neuen Wurzel-Feld; `"level"` ist nur noch ein kosmetischer String
+  (`"custom"`). `data/loadouts/ownship.json` verliert die Level-Lookup-Tabellen
+  für Munition und Trefftoleranz zugunsten der direkten Custom-Difficulty-Werte.

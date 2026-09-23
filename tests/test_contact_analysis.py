@@ -65,6 +65,7 @@ def test_asset_applicability_routes_and_projection_hash():
             machine["cruise_lines"] or machine["cruise_broadband"] is not None)
         assert ("acoustic_high" in assets) == bool(
             machine["high_speed_lines"] or machine["high_speed_broadband"] is not None)
+        assert ("radar" in assets) == bool(profile["components"]["emitters"])
         for route in assets.values():
             assert route.startswith(ASSET_ROUTE_PREFIX)
             leaf = route.removeprefix(ASSET_ROUTE_PREFIX)

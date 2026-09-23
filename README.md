@@ -57,7 +57,7 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 
 - Nine stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,
   Engineering, Helicopter Deck, and Electronic Warfare/ESM.
-- Four built-in scenarios, three difficulty levels, pause, and real-time simulation.
+- Four built-in scenarios, fully configurable custom difficulty, pause, and real-time simulation.
 - Passive HMS and towed-array sonar, active sonar, broadband and LOFAR
   displays, DEMON analysis, bathythermograph readings, and bearing-only TMA.
 - Surface and air radar, AIS, ESM, HFDF, manual classification and affiliation,
@@ -143,7 +143,9 @@ example `u-jagd --windowed`.
 
 The main menu provides new game, load, mission editor, unit editor, options,
 and quit entries. A new game leads through scenario selection and, for the
-random scenario, difficulty selection.
+random scenario, a custom difficulty screen (submarine stealth, repair rate,
+torpedo count and hit tolerance, enemy aggression, starting sea state,
+submarine/warship/traffic counts, air raid frequency, and time limit).
 
 - `W` cycles through the seed-selected real sector, the fixed legacy reference
   map, and a fixed selectable real sector.

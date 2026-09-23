@@ -126,7 +126,8 @@ async function run() {
   await until(() => $("host-new-dialog").open, "new game dialog did not open");
   $("host-new-scenario").value = "s1_patrouille";
   $("host-new-scenario").dispatchEvent(new Event("change", {bubbles: true}));
-  assert($("host-new-level").disabled, "a scenario with a fixed level must not offer a level");
+  assert(document.querySelector("#host-new-difficulty input").disabled,
+    "a scenario with a fixed difficulty must not offer difficulty controls");
   $("host-new-world").value = "procedural";
   $("host-new-seed").value = "4242";
   $("host-new-form").requestSubmit();

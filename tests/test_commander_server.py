@@ -177,6 +177,22 @@ def test_public_v2_ui_is_exact_filtered_and_does_not_pair(server):
         assert request(server, path)[0] == 404
 
 
+def test_prebuilt_contact_routes_accept_the_full_real_packaged_catalog():
+    # Regression: _MAX_PREBUILT_ROUTES/_CONTACT_ASSET_ROUTE must stay wide
+    # enough for the actual packaged catalog (all image kinds, every
+    # profile), not just small fixtures - this is what src/commander/local.py
+    # feeds CommanderServer at real startup.
+    from src.data.contact_analysis import CONTACTS_ROUTE, load_contact_analysis_assets
+    assets_map = load_contact_analysis_assets()
+    server = CommanderServer(contact_analysis_assets=assets_map)
+    try:
+        assert set(server._prebuilt_assets) == set(assets_map)
+        for route in assets_map:
+            assert route == CONTACTS_ROUTE or transport._CONTACT_ASSET_ROUTE(route)
+    finally:
+        server.stop()
+
+
 def test_prebuilt_contact_routes_use_exact_v2_contract(assets):
     projection = b'{"version":1,"profiles":[]}'
     png = b"\x89PNG\r\n\x1a\nfixture"

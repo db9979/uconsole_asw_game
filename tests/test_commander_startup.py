@@ -115,7 +115,8 @@ def test_real_replacements_still_revoke_on_next_pump(game, paired_menu, change):
             key(game, pygame.K_4)
         key(game, pygame.K_RETURN)
         if change == "difficulty":
-            key(game, pygame.K_3)
+            key(game, pygame.K_DOWN)
+            key(game, pygame.K_RIGHT)
         key(game, pygame.K_RETURN)
     assert game.world is not world and game.sonar is not sonar
     assert server.connected and game.commander.bridge.allowed
@@ -161,11 +162,19 @@ def test_late_failed_load_preserves_preparation_and_pairing(game, paired_menu, m
 @pytest.mark.parametrize("field,value", [
     ("sim_t", .1), ("mission_time", .1), ("custom_mission_definition", {}),
     ("mission_result", "SIEG"), ("game_over", True), ("running", False),
-    ("paused", True), ("level", "harte"),
+    ("paused", True),
+    # A changed custom-difficulty choice only matters once the scenario
+    # actually consults it (s4_zufall) - both fields change together.
+    (("scenario_key", "menu_difficulty"),
+     ("s4_zufall", {**config.DEFAULT_DIFFICULTY, "quiet_mult": 0.5})),
 ])
 def test_nonpristine_or_changed_configuration_is_not_reused(game, field, value):
     world = game.world
-    setattr(game, field, value)
+    if isinstance(field, tuple):
+        for name, item in zip(field, value):
+            setattr(game, name, item)
+    else:
+        setattr(game, field, value)
     game._start_menu_mission()
     assert game.world is not world
     assert game.sim_t == game.mission_time == 0.0

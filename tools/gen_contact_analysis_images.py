@@ -25,6 +25,16 @@ SPECTRUM_MAX_HZ = 10_000.0
 PLOT_LEFT = 24
 PLOT_RIGHT = PLOT_SIZE[0] - 12
 LABEL_COLOR = (160, 188, 193)
+# Radar/ESM emitter fingerprint: RF frequency spans the emitter schema's own
+# bounds (src/data/catalog.py); PRF spans a fixed reference range that covers
+# every catalog value with headroom.
+RADAR_MIN_HZ = 0.5e9
+RADAR_MAX_HZ = 18e9
+RADAR_PRF_MIN_HZ = 100.0
+RADAR_PRF_MAX_HZ = 10_000.0
+# One fixed color per emitter row, in catalog (listed) order - reused from the
+# acoustic diagram's own palette so both image kinds share one visual language.
+ROW_COLORS = ((42, 137, 145), (229, 174, 71), (77, 190, 219), (115, 220, 194))
 _DIGITS = {
     "0": ("111", "101", "101", "101", "111"),
     "1": ("010", "110", "010", "010", "111"),
@@ -100,6 +110,95 @@ def spectral_x(frequency):
     span = math.log10(SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ)
     return PLOT_LEFT + round((PLOT_RIGHT - PLOT_LEFT)
                              * math.log10(frequency / SPECTRUM_MIN_HZ) / span)
+
+
+def radar_spectral_x(frequency):
+    """Map an RF frequency (Hz) to the fixed logarithmic radar plot column."""
+    frequency = max(RADAR_MIN_HZ, min(RADAR_MAX_HZ, frequency))
+    span = math.log10(RADAR_MAX_HZ / RADAR_MIN_HZ)
+    return PLOT_LEFT + round((PLOT_RIGHT - PLOT_LEFT)
+                             * math.log10(frequency / RADAR_MIN_HZ) / span)
+
+
+def radar_prf_x(frequency):
+    """Map a PRF (Hz) to the fixed logarithmic radar PRF plot column."""
+    frequency = max(RADAR_PRF_MIN_HZ, min(RADAR_PRF_MAX_HZ, frequency))
+    span = math.log10(RADAR_PRF_MAX_HZ / RADAR_PRF_MIN_HZ)
+    return PLOT_LEFT + round((PLOT_RIGHT - PLOT_LEFT)
+                             * math.log10(frequency / RADAR_PRF_MIN_HZ) / span)
+
+
+def _radar_plot(emitters):
+    """Combined radar/ESM fingerprint: one row per catalog emitter, in listed
+    order. Top panel is the RF frequency band; bottom panel is the PRF band
+    where the catalog supplies one. Rows are colour-coded by listed order,
+    never by any inferred identity."""
+    width, height = PLOT_SIZE
+    pixels = _canvas(width, height)
+    left, right, top, spectral_bottom = PLOT_LEFT, PLOT_RIGHT, 10, 112
+    demon_top, demon_bottom = 134, 169
+
+    for step in range(5):
+        y = top + (spectral_bottom - top) * step // 4
+        _line(pixels, width, height, left, y, right, y, (22, 48, 58))
+    for frequency in (1e9, 2e9, 4e9, 8e9, 18e9):
+        x = radar_spectral_x(frequency)
+        _line(pixels, width, height, x, top, x, spectral_bottom, (18, 41, 50))
+    _line(pixels, width, height, left, top, left, spectral_bottom, (96, 135, 141))
+    _line(pixels, width, height, left, spectral_bottom, right, spectral_bottom,
+          (96, 135, 141))
+    for frequency, value in ((1e9, "1"), (2e9, "2"), (4e9, "4"), (8e9, "8"),
+                             (18e9, "18")):
+        x = radar_spectral_x(frequency)
+        _label(pixels, width, height, value,
+               min(right - 1, max(left, x)), spectral_bottom + 5,
+               align="right" if frequency == 18e9 else "center")
+
+    for y in range(demon_top, demon_bottom + 1):
+        if y in (demon_top, demon_bottom):
+            _line(pixels, width, height, left, y, right, y, (62, 91, 99))
+    for frequency, value in ((100.0, "100"), (1000.0, "1k"), (10000.0, "10k")):
+        x = radar_prf_x(frequency)
+        _line(pixels, width, height, x, demon_bottom - 3, x, demon_bottom,
+              (96, 135, 141))
+        _label(pixels, width, height, value, x, demon_bottom + 4,
+               align="right" if frequency == 10000.0 else "center")
+
+    rows = len(emitters)
+    row_span = (spectral_bottom - top) / rows
+    for index, emitter in enumerate(emitters):
+        color = ROW_COLORS[index % len(ROW_COLORS)]
+        fill = tuple(max(8, channel // 2) for channel in color)
+        y0 = top + round(row_span * index) + 2
+        y1 = top + round(row_span * (index + 1)) - 2
+        if y1 <= y0:
+            y1 = y0 + 1
+        lo, hi = emitter["frequency_band_hz"]
+        x0, x1 = radar_spectral_x(lo), radar_spectral_x(hi)
+        if x1 <= x0:
+            x1 = x0 + 1
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                if (x + y) % 3 == 0:
+                    _pixel(pixels, width, height, x, y, fill)
+        _line(pixels, width, height, x0, y0, x1, y0, color)
+        _line(pixels, width, height, x0, y1, x1, y1, color)
+        _line(pixels, width, height, x0, y0, x0, y1, color)
+        _line(pixels, width, height, x1, y0, x1, y1, color)
+
+        if emitter["prf_band_hz"] is None:
+            continue
+        row_y = (demon_top + 9 if rows == 1 else
+                 demon_top + 5 + round((demon_bottom - demon_top - 10)
+                                        * index / (rows - 1)))
+        plo, phi = emitter["prf_band_hz"]
+        px0, px1 = radar_prf_x(plo), radar_prf_x(phi)
+        if px1 <= px0:
+            px1 = px0 + 1
+        _line(pixels, width, height, px0, row_y, px1, row_y, color)
+        _line(pixels, width, height, px0, row_y - 4, px0, row_y + 4, color)
+        _line(pixels, width, height, px1, row_y - 4, px1, row_y + 4, color)
+    return _png(width, height, pixels)
 
 
 def _plot(machine, speed, *, include_hypotheses=False):
@@ -211,9 +310,12 @@ def expected_output():
     for profile in projection["profiles"]:
         for kind, route in profile["assets"].items():
             filename = route.rsplit("/", 1)[-1]
-            speed = "cruise" if kind == "acoustic_cruise" else "high_speed"
-            payload = _plot(profile["machine"], speed,
-                            include_hypotheses=(kind == "acoustic_cruise"))
+            if kind == "radar":
+                payload = _radar_plot(profile["components"]["emitters"])
+            else:
+                speed = "cruise" if kind == "acoustic_cruise" else "high_speed"
+                payload = _plot(profile["machine"], speed,
+                                include_hypotheses=(kind == "acoustic_cruise"))
             width, height = PLOT_SIZE
             files[filename] = payload
             assets.append({

@@ -167,6 +167,26 @@ def _read_save_document(path):
     return json.loads(raw.decode("utf-8"))
 
 
+def _valid_difficulty_dict(value) -> bool:
+    """Bounded, exact-shape check for a custom-difficulty payload.
+
+    Shared shape check used by ``Game.start_new_game`` and (independently,
+    for defense-in-depth) the Remote Crew ``_new_game_params`` validator and
+    the save-document validator.
+    """
+    if not isinstance(value, dict) or set(value) != set(config.DIFFICULTY_FIELDS):
+        return False
+    for name, (kind, low, high, _step, _default) in config.DIFFICULTY_FIELDS.items():
+        amount = value[name]
+        if kind is int:
+            if type(amount) is not int or not low <= amount <= high:
+                return False
+        elif (type(amount) not in (int, float) or isinstance(amount, bool)
+                or not math.isfinite(amount) or not low <= amount <= high):
+            return False
+    return True
+
+
 def _same_save_value(left, right) -> bool:
     """Compare canonical JSON values while treating tuples as JSON arrays."""
     if isinstance(left, dict) and isinstance(right, dict):
@@ -229,7 +249,7 @@ _ECO_REFRESH_EVENTS = frozenset(
 
 
 class Game:
-    def __init__(self, seed: int = 42, level: str = None,
+    def __init__(self, seed: int = 42, difficulty: dict = None,
                   start_menu: bool = False, fullscreen: bool = None,
                  window_size: tuple = None, show_splash: bool = False,
                   audio_enabled: bool = None, preferences: Preferences = None,
@@ -301,14 +321,17 @@ class Game:
         self._radio_acc = 0.0
         self._slow_acc = 0.0
         self._apply_text_size()
-        self.level = level if level in config.LEVELS else config.DEFAULT_LEVEL
+        self.level = "custom"
+        self.menu_difficulty = (dict(difficulty) if difficulty
+                                and _valid_difficulty_dict(difficulty)
+                                else dict(config.DEFAULT_DIFFICULTY))
         self.in_menu = start_menu
-        self.menu_sel = 1  # Index in LEVEL_ORDER (Default: normal)
+        self.menu_sel = 0  # Index in DIFFICULTY_FIELD_ORDER or SCENARIO_ORDER
         self.seed = seed
         self.world_mode = "procedural"
         # W4: Szenario-Auswahl im Hauptmenü
         self.scenario_key = "s1_patrouille"
-        self.menu_screen = "scenario"  # "scenario" | "level" | "briefing"
+        self.menu_screen = "scenario"  # "scenario" | "difficulty" | "briefing"
         self.main_menu = bool(start_menu)
         self.main_menu_sel = 0
         self.editor = None
@@ -381,11 +404,16 @@ class Game:
             scenario_key = "s4_zufall"
         sc = config.SCENARIOS[scenario_key]
         self.scenario_key = scenario_key
-        if sc["level"] in config.LEVELS:
-            self.level = sc["level"]
+        self.difficulty = {**config.DEFAULT_DIFFICULTY,
+                           **(sc["difficulty"] if sc["difficulty"] is not None
+                              else self.menu_difficulty)}
+        self.level = "custom"
 
         coast = Coastline.load() if self.world_mode == "fixed" else None
         self.world = World(seed=seed, coast=coast)
+        if sc["difficulty"] is None:
+            self.world.sea_state = int(self.difficulty["sea_state_start"])
+            self.world.refresh_weather()
         start = sc["ship_start"] or (250.0, 250.0)
         course = sc["ship_course"]
         if course is None:
@@ -412,7 +440,8 @@ class Game:
         self.feed = EventFeed(sink=self._record_simlog)
 
         # M6: Mission (W4: Szenario kann den Typ fixieren)
-        self.mission = Mission(seed, type_key=sc["mission_type"])
+        self.mission = Mission(seed, type_key=sc["mission_type"],
+                               difficulty=self.difficulty)
         self.custom_mission_definition = None
         self.mission_time = 0.0
         self.score = 0
@@ -430,12 +459,12 @@ class Game:
                 5.0, self.world.size_nm - 5.0)
             return self.world.nearest_water(x, y)  # W3: nie in Land spawnen
 
-        # U-Boote laut Mission + Level (M7: HARTE -> mehr AIP-Boote)
-        lv = config.LEVELS[self.level]
+        # U-Boote laut Mission + Custom-Difficulty (second_sub_prob -> Bonus-Boot)
+        lv = self.difficulty
         plan = list(self.mission.sub_types)
         if (len(plan) < 3 and lv["second_sub_prob"] > 0.0
                 and rng.random() < lv["second_sub_prob"]):
-            plan.append(rng.choice(lv["second_sub_pool"]))
+            plan.append(rng.choice(config.SECOND_SUB_POOL))
         self.subs = []
         for i, stype in enumerate(plan):
             min_d, max_d = (12.0, 20.0) if i == 0 else (22.0, 45.0)
@@ -514,10 +543,10 @@ class Game:
         self.held = set()
         self._map_drag = None
         self._map_drag_moved = False
-        # Waffenzentrale (M3, M7: Munitionsbestand je Level)
+        # Waffenzentrale (M3, Munitionsbestand aus Custom-Difficulty)
         self._ownship_loadout = copy.deepcopy(ownship_loadout())
         self.player_torpedo_battery = WeaponBattery.ownship(
-            self.level, self._ownship_loadout)
+            int(self.difficulty["torpedo_count"]), self._ownship_loadout)
         self.torpedo_total = self.player_torpedo_battery.capacity_total
         self.torpedo_count = self.player_torpedo_battery.remaining_total
         self.torpedo_depth = 60.0
@@ -536,9 +565,9 @@ class Game:
         self.input_buffer = ""
         self._t = 0.0
         self.auto_quit = None  # Test-Hook: Frames bis Auto-Ende
-        # M5: Schadensmodell + Gegentorpedos (M7: Reparatur-Faktor je Level)
+        # M5: Schadensmodell + Gegentorpedos (Reparatur-Faktor aus Custom-Difficulty)
         self.damage = DamageModel(random.Random(seed + 777),
-                                  repair_mult=lv["repair_mult"])
+                                  repair_mult=self.difficulty["repair_mult"])
         self.enemy_torpedoes = []
         self._observed_enemy_torpedoes = set()
         self.game_over = False
@@ -683,7 +712,8 @@ class Game:
         # Menu input cannot operate the simulation. Only this unstarted world
         # may be consumed by menu start; loads replace its world/sonar identity.
         self._prepared_menu_mission = (
-            seed, self.scenario_key, self.world_mode, self.level,
+            seed, self.scenario_key, self.world_mode,
+            tuple(self.difficulty[name] for name in config.DIFFICULTY_FIELD_ORDER),
             id(self.world), id(self.sonar)) if self.in_menu else None
 
     def start_custom_mission(self, definition: dict) -> bool:
@@ -744,7 +774,7 @@ class Game:
         self.world.refresh_weather()
         thermo = float(env["thermocline_depth_m"])
         self.world._thermo = [[thermo for _ in row] for row in self.world._thermo]
-        lv = config.LEVELS[self.level]
+        lv = self.difficulty
         for unit in exact:
             marker = markers[unit["id"]]
             x, y = self.world.nearest_water(marker["x"], marker["y"])
@@ -817,12 +847,12 @@ class Game:
         if self.custom_mission_definition is not None:
             return raw_text(self.mission.name)
         keys = {"patrouille": "mission.patrol", "doppeljagd": "mission.double",
-                "konvoi": "mission.convoy", "nuklearer_abfang": "mission.intercept"}
+                "konvoi": "mission.convoy", "nuklearer_abfang": "mission.intercept",
+                "custom": "mission.custom"}
         return message(keys[self.mission.type_key])
 
     def mission_level_display(self):
-        key = config.LEVEL_I18N_KEY[self.level]
-        return message("level." + key)
+        return message("level.custom")
 
     def mission_description_display(self):
         if self.custom_mission_definition is not None:
@@ -897,23 +927,25 @@ class Game:
         return True
 
     def start_new_game(self, scenario_key: str, world_mode: str,
-                       level: str = None, seed: int = None) -> bool:
+                       difficulty: dict = None, seed: int = None) -> bool:
         """Start a mission through the same path as the main menu.
 
-        Only ``s4_zufall`` lets the operator pick a level; every other scenario
-        fixes its own. Without a seed the menu's uniform re-roll is used, so a
-        host-approved caller can never pin a seed by accident.
+        Only ``s4_zufall`` lets the operator pick a custom difficulty; every
+        other scenario fixes its own. Without a seed the menu's uniform
+        re-roll is used, so a host-approved caller can never pin a seed by
+        accident.
         """
         if (scenario_key not in config.SCENARIOS
                 or world_mode not in ("fixed", "procedural", "real_fixed")
-                or level is not None and level not in config.LEVELS
+                or difficulty is not None and not _valid_difficulty_dict(difficulty)
                 or seed is not None and not (
                     type(seed) is int and 1 <= seed < 1_000_000_000)):
             return False
         self.scenario_key = scenario_key
         self.world_mode = world_mode
-        if level is not None and config.SCENARIOS[scenario_key]["level"] is None:
-            self.level = level
+        if (difficulty is not None
+                and config.SCENARIOS[scenario_key]["difficulty"] is None):
+            self.menu_difficulty = dict(difficulty)
         if seed is None:
             self._reroll_menu_seed()
         else:
@@ -3386,7 +3418,7 @@ class Game:
             self.flash(message("runtime.helo.water_required"))
             return "water_required"
         tgt = self._find_target(contact.target_id)
-        lv = config.LEVELS[self.level]
+        lv = self.difficulty
         range_nm = (contact.range_est if contact.range_est is not None
                     else config.ROE_FREE_LAUNCH_RANGE_NM)
         use_fix = (self._contact_range_fresh(contact)
@@ -5103,7 +5135,7 @@ class Game:
         if self.asm_spawned >= m.asm_count:
             return
         need = (config.ASM_SPAWN_FIRST_S
-                + self.asm_spawned * config.ASM_SPAWN_INTERVAL_S)
+                + self.asm_spawned * self.mission.asm_interval_s)
         if self.mission_time < need:
             return
         self.asm_spawned += 1
@@ -5142,7 +5174,7 @@ class Game:
         if (self.mission.asm_count > 0
                 and len(self.raiders) < config.RAID_MAX_CONCURRENT
                 and self.mission_time >= config.RAID_FIRST_WAVE_S
-                + self.raid_waves_spawned * config.RAID_WAVE_INTERVAL_S):
+                + self.raid_waves_spawned * self.mission.raid_interval_s):
             self._spawn_raid_wave(profiles["raider"])
         for raider in self.raiders:
             raider.update(dt, self.ship, world=self.world)
@@ -5508,10 +5540,8 @@ class Game:
         profile = self.runtime_catalog.torpedoes[profile_key]
         self.torpedoes.append(Torpedo(self.ship.x, self.ship.y, course,
                                       depth_m, tgt, self.torpedo_seq,
-                                      kill_dist_nm=weapon_definition[
-                                          "kill_dist_nm_by_level"][self.level],
-                                      kill_depth_m=weapon_definition[
-                                          "kill_depth_m_by_level"][self.level],
+                                      kill_dist_nm=self.difficulty["kill_dist_nm"],
+                                      kill_depth_m=self.difficulty["kill_depth_m"],
                                       guidance_x=est_x, guidance_y=est_y,
                                       profile=profile, time_since_launch=0.0))
         self.torpedo_count = self.player_torpedo_battery.remaining_total
@@ -6537,7 +6567,8 @@ class Game:
                 name=self.mission.name, win_mode=self.mission.win_mode,
                 time_limit_s=self.mission.time_limit_s,
                 asm_count=self.mission.asm_count,
-                custom_definition=self.custom_mission_definition),
+                custom_definition=self.custom_mission_definition,
+                difficulty=dict(self.difficulty)),
             "damage": dict(
                 repair_mult=self.damage.repair_mult,
                 compartments={k: dict(state=c.state, flood=c.flood, fire=c.fire)
@@ -7002,8 +7033,13 @@ class Game:
         self.ship._clock = ship["clock"]
         self.autocrew = AutocrewController.restore(data["autocrew"])
         self.autocrew_overview_open = False
-        self.mission = Mission(seed, type_key=data["mission_type"])
         runtime_mission = data["mission_runtime"]
+        self.difficulty = {
+            name: (int(runtime_mission["difficulty"][name]) if kind is int
+                   else float(runtime_mission["difficulty"][name]))
+            for name, (kind, *_rest) in config.DIFFICULTY_FIELDS.items()}
+        self.mission = Mission(seed, type_key=data["mission_type"],
+                               difficulty=self.difficulty)
         self.mission.name = runtime_mission["name"]
         self.mission.win_mode = runtime_mission["win_mode"]
         self.mission.time_limit_s = float(runtime_mission["time_limit_s"])
@@ -8252,12 +8288,29 @@ class Game:
                 or not 0 <= torpedo_inventory["count"] <= torpedo_inventory["total"] <= 100
                 or not bounded(torpedo_inventory["depth"], 0, 10000)):
             return False
-        if data.get("level") not in config.LEVELS:
+        # "level" is a cosmetic label now; the real custom-difficulty values
+        # live in mission_runtime["difficulty"] (checked just below).
+        if type(data.get("level")) is not str or not 1 <= len(data["level"]) <= 64:
+            return False
+        runtime_mission = data.get("mission_runtime")
+        if not isinstance(runtime_mission, dict):
+            return False
+        difficulty = runtime_mission.get("difficulty")
+        if (not isinstance(difficulty, dict)
+                or set(difficulty) != set(config.DIFFICULTY_FIELDS)):
+            return False
+        for name, (kind, low, high, _step, _default) in config.DIFFICULTY_FIELDS.items():
+            amount = difficulty[name]
+            if kind is int:
+                if type(amount) is not int or not low <= amount <= high:
+                    return False
+            elif not bounded(amount, low, high):
+                return False
+        if torpedo_inventory["total"] != difficulty["torpedo_count"]:
             return False
         if ("asw" not in data or not valid_asw_state(
                     data["asw"], torpedo_inventory["total"],
-                    torpedo_inventory["count"], data.get("level"),
-                    runtime_catalog)):
+                    torpedo_inventory["count"], runtime_catalog)):
             return False
         if ("air_defense" not in data or not valid_air_defense_state(
                 data["air_defense"], vls_cells=data.get("vls_cells"),
@@ -9120,16 +9173,12 @@ class Game:
             loadout_weapons = data["asw"]["loadout"]["weapons"]
             own_weapon = next((item for item in loadout_weapons
                                if item["runtime_profile_key"] == profile_key), None)
-            if origin == "frigate" and own_weapon is not None:
-                expected_hit_distance = own_weapon[
-                    "kill_dist_nm_by_level"][data["level"]]
-                expected_hit_depth = own_weapon[
-                    "kill_depth_m_by_level"][data["level"]]
-            elif origin == "helo":
-                expected_hit_distance = config.LEVELS[
-                    data["level"]]["kill_dist_nm"]
-                expected_hit_depth = config.LEVELS[
-                    data["level"]]["kill_depth_m"]
+            if origin in ("frigate", "helo") and (
+                    origin != "frigate" or own_weapon is not None):
+                # Fregatte und Helo teilen sich denselben Custom-Difficulty-
+                # Treffwert (keine getrennten Level-Tabellen mehr).
+                expected_hit_distance = difficulty["kill_dist_nm"]
+                expected_hit_depth = difficulty["kill_depth_m"]
             else:
                 expected_hit_distance = profile.hit_dist_nm
                 expected_hit_depth = Torpedo.KILL_DEPTH_M
@@ -9754,7 +9803,13 @@ class Game:
 
     def _start_menu_mission(self) -> None:
         """Consume an exact pristine menu preparation, otherwise replace it."""
-        prepared = (self.seed, self.scenario_key, self.world_mode, self.level,
+        sc = config.SCENARIOS[self.scenario_key]
+        candidate_difficulty = {**config.DEFAULT_DIFFICULTY,
+                                **(sc["difficulty"] if sc["difficulty"] is not None
+                                   else self.menu_difficulty)}
+        prepared = (self.seed, self.scenario_key, self.world_mode,
+                    tuple(candidate_difficulty[name]
+                          for name in config.DIFFICULTY_FIELD_ORDER),
                     id(self.world), id(self.sonar))
         reuse = (self.in_menu and self._prepared_menu_mission == prepared
                  and self.sim_t == 0.0 and self.mission_time == 0.0
@@ -9835,23 +9890,26 @@ class Game:
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
                 self.scenario_key = config.SCENARIO_ORDER[self.menu_sel]
                 sc = config.SCENARIOS[self.scenario_key]
-                self.menu_screen = "level" if sc["level"] is None else "briefing"
-                if self.menu_screen == "level":
-                    self.menu_sel = config.LEVEL_ORDER.index(self.level)
+                self.menu_screen = "difficulty" if sc["difficulty"] is None else "briefing"
+                if self.menu_screen == "difficulty":
+                    self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self._open_administration("quit")
             return
-        if self.menu_screen == "level":
-            n = len(config.LEVEL_ORDER)
+        if self.menu_screen == "difficulty":
+            n = len(config.DIFFICULTY_FIELD_ORDER)
+            name = config.DIFFICULTY_FIELD_ORDER[self.menu_sel]
+            kind, low, high, step, _default = config.DIFFICULTY_FIELDS[name]
             if key == pygame.K_UP:
                 self.menu_sel = (self.menu_sel - 1) % n
             elif key == pygame.K_DOWN:
                 self.menu_sel = (self.menu_sel + 1) % n
-            elif key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4):
-                self.menu_sel = {"1": 0, "2": 1, "3": 2, "4": 3} \
-                    [pygame.key.name(key)]
+            elif key in (pygame.K_LEFT, pygame.K_RIGHT):
+                delta = step * (1 if key == pygame.K_RIGHT else -1)
+                value = config.clamp(self.menu_difficulty[name] + delta, low, high)
+                self.menu_difficulty[name] = (
+                    int(round(value)) if kind is int else round(value, 6))
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
-                self.level = config.LEVEL_ORDER[self.menu_sel]
                 self.scenario_key = "s4_zufall"
                 self._start_menu_mission()
             elif key == pygame.K_ESCAPE:
@@ -9898,24 +9956,28 @@ class Game:
                 marker = "► " if i == self.menu_sel else "  "
                 col = config.COLOR_TEXT if i == self.menu_sel \
                     else config.COLOR_TEXT_DIM
-                lv = (self.tr("level." + config.LEVEL_I18N_KEY[sc["level"]])
-                      if sc["level"] else "-")
+                lv = self.tr("menu.difficulty_fixed" if sc["difficulty"] is not None
+                             else "menu.difficulty_custom")
                 title = self.tr("scenario." + scenario_names[key] + ".title")
                 center(message("menu.scenario_choice", index=i + 1,
                                marker=marker, title=title, level=lv),
                        240 + i * 40, color=col)
-        elif self.menu_screen == "level":
+        elif self.menu_screen == "difficulty":
             center(self.tr("menu.choose_difficulty"),
-                   180, color=config.COLOR_TEXT_DIM)
-            for i, key in enumerate(config.LEVEL_ORDER):
+                   150, color=config.COLOR_TEXT_DIM)
+            row_h = 26
+            for i, name in enumerate(config.DIFFICULTY_FIELD_ORDER):
+                kind, _low, _high, _step, _default = config.DIFFICULTY_FIELDS[name]
                 marker = "► " if i == self.menu_sel else "  "
                 col = config.COLOR_TEXT if i == self.menu_sel \
                     else config.COLOR_TEXT_DIM
-                level_key = config.LEVEL_I18N_KEY[key]
-                center(message("menu.level_choice", index=i + 1, marker=marker,
-                               level=self.tr("level." + level_key),
-                               description=self.tr("level." + level_key + "_desc")),
-                       260 + i * 44, color=col)
+                value = self.menu_difficulty[name]
+                value_text = (str(value) if kind is int
+                             else f"{value:.3f}".rstrip("0").rstrip("."))
+                center(message("menu.difficulty_choice", marker=marker,
+                               label=self.tr("difficulty." + name),
+                               value=value_text),
+                       190 + i * row_h, color=col)
         else:  # briefing
             sc = config.SCENARIOS[self.scenario_key]
             scenario_key = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",

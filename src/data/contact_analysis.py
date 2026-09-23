@@ -23,6 +23,7 @@ _ASSET_FIELDS = {"profile_key", "kind", "route", "filename", "width",
 _ASSET_DIMENSIONS = {
     "acoustic_cruise": (320, 180),
     "acoustic_high": (320, 180),
+    "radar": (320, 180),
 }
 _SHA256 = re.compile(r"[0-9a-f]{64}").fullmatch
 
@@ -139,6 +140,8 @@ def project_contact_catalog(cat=CATALOG):
             assets["acoustic_cruise"] = ASSET_ROUTE_PREFIX + _asset_filename(key, "cruise")
         if machine.high_speed_lines or machine.high_speed_broadband is not None:
             assets["acoustic_high"] = ASSET_ROUTE_PREFIX + _asset_filename(key, "high")
+        if systems.emitter_keys:
+            assets["radar"] = ASSET_ROUTE_PREFIX + _asset_filename(key, "radar")
         profiles.append({
             "key": key,
             "name": _profile_name(cat, key),
@@ -223,6 +226,7 @@ def load_contact_analysis_assets(cat=CATALOG):
                 or not isinstance(filename, str)
                 or filename != _asset_filename(profile_key, {
                     "acoustic_cruise": "cruise", "acoustic_high": "high",
+                    "radar": "radar",
                 }.get(kind, ""))
                 or type(width) is not int or type(height) is not int
                 or (width, height) != _ASSET_DIMENSIONS.get(kind)

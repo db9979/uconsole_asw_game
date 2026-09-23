@@ -729,6 +729,11 @@ button.danger:hover:not(:disabled) { background: var(--red); color: #170c0c; }
 .host-slot-list { display: grid; gap: .4rem; margin: .8rem 0; padding: 0; list-style: none; }
 .host-slot-list button { width: 100%; text-align: left; }
 .host-dialog-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+#host-new-dialog { width: min(92vw, 42rem); }
+.host-new-difficulty-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .3rem .9rem; margin: .5rem 0 .8rem; }
+.host-new-difficulty-grid .field { display: flex; flex-direction: column; gap: .1rem; }
+.host-new-difficulty-grid .field label { margin: 0; }
+.host-new-difficulty-grid .field input { width: 100%; }
 @media (pointer: coarse) {
   button, select, input[type="text"], input[type="number"] { min-height: 2.75rem; }
   .station-tab, .host-bar button, .host-bar select, #workstation-add-station { min-height: 2.75rem; }

@@ -9,6 +9,7 @@ import time
 import pytest
 
 from src.commander.server import (CommanderServer, STATIONS, V2CommandEnvelope)
+from src.core import config
 from src.core.game import Game
 from src.ui import layout
 
@@ -374,7 +375,9 @@ def test_host_view_is_published_only_to_a_solo_session(solo):
     assert view["time_scale"] == {"index": 0, "steps": [1]}
     assert [row["key"] for row in view["scenarios"]] == [
         "s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall"]
-    assert view["levels"] == ["leicht", "normal", "harte", "hardcore"]
+    assert [row["name"] for row in view["difficulty_fields"]] == list(
+        config.DIFFICULTY_FIELD_ORDER)
+    assert view["difficulty"] == config.DEFAULT_DIFFICULTY
     assert [row["slot"] for row in view["slots"]] == [1, 2, 3, 4, 5]
     assert all(row == {"slot": row["slot"], "saved": False, "modified": None}
                for row in view["slots"])
@@ -416,6 +419,9 @@ def test_host_pause_resume_use_the_local_paths(solo):
     ("host_new_game", {"scenario": "nope", "world_mode": "fixed"}),
     ("host_new_game", {"scenario": "s1_patrouille", "world_mode": "flat"}),
     ("host_new_game", {"scenario": "s4_zufall", "world_mode": "fixed", "level": "x"}),
+    ("host_new_game", {"scenario": "s4_zufall", "world_mode": "fixed", "difficulty": {}}),
+    ("host_new_game", {"scenario": "s4_zufall", "world_mode": "fixed",
+                        "difficulty": {**config.DEFAULT_DIFFICULTY, "quiet_mult": 999.0}}),
     ("host_new_game", {"scenario": "s4_zufall", "world_mode": "fixed", "seed": 0}),
     ("host_new_game", {"scenario": "s4_zufall", "world_mode": "fixed", "seed": True}),
     ("host_new_game", {"scenario": "s4_zufall", "world_mode": "fixed",
@@ -468,23 +474,27 @@ def test_a_corrupt_slot_fails_the_load_and_leaves_the_live_game_unchanged(solo):
 
 def test_host_new_game_replaces_the_world_and_keeps_the_browser_paired(solo):
     old_world = id(solo.game.world)
+    difficulty = {**config.DEFAULT_DIFFICULTY, "quiet_mult": 0.8}
     result = host(solo, "host_new_game", {
-        "scenario": "s4_zufall", "world_mode": "procedural", "level": "leicht",
-        "seed": 4242}, "n1")
+        "scenario": "s4_zufall", "world_mode": "procedural",
+        "difficulty": difficulty, "seed": 4242}, "n1")
     assert result["reasoncode"] == "ok"
     assert id(solo.game.world) != old_world
     assert (solo.game.seed, solo.game.scenario_key, solo.game.world_mode,
-            solo.game.level) == (4242, "s4_zufall", "procedural", "leicht")
+            solo.game.difficulty) == (4242, "s4_zufall", "procedural", difficulty)
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
     assert session_of(solo)["host"] == {"generation": 2}
     assert host_view(solo)["scenario"] == "s4_zufall"
 
 
-def test_fixed_scenarios_ignore_a_requested_level_and_random_seed_is_drawn(solo):
+def test_fixed_scenarios_ignore_a_requested_difficulty_and_random_seed_is_drawn(solo):
+    difficulty = {**config.DEFAULT_DIFFICULTY, "quiet_mult": 0.5}
     assert host(solo, "host_new_game", {
         "scenario": "s1_patrouille", "world_mode": "procedural",
-        "level": "hardcore"}, "n1")["reasoncode"] == "ok"
-    assert solo.game.level == "leicht"  # the scenario fixes its own level
+        "difficulty": difficulty}, "n1")["reasoncode"] == "ok"
+    # The scenario fixes its own difficulty; the requested one is not applied.
+    assert solo.game.difficulty == {**config.DEFAULT_DIFFICULTY,
+                                    **config.SCENARIOS["s1_patrouille"]["difficulty"]}
     assert 1 <= solo.game.seed < 1_000_000_000
 
 

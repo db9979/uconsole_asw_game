@@ -483,51 +483,53 @@ SONAR_BEARING_NOISE_EPOCH_S = 2.0
 SONAR_BEARING_DISPLAY_TAU_S = 7.0
 SONAR_BEARING_RATE_MAX_DEG_S = 8.0
 
-# M7: Schwierigkeitslevel (GDD §9)
-# quiet_mult: Faktor auf U-Boot-Stillheit (<1 = lauter/easier zu finden)
-# repair_mult: Faktor auf Reparaturrate | torp_total: Munitionsbestand
-# kill_dist/kill_depth: Treffer-Toleranz der eigenen Torpedos
-# enemy_attack_mult / enemy_cooldown_s: Gegenangriff der U-Boote
-# second_sub_prob: Chance für ein zusätzliches AIP/SSN-Boot (0.0 -> RNG-Sequenz
-#   der M2–M6-Spawns bleibt unverändert)
-LEVELS = {
-    "leicht": dict(
-        label="Leicht", desc="lauter, treffsicher, schnellere Reparatur",
-        quiet_mult=0.8, repair_mult=1.5,
-        torp_total=6, kill_dist_nm=0.20, kill_depth_m=20.0,
-        enemy_attack_mult=0.7, enemy_cooldown_s=1200.0,
-        second_sub_prob=0.0,
-        second_sub_pool=["aip_modern", "ssn"]),
-    "normal": dict(
-        label="Normal", desc="Ausgewogene Jagd",
-        quiet_mult=1.0, repair_mult=1.0,
-        torp_total=6, kill_dist_nm=0.135, kill_depth_m=15.0,
-        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
-        second_sub_prob=0.0,
-        second_sub_pool=["aip_modern", "ssn"]),
-    "harte": dict(
-        label="Hart", desc="wenig Munition, schnelle Konter, AIP-Boote",
-        quiet_mult=1.0, repair_mult=1.0,
-        torp_total=4, kill_dist_nm=0.135, kill_depth_m=15.0,
-        enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
-        second_sub_prob=0.85,
-        second_sub_pool=["aip_modern", "ssn", "aip_modern"]),
-    # W2: vierte, rein optionale Realismus-Stufe - keine leichtere Munitions-/
-    # Treffertoleranz als "harte", nur enger; siehe hardcore-Verhaltensgates
-    # in game.py (Klassifizierungs-Vorschau, TMA-Fehlertoleranz, Kartenpunkte).
-    "hardcore": dict(
-        label="Hardcore", desc="minimale Munition, engste Trefftoleranz, keine Hilfen",
-        quiet_mult=1.0, repair_mult=0.7,
-        torp_total=3, kill_dist_nm=0.10, kill_depth_m=10.0,
-        enemy_attack_mult=1.7, enemy_cooldown_s=480.0,
-        second_sub_prob=0.9,
-        second_sub_pool=["aip_modern", "ssn", "aip_modern"]),
+# Custom-Schwierigkeit (ersetzt das ehemalige feste M7-4-Stufen-System,
+# GDD §9/§17/§25): jede Achse ist einzeln vom Spieler wählbar, identisch in der
+# uConsole-Menüführung und im Remote-Crew-Web-Host-Dialog. Beide Oberflächen
+# iterieren ausschließlich über diese Tabelle - keine Regler-Grenzen sind
+# irgendwo dupliziert.
+#
+# Kampf-Balance (bisher pro Level in LEVELS):
+#   quiet_mult: Faktor auf U-Boot-Stillheit (<1 = lauter/leichter zu finden)
+#   repair_mult: Faktor auf Reparaturrate | torpedo_count: Munitionsbestand
+#   kill_dist_nm/kill_depth_m: Treffer-Toleranz der eigenen Torpedos
+#     (Fregatte und Helo teilen sich diesen einen Wert)
+#   enemy_attack_mult/enemy_cooldown_s: Gegenangriff der U-Boote
+#   second_sub_prob: Chance für ein zusätzliches Bonus-Boot aus
+#     SECOND_SUB_POOL (0.0 -> RNG-Sequenz der Basis-Spawns bleibt unverändert)
+# Missions-Zusammensetzung (bisher pro Missionstyp in MISSION_TYPES, nur für
+# die freie Mission s4_zufall wirksam - feste Szenarien nutzen weiterhin
+# MISSION_TYPES intern):
+#   sea_state_start: Anfangsseegang (0-6, Sturm ab hohen Werten)
+#   sub_count/warship_count/civilian_count/animal_count: Objektzahlen
+#   air_raid_count: Anzahl Luftangriffs-Wellen (0 = keine)
+#   air_raid_freq_mult: Taktfaktor (>1 = häufiger)
+#   time_limit_s: Missions-Zeitlimit in Echtzeitsekunden
+#
+# name: (python_type, min, max, step, default)
+DIFFICULTY_FIELDS = {
+    "quiet_mult":         (float, 0.5,    1.5,    0.05,  1.0),
+    "repair_mult":        (float, 0.3,    2.0,    0.1,   1.0),
+    "torpedo_count":      (int,   2,      10,     1,     6),
+    "kill_dist_nm":       (float, 0.05,   0.30,   0.005, 0.135),
+    "kill_depth_m":       (float, 5.0,    30.0,   1.0,   15.0),
+    "enemy_attack_mult":  (float, 0.3,    2.0,    0.1,   1.0),
+    "enemy_cooldown_s":   (float, 300.0,  1800.0, 30.0,  900.0),
+    "second_sub_prob":    (float, 0.0,    1.0,    0.05,  0.0),
+    "sea_state_start":    (int,   0,      6,      1,     3),
+    "sub_count":          (int,   1,      3,      1,     1),
+    "warship_count":      (int,   0,      3,      1,     0),
+    "civilian_count":     (int,   0,      6,      1,     3),
+    "animal_count":       (int,   0,      6,      1,     3),
+    "air_raid_count":     (int,   0,      8,      1,     0),
+    "air_raid_freq_mult": (float, 0.25,   4.0,    0.25,  1.0),
+    "time_limit_s":       (int,   1800,   36000,  300,   10800),
 }
-LEVEL_ORDER = ["leicht", "normal", "harte", "hardcore"]
-# i18n-Schlüsselsuffix je Level (level.<x> / level.<x>_desc)
-LEVEL_I18N_KEY = {"leicht": "easy", "normal": "normal", "harte": "hard",
-                  "hardcore": "hardcore"}
-DEFAULT_LEVEL = "normal"
+DIFFICULTY_FIELD_ORDER = tuple(DIFFICULTY_FIELDS)
+DEFAULT_DIFFICULTY = {name: spec[4] for name, spec in DIFFICULTY_FIELDS.items()}
+# Fester Pool für die Bonus-"zweites U-Boot"-Ziehung (2:1 Richtung AIP,
+# entspricht dem bisherigen "harte"/"hardcore"-Pool).
+SECOND_SUB_POOL = ("aip_modern", "ssn", "aip_modern")
 
 # M6: Missions-System
 SAVE_DIR = os.path.expanduser("~/.u-jagd")
@@ -570,7 +572,10 @@ SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall")
 SCENARIOS = {
     "s1_patrouille": dict(
         title="Patrouille",
-        level="leicht",
+        difficulty=dict(quiet_mult=0.8, repair_mult=1.5, torpedo_count=6,
+                       kill_dist_nm=0.20, kill_depth_m=20.0,
+                       enemy_attack_mult=0.7, enemy_cooldown_s=1200.0,
+                       second_sub_prob=0.0),
         mission_type="patrouille",
         ship_start=(300.0, 380.0), ship_course=300.0,
         # Kein Seename hier: Welt/Seed sind im Menü frei wählbar (W/R), die
@@ -583,7 +588,10 @@ SCENARIOS = {
     ),
     "s2_doppeljagd": dict(
         title="Doppeljagd",
-        level="normal",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       second_sub_prob=0.0),
         mission_type="doppeljagd",
         ship_start=(250.0, 300.0), ship_course=0.0,
         briefing=("Auftrag: Zwei U-Boote operieren im Einsatzsektor (eines davon "
@@ -595,7 +603,10 @@ SCENARIOS = {
     ),
     "s3_abfang": dict(
         title="Nuklearer Abfang",
-        level="harte",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=4,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
+                       second_sub_prob=0.85),
         mission_type="nuklearer_abfang",
         ship_start=(320.0, 250.0), ship_course=270.0,
         briefing=("Auftrag: Hochwertiges nukleares U-Boot (SSN) dringt in den "
@@ -607,8 +618,8 @@ SCENARIOS = {
     ),
     "s4_zufall": dict(
         title="Freie Jagd (Zufall)",
-        level=None,          # Level-Auswahlmenü danach
-        mission_type=None,   # seed-basierter Missions-Typ
+        difficulty=None,     # Custom-Schwierigkeit-Bildschirm danach
+        mission_type=None,   # aus difficulty zusammengesetzt
         ship_start=None, ship_course=None,
         briefing="Zufällige Mission – Typ und Schwierigkeit nach Auswahl.",
         win_text="",

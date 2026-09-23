@@ -133,7 +133,7 @@ def test_fixed_real_sector_selection_and_seed_reroll(monkeypatch):
 @pytest.mark.parametrize("main_menu,screen", [
     (True, "scenario"),
     (False, "scenario"),
-    (False, "level"),
+    (False, "difficulty"),
     (False, "briefing"),
 ])
 def test_world_and_seed_controls_work_on_every_advertised_menu_screen(

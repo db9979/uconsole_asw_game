@@ -79,6 +79,24 @@ def test_native_detail_lists_each_sensor_and_emitter_field():
         assert label in lines
 
 
+def test_radar_fingerprint_tab_is_offered_and_draws_for_units_with_emitters():
+    pygame.init()
+    analyzer = ContactAnalyzer(tr=Translator("en").t,
+                               packaged_assets=load_contact_analysis_assets())
+    selected = next(index for index, profile in enumerate(analyzer.profiles)
+                    if profile["components"]["emitters"])
+    analyzer.filtered = [selected]
+    analyzer.listbox.selected = 0
+    analyzer._selection_changed()
+    kinds = analyzer._asset_kinds()
+    assert "radar" in kinds
+    analyzer.asset_index = kinds.index("radar")
+    analyzer._prepare_selected_image()
+    screen = pygame.Surface((1280, 720))
+    analyzer.draw(screen)  # must not raise with the radar tab selected
+    pygame.quit()
+
+
 @pytest.mark.parametrize("translator", [
     Translator("en"), Translator("de"),
     Translator("en", catalog=pseudolocale()),

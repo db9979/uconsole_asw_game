@@ -65,30 +65,21 @@ def validate_ownship_loadout(value) -> dict:
         raise ValueError("ownship.weapons: bounded non-empty list expected")
     weapon_keys = set()
     for index, weapon in enumerate(weapons):
-        _object(weapon, {"key", "runtime_profile_key",
-                         "kill_dist_nm_by_level", "kill_depth_m_by_level"},
+        _object(weapon, {"key", "runtime_profile_key"},
                 f"ownship.weapons[{index}]")
         key = _key(weapon["key"], "weapon.", "ownship weapon key")
         _key(weapon["runtime_profile_key"], "", "runtime profile key")
         if key in weapon_keys:
             raise ValueError("ownship.weapons: duplicate key")
         weapon_keys.add(key)
-        for field, low, high in (("kill_dist_nm_by_level", .001, 1),
-                                 ("kill_depth_m_by_level", 0, 1000)):
-            values = weapon[field]
-            if not isinstance(values, dict) or set(values) != set(config.LEVELS):
-                raise ValueError(f"ownship.weapons.{field}: levels mismatch")
-            for level, amount in values.items():
-                _number(amount, low, high,
-                        f"ownship.weapons.{index}.{field}.{level}")
     launcher = _object(value["launcher"], {
         "key", "mount_count", "ready_count", "reload_s", "weapon_keys"},
         "ownship.launcher")
     _key(launcher["key"], "launcher.", "ownship.launcher.key")
     mounts = _integer(launcher["mount_count"], 1, MAX_TUBES,
                       "ownship.launcher.mount_count")
-    ready = _integer(launcher["ready_count"], 0, mounts,
-                     "ownship.launcher.ready_count")
+    _integer(launcher["ready_count"], 0, mounts,
+             "ownship.launcher.ready_count")
     _number(launcher["reload_s"], 0, 604800, "ownship.launcher.reload_s")
     if (not isinstance(launcher["weapon_keys"], list)
             or not launcher["weapon_keys"]
@@ -96,15 +87,10 @@ def validate_ownship_loadout(value) -> dict:
             or not set(launcher["weapon_keys"]) <= weapon_keys):
         raise ValueError("ownship.launcher.weapon_keys: invalid compatibility")
     magazine = _object(value["magazine"], {
-        "key", "weapon_key", "mission_count_by_level"}, "ownship.magazine")
+        "key", "weapon_key"}, "ownship.magazine")
     _key(magazine["key"], "magazine.", "ownship.magazine.key")
     if magazine["weapon_key"] not in weapon_keys:
         raise ValueError("ownship.magazine.weapon_key: unknown weapon")
-    counts = magazine["mission_count_by_level"]
-    if not isinstance(counts, dict) or set(counts) != set(config.LEVELS):
-        raise ValueError("ownship.magazine.mission_count_by_level: levels mismatch")
-    for level, count in counts.items():
-        _integer(count, ready, 100, f"ownship.magazine.{level}")
     countermeasure = _object(value["countermeasure"], {
         "key", "effect_type", "payload_key", "mission_count", "ready_count",
         "reload_s", "active_life_s", "tether_nm", "depth_m"},
@@ -189,10 +175,10 @@ class WeaponBattery:
                    launcher.reload_s, compatible, magazines)
 
     @classmethod
-    def ownship(cls, level: str, definition=None) -> WeaponBattery:
+    def ownship(cls, torpedo_count: int, definition=None) -> WeaponBattery:
         definition = definition or ownship_loadout()
         launcher, magazine = definition["launcher"], definition["magazine"]
-        total = magazine["mission_count_by_level"][level]
+        total = int(torpedo_count)
         return cls(launcher["key"], launcher["mount_count"],
                    launcher["ready_count"], launcher["reload_s"],
                    launcher["weapon_keys"], [MagazineState(
@@ -629,7 +615,7 @@ class TowedAcousticDecoy:
 
 
 def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
-                    level: str, runtime_catalog) -> bool:
+                    runtime_catalog) -> bool:
     """Validate the complete ASW block in the canonical save schema."""
     try:
         _object(value, {"version", "loadout", "player_battery",
@@ -644,10 +630,6 @@ def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
                 or battery.remaining_total != torpedo_count):
             return False
         definition = validate_ownship_loadout(value["loadout"])
-        if (level not in config.LEVELS
-                or torpedo_total != definition["magazine"][
-                    "mission_count_by_level"][level]):
-            return False
         if any((profile := runtime_catalog.torpedoes.get(
                 weapon["runtime_profile_key"])) is None
                or profile.used_by != "frigate" for weapon in definition["weapons"]):

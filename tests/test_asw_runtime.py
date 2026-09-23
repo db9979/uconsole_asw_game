@@ -27,6 +27,7 @@ from src.weapons.asw import (
     ownship_loadout,
     valid_battery_state,
     valid_consumable_state,
+    validate_ownship_loadout,
 )
 
 
@@ -37,19 +38,25 @@ def ocean(**overrides):
     return SimpleNamespace(**values)
 
 
-def test_ownship_loadout_is_typed_and_matches_legacy_level_inventory():
+def test_ownship_loadout_has_no_level_keyed_tables():
     definition = ownship_loadout()
     assert definition["launcher"]["weapon_keys"] == [
         definition["magazine"]["weapon_key"]]
     assert definition["weapons"][0]["runtime_profile_key"] == "frigate_torp"
-    assert definition["weapons"][0]["kill_dist_nm_by_level"] == {
-        "leicht": .2, "normal": .135, "harte": .135, "hardcore": .10}
-    assert definition["magazine"]["mission_count_by_level"] == {
-        "leicht": 6, "normal": 6, "harte": 4, "hardcore": 3}
+    assert "kill_dist_nm_by_level" not in definition["weapons"][0]
+    assert "kill_depth_m_by_level" not in definition["weapons"][0]
+    assert "mission_count_by_level" not in definition["magazine"]
+
+
+def test_ownship_loadout_rejects_a_document_with_legacy_level_tables():
+    definition = copy.deepcopy(ownship_loadout())
+    definition["weapons"][0]["kill_dist_nm_by_level"] = {"leicht": .2}
+    with pytest.raises(ValueError):
+        validate_ownship_loadout(definition)
 
 
 def test_tubes_reserve_magazine_rounds_and_reload_deterministically():
-    battery = WeaponBattery.ownship("normal")
+    battery = WeaponBattery.ownship(6)
     assert (battery.capacity_total, battery.remaining_total,
             battery.ready_count) == (6, 6, 2)
     assert battery.fire() == "weapon.ownship.torpedo"
@@ -79,7 +86,7 @@ def test_catalog_submarine_battery_uses_typed_pilot_profile():
 
 
 def test_battery_roundtrip_and_strict_rejection():
-    battery = WeaponBattery.ownship("normal")
+    battery = WeaponBattery.ownship(6)
     battery.fire()
     battery.update(17.25)
     state = battery.serialize()
@@ -697,7 +704,8 @@ def test_enemy_torpedo_reaches_moving_contact_lead_datum():
 
 
 def test_easy_helicopter_torpedo_roundtrips_with_difficulty_envelope():
-    game = Game(seed=195, level="leicht", start_menu=False, audio_enabled=False)
+    # The default scenario (s1_patrouille) already fixes the "easy" tuning.
+    game = Game(seed=195, start_menu=False, audio_enabled=False)
     _assign_game_contact(game)
     game.helo.launch(game.ship)
     game.launch_helo_torpedo()
@@ -707,25 +715,29 @@ def test_easy_helicopter_torpedo_roundtrips_with_difficulty_envelope():
     assert game.save_state() == state
 
 
-def test_hardcore_level_applies_tighter_ammo_and_hit_tolerance_and_roundtrips():
+def test_hardcore_difficulty_applies_tighter_ammo_and_hit_tolerance_and_roundtrips():
     game = Game(seed=197, start_menu=False, audio_enabled=False)
-    # The initial built-in patrol scenario has a fixed level; select the free
-    # ("s4_zufall") scenario to actually honor an explicit difficulty choice.
-    game.level = "hardcore"
+    # The initial built-in patrol scenario has a fixed difficulty; select the
+    # free ("s4_zufall") scenario to actually honor a custom difficulty choice.
+    hardcore = {**config.DEFAULT_DIFFICULTY, "quiet_mult": 1.0, "repair_mult": 0.7,
+               "torpedo_count": 3, "kill_dist_nm": 0.10, "kill_depth_m": 10.0,
+               "enemy_attack_mult": 1.7, "enemy_cooldown_s": 480.0,
+               "second_sub_prob": 0.9}
+    game.menu_difficulty = hardcore
     game.scenario_key = "s4_zufall"
     game._start_menu_mission()
     assert game.torpedo_count == 3
     assert game.player_torpedo_battery.capacity_total == 3
-    lv = config.LEVELS["hardcore"]
-    assert lv["kill_dist_nm"] < config.LEVELS["harte"]["kill_dist_nm"]
-    assert lv["kill_depth_m"] < config.LEVELS["harte"]["kill_depth_m"]
+    harte = config.SCENARIOS["s3_abfang"]["difficulty"]
+    assert game.difficulty["kill_dist_nm"] < harte["kill_dist_nm"]
+    assert game.difficulty["kill_depth_m"] < harte["kill_depth_m"]
     state = game.save_state()
     game.load_state(copy.deepcopy(state))
     assert game.save_state() == state
 
 
 def test_v10_active_helicopter_torpedo_requires_explicit_provenance():
-    game = Game(seed=196, level="normal", start_menu=False, audio_enabled=False)
+    game = Game(seed=196, start_menu=False, audio_enabled=False)
     _assign_game_contact(game)
     game.helo.launch(game.ship)
     game.launch_helo_torpedo()
@@ -780,9 +792,11 @@ def test_current_enemy_torpedo_requires_observed_datum():
 
 
 def test_ownship_loadout_capacity_must_match_saved_difficulty():
-    game = Game(seed=202, level="normal", start_menu=False, audio_enabled=False)
+    game = Game(seed=202, start_menu=False, audio_enabled=False)
     state = game.save_state()
-    state["level"] = "harte"
+    state["mission_runtime"] = dict(state["mission_runtime"])
+    state["mission_runtime"]["difficulty"] = dict(
+        state["mission_runtime"]["difficulty"], torpedo_count=4)
     assert not game._load_save_data(state)
 
 

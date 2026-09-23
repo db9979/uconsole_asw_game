@@ -667,11 +667,17 @@ def test_ciws_failure_spends_ammo_with_one_second_cadence(game, monkeypatch):
     assert game.ciws_ammo == ammo - 2 * burst
 
 
-@pytest.mark.parametrize("level", list(config.LEVELS))
-def test_custom_mission_applies_authored_sub_speed_and_difficulty(level):
-    game = Game(seed=829, level=level, start_menu=False, audio_enabled=False)
-    # The initial built-in patrol intentionally overrides constructor difficulty.
-    game.level = level
+@pytest.mark.parametrize("difficulty", [
+    dict(config.DEFAULT_DIFFICULTY),
+    {**config.DEFAULT_DIFFICULTY, "quiet_mult": 0.6, "enemy_attack_mult": 1.8,
+     "enemy_cooldown_s": 400.0},
+])
+def test_custom_mission_applies_authored_sub_speed_and_difficulty(difficulty):
+    game = Game(seed=829, difficulty=difficulty, start_menu=False, audio_enabled=False)
+    # start_custom_mission() resets through s4_zufall, which consults
+    # menu_difficulty (the constructor's built-in patrol scenario fixes its
+    # own difficulty and would otherwise override it).
+    game.menu_difficulty = dict(difficulty)
     definition = default_mission("user.runtime")
     definition["units"]["exact"] = [dict(id="target", profile="diesel_alt",
                                         side="hostile", placement=dict(kind="fixed", x=100, y=100),
@@ -679,8 +685,7 @@ def test_custom_mission_applies_authored_sub_speed_and_difficulty(level):
     definition["objective"]["target_ids"] = ["target"]
     assert game.start_custom_mission(definition)
     sub = game.subs[0]
-    tuning = config.LEVELS[level]
     assert sub.speed == 7 and sub.course == 123
-    assert sub.quiet_mult == tuning["quiet_mult"]
-    assert sub.attack_mult == tuning["enemy_attack_mult"]
-    assert sub.attack_left == sub.attack_cooldown == tuning["enemy_cooldown_s"]
+    assert sub.quiet_mult == difficulty["quiet_mult"]
+    assert sub.attack_mult == difficulty["enemy_attack_mult"]
+    assert sub.attack_left == sub.attack_cooldown == difficulty["enemy_cooldown_s"]

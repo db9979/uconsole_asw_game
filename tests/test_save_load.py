@@ -72,8 +72,8 @@ def test_roundtrip_preserves_state(tmp_saves):
     g.torpedo_count = g.player_torpedo_battery.remaining_total
     g.torpedoes.append(Torpedo(
         g.ship.x, g.ship.y, 90.0, 60.0, tgt, 99, profile=profile,
-        kill_dist_nm=weapon["kill_dist_nm_by_level"][g.level],
-        kill_depth_m=weapon["kill_depth_m_by_level"][g.level],
+        kill_dist_nm=g.difficulty["kill_dist_nm"],
+        kill_depth_m=g.difficulty["kill_depth_m"],
         guidance_x=tgt.x, guidance_y=tgt.y))
     g.torpedo_seq = 99
     g.asms.append(ASM(g.ship.x + 10.0, g.ship.y, 0.0, 42, g.rng_asm))
@@ -119,8 +119,7 @@ def test_roundtrip_preserves_state(tmp_saves):
     assert g.damage.compartments["sonar"].state == "BESCHAEDIGT"
     assert abs(g.damage.compartments["sonar"].flood - 12.5) < 1e-6
     assert abs(g.damage.compartments["engine"].fire - 20.0) < 1e-6
-    lvl = config.LEVELS[g.level]
-    assert abs(g.damage.repair_mult - lvl["repair_mult"]) < 1e-9
+    assert abs(g.damage.repair_mult - g.difficulty["repair_mult"]) < 1e-9
 
     # U-Boot-KI-Zustand
     s = g.subs[0]

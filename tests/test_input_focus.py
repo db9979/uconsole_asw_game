@@ -244,7 +244,7 @@ def test_random_scenario_accepts_default_difficulty(game):
     game.in_menu = True
     press(game, pygame.K_4)
     press(game, pygame.K_RETURN)
-    assert 0 <= game.menu_sel < len(config.LEVEL_ORDER)
+    assert 0 <= game.menu_sel < len(config.DIFFICULTY_FIELD_ORDER)
     press(game, pygame.K_RETURN)
     assert not game.in_menu and game.scenario_key == "s4_zufall"
 
@@ -285,7 +285,7 @@ def test_game_over_dialog_renders_above_end_panel(game, monkeypatch, dialog, dra
     assert order == ["end", "dialog"]
 
 
-@pytest.mark.parametrize("screen", ["scenario", "level", "briefing"])
+@pytest.mark.parametrize("screen", ["scenario", "difficulty", "briefing"])
 def test_help_accessible_and_visible_in_menu(game, monkeypatch, screen):
     game.in_menu = True
     game.menu_screen = screen

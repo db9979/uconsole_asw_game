@@ -511,7 +511,7 @@ def _host_load(game, params):
 
 def _host_new_game(game, params):
     return game.start_new_game(params["scenario"], params["world_mode"],
-                               params.get("level"), params.get("seed"))
+                               params.get("difficulty"), params.get("seed"))
 
 
 def _host_instructor_environment(game, params):
@@ -1402,10 +1402,14 @@ class CommanderBridge:
             time_scale=dict(index=config.TIME_SCALE_DEFAULT,
                             steps=list(config.TIME_SCALE_STEPS)),
             world_mode=game.world_mode, scenario=game.scenario_key,
-            level=game.level,
-            scenarios=[dict(key=key, level=config.SCENARIOS[key]["level"])
+            difficulty=dict(game.menu_difficulty),
+            scenarios=[dict(key=key, fixed=config.SCENARIOS[key]["difficulty"] is not None)
                        for key in config.SCENARIO_ORDER],
-            levels=list(config.LEVEL_ORDER),
+            difficulty_fields=[
+                dict(name=name, kind=("int" if kind is int else "float"),
+                     min=low, max=high, step=step, default=default)
+                for name, (kind, low, high, step, default)
+                in config.DIFFICULTY_FIELDS.items()],
             slots=[dict(row) for row in self._slots])
 
     def _publish_sonar_audio(self, game, server, phase):

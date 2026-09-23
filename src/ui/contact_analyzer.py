@@ -20,7 +20,7 @@ from src.ui import layout
 
 MAX_FILTER_CHARS = 48
 SURFACE_CACHE_SIZE = 4
-_ASSET_ORDER = ("acoustic_cruise", "acoustic_high")
+_ASSET_ORDER = ("acoustic_cruise", "acoustic_high", "radar")
 
 
 def _wiki_url_for(key: str, cat=CATALOG) -> str | None:
@@ -423,10 +423,16 @@ class ContactAnalyzer:
                                                  image_box.bottom - 30 - spectrum_legend.bottom)
                 self._rects["spectrum_legend"] = spectrum_legend
                 self._rects["hypothesis_legend"] = hypothesis_legend
-                layout.blit_block(surface, self.tr("analyzer.spectrum_legend"),
+                if kind == "radar":
+                    top_key, bottom_key = ("analyzer.radar_spectrum_legend",
+                                           "analyzer.radar_prf_legend")
+                else:
+                    top_key, bottom_key = ("analyzer.spectrum_legend",
+                                           "analyzer.hypothesis_legend")
+                layout.blit_block(surface, self.tr(top_key),
                                   *spectrum_legend, color=widgets.PALETTE.dim,
                                   size=16, min_size=16)
-                layout.blit_block(surface, self.tr("analyzer.hypothesis_legend"),
+                layout.blit_block(surface, self.tr(bottom_key),
                                   *hypothesis_legend, color=widgets.PALETTE.dim,
                                   size=16, min_size=16)
                 tab_width = max(1, image_box.width // len(kinds))

@@ -2209,9 +2209,9 @@
           typeof profile.name !== "string" || !profile.name || profile.name.length > 256 ||
           typeof profile.resource !== "string" || !["subs.json", "warships.json", "civilians.json", "aircraft.json", "animals.json", "torpedoes.json", "decoys.json"].includes(profile.resource) ||
           !profile.assets || typeof profile.assets !== "object" || Array.isArray(profile.assets) ||
-          Object.keys(profile.assets).some((kind) => !["acoustic_cruise", "acoustic_high"].includes(kind)) ||
+          Object.keys(profile.assets).some((kind) => !["acoustic_cruise", "acoustic_high", "radar"].includes(kind)) ||
           Object.entries(profile.assets).some(([kind, route]) => {
-            const suffix = { acoustic_cruise: "cruise", acoustic_high: "high" }[kind];
+            const suffix = { acoustic_cruise: "cruise", acoustic_high: "high", radar: "radar" }[kind];
             return typeof route !== "string" || route !== `/contact-analysis/${profile.key}-${suffix}.png`;
           }) ||
           !profile.components || typeof profile.components !== "object" || Array.isArray(profile.components) ||
@@ -2324,24 +2324,32 @@
       ["domain", emitter.domain], ["frequency_band_hz", band(emitter.frequency_band_hz, "Hz")],
       ["prf_band_hz", band(emitter.prf_band_hz, "Hz")], ["modulation_codes", joined(emitter.modulation_codes)],
     ]);
-    const imageLabels = { acoustic_cruise: "analyzer_acoustic_cruise", acoustic_high: "analyzer_acoustic_high" };
+    const imageLabels = { acoustic_cruise: "analyzer_acoustic_cruise", acoustic_high: "analyzer_acoustic_high",
+      radar: "analyzer_radar" };
     const imageKey = `${language}:${profile.key}`;
     if (analysisImageKey !== imageKey) {
       $("analysis-images").replaceChildren(...Object.entries(profile.assets).map(([kind, route]) => {
         const figure = node("figure", undefined, "analysis-image");
         const image = node("img");
-        const cruise = kind === "acoustic_cruise";
-        const lines = cruise ? machine.cruise_lines : machine.high_speed_lines;
-        const broadband = cruise ? machine.cruise_broadband : machine.high_speed_broadband;
-        const descriptions = [t("analyzer_image_alt_base", { speed: t(imageLabels[kind]) })];
-        if (Array.isArray(lines) && lines.length) descriptions.push(t("analyzer_image_alt_tonals"));
-        if (Array.isArray(broadband)) descriptions.push(t("analyzer_image_alt_broadband"));
-        if (cruise && Array.isArray(machine.shaft_rpm)) {
-          descriptions.push(t(machine.blade_count == null ? "analyzer_image_alt_shaft" : "analyzer_image_alt_shaft_bpf"));
-        } else if (!Array.isArray(machine.shaft_rpm)) {
-          descriptions.push(t("analyzer_image_alt_no_hypothesis"));
+        const descriptions = [];
+        if (kind === "radar") {
+          descriptions.push(t("analyzer_image_alt_radar_base", { speed: t(imageLabels[kind]) }));
+          descriptions.push(t(profile.components.emitters.some((emitter) => Array.isArray(emitter.prf_band_hz))
+            ? "analyzer_image_alt_radar_prf" : "analyzer_image_alt_radar_no_prf"));
         } else {
-          descriptions.push(t("analyzer_image_alt_not_repeated"));
+          const cruise = kind === "acoustic_cruise";
+          const lines = cruise ? machine.cruise_lines : machine.high_speed_lines;
+          const broadband = cruise ? machine.cruise_broadband : machine.high_speed_broadband;
+          descriptions.push(t("analyzer_image_alt_base", { speed: t(imageLabels[kind]) }));
+          if (Array.isArray(lines) && lines.length) descriptions.push(t("analyzer_image_alt_tonals"));
+          if (Array.isArray(broadband)) descriptions.push(t("analyzer_image_alt_broadband"));
+          if (cruise && Array.isArray(machine.shaft_rpm)) {
+            descriptions.push(t(machine.blade_count == null ? "analyzer_image_alt_shaft" : "analyzer_image_alt_shaft_bpf"));
+          } else if (!Array.isArray(machine.shaft_rpm)) {
+            descriptions.push(t("analyzer_image_alt_no_hypothesis"));
+          } else {
+            descriptions.push(t("analyzer_image_alt_not_repeated"));
+          }
         }
         image.src = route;
         image.alt = descriptions.join(" ");
@@ -5528,7 +5536,6 @@
   // ---- Solo host surface --------------------------------------------------
   const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppeljagd: "scenario_s2_doppeljagd",
     s3_abfang: "scenario_s3_abfang", s4_zufall: "scenario_s4_zufall"};
-  const levelText = {leicht: "level_leicht", normal: "level_normal", harte: "level_harte", hardcore: "level_hardcore"};
   const hostResultText = {ok: "host_result_ok", phase_blocked: "host_result_phase_blocked",
     no_save: "host_result_no_save", save_failed: "host_result_save_failed",
     session_revoked: "host_result_session_revoked", stale_world_session: "host_result_stale",
@@ -5537,7 +5544,7 @@
     context_invalidated: "host_result_stale"};
 
   function validateHost(value) {
-    const fields = ["epoch", "level", "levels", "paused", "phase", "protocol", "scenario", "scenarios", "session", "slots", "time_scale", "world_mode"];
+    const fields = ["epoch", "difficulty", "difficulty_fields", "paused", "phase", "protocol", "scenario", "scenarios", "session", "slots", "time_scale", "world_mode"];
     if (!exactKeys(value, fields) || value.protocol !== 2 || typeof value.session !== "string" ||
         !Number.isSafeInteger(value.epoch) || value.epoch < 0 ||
         !Object.hasOwn(phases, value.phase) || typeof value.paused !== "boolean" ||
@@ -5545,9 +5552,20 @@
         !boundedArray(value.time_scale.steps, 12) || !value.time_scale.steps.every((step) => Number.isSafeInteger(step) && step > 0) ||
         value.time_scale.index < 0 || value.time_scale.index >= value.time_scale.steps.length ||
         !["fixed", "procedural", "real_fixed"].includes(value.world_mode) || typeof value.scenario !== "string" ||
-        typeof value.level !== "string" || !boundedArray(value.levels, 8) || !value.levels.every((level) => typeof level === "string") ||
-        !boundedArray(value.scenarios, 8) || !value.scenarios.every((row) => exactKeys(row, ["key", "level"]) &&
-          typeof row.key === "string" && (row.level === null || typeof row.level === "string")) ||
+        !boundedArray(value.difficulty_fields, 32) || !value.difficulty_fields.every((row) =>
+          exactKeys(row, ["name", "kind", "min", "max", "step", "default"]) &&
+          typeof row.name === "string" && ["int", "float"].includes(row.kind) &&
+          Number.isFinite(row.min) && Number.isFinite(row.max) && row.min <= row.max &&
+          Number.isFinite(row.step) && row.step > 0 &&
+          Number.isFinite(row.default) && row.min <= row.default && row.default <= row.max) ||
+        !exactKeys(value.difficulty, value.difficulty_fields.map((row) => row.name)) ||
+        !value.difficulty_fields.every((row) => {
+          const amount = value.difficulty[row.name];
+          return row.kind === "int" ? Number.isInteger(amount) && amount >= row.min && amount <= row.max :
+            Number.isFinite(amount) && amount >= row.min && amount <= row.max;
+        }) ||
+        !boundedArray(value.scenarios, 8) || !value.scenarios.every((row) => exactKeys(row, ["key", "fixed"]) &&
+          typeof row.key === "string" && typeof row.fixed === "boolean") ||
         !boundedArray(value.slots, 8) || !value.slots.every((row) => exactKeys(row, ["slot", "saved", "modified"]) &&
           Number.isSafeInteger(row.slot) && row.slot >= 1 && typeof row.saved === "boolean" &&
           (row.modified === null || Number.isSafeInteger(row.modified)))) throw new Error("protocol");
@@ -5713,13 +5731,12 @@
     dialog.querySelector("button:not(:disabled)")?.focus();
   }
 
-  function syncNewGameLevel() {
+  function syncNewGameDifficulty() {
     const scenario = hostView?.scenarios.find((row) => row.key === $("host-new-scenario").value);
-    const free = scenario?.level === null;
-    $("host-new-level").disabled = !free;
-    $("host-new-scenario-note").textContent = scenario ? t(free ? "host_new_level_free" : "host_new_level_fixed",
-      {level: t(levelText[scenario.level] ?? "unknown")}) : "";
-    if (!free && scenario) $("host-new-level").value = scenario.level;
+    const free = Boolean(scenario) && !scenario.fixed;
+    for (const input of $("host-new-difficulty").querySelectorAll("input")) input.disabled = !free;
+    $("host-new-difficulty-note").textContent = scenario
+      ? t(free ? "host_new_difficulty_free" : "host_new_difficulty_fixed") : "";
   }
 
   function openNewGameDialog() {
@@ -5730,28 +5747,47 @@
       option.value = row.key;
       return option;
     }));
-    $("host-new-level").replaceChildren(...hostView.levels.map((level) => {
-      const option = node("option", t(levelText[level] ?? "unknown"));
-      option.value = level;
-      return option;
+    $("host-new-difficulty").replaceChildren(...hostView.difficulty_fields.map((field) => {
+      const wrapper = node("div", undefined, "field");
+      const inputId = `host-new-difficulty-${field.name}`;
+      const label = node("label", t(`difficulty_${field.name}`));
+      label.htmlFor = inputId;
+      const input = node("input");
+      input.type = "number";
+      input.id = inputId;
+      input.dataset.field = field.name;
+      input.min = String(field.min);
+      input.max = String(field.max);
+      input.step = String(field.step);
+      input.value = String(hostView.difficulty[field.name]);
+      wrapper.append(label, input);
+      return wrapper;
     }));
     $("host-new-scenario").value = hostView.scenario;
     $("host-new-world").value = hostView.world_mode;
-    $("host-new-level").value = hostView.level;
     $("host-new-seed").value = "";
-    syncNewGameLevel();
+    syncNewGameDifficulty();
     renderDisabledReasons();
     dialog.hidden = false;
     if (!dialog.open) dialog.showModal();
     $("host-new-scenario").focus();
   }
 
-  $("host-new-scenario").addEventListener("change", syncNewGameLevel);
+  $("host-new-scenario").addEventListener("change", syncNewGameDifficulty);
   $("host-new-form").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!$("host-new-form").reportValidity()) return;
     const params = {scenario: $("host-new-scenario").value, world_mode: $("host-new-world").value};
-    if (!$("host-new-level").disabled) params.level = $("host-new-level").value;
+    const difficultyInputs = $("host-new-difficulty").querySelectorAll("input");
+    if (difficultyInputs.length && !difficultyInputs[0].disabled) {
+      const difficulty = {};
+      for (const input of difficultyInputs) {
+        const field = hostView.difficulty_fields.find((row) => row.name === input.dataset.field);
+        difficulty[input.dataset.field] = field.kind === "int"
+          ? parseInt(input.value, 10) : Number(input.value);
+      }
+      params.difficulty = difficulty;
+    }
     if ($("host-new-seed").value.trim()) params.seed = $("host-new-seed").valueAsNumber;
     closeHostDialog($("host-new-dialog"));
     sendHostAction("host_new_game", params);

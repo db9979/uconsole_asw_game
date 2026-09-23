@@ -6,8 +6,11 @@ import zlib
 import numpy as np
 import pytest
 
-from tools.gen_contact_analysis_images import (LABEL_COLOR, _plot, check,
-                                               generate, spectral_x)
+from tools.gen_contact_analysis_images import (LABEL_COLOR, PLOT_LEFT,
+                                               PLOT_RIGHT, ROW_COLORS, _plot,
+                                               _radar_plot, check, generate,
+                                               radar_prf_x, radar_spectral_x,
+                                               spectral_x)
 from src.data.contact_analysis import project_contact_catalog
 
 
@@ -35,11 +38,13 @@ def test_two_generations_are_byte_identical_and_manifest_hashes_match(tmp_path):
     assert first_files == second_files
     manifest = json.loads(first_files["manifest.json"])
     assert manifest["version"] == 1
-    assert len(manifest["assets"]) == 228  # +2: new su_25 (Su-25 Frogfoot) profile
+    assert len(manifest["assets"]) == 337  # +109: new radar/ESM fingerprint kind
     assert sum(item["kind"] == "acoustic_cruise"
                for item in manifest["assets"]) == 114
     assert sum(item["kind"] == "acoustic_high"
                for item in manifest["assets"]) == 114
+    assert sum(item["kind"] == "radar"
+               for item in manifest["assets"]) == 109
     assert "silhouette" not in json.dumps(manifest)
     for asset in manifest["assets"]:
         payload = first_files[asset["filename"]]
@@ -199,3 +204,41 @@ def test_generate_and_check_reject_symlinked_assets(tmp_path):
     with pytest.raises(ValueError, match="unsafe output entry"):
         generate(output)
     assert target.read_bytes() == b"outside"
+
+
+def test_radar_axis_helpers_map_the_fixed_ghz_and_prf_bounds_to_the_shared_columns():
+    assert radar_spectral_x(0.5e9) == PLOT_LEFT
+    assert radar_spectral_x(18e9) == PLOT_RIGHT
+    assert radar_prf_x(100.0) == PLOT_LEFT
+    assert radar_prf_x(10_000.0) == PLOT_RIGHT
+    # Out-of-range inputs clamp rather than wrap or extrapolate.
+    assert radar_spectral_x(1e12) == PLOT_RIGHT
+    assert radar_prf_x(0.0) == PLOT_LEFT
+
+
+def test_radar_plot_draws_one_row_per_listed_emitter_and_skips_missing_prf():
+    emitters = [
+        {"frequency_band_hz": [1e9, 2e9], "prf_band_hz": [200, 400]},
+        {"frequency_band_hz": [8e9, 12e9], "prf_band_hz": None},
+        {"frequency_band_hz": [12e9, 18e9], "prf_band_hz": [1000, 5000]},
+    ]
+    pixels = decode(_radar_plot(emitters))
+    row_span = (112 - 10) / len(emitters)
+    for index, emitter in enumerate(emitters):
+        color = ROW_COLORS[index % len(ROW_COLORS)]
+        y0 = 10 + round(row_span * index) + 2
+        y1 = 10 + round(row_span * (index + 1)) - 2
+        x0 = radar_spectral_x(emitter["frequency_band_hz"][0])
+        x1 = radar_spectral_x(emitter["frequency_band_hz"][1])
+        assert np.any(np.all(pixels[y0:y1 + 1, x0:x1 + 1] == color, axis=2)), index
+    # Rows with a PRF band draw their row colour in the bottom panel; the
+    # middle emitter supplies none and must leave that colour entirely absent.
+    assert np.any(np.all(pixels[134:170] == ROW_COLORS[0], axis=2))
+    assert np.any(np.all(pixels[134:170] == ROW_COLORS[2], axis=2))
+    assert not np.any(np.all(pixels[134:170] == ROW_COLORS[1], axis=2))
+
+
+def test_radar_plot_single_emitter_still_produces_one_row():
+    pixels = decode(_radar_plot([{"frequency_band_hz": [8e9, 12e9], "prf_band_hz": [400, 1200]}]))
+    assert np.any(np.all(pixels[10:113] == ROW_COLORS[0], axis=2))
+    assert np.any(np.all(pixels[134:170] == ROW_COLORS[0], axis=2))

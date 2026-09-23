@@ -102,13 +102,13 @@ def test_exact_legacy_literals_work_but_composed_text_is_not_parsed():
 
 def test_structured_messages_retranslate_and_keep_authored_braces_opaque():
     value = message("runtime.mission.started", name=raw_text("{author.name}"),
-                    level=message("level.hard"),
+                    level=message("level.custom"),
                     objective=raw_text("Reach {sector[0]}"))
     json.dumps(value)
     assert localize(value, Translator("en").t) == \
-        "Mission: {author.name} (Hard) - Reach {sector[0]}"
+        "Mission: {author.name} (Custom) - Reach {sector[0]}"
     assert localize(value, Translator("de").t) == \
-        "Mission: {author.name} (Hart) - Reach {sector[0]}"
+        "Mission: {author.name} (Individuell) - Reach {sector[0]}"
 
 
 def test_raw_text_bypasses_catalog_literals():

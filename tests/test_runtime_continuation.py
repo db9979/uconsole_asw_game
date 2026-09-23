@@ -51,10 +51,8 @@ def game():
     game.torpedoes = [Torpedo(game.ship.x, game.ship.y, 90, 80, sub, 1,
                               guidance_x=game.ship.x + 8,
                               guidance_y=game.ship.y, profile=profile,
-                              kill_dist_nm=weapon[
-                                  "kill_dist_nm_by_level"][game.level],
-                              kill_depth_m=weapon[
-                                  "kill_depth_m_by_level"][game.level])]
+                              kill_dist_nm=game.difficulty["kill_dist_nm"],
+                              kill_depth_m=game.difficulty["kill_depth_m"])]
     game.torpedo_seq = 1
     game.torpedoes[0].break_wire()
     game.torpedoes[0].terminal_active = True

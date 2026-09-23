@@ -261,7 +261,6 @@ def test_custom_objective_and_start_feed_ignore_random_mission_type(
     definition = default_mission("user.objective")
     definition["name"] = "Saved"
     definition["objective"]["type"] = objective_type
-    game.level = "normal"
 
     assert game.start_custom_mission(definition)
     game.mission.type_key = retained_type
@@ -273,9 +272,9 @@ def test_custom_objective_and_start_feed_ignore_random_mission_type(
     assert localize(objective, Translator("en").t) == english
     assert localize(objective, Translator("de").t) == german
     assert localize(started, Translator("en").t) == \
-        f"Mission: Saved (Normal) - {english}"
+        f"Mission: Saved (Custom) - {english}"
     assert localize(started, Translator("de").t) == \
-        f"Mission: Saved (Normal) - {german}"
+        f"Mission: Saved (Individuell) - {german}"
     assert game.messages[-1][1]["__u_jagd_i18n__"] == "runtime.hq.threat_unknown"
 
 

@@ -33,12 +33,12 @@ from src.commander.voice import PCM_BYTES as VOICE_PCM_BYTES, VoicePeer, read_fr
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
                              HELO_DIP_DEPTH_MIN_M, HELO_DIP_DEPTH_MAX_M,
-                             LEVEL_ORDER, SAVE_SLOTS, SCENARIO_ORDER)
+                             DIFFICULTY_FIELDS, SAVE_SLOTS, SCENARIO_ORDER)
 _log = logging.getLogger(__name__)
 _CONNECTION_DEADLINE_S = 3.0
 _CONTACT_ASSET_ROUTE = re.compile(
-    r"/contact-analysis/[a-z0-9][a-z0-9_.-]{0,95}-(?:cruise|high)\.png").fullmatch
-_MAX_PREBUILT_ROUTES = 256  # 2 PNG routes/profile + 1 JSON route; headroom above the current catalog size
+    r"/contact-analysis/[a-z0-9][a-z0-9_.-]{0,95}-(?:cruise|high|radar)\.png").fullmatch
+_MAX_PREBUILT_ROUTES = 512  # 3 PNG routes/profile + 1 JSON route; headroom above the current catalog size
 _MAX_PREBUILT_FILE_BYTES = 4 * 1024 * 1024
 _MAX_PREBUILT_BYTES = 32 * 1024 * 1024
 _V2_COOKIE = "ujagd_remote_v2"
@@ -344,15 +344,28 @@ def _instructor_environment_params(params):
 def _new_game_params(params):
     required = {"scenario", "world_mode"}
     if (type(params) is not dict or not required <= set(params)
-            or not set(params) <= required | {"level", "seed"}):
+            or not set(params) <= required | {"difficulty", "seed"}):
         return False
-    return (type(params["scenario"]) is str and params["scenario"] in SCENARIO_ORDER
+    if not (type(params["scenario"]) is str and params["scenario"] in SCENARIO_ORDER
             and type(params["world_mode"]) is str
             and params["world_mode"] in ("fixed", "procedural", "real_fixed")
-            and ("level" not in params or type(params["level"]) is str
-                 and params["level"] in LEVEL_ORDER)
             and ("seed" not in params or type(params["seed"]) is int
-                 and 1 <= params["seed"] < 1_000_000_000))
+                 and 1 <= params["seed"] < 1_000_000_000)):
+        return False
+    if "difficulty" not in params:
+        return True
+    difficulty = params["difficulty"]
+    if type(difficulty) is not dict or set(difficulty) != set(DIFFICULTY_FIELDS):
+        return False
+    for name, (kind, low, high, _step, _default) in DIFFICULTY_FIELDS.items():
+        amount = difficulty[name]
+        if kind is int:
+            if type(amount) is not int or not low <= amount <= high:
+                return False
+        elif (type(amount) not in (int, float) or isinstance(amount, bool)
+                or not math.isfinite(amount) or not low <= amount <= high):
+            return False
+    return True
 
 
 _HOST_ANY = frozenset({"live", "paused"})

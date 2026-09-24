@@ -215,6 +215,12 @@ LOOKOUT_SEA_STATE_LOSS = 0.08
 LOOKOUT_BEARING_ERR_DEG = 0.6
 LOOKOUT_RANGE_ERR_FRAC = 0.06
 LOOKOUT_EPOCH_S = 0.5
+# Land in sight: day/clear range of a coast with 50 m hills, checked on a
+# slow cadence; a landmass is reported again only after it dropped out of
+# sight.
+LOOKOUT_LAND_RANGE_NM = 20.0
+LOOKOUT_LAND_CHECK_S = 10.0
+LOOKOUT_REPORTS_MAX = 24
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
 PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG",
                   "FLUGZEUG")
@@ -685,6 +691,7 @@ FEED_CATEGORIES = {
     "schaden": (COLOR_DANGER, "SCH"),
     "mission": (COLOR_CONTACT, "MIS"),
     "welt": (COLOR_TEXT_DIM, "WET"),
+    "ausguck": (COLOR_CONTACT, "AUSG"),
 }
 FEED_MAX_ENTRIES = 200
 

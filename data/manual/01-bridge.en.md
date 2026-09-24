@@ -30,6 +30,16 @@ Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) sh
 - **Tactical picture:** observed threats (for example a torpedo bearing or missile threat), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night.
 - **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. Wheel or `Q`/`E` zoom, drag pans, `K` follows own ship.
 
+## Bridge lookout reports {#bridge-lookout}
+
+The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". A contact is reported in up to three steps as it closes, each step once:
+
+- **Sighted:** only the kind of object is clear (vessel, aircraft, small object on the surface).
+- **Class:** the silhouette shows the class, for example merchant ship, warship, aircraft carrier, fishing vessel, speedboat, surfaced submarine, airliner or military aircraft.
+- **Type:** close in the lookout names the type: cargo ship, tanker, passenger ship, tug, frigate, destroyer, corvette or combat aircraft; warships and military aircraft also with their class name. Merchant ships and airliners are identified by name, AIS or transponder, not by eye, so the lookout never reports their name or airliner type.
+
+Class and type need a finer resolved silhouette than the sighting (Johnson criteria): by clear day a tanker is classed at about 7 NM and a frigate identified at about 4 NM, a speedboat is classed only inside 3 NM, and at night the type is made out only within a few cables. Fog, rain and sea state shorten every step. The lookout also calls "land in sight" with the bearing of the nearest coast, and a torpedo wake with a banner. The class is held while the lookout keeps the contact. It appears in the chart and OPZ tooltips as "Lookout: ..." and is an observation only: it never sets the OPZ classification or the affiliation.
+
 ## Keys {#bridge-keys}
 
 <!-- keys:bridge -->
@@ -61,4 +71,5 @@ Combat situation:
 ## Not modelled {#bridge-limits}
 
 - No time acceleration and no autopilot waypoints for the frigate.
-- No separate torpedo alarm procedure: incoming torpedoes appear as sonar contacts and in the tactical picture only when observed.
+- No separate torpedo alarm procedure: incoming torpedoes appear as sonar contacts and in the tactical picture only when observed; the lookout calls out only a visible wake.
+- The lookout never reads a ship's name or flag and does not report navigation lights or day shapes.

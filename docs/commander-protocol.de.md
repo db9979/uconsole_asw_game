@@ -96,6 +96,14 @@ höchstens neun Strahlen zu 64 Punkten und einem begrenzten, daraus berechneten
 Schattenraster. Die Helikopterrolle erhält zusätzlich abgeleitete Freigaben für
 Start und Tauchsonar sowie den Querwind; verborgener Luftfahrzeug- oder
 Wetterzustand und das wahre Meeresprofil werden nicht übertragen.
+Taktische Beobachtungszeilen tragen `visual_class` und `visual_type`: null
+außer bei Meldungen des Brückenausgucks, dort die erkannte Klasse (feste
+Codeliste) und nach der Identifizierung der Katalog-Typname eines Kriegsschiffs
+oder Militärflugzeugs. Das sind Beobachtungen, nie die Klassifizierung oder
+Zugehörigkeit des Bedieners. Die Brückenrolle erhält zusätzlich `sightings`, die
+neuesten 24 Ausguck-Meldungen (Zeit, gesichtete Art oder Klassencode, Typ,
+Peilung, Entfernung); Handelsschiffnamen und Identitäten des Live-Verkehrs sind
+nie enthalten.
 Die Autocrew-Projektion jeder Rolle enthält ausschließlich deren Aktivierung und
 Status. Zugangsdaten, Leases und Autocrew-Befehle gehören nicht zur Projektion.
 

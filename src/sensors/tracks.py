@@ -96,6 +96,11 @@ class TrackPicture:
         self.maximum = maximum
         self._tracks: dict[str, SensorTrack] = {}
 
+    def current(self, track_id: str, now: float) -> SensorTrack | None:
+        """The live (not yet stale) track with this ID, if any."""
+        track = self._tracks.get(track_id)
+        return None if track is None or track.age(now) > self.stale_s else track
+
     @staticmethod
     def _measurement_policy(source: str) -> tuple[float, float]:
         """Return source cadence and smoothing time, both in simulation seconds."""

@@ -39,6 +39,7 @@ from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
 from src.sensors import radar as radar_physics
 from src.sensors import visual as visual_physics
+from src.sensors import lookout_id
 from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
@@ -267,7 +268,8 @@ CIWS_TRACK_RANGE_NM = 3.0
 # Koschmieder lookout model anchored to the 1.0.0 day/calm/clear ranges.
 LOOKOUT_MODEL = visual_physics.LookoutModel(
     {"SURFACE": config.LOOKOUT_SURFACE_RANGE_NM, "SUB": config.LOOKOUT_SUB_RANGE_NM,
-     "FLG": config.LOOKOUT_AIR_RANGE_NM, "TORP": TORPEDO_WAKE_VISIBLE_NM},
+     "FLG": config.LOOKOUT_AIR_RANGE_NM, "TORP": TORPEDO_WAKE_VISIBLE_NM,
+     "LAND": config.LOOKOUT_LAND_RANGE_NM},
     config.WEATHER_VISIBILITY_MAX_NM)
 
 
@@ -630,6 +632,7 @@ class Game:
         self.opz_range_nm = config.RADAR_RANGE_DEFAULT_NM
         self.roe = config.ROE_DEFAULT                # "STD" | "FREE"
         self.messages: list = []                     # Funkraum-Teletype
+        self._reset_lookout_reports()
         self.dmg_cursor = 0
         self.dmg_team = 1
         self.helo = Helicopter(
@@ -3912,19 +3915,29 @@ class Game:
         """Illuminated lunar fraction."""
         return visual_physics.moon_illumination(self.lunar_age_days())
 
+    def _reset_lookout_reports(self) -> None:
+        """Transient bridge-lookout report log (like the feed, never saved)."""
+        self.lookout_reports: list[dict] = []
+        self._lookout_land_seen: set[int] = set()
+        self._lookout_land_epoch: int | None = None
+
+    def _lookout_environment(self) -> dict:
+        return dict(
+            visibility_nm=getattr(self.world, "visibility_nm",
+                                  config.WEATHER_VISIBILITY_MAX_NM),
+            night=self.world.is_night(), illumination=self.moon_illumination(),
+            sea_state=getattr(self.world, "effective_sea_state", self.world.sea_state))
+
     def _lookout_observe(self, actor, namespace: str, kind: str,
-                         seed: int, altitude_m: float | None = None) -> None:
+                         seed: int, altitude_m: float | None = None,
+                         classes: tuple | None = None) -> None:
         import random
 
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
         distance = math.hypot(dx, dy)
-        margin = LOOKOUT_MODEL.margin(
-            kind, distance,
-            visibility_nm=getattr(self.world, "visibility_nm",
-                                  config.WEATHER_VISIBILITY_MAX_NM),
-            night=self.world.is_night(), illumination=self.moon_illumination(),
-            sea_state=getattr(self.world, "effective_sea_state", self.world.sea_state),
-            altitude_m=altitude_m)
+        environment = self._lookout_environment()
+        margin = LOOKOUT_MODEL.margin(kind, distance, altitude_m=altitude_m,
+                                      **environment)
         if (margin < 1.0 or self.world.land_blocks_line(
                 self.ship.x, self.ship.y, actor.x, actor.y)):
             return
@@ -3939,14 +3952,124 @@ class Game:
         # Contrast margin: just above threshold is a doubtful sighting.
         quality = config.clamp(.5 + .45 * (1.0 - 1.0 / margin), .5, .95)
         identity = getattr(actor, "id", getattr(actor, "seq", 0))
-        self.air_picture.observe(
-            track_id="L-" + self._observation_key(namespace, identity),
+        track_id = "L-" + self._observation_key(namespace, identity)
+        # Johnson criteria: the class needs a finer resolved silhouette than
+        # the sighting, the type finer still.  A class once made out is held
+        # while the lookout keeps the contact.
+        level = lookout_id.DETECTED
+        recognized = identified = type_key = None
+        if classes is not None:
+            recognized, identified, type_key = classes
+            if LOOKOUT_MODEL.margin(
+                    kind, distance, altitude_m=altitude_m,
+                    detail=lookout_id.RECOGNIZE_CYCLES / lookout_id.CLASS_SIZE[recognized],
+                    **environment) >= 1.0:
+                level = lookout_id.RECOGNIZED
+                if LOOKOUT_MODEL.margin(
+                        kind, distance, altitude_m=altitude_m,
+                        detail=lookout_id.IDENTIFY_CYCLES / lookout_id.CLASS_SIZE[identified],
+                        **environment) >= 1.0:
+                    level = lookout_id.IDENTIFIED
+        previous = self.air_picture.current(track_id, self.sim_t)
+        previous_level = (lookout_id.decode(previous.label)[0]
+                          if previous is not None and previous.source == "LOOKOUT" else -1)
+        level = max(level, previous_level)
+        label = lookout_id.encode(level, recognized, identified, type_key)
+        track = self.air_picture.observe(
+            track_id=track_id,
             kind=kind, target_id=0, source="LOOKOUT",
             bearing=measured_bearing, range_nm=measured_range,
             observer_x=self.ship.x, observer_y=self.ship.y, course=None,
-            quality=quality, now=self.sim_t, label="VISUAL",
+            quality=quality, now=self.sim_t, label=label,
             bearing_uncertainty_deg=(config.LOOKOUT_BEARING_ERR_DEG
                                      / math.sqrt(3.0)))
+        # One report per new sighting and per step up in recognition; a call
+        # inside the same measurement epoch leaves the track unchanged.
+        if level > previous_level and track.label == label:
+            self._lookout_report(kind, label, measured_bearing, measured_range)
+
+    def lookout_report_text(self, report: dict):
+        """Localizable report line: 'Bridge lookout: frigate bearing 040, 3.8 NM'."""
+        return message("lookout.report", what=self.lookout_report_what(report),
+                       bearing=f"{report['bearing']:03.0f}",
+                       range=f"{report['range_nm']:.1f}")
+
+    def lookout_report_what(self, report: dict):
+        if report["code"] is None:
+            return message(f"lookout.detect.{report['kind'].lower()}")
+        what = message(f"lookout.class.{report['code'].lower()}")
+        if report["type_name"]:
+            what = message("lookout.with_type", what=what,
+                           type=raw_text(report["type_name"]))
+        return what
+
+    def lookout_visual_what(self, label):
+        """What the lookout reported for a visual track label, or None."""
+        _level, code, type_key = lookout_id.decode(label)
+        if code is None:
+            return None
+        return self.lookout_report_what(dict(
+            kind=None, code=code, type_name=self.lookout_type_name(type_key)))
+
+    def lookout_type_name(self, type_key: str | None) -> str | None:
+        if type_key is None:
+            return None
+        profile = (self.runtime_catalog.surfaces.get(type_key)
+                   or self.runtime_catalog.aircraft.get(type_key))
+        return None if profile is None else str(profile.name)
+
+    def _lookout_report(self, kind: str, label: str, bearing: float,
+                        range_nm: float) -> None:
+        level, code, type_key = lookout_id.decode(label)
+        report = dict(t=self.sim_t, stamp=self.world.format_time(), kind=kind,
+                      level=level, code=code,
+                      type_name=self.lookout_type_name(type_key),
+                      bearing=bearing % 360.0, range_nm=range_nm)
+        self.lookout_reports.append(report)
+        del self.lookout_reports[:-config.LOOKOUT_REPORTS_MAX]
+        text = self.lookout_report_text(report)
+        if kind in ("TORP", "SUB") and level > lookout_id.DETECTED:
+            self.announce(text, "ausguck", 4.0)
+        else:
+            self.feed.add(self.world.format_time(), "ausguck", text)
+
+    def _update_lookout_land(self) -> None:
+        """'Land in sight': nearest coast of each landmass on a slow cadence."""
+        epoch = math.floor((self.sim_t + 1e-9) / config.LOOKOUT_LAND_CHECK_S)
+        if epoch == self._lookout_land_epoch:
+            return
+        self._lookout_land_epoch = epoch
+        environment = self._lookout_environment()
+        horizon = visual_physics.optical_horizon_nm(
+            visual_physics.LOOKOUT_EYE_HEIGHT_M, visual_physics.TARGET_HEIGHT_M["LAND"])
+        ox, oy = self.ship.x, self.ship.y
+        seen = set()
+        for index, landmass in enumerate(self.world.coast.landmasses):
+            left, top, right, bottom = landmass.bounds
+            if (max(left - ox, 0.0, ox - right) > horizon
+                    or max(top - oy, 0.0, oy - bottom) > horizon):
+                continue
+            best = None
+            points = landmass.points
+            for position, first in enumerate(points):
+                second = points[(position + 1) % len(points)]
+                sx, sy = second[0] - first[0], second[1] - first[1]
+                length = sx * sx + sy * sy
+                along = (0.0 if length <= 1e-12 else max(0.0, min(1.0, (
+                    (ox - first[0]) * sx + (oy - first[1]) * sy) / length)))
+                px, py = first[0] + sx * along, first[1] + sy * along
+                distance = math.hypot(px - ox, py - oy)
+                if best is None or distance < best[0]:
+                    best = (distance, px, py)
+            if best is None or LOOKOUT_MODEL.margin(
+                    "LAND", best[0], **environment) < 1.0:
+                continue
+            seen.add(index)
+            if index not in self._lookout_land_seen:
+                bearing = math.degrees(math.atan2(best[1] - ox, -(best[2] - oy))) % 360.0
+                self._lookout_report("LAND", lookout_id.encode(
+                    lookout_id.RECOGNIZED, "LAND", "LAND", None), bearing, best[0])
+        self._lookout_land_seen = seen
 
     def _update_lookout_picture(self) -> None:
         """Publish bounded visual fixes without correlating sensor identities."""
@@ -3959,32 +4082,41 @@ class Game:
                         and math.hypot(torpedo.x - self.ship.x, torpedo.y - self.ship.y)
                         <= TORPEDO_WAKE_VISIBLE_NM):
                     self._lookout_observe(torpedo, "torpedo-wake", "TORP",
-                                          torpedo.id)
+                                          torpedo.id, classes=("TORPEDO_WAKE",
+                                                               "TORPEDO_WAKE", None))
         for actor in sorted(self.civilians + self.warships,
                             key=lambda item: item.id):
             if not actor.sunk:
                 self._lookout_observe(
-                    actor, "surface", "SURFACE", actor.sensor_seed)
+                    actor, "surface", "SURFACE", actor.sensor_seed,
+                    classes=lookout_id.surface_classes(getattr(actor, "profile", None)))
         for actor in sorted(self.subs, key=lambda item: item.id):
             if (not actor.sunk and actor.state != "SINKING"
                     and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):
-                self._lookout_observe(actor, "sub", "SUB", actor.sensor_seed)
+                self._lookout_observe(actor, "sub", "SUB", actor.sensor_seed,
+                                      classes=("SUBMARINE", "SUBMARINE", None))
         for actor in sorted(self.flights.flights, key=lambda item: item.seq):
             if actor.active:
                 self._lookout_observe(
                     actor, "flight", "FLG", actor.sensor_seed + 200_000,
-                    altitude_m=actor.altitude_m)
+                    altitude_m=actor.altitude_m,
+                    classes=lookout_id.aircraft_classes(
+                        getattr(actor, "kind", "military"), getattr(actor, "akey", None)))
         for actor in sorted(self.raiders, key=lambda item: item.seq):
             if not actor.despawned and actor.hp > 0:
                 self._lookout_observe(
                     actor, "raider", "FLG", actor.seq + 400_000,
-                    altitude_m=getattr(actor, "altitude_m", 0.0))
+                    altitude_m=getattr(actor, "altitude_m", 0.0),
+                    classes=lookout_id.aircraft_classes("military", None))
         for actor in sorted(self.live_traffic.aircraft.values(),
                             key=lambda item: item.seq):
             if not actor.despawned:
                 self._lookout_observe(
                     actor, "live_air", "FLG", actor.seq + 800_000,
-                    altitude_m=getattr(actor, "altitude_m", 0.0))
+                    altitude_m=getattr(actor, "altitude_m", 0.0),
+                    # Indistinguishable from simulated civil traffic.
+                    classes=lookout_id.aircraft_classes("civil", None))
+        self._update_lookout_land()
 
     def _update_air_picture(self, full_scan: bool = False) -> None:
         """Create noisy observations; consumers never receive world objects.
@@ -4207,7 +4339,8 @@ class Game:
                 hostile=t.hostile, jamming=t.jamming,
                 age=t.age(self.sim_t), position_seen=t.position_seen,
                 bearing_uncertainty_deg=t.bearing_uncertainty_deg,
-                altitude_m=t.altitude_m))
+                altitude_m=t.altitude_m,
+                visual=t.label if t.source == "LOOKOUT" else None))
         return tracks
 
     def _opz_observation_id(self, namespace: str, identity: object) -> str:
@@ -4262,7 +4395,8 @@ class Game:
                 track.quality, track.last_seen,
                 self.opz_track_label(observation_id, observation_id[-6:]), classification,
                 track.bearing_uncertainty_deg, track.position_seen, track.jamming,
-                speed_kn=derived_speed, altitude_m=track.altitude_m)
+                speed_kn=derived_speed, altitude_m=track.altitude_m,
+                visual=track.label if track.source == "LOOKOUT" else None)
             observations.append(observation)
             bindings[observation_id] = track
         self._opz_source_bindings = bindings
@@ -7768,6 +7902,7 @@ class Game:
         self._slow_acc = schedulers["slow"]
         self.torpedo_seq = data["torpedo_seq"]
         self.messages = [tuple(m) for m in data["messages"]]
+        self._reset_lookout_reports()
         self.buoys = []
         self.buoy_seq = data["buoy_seq"]
         self.helo_buoy_mode = "PASSIVE"
@@ -8583,7 +8718,8 @@ class Game:
                     or row["x"] is None or row["y"] is None
                     or row["course"] is not None
                     or row.get("raw_course") is not None
-                    or row["label"] != "VISUAL"
+                    or not lookout_id.valid_label(
+                        row["label"], lookout_id.type_keys(runtime_catalog))
                     or row.get("hostile") is not False
                     or row.get("jamming") is not False):
                 return False

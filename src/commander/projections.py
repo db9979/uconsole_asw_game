@@ -38,6 +38,19 @@ def _age(now, stamp):
     return now - stamp if stamp is not None and 0 <= stamp <= now else None
 
 
+_SIGHTINGS_MAX = config.LOOKOUT_REPORTS_MAX
+
+
+def _sightings(game):
+    """Bridge-lookout reports, newest first; codes are localized in the browser."""
+    return [dict(time=str(row["stamp"])[:8],
+                 sighted=row["kind"] if row["code"] is None else None,
+                 code=row["code"],
+                 type=None if row["type_name"] is None else str(row["type_name"])[:80],
+                 bearing=_number(row["bearing"]), range_nm=_number(row["range_nm"]))
+            for row in reversed(getattr(game, "lookout_reports", [])[-_SIGHTINGS_MAX:])]
+
+
 def _own_navigation(game):
     ship = game.ship
     return {key: _number(getattr(ship, key)) for key in (
@@ -55,7 +68,8 @@ def _observation(row, fields):
 _TACTICAL_FIELDS = ("ref", "label", "domain", "source", "affiliation",
                     "bearing", "range_nm", "x", "y", "course", "speed_kn",
                     "altitude_m", "observer_x", "observer_y", "quality",
-                    "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm")
+                    "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
+                    "visual_class", "visual_type")
 _SONAR_FIELDS = ("ref", "label", "source", "classification", "bearing",
                  "range_nm", "x", "y", "depth_m", "course", "speed_kn",
                  "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg",
@@ -829,7 +843,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                          tactical_summary=[_observation(row, _TACTICAL_FIELDS)
                                            for row in rows
                                           if row["source"] not in ("ESM", "FUSION")
-                                          and not row["source"].startswith("SONAR")]),
+                                          and not row["source"].startswith("SONAR")],
+                        sightings=_sightings(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),
         "weapons": _weapons(game, rows, target_ref, asset_refs,
                             direct_fire_refs["weapons"]),

@@ -37,6 +37,7 @@ TARGET_HEIGHT_M = {
     "SUB": 3.0,        # sail/periscope and wake of a surfaced boat
     "FLG": 6.0,        # apparent size of an aircraft
     "TORP": 1.0,       # bubble track
+    "LAND": 50.0,      # coastal hills and cliffs
 }
 
 
@@ -97,15 +98,20 @@ class LookoutModel:
 
     def margin(self, kind: str, range_nm: float, *, visibility_nm: float,
                night: bool, illumination: float, sea_state: float,
-               altitude_m: float | None = None) -> float:
-        """Apparent contrast over threshold (>= 1 means seen)."""
+               altitude_m: float | None = None, detail: float = 1.0) -> float:
+        """Apparent contrast over threshold (>= 1 means seen).
+
+        ``detail`` > 1 asks for a finer resolved feature (Johnson cycles
+        over relative target size): the resolved height shrinks by that
+        factor, the horizon still belongs to the whole target."""
         height = TARGET_HEIGHT_M[kind]
         top = height if altitude_m is None else max(height, altitude_m)
         if range_nm > optical_horizon_nm(LOOKOUT_EYE_HEIGHT_M, top):
             return 0.0
-        eps = threshold(height, range_nm)
-        if kind != "FLG":
-            # Aircraft are seen against the sky, not the whitecaps.
+        eps = threshold(height / max(detail, 1e-6), range_nm)
+        if kind not in ("FLG", "LAND"):
+            # Aircraft are seen against the sky, land above the horizon,
+            # not against the whitecaps.
             eps *= 1.0 + SEA_CLUTTER_PER_STATE * max(0.0, sea_state)
         if night:
             eps *= self.night_factor(illumination)

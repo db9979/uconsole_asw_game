@@ -45,6 +45,9 @@ def _collect_states():
     for actor in game.civilians[:3] + game.warships[:2]:
         actor.x, actor.y = game.ship.x + 8.0, game.ship.y + 3.0
         actor.emitter = True
+    # Close enough for the bridge lookout to classify and identify them.
+    game.civilians[0].x, game.civilians[0].y = game.ship.x + 2.0, game.ship.y
+    game.civilians[1].x, game.civilians[1].y = game.ship.x - 2.0, game.ship.y
     sub = game.subs[0]
     sub.x, sub.y = game.ship.x + 25.0, game.ship.y
     game.launch_helicopter()
@@ -84,6 +87,10 @@ def _collect_states():
         if step % 20 == 0:
             pump()
     assert game.eloka_tracks() and game.buoys
+    bridge_states = [sample["bridge"]["bridge"] for sample in samples[1:]]
+    assert any(row["visual_class"] for state in bridge_states
+               for row in state["tactical_summary"])
+    assert any(row["code"] for state in bridge_states for row in state["sightings"])
     assert all(sample["sonar"]["weather_station"]["profile"] is not None
                for sample in samples[2:])
     return samples

@@ -30,6 +30,16 @@ Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt d
 - **Taktische Lage:** beobachtete Bedrohungen (z. B. Torpedopeilung oder Flugkörperbedrohung), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht.
 - **Karte:** synthetische Kartentiefe und Küste, eigenes Schiff, von anderen Stationen veröffentlichte Tracks. Mausrad oder `Q`/`E` zoomen, Ziehen verschiebt, `K` folgt dem eigenen Schiff.
 
+## Ausguck-Meldungen {#bridge-lookout}
+
+Der Brückenausguck (Augenhöhe 18 m, Fernglas 7x50) meldet seine Sichtungen im Ereignis-Feed als `AUSG`-Zeilen, zum Beispiel `Brücke/Ausguck: Fregatte (Admiral-Gorshkov-Fregatte) in 040°, 3.8 sm`. Die Remote-Crew-Brücke zeigt dieselben Meldungen unter „Ausguck-Meldungen“. Ein Kontakt wird beim Näherkommen in bis zu drei Stufen gemeldet, jede Stufe einmal:
+
+- **Gesichtet:** nur die Art des Objekts ist klar (Fahrzeug, Luftfahrzeug, kleines Objekt an der Wasseroberfläche).
+- **Klasse:** die Silhouette zeigt die Klasse, zum Beispiel Handelsschiff, Kriegsschiff, Flugzeugträger, Fischereifahrzeug, Speedboot, aufgetauchtes U-Boot, Verkehrsflugzeug oder Militärflugzeug.
+- **Typ:** auf kurze Entfernung nennt der Ausguck den Typ: Frachter, Tanker, Passagierschiff, Schlepper, Fregatte, Zerstörer, Korvette oder Kampfflugzeug; Kriegsschiffe und Militärflugzeuge zusätzlich mit ihrem Klassennamen. Handelsschiffe und Verkehrsflugzeuge werden über Namen, AIS oder Transponder identifiziert, nicht mit dem Auge; der Ausguck meldet deshalb nie ihren Namen oder den Flugzeugtyp.
+
+Klasse und Typ brauchen eine feiner aufgelöste Silhouette als die Sichtung (Johnson-Kriterien): an einem klaren Tag wird ein Tanker auf etwa 7 sm klassifiziert und eine Fregatte auf etwa 4 sm identifiziert, ein Speedboot erst innerhalb von 3 sm klassifiziert, und nachts ist der Typ nur auf wenige Kabellängen erkennbar. Nebel, Regen und Seegang verkürzen jede Stufe. Der Ausguck meldet außerdem „Land in Sicht“ mit der Peilung der nächsten Küste und eine Torpedolaufbahn mit Banner. Die Klasse bleibt erhalten, solange er den Kontakt hält. Sie erscheint in den Tooltips von Karte und OPZ als „Ausguck: …“ und ist nur eine Beobachtung: Sie setzt weder die OPZ-Klassifizierung noch die Zugehörigkeit.
+
 ## Tasten {#bridge-keys}
 
 <!-- keys:bridge -->
@@ -61,4 +71,5 @@ Gefechtslage:
 ## Nicht modelliert {#bridge-limits}
 
 - Keine Zeitraffung und keine Autopilot-Wegpunkte für die Fregatte.
-- Kein eigener Torpedoalarm-Ablauf: anlaufende Torpedos erscheinen nur als Sonarkontakt und in der taktischen Lage, wenn sie beobachtet werden.
+- Kein eigener Torpedoalarm-Ablauf: anlaufende Torpedos erscheinen nur als Sonarkontakt und in der taktischen Lage, wenn sie beobachtet werden; der Ausguck meldet nur eine sichtbare Laufbahn.
+- Der Ausguck liest weder Schiffsnamen noch Flagge und meldet keine Lichter oder Signalkörper.

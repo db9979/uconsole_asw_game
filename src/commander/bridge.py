@@ -76,6 +76,7 @@ from src.sonar.sonar import SonarSystem
 from src.core import config
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
+from src.sensors import lookout_id
 from src.commander.server import (HOST_ROLE, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, _json_bytes)
 from src.commander.projections import (ROLE_NAMES, build_role_states, known_chart,
@@ -571,6 +572,13 @@ def _age(now, timestamp):
     return now - stamp if stamp is not None and 0 <= stamp <= now else None
 
 
+def _visual(game, label):
+    """Lookout class/type of a visual report; None for every other source."""
+    _level, code, type_key = lookout_id.decode(label)
+    name = game.lookout_type_name(type_key) if code is not None else None
+    return dict(visual_class=code, visual_type=None if name is None else name[:80])
+
+
 def _fresh(now, timestamp, lifetime):
     age = _age(now, timestamp)
     return age is not None and age <= lifetime
@@ -827,7 +835,9 @@ class CommanderBridge:
                         quality=_number(track.display_quality(game.sim_t, lifetime)),
                        age_s=_age(game.sim_t, track.last_seen), fix_age_s=fix_age,
                        bearing_uncertainty_deg=_number(track.bearing_uncertainty_deg),
-                         range_uncertainty_nm=None, fixes=[], can_classify=contact is not None,
+                         range_uncertainty_nm=None,
+                         **_visual(game, getattr(track, "visual", None)),
+                         fixes=[], can_classify=contact is not None,
                          can_propose=contact is not None, _opz=key in opz_ids)
             dip_report = source in ("SONAR-DIP-BRG", "SONAR-DIPPING")
             buoy_report = source.startswith("SONAR-BUOY-")

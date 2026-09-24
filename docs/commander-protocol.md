@@ -86,7 +86,13 @@ stale flag, layer, depths and speeds, SOFAR axis or null, CZ bands) with at most
 nine rays of 64 points and a bounded shadow grid computed from it. The
 Helicopter role additionally receives derived launch/dipping safety booleans and
 crosswind; no role receives hidden aircraft or weather state, and no true ocean
-profile. Each role's Autocrew projection contains only that
+profile. Tactical observation rows carry `visual_class` and `visual_type`:
+null except on bridge-lookout reports, where they hold the class the lookout
+made out (a fixed code list) and, once identified, a warship's or military
+aircraft's catalog type name. They are observations, never the operator
+classification or affiliation. The Bridge role additionally receives `sightings`, the newest
+24 lookout reports (time, sighted kind or class code, type, bearing, range);
+merchant names and live-traffic identities are never included. Each role's Autocrew projection contains only that
 role's enabled flag and status. Credentials, leases and Autocrew commands are
 not part of this projection.
 

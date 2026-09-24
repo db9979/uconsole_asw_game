@@ -128,6 +128,9 @@ def map_hit_target(game, pos):
                 message("map.tooltip.range", range=f"{distance:.1f}"),
                 message("map.tooltip.source_quality_age", source=track["source"],
                         quality=f"{track.get('quality', 0):.0%}", age=f"{track.get('age', 0):.0f}"),
+                (message("lookout.tooltip", what=game.lookout_visual_what(track["visual"]))
+                 if track.get("visual") and game.lookout_visual_what(track["visual"]) is not None
+                 else None),
                 *chart_lines,
                 target_id=f"map-track:{track['track_id']}")
     ship_point = view.world_to_screen(game.ship.x, game.ship.y)

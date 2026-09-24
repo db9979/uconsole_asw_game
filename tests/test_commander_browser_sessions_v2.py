@@ -928,7 +928,8 @@ def _direct_fire_browser_states():
                       bearing_uncertainty_deg=1.0, range_uncertainty_nm=.2)
     tactical_row = {key: value for key, value in weapon_row.items()
                     if key not in {"classification", "depth_m", "fix_age_s"}}
-    tactical_row.update(observer_x=250.0, observer_y=250.0, altitude_m=None)
+    tactical_row.update(observer_x=250.0, observer_y=250.0, altitude_m=None,
+                       visual_class=None, visual_type=None)
     weapons = dict(common, role="weapons", weapons=dict(
         inventory=dict(torpedoes=4, vls=8, ciws=200, aa=40,
                        chaff_ready=True, nixies=2),
@@ -988,7 +989,7 @@ def _direct_fire_browser_states():
         teams=[dict(team=1, compartment=None), dict(team=2, compartment="engine")],
         total=15.0, sunk=False))
     bridge = dict(common, role="bridge", bridge=dict(
-        navigation=navigation, tactical_summary=[],
+        navigation=navigation, tactical_summary=[], sightings=[],
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
                     noise=.8, cavitating=False),
         threat=dict(observations=[], count=0, average_flood=0.0),
@@ -1094,7 +1095,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             "range_nm", "x", "y", "course", "speed_kn", "quality", "age_s",
             "bearing_uncertainty_deg", "range_uncertainty_nm")}
         result.update(observer_x=legacy["ownship"]["x"],
-                      observer_y=legacy["ownship"]["y"], altitude_m=None)
+                      observer_y=legacy["ownship"]["y"], altitude_m=None,
+                      visual_class=None, visual_type=None)
         return result
 
     def sonar_row(row):
@@ -1130,6 +1132,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             common[role]["orders"] = {"station_down": False, "speed_max_kn": 25,
                                       "telegraph": "HALF", "noise": .2,
                                       "cavitating": False}
+            common[role]["sightings"] = []
             common[role]["threat"] = {"observations": [], "count": 0,
                                        "average_flood": 0.0}
             common[role]["systems"] = [{"key": "bridge", "state": "OK",

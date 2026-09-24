@@ -669,7 +669,8 @@
       ...(row.domain === "AIR" ? [["altitude", unit(row.altitude_m, "m", 0)]] : []),
       ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
       ["bearing_uncertainty", unit(row.bearing_uncertainty_deg, "\u00b0")],
-      ["range_uncertainty", unit(row.range_uncertainty_nm, "NM")]];
+      ["range_uncertainty", unit(row.range_uncertainty_nm, "NM")],
+      ...(row.visual_class ? [["sighting", sightingText(row.visual_class, row.visual_type)]] : [])];
   }
 
   function sonarEntries(row) {
@@ -705,6 +706,7 @@
       ["noise", number(payload.orders.noise, 2)], ["cavitating", yesNo(payload.orders.cavitating)],
       ["threat_count", number(payload.threat.count, 0)], ["flood", unit(payload.threat.average_flood, "%")]]);
     stationRows($("bridge-tactical"), payload.tactical_summary, tacticalEntries);
+    renderSightings(payload.sightings);
     weatherReceivedAt = performance.now();
     drawBridgeWeather(weatherReceivedAt);
     syncWeatherAnimation();
@@ -714,6 +716,19 @@
       sea: number(weather.effective_sea_state, 1), direction: number(weather.wind_from_deg, 0),
       speed: number(weather.wind_speed_kn, 0), rain: number(weather.rain_intensity * 100, 0),
       visibility: number(weather.visibility_nm, 1),
+    });
+  }
+
+  function renderSightings(rows) {
+    const list = $("bridge-sightings");
+    const lines = rows.map((row) => t("sighting_report", {
+      time: row.time, what: row.code === null ? t(`sighting_detect_${row.sighted.toLowerCase()}`) : sightingText(row.code, row.type),
+      bearing: number(row.bearing, 0).padStart(3, "0"), range: number(row.range_nm, 1)}));
+    if (!lines.length) lines.push(t("sightings_none"));
+    [...list.children].slice(lines.length).forEach((item) => item.remove());
+    lines.forEach((text, index) => {
+      const item = list.children[index] || list.appendChild(node("li"));
+      if (item.textContent !== text) item.textContent = text;
     });
   }
 
@@ -2846,6 +2861,20 @@
 
   const exactKeys = (value, keys) => value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).sort().join(",") === [...keys].sort().join(",");
   const boundedArray = (value, maximum) => Array.isArray(value) && value.length <= maximum;
+  // Bridge-lookout classes (src/sensors/lookout_id.py): an observation, not
+  // an operator classification.
+  const sightingClasses = ["MERCHANT", "TANKER", "CARGO", "PASSENGER", "WARSHIP", "CARRIER", "CRUISER", "DESTROYER",
+    "FRIGATE", "CORVETTE", "MINE_WARFARE", "NAVAL_AUXILIARY", "SERVICE", "TUG", "RESEARCH", "OFFSHORE", "FISHING",
+    "SMALL_CRAFT", "RESCUE", "SUBMARINE", "AIRLINER", "MILITARY_AIRCRAFT", "COMBAT_AIRCRAFT", "TORPEDO_WAKE", "SHIP", "LAND"];
+  const sightingKinds = ["SURFACE", "SUB", "FLG", "TORP"];
+  function validSightingClass(code, type) {
+    if (code === null) return type === null;
+    return sightingClasses.includes(code) && (type === null || (typeof type === "string" && type.length > 0 && type.length <= 80));
+  }
+  function sightingText(code, type) {
+    const what = t(`sighting_class_${code.toLowerCase()}`);
+    return type === null ? what : t("sighting_with_type", { what, type });
+  }
   function v2Observation(row, fields) {
     if (!exactKeys(row, fields) || typeof row.ref !== "string" || !row.ref || row.ref.length > 64) throw new Error("protocol");
   }
@@ -2916,7 +2945,7 @@
     if (!validWeatherStation(state.weather_station)) throw new Error("protocol");
     const payload = state[state.role];
     const shapes = {
-      bridge: ["navigation", "orders", "threat", "systems", "tactical_summary"], sonar: ["observations", "settings", "visualization"],
+      bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"], sonar: ["observations", "settings", "visualization"],
       weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "own_weapons", "active_assets"],
       damage: ["compartments", "teams", "total", "sunk"],
       opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "designated_target_ref", "own_assets"],
@@ -2929,11 +2958,12 @@
       if (!boundedArray(rows, maximum)) throw new Error("protocol");
       rows.forEach((row) => v2Observation(row, fields));
     };
-    const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"];
+    const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
     const tacticalRows = (rows, maximum, extraFields = []) => {
       if (!boundedArray(rows, maximum)) throw new Error("protocol");
       rows.forEach((row) => {
         v2Observation(row, [...tacticalFields, ...extraFields]);
+        if (!validSightingClass(row.visual_class, row.visual_type)) throw new Error("protocol");
         if (row.speed_kn !== null && !finite(row.speed_kn)) throw new Error("protocol");
         if (row.altitude_m !== null && (!finite(row.altitude_m) || row.altitude_m < 0 || row.altitude_m > 30000)) throw new Error("protocol");
       });
@@ -2948,6 +2978,10 @@
           !boundedArray(payload.systems, 32) || payload.systems.some((row) => !exactKeys(row, ["key", "state", "down"]) || typeof row.down !== "boolean")) throw new Error("protocol");
       tacticalRows(payload.threat.observations, 128);
       tacticalRows(payload.tactical_summary, 256);
+      if (!boundedArray(payload.sightings, 24) || payload.sightings.some((row) =>
+          !exactKeys(row, ["time", "sighted", "code", "type", "bearing", "range_nm"]) || typeof row.time !== "string" || row.time.length > 8 ||
+          (row.code === null ? !sightingKinds.includes(row.sighted) || row.type !== null : row.sighted !== null || !validSightingClass(row.code, row.type)) ||
+          !finite(row.bearing) || row.bearing < 0 || row.bearing >= 360 || !finite(row.range_nm) || row.range_nm < 0 || row.range_nm > 1000)) throw new Error("protocol");
     } else if (state.role === "sonar") {
       rowsExact(payload.observations, 256, sonarFields);
       const settings = payload.settings;

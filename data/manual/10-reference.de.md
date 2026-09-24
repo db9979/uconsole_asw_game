@@ -25,7 +25,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Luftradar | 100 sm (50 % je Umlauf) | Flugzeuge und Flugkörper; Störer werden aus der Nähe durchbrannt |
 | ESM | 150 sm (Hauptkeule) | +/-3 Grad Peilung; Pegel und Entfernungsschätzung |
 | HFDF | 120 sm Bodenwelle bei 15 MHz (je nach Frequenz etwa 95-150 sm) | +/-8 Grad Peilung (Raumwelle +/-16) |
-| Ausguck | 12 sm Überwasser, 5 sm aufgetauchtes U-Boot, 20 sm Luft | x0,25 (Neumond) bis x0,45 (Vollmond) bei Nacht; Nebel und Seegang verkürzen |
+| Ausguck | 12 sm Überwasser, 5 sm aufgetauchtes U-Boot, 20 sm Luft, 20 sm Land | x0,25 (Neumond) bis x0,45 (Vollmond) bei Nacht; Nebel und Seegang verkürzen; Klasse ab 2, Typ ab 3,2 aufgelösten Zyklen je relativer Größe (Tanker etwa 7/5 sm, Fregatte 5/4 sm, Speedboot 3/2 sm an einem klaren Tag) |
 
 ## Waffen und Gegenmaßnahmen {#ref-weapons}
 

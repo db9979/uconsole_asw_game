@@ -490,6 +490,11 @@ def _helo_dip_contact_line(game) -> str:
         count=len(contacts), released=released)
 
 
+def _lookout_line(game, visual):
+    what = game.lookout_visual_what(visual) if visual is not None else None
+    return None if what is None else message("lookout.tooltip", what=what)
+
+
 def _track_tooltip(game, track):
     affiliation = game.opz_affiliation(track.track_id)
     domain = nato_symbols.domain_for_kind(track.kind)
@@ -512,6 +517,7 @@ def _track_tooltip(game, track):
         message("observation.fix_age", age=f"{observations.position_age(track, game.sim_t):.1f}")
         if observations.position_age(track, game.sim_t) is not None else None,
         message("opz.tooltip.source", source=track.source),
+        _lookout_line(game, getattr(track, "visual", None)),
         message("runtime.cic.hostile_confirm_required", track=track.label) if pending else None,
         target_id=f"opz:track:{track.track_id}")
 

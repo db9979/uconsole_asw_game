@@ -190,6 +190,12 @@ listed with their reason at the end.
 | Constant salinity | Rain-fed fresh surface lens mixed away by wind in the Mackenzie sound speed. | weather station |
 | No deep sound channel | Temperature profile continues to the seabed in the ray profiles and the bathythermograph (to 1500 m); a SOFAR axis appears where an interior sound-speed minimum exists. | weather station |
 
+## Charted hazards
+
+| Gap | Model now | Closed in |
+|---|---|---|
+| Wrecks only as sonar clutter | Wrecks and rocks are drawn on every chart (native and web) with depth and tooltip; wrecks raise the seabed within half their length (obstacle for grounding, submarines, weapons); evading submarines near the frigate may lie on the bottom beside a charted wreck, where a zero-Doppler echo inside the same range cell and beam merges with the wreck echo (CW 750 m cell, LFM about 8 m). | charted hazards |
+
 ## Out of scope (with reason)
 
 | Item | Reason |

@@ -1556,6 +1556,31 @@ class SonarSystem:
         self.ping_pulse = order[(order.index(self.ping_pulse) + 1) % len(order)]
         return self.ping_pulse
 
+    def _masked_by_wreck(self, tgt, frigate, world, mode: str) -> bool:
+        """Target echo hidden in a wreck echo (same range cell and beam, no
+        Doppler).  The finer LFM range resolution can separate them."""
+        ocean = getattr(world, "ocean", None)
+        if ocean is None or not hasattr(tgt, "stype"):
+            return False
+        bearing = math.degrees(math.atan2(tgt.x - frigate.x, -(tgt.y - frigate.y))) % 360.0
+        radial = getattr(tgt, "speed", 0.0) * math.cos(math.radians(
+            config.angle_diff_deg((bearing + 180.0) % 360.0, getattr(tgt, "course", 0.0))))
+        target_range = math.hypot(tgt.x - frigate.x, tgt.y - frigate.y) * 1852.0
+        beam = 6.0 if mode == "TOWED" else equation.ACTIVE_BEAMWIDTH_DEG
+        for hazard in ocean.hazards:
+            if hazard.kind != "wreck":
+                continue
+            if math.hypot(hazard.x_nm - tgt.x, hazard.y_nm - tgt.y) > 0.5:
+                continue
+            if equation.echo_merges_with_clutter(
+                    target_range, bearing, radial,
+                    math.hypot(hazard.x_nm - frigate.x, hazard.y_nm - frigate.y) * 1852.0,
+                    math.degrees(math.atan2(hazard.x_nm - frigate.x,
+                                            -(hazard.y_nm - frigate.y))) % 360.0,
+                    self.ping_pulse, beam):
+                return True
+        return False
+
     def _queue_clutter(self, frigate, world, t_real: float,
                        range_factor: float, mode: str) -> None:
         """Wrecks on the seabed return real echoes that no contact owns."""
@@ -1828,8 +1853,10 @@ class SonarSystem:
             if can_hear:
                 tgt.hear_ping()
 
-            # Echo erhalten?
-            if dist < active_range:
+            # Echo erhalten?  A stopped boat lying beside a wreck returns an
+            # echo that merges with the wreck's own clutter echo.
+            if dist < active_range and not self._masked_by_wreck(
+                    tgt, frigate, world, mode):
                 snapshot = self._measure_ping(
                     frigate, tgt, t_real, dist,
                     self.active_terms(tgt, frigate, world, range_factor,

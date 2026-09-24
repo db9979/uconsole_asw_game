@@ -35,6 +35,18 @@ if DECOY_PROFILE is None:
 SUB_REACTION_MEDIAN_S = 5.0
 SUB_TMA_RESOLVE_S = 30.0
 SUB_TMA_LEG_TURN_DEG = 35.0
+# Hiding beside a charted wreck: the boat lies still on the bottom next to
+# the wreck, so an active echo without Doppler merges with the wreck echo.
+SUB_WRECK_HIDE_RANGE_NM = 8.0
+SUB_WRECK_HIDE_S = (900.0, 1800.0)
+SUB_WRECK_STANDOFF_NM = 0.02        # beyond the wreck's footprint
+SUB_WRECK_ARRIVED_NM = 0.015
+SUB_WRECK_MIN_BOTTOM_M = 40.0
+SUB_BOTTOM_CLEARANCE_M = 3.0
+SUB_WRECK_TRANSIT_KN = 4.0
+SUB_WRECK_MAX_DEPTH_FRACTION = 0.85
+# States in which the boat runs silent (lurking, or lying by a wreck).
+QUIET_STATES = ("LAUER", "WRACK")
 
 
 class SubType:
@@ -632,8 +644,13 @@ class Sub:
                 if (tactical_observation is not None
                         and tactical_observation.range_nm is not None
                         and tactical_observation.range_nm < config.SUB_LUER_DIST_NM):
-                    self.state = "LAUER"
-                    self.evac_left = self.rng.uniform(*config.SUB_LUER_DURATION_S)
+                    # A charted wreck within reach is the better hiding place:
+                    # lie on the bottom beside it instead of hovering.
+                    hide = self.wreck_hiding_spot(world)
+                    self.state = "LAUER" if hide is None else "WRACK"
+                    self.evac_left = self.rng.uniform(
+                        *(config.SUB_LUER_DURATION_S if hide is None
+                          else SUB_WRECK_HIDE_S))
                     self.heard_ping = False
                     self.speed = 0.5
                 else:
@@ -660,6 +677,8 @@ class Sub:
                 self.motion.turn_rate_deg_s * 2.5 * dt)) % 360.0
             self.speed = max(self.speed, min(self.speed_for_state(),
                                              max(10.0, self.stype.speed_kn * .9)))
+        elif self.state == "WRACK":
+            self._hide_by_wreck(dt, world, safe_depth)
         elif self.state == "LAUER":
             # W2: Stillhalten unter der Thermokline (sehr leise, lauschen)
             self.evac_left -= dt
@@ -736,7 +755,7 @@ class Sub:
         ny = self.y - v * math.cos(math.radians(self.course))
         # W2: Meeresstroemung - reiner Driftzusatz, kein Antrieb/keine Steuerung.
         current = getattr(world, "current_vec", None)
-        if current is not None:
+        if current is not None and not self.bottomed:
             cu, cv = current(self.x, self.y)
             nx += config.kn_to_nm_per_s(cu) * motion_dt
             ny -= config.kn_to_nm_per_s(cv) * motion_dt
@@ -813,7 +832,7 @@ class Sub:
         if self.state == "EVADE":
             self.speed = min(self.speed_for_state(),
                              max(10.0, self.stype.speed_kn * .9))
-        elif self.state == "LAUER":
+        elif self.state in QUIET_STATES:
             self.speed = 1.0
         else:
             self.speed = min(6.0, self.speed_for_state())
@@ -826,7 +845,7 @@ class Sub:
         q = self.stype.quiet * self.quiet_mult - 0.30 * (self.damage / 100.0)
         if self.state == "EVADE":
             q -= 0.30
-        if self.state == "LAUER":
+        if self.state in QUIET_STATES:
             q = max(0.97, q + 0.08)
         if self.transmitting:
             q += config.SNOCKEL_TRANSMIT_NOISE  # M13: Senden macht lauter
@@ -864,6 +883,70 @@ class Sub:
         detail = (f" · DEMON {self.stype.acoustic.tonal_band_hz[0]:.0f}-"
                   f"{self.stype.acoustic.tonal_band_hz[1]:.0f} Hz")
         return f"mechanisch · {base} · {freq}{detail}"
+
+    @property
+    def bottomed(self) -> bool:
+        """Lying still on the seabed (wreck hide): no way ordered, no drift.
+        Derived from saved state, so it survives save/load."""
+        return self.state == "WRACK" and self.speed_order <= 0.0
+
+    def wreck_hiding_spot(self, world):
+        """Nearest charted wreck within reach whose bottom this boat can lie
+        on, and the berth beside it (charts are public to every navy)."""
+        hazards = getattr(world, "charted_hazards", None)
+        depth_at = getattr(world, "depth_m", None)
+        if hazards is None or depth_at is None:
+            return None
+        best = None
+        for index, hazard in enumerate(hazards()):
+            if hazard.kind != "wreck":
+                continue
+            distance = math.hypot(hazard.x_nm - self.x, hazard.y_nm - self.y)
+            if distance > SUB_WRECK_HIDE_RANGE_NM:
+                continue
+            side = detrand.phase(self.sensor_seed, "wreck-berth", index)
+            offset = hazard.radius_nm + SUB_WRECK_STANDOFF_NM
+            bx = hazard.x_nm + offset * math.sin(side)
+            by = hazard.y_nm - offset * math.cos(side)
+            bottom = depth_at(bx, by)
+            # Lie well above test depth so the hull does not fatigue.
+            if not (SUB_WRECK_MIN_BOTTOM_M <= bottom - SUB_BOTTOM_CLEARANCE_M
+                    <= SUB_WRECK_MAX_DEPTH_FRACTION * self.stype.max_depth_m):
+                continue
+            if best is None or (distance, index) < best[0]:
+                best = ((distance, index), hazard, bx, by, bottom)
+        return None if best is None else best[1:]
+
+    def _hide_by_wreck(self, dt: float, world, safe_depth: float) -> None:
+        """Transit quietly to the berth beside the wreck, then settle on the
+        bottom and lie still until the hide time is up."""
+        self.evac_left -= dt
+        spot = self.wreck_hiding_spot(world)
+        if spot is None or self.evac_left <= 0.0:
+            self.state = "PATROLLE"
+            self.speed = min(6.0, self.speed_for_state())
+            self.turn_left = self.rng.uniform(300.0, 900.0)
+            self.turn_delta = 0.0
+            return
+        _hazard, bx, by, bottom = spot
+        distance = math.hypot(bx - self.x, by - self.y)
+        if distance > SUB_WRECK_ARRIVED_NM and not self.bottomed:
+            self.target_course = math.degrees(math.atan2(
+                bx - self.x, -(by - self.y))) % 360.0
+            diff = config.angle_diff_deg(self.target_course, self.course)
+            self.course = (self.course + config.clamp(
+                diff, -self.motion.turn_rate_deg_s * dt,
+                self.motion.turn_rate_deg_s * dt)) % 360.0
+            # Slow down on the final approach so the boat stops on its berth.
+            self.speed = min(SUB_WRECK_TRANSIT_KN, self.speed_for_state(),
+                             max(0.5, distance * 3600.0 / 60.0))
+            # Transit with the usual bottom clearance over the berth, too,
+            # so the approach is not blocked by the rising seabed.
+            self.target_depth = max(0.0, min(safe_depth, bottom - 30.0))
+        else:
+            self.speed = 0.0
+            self.target_depth = max(0.0, bottom - SUB_BOTTOM_CLEARANCE_M)
+        self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
 
     def speed_for_state(self) -> float:
         """Fahrt bei Schaden: langsamer je nach Schadensgrad."""
@@ -919,7 +1002,7 @@ class Sub:
             if self.state == "EVADE":
                 f *= 1.2
                 amp = min(1.0, amp + 0.30)
-            if self.state == "LAUER":
+            if self.state in QUIET_STATES:
                 amp *= 0.5
             lines.append((f, amp, 1.5))
             if v > 4.0:
@@ -946,7 +1029,7 @@ class Sub:
             level = broadband[0]
             if self.state == "EVADE":
                 level *= 1.6
-            if self.state == "LAUER":
+            if self.state in QUIET_STATES:
                 level *= 0.5
             return {"level": min(1.0, level + 0.10 * self.damage / 100.0),
                     "low_hz": broadband[1], "high_hz": broadband[2]}
@@ -957,7 +1040,7 @@ class Sub:
         level = self.fingerprint.bb_level * (0.15 + 0.85 * min(1.0, v / vmax))
         if self.state == "EVADE":
             level *= 1.6
-        if self.state == "LAUER":
+        if self.state in QUIET_STATES:
             level *= 0.5
         level = min(1.0, level + 0.10 * (self.damage / 100.0))
         return {"level": min(1.0, level),

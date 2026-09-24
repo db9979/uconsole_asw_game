@@ -974,7 +974,14 @@ class CommanderBridge:
                                disclaimer="commander.chart.omitted" if omitted
                                else "commander.chart.disclaimer")
             self._chart_world = id(game.world)
-            self._chart_geography = dict(labels=[], airbases=[], depths=[])
+            self._chart_geography = dict(labels=[], airbases=[], depths=[], hazards=[])
+            # Charted wrecks and underwater rocks are public chart content.
+            charted = getattr(game.world, "charted_hazards", None)
+            for hazard in islice(charted() if charted is not None else (), 64):
+                self._chart_geography["hazards"].append(dict(
+                    kind=hazard.kind, x=_number(hazard.x_nm), y=_number(hazard.y_nm),
+                    top_depth_m=_number(hazard.top_depth_m),
+                    length_m=_number(hazard.length_m)))
             for land in islice(game.world.coast.landmasses, 128):
                 if getattr(land, "name", None) and hasattr(land, "centroid"):
                     x, y = land.centroid

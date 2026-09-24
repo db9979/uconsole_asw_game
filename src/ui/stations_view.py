@@ -18,6 +18,7 @@ from src.ship.damage import COMPARTMENTS
 from src.ship.ship import Ship
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
 from src.ui import layout
+from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
 
@@ -1395,6 +1396,13 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
                          if base.get("gameplay_role") == "hostile"
                          else config.COLOR_FLIGHT)
                 pygame.draw.rect(layer, color, (px - 3, py - 3, 7, 7), 1)
+
+    hazards = getattr(world, "charted_hazards", None)
+    if hazards is not None:
+        chart_symbols.draw_hazards(
+            layer, hazards(),
+            lambda x, y: (center_x + (x - bucket_x) * scale, center_y + (y - bucket_y) * scale),
+            (0, 0, map_rect.w, map_rect.h), scale)
 
     world_left = int(center_x - bucket_x * scale)
     world_top = int(center_y - bucket_y * scale)

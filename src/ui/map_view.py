@@ -11,7 +11,7 @@ import pygame
 
 from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
-from src.ui import layout
+from src.ui import chart_symbols, layout
 from src.ui import nato_symbols
 from src.ui import observations
 
@@ -191,6 +191,11 @@ def map_hit_target(game, pos):
                 if observations.position_age(contact, game.sim_t) is not None else None,
                 *chart_lines,
                 target_id=f"map:sonar:{contact.id}")
+    hazards = getattr(game.world, "charted_hazards", None)
+    hazard = (chart_symbols.hazard_at(hazards(), view.world_to_screen, pos)
+              if hazards is not None else None)
+    if hazard is not None:
+        return chart_symbols.hazard_tooltip(hazard)
     return layout.tooltip_payload("map.position", coordinate, terrain,
                                   "tooltip.chart_empty",
                                   target_id=f"chart:{x_nm:.1f}:{y_nm:.1f}")
@@ -328,6 +333,10 @@ def draw_map_view(game, tr=None) -> None:
             pygame.draw.rect(s, col, (int(px) - 4, int(py) - 4, 8, 8), 2)
             s.blit(game.font.render(base["name"], True, config.COLOR_TEXT_DIM),
                    (int(px) + 7, int(py) - 8))
+        # Charted wrecks and underwater rocks (public chart information).
+        hazards = getattr(w, "charted_hazards", None)
+        if hazards is not None:
+            chart_symbols.draw_hazards(s, hazards(), view.world_to_screen, r, view.scale)
 
         tracks = game.radar_tracks()
 

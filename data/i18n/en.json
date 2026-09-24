@@ -3396,5 +3396,12 @@
   "commander.web.weather_dip_above": "Dipping sonar above the layer: lower it below to cover the shadow zone.",
   "commander.web.weather_shadow_hint": "Red: shadow zone below the layer - a submarine can hide there from the hull sonar.",
   "commander.web.weather_layer_label": "LAYER {depth} m",
-  "commander.web.weather_sofar_label": "SOFAR {depth} m"
+  "commander.web.weather_sofar_label": "SOFAR {depth} m",
+  "chart.hazard_depth": "{depth} m",
+  "chart.wreck_title": "Wreck (charted)",
+  "chart.wreck_detail": "Top {depth} m below the surface · length {length} m",
+  "chart.rock_title": "Underwater rock (charted)",
+  "chart.rock_detail": "Top {depth} m below the surface",
+  "chart.hazard_note": "Obstacle for ship, submarines and weapons; wrecks return active sonar echoes",
+  "commander.web.chart_hazard_depth": "{depth} m"
 }

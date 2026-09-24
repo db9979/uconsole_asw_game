@@ -71,6 +71,7 @@ SEDIMENT_ORDER = ("rock", "gravel", "sand", "silt", "mud")
 # --- hazards -----------------------------------------------------------------
 MAX_HAZARDS = 64
 ROCK_RADIUS_NM = 0.08
+WRECK_MIN_RADIUS_NM = 0.02
 ROCK_MIN_TOP_M = 15.0
 
 
@@ -81,6 +82,14 @@ class Hazard:
     y_nm: float
     top_depth_m: float  # depth of the highest point below the surface
     length_m: float
+
+    @property
+    def radius_nm(self) -> float:
+        """Footprint that raises the seabed: a rock pinnacle, or half the
+        length of a wreck lying on the bottom."""
+        if self.kind == "rock":
+            return ROCK_RADIUS_NM
+        return max(WRECK_MIN_RADIUS_NM, self.length_m / 1852.0 / 2.0)
 
 
 def mackenzie_sound_speed(temperature_c: float, salinity_psu: float,
@@ -175,15 +184,14 @@ class OceanEnvironment:
                                 detrand.phase(seed, "iw-phase", index)))
         self._sediment = self._build_sediment(charted_depth)
         self.hazards = self._build_hazards(charted_depth)
-        # Bucket rocks by 1-NM cell so depth queries stay O(1).
-        self._rock_cells: dict[tuple[int, int], list[Hazard]] = {}
+        # Bucket rocks and wrecks by 1-NM cell so depth queries stay O(1).
+        self._hazard_cells: dict[tuple[int, int], list[Hazard]] = {}
         for hazard in self.hazards:
-            if hazard.kind == "rock":
-                cell = (int(hazard.x_nm), int(hazard.y_nm))
-                for dx in (-1, 0, 1):
-                    for dy in (-1, 0, 1):
-                        self._rock_cells.setdefault(
-                            (cell[0] + dx, cell[1] + dy), []).append(hazard)
+            cell = (int(hazard.x_nm), int(hazard.y_nm))
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    self._hazard_cells.setdefault(
+                        (cell[0] + dx, cell[1] + dy), []).append(hazard)
 
     # --- construction -------------------------------------------------------
 
@@ -315,11 +323,14 @@ class OceanEnvironment:
         row = int(round(min(max(y_nm, 0.0), self.size_nm) / step))
         return self._sediment[min(n - 1, row)][min(n - 1, col)]
 
-    def rock_top_depth_m(self, x_nm: float, y_nm: float) -> float | None:
-        """Shallowest charted rock top covering this point, if any."""
+    def hazard_top_depth_m(self, x_nm: float, y_nm: float) -> float | None:
+        """Shallowest charted rock or wreck top covering this point, if any.
+
+        Both are physical obstacles: they raise the seabed within their
+        footprint for grounding, submarines and weapons."""
         best = None
-        for hazard in self._rock_cells.get((int(x_nm), int(y_nm)), ()):
-            if math.hypot(hazard.x_nm - x_nm, hazard.y_nm - y_nm) <= ROCK_RADIUS_NM:
+        for hazard in self._hazard_cells.get((int(x_nm), int(y_nm)), ()):
+            if math.hypot(hazard.x_nm - x_nm, hazard.y_nm - y_nm) <= hazard.radius_nm:
                 if best is None or hazard.top_depth_m < best:
                     best = hazard.top_depth_m
         return best

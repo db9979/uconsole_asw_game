@@ -284,6 +284,30 @@ class ActiveTerms:
 ACTIVE_FREQUENCY_HZ = 3500.0     # medium-frequency hull sonar
 ACTIVE_BEAMWIDTH_DEG = 12.0
 
+SOUND_SPEED_M_S = 1500.0
+DOPPLER_FREE_KN = 0.5
+
+
+def range_resolution_m(pulse: str) -> float:
+    """Range resolution of a pulse: c T / 2 for CW, c / 2B for LFM."""
+    duration, bandwidth = PULSES[pulse]
+    if pulse == "CW":
+        return SOUND_SPEED_M_S * duration / 2.0
+    return SOUND_SPEED_M_S / (2.0 * bandwidth)
+
+
+def echo_merges_with_clutter(target_range_m: float, target_bearing_deg: float,
+                             target_radial_kn: float, clutter_range_m: float,
+                             clutter_bearing_deg: float, pulse: str,
+                             beamwidth_deg: float = ACTIVE_BEAMWIDTH_DEG) -> bool:
+    """True when a target echo cannot be separated from a clutter echo: no
+    Doppler to tell it apart, inside the same range cell and the same beam."""
+    if abs(target_radial_kn) >= DOPPLER_FREE_KN:
+        return False
+    bearing_gap = abs((target_bearing_deg - clutter_bearing_deg + 180.0) % 360.0 - 180.0)
+    return (abs(target_range_m - clutter_range_m) < range_resolution_m(pulse)
+            and bearing_gap < beamwidth_deg / 2.0)
+
 
 def active_noise_db(sea_state: float, rain: float = 0.0) -> float:
     return _db_sum(ambient_noise_db(ACTIVE_FREQUENCY_HZ, sea_state, rain),

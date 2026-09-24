@@ -202,9 +202,9 @@ class World:
         if charted <= 0.0:
             return charted
         depth = charted + self.ocean.tide_m(x_nm, y_nm, charted)
-        rock = self.ocean.rock_top_depth_m(x_nm, y_nm)
-        if rock is not None:
-            depth = min(depth, rock)
+        hazard = self.ocean.hazard_top_depth_m(x_nm, y_nm)
+        if hazard is not None:
+            depth = min(depth, hazard)
         return max(0.0, depth)
 
     def tide_m(self, x_nm: float, y_nm: float) -> float:
@@ -263,6 +263,10 @@ class World:
         return self.ocean.sound_speed_m_s(
             depth_m, self.thermocline_depth_m(x_nm, y_nm), self.hour,
             weather["rain_intensity"], weather["wind_speed_kn"])
+
+    def charted_hazards(self) -> tuple:
+        """Charted wrecks and rocks (public chart information)."""
+        return self.ocean.hazards
 
     def seabed_at(self, x_nm: float, y_nm: float) -> str:
         return self.ocean.sediment_at(x_nm, y_nm)

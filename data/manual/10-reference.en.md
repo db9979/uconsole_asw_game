@@ -61,7 +61,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Sound speed | Mackenzie equation from the temperature profile (sea surface 8-18 deg C by season) |
 | Current | steady field up to 1 kn plus 3 % of the wind, 20 deg right of downwind |
 | Seabed | rock, gravel, sand, silt or mud; affects bottom reflection |
-| Hazards | up to 64 charted wrecks and submerged rocks (tops at least 15 m deep) |
+| Hazards | up to 64 charted wrecks and submerged rocks (tops at least 15 m deep), shown on every chart (wreck: hull line with masts, rock: asterisk; depth of the top when zoomed in, details in the tooltip); both raise the seabed within their footprint and are obstacles for the ship, submarines and weapons |
 | Atmosphere | barometer 975-1025 hPa that falls ahead of rising seas; air temperature from the sea, season, day and cold northerly winds (below 0 deg C in winter storms: snow, icing); gusts; cloud ceiling; sun elevation with civil/nautical twilight; moon phase |
 | Rain lens | rain freshens the top few metres (up to -1 PSU, mixed away by wind) and lowers the surface sound speed |
 | SOFAR channel | an interior sound-speed minimum (about 400-500 m below the surface layer) exists only in deep enough water |
@@ -83,7 +83,7 @@ Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes
 | AIP (modern) | 0.85 | 250 m | 5 |
 | Nuclear attack | 0.92 | 400 m | 8 |
 
-Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less.
+Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less. Near the frigate a boat may instead creep to a charted wreck within 8 NM and lie still on the bottom beside it for 15-30 minutes.
 
 Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded boat blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking boat holds its position against the current. Submarines sense like you do: passive bearings from their own sonar, a range only after their own TMA legs (a few minutes), ESM only with the mast up, the datalink only at mast depth or snorkelling, and a torpedo alarm takes the crew a few seconds (2-15 s) before the boat evades. Surface ships lose top speed in heavy seas (small ships more).
 

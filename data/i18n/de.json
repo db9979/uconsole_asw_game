@@ -3396,5 +3396,12 @@
   "commander.web.weather_dip_above": "Tauchsonar über der Schicht: unter die Schicht fieren, um die Schattenzone abzudecken.",
   "commander.web.weather_shadow_hint": "Rot: Schattenzone unter der Schicht - dort kann sich ein U-Boot vor dem Bugsonar verstecken.",
   "commander.web.weather_layer_label": "SCHICHT {depth} m",
-  "commander.web.weather_sofar_label": "SOFAR {depth} m"
+  "commander.web.weather_sofar_label": "SOFAR {depth} m",
+  "chart.hazard_depth": "{depth} m",
+  "chart.wreck_title": "Wrack (kartiert)",
+  "chart.wreck_detail": "Oberkante {depth} m unter der Oberfläche · Länge {length} m",
+  "chart.rock_title": "Unterwasserfels (kartiert)",
+  "chart.rock_detail": "Oberkante {depth} m unter der Oberfläche",
+  "chart.hazard_note": "Hindernis für Schiff, U-Boote und Waffen; Wracks liefern Aktivsonar-Echos",
+  "commander.web.chart_hazard_depth": "{depth} m"
 }

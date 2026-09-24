@@ -1707,6 +1707,28 @@
       if (x >= 0 && x <= plot.width && y >= 0 && y <= plot.height) plot.context.fillText(label.name, x + 5, y - 5);
     }
     for (const base of geo?.airbases || []) { const [x, y] = point(base.x, base.y); plot.context.strokeRect(x - 3, y - 3, 6, 6); }
+    // Charted wrecks (hull line with masts) and underwater rocks (asterisk);
+    // depth labels once zoomed in.
+    const pxPerNm = Math.abs(point(1, 0)[0] - point(0, 0)[0]);
+    for (const hazard of geo?.hazards || []) {
+      const [x, y] = point(hazard.x, hazard.y);
+      if (x < -8 || x > plot.width + 8 || y < -8 || y > plot.height + 8) continue;
+      const context = plot.context;
+      context.strokeStyle = hazard.kind === "wreck" ? "#96b4c8" : "#dcbe78";
+      context.beginPath();
+      if (hazard.kind === "wreck") {
+        context.moveTo(x - 8, y); context.lineTo(x + 8, y);
+        for (const dx of [-4, 0, 4]) { context.moveTo(x + dx, y - 5); context.lineTo(x + dx, y + 5); }
+      } else {
+        context.moveTo(x - 4, y); context.lineTo(x + 4, y); context.moveTo(x, y - 4); context.lineTo(x, y + 4);
+        context.moveTo(x - 3, y - 3); context.lineTo(x + 3, y + 3); context.moveTo(x - 3, y + 3); context.lineTo(x + 3, y - 3);
+      }
+      context.stroke();
+      if (pxPerNm >= 12) {
+        context.fillStyle = context.strokeStyle;
+        context.fillText(t("chart_hazard_depth", {depth: number(hazard.top_depth_m, 0)}), x + 12, y + 4);
+      }
+    }
     const [ox, oy] = hasPosition(data.own) ? point(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
     if (hasPosition(data.own)) {
       addRoleMapHit(null, ox, oy);
@@ -3152,7 +3174,10 @@
           land.points.some((point) => !Array.isArray(point) || point.length !== 2 || !point.every(finite)))) throw new Error("chart");
     if (data.geography !== undefined) {
       const geo = data.geography;
-      if (!exactKeys(geo, ["labels", "airbases", "depths"]) ||
+      if (!exactKeys(geo, ["labels", "airbases", "depths", "hazards"]) ||
+          !Array.isArray(geo.hazards) || geo.hazards.length > 64 || geo.hazards.some((row) =>
+            !exactKeys(row, ["kind", "x", "y", "top_depth_m", "length_m"]) || !["wreck", "rock"].includes(row.kind) ||
+            ![row.x, row.y, row.top_depth_m, row.length_m].every(finite)) ||
           ![geo.labels, geo.airbases].every((rows) => Array.isArray(rows) && rows.length <= 128 && rows.every((row) =>
             exactKeys(row, ["name", "x", "y"]) && typeof row.name === "string" && row.name.length <= 96 && finite(row.x) && finite(row.y))) ||
           !Array.isArray(geo.depths) || geo.depths.length > 64 || geo.depths.some((row) =>

@@ -790,3 +790,8 @@ body.workstation-mode #station-helicopter #helicopter-dip-canvas { max-width: 52
 #helicopter-buoy-observations { flex: 1; min-height: 0; overflow: auto; }
 @media (max-width: 760px) { .helicopter-acoustic-workspace { display: flex; flex-direction: column; } .helicopter-acoustic-plots { min-height: 16rem; } .helicopter-acoustic-rail { min-height: 7rem; max-height: 13rem; } }
 @media (max-height: 750px) { .helicopter-acoustic-visual { overflow: auto; } .helicopter-acoustic-workspace { flex: none; min-height: min(50vh, 22rem); } }
+
+/* Map mouse-over: a small readable box beside the cursor, never catching the pointer. */
+.map-tooltip { position: fixed; z-index: 50; max-width: min(26rem, 90vw); padding: .45rem .6rem; display: grid; gap: .15rem; pointer-events: none; color: var(--text); background: rgb(7 21 28 / .96); border: 1px solid var(--accent); font: .85rem/1.35 ui-monospace, monospace; box-shadow: 0 4px 18px rgb(0 0 0 / .45); }
+.map-tooltip strong { color: var(--accent); }
+.map-tooltip[hidden] { display: none; }

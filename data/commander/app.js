@@ -192,6 +192,10 @@
   const roleMapViews = Object.fromEntries([...mapRoles].map((role) => [role, {x: 250, y: 250, zoom: 1}]));
   const maxRoleMapHits = 512;
   let roleMapHits = [];
+  // Hover information for the maps (tracks, own ship, assets, chart items);
+  // separate from the click hit lists so selection semantics are unchanged.
+  let roleMapInfo = [];
+  let chartInfo = [];
   let damageHits = [];
   const defaultSonarPage = () => matchMedia("(min-width: 851px)").matches ? "overview" : "broadband";
   let sonarVisualPage = defaultSonarPage();
@@ -649,6 +653,7 @@
     visualDrawQueued = false;
     stopOpzSweepAnimation();
     roleMapHits = [];
+    roleMapInfo = [];
     damageHits = [];
     for (const id of visualCanvasIds) releaseCanvas($(id));
     for (const element of document.querySelectorAll(".visual-equivalent")) element.replaceChildren();
@@ -1606,6 +1611,133 @@
     }
   }
 
+  function drawChartHazards(context, hazards, point, width, height, pxPerNm, info) {
+    for (const hazard of hazards) {
+      const [x, y] = point(hazard.x, hazard.y);
+      if (x < -8 || x > width + 8 || y < -8 || y > height + 8) continue;
+      addMapInfo(info, x, y, "hazard", hazard);
+      context.save();
+      context.lineWidth = 1.5;
+      context.strokeStyle = hazard.kind === "wreck" ? "#96b4c8" : "#dcbe78";
+      context.beginPath();
+      if (hazard.kind === "wreck") {
+        context.moveTo(x - 8, y); context.lineTo(x + 8, y);
+        for (const dx of [-4, 0, 4]) { context.moveTo(x + dx, y - 5); context.lineTo(x + dx, y + 5); }
+      } else {
+        context.moveTo(x - 5, y); context.lineTo(x + 5, y); context.moveTo(x, y - 5); context.lineTo(x, y + 5);
+        context.moveTo(x - 4, y - 4); context.lineTo(x + 4, y + 4); context.moveTo(x - 4, y + 4); context.lineTo(x + 4, y - 4);
+      }
+      context.stroke();
+      if (pxPerNm >= 12) {
+        context.fillStyle = context.strokeStyle;
+        context.textAlign = "left";
+        context.fillText(t("chart_hazard_depth", {depth: number(hazard.top_depth_m, 0)}), x + 12, y + 4);
+      }
+      context.restore();
+    }
+  }
+
+  function addMapInfo(list, x, y, kind, item) {
+    if (list.length < 512) list.push({x, y, kind, item});
+  }
+
+  function chartDepthAt(x, y) {
+    const grid = chart?.geography?.depths;
+    if (!Array.isArray(grid) || !grid.length || !finite(chart.size_nm)) return null;
+    const n = grid.length;
+    const row = grid[Math.min(n - 1, Math.max(0, Math.floor(y / chart.size_nm * n)))];
+    if (!Array.isArray(row) || !row.length) return null;
+    const value = row[Math.min(row.length - 1, Math.max(0, Math.floor(x / chart.size_nm * row.length)))];
+    return finite(value) ? value : null;
+  }
+
+  function mapTooltipLines(hit, worldX, worldY, own) {
+    const lines = [];
+    if (hit?.kind === "track") {
+      const row = hit.item;
+      lines.push(String(row.label || row.ref || ""));
+      if (row.source) lines.push(t("map_tip_source", {source: row.source}));
+      if (row.classification !== undefined || row.affiliation !== undefined)
+        lines.push(t("map_tip_class", {classification: classificationText(row.classification),
+          affiliation: enumText(affiliations, row.affiliation)}));
+      if (finite(row.bearing)) lines.push(finite(row.range_nm) ?
+        t("map_tip_bearing_range", {bearing: number(row.bearing, 0), range: number(row.range_nm, 1)}) :
+        t("map_tip_bearing", {bearing: number(row.bearing, 0)}));
+      if (finite(row.course)) lines.push(t("map_tip_course", {course: number(row.course, 0),
+        speed: finite(row.speed_kn) ? number(row.speed_kn, 0) : "--"}));
+      if (finite(row.altitude_m)) lines.push(t("map_tip_altitude", {altitude: number(row.altitude_m, 0)}));
+      if (finite(row.age_s)) lines.push(t("map_tip_age", {age: number(row.age_s, 0),
+        quality: finite(row.quality) ? number(row.quality * 100, 0) : "--"}));
+      return lines;
+    }
+    if (hit?.kind === "fix") {
+      lines.push(t("map_tip_fix", {label: String(hit.item.label || ""), source: String(hit.item.source || "")}));
+      if (finite(hit.item.uncertainty_nm)) lines.push(t("map_tip_uncertainty", {value: number(hit.item.uncertainty_nm, 1)}));
+      if (finite(hit.item.depth_m)) lines.push(t("map_tip_depth_estimate", {depth: number(hit.item.depth_m, 0)}));
+      return lines;
+    }
+    if (hit?.kind === "own") {
+      lines.push(t("map_tip_own"));
+      lines.push(t("map_tip_course", {course: number(hit.item.course, 0), speed: number(hit.item.speed, 1)}));
+      return lines;
+    }
+    if (hit?.kind === "asset") {
+      lines.push(hit.item.waypoint ? t("station_waypoint") : String(hit.item.display || hit.item.ref || t("helicopter")));
+      if (finite(hit.item.depth_m)) lines.push(t("map_tip_depth_estimate", {depth: number(hit.item.depth_m, 0)}));
+      if (finite(hit.item.course)) lines.push(t("map_tip_course", {course: number(hit.item.course, 0), speed: "--"}));
+      return lines;
+    }
+    if (hit?.kind === "hazard") {
+      const hazard = hit.item;
+      lines.push(t(hazard.kind === "wreck" ? "map_tip_wreck" : "map_tip_rock"));
+      lines.push(t("map_tip_hazard_top", {depth: number(hazard.top_depth_m, 0)}));
+      if (hazard.kind === "wreck") lines.push(t("map_tip_wreck_length", {length: number(hazard.length_m, 0)}));
+      lines.push(t("map_tip_hazard_note"));
+      return lines;
+    }
+    if (hit?.kind === "base") {
+      lines.push(String(hit.item.name || ""));
+      lines.push(t("map_tip_airbase"));
+      return lines;
+    }
+    if (!finite(worldX) || !finite(worldY) || !chart || worldX < 0 || worldY < 0 ||
+        worldX > chart.size_nm || worldY > chart.size_nm) return lines;
+    lines.push(t("map_tip_position", {x: number(worldX, 1), y: number(worldY, 1)}));
+    const depth = chartDepthAt(worldX, worldY);
+    if (depth !== null) lines.push(depth <= 0 ? t("map_tip_land") : t("map_tip_chart_depth", {depth: number(depth, 0)}));
+    if (own && finite(own.x) && finite(own.y)) {
+      const dx = worldX - own.x, dy = worldY - own.y;
+      lines.push(t("map_tip_from_own", {bearing: number(((Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360, 0),
+        range: number(Math.hypot(dx, dy), 1)}));
+    }
+    return lines;
+  }
+
+  function showMapTooltip(event, lines) {
+    const element = $("map-tooltip");
+    if (!lines.length) { element.hidden = true; return; }
+    element.replaceChildren(...lines.map((line, index) => node(index ? "span" : "strong", line)));
+    element.hidden = false;
+    const margin = 14, box = element.getBoundingClientRect();
+    const left = Math.min(event.clientX + margin, window.innerWidth - box.width - 4);
+    const top = Math.min(event.clientY + margin, window.innerHeight - box.height - 4);
+    element.style.left = `${Math.max(4, left)}px`;
+    element.style.top = `${Math.max(4, top)}px`;
+  }
+
+  function hideMapTooltip() {
+    $("map-tooltip").hidden = true;
+  }
+
+  function nearestMapInfo(list, x, y, radius = 14) {
+    let best = null;
+    for (const hit of list) {
+      const distance = Math.hypot(hit.x - x, hit.y - y);
+      if (distance <= radius && (best === null || distance < best.distance)) best = {hit, distance};
+    }
+    return best?.hit || null;
+  }
+
   function rayLengthToCanvasEdge(x, y, dx, dy, width, height) {
     const candidates = [];
     if (dx > 0) candidates.push((width - x) / dx);
@@ -1650,6 +1782,7 @@
   function drawRoleMap(role) {
     const plot = visualContext("role-map");
     roleMapHits = [];
+    roleMapInfo = [];
     if (!plot || !chart) return;
     const payload = v2State[role], data = mapPayload(role), viewState = roleMapViews[role];
     plot.context.textAlign = "left";
@@ -1706,32 +1839,14 @@
       const [x, y] = point(label.x, label.y);
       if (x >= 0 && x <= plot.width && y >= 0 && y <= plot.height) plot.context.fillText(label.name, x + 5, y - 5);
     }
-    for (const base of geo?.airbases || []) { const [x, y] = point(base.x, base.y); plot.context.strokeRect(x - 3, y - 3, 6, 6); }
-    // Charted wrecks (hull line with masts) and underwater rocks (asterisk);
-    // depth labels once zoomed in.
-    const pxPerNm = Math.abs(point(1, 0)[0] - point(0, 0)[0]);
-    for (const hazard of geo?.hazards || []) {
-      const [x, y] = point(hazard.x, hazard.y);
-      if (x < -8 || x > plot.width + 8 || y < -8 || y > plot.height + 8) continue;
-      const context = plot.context;
-      context.strokeStyle = hazard.kind === "wreck" ? "#96b4c8" : "#dcbe78";
-      context.beginPath();
-      if (hazard.kind === "wreck") {
-        context.moveTo(x - 8, y); context.lineTo(x + 8, y);
-        for (const dx of [-4, 0, 4]) { context.moveTo(x + dx, y - 5); context.lineTo(x + dx, y + 5); }
-      } else {
-        context.moveTo(x - 4, y); context.lineTo(x + 4, y); context.moveTo(x, y - 4); context.lineTo(x, y + 4);
-        context.moveTo(x - 3, y - 3); context.lineTo(x + 3, y + 3); context.moveTo(x - 3, y + 3); context.lineTo(x + 3, y - 3);
-      }
-      context.stroke();
-      if (pxPerNm >= 12) {
-        context.fillStyle = context.strokeStyle;
-        context.fillText(t("chart_hazard_depth", {depth: number(hazard.top_depth_m, 0)}), x + 12, y + 4);
-      }
-    }
+    for (const base of geo?.airbases || []) { const [x, y] = point(base.x, base.y); plot.context.strokeRect(x - 3, y - 3, 6, 6); addMapInfo(roleMapInfo, x, y, "base", base); }
+    // Charted wrecks (hull line with masts) and underwater rocks (asterisk).
+    drawChartHazards(plot.context, geo?.hazards || [], point, plot.width, plot.height,
+      Math.abs(point(1, 0)[0] - point(0, 0)[0]), roleMapInfo);
     const [ox, oy] = hasPosition(data.own) ? point(data.own.x, data.own.y) : [plot.width / 2, plot.height / 2];
     if (hasPosition(data.own)) {
       addRoleMapHit(null, ox, oy);
+      addMapInfo(roleMapInfo, ox, oy, "own", data.own);
       plot.context.save(); plot.context.translate(ox, oy); plot.context.rotate(data.own.course * Math.PI / 180);
       plot.context.strokeStyle = palette().accent; plot.context.fillStyle = palette().accent; plot.context.beginPath();
       plot.context.moveTo(0, -9); plot.context.lineTo(-5, 6); plot.context.lineTo(5, 6); plot.context.closePath(); plot.context.fill();
@@ -1744,6 +1859,7 @@
       if (hasPosition(row)) {
         const [x, y] = point(row.x, row.y);
         addRoleMapHit(row.ref, x, y);
+        addMapInfo(roleMapInfo, x, y, "track", row);
         if (finite(row.range_uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, row.range_uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
         plot.context.fillStyle = plot.context.strokeStyle; plot.context.beginPath(); plot.context.arc(x, y, 4, 0, Math.PI * 2); plot.context.fill();
         if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 10, 0, Math.PI * 2); plot.context.stroke(); }
@@ -1776,6 +1892,7 @@
     for (const item of [...data.fixes, ...data.assets]) if (hasPosition(item)) {
       const [x, y] = point(item.x, item.y);
       addRoleMapHit(null, x, y);
+      addMapInfo(roleMapInfo, x, y, "asset", item);
       plot.context.strokeStyle = item.waypoint ? palette().amber : palette().blue;
       if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
       plot.context.strokeRect(x - 4, y - 4, 8, 8);
@@ -4636,6 +4753,8 @@
     ctx.strokeRect(zeroX, zeroY, chart.size_nm * scale, chart.size_nm * scale);
     ctx.setLineDash([]);
     chartHits = [];
+    chartInfo = [];
+    drawChartHazards(ctx, chart.geography?.hazards || [], point, width, height, scale, chartInfo);
     // Status-only snapshots intentionally omit ownship geometry. Null is not 0.
     const [ox, oy] = ownPosition ? point(own.x, own.y) : [null, null];
     const rayLength = ownPosition ? Math.hypot(width, height) + Math.hypot(ox - width / 2, oy - height / 2) : null;
@@ -4701,6 +4820,7 @@
       ctx.fillStyle = color;
       ctx.fillText(String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
       chartHits.push({ ref: track.ref, x, y });
+      addMapInfo(chartInfo, x, y, "track", track);
     }
     // Independent sonar fixes share their parent track identity and are rebuilt
     // from the current snapshot on every draw, so stale markers cannot be hit.
@@ -4716,9 +4836,11 @@
         ctx.fillStyle = ctx.strokeStyle;
         ctx.fillText(`${String(track.label ?? "")} ${fix.source}`, x + 9, y - 8, Math.max(50, width - x - 13));
         chartHits.push({ ref: track.ref, x, y });
+        addMapInfo(chartInfo, x, y, "fix", {...fix, label: track.label});
       }
     }
     if (ownPosition) {
+      addMapInfo(chartInfo, ox, oy, "own", own);
       ctx.save();
       ctx.translate(ox, oy);
       ctx.strokeStyle = palette().accent; ctx.fillStyle = "#183e3c"; ctx.lineWidth = 2;
@@ -5528,6 +5650,20 @@
     $("role-map").releasePointerCapture(event.pointerId);
   });
   $("role-map").addEventListener("pointercancel", (event) => { if (roleMapDrag?.id === event.pointerId) roleMapDrag = null; });
+  // Mouse-over: describe the nearest map item, or the chart position.
+  $("role-map").addEventListener("pointermove", (event) => {
+    const role = v2State?.role;
+    if (roleMapDrag?.moved || event.pointerType === "touch" || !mapRoles.has(role)) { hideMapTooltip(); return; }
+    const rect = $("role-map").getBoundingClientRect();
+    const x = event.clientX - rect.left, y = event.clientY - rect.top;
+    const geometry = roleMapGeometry(role);
+    const view = roleMapViews[role];
+    const worldX = geometry ? view.x + (x - rect.width / 2) / geometry.scale : null;
+    const worldY = geometry ? view.y + (y - rect.height / 2) / geometry.scale : null;
+    const own = roleMapInfo.find((hit) => hit.kind === "own")?.item || null;
+    showMapTooltip(event, mapTooltipLines(nearestMapInfo(roleMapInfo, x, y), worldX, worldY, own));
+  });
+  $("role-map").addEventListener("pointerleave", hideMapTooltip);
   $("role-map").addEventListener("lostpointercapture", () => { roleMapDrag = null; });
   $("role-map").addEventListener("keydown", (event) => {
     const role = v2State?.role;
@@ -5622,6 +5758,16 @@
     canvas.releasePointerCapture(event.pointerId);
   });
   canvas.addEventListener("lostpointercapture", () => { drag = null; });
+  canvas.addEventListener("pointermove", (event) => {
+    if (drag?.moved || event.pointerType === "touch" || !chart) { hideMapTooltip(); return; }
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left, y = event.clientY - rect.top;
+    const { width, height, scale } = chartGeometry();
+    const worldX = view.x + (x - width / 2) / scale, worldY = view.y + (y - height / 2) / scale;
+    const own = chartInfo.find((hit) => hit.kind === "own")?.item || null;
+    showMapTooltip(event, mapTooltipLines(nearestMapInfo(chartInfo, x, y), worldX, worldY, own));
+  });
+  canvas.addEventListener("pointerleave", hideMapTooltip);
   canvas.addEventListener("pointercancel", () => { drag = null; });
   canvas.addEventListener("keydown", (event) => {
     if (!snapshot || !chart) return;

@@ -177,6 +177,8 @@ _WEB_HELP = (
         ("Home / End", "help.web.list_ends"),
         ("+ / -", "help.web.map_zoom"),
         ("help.key.web_map_pan", "help.web.map_pan"),
+        ("help.key.web_map_hover", "help.web.map_hover"),
+        ("0", "help.web.weather_station"),
     ],
 )
 

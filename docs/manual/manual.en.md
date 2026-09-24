@@ -72,6 +72,8 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 | `Home / End` | First / last entry of the focused list |
 | `+ / -` | Zoom focused chart; Home fits the view |
 | `Arrow keys (chart)` | Pan focused chart |
+| `Mouse over map` | Details of the track, own ship, asset, wreck or chart position under the cursor |
+| `0` | Open or close the weather & sonar analysis |
 
 `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
 

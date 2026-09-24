@@ -72,6 +72,8 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 | `Home / End` | Erster / letzter Eintrag der fokussierten Liste |
 | `+ / -` | Fokussierte Karte zoomen; Pos1 passt die Ansicht ein |
 | `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
+| `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
+| `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
 
 `F1` (oder `?`) öffnet jederzeit die Hilfe. Sie hat vier Kategorien: globale Tasten, aktuelle Station (Tasten und Standardablauf), Sensoren und Taktik sowie dieses Handbuch.
 

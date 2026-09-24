@@ -24,6 +24,11 @@
   "reason": "Phase 4: ray-traced propagation (Snell rays, lossy Rayleigh bottom, rough surface) replaces the fixed 6.5 dB layer penalty. In ~800 m of water over sand bottom-bounce and multipath fill the region below the layer beyond ~10 NM, so cross-layer ranges roughly double; the shadow zone remains at short range and in deep water.",
   "value": 23.403145
  },
+ "sonar.passive_nm.BOW.sea1.own18.d150": {
+  "phase": "weather-station",
+  "reason": "Deep sound channel: the ray-traced profile now continues the temperature profile to the seabed instead of a linear pressure gradient below 400 m, so an interior sound-speed minimum (~500 m) refracts deep rays back up and slightly raises levels below the layer; this self-noise-limited cavitating case gains about 10 %.",
+  "value": 4.4673
+ },
  "sonar.passive_nm.BOW.sea1.own18.d30": {
   "phase": 4,
   "reason": "Phase 4: ray-traced propagation is near spherical at short range, while the figure of merit is anchored at 20 NM where multipath already gains ~13 dB; short, self-noise-limited detections at cavitating speed become shorter.",

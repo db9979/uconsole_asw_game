@@ -708,7 +708,7 @@ class SonarSystem:
         true_thermo = world.thermocline_depth_m(frigate.x, frigate.y)
         measured_thermo = config.clamp(true_thermo + self.rng.uniform(-3.0, 3.0),
                                        20.0, water_depth)
-        max_depth = min(water_depth, 400.0)
+        max_depth = min(water_depth, config.SONAR_BT_MAX_DEPTH_M)
         depths = np.linspace(0.0, max_depth, 21)
         speeds = []
         true_speed = getattr(world, "sound_speed_m_s", None)

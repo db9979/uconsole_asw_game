@@ -173,13 +173,15 @@ class Helicopter:
         if abs(self.dip_depth_m - self.dip_depth_target_m) <= 1e-9:
             self.dip_state = "DEPLOYED"
 
-    def update(self, dt: float, frigate, world, recovery_available: bool = True) -> None:
+    def update(self, dt: float, frigate, world, recovery_available: bool = True,
+               fuel_factor: float = 1.0) -> None:
         """dt in Simulationssekunden. Haelt Patrouillen-Offset vor der
         Fregatte (AUF) bzw. fliegt zurück (ZURUECK)."""
         self.dip_ping_cooldown = max(0.0, self.dip_ping_cooldown - dt)
         if not self.airborne:
             return
-        self.fuel_s = max(0.0, self.fuel_s - dt * (
+        # fuel_factor: extra power for anti-/de-icing in icing conditions.
+        self.fuel_s = max(0.0, self.fuel_s - dt * max(1.0, fuel_factor) * (
             HOVER_FUEL_FACTOR if self.hovering else 1.0))
         self._update_dipping(dt, world)
         home_dist = math.hypot(frigate.x - self.x, frigate.y - self.y)

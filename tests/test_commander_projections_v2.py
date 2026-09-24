@@ -37,7 +37,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     game, bridge, server = published
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
-              "autocrew", "audio"}
+              "autocrew", "audio", "weather_station"}
     assert set(server.v2_states) == {None, *ROLE_NAMES}
     assert server.v2_states[None] == dict(
         protocol=2, version=server.state["version"], session=bridge.status["session"],
@@ -61,6 +61,10 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
         assert server.v2_states[role]["autocrew"] == {
             "enabled": False, "status": "off"}
         assert server.v2_states[role]["audio"] == {"events": []}
+        station = server.v2_states[role]["weather_station"]
+        assert set(station) == {"atmosphere", "effects", "flight", "profile"}
+        # No bathythermograph measurement yet: no ocean profile at all.
+        assert station["profile"] is None
     assert set(server.v2_charts[None]) == {
         "protocol", "revision", "size_nm", "landmasses", "disclaimer"}
     assert server.v2_charts[None]["landmasses"] == []

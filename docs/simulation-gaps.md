@@ -182,6 +182,14 @@ listed with their reason at the end.
 | Seabed composition | Seeded 12x12 sediment grid (rock/gravel/sand/silt/mud) from depth and slope with Hamilton-style geoacoustic parameters and a Rayleigh fluid-fluid bottom-loss function; consumed by the sonar equation (Phase 3) and ray tracer (Phase 4). | 1 (d666b1b) |
 | No underwater geography beyond depth | Up to 64 seeded wrecks and submerged rocks. Rocks shoal `depth_m` (tops at least 15 m, a hazard to submarines and weapons, never to surface keels); wrecks become active-sonar clutter in Phase 3. | 1 (d666b1b) |
 
+## Atmosphere and weather station (after 1.1.0)
+
+| Gap | Model now | Closed in |
+|---|---|---|
+| No barometer, air temperature, gusts, cloud ceiling, snow/icing or twilight | `src/world/atmosphere.py`: derived (no saved state) from the weather epoch, season, clock and sea temperature - barometer leading the sea with WMO tendency classes and storm warning, air temperature with cold northerly outbreaks, snow below 0.5 deg C, gusts, ceiling, spray/precipitation icing, sun elevation with twilight, moon phases. Helicopter launch/dipping honour gusts, ceiling and icing. | weather station |
+| Constant salinity | Rain-fed fresh surface lens mixed away by wind in the Mackenzie sound speed. | weather station |
+| No deep sound channel | Temperature profile continues to the seabed in the ray profiles and the bathythermograph (to 1500 m); a SOFAR axis appears where an interior sound-speed minimum exists. | weather station |
+
 ## Out of scope (with reason)
 
 | Item | Reason |

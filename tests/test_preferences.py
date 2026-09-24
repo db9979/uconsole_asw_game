@@ -120,3 +120,14 @@ def test_credential_fields_are_length_limited(tmp_path):
     path.write_text(json.dumps({"aisstream_api_key": "x" * 500}),
                     encoding="utf-8")
     assert len(load_preferences(path).aisstream_api_key) == 256
+
+
+def test_frame_rate_round_trip_and_invalid_values(tmp_path):
+    path = tmp_path / "preferences.json"
+    assert Preferences().frame_rate == 30
+    save_preferences(Preferences(language="en", frame_rate=60), path)
+    assert load_preferences(path).frame_rate == 60
+    for bad in (45, 60.0, "60", True, None, -30):
+        path.write_text(json.dumps({"language": "en", "frame_rate": bad}),
+                        encoding="utf-8")
+        assert load_preferences(path).frame_rate == 30

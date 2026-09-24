@@ -144,7 +144,7 @@
   let sonarAudioWorklet = null;
   let sonarAudioSocket = null;
   let sonarAudioReconnect = null;
-  let sonarAudioMetrics = {buffered: 0, gaps: 0, repeats: 0, stale: false};
+  let sonarAudioMetrics = {buffered: 0, gaps: 0, concealed: 0, rate: 1, stale: false};
   let gameSoundContext = null;
   let gameSoundHighWater = 0;
   const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry"]);
@@ -328,9 +328,9 @@
   function stopSonarAudio(key = "sonar_live_off") {
     sonarAudioGeneration += 1;
     sonarAudioEnabled = false;
-    sonarAudioMetrics = {buffered: 0, gaps: 0, repeats: 0, stale: false};
+    sonarAudioMetrics = {buffered: 0, gaps: 0, concealed: 0, rate: 1, stale: false};
     window.uJagdAudioDiagnostics = Object.freeze({bufferedSeconds: 0,
-      sequenceGaps: 0, droppedBlocks: 0, repeatedBlocks: 0,
+      sequenceGaps: 0, droppedBlocks: 0, concealedBlocks: 0, playbackRate: 1,
       stale: false, transport: "off"});
     clearTimeout(sonarAudioTimer);
     sonarAudioTimer = null;
@@ -1118,6 +1118,120 @@
     plot.context.fillStyle = palette().muted;
     plot.context.textAlign = "center";
     plot.context.fillText(t(key), plot.width / 2, plot.height / 2);
+  }
+
+  // --- Weather & sonar analysis dialog (key 0, every station) -------------
+  function toggleWeatherStation(force) {
+    const dialog = $("weather-dialog");
+    const open = force === undefined ? !dialog.open : force;
+    if (open && !dialog.open) { dialog.hidden = false; dialog.showModal(); renderWeatherStation(); }
+    else if (!open && dialog.open) dialog.close();
+  }
+
+  function renderWeatherStation() {
+    const dialog = $("weather-dialog");
+    const ws = v2State?.weather_station;
+    if (!dialog.open || !ws) return;
+    const a = ws.atmosphere, f = ws.flight, p = ws.profile;
+    const limit = (value, max, digits = 0) => t("weather_limit_value", {value: number(value, digits), limit: number(max, digits)});
+    metrics($("weather-environment"), [
+      ["weather_time", `${a.time} · ${t(`weather_daylight_${a.daylight}`)}`],
+      ["weather_moon", `${t(`weather_moon_${a.moon_phase}`)} · ${number(a.moon_illumination * 100, 0)} %`],
+      ["weather_kind", `${t(`weather_kind_${a.weather}`)} · ${t(`weather_precip_${a.precipitation}`)}`],
+      ["weather_visibility", unit(a.visibility_nm, "NM", 1)],
+      ["weather_wind", `${number(a.wind_from_deg, 0)}° · ${unit(a.wind_kn, "kn", 0)} · ${t("weather_gust_value", {gust: number(a.gust_kn, 0)})}`],
+      ["weather_beaufort", `${a.beaufort} · ${t("weather_sea_state_value", {sea: a.sea_state})}`],
+      ["weather_pressure", `${unit(a.pressure_hpa, "hPa", 0)} · ${number(a.pressure_tendency_hpa_3h, 0)} hPa/3h · ${t(`weather_trend_${a.pressure_trend}`)}`],
+      ["weather_temperature", `${unit(a.air_temp_c, "°C", 1)} / ${unit(a.sea_temp_c, "°C", 1)}`],
+      ["weather_ceiling", a.ceiling_ft === null ? t("weather_ceiling_none") : unit(a.ceiling_ft, "ft", 0)],
+      ["weather_icing", t(`weather_icing_${a.icing}`)],
+    ]);
+    $("weather-storm").hidden = !a.storm_warning;
+    $("weather-effects").replaceChildren(...[["solar_heating", "solar"], ["wind_mixing", "wind"], ["freshwater", "rain"]].map(([key, label]) => {
+      const item = node("li", t(`weather_effect_${label}`));
+      item.dataset.active = String(ws.effects[key]);
+      return item;
+    }));
+    const status = $("weather-flight-status");
+    status.textContent = t(`weather_flight_${f.status}`);
+    status.dataset.status = f.status;
+    metrics($("weather-flight"), [
+      ["weather_wind", limit(f.wind_kn, f.limits.wind_kn)],
+      ["weather_gust", limit(f.gust_kn, f.limits.gust_kn)],
+      ["weather_crosswind", limit(f.crosswind_kn, f.limits.crosswind_kn)],
+      ["weather_visibility", limit(f.visibility_nm, f.limits.visibility_nm, 1)],
+      ["weather_ceiling", f.ceiling_ft === null ? t("weather_ceiling_none") : limit(f.ceiling_ft, f.limits.ceiling_ft)],
+      ["weather_sea_state", limit(f.sea_state, f.limits.sea_state)],
+      ["weather_deck_roll", limit(Math.abs(f.roll_deg), f.limits.roll_deg, 1)],
+      ["weather_deck_pitch", limit(Math.abs(f.pitch_deg), f.limits.pitch_deg, 1)],
+      ["weather_icing", t(`weather_icing_${f.icing}`)],
+      ["weather_dipping", t(f.dipping_safe ? "weather_dip_ok" : "weather_dip_blocked")],
+    ]);
+    const text = $("weather-profile-text");
+    if (p === null) {
+      text.textContent = t("weather_profile_none");
+    } else {
+      const shadowCells = p.shadow.reduce((sum, row) => sum + row.filter(Boolean).length, 0);
+      text.textContent = [t("weather_profile_text", {
+        age: number(p.age_s / 60, 0), offset: number(p.offset_nm, 1), layer: number(p.thermocline_m, 0),
+        depth: number(p.water_depth_m, 0),
+        sofar: p.sofar_axis_m === null ? t("weather_sofar_none") : t("weather_sofar_depth", {depth: number(p.sofar_axis_m, 0)}),
+        shadow: shadowCells, cz: p.cz_bands_nm.map(([low, high]) => `${number(low, 0)}-${number(high, 0)}`).join(" / "),
+      }), p.stale ? t("weather_profile_stale") : "",
+        p.dip_relative_to_layer ? t(`weather_dip_${p.dip_relative_to_layer}`) : t("weather_shadow_hint")].filter(Boolean).join(" ");
+    }
+    drawWeatherProfile(p);
+  }
+
+  function drawWeatherProfile(p) {
+    const plot = visualContext("weather-profile");
+    if (!plot) return;
+    if (p === null) { drawEmpty(plot, "weather_profile_none"); return; }
+    const {context, width, height} = plot;
+    const colors = palette();
+    const depthMax = Math.max(1, p.depths_m[p.depths_m.length - 1]);
+    const top = 18, bottom = height - 18, leftW = Math.max(90, width * .26);
+    const y = (depth) => top + Math.min(1, Math.max(0, depth / depthMax)) * (bottom - top);
+    const low = Math.min(...p.speeds_m_s), high = Math.max(...p.speeds_m_s, low + 1);
+    context.strokeStyle = colors.line;
+    context.strokeRect(4, top, leftW - 8, bottom - top);
+    context.strokeStyle = colors.accent;
+    context.beginPath();
+    p.depths_m.forEach((depth, index) => {
+      const x = 10 + (p.speeds_m_s[index] - low) / (high - low) * (leftW - 20);
+      if (index) context.lineTo(x, y(depth)); else context.moveTo(x, y(depth));
+    });
+    context.stroke();
+    const sx = leftW + 6, sw = width - sx - 4;
+    context.strokeStyle = colors.line;
+    context.strokeRect(sx, top, sw, bottom - top);
+    context.fillStyle = "rgb(150 50 50 / .45)";
+    p.shadow.forEach((row, column) => row.forEach((cell, index) => {
+      if (!cell || p.depth_edges_m[index] > depthMax) return;
+      const y0 = y(p.depth_edges_m[index]), y1 = y(Math.min(p.depth_edges_m[index + 1], depthMax));
+      context.fillRect(sx + column * sw / p.shadow.length, y0, sw / p.shadow.length, Math.max(1, y1 - y0));
+    }));
+    context.strokeStyle = "#5adc96";
+    for (const ray of p.rays) {
+      context.beginPath();
+      ray.forEach(([range, depth], index) => {
+        const x = sx + range / p.range_nm * sw;
+        if (index) context.lineTo(x, y(depth)); else context.moveTo(x, y(depth));
+      });
+      context.stroke();
+    }
+    context.textAlign = "left";
+    for (const [depth, color, key] of [[p.thermocline_m, colors.amber, "weather_layer_label"], [p.sofar_axis_m, colors.blue, "weather_sofar_label"]]) {
+      if (depth === null || depth > depthMax) continue;
+      context.strokeStyle = color; context.fillStyle = color; context.setLineDash([5, 5]);
+      context.beginPath(); context.moveTo(4, y(depth)); context.lineTo(width - 4, y(depth)); context.stroke();
+      context.setLineDash([]);
+      context.fillText(t(key, {depth: number(depth, 0)}), sx + 8, y(depth) - 4);
+    }
+    context.fillStyle = colors.muted;
+    context.fillText(`${number(depthMax, 0)} m · ${number(low, 0)}-${number(high, 0)} m/s`, 8, height - 4);
+    context.textAlign = "right";
+    context.fillText(`${number(p.range_nm, 0)} NM`, width - 6, height - 4);
   }
 
   function plotAxes(plot, xmax, ymax, xunit, yunit, xorigin = 0, reverseY = false) {
@@ -2596,6 +2710,41 @@
   function v2Observation(row, fields) {
     if (!exactKeys(row, fields) || typeof row.ref !== "string" || !row.ref || row.ref.length > 64) throw new Error("protocol");
   }
+  // Weather & sonar analysis block, common to every role.  The ocean profile
+  // is null until the sonar has taken a bathythermograph measurement.
+  function validWeatherStation(ws) {
+    const nullableFinite = (value) => value === null || finite(value);
+    const atmosphereKeys = ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"];
+    const flightKeys = ["status", "launch_safe", "dipping_safe", "deck_safe", "wind_kn", "gust_kn", "crosswind_kn", "visibility_nm", "ceiling_ft", "icing", "sea_state", "roll_deg", "pitch_deg", "limits"];
+    const limitKeys = ["wind_kn", "gust_kn", "crosswind_kn", "visibility_nm", "ceiling_ft", "sea_state", "roll_deg", "pitch_deg"];
+    const profileKeys = ["age_s", "offset_nm", "stale", "thermocline_m", "water_depth_m", "depths_m", "speeds_m_s", "sofar_axis_m", "cz_bands_nm", "range_nm", "rays", "depth_edges_m", "shadow", "dip_relative_to_layer"];
+    if (!exactKeys(ws, ["atmosphere", "effects", "flight", "profile"])) return false;
+    const a = ws.atmosphere, f = ws.flight, p = ws.profile;
+    if (!exactKeys(a, atmosphereKeys) || !["clear", "rain", "storm", "fog", "snow"].includes(a.weather) ||
+        !["none", "rain", "snow"].includes(a.precipitation) || !["rising", "steady", "falling", "falling_rapidly"].includes(a.pressure_trend) ||
+        !["none", "light", "severe"].includes(a.icing) || !["day", "civil_twilight", "nautical_twilight", "night"].includes(a.daylight) ||
+        !["new", "waxing_crescent", "first_quarter", "waxing_gibbous", "full", "waning_gibbous", "last_quarter", "waning_crescent"].includes(a.moon_phase) ||
+        typeof a.storm_warning !== "boolean" || typeof a.time !== "string" || !/^\d\d:\d\d$/.test(a.time) ||
+        !Number.isInteger(a.beaufort) || a.beaufort < 0 || a.beaufort > 12 || !Number.isInteger(a.sea_state) || a.sea_state < 0 || a.sea_state > 6 ||
+        !["rain_intensity", "visibility_nm", "wind_from_deg", "wind_kn", "gust_kn", "pressure_hpa", "pressure_tendency_hpa_3h", "air_temp_c", "sea_temp_c", "cloud_cover", "sun_elevation_deg", "moon_illumination"].every((key) => finite(a[key])) ||
+        !nullableFinite(a.ceiling_ft)) return false;
+    if (!exactKeys(ws.effects, ["solar_heating", "wind_mixing", "freshwater"]) || Object.values(ws.effects).some((value) => typeof value !== "boolean")) return false;
+    if (!exactKeys(f, flightKeys) || !["clear", "limited", "no_go"].includes(f.status) || !["none", "light", "severe"].includes(f.icing) ||
+        ["launch_safe", "dipping_safe", "deck_safe"].some((key) => typeof f[key] !== "boolean") ||
+        !["wind_kn", "gust_kn", "crosswind_kn", "visibility_nm", "roll_deg", "pitch_deg"].every((key) => finite(f[key])) || !nullableFinite(f.ceiling_ft) ||
+        !Number.isInteger(f.sea_state) || !exactKeys(f.limits, limitKeys) || !Object.values(f.limits).every((value) => finite(value))) return false;
+    if (p === null) return true;
+    const pairs = (rows, maximum) => boundedArray(rows, maximum) && rows.every((row) => Array.isArray(row) && row.length === 2 && row.every((value) => finite(value)));
+    return exactKeys(p, profileKeys) && typeof p.stale === "boolean" &&
+      ["age_s", "offset_nm", "thermocline_m", "water_depth_m", "range_nm"].every((key) => finite(p[key]) && p[key] >= 0) && nullableFinite(p.sofar_axis_m) &&
+      boundedArray(p.depths_m, 64) && boundedArray(p.speeds_m_s, 64) && p.depths_m.length === p.speeds_m_s.length && p.depths_m.length >= 2 &&
+      [...p.depths_m, ...p.speeds_m_s].every((value) => finite(value)) && pairs(p.cz_bands_nm, 8) &&
+      boundedArray(p.rays, 9) && p.rays.every((ray) => pairs(ray, 64)) &&
+      boundedArray(p.depth_edges_m, 32) && p.depth_edges_m.length >= 2 && p.depth_edges_m.every((value) => finite(value)) &&
+      boundedArray(p.shadow, 32) && p.shadow.every((row) => boundedArray(row, 32) && row.length === p.depth_edges_m.length - 1 && row.every((cell) => typeof cell === "boolean")) &&
+      (p.dip_relative_to_layer === null || ["above", "below"].includes(p.dip_relative_to_layer));
+  }
+
   function validateV2State(state) {
     const status = ["protocol", "version", "session", "epoch", "revision", "seq", "phase", "role", "chart_revision"];
     if (!state || state.protocol !== 2 || typeof state.version !== "string" ||
@@ -2606,7 +2755,7 @@
       if (!exactKeys(state, status)) throw new Error("protocol");
       return;
     }
-    const common = [...status, "clock", "environment", "mission", "autocrew", "audio"];
+    const common = [...status, "clock", "environment", "mission", "autocrew", "audio", "weather_station"];
     if (!stationNames.includes(state.role) || state.role !== session?.station ||
         !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "time_scale", "world"]) ||
         !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm"]) ||
@@ -2625,6 +2774,7 @@
         state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue"]) ||
           !Number.isSafeInteger(event.seq) || event.seq < 1 || !gameEffectKinds.has(event.cue) ||
           index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
+    if (!validWeatherStation(state.weather_station)) throw new Error("protocol");
     const payload = state[state.role];
     const shapes = {
       bridge: ["navigation", "orders", "threat", "systems", "tactical_summary"], sonar: ["observations", "settings", "visualization"],
@@ -3757,6 +3907,7 @@
   }
 
   function renderSnapshot(resetDraft = false) {
+    renderWeatherStation();
     $("mission-name").textContent = snapshot.mission.name;
     $("objective").textContent = snapshot.mission.objective;
     $("phase").textContent = enumText(phases, snapshot.phase);
@@ -5160,6 +5311,14 @@
     $(id).addEventListener("click", () => { $("workstation-tools").open = false; activateTab(name); });
   }
   $("workstation-release").addEventListener("click", releaseActiveStation);
+  $("workstation-weather").addEventListener("click", () => { $("workstation-tools").open = false; toggleWeatherStation(true); });
+  $("weather-close").addEventListener("click", () => toggleWeatherStation(false));
+  $("weather-dialog").addEventListener("close", (event) => {
+    // Only the dialog's own dismissal hides it (not a close from inside).
+    if (event.target !== $("weather-dialog") || $("weather-dialog").open) return;
+    $("weather-dialog").hidden = true;
+    releaseCanvas($("weather-profile"));
+  });
   for (const name of tabNames) {
     const tab = $(`tab-${name}`);
     tab.addEventListener("click", () => activateTab(name));
@@ -5242,7 +5401,7 @@
               window.uJagdAudioDiagnostics = Object.freeze({
                 bufferedSeconds: Math.max(0, Math.min(6, data.buffered * .25)),
                 sequenceGaps: data.gaps, droppedBlocks: data.evictions,
-                repeatedBlocks: data.repeats,
+                concealedBlocks: data.concealed, playbackRate: data.rate,
                 stale: data.stale, transport: sonarAudioSocket ? "websocket" : "http"});
             }
             if (data?.type === "stale") {
@@ -5536,6 +5695,12 @@
     if (!session?.station || event.ctrlKey || event.altKey || event.metaKey || event.isComposing ||
         event.repeat || $("operations").hidden) return;
     const target = event.target;
+    if (event.key === "0" && !(target instanceof Element && (target.closest("input, select, textarea") || target.isContentEditable)) &&
+        !document.querySelector("dialog[open]:not(#weather-dialog)")) {
+      event.preventDefault();
+      toggleWeatherStation();
+      return;
+    }
     if (target instanceof Element && (target.closest("input, select, textarea, dialog[open]") ||
         target.isContentEditable)) return;
     if (/^[1-9]$/.test(event.key)) {

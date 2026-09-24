@@ -106,11 +106,13 @@ Combat situation:
 
 - Gain (`I`/`O`) changes display and audio only, not detection. Black level (`Ctrl+I`/`Ctrl+O`) and contrast (`Shift+I`/`Shift+O`) help faint traces stand out; `Shift+C` changes the phosphor colour.
 - `D` or `A`/`B`/`H` choose broadband, filtered or heterodyne audition. Heterodyne shifts the low band up to about 700 Hz so low tonals become audible.
+- The listening audio runs about one second behind the display so a busy moment never interrupts it. After steering the listening bearing the old beam fades into the new one after about a second; the stream is not cut.
 - Put the TAS below the measured layer to hear deep targets; keep the HMS for shallow ones. Both arrays run in parallel.
 - The TMA page shows the closing rate derived from the solution: positive means the target is closing.
 - If the TAS and HMS disagree by 9 degrees or more, treat the contact as a possible ghost (the display flags it) and turn to resolve it.
 - The towed array is a line: it cannot tell a bearing from its mirror about the cable. A contact heard only on the TAS is marked "TAS left/right ambiguous" with its mirror bearing and does not feed TMA; the shown side is right only half the time. Turn 20 degrees (or get the contact on the HMS) and the wrong side drops out. Bearings toward the cable ends (endfire) are also less accurate than broadside.
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
+- The bathythermograph (`E`) measures to the seabed, at most 1500 m. Only after a measurement does the weather & sonar analysis (`0`) show the layer, the shadow zone below it and a SOFAR channel.
 
 ## Not modelled {#sonar-limits}
 

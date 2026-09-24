@@ -53,6 +53,72 @@ def test_update_passes_unclamped_wall_dt_to_audio(monkeypatch):
     game.audio.shutdown()
 
 
+def test_frame_dt_catches_up_slow_frames_within_bounds():
+    game = Game(seed=86, audio_enabled=False)
+    game._frame_clock_reset = False
+    walls = [1 / 30] * 5 + [.35] + [1 / 30] * 10
+    dts = [game._frame_dt(wall) for wall in walls]
+    assert max(dts) <= config.SIM_FRAME_DT_MAX + 1e-12
+    # The spike is fully caught up within a few frames; nothing is lost.
+    assert sum(dts) == pytest.approx(sum(walls))
+    assert game._sim_debt_s == pytest.approx(0.0)
+    assert game._sim_dropped_s == 0.0
+    # A hang beyond the catch-up bound drops only the excess.
+    assert game._frame_dt(3.0) == pytest.approx(config.SIM_FRAME_DT_MAX)
+    assert game._sim_dropped_s == pytest.approx(3.0 - config.SIM_CATCHUP_MAX_S)
+    assert game._sim_debt_s == pytest.approx(
+        config.SIM_CATCHUP_MAX_S - config.SIM_FRAME_DT_MAX)
+    for bad in (float("nan"), float("inf"), -1.0, None):
+        assert game._frame_dt(bad) >= 0.0
+    game.audio.shutdown()
+
+
+def test_frame_dt_never_catches_up_across_pause_or_load(monkeypatch):
+    game = Game(seed=87, audio_enabled=False)
+    game._frame_clock_reset = False
+    game._frame_dt(.5)
+    assert game._sim_debt_s > 0
+    game.set_paused(True)
+    game.update(game._frame_dt(1 / 30))
+    game.set_paused(False)
+    # Pause wall time is not simulated afterwards.
+    assert game._frame_dt(2.0) == pytest.approx(config.SIM_FRAME_DT_MAX)
+    assert game._sim_debt_s == 0.0
+    game._frame_dt(.5)
+    game.reset(88)
+    assert game._frame_dt(.5) == pytest.approx(config.SIM_FRAME_DT_MAX)
+    assert game._sim_debt_s == 0.0
+    game.audio.shutdown()
+
+
+def test_frame_rate_option_cycles_and_persists(tmp_path):
+    game = Game(seed=89, audio_enabled=False)
+    assert game.frame_rate() == config.FPS_DEFAULT == 30
+    game._open_administration("options")
+    game.options_sel = game._OPTION_ROWS.index("frame_rate")
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT))
+    assert game.preferences.frame_rate == 60 and game.frame_rate() == 60
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT))
+    assert game.frame_rate() == 30
+    game.draw_options_overlay()
+    game.audio.shutdown()
+
+
+def test_listen_bearing_change_keeps_sonar_audio_stream(monkeypatch):
+    game = Game(seed=90, audio_enabled=False)
+    game.station = Station.SONAR
+    game.sonar_audio_enabled = True
+    stops = Mock()
+    monkeypatch.setattr(game.audio, "stop_sonar", stops)
+    game._sonar_audio_sequence = 7
+    assert game.set_sonar_listen_bearing(123.0) is True
+    game._joy_horizontal_step(1)
+    assert game.clear_sonar_focus() is True
+    stops.assert_not_called()
+    assert game._sonar_audio_sequence == 7
+    game.audio.shutdown()
+
+
 def test_sonar_audio_continues_at_fixed_realtime_speed(monkeypatch):
     game = Game(seed=85, audio_enabled=False)
     game.station = Station.SONAR

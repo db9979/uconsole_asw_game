@@ -17,6 +17,7 @@ from src.sonar.sonar import Contact
 from src.core import manual
 from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
                                    browser_state, catalogs)
+from commander_fixtures import WEATHER_STATION
 
 
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
@@ -915,7 +916,7 @@ def _direct_fire_browser_states():
                                     rain_intensity=.1, visibility_nm=24.0),
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
                    autocrew=dict(enabled=False, status="off"),
-                   audio=dict(events=[]))
+                   audio=dict(events=[]), weather_station=WEATHER_STATION)
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
                       yaw_rate=0.0)
@@ -1119,6 +1120,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             rain_intensity=0.0, visibility_nm=30.0)
         common["autocrew"] = {"enabled": False, "status": "off"}
         common["audio"] = {"events": list(legacy["sound_events"])}
+        common["weather_station"] = WEATHER_STATION
         if role == "bridge":
             common[role] = {"navigation": {key: legacy["ownship"][key] for key in (
                 "x", "y", "course", "speed", "target_course", "target_speed")},
@@ -1388,6 +1390,8 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
         "de": {key: value for key, value in de.items() if key.startswith(PREFIX)},
     }
     console._contact_analysis_assets = {}
+    # Pre-rendered like the assets: resources.files is redirected below.
+    console._manual_pages = {}
     console._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
     html = ASSETS.joinpath("index.html").read_text().replace(
         '<script src="./app.js" defer>',

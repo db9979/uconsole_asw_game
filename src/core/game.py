@@ -39,6 +39,9 @@ from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
 from src.sensors import radar as radar_physics
 from src.sensors import visual as visual_physics
+from src.world import atmosphere as atmosphere_physics
+from src.world import ocean as ocean_physics
+from src.sonar import raytrace as sonar_raytrace
 from src.sensors import hfdf as hf_physics
 from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
@@ -97,6 +100,7 @@ from src.ui.feedback import EventFeed
 from src.ui.map_view import draw_map_view, map_hit_target
 from src.ui.splash_view import SPLASH_PING_PERIOD_S, draw_splash
 from src.ui.sonar_view import draw_sonar_view, sonar_click_target, sonar_hit_target
+from src.ui.weather_station import draw_weather_station
 from src.ui.stations_view import (draw_autocrew_overview, draw_bridge_view,
                                   draw_damage_view, draw_eloka_view,
                                   draw_engine_view, draw_opz_view,
@@ -268,6 +272,11 @@ LOOKOUT_MODEL = visual_physics.LookoutModel(
 
 
 class Game:
+    # Options overlay rows in display order; the last two open sub-menus.
+    _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
+                    "simlog", "night_mode", "high_contrast", "frame_rate",
+                    "live_traffic", "commander")
+
     def __init__(self, seed: int = 42, difficulty: dict = None,
                   start_menu: bool = False, fullscreen: bool = None,
                  window_size: tuple = None, show_splash: bool = False,
@@ -332,6 +341,10 @@ class Game:
         self._perf_audio_s = 0.0
         self._perf_commander_s = 0.0
         self._perf_draw_s = 0.0
+        self._perf_frame_max_s = 0.0
+        self._sim_debt_s = 0.0
+        self._sim_dropped_s = 0.0
+        self._frame_clock_reset = True
         self._sound_event_seq = 0
         self._sound_events = deque(maxlen=16)
         self._eco_drawn_at = float("-inf")
@@ -416,6 +429,7 @@ class Game:
         self.runtime_catalog = CATALOG
         self.commander_open = False
         self.audio.stop()
+        self._frame_clock_reset = True
         self._sound_events.clear()
         self._sonar_audio_sequence = -1
         scenario_key = scenario_key or self.scenario_key
@@ -553,6 +567,7 @@ class Game:
         self.station = Station.BRIDGE
         self.autocrew = AutocrewController()
         self.autocrew_overview_open = False
+        self.weather_station_open = False
         self.paused = False
         self.running = True
         self.simlog_view_open = False
@@ -1146,8 +1161,9 @@ class Game:
             return "invalid_value"
         if self.damage.station_down("sonar"):
             return "sonar_down"
+        # Retuning keeps the listening stream running: the receiver reset is a
+        # sequence gap that _update_audio joins without a silent re-buffer.
         self.sonar.set_listen_bearing(bearing)
-        self._stop_sonar_audio()
         return True
 
     def set_sonar_focus(self, contact):
@@ -1162,7 +1178,6 @@ class Game:
         self.sonar.set_listen_bearing(contact.bearing)
         self.sonar.focus_locked = True
         self.sonar._listen_target_id = contact.target_id
-        self._stop_sonar_audio()
         return True
 
     def clear_sonar_focus(self):
@@ -1170,7 +1185,6 @@ class Game:
             return "sonar_down"
         self.sonar.focus_locked = False
         self.sonar._listen_target_id = None
-        self._stop_sonar_audio()
         return True
 
     def set_sonar_array_mode(self, mode: str):
@@ -1732,6 +1746,7 @@ class Game:
     def _clear_controls(self) -> None:
         self._clear_station_input()
         self._stop_sonar_audio()
+        self._frame_clock_reset = True
 
     def _local_station_input_locked(self) -> bool:
         if (not self.autocrew.enabled[station_key(self.station)]
@@ -1804,19 +1819,21 @@ class Game:
             if key == pygame.K_ESCAPE:
                 self.options_open = False
             elif key in (pygame.K_UP, pygame.K_DOWN):
-                self.options_sel = (self.options_sel + (1 if key == pygame.K_DOWN else -1)) % 10
+                self.options_sel = ((self.options_sel + (1 if key == pygame.K_DOWN else -1))
+                                    % len(self._OPTION_ROWS))
             elif key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_RETURN, pygame.K_KP_ENTER):
-                if self.options_sel == 8:
-                    self._open_administration("live_traffic")
+                name = self._OPTION_ROWS[self.options_sel]
+                if name in ("live_traffic", "commander"):
+                    self._open_administration(name)
                     return
-                if self.options_sel == 9:
-                    self._open_administration("commander")
-                    return
-                names = ("language", "fullscreen", "audio", "large_text",
-                         "tooltips", "simlog", "night_mode", "high_contrast")
-                name = names[self.options_sel]
-                value = ("de" if self.preferences.language == "en" else "en") \
-                    if name == "language" else not getattr(self.preferences, name)
+                if name == "language":
+                    value = "de" if self.preferences.language == "en" else "en"
+                elif name == "frame_rate":
+                    choices = config.FPS_CHOICES
+                    step = -1 if key == pygame.K_LEFT else 1
+                    value = choices[(choices.index(self.frame_rate()) + step) % len(choices)]
+                else:
+                    value = not getattr(self.preferences, name)
                 self._set_preference(name, value)
         elif self.live_traffic_open:
             self._handle_live_traffic_key(key)
@@ -2060,7 +2077,7 @@ class Game:
                   "help_open", "nations_open", "quit_confirm", "save_ui",
                   "options_open", "commander_open", "live_traffic_open",
                   "simlog_view_open",
-                  "autocrew_overview_open",
+                  "autocrew_overview_open", "weather_station_open",
                   "running", "game_over")
         before = tuple(getattr(self, field) for field in fields), id(self.editor)
         try:
@@ -2189,6 +2206,17 @@ class Game:
                 self.autocrew_overview_open = False
                 self._clear_station_input()
             return
+        if self.weather_station_open:
+            # The read-only panel owns input: 0 / Esc close it, nothing leaks
+            # to the station underneath.
+            if e.type == pygame.QUIT:
+                self.weather_station_open = False
+                self._open_administration("quit")
+            elif (e.type == pygame.KEYDOWN
+                  and e.key in (pygame.K_0, pygame.K_KP0, pygame.K_ESCAPE)):
+                self.weather_station_open = False
+                self._clear_station_input()
+            return
         if e.type == pygame.MOUSEBUTTONUP and e.button == 1:
             if self._local_station_input_locked():
                 return
@@ -2252,10 +2280,9 @@ class Game:
                         for index, rect in enumerate(self._options_row_rects()):
                             if rect.collidepoint(canvas):
                                 self.options_sel = index
-                                if index == 8:
-                                    self._open_administration("live_traffic")
-                                elif index == 9:
-                                    self._open_administration("commander")
+                                name = self._OPTION_ROWS[index]
+                                if name in ("live_traffic", "commander"):
+                                    self._open_administration(name)
                                 break
             return
         if (e.type == pygame.TEXTINPUT and getattr(e, "text", "") == "?"
@@ -2323,6 +2350,12 @@ class Game:
             if e.key == pygame.K_F3:
                 self._clear_station_input()
                 self.autocrew_overview_open = True
+                return
+            if e.key in (pygame.K_0, pygame.K_KP0):
+                self._clear_station_input()
+                self.pinned_tooltip = None
+                self._tooltip_anchor = None
+                self.weather_station_open = True
                 return
             if e.key == pygame.K_F4:
                 self._open_simlog_view()
@@ -2907,7 +2940,7 @@ class Game:
                         and not (self.station is Station.HELICOPTER
                                  and self.station_page == 3)
                         and len(STATION_PAGES[self.station]) > 1
-                        and not self.autocrew_overview_open):
+                        and not self._station_overlay_open):
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
                     station_rect = (config.STATION_PANEL_RECT
                                     if self._map_station_visible() else
@@ -3303,9 +3336,55 @@ class Game:
             self.announce(message("runtime.helo.launch", torpedoes=self.helo.torps,
                                   buoys=self.helo.buoys_left), "waffen", 3.0)
 
+    def atmosphere(self) -> dict:
+        """Own-ship atmosphere (barometer, thermometer, wind, sky), derived
+        from the weather system; observation-safe (no future values)."""
+        world = self.world
+        weather = world.weather_values()
+        kind = world.weather_kind()
+        source_sea, target_sea, elapsed = world.weather_epoch()
+        pressure, tendency = atmosphere_physics.barometer(
+            self.seed, source_sea, target_sea, elapsed)
+        trend = atmosphere_physics.pressure_trend(tendency)
+        rain = weather["rain_intensity"]
+        wind = weather["wind_speed_kn"]
+        sst = world.ocean.sea_surface_temperature_c(world.hour)
+        cloud = atmosphere_physics.cloud_cover(kind, rain)
+        air = atmosphere_physics.air_temperature_c(
+            sst, world.ocean.day_of_year, world.hour, weather["wind_from_deg"],
+            wind, cloud)
+        precipitation = atmosphere_physics.precipitation(rain, air)
+        latitude = world.latitude_deg()
+        latitude = (atmosphere_physics.DEFAULT_LATITUDE_DEG if latitude is None
+                    else latitude)
+        sun = atmosphere_physics.sun_elevation_deg(
+            latitude, world.ocean.day_of_year, world.hour)
+        lunar_age = self.lunar_age_days()
+        return dict(
+            weather=("snow" if precipitation == "snow" else kind),
+            precipitation=precipitation, rain_intensity=rain,
+            visibility_nm=weather["visibility_nm"],
+            sea_state=int(round(weather["sea_state"])),
+            wind_from_deg=weather["wind_from_deg"], wind_kn=wind,
+            gust_kn=atmosphere_physics.gust_kn(wind, weather["sea_state"]),
+            beaufort=atmosphere_physics.beaufort(wind),
+            pressure_hpa=pressure, pressure_tendency_hpa_3h=tendency,
+            pressure_trend=trend,
+            storm_warning=atmosphere_physics.storm_warning(pressure, trend),
+            air_temp_c=air, sea_temp_c=sst, cloud_cover=cloud,
+            ceiling_ft=atmosphere_physics.cloud_ceiling_ft(
+                kind, rain, weather["visibility_nm"]),
+            icing=atmosphere_physics.icing(air, precipitation, wind),
+            sun_elevation_deg=sun,
+            daylight=atmosphere_physics.daylight(sun),
+            moon_phase=atmosphere_physics.moon_phase(lunar_age),
+            moon_illumination=visual_physics.moon_illumination(lunar_age),
+            time=world.format_time())
+
     def helicopter_weather(self) -> dict:
         """Return one shared, observation-safe flight-weather decision."""
         weather = self.world.weather_values()
+        atmosphere = self.atmosphere()
         relative = math.radians(config.angle_diff_deg(
             weather["wind_from_deg"], self.ship.course))
         crosswind = abs(weather["wind_speed_kn"] * math.sin(relative))
@@ -3314,15 +3393,108 @@ class Game:
             and crosswind <= config.HELO_LAUNCH_CROSSWIND_MAX_KN
             and weather["visibility_nm"] >= config.HELO_LAUNCH_VISIBILITY_MIN_NM
             and weather["sea_state"] <= config.HELO_LAUNCH_SEA_STATE_MAX)
+        gust = atmosphere["gust_kn"]
+        ceiling = atmosphere["ceiling_ft"]
+        icing = atmosphere["icing"]
+        launch_weather = (launch_safe
+                          and gust <= config.HELO_LAUNCH_GUST_MAX_KN
+                          and (ceiling is None or ceiling >= config.HELO_CEILING_MIN_FT)
+                          and icing != "severe")
         # Launch and recovery also need a deck-motion window (own ship).
         deck_safe = helicopter_physics.deck_within_limits(self.ship.roll, self.ship.pitch)
-        launch_safe = launch_safe and deck_safe
+        launch_safe = launch_weather and deck_safe
         dipping_safe = (
             weather["wind_speed_kn"] <= config.HELO_DIP_WIND_MAX_KN
             and weather["visibility_nm"] >= config.HELO_DIP_VISIBILITY_MIN_NM
-            and weather["sea_state"] <= config.HELO_DIP_SEA_STATE_MAX)
+            and weather["sea_state"] <= config.HELO_DIP_SEA_STATE_MAX
+            # Winch and cable ice up: no dipping in icing conditions.
+            and icing == "none")
+        # Flight-weather category: NO-GO outside the launch weather limits,
+        # LIMITED near a limit (80 %) or in light icing, else CLEAR.
+        margins = (
+            weather["wind_speed_kn"] / config.HELO_LAUNCH_WIND_MAX_KN,
+            gust / config.HELO_LAUNCH_GUST_MAX_KN,
+            crosswind / config.HELO_LAUNCH_CROSSWIND_MAX_KN,
+            weather["sea_state"] / config.HELO_LAUNCH_SEA_STATE_MAX,
+            config.HELO_LAUNCH_VISIBILITY_MIN_NM / max(weather["visibility_nm"], 1e-3),
+            (0.0 if ceiling is None else config.HELO_CEILING_MIN_FT / max(ceiling, 1.0)))
+        status = ("no_go" if not launch_weather else
+                  "limited" if icing != "none" or max(margins) >= 0.8 else "clear")
         return dict(weather, crosswind_kn=crosswind, deck_safe=deck_safe,
-                    launch_safe=launch_safe, dipping_safe=dipping_safe)
+                    launch_safe=launch_safe, dipping_safe=dipping_safe,
+                    gust_kn=gust, ceiling_ft=ceiling, icing=icing, status=status)
+
+    WEATHER_PROFILE_STALE_S = 1800.0
+    WEATHER_PROFILE_STALE_NM = 10.0
+    WEATHER_RAY_SOURCE_DEPTH_M = 5.0      # hull sonar
+
+    def weather_station_data(self) -> dict:
+        """Observation-safe data for the weather & sonar analysis panel.
+
+        Atmosphere and flight weather come from own-ship instruments.  The
+        ocean profile - layer, sound-speed curve, shadow zone, SOFAR axis,
+        rays - exists only after the sonar has taken a bathythermograph
+        measurement, and is always that measurement (with its age), never
+        the modelled truth."""
+        atmosphere = self.atmosphere()
+        flight = self.helicopter_weather()
+        effects = dict(
+            solar_heating=(atmosphere["daylight"] == "day"
+                           and atmosphere["sun_elevation_deg"] >= 20.0
+                           and atmosphere["cloud_cover"] < 0.6),
+            wind_mixing=atmosphere["wind_kn"] >= ocean_physics.MLD_WIND_THRESHOLD_KN,
+            freshwater=atmosphere["precipitation"] != "none")
+        return dict(
+            atmosphere=atmosphere, effects=effects,
+            flight=dict(
+                status=flight["status"], launch_safe=flight["launch_safe"],
+                dipping_safe=flight["dipping_safe"], deck_safe=flight["deck_safe"],
+                wind_kn=flight["wind_speed_kn"], gust_kn=flight["gust_kn"],
+                crosswind_kn=flight["crosswind_kn"],
+                visibility_nm=flight["visibility_nm"],
+                ceiling_ft=flight["ceiling_ft"], icing=flight["icing"],
+                sea_state=int(round(flight["sea_state"])),
+                roll_deg=self.ship.roll, pitch_deg=self.ship.pitch,
+                limits=dict(
+                    wind_kn=config.HELO_LAUNCH_WIND_MAX_KN,
+                    gust_kn=config.HELO_LAUNCH_GUST_MAX_KN,
+                    crosswind_kn=config.HELO_LAUNCH_CROSSWIND_MAX_KN,
+                    visibility_nm=config.HELO_LAUNCH_VISIBILITY_MIN_NM,
+                    ceiling_ft=config.HELO_CEILING_MIN_FT,
+                    sea_state=config.HELO_LAUNCH_SEA_STATE_MAX,
+                    roll_deg=helicopter_physics.DECK_ROLL_LIMIT_DEG,
+                    pitch_deg=helicopter_physics.DECK_PITCH_LIMIT_DEG)),
+            profile=self._weather_station_profile())
+
+    def _weather_station_profile(self) -> dict | None:
+        bt = self.sonar.bt_profile
+        if bt is None:
+            return None
+        age = max(0.0, self.sim_t - bt["t"])
+        offset = math.hypot(self.ship.x - bt["x"], self.ship.y - bt["y"])
+        # Wind of the measurement's sea-state band keeps the picture fixed
+        # for one measurement (a pure, cached function of it).
+        wind = ocean_physics.MLD_WIND_THRESHOLD_KN * bt["sea_state"] / 3.0
+        picture = sonar_raytrace.ray_picture(
+            bt["depths_m"], bt["speeds_m_s"], bt["water_depth_m"],
+            self.WEATHER_RAY_SOURCE_DEPTH_M, self.world.seabed_at(bt["x"], bt["y"]),
+            wind, bt["thermocline_m"])
+        dip = None
+        if self.helo.airborne and self.helo.dip_state != "STOWED":
+            dip = ("below" if self.helo.dip_depth_m >= bt["thermocline_m"]
+                   else "above")
+        return dict(
+            age_s=age, offset_nm=offset,
+            stale=(age > self.WEATHER_PROFILE_STALE_S
+                   or offset > self.WEATHER_PROFILE_STALE_NM),
+            thermocline_m=bt["thermocline_m"], water_depth_m=bt["water_depth_m"],
+            depths_m=list(bt["depths_m"]), speeds_m_s=list(bt["speeds_m_s"]),
+            sofar_axis_m=ocean_physics.sofar_axis_m(
+                bt["depths_m"], bt["speeds_m_s"], bt["water_depth_m"]),
+            cz_bands_nm=[list(band) for band in bt["cz_bands_nm"]],
+            range_nm=picture["range_nm"], rays=picture["rays"],
+            depth_edges_m=picture["depth_edges_m"], shadow=picture["shadow"],
+            dip_relative_to_layer=dip)
 
     def launch_helicopter(self):
         if self.damage.station_down("flightdeck"):
@@ -3707,7 +3879,6 @@ class Game:
             self.dmg_cursor = (self.dmg_cursor + delta) % n
         elif self.station is Station.SONAR:
             self.sonar.set_listen_bearing(self.sonar.listen_bearing + delta * .5)
-            self._stop_sonar_audio()
         elif self.station is Station.WEAPONS:
             self._cycle_selected_contact(delta)
         elif self.station is Station.OPZ:
@@ -3732,12 +3903,14 @@ class Game:
         value = f"{self.seed}:{namespace}:{identity}".encode("utf-8")
         return hashlib.blake2b(value, digest_size=8).hexdigest().upper()
 
+    def lunar_age_days(self) -> float:
+        """Lunar age: seeded per world, advancing with simulation time."""
+        return (detrand.u01(self.seed, "lunar-age") * visual_physics.SYNODIC_MONTH_D
+                + self.sim_t / 86400.0) % visual_physics.SYNODIC_MONTH_D
+
     def moon_illumination(self) -> float:
-        """Illuminated lunar fraction; the lunar age is seeded per world and
-        advances with simulation time."""
-        age = (detrand.u01(self.seed, "lunar-age") * visual_physics.SYNODIC_MONTH_D
-               + self.sim_t / 86400.0)
-        return visual_physics.moon_illumination(age)
+        """Illuminated lunar fraction."""
+        return visual_physics.moon_illumination(self.lunar_age_days())
 
     def _lookout_observe(self, actor, namespace: str, kind: str,
                          seed: int, altitude_m: float | None = None) -> None:
@@ -5589,7 +5762,6 @@ class Game:
         self.selected_contact = cs[(i + delta) % len(cs)]
         if self.sonar.focus_locked:
             self.sonar.reset_listening_history()
-            self._stop_sonar_audio()
 
     def _cycle_helo_contact(self, delta: int) -> None:
         """W2: browse only what the helicopter's own dip has plotted - its
@@ -5834,11 +6006,14 @@ class Game:
             if ping_cycle != self._splash_ping_cycle:
                 self._splash_ping_cycle = ping_cycle
                 self.audio.play_ping()
+            self._frame_clock_reset = True
             return
         overlay_blocked = ((self.administration_open or self.editor is not None)
                            and not self.crew_overlay_allows_simulation())
         if (not self.running or self.in_menu or self.paused or self.game_over
                 or overlay_blocked):
+            # Nothing is caught up after a pause, menu, overlay or game over.
+            self._frame_clock_reset = True
             self.audio.stop()
             self._sonar_audio_sequence = -1
             return
@@ -6163,10 +6338,13 @@ class Game:
         if (self.helo.dip_state in ("DEPLOYING", "DEPLOYED")
                 and not self.helicopter_weather()["dipping_safe"]):
             self.helo.set_dipping(False, self.world)
+        icing = (self.atmosphere()["icing"] if self.helo.airborne else "none")
         self.helo.update(dt, self.ship, self.world,
                          recovery_available=not self.damage.station_down("flightdeck")
                          and helicopter_physics.deck_within_limits(
-                             self.ship.roll, self.ship.pitch))
+                             self.ship.roll, self.ship.pitch),
+                         fuel_factor=(config.HELO_ICING_FUEL_FACTOR
+                                      if icing != "none" else 1.0))
         for buoy in self.buoys:
             buoy.update(dt, self.world)
         self.buoys = [buoy for buoy in self.buoys if buoy.active]
@@ -7425,6 +7603,7 @@ class Game:
         self.ship._clock = ship["clock"]
         self.autocrew = AutocrewController.restore(data["autocrew"])
         self.autocrew_overview_open = False
+        self.weather_station_open = False
         runtime_mission = data["mission_runtime"]
         self.difficulty = {
             name: (int(runtime_mission["difficulty"][name]) if kind is int
@@ -9461,7 +9640,7 @@ class Game:
                         bt_profile["cz_bands_nm"],
                         [list(band) for band in config.CZ_BANDS])):
                 return False
-            maximum = min(water_depth, 400)
+            maximum = min(water_depth, config.SONAR_BT_MAX_DEPTH_M)
             expected_depths = [maximum * index / 20 for index in range(21)]
             if (any(abs(depth - expected) > 1e-9
                     for depth, expected in zip(depths, expected_depths))
@@ -9814,6 +9993,8 @@ class Game:
         self.in_menu = False
         self.main_menu = False
         self.feed.clear()
+        # The load itself took wall time; it is not simulation time to catch up.
+        self._frame_clock_reset = True
         return True
 
     # --- W4: Save-Slots 1-5 ---
@@ -10126,6 +10307,11 @@ class Game:
 
     # --- W0: Draw-Grid ---
 
+    @property
+    def _station_overlay_open(self) -> bool:
+        """A full-station overlay (F3 autocrew, 0 weather) replaces the station."""
+        return self.autocrew_overview_open or self.weather_station_open
+
     @localized
     def _eco_display_active(self) -> bool:
         """Solo browser is live: the uConsole shows a cheap status screen.
@@ -10135,7 +10321,7 @@ class Game:
         return (self.running and not self.splash_active and self.editor is None
                 and not self.simlog_view_open and not self.in_menu
                 and not self.main_menu and not self.administration_open
-                and not self.game_over and not self.autocrew_overview_open
+                and not self.game_over and not self._station_overlay_open
                 and self.commander.eco_display_ready(self))
 
     def _skip_eco_frame(self) -> bool:
@@ -10198,23 +10384,29 @@ class Game:
             self.draw_bottom_telemetry()
         else:
             self.draw_top_bar()
-            map_station = (not self.autocrew_overview_open
+            map_station = (not self._station_overlay_open
                            and self._map_station_visible())
             previous_rect = config.STATION_RECT
             try:
                 config.STATION_RECT = (config.STATION_PANEL_RECT if map_station else
+                                       # The weather panel takes the whole
+                                       # screen below the top bar.
                                        config.OPZ_STATION_RECT
-                                       if self.station is Station.OPZ
-                                       and not self.autocrew_overview_open else
+                                       if self.weather_station_open
+                                       or (self.station is Station.OPZ
+                                           and not self._station_overlay_open) else
                                        config.FULL_STATION_RECT)
                 if self.autocrew_overview_open:
                     with layout.clip_to(s, config.STATION_RECT):
                         draw_autocrew_overview(self)
+                elif self.weather_station_open:
+                    with layout.clip_to(s, config.STATION_RECT):
+                        draw_weather_station(self)
                 elif map_station:
                     draw_map_view(self)
                     if self.station is Station.WEAPONS:
                         draw_weapons_overlay(self)
-                if not self.autocrew_overview_open:
+                if not self._station_overlay_open:
                     with layout.clip_to(s, config.STATION_RECT):
                         if self.station is Station.SONAR:
                             draw_sonar_view(self)
@@ -10234,7 +10426,7 @@ class Game:
                             draw_eloka_view(self)
                         else:
                             draw_bridge_view(self)
-                if self.station is not Station.OPZ:
+                if self.station is not Station.OPZ and not self.weather_station_open:
                     self.draw_bottom_feed()
                     self.draw_bottom_telemetry()
                 self.draw_navigation_input()
@@ -10263,7 +10455,7 @@ class Game:
             layout.blit_block(s, localize(self.msg), 22, 62, config.SCREEN_W - 44, 76,
                               config.COLOR_WARN, size=28, align="center")
         if (not self.in_menu and not self.splash_active and self.editor is None
-                and not self.simlog_view_open and not self.autocrew_overview_open
+                and not self.simlog_view_open and not self._station_overlay_open
                 and self.tooltips_enabled and not eco
                 and not self.administration_open and not self.game_over):
             canvas = self._window_to_canvas(pygame.mouse.get_pos())
@@ -10559,7 +10751,8 @@ class Game:
 
     @staticmethod
     def _options_row_rects():
-        return tuple(pygame.Rect(292, 140 + index * 50, 696, 44) for index in range(10))
+        return tuple(pygame.Rect(292, 132 + index * 46, 696, 42)
+                     for index in range(len(Game._OPTION_ROWS)))
 
     @localized
     def draw_options_overlay(self) -> None:
@@ -10584,6 +10777,7 @@ class Game:
             + self.tr("common.on" if self.preferences.night_mode else "common.off"),
             self.tr("option.high_contrast") + ": "
             + self.tr("common.on" if self.preferences.high_contrast else "common.off"),
+            self.tr("option.frame_rate", fps=self.frame_rate()),
             self.tr("option.live_traffic"),
             self.tr("commander.local.option"),
         )
@@ -10744,6 +10938,7 @@ class Game:
         if not math.isfinite(wall_dt) or wall_dt <= 0.0:
             return
         self._perf_frames += 1
+        self._perf_frame_max_s = max(self._perf_frame_max_s, wall_dt)
         self._perf_debug_due += wall_dt
         if self._perf_debug_due < 1.0:
             return
@@ -10751,8 +10946,11 @@ class Game:
         frames = self._perf_frames
         line = ("t={t:.1f} fps={fps} substeps_avg={sub:.2f} sim_ms={sim:.2f} "
                 "audio_ms={audio:.2f} commander_ms={cmd:.2f} "
-                "draw_ms={draw:.2f}\n").format(
+                "draw_ms={draw:.2f} frame_max_ms={fmax:.1f} "
+                "sim_lag_ms={lag:.1f} sim_dropped_ms={drop:.1f}\n").format(
             t=time.monotonic(), fps=frames, sub=self._perf_substeps / frames,
+            fmax=1000 * self._perf_frame_max_s, lag=1000 * self._sim_debt_s,
+            drop=1000 * self._sim_dropped_s,
             sim=1000 * self._perf_sim_s / frames,
             audio=1000 * self._perf_audio_s / frames,
             cmd=1000 * self._perf_commander_s / frames,
@@ -10765,6 +10963,39 @@ class Game:
         self._perf_audio_s = 0.0
         self._perf_commander_s = 0.0
         self._perf_draw_s = 0.0
+        self._perf_frame_max_s = 0.0
+
+    def _frame_dt(self, wall_dt: float) -> float:
+        """Simulation seconds for this frame from wall time and bounded debt.
+
+        A frame never advances more than SIM_FRAME_DT_MAX, but the remainder of
+        a slow frame is caught up over the next frames, so simulation time (and
+        the sonar audio produced in it) keeps pace with wall-clock playback.
+        Debt above SIM_CATCHUP_MAX_S is dropped. After a pause, menu, overlay,
+        load or world reset the first frame is only clamped, never caught up.
+        """
+        try:
+            wall_dt = float(wall_dt)
+        except (TypeError, ValueError, OverflowError):
+            wall_dt = 0.0
+        if not math.isfinite(wall_dt) or wall_dt < 0.0:
+            wall_dt = 0.0
+        if self._frame_clock_reset:
+            self._frame_clock_reset = False
+            self._sim_debt_s = 0.0
+            return min(wall_dt, config.SIM_FRAME_DT_MAX)
+        debt = self._sim_debt_s + wall_dt
+        if debt > config.SIM_CATCHUP_MAX_S:
+            self._sim_dropped_s += debt - config.SIM_CATCHUP_MAX_S
+            debt = config.SIM_CATCHUP_MAX_S
+        dt = min(debt, config.SIM_FRAME_DT_MAX)
+        self._sim_debt_s = debt - dt
+        return dt
+
+    def frame_rate(self) -> int:
+        """Active frame-rate cap from the saved preference."""
+        value = getattr(self.preferences, "frame_rate", config.FPS_DEFAULT)
+        return value if value in config.FPS_CHOICES else config.FPS_DEFAULT
 
     def run(self) -> None:
         try:
@@ -10773,8 +11004,8 @@ class Game:
                     self.auto_quit -= 1
                     if self.auto_quit <= 0:
                         self.running = False
-                wall_dt = self.clock.tick(config.FPS) / 1000.0
-                dt = min(wall_dt, 0.1)
+                wall_dt = self.clock.tick(self.frame_rate()) / 1000.0
+                dt = self._frame_dt(wall_dt)
                 self._t += dt
                 for e in pygame.event.get():
                     if not self.web_mode:

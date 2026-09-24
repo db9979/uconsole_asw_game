@@ -20,6 +20,7 @@ MAX_PATHS = 4
 MAX_SEGMENTS_PER_PATH = 3
 PROFILE_SAMPLES = 21
 PROFILE_MAX_DEPTH_M = 400.0
+DEEP_PROFILE_STEP_M = 100.0
 REPRESENTATIVE_PASSIVE_BAND_HZ = 100.0
 # Historical per-band absorption folded into path loss; the sonar equation
 # replaces it with Francois-Garrison (src/sonar/equation.py).
@@ -278,6 +279,14 @@ def _profile_from_key(key: tuple):
     maximum = min(depth, PROFILE_MAX_DEPTH_M)
     depths = [maximum * index / (PROFILE_SAMPLES - 1)
               for index in range(PROFILE_SAMPLES)]
+    # Below the upper column the full temperature profile continues to the
+    # seabed (coarse steps), so a deep sound-channel minimum can form.
+    below = PROFILE_MAX_DEPTH_M + DEEP_PROFILE_STEP_M
+    while below < depth:
+        depths.append(below)
+        below += DEEP_PROFILE_STEP_M
+    if depth > PROFILE_MAX_DEPTH_M:
+        depths.append(float(depth))
     speeds = [mackenzie_sound_speed(temperature_profile_c(z, mld, sst),
                                     SALINITY_PSU, z) for z in depths]
     return depths, speeds

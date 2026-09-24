@@ -688,6 +688,29 @@ button.danger:hover:not(:disabled) { background: var(--red); color: #170c0c; }
 .simlog-map-sidebar h3 { color: var(--accent); margin-bottom: .5rem; }
 .simlog-map-sidebar ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
 .simlog-map-sidebar li { padding-left: .55rem; border-left: 3px solid var(--unit-color); color: var(--muted); font: .7rem/1.4 ui-monospace, monospace; overflow-wrap: anywhere; }
+/* Weather & sonar analysis dialog: three boxes on a desktop, one column when narrow. */
+#weather-dialog { width: min(96vw, 110rem); max-width: none; max-height: 94dvh; padding: 0; color: var(--text); background: var(--panel); border: 1px solid var(--accent); }
+#weather-dialog::backdrop { background: rgb(2 8 12 / .82); }
+.weather-shell { padding: .85rem; display: grid; gap: .65rem; min-width: 0; }
+.weather-header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; border-bottom: 1px solid var(--line); padding-bottom: .6rem; }
+.weather-header h2 { color: var(--accent); }
+.weather-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: .75rem; min-width: 0; }
+.weather-box { border: 1px solid var(--line); padding: .6rem; min-width: 0; }
+.weather-box h3 { color: var(--accent); margin-bottom: .45rem; }
+.weather-profile-box { grid-column: 1 / -1; }
+#weather-profile { display: block; width: 100%; height: clamp(14rem, 38vh, 26rem); }
+#weather-profile-text { color: var(--muted); margin-top: .4rem; overflow-wrap: anywhere; }
+.weather-effects { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem; }
+.weather-effects li { border: 1px solid var(--line); padding: .15rem .45rem; color: var(--muted); }
+.weather-effects li[data-active="true"] { color: var(--amber); border-color: var(--amber); }
+.weather-flight-status { font-weight: 700; font-size: 1.3rem; }
+.weather-flight-status[data-status="clear"] { color: var(--accent); }
+.weather-flight-status[data-status="limited"] { color: var(--amber); }
+.weather-flight-status[data-status="no_go"] { color: var(--red); }
+@media (max-width: 900px) {
+  .weather-grid { grid-template-columns: minmax(0, 1fr); }
+  #weather-dialog { width: 100vw; max-height: 100dvh; border-width: 0; }
+}
 @media (max-width: 700px) {
   #simlog-map-dialog { width: 100vw; height: 100dvh; border-width: 0; }
   .simlog-map-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(12rem, 2fr) minmax(6rem, 1fr); }

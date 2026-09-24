@@ -27,7 +27,7 @@ let v2State = {session:'world', epoch:1, role:'sonar', phase:'live', clock:{time
 let sonarAudioEnabled = true, sonarAudioController = null, sonarAudioSources = [], sonarAudioSequence = null;
 let sonarAudioTimer = null, sonarAudioNextTime = 0, sonarAudioGeneration = 0;
 let sonarAudioSocket = null, sonarAudioWorklet = null, sonarAudioReconnect = null;
-let sonarAudioMetrics = {buffered:0, gaps:0, repeats:0, stale:false};
+let sonarAudioMetrics = {buffered:0, gaps:0, concealed:0, rate:1, stale:false};
 let sonarAudioGain = {gain:{value:0}, disconnect() {}}, nextTimer = 0;
 const timers = new Map();
 const setTimeout = (fn, delay) => { const id = ++nextTimer; timers.set(id, {fn, delay}); return id; };

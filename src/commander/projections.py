@@ -131,6 +131,41 @@ def _direct_fire_observations(rows, refs):
     return result[:_MAP_ROWS_MAX]
 
 
+def _weather_station(game):
+    """Observation-safe weather & sonar analysis block for every role.
+
+    Own-ship atmosphere and flight weather; the ocean profile only after a
+    sonar bathythermograph measurement (``profile`` is null before)."""
+    data = game.weather_station_data()
+    a, f, p = data["atmosphere"], data["flight"], data["profile"]
+    atmosphere = {key: (_number(value) if isinstance(value, float) else value)
+                  for key, value in a.items()}
+    flight = {key: (_number(value) if isinstance(value, float) else value)
+              for key, value in f.items() if key != "limits"}
+    flight["limits"] = {key: _number(float(value)) for key, value in f["limits"].items()}
+    profile = None
+    if p is not None:
+        profile = dict(
+            age_s=_number(p["age_s"]), offset_nm=_number(p["offset_nm"]),
+            stale=bool(p["stale"]), thermocline_m=_number(p["thermocline_m"]),
+            water_depth_m=_number(p["water_depth_m"]),
+            depths_m=[_number(float(value)) for value in p["depths_m"]][:64],
+            speeds_m_s=[_number(float(value)) for value in p["speeds_m_s"]][:64],
+            sofar_axis_m=(None if p["sofar_axis_m"] is None
+                          else _number(float(p["sofar_axis_m"]))),
+            cz_bands_nm=[[_number(float(a_)), _number(float(b_))]
+                         for a_, b_ in p["cz_bands_nm"]][:8],
+            range_nm=_number(p["range_nm"]),
+            rays=[[[_number(float(r)), _number(float(z))] for r, z in ray][:64]
+                  for ray in p["rays"]][:9],
+            depth_edges_m=[_number(float(value)) for value in p["depth_edges_m"]][:32],
+            shadow=[[bool(cell) for cell in row][:32] for row in p["shadow"]][:32],
+            dip_relative_to_layer=p["dip_relative_to_layer"])
+    return dict(atmosphere=atmosphere, effects={key: bool(value) for key, value
+                                                in data["effects"].items()},
+                flight=flight, profile=profile)
+
+
 def _common(game, status, role):
     weather = game.world.weather_values()
     return dict(protocol=2, version=APP_VERSION, session=status["session"],
@@ -148,6 +183,7 @@ def _common(game, status, role):
                      wind_speed_kn=_number(weather["wind_speed_kn"]),
                      rain_intensity=_number(weather["rain_intensity"]),
                      visibility_nm=_number(weather["visibility_nm"])),
+                weather_station=_weather_station(game),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),

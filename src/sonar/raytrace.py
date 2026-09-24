@@ -196,3 +196,96 @@ def clear_cache() -> None:
     global build_count
     _cache.clear()
     build_count = 0
+
+
+# --- ray picture for the weather/sonar analysis panel ------------------------
+
+PICTURE_RAYS_DEG = (-12.0, -8.0, -4.0, -1.5, 0.0, 1.5, 4.0, 8.0, 12.0)
+PICTURE_POINTS = 64
+PICTURE_RANGE_NM = 20.0
+PICTURE_STEP_M = 100.0
+SHADOW_RANGE_BINS = 25
+SHADOW_EXCESS_DB = 10.0
+SHADOW_BAND_HZ = 1600.0
+_picture_cache: "OrderedDict[tuple, dict]" = OrderedDict()
+PICTURE_CACHE_SIZE = 8
+
+
+def ray_picture(profile_depths_m, profile_m_s, water_depth_m: float,
+                source_depth_m: float, sediment: str, wind_kn: float,
+                layer_m: float) -> dict:
+    """Display rays and an acoustic shadow grid from one (measured) profile.
+
+    ``rays``: a few named launch angles traced with the same Snell stepping
+    and surface/seabed reflection as ``trace_table``.  ``shadow``: cells of
+    the ``trace_table`` grid within the display range where transmission
+    loss exceeds spherical spreading by more than ``SHADOW_EXCESS_DB`` - the
+    region no significant ray energy reaches.  Only cells below the measured
+    layer and beyond the first range cell count: steep paths the display fan
+    does not trace reach the water right under the ship.  A pure function of its
+    arguments, cached in a small bounded LRU."""
+    depths = tuple(round(float(value), 1) for value in profile_depths_m)
+    speeds = tuple(round(float(value), 2) for value in profile_m_s)
+    bottom = max(float(water_depth_m), 5.0)
+    source = min(max(float(source_depth_m), 0.5), bottom - 0.5)
+    key = (depths, speeds, round(bottom, 1), round(source, 1), sediment,
+           round(float(wind_kn)), round(float(layer_m), 1))
+    cached = _picture_cache.get(key)
+    if cached is not None:
+        _picture_cache.move_to_end(key)
+        return cached
+    z_profile = np.asarray(depths, dtype=float)
+    c_profile = np.asarray(speeds, dtype=float)
+    if z_profile[-1] < bottom:
+        z_profile = np.append(z_profile, bottom)
+        c_profile = np.append(c_profile, c_profile[-1] + 0.017 * (bottom - z_profile[-2]))
+    angles = np.radians(np.array(PICTURE_RAYS_DEG))
+    c0 = float(np.interp(source, z_profile, c_profile))
+    xi = np.cos(angles) / c0
+    z = np.full(len(angles), source)
+    direction = np.sign(np.sin(angles))
+    direction[direction == 0] = 1.0
+    steps = int(PICTURE_RANGE_NM * NM_M / PICTURE_STEP_M)
+    stride = max(1, -(-steps // (PICTURE_POINTS - 1)))    # ceil: reach the full range
+    paths = [[(0.0, round(source, 1))] for _ in angles]
+    for step in range(steps):
+        r = (step + 1) * PICTURE_STEP_M
+        c = np.interp(z, z_profile, c_profile)
+        cos_t = np.clip(xi * c, 0.0, 1.0)
+        sin_t = np.sqrt(np.maximum(0.0, 1.0 - cos_t * cos_t))
+        turning = cos_t >= 0.999999
+        direction = np.where(turning, -direction, direction)
+        sin_t = np.where(turning, 1e-3, sin_t)
+        z = z + direction * PICTURE_STEP_M * sin_t / np.maximum(cos_t, 1e-3)
+        surface, seabed = z < 0.0, z > bottom
+        z = np.where(surface, -z, z)
+        direction = np.where(surface, 1.0, direction)
+        z = np.where(seabed, 2.0 * bottom - z, z)
+        direction = np.where(seabed, -1.0, direction)
+        z = np.clip(z, 0.0, bottom)
+        if (step + 1) % stride == 0 or step == steps - 1:
+            for index, depth in enumerate(z):
+                if len(paths[index]) < PICTURE_POINTS:
+                    paths[index].append((round(r / NM_M, 3), round(float(depth), 1)))
+    table = trace_table(source, z_profile, c_profile, bottom, sediment, wind_kn)
+    band = BANDS_HZ.index(SHADOW_BAND_HZ)
+    edges = depth_edges(bottom)
+    per_bin = max(1, int(PICTURE_RANGE_NM * NM_M / RANGE_STEP_M) // SHADOW_RANGE_BINS)
+    shadow = []
+    for range_bin in range(SHADOW_RANGE_BINS):
+        rows = table[band, range_bin * per_bin:(range_bin + 1) * per_bin]
+        r_m = ((range_bin + 0.5) * per_bin) * RANGE_STEP_M
+        spherical = 20.0 * math.log10(max(r_m, 1.0))
+        shadow.append([bool(range_bin > 0 and edges[index] >= layer_m
+                            and value - spherical > SHADOW_EXCESS_DB)
+                       for index, value in enumerate(rows.mean(axis=0))])
+    result = {
+        "range_nm": PICTURE_RANGE_NM,
+        "rays": [[[r, d] for r, d in path] for path in paths],
+        "depth_edges_m": [round(float(edge), 1) for edge in edges],
+        "shadow": shadow,
+    }
+    _picture_cache[key] = result
+    while len(_picture_cache) > PICTURE_CACHE_SIZE:
+        _picture_cache.popitem(last=False)
+    return result

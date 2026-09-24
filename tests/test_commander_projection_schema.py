@@ -56,6 +56,8 @@ def _collect_states():
     game.damage.torpedo_hit(impact=(-0.45, 0.0))
     game.damage.missile_hit(0.7, 0.0)
     game.deploy_nixie_result()
+    pump()                      # weather station without a BT measurement
+    assert game.measure_sonar_bt() is True
     for step in range(260):
         game._update_sim(0.1)
         if step == 60:
@@ -82,6 +84,8 @@ def _collect_states():
         if step % 20 == 0:
             pump()
     assert game.eloka_tracks() and game.buoys
+    assert all(sample["sonar"]["weather_station"]["profile"] is not None
+               for sample in samples[2:])
     return samples
 
 

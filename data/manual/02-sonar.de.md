@@ -107,11 +107,13 @@ Gefechtslage:
 
 - Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Ctrl+I`/`Ctrl+O`) und Kontrast (`Shift+I`/`Shift+O`) heben schwache Spuren hervor; `Shift+C` wechselt die Phosphorfarbe.
 - `D` oder `A`/`B`/`H` wählen Breitband-, gefiltertes oder Überlagerungs-Abhören. Überlagerung verschiebt das tiefe Band auf etwa 700 Hz, damit tiefe Töne hörbar werden.
+- Das Abhör-Audio läuft etwa eine Sekunde hinter der Anzeige, damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach etwa einer Sekunde in den neuen über; der Ton bricht nicht ab.
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
 - Die TMA-Seite zeigt die aus der Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
 - Die Schleppantenne ist eine Linie: sie kann eine Peilung nicht von ihrem Spiegelbild zum Kabel unterscheiden. Ein nur auf der TAS gehörter Kontakt wird als "TAS links/rechts mehrdeutig" mit Spiegelpeilung markiert und speist keine TMA; die angezeigte Seite stimmt nur in der Hälfte der Fälle. 20 Grad drehen (oder den Kontakt auf die HMS bekommen), dann fällt die falsche Seite weg. Peilungen zu den Kabelenden (Endfire) sind zudem ungenauer als querab.
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
+- Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.
 
 ## Nicht modelliert {#sonar-limits}
 

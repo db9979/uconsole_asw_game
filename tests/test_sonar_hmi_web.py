@@ -128,6 +128,8 @@ def test_detached_broadband_scope_renders_live_energy_in_chromium(tmp_path, monk
         "de": {key: value for key, value in de.items() if key.startswith(PREFIX)},
     }
     console._contact_analysis_assets = {}
+    # Pre-rendered like the assets: resources.files is redirected below.
+    console._manual_pages = {}
     html = ASSETS.joinpath("index.html").read_text().replace(
         '<script src="./app.js" defer>',
         '<script src="./scope-test.js" defer></script><script src="./app.js" defer>')

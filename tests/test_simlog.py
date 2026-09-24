@@ -192,8 +192,8 @@ def test_in_game_simlog_view_draws_all_languages_and_large_text(game):
     game.simlog_view_open = False
 
 
-def test_options_menu_has_ten_rows_and_toggles_simlog(game):
-    assert len(game._options_row_rects()) == 10
+def test_options_menu_has_eleven_rows_and_toggles_simlog(game):
+    assert len(game._options_row_rects()) == 11
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F10))
     assert game.options_open
     for _ in range(5):
@@ -217,11 +217,10 @@ def test_options_menu_toggles_night_mode_and_draw_applies_the_overlay(game):
     game.draw()  # must not crash with the overlay active
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
     assert game.preferences.night_mode is False
-    # Commander-Eintrag liegt jetzt hinter high_contrast und Echtzeit-Verkehr
-    # auf Zeile 9.
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
+    # Commander-Eintrag liegt hinter high_contrast, Bildrate und
+    # Echtzeit-Verkehr auf Zeile 10.
+    for _ in range(4):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
     assert game.commander_open
 

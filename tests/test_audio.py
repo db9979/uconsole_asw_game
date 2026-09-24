@@ -448,8 +448,8 @@ def test_lost_receiver_block_keeps_buffered_sonar_playback(mixer):
     engine.shutdown()
 
 
-def test_buffered_sonar_repeats_then_uses_neutral_sound_and_recovers(mixer, monkeypatch):
-    _, channels, _ = mixer
+def test_buffered_sonar_conceals_then_uses_neutral_sound_and_refills(mixer, monkeypatch):
+    _, channels, make_sound = mixer
     engine = AudioEngine()
     engine._sonar_worker = Mock()
     clock = [100.0]
@@ -462,17 +462,116 @@ def test_buffered_sonar_repeats_then_uses_neutral_sound_and_recovers(mixer, monk
     assert not engine._sonar_buffer
     channels[1].get_busy.return_value = True
     engine._pump_sonar_once()
+    engine._pump_sonar_once()
+    # One underrun event, two concealed blocks, neither a copy of fresh audio.
     assert engine.sonar_local_underruns == 1
+    assert engine.sonar_concealed_blocks == 2
     assert not engine.sonar_stale
+    fresh = make_sound.call_args_list[3].args[0]
+    for call in make_sound.call_args_list[-2:]:
+        concealed = call.args[0]
+        assert concealed.shape == fresh.shape
+        assert not np.array_equal(concealed, fresh)
+    assert not np.array_equal(make_sound.call_args_list[-1].args[0],
+                              make_sound.call_args_list[-2].args[0])
     clock[0] += 2.1
     engine._pump_sonar_once()
     assert engine.sonar_stale and engine.sonar_neutral_blocks == 1
+    # Recovery waits for a short refill instead of stuttering block by block.
+    assert engine.play_sonar(block * .5, 4096, buffered=True)
+    engine._pump_sonar_once()
+    assert engine.sonar_stale and engine.sonar_neutral_blocks == 2
     assert engine.play_sonar(block * .5, 4096, buffered=True)
     engine._pump_sonar_once()
     assert not engine.sonar_stale
-    assert engine.sonar_neutral_blocks == 1
+    assert engine.sonar_neutral_blocks == 2
     engine.stop_sonar(immediate=True)
     assert not engine.sonar_stale and not engine._sonar_buffer
+    engine.shutdown()
+
+
+def test_concealment_keeps_level_and_joins_last_sample(mixer):
+    engine = AudioEngine()
+    rng = np.random.default_rng(3)
+    history = rng.normal(0, .1, 11025)
+    engine._sonar_history.extend((history[:5512], history[5512:]))
+    engine._sonar_last_value = np.array(.3)
+    signal = engine._conceal_signal()
+    assert signal.shape == (11025,)
+    assert signal[0] == pytest.approx(.3)
+    body = signal[round(44100 * .02):]
+    assert np.sqrt(np.mean(body ** 2)) == pytest.approx(.1, rel=.15)
+    assert not np.array_equal(signal, engine._conceal_signal())
+    engine.shutdown()
+
+
+@pytest.mark.parametrize("producer_ratio", [.99, 1.0, 1.01])
+def test_elastic_rate_holds_queue_near_target_under_clock_drift(mixer, producer_ratio):
+    _, channels, _ = mixer
+    channels[1].get_busy.return_value = True
+    engine = AudioEngine()
+    engine._sonar_worker = Mock()
+    block = (np.sin(np.arange(1024) * .3) * .1).astype(np.float32)
+    jitter = np.random.default_rng(1)
+    produced, mixer_end, adjust, levels = 0.0, None, [], []
+    for step in range(18000):   # 180 s in 10 ms ticks
+        now = step * .01
+        if now * producer_ratio >= produced + jitter.uniform(0, .1):
+            assert engine.play_sonar(block, 4096, buffered=True)
+            produced += .25
+        # Fake mixer: one playing and one queued block, drained in wall time.
+        if mixer_end is None or now >= mixer_end - .25:
+            before = engine._sonar_buffer_duration
+            engine._pump_sonar_once()
+            if engine._sonar_primed:
+                taken = before - engine._sonar_buffer_duration
+                mixer_end = (now if mixer_end is None else mixer_end) + (taken or .25)
+        if step > 9000:
+            adjust.append(engine.sonar_rate_adjust)
+            levels.append(engine._sonar_buffer_duration)
+    assert engine.sonar_local_underruns == 0
+    assert engine.sonar_dropped_blocks == 0
+    assert .2 <= np.mean(levels) <= 1.0
+    # The correction cancels the drift and stays steady (no audible wobble).
+    assert np.mean(adjust) == pytest.approx(1 - producer_ratio, abs=.002)
+    assert np.std(adjust) < .002
+    engine.shutdown()
+
+
+def test_elastic_rate_change_keeps_boundaries_continuous(mixer):
+    _, _, make_sound = mixer
+    engine = AudioEngine()
+    engine._sonar_worker = Mock()
+    t = np.arange(8 * 1024) / 4096
+    source = (.2 * np.sin(2 * np.pi * 173 * t)).astype(np.float32)
+    rates = [44100, 44100, 45000, 45000, 43500, 44100, 44982, 44100]
+    for block, rate in zip(np.split(source, 8), rates):
+        engine._elastic_output_rate = lambda rate=rate: rate
+        assert engine.play_sonar(block, 4096, volume=1.0, buffered=True)
+        engine._sonar_buffer.clear()
+        engine._sonar_buffer_duration = 0.0
+    blocks = [call.args[0][:, 0].astype(np.float64) / 32767
+              for call in make_sound.call_args_list]
+    joined = np.concatenate(blocks)
+    normal_step = np.quantile(np.abs(np.diff(joined))[300:], .999)
+    for boundary in np.cumsum([len(block) for block in blocks[:-1]]):
+        assert abs(joined[boundary] - joined[boundary - 1]) <= normal_step * 1.3
+    assert len(blocks[2]) > len(blocks[0]) > len(blocks[4])
+    engine.shutdown()
+
+
+def test_retuned_stream_joins_queued_tail_instead_of_dipping(mixer):
+    _, _, make_sound = mixer
+    engine = AudioEngine()
+    engine._sonar_worker = Mock()
+    block = np.full(1024, .2, dtype=np.float32)
+    assert engine.play_sonar(block, 4096, volume=1.0, buffered=True)
+    engine.discontinue_sonar_input()
+    assert engine.play_sonar(block, 4096, volume=1.0, buffered=True)
+    joined = make_sound.call_args.args[0][:, 0].astype(np.float64) / 32767
+    first = make_sound.call_args_list[0].args[0][:, 0].astype(np.float64) / 32767
+    assert joined[0] == pytest.approx(first[-1], abs=1e-3)
+    assert np.min(joined) >= .9 * first[-1]
     engine.shutdown()
 
 

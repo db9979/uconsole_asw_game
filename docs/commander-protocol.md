@@ -75,9 +75,18 @@ observation-lifetime references.
 Every assigned v2 role receives the same detached environment summary: authored
 integer `sea_state`, transitioning `effective_sea_state`, authoritative
 `is_night`, weather class, nautical wind-from direction, wind speed in knots,
-rain intensity and visibility in NM. The Helicopter role additionally receives
-only derived launch/dipping safety booleans and crosswind; it receives no hidden
-aircraft or weather state. Each role's Autocrew projection contains only that
+rain intensity and visibility in NM. Every role also receives the common
+`weather_station` block for the analysis dialog (key 0): own-ship `atmosphere`
+(barometer and 3-hour tendency, air/sea temperature, gusts, Beaufort, ceiling,
+icing, daylight, moon phase), qualitative weather `effects`, the derived
+helicopter `flight` decision (CLEAR/LIMITED/NO-GO with values and configured
+limits) and `profile`. `profile` is null until the sonar has taken a
+bathythermograph measurement; it then carries only that measurement (age, offset,
+stale flag, layer, depths and speeds, SOFAR axis or null, CZ bands) with at most
+nine rays of 64 points and a bounded shadow grid computed from it. The
+Helicopter role additionally receives derived launch/dipping safety booleans and
+crosswind; no role receives hidden aircraft or weather state, and no true ocean
+profile. Each role's Autocrew projection contains only that
 role's enabled flag and status. Credentials, leases and Autocrew commands are
 not part of this projection.
 
@@ -96,9 +105,12 @@ active sonar generation, and filtered on the main thread using the projected
 Sonar audition mode, band, notch, and gain. The server keeps the last 40 blocks
 (ten seconds) so a briefly stalled client catches up in order; older blocks are dropped
 and reported as a discontinuity. The browser starts playback about one second behind the newest
-block. Its AudioWorklet repeats the last block for at most two seconds after fresh data ends,
-then plays quiet neutral noise and marks the stream stale. The uConsole mixer worker uses the
-same one-second lead and two-second continuation. A transient
+block. Its AudioWorklet steers that lead by reading the stream up to 2 % faster or slower,
+so clock drift and jitter neither drain nor overflow it. On an underrun it plays a
+non-periodic granular stand-in built from the last half second and refills half a second
+before fresh audio resumes; after two seconds without data it plays quiet neutral noise and
+marks the stream stale. Crossfades are applied only at real discontinuities. The uConsole
+mixer worker uses the same elastic lead, concealment and two-second limit. A transient
 state-poll failure or HTTP 503 does not discard queued audio; the audio endpoint
 still checks session and station authority on each request. A restarted stream
 rebases a browser cursor that is ahead of its new sequence. There is no continuous
@@ -111,10 +123,12 @@ samples at 4096 Hz. Sequence gaps signal dropped blocks; the server sends at mos
 the newest four pending blocks after a slow client. HTTP audio polling remains the
 fallback. Neither transport accepts browser audio or simulation commands.
 For on-device diagnosis, `U_JAGD_AUDIO_DEBUG=1` writes bounded, contact-free
-receiver block rate, mixer underruns, queue fill and loss counters to
-`~/.u-jagd/audio_debug.log`. Browser developer tools can read the bounded
-`window.uJagdAudioDiagnostics` snapshot (buffer seconds, sequence gaps,
-dropped blocks, repeats, stale state and transport). Neither is persisted in
+receiver block rate, mixer underruns, concealed blocks, rate correction, queue
+fill and loss counters to `~/.u-jagd/audio_debug.log`; `U_JAGD_PERF_DEBUG=1`
+adds frame-time peaks and simulation catch-up to `perf_debug.log`. Browser
+developer tools can read the bounded `window.uJagdAudioDiagnostics` snapshot
+(buffer seconds, sequence gaps, dropped blocks, concealed blocks, playback
+rate, stale state and transport). Neither is persisted in
 game saves.
 The Sonar role receives only bounded own-ship speed and TAS handling limits needed
 to explain a disabled array control; hover reasons never inspect hidden entities.

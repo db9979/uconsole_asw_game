@@ -12,6 +12,7 @@ from src.commander.server import (CommanderServer, STATIONS, V2CommandEnvelope)
 from src.core import config
 from src.core.game import Game
 from src.ui import layout
+from commander_fixtures import WEATHER_STATION
 
 
 @pytest.fixture
@@ -248,7 +249,7 @@ def _publication():
     common = dict(protocol=2, version="t", session="s", epoch=0, revision=0, seq=1,
                   phase="live", chart_revision="s", clock={}, environment={},
                   mission={}, autocrew={"enabled": False, "status": "off"},
-                  audio={"events": []})
+                  audio={"events": []}, weather_station=WEATHER_STATION)
     chart = dict(protocol=2, revision="s", size_nm=500, landmasses=[], disclaimer="")
     redacted = {key: common[key] for key in (
         "protocol", "version", "session", "epoch", "revision", "seq", "phase",

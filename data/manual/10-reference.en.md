@@ -62,6 +62,18 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Current | steady field up to 1 kn plus 3 % of the wind, 20 deg right of downwind |
 | Seabed | rock, gravel, sand, silt or mud; affects bottom reflection |
 | Hazards | up to 64 charted wrecks and submerged rocks (tops at least 15 m deep) |
+| Atmosphere | barometer 975-1025 hPa that falls ahead of rising seas; air temperature from the sea, season, day and cold northerly winds (below 0 deg C in winter storms: snow, icing); gusts; cloud ceiling; sun elevation with civil/nautical twilight; moon phase |
+| Rain lens | rain freshens the top few metres (up to -1 PSU, mixed away by wind) and lowers the surface sound speed |
+| SOFAR channel | an interior sound-speed minimum (about 400-500 m below the surface layer) exists only in deep enough water |
+
+## Weather & sonar analysis (key 0) {#ref-weather-station}
+
+Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes it; it also works while paused). In the web client every station opens it with `0` or from the workstation menu.
+
+- **Environment:** time, daylight (day, civil or nautical twilight, night), moon phase, weather and precipitation, visibility, wind with gusts and Beaufort force, sea state, barometer with its 3-hour tendency (rising, steady, falling, falling rapidly), air and sea temperature, cloud ceiling and icing. A rapidly falling glass below about 1004 hPa gives a storm warning. The weather system changes by at most one sea state per hour, so the barometer moves faster than a real one.
+- **Weather effects:** sun (strong layer), wind (deeper mixed layer) and rain or snow (fresher surface water, rain noise) light up while they act.
+- **Helicopter flight weather:** CLEAR, LIMITED (within 80 % of a limit, or light icing) or NO-GO, with wind, gusts, crosswind, visibility, ceiling, sea state, deck roll and pitch, icing and whether dipping is possible.
+- **Ocean profile:** appears only after the sonar has taken a bathythermograph (Sonar `E`): measured sound speed over depth, the layer, a SOFAR axis if present, nine sound rays from the hull sonar to 20 NM and the shadow zone below the layer (red) where the hull sonar hears little. The measurement is marked stale after 30 min or 10 NM.
 
 ## Opposing submarines {#ref-subs}
 

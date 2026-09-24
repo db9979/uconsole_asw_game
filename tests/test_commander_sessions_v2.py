@@ -13,6 +13,7 @@ import pytest
 
 from src.commander import CommanderServer
 from src.commander import server as transport
+from commander_fixtures import WEATHER_STATION
 
 
 @pytest.fixture
@@ -83,9 +84,10 @@ def projection_states(revision="chart"):
                    revision=0, seq=1, phase="live", chart_revision=revision,
                    clock={}, environment={}, mission={},
                    autocrew={"enabled": False, "status": "off"},
-                   audio={"events": []})
+                   audio={"events": []}, weather_station=WEATHER_STATION)
     return {None: {key: value for key, value in common.items()
-                    if key not in ("clock", "environment", "mission", "autocrew", "audio")} | {"role": None},
+                    if key not in ("clock", "environment", "mission", "autocrew", "audio",
+                                   "weather_station")} | {"role": None},
             **{role: dict(common, role=role, **{role: {}})
                for role in transport.STATIONS}}
 

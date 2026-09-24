@@ -30,6 +30,18 @@ FPS = 60
 # Keep tactical circles and bearings geometrically correct on arbitrary windows.
 # Unused space is letterboxed instead of stretching the virtual canvas.
 FILL_SCREEN = False
+# Selectable frame-rate cap (settings.json "frame_rate"). 30 FPS halves render
+# work on the uConsole and leaves CPU/GIL headroom for the audio pump and the
+# Remote Crew server threads; FPS stays the canvas/test reference maximum.
+FPS_CHOICES = (30, 60)
+FPS_DEFAULT = 30
+# Main loop: no single frame advances the simulation by more than
+# SIM_FRAME_DT_MAX, but wall time lost to a slow frame is carried as a bounded
+# debt and caught up over the following frames. Sonar audio is produced in
+# simulation time and played in wall time, so dropping that time would drain
+# every playback buffer. Debt beyond SIM_CATCHUP_MAX_S (a real hang) is dropped.
+SIM_FRAME_DT_MAX = 0.1
+SIM_CATCHUP_MAX_S = 1.0
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 AUDIO_UPDATE_S = 0.25
@@ -285,6 +297,9 @@ SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
 SONAR_FUSION_CONFIRM_DEG = 5.0
 SONAR_FUSION_DIVERGENT_DEG = 9.0
 SONAR_BT_COOLDOWN_S = 60.0
+# Deep expendable bathythermograph: to the seabed, at most this deep, so a
+# deep sound channel (SOFAR axis) can be measured.
+SONAR_BT_MAX_DEPTH_M = 1500.0
 SONAR_PAGE_COUNT = 6
 CZ_BANDS = ((40.0, 70.0), (90.0, 130.0))  # Konvergenzzonen (NM, vom Schallfenster)
 CZ_BONUS_NM = 25.0              # zusätzliche passive Reichweite in der Zone
@@ -385,6 +400,9 @@ def measure_altitude_m(rng, altitude_m: float, error_scale: float = 1.0) -> floa
 HELO_LAUNCH_WIND_MAX_KN = 32.0
 HELO_LAUNCH_CROSSWIND_MAX_KN = 22.0
 HELO_LAUNCH_VISIBILITY_MIN_NM = 2.0
+HELO_LAUNCH_GUST_MAX_KN = 40.0
+HELO_CEILING_MIN_FT = 300.0
+HELO_ICING_FUEL_FACTOR = 1.2   # anti-/de-icing power in light icing
 HELO_LAUNCH_SEA_STATE_MAX = 5.0
 HELO_DIP_WIND_MAX_KN = 30.0
 HELO_DIP_VISIBILITY_MIN_NM = 1.0

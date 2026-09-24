@@ -83,9 +83,19 @@ sind undurchsichtige Referenzen für die Lebensdauer einer Beobachtung.
 Jede zugewiesene v2-Rolle erhält dieselbe abgelöste Umgebungszusammenfassung:
 vorgegebenen ganzzahligen `sea_state`, überblendeten `effective_sea_state`, den
 maßgeblichen Wert `is_night`, Wetterart, nautische Wind-Herkunftsrichtung,
-Windgeschwindigkeit in Knoten, Regenstärke und Sicht in NM. Die Helikopterrolle
-erhält zusätzlich nur abgeleitete Freigaben für Start und Tauchsonar sowie den
-Querwind; verborgener Luftfahrzeug- oder Wetterzustand wird nicht übertragen.
+Windgeschwindigkeit in Knoten, Regenstärke und Sicht in NM. Jede Rolle erhält
+außerdem den gemeinsamen Block `weather_station` für den Analysedialog (Taste 0):
+eigene `atmosphere` (Barometer und 3-Stunden-Tendenz, Luft-/Wassertemperatur,
+Böen, Beaufort, Wolkenuntergrenze, Vereisung, Tageslicht, Mondphase),
+qualitative `effects`, die abgeleitete Helikopter-Entscheidung `flight`
+(CLEAR/LIMITED/NO-GO mit Werten und konfigurierten Grenzwerten) und `profile`.
+`profile` ist null, bis das Sonar einen Bathythermographen genommen hat; danach
+enthält es ausschließlich diese Messung (Alter, Versatz, Veraltet-Kennzeichen,
+Schicht, Tiefen und Geschwindigkeiten, SOFAR-Achse oder null, KZ-Bänder) mit
+höchstens neun Strahlen zu 64 Punkten und einem begrenzten, daraus berechneten
+Schattenraster. Die Helikopterrolle erhält zusätzlich abgeleitete Freigaben für
+Start und Tauchsonar sowie den Querwind; verborgener Luftfahrzeug- oder
+Wetterzustand und das wahre Meeresprofil werden nicht übertragen.
 Die Autocrew-Projektion jeder Rolle enthält ausschließlich deren Aktivierung und
 Status. Zugangsdaten, Leases und Autocrew-Befehle gehören nicht zur Projektion.
 
@@ -108,11 +118,15 @@ wird im Hauptthread anhand des projizierten Sonar-Abhörmodus sowie der Einstell
 für Band, Notch und Gain gefiltert. Der Server hält die letzten 40 Blöcke (zehn
 Sekunden), damit ein kurz stockender Client der Reihe nach aufholt; ältere Blöcke
 werden verworfen und als Diskontinuität gemeldet. Der Browser startet die Wiedergabe
-etwa eine Sekunde hinter dem neuesten Block. Das AudioWorklet wiederholt den
-letzten Block höchstens zwei Sekunden nach dem Ende frischer Daten; danach spielt
-es leises neutrales Rauschen und kennzeichnet den Strom als veraltet. Der
-uConsole-Mixer-Worker nutzt ebenfalls eine Sekunde Vorlauf und zwei Sekunden
-Ersatzwiedergabe. Ein vorübergehender Fehler der
+etwa eine Sekunde hinter dem neuesten Block. Das AudioWorklet regelt diesen
+Vorlauf, indem es den Strom um höchstens 2 % schneller oder langsamer liest;
+Uhrendrift und Jitter leeren oder überfüllen ihn so nicht. Bei einem Unterlauf
+spielt es einen nicht periodischen, granular aus der letzten halben Sekunde
+erzeugten Ersatz und puffert eine halbe Sekunde nach, bevor frische Daten
+weiterlaufen; nach zwei Sekunden ohne Daten spielt es leises neutrales Rauschen
+und kennzeichnet den Strom als veraltet. Überblendet wird nur an echten
+Brüchen. Der uConsole-Mixer-Worker nutzt denselben elastischen Vorlauf, dieselbe
+Verdeckung und dieselbe Zwei-Sekunden-Grenze. Ein vorübergehender Fehler der
 Zustandsabfrage oder HTTP 503 verwirft gepuffertes Audio nicht; der Audio-Endpunkt
 prüft Sitzung und Stationsrecht weiterhin bei jeder Anfrage.
 Ein neu gestarteter Stream setzt eine gegenüber seiner Blocknummer vorauseilende
@@ -130,11 +144,13 @@ Die HTTP-Abfrage bleibt der Fallback. Beide Transporte nehmen weder Browseraudio
 noch Simulationsbefehle an.
 
 Für die Diagnose auf dem Gerät schreibt `U_JAGD_AUDIO_DEBUG=1` begrenzte,
-kontaktfreie Werte zu Receiver-Blockrate, Mixer-Unterläufen, Pufferstand und
-Verlusten nach `~/.u-jagd/audio_debug.log`. Im Browser zeigen die
+kontaktfreie Werte zu Receiver-Blockrate, Mixer-Unterläufen, verdeckten
+Blöcken, Ratenkorrektur, Pufferstand und Verlusten nach
+`~/.u-jagd/audio_debug.log`; `U_JAGD_PERF_DEBUG=1` ergänzt in `perf_debug.log`
+Frame-Spitzen und das Nachholen der Simulationszeit. Im Browser zeigen die
 Entwicklerwerkzeuge `window.uJagdAudioDiagnostics` mit Puffersekunden,
-Sequenzlücken, verworfenen und wiederholten Blöcken, Veraltet-Zustand und
-Transport. Beides bleibt außerhalb der Spielstände.
+Sequenzlücken, verworfenen und verdeckten Blöcken, Wiedergaberate,
+Veraltet-Zustand und Transport. Beides bleibt außerhalb der Spielstände.
 
 Die Sonarrollenprojektion erhält nur die
 begrenzte Eigenschifffahrt und die TAS-Handhabungsgrenzen, die zur Erklärung eines

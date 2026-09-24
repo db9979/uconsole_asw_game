@@ -80,5 +80,5 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10` (or `O` while paused): options - language, fullscreen, audio, large text, tooltips.
+- `F10` (or `O` while paused): options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default).
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.

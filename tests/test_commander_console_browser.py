@@ -171,6 +171,8 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
         "de": {key: value for key, value in de.items() if key.startswith(PREFIX)},
     }
     console._contact_analysis_assets = {}
+    # Pre-rendered like the assets: resources.files is redirected below.
+    console._manual_pages = {}
     console._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
     html = ASSETS.joinpath("index.html").read_text().replace(
         '<script src="./app.js" defer>',

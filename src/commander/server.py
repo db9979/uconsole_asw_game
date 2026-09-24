@@ -1604,7 +1604,7 @@ class CommanderServer:
         status_fields = {"protocol", "version", "session", "epoch", "revision",
                          "seq", "phase", "role", "chart_revision"}
         assigned_fields = status_fields | {"clock", "environment", "mission",
-                                           "autocrew", "audio"}
+                                           "autocrew", "audio", "weather_station"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")
@@ -2468,6 +2468,12 @@ class _Handler(BaseHTTPRequestHandler):
             with owner._audio_condition:
                 owner._audio_clients.pop(client_key, None)
             return
+        try:
+            # Send each 250 ms block at once; Nagle would batch small frames
+            # into bursts the browser has to absorb as jitter.
+            self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        except (OSError, AttributeError):
+            pass
         last_sequence = None
         try:
             while True:

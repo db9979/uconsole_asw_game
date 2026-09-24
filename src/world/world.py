@@ -127,6 +127,21 @@ class World:
                                + (self._weather_target_sea - self.sea_state) * blend)
         return values
 
+    def weather_epoch(self) -> tuple[int, int, float]:
+        """(current sea state, sea state this epoch leads to, seconds into
+        the epoch) - the physical weather system, for derived quantities
+        such as the barometer that respond ahead of the sea."""
+        self.weather_values()
+        return self.sea_state, self._weather_target_sea, self.weather_shift_timer
+
+    def latitude_deg(self) -> float | None:
+        """Centre latitude of a real coastline sector, if the world has one."""
+        metadata = getattr(self.coast, "metadata", None) or {}
+        center = metadata.get("center") if isinstance(metadata, dict) else None
+        if isinstance(center, dict) and isinstance(center.get("latitude"), (int, float)):
+            return float(center["latitude"])
+        return None
+
     @property
     def effective_sea_state(self) -> float:
         return self.weather_values()["sea_state"]
@@ -244,8 +259,10 @@ class World:
 
     def sound_speed_m_s(self, depth_m: float, x_nm: float, y_nm: float) -> float:
         """Mackenzie sound speed from the modelled temperature profile."""
+        weather = self.weather_values()
         return self.ocean.sound_speed_m_s(
-            depth_m, self.thermocline_depth_m(x_nm, y_nm), self.hour)
+            depth_m, self.thermocline_depth_m(x_nm, y_nm), self.hour,
+            weather["rain_intensity"], weather["wind_speed_kn"])
 
     def seabed_at(self, x_nm: float, y_nm: float) -> str:
         return self.ocean.sediment_at(x_nm, y_nm)

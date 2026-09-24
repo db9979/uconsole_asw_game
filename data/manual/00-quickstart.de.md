@@ -80,5 +80,5 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 
 - Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
-- `F10` (oder `O` in der Pause): Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips.
+- `F10` (oder `O` in der Pause): Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt).
 - `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen.

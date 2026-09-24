@@ -18,6 +18,7 @@ _GLOBAL_HELP = (
         ("F1 / ?", "help.global.display"),
         ("F2", "help.global.autocrew_toggle"),
         ("F3", "help.global.autocrew_overview"),
+        ("0", "help.global.weather_station"),
         ("F8", "help.global.analyzer"),
         ("F4", "help.global.simlog_view"),
         ("F9", "help.global.commander"),

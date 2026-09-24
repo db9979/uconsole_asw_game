@@ -48,10 +48,11 @@ Globale Tasten (alle Stationen):
 | `F1 / ?` | Hilfe (diese Anzeige) |
 | `F2` | Autocrew der aktuellen Station umschalten |
 | `F3` | Autocrew-Uebersicht oeffnen |
+| `0` | Wetter- & Sonar-Analyse |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
 | `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte) |
 | `F9` | Lokale Commander-LAN-Verwaltung oeffnen |
-| `F10` | Optionen: Sprache, Vollbild, Audio, grosser Text, Tooltips |
+| `F10` | Optionen: Sprache, Vollbild, Audio, grosser Text, Tooltips, Bildrate |
 | `N` | Nationen & Einheiten; im Sonar: Notchfilter |
 | `S / L` | Speichern / Laden (Slots 1-5) |
 | `Alt+Enter` | Vollbild (alle Stationen) |
@@ -115,7 +116,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 
 - Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
-- `F10` (oder `O` in der Pause): Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips.
+- `F10` (oder `O` in der Pause): Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt).
 - `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen.
 
 ## 1 Brücke
@@ -338,11 +339,13 @@ Gefechtslage:
 
 - Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Ctrl+I`/`Ctrl+O`) und Kontrast (`Shift+I`/`Shift+O`) heben schwache Spuren hervor; `Shift+C` wechselt die Phosphorfarbe.
 - `D` oder `A`/`B`/`H` wählen Breitband-, gefiltertes oder Überlagerungs-Abhören. Überlagerung verschiebt das tiefe Band auf etwa 700 Hz, damit tiefe Töne hörbar werden.
+- Das Abhör-Audio läuft etwa eine Sekunde hinter der Anzeige, damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach etwa einer Sekunde in den neuen über; der Ton bricht nicht ab.
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
 - Die TMA-Seite zeigt die aus der Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
 - Die Schleppantenne ist eine Linie: sie kann eine Peilung nicht von ihrem Spiegelbild zum Kabel unterscheiden. Ein nur auf der TAS gehörter Kontakt wird als "TAS links/rechts mehrdeutig" mit Spiegelpeilung markiert und speist keine TMA; die angezeigte Seite stimmt nur in der Hälfte der Fälle. 20 Grad drehen (oder den Kontakt auf die HMS bekommen), dann fällt die falsche Seite weg. Peilungen zu den Kabelenden (Endfire) sind zudem ungenauer als querab.
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
+- Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.
 
 ### Nicht modelliert
 
@@ -738,8 +741,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 ```
 
 - **Kraftstoff:** 2 Stunden im Vorwärtsflug; im Schwebeflug (Tauchsonar) verbraucht er 1,3-mal so schnell. Der Helikopter kehrt automatisch zurück, wenn nur noch die 20-Minuten-Reserve bleibt. Leerfliegen vor der Landung kostet die Maschine. Im Schwebeflug drückt ihn der Wind etwas von seinem Schwebepunkt nach Lee.
-- **Startgrenzen:** Wind bis 32 kn, Seitenwind bis 22 kn, Sicht mindestens 2 sm, Seegang höchstens 5, einsatzbereites Flugdeck und ein ruhiges Deckfenster (Rollen höchstens 8 Grad, Stampfen höchstens 3,5 Grad). Auch die Landung wartet auf ein solches Fenster; gegen die See gedreht stampft das Schiff weniger.
-- **Tauchsonar:** Tiefe 15-300 m (Standard 75 m, mindestens 10 m über Grund), passiv 18 sm mit +/-2 Grad, aktiver Ping 14 sm mit 30 s Abklingzeit. Tauchen braucht Wind bis 30 kn und 1 sm Sicht.
+- **Startgrenzen:** Wind bis 32 kn, Seitenwind bis 22 kn, Sicht mindestens 2 sm, Seegang höchstens 5, einsatzbereites Flugdeck, Böen bis 40 kn, Wolkenuntergrenze mindestens 300 ft, keine starke Vereisung und ein ruhiges Deckfenster (Rollen höchstens 8 Grad, Stampfen höchstens 3,5 Grad). Leichte Vereisung kostet 20 % mehr Treibstoff; die Wetter- & Sonar-Analyse (`0`) zeigt CLEAR, LIMITED oder NO-GO. Auch die Landung wartet auf ein solches Fenster; gegen die See gedreht stampft das Schiff weniger.
+- **Tauchsonar:** Tiefe 15-300 m (Standard 75 m, mindestens 10 m über Grund), passiv 18 sm mit +/-2 Grad, aktiver Ping 14 sm mit 30 s Abklingzeit. Tauchen braucht Wind bis 30 kn, 1 sm Sicht und keine Vereisung.
 - **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie; sie treiben mit der Strömung und etwas mit dem Wind. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
@@ -938,6 +941,18 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Strömung | festes Feld bis 1 kn plus 3 % des Windes, 20 Grad rechts der Windrichtung |
 | Meeresboden | Fels, Kies, Sand, Schluff oder Schlick; beeinflusst die Bodenreflexion |
 | Hindernisse | bis zu 64 kartierte Wracks und Unterwasserfelsen (Spitzen mindestens 15 m tief) |
+| Atmosphäre | Barometer 975-1025 hPa, das vor steigendem Seegang fällt; Lufttemperatur aus Wasser, Jahreszeit, Tageszeit und kaltem Nordwind (in Winterstürmen unter 0 Grad C: Schnee, Vereisung); Böen; Wolkenuntergrenze; Sonnenstand mit bürgerlicher/nautischer Dämmerung; Mondphase |
+| Regenlinse | Regen süßt die obersten Meter aus (bis -1 PSU, vom Wind eingemischt) und senkt die Schallgeschwindigkeit an der Oberfläche |
+| SOFAR-Kanal | ein inneres Schallgeschwindigkeitsminimum (etwa 400-500 m unter der Deckschicht) gibt es nur in ausreichend tiefem Wasser |
+
+### Wetter- & Sonar-Analyse (Taste 0)
+
+Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; auch in der Pause). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü.
+
+- **Umwelt:** Uhrzeit, Tageslicht (Tag, bürgerliche oder nautische Dämmerung, Nacht), Mondphase, Wetter und Niederschlag, Sicht, Wind mit Böen und Beaufort, Seegang, Barometer mit 3-Stunden-Tendenz (steigend, stabil, fallend, rasch fallend), Luft- und Wassertemperatur, Wolkenuntergrenze und Vereisung. Rasch fallender Luftdruck unter etwa 1004 hPa löst eine Sturmwarnung aus. Das Wetter ändert sich höchstens um eine Seegangsstufe pro Stunde, deshalb bewegt sich das Barometer schneller als ein echtes.
+- **Wettereinflüsse:** Sonne (starke Sprungschicht), Wind (tiefere Deckschicht) und Regen oder Schnee (süßeres Oberflächenwasser, Regenrauschen) leuchten, solange sie wirken.
+- **Helikopter-Flugwetter:** CLEAR, LIMITED (innerhalb von 80 % eines Grenzwerts oder leichte Vereisung) oder NO-GO, mit Wind, Böen, Seitenwind, Sicht, Wolkenuntergrenze, Seegang, Rollen und Stampfen des Decks, Vereisung und ob Tauchsonar möglich ist.
+- **Meeresprofil:** erscheint erst, wenn das Sonar einen Bathythermographen genommen hat (Sonar `E`): gemessene Schallgeschwindigkeit über der Tiefe, die Schicht, eine SOFAR-Achse falls vorhanden, neun Schallstrahlen vom Bugsonar bis 20 sm und die Schattenzone unter der Schicht (rot), in der das Bugsonar wenig hört. Nach 30 min oder 10 sm gilt die Messung als veraltet.
 
 ### Gegnerische U-Boote
 

@@ -62,6 +62,18 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 | Strömung | festes Feld bis 1 kn plus 3 % des Windes, 20 Grad rechts der Windrichtung |
 | Meeresboden | Fels, Kies, Sand, Schluff oder Schlick; beeinflusst die Bodenreflexion |
 | Hindernisse | bis zu 64 kartierte Wracks und Unterwasserfelsen (Spitzen mindestens 15 m tief) |
+| Atmosphäre | Barometer 975-1025 hPa, das vor steigendem Seegang fällt; Lufttemperatur aus Wasser, Jahreszeit, Tageszeit und kaltem Nordwind (in Winterstürmen unter 0 Grad C: Schnee, Vereisung); Böen; Wolkenuntergrenze; Sonnenstand mit bürgerlicher/nautischer Dämmerung; Mondphase |
+| Regenlinse | Regen süßt die obersten Meter aus (bis -1 PSU, vom Wind eingemischt) und senkt die Schallgeschwindigkeit an der Oberfläche |
+| SOFAR-Kanal | ein inneres Schallgeschwindigkeitsminimum (etwa 400-500 m unter der Deckschicht) gibt es nur in ausreichend tiefem Wasser |
+
+## Wetter- & Sonar-Analyse (Taste 0) {#ref-weather-station}
+
+Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; auch in der Pause). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü.
+
+- **Umwelt:** Uhrzeit, Tageslicht (Tag, bürgerliche oder nautische Dämmerung, Nacht), Mondphase, Wetter und Niederschlag, Sicht, Wind mit Böen und Beaufort, Seegang, Barometer mit 3-Stunden-Tendenz (steigend, stabil, fallend, rasch fallend), Luft- und Wassertemperatur, Wolkenuntergrenze und Vereisung. Rasch fallender Luftdruck unter etwa 1004 hPa löst eine Sturmwarnung aus. Das Wetter ändert sich höchstens um eine Seegangsstufe pro Stunde, deshalb bewegt sich das Barometer schneller als ein echtes.
+- **Wettereinflüsse:** Sonne (starke Sprungschicht), Wind (tiefere Deckschicht) und Regen oder Schnee (süßeres Oberflächenwasser, Regenrauschen) leuchten, solange sie wirken.
+- **Helikopter-Flugwetter:** CLEAR, LIMITED (innerhalb von 80 % eines Grenzwerts oder leichte Vereisung) oder NO-GO, mit Wind, Böen, Seitenwind, Sicht, Wolkenuntergrenze, Seegang, Rollen und Stampfen des Decks, Vereisung und ob Tauchsonar möglich ist.
+- **Meeresprofil:** erscheint erst, wenn das Sonar einen Bathythermographen genommen hat (Sonar `E`): gemessene Schallgeschwindigkeit über der Tiefe, die Schicht, eine SOFAR-Achse falls vorhanden, neun Schallstrahlen vom Bugsonar bis 20 sm und die Schattenzone unter der Schicht (rot), in der das Bugsonar wenig hört. Nach 30 min oder 10 sm gilt die Messung als veraltet.
 
 ## Gegnerische U-Boote {#ref-subs}
 

@@ -40,6 +40,10 @@ MLD_MAX_M = 250.0
 
 # --- temperature / sound speed -----------------------------------------------
 SALINITY_PSU = 35.0
+# Rain freshens a thin surface lens that wind mixes away (quasi-steady).
+RAIN_LENS_MAX_PSU = 1.0
+RAIN_LENS_DEPTH_M = 5.0
+RAIN_LENS_MIXING_KN = 10.0
 DEEP_TEMPERATURE_C = 4.0
 THERMOCLINE_SCALE_M = 150.0
 SST_MEAN_C = 13.0
@@ -95,6 +99,35 @@ def temperature_profile_c(depth_m: float, mld_m: float, sst_c: float) -> float:
     surface = sst_c - 0.002 * mld_m
     return DEEP_TEMPERATURE_C + (surface - DEEP_TEMPERATURE_C) * math.exp(
         -(depth_m - mld_m) / THERMOCLINE_SCALE_M)
+
+
+def salinity_psu(depth_m: float, rain_intensity: float = 0.0,
+                 wind_kn: float = 0.0) -> float:
+    """Salinity with a rain-fed fresh surface lens, mixed down by wind."""
+    rain = max(0.0, min(1.0, rain_intensity))
+    if rain <= 0.0:
+        return SALINITY_PSU
+    mixing = 1.0 / (1.0 + (max(0.0, wind_kn) / RAIN_LENS_MIXING_KN) ** 2)
+    return SALINITY_PSU - RAIN_LENS_MAX_PSU * rain * mixing * math.exp(
+        -max(0.0, depth_m) / RAIN_LENS_DEPTH_M)
+
+
+def sofar_axis_m(depths_m, speeds_m_s, water_depth_m: float) -> float | None:
+    """Depth of an interior sound-speed minimum below the surface layer.
+
+    A deep sound channel exists only when the profile has a minimum that is
+    clearly above the seabed and below the upper water column, i.e. sound
+    speed rises again both towards the surface and towards the bottom."""
+    pairs = sorted(zip(depths_m, speeds_m_s))
+    if len(pairs) < 3:
+        return None
+    index = min(range(len(pairs)), key=lambda i: pairs[i][1])
+    depth, speed = pairs[index]
+    if index in (0, len(pairs) - 1) or depth >= water_depth_m - 50.0:
+        return None
+    if pairs[-1][1] - speed < 0.5 or pairs[0][1] - speed < 0.5:
+        return None
+    return depth
 
 
 def rayleigh_bottom_loss_db(sediment: str, grazing_deg: float) -> float:
@@ -256,10 +289,12 @@ class OceanEnvironment:
     def temperature_c(depth_m: float, mld_m: float, sst_c: float) -> float:
         return temperature_profile_c(depth_m, mld_m, sst_c)
 
-    def sound_speed_m_s(self, depth_m: float, mld_m: float, hour: float) -> float:
+    def sound_speed_m_s(self, depth_m: float, mld_m: float, hour: float,
+                        rain_intensity: float = 0.0, wind_kn: float = 0.0) -> float:
         sst = self.sea_surface_temperature_c(hour)
-        return mackenzie_sound_speed(self.temperature_c(depth_m, mld_m, sst),
-                                     SALINITY_PSU, depth_m)
+        return mackenzie_sound_speed(
+            self.temperature_c(depth_m, mld_m, sst),
+            salinity_psu(depth_m, rain_intensity, wind_kn), depth_m)
 
     # --- wind drift -------------------------------------------------------------
 

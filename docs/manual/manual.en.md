@@ -48,10 +48,11 @@ Global keys (all stations):
 | `F1 / ?` | Help (this display) |
 | `F2` | Toggle Autocrew for the current station |
 | `F3` | Open Autocrew overview |
+| `0` | Weather & sonar analysis panel |
 | `F8` | Tactical Unit Analyzer (read-only catalog) |
 | `F4` | Simulation log view (live; requires simlog option; M: map of all contacts) |
 | `F9` | Open local Commander LAN administration |
-| `F10` | Options: language, fullscreen, audio, large text, tooltips |
+| `F10` | Options: language, fullscreen, audio, large text, tooltips, frame rate |
 | `N` | Nations & units; in sonar: notch filter |
 | `S / L` | Save / load (slots 1-5) |
 | `Alt+Enter` | Fullscreen (all stations) |
@@ -115,7 +116,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10` (or `O` while paused): options - language, fullscreen, audio, large text, tooltips.
+- `F10` (or `O` while paused): options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default).
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.
 
 ## 1 Bridge
@@ -337,11 +338,13 @@ Combat situation:
 
 - Gain (`I`/`O`) changes display and audio only, not detection. Black level (`Ctrl+I`/`Ctrl+O`) and contrast (`Shift+I`/`Shift+O`) help faint traces stand out; `Shift+C` changes the phosphor colour.
 - `D` or `A`/`B`/`H` choose broadband, filtered or heterodyne audition. Heterodyne shifts the low band up to about 700 Hz so low tonals become audible.
+- The listening audio runs about one second behind the display so a busy moment never interrupts it. After steering the listening bearing the old beam fades into the new one after about a second; the stream is not cut.
 - Put the TAS below the measured layer to hear deep targets; keep the HMS for shallow ones. Both arrays run in parallel.
 - The TMA page shows the closing rate derived from the solution: positive means the target is closing.
 - If the TAS and HMS disagree by 9 degrees or more, treat the contact as a possible ghost (the display flags it) and turn to resolve it.
 - The towed array is a line: it cannot tell a bearing from its mirror about the cable. A contact heard only on the TAS is marked "TAS left/right ambiguous" with its mirror bearing and does not feed TMA; the shown side is right only half the time. Turn 20 degrees (or get the contact on the HMS) and the wrong side drops out. Bearings toward the cable ends (endfire) are also less accurate than broadside.
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
+- The bathythermograph (`E`) measures to the seabed, at most 1500 m. Only after a measurement does the weather & sonar analysis (`0`) show the layer, the shadow zone below it and a SOFAR channel.
 
 ### Not modelled
 
@@ -737,8 +740,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 ```
 
 - **Fuel:** 2 hours in forward flight; hovering (dipping) burns 1.3 times as fast. The helicopter returns automatically when only the 20-minute reserve remains. Running dry before landing loses the aircraft. In the hover the wind pushes it slightly downwind of its hover point.
-- **Launch limits:** wind up to 32 kn, crosswind up to 22 kn, visibility at least 2 NM, sea state 5 or less, working flight deck, and a deck-motion window (roll within 8 degrees, pitch within 3.5 degrees). Landing also waits for such a window; turning into the sea reduces pitching.
-- **Dipping sonar:** depth 15-300 m (default 75 m, at least 10 m above the seabed), passive 18 NM with +/-2 degrees, active ping 14 NM with 30 s cooldown. Dipping needs wind up to 30 kn and visibility of 1 NM.
+- **Launch limits:** wind up to 32 kn, crosswind up to 22 kn, visibility at least 2 NM, sea state 5 or less, working flight deck, gusts up to 40 kn, cloud ceiling at least 300 ft, no severe icing, and a deck-motion window (roll within 8 degrees, pitch within 3.5 degrees). Light icing costs 20 % more fuel; the weather & sonar analysis (`0`) shows CLEAR, LIMITED or NO-GO. Landing also waits for such a window; turning into the sea reduces pitching.
+- **Dipping sonar:** depth 15-300 m (default 75 m, at least 10 m above the seabed), passive 18 NM with +/-2 degrees, active ping 14 NM with 30 s cooldown. Dipping needs wind up to 30 kn, visibility of 1 NM and no icing.
 - **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery; they drift with the current and a little with the wind. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
@@ -937,6 +940,18 @@ All values are the defaults of the current game version. Custom difficulty and m
 | Current | steady field up to 1 kn plus 3 % of the wind, 20 deg right of downwind |
 | Seabed | rock, gravel, sand, silt or mud; affects bottom reflection |
 | Hazards | up to 64 charted wrecks and submerged rocks (tops at least 15 m deep) |
+| Atmosphere | barometer 975-1025 hPa that falls ahead of rising seas; air temperature from the sea, season, day and cold northerly winds (below 0 deg C in winter storms: snow, icing); gusts; cloud ceiling; sun elevation with civil/nautical twilight; moon phase |
+| Rain lens | rain freshens the top few metres (up to -1 PSU, mixed away by wind) and lowers the surface sound speed |
+| SOFAR channel | an interior sound-speed minimum (about 400-500 m below the surface layer) exists only in deep enough water |
+
+### Weather & sonar analysis (key 0)
+
+Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes it; it also works while paused). In the web client every station opens it with `0` or from the workstation menu.
+
+- **Environment:** time, daylight (day, civil or nautical twilight, night), moon phase, weather and precipitation, visibility, wind with gusts and Beaufort force, sea state, barometer with its 3-hour tendency (rising, steady, falling, falling rapidly), air and sea temperature, cloud ceiling and icing. A rapidly falling glass below about 1004 hPa gives a storm warning. The weather system changes by at most one sea state per hour, so the barometer moves faster than a real one.
+- **Weather effects:** sun (strong layer), wind (deeper mixed layer) and rain or snow (fresher surface water, rain noise) light up while they act.
+- **Helicopter flight weather:** CLEAR, LIMITED (within 80 % of a limit, or light icing) or NO-GO, with wind, gusts, crosswind, visibility, ceiling, sea state, deck roll and pitch, icing and whether dipping is possible.
+- **Ocean profile:** appears only after the sonar has taken a bathythermograph (Sonar `E`): measured sound speed over depth, the layer, a SOFAR axis if present, nine sound rays from the hull sonar to 20 NM and the shadow zone below the layer (red) where the hull sonar hears little. The measurement is marked stale after 30 min or 10 NM.
 
 ### Opposing submarines
 

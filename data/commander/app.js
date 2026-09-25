@@ -702,11 +702,13 @@
     metrics($("bridge-navigation"), [["position", position(navigation)], ["course", unit(navigation.course, "\u00b0", 0)],
       ["speed", unit(navigation.speed, "kn")], ["ordered_course", unit(navigation.target_course, "\u00b0", 0)],
       ["ordered_speed", unit(navigation.target_speed, "kn")], ["rudder_angle", unit(navigation.rudder_angle, "\u00b0")],
-      ["yaw_rate", unit(navigation.yaw_rate, "\u00b0/s")]]);
+      ["yaw_rate", unit(navigation.yaw_rate, "\u00b0/s")], ["turn_radius", unit(navigation.turn_radius_nm, "NM", 2)]]);
     metrics($("bridge-orders-summary"), [["station_down", yesNo(payload.orders.station_down)],
       ["speed_max", unit(payload.orders.speed_max_kn, "kn")], ["telegraph", payload.orders.telegraph],
       ["noise", number(payload.orders.noise, 2)], ["cavitating", yesNo(payload.orders.cavitating)],
       ["threat_count", number(payload.threat.count, 0)], ["flood", unit(payload.threat.average_flood, "%")],
+      ["systems_down", payload.systems.filter((item) => item.down).map((item) => item.key).join(", ") || t("station_none")],
+      ["threat_tracks", payload.threat.observations.map((row) => row.label).join(", ") || t("station_none")],
       ["torpedo_warning", payload.threat.torpedoes.length ? t(`torpedo_warning_${payload.threat.torpedoes[0].source}`, {
         bearing: number(payload.threat.torpedoes[0].bearing, 1), age: number(payload.threat.torpedoes[0].age_s, 0)}) : t("torpedo_warning_none")]]);
     stationRows($("bridge-tactical"), payload.tactical_summary, tacticalEntries);
@@ -801,7 +803,9 @@
     metrics($("sonar-settings"), [["sonar_mode", settings.mode], ["sonar_page", number(settings.page, 0)],
       ["sonar_listen_bearing", unit(settings.listen_bearing, "\u00b0", 0)], ["sonar_focus", settings.focus_ref || t("station_none")],
       ["sonar_target", settings.target_ref || t("station_none")], ["station_down", yesNo(settings.station_down)],
-      ["sonar_tow_state", settings.tow.state], ["sonar_tow_depth", unit(settings.tow.depth_m, "m", 0)],
+      ["sonar_tow_state", settings.tow.state], ["sonar_tow_payout", unit(settings.tow.payout * 100, "%", 0)],
+      ["sonar_tow_speed_window", `${unit(settings.tow.speed_min_kn, "kn", 0)} - ${unit(settings.tow.speed_max_kn, "kn", 0)}`],
+      ["sonar_tow_depth", unit(settings.tow.depth_m, "m", 0)],
       ["sonar_bt_ready", yesNo(settings.bt.ready)], ["sonar_ping_ready", yesNo(settings.ping.ready)],
       ["sonar_tma", yesNo(settings.tma_enabled)], ["sonar_audition_mode", enumText({BROADBAND: "sonar_audition_broadband", FILTERED: "sonar_audition_filtered", HETERODYNE: "sonar_audition_heterodyne"}, auditionMode)], ["sonar_gain", unit(settings.gain_db, "dB")],
       ["sonar_band", settings.band_preset || settings.band_hz.map((value) => number(value, 0)).join("-")],
@@ -890,7 +894,9 @@
       ["sonar_target", payload.designated_target_ref || t("station_no_target")]]);
     metrics($("opz-defense"), [["vls", number(payload.defense.vls, 0)], ["ciws", number(payload.defense.ciws, 0)],
       ["aa", number(payload.defense.aa, 0)], ["chaff", yesNo(payload.defense.chaff_ready)],
-      ["ciws_ready", yesNo(payload.defense.ciws_ready)], ["aa_ready", yesNo(payload.defense.aa_ready)]]);
+      ["ciws_ready", yesNo(payload.defense.ciws_ready)], ["aa_ready", yesNo(payload.defense.aa_ready)],
+      ["opz_ciws_release", yesNo(payload.defense.ciws_released)]]);
+    $("opz-ciws").checked = payload.defense.ciws_released;
     fillFireTargets("opz-fire-target", payload.asm_observations);
     stationRows($("opz-observations"), payload.observations, tacticalEntries);
     stationRows($("opz-fusions"), payload.fusions, (row) => [...tacticalEntries(row), ["fusion_members", row.members.join(", ")]]);
@@ -1110,6 +1116,7 @@
       ["signal_level", unit(row.signal_db, "dB", 0)], ["range_estimate", row.range_estimate_nm === null ? t("station_none") : unit(row.range_estimate_nm, "NM", 0)],
       ["scan_period", row.scan_period_s === null ? t("station_none") : unit(row.scan_period_s, "s", 1)],
       ["radar_type", row.radar_type || t("station_none")], ["threat", row.threat],
+      ["ambiguous", yesNo(row.ambiguous)],
       ["synthetic_assumption", yesNo(row.synthetic_assumption)],
       ["jamming_effectiveness", row.jamming_effectiveness === null ? t("station_none") : number(row.jamming_effectiveness, 2)],
       ["jamming_technique", row.jamming_technique === null ? t("station_none") : t(`ecm_${row.jamming_technique}`)],
@@ -1731,9 +1738,9 @@
       });
       tma.context.lineWidth = 1;
       const chosen = visual.tma.find((row) => row.ref === selected);
-      if (chosen) $("sonar-tma-readout").value = chosen.evaluation ? t("sonar_tma_evaluation", {
+      if (chosen) $("sonar-tma-readout").value = t("sonar_tma_summary", {rate: finite(chosen.summary.rate_deg_min) ? number(chosen.summary.rate_deg_min, 2) : "--", legs: chosen.summary.legs}) + " | " + (chosen.evaluation ? t("sonar_tma_evaluation", {
         rms: number(chosen.evaluation.rms_deg, 1), trend: number(chosen.evaluation.systematic_deg, 1),
-        fit: number(chosen.evaluation.fit * 100, 0), observable: number(chosen.evaluation.observability * 100, 0)}) : t("sonar_tma_pending");
+        fit: number(chosen.evaluation.fit * 100, 0), observable: number(chosen.evaluation.observability * 100, 0)}) : t("sonar_tma_pending"));
     };
     registerAnimatedPlot("sonar-tma-plot", drawTma);
     drawTma(performance.now());
@@ -3224,7 +3231,7 @@
     };
     const sonarFields = ["ref", "label", "source", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
     if (state.role === "bridge") {
-      if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"])) throw new Error("protocol");
+      if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
       if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
           typeof payload.orders.station_down !== "boolean" || !finite(payload.orders.speed_max_kn) ||
           typeof payload.orders.cavitating !== "boolean" || payload.orders.speed_max_kn < 0 || payload.orders.speed_max_kn > 100 ||
@@ -3271,7 +3278,8 @@
           !exactKeys(visual.demon, ["frequency_min_hz", "frequency_max_hz", "bin_step_hz", "spectrum", "history", "analysis"]) || !boundedArray(visual.demon.spectrum, 80) ||
           !boundedArray(visual.demon.history, 120) || visual.demon.history.some((row) => !exactKeys(row, ["age_s", "bins"]) || !boundedArray(row.bins, 80)) ||
           (visual.demon.analysis !== null && (!exactKeys(visual.demon.analysis, ["modulation_peak_hz", "detection_confidence", "cavitation", "tonal_hz", "hypotheses"]) || !boundedArray(visual.demon.analysis.hypotheses, 20) || visual.demon.analysis.hypotheses.some((row) => !exactKeys(row, ["blades", "order", "rpm"])))) ||
-          !boundedArray(visual.tma, 32) || visual.tma.some((row) => !exactKeys(row, ["ref", "bearings", "solution", "hypothesis", "evaluation", "residuals_deg", "proposal"]) ||
+          !boundedArray(visual.tma, 32) || visual.tma.some((row) => !exactKeys(row, ["ref", "bearings", "solution", "summary", "hypothesis", "evaluation", "residuals_deg", "proposal"]) ||
+            !exactKeys(row.summary, ["rate_deg_min", "legs"]) || !Number.isInteger(row.summary.legs) ||
             !exactKeys(row.hypothesis, ["course", "speed_kn", "range_nm"]) || !finite(row.hypothesis.course) || !finite(row.hypothesis.speed_kn) || !finite(row.hypothesis.range_nm) ||
             (row.evaluation !== null && !exactKeys(row.evaluation, ["rms_deg", "systematic_deg", "fit", "observability"])) ||
             !boundedArray(row.residuals_deg, 24) || row.residuals_deg.some((value) => !finite(value)) ||
@@ -3283,7 +3291,7 @@
       if (!exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
           !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "aa_ready", "state", "interlock", "reload_s"]) ||
           (payload.designated_target !== null && !exactKeys(payload.designated_target, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"])) ||
-          !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"]) ||
+          !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
           !boundedArray(payload.tubes, 16) || payload.tubes.some((row) => !exactKeys(row, ["tube", "state", "reload_s"])) ||
           !boundedArray(payload.own_weapons, 96) || payload.own_weapons.some((row) => !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"])) ||
           !boundedArray(payload.active_assets, 104) || payload.active_assets.some((row) => !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"]))) throw new Error("protocol");
@@ -3310,11 +3318,11 @@
             !pictureRefs.has(row.ref) || typeof row.source !== "string" ||
             typeof row.classification !== "string" || !row.classification || row.classification.length > 128) ||
            new Set(payload.source_classifications.map((row) => row.ref)).size !== payload.source_classifications.length ||
-           !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready"])) throw new Error("protocol");
+           !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready", "ciws_released"]) || typeof payload.defense.ciws_released !== "boolean") throw new Error("protocol");
       tacticalRows(payload.asm_observations, 128);
       if (payload.designated_target_ref !== null && (typeof payload.designated_target_ref !== "string" || !pictureRefs.has(payload.designated_target_ref))) throw new Error("protocol");
       if (!exactKeys(payload.own_assets, ["ship", "helicopter"]) ||
-          !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"]) ||
+          !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
           !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");
     } else if (state.role === "radio") {
       rowsExact(payload.observations, 256, ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg", "can_capture"]);
@@ -3322,7 +3330,7 @@
           !boundedArray(payload.logged_bearings, 256) || payload.logged_bearings.some((row) => !exactKeys(row, ["ref", "bearing", "observer_x", "observer_y", "age_s"])) ||
           !boundedArray(payload.messages, 40) || payload.messages.some((row) => !exactKeys(row, ["stamp", "text"])) ||
           typeof payload.station_down !== "boolean" || payload.observations.some((row) => typeof row.can_capture !== "boolean") ||
-          !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"])) throw new Error("protocol");
+          !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
       tacticalRows(payload.tactical, 128);
     } else if (state.role === "engine") {
       if (!exactKeys(payload.propulsion, ["course", "target_course", "speed", "target_speed", "telegraph", "rpm", "quiet_mode", "cavitating", "fuel_kg", "fuel_capacity_kg", "fuel_burn_kg_h", "fuel_endurance_h", "fuel_range_nm"]) ||
@@ -3335,7 +3343,7 @@
       if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode"]) ||
           (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
           !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active", "mode"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label) || !["ACTIVE", "PASSIVE"].includes(row.mode)) ||
-          !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate"]) ||
+          !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
           !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
           [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping, payload.readiness.weather_launch_safe, payload.readiness.weather_dipping_safe].some((value) => typeof value !== "boolean") ||
           !finite(payload.readiness.crosswind_kn) || payload.readiness.crosswind_kn < 0 || payload.readiness.crosswind_kn > 80) throw new Error("protocol");
@@ -5095,14 +5103,19 @@
       ctx.fillStyle = color;
       ctx.lineWidth = track.ref === selected ? 2 : 1;
       if (!finite(track.x) || !finite(track.y)) {
-        if (!ownPosition || !finite(track.bearing)) continue;
+        // A bearing starts at the platform that measured it (buoy, dip,
+        // logged HFDF position), as on the role map; else at own ship.
+        const observed = finite(track.observer_x) && finite(track.observer_y);
+        if (!finite(track.bearing) || (!ownPosition && !observed)) continue;
+        const [bx, by] = observed ? point(track.observer_x, track.observer_y) : [ox, oy];
+        const reach = Math.hypot(width, height) + Math.hypot(bx - width / 2, by - height / 2);
         const angle = track.bearing * Math.PI / 180 - Math.PI / 2;
         const uncertainty = finite(track.bearing_uncertainty_deg) ? Math.min(180, Math.max(0, track.bearing_uncertainty_deg)) * Math.PI / 180 : 0;
         if (uncertainty) {
           ctx.globalAlpha = track.ref === selected ? .13 : .055;
-          ctx.beginPath(); ctx.moveTo(ox, oy); ctx.arc(ox, oy, rayLength, angle - uncertainty, angle + uncertainty); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+          ctx.beginPath(); ctx.moveTo(bx, by); ctx.arc(bx, by, reach, angle - uncertainty, angle + uncertainty); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
         }
-        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(angle) * rayLength, oy + Math.sin(angle) * rayLength);
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(angle) * reach, by + Math.sin(angle) * reach);
         if (track.ref === selected) { ctx.strokeStyle = palette().accent; ctx.lineWidth = 4; ctx.stroke(); }
         ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([6, 6]); ctx.stroke(); ctx.setLineDash([]);
         // A ray is intentionally not pickable as a fictitious contact position.
@@ -5603,6 +5616,7 @@
     });
   });
   $("opz-radar-surface").addEventListener("change", () => sendStationAction("opz_set_radar", {domain: "surface", enabled: $("opz-radar-surface").checked}));
+  $("opz-ciws").addEventListener("change", () => sendStationAction("opz_set_ciws", {enabled: $("opz-ciws").checked}));
   $("opz-radar-air").addEventListener("change", () => sendStationAction("opz_set_radar", {domain: "air", enabled: $("opz-radar-air").checked}));
   $("opz-range").addEventListener("change", () => sendStationAction("opz_set_range", {range_nm: Number($("opz-range").value)}));
   $("opz-create-fusion").addEventListener("click", () => sendStationAction("opz_create_fusion", {refs: [...opzMarked]}));

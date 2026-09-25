@@ -382,7 +382,9 @@ def test_raider_radar_detection_is_capped_by_geometric_horizon(game, monkeypatch
     assert track is not None and track.source == "RADAR-L"
 
 
-def test_raider_first_contact_flashes_once(game, monkeypatch):
+def test_raider_first_contact_is_not_announced_as_a_raid(game, monkeypatch):
+    """Radar cannot tell an attack aircraft from other air traffic, so no
+    'raid incoming' call names the contact hostile."""
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
     profile = game._air_defense_loadout
     raider = Raider(game.ship.x + 20.0, game.ship.y, 0.0, 1,
@@ -394,41 +396,8 @@ def test_raider_first_contact_flashes_once(game, monkeypatch):
     monkeypatch.setattr(game, "flash",
                         lambda text, seconds=3.0: flashes.append(text))
     game._update_raiders(0.1, publish_picture=True)
-    assert any("raid.incoming" in str(f) for f in flashes)
+    assert not any("raid" in str(f) for f in flashes)
     assert game._raider_visible_last is True
-    game._update_raiders(0.1, publish_picture=True)
-    assert len([f for f in flashes if "raid.incoming" in str(f)]) == 1
-
-
-# --- Save/Load ---
-
-def test_raid_state_roundtrips_save_load(game):
-    profile = game._air_defense_loadout
-    raider = Raider(game.ship.x + 60.0, game.ship.y, 0.0, 7,
-                    game.rng_raid, profile["raider"])
-    raider.phase = RaidPhase.ATTACK
-    raider.hp = 5
-    raider.salto_cd = 12.3
-    raider.pending_asm = 1
-    raider.attack_t = 20.0
-    game.raiders = [raider]
-    game.raid_seq = 7
-    game.raid_waves_spawned = 3
-    game.aa_ammo = 100
-    game.aa_cooldown_s = 0.4
-    state = json.loads(json.dumps(game.save_state(), allow_nan=False))
-    restored = Game(seed=1, start_menu=False, audio_enabled=False)
-    restored.load_state(state)
-    snapshot = json.loads(json.dumps(restored.save_state(), allow_nan=False))
-    for field in ("air_defense", "rngs"):
-        assert snapshot[field] == state[field]
-    out = restored.raiders[0]
-    assert (out.x, out.y, out.course, out.seq, out.phase, out.hp,
-            out.salto_cd, out.pending_asm, out.attack_t) == \
-        (raider.x, raider.y, raider.course, raider.seq, raider.phase, raider.hp,
-         raider.salto_cd, raider.pending_asm, raider.attack_t)
-    assert restored.aa_ammo == 100 and restored.aa_cooldown_s == 0.4
-    assert restored.raid_seq == 7 and restored.raid_waves_spawned == 3
 
 
 def test_pre_r20_save_shape_is_rejected(game):

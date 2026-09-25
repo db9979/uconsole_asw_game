@@ -56,7 +56,7 @@ def _own_navigation(game):
     ship = game.ship
     return {key: _number(getattr(ship, key)) for key in (
         "x", "y", "course", "speed", "target_course", "target_speed",
-        "rudder_angle", "yaw_rate")}
+        "rudder_angle", "yaw_rate", "turn_radius_nm")}
 
 
 def _observation(row, fields):
@@ -227,6 +227,13 @@ def known_chart(status, chart):
                 disclaimer=str(chart["disclaimer"])[:512])
 
 
+def _tma_summary(track, now):
+    """Bearing rate and own-ship legs, as on the uConsole TMA page."""
+    from src.ui.sonar_view import tma_observation_summary
+    summary = tma_observation_summary(track, now)
+    return dict(rate_deg_min=_number(summary["rate"]), legs=int(summary["legs"]))
+
+
 def _sonar_visualization(game, rows, sonar_refs):
     sonar = game.sonar
     receiver = sonar.receiver
@@ -353,6 +360,7 @@ def _sonar_visualization(game, rows, sonar_refs):
             hypothesis=dict(course=_number(hypothesis.course),
                             speed_kn=_number(hypothesis.speed_kn),
                             range_nm=_number(hypothesis.range_nm)),
+            summary=_tma_summary(track, game.sim_t),
             evaluation=None if evaluation is None else dict(
                 rms_deg=_number(evaluation["rms_deg"]),
                 systematic_deg=_number(evaluation["systematic_deg"]),
@@ -936,7 +944,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                     aa=game.aa_ammo,
                                      chaff_ready=game.softkill_store.ready > 0,
                                     ciws_ready=game.ciws_cooldown_s <= 0,
-                                    aa_ready=game.aa_cooldown_s <= 0),
+                                    aa_ready=game.aa_cooldown_s <= 0,
+                                    ciws_released=bool(game.ciws_authorized)),
                        asm_observations=[dict(
                            _observation(row, _TACTICAL_FIELDS),
                            ref=direct_fire_refs["opz"][row["ref"]])

@@ -6085,13 +6085,10 @@ class Game:
                         self.feed.add(self.world.format_time(), "waffen",
                                       message("runtime.live_air.downed"))
         if publish_picture:
-            visible = bool(observed)
-            if visible and not self._raider_visible_last:
-                self.audio.play_alert("danger")
-                self.flash(message("runtime.raid.incoming"), 4.0)
-                self.feed.add(self.world.format_time(), "opz",
-                              message("runtime.raid.incoming"))
-            self._raider_visible_last = visible
+            # No "raid incoming" call: radar cannot tell an attack aircraft
+            # from other air traffic. Threat alerts come from the measured
+            # ASM cue (speed/altitude/jamming) and operator annotations.
+            self._raider_visible_last = bool(observed)
 
     def _drain_raider_asm(self) -> None:
         """R20: Raid-Salven werden zu ASM-Objekten gegen die Fregatte."""

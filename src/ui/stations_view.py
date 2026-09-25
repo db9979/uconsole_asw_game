@@ -1800,7 +1800,34 @@ def draw_radio_view(game, tr=None) -> None:
     box_h = station_rect.bottom - cy - 34
 
     if page == 0:
-        left = layout.box(s, (x, cy, w, box_h), "panel.hfdf")
+        # Current intercepts left; the operator's logged bearings and the
+        # resulting cross-fixes right (same data as the Remote Crew radio).
+        split = int(w * .56)
+        left = layout.box(s, (x, cy, split - 6, box_h), "panel.hfdf")
+        log_box = layout.box(s, (x + split + 6, cy, w - split - 6, box_h), "panel.hfdf_log")
+        gx, gy, gw, gh = log_box
+        logged = list(game.hfdf_log)[-6:]
+        if not logged:
+            layout.blit_line(s, "radio.log_empty", (gx, gy, gw, 24),
+                             config.COLOR_TEXT_DIM, size=16)
+        for row in reversed(logged):
+            layout.blit_line(s, message(
+                "radio.line.logged", label=raw_text(row["label"]),
+                bearing=f"{row['bearing'] % 360:05.1f}",
+                x=f"{row['observer_x']:.1f}", y=f"{row['observer_y']:.1f}",
+                age=f"{max(0.0, game.sim_t - row['t']):.0f}"),
+                (gx, gy, gw, 24), config.COLOR_TEXT, size=16)
+            gy += 26
+        gy += 8
+        for fix in list(game.hfdf_fixes.values())[-4:]:
+            if gy + 24 > log_box[1] + gh:
+                break
+            layout.blit_line(s, message(
+                "radio.line.fix", label=raw_text(fix["label"]),
+                sigma=f"{fix['sigma_nm']:.1f}",
+                age=f"{max(0.0, game.sim_t - fix['t']):.0f}"),
+                (gx, gy, gw, 24), config.COLOR_OK, size=16)
+            gy += 26
         lx, ly, lw, _ = left
         reports = game.hfdf_bearings()
         row_h = 34

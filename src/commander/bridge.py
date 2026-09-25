@@ -166,6 +166,10 @@ def _opz_dissolve_fusion(game, params, bindings):
     return game.dissolve_opz_fusion(binding[0])
 
 
+def _opz_set_ciws(game, params, _bindings):
+    return game.set_ciws_authorized(params["enabled"])
+
+
 def _opz_set_radar(game, params, _bindings):
     return game.set_opz_radar(params["domain"], params["enabled"])
 
@@ -477,6 +481,7 @@ _V2_ACTION_HANDLERS = {
     "opz_create_fusion": _opz_create_fusion,
     "opz_dissolve_fusion": _opz_dissolve_fusion,
     "opz_set_radar": _opz_set_radar,
+    "opz_set_ciws": _opz_set_ciws,
     "opz_set_range": _opz_set_range,
     "opz_designate_target": _opz_designate_target,
     "engine_set_telegraph": _engine_set_telegraph,

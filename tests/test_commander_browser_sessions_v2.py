@@ -765,9 +765,10 @@ async function run() {
   const edge = roleMapSweepEndpoint;
   const sweepLength = Math.hypot(edge.x - roleMapSweepOrigin.x, edge.y - roleMapSweepOrigin.y);
   // Default OPZ zoom fits the selected radar range to the shorter map dimension
-  // (viewState.zoom = chart.size_nm / (2 * range_nm)), so the beam should reach
-  // exactly that radius regardless of bearing, never the canvas edge itself.
-  const expectedSweepLength = Math.min(sweepLayer.clientWidth, sweepLayer.clientHeight) / 2;
+  // (viewState.zoom = chart.size_nm / (2 * range_nm)). The beam reaches the
+  // longest *effective* radar range (38 of 40 NM in this fixture, weather),
+  // regardless of bearing, never the canvas edge itself.
+  const expectedSweepLength = Math.min(sweepLayer.clientWidth, sweepLayer.clientHeight) / 2 * 38 / 40;
   assert(Math.abs(sweepLength - expectedSweepLength) < 3,
     `OPZ sweep length ${sweepLength} does not match the radar range (expected ~${expectedSweepLength})`);
   const sweepRect = sweepLayer.getBoundingClientRect();
@@ -919,7 +920,7 @@ def _direct_fire_browser_states():
                    audio=dict(events=[]), weather_station=WEATHER_STATION)
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
-                      yaw_rate=0.0)
+                      yaw_rate=0.0, turn_radius_nm=None)
     weapon_row = dict(ref="weapon-ref-a", label="Eligible sonar observation",
                       domain="SUBSURFACE", source="SONAR", affiliation="HOSTILE",
                       classification="U_BOOT", bearing=30.0, range_nm=4.0,
@@ -953,7 +954,8 @@ def _direct_fire_browser_states():
                    sweep_bearing=20.0, sweep_rate_deg_s=180.0, weather_severity=.1,
                    surface_effective_range_nm=35.0, air_effective_range_nm=38.0),
         defense=dict(vls=8, ciws=200, aa=40, chaff_ready=True,
-                     ciws_ready=True, aa_ready=True), asm_observations=[asm_row],
+                     ciws_ready=True, aa_ready=True, ciws_released=True),
+        asm_observations=[asm_row],
         source_classifications=[], designated_target_ref=None,
         own_assets=dict(ship=navigation, helicopter=helicopter_asset)))
     helicopter = dict(common, role="helicopter", helicopter=dict(
@@ -1128,7 +1130,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 "x", "y", "course", "speed", "target_course", "target_speed")},
                             "tactical_summary": [tactical_row(row)
                                                  for row in legacy["tracks"]]}
-            common[role]["navigation"].update(rudder_angle=0.0, yaw_rate=0.0)
+            common[role]["navigation"].update(rudder_angle=0.0, yaw_rate=0.0, turn_radius_nm=None)
             common[role]["orders"] = {"station_down": False, "speed_max_kn": 25,
                                       "telegraph": "HALF", "noise": .2,
                                       "cavitating": False}

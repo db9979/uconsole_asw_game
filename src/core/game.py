@@ -20,6 +20,8 @@ from src.audio.preview import unit_sonar_preview
 from src.commander.local import CommanderConsole
 from src.core import config
 from src.core import detrand
+from src.core import plot as plot_geometry
+from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController, station_key
 from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
                                station_page_step, toggle_tas)
@@ -638,6 +640,9 @@ class Game:
         self.sonar_tools = analysis_tools.AcousticToolState()
         # Operator TMA hypotheses per sonar target (transient UI state).
         self.tma_hypotheses = {}
+        # Shared operator plot layer (chart marks, rulers, bearing lines...).
+        self.plot = PlotLayer()
+        self._reset_plot_ui()
         # Display-only CRT controls are intentionally transient: they affect no
         # observation, simulation or v10 save contract.
         self.sonar_display_palette = "green"
@@ -1025,6 +1030,9 @@ class Game:
             self.input_buffer = ""
             prompt = message("runtime.input.bearing",
                              current=f"{self.sonar.listen_bearing:05.1f}")
+        elif mode == "plot_speed":
+            self.input_buffer = ""
+            prompt = message("plot.input.speed")
         elif mode == "course":
             self.input_buffer = ""
             prompt = message("runtime.input.course",
@@ -1396,6 +1404,16 @@ class Game:
         except ValueError:
             self.flash(message("event.invalid_input"), 2.0)
             return
+        if mode == "plot_speed":
+            pending = self._plot_dr_pending
+            self.input_mode = None
+            self.input_buffer = ""
+            self._plot_dr_pending = None
+            if pending is not None:
+                self._plot_flash_result(self.plot_add(
+                    "dr", pending[0], pending[1], course=pending[2],
+                    speed_kn=number))
+            return
         if mode in ("course", "bearing"):
             if not 0.0 <= number < 360.0:
                 self.flash(message("runtime.numeric.angle"), 2.0)
@@ -1458,7 +1476,7 @@ class Game:
                      pygame.K_KP8, pygame.K_KP9):
             if len(self.input_buffer) < 5:
                 self.input_buffer += pygame.key.name(key).strip("[]")
-        elif (self.input_mode in ("speed", "bearing")
+        elif (self.input_mode in ("speed", "bearing", "plot_speed")
               and key in (pygame.K_PERIOD, pygame.K_COMMA, pygame.K_KP_PERIOD)
               and "." not in self.input_buffer):
             self.input_buffer += "."
@@ -2331,6 +2349,9 @@ class Game:
             if self.commander.confirm_visible(self):
                 if self.commander.handle_confirm_key(self, e.key):
                     return
+            if (self.plot_mode and not self.game_over
+                    and self._handle_plot_key(e.key, getattr(e, "mod", 0))):
+                return
             if e.key == pygame.K_ESCAPE:
                 self._open_administration("quit")
                 return
@@ -2412,6 +2433,9 @@ class Game:
                     self.reset(self.seed)
                 return
             if self._local_station_input_locked():
+                return
+            if e.key == pygame.K_p and self._plot_view() is not None:
+                self.toggle_plot_mode()
                 return
             if (e.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
                     and getattr(e, "mod", 0) & pygame.KMOD_CTRL):
@@ -2979,6 +3003,10 @@ class Game:
             self.map_view.set_rect(config.MAP_RECT)
             self.map_view.zoom(factor, pivot=pointer)
         elif e.type == pygame.MOUSEBUTTONDOWN:
+            if (e.button == 1 and self.plot_mode and not self.in_menu
+                    and not self.game_over
+                    and self._handle_plot_click(getattr(e, "pos", None))):
+                return
             if e.button == 1 and not self.in_menu and not self.game_over:
                 if self.station is Station.HELICOPTER and self.station_page == 3:
                     canvas = self._window_to_canvas(getattr(e, "pos", None))
@@ -4973,6 +5001,168 @@ class Game:
             "runtime.cic.filter",
             filter=display_value("contact_filter", self.opz_contact_filter,
                                  self.tr)), 1.5)
+
+    # --- Shared operator plot layer ----------------------------------------
+
+    PLOT_TOOL_KEYS = {pygame.K_m: "mark", pygame.K_r: "ruler",
+                      pygame.K_b: "bearing", pygame.K_c: "circle",
+                      pygame.K_d: "dr"}
+    PLOT_CURSOR_STEP_PX = 6
+    PLOT_CURSOR_STEP_FAST_PX = 40
+    PLOT_PICK_PX = 12
+
+    def _reset_plot_ui(self) -> None:
+        """Transient plot-mode state; the drawing itself lives in ``plot``."""
+        self.plot_mode = False
+        self.plot_tool = "mark"
+        self.plot_cursor = (0.0, 0.0)
+        self.plot_anchor = None
+        self._plot_dr_pending = None
+
+    def plot_add(self, kind, x, y, label="", **fields):
+        """Add one crew drawing at sim time now; returns its id or an error."""
+        if kind not in plot_geometry.KINDS:
+            return "invalid_value"
+        return self.plot.add({"kind": kind, "label": label,
+                              "t": float(self.sim_t), "x": x, "y": y, **fields})
+
+    def plot_remove(self, object_id):
+        return True if self.plot.remove(object_id) else "stale_ref"
+
+    def plot_clear(self):
+        self.plot.clear()
+        return True
+
+    def plot_relabel(self, object_id, label):
+        if not plot_geometry.valid_label(label):
+            return "invalid_value"
+        return True if self.plot.relabel(object_id, label) else "stale_ref"
+
+    def _plot_view(self):
+        """The chart camera of the current station, or None without a chart."""
+        if self.station is Station.OPZ:
+            self._configure_opz_map_view()
+            return self.opz_map_view
+        if self._map_station_visible():
+            self.map_view.set_rect(config.MAP_RECT)
+            return self.map_view
+        return None
+
+    def toggle_plot_mode(self):
+        if self.plot_mode:
+            self._reset_plot_ui()
+            self.flash(message("plot.flash.off"), 1.5)
+            return False
+        if self._plot_view() is None:
+            self.flash(message("plot.flash.no_chart"), 2.0)
+            return None
+        self._clear_station_input()
+        self.plot_mode = True
+        self.plot_anchor = None
+        self.plot_cursor = (self.ship.x, self.ship.y)
+        self.flash(message("plot.flash.on"), 2.0)
+        return True
+
+    def _plot_flash_result(self, result) -> None:
+        if isinstance(result, str):
+            self.flash(message("plot.flash.full" if result == "full"
+                               else "plot.flash.invalid"), 2.0)
+        else:
+            item = next((obj for obj in self.plot.objects if obj["id"] == result), None)
+            if item is not None:
+                self.flash(message("plot.flash.added", label=item["label"]), 1.5)
+
+    def _plot_commit_point(self, x=None, y=None) -> None:
+        """Enter/click: place the cursor point for the active tool."""
+        if x is not None:
+            self.plot_cursor = (x, y)
+        cx, cy = self.plot_cursor
+        tool = self.plot_tool
+        if tool == "mark":
+            self._plot_flash_result(self.plot_add("mark", cx, cy))
+            return
+        if tool == "bearing":
+            brg, dist = plot_geometry.bearing_distance(self.ship.x, self.ship.y, cx, cy)
+            result = (self.plot_add("bearing", self.ship.x, self.ship.y,
+                                    bearing=round(brg, 1) % 360.0)
+                      if dist > 0.0 else "invalid_value")
+            self._plot_flash_result(result)
+            return
+        if self.plot_anchor is None:
+            self.plot_anchor = (cx, cy)
+            self.flash(message("plot.flash.second_point"), 2.0)
+            return
+        ax, ay = self.plot_anchor
+        self.plot_anchor = None
+        brg, dist = plot_geometry.bearing_distance(ax, ay, cx, cy)
+        if tool == "ruler":
+            result = self.plot_add("ruler", ax, ay, x2=cx, y2=cy)
+        elif tool == "circle":
+            result = self.plot_add("circle", ax, ay, radius_nm=round(dist, 2))
+        else:
+            if dist <= 0.0:
+                self._plot_flash_result("invalid_value")
+                return
+            self._plot_dr_pending = (ax, ay, round(brg, 1) % 360.0)
+            self._begin_numeric_input("plot_speed")
+            return
+        self._plot_flash_result(result)
+
+    def _handle_plot_key(self, key: int, mod: int) -> bool:
+        """Plot-mode keys; returns True when the key was consumed."""
+        view = self._plot_view()
+        if view is None or self._local_station_input_locked():
+            self._reset_plot_ui()
+            return False
+        if key == pygame.K_p or (key == pygame.K_ESCAPE and self.plot_anchor is None):
+            self.toggle_plot_mode()
+            return True
+        if key == pygame.K_ESCAPE:
+            self.plot_anchor = None
+            return True
+        steps = {pygame.K_LEFT: (-1, 0), pygame.K_RIGHT: (1, 0),
+                 pygame.K_UP: (0, -1), pygame.K_DOWN: (0, 1)}
+        if key in steps:
+            px = (self.PLOT_CURSOR_STEP_FAST_PX if mod & pygame.KMOD_SHIFT
+                  else self.PLOT_CURSOR_STEP_PX)
+            step = px / max(view.scale, 1e-6)
+            dx, dy = steps[key]
+            limit = self.world.size_nm
+            self.plot_cursor = (config.clamp(self.plot_cursor[0] + dx * step, 0.0, limit),
+                                config.clamp(self.plot_cursor[1] + dy * step, 0.0, limit))
+            return True
+        if key in self.PLOT_TOOL_KEYS:
+            self.plot_tool = self.PLOT_TOOL_KEYS[key]
+            self.plot_anchor = None
+            return True
+        if key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+            self._plot_commit_point()
+            return True
+        if key in (pygame.K_BACKSPACE, pygame.K_DELETE):
+            if mod & pygame.KMOD_SHIFT:
+                self.plot_clear()
+                self.flash(message("plot.flash.cleared"), 1.5)
+                return True
+            item = self.plot.nearest(*self.plot_cursor,
+                                     self.PLOT_PICK_PX / max(view.scale, 1e-6))
+            if item is not None:
+                self.plot_remove(item["id"])
+                self.flash(message("plot.flash.removed", label=item["label"]), 1.5)
+            return True
+        return False
+
+    def _handle_plot_click(self, pos) -> bool:
+        """Left click on the chart in plot mode places a point there."""
+        view = self._plot_view()
+        canvas = self._window_to_canvas(pos) if pos is not None else None
+        if view is None or canvas is None:
+            return False
+        if not pygame.Rect(view.rect).collidepoint(canvas):
+            return False
+        x, y = view.screen_to_world(*canvas)
+        limit = self.world.size_nm
+        self._plot_commit_point(config.clamp(x, 0.0, limit), config.clamp(y, 0.0, limit))
+        return True
 
     def selected_opz_track(self):
         return next((track for track in self.opz_tracks()
@@ -7634,6 +7824,7 @@ class Game:
                 for key, (cls, entities) in entity_groups.items()},
             "autocrew": self.autocrew.serialize(),
             "ais": self.ais.serialize(),
+            "plot": self.plot.to_save(),
             "seed": self.seed,
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
@@ -8209,6 +8400,9 @@ class Game:
         self.sonar_tools = analysis_tools.AcousticToolState()
         # Operator TMA hypotheses per sonar target (transient UI state).
         self.tma_hypotheses = {}
+        # Shared operator plot layer (chart marks, rulers, bearing lines...).
+        self.plot = PlotLayer()
+        self._reset_plot_ui()
         rng = random.Random(seed + 99999)
         self.rng_world = rng
         ship = data["ship"]
@@ -8340,6 +8534,9 @@ class Game:
         self.sonar_tools = analysis_tools.AcousticToolState()
         # Operator TMA hypotheses per sonar target (transient UI state).
         self.tma_hypotheses = {}
+        # Shared operator plot layer (chart marks, rulers, bearing lines...).
+        self.plot = PlotLayer()
+        self._reset_plot_ui()
         sonar_controls = data["sonar_controls"]
         self.sonar.gain_db = sonar_controls["gain_db"]
         self.sonar.band_low_hz = sonar_controls["band_low_hz"]
@@ -8377,6 +8574,8 @@ class Game:
         self.air_picture.restore(data["air_picture"])
         self.ais = AISReceiver(data["seed"])
         self.ais.restore(data["ais"])
+        self.plot = PlotLayer.from_save(data["plot"])
+        self._reset_plot_ui()
         self._raider_visible_last = any(
             track.track_id.startswith("R-")
             for track in self.air_picture.tracks(self.sim_t, ("FLG", "ASM")))
@@ -9048,6 +9247,8 @@ class Game:
                 or data.get("save_schema") != SAVE_SCHEMA):
             return False
         if set(data) != SAVE_ROOT_FIELDS:
+            return False
+        if not PlotLayer.valid_save(data.get("plot")):
             return False
         if not AISReceiver.valid_state(
                 data.get("ais"), data.get("sim_t"),

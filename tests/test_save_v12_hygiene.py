@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v13_and_older_documents_are_rejected():
+def test_save_is_v14_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (13, "u-jagd-save-v13")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (13, "u-jagd-save-v13")
+    assert (state["version"], state["save_schema"]) == (14, "u-jagd-save-v14")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (14, "u-jagd-save-v14")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -33,11 +33,12 @@ def test_save_is_v13_and_older_documents_are_rejected():
     for row in legacy["subs"]:
         del row["active_ping_cd"]
     assert not game._load_save_data(legacy)
-    # v12 differs only by the operator catalog assignment on sonar contacts.
-    v12 = copy.deepcopy(state)
-    v12["version"] = 12
-    v12["save_schema"] = "u-jagd-save-v12"
-    assert not game._load_save_data(v12)
+    # v13 differs only by the operator plot layer.
+    v13 = copy.deepcopy(state)
+    v13["version"] = 13
+    v13["save_schema"] = "u-jagd-save-v13"
+    del v13["plot"]
+    assert not game._load_save_data(v13)
     assert game.save_state() == before
 
 

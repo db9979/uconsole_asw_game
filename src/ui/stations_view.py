@@ -18,6 +18,7 @@ from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
 from src.ship.ship import Ship
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
+from src.ui.plot_view import draw_plot
 from src.ui import layout
 from src.ui import chart_symbols
 from src.ui import nato_symbols
@@ -1598,6 +1599,7 @@ def draw_opz_view(game, tr=None) -> None:
             continue
         if i == min(game.asm_sel, len(asm_tracks) - 1):
             pygame.draw.circle(s, config.COLOR_DANGER, (int(bx), int(by)), 16, 1)
+    draw_plot(s, game, view, chart)
 
     s.set_clip(previous_clip)
     side_top = regions["sidebar"].y

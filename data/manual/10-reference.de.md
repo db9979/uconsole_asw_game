@@ -75,6 +75,17 @@ Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschi
 - **Helikopter-Flugwetter:** CLEAR, LIMITED (innerhalb von 80 % eines Grenzwerts oder leichte Vereisung) oder NO-GO, mit Wind, Böen, Seitenwind, Sicht, Wolkenuntergrenze, Seegang, Rollen und Stampfen des Decks, Vereisung und ob Tauchsonar möglich ist.
 - **Meeresprofil:** erscheint erst, wenn das Sonar einen Bathythermographen genommen hat (Sonar `E`): gemessene Schallgeschwindigkeit über der Tiefe, die Schicht, eine SOFAR-Achse falls vorhanden, neun Schallstrahlen vom Bugsonar bis 20 sm und die Schattenzone unter der Schicht (rot), in der das Bugsonar wenig hört. Nach 30 min oder 10 sm gilt die Messung als veraltet.
 
+## Karten-Plotwerkzeuge (Taste P) {#ref-plot}
+
+Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle Remote-Crew-Browser sehen dieselbe Zeichnung, und sie wird mit dem Spiel gespeichert. Es ist die eigene Zeichnung der Besatzung: nichts darin stammt von einem Sensor, und sie verändert die Simulation nie.
+
+- **Öffnen:** `P` auf der Brücken-, Waffen- oder Helikopterkarte oder auf der OPZ-Karte drücken. Ein Cursor erscheint am Eigenschiff. Die Pfeiltasten bewegen ihn (Shift: schneller), oder auf die Karte klicken. `Enter` setzt einen Punkt, `Esc` bricht ein begonnenes Objekt ab und beendet danach den Plotmodus, `P` beendet ihn ebenfalls.
+- **Werkzeuge:** `M` Marke (ein Punkt); `R` Lineal (zwei Punkte, zeigt Peilung und Entfernung); `B` Peillinie vom Eigenschiff durch den Cursor (eigene Position und Zeit werden gespeichert, die Linie bleibt also dort, wo sie gelegt wurde); `C` Kreis (Mitte, dann ein Punkt auf dem Radius, höchstens 200 sm); `D` Koppellinie (Startpunkt, dann ein Punkt in Fahrtrichtung, dann die Fahrt 0-60 kn eingeben). Die Koppellinie wandert mit der Zeit weiter und zeigt ihren CPA zu Kurs und Fahrt des Eigenschiffs.
+- **Löschen:** `Rücktaste` löscht das Objekt, das dem Cursor am nächsten liegt. `Shift+Rücktaste` löscht den ganzen Plot.
+- **Bezeichnungen:** Objekte werden als M1, R2, B3 usw. nummeriert. Im Web-Client kann vor dem Zeichnen eine Bezeichnung eingegeben oder ein Objekt in der Liste unter der Karte umbenannt werden.
+- **Web-Client:** über der Karte ein Werkzeug wählen, dann einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken. „Trackpeilung plotten“ legt die gemessene Peilung des gewählten Tracks von dessen Beobachterposition an.
+- **Grenzen:** höchstens 64 Objekte und 24 Zeichen je Bezeichnung.
+
 ## Gegnerische U-Boote {#ref-subs}
 
 | Klasse | Leisheit | Max. Tiefe | Torpedos |

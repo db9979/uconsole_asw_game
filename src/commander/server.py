@@ -28,6 +28,7 @@ import unicodedata
 from urllib.parse import urlsplit
 
 from src.commander.web_auth import WebHostAuth
+from src.core import plot
 from src.commander.voice import PCM_BYTES as VOICE_PCM_BYTES, VoicePeer, read_frames
 from src.core.config import (NATO_AFFILIATIONS, PLAYER_CLASSES,
                              RADAR_RANGE_SCALES_NM, SHIP_SPEED_MAX_KN,
@@ -323,6 +324,28 @@ def _tma_hypothesis_params(params):
             and 0.2 <= params["range_nm"] <= 60.0)
 
 
+def _plot_add_params(params):
+    shape = params.get("shape") if type(params) is dict else None
+    if shape not in plot.KINDS:
+        return False
+    item = {("kind" if key == "shape" else key): value for key, value in params.items()}
+    return (set(item) == plot.command_fields(shape)
+            and plot.valid_object(dict(item, id=1, t=0.0)))
+
+
+def _plot_id(value):
+    return type(value) is int and 1 <= value <= plot.MAX_ID
+
+
+def _plot_remove_params(params):
+    return type(params) is dict and set(params) == {"id"} and _plot_id(params["id"])
+
+
+def _plot_relabel_params(params):
+    return (type(params) is dict and set(params) == {"id", "label"}
+            and _plot_id(params["id"]) and plot.valid_label(params["label"]))
+
+
 def _integration_params(params):
     return (type(params) is dict and set(params) == {"seconds"}
             and type(params["seconds"]) is int and params["seconds"] in (2, 8, 16, 64))
@@ -427,6 +450,11 @@ _HOST_STATIONS = frozenset({HOST_ROLE})
 
 V2_ACTION_REGISTRY = {
     "acknowledge": V2Action(frozenset(STATIONS), _no_params),
+    # Shared chart plot: every station may draw, relabel and erase.
+    "plot_add": V2Action(frozenset(STATIONS), _plot_add_params),
+    "plot_remove": V2Action(frozenset(STATIONS), _plot_remove_params),
+    "plot_relabel": V2Action(frozenset(STATIONS), _plot_relabel_params),
+    "plot_clear": V2Action(frozenset(STATIONS), _no_params),
     # Solo-only host controls: admitted only for a session carrying the host
     # surface, and each action states the exact phases it may run in.
     "host_save": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_ANY),
@@ -1681,7 +1709,7 @@ class CommanderServer:
                          "seq", "phase", "role", "chart_revision"}
         assigned_fields = status_fields | {"clock", "environment", "mission",
                                            "autocrew", "autocrew_overview", "audio",
-                                           "weather_station"}
+                                           "weather_station", "plot"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")

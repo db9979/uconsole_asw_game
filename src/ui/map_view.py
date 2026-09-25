@@ -12,6 +12,7 @@ import pygame
 from src.core import config
 from src.core.i18n import (display_value, localized, localize, raw_text,
                             message as structured_message)
+from src.ui.plot_view import draw_plot
 from src.ui import chart_symbols, layout
 from src.ui import nato_symbols
 from src.ui import observations
@@ -545,6 +546,7 @@ def draw_map_view(game, tr=None) -> None:
                 view.scale, col, max_px=120)
             _map_label(s, game, raw_text("HSP-5"), (int(px) + 15, int(py) - 14),
                        col, r)
+        draw_plot(s, game, view, r)
 
     pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
     # Zoom-Stufenanzeige

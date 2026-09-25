@@ -27,7 +27,7 @@ Antenne, ESM-Pegel, KW-Ausbreitung und ein Ausguck mit Mondlicht; sowie
 Flugkörper-Flugphysik mit Düppelwolken, CIWS-Ballistik, Pop-up-Angriffen,
 Helikopter-Schwebeflug/Decklimits und treibenden Bojen. Feindliche U-Boote
 brauchen jetzt eine eigene TMA, bevor sie Ihre Entfernung kennen.
-**Spielstände haben jetzt das Format v13 (manuelle Katalogzuordnung von Kontakten);
+**Spielstände haben jetzt das Format v14 (Katalogzuordnung, gemeinsamer Kartenplot);
 ältere Spielstände werden abgelehnt.** Das Remote-Crew-v2-Protokoll bleibt bis auf neue ELOKA-Felder
 unverändert. Die vollständige Übersicht steht in
 [docs/simulation-gaps.md](docs/simulation-gaps.md).
@@ -320,7 +320,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v13 gespeichert.
+v14 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -395,7 +395,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.0.0**, API-Protokoll **v2** und Speicherformat **v13** sind
+Anwendungsversion **1.0.0**, API-Protokoll **v2** und Speicherformat **v14** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -447,8 +447,8 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v13**. V13
-verlangt das exakte Schema `u-jagd-save-v13` einschließlich des aktuellen
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v14**. V14
+verlangt das exakte Schema `u-jagd-save-v14` einschließlich des aktuellen
 Schnappschusses des Laufzeitkatalogs und des gesamten Zustands für die
 deterministische Fortsetzung. Ältere (auch alle v11-Spielstände von 1.0.0),
 neuere, fehlerhafte oder unvollständige Spielstände werden ohne Migration

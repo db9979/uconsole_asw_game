@@ -8,7 +8,7 @@ simulation object.
 from copy import deepcopy
 import math
 
-from src.core import config
+from src.core import config, plot
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.sonar import analysis_tools
 from src.core.i18n import localize
@@ -182,6 +182,25 @@ def _weather_station(game):
                 flight=flight, profile=profile)
 
 
+def _plot(game):
+    """The shared crew plot: detached copies plus the DR line's CPA to own ship."""
+    objects = []
+    for item in game.plot.objects:
+        # "shape", not "kind": the browser rejects any "kind" key as a
+        # possible entity-type leak.
+        row = {("shape" if key == "kind" else key):
+               (_number(value) if type(value) is float else value)
+               for key, value in item.items()}
+        if item["kind"] == "dr":
+            now_x, now_y = plot.dr_position(item, game.sim_t)
+            distance, seconds = plot.cpa(item, game.sim_t, game.ship.x, game.ship.y,
+                                         game.ship.course, game.ship.speed)
+            row.update(now_x=_number(now_x), now_y=_number(now_y),
+                       cpa_nm=_number(distance), cpa_s=_number(seconds))
+        objects.append(row)
+    return dict(objects=objects, max_objects=plot.MAX_OBJECTS, max_label=plot.MAX_LABEL)
+
+
 def _common(game, status, role):
     weather = game.world.weather_values()
     return dict(protocol=2, version=APP_VERSION, session=status["session"],
@@ -200,6 +219,7 @@ def _common(game, status, role):
                      rain_intensity=_number(weather["rain_intensity"]),
                      visibility_nm=_number(weather["visibility_nm"])),
                 weather_station=_weather_station(game),
+                plot=_plot(game),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),

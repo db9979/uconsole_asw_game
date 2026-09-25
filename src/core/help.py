@@ -29,6 +29,8 @@ _GLOBAL_HELP = (
         ("help.key.mouse_zoom", "help.global.map_zoom"),
         ("Drag", "help.global.map_pan"),
         ("K", "help.global.map_follow"),
+        ("P", "help.global.plot"),
+        ("help.key.plot_keys", "help.global.plot_keys"),
         ("Esc", "help.cancel"),
     ],
 )
@@ -191,6 +193,7 @@ _WEB_HELP = (
         ("help.key.web_map_pan", "help.web.map_pan"),
         ("help.key.web_map_hover", "help.web.map_hover"),
         ("0", "help.web.weather_station"),
+        ("help.key.web_plot", "help.web.plot"),
     ],
 )
 

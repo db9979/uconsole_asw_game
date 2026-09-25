@@ -18,3 +18,15 @@ WEATHER_STATION = dict(
         limits=dict(wind_kn=32.0, gust_kn=40.0, crosswind_kn=22.0, visibility_nm=2.0,
                     ceiling_ft=300.0, sea_state=5.0, roll_deg=8.0, pitch_deg=3.5)),
     profile=None)
+
+
+# The shared crew plot (src/commander/projections._plot), one object of each
+# kind so the browser draws and lists every shape.
+PLOT = dict(objects=[
+    dict(id=1, shape="mark", label="M1", t=0.0, x=250.0, y=250.0),
+    dict(id=2, shape="ruler", label="R2", t=0.0, x=250.0, y=250.0, x2=255.0, y2=246.0),
+    dict(id=3, shape="bearing", label="B3", t=0.0, x=250.0, y=250.0, bearing=45.0),
+    dict(id=4, shape="circle", label="C4", t=0.0, x=252.0, y=252.0, radius_nm=3.0),
+    dict(id=5, shape="dr", label="D5", t=0.0, x=240.0, y=250.0, course=90.0,
+         speed_kn=10.0, now_x=241.0, now_y=250.0, cpa_nm=0.5, cpa_s=120.0),
+], max_objects=64, max_label=24)

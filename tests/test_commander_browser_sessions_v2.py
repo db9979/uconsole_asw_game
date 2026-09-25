@@ -17,7 +17,7 @@ from src.sonar.sonar import Contact
 from src.core import manual
 from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
                                    browser_state, catalogs)
-from commander_fixtures import WEATHER_STATION
+from commander_fixtures import PLOT, WEATHER_STATION
 
 
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
@@ -917,7 +917,7 @@ def _direct_fire_browser_states():
                                     rain_intensity=.1, visibility_nm=24.0),
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
                    autocrew=dict(enabled=False, status="off"), autocrew_overview=[],
-                   audio=dict(events=[]), weather_station=WEATHER_STATION)
+                   audio=dict(events=[]), weather_station=WEATHER_STATION, plot=PLOT)
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
                       yaw_rate=0.0, turn_radius_nm=None)
@@ -1127,6 +1127,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
         common["autocrew_overview"] = []
         common["audio"] = {"events": list(legacy["sound_events"])}
         common["weather_station"] = WEATHER_STATION
+        common["plot"] = PLOT
         if role == "bridge":
             common[role] = {"navigation": {key: legacy["ownship"][key] for key in (
                 "x", "y", "course", "speed", "target_course", "target_speed")},

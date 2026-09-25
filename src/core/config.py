@@ -687,6 +687,8 @@ COLOR_DEEP = (4, 24, 48)
 COLOR_ESM = (140, 150, 220)
 COLOR_HFDF = (200, 140, 220)
 COLOR_FLIGHT = (220, 180, 90)
+# Operator plot layer (grease pencil): distinct from every contact colour.
+COLOR_PLOT = (255, 160, 230)
 # W2: OPZ-Domänenfarbe für Flugkörper/Torpedo - eigene Farbe, da COLOR_DANGER
 # und COLOR_CONTACT_UBOOT (Unterwasser-Domäne) sonst fast ununterscheidbar sind.
 COLOR_CONTACT_MISSILE = (235, 70, 180)

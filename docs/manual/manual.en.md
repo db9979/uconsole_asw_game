@@ -59,6 +59,8 @@ Global keys (all stations):
 | `Q / E or mouse wheel` | Chart zoom only on bridge, weapons, and helicopter |
 | `Drag` | Pan chart (bridge, weapons, and helicopter) |
 | `K` | Camera follow only on visible charts (drag disables it) |
+| `P` | Plot mode on the Bridge/Weapons/Helo map and OPZ chart: marks, rulers, bearing lines, circles, DR lines (shared by all stations, saved) |
+| `M R B C D · Enter · Bksp` | In plot mode: choose tool, place point with Enter or click (arrows move the cursor, Shift faster), delete the nearest object (Shift: all) |
 | `Esc` | Cancel input or open exit dialog |
 
 In the Remote Crew browser (Commander, `F9`) stations are operated with buttons; the keyboard helps with navigation:
@@ -74,6 +76,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 | `Arrow keys (chart)` | Pan focused chart |
 | `Mouse over map` | Details of the track, own ship, asset, wreck or chart position under the cursor |
 | `0` | Open or close the weather & sonar analysis |
+| `Plot tool + click` | Draw on the shared plot: pick a tool above the map, click once (mark, bearing line) or twice (ruler, circle, DR line) |
 
 The bottom status ticker shows the newest event and key telemetry; `F11` opens the full event log and telemetry over the station without stopping it or taking its keys. `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
 
@@ -986,6 +989,17 @@ Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes
 - **Weather effects:** sun (strong layer), wind (deeper mixed layer) and rain or snow (fresher surface water, rain noise) light up while they act.
 - **Helicopter flight weather:** CLEAR, LIMITED (within 80 % of a limit, or light icing) or NO-GO, with wind, gusts, crosswind, visibility, ceiling, sea state, deck roll and pitch, icing and whether dipping is possible.
 - **Ocean profile:** appears only after the sonar has taken a bathythermograph (Sonar `E`): measured sound speed over depth, the layer, a SOFAR axis if present, nine sound rays from the hull sonar to 20 NM and the shadow zone below the layer (red) where the hull sonar hears little. The measurement is marked stale after 30 min or 10 NM.
+
+### Chart plot tools (key P)
+
+The crew keeps one shared grease-pencil plot. Every station and every Remote Crew browser sees the same drawing, and it is saved with the game. It is the crew's own drawing: nothing in it comes from a sensor, and it never changes the simulation.
+
+- **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it.
+- **Tools:** `M` mark (one point); `R` ruler (two points, shows bearing and distance); `B` bearing line from own ship through the cursor (own position and time are stored, so the line stays where it was laid); `C` circle (centre, then a point on the radius, at most 200 NM); `D` dead-reckoning line (start point, then a point in the direction of travel, then type the speed 0-60 kn). The DR line moves on with time and shows its CPA to own ship's present course and speed.
+- **Erasing:** `Backspace` deletes the object nearest the cursor. `Shift+Backspace` clears the whole plot.
+- **Labels:** objects are numbered M1, R2, B3 and so on. In the web client you can type a label before drawing or rename an object in the list under the map.
+- **Web client:** choose a tool above the map, then click once (mark, bearing line) or twice (ruler, circle, DR line). "Plot track bearing" lays the selected track's measured bearing from its observer position.
+- **Limits:** at most 64 objects and 24 characters per label.
 
 ### Opposing submarines
 

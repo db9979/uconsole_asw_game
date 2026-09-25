@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v13`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v14`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -22,7 +22,7 @@ SAVE_ROOT_FIELDS = frozenset({
     "asm_spawned", "asm_seq", "warship_asm_seq", "torpedo_seq", "buoy_seq",
     "ciws_cooldown_s", "ciws_mount_deg", "chaff_clouds", "chaff_seq",
     "schedulers", "rngs", "ui",
-    "autocrew", "ais",
+    "autocrew", "ais", "plot",
 })
 
 RNG_STREAMS = frozenset({

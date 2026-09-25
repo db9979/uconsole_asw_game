@@ -53,7 +53,7 @@
         bg: read("--bg"), panel: read("--panel"), line: read("--line"),
         text: read("--text"), muted: read("--muted"), accent: read("--accent"),
         amber: read("--amber"), red: read("--red"), blue: read("--blue"),
-        scopeBg: read("--scope-bg"),
+        scopeBg: read("--scope-bg"), plot: read("--plot"),
       };
     }
     return paletteCache;
@@ -217,6 +217,8 @@
   let weatherTimer = null;
   let weatherLastDraw = 0;
   let roleMapDrag = null;
+  let plotAnchor = null;
+  let plotListKey = "";
   let sonarBroadbandDrag = null;
   let opzSweepFrame = null;
   let opzSweepSample = null;
@@ -2194,6 +2196,8 @@
       const byRef = new Map(data.observations.map((row) => [row.ref, row]));
       for (const fusion of payload.fusions) if (hasPosition(fusion)) for (const ref of fusion.members) { const member = byRef.get(ref); if (hasPosition(member)) { plot.context.strokeStyle = "#697f88"; plot.context.beginPath(); plot.context.moveTo(...point(fusion.x, fusion.y)); plot.context.lineTo(...point(member.x, member.y)); plot.context.stroke(); } }
     }
+    drawPlotLayer(plot.context, point, scale, plot.width, plot.height, null);
+    renderPlotList();
     $("role-map-scale").textContent = t("role_map_scale", {distance: number(chart.size_nm / viewState.zoom, 0)});
     plot.context.save(); plot.context.textAlign = "right"; plot.context.fillStyle = palette().text; plot.context.fillText("N ↑", plot.width - 10, 18); plot.context.restore();
     const equivalent = [t("role_map_own", {position: hasPosition(data.own) ? position(data.own) : t("unavailable")})];
@@ -3154,6 +3158,27 @@
   }
   // Weather & sonar analysis block, common to every role.  The ocean profile
   // is null until the sonar has taken a bathythermograph measurement.
+  const PLOT_FIELDS = {
+    mark: ["id", "shape", "label", "t", "x", "y"],
+    ruler: ["id", "shape", "label", "t", "x", "y", "x2", "y2"],
+    bearing: ["id", "shape", "label", "t", "x", "y", "bearing"],
+    circle: ["id", "shape", "label", "t", "x", "y", "radius_nm"],
+    dr: ["id", "shape", "label", "t", "x", "y", "course", "speed_kn", "now_x", "now_y", "cpa_nm", "cpa_s"],
+  };
+
+  function validPlot(plot) {
+    if (!exactKeys(plot, ["objects", "max_objects", "max_label"]) || !Number.isInteger(plot.max_objects) ||
+        !Number.isInteger(plot.max_label) || !boundedArray(plot.objects, plot.max_objects)) return false;
+    const ids = new Set();
+    return plot.objects.every((item) => {
+      const fields = item && PLOT_FIELDS[item.shape];
+      if (!fields || !exactKeys(item, fields) || !Number.isSafeInteger(item.id) || item.id < 1 || ids.has(item.id) ||
+          typeof item.label !== "string" || item.label.length > plot.max_label) return false;
+      ids.add(item.id);
+      return fields.filter((key) => !["id", "shape", "label"].includes(key)).every((key) => finite(item[key]));
+    });
+  }
+
   function validWeatherStation(ws) {
     const nullableFinite = (value) => value === null || finite(value);
     const atmosphereKeys = ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"];
@@ -3197,7 +3222,7 @@
       if (!exactKeys(state, status)) throw new Error("protocol");
       return;
     }
-    const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station"];
+    const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station", "plot"];
     if (!stationNames.includes(state.role) || state.role !== session?.station ||
         !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "world"]) ||
         !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm"]) ||
@@ -3219,7 +3244,7 @@
         state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue"]) ||
           !Number.isSafeInteger(event.seq) || event.seq < 1 || !gameEffectKinds.has(event.cue) ||
           index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
-    if (!validWeatherStation(state.weather_station)) throw new Error("protocol");
+    if (!validWeatherStation(state.weather_station) || !validPlot(state.plot)) throw new Error("protocol");
     const payload = state[state.role];
     const shapes = {
       bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"], sonar: ["observations", "settings", "visualization"],
@@ -5201,10 +5226,139 @@
         ctx.fillStyle = palette().accent; ctx.fillText(t("helicopter"), hx + 15, hy + 5);
       }
     }
+    if (v2State?.plot) drawPlotLayer(ctx, point, scale, width, height, null);
     ctx.fillStyle = "#c6d6d9"; ctx.fillText(t("north"), width - 27, 25);
     ctx.strokeStyle = "#c6d6d9"; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(width - 23, 47); ctx.lineTo(width - 23, 31); ctx.lineTo(width - 27, 37); ctx.moveTo(width - 23, 31); ctx.lineTo(width - 19, 37); ctx.stroke();
     $("chart-scale").textContent = t("chart_scale", { distance: number(step, step < 1 ? 1 : 0) });
+  }
+
+  // Shared crew plot (marks, rulers, bearing lines, circles, DR lines): the
+  // same objects the uConsole draws, from the common "plot" projection.
+  function plotBearingDistance(x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1;
+    return [((Math.atan2(dx, -dy) * 180 / Math.PI) % 360 + 360) % 360, Math.hypot(dx, dy)];
+  }
+
+  function plotText(item) {
+    if (item.shape === "ruler") {
+      const [bearing, distance] = plotBearingDistance(item.x, item.y, item.x2, item.y2);
+      return t("plot_ruler", {label: item.label, bearing: number(bearing, 0).padStart(3, "0"), range: number(distance, 1)});
+    }
+    if (item.shape === "bearing") return t("plot_bearing", {label: item.label, bearing: number(item.bearing, 0).padStart(3, "0")});
+    if (item.shape === "circle") return t("plot_circle", {label: item.label, range: number(item.radius_nm, 1)});
+    if (item.shape === "dr") return t("plot_dr", {label: item.label, range: number(item.cpa_nm, 1), minutes: number(item.cpa_s / 60, 0)});
+    return item.label;
+  }
+
+  function plotLabel() {
+    return $("plot-label-input").value.trim().slice(0, v2State?.plot?.max_label || 24);
+  }
+
+  function plotClick(role, worldX, worldY) {
+    const tool = $("plot-tool").value, label = plotLabel(), own = mapPayload(role).own;
+    if (!stationActionAvailable() || !finite(worldX) || !finite(worldY) ||
+        Math.abs(worldX) > 1000 || Math.abs(worldY) > 1000) return;
+    const tenth = (value) => (Math.round(value * 10) / 10) % 360;
+    if (tool === "mark") { sendStationAction("plot_add", {shape: "mark", x: worldX, y: worldY, label}); return; }
+    if (tool === "bearing") {
+      if (!hasPosition(own)) return;
+      const [bearing, distance] = plotBearingDistance(own.x, own.y, worldX, worldY);
+      if (distance > 0) sendStationAction("plot_add", {shape: "bearing", x: own.x, y: own.y, bearing: tenth(bearing), label});
+      return;
+    }
+    if (!plotAnchor || plotAnchor.role !== role || plotAnchor.tool !== tool) {
+      plotAnchor = {role, tool, x: worldX, y: worldY};
+      queueVisualDraw();
+      return;
+    }
+    const anchor = plotAnchor;
+    plotAnchor = null;
+    const [bearing, distance] = plotBearingDistance(anchor.x, anchor.y, worldX, worldY);
+    if (tool === "ruler") {
+      sendStationAction("plot_add", {shape: "ruler", x: anchor.x, y: anchor.y, x2: worldX, y2: worldY, label});
+    } else if (tool === "circle" && distance > 0 && distance <= 200) {
+      sendStationAction("plot_add", {shape: "circle", x: anchor.x, y: anchor.y, radius_nm: Math.round(distance * 100) / 100, label});
+    } else if (tool === "dr" && distance > 0) {
+      const speed = Number($("plot-speed").value);
+      if (finite(speed) && speed >= 0 && speed <= 60) {
+        sendStationAction("plot_add", {shape: "dr", x: anchor.x, y: anchor.y, course: tenth(bearing), speed_kn: speed, label});
+      }
+    }
+    queueVisualDraw();
+  }
+
+  // Plot the selected track's measured bearing from its observer position.
+  function plotTrackBearing() {
+    const role = v2State?.role;
+    if (!mapRoles.has(role)) return;
+    const data = mapPayload(role), row = data.observations.find((item) => item.ref === selected);
+    if (!row || !finite(row.bearing)) return;
+    const origin = finite(row.observer_x) && finite(row.observer_y) ? {x: row.observer_x, y: row.observer_y} : data.own;
+    if (!hasPosition(origin)) return;
+    sendStationAction("plot_add", {shape: "bearing", x: origin.x, y: origin.y,
+      bearing: (Math.round(row.bearing * 10) / 10) % 360, label: (plotLabel() || String(row.label || row.ref)).slice(0, 24)});
+  }
+
+  function renderPlotList() {
+    const objects = v2State?.plot?.objects || [];
+    const key = JSON.stringify(objects.map((item) => [item.id, plotText(item)]));
+    if (key === plotListKey) return;
+    plotListKey = key;
+    $("plot-list").replaceChildren(...objects.map((item) => {
+      const row = node("li", plotText(item));
+      const rename = node("button", t("plot_rename"));
+      rename.type = "button";
+      rename.addEventListener("click", () => sendStationAction("plot_relabel", {id: item.id, label: plotLabel()}));
+      const remove = node("button", t("plot_delete"));
+      remove.type = "button";
+      remove.addEventListener("click", () => sendStationAction("plot_remove", {id: item.id}));
+      row.append(" ", rename, " ", remove);
+      return row;
+    }));
+  }
+
+  function drawPlotLayer(context, point, scale, width, height, info) {
+    const objects = v2State?.plot?.objects || [];
+    const far = 2 * Math.hypot(width, height) / Math.max(scale, 1e-6);
+    context.save();
+    context.strokeStyle = palette().plot; context.fillStyle = palette().plot; context.lineWidth = 1.5;
+    for (const item of objects) {
+      const [x, y] = point(item.x, item.y);
+      let [lx, ly] = [x, y];
+      context.beginPath();
+      if (item.shape === "mark") {
+        context.moveTo(x - 6, y - 6); context.lineTo(x + 6, y + 6); context.moveTo(x - 6, y + 6); context.lineTo(x + 6, y - 6);
+      } else if (item.shape === "ruler") {
+        const [x2, y2] = point(item.x2, item.y2);
+        context.moveTo(x, y); context.lineTo(x2, y2);
+        context.moveTo(x + 3, y); context.arc(x, y, 3, 0, Math.PI * 2); context.moveTo(x2 + 3, y2); context.arc(x2, y2, 3, 0, Math.PI * 2);
+        [lx, ly] = [(x + x2) / 2, (y + y2) / 2];
+      } else if (item.shape === "bearing") {
+        const angle = item.bearing * Math.PI / 180, [ex, ey] = point(item.x + Math.sin(angle) * far, item.y - Math.cos(angle) * far);
+        context.setLineDash([8, 8]); context.moveTo(x, y); context.lineTo(ex, ey); context.stroke(); context.setLineDash([]);
+        context.beginPath(); context.arc(x, y, 3, 0, Math.PI * 2);
+      } else if (item.shape === "circle") {
+        context.arc(x, y, Math.max(2, item.radius_nm * scale), 0, Math.PI * 2);
+      } else if (item.shape === "dr") {
+        const [nx, ny] = point(item.now_x, item.now_y), angle = item.course * Math.PI / 180;
+        const ahead = item.speed_kn / 3600 * 1800;
+        const [ax, ay] = point(item.now_x + Math.sin(angle) * ahead, item.now_y - Math.cos(angle) * ahead);
+        context.moveTo(x, y); context.lineTo(nx, ny); context.stroke();
+        context.setLineDash([8, 8]); context.beginPath(); context.moveTo(nx, ny); context.lineTo(ax, ay); context.stroke(); context.setLineDash([]);
+        context.beginPath(); context.rect(nx - 4, ny - 4, 8, 8);
+        [lx, ly] = [nx, ny];
+      }
+      context.stroke();
+      context.fillText(plotText(item), lx + 8, ly - 6);
+      if (info) addMapInfo(info, lx, ly, "plot", item);
+    }
+    const anchor = plotAnchor && plotAnchor.role === v2State?.role ? plotAnchor : null;
+    if (anchor) {
+      const [x, y] = point(anchor.x, anchor.y);
+      context.beginPath(); context.arc(x, y, 5, 0, Math.PI * 2); context.stroke();
+    }
+    context.restore();
   }
 
   // NATO-style symbol, same geometry as the uConsole (src/ui/nato_symbols.py):
@@ -6003,6 +6157,9 @@
     Object.assign(roleMapViews[role], {x: chart?.size_nm / 2 || 250, y: chart?.size_nm / 2 || 250, zoom: 1, follow: false});
     queueVisualDraw();
   });
+  $("plot-tool").addEventListener("change", () => { plotAnchor = null; queueVisualDraw(); });
+  $("plot-clear").addEventListener("click", () => sendStationAction("plot_clear", {}));
+  $("plot-track-bearing").addEventListener("click", plotTrackBearing);
   $("role-map-follow").addEventListener("click", () => {
     const state = roleMapViews[v2State?.role]; if (!state) return;
     state.follow = !state.follow; queueVisualDraw();
@@ -6037,7 +6194,11 @@
       const hits = roleMapHits.filter((hit) => Math.hypot(hit.x - x, hit.y - y) < 26)
         .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
       const contact = hits.find((hit) => hit.ref !== null);
-      if (contact) {
+      if ($("plot-tools").open && $("plot-tool").value !== "off") {
+        const geometry = roleMapGeometry(gesture.role), state = roleMapViews[gesture.role];
+        if (geometry) plotClick(gesture.role, state.x + (x - rect.width / 2) / geometry.scale,
+          state.y + (y - rect.height / 2) / geometry.scale);
+      } else if (contact) {
         selectTrack(contact.ref);
       } else if (!hits.length && gesture.role === "helicopter" && stationActionAvailable() &&
                  v2State.helicopter.readiness.can_set_waypoint) {

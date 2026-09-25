@@ -38,7 +38,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     game, bridge, server = published
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
-              "autocrew", "autocrew_overview", "audio", "weather_station"}
+              "autocrew", "autocrew_overview", "audio", "weather_station", "plot"}
     assert set(server.v2_states) == {None, *ROLE_NAMES}
     assert server.v2_states[None] == dict(
         protocol=2, version=server.state["version"], session=bridge.status["session"],

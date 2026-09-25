@@ -326,6 +326,27 @@ def _sonar_mark_line(game, params, _bindings):
     return game.mark_sonar_cursor(params["page"])
 
 
+def _plot_add(game, params, _bindings):
+    fields = {key: value for key, value in params.items()
+              if key not in ("shape", "x", "y", "label")}
+    result = game.plot_add(params["shape"], params["x"], params["y"],
+                           params["label"], **fields)
+    return "active_limit" if result == "full" else (
+        True if type(result) is int else result)
+
+
+def _plot_remove(game, params, _bindings):
+    return game.plot_remove(params["id"])
+
+
+def _plot_relabel(game, params, _bindings):
+    return game.plot_relabel(params["id"], params["label"])
+
+
+def _plot_clear(game, _params, _bindings):
+    return game.plot_clear()
+
+
 def _sonar_set_integration(game, params, _bindings):
     return game.set_sonar_integration(params["seconds"])
 
@@ -489,6 +510,10 @@ def _opz_launch_chaff(game, params, bindings):
 
 _V2_ACTION_HANDLERS = {
     "acknowledge": _acknowledge,
+    "plot_add": _plot_add,
+    "plot_remove": _plot_remove,
+    "plot_relabel": _plot_relabel,
+    "plot_clear": _plot_clear,
     "bridge_set_course": _bridge_set_course,
     "bridge_set_speed": _bridge_set_speed,
     "sonar_classify": _sonar_classify,

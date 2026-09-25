@@ -5120,7 +5120,7 @@
 
   // NATO-style symbol, same geometry as the uConsole (src/ui/nato_symbols.py):
   // the frame shows the operator's affiliation (hostile diamond, neutral
-  // square, friend wide rectangle, unknown quatrefoil), the glyph the domain.
+  // square, friend wide rectangle, unknown: no frame), the glyph the domain.
   function drawNatoSymbol(context, x, y, affiliation, domain, color, size) {
     const half = Math.max(5, size), height = Math.max(6, size * 1.3), glyph = Math.max(3, size * .5);
     context.strokeStyle = color; context.lineWidth = 2; context.beginPath();
@@ -5130,10 +5130,8 @@
       context.rect(x - half, y - height, half * 2, height * 2);
     } else if (affiliation === "FRIEND") {
       context.rect(x - half - 2, y - height, half * 2 + 4, height * 2);
-    } else {
-      context.moveTo(x - half, y); context.lineTo(x - half / 2, y - height); context.lineTo(x + half / 2, y - height);
-      context.lineTo(x + half, y); context.lineTo(x + half / 2, y + height); context.lineTo(x - half / 2, y + height); context.closePath();
     }
+    // Unknown affiliation: no frame, only the domain glyph (colour marks it).
     context.stroke();
     context.lineWidth = 1.6; context.beginPath();
     if (domain === "AIR") {

@@ -321,13 +321,13 @@ def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
             screen.blit(image, rendered)
 
 
-def box(screen, rect, title: str = "", border=None, fill=(14, 24, 18),
+def box(screen, rect, title: str = "", border=None, fill=None,
         title_size: int = 16) -> tuple:
     """Zeichnet eine Box und liefert ihr garantiert inneres Rechteck."""
     x, y, w, h = rect
     record_geometry("box", rect, title)
     border = border or config.COLOR_SONAR_RING
-    pygame.draw.rect(screen, fill, rect)
+    pygame.draw.rect(screen, fill or config.COLOR_PANEL_BG, rect)
     pygame.draw.rect(screen, border, rect, 1)
     top = y + 8
     if title:
@@ -376,7 +376,7 @@ def panel(screen, rect, title: str = "", title_size: int = 20) -> int:
     """Panel-Rahmen + optionaler Titel; liefert y unterhalb des Titels."""
     x, y, w, h = rect
     record_geometry("panel", rect, title)
-    pygame.draw.rect(screen, (14, 24, 18), (x, y, w, h))
+    pygame.draw.rect(screen, config.COLOR_PANEL_BG, (x, y, w, h))
     pygame.draw.rect(screen, config.COLOR_SONAR_RING, (x, y, w, h), 1)
     title = localize(title)
     if title:

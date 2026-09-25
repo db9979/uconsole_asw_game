@@ -488,7 +488,7 @@ def draw_map_view(game, tr=None) -> None:
             ox, oy = view.world_to_screen(report["observer_x"], report["observer_y"])
             brg = math.radians(report["bearing"])
             ex, ey = ox + 260 * math.sin(brg), oy - 260 * math.cos(brg)
-            pygame.draw.line(s, (140, 150, 220), (int(ox), int(oy)),
+            pygame.draw.line(s, config.COLOR_ESM, (int(ox), int(oy)),
                              (int(ex), int(ey)), 1)
         for fix in game.hfdf_fixes.values():
             age = max(0.0, game.sim_t - fix["t"])
@@ -508,13 +508,13 @@ def draw_map_view(game, tr=None) -> None:
                     phase = index * math.tau / 32
                     a, b = major * math.cos(phase), minor * math.sin(phase)
                     points.append((px + a * ca - b * sa, py + a * sa + b * ca))
-                pygame.draw.lines(s, (140, 150, 220), True, points, 1)
+                pygame.draw.lines(s, config.COLOR_ESM, True, points, 1)
             else:
                 radius = max(4, int(fix["sigma_nm"] * view.scale))
-                pygame.draw.circle(s, (140, 150, 220), (int(px), int(py)), radius, 1)
+                pygame.draw.circle(s, config.COLOR_ESM, (int(px), int(py)), radius, 1)
             layout.blit_line(s, message("map.hfdf_fix", label=fix["label"], age=f"{age:.0f}"),
                              (int(px) + 8, int(py) - 20, 350, 20),
-                             (140, 150, 220), size=14)
+                             config.COLOR_ESM, size=14)
 
         # Fregatte: Pfeil in Kursrichtung
         px, py = view.world_to_screen(game.ship.x, game.ship.y)

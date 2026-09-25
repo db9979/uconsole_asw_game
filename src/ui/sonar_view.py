@@ -1714,7 +1714,7 @@ def _draw_contacts(game, rect):
             layout.record_geometry("sonar-contact", row_rect,
                                    f"sonar:contact:{contact.id}")
             if contact is selected:
-                pygame.draw.rect(screen, (21, 55, 68), row_rect)
+                pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, row_rect)
                 pygame.draw.rect(screen, CYAN, (row_rect.x, y, 3, row_rect.h))
             label = display_value("classification",
                                   getattr(contact, "player_class", None))
@@ -1783,7 +1783,7 @@ def draw_sonar_view(game, tr=None) -> None:
         for i, (name, tab) in enumerate(zip(PAGES, geometry["tabs"])):
             layout.record_geometry("sonar-tab", tab, f"sonar:tab:{i}")
             if i == page:
-                pygame.draw.rect(screen, (21, 55, 68), tab)
+                pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
                 pygame.draw.line(screen, CYAN, tab.bottomleft, (tab.right - 1, tab.bottom), 2)
             _text(screen, display_value("sonar_page", name, translate),
                   tab.move(6, 3).inflate(-12, 0),

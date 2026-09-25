@@ -35,3 +35,19 @@ def test_local_radio_lists_logged_bearings_and_fixes():
         game.draw()
     shown = " ".join(entry["text"] for entry in text)
     assert "H-ABC123" in shown and "045.0" in shown and "2.5" in shown
+
+
+def test_web_styles_use_tokens_and_the_pygame_theme_covers_chrome():
+    import re
+    from pathlib import Path
+    from src.ui import theme
+    css = Path("data/commander/style.css").read_text(encoding="utf-8")
+    root, rest = css[:css.index("}")], css[css.index("}"):]
+    for token in ("--aff-unknown", "--aff-friend", "--aff-neutral", "--aff-hostile"):
+        assert token + ":" in root
+    # Only the translucent drop shadow remains a literal outside the tokens.
+    assert re.findall(r"#[0-9a-fA-F]{3,8}\b", rest) == ["#0008"]
+    for name in ("COLOR_PANEL_BG", "COLOR_FEED_BG", "COLOR_OVERLAY_BG",
+                 "COLOR_SELECT_BG", "COLOR_ALARM_BG", "COLOR_TAB_ACTIVE"):
+        assert name in theme.CONFIG_COLORS_STANDARD
+        assert name in theme.CONFIG_COLORS_HIGH_CONTRAST

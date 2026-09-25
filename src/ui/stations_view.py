@@ -120,7 +120,7 @@ def draw_station_page_tabs(screen, station_rect, pages, current_page,
     for i, (name, tab) in enumerate(zip(pages, tabs)):
         active = (i == current_page)
         if active:
-            pygame.draw.rect(screen, (21, 55, 68), tab)
+            pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
             pygame.draw.line(screen, config.COLOR_SONAR_RING,
                               tab.topleft, (tab.right - 1, tab.top), 2)
         label = display_value("station_page", name, tr)
@@ -339,7 +339,7 @@ def draw_bridge_view(game, tr=None) -> None:
         "bridge.line.threat", kind=threats[0][0], detail=threats[0][1]))
     alarm_color = config.COLOR_OK if not threats else config.COLOR_DANGER
     alarm_h = 54 if len(threats) > 1 else 38
-    pygame.draw.rect(s, (18, 28, 22), (x, cy, w, alarm_h))
+    pygame.draw.rect(s, config.COLOR_ALARM_BG, (x, cy, w, alarm_h))
     pygame.draw.rect(s, alarm_color, (x, cy, w, alarm_h), 2)
     layout.blit_line(s, alarm, (x + 10, cy + 5, w - 20, 28), alarm_color,
                      size=20, align="center")
@@ -948,7 +948,7 @@ def draw_eloka_view(game, tr=None) -> None:
             for track in tracks:
                 selected = track.track_key == game.eloka_selected_track_key
                 if selected:
-                    pygame.draw.rect(surface, (30, 44, 30),
+                    pygame.draw.rect(surface, config.COLOR_SELECT_BG,
                                      (bx - 5, by - 2, bw + 10, row_h - 4))
                     pygame.draw.rect(surface, config.COLOR_WARN,
                                      (bx - 5, by - 2, 3, row_h - 4))
@@ -1842,7 +1842,7 @@ def draw_radio_view(game, tr=None) -> None:
             for i, report in enumerate(reports[start:start + capacity], start):
                 selected = i == selected_idx
                 if selected:
-                    pygame.draw.rect(s, (30, 44, 30),
+                    pygame.draw.rect(s, config.COLOR_SELECT_BG,
                                      (lx - 5, ly - 2, lw + 10, row_h - 4))
                     pygame.draw.rect(s, config.COLOR_WARN,
                                      (lx - 5, ly - 2, 3, row_h - 4))
@@ -2219,7 +2219,7 @@ def _draw_helicopter_acoustic_view(game, rect):
                      (rect.x + 14, rect.y + 10, 245, 27),
                      config.COLOR_TEXT, size=19)
     for index, tab in enumerate(geo["tabs"]):
-        pygame.draw.rect(screen, (21, 55, 68) if index == page else (9, 30, 39), tab)
+        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if index == page else (9, 30, 39), tab)
         pygame.draw.rect(screen, config.COLOR_SONAR_RING if index == page
                          else config.COLOR_GRID, tab, 1)
         layout.blit_line(screen, _HELO_ACOUSTIC_TABS[index], tab,
@@ -2330,7 +2330,7 @@ def _draw_helicopter_acoustic_view(game, rect):
             break
         selected = contact is game.selected_contact
         row = pygame.Rect(rail.x + 8, y, rail.w - 16, 43)
-        pygame.draw.rect(screen, (21, 55, 68) if selected else (12, 32, 40), row)
+        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if selected else (12, 32, 40), row)
         layout.blit_line(screen, message("helo.acoustic.contact",
             contact=contact.id, bearing=f"{observed:05.1f}"),
             (row.x + 7, row.y + 3, row.w - 14, 19), config.COLOR_TEXT, size=14)

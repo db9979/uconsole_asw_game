@@ -32,7 +32,13 @@
     direct_fire_unavailable: "reason_direct_fire_unavailable",
     ok: "reason_ok",
   };
-  const colors = { UNKNOWN: "#f3cf79", FRIEND: "#81c5ff", NEUTRAL: "#8fdfab", HOSTILE: "#ff9090" };
+  // Affiliation colours come from the stylesheet tokens (one palette for
+  // lists, badges and map symbols); literals are only the fallback.
+  const cssToken = (name, fallback) => {
+    try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; } catch { return fallback; }
+  };
+  const colors = { UNKNOWN: cssToken("--aff-unknown", "#f3c577"), FRIEND: cssToken("--aff-friend", "#81c5ff"),
+    NEUTRAL: cssToken("--aff-neutral", "#8fdfab"), HOSTILE: cssToken("--aff-hostile", "#ff9090") };
   // Canvas drawing cannot use CSS custom properties directly, so it used to
   // duplicate the palette as hand-copied hex literals - a real drift risk if
   // style.css's :root palette is ever retuned. Read it once instead; these

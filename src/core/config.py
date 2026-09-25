@@ -692,6 +692,10 @@ COLOR_FLIGHT = (220, 180, 90)
 COLOR_CONTACT_MISSILE = (235, 70, 180)
 COLOR_FEED_BG = (10, 18, 14)       # event feed / telemetry / ticker ground
 COLOR_PANEL_BG = (14, 24, 18)      # top bar and panel boxes
+COLOR_OVERLAY_BG = (7, 18, 13)     # dialogs over a running mission
+COLOR_SELECT_BG = (30, 44, 30)     # selected list row
+COLOR_ALARM_BG = (18, 28, 22)      # bridge alarm bar
+COLOR_TAB_ACTIVE = (21, 55, 68)    # active page tab / selected sonar row
 
 # W3: Feed-Kategorien (Farbe, Kürzel)
 FEED_CATEGORIES = {

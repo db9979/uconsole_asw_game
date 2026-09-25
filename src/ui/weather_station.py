@@ -17,8 +17,9 @@ from src.core.i18n import localize, localized, message
 from src.ui import layout
 
 TREND_ARROWS = {"rising": "^", "steady": "=", "falling": "v", "falling_rapidly": "vv"}
-STATUS_COLORS = {"clear": config.COLOR_OK, "limited": config.COLOR_WARN,
-                 "no_go": config.COLOR_DANGER}
+# Theme attribute names, resolved at draw time so high contrast applies.
+STATUS_COLORS = {"clear": "COLOR_OK", "limited": "COLOR_WARN",
+                 "no_go": "COLOR_DANGER"}
 SHADOW_COLOR = (70, 30, 30)
 RAY_COLOR = (90, 220, 150)
 SOFAR_COLOR = (110, 170, 230)
@@ -88,7 +89,7 @@ def _flight(screen, rect, data) -> None:
     limits = f["limits"]
     status = f["status"]
     layout.blit_line(screen, "weather.flight." + status, (x, y, w, 30),
-                     STATUS_COLORS[status], size=24)
+                     getattr(config, STATUS_COLORS[status]), size=24)
     rows = (
         message("weather.flight.wind", value=_fmt(f["wind_kn"]), limit=_fmt(limits["wind_kn"])),
         message("weather.flight.gust", value=_fmt(f["gust_kn"]), limit=_fmt(limits["gust_kn"])),

@@ -11014,7 +11014,7 @@ class Game:
             return
         label = self.tr("input." + self.input_mode)
         rect = pygame.Rect(280, 88, 720, 70)
-        pygame.draw.rect(self.screen, (8, 20, 14), rect)
+        pygame.draw.rect(self.screen, config.COLOR_OVERLAY_BG, rect)
         pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
         layout.blit_line(self.screen, self.tr("input.value", label=label,
                                               value=self.input_buffer),
@@ -11028,7 +11028,7 @@ class Game:
     def draw_top_bar(self) -> None:
         layout.configure_for(self)
         s = self.screen
-        pygame.draw.rect(s, (14, 24, 18), (0, 0, config.SCREEN_W, config.TOP_BAR_H))
+        pygame.draw.rect(s, config.COLOR_PANEL_BG, (0, 0, config.SCREEN_W, config.TOP_BAR_H))
         pygame.draw.line(s, config.COLOR_SONAR_RING,
                          (0, config.TOP_BAR_H - 1),
                          (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
@@ -11256,7 +11256,7 @@ class Game:
         bw, bh = 1000, 620
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
-        pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
+        pygame.draw.rect(s, config.COLOR_PANEL_BG, (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
         help_title = self.tr("help.title", station=display_value(
             "station", self.station.name, self.tr).upper())
@@ -11290,7 +11290,7 @@ class Game:
         bw, bh = 1100, 620
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
-        pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
+        pygame.draw.rect(s, config.COLOR_PANEL_BG, (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
         layout.blit_line(s, "panel.nations", (bx + 18, by + 12, bw - 36, 38),
                          config.COLOR_TEXT, size=30)
@@ -11322,7 +11322,7 @@ class Game:
         for i, (title, body, color) in enumerate(cards):
             cx = bx + 18 + (i % 2) * (cw + 14)
             cyy = by + 52 + (i // 2) * (ch + 12)
-            pygame.draw.rect(s, (14, 24, 18), (cx, cyy, cw, ch))
+            pygame.draw.rect(s, config.COLOR_PANEL_BG, (cx, cyy, cw, ch))
             pygame.draw.rect(s, color, (cx, cyy, cw, ch), 1)
             layout.blit_line(s, title, (cx + 12, cyy + 8, cw - 24, 36), color, size=24)
             layout.blit_block(s, body, cx + 12, cyy + 50, cw - 24, ch - 58,
@@ -11340,7 +11340,7 @@ class Game:
         bw, bh = 660, 380
         bx = (config.SCREEN_W - bw) // 2
         by = (config.SCREEN_H - bh) // 2
-        pygame.draw.rect(s, (12, 24, 18), (bx, by, bw, bh))
+        pygame.draw.rect(s, config.COLOR_PANEL_BG, (bx, by, bw, bh))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (bx, by, bw, bh), 2)
         layout.blit_line(s, self.tr("save.title", mode=mode),
                          (bx + 18, by + 14, bw - 36, 34), config.COLOR_TEXT, size=22)
@@ -11412,7 +11412,7 @@ class Game:
         # the last row with margin, never overlapping it (was previously a
         # fixed y=612 footer colliding with row 9's box at y=620-662).
         rect = pygame.Rect(260, 40, 760, 660)
-        pygame.draw.rect(self.screen, (7, 18, 13), rect)
+        pygame.draw.rect(self.screen, config.COLOR_OVERLAY_BG, rect)
         pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
         layout.blit_line(self.screen, "option.title", (292, 64, 696, 48),
                          config.COLOR_WARN, size=32, align="center")
@@ -11461,7 +11461,7 @@ class Game:
     @localized
     def draw_live_traffic_overlay(self) -> None:
         rect = pygame.Rect(260, 40, 760, 660)
-        pygame.draw.rect(self.screen, (7, 18, 13), rect)
+        pygame.draw.rect(self.screen, config.COLOR_OVERLAY_BG, rect)
         pygame.draw.rect(self.screen, config.COLOR_WARN, rect, 2)
         layout.blit_line(self.screen, "live_traffic.title", (292, 64, 696, 48),
                          config.COLOR_WARN, size=32, align="center")
@@ -11539,7 +11539,7 @@ class Game:
         dim.fill((0, 0, 0, 155))
         s.blit(dim, (0, 0))
         rect = pygame.Rect(260, 185, 760, 330)
-        pygame.draw.rect(s, (12, 24, 18), rect)
+        pygame.draw.rect(s, config.COLOR_PANEL_BG, rect)
         pygame.draw.rect(s, config.COLOR_WARN, rect, 2)
         layout.blit_line(s, "quit.title", (rect.x + 20, rect.y + 22,
                          rect.w - 40, 36), config.COLOR_WARN, size=28)

@@ -81,6 +81,7 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
         screen=pygame.Surface((1280, 720)), target=contact, sim_t=100.0,
         torpedo_readiness=lambda: ("FEUER FREI", config.COLOR_OK),
         _contact_range_fresh=lambda c: True,
+        weapon_classification=lambda c: c.player_class,
         torpedo_count=4, torpedo_total=4, torpedo_depth=50.0,
         torpedoes=[], roe="STD", station_page=0, flak_authorized=True,
         helo=NS(torps=2, buoys_left=6, airborne=False, state="HANGAR"),

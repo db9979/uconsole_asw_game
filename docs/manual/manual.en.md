@@ -12,7 +12,8 @@ You command the ASW frigate F-217 and man nine stations. Your job: detect, track
 
 - **Win:** sink every assigned target submarine, or survive until the time limit (depends on the mission).
 - **Lose:** own ship sinks, a civilian vessel is hit, the target escapes more than 150 NM from its start point, or time runs out on a sink mission.
-- Deadline warnings arrive at 5, 2 and 1 minutes remaining.
+- Time warnings arrive at 5, 2 and 1 minutes remaining: on a sink mission as a deadline, on a survive (convoy) mission as the time until the convoy is safe.
+- When the mission ends, `R` restarts it with the same seed (an editor mission restarts itself) and `M` returns to the main menu. During a mission, `Esc` offers "Main menu (without saving)" next to save-and-exit.
 - Score: 1000 per submarine sunk, 200 per unused torpedo, 500 for no civilian losses, up to 500 time bonus.
 
 ### Stations
@@ -62,6 +63,7 @@ Global keys (all stations):
 | `P` | Plot mode on the Bridge/Weapons/Helo map and OPZ chart: marks, rulers, bearing lines, circles, DR lines (shared by all stations, saved) |
 | `M R B C D · Enter · Bksp` | In plot mode: choose tool, place point with Enter or click (arrows move the cursor, Shift faster), delete the nearest object (Shift: all) |
 | `Esc` | Cancel input or open exit dialog |
+| `R / M` | After the mission ends: restart with the same seed / main menu |
 
 In the Remote Crew browser (Commander, `F9`) stations are operated with buttons; the keyboard helps with navigation:
 
@@ -463,7 +465,7 @@ Combat situation:
 | STD (start) | Current range (ping, TMA or buoy) and classification submarine or warship |
 | FREE | Classification only; without range the torpedo is aimed 10 NM down the bearing |
 
-HQ switches to FREE by radio after the first hostile submarine is sunk; the player cannot change ROE. A contact marked FRIEND or NEUTRAL in Operations can never be engaged.
+HQ switches to FREE by radio after the first hostile submarine is sunk; the player cannot change ROE. A contact marked FRIEND or NEUTRAL in Operations, directly or through a fusion, can never be engaged.
 
 ### Pro tips
 
@@ -569,7 +571,7 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 - **Air radar:** 100 NM for aircraft and anti-ship missiles (ASM).
 - The antenna turns once every 4 s: a contact is updated only when the beam sweeps past it, and each sweep detects it with a probability that falls with range (50 % at the nominal range for a broadside ship; bow-on targets are seen later, fluctuating echoes can miss a sweep). Sea clutter grows with sea state (about -5 % at sea state 4, -25 % at 6) and rain attenuates the echo (-10 % surface, -20 % air); from sea state 5 measurement errors increase. Inside 3 NM the CIWS search/track radar holds an inbound missile continuously while CIWS is released.
 - **AIS:** civilian ships broadcast course and speed every 2-10 s (3 min at anchor) and their name about every 6 min. The VHF receiver hears them only within line of sight (about 20 NM). A radar track of a civilian shows name and course only after the matching AIS report has been received; radar alone gives position only. Optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
-- **Fusion:** mark 2-8 raw reports (`Space`) and fuse them (`L`) into one operator track; `Shift+L` dissolves it.
+- **Fusion:** mark 2-8 raw reports (`Space`) and fuse them (`L`) into one operator track; `Shift+L` dissolves it. A fusion whose reports come from exactly one sonar contact can be designated to Weapons; its classification counts for fire control unless Sonar has classified the contact itself, and its affiliation applies to that contact. A fusion lasts only while all its reports are current.
 - **Suppression:** `Delete` hides a report locally; `H` shows suppressed reports again.
 
 ### Keys
@@ -622,7 +624,7 @@ Air defence sequence (missile inbound):
 - The radar does not know what an air contact is. Threat evaluation flags an air track as a possible missile (ASM) only from its own measurements: faster than 300 kn at or below 150 m, or a jamming strobe; a low, fast attack aircraft can raise the same flag. The flag needs about a second of plots, CIWS and ESSM engage only flagged tracks, and HFDF fixes and unclassified sonar contacts carry no domain until you classify them.
 - Anti-ship missiles skim at about 20 m (5 m in the last 5 NM): radar sees them only inside about 20 NM, and a jamming missile gives only a home-on-jam (HOJ) bearing until it burns through. Missiles fly inertially to their launch datum, then their seeker needs the ship inside its cone for 1.5 s before homing; attack aircraft pop up to about 300 m for a few seconds to lock their fire-control radar before each salvo (an ESM warning and an early radar contact).
 - Chaff lays a cloud beside the ship that blooms in about 3 s and drifts with the wind; fire it early enough for the cloud to bloom. CIWS must first slew onto the missile and kills mostly in the last few hundred metres.
-- Affiliation is your annotation. Marking a contact FRIEND or NEUTRAL blocks every torpedo shot on it.
+- Affiliation is your annotation. Marking a contact, or a fusion containing it, FRIEND or NEUTRAL blocks every torpedo shot on it.
 - Chart symbols follow NATO style on the uConsole and on every Remote Crew map: the frame shows your affiliation (hostile diamond, neutral square, friend wide rectangle, unknown without frame), the inner glyph the observed domain.
 - `J` gives a track a shared ID that the whole crew (and Remote Crew browsers) sees.
 - `Enter` confirms an engagement against a live (real-world traffic) contact after you classified it hostile; nothing fires automatically on unclassified contacts.
@@ -994,7 +996,7 @@ Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes
 
 The crew keeps one shared grease-pencil plot. Every station and every Remote Crew browser sees the same drawing, and it is saved with the game. It is the crew's own drawing: nothing in it comes from a sensor, and it never changes the simulation.
 
-- **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it.
+- **Opening it:** press `P` on the Bridge, Weapons or Helicopter map or on the OPZ chart. A cursor appears on own ship. Arrow keys move it (Shift: faster), or click on the chart. `Enter` sets a point, `Esc` cancels a started object and then ends plot mode, and `P` also ends it. A hint bar at the top of the chart shows the active tool and keys on the left and the cursor's bearing and distance from own ship on the right.
 - **Tools:** `M` mark (one point); `R` ruler (two points, shows bearing and distance); `B` bearing line from own ship through the cursor (own position and time are stored, so the line stays where it was laid); `C` circle (centre, then a point on the radius, at most 200 NM); `D` dead-reckoning line (start point, then a point in the direction of travel, then type the speed 0-60 kn). The DR line moves on with time and shows its CPA to own ship's present course and speed.
 - **Erasing:** `Backspace` deletes the object nearest the cursor. `Shift+Backspace` clears the whole plot.
 - **Labels:** objects are numbered M1, R2, B3 and so on. In the web client you can type a label before drawing or rename an object in the list under the map.

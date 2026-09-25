@@ -57,7 +57,7 @@ Gefechtslage:
 | STD (Start) | Aktuelle Entfernung (Ping, TMA oder Boje) und Klassifizierung U-Boot oder Kampfschiff |
 | FREI | Nur Klassifizierung; ohne Entfernung zielt der Torpedo 10 sm in Peilrichtung |
 
-Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Funk auf FREI; der Spieler kann die ROE nicht ändern. Ein in der OPZ als FREUND oder NEUTRAL markierter Kontakt kann nie bekämpft werden.
+Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Funk auf FREI; der Spieler kann die ROE nicht ändern. Ein in der OPZ als FREUND oder NEUTRAL markierter Kontakt, direkt oder über eine Fusion, kann nie bekämpft werden.
 
 ## Tipps für Profis {#weapons-tips}
 

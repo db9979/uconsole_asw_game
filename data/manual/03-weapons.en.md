@@ -57,7 +57,7 @@ Combat situation:
 | STD (start) | Current range (ping, TMA or buoy) and classification submarine or warship |
 | FREE | Classification only; without range the torpedo is aimed 10 NM down the bearing |
 
-HQ switches to FREE by radio after the first hostile submarine is sunk; the player cannot change ROE. A contact marked FRIEND or NEUTRAL in Operations can never be engaged.
+HQ switches to FREE by radio after the first hostile submarine is sunk; the player cannot change ROE. A contact marked FRIEND or NEUTRAL in Operations, directly or through a fusion, can never be engaged.
 
 ## Pro tips {#weapons-tips}
 

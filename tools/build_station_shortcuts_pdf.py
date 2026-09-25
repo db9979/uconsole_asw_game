@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from runpy import run_path
+import sys
 import textwrap
 
 
@@ -14,148 +15,46 @@ MARKDOWN_PATH = ROOT / "docs" / "station-shortcuts.de.md"
 PDF_PATH = ROOT / "docs" / "station-shortcuts.de.pdf"
 VERSION = str(run_path(ROOT / "src" / "core" / "version.py")["APP_VERSION"])
 
-SECTIONS = (
-    ("Global", (
-        ("1 bis 9", "Station direkt wählen; aktive Stationsnummer erneut drücken, um verfügbare Seiten weiterzuschalten."),
-        ("Tab / Shift+Tab", "Nächste / vorherige Station."),
-        ("+ / -", "Maschinentelegraf vor / zurück; auch Num+ / Num-."),
-        ("F1", "Kontextsensitive Hilfe öffnen."),
-        ("F2", "Autocrew der aktuellen Station ein- oder ausschalten."),
-        ("F3", "Autocrew-Übersicht öffnen."),
-        ("F4", "SimLog öffnen, sofern die Option aktiviert ist."),
-        ("F8", "Taktischen Einheitenanalysator öffnen; bei Commander-Vorschlägen Vorschlagsart wechseln."),
-        ("F9", "Lokale Commander-/Remote-Crew-Verwaltung öffnen."),
-        ("F10", "Optionen öffnen."),
-        ("N", "Nationen-/Einheitenansicht öffnen; nicht am Sonar."),
-        ("S / L", "Speichern / Laden; L ist in der OPZ stattdessen der Fusionsbefehl."),
-        ("Alt+Enter", "Vollbild umschalten."),
-        ("Esc", "Fixierten Tooltip lösen, Eingabe/Ansicht abbrechen oder Beenden-Dialog öffnen."),
-    )),
-    ("1  Brücke", (
-        ("← / → halten", "Sollkurs kontinuierlich nach Backbord / Steuerbord ändern."),
-        ("↑ / ↓", "Maschinentelegraf vor / zurück."),
-        ("U", "Sollkurs numerisch eingeben."),
-        ("V", "Sollfahrt numerisch eingeben."),
-        ("Q / E", "Karte heraus- / hineinzoomen."),
-        ("K", "Kartenverfolgung ein- oder ausschalten."),
-        ("Mausrad / Ziehen", "Karte um Mausposition zoomen / verschieben."),
-        ("Klick auf Objekt", "Tooltip fixieren; beobachtbaren Sonarkontakt gegebenenfalls wählen."),
-    )),
-    ("2  Sonar", (
-        ("Bild↑ / Bild↓", "Vorherige / nächste Sonarseite: Broadband, LOFAR, DEMON, TMA, Environment, ACTIVE."),
-        ("2", "Bei bereits aktivem Sonar zur nächsten Sonarseite."),
-        ("Shift+A", "Aktiven Schiffssonar-Ping senden."),
-        ("Shift+B", "Empfangsarray zwischen HMS/Bug und TAS/Schlepparray wechseln."),
-        ("Y", "TAS ausbringen oder einholen."),
-        ("E", "Bathythermografische Messung durchführen."),
-        ("U / V", "TAS-/VDS-Solltiefe um 10 m heben / senken."),
-        ("R", "Horchpeilung numerisch eingeben."),
-        ("← / →", "Horchpeilung um 0,5° ändern; Shift: 5°, Strg: 0,1°."),
-        ("↑ / ↓", "Vorherigen / nächsten Kontakt wählen."),
-        ("Enter", "Gewähltem Kontakt folgen; bei Fokus zur manuellen Peilung zurückkehren."),
-        ("J", "Sonar-Hörton ein- oder ausschalten."),
-        (", / .", "Hörlautstärke um 10 % verringern / erhöhen."),
-        ("A / B / H", "Breitband-, gefilterten oder Heterodyn-Hörmodus wählen."),
-        ("D", "Zwischen Breitband und gefiltertem Hören wechseln."),
-        ("I / O", "Empfangsverstärkung um 3 dB verringern / erhöhen."),
-        ("Umschalt+I / Umschalt+O", "Anzeigekontrast verringern / erhöhen."),
-        ("Strg+I / Strg+O", "Schwarzpunkt verringern / erhöhen."),
-        ("Umschalt+C", "Phosphorpalette Grün / Amber / Cyan wechseln."),
-        ("Umschalt+H", "Angezeigte Historientiefe 25 / 50 / 100 % wechseln."),
-        ("F", "Frequenzband weit / tief / mittel wechseln."),
-        ("N", "Eigenantriebs-Notchfilter ein- oder ausschalten."),
-        ("K", "Erkannte Harmonik-Hypothese wählen oder löschen."),
-        ("Leertaste", "LOFAR-Peak-Hold ein- oder ausschalten."),
-        ("T / C / G / M", "TMA umschalten / klassifizieren / an OPZ freigeben / als Waffenziel setzen."),
-        ("Maus", "Seitentab oder Kontakt wählen; im Broadband-Wasserfall Horchpeilung setzen."),
-    )),
-    ("3  Waffen", (
-        ("↑ / ↓ halten", "Torpedo-Solltiefe zwischen 10 und 300 m ändern."),
-        ("← / →", "Vorherigen / nächsten Sonarkontakt wählen."),
-        ("M", "Gewählten Sonarkontakt als Ziel setzen."),
-        ("T / Strg+Enter", "Schiffstorpedo starten; Bereitschafts- und ROE-Prüfungen gelten."),
-        ("H", "Helikopter starten oder zurückrufen."),
-        ("B / D", "Sonarboje absetzen / Helikoptertorpedo abwerfen."),
-        ("V", "Nixie-Schleppköder ausbringen."),
-        ("F", "Flak-Feuerfreigabe erteilen oder entziehen."),
-        ("Q / E / K", "Kartenzoom heraus / hinein / Verfolgung umschalten."),
-        ("Mausrad / Ziehen", "Karte zoomen / verschieben."),
-    )),
-    ("4  Schadensabwehr", (
-        ("← / →", "Vorherige / nächste Abteilung wählen."),
-        ("↑ / ↓", "Reparaturteam 1 bis 3 wählen."),
-        ("Enter", "Gewähltes Team der gewählten Abteilung zuweisen."),
-        ("Backspace", "Gewähltes Team zurückziehen."),
-        ("Klick auf Abteilung", "Abteilung wählen und Zuweisung des aktuell gewählten Teams versuchen."),
-        ("1 bis 9", "Wechselt immer die Station; wählt kein Reparaturteam."),
-    )),
-    ("5  OPZ / CIC", (
-        ("↑ / ↓", "Vorherigen / nächsten CIC-Track wählen."),
-        ("C / F", "Klassifikation / NATO-Zugehörigkeit des gewählten Tracks ändern."),
-        ("Umschalt+F", "Kontaktdomainfilter wechseln."),
-        ("J", "Gemeinsame bedienersichtbare Track-ID eingeben."),
-        ("Leertaste", "Gewählten Rohbericht markieren oder Markierung entfernen."),
-        ("L / Shift+L", "Aus markierten Meldungen Fusion bilden / gewählte Fusion auflösen."),
-        ("Backspace", "Alle Markierungen leeren."),
-        ("Delete / H", "Bericht unterdrücken / Anzeige unterdrückter Meldungen umschalten."),
-        ("M", "CIC-Track an Sonar/Waffen übergeben."),
-        ("Bild↑ / Bild↓", "Schiffszentrierten Radarbereich vergrößern / verkleinern; die Kartenkamera bleibt unverändert."),
-        ("Mausrad / Ziehen", "Unabhängige OPZ-Karte am Zeiger zoomen (bis 5 NM Radius) / verschieben."),
-        ("K", "Kartenverfolgung des eigenen Schiffs ein- oder ausschalten."),
-        ("← / →", "Vorheriges / nächstes ASM-Ziel wählen."),
-        ("E / Strg+Enter", "ESSM starten; Bereitschafts- und ROE-Prüfungen gelten."),
-        ("G", "Chaff ausbringen."),
-        ("R / Shift+R", "Seezielradar / Luftraumradar ein- oder ausschalten."),
-        ("I", "CIWS-Feuerfreigabe erteilen oder entziehen."),
-        ("Enter", "Angriff auf einen als feindlich eingestuften Live-Kontakt ausdrücklich bestätigen."),
-        ("Klick", "Dargestellten Bericht wählen; freie Kartenfläche beginnt das Verschieben."),
-    )),
-    ("6  Funk", (
-        ("↑ / ↓", "Vorheriges / nächstes HFDF-Signal wählen."),
-        ("Enter", "HFDF-Peilung zusammen mit der eigenen Position protokollieren."),
-    )),
-    ("7  Maschinenraum", (
-        ("↑ / ↓", "Maschinentelegraf vor / zurück."),
-        ("A", "Schleichfahrt / Normalbetrieb umschalten."),
-        ("U", "Sollkurs numerisch eingeben."),
-        ("V", "Sollfahrt numerisch eingeben."),
-        ("+ / -", "Globaler Maschinentelegraf vor / zurück."),
-    )),
-    ("8  Helikopter", (
-        ("H", "Helikopter starten oder zurückrufen; Wettergrenzen gelten für den Start."),
-        ("← / →", "Wegpunktpeilung um 15° ändern."),
-        ("↑ / ↓", "Wegpunktentfernung um 1 NM erhöhen / verringern."),
-        ("M", "Sonarkontakt als Lufttorpedoziel setzen."),
-        ("B", "Sonarboje an aktueller Position absetzen."),
-        ("C", "Gewählten Tauchsonarkontakt klassifizieren."),
-        ("G / Umschalt+G", "Nächsten Tauchsonarkontakt wählen / an OPZ freigeben oder zurückziehen."),
-        ("Y", "Tauchsonar ausbringen oder einholen."),
-        ("U / V", "Tauchsonar-Solltiefe um 10 m heben / senken."),
-        ("A", "Aktiven Tauchsonar-Ping senden."),
-        ("D / Strg+Enter", "Leichttorpedo abwerfen."),
-        ("Q / E / K", "Kartenzoom heraus / hinein / Verfolgung umschalten."),
-        ("Klick in freie Karte", "Wegpunkt direkt setzen; Objektklick wählt stattdessen Objekt/Tooltip."),
-    )),
-    ("9  EloKa / ESM", (
-        ("↑ / ↓", "Vorherige / nächste passive ESM-Auffassung wählen."),
-        ("F", "Statusfilter (OPERATIV, LIVE, SPEICHER, ALLE) wechseln."),
-        ("Umschalt+F", "Mindestbedrohung wechseln."),
-        ("B", "Frequenzbandfilter wechseln."),
-        ("C", "Manuelle Radarart-Zuordnung wechseln."),
-        ("J", "Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben."),
-        ("Umschalt+J", "ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln."),
-        ("A", "Automatische ECM-Priorisierung und Softkill-Kopplung umschalten."),
-        ("M", "EloKa-Audio umschalten."),
-        ("Klick auf Track", "Auffassung wählen und gegebenenfalls Tooltip fixieren."),
-    )),
-    ("Eingabe und Dialoge", (
-        ("Numerische Eingabe", "Ziffern, Punkt oder Komma; Backspace; Enter bestätigt; Esc bricht ab."),
-        ("Hilfe", "←/→/Tab Kategorie; ↑/↓ zeilenweise; Bild↑/Bild↓ seitenweise; F1/Esc schließen."),
-        ("Speichern/Laden", "1 bis 5 wählt Slot; Enter bestätigt; Esc zurück."),
-        ("Commander-Vorschlag", "F6 annehmen; F7 ablehnen; F8 Vorschlagsart; Esc ausblenden."),
-        ("SimLog", "↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; F4/Esc schließen."),
-    )),
-)
+# Global and station keys come from src/core/help.py, the single source of the
+# F1 overlay and the player manual, so this sheet cannot drift from the game.
+# Only dialog keys, which help.py does not list, are maintained here.
+DIALOG_SECTION = ("Eingabe und Dialoge", (
+    ("Numerische Eingabe", "Ziffern, Punkt oder Komma; Backspace; Enter bestätigt; Esc bricht ab."),
+    ("Hilfe", "←/→/Tab Kategorie; ↑/↓ zeilenweise; Bild↑/Bild↓ seitenweise; im Handbuch [ ] oder , . bzw. 0-9 Kapitel; F1/Esc schließen."),
+    ("Speichern/Laden", "1 bis 5 wählt Slot; Enter bestätigt; Esc zurück."),
+    ("Beenden-Dialog", "↑/↓ wählen, Enter bestätigen: zurück zum Spiel, speichern und beenden, zum Hauptmenü (ohne Speichern), ohne Speichern beenden; Esc/N schließt."),
+    ("Missionsende", "R Neustart mit gleichem Seed (Editor-Mission startet sich selbst neu); M zum Hauptmenü; Esc Beenden-Dialog."),
+    ("Hauptmenü", "↑/↓ und Enter; W Weltmodus, R neuer Seed, Bild↑/Bild↓ Sektor (feste reale Welt), F Vollbild; Esc in der Szenarioauswahl zurück zum Hauptmenü."),
+    ("Commander-Vorschlag", "F6 annehmen; F7 ablehnen; F8 Vorschlagsart; Esc ausblenden."),
+    ("SimLog", "↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; M Karte, F Karte einpassen; F4/Esc schließen."),
+    ("Wetter/Analyse", "0 oder Esc schließt das Analysefeld."),
+    ("Autocrew-Übersicht", "F3 oder Esc schließt."),
+))
+
+
+def build_sections() -> tuple:
+    from src.core import help as game_help
+    from src.core import manual
+    from src.core.i18n import Translator
+
+    tr = Translator("de").t
+    title, rows = game_help.get_global_help(tr)
+    sections = [("Global", tuple(rows))]
+    for station, chapter in manual.STATION_CHAPTERS.items():
+        _, controls, _, _ = game_help.get_help(station, tr)
+        sections.append((manual.chapter_title(chapter, "de"), tuple(controls)))
+    web_title, web_rows = game_help.get_web_help(tr)
+    sections.append((web_title, tuple(web_rows)))
+    sections.append(DIALOG_SECTION)
+    return tuple(sections)
+
+
+sys.path.insert(0, str(ROOT))
+SECTIONS = build_sections()
+
+
+def _md(text: str) -> str:
+    return text.replace("|", "\\|")
 
 
 def markdown_bytes() -> bytes:
@@ -170,7 +69,7 @@ def markdown_bytes() -> bytes:
     ]
     for title, rows in SECTIONS:
         lines.extend((f"## {title}", "", "| Taste / Eingabe | Funktion |", "|---|---|"))
-        lines.extend(f"| `{key}` | {action} |" for key, action in rows)
+        lines.extend(f"| `{_md(key)}` | {_md(action)} |" for key, action in rows)
         lines.append("")
     lines.extend((
         "## Hinweise",
@@ -178,10 +77,12 @@ def markdown_bytes() -> bytes:
         "- `Num-Enter` entspricht in Spiel- und Eingabedialogen grundsätzlich `Enter`.",
         "- Wiederholte Keydown-Ereignisse werden ignoriert; nur ausdrücklich als",
         "  gehalten beschriebene Steuerungen arbeiten kontinuierlich.",
-        "- Remote Crew verwendet Browser-Bedienelemente. Dieses Blatt beschreibt die",
-        "  lokale Tastatur- und Mausbedienung auf der uConsole.",
+        "- Remote Crew verwendet Browser-Bedienelemente; der Abschnitt zum Browser",
+        "  nennt nur dessen Tastaturhilfen.",
         "- In der nativen OPZ sind Ereignis-Feed und Telemetrie ausgeblendet; ihre",
-        "  Daten laufen weiter und erscheinen auf anderen Stationen wieder.",
+        "  Daten laufen weiter, `F11` blendet sie auch dort als Overlay ein.",
+        "- Tasten und Beschreibungen der Stationen stammen aus `src/core/help.py`",
+        "  (dieselbe Quelle wie die F1-Hilfe und das Handbuch).",
         "- U-Jagd ist ein Spiel und kein Ausbildungs- oder Navigationsprodukt.",
         "",
         "Erzeugt mit `python tools/build_station_shortcuts_pdf.py`.",
@@ -207,10 +108,13 @@ def _text(command: bytearray, x: float, y: float, text: str,
 
 
 def _wrapped_rows(rows: tuple[tuple[str, str], ...]):
+    """Yield (key lines, action lines); long key labels wrap in their column."""
     for key, action in rows:
+        keys = textwrap.wrap(key, width=19, break_long_words=False,
+                             break_on_hyphens=False) or [""]
         wrapped = textwrap.wrap(action, width=78, break_long_words=False,
                                 break_on_hyphens=False) or [""]
-        yield key, wrapped
+        yield keys, wrapped
 
 
 def pdf_bytes() -> bytes:
@@ -230,7 +134,8 @@ def pdf_bytes() -> bytes:
         y = 784.0
 
     def section_height(rows: tuple[tuple[str, str], ...]) -> float:
-        line_count = sum(len(wrapped) for _, wrapped in _wrapped_rows(rows))
+        line_count = sum(max(len(keys), len(wrapped))
+                         for keys, wrapped in _wrapped_rows(rows))
         return 24.0 + line_count * 10.5 + len(rows) * 2.0
 
     new_page()
@@ -242,15 +147,17 @@ def pdf_bytes() -> bytes:
         y -= 6
         page.extend(f"0.35 0.55 0.58 RG 36 {y:.1f} m 559 {y:.1f} l S\n0 0 0 rg\n".encode())
         y -= 13
-        for key, wrapped in _wrapped_rows(rows):
-            if y - len(wrapped) * 10.5 < 43:
+        for keys, wrapped in _wrapped_rows(rows):
+            height = max(len(keys), len(wrapped))
+            if y - height * 10.5 < 43:
                 new_page()
                 _text(page, 36, y, title + " (Fortsetzung)", size=10, bold=True)
                 y -= 18
-            _text(page, 40, y, key, size=8.2, bold=True)
+            for index, line in enumerate(keys):
+                _text(page, 40, y - index * 10.5, line, size=8.2, bold=True)
             for index, line in enumerate(wrapped):
                 _text(page, 139, y - index * 10.5, line, size=8.2)
-            y -= len(wrapped) * 10.5 + 2.0
+            y -= height * 10.5 + 2.0
         y -= 8
     pages.append(page)
 

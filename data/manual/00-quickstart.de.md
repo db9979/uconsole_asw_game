@@ -8,7 +8,8 @@ Sie führen die U-Jagd-Fregatte F-217 und besetzen neun Stationen. Auftrag: fein
 
 - **Sieg:** alle zugewiesenen Ziel-U-Boote versenken oder bis zum Zeitlimit überleben (je nach Mission).
 - **Niederlage:** eigenes Schiff sinkt, ein ziviles Schiff wird getroffen, das Ziel entkommt mehr als 150 sm von seinem Startpunkt, oder die Zeit läuft bei einem Versenkungsauftrag ab.
-- Fristwarnungen kommen bei 5, 2 und 1 Minute Restzeit.
+- Zeitwarnungen kommen bei 5, 2 und 1 Minute Restzeit: bei einem Versenkungsauftrag als Frist, bei einem Überlebensauftrag (Konvoi) als Zeit, bis der Konvoi in Sicherheit ist.
+- Am Missionsende startet `R` die Mission mit gleichem Seed neu (eine Editor-Mission startet sich selbst neu), `M` führt ins Hauptmenü. Während der Mission bietet `Esc` neben Speichern und Beenden auch "Zum Hauptmenü (ohne Speichern)".
 - Punkte: 1000 je versenktem U-Boot, 200 je unverbrauchtem Torpedo, 500 ohne zivile Verluste, bis zu 500 Zeitbonus.
 
 ## Stationen {#qs-stations}

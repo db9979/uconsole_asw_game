@@ -1891,7 +1891,7 @@ class Game:
         elif self.live_traffic_open:
             self._handle_live_traffic_key(key)
         elif self.quit_confirm:
-            choices = (0, 2) if self.in_menu else (0, 1, 2)
+            choices = (0, 2) if self.in_menu else (0, 1, 3, 2)
             if key in (pygame.K_ESCAPE, pygame.K_n):
                 self.quit_confirm = False
             elif key in (pygame.K_UP, pygame.K_DOWN):
@@ -1904,6 +1904,8 @@ class Game:
                 elif action == 1:
                     self._open_administration("save")
                     self.quit_after_save = True
+                elif action == 3:
+                    self._return_to_main_menu()
                 else:
                     self.running = False
         elif self.save_ui is not None:
@@ -2461,7 +2463,12 @@ class Game:
                 return
             if self.game_over:
                 if e.key == pygame.K_r:
-                    self.reset(self.seed)
+                    definition = self.custom_mission_definition
+                    if definition is None or not self.start_custom_mission(
+                            json.loads(json.dumps(definition))):
+                        self.reset(self.seed)
+                elif e.key == pygame.K_m:
+                    self._return_to_main_menu()
                 return
             if self._local_station_input_locked():
                 return
@@ -2737,9 +2744,7 @@ class Game:
                                        if self.ecm_jammer.auto_enabled else
                                        "runtime.eloka.auto_off"), 1.5)
             elif e.key == pygame.K_r:
-                if self.game_over:
-                    self.reset(self.seed)
-                elif self.station in (Station.OPZ, Station.RADAR):
+                if self.station in (Station.OPZ, Station.RADAR):
                     domain = ("air" if getattr(e, "mod", 0)
                               & pygame.KMOD_SHIFT else "surface")
                     self.toggle_radar(domain)
@@ -4054,7 +4059,7 @@ class Game:
         if self.roe == "STD" and not self._contact_range_fresh(contact):
             self.flash(message("runtime.target.not_located"))
             return "not_located"
-        if contact.player_class != "U_BOOT":
+        if self.weapon_classification(contact) != "U_BOOT":
             self.flash(message("runtime.target.air_class"))
             return "not_classified"
         if not self.helo.airborne:
@@ -5015,8 +5020,15 @@ class Game:
             "AIS": "SURFACE", "SURFACE": "SURFACE", "SUB": "SUBSURFACE",
             "TORP": "SUBSURFACE", "FLG": "AIR", "ASM": "AIR",
         }
+        # Sonar reports carry no sensor domain; the operator's classification
+        # (an annotation, not truth) sorts them into the display filter.
+        class_domains = {
+            "U_BOOT": "SUBSURFACE", "TORPEDO": "SUBSURFACE",
+            "KAMPFSCHIFF": "SURFACE", "FAHRZEUG": "SURFACE", "FLUGZEUG": "AIR",
+        }
         return [track for track in tracks
-                if kind_domains.get(track.kind, "UNKNOWN") == selected]
+                if kind_domains.get(track.kind, class_domains.get(
+                    track.classification, "UNKNOWN")) == selected]
 
     def _cycle_opz_contact_filter(self) -> None:
         filters = ("ALL", "RADAR", "SONAR", "ESM", "AIR", "SURFACE",
@@ -5206,11 +5218,11 @@ class Game:
             self.flash(message("runtime.cic.none"))
             return
         result = self.designate_opz_observation(track.observation_id)
-        if result == "source_owned":
-            self.flash(message("runtime.cic.fusion_display_only"))
-            return
         if result is not True:
-            self.flash(message("runtime.cic.no_solution"))
+            ambiguous = (track.source == "FUSION"
+                         and len(self._fusion_contacts(track)) > 1)
+            self.flash(message("runtime.cic.fusion_ambiguous" if ambiguous
+                               else "runtime.cic.no_solution"))
             return
         self.selected_contact = self.target
         self.flash(message("runtime.cic.designated", track=track.track_id))
@@ -5223,17 +5235,31 @@ class Game:
         if track is None:
             return "stale_ref"
         if track.source == "FUSION":
-            return "source_owned"
-        bound = self._opz_source_bindings.get(track.observation_id)
-        contact = (bound if isinstance(bound, Contact) else
-                   next((c for c in self.sonar.contacts.values()
-                         if getattr(bound, "target_id", None) == c.target_id), None))
+            # A fusion hands over its sonar report only when that is unique.
+            contacts = self._fusion_contacts(track)
+            contact = contacts[0] if len(contacts) == 1 else None
+        else:
+            bound = self._opz_source_bindings.get(track.observation_id)
+            contact = (bound if isinstance(bound, Contact) else
+                       next((c for c in self.sonar.contacts.values()
+                             if getattr(bound, "target_id", None) == c.target_id),
+                            None))
         if (contact is None or self.sonar.contacts.get(contact.target_id) is not contact
                 or not 0 <= self.sim_t - contact.last_seen
                 < config.SONAR_CONTACT_LOST_S):
             return "no_solution"
         self.target = contact
         return True
+
+    def _fusion_contacts(self, track) -> list:
+        """Distinct sonar contacts behind the member reports of one fusion."""
+        contacts = []
+        for member in getattr(track, "members", ()):
+            bound = self._opz_source_bindings.get(member)
+            if isinstance(bound, Contact) and not any(
+                    item is bound for item in contacts):
+                contacts.append(bound)
+        return contacts
 
     def opz_affiliation(self, track_id: str) -> str:
         if track_id not in self.opz_affiliations:
@@ -6425,7 +6451,7 @@ class Game:
                     config.COLOR_DANGER)
         if not self._contact_range_fresh(self.target) and self.roe == "STD":
             return "BLOCKIERT: KEINE ENTFERNUNG", config.COLOR_WARN
-        if self.target.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
+        if self.weapon_classification(self.target) not in ("U_BOOT", "KAMPFSCHIFF"):
             return ("BLOCKIERT: NICHT ALS U-BOOT/KAMPFSCHIFF KLASSIFIZIERT",
                     config.COLOR_WARN)
         if self.torpedo_count <= 0:
@@ -6457,7 +6483,43 @@ class Game:
                 == contact.target_id and str(
                     getattr(source, "track_id", "")).split("-", 1)[0]
                 in ("U", "S")))
+        # An affiliation set on an OPZ fusion covers every sonar report in it.
+        affiliations.extend(
+            self.opz_fusion.fusion_affiliations[fusion.fusion_id]
+            for fusion in self._contact_fusions(contact)
+            if fusion.fusion_id in self.opz_fusion.fusion_affiliations)
         return affiliations
+
+    def _contact_fusions(self, contact) -> list:
+        """Intact OPZ fusions holding a report bound to this sonar contact.
+
+        Read-only: a fusion counts only while all its member reports are
+        current (the condition ``OPZFusion.prune`` applies), so the result
+        never depends on whether a frame pruned the register first.
+        """
+        if contact is None or not self.opz_fusion.fusions:
+            return []
+        current = {item.observation_id for item in self.opz_source_observations()}
+        bindings = self._opz_source_bindings
+        return [fusion for _, fusion in sorted(self.opz_fusion.fusions.items())
+                if set(fusion.members) <= current
+                and any(bindings.get(member) is contact
+                        for member in fusion.members)]
+
+    def weapon_classification(self, contact) -> str | None:
+        """Operator class that fire control uses for one sonar contact.
+
+        The sonar contact's own class wins; otherwise the class the OPZ gave a
+        fusion holding this contact's report applies.
+        """
+        if contact is None:
+            return None
+        if contact.player_class in config.PLAYER_CLASSES:
+            return contact.player_class
+        return next((self.opz_fusion.classifications[fusion.fusion_id]
+                     for fusion in self._contact_fusions(contact)
+                     if self.opz_fusion.classifications.get(fusion.fusion_id)
+                     in config.PLAYER_CLASSES), None)
 
     def contact_affiliation(self, contact) -> str:
         """Resolve one affiliation for a contact, FRIEND/NEUTRAL taking
@@ -6602,11 +6664,11 @@ class Game:
             if not self._contact_range_fresh(contact):
                 self.flash(message("runtime.target.not_located"))
                 return "not_located"
-            if contact.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
+            if self.weapon_classification(contact) not in ("U_BOOT", "KAMPFSCHIFF"):
                 self.flash(message("runtime.target.not_classified"))
                 return "not_classified"
         else:
-            if contact.player_class not in ("U_BOOT", "KAMPFSCHIFF"):
+            if self.weapon_classification(contact) not in ("U_BOOT", "KAMPFSCHIFF"):
                 self.flash(message("runtime.target.not_classified"))
                 return "not_classified"
         active_torpedoes = len([t for t in self.torpedoes if t.state == "RUN"])
@@ -7766,10 +7828,14 @@ class Game:
                 minutes = int(threshold // 60)
                 amount = minutes if minutes else 60
                 suffix = "minutes" if minutes else "seconds"
-                self.flash(message("runtime.deadline.warning_" + suffix,
+                # Running out the clock wins a survive mission: announce the
+                # remaining time as progress, not as a deadline.
+                prefix = ("runtime.survive." if self.mission.win_mode == "survive"
+                          else "runtime.deadline.")
+                self.flash(message(prefix + "warning_" + suffix,
                                    amount=amount), 4.0)
                 self.feed.add(self.world.format_time(), "mission",
-                              message("runtime.deadline.feed_" + suffix,
+                              message(prefix + "feed_" + suffix,
                                       amount=amount))
 
     # --- M6: Missions-Endbedingungen & Score ---
@@ -11017,6 +11083,31 @@ class Game:
         self.msg_until = 0.0
         self._t = 0.0
 
+    def _return_to_main_menu(self) -> None:
+        """Leave the current mission (running or finished) without saving.
+
+        The old world stays behind the menu until the next start replaces it;
+        nothing is simulated while the menu owns the screen.
+        """
+        self._open_administration("none")
+        self.quit_confirm = False
+        self.simlog_view_open = False
+        self.autocrew_overview_open = False
+        self.weather_station_open = False
+        self.feed_overlay_open = False
+        self.pinned_tooltip = None
+        self._tooltip_anchor = None
+        self._reset_plot_ui()
+        self.audio.stop()
+        self._sonar_audio_sequence = -1
+        self._prepared_menu_mission = None
+        self._frame_clock_reset = True
+        self.in_menu = True
+        self.main_menu = True
+        self.main_menu_sel = 0
+        self.menu_screen = "scenario"
+        self.menu_sel = 0
+
     def _handle_menu_key(self, key) -> None:
         if key == pygame.K_f:
             self.toggle_fullscreen()
@@ -11083,7 +11174,8 @@ class Game:
                 if self.menu_screen == "difficulty":
                     self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
-                self._open_administration("quit")
+                self.main_menu = True
+                self.main_menu_sel = 0
             return
         if self.menu_screen == "difficulty":
             n = len(config.DIFFICULTY_FIELD_ORDER)
@@ -11746,7 +11838,9 @@ class Game:
              config.COLOR_TEXT_DIM, False),
             (message("end.time_remaining",
                      remaining=self.mission.format_remaining(self.mission_time))
-             if self.mission_result == "SIEG" else "end.expired",
+             if (self.mission_result == "SIEG"
+                 or self.mission_time < self.mission.time_limit_s)
+             else "end.expired",
              config.COLOR_TEXT_DIM, False),
             ("", config.COLOR_TEXT, False),
             ("end.restart", config.COLOR_TEXT_DIM, False),
@@ -11899,7 +11993,10 @@ class Game:
         dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
         dim.fill((0, 0, 0, 155))
         s.blit(dim, (0, 0))
-        rect = pygame.Rect(260, 185, 760, 330)
+        choices = (("quit.menu", "common.exit") if self.in_menu else
+                   ("quit.game", "quit.save", "quit.main_menu", "quit.no_save"))
+        rect = pygame.Rect(260, 185 - 20 * (len(choices) - 3),
+                           760, 330 + 40 * (len(choices) - 3))
         pygame.draw.rect(s, config.COLOR_PANEL_BG, rect)
         pygame.draw.rect(s, config.COLOR_WARN, rect, 2)
         layout.blit_line(s, "quit.title", (rect.x + 20, rect.y + 22,
@@ -11907,8 +12004,6 @@ class Game:
         layout.blit_line(s, "quit.warning",
                          (rect.x + 20, rect.y + 74, rect.w - 40, 26),
                          config.COLOR_TEXT, size=16)
-        choices = (("quit.menu", "common.exit") if self.in_menu else
-                   ("quit.game", "quit.save", "quit.no_save"))
         for index, label in enumerate(choices):
             selected = index == self.quit_selection
             layout.blit_line(s, message("menu.choice",

@@ -239,8 +239,8 @@ class AutocrewController:
             return "monitoring"
         candidates = [
             contact for contact in game.sonar.contacts.values()
-            if contact.player_class in ("U_BOOT", "KAMPFSCHIFF")
-            and 0.0 <= game.sim_t - contact.last_seen <= 2.0
+            if 0.0 <= game.sim_t - contact.last_seen <= 2.0
+            and game.weapon_classification(contact) in ("U_BOOT", "KAMPFSCHIFF")
             and game.contact_affiliation(contact) == "HOSTILE"]
         if not candidates:
             return "monitoring"

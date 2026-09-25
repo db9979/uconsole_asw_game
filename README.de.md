@@ -12,7 +12,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.1.0**
+Aktuelle Version: **1.2.0**
+
+Version 1.2.0 verbessert den Spielfluss und die Übergabe zwischen den
+Stationen: Der `Esc`-Dialog und das Missionsende führen zurück ins Hauptmenü
+(`M`), `R` startet eine Editor-Mission als sie selbst neu, Konvoimissionen
+melden die Restzeit als Fortschritt, und eine OPZ-Fusion aus einem
+Sonarkontakt lässt sich der Waffenzentrale zuweisen; ihre Klassifizierung und
+Zugehörigkeit gelten für die Feuerleitung (FREUND/NEUTRAL auf einer Fusion
+sperrt jeden Torpedoschuss). Spielstände bleiben v14.
 
 Version 1.1.0 ersetzt die verbliebenen kinematischen Vereinfachungen durch
 physikalische Modelle und hält dabei die Spielbalance von 1.0.0 (geprüft durch
@@ -195,7 +203,10 @@ Kapitel je Station mit Anzeigen, Tasten, Standardablauf und Tipps sowie
 Referenzdaten). Dasselbe Handbuch liegt als
 [`docs/manual/manual.de.md`](docs/manual/manual.de.md) /
 [`manual.en.md`](docs/manual/manual.en.md) vor und wird von Remote Crew unter
-`/manual-de` und `/manual-en` ausgeliefert. Eine
+`/manual-de` und `/manual-en` ausgeliefert. Druckfassungen liegen als
+[`docs/manual/handbuch.de.pdf`](docs/manual/handbuch.de.pdf) /
+[`manual.en.pdf`](docs/manual/manual.en.pdf) vor (`python tools/build_manual_pdf.py`,
+benötigt ein lokales Chromium). Eine
 vollständige druckbare Übersicht der lokalen Tastenkürzel steht als
 [`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf) bereit; die
 Textquelle ist [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md).
@@ -206,7 +217,11 @@ Die wichtigsten globalen Bedienelemente sind:
 | `1` bis `9` | Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk, Maschinenraum, Helikopter, Elektronische Kampfführung/ESM; erneutes Drücken der Nummer der aktiven Station wechselt, sofern vorhanden, zur nächsten Seite |
 | `F` / `Umschalt+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
 | `Tab` / `Shift+Tab` | Nächste / vorherige Station |
-| `F1` | Kontextsensitive Hilfe |
+| `F1` / `?` | Kontextsensitive Hilfe; Kategorie 4 ist das vollständige Handbuch |
+| `0` | Wetter- und Sonar-Analysefeld über jeder Station |
+| `F11` | Vollständiges Ereignislog und Telemetrie über der Station (läuft weiter) |
+| `N` | Nationen und Einheiten (am Sonar: Notchfilter) |
+| `P` | Plotmodus auf Brücken-/Waffen-/Helikopterkarte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (`M R B C D`, `Enter`/Klick, `Backspace`) |
 | `F2` / `F3` | Autocrew der aktuellen Station umschalten / Autocrew-Übersicht öffnen |
 | `F4` | SimLog öffnen, sofern aktiviert |
 | `F8` | Taktischen Einheitenanalysator öffnen; gegebenenfalls sichtbaren Commander-Vorschlag wechseln |
@@ -219,7 +234,8 @@ Die wichtigsten globalen Bedienelemente sind:
 | `Q` / `E` oder Mausrad | Sichtbare Karten an den Stationen Brücke, Waffen und Helikopter zoomen |
 | Ziehen mit der Maus | Eine sichtbare Karte verschieben und die Kameraverfolgung ausschalten |
 | `K` | Kameraverfolgung auf einer sichtbaren Karte umschalten |
-| `Esc` | Einen fixierten Hinweis entfernen, die aktuelle Ansicht/Eingabe abbrechen oder die Beenden-Bestätigung öffnen |
+| `Esc` | Einen fixierten Hinweis entfernen, die aktuelle Ansicht/Eingabe abbrechen oder die Beenden-Bestätigung öffnen (zurück zum Spiel, speichern und beenden, Hauptmenü, ohne Speichern beenden) |
+| `R` / `M` nach Missionsende | Neustart mit gleichem Seed / zurück zum Hauptmenü |
 
 Stationstasten sind bewusst kontextabhängig. Beispielsweise sendet `Shift+A` am
 Sonar einen aktiven Ping, während dort `A` den Breitband-Hörmodus wählt und im

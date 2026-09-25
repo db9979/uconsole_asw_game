@@ -8,7 +8,8 @@ You command the ASW frigate F-217 and man nine stations. Your job: detect, track
 
 - **Win:** sink every assigned target submarine, or survive until the time limit (depends on the mission).
 - **Lose:** own ship sinks, a civilian vessel is hit, the target escapes more than 150 NM from its start point, or time runs out on a sink mission.
-- Deadline warnings arrive at 5, 2 and 1 minutes remaining.
+- Time warnings arrive at 5, 2 and 1 minutes remaining: on a sink mission as a deadline, on a survive (convoy) mission as the time until the convoy is safe.
+- When the mission ends, `R` restarts it with the same seed (an editor mission restarts itself) and `M` returns to the main menu. During a mission, `Esc` offers "Main menu (without saving)" next to save-and-exit.
 - Score: 1000 per submarine sunk, 200 per unused torpedo, 500 for no civilian losses, up to 500 time bonus.
 
 ## Stations {#qs-stations}

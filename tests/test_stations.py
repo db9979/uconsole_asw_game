@@ -182,6 +182,13 @@ def test_escape_requires_explicit_quit_confirmation():
     key(game, pygame.K_DOWN)
     key(game, pygame.K_DOWN)
     key(game, pygame.K_RETURN)
+    # Third entry: main menu without saving; the game keeps running.
+    assert game.running is True and game.in_menu and game.main_menu
+    game = Game(seed=31415, start_menu=False)
+    key(game, pygame.K_ESCAPE)
+    for _ in range(3):
+        key(game, pygame.K_DOWN)
+    key(game, pygame.K_RETURN)
     assert game.running is False
 
 

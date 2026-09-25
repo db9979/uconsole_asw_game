@@ -10,7 +10,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.1.0**
+Current release: **1.2.0**
+
+Release 1.2.0 tightens the game flow and the hand-over between stations: the
+`Esc` dialog and the mission-end screen return to the main menu (`M`), `R`
+restarts an editor mission as itself, convoy missions announce the remaining
+time as progress, and an Operations fusion built from one sonar contact can be
+designated to Weapons, with its classification and affiliation applying to fire
+control (FRIEND/NEUTRAL on a fusion blocks every torpedo shot). Saves stay v14.
 
 Release 1.1.0 replaces the remaining kinematic shortcuts with physical models
 while keeping the 1.0.0 gameplay balance (checked by a calibration harness):
@@ -186,7 +193,10 @@ is the full player manual (quickstart, one chapter per station with displays,
 keys, standard procedure and tips, plus reference data). The same manual is
 exported to [`docs/manual/manual.en.md`](docs/manual/manual.en.md) /
 [`manual.de.md`](docs/manual/manual.de.md) and served by Remote Crew at
-`/manual-en` and `/manual-de`. A printable complete local
+`/manual-en` and `/manual-de`. Printable PDFs are
+[`docs/manual/manual.en.pdf`](docs/manual/manual.en.pdf) /
+[`handbuch.de.pdf`](docs/manual/handbuch.de.pdf) (`python tools/build_manual_pdf.py`,
+needs a local Chromium). A printable complete local
 keyboard reference is available as
 [`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf), with its text
 source at [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md). The
@@ -197,7 +207,11 @@ most important global controls are:
 | `1` to `9` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter, Electronic Warfare/ESM; press the active station number again to advance its page when available |
 | `F` / `Shift+F` / `B` at ESM | Cycle signal-status, minimum-threat, and frequency-band filters |
 | `Tab` / `Shift+Tab` | Next / previous station |
-| `F1` | Context-sensitive help |
+| `F1` / `?` | Context-sensitive help; category 4 is the full player manual |
+| `0` | Weather and sonar analysis panel over any station |
+| `F11` | Full event log and telemetry over the station (keeps running) |
+| `N` | Nations and units (at Sonar: notch filter) |
+| `P` | Plot mode on the Bridge/Weapons/Helicopter map and OPZ chart: marks, rulers, bearing lines, circles, DR lines (`M R B C D`, `Enter`/click, `Backspace`) |
 | `F2` / `F3` | Toggle Autocrew for the current station / open the Autocrew overview |
 | `F4` | Open SimLog when enabled |
 | `F8` | Open the tactical unit analyzer; cycles a visible Commander proposal when applicable |
@@ -210,7 +224,8 @@ most important global controls are:
 | `Q` / `E` or mouse wheel | Zoom maps on Bridge, Weapons, and Helicopter; the OPZ chart uses the mouse wheel |
 | Mouse drag | Pan a visible map, including the OPZ chart, and disable its independent camera follow |
 | `K` | Toggle camera follow on the current map or OPZ chart |
-| `Esc` | Clear a pinned tooltip, cancel the current view/input, or open quit confirmation |
+| `Esc` | Clear a pinned tooltip, cancel the current view/input, or open quit confirmation (back to game, save and exit, main menu, exit without saving) |
+| `R` / `M` after the mission ends | Restart with the same seed / return to the main menu |
 
 Station keys are deliberately contextual. For example, `Shift+A` sends an active
 ping at Sonar, plain `A` selects Broadband listening there, and `A` changes

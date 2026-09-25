@@ -330,7 +330,8 @@ def draw_weapons_panel(game, tr=None) -> None:
         rx, ry, rw, _ = ready
         has_target = c is not None
         has_solution = fresh_solution
-        authorized = (has_target and c.player_class in ("U_BOOT", "KAMPFSCHIFF")
+        authorized = (has_target
+                      and game.weapon_classification(c) in ("U_BOOT", "KAMPFSCHIFF")
                       and not readiness.startswith("BLOCKIERT: ZUGEHOERIGKEIT"))
         stages = ((message("ui.target"), message("panel.assigned" if has_target else "ui.no_target"), has_target),
                   (message("weapons.fix"), message("panel.valid" if has_solution else

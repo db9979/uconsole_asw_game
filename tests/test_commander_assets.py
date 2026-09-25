@@ -1018,7 +1018,7 @@ async function runContract() {
   $test("language").value = "de";
   $test("language").dispatchEvent(new Event("change"));
   await until(() => document.documentElement.lang === "de", "rejection language switch");
-  assert($test("command-status").textContent.includes("Die Bewertung hat sich geaendert."), "stored reason code retranslates into German");
+  assert($test("command-status").textContent.includes("Die Bewertung hat sich geändert."), "stored reason code retranslates into German");
   $test("language").value = "en";
   $test("language").dispatchEvent(new Event("change"));
   await until(() => document.documentElement.lang === "en", "restore English after rejection check");

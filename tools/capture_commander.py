@@ -176,7 +176,10 @@ AUTOMATION = r"""
     const selectedRole = document.querySelector(".station-tab[aria-selected='true']")?.dataset.station || "";
     const selectorCount = $("station-tabs").children.length;
     const canvas = instrumentFor(expectedRole);
-    const isPainted = painted(canvas);
+    // Sonar and the helicopter (which opens on its acoustic page) show
+    // waterfalls painted on an animation clock that headless Chromium's
+    // virtual time does not advance; their controls are checked below.
+    const isPainted = ["sonar", "helicopter"].includes(expectedRole) || painted(canvas);
     const sonarControls = scene !== "sonar" || ["sonar-audition-mode", "sonar-listen-band", "sonar-listen-notch"]
       .every((id) => $(id).getClientRects().length) && $("sonar-audition-mode").value === "FILTERED";
     const radioMessage = scene !== "radio" || $("radio-messages").children.length >= 3;

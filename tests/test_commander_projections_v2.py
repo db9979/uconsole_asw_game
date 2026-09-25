@@ -627,3 +627,18 @@ def test_browser_exact_validator_accepts_unified_own_weapon_shape():
               '"course", "state"])')
     assert schema in script
     assert "own_weapons.some((row)" in script
+
+
+def test_opz_sees_own_launched_torpedo_as_commanded_asset():
+    game = Game(seed=84, start_menu=False, audio_enabled=False, language="en")
+    game.torpedoes = [Torpedo(game.ship.x + 1.0, game.ship.y, 20, 40, None, 5)]
+    server, bridge = Server(), CommanderBridge()
+    bridge.pump(game, server, now=10.0)
+    weapons = server.v2_states["opz"]["opz"]["own_assets"]["weapons"]
+    assert len(weapons) == 1
+    row = weapons[0]
+    assert set(row) == {"ref", "x", "y", "depth_m", "course", "state"}
+    assert row["x"] == pytest.approx(game.ship.x + 1.0)
+    # Same opaque reference as the Weapons station's asset list.
+    assert row["ref"] in {item["ref"] for item in
+                          server.v2_states["weapons"]["weapons"]["active_assets"]}

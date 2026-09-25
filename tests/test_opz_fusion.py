@@ -270,3 +270,19 @@ def test_subsurface_filter_uses_operator_classification_of_sonar_reports():
     assert shown[0].kind == "UNKNOWN"
     game.opz_contact_filter = "SURFACE"
     assert not game.filtered_opz_tracks()
+
+
+def test_native_opz_chart_draws_own_launched_torpedo(monkeypatch):
+    from src.ui import stations_view
+    from src.weapons.torpedo import Torpedo
+
+    game = game_with_contacts()
+    game.torpedoes = [Torpedo(game.ship.x + .5, game.ship.y, 90, 40, None, 7)]
+    drawn = []
+    original = stations_view.nato_symbols.draw_symbol
+    monkeypatch.setattr(stations_view.nato_symbols, "draw_symbol",
+                        lambda surface, center, affiliation, domain, *args, **kw:
+                        drawn.append((affiliation, domain)) or original(
+                            surface, center, affiliation, domain, *args, **kw))
+    game.draw()
+    assert ("FRIEND", "UNDERWATER_WEAPON") in drawn

@@ -1828,7 +1828,7 @@
     const payload = v2State[role];
     if (role === "bridge") return {own: payload.navigation, observations: payload.tactical_summary, assets: [], bearingLogs: [], fixes: []};
     if (role === "weapons") return {own: payload.navigation, observations: payload.tactical, assets: payload.active_assets, bearingLogs: [], fixes: []};
-    if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : [], bearingLogs: [], fixes: []};
+    if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
     if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
     return {own: payload.navigation, observations: payload.tactical,
       assets: [payload.asset, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),
@@ -3363,7 +3363,8 @@
            !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready", "ciws_released"]) || typeof payload.defense.ciws_released !== "boolean") throw new Error("protocol");
       tacticalRows(payload.asm_observations, 128);
       if (payload.designated_target_ref !== null && (typeof payload.designated_target_ref !== "string" || !pictureRefs.has(payload.designated_target_ref))) throw new Error("protocol");
-      if (!exactKeys(payload.own_assets, ["ship", "helicopter"]) ||
+      if (!exactKeys(payload.own_assets, ["ship", "helicopter", "weapons"]) ||
+          !boundedArray(payload.own_assets.weapons, 104) || payload.own_assets.weapons.some((row) => !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"])) ||
           !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
           !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");
     } else if (state.role === "radio") {

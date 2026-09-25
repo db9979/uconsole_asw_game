@@ -254,6 +254,15 @@ def _alternate_german_spelling(text: str) -> str:
     return text
 
 
+def _ascii_german_spelling(text: str) -> str:
+    """Transliterate umlauts and sharp s back to the legacy ASCII spelling."""
+    for unicode_text, ascii_text in (("Ä", "Ae"), ("Ö", "Oe"), ("Ü", "Ue"),
+                                     ("ä", "ae"), ("ö", "oe"), ("ü", "ue"),
+                                     ("ß", "ss")):
+        text = text.replace(unicode_text, ascii_text)
+    return text
+
+
 class Translator:
     """Translate message keys and safely substitute named placeholders."""
 
@@ -272,6 +281,11 @@ class Translator:
         self._literal_sources.update({value: key for key, value in self.german.items()})
         self._literal_sources.update({_alternate_german_spelling(value): key
                                       for key, value in self.german.items()})
+        # Older code literals spell the catalog's umlauts as ae/oe/ue/ss.
+        self._literal_sources.update({_ascii_german_spelling(value): key
+                                      for key, value in self.german.items()
+                                      if _ascii_german_spelling(value)
+                                      not in self._literal_sources})
 
     def translate(self, key: str, **values: object) -> str:
         message = self.catalog.get(key)

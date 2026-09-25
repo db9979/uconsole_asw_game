@@ -1527,6 +1527,26 @@ def draw_opz_view(game, tr=None) -> None:
                                             px_per_nm, hcol, max_px=min(chart.size) * .3)
             layout.blit_line(s, "HSP-5 DL",
                              (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
+    # Own weapons are commanded own assets (wire/datalink), not sensor tracks:
+    # torpedoes from ship, helicopter or ASROC payload, ASROC and ESSM flights.
+    own_weapons = (
+        [(item, "UNDERWATER_WEAPON", f"T{item.idx}")
+         for item in getattr(game, "torpedoes", ())]
+        + [(item, "MISSILE", f"ASROC {item.seq}")
+           for item in getattr(game, "asrocs", ())]
+        + [(item, "MISSILE", "ESSM") for item in getattr(game, "essms", ())])
+    for item, domain, label in own_weapons:
+        wx, wy = view.world_to_screen(item.x, item.y)
+        if not chart.collidepoint(wx, wy):
+            continue
+        wcol = nato_symbols.draw_symbol(s, (wx, wy), "FRIEND", domain, 12)
+        course = getattr(item, "course", None)
+        if course is not None:
+            rad = math.radians(course)
+            pygame.draw.line(s, wcol, (int(wx), int(wy)),
+                             (int(wx + 12 * math.sin(rad)), int(wy - 12 * math.cos(rad))), 1)
+        layout.blit_line(s, raw_text(label),
+                         (int(wx) + 10, int(wy) - 9, 80, 17), wcol, size=12)
     cic_tracks = (game.opz_tracks() if hasattr(game, "opz_tracks")
                   else game.radar_tracks())
     selected_id = game.opz_selected_track_id

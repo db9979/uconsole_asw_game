@@ -38,32 +38,32 @@ Globale Tasten (alle Stationen):
 
 | Taste | Funktion |
 |---|---|
-| `Tab / Shift+Tab` | Naechste / vorherige Station |
-| `1 / 2 / 3 / 4` | Bruecke / Sonar / Waffen / Schaden |
+| `Tab / Shift+Tab` | Nächste / vorherige Station |
+| `1 / 2 / 3 / 4` | Brücke / Sonar / Waffen / Schaden |
 | `5 / 6 / 7 / 8` | OPZ / Funk / Maschine / Helikopter |
-| `9` | Elektronische Kampffuehrung / ESM |
-| `Nummer der aktiven Station` | Erneut druecken, um die Seite dieser Station weiterzuschalten |
+| `9` | Elektronische Kampfführung / ESM |
+| `Nummer der aktiven Station` | Erneut drücken, um die Seite dieser Station weiterzuschalten |
 | `Pfeiltasten` | Stationsbezogene Auswahl oder Einstellung |
-| `+ / -` | Telegraph (an jeder Station verfuegbar) |
+| `+ / -` | Telegraph (an jeder Station verfügbar) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
 | `F2` | Autocrew der aktuellen Station umschalten |
-| `F3` | Autocrew-Uebersicht oeffnen |
+| `F3` | Autocrew-Übersicht öffnen |
 | `0` | Wetter- & Sonar-Analyse |
 | `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
 | `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte) |
-| `F9` | Lokale Commander-LAN-Verwaltung oeffnen |
-| `F10` | Optionen: Sprache, Vollbild, Audio, grosser Text, Tooltips, Bildrate |
+| `F9` | Lokale Commander-LAN-Verwaltung öffnen |
+| `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
 | `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
 | `N` | Nationen & Einheiten; im Sonar: Notchfilter |
 | `S / L` | Speichern / Laden (Slots 1-5) |
 | `Alt+Enter` | Vollbild (alle Stationen) |
-| `Q / E oder Mausrad` | Kartenzoom nur auf Bruecke, Waffen und Helikopter |
-| `Drag` | Karte verschieben (Bruecke, Waffen und Helikopter) |
+| `Q / E oder Mausrad` | Kartenzoom nur auf Brücke, Waffen und Helikopter |
+| `Drag` | Karte verschieben (Brücke, Waffen und Helikopter) |
 | `K` | Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus) |
 | `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
-| `Esc` | Eingabe abbrechen oder Beenden-Dialog oeffnen |
-| `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenue |
+| `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
+| `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
 
 Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bedient; die Tastatur hilft bei der Navigation:
 
@@ -172,7 +172,7 @@ Klasse und Typ brauchen eine feiner aufgelöste Silhouette als die Sichtung (Joh
 
 | Taste | Funktion |
 |---|---|
-| `<- / ->` | Ruder: Zielkurs aendern |
+| `<- / ->` | Ruder: Zielkurs ändern |
 | `Auf / Ab` | Telegraph hoch / runter |
 | `U` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
@@ -313,27 +313,27 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 
 | Taste | Funktion |
 |---|---|
-| `Shift+A` | Aktiv-Ping abfeuern (Kuehlzeit, verraet Position!) |
+| `Shift+A` | Aktiv-Ping abfeuern (Kühlzeit, verrät Position!) |
 | `Shift+B` | Empfangsarray zwischen HMS und TAS wechseln |
 | `Y` | TAS ausbringen / einholen (nur bei 3-12 kn) |
 | `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
-| `2` | 2 erneut druecken, um die Sonarseite weiterzuschalten |
+| `2` | 2 erneut drücken, um die Sonarseite weiterzuschalten |
 | `E` | Bathythermograph: lokales Schallprofil messen |
 | `W` | Aktivpuls CW / LFM |
 | `U / V` | TAS/VDS-Solltiefe um 10 m heben / senken |
-| `R` | Hoerpeilung direkt: 000 bis 359.9 Grad rechtweisend |
+| `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
 | `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
-| `Auf / Ab` | Kontakt fuer TMA und Klassifikation waehlen |
+| `Auf / Ab` | Kontakt für TMA und Klassifikation wählen |
 | `Enter` | Gemessener Kontaktpeilung folgen / manuell halten |
-| `J \| , / .` | Empfangston an/aus \| Lautstaerke senken/erhoehen |
-| `A / B / H` | Direkt Breitband / gefiltert / Heterodyn abhoeren |
-| `D` | Breitband/gefiltertes Abhoeren umschalten |
-| `I / O` | Gain senken / erhoehen (3 dB) |
-| `Shift+I / Shift+O` | Sonar-Anzeigekontrast senken / erhoehen |
-| `Ctrl+I / Ctrl+O` | Sonar-Schwarzpunkt senken / erhoehen |
-| `Shift+C` | Phosphorpalette Gruen / Amber / Cyan wechseln |
+| `J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
+| `A / B / H` | Direkt Breitband / gefiltert / Heterodyn abhören |
+| `D` | Breitband/gefiltertes Abhören umschalten |
+| `I / O` | Gain senken / erhöhen (3 dB) |
+| `Shift+I / Shift+O` | Sonar-Anzeigekontrast senken / erhöhen |
+| `Ctrl+I / Ctrl+O` | Sonar-Schwarzpunkt senken / erhöhen |
+| `Shift+C` | Phosphorpalette Grün / Amber / Cyan wechseln |
 | `Shift+H` | Angezeigte Historientiefe 25 / 50 / 100 Prozent wechseln |
-| `F` | Frequenzband waehlen: breit / tief / mittel |
+| `F` | Frequenzband wählen: breit / tief / mittel |
 | `N` | Notchfilter gegen Eigenantrieb |
 | `K` | Linie am Cursor markieren (LOFAR-Grundton, DEMON Welle/Blatt) |
 | `Z / X` | LOFAR/DEMON-Frequenzcursor (Umschalt: 10 Hz) |
@@ -349,10 +349,10 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 | `Q / Shift+Q (TMA)` | TMA-Seite: Hypothesenentfernung -/+ 1 sm (Strg 0,2 sm) |
 | `K / Shift+K (TMA)` | TMA-Seite: Hypothese als Fix übernehmen / Umschalt: Solver-Vorschlag kopieren (Training) |
 | `SPACE` | LOFAR Peak-Hold ein/aus |
-| `T` | TMA fuer ausgewaehlten Kontakt ein/aus |
+| `T` | TMA für ausgewählten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
-| `G` | Gewaehlt Kontakt unabhaengig von der Klassifikation an OPZ freigeben / zurueckziehen |
-| `M` | Ausgewaehlten Kontakt als Ziel setzen |
+| `G` | Gewählt Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
+| `M` | Ausgewählten Kontakt als Ziel setzen |
 
 ### Standardablauf
 
@@ -435,12 +435,12 @@ Torpedolauf von oben:
 |---|---|
 | `M` | Ziel setzen (aus Sonarkontakten) |
 | `Auf / Ab halten` | Torpedotiefe (10-300 m) |
-| `<- / ->` | Sonarkontakt fuer Zielwahl waehlen |
-| `T / Ctrl+Enter` | Torpedo abfeuern (ROE-Pruefung) |
-| `H` | HSP-5 starten / zurueckrufen |
+| `<- / ->` | Sonarkontakt für Zielwahl wählen |
+| `T / Ctrl+Enter` | Torpedo abfeuern (ROE-Prüfung) |
+| `H` | HSP-5 starten / zurückrufen |
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
-| `V` | Einen begrenzten geschleppten Akustik-Taeuschkoerper ausbringen |
+| `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
 | `Q / E` | Karte heraus-/hineinzoomen |
 | `K` | Kamera-Follow an/aus |
 | `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
@@ -521,12 +521,12 @@ Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem
 
 | Taste | Funktion |
 |---|---|
-| `<- / ->` | Kompartiment waehlen |
-| `Auf / Ab` | Team 1-3 auswaehlen (ohne Zuweisung) |
-| `Enter` | Gewaehltes Team dem gewaehlten Kompartiment zuweisen |
-| `Backspace` | Gewaehltes Team zurueckziehen |
+| `<- / ->` | Kompartiment wählen |
+| `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
+| `Enter` | Gewähltes Team dem gewählten Kompartiment zuweisen |
+| `Backspace` | Gewähltes Team zurückziehen |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
-| `Klick` | Raum oder Beschriftung waehlen; Enter weist das gewaehlte Team zu |
+| `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
 Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten Abteilung zu.
 
@@ -558,7 +558,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ### Anzeigen und Instrumente
 
-Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt).
+Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
 
 ```text
  NATO-Rahmenfarben (Bedienervermerk, keine Wahrheit)
@@ -579,23 +579,23 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 
 | Taste | Funktion |
 |---|---|
-| `Auf / Ab` | CIC-Track waehlen |
+| `Auf / Ab` | CIC-Track wählen |
 | `C` | OPZ-eigene Radar-/HOJ-Meldungen oder manuelle Fusion klassifizieren |
-| `F` | NATO-Zugehoerigkeit setzen |
+| `F` | NATO-Zugehörigkeit setzen |
 | `Shift+F` | OPZ-Kontaktdomainfilter wechseln |
 | `J` | Gemeinsame bedienersichtbare Track-ID eingeben |
-| `Space / L / Shift+L` | Rohmeldungen markieren und manuelle Fusion bilden/aufloesen (Shift+L) |
-| `Delete / H` | Lokal unterdruecken/wiederherstellen; H verwaltet Unterdrueckte |
-| `M` | CIC-Track an Sonar/Waffen uebergeben |
+| `Space / L / Shift+L` | Rohmeldungen markieren und manuelle Fusion bilden/auflösen (Shift+L) |
+| `Delete / H` | Lokal unterdrücken/wiederherstellen; H verwaltet Unterdrückte |
+| `M` | CIC-Track an Sonar/Waffen übergeben |
 | `Bild Auf / Ab` | Radarbereich 10/20/40/80/120 NM |
-| `<- / ->` | ASM-Track waehlen |
+| `<- / ->` | ASM-Track wählen |
 | `E / Ctrl+Enter` | ESSM abfeuern (VLS-Cell) |
-| `G` | Chaff abwerfen (8 NM-Kegel, Kuehlzeit) |
+| `G` | Chaff abwerfen (8 NM-Kegel, Kühlzeit) |
 | `R` | Seeraumradar an/aus (EMCON) |
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
-| `Backspace` | Alle markierten Meldungen abwaehlen |
-| `Enter` | Angriff nach Feind-Einstufung eines realen Kontakts bestaetigen |
+| `Backspace` | Alle markierten Meldungen abwählen |
+| `Enter` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Kamera-Follow an/aus |
 
 ### Standardablauf
@@ -667,7 +667,7 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
 
 | Taste | Funktion |
 |---|---|
-| `Auf / Ab` | HFDF-Signal auswaehlen |
+| `Auf / Ab` | HFDF-Signal auswählen |
 | `Enter` | Peilung mit eigener Position protokollieren |
 
 ### Standardablauf
@@ -789,15 +789,15 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 
 | Taste | Funktion |
 |---|---|
-| `H` | HSP-5 starten / zurueckrufen |
+| `H` | HSP-5 starten / zurückrufen |
 | `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
-| `M` | Sonarkontakt als Ziel fuer Lufttorpedo setzen |
+| `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
 | `B` | Eine Sonarboje an aktueller Position aussetzen |
 | `Shift+B` | Modus der nächsten Boje PASSIV / AKTIV |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
-| `G / Shift+G` | Tauchsonarkontakt waehlen / an OPZ freigeben oder zurueckziehen |
+| `G / Shift+G` | Tauchsonarkontakt wählen / an OPZ freigeben oder zurückziehen |
 | `Y` | Hubschrauber-Tauchsonar absenken / einholen |
 | `U / V` | Solltiefe des Tauchsonars heben / senken |
 | `A` | Aktiven Ping vom abgesenkten Tauchsonar senden |
@@ -808,8 +808,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `Akustik: <- / ->` | Hubschrauber-Horchpeilung -/+ 5 Grad |
 | `Akustik: R` | Horchpeilung auf automatisch zurücksetzen |
 | `Akustik: T` | Horchquelle: Tauchsonar / passive Bojen |
-| `Akustik: J \| , / .` | Empfangston an/aus \| Lautstaerke senken/erhoehen |
-| `Akustik: I / O` | Gain senken / erhoehen (3 dB) |
+| `Akustik: J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
+| `Akustik: I / O` | Gain senken / erhöhen (3 dB) |
 | `Akustik: N` | Notchfilter gegen Eigenantrieb |
 | `Akustik: Shift+D` | Abhörmodus Breitband / gefiltert / Überlagerung |
 | `Akustik: Shift+F` | Abhör-Frequenzband wechseln |
@@ -876,10 +876,10 @@ Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfa
 
 | Taste | Funktion |
 |---|---|
-| `Auf / Ab` | Sichtbare passive ESM-Auffassung waehlen |
+| `Auf / Ab` | Sichtbare passive ESM-Auffassung wählen |
 | `F / Shift+F / B` | Status-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
-| `C` | Radarart zuordnen und aktuelle Peilungen an OPZ freigeben; Zuordnung loeschen zieht die Freigabe zurueck |
-| `J` | Gerichteten ECM-Kanal fuer die gewaehlte Auffassung aktivieren / freigeben |
+| `C` | Radarart zuordnen und aktuelle Peilungen an OPZ freigeben; Zuordnung löschen zieht die Freigabe zurück |
+| `J` | Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben |
 | `Shift+J` | ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln |
 | `A` | Automatische ECM-Priorisierung und Softkill-Kopplung umschalten |
 | `M` | Lokalen ELOKA-Auffassungston umschalten |

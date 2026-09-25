@@ -504,11 +504,8 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                 visualization=_sonar_visualization(game, rows, sonar_refs))
 
 
-def _weapons(game, rows, target_ref, asset_refs, direct_refs):
-    tactical = [row for row in rows if row.get("_opz")
-                and row["ref"] == target_ref][:_MAP_ROWS_MAX]
-    designated = next((_weapon_observation(row) for row in tactical
-                       if row["ref"] == target_ref), None)
+def _own_weapon_assets(game, asset_refs):
+    """Commanded own weapons in the water or air (torpedoes, ASROC, Nixie)."""
     torpedoes = [dict(ref=asset_refs[("torpedo", id(item))], x=_number(item.x), y=_number(item.y),
                       depth_m=_number(item.depth), course=_number(item.course),
                       state=str(item.state)[:32])
@@ -520,6 +517,15 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                     y=_number(item.y), depth_m=_number(item.depth), course=None,
                     state=str(item.state)[:32])
                for item in sorted(game.nixies, key=lambda decoy: decoy.seq)[:8]]
+    return torpedoes, asrocs, nixies
+
+
+def _weapons(game, rows, target_ref, asset_refs, direct_refs):
+    tactical = [row for row in rows if row.get("_opz")
+                and row["ref"] == target_ref][:_MAP_ROWS_MAX]
+    designated = next((_weapon_observation(row) for row in tactical
+                       if row["ref"] == target_ref), None)
+    torpedoes, asrocs, nixies = _own_weapon_assets(game, asset_refs)
     battery = getattr(game, "player_torpedo_battery", None)
     tubes = ([] if battery is None else [dict(
         tube=item.index, state=("ready" if item.loaded_weapon_key is not None else
@@ -982,7 +988,9 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                       own_assets=dict(ship=_own_navigation(game),
                                        helicopter=_helicopter(
                                            game, rows, asset_refs, buoy_labels,
-                                           asset_only=True)["asset"])),
+                                           asset_only=True)["asset"],
+                                       weapons=[row for group in _own_weapon_assets(
+                                           game, asset_refs) for row in group])),
         "radio": _radio(game, rows, ref_by_track),
         "engine": dict(propulsion=dict(course=_number(game.ship.course),
                     target_course=_number(game.ship.target_course),

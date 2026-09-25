@@ -6,7 +6,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ## Anzeigen und Instrumente {#opz-displays}
 
-Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt).
+Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
 
 ```text
  NATO-Rahmenfarben (Bedienervermerk, keine Wahrheit)

@@ -957,7 +957,9 @@ def _direct_fire_browser_states():
                      ciws_ready=True, aa_ready=True, ciws_released=True),
         asm_observations=[asm_row],
         source_classifications=[], designated_target_ref=None,
-        own_assets=dict(ship=navigation, helicopter=helicopter_asset)))
+        own_assets=dict(ship=navigation, helicopter=helicopter_asset, weapons=[
+            dict(ref="opaque-torpedo-reference-one", x=251.0, y=249.0, depth_m=60.0,
+                 course=90.0, state="RUN")])))
     helicopter = dict(common, role="helicopter", helicopter=dict(
         asset=dict(helicopter_asset, buoy_mode="PASSIVE"), waypoint=None,
         buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,

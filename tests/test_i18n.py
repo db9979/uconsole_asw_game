@@ -131,7 +131,7 @@ def test_help_and_open_editor_literals_follow_the_current_draw_scope():
     assert intro_en.startswith("Bridge / Navigation")
     assert intro_de.startswith("Brücke / Nautik")
     assert controls_en[0][1] == "Rudder: change target course"
-    assert controls_de[0][1] == "Ruder: Zielkurs aendern"
+    assert controls_de[0][1] == "Ruder: Zielkurs ändern"
 
     with translation_scope(Translator("de").t):
         from src.core.i18n import localize
@@ -267,3 +267,11 @@ def test_game_does_not_send_composed_text_to_exact_localization():
                 node.args[0], (ast.JoinedStr, ast.BinOp)):
             violations.append(f"{path}:{node.lineno}: {ast.unparse(node.args[0])}")
     assert not violations, "composed exact-localization input:\n" + "\n".join(violations)
+
+
+def test_legacy_ascii_german_literals_resolve_to_umlaut_catalog():
+    # The German catalog uses real umlauts; older code literals spelled them
+    # as ae/oe/ue/ss and must still find their key in both languages.
+    assert "Zurück zum Spiel" in Translator("de").catalog.values()
+    assert Translator("de").t("Zurueck zum Spiel") == "Zurück zum Spiel"
+    assert Translator("en").t("Zurueck zum Spiel") == "Return to game"

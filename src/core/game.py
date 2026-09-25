@@ -27,7 +27,7 @@ from src.core.commands import (MAP_STATIONS, STATION_PAGES, event_feed_heading,
                                station_page_step, toggle_tas)
 from src.core.debuglog import append_bounded_log
 from src.core.i18n import (Translator, display_value, localized, localize,
-                           message, raw_text)
+                           message, raw_text, translation_scope)
 from src.core.preferences import Preferences, save_preferences
 from src.network.adsb_client import test_connection as adsb_test_connection
 from src.network.ais_client import test_connection as ais_test_connection
@@ -11347,7 +11347,11 @@ class Game:
                          config.COLOR_TEXT_DIM, size=16, align="center")
 
     def draw(self) -> None:
-        with layout.bottom_panel_regions(self.bottom_panel_mode()):
+        # One translation scope for the whole frame: text drawn directly here
+        # (flash banner, overlays) must follow the game language, not the
+        # process-wide default translator.
+        with layout.bottom_panel_regions(self.bottom_panel_mode()), \
+                translation_scope(self.tr):
             self._draw()
 
     def _draw(self) -> None:

@@ -6,7 +6,7 @@ Operations (OPZ / CIC) builds the tactical picture above the water: surface and 
 
 ## Displays and instruments {#opz-displays}
 
-Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `PgUp`/`PgDn`), independent of the chart zoom (wheel, down to 5 NM radius; drag pans; `K` follows).
+Page 1 is a full-height free chart with all published tracks; page 2 is the target page for the selected track. The ship-centred radar picture uses its own range scale (10/20/40/80/120 NM, `PgUp`/`PgDn`), independent of the chart zoom (wheel, down to 5 NM radius; drag pans; `K` follows). Own units come from the datalink, not from sensors: the ship, the airborne helicopter ("HSP-5 DL") and every own weapon under way, i.e. torpedoes from ship, helicopter or ASROC (`T<n>`), ASROC in flight and ESSM, each with a friendly symbol and a heading tick.
 
 ```text
  NATO frame colours (operator annotation, not truth)

@@ -207,3 +207,16 @@ def test_remote_commands_validate_strictly_and_apply(game):
         game.plot_add("mark", 1.0, 1.0)
     assert handlers["plot_add"](game, {"shape": "mark", "x": 1.0, "y": 1.0,
                                        "label": ""}, None) == "active_limit"
+
+
+@pytest.mark.parametrize("station", [Station.BRIDGE, Station.OPZ, Station.WEAPONS])
+def test_flash_banner_stays_in_the_top_bar_beside_the_status_line(game, station):
+    game.station = station
+    game.toggle_plot_mode()
+    game.draw()
+    box = game.flash_banner_rect()
+    assert box.bottom <= config.TOP_BAR_H and box.x >= game._top_status_right
+    with layout.capture_text() as texts:
+        game.draw()
+    banner = [row for row in texts if row["rect"].colliderect(box)]
+    assert banner and all(box.contains(row["rect"]) for row in banner)

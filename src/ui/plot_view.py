@@ -146,9 +146,13 @@ def _draw_cursor(surface, game, view, chart) -> None:
     else:
         ref = (game.ship.x, game.ship.y)
     brg, dist = plot.bearing_distance(ref[0], ref[1], cx, cy)
-    _label(surface, game, message("plot.cursor", bearing=f"{brg:03.0f}",
-                                  range=f"{dist:.1f}"), (px, py + 26), chart)
+    # Hint bar at the top of the chart: tool keys left, cursor readout right,
+    # so the readout never lands on a chart label.
     hint = pygame.Rect(chart.x + 2, chart.y + 24, chart.w - 4, 20)
     pygame.draw.rect(surface, config.COLOR_PANEL_BG, hint)
+    readout = message("plot.cursor", bearing=f"{brg:03.0f}", range=f"{dist:.1f}")
+    readout_w = min(hint.w // 3, layout.font(layout.scaled_size(13)).size(localize(readout))[0] + 8)
+    layout.blit_line(surface, readout, (hint.right - readout_w - 2, hint.y, readout_w, hint.h),
+                     color, size=13, align="right")
     layout.blit_line(surface, message("plot.hint", tool=message(TOOL_KEYS[game.plot_tool])),
-                     hint.inflate(-4, 0), color, size=13)
+                     (hint.x + 2, hint.y, hint.w - readout_w - 8, hint.h), color, size=13)

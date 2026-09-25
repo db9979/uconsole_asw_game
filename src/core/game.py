@@ -904,6 +904,37 @@ class Game:
         self._reset_map_view()
         return True
 
+    FLASH_TEXT_SIZE = 18
+    FLASH_MAX_LINES = 2
+
+    def flash_banner_rect(self) -> pygame.Rect:
+        """Opaque, text-sized banner in the free right part of the top bar.
+
+        It starts right of the status line, so it never prints over a map,
+        station tabs or chart labels; only a message too long for one line
+        grows downward (at most two lines).
+        """
+        face = layout.font(layout.scaled_size(self.FLASH_TEXT_SIZE))
+        left = max(config.SCREEN_W // 2,
+                   getattr(self, "_top_status_right", 0) + 16)
+        max_w = config.SCREEN_W - 6 - left
+        lines = layout.wrap_text(localize(self.msg), face, max_w - 20)
+        lines = lines[:self.FLASH_MAX_LINES] or [""]
+        width = min(max_w, max(face.size(line)[0] for line in lines) + 20)
+        height = max(config.TOP_BAR_H - 4,
+                     len(lines) * layout._line_height(face) + 6)
+        return pygame.Rect(config.SCREEN_W - 6 - width, 2, width, height)
+
+    def _draw_flash_banner(self, surface) -> None:
+        # The banner covers what lies beneath it instead of printing over
+        # the map and the station tabs.
+        box = self.flash_banner_rect()
+        pygame.draw.rect(surface, config.COLOR_OVERLAY_BG, box)
+        pygame.draw.rect(surface, config.COLOR_WARN, box, 1)
+        layout.blit_block(surface, localize(self.msg), box.x + 10, box.y + 3,
+                          box.w - 20, box.h - 6, config.COLOR_WARN,
+                          size=self.FLASH_TEXT_SIZE, align="center", valign="center")
+
     def flash(self, text: object, seconds: float = 3.0) -> None:
         self.msg = text
         self.msg_until = self._t + seconds
@@ -11319,8 +11350,7 @@ class Game:
             self.commander.draw(self)
         self.commander.draw_confirm(self)
         if self.msg and self._t < self.msg_until:
-            layout.blit_block(s, localize(self.msg), 22, 62, config.SCREEN_W - 44, 76,
-                              config.COLOR_WARN, size=28, align="center")
+            self._draw_flash_banner(s)
         if (not self.in_menu and not self.splash_active and self.editor is None
                 and not self.simlog_view_open and not self._station_overlay_open
                 and self.tooltips_enabled and not eco
@@ -11373,6 +11403,8 @@ class Game:
         layout.blit_line(s, txt, (10, 4, config.SCREEN_W - 20,
                                   config.TOP_BAR_H - 8),
                          config.COLOR_TEXT, size=18)
+        self._top_status_right = 10 + layout.font(layout.scaled_size(18)).size(
+            localize(txt))[0]
 
     def draw_bottom_panel(self) -> None:
         """Event feed and telemetry: docked band or one status ticker."""

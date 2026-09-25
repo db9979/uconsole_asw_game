@@ -68,7 +68,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 
 ## Wetter- & Sonar-Analyse (Taste 0) {#ref-weather-station}
 
-Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; die Simulation läuft weiter). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü.
+Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; die Simulation läuft weiter). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü. Über dem Meeresprofil zeigt die Maus Tiefe und Schallgeschwindigkeit, über dem Schallweg-Schnitt Entfernung, Tiefe und Schallgeschwindigkeit und ob der Punkt in einer Schattenzone oder Konvergenzzone liegt.
 
 - **Umwelt:** Uhrzeit, Tageslicht (Tag, bürgerliche oder nautische Dämmerung, Nacht), Mondphase, Wetter und Niederschlag, Sicht, Wind mit Böen und Beaufort, Seegang, Barometer mit 3-Stunden-Tendenz (steigend, stabil, fallend, rasch fallend), Luft- und Wassertemperatur, Wolkenuntergrenze und Vereisung. Rasch fallender Luftdruck unter etwa 1004 hPa löst eine Sturmwarnung aus. Das Wetter ändert sich höchstens um eine Seegangsstufe pro Stunde, deshalb bewegt sich das Barometer schneller als ein echtes.
 - **Wettereinflüsse:** Sonne (starke Sprungschicht), Wind (tiefere Deckschicht) und Regen oder Schnee (süßeres Oberflächenwasser, Regenrauschen) leuchten, solange sie wirken.

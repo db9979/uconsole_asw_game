@@ -13,6 +13,7 @@ from src.core.i18n import (display_message, display_value, localized, localize,
 from src.sonar import analysis_tools, tma_operator
 from src.ui import layout
 from src.ui import observations
+from src.ui import profile_cursor
 
 
 NAVY = (6, 13, 25)
@@ -1375,6 +1376,16 @@ def _draw_environment(game, panel):
               (plot.x + 8, ty - 20, 210, 18), AMBER, 12)
         _text(screen, message("sonar.line.sound_speed", low=f"{lo:.1f}", high=f"{hi:.1f}"),
               (plot.x, plot.bottom + 5, plot.w, 18), DIM, 12)
+        mouse = profile_cursor.pointer(game)
+        if mouse is not None and plot.collidepoint(mouse):
+            depth = (mouse[1] - plot.y) / max(1, plot.h - 1) * max_depth
+            speed = profile_cursor.speed_at(depths, speeds, depth)
+            key = ("sonar.cursor.depth_above" if depth < thermo
+                   else "sonar.cursor.depth_below")
+            profile_cursor.draw_crosshair(screen, plot, y=mouse[1])
+            profile_cursor.draw_label(screen, message(key, depth=f"{depth:.0f}",
+                                                      speed=f"{speed:.1f}"),
+                                      mouse, plot)
     else:
         _text(screen, "sonar.no_profile",
               (plot.x, plot.centery - 20, plot.w, 22), AMBER, 16, "center")

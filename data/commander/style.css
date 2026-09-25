@@ -103,6 +103,9 @@ body.workstation-mode .visual-heading { padding-bottom: .2rem; }
 body.workstation-mode .visual-panel:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 body.workstation-mode #map-visual:not([hidden]) { flex-grow: 2.2; }
 body.workstation-mode .role-canvas { flex: 1; height: auto; min-height: 6rem; }
+/* A canvas with height:auto in a grid takes its bitmap height (CSS size x
+   devicePixelRatio) and grows past its cell on every redraw; fill the row. */
+body.workstation-mode .sonar-active-plots > canvas { height: 100%; }
 body.workstation-mode .role-map-frame { flex: 1; height: auto; min-height: 6rem; }
 body.workstation-mode .spectrum-canvas { flex: 0 0 5rem; min-height: 5rem; }
 body.workstation-mode .sonar-band-plots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 0 0 6rem; gap: .3rem; min-height: 0; }
@@ -181,6 +184,8 @@ body[data-sonar-scope][data-remote-role="assigned"] .sonar-plots > section:not([
   body.workstation-mode #detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   body.workstation-mode .role-canvas { height: 22rem; }
   body.workstation-mode .track-workstation .role-canvas { flex: none; height: 22rem; }
+  body.workstation-mode .sonar-active-plots { grid-template-rows: auto; }
+  body.workstation-mode .sonar-active-plots > canvas { height: 22rem; }
   body.workstation-mode .role-map-frame, body.workstation-mode .track-workstation .role-map-frame { flex: none; height: 22rem; }
   body.workstation-mode .spectrum-canvas, body.workstation-mode .track-workstation .spectrum-canvas { flex: none; height: 8rem; min-height: 8rem; }
   body.workstation-mode .sonar-plots[data-layout="overview"] { display: flex; flex-direction: column; }
@@ -429,7 +434,7 @@ ul.visual-equivalent { padding-left: 1.8rem; }
 .sonar-display-controls select, .sonar-display-controls button { min-height: 1.9rem; padding: .15rem .35rem; border-radius: 0; font-size: var(--font-xs); }
 .sonar-display-controls input[type="range"], .sonar-audition-controls input[type="range"] { accent-color: var(--accent); }
 .sonar-cursor-readout { overflow: hidden; text-overflow: ellipsis; }
-.sonar-active-plots { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); flex: 1; min-height: 0; gap: .35rem; }
+.sonar-active-plots { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; gap: .35rem; }
 .sonar-active-plots > canvas { min-width: 0; min-height: 6rem; }
 .sonar-plots > section { min-width: 0; }
 .sonar-band-plots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; margin-top: .35rem; }

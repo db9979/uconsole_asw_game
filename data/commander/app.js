@@ -228,7 +228,7 @@
   let sonarAudioGeneration = 0;
   const detachedSonarScope = new URLSearchParams(location.search).get("scope");
   const sonarScopeNames = new Set(["broadband", "lofar", "demon", "tma", "environment", "active"]);
-  const sonarDisplay = {black: 0, contrast: 2.5, history: 300, palette: "green", demonCursor: null};
+  const sonarDisplay = {black: 0, contrast: 2.5, history: 300, palette: "green", demonCursor: null, btCursorDepth: null};
   const sonarHistory = {context: null, broadband: new Map(), lofar: new Map(), demon: new Map()};
   const sonarStream = {socket: null, connected: false, retry: null, generation: 0,
     sequence: -1, lofarSpectrum: [], demonSpectrum: []};
@@ -1239,14 +1239,59 @@
     drawWeatherProfile(p);
   }
 
+  // Sound speed at a depth, linearly interpolated from a measured profile.
+  function profileSpeedAt(depths, speeds, depth) {
+    if (!depths.length) return null;
+    if (depth <= depths[0]) return speeds[0];
+    for (let index = 1; index < depths.length; index++) {
+      if (depth <= depths[index]) {
+        const upper = depths[index - 1], lower = depths[index];
+        const share = lower > upper ? (depth - upper) / (lower - upper) : 0;
+        return speeds[index - 1] + share * (speeds[index] - speeds[index - 1]);
+      }
+    }
+    return speeds[speeds.length - 1];
+  }
+
+  // Pointer position over the weather profile (CSS px), or null.
+  let weatherCursor = null;
+
+  function weatherProfileGeometry(p, width, height) {
+    const depthMax = Math.max(1, p.depths_m[p.depths_m.length - 1]);
+    const top = 18, bottom = height - 18, leftW = Math.max(90, width * .26);
+    const sx = leftW + 6, sw = width - sx - 4;
+    return {depthMax, top, bottom, leftW, sx, sw};
+  }
+
+  function weatherCursorReading(p, width, height) {
+    if (!weatherCursor || !p) return null;
+    const {depthMax, top, bottom, leftW, sx, sw} = weatherProfileGeometry(p, width, height);
+    const {x, y} = weatherCursor;
+    if (y < top || y > bottom || x < 4 || x > width - 4) return null;
+    const depth = (y - top) / (bottom - top) * depthMax;
+    const speed = profileSpeedAt(p.depths_m, p.speeds_m_s, depth);
+    if (x <= leftW) {
+      return {x: null, y, text: t("weather_cursor_depth", {depth: number(depth, 0), speed: number(speed, 1)})};
+    }
+    if (x < sx) return null;
+    const range = (x - sx) / sw * p.range_nm;
+    const parts = [t("weather_cursor_section", {range: number(range, 1), depth: number(depth, 0), speed: number(speed, 1)})];
+    const column = Math.min(p.shadow.length - 1, Math.floor(range / p.range_nm * p.shadow.length));
+    let row = -1;
+    for (let index = 0; index + 1 < p.depth_edges_m.length; index++)
+      if (depth >= p.depth_edges_m[index] && depth < p.depth_edges_m[index + 1]) row = index;
+    if (column >= 0 && row >= 0 && p.shadow[column]?.[row]) parts.push(t("weather_cursor_shadow"));
+    if (p.cz_bands_nm.some(([low, high]) => range >= low && range <= high)) parts.push(t("weather_cursor_cz"));
+    return {x, y, text: parts.join(" · ")};
+  }
+
   function drawWeatherProfile(p) {
     const plot = visualContext("weather-profile");
     if (!plot) return;
     if (p === null) { drawEmpty(plot, "weather_profile_none"); return; }
     const {context, width, height} = plot;
     const colors = palette();
-    const depthMax = Math.max(1, p.depths_m[p.depths_m.length - 1]);
-    const top = 18, bottom = height - 18, leftW = Math.max(90, width * .26);
+    const {depthMax, top, bottom, leftW} = weatherProfileGeometry(p, width, height);
     const y = (depth) => top + Math.min(1, Math.max(0, depth / depthMax)) * (bottom - top);
     const low = Math.min(...p.speeds_m_s), high = Math.max(...p.speeds_m_s, low + 1);
     context.strokeStyle = colors.line;
@@ -1288,6 +1333,19 @@
     context.fillText(`${number(depthMax, 0)} m · ${number(low, 0)}-${number(high, 0)} m/s`, 8, height - 4);
     context.textAlign = "right";
     context.fillText(`${number(p.range_nm, 0)} NM`, width - 6, height - 4);
+    const reading = weatherCursorReading(p, width, height);
+    if (reading) {
+      context.strokeStyle = colors.accent; context.setLineDash([2, 3]);
+      context.beginPath(); context.moveTo(4, reading.y); context.lineTo(width - 4, reading.y); context.stroke();
+      if (reading.x !== null) { context.beginPath(); context.moveTo(reading.x, top); context.lineTo(reading.x, bottom); context.stroke(); }
+      context.setLineDash([]);
+      const label = reading.text, labelWidth = context.measureText(label).width + 10;
+      const lx = Math.min(width - labelWidth - 4, Math.max(4, (reading.x ?? leftW / 2) + 8));
+      const ly = reading.y > top + 22 ? reading.y - 18 : reading.y + 6;
+      context.fillStyle = colors.panel || "#07151c"; context.fillRect(lx, ly, labelWidth, 16);
+      context.fillStyle = colors.accent; context.textAlign = "left";
+      context.fillText(label, lx + 5, ly + 12);
+    }
   }
 
   function plotAxes(plot, xmax, ymax, xunit, yunit, xorigin = 0, reverseY = false) {
@@ -1771,12 +1829,45 @@
         bt.context.fillText(`${number(min, 0)}–${number(max, 0)} m/s`, bt.width / 2, -7);
         if (finite(visual.bt.thermocline_m)) { const y = visual.bt.thermocline_m / depth * bt.height; bt.context.strokeStyle = palette().amber; bt.context.setLineDash([4, 4]); bt.context.beginPath(); bt.context.moveTo(0, y); bt.context.lineTo(bt.width, y); bt.context.stroke(); bt.context.setLineDash([]); }
         bt.context.strokeStyle = palette().blue; bt.context.beginPath();
+        const speedX = (speed) => 12 + (speed - min) / (max - min) * (bt.width - 24);
         visual.bt.depths_m.forEach((value, index) => {
-          const x = 12 + (visual.bt.speeds_m_s[index] - min) / (max - min) * (bt.width - 24);
+          const x = speedX(visual.bt.speeds_m_s[index]);
           const y = value / depth * bt.height;
           index ? bt.context.lineTo(x, y) : bt.context.moveTo(x, y);
         });
         bt.context.stroke();
+        // Labelled reference depths: layer, seabed and the sound-speed minimum.
+        bt.context.textAlign = "right";
+        if (finite(visual.bt.thermocline_m)) {
+          bt.context.fillStyle = palette().amber;
+          bt.context.fillText(t("sonar_bt_layer", {depth: number(visual.bt.thermocline_m, 0)}),
+            bt.width - 4, Math.max(12, visual.bt.thermocline_m / depth * bt.height - 4));
+        }
+        if (finite(visual.bt.water_depth_m) && visual.bt.water_depth_m <= depth) {
+          const y = visual.bt.water_depth_m / depth * bt.height;
+          bt.context.strokeStyle = palette().muted; bt.context.beginPath(); bt.context.moveTo(0, y); bt.context.lineTo(bt.width, y); bt.context.stroke();
+          bt.context.fillStyle = palette().muted;
+          bt.context.fillText(t("sonar_bt_bottom", {depth: number(visual.bt.water_depth_m, 0)}), bt.width - 4, Math.max(12, y - 4));
+        }
+        const slowest = visual.bt.speeds_m_s.indexOf(min);
+        if (slowest >= 0) {
+          const x = speedX(min), y = visual.bt.depths_m[slowest] / depth * bt.height;
+          bt.context.fillStyle = palette().blue; bt.context.beginPath(); bt.context.arc(x, y, 3.5, 0, Math.PI * 2); bt.context.fill();
+          bt.context.textAlign = x < bt.width / 2 ? "left" : "right";
+          bt.context.fillText(t("sonar_bt_minimum", {speed: number(min, 0), depth: number(visual.bt.depths_m[slowest], 0)}),
+            x + (x < bt.width / 2 ? 8 : -8), Math.min(bt.height - 4, Math.max(12, y + 4)));
+        }
+        if (finite(sonarDisplay.btCursorDepth) && sonarDisplay.btCursorDepth <= depth) {
+          const y = sonarDisplay.btCursorDepth / depth * bt.height;
+          bt.context.strokeStyle = palette().accent; bt.context.setLineDash([2, 3]);
+          bt.context.beginPath(); bt.context.moveTo(0, y); bt.context.lineTo(bt.width, y); bt.context.stroke();
+          bt.context.setLineDash([]);
+          if (sonarDisplay.btCursorText) {
+            bt.context.fillStyle = palette().accent; bt.context.textAlign = "left";
+            bt.context.fillText(sonarDisplay.btCursorText, 4, y > 16 ? y - 4 : y + 13);
+          }
+        }
+        bt.context.textAlign = "center";
       }
     }
     const active = visualContext("sonar-active");
@@ -5658,6 +5749,55 @@
     const x = (event.clientX - bounds.left) * canvas.clientWidth / Math.max(1, bounds.width);
     return x < area.left || x > area.left + area.width ? null : (x - area.left) / area.width * maximum;
   };
+  // Environment (BT): the cursor depth reads the measured profile.
+  const btReadout = (event) => {
+    const canvas = $("sonar-environment"), bt = v2State?.sonar?.visualization?.bt;
+    if (!bt || !bt.depths_m.length) return null;
+    const bounds = canvas.getBoundingClientRect();
+    const area = plotArea(canvas.clientWidth, canvas.clientHeight);
+    const y = (event.clientY - bounds.top) * canvas.clientHeight / Math.max(1, bounds.height);
+    if (y < area.top || y > area.top + area.height) return null;
+    const maximum = Math.max(1, ...bt.depths_m);
+    const depth = (y - area.top) / area.height * maximum;
+    const speed = profileSpeedAt(bt.depths_m, bt.speeds_m_s, depth);
+    const key = !finite(bt.thermocline_m) ? "sonar_cursor_depth"
+      : depth < bt.thermocline_m ? "sonar_cursor_depth_above" : "sonar_cursor_depth_below";
+    return {depth, text: t(key, {depth: number(depth, 0), speed: number(speed, 1)})};
+  };
+  let btRedrawQueued = false;
+  const redrawBt = () => {
+    if (btRedrawQueued) return;
+    btRedrawQueued = true;
+    requestAnimationFrame(() => { btRedrawQueued = false; if (v2State?.sonar) drawSonarVisuals(); });
+  };
+  $("sonar-environment").addEventListener("pointermove", (event) => {
+    const reading = btReadout(event);
+    sonarDisplay.btCursorDepth = reading ? reading.depth : null;
+    sonarDisplay.btCursorText = reading ? reading.text : "";
+    if (reading) $("sonar-cursor-readout").value = reading.text;
+    redrawBt();
+  });
+  $("sonar-environment").addEventListener("pointerleave", () => {
+    sonarDisplay.btCursorDepth = null;
+    redrawBt();
+  });
+  let weatherRedrawQueued = false;
+  const redrawWeatherProfile = () => {
+    if (weatherRedrawQueued) return;
+    weatherRedrawQueued = true;
+    requestAnimationFrame(() => {
+      weatherRedrawQueued = false;
+      const profile = v2State?.weather_station?.profile;
+      if ($("weather-dialog").open && profile !== undefined) drawWeatherProfile(profile);
+    });
+  };
+  $("weather-profile").addEventListener("pointermove", (event) => {
+    const canvas = $("weather-profile"), bounds = canvas.getBoundingClientRect();
+    weatherCursor = {x: (event.clientX - bounds.left) * canvas.clientWidth / Math.max(1, bounds.width),
+                     y: (event.clientY - bounds.top) * canvas.clientHeight / Math.max(1, bounds.height)};
+    redrawWeatherProfile();
+  });
+  $("weather-profile").addEventListener("pointerleave", () => { weatherCursor = null; redrawWeatherProfile(); });
   $("sonar-lofar").addEventListener("pointermove", (event) => {
     const hz = sonarFrequencyAt($("sonar-lofar"), event, 300);
     const visual = v2State?.sonar?.visualization?.lofar;

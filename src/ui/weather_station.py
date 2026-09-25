@@ -15,6 +15,7 @@ import pygame
 from src.core import config
 from src.core.i18n import localize, localized, message
 from src.ui import layout
+from src.ui import profile_cursor
 
 TREND_ARROWS = {"rising": "^", "steady": "=", "falling": "v", "falling_rapidly": "vv"}
 # Theme attribute names, resolved at draw time so high contrast applies.
@@ -121,7 +122,7 @@ def _flight(screen, rect, data) -> None:
               config.COLOR_WARN if warn.get(index) else config.COLOR_TEXT, size=TEXT)
 
 
-def _profile(screen, rect, data) -> None:
+def _profile(screen, rect, data, mouse=None) -> None:
     x, y, w, h = layout.box(screen, rect, "weather.box.profile")
     p = data["profile"]
     if p is None:
@@ -202,6 +203,43 @@ def _profile(screen, rect, data) -> None:
     dip = p["dip_relative_to_layer"]
     footer = ("weather.shadow_hint" if dip is None else "weather.dip." + dip)
     _line(screen, footer, x, y + h - LINE_H, w, config.COLOR_TEXT_DIM)
+    _profile_cursor(screen, p, mouse, pygame.Rect(x, top, left_w, plot_h),
+                    pygame.Rect(sx, top, sw, plot_h), depth_max)
+
+
+def _profile_cursor(screen, p, mouse, left, section, depth_max) -> None:
+    """Depth (and range) readout under the pointer; display only."""
+    if mouse is None:
+        return
+    inside_left, inside_section = left.collidepoint(mouse), section.collidepoint(mouse)
+    if not (inside_left or inside_section):
+        return
+    depth = (mouse[1] - left.y) / max(1, left.h) * depth_max
+    speed = profile_cursor.speed_at(p["depths_m"], p["speeds_m_s"], depth)
+    whole = left.union(section)
+    if inside_left:
+        profile_cursor.draw_crosshair(screen, whole, y=mouse[1])
+        profile_cursor.draw_label(screen, message("weather.cursor.depth", depth=_fmt(depth),
+                                                  speed=_fmt(speed, 1)), mouse, whole)
+        return
+    range_nm = (mouse[0] - section.x) / max(1, section.w) * p["range_nm"]
+    columns = len(p["shadow"])
+    column = min(columns - 1, int(range_nm / p["range_nm"] * columns)) if columns else -1
+    edges = p["depth_edges_m"]
+    row = next((index for index in range(len(edges) - 1)
+                if edges[index] <= depth < edges[index + 1]), -1)
+    notes = []
+    if column >= 0 and row >= 0 and p["shadow"][column][row]:
+        notes.append(message("weather.cursor.shadow"))
+    if any(low <= range_nm <= high for low, high in p["cz_bands_nm"]):
+        notes.append(message("weather.cursor.cz"))
+    text = message("weather.cursor.section", range=_fmt(range_nm, 1), depth=_fmt(depth),
+                   speed=_fmt(speed, 1))
+    for note in notes:
+        text = message("weather.cursor.with_note", text=text, note=note)
+    profile_cursor.draw_crosshair(screen, whole, y=mouse[1])
+    profile_cursor.draw_crosshair(screen, section, x=mouse[0])
+    profile_cursor.draw_label(screen, text, mouse, whole)
 
 
 @localized
@@ -219,4 +257,5 @@ def draw_weather_station(game, tr=None) -> None:
     _flight(screen, (x + left_w + 10, y, width - left_w - 10, top_h), data)
     _effects(screen, (x + 8, y + top_h + 6, width - 16, LINE_H), data)
     profile_y = y + top_h + LINE_H + 12
-    _profile(screen, (x, profile_y, width, r[1] + r[3] - profile_y - 6), data)
+    _profile(screen, (x, profile_y, width, r[1] + r[3] - profile_y - 6), data,
+             profile_cursor.pointer(game))

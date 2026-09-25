@@ -1,3 +1,4 @@
+from dataclasses import replace
 """Protocol-v2 role projection boundaries and exact envelopes."""
 
 from copy import deepcopy
@@ -147,6 +148,12 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
     assert sonar["tow"]["speed_max_kn"] == config.SONAR_TOWED_HANDLING_MAX_KN
     assert set(sonar["bt"]) == {"ready", "cooldown_s", "thermocline_m"}
     assert set(sonar["ping"]) == {"ready", "cooldown_s"}
+    # Detected peaks are a training aid: off by default, sent only in training.
+    assert sonar["harmonic_candidates_hz"] == []
+    assert sonar["tools"]["assist"] is False
+    game.preferences = replace(game.preferences, operator_assist="training")
+    bridge.pump(game, server, now=11.0)
+    sonar = server.v2_states["sonar"]["sonar"]["settings"]
     assert sonar["harmonic_candidates_hz"] == [12.5, 25.0]
     assert server.v2_states["engine"]["engine"]["controls"] == {
         "orders": ["ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"],
@@ -197,7 +204,7 @@ def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
     assert set(visual["broadband"]) == {
         "bearing_start_deg", "bearing_step_deg", "history"}
     assert set(visual["lofar"]) == {"frequency_min_hz", "frequency_max_hz",
-        "bin_frequencies_hz", "history", "spectrum", "held"}
+        "bin_frequencies_hz", "history", "spectrum", "held", "vernier"}
     assert set(visual["demon"]) == {"frequency_min_hz", "frequency_max_hz",
         "bin_step_hz", "spectrum", "history", "analysis"}
     assert set(visual["receiver"]) == {"array", "listen_bearing",

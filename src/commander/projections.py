@@ -9,6 +9,7 @@ from copy import deepcopy
 import math
 
 from src.core import config
+from src.sonar import analysis_tools
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.commander.server import CHART_MAX_BYTES, STATE_MAX_BYTES, STATIONS
@@ -259,12 +260,29 @@ def _sonar_visualization(game, rows, sonar_refs):
         if age is not None and _number(bearing) is not None and bins:
             lofar.append(dict(age_s=age, bearing=_number(bearing), bins=bins))
     held = bool(sonar.peak_hold and sonar.peak_spectrum)
+    tools = game.sonar_tools
+    columns = list(getattr(sonar, "integration_columns", ()))
+    live = (analysis_tools.integrate([column[0] for column in columns],
+                                     tools.integration_s)
+            if columns else receiver.spectrum)
     spectrum = [round(value, 5) for value in sonar.process_lofar_column(
-        _series(sonar.peak_spectrum if held else receiver.spectrum,
+        _series(sonar.peak_spectrum if held else list(live),
                 config.LOFAR_BINS), game.ship)]
+    demon_spectrum = (analysis_tools.integrate([column[2] for column in columns],
+                                               tools.integration_s)
+                      if columns else receiver.demon_spectrum)
+    vernier = None
+    if tools.vernier and columns:
+        low, high = analysis_tools.vernier_window(tools.lofar_cursor_hz)
+        native = analysis_tools.integrate([column[1] for column in columns],
+                                          tools.integration_s)
+        first, last = int(round(low * 2)), int(round(high * 2))
+        vernier = dict(low_hz=_number(low), high_hz=_number(high), step_hz=0.5,
+                       bins=[round(float(value), 5) for value in native[first:last + 1]])
 
     analysis = None
-    if isinstance(sonar.demon_analysis, dict):
+    # Automatic modulation analysis is a training aid only.
+    if isinstance(sonar.demon_analysis, dict) and game.operator_assist():
         data = sonar.demon_analysis
         hypotheses = []
         for item in list(data.get("harmonic_rpm_hypotheses", ()))[:20]:
@@ -354,9 +372,9 @@ def _sonar_visualization(game, rows, sonar_refs):
         lofar=dict(frequency_min_hz=0.0, frequency_max_hz=config.LOFAR_FMAX_HZ,
                    bin_frequencies_hz=[config.lofar_bin_freq(i)
                                        for i in range(config.LOFAR_BINS)],
-                   history=lofar, spectrum=spectrum, held=held),
+                   history=lofar, spectrum=spectrum, held=held, vernier=vernier),
         demon=dict(frequency_min_hz=1.0, frequency_max_hz=80.0,
-                   bin_step_hz=1.0, spectrum=_series(receiver.demon_spectrum, 80),
+                   bin_step_hz=1.0, spectrum=_series(list(demon_spectrum), 80),
                    history=demon_history, analysis=analysis),
         tma=tma, bt=bt_data, active_echoes=echoes,
         receiver=dict(array=str(sonar._receiver_mode)[:16],
@@ -407,8 +425,19 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                               notch=bool(game.sonar.notch_enabled),
                               peak_hold=bool(game.sonar.peak_hold),
                               harmonic_hz=_number(game.sonar_harmonic_hz),
-                              harmonic_candidates_hz=[_number(value) for value in
-                                                      game.sonar_harmonic_candidates()],
+                              harmonic_candidates_hz=([_number(value) for value in
+                                                       game.sonar_harmonic_candidates()]
+                                                      if game.operator_assist() else []),
+                              tools=dict(
+                                  assist=bool(game.operator_assist()),
+                                  lofar_cursor_hz=_number(game.sonar_tools.lofar_cursor_hz),
+                                  demon_cursor_hz=_number(game.sonar_tools.demon_cursor_hz),
+                                  integration_s=int(game.sonar_tools.integration_s),
+                                  vernier=bool(game.sonar_tools.vernier),
+                                  shaft_hz=_number(game.sonar_tools.shaft_hz),
+                                  blade_hz=_number(game.sonar_tools.blade_hz),
+                                  operator_notch_hz=_number(
+                                      getattr(game.sonar, "operator_notch_hz", None))),
                               audio_enabled=bool(game.sonar_audio_enabled),
                               volume=_number(game.sonar_volume),
                               quiet_mode=bool(game.ship.quiet_mode)),
@@ -732,12 +761,15 @@ def _eloka(game, rows, esm_refs, candidate_refs):
         age = _age(game.sim_t, track.last_seen)
         if age is None or age > game.esm_picture.stale_s:
             continue
+        # Scores and catalog-derived radar type/threat/range are a training
+        # aid; with operator assistance off the browser gets the unranked
+        # library range lookup and raw parameters only (as the uConsole).
         candidates = [dict(ref=candidate_refs[(track.track_key, item.emitter_key)],
                             name=(game.eloka_emitter_name(item.emitter_key) or "")[:128],
-                            score=_number(item.score))
-                      for item in game.eloka_candidates(track)[:5]]
+                            score=None if item.score is None else _number(item.score))
+                      for item in game.eloka_display_candidates(track)[:32]]
         annotation = game.eloka_annotation_name(track.track_key)
-        analysis = game.eloka_analysis(track)
+        analysis = game.eloka_display_analysis(track)
         channel = next((item for item in game.ecm_jammer.channels
                         if item.track_key == track.track_key), None)
         threat = "unknown" if analysis is None else analysis.threat_level
@@ -775,7 +807,7 @@ def _eloka(game, rows, esm_refs, candidate_refs):
             ambiguous=False if analysis is None else analysis.ambiguous,
             synthetic_assumption=bool(track.synthetic_assumption),
             signal_db=_number(track.signal_db),
-            range_estimate_nm=_number(game.eloka_range_estimate(track)),
+            range_estimate_nm=_number(game.eloka_display_range(track)),
             scan_period_s=_number(track.revisit_s) if track.revisit_s > 0.0 else None,
             auto_jamming=bool(game.ecm_jammer.auto_enabled),
             jamming=channel is not None,

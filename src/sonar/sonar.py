@@ -7,6 +7,7 @@ Aktiv: Ping -> exakte Distanz + Tiefe (verrät Position).
 
 import math
 import random
+from collections import deque
 from enum import Enum
 
 import numpy as np
@@ -601,6 +602,8 @@ class SonarSystem:
         self.band_low_hz = 0.0
         self.band_high_hz = config.LOFAR_FMAX_HZ
         self.notch_enabled = False
+        # Operator notch at a chosen frequency (display and audio, transient).
+        self.operator_notch_hz = None
         self.peak_hold = False
         self.focus_locked = False
         self.tma_enabled = True
@@ -614,6 +617,9 @@ class SonarSystem:
         self._audition_ola_out = None
         self._audition_previous_source = None
         self.receiver = AcousticReceiver(seed)
+        # Operator integration buffer (display only, transient like the
+        # receiver): (LOFAR bins, native 0.5 Hz spectrum, DEMON spectrum).
+        self.integration_columns = deque(maxlen=256)
         self.broadband_history = []
         self.history_times = []
         self.broadband_long_history = []
@@ -741,6 +747,7 @@ class SonarSystem:
         self.lofar_history.clear()
         self.lofar_times.clear()
         self.lofar_bearings.clear()
+        self.integration_columns.clear()
         self.peak_spectrum = []
         self.demon_analysis = None
         self.demon_history.clear()
@@ -773,7 +780,8 @@ class SonarSystem:
         return True
 
     def _audition_process(self, samples, controls):
-        mode, low_hz, high_hz, notch, own_line_hz, gain_db = controls
+        mode, low_hz, high_hz, notch, own_line_hz, gain_db = controls[:6]
+        operator_notch = controls[6] if len(controls) > 6 else None
         out = np.array(samples, copy=True)
         if mode != "BROADBAND":
             n = out.size
@@ -781,6 +789,8 @@ class SonarSystem:
             mask = ((frequencies >= low_hz) & (frequencies <= high_hz)).astype(float)
             if notch:
                 mask[abs(frequencies - own_line_hz) < 5] *= .15
+            if operator_notch is not None:
+                mask[abs(frequencies - operator_notch) < 2.5] *= .15
             if n >= 2 and n % 2 == 0:
                 half = n // 2
                 previous, overlap = self._audition_states.get(
@@ -827,7 +837,8 @@ class SonarSystem:
                 or not np.all(np.isfinite(source))):
             raise ValueError("audition requires one complete mixed receiver block")
         controls = (self.audition_mode, self.band_low_hz, self.band_high_hz,
-                     self.notch_enabled, self._own_line_hz, self.gain_db)
+                     self.notch_enabled, self._own_line_hz, self.gain_db,
+                     getattr(self, "operator_notch_hz", None))
         # A rejected playback block must retry byte-for-byte even if ship speed
         # changes the own-line notch before the next frame. New controls take
         # effect on the next receiver sequence.
@@ -1461,6 +1472,10 @@ class SonarSystem:
             self.broadband_history.append(list(self.receiver.broadband))
             self.history_times.append(stamp)
             self.lofar_history.append(list(self.receiver.spectrum))
+            self.integration_columns.append((
+                tuple(self.receiver.spectrum),
+                np.array(getattr(self.receiver, "native_spectrum", ()), dtype=float),
+                tuple(self.receiver.demon_spectrum)))
             self.lofar_times.append(stamp)
             self.lofar_bearings.append(self.listen_bearing)
             for history in (self.broadband_history, self.history_times, self.lofar_history,
@@ -1662,7 +1677,9 @@ class SonarSystem:
             if not self.band_low_hz <= freq <= self.band_high_hz:
                 result.append(0.0)
                 continue
-            if self.notch_enabled and abs(freq - shaft) < 5.0:
+            operator_notch = getattr(self, "operator_notch_hz", None)
+            if ((self.notch_enabled and abs(freq - shaft) < 5.0)
+                    or (operator_notch is not None and abs(freq - operator_notch) < 2.5)):
                 result.append(min(1.0, value * gain * 0.15))
             else:
                 result.append(min(1.0, value * gain))

@@ -314,6 +314,30 @@ def _sonar_set_harmonic(game, params, _bindings):
     return game.set_sonar_harmonic(params["frequency_hz"])
 
 
+def _sonar_set_cursor(game, params, _bindings):
+    return game.set_sonar_cursor(params["page"], params["frequency_hz"])
+
+
+def _sonar_mark_line(game, params, _bindings):
+    return game.mark_sonar_cursor(params["page"])
+
+
+def _sonar_set_integration(game, params, _bindings):
+    return game.set_sonar_integration(params["seconds"])
+
+
+def _sonar_set_vernier(game, params, _bindings):
+    return game.set_sonar_vernier(params["enabled"])
+
+
+def _sonar_set_band(game, params, _bindings):
+    return game.set_sonar_band(params["low_hz"], params["high_hz"])
+
+
+def _sonar_set_operator_notch(game, params, _bindings):
+    return game.set_sonar_operator_notch(params["frequency_hz"])
+
+
 def _sonar_designate_target(game, params, bindings):
     contact = _sonar_contact(bindings, params["ref"])
     return "unknown_ref" if contact is None else game.designate_sonar_target(contact)
@@ -466,6 +490,12 @@ _V2_ACTION_HANDLERS = {
     "sonar_set_notch": _sonar_set_notch,
     "sonar_set_peak_hold": _sonar_set_peak_hold,
     "sonar_set_harmonic": _sonar_set_harmonic,
+    "sonar_set_cursor": _sonar_set_cursor,
+    "sonar_mark_line": _sonar_mark_line,
+    "sonar_set_integration": _sonar_set_integration,
+    "sonar_set_vernier": _sonar_set_vernier,
+    "sonar_set_band": _sonar_set_band,
+    "sonar_set_operator_notch": _sonar_set_operator_notch,
     "sonar_designate_target": _sonar_designate_target,
     "helicopter_launch": _helicopter_launch,
     "helicopter_return": _helicopter_return,
@@ -1293,7 +1323,7 @@ class CommanderBridge:
             self._esm_refs = current_esm
             current_candidates = {}
             for track in game.eloka_tracks():
-                for candidate in game.eloka_candidates(track)[:5]:
+                for candidate in game.eloka_display_candidates(track)[:32]:
                     key = (track.track_key, candidate.emitter_key)
                     previous = self._esm_candidate_refs.get(key)
                     ref = (previous[1] if previous is not None

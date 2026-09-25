@@ -807,7 +807,17 @@
       ["sonar_band", settings.band_preset || settings.band_hz.map((value) => number(value, 0)).join("-")],
       ["sonar_notch", yesNo(settings.notch)], ["sonar_peak_hold", yesNo(settings.peak_hold)],
       ["sonar_harmonic", unit(settings.harmonic_hz, "Hz")], ["sonar_audio", yesNo(settings.audio_enabled)],
-      ["sonar_volume", number(settings.volume, 2)], ["quiet_mode", yesNo(settings.quiet_mode)]]);
+      ["sonar_volume", number(settings.volume, 2)], ["quiet_mode", yesNo(settings.quiet_mode)],
+      ["sonar_integration", `${settings.tools.integration_s} s`], ["sonar_vernier", yesNo(settings.tools.vernier)],
+      ["sonar_operator_notch", unit(settings.tools.operator_notch_hz, "Hz")],
+      ["sonar_demon_marks", t("sonar_demon_marks_value", {shaft: finite(settings.tools.shaft_hz) ? number(settings.tools.shaft_hz, 1) : "--",
+        blade: finite(settings.tools.blade_hz) ? number(settings.tools.blade_hz, 1) : "--",
+        blades: finite(settings.tools.shaft_hz) && finite(settings.tools.blade_hz) && settings.tools.shaft_hz > 0
+          ? number(Math.round(settings.tools.blade_hz / settings.tools.shaft_hz), 0) : "--",
+        rpm: finite(settings.tools.shaft_hz) ? number(settings.tools.shaft_hz * 60, 0) : "--"})],
+      ["sonar_assist", yesNo(settings.tools.assist)]]);
+    if (!stationDrafts.has("sonar-integration")) $("sonar-integration").value = String(settings.tools.integration_s);
+    $("sonar-vernier").checked = settings.tools.vernier;
     const live = !settings.station_down;
     if (!stationDrafts.has("sonar-array-mode")) $("sonar-array-mode").value = settings.mode;
     const tasDeployed = ["DEPLOYING", "STREAMED"].includes(settings.tow.state);
@@ -1107,7 +1117,7 @@
       ["ecm_lock", yesNo(row.is_locked_on)], ["hoj_risk", yesNo(row.hoj_risk)],
       ["annotation", row.annotation || t("station_none")],
       ["opz_release_status", t(row.annotation ? "opz_release_annotated" : "opz_release_unannotated")],
-      ["candidates", row.candidates.map((item) => `${item.name}: ${number(item.score, 2)}`).join(" / ") || t("station_none")],
+      ["candidates", row.candidates.map((item) => item.score === null ? item.name : `${item.name}: ${number(item.score, 2)}`).join(" / ") || t("station_none")],
       ["correlations", row.correlations.map((item) => `${item.ref} / ${item.source}: ${number(item.score, 2)} (${t(item.ambiguous ? "ambiguous" : "unambiguous")}); ${unit(item.evidence.bearing, "\u00b0", 0)} / ${unit(item.evidence.age_s, "s", 0)}`).join(" / ") || t("station_none")]],
       "station_none", (row) => [...row.candidates.map((candidate) => actionButton("eloka_annotate_candidate",
         "eloka_annotate", {ref: row.ref, candidate_ref: candidate.ref}, !payload.station_down, {candidate: candidate.name})),
@@ -1560,6 +1570,9 @@
   }
 
   function drawPeakLabels(plot, values, frequencies, xmin, xmax, maximum, markers) {
+    // Automatic peak labels are a training aid; off, the operator reads lines
+    // with the cursor (same rule as the uConsole).
+    if (v2State?.sonar?.settings?.tools && !v2State.sonar.settings.tools.assist) return;
     if (plot.width < PEAK_LABEL_W || xmax <= xmin) return;
     const hz = frequencies ?? Array.from(values, (_, index) => values.length === 1 ? xmin : xmin + index / (values.length - 1) * (xmax - xmin));
     const scale = plot.width / (xmax - xmin);
@@ -1656,13 +1669,30 @@
       drawHarmonicGuides(plot, v2State.sonar.settings.harmonic_hz, 300);
     };
     heatmap("sonar-lofar", lofarHistory, visual.lofar.bin_frequencies_hz, null, lofarGuides);
-    spectrum("sonar-spectrum", visual.lofar.spectrum, [], visual.lofar.bin_frequencies_hz, 300, 0, lofarGuides);
+    const vernier = visual.lofar.vernier;
+    if (vernier) {
+      // Vernier: the operator's 20 Hz window at native 0.5 Hz resolution.
+      spectrum("sonar-spectrum", vernier.bins, [], vernier.bins.map((_, index) => vernier.low_hz + index * vernier.step_hz),
+        vernier.high_hz, vernier.low_hz, null);
+    } else spectrum("sonar-spectrum", visual.lofar.spectrum, [], visual.lofar.bin_frequencies_hz, 300, 0, lofarGuides);
     bandSpectrum("sonar-band-low", visual.lofar, 0, 40);
     bandSpectrum("sonar-band-mid", visual.lofar, 40, 100);
     bandSpectrum("sonar-band-high", visual.lofar, 100, 300);
     const peak = visual.demon.analysis?.modulation_peak_hz;
     const demonFrequencies = visual.demon.spectrum.map((_, index) => index + 1);
-    const demonGuides = (plot) => drawHarmonicGuides(plot, sonarDisplay.demonCursor, 50);
+    const demonGuides = (plot) => {
+      drawHarmonicGuides(plot, sonarDisplay.demonCursor, 50);
+      const tools = v2State.sonar.settings.tools;
+      plot.context.save(); plot.context.font = "11px ui-monospace, monospace";
+      for (const [value, label, color] of [[tools.shaft_hz, "S", palette().accent], [tools.blade_hz, "B", palette().amber]]) {
+        if (!finite(value) || value > 50) continue;
+        const x = value / 50 * plot.width;
+        plot.context.strokeStyle = color; plot.context.fillStyle = color;
+        plot.context.beginPath(); plot.context.moveTo(x, 0); plot.context.lineTo(x, plot.height); plot.context.stroke();
+        plot.context.fillText(`${label} ${number(value, 1)}`, Math.min(plot.width - 60, x + 3), 26);
+      }
+      plot.context.restore();
+    };
     heatmap("sonar-demon", demonHistory.map((row) => ({...row, bins: row.bins.slice(0, 50)})), demonFrequencies.slice(0, 50), 50, demonGuides);
     spectrum("sonar-demon-spectrum", visual.demon.spectrum.slice(0, 50),
       finite(peak) && peak <= 50 ? [{x: peak / 50, text: `${number(peak, 1)} Hz`}] : [], demonFrequencies.slice(0, 50), 50, 0, demonGuides);
@@ -3197,8 +3227,13 @@
     } else if (state.role === "sonar") {
       rowsExact(payload.observations, 256, sonarFields);
       const settings = payload.settings;
-      if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode"]) ||
+      if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
           !["BOW", "TOWED"].includes(settings.mode) || typeof settings.station_down !== "boolean" ||
+          !exactKeys(settings.tools, ["assist", "lofar_cursor_hz", "demon_cursor_hz", "integration_s", "vernier", "shaft_hz", "blade_hz", "operator_notch_hz"]) ||
+          typeof settings.tools.assist !== "boolean" || typeof settings.tools.vernier !== "boolean" ||
+          ![2, 8, 16, 64].includes(settings.tools.integration_s) ||
+          [settings.tools.lofar_cursor_hz, settings.tools.demon_cursor_hz].some((value) => !finite(value) || value < 0 || value > 300) ||
+          [settings.tools.shaft_hz, settings.tools.blade_hz, settings.tools.operator_notch_hz].some((value) => value !== null && (!finite(value) || value < 0 || value > 300)) ||
           !exactKeys(settings.tow, ["state", "payout", "available", "handling_ok", "speed_kn", "speed_min_kn", "speed_max_kn", "depth_m", "depth_target_m"]) ||
           !finite(settings.tow.speed_kn) || !finite(settings.tow.speed_min_kn) || !finite(settings.tow.speed_max_kn) ||
           !exactKeys(settings.bt, ["ready", "cooldown_s", "thermocline_m"]) ||
@@ -3214,7 +3249,8 @@
       if (!exactKeys(visual, ["broadband", "lofar", "demon", "tma", "bt", "active_echoes", "receiver"]) ||
           !exactKeys(visual.broadband, ["bearing_start_deg", "bearing_step_deg", "history"]) ||
           !boundedArray(visual.broadband.history, 120) || visual.broadband.history.some((row) => !exactKeys(row, ["age_s", "bins"]) || !boundedArray(row.bins, 180)) ||
-          !exactKeys(visual.lofar, ["frequency_min_hz", "frequency_max_hz", "bin_frequencies_hz", "history", "spectrum", "held"]) ||
+          !exactKeys(visual.lofar, ["frequency_min_hz", "frequency_max_hz", "bin_frequencies_hz", "history", "spectrum", "held", "vernier"]) ||
+          (visual.lofar.vernier !== null && (!exactKeys(visual.lofar.vernier, ["low_hz", "high_hz", "step_hz", "bins"]) || !boundedArray(visual.lofar.vernier.bins, 64) || !finite(visual.lofar.vernier.low_hz) || !finite(visual.lofar.vernier.high_hz))) ||
           !boundedArray(visual.lofar.bin_frequencies_hz, 256) || !boundedArray(visual.lofar.spectrum, 256) ||
           !boundedArray(visual.lofar.history, 80) || visual.lofar.history.some((row) => !exactKeys(row, ["age_s", "bearing", "bins"]) || !boundedArray(row.bins, 110)) || typeof visual.lofar.held !== "boolean" ||
           !exactKeys(visual.demon, ["frequency_min_hz", "frequency_max_hz", "bin_step_hz", "spectrum", "history", "analysis"]) || !boundedArray(visual.demon.spectrum, 80) ||
@@ -3318,7 +3354,7 @@
           typeof row.is_locked_on !== "boolean" || typeof row.hoj_risk !== "boolean" || !["a_c", "d", "e_f", "g_h", "i_j", "k"].includes(row.frequency_band) ||
           (row.jamming_technique !== null && !["noise", "rgpo", "vgpo", "false_targets"].includes(row.jamming_technique)) ||
           typeof row.ambiguous !== "boolean" || typeof row.operational !== "boolean" || !["LIVE", "RECENT", "MEMORY", "UNCONFIRMED"].includes(row.signal_state) || !["low", "medium", "high", "critical", "unknown"].includes(row.threat) ||
-          !boundedArray(row.candidates, 5) || row.candidates.some((item) => !exactKeys(item, ["ref", "name", "score"])) ||
+          !boundedArray(row.candidates, 32) || row.candidates.some((item) => !exactKeys(item, ["ref", "name", "score"]) || (item.score !== null && !finite(item.score))) ||
           !boundedArray(row.correlations, 8) || row.correlations.some((item) => !exactKeys(item, ["ref", "source", "score", "ambiguous", "evidence"]) || !exactKeys(item.evidence, ["bearing", "bearing_uncertainty_deg", "age_s", "position_available"])))) throw new Error("protocol");
       if (typeof payload.station_down !== "boolean" || !["down", "live"].includes(payload.status)) throw new Error("protocol");
       if (!exactKeys(payload.hardware, ["df_sensors", "broadband_sensors", "ecm_channels", "frequency_min_hz", "frequency_max_hz", "reaction_s"]) ||
@@ -5429,6 +5465,8 @@
   $("sonar-demon-spectrum").addEventListener("click", (event) => {
     const hz = sonarFrequencyAt($("sonar-demon-spectrum"), event, 50);
     if (hz === null) return;
+    if (session?.station === "sonar" && stationActionAvailable())
+      sendStationAction("sonar_set_cursor", {page: "demon", frequency_hz: Math.round(hz * 2) / 2});
     if (sonarDisplay.demonCursor === null) {
       sonarDisplay.demonCursor = hz;
       $("sonar-cursor-readout").value = t("sonar_demon_cursor_first", {frequency: number(hz, 1)});
@@ -5637,6 +5675,18 @@
   $("sonar-listen-band").addEventListener("change", () => sendStationAction("sonar_set_band_preset", {preset: $("sonar-listen-band").value}));
   $("sonar-listen-notch").addEventListener("change", () => sendStationAction("sonar_set_notch", {enabled: $("sonar-listen-notch").checked}));
   $("sonar-peak").addEventListener("change", () => sendStationAction("sonar_set_peak_hold", {enabled: $("sonar-peak").checked}));
+  $("sonar-integration").addEventListener("change", () => sendStationAction("sonar_set_integration", {seconds: Number($("sonar-integration").value)}));
+  $("sonar-vernier").addEventListener("change", () => sendStationAction("sonar_set_vernier", {enabled: $("sonar-vernier").checked}));
+  $("sonar-demon-mark").addEventListener("click", () => sendStationAction("sonar_mark_line", {page: "demon"}));
+  $("sonar-band-edges-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const low = Number($("sonar-band-low-hz").value), high = Number($("sonar-band-high-hz").value);
+    if (finite(low) && finite(high) && low >= 0 && low < high && high <= 300) sendStationAction("sonar_set_band", {low_hz: low, high_hz: high});
+  });
+  $("sonar-operator-notch-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("sonar-operator-notch-form", "sonar-operator-notch", "sonar_set_operator_notch", "frequency_hz", 0.000001, 300);
+  });
+  $("sonar-operator-notch-clear").addEventListener("click", () => sendStationAction("sonar_set_operator_notch", {frequency_hz: null}));
   $("sonar-harmonic-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("sonar-harmonic-form", "sonar-harmonic-input", "sonar_set_harmonic", "frequency_hz", 0.000001, 300);
   });

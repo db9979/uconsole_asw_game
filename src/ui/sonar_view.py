@@ -10,6 +10,7 @@ import pygame
 from src.core import config
 from src.core.i18n import (display_message, display_value, localized, localize,
                             message as structured_message, short_candidates)
+from src.sonar import analysis_tools
 from src.ui import layout
 from src.ui import observations
 
@@ -137,6 +138,20 @@ def sonar_geometry(game, page=None):
     )
     actions = (("page", "array", "gain", "band_filter"),
                ("harmonic", "notch", "peak", "audio"))
+    tools = getattr(game, "sonar_tools", None)
+    if page in (1, 2) and tools is not None:
+        # Analysis pages: the operator's cursor tools replace peak/audio.
+        cursor = tools.lofar_cursor_hz if page == 1 else tools.demon_cursor_hz
+        mark = (structured_message("sonar.footer.demon_marks",
+                                   shaft="--" if tools.shaft_hz is None else f"{tools.shaft_hz:.1f}",
+                                   blade="--" if tools.blade_hz is None else f"{tools.blade_hz:.1f}")
+                if page == 2 else footer_specs[1][0][3])
+        footer_specs = (footer_specs[0], (
+            ("K", "sonar.footer.mark", "", mark),
+            ("Z/X", "sonar.footer.cursor", "", f"{cursor:.1f} Hz"),
+            ("Q", "sonar.footer.integration", "", f"{tools.integration_s} s"),
+            footer_specs[1][1]))
+        actions = (actions[0], ("harmonic", "cursor", "integration", "notch"))
     footer = []
     for row, specs in enumerate(footer_specs):
         width = (station.w - 28) // len(specs)
@@ -476,7 +491,8 @@ def _lofar_frequencies(size):
 
 def _process_lofar_rows(raw, controls, apply_filters=True):
     """Vectorized equivalent of Sonar.process_lofar_column over all rows."""
-    gain_db, band_low, band_high, notch_enabled, ship_speed = controls
+    gain_db, band_low, band_high, notch_enabled, ship_speed = controls[:5]
+    operator_notch = controls[5] if len(controls) > 5 else None
     gain = 10.0 ** (gain_db / 20.0)
     processed = np.clip(raw * gain, 0.0, 1.0)
     if not apply_filters or raw.shape[-1] == 0:
@@ -488,6 +504,9 @@ def _process_lofar_rows(raw, controls, apply_filters=True):
         shaft = 10.0 + 1.9 * ship_speed
         notch = in_band & (np.abs(frequencies - shaft) < 5.0)
         processed[:, notch] = np.clip(raw[:, notch] * gain * 0.15, 0.0, 1.0)
+    if operator_notch is not None:
+        notch = in_band & (np.abs(frequencies - operator_notch) < 2.5)
+        processed[:, notch] = np.clip(raw[:, notch] * gain * 0.15, 0.0, 1.0)
     return processed
 
 
@@ -495,10 +514,13 @@ def _waterfall_controls(game, page):
     sonar = game.sonar
     filters = page == 1 and getattr(sonar, "process_lofar_column", None) is not None
     notch = filters and getattr(sonar, "notch_enabled", False)
+    tools = getattr(game, "sonar_tools", None)
     return (getattr(sonar, "gain_db", 0.0),
             getattr(sonar, "band_low_hz", 0.0) if filters else 0.0,
             getattr(sonar, "band_high_hz", 300.0) if filters else 300.0,
-            notch, getattr(getattr(game, "ship", None), "speed", 0.0) if notch else 0.0)
+            notch, getattr(getattr(game, "ship", None), "speed", 0.0) if notch else 0.0,
+            getattr(sonar, "operator_notch_hz", None) if filters else None,
+            getattr(tools, "integration_s", 2) if page in (1, 2) else 2)
 
 
 def _display_controls(game):
@@ -548,6 +570,8 @@ def _waterfall(game, page, rect):
         processed = rows
         if page == 1 and len(rows):
             process = getattr(sonar, "process_lofar_column", None)
+            # Operator integration: each row averages its last N seconds.
+            raw = analysis_tools.integrate_rows(raw, controls[6])
             processed = _process_lofar_rows(raw, controls, process is not None)
             processed = np.asarray([_linear_lofar(row, rect.w) for row in processed])
         elif page == 0 and len(rows):
@@ -913,36 +937,58 @@ def _draw_waterfall(game, panel, page):
         spectrum_rect = pygame.Rect(plot.x, panel.y + 56, plot.w, 42)
         pygame.draw.rect(screen, NAVY, spectrum_rect)
         receiver = getattr(sonar, "receiver", None)
-        current = getattr(receiver, "spectrum", [])
+        tools = getattr(game, "sonar_tools", None)
+        seconds = getattr(tools, "integration_s", 2)
+        columns = list(getattr(sonar, "integration_columns", ()))
+        current = (analysis_tools.integrate([column[0] for column in columns], seconds)
+                   if columns else np.asarray(getattr(receiver, "spectrum", []), dtype=float))
         process = getattr(sonar, "process_lofar_column", None)
-        if len(current):
-            bins = process(current, game.ship) if process else current
+        assist = bool(getattr(game, "operator_assist", lambda: True)())
+        vernier = bool(getattr(tools, "vernier", False))
+        xmin, xmax = 0.0, config.LOFAR_FMAX_HZ
+        if vernier and columns:
+            xmin, xmax = analysis_tools.vernier_window(tools.lofar_cursor_hz)
+            native = analysis_tools.integrate([column[1] for column in columns], seconds)
+            native_hz = np.arange(native.size) * 0.5
+            inside = (native_hz >= xmin) & (native_hz <= xmax)
+            gain = 10.0 ** (getattr(sonar, "gain_db", 0.0) / 20.0)
+            latest = np.clip(native[inside] * gain, 0.0, 1.0)
+            labelled = (latest, native_hz[inside])
+        elif len(current):
+            bins = process(list(current), game.ship) if process else current
             latest = _linear_lofar(bins, plot.w)
-            labelled = (bins, _lofar_frequencies(len(bins)))
+            labelled = (np.asarray(bins), _lofar_frequencies(len(bins)))
         else:
             latest = processed[-1] if len(processed) else []
             labelled = (latest, np.linspace(0.0, config.LOFAR_FMAX_HZ, len(latest)))
         _trace(screen, spectrum_rect, latest)
-        for frequency, label in ((40.0, "0-40"), (100.0, "40-100"),
-                                 (300.0, "100-300")):
-            x = spectrum_rect.x + round(frequency / config.LOFAR_FMAX_HZ
-                                        * (spectrum_rect.w - 1))
-            pygame.draw.line(screen, GRID, (x, spectrum_rect.y),
-                             (x, plot.bottom - 1), 1)
-            start = 0.0 if label == "0-40" else 40.0 if label == "40-100" else 100.0
-            left = spectrum_rect.x + round(start / config.LOFAR_FMAX_HZ
+
+        def strip_x(frequency):
+            return spectrum_rect.x + round((frequency - xmin) / max(1e-9, xmax - xmin)
                                            * (spectrum_rect.w - 1))
-            _text(screen, label + " Hz", (left + 4, spectrum_rect.bottom - 17,
-                  max(40, x - left - 8), 16), DIM, 10)
+
+        if not vernier:
+            for frequency, label in ((40.0, "0-40"), (100.0, "40-100"),
+                                     (300.0, "100-300")):
+                x = strip_x(frequency)
+                pygame.draw.line(screen, GRID, (x, spectrum_rect.y),
+                                 (x, plot.bottom - 1), 1)
+                start = 0.0 if label == "0-40" else 40.0 if label == "40-100" else 100.0
+                left = strip_x(start)
+                _text(screen, label + " Hz", (left + 4, spectrum_rect.bottom - 17,
+                      max(40, x - left - 8), 16), DIM, 10)
+        else:
+            _text(screen, message("sonar.vernier_axis", low=f"{xmin:.1f}", high=f"{xmax:.1f}"),
+                  (spectrum_rect.x + 4, spectrum_rect.bottom - 17, 220, 16), DIM, 10)
         low = float(getattr(sonar, "band_low_hz", 0.0))
         high = float(getattr(sonar, "band_high_hz", config.LOFAR_FMAX_HZ))
         for frequency in (low, high):
-            x = spectrum_rect.x + round(frequency / config.LOFAR_FMAX_HZ
-                                        * (spectrum_rect.w - 1))
-            pygame.draw.line(screen, AMBER, (x, spectrum_rect.y),
-                             (x, plot.bottom - 1), 1)
+            if xmin <= frequency <= xmax:
+                x = strip_x(frequency)
+                pygame.draw.line(screen, AMBER, (x, spectrum_rect.y),
+                                 (x, spectrum_rect.bottom - 1 if vernier else plot.bottom - 1), 1)
         held = getattr(sonar, "peak_hold", False)
-        if held:
+        if held and not vernier:
             peak = getattr(sonar, "peak_spectrum", getattr(receiver, "peak_spectrum", []))
             if peak is not None and len(peak):
                 peak = process(peak, game.ship) if process else peak
@@ -952,12 +998,12 @@ def _draw_waterfall(game, panel, page):
                 peak = np.max(processed, axis=0) if len(processed) else []
                 labelled = (peak, np.linspace(0.0, config.LOFAR_FMAX_HZ, len(peak)))
             _trace(screen, spectrum_rect, peak, AMBER)
-        # Peak hold labels the held envelope, otherwise the live spectrum.
-        _draw_peak_labels(screen, spectrum_rect, *labelled, 0.0,
-                          config.LOFAR_FMAX_HZ)
+        if assist:
+            # Training aid only: the operator finds lines with the cursor.
+            _draw_peak_labels(screen, spectrum_rect, *labelled, xmin, xmax)
         # Above the strip, so it never hides the peak values of 0-40 Hz.
         legend = pygame.Rect(panel.right - 196, panel.y + 35, 180, 20)
-        _text(screen, message("sonar.live_peak", state=localize(
+        _text(screen, message("sonar.live_peak", state=message(
                   "sonar.peak_held" if held else "sonar.peak_off")),
               legend, AMBER if held else DIM, 12, "right")
         bearings = getattr(sonar, "lofar_bearings", [])
@@ -967,18 +1013,26 @@ def _draw_waterfall(game, panel, page):
         _text(screen, note, (plot.x, plot.bottom + 24, plot.w - 160, 18), DIM, 12)
 
         base = _selected_harmonic(game)
-        if base is not None:
-            with layout.clip_to(screen, pygame.Rect(spectrum_rect.x, spectrum_rect.y,
-                                                    spectrum_rect.w, plot.bottom - spectrum_rect.y)):
-                for multiple in range(1, 13):
-                    frequency = base * multiple
-                    if frequency > config.LOFAR_FMAX_HZ:
+        top = spectrum_rect.y
+        with layout.clip_to(screen, pygame.Rect(spectrum_rect.x, top, spectrum_rect.w,
+                                                plot.bottom - top)):
+            if base is not None:
+                for multiple, frequency in analysis_tools.harmonic_comb(base, xmax):
+                    if frequency < xmin:
                         continue
-                    x = plot.x + round(frequency / config.LOFAR_FMAX_HZ * (plot.w - 1))
-                    pygame.draw.line(screen, AMBER, (x, spectrum_rect.y),
-                                     (x, plot.bottom - 1), 1)
+                    x = strip_x(frequency)
+                    pygame.draw.line(screen, AMBER, (x, top),
+                                     (x, spectrum_rect.bottom - 1 if vernier else plot.bottom - 1), 1)
                     _text(screen, f"{multiple if multiple > 1 else ''}f",
-                          (x + 3, spectrum_rect.y + 2, 24, 16), AMBER, 11)
+                          (x + 3, top + 2, 24, 16), AMBER, 11)
+            notch = getattr(sonar, "operator_notch_hz", None)
+            if notch is not None and xmin <= notch <= xmax:
+                x = strip_x(notch)
+                pygame.draw.line(screen, DIM, (x, top), (x, spectrum_rect.bottom - 1), 3)
+            if tools is not None and xmin <= tools.lofar_cursor_hz <= xmax:
+                x = strip_x(tools.lofar_cursor_hz)
+                pygame.draw.line(screen, TEXT, (x, top),
+                                 (x, spectrum_rect.bottom - 1 if vernier else plot.bottom - 1), 1)
 
 
 def _harmonic_candidates(sonar):
@@ -989,14 +1043,11 @@ def _harmonic_candidates(sonar):
 
 
 def _selected_harmonic(game):
+    """The operator's fundamental (placed with the cursor), if any."""
     selected = getattr(game, "sonar_harmonic_hz", None)
-    if selected is None:
+    if selected is None or not np.isfinite(selected) or selected <= 0:
         return None
-    matched = next((hz for hz in _harmonic_candidates(game.sonar)
-                    if abs(hz - selected) < 1e-6), None)
-    if matched is None:
-        game.sonar_harmonic_hz = None
-    return matched
+    return float(selected)
 
 
 def _demon_evidence(sonar):
@@ -1026,24 +1077,33 @@ def _draw_demon(game, panel):
                        full.bottom - spectrum_rect.bottom - 8)
     pygame.draw.rect(screen, NAVY, spectrum_rect)
     pygame.draw.rect(screen, NAVY, plot)
+    tools = getattr(game, "sonar_tools", None)
+    assist = bool(getattr(game, "operator_assist", lambda: True)())
+    seconds = getattr(tools, "integration_s", 2)
+    columns = list(getattr(sonar, "integration_columns", ()))
+    if columns:
+        spectrum = analysis_tools.integrate([column[2] for column in columns], seconds)
     visible_spectrum = spectrum[:int(DEMON_DISPLAY_MAX_HZ)]
     if visible_spectrum.size:
         _trace(screen, spectrum_rect, np.concatenate(([0.0], visible_spectrum)))
-        modulation = analysis.get("modulation_peak_hz")
-        _draw_peak_labels(screen, spectrum_rect, visible_spectrum,
-                          np.arange(1, visible_spectrum.size + 1, dtype=float),
-                          0.0, DEMON_DISPLAY_MAX_HZ,
-                          None if modulation is None else float(modulation))
+        if assist:
+            modulation = analysis.get("modulation_peak_hz")
+            _draw_peak_labels(screen, spectrum_rect, visible_spectrum,
+                              np.arange(1, visible_spectrum.size + 1, dtype=float),
+                              0.0, DEMON_DISPLAY_MAX_HZ,
+                              None if modulation is None else float(modulation))
     black, contrast, palette, history_fraction = _display_controls(game)
     history_rows = max(1, round(config.SONAR_DEMON_HISTORY_ROWS * history_fraction))
     rows = [np.asarray(row)[:int(DEMON_DISPLAY_MAX_HZ)]
             for row in list(getattr(sonar, "demon_history", ()))[-history_rows:]]
+    if rows and seconds > analysis_tools.NATIVE_INTEGRATION_S:
+        rows = list(analysis_tools.integrate_rows(rows, seconds))
     bitmap = rows
     if rows and len(rows) < history_rows:
         bitmap = [[0.0] * len(rows[0]) for _ in range(history_rows - len(rows))] + rows
     key = (id(sonar), "demon", plot.size,
            getattr(getattr(sonar, "receiver", None), "sequence", None), len(rows),
-           black, contrast, palette, history_fraction)
+           black, contrast, palette, history_fraction, seconds)
     cached = _WATERFALL_CACHE.get(key)
     if cached is None:
         cached = (waterfall_surface(bitmap, *plot.size, black_level=black,
@@ -1057,14 +1117,26 @@ def _draw_demon(game, panel):
     _text(screen, "sonar.new", (panel.x + 8, plot.y, 45, 18), CYAN, 12)
     _text(screen, "sonar.old", (panel.x + 8, plot.bottom - 18, 45, 18), DIM, 12)
     peak = analysis.get("modulation_peak_hz")
-    if (peak is not None and np.isfinite(peak)
+    if (assist and peak is not None and np.isfinite(peak)
             and 0.0 <= float(peak) <= DEMON_DISPLAY_MAX_HZ):
         x = plot.x + round(float(peak) / DEMON_DISPLAY_MAX_HZ * (plot.w - 1))
         pygame.draw.line(screen, AMBER, (x, spectrum_rect.y),
                          (x, plot.bottom - 1), 1)
         _text(screen, f"{float(peak):.1f} Hz",
               (x + 4, spectrum_rect.y + 2, 70, 18), AMBER, 11)
-    if not evidence:
+    if tools is not None:
+        # Operator marks: S = shaft line, B = blade line, white = cursor.
+        for mark, label, color in ((tools.shaft_hz, "S", CYAN),
+                                   (tools.blade_hz, "B", AMBER),
+                                   (tools.demon_cursor_hz, "", TEXT)):
+            if mark is None or not 0.0 <= mark <= DEMON_DISPLAY_MAX_HZ:
+                continue
+            x = plot.x + round(float(mark) / DEMON_DISPLAY_MAX_HZ * (plot.w - 1))
+            pygame.draw.line(screen, color, (x, spectrum_rect.y), (x, plot.bottom - 1), 1)
+            if label:
+                _text(screen, f"{label} {mark:.1f}", (x + 3, spectrum_rect.y + 2, 60, 16),
+                      color, 11)
+    if assist and not evidence:
         _text(screen, "sonar.low_evidence",
               (plot.x + 12, plot.y + 12, plot.w - 24, 22), AMBER, 14)
 
@@ -1349,6 +1421,42 @@ def _detail_rows(game, page):
             "array", getattr(game, "sonar_mode", "BOW")), state=localize(
             "sonar.track" if getattr(sonar, "focus_locked", False) else "ui.manual")), DIM),
     ))
+    tools = getattr(game, "sonar_tools", None)
+    assist = bool(getattr(game, "operator_assist", lambda: True)())
+    if page in (1, 2) and tools is not None:
+        columns = list(getattr(sonar, "integration_columns", ()))
+        if page == 1:
+            values = (analysis_tools.integrate([c[0] for c in columns], tools.integration_s)
+                      if columns else np.zeros(0))
+            level = analysis_tools.level_at(values, _lofar_frequencies(len(values)),
+                                            tools.lofar_cursor_hz) if len(values) else None
+            cursor = tools.lofar_cursor_hz
+        else:
+            values = (analysis_tools.integrate([c[2] for c in columns], tools.integration_s)
+                      if columns else np.zeros(0))
+            level = analysis_tools.level_at(values, np.arange(1, len(values) + 1, dtype=float),
+                                            tools.demon_cursor_hz) if len(values) else None
+            cursor = tools.demon_cursor_hz
+        rows.append((message("sonar.line.cursor", frequency=f"{cursor:.1f}",
+                             level="--" if level is None else f"{level:.2f}",
+                             seconds=tools.integration_s), CYAN, 13))
+    if page == 2 and not assist:
+        # Manual blade count from the operator's shaft (S) and blade (B) marks.
+        result = analysis_tools.blade_count(tools.shaft_hz, tools.blade_hz)
+        lines = [message("sonar.line.demon_marks",
+                         shaft="--" if tools.shaft_hz is None else f"{tools.shaft_hz:.1f}",
+                         blade="--" if tools.blade_hz is None else f"{tools.blade_hz:.1f}")]
+        if result is not None:
+            blades, deviation, rpm = result
+            lines.append(message("sonar.line.blade_count", blades=blades,
+                                 deviation=f"{deviation:+.2f}", rpm=f"{rpm:.0f}"))
+        elif tools.shaft_hz is not None:
+            lines.append(message("sonar.line.shaft_rpm", rpm=f"{tools.shaft_hz * 60:.0f}"))
+        else:
+            lines.append("sonar.demon_manual_hint")
+        lines.append("sonar.catalog_manual_hint")
+        rows.extend((line, TEXT, 13) for line in lines)
+        return rows
     if page == 2:
         _, analysis, evidence = _demon_evidence(sonar)
         if evidence:
@@ -1474,11 +1582,13 @@ def _detail_rows(game, page):
                           low=f"{getattr(sonar, 'band_low_hz', 0):.0f}",
                           high=f"{getattr(sonar, 'band_high_hz', 300):.0f}",
                           notch=localize("ui.on" if getattr(sonar, "notch_enabled", False) else "ui.off"))]
-        if len(peaks):
+        if assist and len(peaks):
             peak_text = " | ".join(f"{hz:.1f} Hz {level:.2f}" for hz, level in peaks[:3])
             lines += [message("sonar.line.received_peaks", peaks=peak_text)]
-        if not len(peaks):
+        elif assist:
             lines += ["sonar.no_stable_lines"]
+        else:
+            lines += ["sonar.lofar_manual_hint"]
         base = _selected_harmonic(game)
         if base is not None:
             lines += [message("sonar.line.harmonics", fundamental=f"{base:.1f}",

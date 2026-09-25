@@ -38,11 +38,13 @@ Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehe
 
 Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen sind 1 Hz breit unter 40 Hz, 2 Hz bis 100 Hz und 5 Hz darüber. Alle 0,25 s kommt eine Zeile hinzu; 80 Zeilen bleiben stehen.
 
-- Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie; `K` schaltet die erkannte Harmonischen-Hypothese.
+- Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie: den weißen Cursor mit `Z`/`X` auf eine Linie setzen (`Umschalt`: 10-Hz-Schritte) und mit `K` als Grundton markieren; bernsteinfarbene Hilfslinien zeigen dann 2f, 3f usw. `K` auf derselben Frequenz löscht ihn.
 - Das eigene Schiff erzeugt eine Wellenlinie bei etwa 10 + 1,9 x eigene Fahrt Hz. `N` blendet sie per Notch aus.
 - `Leertaste` hält Spitzen, damit schwache Töne hervortreten.
 - Der Spektrumstreifen über dem Wasserfall schreibt die Frequenz über jede deutliche Linie (zwischen den Klassen interpoliert; mit `Leertaste` die gehaltene Hüllkurve). Wo sich Werte überdecken würden, behält die stärkere Linie ihre Beschriftung. Der Remote-Crew-Browser beschriftet seine Spektren genauso.
-- `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
+- `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz. `Strg+Z` / `Strg+X` setzen die untere / obere Bandkante auf den Cursor für jeden Band-, Tief- oder Hochpass; `Umschalt+N` legt einen zusätzlichen Notch auf die Cursorfrequenz.
+- `Q` wählt die Integrationszeit: 2 s (die FFT des Empfängers), 8, 16 oder 64 s. Längere Integration mittelt aufeinanderfolgende Spektren, sodass ein schwacher stehender Ton aus dem Rauschen tritt; eine wandernde Linie verschmiert dabei. `Umschalt+Q` öffnet den Nonius: 20 Hz um den Cursor in der nativen 0,5-Hz-Auflösung.
+- Die Detailspalte liest den Pegel am Cursor. Automatisch beschriftet der Streifen Linien nur mit Bedienerassistenz Training (`F10`).
 
 ### DEMON {#sonar-demon}
 
@@ -58,7 +60,7 @@ DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraube
     Welle Blatt 2. Harmonische
 ```
 
-Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefenster sind bis zu 2 s lang: nach einer Peilungsänderung mindestens eine Sekunde horchen, bevor Sie urteilen. Gerankte Kandidaten aus dem Akustikkatalog erscheinen als Hinweis; die Klassifizierung bleibt Ihre Entscheidung. Der Spektrumstreifen beschriftet jede deutliche Modulationslinie mit ihrer Frequenz; die stärkste ist bernsteinfarben markiert.
+Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsänderung einige Sekunden horchen, bevor Sie urteilen. Blätter selbst zählen: den Cursor (`Z`/`X`, 0,5 Hz) auf die Wellenlinie setzen und `K` drücken, dann auf die Blattlinie und erneut `K`; die Spalte zeigt Blätter = Blattfrequenz / Wellenfrequenz (mit der Abweichung von einer ganzen Zahl) und die Wellendrehzahl. Ein drittes `K` löscht beide Marken. Das Ergebnis mit den Referenzen im Kontaktanalysator (`F8`) vergleichen. Mit Bedienerassistenz Training (`F10`) beschriftet das Sonar zusätzlich Modulationslinien, schlägt Drehzahlen für 3-7 Blätter vor und rankt Katalogkandidaten.
 
 ### TMA, Umwelt und Aktiv {#sonar-tma-env}
 

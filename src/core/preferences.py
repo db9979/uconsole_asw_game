@@ -29,6 +29,10 @@ class Preferences:
     # Event feed + telemetry: "ticker" (one status strip, full feed on F11)
     # frees station space on the 1280x720 uConsole; "docked" is the 180 px band.
     bottom_panel: str = "ticker"
+    # Operator assistance: "off" = raw data and manual tools only (default);
+    # "training" adds automatic peak labels, blade-rate/catalog ranking and
+    # ESM emitter candidates. Display only, never simulation state.
+    operator_assist: str = "off"
     live_ais_enabled: bool = False
     live_adsb_enabled: bool = False
     aisstream_api_key: str = ""
@@ -70,6 +74,9 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     bottom_panel = payload.get("bottom_panel", defaults.bottom_panel)
     values["bottom_panel"] = (bottom_panel if bottom_panel in BOTTOM_PANEL_MODES
                               else defaults.bottom_panel)
+    assist = payload.get("operator_assist", defaults.operator_assist)
+    values["operator_assist"] = (assist if assist in ("off", "training")
+                                 else defaults.operator_assist)
     for name in ("aisstream_api_key", "opensky_credentials"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value.strip()[:_MAX_CREDENTIAL_LEN] \

@@ -159,6 +159,8 @@ class AcousticReceiver:
         self.elapsed = 0.0
         self.samples = np.zeros(1024, dtype=np.float32)
         self.spectrum = [0.0] * config.LOFAR_BINS
+        # Native 0.5 Hz FFT bins 0..300 Hz for the operator vernier display.
+        self.native_spectrum = np.zeros(601)
         self.broadband = [0.0] * 180
         self.demon_spectrum = [0.0] * 80
         self.demon_analysis = None
@@ -515,6 +517,7 @@ class AcousticReceiver:
         amplitudes = np.abs(np.fft.rfft(data * window, n=self._history.size)) * scale
         low = amplitudes[self._frequencies <= 300]
         self.spectrum = np.clip(np.maximum.reduceat(low, self._bin_starts) / .25, 0, 1).tolist()
+        self.native_spectrum = np.clip(low[:601] / .25, 0, 1)
         if data.size < self.sample_rate:
             return
         floor = float(np.median(low))

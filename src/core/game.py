@@ -45,6 +45,7 @@ from src.sensors import threat_cue
 from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
+from src.sonar import analysis_tools
 from src.sensors import hfdf as hf_physics
 from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
@@ -84,6 +85,7 @@ from src.sensors.esm import (
     correlate_observations,
     estimated_range_nm,
     filter_and_sort_tracks,
+    library_emitters,
     rank_emitters,
     valid_esm_state,
 )
@@ -287,7 +289,7 @@ class Game:
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
-                    "bottom_panel", "live_traffic", "commander")
+                    "bottom_panel", "operator_assist", "live_traffic", "commander")
 
     def __init__(self, seed: int = 42, difficulty: dict = None,
                   start_menu: bool = False, fullscreen: bool = None,
@@ -628,6 +630,8 @@ class Game:
         self.station_page = 0
         self.helo_acoustic_page = 1
         self.sonar_harmonic_hz = None
+        # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).
+        self.sonar_tools = analysis_tools.AcousticToolState()
         # Display-only CRT controls are intentionally transient: they affect no
         # observation, simulation or v10 save contract.
         self.sonar_display_palette = "green"
@@ -1349,11 +1353,8 @@ class Game:
                 or not 0 < frequency_hz <= config.LOFAR_FMAX_HZ
                 or not math.isfinite(frequency_hz)):
             return "invalid_value"
-        candidate = next((hz for hz in self.sonar_harmonic_candidates()
-                          if abs(hz - frequency_hz) < 1e-6), None)
-        if candidate is None:
-            return "not_ready"
-        self.sonar_harmonic_hz = candidate
+        # Any operator-chosen fundamental (the cursor), not only detected peaks.
+        self.sonar_harmonic_hz = float(frequency_hz)
         return True
 
     def designate_sonar_target(self, contact):
@@ -1823,6 +1824,8 @@ class Game:
                     choices = config.FPS_CHOICES
                     step = -1 if key == pygame.K_LEFT else 1
                     value = choices[(choices.index(self.frame_rate()) + step) % len(choices)]
+                elif name == "operator_assist":
+                    value = ("off" if self.operator_assist() else "training")
                 elif name == "bottom_panel":
                     choices = layout.BOTTOM_PANEL_MODES
                     value = choices[(choices.index(self.bottom_panel_mode()) + 1)
@@ -2478,6 +2481,18 @@ class Game:
                 if e.key == pygame.K_k:
                     self._cycle_sonar_harmonic()
                     return
+                if e.key in (pygame.K_z, pygame.K_x) and self.sonar_page in (1, 2):
+                    self._sonar_cursor_key(e)
+                    return
+                if e.key == pygame.K_q:
+                    if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                        self.set_sonar_vernier(not self.sonar_tools.vernier)
+                        self.flash(message("runtime.vernier.on" if self.sonar_tools.vernier
+                                           else "runtime.vernier.off"), 1.5)
+                    else:
+                        seconds = self.sonar_tools.cycle_integration()
+                        self.flash(message("runtime.integration", seconds=seconds), 1.5)
+                    return
                 if e.key == pygame.K_d:
                     mode = ("BROADBAND" if self.sonar.audition_mode == "FILTERED"
                             else "FILTERED")
@@ -2562,6 +2577,18 @@ class Game:
                 return
             if e.key == pygame.K_n and self.station is Station.HELICOPTER and self.station_page == 3:
                 self.set_helicopter_audio_notch(not self.helo_audition.notch_enabled)
+                return
+            if (e.key == pygame.K_n and self.station is Station.SONAR
+                    and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                current = getattr(self.sonar, "operator_notch_hz", None)
+                cursor = self.sonar_tools.lofar_cursor_hz
+                self.set_sonar_operator_notch(None if current == cursor else cursor)
+                notch = self.sonar.operator_notch_hz
+                if notch is None:
+                    self.flash(message("runtime.operator_notch.off"), 1.5)
+                else:
+                    self.flash(message("runtime.operator_notch.on",
+                                       frequency=f"{notch:.1f}"), 1.5)
                 return
             if e.key == pygame.K_n:
                 if self.station is Station.SONAR:
@@ -3116,6 +3143,11 @@ class Game:
                                else "runtime.notch.off"), 1.5)
         elif action == "harmonic":
             self._cycle_sonar_harmonic()
+        elif action == "integration":
+            seconds = self.sonar_tools.cycle_integration()
+            self.flash(message("runtime.integration", seconds=seconds), 1.5)
+        elif action == "cursor":
+            pass   # the cursor moves with Z/X; the segment is a readout
         elif action == "peak":
             self.set_sonar_peak_hold(not self.sonar.peak_hold)
             self.flash(message("runtime.peak_hold.on" if self.sonar.peak_hold
@@ -3130,17 +3162,109 @@ class Game:
         return True
 
     def _cycle_sonar_harmonic(self) -> None:
-        candidates = self.sonar_harmonic_candidates()
-        current = self.sonar_harmonic_hz
-        index = next((i for i, hz in enumerate(candidates)
-                      if current is not None and abs(hz - current) < 1e-6), -1)
-        self.set_sonar_harmonic(candidates[index + 1]
-                                if index + 1 < len(candidates) else None)
-        if self.sonar_harmonic_hz is None:
+        """K: mark the line under the operator cursor (LOFAR fundamental,
+        DEMON shaft then blade line); pressing again on the mark clears it."""
+        page = "demon" if self.sonar_page == 2 else "lofar"
+        if self.mark_sonar_cursor(page) is not True:
+            return
+        tools = self.sonar_tools
+        if page == "demon":
+            key = ("runtime.demon.blade" if tools.blade_hz is not None
+                   else "runtime.demon.shaft" if tools.shaft_hz is not None
+                   else "runtime.demon.cleared")
+            self.flash(message(key, frequency=f"{tools.demon_cursor_hz:.1f}"), 1.5)
+        elif self.sonar_harmonic_hz is None:
             self.flash(message("runtime.harmonic.cleared"), 1.5)
         else:
             self.flash(message("runtime.harmonic.selected",
                                frequency=f"{self.sonar_harmonic_hz:.1f}"), 1.5)
+
+    def _sonar_cursor_key(self, e) -> None:
+        """Z/X move the frequency cursor; Shift: 10 Hz; Ctrl on LOFAR sets
+        the band-pass low (Z) or high (X) edge at the cursor."""
+        page = "demon" if self.sonar_page == 2 else "lofar"
+        mods = getattr(e, "mod", 0)
+        tools = self.sonar_tools
+        if page == "lofar" and mods & pygame.KMOD_CTRL:
+            cursor = tools.lofar_cursor_hz
+            low, high = self.sonar.band_low_hz, self.sonar.band_high_hz
+            low, high = ((cursor, high) if e.key == pygame.K_z else (low, cursor))
+            if self.set_sonar_band(low, high) is True:
+                self.flash(message("runtime.sonar_band", low=f"{low:.1f}",
+                                   high=f"{high:.1f}"), 1.5)
+            return
+        fine = page == "demon" or tools.vernier
+        step = 10.0 if mods & pygame.KMOD_SHIFT else (0.5 if fine else 1.0)
+        current = tools.demon_cursor_hz if page == "demon" else tools.lofar_cursor_hz
+        self.set_sonar_cursor(page, current + (step if e.key == pygame.K_x else -step))
+
+    def operator_assist(self) -> bool:
+        """Training aids (auto peaks, blade-rate/catalog ranking, ESM IDs) on?"""
+        return getattr(self.preferences, "operator_assist", "off") == "training"
+
+    def set_sonar_cursor(self, page, frequency_hz):
+        if page not in ("lofar", "demon"):
+            return "invalid_value"
+        if (type(frequency_hz) not in (int, float)
+                or not math.isfinite(frequency_hz)):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        value = analysis_tools.clamp_cursor(frequency_hz, page)
+        if page == "lofar":
+            self.sonar_tools.lofar_cursor_hz = value
+        else:
+            self.sonar_tools.demon_cursor_hz = value
+        return True
+
+    def mark_sonar_cursor(self, page):
+        if page not in ("lofar", "demon"):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        tools = self.sonar_tools
+        if page == "demon":
+            tools.mark_demon(tools.demon_cursor_hz)
+            return True
+        cursor = tools.lofar_cursor_hz
+        if (self.sonar_harmonic_hz is not None
+                and abs(self.sonar_harmonic_hz - cursor) < 1e-6):
+            return self.set_sonar_harmonic(None)
+        return self.set_sonar_harmonic(cursor)
+
+    def set_sonar_integration(self, seconds):
+        if type(seconds) is not int or seconds not in analysis_tools.INTEGRATION_CHOICES_S:
+            return "invalid_value"
+        self.sonar_tools.integration_s = seconds
+        return True
+
+    def set_sonar_vernier(self, enabled):
+        if type(enabled) is not bool:
+            return "invalid_value"
+        self.sonar_tools.vernier = enabled
+        return True
+
+    def set_sonar_band(self, low_hz, high_hz):
+        """Free band-pass edges (low 0 = low-pass, high 300 = high-pass)."""
+        if (any(type(value) not in (int, float) or not math.isfinite(value)
+                for value in (low_hz, high_hz))
+                or not 0.0 <= low_hz < high_hz <= config.LOFAR_FMAX_HZ):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.band_low_hz, self.sonar.band_high_hz = float(low_hz), float(high_hz)
+        return True
+
+    def set_sonar_operator_notch(self, frequency_hz):
+        if frequency_hz is not None and (
+                type(frequency_hz) not in (int, float) or not math.isfinite(frequency_hz)
+                or not 0.0 < frequency_hz <= config.LOFAR_FMAX_HZ):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.operator_notch_hz = (None if frequency_hz is None
+                                        else float(frequency_hz))
+        return True
 
     def _adjust_sonar_gain(self, delta: float) -> None:
         self.set_sonar_gain(config.clamp(self.sonar.gain_db + delta, -12.0, 24.0))
@@ -4992,7 +5116,7 @@ class Game:
     def eloka_visible_tracks(self) -> tuple:
         """Return the one filtered/sorted list used by ELOKA presentation."""
         return filter_and_sort_tracks(
-            self.eloka_tracks(), self.sim_t, self.eloka_analysis,
+            self.eloka_tracks(), self.sim_t, self.eloka_display_analysis,
             status=self.eloka_status_filter,
             minimum_threat=self.eloka_threat_filter,
             band=self.eloka_band_filter,
@@ -5045,6 +5169,24 @@ class Game:
         track = track or self.selected_eloka_track()
         return (() if track is None else
                 rank_emitters(track, self.runtime_catalog.emitters))
+
+    def eloka_display_candidates(self, track=None) -> tuple:
+        """Emitter choices shown to the operator: ranked with scores only as
+        a training aid; otherwise an unranked library range lookup."""
+        if self.operator_assist():
+            return self.eloka_candidates(track)
+        if self.damage.station_down("opz"):
+            return ()
+        track = track or self.selected_eloka_track()
+        return (() if track is None else
+                library_emitters(track, self.runtime_catalog.emitters))
+
+    def eloka_display_analysis(self, track=None):
+        """Radar type/threat inferred from the catalog: training aid only."""
+        return self.eloka_analysis(track) if self.operator_assist() else None
+
+    def eloka_display_range(self, track):
+        return self.eloka_range_estimate(track) if self.operator_assist() else None
 
     ELOKA_ANALYSIS_CACHE_MAX = 256
 
@@ -5212,9 +5354,16 @@ class Game:
         if track is None:
             self.flash(message("runtime.eloka.none_select"))
             return
-        choices = [candidate.emitter_key for candidate in rank_emitters(
+        # Training: likeliest first. Otherwise the library range lookup in
+        # name order, so the first press does not reveal the best match.
+        choices = ([candidate.emitter_key for candidate in rank_emitters(
             track, self.runtime_catalog.emitters,
             maximum=len(self.runtime_catalog.emitters))]
+            if self.operator_assist() else sorted(
+                (candidate.emitter_key for candidate in library_emitters(
+                    track, self.runtime_catalog.emitters,
+                    maximum=len(self.runtime_catalog.emitters))),
+                key=lambda key: (str(self.eloka_emitter_name(key) or key), key)))
         current = self.eloka_annotation(track.track_key)
         index = choices.index(current) if current in choices else -1
         if index + 1 >= len(choices):
@@ -7811,6 +7960,8 @@ class Game:
         self.sonar = SonarSystem(
             seed=seed, acoustic_profiles=self.runtime_catalog.acoustic_profiles)
         self.sonar_harmonic_hz = None
+        # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).
+        self.sonar_tools = analysis_tools.AcousticToolState()
         rng = random.Random(seed + 99999)
         self.rng_world = rng
         ship = data["ship"]
@@ -7938,6 +8089,8 @@ class Game:
         # M10–M16
         self.sonar_mode = data["sonar_mode"]
         self.sonar_harmonic_hz = None
+        # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).
+        self.sonar_tools = analysis_tools.AcousticToolState()
         sonar_controls = data["sonar_controls"]
         self.sonar.gain_db = sonar_controls["gain_db"]
         self.sonar.band_low_hz = sonar_controls["band_low_hz"]
@@ -11147,6 +11300,9 @@ class Game:
             self.tr("option.frame_rate", fps=self.frame_rate()),
             self.tr("option.bottom_panel") + ": "
             + self.tr("option.bottom_panel." + self.bottom_panel_mode()),
+            self.tr("option.operator_assist") + ": "
+            + self.tr("option.operator_assist." + ("training" if self.operator_assist()
+                                                   else "off")),
             self.tr("option.live_traffic"),
             self.tr("commander.local.option"),
         )

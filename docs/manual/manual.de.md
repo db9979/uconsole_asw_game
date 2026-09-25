@@ -118,7 +118,7 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 - Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
-- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste.
+- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste, Bedienerassistenz aus (Standard: Rohdaten und manuelle Analyse) oder Training (automatische Linienbeschriftung, Blattfrequenz- und Katalog-/Senderkandidaten).
 - `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen.
 
 ## 1 Brücke
@@ -250,11 +250,13 @@ Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehe
 
 Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen sind 1 Hz breit unter 40 Hz, 2 Hz bis 100 Hz und 5 Hz darüber. Alle 0,25 s kommt eine Zeile hinzu; 80 Zeilen bleiben stehen.
 
-- Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie; `K` schaltet die erkannte Harmonischen-Hypothese.
+- Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie: den weißen Cursor mit `Z`/`X` auf eine Linie setzen (`Umschalt`: 10-Hz-Schritte) und mit `K` als Grundton markieren; bernsteinfarbene Hilfslinien zeigen dann 2f, 3f usw. `K` auf derselben Frequenz löscht ihn.
 - Das eigene Schiff erzeugt eine Wellenlinie bei etwa 10 + 1,9 x eigene Fahrt Hz. `N` blendet sie per Notch aus.
 - `Leertaste` hält Spitzen, damit schwache Töne hervortreten.
 - Der Spektrumstreifen über dem Wasserfall schreibt die Frequenz über jede deutliche Linie (zwischen den Klassen interpoliert; mit `Leertaste` die gehaltene Hüllkurve). Wo sich Werte überdecken würden, behält die stärkere Linie ihre Beschriftung. Der Remote-Crew-Browser beschriftet seine Spektren genauso.
-- `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
+- `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz. `Strg+Z` / `Strg+X` setzen die untere / obere Bandkante auf den Cursor für jeden Band-, Tief- oder Hochpass; `Umschalt+N` legt einen zusätzlichen Notch auf die Cursorfrequenz.
+- `Q` wählt die Integrationszeit: 2 s (die FFT des Empfängers), 8, 16 oder 64 s. Längere Integration mittelt aufeinanderfolgende Spektren, sodass ein schwacher stehender Ton aus dem Rauschen tritt; eine wandernde Linie verschmiert dabei. `Umschalt+Q` öffnet den Nonius: 20 Hz um den Cursor in der nativen 0,5-Hz-Auflösung.
+- Die Detailspalte liest den Pegel am Cursor. Automatisch beschriftet der Streifen Linien nur mit Bedienerassistenz Training (`F10`).
 
 #### DEMON
 
@@ -270,7 +272,7 @@ DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraube
     Welle Blatt 2. Harmonische
 ```
 
-Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefenster sind bis zu 2 s lang: nach einer Peilungsänderung mindestens eine Sekunde horchen, bevor Sie urteilen. Gerankte Kandidaten aus dem Akustikkatalog erscheinen als Hinweis; die Klassifizierung bleibt Ihre Entscheidung. Der Spektrumstreifen beschriftet jede deutliche Modulationslinie mit ihrer Frequenz; die stärkste ist bernsteinfarben markiert.
+Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsänderung einige Sekunden horchen, bevor Sie urteilen. Blätter selbst zählen: den Cursor (`Z`/`X`, 0,5 Hz) auf die Wellenlinie setzen und `K` drücken, dann auf die Blattlinie und erneut `K`; die Spalte zeigt Blätter = Blattfrequenz / Wellenfrequenz (mit der Abweichung von einer ganzen Zahl) und die Wellendrehzahl. Ein drittes `K` löscht beide Marken. Das Ergebnis mit den Referenzen im Kontaktanalysator (`F8`) vergleichen. Mit Bedienerassistenz Training (`F10`) beschriftet das Sonar zusätzlich Modulationslinien, schlägt Drehzahlen für 3-7 Blätter vor und rankt Katalogkandidaten.
 
 #### TMA, Umwelt und Aktiv
 
@@ -328,7 +330,12 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 | `Shift+H` | Angezeigte Historientiefe 25 / 50 / 100 Prozent wechseln |
 | `F` | Frequenzband waehlen: breit / tief / mittel |
 | `N` | Notchfilter gegen Eigenantrieb |
-| `K` | Erkannte Harmonik-Hypothese waehlen oder loeschen |
+| `K` | Linie am Cursor markieren (LOFAR-Grundton, DEMON Welle/Blatt) |
+| `Z / X` | LOFAR/DEMON-Frequenzcursor (Umschalt: 10 Hz) |
+| `Ctrl+Z / Ctrl+X` | Bandpass untere / obere Kante am Cursor |
+| `Q` | Integrationszeit 2 (FFT)/8/16/64 s |
+| `Shift+Q` | LOFAR-Nonius: 20 Hz in nativen 0,5 Hz |
+| `Shift+N` | Notch auf der Cursorfrequenz |
 | `SPACE` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA fuer ausgewaehlten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -847,7 +854,7 @@ Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfa
 
 - Die Peilgenauigkeit beträgt etwa +/-3 Grad. Erfassungen sind Peilungen, keine Positionen.
 - Ein drehendes Suchradar trifft die ESM-Antenne einmal je Umlauf mit der Hauptkeule; seine Nebenkeulen sind nur aus der Nähe hörbar. Die Belegseite zeigt den Spitzenpegel, eine Entfernungsschätzung unter Annahme der Leistungsklasse des besten Kandidaten (ein falscher Kandidat ergibt eine falsche Entfernung) und die gemessene Antennenumlaufzeit.
-- Kandidaten werden nur aus beobachteter Frequenz, PRF und Modulation gerankt. Ein Gleichstand ist keine Identifizierung.
+- Standardmäßig (Bedienerassistenz aus, `F10`) zeigt die Belegseite nur die gemessenen Parameter und eine Bibliotheksabfrage: jeder Sender, dessen veröffentlichter Frequenz- (und PRF-)Bereich die Messung enthält, nach Namen sortiert, ohne Bewertung. Radartyp, Bedrohung und Entfernungsschätzung beurteilen Sie dann selbst; `C` schaltet die Bibliothek in Namensreihenfolge durch. Mit Assistenz Training werden Kandidaten nach Frequenz, PRF und Modulation mit Bewertung gerankt und Radartyp, Bedrohung und Entfernungsschätzung ausgefüllt. Ein Gleichstand ist keine Identifizierung.
 - Die Korrelation mit Radar- oder Sonartracks nutzt vereinbare Zeit, Peilung und beobachtete Position, nie verborgene Identität.
 - ESM läuft aus der OPZ-Abteilung: eine zerstörte OPZ legt es lahm.
 

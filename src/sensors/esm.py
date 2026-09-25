@@ -898,6 +898,32 @@ def rank_emitters(track: ESMTrack, emitters: Mapping[str, object],
                  :max(0, int(maximum))])
 
 
+def library_emitters(track: ESMTrack, emitters: Mapping[str, object],
+                     maximum: int = 32) -> tuple[ESMCandidate, ...]:
+    """Library lookup without ranking: radar emitters whose published
+    frequency (and PRF, when measured) range contains the measurement.
+
+    This is the range check an operator does in the emitter reference; the
+    result carries no score and is ordered by key, never by likelihood.
+    """
+    found = []
+    for emitter_key in sorted(emitters):
+        emitter = emitters[emitter_key]
+        if getattr(emitter, "domain", None) != "radar":
+            continue
+        low, high = emitter.frequency_band_hz
+        if not low <= track.frequency_hz <= high:
+            continue
+        band = emitter.prf_band_hz
+        if (track.prf_hz is not None and band is not None
+                and not band[0] <= track.prf_hz <= band[1]):
+            continue
+        found.append(ESMCandidate(emitter_key, None))
+        if len(found) >= maximum:
+            break
+    return tuple(found)
+
+
 def analyze_signal(track: ESMTrack, emitters: Mapping[str, object],
                    maximum: int = 5) -> ESMAnalysis:
     candidates = rank_emitters(track, emitters, maximum)

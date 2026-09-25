@@ -427,9 +427,10 @@ def test_options_eight_and_f9_live_menu_ownership(game, monkeypatch):
     monkeypatch.setattr(game.commander, "prepare", Mock())
     key(game, pygame.K_F10)
     assert game.options_open
-    for _ in range(11):
+    commander_row = game._OPTION_ROWS.index("commander")
+    for _ in range(commander_row):
         key(game, pygame.K_DOWN)
-    assert game.options_sel == 11
+    assert game.options_sel == commander_row
     key(game, pygame.K_RETURN)
     assert game.commander_open and game.administration_open and not game.options_open
     key(game, pygame.K_ESCAPE)
@@ -580,7 +581,7 @@ def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     game.commander._prepared = True
     game._open_administration("options")
     monkeypatch.setattr(pygame.display, "get_window_size", lambda: (1280, 1000))
-    rect = game._options_row_rects()[11]
+    rect = game._options_row_rects()[game._OPTION_ROWS.index("commander")]
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                         pos=(rect.centerx, 20)))
     assert game.options_open

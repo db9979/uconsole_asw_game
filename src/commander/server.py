@@ -279,6 +279,26 @@ _COMPARTMENTS = frozenset(("bridge", "sonar", "weapons", "opz", "radio",
                            "engine", "flightdeck", "hull_left", "hull_right"))
 
 
+def _sonar_cursor_params(params):
+    return (type(params) is dict and set(params) == {"page", "frequency_hz"}
+            and params["page"] in ("lofar", "demon")
+            and type(params["frequency_hz"]) in (int, float)
+            and math.isfinite(params["frequency_hz"])
+            and 0.0 <= params["frequency_hz"] <= 300.0)
+
+
+def _sonar_band_params(params):
+    return (type(params) is dict and set(params) == {"low_hz", "high_hz"}
+            and all(type(params[name]) in (int, float) and math.isfinite(params[name])
+                    for name in ("low_hz", "high_hz"))
+            and 0.0 <= params["low_hz"] < params["high_hz"] <= 300.0)
+
+
+def _integration_params(params):
+    return (type(params) is dict and set(params) == {"seconds"}
+            and type(params["seconds"]) is int and params["seconds"] in (2, 8, 16, 64))
+
+
 def _team_compartment_params(params):
     return (type(params) is dict and set(params) == {"team", "compartment"}
             and type(params["team"]) is int and 1 <= params["team"] <= 3
@@ -452,6 +472,14 @@ V2_ACTION_REGISTRY = {
     "sonar_set_band_preset": V2Action(frozenset({"sonar"}),
         _enum_params("preset", ("FULL", "LOW", "SHAFT", "MID"))),
     "sonar_set_notch": V2Action(frozenset({"sonar"}), _bool_params("enabled")),
+    "sonar_set_cursor": V2Action(frozenset({"sonar"}), _sonar_cursor_params),
+    "sonar_mark_line": V2Action(frozenset({"sonar"}),
+        _enum_params("page", ("lofar", "demon"))),
+    "sonar_set_integration": V2Action(frozenset({"sonar"}), _integration_params),
+    "sonar_set_vernier": V2Action(frozenset({"sonar"}), _bool_params("enabled")),
+    "sonar_set_band": V2Action(frozenset({"sonar"}), _sonar_band_params),
+    "sonar_set_operator_notch": V2Action(frozenset({"sonar"}),
+        _bounded_number_params("frequency_hz", 0.000001, 300, nullable=True)),
     "sonar_set_peak_hold": V2Action(frozenset({"sonar"}),
                                     _bool_params("enabled")),
     "sonar_set_harmonic": V2Action(frozenset({"sonar"}),

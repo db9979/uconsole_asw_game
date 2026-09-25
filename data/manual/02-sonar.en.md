@@ -37,11 +37,13 @@ Newest data is at the top. A straight vertical trace is a contact on a steady be
 
 The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 Hz, 2 Hz up to 100 Hz and 5 Hz above. A new line is added every 0.25 s; 80 lines are kept.
 
-- Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family; `K` cycles the detected harmonic hypothesis.
+- Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family: put the white cursor on a line with `Z`/`X` (`Shift`: 10 Hz steps) and press `K` to mark it as fundamental; amber guides then show 2f, 3f and so on. `K` on the same frequency clears it.
 - Own ship produces a shaft line at about 10 + 1.9 x own speed Hz. `N` notches it out.
 - `Space` holds peaks so faint tonals stand out.
 - The spectrum strip above the waterfall prints the frequency over every prominent line (interpolated between bins; with `Space` the held envelope). Where values would overlap, the stronger line keeps its label. The Remote Crew browser labels its spectra the same way.
-- `F` selects the analysed band: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
+- `F` selects the analysed band: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz. `Ctrl+Z` / `Ctrl+X` set the low / high band edge at the cursor for any band-, low- or high-pass; `Shift+N` puts an extra notch on the cursor frequency.
+- `Q` selects the integration time: 2 s (the receiver's own FFT), 8, 16 or 64 s. Longer integration averages successive spectra so a weak steady tonal rises out of the noise, but a moving line smears. `Shift+Q` opens the vernier: 20 Hz around the cursor at the native 0.5 Hz resolution.
+- The detail rail reads the level at the cursor. The strip labels lines automatically only with operator assistance set to training (`F10`).
 
 ### DEMON {#sonar-demon}
 
@@ -57,7 +59,7 @@ DEMON demodulates the broadband noise envelope of the listening beam. Propeller 
     shaft blade 2nd harmonic
 ```
 
-The display shows measured modulation, not certain identity. The analysis windows are up to 2 s long: after changing the bearing listen for at least one second before judging. Ranked candidates from the acoustic catalogue appear as hints; the classification is still yours. The spectrum strip labels every prominent modulation line with its frequency; the strongest one is marked in amber.
+The display shows measured modulation, not identity. After changing the bearing listen for at least a few seconds before judging. Count blades yourself: move the cursor (`Z`/`X`, 0.5 Hz) onto the shaft line and press `K`, then onto the blade line and press `K` again; the rail shows blades = blade rate / shaft rate (with the deviation from a whole number) and the shaft RPM. A third `K` clears both marks. Compare the result with the references in the contact analyser (`F8`). With operator assistance set to training (`F10`) the sonar also labels modulation lines, proposes RPM for 3-7 blades and ranks catalogue candidates.
 
 ### TMA, environment and active {#sonar-tma-env}
 

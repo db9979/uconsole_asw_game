@@ -269,9 +269,10 @@ def test_lofar_harmonics_require_current_operator_selection(display_game):
     game.sonar_harmonic_hz = 20.0
     assert view._selected_harmonic(game) == 20.0
     assert any("2f" in localize(row[0], game.tr) for row in view._detail_rows(game, 1))
+    # The operator's fundamental does not depend on detected peaks.
     game.sonar.receiver.peaks = [(30.0, .8)]
-    assert view._selected_harmonic(game) is None
-    game.sonar.receiver.peaks = [(20.0, .8)]
+    assert view._selected_harmonic(game) == 20.0
+    game.sonar_harmonic_hz = None
     assert view._selected_harmonic(game) is None
 
 

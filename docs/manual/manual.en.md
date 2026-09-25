@@ -118,7 +118,7 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band.
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates).
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.
 
 ## 1 Bridge
@@ -249,11 +249,13 @@ Newest data is at the top. A straight vertical trace is a contact on a steady be
 
 The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 Hz, 2 Hz up to 100 Hz and 5 Hz above. A new line is added every 0.25 s; 80 lines are kept.
 
-- Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family; `K` cycles the detected harmonic hypothesis.
+- Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family: put the white cursor on a line with `Z`/`X` (`Shift`: 10 Hz steps) and press `K` to mark it as fundamental; amber guides then show 2f, 3f and so on. `K` on the same frequency clears it.
 - Own ship produces a shaft line at about 10 + 1.9 x own speed Hz. `N` notches it out.
 - `Space` holds peaks so faint tonals stand out.
 - The spectrum strip above the waterfall prints the frequency over every prominent line (interpolated between bins; with `Space` the held envelope). Where values would overlap, the stronger line keeps its label. The Remote Crew browser labels its spectra the same way.
-- `F` selects the analysed band: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
+- `F` selects the analysed band: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz. `Ctrl+Z` / `Ctrl+X` set the low / high band edge at the cursor for any band-, low- or high-pass; `Shift+N` puts an extra notch on the cursor frequency.
+- `Q` selects the integration time: 2 s (the receiver's own FFT), 8, 16 or 64 s. Longer integration averages successive spectra so a weak steady tonal rises out of the noise, but a moving line smears. `Shift+Q` opens the vernier: 20 Hz around the cursor at the native 0.5 Hz resolution.
+- The detail rail reads the level at the cursor. The strip labels lines automatically only with operator assistance set to training (`F10`).
 
 #### DEMON
 
@@ -269,7 +271,7 @@ DEMON demodulates the broadband noise envelope of the listening beam. Propeller 
     shaft blade 2nd harmonic
 ```
 
-The display shows measured modulation, not certain identity. The analysis windows are up to 2 s long: after changing the bearing listen for at least one second before judging. Ranked candidates from the acoustic catalogue appear as hints; the classification is still yours. The spectrum strip labels every prominent modulation line with its frequency; the strongest one is marked in amber.
+The display shows measured modulation, not identity. After changing the bearing listen for at least a few seconds before judging. Count blades yourself: move the cursor (`Z`/`X`, 0.5 Hz) onto the shaft line and press `K`, then onto the blade line and press `K` again; the rail shows blades = blade rate / shaft rate (with the deviation from a whole number) and the shaft RPM. A third `K` clears both marks. Compare the result with the references in the contact analyser (`F8`). With operator assistance set to training (`F10`) the sonar also labels modulation lines, proposes RPM for 3-7 blades and ranks catalogue candidates.
 
 #### TMA, environment and active
 
@@ -327,7 +329,12 @@ The display shows measured modulation, not certain identity. The analysis window
 | `Shift+H` | Cycle displayed history depth: 25 / 50 / 100 percent |
 | `F` | Select frequency band: wide / low / medium |
 | `N` | Notch filter against own propulsion |
-| `K` | Cycle or clear the detected harmonic hypothesis |
+| `K` | Mark line at cursor (LOFAR fundamental, DEMON shaft/blade) |
+| `Z / X` | LOFAR/DEMON frequency cursor (Shift: 10 Hz) |
+| `Ctrl+Z / Ctrl+X` | Band-pass low / high edge at the cursor |
+| `Q` | Integration time 2 (FFT)/8/16/64 s |
+| `Shift+Q` | LOFAR vernier: 20 Hz at native 0.5 Hz |
+| `Shift+N` | Notch at the cursor frequency |
 | `SPACE` | LOFAR peak hold on/off |
 | `T` | TMA for selected contact on/off |
 | `C` | Classify contact (submarine / warship / biological / vessel / aircraft / torpedo) |
@@ -846,7 +853,7 @@ Page 1 lists intercepts; page 2 shows the evidence for the selected intercept (f
 
 - Bearing accuracy is about +/-3 degrees. Intercepts are bearings, not positions.
 - A rotating search radar reaches the ESM antenna with its main beam once per revolution; its side lobes are heard only close in. The evidence page shows the peak signal level, a range estimate that assumes the power class of the best candidate (a wrong candidate gives a wrong range) and the measured antenna scan period.
-- Candidates are ranked only from observed frequency, PRF and modulation. A tie is not an identification.
+- By default (operator assistance off, `F10`) the evidence page shows only the measured parameters and a library lookup: every emitter whose published frequency (and PRF) range contains the measurement, in name order, without score. Radar type, threat and range estimate are then yours to judge; `C` cycles the library in name order. With assistance set to training, candidates are ranked by frequency, PRF and modulation with a score, and radar type, threat and range estimate are filled in. A tie is not an identification.
 - Correlation with radar or sonar tracks uses compatible time, bearing and observed position, never hidden identity.
 - ESM runs from the operations compartment: a destroyed operations room disables it.
 

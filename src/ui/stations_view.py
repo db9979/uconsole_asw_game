@@ -12,7 +12,8 @@ import pygame
 import numpy as np
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize, message as structured_message
+from src.core.i18n import (display_value, localized, localize, raw_text,
+                            message as structured_message)
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
 from src.ship.ship import Ship
@@ -986,7 +987,7 @@ def draw_eloka_view(game, tr=None) -> None:
         else:
             modulation = localize("eloka.modulation." + selected.modulation_code)
             prf = f"{selected.prf_hz:.0f} Hz" if selected.prf_hz is not None else "--"
-            analysis = game.eloka_analysis(selected)
+            analysis = game.eloka_display_analysis(selected)
             channel = next((item for item in game.ecm_jammer.channels
                             if item.track_key == selected.track_key), None)
             values = (
@@ -1010,14 +1011,14 @@ def draw_eloka_view(game, tr=None) -> None:
                     age=f"{selected.age(game.sim_t):.1f}")),
                 ("eloka.field.signal", message(
                     "eloka.value.signal", level=f"{selected.signal_db:.0f}",
-                    range=(f"{estimate:.0f}" if (estimate := game.eloka_range_estimate(
+                    range=(f"{estimate:.0f}" if (estimate := game.eloka_display_range(
                         selected)) is not None else "--"),
                     scan=(f"{selected.revisit_s:.1f}" if selected.revisit_s > 0.0
                           else "--"))),
                 ("eloka.field.radar_type", localize(
                     "eloka.radar_type." + (analysis.radar_type.value
                     if analysis is not None and analysis.radar_type is not None
-                    else "surface_search"))),
+                    else "unassessed"))),
                 ("eloka.field.threat", localize(
                     "eloka.threat." + (analysis.threat_level
                     if analysis is not None else "unknown"))),
@@ -1059,16 +1060,26 @@ def draw_eloka_view(game, tr=None) -> None:
                     surface, (analysis_x, analysis_y, analysis_w, signal_h),
                     selected, game.sim_t, channel)
                 analysis_y += signal_h + 10
-                layout.blit_line(surface, "eloka.heading.candidates",
+                assist = game.operator_assist()
+                layout.blit_line(surface, "eloka.heading.candidates" if assist
+                                 else "eloka.heading.library",
                                  (analysis_x, analysis_y, analysis_w, 24),
                                  config.COLOR_TEXT, size=17)
                 analysis_y += 28
-                for candidate in game.eloka_candidates(selected)[:3]:
+                shown = game.eloka_display_candidates(selected)
+                for candidate in shown[:3]:
+                    name = (game.eloka_emitter_name(candidate.emitter_key)
+                            or candidate.emitter_key)
                     layout.blit_line(surface, message(
-                        "eloka.line.candidate",
-                        emitter=game.eloka_emitter_name(candidate.emitter_key)
-                        or candidate.emitter_key,
-                        score=f"{candidate.score:.0%}"),
+                        "eloka.line.candidate", emitter=name,
+                        score=f"{candidate.score:.0%}") if candidate.score is not None
+                        else raw_text(name),
+                        (analysis_x, analysis_y, analysis_w, 25),
+                        config.COLOR_TEXT_DIM, size=16)
+                    analysis_y += 28
+                if not assist:
+                    layout.blit_line(surface, message(
+                        "eloka.library_hint", count=len(shown)),
                         (analysis_x, analysis_y, analysis_w, 25),
                         config.COLOR_TEXT_DIM, size=16)
                     analysis_y += 28

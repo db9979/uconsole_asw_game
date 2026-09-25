@@ -46,6 +46,7 @@ from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
 from src.sonar import analysis_tools
+from src.sonar import tma_operator
 from src.sensors import hfdf as hf_physics
 from src.sonar import equation as sonar_equation
 from src.sonar import propagation as sonar_propagation
@@ -166,6 +167,9 @@ MAX_DECOYS = 128
 # F1 overlay categories: global keys, station, sensors/tactics, manual reader.
 HELP_PAGE_COUNT = 4
 HELP_MANUAL_PAGE = 3
+# Operator TMA: the residuals must show no systematic trend beyond the
+# averaged bearing noise before a hypothesis can be accepted as a fix.
+TMA_ACCEPT_MIN_FIT = 0.3
 # Operator sonar classification -> published track kind (domain symbol).
 SONAR_CLASS_KINDS = {
     "U_BOOT": "SUB",
@@ -632,6 +636,8 @@ class Game:
         self.sonar_harmonic_hz = None
         # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).
         self.sonar_tools = analysis_tools.AcousticToolState()
+        # Operator TMA hypotheses per sonar target (transient UI state).
+        self.tma_hypotheses = {}
         # Display-only CRT controls are intentionally transient: they affect no
         # observation, simulation or v10 save contract.
         self.sonar_display_palette = "green"
@@ -2478,11 +2484,18 @@ class Game:
                     self.flash(message("runtime.sonar_audio.on" if self.sonar_audio_enabled
                                        else "runtime.sonar_audio.off"))
                     return
+                if e.key == pygame.K_k and self.sonar_page == 3:
+                    self._tma_key(e)
+                    return
                 if e.key == pygame.K_k:
                     self._cycle_sonar_harmonic()
                     return
                 if e.key in (pygame.K_z, pygame.K_x) and self.sonar_page in (1, 2):
                     self._sonar_cursor_key(e)
+                    return
+                if self.sonar_page == 3 and e.key in (pygame.K_z, pygame.K_x,
+                                                      pygame.K_q, pygame.K_k):
+                    self._tma_key(e)
                     return
                 if e.key == pygame.K_q:
                     if getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
@@ -3143,6 +3156,8 @@ class Game:
                                else "runtime.notch.off"), 1.5)
         elif action == "harmonic":
             self._cycle_sonar_harmonic()
+        elif action == "tma_accept":
+            self._accept_tma_with_notice(self._tma_contact())
         elif action == "integration":
             seconds = self.sonar_tools.cycle_integration()
             self.flash(message("runtime.integration", seconds=seconds), 1.5)
@@ -3197,6 +3212,122 @@ class Game:
         step = 10.0 if mods & pygame.KMOD_SHIFT else (0.5 if fine else 1.0)
         current = tools.demon_cursor_hz if page == "demon" else tools.lofar_cursor_hz
         self.set_sonar_cursor(page, current + (step if e.key == pygame.K_x else -step))
+
+    # --- Operator TMA (sonar page 3) ---
+
+    def _tma_contact(self):
+        contact = self.selected_contact
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            return None
+        return contact
+
+    def _tma_points(self, contact):
+        track = self.sonar._tracks.get(getattr(contact, "target_id", None))
+        return list(getattr(track, "pts", ()))
+
+    def tma_hypothesis(self, contact):
+        hypothesis = self.tma_hypotheses.get(contact.target_id)
+        if hypothesis is None:
+            hypothesis = tma_operator.default_hypothesis(self._tma_points(contact))
+        return hypothesis
+
+    def set_tma_hypothesis(self, contact, course, speed_kn, range_nm):
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            return "stale_ref"
+        if any(type(value) not in (int, float) or not math.isfinite(value)
+               for value in (course, speed_kn, range_nm)):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.tma_hypotheses[contact.target_id] = tma_operator.Hypothesis(
+            float(course), float(speed_kn), float(range_nm)).clamped()
+        while len(self.tma_hypotheses) > 64:
+            self.tma_hypotheses.pop(next(iter(self.tma_hypotheses)))
+        return True
+
+    def tma_evaluation(self, contact):
+        points = self._tma_points(contact)
+        return tma_operator.evaluate(points, self.tma_hypothesis(contact))
+
+    def accept_tma(self, contact):
+        """Write the operator's hypothesis as the contact's TMA fix."""
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            return "stale_ref"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        points = self._tma_points(contact)
+        evaluation = tma_operator.evaluate(points, self.tma_hypothesis(contact))
+        if evaluation is None:
+            return "not_ready"
+        if evaluation["observability"] < 0.5:
+            return "unobservable"
+        if evaluation["fit"] < TMA_ACCEPT_MIN_FIT:
+            return "poor_fit"
+        hypothesis = self.tma_hypothesis(contact)
+        position = tma_operator.position_at(points, hypothesis, self.sim_t)
+        contact.accept_operator_tma(position, hypothesis.course,
+                                    hypothesis.speed_kn, evaluation["quality"],
+                                    self.sim_t)
+        return True
+
+    def copy_tma_proposal(self, contact):
+        """Training aid: start the hypothesis from the automatic solver."""
+        if not self.operator_assist():
+            return "not_available"
+        if contact is None:
+            return "stale_ref"
+        proposal = self.sonar.tma_proposals.get(contact.target_id)
+        points = self._tma_points(contact)
+        if proposal is None or not points:
+            return "not_ready"
+        # The proposal's position is at its newest bearing; its range from
+        # that observation point seeds the hypothesis range.
+        ref = points[-1]
+        return self.set_tma_hypothesis(
+            contact, proposal.course, proposal.speed,
+            math.hypot(proposal.pos[0] - ref.fx, proposal.pos[1] - ref.fy))
+
+    def _accept_tma_with_notice(self, contact) -> None:
+        result = self.accept_tma(contact) if contact is not None else "stale_ref"
+        if result is True:
+            self.flash(message("runtime.tma.accepted", contact=contact.id,
+                               quality=f"{contact.tma_quality:.0%}"), 2.0)
+        elif result == "poor_fit":
+            self.flash(message("runtime.tma.poor_fit"), 2.0)
+        elif result == "unobservable":
+            self.flash(message("runtime.tma.unobservable"), 2.0)
+        else:
+            self.flash(message("runtime.tma.not_ready"), 2.0)
+
+    def _tma_key(self, e) -> None:
+        """TMA page: Z/X course -/+ (Shift fine), Ctrl+Z/X speed -/+,
+        Q / Shift+Q range -/+, K accept, Shift+K copy the solver proposal."""
+        contact = self._tma_contact()
+        if contact is None:
+            self.flash(message("runtime.tma.no_contact"), 1.5)
+            return
+        mods = getattr(e, "mod", 0)
+        hypothesis = self.tma_hypothesis(contact)
+        course, speed, rng = hypothesis.course, hypothesis.speed_kn, hypothesis.range_nm
+        if e.key == pygame.K_k:
+            if mods & pygame.KMOD_SHIFT:
+                result = self.copy_tma_proposal(contact)
+                self.flash(message("runtime.tma.copied" if result is True
+                                   else "runtime.tma.no_proposal"), 1.5)
+                return
+            self._accept_tma_with_notice(contact)
+            return
+        sign = 1.0 if e.key == pygame.K_x else -1.0
+        if e.key == pygame.K_q:
+            rng += (tma_operator.RANGE_FINE_NM if mods & pygame.KMOD_CTRL
+                    else tma_operator.RANGE_STEP_NM) * (1.0 if mods & pygame.KMOD_SHIFT
+                                                        else -1.0)
+        elif mods & pygame.KMOD_CTRL:
+            speed += tma_operator.SPEED_STEP_KN * sign
+        else:
+            course += (tma_operator.COURSE_FINE_DEG if mods & pygame.KMOD_SHIFT
+                       else tma_operator.COURSE_STEP_DEG) * sign
+        self.set_tma_hypothesis(contact, course, speed, rng)
 
     def operator_assist(self) -> bool:
         """Training aids (auto peaks, blade-rate/catalog ranking, ESM IDs) on?"""
@@ -7962,6 +8093,8 @@ class Game:
         self.sonar_harmonic_hz = None
         # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).
         self.sonar_tools = analysis_tools.AcousticToolState()
+        # Operator TMA hypotheses per sonar target (transient UI state).
+        self.tma_hypotheses = {}
         rng = random.Random(seed + 99999)
         self.rng_world = rng
         ship = data["ship"]
@@ -8091,6 +8224,8 @@ class Game:
         self.sonar_harmonic_hz = None
         # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).
         self.sonar_tools = analysis_tools.AcousticToolState()
+        # Operator TMA hypotheses per sonar target (transient UI state).
+        self.tma_hypotheses = {}
         sonar_controls = data["sonar_controls"]
         self.sonar.gain_db = sonar_controls["gain_db"]
         self.sonar.band_low_hz = sonar_controls["band_low_hz"]

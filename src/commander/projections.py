@@ -331,7 +331,35 @@ def _sonar_visualization(game, rows, sonar_refs):
                                 contact.tma_quality), age_s=_age(
                                     game.sim_t, contact.tma_seen),
                             uncertainty_nm=row["range_uncertainty_nm"])
-        tma.append(dict(ref=row["ref"], bearings=points, solution=solution))
+        # Operator hypothesis with its residuals (aligned with the newest
+        # bearings sent above); the solver proposal only as a training aid.
+        hypothesis = game.tma_hypothesis(contact)
+        evaluation = game.tma_evaluation(contact)
+        all_points = [] if track is None else list(track.pts)
+        residual_rows = ([] if evaluation is None else
+                         [round(float(value), 3) for value in
+                          evaluation["residuals"][-len(points):]]) if points else []
+        proposal = None
+        if game.operator_assist():
+            candidate = sonar.tma_proposals.get(contact.target_id)
+            if candidate is not None and all_points:
+                ref = all_points[-1]
+                proposal = dict(course=_number(candidate.course),
+                                speed_kn=_number(candidate.speed),
+                                range_nm=_number(math.hypot(candidate.pos[0] - ref.fx,
+                                                            candidate.pos[1] - ref.fy)))
+        tma.append(dict(
+            ref=row["ref"], bearings=points, solution=solution,
+            hypothesis=dict(course=_number(hypothesis.course),
+                            speed_kn=_number(hypothesis.speed_kn),
+                            range_nm=_number(hypothesis.range_nm)),
+            evaluation=None if evaluation is None else dict(
+                rms_deg=_number(evaluation["rms_deg"]),
+                systematic_deg=_number(evaluation["systematic_deg"]),
+                fit=_number(evaluation["fit"]),
+                observability=_number(evaluation["observability"])),
+            residuals_deg=residual_rows if len(residual_rows) == len(points) else [],
+            proposal=proposal))
         if len(tma) == _TMA_CONTACTS_MAX:
             break
 

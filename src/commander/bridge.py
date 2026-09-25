@@ -338,6 +338,22 @@ def _sonar_set_operator_notch(game, params, _bindings):
     return game.set_sonar_operator_notch(params["frequency_hz"])
 
 
+def _sonar_tma_set(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None else game.set_tma_hypothesis(
+        contact, params["course"], params["speed_kn"], params["range_nm"]))
+
+
+def _sonar_tma_accept(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return "unknown_ref" if contact is None else game.accept_tma(contact)
+
+
+def _sonar_tma_copy_proposal(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return "unknown_ref" if contact is None else game.copy_tma_proposal(contact)
+
+
 def _sonar_designate_target(game, params, bindings):
     contact = _sonar_contact(bindings, params["ref"])
     return "unknown_ref" if contact is None else game.designate_sonar_target(contact)
@@ -491,6 +507,9 @@ _V2_ACTION_HANDLERS = {
     "sonar_set_peak_hold": _sonar_set_peak_hold,
     "sonar_set_harmonic": _sonar_set_harmonic,
     "sonar_set_cursor": _sonar_set_cursor,
+    "sonar_tma_set": _sonar_tma_set,
+    "sonar_tma_accept": _sonar_tma_accept,
+    "sonar_tma_copy_proposal": _sonar_tma_copy_proposal,
     "sonar_mark_line": _sonar_mark_line,
     "sonar_set_integration": _sonar_set_integration,
     "sonar_set_vernier": _sonar_set_vernier,

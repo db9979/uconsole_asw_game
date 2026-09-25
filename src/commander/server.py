@@ -294,6 +294,16 @@ def _sonar_band_params(params):
             and 0.0 <= params["low_hz"] < params["high_hz"] <= 300.0)
 
 
+def _tma_hypothesis_params(params):
+    return (type(params) is dict
+            and set(params) == {"ref", "course", "speed_kn", "range_nm"}
+            and type(params["ref"]) is str and 0 < len(params["ref"]) <= 64
+            and all(type(params[name]) in (int, float) and math.isfinite(params[name])
+                    for name in ("course", "speed_kn", "range_nm"))
+            and 0.0 <= params["course"] < 360.0 and 0.0 <= params["speed_kn"] <= 45.0
+            and 0.2 <= params["range_nm"] <= 60.0)
+
+
 def _integration_params(params):
     return (type(params) is dict and set(params) == {"seconds"}
             and type(params["seconds"]) is int and params["seconds"] in (2, 8, 16, 64))
@@ -485,6 +495,9 @@ V2_ACTION_REGISTRY = {
     "sonar_set_harmonic": V2Action(frozenset({"sonar"}),
         _bounded_number_params("frequency_hz", 0.000001, 300, nullable=True)),
     "sonar_designate_target": V2Action(frozenset({"sonar"}), _single_ref_params),
+    "sonar_tma_set": V2Action(frozenset({"sonar"}), _tma_hypothesis_params),
+    "sonar_tma_accept": V2Action(frozenset({"sonar"}), _single_ref_params),
+    "sonar_tma_copy_proposal": V2Action(frozenset({"sonar"}), _single_ref_params),
     "helicopter_launch": V2Action(frozenset({"helicopter"}), _no_params),
     "helicopter_return": V2Action(frozenset({"helicopter"}), _no_params),
     "helicopter_set_waypoint": V2Action(frozenset({"helicopter"}),

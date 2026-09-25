@@ -327,7 +327,7 @@ class Contact:
         if self.range_source == "ping" and self.ping_pos is not None:
             self.observed_x, self.observed_y = self.ping_pos
         elif self.range_source == "tma" and self.tma_pos is not None:
-            self.observed_x, self.observed_y = self.tma_pos
+            self.observed_x, self.observed_y = self.tma_position_at(t)
         if self.observed_x is not None and self.observed_y is not None:
             self.bearing = math.degrees(math.atan2(
                 self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
@@ -503,6 +503,46 @@ class Contact:
             return config.clamp(max(self.tma_ellipse[0], heuristic), 0.1, 12.0)
         return heuristic
 
+    def accept_operator_tma(self, pos, course: float, speed: float,
+                            quality: float, t: float) -> None:
+        """Take the operator's accepted solution as the contact's TMA fix.
+
+        The position is dead-reckoned along course/speed until the fix ages
+        out; the operator refines and re-accepts as bearings accumulate.
+        """
+        self.expire_ping_fix(t)
+        self.tma_pos = (float(pos[0]), float(pos[1]))
+        self.tma_course = float(course) % 360.0
+        self.tma_speed = float(speed)
+        self.tma_quality = float(quality)
+        self.tma_seen = t
+        self.tma_ellipse = None
+        sigma = self.tma_range_sigma_nm(quality)
+        self._publish_fix("TMA", t, t, self.tma_pos[0], self.tma_pos[1], sigma,
+                          self.tma_quality)
+        if self.range_source not in ("ping", "buoy"):
+            self.observed_x, self.observed_y = self.tma_pos
+            self.bearing = math.degrees(math.atan2(
+                self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
+            self.range_est = math.hypot(self.observed_x - self._fx,
+                                        self.observed_y - self._fy)
+            self.range_sigma_nm = sigma
+            self.range_source = "tma"
+            self.range_seen = t
+            self.bearing_uncertainty_deg = None
+            self.depth_est = self.depth_sigma_m = None
+
+    def tma_position_at(self, t: float):
+        """The accepted TMA position dead-reckoned to time ``t``."""
+        if self.tma_pos is None:
+            return None
+        if self.tma_seen is None or self.tma_course is None or self.tma_speed is None:
+            return self.tma_pos
+        step = config.kn_to_nm_per_s(self.tma_speed) * max(0.0, t - self.tma_seen)
+        course = math.radians(self.tma_course)
+        return (self.tma_pos[0] + step * math.sin(course),
+                self.tma_pos[1] - step * math.cos(course))
+
     def update_tma(self, sol, t: float, fixed_at: float = None):
         """TMA-Estimate übernehmen (nur, solange kein frischerer Ping)."""
         self.expire_ping_fix(t)
@@ -604,6 +644,8 @@ class SonarSystem:
         self.notch_enabled = False
         # Operator notch at a chosen frequency (display and audio, transient).
         self.operator_notch_hz = None
+        # Automatic TMA proposals per target (transient training aid).
+        self.tma_proposals = {}
         self.peak_hold = False
         self.focus_locked = False
         self.tma_enabled = True
@@ -1835,10 +1877,16 @@ class SonarSystem:
         c = self.contacts.get(tgt.id)
         if c is None:
             return
-        sol = solve_tma(tr, previous_course=c.tma_course,
-                        previous_speed=c.tma_speed)
-        if sol is not None:
-            c.update_tma(sol, tr.pts[-1].t, fixed_at=t)
+        # The solver only proposes (a training aid, shown with operator
+        # assistance on). The contact's TMA fix is written solely when the
+        # operator accepts a solution (Game.accept_tma).
+        previous = self.tma_proposals.get(tgt.id)
+        sol = solve_tma(tr, previous_course=getattr(previous, "course", None),
+                        previous_speed=getattr(previous, "speed", None))
+        if sol is not None:   # a failed re-solve keeps the last proposal
+            self.tma_proposals[tgt.id] = sol
+        for key in [key for key in self.tma_proposals if key not in self.contacts]:
+            del self.tma_proposals[key]
         self._tma_versions[tgt.id] = tr.version
         self._tma_next[tgt.id] = t + config.TMA_RESOLVE_EVERY_S
 

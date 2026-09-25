@@ -10,7 +10,7 @@ import pygame
 from src.core import config
 from src.core.i18n import (display_message, display_value, localized, localize,
                             message as structured_message, short_candidates)
-from src.sonar import analysis_tools
+from src.sonar import analysis_tools, tma_operator
 from src.ui import layout
 from src.ui import observations
 
@@ -152,6 +152,17 @@ def sonar_geometry(game, page=None):
             ("Q", "sonar.footer.integration", "", f"{tools.integration_s} s"),
             footer_specs[1][1]))
         actions = (actions[0], ("harmonic", "cursor", "integration", "notch"))
+    contact = getattr(game, "selected_contact", None)
+    if page == 3 and contact is not None and hasattr(game, "tma_hypothesis"):
+        hypothesis = game.tma_hypothesis(contact)
+        evaluation = game.tma_evaluation(contact)
+        footer_specs = (footer_specs[0], (
+            ("K", "sonar.footer.tma_accept", "",
+             "--" if evaluation is None else f"{evaluation['fit']:.0%}"),
+            ("Z/X", "sonar.footer.tma_course", "", f"{hypothesis.course:05.1f}\u00b0"),
+            ("^Z/^X", "sonar.footer.tma_speed", "", f"{hypothesis.speed_kn:.1f} kn"),
+            ("Q", "sonar.footer.tma_range", "", f"{hypothesis.range_nm:.1f} NM")))
+        actions = (actions[0], ("tma_accept", "cursor", "cursor", "cursor"))
     footer = []
     for row, specs in enumerate(footer_specs):
         width = (station.w - 28) // len(specs)
@@ -1268,6 +1279,8 @@ def _draw_tma(game, panel):
                 pygame.draw.lines(screen, CYAN, False, xy, 2)
             for point in xy:
                 pygame.draw.circle(screen, TEXT, point, 3)
+            _draw_tma_hypothesis(game, contact, points, plot, times, bearings, lo, hi,
+                                 start, end)
         _text(screen, message("sonar.line.observations", count=len(points),
                               duration=f"{times[-1] - times[0]:.1f}"),
                (plot.x, plot.bottom + 24, plot.w - 145, 18), DIM, 12)
@@ -1282,6 +1295,50 @@ def _draw_tma(game, panel):
     else:
         _text(screen, "sonar.no_bearing_series",
               (plot.x, plot.centery, plot.w, 22), DIM, 14, "center")
+
+
+def _draw_tma_hypothesis(game, contact, points, plot, times, bearings, lo, hi,
+                         start, end):
+    """Predicted bearings of the operator hypothesis (amber) and, as a
+    training aid, of the automatic proposal (dim); residuals along the foot."""
+    if contact is None or not hasattr(game, "tma_hypothesis"):
+        return
+    screen = game.screen
+    unwrapped = np.asarray(bearings, dtype=float)
+
+    def curve(hypothesis):
+        predicted = []
+        for index, residual in enumerate(tma_operator.residuals(points, hypothesis)):
+            value = unwrapped[index] - residual
+            x = plot.x + round((float(times[index]) - start) / max(1e-9, end - start)
+                               * (plot.w - 1))
+            y = plot.bottom - 1 - round((value - lo) / max(1e-9, hi - lo) * (plot.h - 1))
+            predicted.append((x, y))
+        return predicted
+
+    if getattr(game, "operator_assist", lambda: False)():
+        proposal = getattr(game.sonar, "tma_proposals", {}).get(contact.target_id)
+        if proposal is not None:
+            ref = points[-1]
+            ghost = tma_operator.Hypothesis(
+                proposal.course, proposal.speed,
+                max(tma_operator.RANGE_MIN_NM,
+                    float(np.hypot(proposal.pos[0] - ref.fx, proposal.pos[1] - ref.fy))))
+            line = curve(ghost)
+            if len(line) > 1:
+                pygame.draw.lines(screen, DIM, False, line, 1)
+    hypothesis = game.tma_hypothesis(contact)
+    line = curve(hypothesis)
+    if len(line) > 1:
+        pygame.draw.lines(screen, AMBER, False, line, 2)
+    # Residual strip: +/-10 deg around the foot line of the plot.
+    strip = pygame.Rect(plot.x, plot.bottom - 40, plot.w, 36)
+    pygame.draw.line(screen, GRID, (strip.x, strip.centery), (strip.right - 1, strip.centery))
+    for index, residual in enumerate(tma_operator.residuals(points, hypothesis)):
+        x = plot.x + round((float(times[index]) - start) / max(1e-9, end - start)
+                           * (plot.w - 1))
+        y = strip.centery - round(max(-10.0, min(10.0, residual)) / 10.0 * (strip.h / 2 - 2))
+        pygame.draw.circle(screen, AMBER, (x, y), 2)
 
 
 def _draw_environment(game, panel):
@@ -1576,6 +1633,25 @@ def _detail_rows(game, page):
         seen = getattr(contact, "tma_seen", None)
         if seen is not None:
             lines += [message("observation.fix_age", age=f"{max(0, game.sim_t - seen):.0f}")]
+        # Operator hypothesis (Z/X course, Ctrl+Z/X speed, Q range, K accept).
+        if contact is not None and hasattr(game, "tma_hypothesis"):
+            hypothesis = game.tma_hypothesis(contact)
+            lines.append(message("sonar.line.tma_hypothesis",
+                                 course=f"{hypothesis.course:05.1f}",
+                                 speed=f"{hypothesis.speed_kn:.1f}",
+                                 range=f"{hypothesis.range_nm:.1f}"))
+            evaluation = game.tma_evaluation(contact)
+            lines.append("sonar.tma_hypothesis_pending" if evaluation is None else
+                         message("sonar.line.tma_residuals",
+                                 rms=f"{evaluation['rms_deg']:.1f}",
+                                 trend=f"{evaluation['systematic_deg']:.1f}",
+                                 fit=f"{evaluation['fit']:.0%}",
+                                 observable=f"{evaluation['observability']:.0%}"))
+            proposal = getattr(sonar, "tma_proposals", {}).get(contact.target_id)
+            if proposal is not None and getattr(game, "operator_assist", lambda: False)():
+                lines.append(message("sonar.line.tma_proposal",
+                                     course=f"{proposal.course:05.1f}",
+                                     speed=f"{proposal.speed:.1f}"))
     elif page == 1:
         peaks = getattr(getattr(sonar, "receiver", None), "peaks", [])
         lines += [message("sonar.line.beam_filter", width=f"{getattr(sonar, 'beam_width_deg', 12):.1f}",

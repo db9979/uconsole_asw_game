@@ -183,6 +183,11 @@ def test_delayed_tma_solve_does_not_redate_measurement(monkeypatch):
     monkeypatch.setattr("src.sonar.sonar.solve_tma",
                         lambda tr, **kwargs: solution())
     sonar._update_tma(target, 20)
+    # The solver only proposes; the contact carries no fix until the
+    # operator accepts one.
+    assert sonar.tma_proposals[1] is not None
+    assert contact.tma_pos is None and contact.range_seen is None
+    contact.update_tma(solution(), track.pts[-1].t, fixed_at=20)
     assert contact.range_seen == contact.tma_seen == 10
     sonar.advance_mechanics(1, 131, Ship(0, 0))
     sonar._tma_versions.clear()

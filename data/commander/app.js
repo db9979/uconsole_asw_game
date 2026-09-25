@@ -1717,8 +1717,23 @@
           pointIndex && Math.abs(point.bearing - track.bearings[pointIndex - 1].bearing) < 180 ? tma.context.lineTo(x, y) : tma.context.moveTo(x, y);
         });
         tma.context.stroke();
+        // Operator hypothesis: predicted bearings (measured minus residual).
+        if (isSelected && track.residuals_deg.length === track.bearings.length) {
+          tma.context.save(); tma.context.setLineDash([5, 4]); tma.context.strokeStyle = palette().amber; tma.context.lineWidth = 2;
+          tma.context.beginPath();
+          track.bearings.forEach((point, pointIndex) => {
+            const predicted = ((point.bearing - track.residuals_deg[pointIndex]) % 360 + 360) % 360;
+            const x = (point.age_s + shift) / maxAge * tma.width, y = predicted / 360 * tma.height;
+            pointIndex ? tma.context.lineTo(x, y) : tma.context.moveTo(x, y);
+          });
+          tma.context.stroke(); tma.context.restore();
+        }
       });
       tma.context.lineWidth = 1;
+      const chosen = visual.tma.find((row) => row.ref === selected);
+      if (chosen) $("sonar-tma-readout").value = chosen.evaluation ? t("sonar_tma_evaluation", {
+        rms: number(chosen.evaluation.rms_deg, 1), trend: number(chosen.evaluation.systematic_deg, 1),
+        fit: number(chosen.evaluation.fit * 100, 0), observable: number(chosen.evaluation.observability * 100, 0)}) : t("sonar_tma_pending");
     };
     registerAnimatedPlot("sonar-tma-plot", drawTma);
     drawTma(performance.now());
@@ -3256,7 +3271,11 @@
           !exactKeys(visual.demon, ["frequency_min_hz", "frequency_max_hz", "bin_step_hz", "spectrum", "history", "analysis"]) || !boundedArray(visual.demon.spectrum, 80) ||
           !boundedArray(visual.demon.history, 120) || visual.demon.history.some((row) => !exactKeys(row, ["age_s", "bins"]) || !boundedArray(row.bins, 80)) ||
           (visual.demon.analysis !== null && (!exactKeys(visual.demon.analysis, ["modulation_peak_hz", "detection_confidence", "cavitation", "tonal_hz", "hypotheses"]) || !boundedArray(visual.demon.analysis.hypotheses, 20) || visual.demon.analysis.hypotheses.some((row) => !exactKeys(row, ["blades", "order", "rpm"])))) ||
-          !boundedArray(visual.tma, 32) || visual.tma.some((row) => !exactKeys(row, ["ref", "bearings", "solution"]) || !boundedArray(row.bearings, 24) || row.bearings.some((point) => !exactKeys(point, ["age_s", "bearing", "uncertainty_deg", "own_x", "own_y", "own_course"])) || row.solution !== null && !exactKeys(row.solution, ["x", "y", "course", "speed_kn", "quality", "age_s", "uncertainty_nm"])) ||
+          !boundedArray(visual.tma, 32) || visual.tma.some((row) => !exactKeys(row, ["ref", "bearings", "solution", "hypothesis", "evaluation", "residuals_deg", "proposal"]) ||
+            !exactKeys(row.hypothesis, ["course", "speed_kn", "range_nm"]) || !finite(row.hypothesis.course) || !finite(row.hypothesis.speed_kn) || !finite(row.hypothesis.range_nm) ||
+            (row.evaluation !== null && !exactKeys(row.evaluation, ["rms_deg", "systematic_deg", "fit", "observability"])) ||
+            !boundedArray(row.residuals_deg, 24) || row.residuals_deg.some((value) => !finite(value)) ||
+            (row.proposal !== null && !exactKeys(row.proposal, ["course", "speed_kn", "range_nm"])) || !boundedArray(row.bearings, 24) || row.bearings.some((point) => !exactKeys(point, ["age_s", "bearing", "uncertainty_deg", "own_x", "own_y", "own_course"])) || row.solution !== null && !exactKeys(row.solution, ["x", "y", "course", "speed_kn", "quality", "age_s", "uncertainty_nm"])) ||
           (visual.bt !== null && (!exactKeys(visual.bt, ["age_s", "thermocline_m", "water_depth_m", "sea_state", "depths_m", "speeds_m_s", "cz_bands_nm"]) || !boundedArray(visual.bt.depths_m, 64) || !boundedArray(visual.bt.speeds_m_s, 64) || visual.bt.depths_m.length !== visual.bt.speeds_m_s.length || !boundedArray(visual.bt.cz_bands_nm, 8) || visual.bt.cz_bands_nm.some((band) => !boundedArray(band, 2) || band.length !== 2))) ||
           !boundedArray(visual.active_echoes, 40) || visual.active_echoes.some((row) => !exactKeys(row, ["age_s", "bearing", "range_nm", "depth_m", "range_uncertainty_nm", "depth_uncertainty_m", "snr_db", "array"])) ||
           !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"]) || !["BROADBAND", "FILTERED", "HETERODYNE"].includes(visual.receiver.listen_mode) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
@@ -5675,6 +5694,14 @@
   $("sonar-listen-band").addEventListener("change", () => sendStationAction("sonar_set_band_preset", {preset: $("sonar-listen-band").value}));
   $("sonar-listen-notch").addEventListener("change", () => sendStationAction("sonar_set_notch", {enabled: $("sonar-listen-notch").checked}));
   $("sonar-peak").addEventListener("change", () => sendStationAction("sonar_set_peak_hold", {enabled: $("sonar-peak").checked}));
+  $("sonar-tma-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const course = Number($("sonar-tma-course").value), speed = Number($("sonar-tma-speed").value), range = Number($("sonar-tma-range").value);
+    if (selected && [course, speed, range].every(finite) && course >= 0 && course < 360 && speed >= 0 && speed <= 45 && range >= .2 && range <= 60)
+      sendStationAction("sonar_tma_set", {ref: selected, course, speed_kn: speed, range_nm: range});
+  });
+  $("sonar-tma-accept").addEventListener("click", () => { if (selected) sendStationAction("sonar_tma_accept", {ref: selected}); });
+  $("sonar-tma-copy").addEventListener("click", () => { if (selected) sendStationAction("sonar_tma_copy_proposal", {ref: selected}); });
   $("sonar-integration").addEventListener("change", () => sendStationAction("sonar_set_integration", {seconds: Number($("sonar-integration").value)}));
   $("sonar-vernier").addEventListener("change", () => sendStationAction("sonar_set_vernier", {enabled: $("sonar-vernier").checked}));
   $("sonar-demon-mark").addEventListener("click", () => sendStationAction("sonar_mark_line", {page: "demon"}));

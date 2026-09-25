@@ -16,6 +16,7 @@ from src.ship.ship import Ship
 from src.sonar.sonar import Contact, SonarSystem
 from src.sonar.tma import BearingTrack, solve_tma
 from src.ui import layout, sonar_view as view
+from src.core.i18n import localize
 
 
 def solution(pos=(3.0, -4.0), quality=.8):
@@ -264,10 +265,10 @@ def test_lofar_harmonics_require_current_operator_selection(display_game):
     game = display_game
     game.sonar_page = 1
     assert view._selected_harmonic(game) is None
-    assert not any("2f" in str(row[0]) for row in view._detail_rows(game, 1))
+    assert not any("2f" in localize(row[0], game.tr) for row in view._detail_rows(game, 1))
     game.sonar_harmonic_hz = 20.0
     assert view._selected_harmonic(game) == 20.0
-    assert any("2f" in str(row[0]) for row in view._detail_rows(game, 1))
+    assert any("2f" in localize(row[0], game.tr) for row in view._detail_rows(game, 1))
     game.sonar.receiver.peaks = [(30.0, .8)]
     assert view._selected_harmonic(game) is None
     game.sonar.receiver.peaks = [(20.0, .8)]

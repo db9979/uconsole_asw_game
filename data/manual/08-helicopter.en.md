@@ -49,7 +49,7 @@ Attack sequence:
 
 ## Pro tips {#helicopter-tips}
 
-- Put the dipping sonar below the layer (measure it with the bathythermograph at Sonar) to hear deep submarines.
+- Put the dipping sonar below the layer to hear deep submarines. The dip gauge shows the layer at the helicopter only once the lowered dome has passed through it; before that it shows only the charted water depth.
 - Lay buoys ahead of the target's estimated track, not on top of the last datum.
 - `F` confirms a helicopter contact; `Shift+G` releases it to Operations like a sonar contact.
 - On the acoustic page, `T` switches the listening source between the dip and each passive buoy.

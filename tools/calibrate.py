@@ -411,7 +411,6 @@ def _air_game(seed):
     game.ship.speed = game.ship.target_speed = 0.0
     game.ship.order_idx = next(i for i, item in enumerate(config.TELEGRAPH_ORDERS)
                                if item[1] == 0.0)
-    game.paused = False
     return game
 
 

@@ -18,9 +18,6 @@ SECTIONS = (
     ("Global", (
         ("1 bis 9", "Station direkt wählen; aktive Stationsnummer erneut drücken, um verfügbare Seiten weiterzuschalten."),
         ("Tab / Shift+Tab", "Nächste / vorherige Station."),
-        ("P", "Pause oder Fortsetzen."),
-        ("[ / Z", "Zeitraffer verringern."),
-        ("] / X", "Zeitraffer erhöhen."),
         ("+ / -", "Maschinentelegraf vor / zurück; auch Num+ / Num-."),
         ("F1", "Kontextsensitive Hilfe öffnen."),
         ("F2", "Autocrew der aktuellen Station ein- oder ausschalten."),
@@ -28,7 +25,7 @@ SECTIONS = (
         ("F4", "SimLog öffnen, sofern die Option aktiviert ist."),
         ("F8", "Taktischen Einheitenanalysator öffnen; bei Commander-Vorschlägen Vorschlagsart wechseln."),
         ("F9", "Lokale Commander-/Remote-Crew-Verwaltung öffnen."),
-        ("F10", "Optionen öffnen; während Pause funktioniert zusätzlich O."),
+        ("F10", "Optionen öffnen."),
         ("N", "Nationen-/Einheitenansicht öffnen; nicht am Sonar."),
         ("S / L", "Speichern / Laden; L ist in der OPZ stattdessen der Fusionsbefehl."),
         ("Alt+Enter", "Vollbild umschalten."),

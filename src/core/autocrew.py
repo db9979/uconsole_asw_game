@@ -45,10 +45,11 @@ def _nearest_threat(game):
     """
     items = [(track.range_nm, track.track_id, track.bearing)
              for track in game.asm_tracks()]
-    items += [(contact.range_est, f"T{contact.id}", contact.bearing)
-              for contact in game.sonar.contacts.values()
-              if contact.kind == "torpedo"
-              and 0.0 <= game.sim_t - contact.last_seen <= 2.0]
+    # Torpedo threats are intercepts audible now or contacts the operator
+    # classified TORPEDO; the entity type is never consulted.
+    items += [(None, f"T{index:03d}", warning["bearing"])
+              for index, warning in enumerate(game.torpedo_warnings(held=False))
+              if warning["age_s"] <= 2.0]
     if not items:
         return None
     # `_id` is a str on both branches above so the tie-break stays orderable
@@ -229,10 +230,8 @@ class AutocrewController:
 
     @staticmethod
     def _weapons(game):
-        observed = any(
-            contact.kind == "torpedo"
-            and 0.0 <= game.sim_t - contact.last_seen <= 2.0
-            for contact in game.sonar.contacts.values())
+        observed = any(warning["age_s"] <= 2.0
+                       for warning in game.torpedo_warnings(held=False))
         if observed and not game.nixies and game.nixie_store.ready > 0:
             if game.deploy_nixie_result() is True:
                 return "countermeasure"

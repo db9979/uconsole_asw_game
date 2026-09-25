@@ -11,7 +11,7 @@ die normale Spielpersistenz.
 ## Zuständigkeit
 
 CommanderConsole steuert den Listener lokal. CommanderBridge.pump wird einmal pro
-Wall-Frame der Hauptschleife vor Game.update ausgeführt, auch in pausierten Frames.
+Wall-Frame der Hauptschleife vor Game.update ausgeführt, auch in Menü-Frames.
 Es liest öffentliche Beobachtungen und eigene Einheiten, validiert Befehle und
 veröffentlicht abgelöstes JSON. HTTP-Handler importieren niemals Game/Pygame,
 greifen nicht auf Simulationsobjekte zu und lösen keine Sensor-/TMA-Arbeit aus.
@@ -62,7 +62,7 @@ der Lease sofort; `direct_fire`- und `sonar_audio`-Freigaben bleiben separat. Ge
 eine behaltene Lease ist aktiv und wird durch eine separate monotone
 `active_generation` identifiziert.
 Stationsanfragen sind additiv; die Aktivierung gibt keine andere Lease frei.
-Release, Widerruf, Übernahme, Ablauf, Pause, Fokusverlust und Weltersatz machen
+Release, Widerruf, Übernahme, Ablauf und Weltersatz machen
 die Berechtigung in ihrem jeweils definierten Geltungsbereich ungültig.
 
 Die Aktivierung validiert die Ziel-Lease und ihre Stationsgeneration, vergleicht
@@ -113,7 +113,12 @@ Befehle verwenden strikte Umschläge mit `protocol`, kryptografischer Anfrage-ID
 und exakt begrenzten Parametern (`params`).
 HTTP-Threads reihen nur abgelöste Umschläge ein. Der Hauptthread validiert erneut
 und wendet angenommene Befehle genau einmal in deterministischer Stationsreihenfolge
-und je Client in FIFO-Reihenfolge an. Direktfeueraktionen benötigen zusätzlich die
+und je Client in FIFO-Reihenfolge an. Nur Bediener-Annotationen des gemeinsamen
+Lagebilds (Klassifizierung, Zugehörigkeit, Track-ID, Freigabe, Fusion,
+Qualifizierung, ESM-Annotation, Zielvorschlag) müssen noch zur vom Browser
+gesehenen `resource_revision` passen (`revision_conflict`); alle übrigen Befehle
+lösen ihre opaken Referenzen erst bei der Anwendung auf und werden nicht
+abgelehnt, nur weil sich ein anderer Kontakt geändert hat. Direktfeueraktionen benötigen zusätzlich die
 Direktfeuer-Freigabe der Station sowie die üblichen Prüfungen von Beobachtung,
 Bereitschaft, Bestand, ROE und Einsatzbereich. Eine eingereihte Antwort wird vor
 ihrem endgültigen Ergebnis niemals als erfolgreich gemeldet.
@@ -232,7 +237,6 @@ SimLog-Historie verwenden getrennte authentifizierte Endpunkte, damit jeder sein
 eigene Sitzungs-, Rollen-, Autoritäts- und Freigabegrenze erzwingt.
 Menü/Editor/Splash verwenden dasselbe Schema mit eigener Geometrie und Umgebung
 als `null` sowie leerer Mission, leeren Tracks, Ereignissen und leerer Karte.
-Pausierte laufende Missionen behalten ein eingefrorenes schreibgeschütztes Bild.
 
 Track-Referenzen und neutrale Bezeichnungen sind Identitäten für die Lebensdauer
 einer Beobachtung, keine rohen Entity-IDs. Ersetzung/Wiedererfassung macht sie
@@ -299,12 +303,12 @@ Kopplung und erzeugt beim nächsten Pump eine neue Sitzung. Der Browser benötig
 einen passenden Sitzungs-/Kartenkontext, bevor er das neue Bild offenlegt. Der alte
 Ereignisrückstand löst Audio nach dem Neuverbinden nicht erneut aus.
 
-Eine aktive Besatzungsstation hält die Protokollphase hinter der lokalen F1-Hilfe,
-dem spielinternen F8-Kontakt-Analyzer, der F9-Besatzungsverwaltung und den
-F10-Optionen auf `live`. Das Öffnen oder Schließen eines dieser Eingabebesitzer
-macht über den Übergang hinweg eingereihte Befehle dennoch ungültig. Manuelle
-Pause, Fokusverlust, Speichern/Laden, Beenden, Nationen, echte Editoren, Menüs und
-Splash bleiben gesperrt.
+Die Mission läuft immer in Echtzeit und kennt keine Pause. Die Protokollphase
+bleibt hinter jedem lokalen Menü und Overlay (Hilfe, Optionen, Speichern/Laden,
+Beenden-Abfrage, Nationen, F8-Analyzer, F9-Verwaltung) und über einen Fokusverlust
+hinweg `live`; Öffnen oder Schließen macht eingereihte Befehle nicht ungültig.
+Phasen sind `live`, `menu`, `blocked` (nur Splash) und `ended`; nur Änderungen am
+Weltlebenszyklus verschieben die Epoche.
 
 Der Lookout nutzt ausschließlich den aktuellen Zustands-Snapshot, niemals
 Kartengeografie oder Simulationsobjekte. Er ist nordorientiert und schiffszentriert:
@@ -319,7 +323,7 @@ oder Größenänderung und verwendet gerätepixelgerechte Backing-Dimensionen.
 
 Der Session-Body enthält `host`: normal `null`, für eine Solo-Sitzung
 `{"generation": n}`. `GET /api/v2/host` liefert die losgelöste Host-Sicht (`phase`,
-`paused`, `time_scale`, `world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`)
+`world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`)
 nur an eine Sitzung mit `host`; andere erhalten 403. Slot-Zeilen enthalten `saved` und
 `modified` ausschließlich aus Dateimetadaten, nie Spielstandinhalte.
 
@@ -327,9 +331,9 @@ Host-Steuerungen nutzen das normale `POST /api/v2/commands` mit der Pseudo-Rolle
 `"host"` (nie ein Station-Lease; `STATIONS` und jede Projektion bleiben bei neun).
 `station_generation` ist `host.generation` der Sitzung, `active_generation` muss 0
 sein und `world_session` muss passen; Epoche und Ressourcenrevision werden nicht
-geprüft, weil diese Aktionen keine Ressource referenzieren und Pause/Fortsetzen die
-Epoche selbst verschieben. Aktionen: `host_pause`, `host_resume`, `host_time_scale
-{index}`, `host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
+geprüft, weil diese Aktionen keine Ressource referenzieren und Laden/Neues Spiel die
+Epoche selbst verschieben. Es gibt keine Pause- oder Zeitfaktor-Aktion. Aktionen:
+`host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
 level?, seed?}` und `host_instructor_environment {sea_state, event}`. Die Ausbilderaktion
 aendert das spielstandkompatible autoritative Weltfeld (0–6) und baut die daraus
 abgeleiteten Wetterendpunkte neu auf. Ihre optionale geschlossene Ereignisauswahl

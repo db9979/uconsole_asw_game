@@ -506,8 +506,7 @@ def test_remote_eloka_correlations_use_radar_evidence_only(published, monkeypatc
 
 
 @pytest.mark.parametrize("field,value", [
-    ("in_menu", True), ("main_menu", True), ("editor", object()),
-    ("splash_active", True),
+    ("in_menu", True), ("main_menu", True), ("splash_active", True),
 ])
 def test_redacted_phases_clear_every_role_and_chart(published, field, value):
     game, bridge, server = published
@@ -517,6 +516,14 @@ def test_redacted_phases_clear_every_role_and_chart(published, field, value):
     assert all(chart == server.v2_charts[None] for chart in server.v2_charts.values())
     assert set(server.v2_states[None]) == {"protocol", "version", "session", "epoch",
         "revision", "seq", "phase", "role", "chart_revision"}
+
+
+def test_in_game_analyzer_keeps_every_role_live(published):
+    game, bridge, server = published
+    game.editor = object()
+    bridge.pump(game, server, now=10.1)
+    assert all(state["phase"] == "live" and state["role"] == role
+               for role, state in server.v2_states.items() if role is not None)
 
 
 def test_world_replacement_publishes_one_immediate_redacted_generation(published):

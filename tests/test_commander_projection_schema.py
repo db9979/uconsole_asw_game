@@ -31,7 +31,6 @@ APP = Path("data/commander/app.js")
 def _collect_states():
     samples = []
     game = Game(seed=31, start_menu=False, audio_enabled=False, language="en")
-    game.paused = False
     game.world.land_blocks_line = lambda *args: False
     bridge, server = CommanderBridge(), Server()
     clock = [100.0]

@@ -119,3 +119,72 @@ def position_age(observation, now: float):
     if seen is None:
         seen = value(observation, "range_seen")
     return None if seen is None else max(0.0, float(now) - float(seen))
+
+
+# Shared own-ship telemetry: one source for the docked band, the status
+# ticker, the F11 overlay and the Remote Crew projection. Values are
+# localizable messages; levels are "ok", "warn" or "danger".
+TELEMETRY_KEYS = ("telemetry.course_speed", "telemetry.noise",
+                  "telemetry.sea_state", "telemetry.flooding",
+                  "telemetry.torpedoes", "telemetry.vls_chaff",
+                  "telemetry.helo_roe")
+TICKER_KEYS = ("telemetry.course_speed", "telemetry.noise",
+               "telemetry.flooding", "telemetry.torpedoes")
+
+
+def telemetry_rows(game) -> list:
+    """Return ``(label_key, value, level, compact)`` for own ship and stores.
+
+    ``value`` is the full reading, ``compact`` the ticker form (same facts,
+    fewer digits: the overlay and docked band always show the full value).
+    Only own-ship and own-asset truth plus the operator's own BT measurement.
+    """
+    ship = game.ship
+    profile = game.sonar.bt_profile
+    flood = float(game.damage.avg_flood())
+    capacity = len(game.damage.compartments) * 100
+    course_speed = message("telemetry.value.course_speed",
+                           course=f"{ship.course % 360.0:03.0f}",
+                           speed=f"{ship.speed:.1f}")
+    noise = message("telemetry.value.noise_cavitating" if ship.cavitating
+                    else "telemetry.value.noise",
+                    noise=f"{ship.noise_level() * 100:.0f}")
+    sea = message("telemetry.value.sea_layer", sea=f"{game.world.sea_state}",
+                  layer=(f"{profile['thermocline_m']:.0f}" if profile else "--"))
+    helo_roe = message("telemetry.value.helo_roe",
+                       helo=message("telemetry.helo.airborne" if game.helo.airborne
+                                    else "telemetry.helo.hangar"),
+                       roe=raw_roe(game.roe))
+    return [
+        ("telemetry.course_speed", course_speed, "ok", course_speed),
+        ("telemetry.noise", noise, "warn" if ship.cavitating else "ok", noise),
+        ("telemetry.sea_state", sea, "ok", sea),
+        ("telemetry.flooding", message(
+            "telemetry.value.flooding", total=f"{game.damage.total:.0f}",
+            capacity=capacity, mean=f"{flood:.0f}"),
+         "danger" if flood >= 25 else "warn" if flood > 0 else "ok",
+         message("telemetry.value.percent", value=f"{flood:.0f}")),
+        ("telemetry.torpedoes", message(
+            "telemetry.value.torpedoes", count=game.torpedo_count,
+            total=game.torpedo_total, depth=f"{game.torpedo_depth:.0f}"),
+         "warn" if game.torpedo_count == 0 else "ok",
+         message("telemetry.value.count", count=game.torpedo_count,
+                 total=game.torpedo_total)),
+        ("telemetry.vls_chaff", message(
+            "telemetry.value.vls_chaff", cells=game.vls_cells,
+            total=game.vls_loadout_total, chaff=f"{float(game.chaff_cd):.0f}"),
+         "warn" if game.vls_cells == 0 else "ok",
+         message("telemetry.value.count", count=game.vls_cells,
+                 total=game.vls_loadout_total)),
+        ("telemetry.helo_roe", helo_roe, "ok", helo_roe),
+    ]
+
+
+def telemetry_label(key: str, short: bool) -> str:
+    """Catalog key of a telemetry label, full or abbreviated."""
+    return f"{key}.short" if short else key
+
+
+def raw_roe(roe) -> str:
+    """ROE codes are technical labels shown verbatim."""
+    return str(roe)[:8]

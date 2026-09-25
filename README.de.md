@@ -80,7 +80,7 @@ Commander-Browser: [OPZ/CIC mit 1920 x 1080](docs/screenshots/commander-v2-de-op
 
 - Neun Stationen: Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk,
   Maschinenraum, Helikopterdeck und Elektronische Kampfführung/ESM.
-- Vier integrierte Szenarien, drei Schwierigkeitsgrade, Pause und Echtzeitsimulation.
+- Vier integrierte Szenarien, drei Schwierigkeitsgrade und durchgehende Echtzeitsimulation (keine Pause, kein Zeitraffer).
 - Passives HMS und Schleppsonar, aktives Sonar, Breitband- und LOFAR-Anzeigen,
   DEMON-Analyse, Bathythermografmessungen und rein peilungsbasierte TMA.
 - Seeziel- und Luftraumradar, AIS, ESM, HFDF, manuelle Klassifikation und
@@ -206,12 +206,11 @@ Die wichtigsten globalen Bedienelemente sind:
 | `1` bis `9` | Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk, Maschinenraum, Helikopter, Elektronische Kampfführung/ESM; erneutes Drücken der Nummer der aktiven Station wechselt, sofern vorhanden, zur nächsten Seite |
 | `F` / `Umschalt+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
 | `Tab` / `Shift+Tab` | Nächste / vorherige Station |
-| `P` | Pause / fortsetzen |
 | `F1` | Kontextsensitive Hilfe |
 | `F2` / `F3` | Autocrew der aktuellen Station umschalten / Autocrew-Übersicht öffnen |
 | `F4` | SimLog öffnen, sofern aktiviert |
 | `F8` | Taktischen Einheitenanalysator öffnen; gegebenenfalls sichtbaren Commander-Vorschlag wechseln |
-| `F10` | Optionen; während der Pause öffnet auch `O` die Optionen |
+| `F10` | Optionen |
 | `F9` | Lokale Commander-LAN-Verwaltung |
 | `S` / `L` | Speichern / Laden über die Plätze 1 bis 5; in der OPZ ist `L` der kontextbezogene Fusionsbefehl |
 | `+` / `-` | Maschinentelegraf |
@@ -235,7 +234,7 @@ Echtzeit.
 
 Der Ereignis-Feed am unteren Rand gilt stationsübergreifend. Er bewahrt operative
 Meldungen, abgeschlossene Befehle und Alarme auf, darunter Missionsergebnis,
-Waffen- und Abwehrereignisse, Schaden, Funkverkehr, Navigation sowie Pause.
+Waffen- und Abwehrereignisse, Schaden, Funkverkehr und Navigation.
 Kurzlebige Eingabe-, Fehler-, Auswahl- und Anzeigehinweise bleiben im
 Statusbanner, damit sie die operative Historie nicht verdrängen.
 
@@ -371,7 +370,7 @@ versteckter Einheiten; eine Neuverbindung setzt eine stille
 Ereignis-Ausgangsbasis, anstatt alte Alarme erneut abzuspielen.
 
 Solange ein Browser eine Stations-Lease besitzt, ist die Bedienung der
-entsprechenden Station auf der uConsole schreibgeschützt. Host-Verwaltung, Pause
+entsprechenden Station auf der uConsole schreibgeschützt. Host-Verwaltung
 und der Wechsel zu einer anderen Station bleiben verfügbar; der Widerruf der
 Lease stellt die lokale Bedienung sofort wieder her.
 
@@ -379,11 +378,11 @@ Der Dienst startet **bei jedem Programmstart ausgeschaltet**. Zugriffe und
 Freigaben werden nicht gespeichert. Zugangsdaten, Clients, Stations-Leases,
 Netzwerkwarteschlangen, Entwürfe und nicht angenommene Befehle gelangen weder in
 Spielstände noch in die Einstellungen. Ein Austausch der Welt widerruft aktive
-Berechtigungen im nächsten Frame des Hauptthreads. Manuelle Pause, Fokusverlust,
-Speichern/Laden, Beenden, Länderübersicht, die eigentlichen Editoren, Menüs und
-Splashscreen sperren Änderungen aus dem Browser. Bei einer aktiven Crew-Station
-lassen die F1-Hilfe, der spielinterne F8-Analysator, die Crew-Verwaltung mit F9
-und die Optionen mit F10 Simulation und Browser-Stationen weiterlaufen.
+Berechtigungen im nächsten Frame des Hauptthreads. Die Mission läuft immer in
+Echtzeit: lokale Menüs und Overlays (Hilfe, Optionen, Speichern/Laden,
+Beenden-Abfrage, F8-Analysator, F9-Verwaltung) und ein Fokusverlust pausieren sie
+nie, Browser-Stationen bleiben dahinter bedienbar. Nur Hauptmenü und Splashscreen
+sperren Änderungen aus dem Browser.
 Sonarklang im Browser erfordert eine ausdrückliche Host-Freigabe und eine lokale
 Benutzeraktion; nach einer Neuverbindung werden alte Audiodaten nicht
 nachgespielt. Die Hörmodi Broadband, Filtered und Heterodyne verwenden die

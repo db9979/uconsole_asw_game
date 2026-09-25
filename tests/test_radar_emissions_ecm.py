@@ -212,7 +212,7 @@ def test_ecm_auto_couples_terminal_threat_to_finite_softkill(monkeypatch):
     asm.jammer = False
     game.asms = [asm]
     track = SimpleNamespace(target_id=asm.seq, range_nm=1.0,
-                            position_seen=game.sim_t, track_id="A-77")
+                            position_seen=game.sim_t, track_id="M-77")
     monkeypatch.setattr(game, "asm_tracks", lambda: [track])
     monkeypatch.setattr(game, "_ecm_effect_against_asm", lambda _asm:
                         ECMEffect(.5, "vgpo", velocity_error_kn=100.0))

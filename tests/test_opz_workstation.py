@@ -11,6 +11,7 @@ from src.core.station import Station
 from src.sonar.sonar import Contact
 from src.ui import layout, nato_symbols
 from src.ui import stations_view
+from src.core.i18n import localize
 
 
 def press(game, key, mod=0):
@@ -289,7 +290,7 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     original = stations_view.layout.blit_line
 
     def record(screen, text, *args, **kwargs):
-        lines.append(text)
+        lines.append(localize(text, game.tr))
         return original(screen, text, *args, **kwargs)
 
     monkeypatch.setattr(stations_view.layout, "blit_line", record)
@@ -299,8 +300,8 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     assert any("Bearing" in line and "available" in line for line in lines)
     assert any("Range" in line and "available" in line for line in lines)
     assert any("Course" in line and "available" in line for line in lines)
-    assert "opz.line.depth_unavailable" in lines
-    assert "opz.line.speed_unavailable" in lines
+    assert game.tr("opz.line.depth_unavailable") in lines
+    assert game.tr("opz.line.speed_unavailable") in lines
     assert any("Age/Q" in line for line in lines)
     assert any("Affiliation" in line and "Neutral" in line for line in lines)
 
@@ -322,7 +323,7 @@ def test_selected_track_sidebar_reports_sonar_depth_and_speed(monkeypatch):
     original = stations_view.layout.blit_line
 
     def record(screen, text, *args, **kwargs):
-        lines.append(text)
+        lines.append(localize(text, game.tr))
         return original(screen, text, *args, **kwargs)
 
     monkeypatch.setattr(stations_view.layout, "blit_line", record)

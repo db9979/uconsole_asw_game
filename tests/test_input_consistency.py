@@ -36,7 +36,8 @@ def test_damage_click_selects_without_assigning_and_obeys_input_owner(game, monk
     game.station = Station.DAMAGE
     game.tooltips_enabled = tooltips
     monkeypatch.setattr(config, "STATION_RECT", config.STATION_PANEL_RECT)
-    region = damage_regions(game, config.FULL_STATION_RECT)["compartments"]["engine"]
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        region = damage_regions(game, config.FULL_STATION_RECT)["compartments"]["engine"]
     pos = region[region_type]
     if region_type == "callout":
         pos = pos.center
@@ -72,9 +73,8 @@ def test_editor_universal_guards_and_canvas_pointer(game, monkeypatch):
     game._joy_turn = 1
     event(game, pygame.WINDOWFOCUSLOST)
     assert not received and fullscreen == [True]
-    assert game.paused and not game.held and game._joy_turn == 0
+    assert not game.held and game._joy_turn == 0
     event(game, pygame.WINDOWFOCUSGAINED)
-    assert game.paused
     received.clear()
     event(game, pygame.MOUSEBUTTONDOWN, button=1, pos=(100, 25))
     assert not received
@@ -260,9 +260,6 @@ def test_primary_weapon_alias_retains_legacy_keys_and_guards(game, monkeypatch,
     press(game, legacy)
     assert len(calls) == 3
     press(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL, repeat=True)
-    game.paused = True
-    press(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL)
-    game.paused = False
     game._open_administration("help")
     press(game, pygame.K_RETURN, mod=pygame.KMOD_CTRL)
     assert len(calls) == 3

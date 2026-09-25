@@ -114,7 +114,8 @@ def test_lookout_sees_a_shallow_torpedo_wake_by_day():
     torpedo = EnemyTorpedo(game.ship.x + 1.0, game.ship.y, 270.0, 8.0, 1)
     game.enemy_torpedoes = [torpedo]
     game._update_lookout_picture()
-    assert any(track.kind == "TORP" and track.source == "LOOKOUT"
+    # The wake is sighted; the torpedo domain follows only on recognition.
+    assert any(track.kind in ("TORP", "UNKNOWN") and track.source == "LOOKOUT"
                for track in game.air_picture._tracks.values())
 
 

@@ -41,6 +41,7 @@ Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen
 - Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie; `K` schaltet die erkannte Harmonischen-Hypothese.
 - Das eigene Schiff erzeugt eine Wellenlinie bei etwa 10 + 1,9 x eigene Fahrt Hz. `N` blendet sie per Notch aus.
 - `Leertaste` hält Spitzen, damit schwache Töne hervortreten.
+- Der Spektrumstreifen über dem Wasserfall schreibt die Frequenz über jede deutliche Linie (zwischen den Klassen interpoliert; mit `Leertaste` die gehaltene Hüllkurve). Wo sich Werte überdecken würden, behält die stärkere Linie ihre Beschriftung. Der Remote-Crew-Browser beschriftet seine Spektren genauso.
 - `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
 
 ### DEMON {#sonar-demon}
@@ -57,7 +58,7 @@ DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraube
     Welle Blatt 2. Harmonische
 ```
 
-Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefenster sind bis zu 2 s lang: nach einer Peilungsänderung mindestens eine Sekunde horchen, bevor Sie urteilen. Gerankte Kandidaten aus dem Akustikkatalog erscheinen als Hinweis; die Klassifizierung bleibt Ihre Entscheidung.
+Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefenster sind bis zu 2 s lang: nach einer Peilungsänderung mindestens eine Sekunde horchen, bevor Sie urteilen. Gerankte Kandidaten aus dem Akustikkatalog erscheinen als Hinweis; die Klassifizierung bleibt Ihre Entscheidung. Der Spektrumstreifen beschriftet jede deutliche Modulationslinie mit ihrer Frequenz; die stärkste ist bernsteinfarben markiert.
 
 ### TMA, Umwelt und Aktiv {#sonar-tma-env}
 
@@ -99,7 +100,7 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 
 Gefechtslage:
 
-1. Ein neuer, hoher, schnell wandernder Kontakt kann ein Torpedo sein. Peilung sofort an die Brücke melden.
+1. Ein Starttransient, hochfrequente Ortungsimpulse oder ein neuer lauter Breitbandkontakt ohne Tonale mit schnell wandernder Peilung kann ein Torpedo sein. Als Torpedo klassifizieren (`C`) und die Peilung sofort an die Brücke melden.
 2. Fokus auf dem feindlichen U-Boot halten, damit das Draht-Datum des Torpedos frisch bleibt.
 3. Nur pingen, wenn die Tiefe für den Schuss fehlt oder der Kontakt verloren geht: das U-Boot hört einen Ping bis 60 sm und weicht aus.
 
@@ -115,6 +116,7 @@ Gefechtslage:
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
 - Wracks liefern echte Echos ohne Doppler. Ein U-Boot, das still neben einem kartierten Wrack auf Grund liegt, versteckt sich vor einem CW-Ping in dessen Echo (750 m Entfernungszelle); ein LFM-Ping löst etwa 8 m auf und kann Boot und Wrack trennen. Jedes Wrack, das der Gegner erreichen konnte, ist verdächtig.
 - Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.
+- Das Sonar benennt nie einen Torpedo oder ein U-Boot. Es meldet, was es hört: einen mechanischen Starttransient (hörbar bis 35 NM) oder hochfrequente Ortungsimpulse (etwa 6 NM) als Peilung, die der Brückenalarm 60 s hält, und Sinkgeräusche, wenn ein Rumpf sinkt. Das OPZ-Symbol eines Sonarkontakts folgt allein Ihrer Klassifizierung; ein unklassifizierter Kontakt bleibt unbekannt.
 
 ## Nicht modelliert {#sonar-limits}
 

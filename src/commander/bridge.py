@@ -17,8 +17,8 @@ Navigation requests stage a separate course/speed proposal, never remote steerin
 Only local accept_navigation changes helm setpoints after atomic validation.
 navigation_proposal is omitted from snapshots when absent; otherwise it contains
 course/speed_kn (nullable) and status. It is not persisted or carried across worlds.
-The Commander overlay is identified by ``game.commander_open``. Local proposal
-decisions may run there, but not in other administration or paused gameplay.
+The simulation never pauses: local menus and overlays own local input only, so
+the phase stays live behind them and local proposal decisions remain possible.
 
 Epoch changes invalidate requests across input-owner/grant/connection changes;
 revision tracks annotations, observation enums/eligibility, crew target and
@@ -43,7 +43,7 @@ crew_target/proposal null.
 Results retain {id, status, reasoncode}; no legacy reason alias is published.
 The redacted chart is {revision: session, size_nm: 500, landmasses: [],
 disclaimer: ""}. Its revision stays session; redaction and return both republish
-the chart. Pause/administration retain the read-only observed picture.
+the chart.
 Helicopter x/y/course are published only while airborne (AUF/ZURUECK), never
 hangar defaults or the last position of a lost asset.
 Mission alerts use known remaining seconds crossing 300/120/60 or a transition
@@ -490,14 +490,6 @@ _V2_ACTION_HANDLERS = {
 }
 
 
-def _host_pause(game, params):
-    return game.set_paused(True)
-
-
-def _host_resume(game, params):
-    return game.set_paused(False)
-
-
 def _host_save(game, params):
     try:
         game.save_to_slot(params["slot"])
@@ -549,8 +541,6 @@ def _host_instructor_event(game, params):
 # Solo-only host surface: a closed table, never a dynamic method lookup. The
 # world-replacing actions are listed so the rest of the frame can fail closed.
 _HOST_ACTION_HANDLERS = {
-    "host_pause": _host_pause,
-    "host_resume": _host_resume,
     "host_save": _host_save,
     "host_load": _host_load,
     "host_new_game": _host_new_game,
@@ -699,23 +689,14 @@ class CommanderBridge:
             raise RuntimeError("CommanderBridge requires the main thread")
 
     @staticmethod
-    def _phase(game, local=False):
+    def _phase(game):
+        # The mission never pauses: local menus and overlays only own local
+        # input, so the crew stays live behind them.
         if not game.running or game.game_over:
             return "ended"
         if game.in_menu or getattr(game, "main_menu", False):
             return "menu"
-        crew_overlay = bool(game.crew_overlay_allows_simulation())
-        if ((game.editor is not None and (local or not crew_overlay))
-                or game.splash_active):
-            return "blocked"
-        if game.paused:
-            return "paused"
-        commander = bool(getattr(game, "commander_open", False))
-        other_admin = (game.help_open or game.nations_open or game.quit_confirm
-                       or game.save_ui is not None or game.options_open)
-        if ((other_admin and (local or not crew_overlay)) or game.input_mode is not None
-                or (not local and game.administration_open and not crew_overlay)
-                or (local and game.administration_open and not commander)):
+        if game.splash_active:
             return "blocked"
         return "live"
 
@@ -1085,7 +1066,7 @@ class CommanderBridge:
                     apply=lambda action, params: (
                         _HOST_ACTION_HANDLERS[action](game, params)
                         if action in _HOST_ACTION_HANDLERS else False))
-                phase = self._phase(game)  # pause/resume changes what may follow
+                phase = self._phase(game)  # load/new game changes what may follow
                 self._slots_at = None  # a save may have changed the slot list
                 self._dirty = True  # publish the new host view immediately
                 continue
@@ -1124,11 +1105,9 @@ class CommanderBridge:
 
     def _settle_gate(self, game, server, phase):
         """Advance the epoch and drop queued input when the input owner changed."""
-        gate = (phase, bool(game.help_open),
-                bool(game.nations_open), bool(game.quit_confirm), game.save_ui,
-                bool(game.options_open), bool(getattr(game, "commander_open", False)),
-                game.input_mode, id(game.editor), bool(game.splash_active),
-                bool(game.paused), bool(game.in_menu), bool(game.main_menu),
+        # Only world lifecycle changes invalidate queued input; local overlays
+        # never stop the simulation, so they do not either.
+        gate = (phase, bool(game.splash_active), bool(game.in_menu), bool(game.main_menu),
                 bool(game.running), bool(game.game_over), id(server))
         if gate != self._gate:
             if self._gate is not None:
@@ -1204,10 +1183,7 @@ class CommanderBridge:
         self._publish_helicopter_audio(game, server, phase)
         self._status.update(phase=phase, connected=connected,
                             commands_allowed=self.allowed is True and connected and phase == "live")
-        redacted = (game.in_menu or game.main_menu
-                    or (game.editor is not None
-                        and not game.crew_overlay_allows_simulation())
-                    or game.splash_active)
+        redacted = game.in_menu or game.main_menu or game.splash_active
         self._publish_role_simlog(server, game, redacted)
         if redacted:
             self._refs.clear()
@@ -1247,7 +1223,7 @@ class CommanderBridge:
             self._dirty = True
             return
         if drained:
-            # A host command may have paused or resumed: settle that context change
+            # A host command may have loaded or started a world: settle that change
             # in this very frame, so the browser never sees the new state while the
             # bridge still owes an epoch bump (which would eat its next command).
             phase = self._phase(game)
@@ -1415,9 +1391,6 @@ class CommanderBridge:
             self._slots_at = now
         return dict(
             protocol=2, session=self._session, epoch=self._epoch, phase=phase,
-            paused=bool(game.paused),
-            time_scale=dict(index=config.TIME_SCALE_DEFAULT,
-                            steps=list(config.TIME_SCALE_STEPS)),
             world_mode=game.world_mode, scenario=game.scenario_key,
             difficulty=dict(game.menu_difficulty),
             scenarios=[dict(key=key, fixed=config.SCENARIOS[key]["difficulty"] is not None)
@@ -1575,7 +1548,7 @@ class CommanderBridge:
     def _decide(self, game, accepted):
         self._main_thread()
         if (self._identity != (id(game.world), id(game.sonar))
-                or self._phase(game, local=True) != "live"
+                or self._phase(game) != "live"
                 or self.allowed is not True or self._server is None
                 or not self._server.connected
                 or self._proposal is None or self._proposal["status"] != "pending"):
@@ -1605,7 +1578,7 @@ class CommanderBridge:
         self.navigation_error = "commander.local.error.proposal"
         proposal = self._navigation_proposal
         if (self._identity != (id(game.world), id(game.sonar))
-                or self._phase(game, local=True) != "live"
+                or self._phase(game) != "live"
                 or not self.allowed or self._server is None or not self._server.connected
                 or proposal is None or proposal["status"] != "pending"):
             return False

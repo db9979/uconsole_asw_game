@@ -166,6 +166,11 @@ class V2Action:
     validate_params: object
     direct_fire: bool = False
     phases: frozenset = frozenset({"live"})
+    # Only operator annotations of the shared picture are optimistic edits that
+    # must match the crew assessment revision the browser saw. Every other
+    # action resolves its opaque refs (if any) at apply time, so an unrelated
+    # contact change must not reject it.
+    revision_bound: bool = False
 
 
 def _no_params(params):
@@ -367,16 +372,14 @@ def _new_game_params(params):
     return True
 
 
-_HOST_ANY = frozenset({"live", "paused"})
-_HOST_REPLACING = frozenset({"live", "paused", "menu", "ended"})
+_HOST_ANY = frozenset({"live"})
+_HOST_REPLACING = frozenset({"live", "menu", "ended"})
 _HOST_STATIONS = frozenset({HOST_ROLE})
 
 V2_ACTION_REGISTRY = {
     "acknowledge": V2Action(frozenset(STATIONS), _no_params),
     # Solo-only host controls: admitted only for a session carrying the host
     # surface, and each action states the exact phases it may run in.
-    "host_pause": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_ANY),
-    "host_resume": V2Action(_HOST_STATIONS, _no_params, phases=_HOST_ANY),
     "host_save": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_ANY),
     "host_load": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_REPLACING),
     "host_new_game": V2Action(_HOST_STATIONS, _new_game_params,
@@ -387,17 +390,27 @@ V2_ACTION_REGISTRY = {
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
                                     _navigation_proposal_params),
-    "sonar_classify": V2Action(frozenset({"sonar", "helicopter"}), _classification_params),
-    "sonar_set_release": V2Action(frozenset({"sonar", "helicopter"}), _release_params),
-    "helicopter_qualify": V2Action(frozenset({"helicopter"}), _ref_enabled_params),
-    "helicopter_buoy_release": V2Action(frozenset({"helicopter"}), _release_params),
-    "propose_target": V2Action(frozenset({"sonar"}), _single_ref_params),
+    "sonar_classify": V2Action(frozenset({"sonar", "helicopter"}), _classification_params,
+        revision_bound=True),
+    "sonar_set_release": V2Action(frozenset({"sonar", "helicopter"}), _release_params,
+        revision_bound=True),
+    "helicopter_qualify": V2Action(frozenset({"helicopter"}), _ref_enabled_params,
+        revision_bound=True),
+    "helicopter_buoy_release": V2Action(frozenset({"helicopter"}), _release_params,
+        revision_bound=True),
+    "propose_target": V2Action(frozenset({"sonar"}), _single_ref_params,
+        revision_bound=True),
     "clear_target_proposal": V2Action(frozenset({"sonar"}), _no_params),
-    "opz_classify": V2Action(frozenset({"opz"}), _classification_params),
-    "opz_affiliate": V2Action(frozenset({"opz"}), _affiliation_params),
-    "opz_set_track_id": V2Action(frozenset({"opz"}), _track_label_params),
-    "opz_create_fusion": V2Action(frozenset({"opz"}), _fusion_refs_params),
-    "opz_dissolve_fusion": V2Action(frozenset({"opz"}), _single_ref_params),
+    "opz_classify": V2Action(frozenset({"opz"}), _classification_params,
+        revision_bound=True),
+    "opz_affiliate": V2Action(frozenset({"opz"}), _affiliation_params,
+        revision_bound=True),
+    "opz_set_track_id": V2Action(frozenset({"opz"}), _track_label_params,
+        revision_bound=True),
+    "opz_create_fusion": V2Action(frozenset({"opz"}), _fusion_refs_params,
+        revision_bound=True),
+    "opz_dissolve_fusion": V2Action(frozenset({"opz"}), _single_ref_params,
+        revision_bound=True),
     "opz_set_radar": V2Action(frozenset({"opz"}), _radar_params),
     "opz_set_range": V2Action(frozenset({"opz"}), _range_params),
     "opz_designate_target": V2Action(frozenset({"opz"}), _single_ref_params),
@@ -412,8 +425,10 @@ V2_ACTION_REGISTRY = {
     "damage_unassign_team": V2Action(frozenset({"damage"}),
                                      _team_compartment_params),
     "radio_capture_hfdf": V2Action(frozenset({"radio"}), _single_ref_params),
-    "eloka_annotate": V2Action(frozenset({"eloka"}), _annotation_params),
-    "eloka_clear_annotation": V2Action(frozenset({"eloka"}), _single_ref_params),
+    "eloka_annotate": V2Action(frozenset({"eloka"}), _annotation_params,
+        revision_bound=True),
+    "eloka_clear_annotation": V2Action(frozenset({"eloka"}), _single_ref_params,
+        revision_bound=True),
     "eloka_set_jamming": V2Action(frozenset({"eloka"}), _ref_enabled_params),
     "eloka_set_technique": V2Action(
         frozenset({"eloka"}), _ecm_technique_params),
@@ -1020,12 +1035,6 @@ class CommanderServer:
             self._solo_grant_all_locked(session)
         return token, session
 
-    def web_host_present(self, max_age=15.0):
-        with self._lock:
-            self._expire_locked()
-            session = self._sessions_v2.get(self._web_host_digest)
-            return bool(session and time.monotonic() - session["presence"] <= max_age)
-
     def web_host_session(self):
         with self._lock:
             self._expire_locked()
@@ -1566,11 +1575,12 @@ class CommanderServer:
             elif body["world_session"] != world_session:
                 reason = "stale_world_session"
             elif not is_host and body["world_epoch"] != world_epoch:
-                # Host controls bind the world session only: pause and resume move
+                # Host controls bind the world session only: load and new game move
                 # the epoch themselves, and queued input is invalidated anyway.
                 reason = "stale_world_epoch"
-            elif not is_host and body["resource_revision"] != resource_revision:
-                # Host controls reference no resource, only the world and epoch.
+            elif (spec.revision_bound
+                  and body["resource_revision"] != resource_revision):
+                # Host controls are never revision-bound: they reference no resource.
                 reason = "revision_conflict"
             else:
                 try:
@@ -1824,7 +1834,7 @@ class CommanderServer:
                         or entry["state"].get("epoch") != world_epoch
                         or type(entry["truth"]) is not dict
                         or set(entry["truth"]) != {
-                            "mission_t", "timescale", "result", "world", "ship",
+                            "mission_t", "result", "world", "ship",
                             "weapons", "subs", "surfaces", "animals", "torpedoes",
                             "enemy_torpedoes", "decoys", "asms", "essms", "asrocs",
                             "nixies", "buoys", "helo", "flights", "raiders", "radars"}

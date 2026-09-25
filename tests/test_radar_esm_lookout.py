@@ -214,8 +214,11 @@ def test_ciws_track_radar_holds_close_in_missiles_between_sweeps(monkeypatch):
               game.rng_asm, game._air_defense_loadout["asm"])
     asm.jammer = False
     game.asms = [asm]
-    game.radar_scan_phase, game.radar_scan_pending_deg = 0.0, 10.0  # beam north
-    game._update_air_picture()
+    for _ in range(4):   # the ASM cue needs a measured speed over >= 1 s
+        game.radar_scan_phase, game.radar_scan_pending_deg = 0.0, 10.0  # beam north
+        game.sim_t += .5
+        asm.x -= config.kn_to_nm_per_s(asm.speed_kn) * .5
+        game._update_air_picture()
     assert game.asm_tracks()
     game.air_picture._tracks.clear()
     game.ciws_authorized = False

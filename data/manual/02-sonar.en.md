@@ -40,6 +40,7 @@ The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 
 - Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family; `K` cycles the detected harmonic hypothesis.
 - Own ship produces a shaft line at about 10 + 1.9 x own speed Hz. `N` notches it out.
 - `Space` holds peaks so faint tonals stand out.
+- The spectrum strip above the waterfall prints the frequency over every prominent line (interpolated between bins; with `Space` the held envelope). Where values would overlap, the stronger line keeps its label. The Remote Crew browser labels its spectra the same way.
 - `F` selects the analysed band: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
 
 ### DEMON {#sonar-demon}
@@ -56,7 +57,7 @@ DEMON demodulates the broadband noise envelope of the listening beam. Propeller 
     shaft blade 2nd harmonic
 ```
 
-The display shows measured modulation, not certain identity. The analysis windows are up to 2 s long: after changing the bearing listen for at least one second before judging. Ranked candidates from the acoustic catalogue appear as hints; the classification is still yours.
+The display shows measured modulation, not certain identity. The analysis windows are up to 2 s long: after changing the bearing listen for at least one second before judging. Ranked candidates from the acoustic catalogue appear as hints; the classification is still yours. The spectrum strip labels every prominent modulation line with its frequency; the strongest one is marked in amber.
 
 ### TMA, environment and active {#sonar-tma-env}
 
@@ -98,7 +99,7 @@ The display shows measured modulation, not certain identity. The analysis window
 
 Combat situation:
 
-1. A new high-pitched, fast-moving contact with rapidly changing bearing may be a torpedo. Report the bearing to the Bridge immediately.
+1. A launch transient, high-frequency sonar pulses, or a new loud broadband contact without tonals and with fast bearing drift may be a torpedo. Classify it as Torpedo (`C`) and report the bearing to the Bridge immediately.
 2. Keep focus on the hostile submarine so the torpedo wire datum stays fresh.
 3. Ping only when you need depth for the shot or the contact is about to be lost: the submarine hears a ping out to 60 NM and starts evading.
 
@@ -114,6 +115,7 @@ Combat situation:
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
 - Wrecks return real echoes without Doppler. A submarine lying still beside a charted wreck hides in that echo from a CW ping (750 m range cell); an LFM ping resolves about 8 m and can separate the boat from the wreck. Suspect every wreck the enemy could have reached.
 - The bathythermograph (`E`) measures to the seabed, at most 1500 m. Only after a measurement does the weather & sonar analysis (`0`) show the layer, the shadow zone below it and a SOFAR channel.
+- The sonar never names a torpedo or a submarine. It reports what it hears: a mechanical launch transient (heard out to 35 NM) or high-frequency seeker pulses (about 6 NM) as a bearing, held on the Bridge alarm for 60 s, and breaking-up noises when a hull sinks. The OPZ symbol of a sonar contact follows your classification only; an unclassified contact stays unknown.
 
 ## Not modelled {#sonar-limits}
 

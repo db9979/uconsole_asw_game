@@ -10,7 +10,8 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize, message as structured_message
+from src.core.i18n import (display_value, localized, localize, raw_text,
+                            message as structured_message)
 from src.ui import chart_symbols, layout
 from src.ui import nato_symbols
 from src.ui import observations
@@ -220,6 +221,23 @@ def _visible_landmasses(coast, view, rect):
             and land.bounds[3] >= top and land.bounds[1] <= bottom]
 
 
+def _map_label(surface, game, text, pos, color, chart) -> None:
+    """Label beside a chart symbol, flipped left/down so it is never cut off."""
+    shown = localize(text)
+    face = game.font
+    width, height = face.size(shown)
+    chart = pygame.Rect(chart)
+    x, y = pos
+    if x + width > chart.right - 2:
+        x = max(chart.x + 2, pos[0] - width - 24)
+    y = min(max(y, chart.y + 2), chart.bottom - height - 2)
+    with layout.clip_to(surface, chart):
+        image = face.render(shown, True, color)
+        rendered = image.get_rect(topleft=(int(x), int(y)))
+        layout.record_text(shown, rendered, chart)
+        surface.blit(image, rendered)
+
+
 @localized
 def draw_map_view(game, tr=None) -> None:
     layout.configure_for(game)
@@ -334,8 +352,8 @@ def draw_map_view(game, tr=None) -> None:
             col = config.COLOR_DANGER if base.get("gameplay_role") == "hostile" \
                 else config.COLOR_FLIGHT
             pygame.draw.rect(s, col, (int(px) - 4, int(py) - 4, 8, 8), 2)
-            s.blit(game.font.render(base["name"], True, config.COLOR_TEXT_DIM),
-                   (int(px) + 7, int(py) - 8))
+            _map_label(s, game, raw_text(base["name"]), (int(px) + 7, int(py) - 8),
+                       config.COLOR_TEXT_DIM, r)
         # Charted wrecks and underwater rocks (public chart information).
         hazards = getattr(w, "charted_hazards", None)
         if hazards is not None:
@@ -353,8 +371,8 @@ def draw_map_view(game, tr=None) -> None:
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(
                 s, (px, py), affiliation, "SURFACE", 14)
-            s.blit(game.font.render(track["label"], True, col),
-                   (int(px) + 7, int(py) - 18))
+            _map_label(s, game, raw_text(track["label"]), (int(px) + 7, int(py) - 18),
+                       col, r)
             nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
                                             view.scale, col, font=game.font, max_px=120)
 
@@ -365,8 +383,8 @@ def draw_map_view(game, tr=None) -> None:
                 continue
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(s, (px, py), affiliation, "AIR", 14)
-            s.blit(game.font.render(track["label"], True, col),
-                   (int(px) + 9, int(py) - 14))
+            _map_label(s, game, raw_text(track["label"]), (int(px) + 9, int(py) - 14),
+                       col, r)
             nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
                                             view.scale, col, font=game.font, max_px=120)
 
@@ -377,8 +395,8 @@ def draw_map_view(game, tr=None) -> None:
             pygame.draw.line(s, config.COLOR_WARN, (int(px), int(py)),
                              (int(px + 10 * math.cos(ang)), int(py + 10 * math.sin(ang))), 2)
             pygame.draw.circle(s, config.COLOR_WARN, (int(px), int(py)), 3)
-            s.blit(game.font.render(f"T{t.idx}", True, config.COLOR_WARN),
-                   (int(px) + 10, int(py) - 24))
+            _map_label(s, game, raw_text(f"T{t.idx}"), (int(px) + 10, int(py) - 24),
+                       config.COLOR_WARN, r)
 
         # Sonarbojen
         for b in game.buoys:
@@ -392,8 +410,8 @@ def draw_map_view(game, tr=None) -> None:
             affiliation = game.opz_affiliation(track["track_id"])
             col = nato_symbols.draw_symbol(
                 s, (px, py), affiliation, "MISSILE", 14)
-            s.blit(game.font.render(track["label"], True, col),
-                   (int(px) + 10, int(py) - 12))
+            _map_label(s, game, raw_text(track["label"]), (int(px) + 10, int(py) - 12),
+                       col, r)
             nato_symbols.draw_motion_vector(s, (px, py), track["course"], track["speed_kn"],
                                             view.scale, col, font=game.font, max_px=120)
         fx, fy = view.world_to_screen(game.ship.x, game.ship.y)
@@ -403,8 +421,8 @@ def draw_map_view(game, tr=None) -> None:
             ex, ey = fx + 300 * math.sin(rad), fy - 300 * math.cos(rad)
             pygame.draw.line(s, config.COLOR_DANGER, (int(fx), int(fy)),
                              (int(ex), int(ey)), 1)
-            s.blit(game.font.render(track["source"] + " " + track["label"], True,
-                                    config.COLOR_DANGER), (int(fx) + 12, int(fy) + 24))
+            _map_label(s, game, raw_text(track["source"] + " " + track["label"]),
+                       (int(fx) + 12, int(fy) + 24), config.COLOR_DANGER, r)
         for e in game.essms:
             px, py = view.world_to_screen(e.x, e.y)
             pygame.draw.circle(s, (220, 200, 90), (int(px), int(py)), 3)
@@ -444,11 +462,11 @@ def draw_map_view(game, tr=None) -> None:
                 src = ({"tma": "TMA", "ping": "PING",
                         "buoy": localize("map.source.buoy")}
                        .get(contact.range_source, "FIX"))
-                s.blit(game.font.render(localize(message(
+                _map_label(s, game, structured_message(
                     "map.line.contact_fix",
                     contact=observations.contact_display_id(game, contact),
-                    range=f"{observations.range_nm(contact, game.ship):4.1f}", source=src)),
-                    True, line_col), (int(tx) + 11, int(ty) - 22))
+                    range=f"{observations.range_nm(contact, game.ship):4.1f}", source=src),
+                    (int(tx) + 11, int(ty) - 22), line_col, r)
                 nato_symbols.draw_motion_vector(
                     s, (tx, ty), getattr(contact, "tma_course", None),
                     getattr(contact, "tma_speed", None),
@@ -458,11 +476,10 @@ def draw_map_view(game, tr=None) -> None:
                 ey = fy - 300 * math.cos(brg)
                 pygame.draw.line(s, config.COLOR_WARN, (int(fx), int(fy)),
                                  (int(ex), int(ey)), 1)
-                s.blit(game.font.render(message("map.line.bearing_only",
-                                                contact=observations.contact_display_id(
-                                                    game, contact)),
-                                         True, config.COLOR_WARN),
-                       (int(fx) + 14, int(fy) - 20))
+                _map_label(s, game, structured_message(
+                    "map.line.bearing_only",
+                    contact=observations.contact_display_id(game, contact)),
+                    (int(fx) + 14, int(fy) - 20), config.COLOR_WARN, r)
 
         # Manuell protokollierte HFDF-Messungen und daraus berechnete Fixes.
         for report in game.hfdf_log[-6:]:
@@ -507,8 +524,8 @@ def draw_map_view(game, tr=None) -> None:
         target_ey = int(py + 42 * math.sin(target_ang))
         pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(px), int(py)),
                          (target_ex, target_ey), 1)
-        layout.blit_line(s, localize(message("map.target_course",
-                                             course=f"{game.ship.target_course:03.0f}")),
+        layout.blit_line(s, structured_message("map.target_course",
+                                               course=f"{game.ship.target_course:03.0f}"),
                          (int(px) + 8, int(py) + 10, 124, 18),
                          config.COLOR_TEXT_DIM, size=12)
         L = 14
@@ -526,19 +543,19 @@ def draw_map_view(game, tr=None) -> None:
             nato_symbols.draw_motion_vector(
                 s, (px, py), game.helo.course, game.helo.SPEED_KN,
                 view.scale, col, max_px=120)
-            s.blit(game.font.render("HSP-5", True, col),
-                   (int(px) + 15, int(py) - 14))
+            _map_label(s, game, raw_text("HSP-5"), (int(px) + 15, int(py) - 14),
+                       col, r)
 
     pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
     # Zoom-Stufenanzeige
     zoom_nm = r[3] / view.scale
-    follow = localize("common.on" if getattr(game, "map_follow", True)
-                      else "common.off")
+    follow = structured_message("common.on" if getattr(game, "map_follow", True)
+                                else "common.off")
     metadata = getattr(coast, "metadata", None) or {}
     region = metadata.get("name")
     prefix = region if region else getattr(game, "world_mode", "fixed").upper()
     layout.blit_line(
-        s, message("map.line.footer", region=prefix, zoom=f"{zoom_nm:3.0f}",
-                   follow=follow),
+        s, structured_message("map.line.footer", region=prefix,
+                              zoom=f"{zoom_nm:3.0f}", follow=follow),
         (r[0] + 4, r[1] + 4, r[2] - 8, 20), config.COLOR_TEXT_DIM,
         size=13)

@@ -77,6 +77,11 @@ def test_proportional_navigation_hits_a_crossing_ship():
     assert asm.state == "TREFFER"
 
 
+def _fly_west(asm, dt):
+    """Advance a test missile on its 270 deg course so radar sees it move."""
+    asm.x -= config.kn_to_nm_per_s(asm.speed_kn) * dt
+
+
 def test_sea_skimmer_is_below_the_radar_horizon_until_close(monkeypatch):
     game = Game(seed=1201, start_menu=False, audio_enabled=False)
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
@@ -94,7 +99,9 @@ def test_sea_skimmer_is_below_the_radar_horizon_until_close(monkeypatch):
     game.asms = [near]
     for _ in range(6):
         game.sim_t += 4.0
+        _fly_west(near, 4.0)
         game._update_air_picture(full_scan=True)
+    # The ASM cue rests on measured speed and altitude, so it needs plots.
     assert game.asm_tracks()
 
 
@@ -129,6 +136,7 @@ def test_game_lays_a_cloud_and_saves_it(monkeypatch):
     game.asms = [asm]
     for _ in range(6):
         game.sim_t += 4.0
+        _fly_west(asm, 4.0)
         game._update_air_picture(full_scan=True)
         if game.asm_tracks():
             break

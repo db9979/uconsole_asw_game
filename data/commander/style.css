@@ -61,7 +61,6 @@ body.workstation-mode #tab-operations { display: none; }
 .workstation-menu { position: absolute; right: 0; top: 100%; z-index: 20; display: grid; min-width: 15rem; padding: .5rem; gap: .4rem; background: var(--panel); border: 1px solid var(--line); }
 .host-bar { display: flex; align-items: center; flex: 0 0 auto; gap: .3rem; margin-left: auto; }
 .host-bar button, .host-bar select { min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-sm); }
-.host-time { display: flex; align-items: center; gap: .3rem; color: var(--muted); font-size: var(--font-xs); }
 .host-status { max-width: 20rem; color: var(--amber); font-size: var(--font-xs); line-height: 1.3; }
 .host-status[data-status="applied"] { color: var(--accent); }
 .host-status[data-status="rejected"] { color: var(--red); }
@@ -69,7 +68,6 @@ body.workstation-mode .operations-panel { display: grid; grid-template-rows: aut
 body.workstation-mode .mission-strip { padding: .15rem 0; gap: .8rem; flex-wrap: nowrap; }
 body.workstation-mode .mission-name { flex: 0 1 auto; }
 body.workstation-mode .mission-strip .metrics { flex: 1 1 auto; justify-content: flex-end; }
-body.workstation-mode .host-time > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 body.workstation-mode .mission-strip .eyebrow, body.workstation-mode #objective { display: none; }
 body.workstation-mode .mission-strip h1 { font-size: .9rem; }
 body.workstation-mode .mission-strip .metrics { gap: .2rem .9rem; }

@@ -286,13 +286,32 @@ def test_per_client_global_bounds_and_pressure_isolation(server):
 @pytest.mark.parametrize(("changes", "reason"), [
     ({"world_session": "other"}, "stale_world_session"),
     ({"world_epoch": 4}, "stale_world_epoch"),
-    ({"resource_revision": 6}, "revision_conflict"),
 ])
 def test_main_thread_rejects_stale_world_context(server, changes, reason):
     cookie, session = pair(server, reason, "radio")
     assert post(server, cookie, session, command(session, **changes))[0] == 202
     apply_all(server)
     assert results(server, cookie)[-1]["reasoncode"] == reason
+
+
+def test_only_annotations_are_bound_to_the_assessment_revision(server):
+    # A contact appearing elsewhere bumps the revision between the browser's
+    # snapshot and main-thread application; that must not reject orders that
+    # do not edit the shared assessment.
+    cookie, session = pair(server, "Revision", "opz")
+    stale = {"resource_revision": 6}
+    for seq, (action, params) in enumerate((
+            ("acknowledge", {}),
+            ("opz_set_range", {"range_nm": 20}),
+            ("opz_classify", {"ref": "r1", "classification": "U_BOOT"}),
+            ("opz_affiliate", {"ref": "r1", "affiliation": "HOSTILE"}))):
+        assert post(server, cookie, session, command(
+            session, command_id=f"rev-{seq}", seq=seq, action=action,
+            params=params, **stale))[0] == 202
+    apply_all(server)
+    assert [row["reasoncode"] for row in results(server, cookie)] == [
+        # apply_all only accepts acknowledge; the range order reached apply.
+        "ok", "action_rejected", "revision_conflict", "revision_conflict"]
 
 
 def test_main_thread_rechecks_age_phase_generation_and_grant(server):
@@ -306,7 +325,7 @@ def test_main_thread_rechecks_age_phase_generation_and_grant(server):
         phase="live", world_session="world", world_epoch=3, resource_revision=5,
         apply=lambda *_: True)
     assert server.apply_command_v2(cases[1], now=cases[1].received_at,
-        phase="paused", world_session="world", world_epoch=3, resource_revision=5,
+        phase="menu", world_session="world", world_epoch=3, resource_revision=5,
         apply=lambda *_: True)
     changed_generation = replace(cases[2], lease_generation=cases[2].lease_generation + 1)
     assert server.apply_command_v2(changed_generation, now=cases[2].received_at,
@@ -677,7 +696,7 @@ def test_remaining_actions_are_phase_blocked_before_callback(
     envelope = server.drain_commands_v2()[0]
     called = []
     assert server.apply_command_v2(
-        envelope, now=envelope.received_at, phase="paused", world_session="world",
+        envelope, now=envelope.received_at, phase="menu", world_session="world",
         world_epoch=3, resource_revision=5,
         apply=lambda *_: called.append(True) or True)
     assert called == []

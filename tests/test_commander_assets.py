@@ -241,7 +241,8 @@ def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
                              "active_echoes", "receiver"),
             "drawRoleMap": ("landmasses", "range_uncertainty_nm", "bearingLogs",
                             "fixes", "assets", "members", "drawOpzSweepOverlay"),
-            "drawOpzSweepOverlay": ("sweep_bearing", "range_nm",
+            "drawOpzSweepOverlay": ("sweep_bearing", "surface_effective_range_nm",
+                                     "air_effective_range_nm",
                                      "roleMapSweepCtx"),
         "drawDamageVisual": ("compartments", "flood", "fire", "trend", "teams"),
         "drawEngineVisual": ("telegraph", "rpm", "speed", "noise",
@@ -524,8 +525,8 @@ def test_contacts_panel_owns_bounded_browser_and_detail_scrolling():
     for catalog in catalogs():
         spectrum = catalog[PREFIX + "analyzer_spectrum_legend"]
         hypothesis = catalog[PREFIX + "analyzer_hypothesis_legend"]
-        assert "5 Hz-10 kHz" in spectrum
-        assert "0-80" in hypothesis
+        assert "LOFAR" in spectrum and "0-300 Hz" in spectrum
+        assert "0-50 Hz" in hypothesis
         assert "DEMON" in hypothesis
         assert any(word in hypothesis.lower() for word in ("measurement", "messung"))
 
@@ -596,7 +597,7 @@ const liveFixture = __STATE__;
 const statusFixture = __STATUS_STATE__;
 const fixture = structuredClone(statusFixture);
 const simlogFixture = [{seq: 1, t: 10, stamp: "00:10", cat: "state", text: "", data: {
-  mission_t: 10, timescale: 1, result: null,
+  mission_t: 10, result: null,
   ship: {x: 250, y: 250, course: 15, speed: 12, damage: 0, sunk: false, stations: {}},
   world: {hour: 12, sea_state: 3, night: false}, weapons: {},
   subs: [{id: 1, x: 100, y: 100}], surfaces: [{id: 2, x: 150, y: 150}],
@@ -1220,7 +1221,7 @@ def browser_state():
         uncertainty_nm=1.5, depth_m=70, depth_uncertainty_m=2, quality=.9)]
     return dict(version=APP_VERSION, session="session-A", epoch=1, revision=12,
                  seq=1, phase="live", commands_allowed=True, language="en",
-                 clock=dict(sim=90, mission=90, time_scale=1, world=12.5),
+                 clock=dict(sim=90, mission=90, world=12.5),
                  environment=dict(sea_state=3, is_night=False),
                 mission=dict(name="Northern watch <img src=x onerror=alert(1)>", objective="Maintain the observation picture", remaining_s=900),
                 ownship=dict(x=250, y=250, course=15, speed=12, target_course=20, target_speed=15,

@@ -17,15 +17,10 @@ def test_every_emitted_feed_category_has_a_visible_tag():
     assert all(tag != "?" for _color, tag in config.FEED_CATEGORIES.values())
 
 
-def test_pause_and_mission_result_are_retained_in_event_feed():
+def test_mission_result_is_retained_in_event_feed():
     game = Game(seed=9191, start_menu=False)
     game.feed.clear()
 
-    assert game.set_paused(True)
-    assert localize(game.feed.entries[-1].text, game.tr) == game.tr("status.paused")
-    assert game.feed.entries[-1].category == "welt"
-
-    game.set_paused(False)
     game._end_mission(False, message("end.reason.time_limit"))
     assert localize(game.feed.entries[-1].text, game.tr) == game.tr(
         "runtime.mission.lost")

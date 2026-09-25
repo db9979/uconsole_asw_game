@@ -331,6 +331,21 @@ ausdruecklich klar, dass dies keine Aufnahme oder Messung ist und fehlende Daten
 nicht abgeleitet werden. Der historische R11-Verifikationsblock oben bleibt
 unveraendert; die aktive R11-Silhouettenanforderung im Plan ist superseded.
 
+Analyzer-Bilder als Stationsschirme (ersetzt den Absatz davor): Die
+Akustikbilder zeigen jetzt, wie die Spur an der Sonarstation aussieht. Der
+Generator spielt die Katalogsignatur durch den echten `AcousticReceiver`
+(stetiger Kontakt im Horchstrahl, eigenes Schiff gestoppt, Seegang 3) und
+rendert oben den LOFAR-Wasserfall 0-300 Hz linear mit Live-Spektrum, unten den
+DEMON-Wasserfall 0-50 Hz mit gemessener Modulationsspitze, beide ueber
+`sonar_view.waterfall_pixels` (dieselbe Phosphor-Abbildung wie die Station).
+Die Radarbilder zeigen je Katalog-Emitter HF-/PRF-Band und den
+ELOKA-Signal-Fingerabdruck (`esm.signal_fingerprint`) je Katalogmodulation. Die
+Katalog-Wellen-/BPF-Hypothesenstreifen entfallen. In die Bilder geschrieben
+sind die gemessenen Werte: LOFAR-Spitzenfrequenzen, DEMON-Modulationsspitze,
+HF/PRF je Fingerabdruck. Das Druck-PDF (`tools/gen_unit_reference_pdf.py`)
+zeigt dieselben Schirme und Werte hell auf Weiss (dunkle Wasserfalltinte,
+grosse Schrift); durch die Wasserfaelle waechst es auf rund 11,7 MB.
+
 R12 ist implementiert: Die Commander-Webanleitung besitzt acht semantische
 Abschnitte zu Kopplung und lokaler Freigabe, Operationen/Ausguck,
 Beobachtungsalter und Bewertungen, Ziel-/Navigationsvorschlaegen und

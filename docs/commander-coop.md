@@ -50,7 +50,7 @@ in screenshots, logs, or issue reports.
   Use Add station for another request; an approved station opens automatically.
   Afterwards, choose any retained lease from the stable station selector.
 - A leased station is read-only on the uConsole until the host revokes its lease.
-  F9 administration, pause, and switching the local display to another station
+  F9 administration and switching the local display to another station
   remain available, and retained inactive browser leases stay exclusive.
 - Browser contact selection, map pan/zoom/follow, workstation pages, drafts, and
   analyzer selection remain local to that browser.
@@ -79,10 +79,10 @@ in screenshots, logs, or issue reports.
   grants, revocation, takeover, and host control. Clicking never bypasses readiness.
 - Voice coordination uses your existing external voice connection or conversation.
   There is no built-in chat, microphone capture or general command execution.
-- Manual pause, focus loss, save/load, quit, nations, true editors, menus and the
-  splash lock remote changes. With an active crew station, F1 help, the in-game F8
-  analyzer, F9 crew administration and F10 options leave simulation and remote
-  stations live; without active crew they retain the normal pause behavior.
+- The mission always runs in real time and cannot be paused. Local menus and
+  overlays (F1 help, options, save/load, quit confirmation, nations, the in-game F8
+  analyzer, F9 administration) and focus loss leave simulation and remote stations
+  live. Only the main menu and the splash lock remote changes.
   Unknown or stale observations never gain information merely because the
   Commander selects them. Menu/editor/splash pages disclose no pregenerated
   tactical world.
@@ -106,7 +106,7 @@ labels its projected Sonobuoys `SB01`, `SB02`, and so on.
 
 The Bridge weather instrument shows the authoritative day/night state, effective
 sea state, weather class, wind, rain and visibility. Its subdued wave and rain
-animation follows projected simulation time and freezes while paused. Helicopter
+animation follows projected simulation time. Helicopter
 readiness separately shows weather-safe launch/dipping decisions and crosswind.
 Autocrew status is read-only in every browser role; the host controls it locally.
 
@@ -156,7 +156,7 @@ nine stations with command, direct fire, sonar audio and SimLog, only one browse
 may pair (a second gets `session_limit` until you remove the first in the roster),
 and leases do not lapse. Changing the mode revokes every session and rotates the code.
 
-The solo browser also gets a **game control bar**: pause/resume,
+The solo browser also gets a **game control bar**:
 save and load (slots 1-5) and new game (scenario, world, difficulty,
 optional seed). Loading or starting a game replaces the world but keeps the browser
 paired; anything it had prepared for the old world fails closed. At the uConsole main

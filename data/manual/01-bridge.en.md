@@ -27,7 +27,7 @@ Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) sh
 
 - **Course / rudder:** current course, ordered course, rudder angle and turn radius.
 - **Speed / acoustics:** telegraph order, speed, own noise in percent and a CAVITATION warning above 15 kn.
-- **Tactical picture:** observed threats (for example a torpedo bearing or missile threat), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night.
+- **Tactical picture:** observed threats (a heard torpedo launch transient or HF seeker pulses, a contact sonar classified as torpedo, or an air track flagged as a possible missile), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night.
 - **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. Wheel or `Q`/`E` zoom, drag pans, `K` follows own ship.
 
 ## Bridge lookout reports {#bridge-lookout}
@@ -70,6 +70,6 @@ Combat situation:
 
 ## Not modelled {#bridge-limits}
 
-- No time acceleration and no autopilot waypoints for the frigate.
-- No separate torpedo alarm procedure: incoming torpedoes appear as sonar contacts and in the tactical picture only when observed; the lookout calls out only a visible wake.
+- No time acceleration, no pause and no autopilot waypoints for the frigate.
+- No automatic torpedo identification: the alarm rests only on heard intercepts or the sonar operator's classification; a torpedo running silent outside seeker range can arrive unannounced. The lookout calls out only a visible wake.
 - The lookout never reads a ship's name or flag and does not report navigation lights or day shapes.

@@ -5,8 +5,8 @@
   const prefix = "commander.web.";
   const domains = { UNKNOWN: "domain_unknown", SURFACE: "domain_surface", SUBSURFACE: "domain_subsurface", AIR: "domain_air" };
   const affiliations = { UNKNOWN: "aff_unknown", FRIEND: "aff_friend", NEUTRAL: "aff_neutral", HOSTILE: "aff_hostile" };
-  const classes = { U_BOOT: "class_submarine", KAMPFSCHIFF: "class_warship", BIOLOGISCH: "class_biological", FAHRZEUG: "class_vehicle", FLUGZEUG: "class_aircraft" };
-  const phases = { live: "phase_live", paused: "phase_paused", menu: "phase_menu", blocked: "phase_blocked", ended: "phase_ended" };
+  const classes = { U_BOOT: "class_submarine", KAMPFSCHIFF: "class_warship", BIOLOGISCH: "class_biological", FAHRZEUG: "class_vehicle", FLUGZEUG: "class_aircraft", TORPEDO: "class_torpedo" };
+  const phases = { live: "phase_live", menu: "phase_menu", blocked: "phase_blocked", ended: "phase_ended" };
   const damageStates = { OK: "damage_ok", FLUTEND: "damage_flooding", BESCHAEDIGT: "damage_damaged", ZERSTOERT: "damage_destroyed" };
   const heloStates = { HANGAR: "helo_stowed", AUF: "helo_airborne", ZURUECK: "helo_returning", VERLOREN: "helo_lost" };
   const stationNames = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka"];
@@ -210,7 +210,6 @@
   let weatherFrame = null;
   let weatherTimer = null;
   let weatherLastDraw = 0;
-  let weatherReceivedAt = 0;
   let roleMapDrag = null;
   let sonarBroadbandDrag = null;
   let opzSweepFrame = null;
@@ -651,6 +650,9 @@
 
   function clearVisuals() {
     visualDrawQueued = false;
+    animatedPlots.clear();
+    spectrumStates.clear();
+    syncPlotAnimation();
     stopOpzSweepAnimation();
     roleMapHits = [];
     roleMapInfo = [];
@@ -704,11 +706,12 @@
     metrics($("bridge-orders-summary"), [["station_down", yesNo(payload.orders.station_down)],
       ["speed_max", unit(payload.orders.speed_max_kn, "kn")], ["telegraph", payload.orders.telegraph],
       ["noise", number(payload.orders.noise, 2)], ["cavitating", yesNo(payload.orders.cavitating)],
-      ["threat_count", number(payload.threat.count, 0)], ["flood", unit(payload.threat.average_flood, "%")]]);
+      ["threat_count", number(payload.threat.count, 0)], ["flood", unit(payload.threat.average_flood, "%")],
+      ["torpedo_warning", payload.threat.torpedoes.length ? t(`torpedo_warning_${payload.threat.torpedoes[0].source}`, {
+        bearing: number(payload.threat.torpedoes[0].bearing, 1), age: number(payload.threat.torpedoes[0].age_s, 0)}) : t("torpedo_warning_none")]]);
     stationRows($("bridge-tactical"), payload.tactical_summary, tacticalEntries);
     renderSightings(payload.sightings);
-    weatherReceivedAt = performance.now();
-    drawBridgeWeather(weatherReceivedAt);
+    drawBridgeWeather(performance.now());
     syncWeatherAnimation();
     const weather = v2State.environment;
     $("bridge-weather-text").textContent = t("weather_equivalent", {
@@ -737,7 +740,7 @@
     if (!weather || session?.station !== "bridge") return;
     const canvas = $("bridge-weather-canvas"), context = canvas.getContext("2d");
     const width = canvas.width, height = canvas.height, horizon = Math.floor(height / 2);
-    const phase = (v2State.clock.sim + Math.max(0, now - weatherReceivedAt) / 1000 * v2State.clock.time_scale);
+    const phase = displaySimNow(now) + DISPLAY_CLOCK_LAG_S;
     const gradient = context.createLinearGradient(0, 0, 0, horizon);
     gradient.addColorStop(0, weather.is_night ? "#050e1b" : "#19465c");
     gradient.addColorStop(1, weather.is_night ? "#26353e" : "#789ba0");
@@ -1292,42 +1295,122 @@
   }
   const heatmapRasters = new Map();
 
+  // The host publishes at most every 0.5 s, so drawing the acoustic plots only
+  // when data arrived made the waterfalls jump in steps. They are instead drawn
+  // against a smoothed display clock. The game always runs in real time and
+  // never pauses, so the clock simply advances 1:1 with wall time from the last
+  // publication while the world is live, runs a fixed jitter delay behind it
+  // (rows scroll in over the top edge instead of popping in) and only slews
+  // gently. Purely presentational: nothing here is sent to the host.
+  const DISPLAY_CLOCK_LAG_S = .75;
+  const displayClock = {context: null, sim: 0, wall: 0, live: false, shown: null, shownWall: 0};
+
+  function sampleDisplayClock(state, sim = state?.clock?.sim) {
+    if (!state || !finite(sim)) return;
+    const context = `${state.session}:${state.epoch}`;
+    const live = state.phase === "live";
+    const reset = displayClock.context !== context;
+    if (reset) { displayClock.context = context; displayClock.shown = null; }
+    // One publication reaches the page twice (stream frame and state poll);
+    // its earliest arrival is the better anchor for extrapolation.
+    if (reset || sim > displayClock.sim || live !== displayClock.live)
+      Object.assign(displayClock, {sim, wall: performance.now(), live});
+  }
+
+  function displaySimNow(wallNow = performance.now()) {
+    if (displayClock.context === null) return v2State?.clock?.sim ?? 0;
+    const rate = displayClock.live ? 1 : 0;
+    const elapsed = Math.min(1.5, Math.max(0, (wallNow - displayClock.wall) / 1000));
+    const target = displayClock.sim + elapsed * rate - DISPLAY_CLOCK_LAG_S;
+    if (displayClock.shown === null || Math.abs(target - displayClock.shown) > 3) {
+      displayClock.shown = target;
+    } else {
+      const dt = Math.min(.25, Math.max(0, (wallNow - displayClock.shownWall) / 1000));
+      displayClock.shown += Math.max(0, dt * (rate + Math.max(-.1, Math.min(.1, target - displayClock.shown))));
+    }
+    displayClock.shownWall = wallNow;
+    return displayClock.shown;
+  }
+
+  // Plots redrawn on every animation frame between publications, by canvas id.
+  // A frame only blits cached rasters and strokes a few hundred points.
+  const animatedPlots = new Map();
+  let plotFrame = null;
+  let plotLastDraw = 0;
+
+  function registerAnimatedPlot(id, draw) {
+    animatedPlots.set(id, {role: v2State?.role, draw});
+  }
+
+  function plotAnimation(now) {
+    plotFrame = null;
+    if (now - plotLastDraw >= 30) {
+      plotLastDraw = now;
+      for (const [id, plot] of animatedPlots) {
+        const element = $(id);
+        if (plot.role !== v2State?.role || !element || element.closest("[hidden]")) continue;
+        plot.draw(now);
+      }
+    }
+    syncPlotAnimation();
+  }
+
+  function syncPlotAnimation() {
+    const role = v2State?.role;
+    const active = !document.hidden && connected && v2State?.phase === "live" && (role === "sonar" || role === "helicopter") &&
+      !$("role-visuals").hidden && [...animatedPlots.values()].some((plot) => plot.role === role);
+    if (active && plotFrame === null) plotFrame = requestAnimationFrame(plotAnimation);
+    if (!active && plotFrame !== null) { cancelAnimationFrame(plotFrame); plotFrame = null; }
+  }
+
   // A waterfall has tens of thousands of cells. Painting each with fillRect blocked
   // the browser's main thread long enough to starve the live-sonar audio scheduler,
-  // so the cells are written into one pixel buffer and drawn with a single drawImage.
-  function heatmap(id, rows, frequencies = null, axisMaximum = null) {
-    const plot = visualContext(id);
-    if (!plot) return null;
-    rows = rows.filter((row) => row.age_s <= sonarDisplay.history);
-    if (!rows.length || !rows.some((row) => row.bins.length)) { drawEmpty(plot); return null; }
-    const maxAge = Math.max(20, ...rows.map((row) => row.age_s));
-    const xmax = axisMaximum ?? (frequencies ? 300 : 360);
-    const area = plotAxes(plot, xmax, maxAge, frequencies ? " Hz" : "°", "s");
-    const count = Math.max(...rows.map((row) => row.bins.length));
-    const width = Math.max(1, Math.round(area.width)), height = Math.max(1, Math.round(area.height));
+  // so the cells are written into one pixel buffer. The buffer is positioned by
+  // row time stamps and rebuilt only when rows or display settings change; each
+  // animation frame merely blits it at the display clock's offset.
+  function heatmap(id, rows, frequencies = null, axisMaximum = null, overlay = null, historyS = sonarDisplay.history) {
+    const now = v2State?.clock?.sim ?? 0;
+    rows = rows.map((row) => finite(row.stamp) ? row : {...row, stamp: now - row.age_s})
+      .filter((row) => row.stamp >= now - historyS - 5 && row.bins.length);
+    const spec = {rows, frequencies, axisMaximum, overlay, historyS};
+    const draw = (wallNow) => drawHeatmap(id, spec, wallNow);
+    registerAnimatedPlot(id, draw);
+    return draw(performance.now());
+  }
+
+  function heatmapRaster(id, spec, width, height, pixelsPerSecond, headroom) {
+    const {rows, frequencies, historyS} = spec;
     let raster = heatmapRasters.get(id);
-    if (!raster || raster.canvas.width !== width || raster.canvas.height !== height) {
+    const settings = [width, height, headroom, historyS, sonarDisplay.palette, sonarDisplay.black, sonarDisplay.contrast].join(":");
+    if (raster?.rows === rows && raster.settings === settings) return raster;
+    const rasterHeight = height + headroom;
+    if (!raster || raster.canvas.width !== width || raster.canvas.height !== rasterHeight) {
       const off = document.createElement("canvas");
-      off.width = width; off.height = height;
+      off.width = width; off.height = rasterHeight;
       const context = off.getContext("2d");
-      const image = context.createImageData(width, height);
+      const image = context.createImageData(width, rasterHeight);
       raster = {canvas: off, context, image, pixels: new Uint32Array(image.data.buffer)};
       heatmapRasters.set(id, raster);
     }
+    const anchor = Math.max(...rows.map((row) => row.stamp));
+    Object.assign(raster, {rows, settings, anchor});
     const pixels = raster.pixels;
     const colors = heatmapPalette();
-    const background = colors[0];
-    pixels.fill(background);
-    const ages = rows.map((row) => row.age_s).sort((a, b) => a - b);
-    const gaps = ages.slice(1).map((age, index) => age - ages[index]).filter((gap) => gap > 0);
+    pixels.fill(colors[0]);
+    const xmax = spec.axisMaximum ?? (frequencies ? 300 : 360);
+    const count = Math.max(...rows.map((row) => row.bins.length));
+    const stamps = rows.map((row) => row.stamp).sort((a, b) => a - b);
+    const gaps = stamps.slice(1).map((stamp, index) => stamp - stamps[index]).filter((gap) => gap > 0);
     const samplePeriod = gaps.length ? gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : .25;
-    const cellHeight = Math.max(1, Math.round(samplePeriod / maxAge * height));
+    const cellHeight = Math.max(1, Math.round(samplePeriod * pixelsPerSecond));
     for (const row of rows) {
-      const y0 = Math.min(height - 1, Math.max(0, Math.floor(row.age_s / maxAge * height)));
-      const y1 = Math.min(height, y0 + cellHeight);
+      const age = anchor - row.stamp;
+      const y0 = Math.floor(headroom + age * pixelsPerSecond);
+      if (y0 < 0 || y0 >= rasterHeight) continue;
+      const y1 = Math.min(rasterHeight, y0 + cellHeight);
+      const persistence = Math.exp(-age / Math.max(8, historyS * .8));
       for (let x = 0; x < row.bins.length; x++) {
         const raw = Math.max(0, Math.min(1, row.bins[x]));
-        const persistence = Math.exp(-row.age_s / Math.max(8, maxAge * .8));
         const level = Math.max(0, Math.min(1, (raw - sonarDisplay.black) / Math.max(.01, 1 - sonarDisplay.black) * sonarDisplay.contrast * persistence));
         const start = frequencies ? frequencies[x] / xmax : x / count;
         const end = frequencies ? (frequencies[x + 1] ?? xmax) / xmax : (x + 1) / count;
@@ -1338,16 +1421,70 @@
       }
     }
     raster.context.putImageData(raster.image, 0, 0);
-    area.context.imageSmoothingEnabled = false;
-    area.context.drawImage(raster.canvas, 0, 0, area.width, area.height);
+    return raster;
+  }
+
+  function drawHeatmap(id, spec, wallNow) {
+    const plot = visualContext(id);
+    if (!plot) return null;
+    if (!spec.rows.length) { drawEmpty(plot); return null; }
+    const xmax = spec.axisMaximum ?? (spec.frequencies ? 300 : 360);
+    // A fixed time axis: rows scroll down through it rather than the axis
+    // rescaling while the history fills.
+    const area = plotAxes(plot, xmax, spec.historyS, spec.frequencies ? " Hz" : "°", "s");
+    const width = Math.max(1, Math.round(area.width)), height = Math.max(1, Math.round(area.height));
+    const pixelsPerSecond = height / spec.historyS;
+    const headroom = Math.min(height, Math.ceil((DISPLAY_CLOCK_LAG_S + 1.5) * pixelsPerSecond) + 2);
+    const raster = heatmapRaster(id, spec, width, height, pixelsPerSecond, headroom);
+    const dpr = area.context.getTransform().a || 1;
+    const scaleY = area.height / height;
+    const offset = Math.round(((displaySimNow(wallNow) - raster.anchor) * pixelsPerSecond - headroom) * scaleY * dpr) / dpr;
+    const context = area.context;
+    context.save();
+    context.beginPath(); context.rect(0, 0, area.width, area.height); context.clip();
+    context.fillStyle = "#030806"; context.fillRect(0, 0, area.width, area.height);
+    context.imageSmoothingEnabled = false;
+    context.drawImage(raster.canvas, 0, offset, area.width, (height + headroom) * scaleY);
+    context.restore();
+    spec.overlay?.(area);
     return area;
   }
 
-  function spectrum(id, values, markers = [], frequencies = null, xmax = 80, xmin = 0) {
+  // Spectra ease towards each publication instead of jumping to it.
+  const SPECTRUM_SMOOTHING_S = .15;
+  const spectrumStates = new Map();
+
+  function spectrum(id, values, markers = [], frequencies = null, xmax = 80, xmin = 0, overlay = null) {
+    const spec = {values, markers, frequencies, xmax, xmin, overlay};
+    const draw = (wallNow) => drawSpectrum(id, spec, wallNow);
+    registerAnimatedPlot(id, draw);
+    return draw(performance.now());
+  }
+
+  function easedSpectrum(id, values, wallNow) {
+    const maximum = Math.max(1e-6, ...values.map((value) => Math.abs(value)));
+    let state = spectrumStates.get(id);
+    if (!state || state.values.length !== values.length) {
+      state = {values: Float64Array.from(values), maximum, wall: wallNow};
+      spectrumStates.set(id, state);
+      return state;
+    }
+    const alpha = 1 - Math.exp(-Math.max(0, wallNow - state.wall) / 1000 / SPECTRUM_SMOOTHING_S);
+    for (let index = 0; index < values.length; index++) state.values[index] += (values[index] - state.values[index]) * alpha;
+    state.maximum += (maximum - state.maximum) * alpha;
+    state.wall = wallNow;
+    return state;
+  }
+
+  function drawSpectrum(id, spec, wallNow) {
+    const {markers, frequencies, xmax, xmin} = spec;
     let plot = visualContext(id);
     if (!plot) return;
-    if (!values.length) { drawEmpty(plot); return; }
-    const maximum = Math.max(1e-6, ...values.map((value) => Math.abs(value)));
+    if (!spec.values.length) { spectrumStates.delete(id); drawEmpty(plot); return; }
+    const eased = easedSpectrum(id, spec.values, wallNow);
+    const values = eased.values;
+    let maximum = eased.maximum;
+    for (const value of values) maximum = Math.max(maximum, Math.abs(value));
     plot = plotAxes(plot, xmax - xmin, maximum, " Hz", "rel.", xmin, true);
     plot.context.strokeStyle = palette().accent;
     plot.context.beginPath();
@@ -1357,9 +1494,95 @@
       index ? plot.context.lineTo(x, y) : plot.context.moveTo(x, y);
     });
     plot.context.stroke();
+    drawPeakLabels(plot, values, frequencies, xmin, xmax, maximum, markers);
     plot.context.fillStyle = palette().amber;
     for (const marker of markers.slice(0, 20)) plot.context.fillText(marker.text, Math.max(2, Math.min(plot.width - 50, marker.x * plot.width)), 14);
+    spec.overlay?.(plot);
     return plot;
+  }
+
+  // Same rule as sonar_view.spectrum_peaks: prominent local maxima above the
+  // median floor, parabola-refined, strongest first and thinned so labels
+  // never overlap.
+  const PEAK_LABEL_W = 30;
+  function spectrumPeaks(values, frequencies, limit, minSeparation) {
+    const count = values.length;
+    if (count < 3 || frequencies.length !== count || limit <= 0) return [];
+    const v = Array.from(values, (value) => Number.isFinite(value) ? value : 0);
+    const top = Math.max(...v);
+    const sorted = [...v].sort((a, b) => a - b);
+    const floor = count % 2 ? sorted[(count - 1) / 2] : (sorted[count / 2 - 1] + sorted[count / 2]) / 2;
+    const span = top - floor;
+    if (top < .03 || span <= 1e-6) return [];
+    const threshold = Math.max(floor + .25 * span, floor * 1.6, .03);
+    const candidates = [];
+    for (let i = 1; i < count - 1; i++) {
+      if (!(v[i] > v[i - 1] && v[i] >= v[i + 1] && v[i] >= threshold)) continue;
+      const left = Math.min(...v.slice(Math.max(0, i - 4), i));
+      const right = Math.min(...v.slice(i + 1, i + 5));
+      if (v[i] - Math.max(left, right) < .1 * span) continue;
+      const [x0, x1, x2] = [frequencies[i - 1], frequencies[i], frequencies[i + 1]];
+      const [y0, y1, y2] = [v[i - 1], v[i], v[i + 1]];
+      const denominator = (x0 - x1) * (x0 - x2) * (x1 - x2);
+      let hz = x1;
+      if (Math.abs(denominator) > 1e-12) {
+        const a = (x2 * (y1 - y0) + x1 * (y0 - y2) + x0 * (y2 - y1)) / denominator;
+        const b = (x2 * x2 * (y0 - y1) + x1 * x1 * (y2 - y0) + x0 * x0 * (y1 - y2)) / denominator;
+        if (a < 0) hz = Math.max(x0, Math.min(x2, -b / (2 * a)));
+      }
+      candidates.push({hz, level: v[i], index: i});
+    }
+    candidates.sort((a, b) => b.level - a.level || a.index - b.index);
+    const chosen = [];
+    for (const peak of candidates) {
+      if (chosen.every((other) => Math.abs(peak.hz - other.hz) >= minSeparation)) chosen.push(peak);
+      if (chosen.length >= limit) break;
+    }
+    return chosen.sort((a, b) => a.hz - b.hz);
+  }
+
+  // Same rule as sonar_view.place_peak_labels: strongest first, above the
+  // apex or beside it, and a value with no free place is dropped.
+  function placePeakLabels(apexes, width, height, obstacles) {
+    const taken = [...obstacles], placed = [];
+    const collides = (box) => taken.some((other) => box.x - 2 < other.x + other.w && other.x < box.x + box.w + 2 && box.y < other.y + other.h && other.y < box.y + box.h);
+    for (const apex of [...apexes].sort((a, b) => b.level - a.level || a.x - b.x)) {
+      const sideTop = Math.max(1, apex.y - 6);
+      const options = [[{x: apex.x - apex.w / 2, y: apex.y - 15, w: apex.w, h: 12}, true]];
+      for (const top of [sideTop, sideTop + 12]) for (const x of [apex.x + 4, apex.x - 4 - apex.w]) options.push([{x, y: top, w: apex.w, h: 12}, false]);
+      for (const [box, above] of options) {
+        if (box.x < 0 || box.y < 0 || box.x + box.w > width || box.y + box.h > height || collides(box)) continue;
+        taken.push(box); placed.push({...apex, box, above});
+        break;
+      }
+    }
+    return placed;
+  }
+
+  function drawPeakLabels(plot, values, frequencies, xmin, xmax, maximum, markers) {
+    if (plot.width < PEAK_LABEL_W || xmax <= xmin) return;
+    const hz = frequencies ?? Array.from(values, (_, index) => values.length === 1 ? xmin : xmin + index / (values.length - 1) * (xmax - xmin));
+    const scale = plot.width / (xmax - xmin);
+    const normalised = Array.from(values, (value) => Math.max(0, value) / maximum);
+    const context = plot.context;
+    context.save();
+    context.font = "10px ui-monospace, monospace";
+    const markerBoxes = markers.slice(0, 20).map((marker) => ({x: Math.max(2, Math.min(plot.width - 50, marker.x * plot.width)), y: 3, w: context.measureText(marker.text).width, h: 13}));
+    const apexes = [];
+    for (const peak of spectrumPeaks(normalised, hz, 12, 0)) {
+      const x = (peak.hz - xmin) * scale;
+      if (x < 0 || x > plot.width || markers.some((marker) => Math.abs(marker.x * plot.width - x) < 4)) continue;
+      const text = peak.hz < 100 ? number(peak.hz, 1) : number(peak.hz, 0);
+      apexes.push({x, y: plot.height - peak.level * (plot.height - 12), w: context.measureText(text).width, text, level: peak.level});
+    }
+    context.fillStyle = palette().text;
+    context.strokeStyle = palette().text;
+    context.textBaseline = "top";
+    for (const label of placePeakLabels(apexes, plot.width, plot.height, markerBoxes)) {
+      if (label.above) { context.beginPath(); context.moveTo(label.x, label.y - 1); context.lineTo(label.x, label.y - 4); context.stroke(); }
+      context.fillText(label.text, label.box.x, label.box.y);
+    }
+    context.restore();
   }
 
   function drawBandLimits(plot, band, maximum = 300) {
@@ -1399,16 +1622,14 @@
   function drawSonarVisuals() {
     const visual = v2State.sonar.visualization;
     const historyRows = (name, fallback) => {
-      const now = v2State.clock.sim;
-      const rows = [...sonarHistory[name].values()].map((row) => ({...row, age_s: now - row.stamp}));
-      return rows.length ? rows.filter((row) => row.age_s >= 0 && row.age_s <= 600).sort((a, b) => a.age_s - b.age_s) : fallback;
+      const rows = [...sonarHistory[name].values()].filter((row) => row.stamp >= v2State.clock.sim - 600);
+      return rows.length ? rows.sort((a, b) => b.stamp - a.stamp) : fallback;
     };
-    const focusedTrack = selectedTrack();
     const broadbandHistory = historyRows("broadband", visual.broadband.history);
     const lofarHistory = historyRows("lofar", visual.lofar.history);
     const demonHistory = historyRows("demon", visual.demon.history);
-    const broadband = heatmap("sonar-broadband", broadbandHistory);
-    if (broadband) {
+    heatmap("sonar-broadband", broadbandHistory, null, null, (broadband) => {
+      const focusedTrack = selectedTrack();
       const bearing = visual.receiver.listen_bearing % 360;
       const half = visual.receiver.beam_width_deg / 2;
       broadband.context.strokeStyle = palette().muted;
@@ -1429,28 +1650,31 @@
         broadband.context.lineTo(selectedX, broadband.height); broadband.context.stroke();
         broadband.context.lineWidth = 1;
       }
-    }
-    const lofar = heatmap("sonar-lofar", lofarHistory, visual.lofar.bin_frequencies_hz);
-    const lofarSpectrum = spectrum("sonar-spectrum", visual.lofar.spectrum, [], visual.lofar.bin_frequencies_hz, 300);
-    drawBandLimits(lofar, v2State.sonar.settings.band_hz);
-    drawBandLimits(lofarSpectrum, v2State.sonar.settings.band_hz);
-    drawHarmonicGuides(lofar, v2State.sonar.settings.harmonic_hz, 300);
-    drawHarmonicGuides(lofarSpectrum, v2State.sonar.settings.harmonic_hz, 300);
+    });
+    const lofarGuides = (plot) => {
+      drawBandLimits(plot, v2State.sonar.settings.band_hz);
+      drawHarmonicGuides(plot, v2State.sonar.settings.harmonic_hz, 300);
+    };
+    heatmap("sonar-lofar", lofarHistory, visual.lofar.bin_frequencies_hz, null, lofarGuides);
+    spectrum("sonar-spectrum", visual.lofar.spectrum, [], visual.lofar.bin_frequencies_hz, 300, 0, lofarGuides);
     bandSpectrum("sonar-band-low", visual.lofar, 0, 40);
     bandSpectrum("sonar-band-mid", visual.lofar, 40, 100);
     bandSpectrum("sonar-band-high", visual.lofar, 100, 300);
     const peak = visual.demon.analysis?.modulation_peak_hz;
     const demonFrequencies = visual.demon.spectrum.map((_, index) => index + 1);
-    const demon = heatmap("sonar-demon", demonHistory.map((row) => ({...row, bins: row.bins.slice(0, 50)})), demonFrequencies.slice(0, 50), 50);
-    const demonSpectrum = spectrum("sonar-demon-spectrum", visual.demon.spectrum.slice(0, 50),
-      finite(peak) && peak <= 50 ? [{x: peak / 50, text: `${number(peak, 1)} Hz`}] : [], demonFrequencies.slice(0, 50), 50);
-    drawHarmonicGuides(demon, sonarDisplay.demonCursor, 50);
-    drawHarmonicGuides(demonSpectrum, sonarDisplay.demonCursor, 50);
-    let tma = visualContext("sonar-tma-plot");
-    if (tma) {
+    const demonGuides = (plot) => drawHarmonicGuides(plot, sonarDisplay.demonCursor, 50);
+    heatmap("sonar-demon", demonHistory.map((row) => ({...row, bins: row.bins.slice(0, 50)})), demonFrequencies.slice(0, 50), 50, demonGuides);
+    spectrum("sonar-demon-spectrum", visual.demon.spectrum.slice(0, 50),
+      finite(peak) && peak <= 50 ? [{x: peak / 50, text: `${number(peak, 1)} Hz`}] : [], demonFrequencies.slice(0, 50), 50, 0, demonGuides);
+    const tmaSim = v2State.clock.sim;
+    const drawTma = (wallNow) => {
+      let tma = visualContext("sonar-tma-plot");
+      if (!tma) return;
       const contacts = visual.tma.filter((row) => row.bearings.length);
       if (!contacts.length) drawEmpty(tma);
-      const maxAge = Math.max(1, ...contacts.flatMap((track) => track.bearings.map((point) => point.age_s)));
+      // Bearings age smoothly between publications, in step with the waterfalls.
+      const shift = Math.max(0, Math.min(1.5, displaySimNow(wallNow) + DISPLAY_CLOCK_LAG_S - tmaSim));
+      const maxAge = Math.max(1, ...contacts.flatMap((track) => track.bearings.map((point) => point.age_s + shift)));
       tma = plotAxes(tma, maxAge, 360, " s", "°");
       contacts.forEach((track, index) => {
         const isSelected = track.ref === selected;
@@ -1458,14 +1682,16 @@
         tma.context.lineWidth = isSelected ? 3 : 1;
         tma.context.beginPath();
         track.bearings.forEach((point, pointIndex) => {
-          const x = point.age_s / maxAge * tma.width;
+          const x = (point.age_s + shift) / maxAge * tma.width;
           const y = point.bearing / 360 * tma.height;
           pointIndex && Math.abs(point.bearing - track.bearings[pointIndex - 1].bearing) < 180 ? tma.context.lineTo(x, y) : tma.context.moveTo(x, y);
         });
         tma.context.stroke();
       });
       tma.context.lineWidth = 1;
-    }
+    };
+    registerAnimatedPlot("sonar-tma-plot", drawTma);
+    drawTma(performance.now());
     let bt = visualContext("sonar-environment");
     if (bt) {
       if (!visual.bt || !visual.bt.depths_m.length) drawEmpty(bt);
@@ -1546,45 +1772,26 @@
         ...(payload.waypoint ? [{...payload.waypoint, waypoint: true}] : [])], bearingLogs: [], fixes: []};
   }
 
-  // The sweep turns at a constant rate, but each published bearing is 0-0.6 s old
-  // when it arrives (publish cadence, poll phase, network). Restarting the strobe
-  // from every sample made it jump by up to rate * age. Instead keep one phase
-  // model. `target` is estimated from the samples: a sample can only be older than
-  // the truth, so it moves the estimate forward quickly and backward only very
-  // slowly, which converges on the least-delayed sample. The displayed `phase`
-  // then follows `target` with a capped slew, so corrections are never visible
-  // as a jump, only as a barely noticeable change of turning speed.
+  // The host sweep turns at a constant rate in sim time, so every sample fixes
+  // one phase offset (bearing - rate * sim). The strobe is drawn against the
+  // shared smoothed display clock, which only ever advances (with at most
+  // +/-10 % rate correction), so the beam turns steadily and never steps back
+  // when a delayed or duplicate publication arrives.
   const wrap360 = (value) => ((value % 360) + 360) % 360;
-  const wrap180 = (value) => wrap360(value + 180) - 180;
-  const opzSweepMaxSlewDegPerS = 25;
 
   function currentOpzSweepBearing() {
     const model = opzSweepSample;
     if (!model) return null;
-    const now = performance.now();
-    const step = Math.max(0, now - model.readAt) / 1000 * opzSweepMaxSlewDegPerS;
-    model.phase = wrap360(model.phase + Math.max(-step, Math.min(step, wrap180(model.target - model.phase))));
-    model.readAt = now;
-    return wrap360(model.phase + now / 1000 * model.rate);
+    return wrap360(model.offset + (displaySimNow() + DISPLAY_CLOCK_LAG_S) * model.rate);
   }
 
   function updateOpzSweepSample(state) {
     const radar = state?.role === "opz" ? state.opz.radar : null;
-    if (!radar || !finite(radar.sweep_bearing)) { opzSweepSample = null; stopOpzSweepAnimation(); return; }
-    const now = performance.now();
+    if (!radar || !finite(radar.sweep_bearing) || !finite(state.clock?.sim)) {
+      opzSweepSample = null; stopOpzSweepAnimation(); return;
+    }
     const rate = finite(radar.sweep_rate_deg_s) ? radar.sweep_rate_deg_s : 90;
-    const implied = wrap360(radar.sweep_bearing - now / 1000 * rate);
-    if (!opzSweepSample || opzSweepSample.rate !== rate) {
-      opzSweepSample = {phase: implied, target: implied, rate, readAt: now};
-      return;
-    }
-    const error = wrap180(implied - opzSweepSample.target);
-    if (Math.abs(error) > rate * 1.2) {
-      // Far outside any plausible sample age: the sweep restarted, follow it.
-      opzSweepSample.target = opzSweepSample.phase = implied;
-    } else {
-      opzSweepSample.target = wrap360(opzSweepSample.target + error * (error > 0 ? .5 : .03));
-    }
+    opzSweepSample = {offset: wrap360(radar.sweep_bearing - state.clock.sim * rate), rate};
   }
 
   function opzSweepActive() {
@@ -1782,10 +1989,11 @@
     if (!finite(bearing)) return;
     const angle = bearing * Math.PI / 180;
     const dx = Math.sin(angle), dy = -Math.cos(angle);
-    // Match the native OPZ scope: the beam reaches exactly the selected radar
-    // range, never the canvas edge (which made any interpolation jitter far
-    // more visible at the long, mostly off-screen tip).
-    const length = radar.range_nm * geometry.scale;
+    // The beam reaches as far as the own radar does: the effective range of
+    // the longest-reaching active radar, not the display scale or canvas edge.
+    const reach = Math.max(radar.surface ? radar.surface_effective_range_nm : 0,
+      radar.air ? radar.air_effective_range_nm : 0);
+    const length = reach * geometry.scale;
     roleMapSweepCtx.strokeStyle = palette().accent;
     roleMapSweepCtx.lineWidth = 1.5;
     roleMapSweepCtx.beginPath();
@@ -1876,9 +2084,14 @@
         addRoleMapHit(row.ref, x, y);
         addMapInfo(roleMapInfo, x, y, "track", row);
         if (finite(row.range_uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, row.range_uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
-        plot.context.fillStyle = plot.context.strokeStyle; plot.context.beginPath(); plot.context.arc(x, y, 4, 0, Math.PI * 2); plot.context.fill();
-        if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 10, 0, Math.PI * 2); plot.context.stroke(); }
-        plot.context.fillText(row.label || row.ref, x + 6, y - 6);
+        // Same NATO symbol as the chart and the uConsole: affiliation frame + domain glyph.
+        const symbolColor = colors[row.affiliation] || colors.UNKNOWN;
+        drawNatoSymbol(plot.context, x, y, row.affiliation, row.domain, symbolColor, 7);
+        plot.context.strokeStyle = isSelected ? palette().accent : symbolColor;
+        plot.context.lineWidth = isSelected ? 3 : 1;
+        if (isSelected) { plot.context.beginPath(); plot.context.arc(x, y, 14, 0, Math.PI * 2); plot.context.stroke(); }
+        plot.context.fillStyle = symbolColor;
+        plot.context.fillText(row.label || row.ref, x + 12, y - 10);
         if (finite(row.course)) {
           const angle = row.course * Math.PI / 180, tipX = x + Math.sin(angle) * 22, tipY = y - Math.cos(angle) * 22;
           plot.context.beginPath(); plot.context.moveTo(x, y); plot.context.lineTo(tipX, tipY); plot.context.stroke();
@@ -2040,16 +2253,18 @@
     const acoustic = v2State?.helicopter?.acoustic;
     if (!acoustic || $("helicopter-buoy-console").hidden) return;
     const aged = (rows) => rows.map((bins, index) => ({bins, age_s: (rows.length - 1 - index) * .25}));
-    const broadband = heatmap("helicopter-broadband-canvas", aged(acoustic.broadband_history));
-    if (broadband && finite(acoustic.listen_bearing)) {
+    // The buoy relay keeps a fixed number of 0.25 s rows; that span is its time axis.
+    const span = (rows) => Math.max(20, rows.length * .25);
+    heatmap("helicopter-broadband-canvas", aged(acoustic.broadband_history), null, null, (broadband) => {
+      if (!finite(acoustic.listen_bearing)) return;
       broadband.context.strokeStyle = palette().amber;
       const x = acoustic.listen_bearing / 360 * broadband.width;
       broadband.context.beginPath(); broadband.context.moveTo(x, 0);
       broadband.context.lineTo(x, broadband.height); broadband.context.stroke();
-    }
+    }, span(acoustic.broadband_history));
     spectrum("helicopter-spectrum-canvas", acoustic.spectrum,
       [], acoustic.bin_frequencies_hz, 300);
-    heatmap("helicopter-lofar-canvas", aged(acoustic.history), acoustic.bin_frequencies_hz);
+    heatmap("helicopter-lofar-canvas", aged(acoustic.history), acoustic.bin_frequencies_hz, null, null, span(acoustic.history));
     spectrum("helicopter-demon-canvas", acoustic.demon,
       [], acoustic.demon.map((_, index) => index + 1), 80);
   }
@@ -2069,7 +2284,7 @@
   function queueVisualDraw() {
     if (visualDrawQueued) return;
     visualDrawQueued = true;
-    requestAnimationFrame(() => { visualDrawQueued = false; drawRoleVisuals(); });
+    requestAnimationFrame(() => { visualDrawQueued = false; drawRoleVisuals(); syncPlotAnimation(); });
   }
 
   function renderRoleVisuals(role) {
@@ -2088,7 +2303,7 @@
       ["damage-visual", role === "damage"], ["engine-visual", role === "engine"],
       ["eloka-visual", role === "eloka"], ["weapons-visual", role === "weapons"]]) $(id).hidden = !active;
     if (!role) { clearVisuals(); return; }
-    const stateKey = !connected ? "visual_stale" : v2State.phase !== "live" ? (v2State.phase === "paused" ? "visual_paused" : "visual_inactive") : visualStationDown(role) ? "visual_station_down" : "visual_live";
+    const stateKey = !connected ? "visual_stale" : v2State.phase !== "live" ? "visual_inactive" : visualStationDown(role) ? "visual_station_down" : "visual_live";
     $("role-visual-state").textContent = t(stateKey);
     for (const button of $("sonar-page-tabs").querySelectorAll("button")) {
       const selectedPage = button.dataset.sonarVisual === sonarVisualPage;
@@ -2614,13 +2829,6 @@
           descriptions.push(t("analyzer_image_alt_base", { speed: t(imageLabels[kind]) }));
           if (Array.isArray(lines) && lines.length) descriptions.push(t("analyzer_image_alt_tonals"));
           if (Array.isArray(broadband)) descriptions.push(t("analyzer_image_alt_broadband"));
-          if (cruise && Array.isArray(machine.shaft_rpm)) {
-            descriptions.push(t(machine.blade_count == null ? "analyzer_image_alt_shaft" : "analyzer_image_alt_shaft_bpf"));
-          } else if (!Array.isArray(machine.shaft_rpm)) {
-            descriptions.push(t("analyzer_image_alt_no_hypothesis"));
-          } else {
-            descriptions.push(t("analyzer_image_alt_not_repeated"));
-          }
         }
         image.src = route;
         image.alt = descriptions.join(" ");
@@ -2735,6 +2943,7 @@
     if (v2State?.role) renderRoleVisuals(v2State.role);
     if (sonarAudioEnabled && !sonarAudioAuthorized()) stopSonarAudio("sonar_live_unavailable");
     syncGameAudio();
+    syncPlotAnimation();
   }
 
   function forgetSession(message = "connection_unpaired") {
@@ -2925,7 +3134,7 @@
     }
     const common = [...status, "clock", "environment", "mission", "autocrew", "audio", "weather_station"];
     if (!stationNames.includes(state.role) || state.role !== session?.station ||
-        !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "time_scale", "world"]) ||
+        !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "world"]) ||
         !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm"]) ||
         !Number.isInteger(state.environment.sea_state) || state.environment.sea_state < 0 || state.environment.sea_state > 6 ||
         !finite(state.environment.effective_sea_state) || state.environment.effective_sea_state < 0 || state.environment.effective_sea_state > 6 ||
@@ -2974,7 +3183,10 @@
       if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
           typeof payload.orders.station_down !== "boolean" || !finite(payload.orders.speed_max_kn) ||
           typeof payload.orders.cavitating !== "boolean" || payload.orders.speed_max_kn < 0 || payload.orders.speed_max_kn > 100 ||
-          !exactKeys(payload.threat, ["observations", "count", "average_flood"]) ||
+          !exactKeys(payload.threat, ["observations", "count", "average_flood", "torpedoes"]) ||
+          !boundedArray(payload.threat.torpedoes, 8) || payload.threat.torpedoes.some((row) =>
+            !exactKeys(row, ["source", "bearing", "age_s"]) || !["transient", "seeker", "classified"].includes(row.source) ||
+            !finite(row.bearing) || row.bearing < 0 || row.bearing >= 360 || !finite(row.age_s) || row.age_s < 0) ||
           !boundedArray(payload.systems, 32) || payload.systems.some((row) => !exactKeys(row, ["key", "state", "down"]) || typeof row.down !== "boolean")) throw new Error("protocol");
       tacticalRows(payload.threat.observations, 128);
       tacticalRows(payload.tactical_summary, 256);
@@ -3194,6 +3406,7 @@
     storeSonarStreamRow("broadband", simTime - ages[0], broadband);
     storeSonarStreamRow("lofar", simTime - ages[1], lofar, bearing);
     storeSonarStreamRow("demon", simTime - ages[2], demon);
+    sampleDisplayClock(v2State, simTime);
     const visual = v2State.sonar.visualization;
     visual.lofar.spectrum = sonarStream.lofarSpectrum;
     visual.demon.spectrum = sonarStream.demonSpectrum;
@@ -3202,7 +3415,7 @@
 
   function syncSonarStream() {
     const allowed = authenticated() && connected && !document.hidden && session?.station === "sonar" &&
-      v2State?.role === "sonar" && ["live", "paused"].includes(v2State.phase);
+      v2State?.role === "sonar" && v2State.phase === "live";
     if (!allowed) { if (sonarStream.socket) stopSonarStream(); return; }
     if (sonarStream.socket) return;
     const streamGeneration = ++sonarStream.generation;
@@ -3231,6 +3444,7 @@
 
   function useV2State(state) {
     accumulateSonarHistory(state);
+    sampleDisplayClock(state);
     v2State = state;
     if (state.role === "sonar" && sonarStream.connected) {
       state.sonar.visualization.lofar.spectrum = sonarStream.lofarSpectrum;
@@ -3239,6 +3453,7 @@
     updateOpzSweepSample(state);
     syncGameAudio();
     syncSonarStream();
+    syncPlotAnimation();
   }
 
   function buildDisplayModel(state) {
@@ -4412,7 +4627,7 @@
         context.fillStyle = item.color;
         context.beginPath(); context.arc(x, y, 3.5, 0, Math.PI * 2); context.fill();
       } else {
-        drawSymbolOn(context, x, y, item.domain, item.color, 6);
+        drawSymbolOn(context, x, y, item.domain, item.color, 6, item.value?.affiliation);
       }
       if (item.value.sunk === true || item.value.dead === true) {
         context.strokeStyle = item.color;
@@ -4524,7 +4739,7 @@
   function validateSimlogTruth(value) {
     const arrays = ["subs", "surfaces", "animals", "torpedoes", "enemy_torpedoes", "decoys",
       "asms", "essms", "asrocs", "nixies", "buoys", "flights", "raiders"];
-    if (!exactKeys(value, ["mission_t", "timescale", "result", "world", "ship", "weapons", ...arrays,
+    if (!exactKeys(value, ["mission_t", "result", "world", "ship", "weapons", ...arrays,
       "helo", "radars"]) || arrays.some((key) => !boundedArray(value[key], 1024)) ||
       !value.ship || typeof value.ship !== "object" || !finite(value.ship.x) || !finite(value.ship.y))
       throw new Error("simlog_schema");
@@ -4597,7 +4812,7 @@
     root.append(simlogMetricBlock("simlog_own", Object.entries(truth.ship).map(([key, value]) =>
       [key, value && typeof value === "object" ? JSON.stringify(value) : String(value)])));
     root.append(simlogMetricBlock("simlog_world", [...Object.entries(truth.world),
-      ["mission_t", truth.mission_t], ["timescale", truth.timescale], ["result", truth.result ?? "-"]]));
+      ["mission_t", truth.mission_t], ["result", truth.result ?? "-"]]));
     root.append(simlogMetricBlock("simlog_weapons", Object.entries(truth.weapons)));
     const display = simlogTruthDisplay(truth);
     const mapButton = node("button", t("simlog_map_open"));
@@ -4849,7 +5064,7 @@
         for (const glow of [8, 13, 19]) { ctx.beginPath(); ctx.arc(x, y, glow, 0, Math.PI * 2); ctx.stroke(); }
         ctx.globalAlpha = 1;
       }
-      drawSymbol(x, y, track.domain, color, fontSize * .65);
+      drawSymbol(x, y, track.domain, color, fontSize * .65, track.affiliation);
       if (track.ref === selected) { ctx.strokeStyle = palette().accent; ctx.lineWidth = 2; ctx.strokeRect(x - 25, y - 25, 50, 50); }
       ctx.fillStyle = color;
       ctx.fillText(String(track.label ?? ""), x + 31, y - 9, Math.max(60, width - x - 37));
@@ -4903,16 +5118,48 @@
     $("chart-scale").textContent = t("chart_scale", { distance: number(step, step < 1 ? 1 : 0) });
   }
 
-  function drawSymbolOn(context, x, y, domain, color, size) {
-    context.strokeStyle = color; context.lineWidth = 1.8; context.beginPath();
-    if (domain === "SURFACE") context.rect(x - size, y - size * .65, size * 2, size * 1.3);
-    else if (domain === "AIR") { context.arc(x, y + size / 2, size, Math.PI, Math.PI * 2); }
-    else if (domain === "SUBSURFACE") { context.arc(x, y - size / 2, size, 0, Math.PI); }
-    else { context.moveTo(x, y - size); context.lineTo(x + size, y); context.lineTo(x, y + size); context.lineTo(x - size, y); context.closePath(); }
+  // NATO-style symbol, same geometry as the uConsole (src/ui/nato_symbols.py):
+  // the frame shows the operator's affiliation (hostile diamond, neutral
+  // square, friend wide rectangle, unknown quatrefoil), the glyph the domain.
+  function drawNatoSymbol(context, x, y, affiliation, domain, color, size) {
+    const half = Math.max(5, size), height = Math.max(6, size * 1.3), glyph = Math.max(3, size * .5);
+    context.strokeStyle = color; context.lineWidth = 2; context.beginPath();
+    if (affiliation === "HOSTILE") {
+      context.moveTo(x, y - height); context.lineTo(x + half, y); context.lineTo(x, y + height); context.lineTo(x - half, y); context.closePath();
+    } else if (affiliation === "NEUTRAL") {
+      context.rect(x - half, y - height, half * 2, height * 2);
+    } else if (affiliation === "FRIEND") {
+      context.rect(x - half - 2, y - height, half * 2 + 4, height * 2);
+    } else {
+      context.moveTo(x - half, y); context.lineTo(x - half / 2, y - height); context.lineTo(x + half / 2, y - height);
+      context.lineTo(x + half, y); context.lineTo(x + half / 2, y + height); context.lineTo(x - half / 2, y + height); context.closePath();
+    }
+    context.stroke();
+    context.lineWidth = 1.6; context.beginPath();
+    if (domain === "AIR") {
+      context.moveTo(x - glyph, y + glyph * .7); context.lineTo(x, y - glyph * .7); context.lineTo(x + glyph, y + glyph * .7);
+    } else if (domain === "MISSILE") {
+      context.moveTo(x, y + glyph); context.lineTo(x, y - glyph); context.moveTo(x - glyph * .7, y - glyph * .2);
+      context.lineTo(x, y - glyph); context.lineTo(x + glyph * .7, y - glyph * .2);
+    } else if (domain === "SUBSURFACE") {
+      context.arc(x, y + glyph * .3, glyph * 1.2, Math.PI, Math.PI * 2);
+      context.moveTo(x - glyph * .4, y + glyph * .3); context.lineTo(x - glyph * .4, y - glyph * .4); context.lineTo(x + glyph * .4, y - glyph * .4);
+    } else if (domain === "UNDERWATER_WEAPON") {
+      context.moveTo(x - glyph, y); context.lineTo(x + glyph, y); context.moveTo(x + glyph * .4, y - glyph * .4);
+      context.lineTo(x + glyph, y); context.lineTo(x + glyph * .4, y + glyph * .4);
+    } else if (domain === "SURFACE") {
+      context.moveTo(x - glyph * 1.2, y + glyph * .4); context.lineTo(x + glyph * 1.2, y + glyph * .4);
+      context.moveTo(x + glyph * 1.2, y + glyph * .4); context.arc(x, y + glyph * .4, glyph * 1.2, 0, Math.PI, true);
+    } else {
+      context.arc(x, y, Math.max(1.5, glyph * .4), 0, Math.PI * 2);
+    }
     context.stroke();
   }
-  function drawSymbol(x, y, domain, color, size) {
-    drawSymbolOn(ctx, x, y, domain, color, size);
+  function drawSymbolOn(context, x, y, domain, color, size, affiliation = "UNKNOWN") {
+    drawNatoSymbol(context, x, y, affiliation, domain, color, size);
+  }
+  function drawSymbol(x, y, domain, color, size, affiliation = "UNKNOWN") {
+    drawNatoSymbol(ctx, x, y, affiliation, domain, color, size);
   }
 
   function renderLookoutStatus() {
@@ -5833,6 +6080,7 @@
     if (document.hidden && authenticated()) setConnection("stale");
     syncOpzSweepAnimation();
     syncWeatherAnimation();
+    syncPlotAnimation();
   });
   window.addEventListener("offline", () => { eventBaselinePending = true; stopSonarStream(); stopOpzSweepAnimation(); if (authenticated()) setConnection("stale"); });
   window.addEventListener("online", () => { syncOpzSweepAnimation(); syncSonarStream(); if (authenticated() && !polling) { clearTimeout(pollTimer); poll(); } });
@@ -5931,13 +6179,10 @@
     context_invalidated: "host_result_stale"};
 
   function validateHost(value) {
-    const fields = ["epoch", "difficulty", "difficulty_fields", "paused", "phase", "protocol", "scenario", "scenarios", "session", "slots", "time_scale", "world_mode"];
+    const fields = ["epoch", "difficulty", "difficulty_fields", "phase", "protocol", "scenario", "scenarios", "session", "slots", "world_mode"];
     if (!exactKeys(value, fields) || value.protocol !== 2 || typeof value.session !== "string" ||
         !Number.isSafeInteger(value.epoch) || value.epoch < 0 ||
-        !Object.hasOwn(phases, value.phase) || typeof value.paused !== "boolean" ||
-        !exactKeys(value.time_scale, ["index", "steps"]) || !Number.isSafeInteger(value.time_scale.index) ||
-        !boundedArray(value.time_scale.steps, 12) || !value.time_scale.steps.every((step) => Number.isSafeInteger(step) && step > 0) ||
-        value.time_scale.index < 0 || value.time_scale.index >= value.time_scale.steps.length ||
+        !Object.hasOwn(phases, value.phase) ||
         !["fixed", "procedural", "real_fixed"].includes(value.world_mode) || typeof value.scenario !== "string" ||
         !boundedArray(value.difficulty_fields, 32) || !value.difficulty_fields.every((row) =>
           exactKeys(row, ["name", "kind", "min", "max", "step", "default"]) &&
@@ -5976,8 +6221,8 @@
 
   const hostPhaseAllows = (kind) => {
     const phase = hostView?.phase;
-    return kind === "any" ? phase === "live" || phase === "paused" :
-      phase === "live" || phase === "paused" || phase === "menu" || phase === "ended";
+    return kind === "any" ? phase === "live" :
+      phase === "live" || phase === "menu" || phase === "ended";
   };
 
   function hostUnavailableReason(control) {
@@ -5999,7 +6244,7 @@
     const menu = active && hostView?.phase === "menu";
     $("host-screen").hidden = !menu || simlogActive();
     if (!active) {
-      for (const id of ["host-pause", "host-save", "host-load", "host-new",
+      for (const id of ["host-save", "host-load", "host-new",
                         "host-instructor", "host-screen-new", "host-screen-load",
                         "host-new-start"]) $(id).disabled = true;
       for (const button of $("host-slot-list").querySelectorAll("button"))
@@ -6009,9 +6254,6 @@
     const ready = Boolean(hostView) && !hostPending && connected;
     const any = ready && hostPhaseAllows("any");
     const replacing = ready && hostPhaseAllows("replacing");
-    $("host-pause").disabled = !any;
-    $("host-pause").setAttribute("aria-pressed", String(hostView?.paused === true));
-    $("host-pause").textContent = t(hostView?.paused ? "host_resume" : "host_pause");
     $("host-save").disabled = !any;
     $("host-load").disabled = !replacing;
     $("host-new").disabled = !replacing;
@@ -6179,7 +6421,6 @@
     closeHostDialog($("host-new-dialog"));
     sendHostAction("host_new_game", params);
   });
-  $("host-pause").addEventListener("click", () => sendHostAction(hostView?.paused ? "host_resume" : "host_pause", {}));
   for (const id of ["host-save"]) $(id).addEventListener("click", () => openSlotDialog("save"));
   for (const id of ["host-load", "host-screen-load"]) $(id).addEventListener("click", () => openSlotDialog("load"));
   for (const id of ["host-new", "host-screen-new"]) $(id).addEventListener("click", openNewGameDialog);

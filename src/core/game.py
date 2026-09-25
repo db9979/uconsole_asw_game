@@ -7,6 +7,7 @@ import math
 import os
 import threading
 import time
+import weakref
 from collections import deque
 from dataclasses import replace
 from types import SimpleNamespace
@@ -40,6 +41,7 @@ from src.sensors.ais import AISReceiver
 from src.sensors import radar as radar_physics
 from src.sensors import visual as visual_physics
 from src.sensors import lookout_id
+from src.sensors import threat_cue
 from src.world import atmosphere as atmosphere_physics
 from src.world import ocean as ocean_physics
 from src.sonar import raytrace as sonar_raytrace
@@ -96,6 +98,7 @@ from src.ship.ship import Ship
 from src.sonar.sonar import Contact, SonarSystem, TowState
 from src.sonar.tma import BearingPoint, BearingTrack
 from src.ui import layout
+from src.ui import observations
 from src.ui.editor_widgets import TextField
 from src.ui.feedback import EventFeed
 from src.ui.map_view import draw_map_view, map_hit_target
@@ -161,6 +164,13 @@ MAX_DECOYS = 128
 # F1 overlay categories: global keys, station, sensors/tactics, manual reader.
 HELP_PAGE_COUNT = 4
 HELP_MANUAL_PAGE = 3
+# Operator sonar classification -> published track kind (domain symbol).
+SONAR_CLASS_KINDS = {
+    "U_BOOT": "SUB",
+    "KAMPFSCHIFF": "SURFACE",
+    "FAHRZEUG": "SURFACE",
+    "TORPEDO": "TORP",
+}
 SONAR_BAND_PRESETS = {
     "FULL": (0.0, 300.0),
     "LOW": (4.0, 80.0),
@@ -277,7 +287,7 @@ class Game:
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
-                    "live_traffic", "commander")
+                    "bottom_panel", "live_traffic", "commander")
 
     def __init__(self, seed: int = 42, difficulty: dict = None,
                   start_menu: bool = False, fullscreen: bool = None,
@@ -468,7 +478,6 @@ class Game:
         self._esm_acc = 0.0
         self._radio_acc = 0.0
         self._slow_acc = 0.0
-        self.time_scale_idx = config.TIME_SCALE_DEFAULT
         self.simlog = deque(maxlen=config.SIMLOG_MAX_ENTRIES)
         self._simlog_seq = 0
         self._simlog_acc = 0.0
@@ -570,7 +579,10 @@ class Game:
         self.autocrew = AutocrewController()
         self.autocrew_overview_open = False
         self.weather_station_open = False
-        self.paused = False
+        # F11 event history/telemetry overlay: display only, never an input
+        # owner, so every station stays operable underneath it.
+        self.feed_overlay_open = False
+        self.feed_overlay_scroll = 0
         self.running = True
         self.simlog_view_open = False
         self.simlog_view_scroll = 0
@@ -605,7 +617,10 @@ class Game:
         self.damage = DamageModel(random.Random(seed + 777),
                                   repair_mult=self.difficulty["repair_mult"])
         self.enemy_torpedoes = []
-        self._observed_enemy_torpedoes = set()
+        # Presentation-only torpedo intercept memory (see _update_torpedo_cues);
+        # rebuilt from the saved torpedo state on load, never saved itself.
+        self.torpedo_cues = []
+        self._torpedo_cues_reported = weakref.WeakKeyDictionary()
         self.game_over = False
         # M10–M16
         self.sonar_mode = "BOW"                      # "BOW" | "TOWED"
@@ -956,22 +971,6 @@ class Game:
         return message(f"runtime.hq.threat_{domain}", bearing=f"{bearing:03d}",
                        range=distance)
 
-    @property
-    def time_scale(self) -> int:
-        return 1
-
-    def set_paused(self, paused: bool) -> bool:
-        """Manual pause, exactly like the P key; used by the solo host command."""
-        if self.game_over:
-            return False
-        paused = bool(paused)
-        if paused is not self.paused:
-            self._clear_controls()
-            self.paused = paused
-            self.announce(message("status.paused" if paused else "status.resumed"),
-                          "welt")
-        return True
-
     def start_new_game(self, scenario_key: str, world_mode: str,
                        difficulty: dict = None, seed: int = None) -> bool:
         """Start a mission through the same path as the main menu.
@@ -1039,11 +1038,11 @@ class Game:
         self.flash(message("runtime.input.track_id", current=track.label), 60.0)
 
     def _navigation_order_live(self) -> bool:
-        overlay_blocked = ((self.administration_open or self.editor is not None)
-                           and not self.crew_overlay_allows_simulation())
-        return (self.running and not self.game_over and not self.paused
+        # The simulation never pauses: menus and overlays own local input only,
+        # so crew orders stay live behind them.
+        return (self.running and not self.game_over
                 and not self.in_menu and not self.main_menu
-                and not self.splash_active and not overlay_blocked
+                and not self.splash_active
                 and self.input_mode in (None, "course", "speed"))
 
     def _set_course_order(self, course: float, station: str) -> str:
@@ -1580,7 +1579,6 @@ class Game:
         ship = self.ship
         snap = {
             "mission_t": r2(self.mission_time),
-            "timescale": config.TIME_SCALE_DEFAULT,
             "result": self.mission_result,
             "world": {"hour": r1(self.world.hour),
                       "sea_state": self.world.sea_state,
@@ -1728,16 +1726,6 @@ class Game:
                 or self.save_ui is not None or self.options_open or self.commander_open
                 or self.live_traffic_open)
 
-    def crew_overlay_allows_simulation(self) -> bool:
-        """Keep tactical crew stations live behind selected local overlays."""
-        if not getattr(self.commander, "active_crew", False):
-            return False
-        if self.editor is not None:
-            return (isinstance(self.editor, ContactAnalyzer)
-                    and not self.in_menu and not self.main_menu)
-        return (self.help_open or self.options_open or self.commander_open
-                or self.live_traffic_open)
-
     def _clear_station_input(self) -> None:
         self.held.clear()
         self._joy_turn = 0
@@ -1835,6 +1823,10 @@ class Game:
                     choices = config.FPS_CHOICES
                     step = -1 if key == pygame.K_LEFT else 1
                     value = choices[(choices.index(self.frame_rate()) + step) % len(choices)]
+                elif name == "bottom_panel":
+                    choices = layout.BOTTOM_PANEL_MODES
+                    value = choices[(choices.index(self.bottom_panel_mode()) + 1)
+                                    % len(choices)]
                 else:
                     value = not getattr(self.preferences, name)
                 self._set_preference(name, value)
@@ -2073,10 +2065,18 @@ class Game:
         self._tooltip_anchor = tuple(canvas)
         return self.pinned_tooltip is not None
 
+    def bottom_panel_mode(self) -> str:
+        mode = getattr(self.preferences, "bottom_panel", "docked")
+        return mode if mode in layout.BOTTOM_PANEL_MODES else "docked"
+
     def handle_event(self, e) -> None:
+        with layout.bottom_panel_regions(self.bottom_panel_mode()):
+            self._handle_event(e)
+
+    def _handle_event(self, e) -> None:
         # Observe actual input transitions, not candidate restoration. Two owner
         # changes within one wall frame must still invalidate queued commands.
-        fields = ("paused", "in_menu", "main_menu", "splash_active", "input_mode",
+        fields = ("in_menu", "main_menu", "splash_active", "input_mode",
                   "help_open", "nations_open", "quit_confirm", "save_ui",
                   "options_open", "commander_open", "live_traffic_open",
                   "simlog_view_open",
@@ -2101,10 +2101,8 @@ class Game:
             self._clear_controls()
             return
         if e.type == pygame.WINDOWFOCUSLOST:
+            # Real time never stops; losing focus only releases held controls.
             self._clear_controls()
-            if not self.in_menu and not self.game_over:
-                self.paused = True
-                self.flash(message("runtime.focus_lost"), 3.0)
             return
         if e.type == pygame.KEYDOWN and getattr(e, "repeat", False):
             return
@@ -2294,7 +2292,7 @@ class Game:
             self._open_administration("help")
             return
         if e.type != pygame.KEYDOWN:
-            if self.input_mode is not None or self.paused or self.in_menu or self.game_over:
+            if self.input_mode is not None or self.in_menu or self.game_over:
                 return
             if self.commander.confirm_visible(self):
                 if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
@@ -2316,16 +2314,10 @@ class Game:
             if self.input_mode is not None and self._local_station_input_locked():
                 pass
             elif self.input_mode is not None:
-                if e.key == pygame.K_ESCAPE or not self.paused:
-                    self._handle_numeric_input(e.key)
-                elif e.key == pygame.K_p:
-                    self.set_paused(False)
+                self._handle_numeric_input(e.key)
                 return
             if e.key == pygame.K_F9:
                 self._open_administration("commander")
-                return
-            if e.key == pygame.K_p and self.commander.confirm_visible(self):
-                self.set_paused(not self.paused)
                 return
             if self.commander.confirm_visible(self):
                 if self.commander.handle_confirm_key(self, e.key):
@@ -2336,8 +2328,12 @@ class Game:
             if e.key == pygame.K_F1:
                 self._open_administration("help")
                 return
-            if e.key == pygame.K_F10 or (e.key == pygame.K_o and self.paused):
+            if e.key == pygame.K_F10:
                 self._open_administration("options")
+                return
+            if e.key == pygame.K_F11:
+                self.feed_overlay_open = not self.feed_overlay_open
+                self.feed_overlay_scroll = 0
                 return
             if e.key == pygame.K_F8:
                 self._open_analyzer_in_game()
@@ -2372,9 +2368,6 @@ class Game:
                     e.key == pygame.K_l and self.station is Station.OPZ):
                 self._open_administration("save" if e.key == pygame.K_s else "load")
                 return
-            if e.key == pygame.K_p and not self.game_over:
-                self.set_paused(not self.paused)
-                return
             if pygame.K_1 <= e.key <= pygame.K_9:
                 destination = list(Station)[e.key - pygame.K_1]
                 self.pinned_tooltip = None
@@ -2408,8 +2401,6 @@ class Game:
             if self.game_over:
                 if e.key == pygame.K_r:
                     self.reset(self.seed)
-                return
-            if self.paused:
                 return
             if self._local_station_input_locked():
                 return
@@ -2909,6 +2900,13 @@ class Game:
             # Wheel-Events haben nicht in allen SDL-Versionen ein pos.
             if self.in_menu or self.game_over or e.y == 0:
                 return
+            if self.feed_overlay_open:
+                canvas = self._window_to_canvas(
+                    getattr(e, "pos", None) or pygame.mouse.get_pos())
+                if canvas is not None and self.feed_overlay_rect().collidepoint(canvas):
+                    # Wheel up reads older entries.
+                    self.feed_overlay_scroll = max(0, self.feed_overlay_scroll + e.y * 3)
+                    return
             pointer = self._opz_map_pointer(getattr(e, "pos", None))
             if pointer is not None:
                 chart = opz_ppi_rect(config.OPZ_STATION_RECT)
@@ -3192,7 +3190,6 @@ class Game:
                     mode=self.sonar.audition_mode, gain_db=self.sonar.gain_db,
                     band_hz=[self.sonar.band_low_hz, self.sonar.band_high_hz],
                     notch=bool(self.sonar.notch_enabled), volume=self.sonar_volume,
-                    muted_above_1x=False,
                     stale=bool(self.audio.sonar_stale),
                     audible=bool(status["global_enabled"]
                                  and status["device_available"] and locally_ready))
@@ -3712,6 +3709,17 @@ class Game:
                               torpedo=self.torpedo_seq, contact=contact.id))
         return True
 
+    @staticmethod
+    def _missile_seq(track):
+        """Internal missile sequence behind an ``M-`` air track, else None.
+
+        An ASM cue can also sit on an aircraft track; fire control resolves
+        the engaged weapon only through the missile's own track namespace.
+        """
+        track_id = str(getattr(track, "track_id", ""))
+        suffix = track_id[2:]
+        return int(suffix) if track_id.startswith("M-") and suffix.isdigit() else None
+
     def _cycle_asm_track(self, delta: int) -> None:
         n = len(self.asm_tracks())
         if n == 0:
@@ -3748,14 +3756,15 @@ class Game:
                 > sam["observation_max_age_s"]):
             self.flash(message("runtime.asm.stale"))
             return "stale_ref"
-        tgt = next((a for a in self.asms if a.seq == track.target_id), None)
+        missile_seq = self._missile_seq(track)
+        tgt = next((a for a in self.asms if a.seq == missile_seq), None)
         course = math.degrees(math.atan2(track.x - self.ship.x,
                                         -(track.y - self.ship.y))) % 360.0
         self.essm_seq += 1
         self.essms.append(ESSM(self.ship.x, self.ship.y, course, tgt,
                                self.essm_seq,
                                guidance_x=track.x, guidance_y=track.y,
-                               target_id=track.target_id, profile=sam))
+                               target_id=missile_seq, profile=sam))
         self.vls_cells -= 1
         self._emit_sound("missile_launch")
         self.announce(message("runtime.essm.launched", cells=self.vls_cells),
@@ -3779,7 +3788,8 @@ class Game:
             self.flash(message("runtime.chaff.none"))
             return "invalid_target"
         a = next((item for item in self.asms
-                  if item.seq == track.target_id and item.state == "LAUF"), None)
+                  if item.seq == self._missile_seq(track)
+                  and item.state == "LAUF"), None)
         profile = self._air_defense_loadout["softkill"]
         if (a is not None and track.range_nm is not None
                 and track.position_seen is not None
@@ -3975,9 +3985,14 @@ class Game:
                           if previous is not None and previous.source == "LOOKOUT" else -1)
         level = max(level, previous_level)
         label = lookout_id.encode(level, recognized, identified, type_key)
+        # A bare detection only says what the eye sees: something on the
+        # surface or a wake. Submarine/torpedo domains need recognition.
+        published_kind = (kind if level >= lookout_id.RECOGNIZED
+                          or kind in ("SURFACE", "FLG")
+                          else "SURFACE" if kind == "SUB" else "UNKNOWN")
         track = self.air_picture.observe(
             track_id=track_id,
-            kind=kind, target_id=0, source="LOOKOUT",
+            kind=published_kind, target_id=0, source="LOOKOUT",
             bearing=measured_bearing, range_nm=measured_range,
             observer_x=self.ship.x, observer_y=self.ship.y, course=None,
             quality=quality, now=self.sim_t, label=label,
@@ -4186,11 +4201,13 @@ class Game:
                 range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
-                self.air_picture.observe(track_id=f"W-{w.id}", kind="SURFACE",
+                # Same S-<id> form as civilians (shared SurfaceShip ID counter):
+                # the track ID must not reveal that a contact is a warship.
+                self.air_picture.observe(track_id=f"S-{w.id}", kind="SURFACE",
                     target_id=w.id, source="RADAR-S", bearing=brg,
                     range_nm=measured, observer_x=self.ship.x, observer_y=self.ship.y,
                     course=None, quality=.9, now=self.sim_t,
-                    label=f"W-{w.id}",
+                    label=f"S-{w.id}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
         for f in self.flights.flights:
             dist = f.distance_nm(self.ship)
@@ -4210,7 +4227,8 @@ class Game:
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
                 altitude = config.measure_altitude_m(rng, f.altitude_m, error_scale)
-                self.air_picture.observe(track_id=f"A-{f.seq}", kind="FLG",
+                self.air_picture.observe(track_id=f"A-{f.seq}",
+                    kind=self._radar_air_kind(f"A-{f.seq}", altitude),
                     target_id=f.seq, source="RADAR-L", bearing=brg, range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.85, now=self.sim_t, label=f"A-{f.seq}",
@@ -4235,7 +4253,8 @@ class Game:
                     -range_error, range_error)))
                 altitude = config.measure_altitude_m(
                     rng, getattr(r, "altitude_m", 0.0), error_scale)
-                self.air_picture.observe(track_id=f"R-{r.seq}", kind="FLG",
+                self.air_picture.observe(track_id=f"R-{r.seq}",
+                    kind=self._radar_air_kind(f"R-{r.seq}", altitude),
                     target_id=r.seq, source="RADAR-L", bearing=brg,
                     range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
@@ -4266,7 +4285,8 @@ class Game:
                 # Luftkontakte sind fuer den Spieler ununterscheidbar.
                 altitude = config.measure_altitude_m(
                     rng, live.altitude_m, error_scale)
-                self.air_picture.observe(track_id=f"A-{live.seq}", kind="FLG",
+                self.air_picture.observe(track_id=f"A-{live.seq}",
+                    kind=self._radar_air_kind(f"A-{live.seq}", altitude),
                     target_id=live.seq, source="RADAR-L", bearing=brg,
                     range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
@@ -4289,7 +4309,8 @@ class Game:
                     a.seq * 7919, self.sim_t, 5.0)
                 brg = (a.bearing_to_frigate(self.ship)
                        + noise * 5.0) % 360.0
-                self.air_picture.observe(track_id=f"M-{a.seq}", kind="ASM",
+                self.air_picture.observe(track_id=f"M-{a.seq}",
+                    kind=self._radar_air_kind(f"M-{a.seq}", None, jamming=True),
                     target_id=a.seq, source="HOJ", bearing=brg, range_nm=None,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.55, now=self.sim_t, label=f"A-{a.seq}",
@@ -4311,13 +4332,24 @@ class Game:
                 range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
                 measured = max(0.0, dist * (1.0 + rng.uniform(
                     -range_error, range_error)))
-                self.air_picture.observe(track_id=f"M-{a.seq}", kind="ASM",
+                altitude = config.measure_altitude_m(rng, a.altitude_m, error_scale)
+                self.air_picture.observe(track_id=f"M-{a.seq}",
+                    kind=self._radar_air_kind(f"M-{a.seq}", altitude),
                     target_id=a.seq, source="RADAR-L", bearing=brg, range_nm=measured,
                     observer_x=self.ship.x, observer_y=self.ship.y, course=None,
                     quality=.9, now=self.sim_t, label=f"A-{a.seq}",
-                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+                    bearing_uncertainty_deg=bearing_error / math.sqrt(3.0),
+                    altitude_m=altitude)
         self._update_lookout_picture()
         self.air_picture.expire(self.sim_t)
+
+    def _radar_air_kind(self, track_id: str, altitude_m, jamming: bool = False) -> str:
+        """Threat evaluation from this track's own measurements only."""
+        previous = self.air_picture.current(track_id, self.sim_t)
+        return threat_cue.air_track_kind(
+            None if previous is None else previous.kind,
+            None if previous is None else previous.derived_motion()[1],
+            altitude_m, jamming)
 
     def radar_tracks(self) -> list:
         """Compatibility view of the persistent surface/air picture."""
@@ -5597,7 +5629,7 @@ class Game:
         bearing = math.degrees(math.atan2(
             x - row["observer_x"], -(y - row["observer_y"]))) % 360.0
         self.air_picture.observe(
-            track_id=f"H-{report.target_id}", kind="SUB",
+            track_id=f"H-{report.target_id}", kind="UNKNOWN",
             target_id=report.target_id, source="HFDF-FIX", bearing=bearing,
             range_nm=dist, observer_x=row["observer_x"],
             observer_y=row["observer_y"],
@@ -5693,7 +5725,7 @@ class Game:
         # kollisionsfrei, ohne dass ein eigenes, erkennbares Praefix noetig
         # waere.
         observed_a_tracks = {}
-        for track in self.air_picture.tracks(self.sim_t, ("FLG",)):
+        for track in self.air_picture.tracks(self.sim_t, ("FLG", "ASM")):
             if track.track_id.startswith("R-"):
                 observed[track.track_id] = track
             elif track.track_id.startswith("A-"):
@@ -5846,7 +5878,7 @@ class Game:
         # IDs are a separate namespace and must not annotate a sonar target.
         affiliations = [self.opz_affiliations.get(
             f"{prefix}-{contact.target_id}", "UNKNOWN")
-            for prefix in ("U", "S", "W")]
+            for prefix in ("U", "S")]
         self.opz_source_observations()
         affiliations.extend(
             self.opz_affiliation(observation_id)
@@ -5854,7 +5886,7 @@ class Game:
             if (source is contact or getattr(source, "target_id", None)
                 == contact.target_id and str(
                     getattr(source, "track_id", "")).split("-", 1)[0]
-                in ("U", "S", "W")))
+                in ("U", "S")))
         return affiliations
 
     def contact_affiliation(self, contact) -> str:
@@ -6131,6 +6163,10 @@ class Game:
                                  time_since_launch=0.0))
 
     def update(self, dt: float, audio_dt: float | None = None) -> None:
+        with layout.bottom_panel_regions(self.bottom_panel_mode()):
+            self._update(dt, audio_dt)
+
+    def _update(self, dt: float, audio_dt: float | None = None) -> None:
         """Advance simulation in real time with bounded physics substeps."""
         wall_dt = audio_dt if audio_dt is not None else dt
         self.audio.debug_log(wall_dt, receiver=getattr(self.sonar, "receiver", None))
@@ -6142,11 +6178,11 @@ class Game:
                 self.audio.play_ping()
             self._frame_clock_reset = True
             return
-        overlay_blocked = ((self.administration_open or self.editor is not None)
-                           and not self.crew_overlay_allows_simulation())
-        if (not self.running or self.in_menu or self.paused or self.game_over
-                or overlay_blocked):
-            # Nothing is caught up after a pause, menu, overlay or game over.
+        # The game always runs in real time: overlays, menus opened over a
+        # mission and focus loss never stop it. Only no mission (menu) or a
+        # finished one has nothing to simulate.
+        if not self.running or self.in_menu or self.main_menu or self.game_over:
+            # Nothing is caught up after the menu or game over.
             self._frame_clock_reset = True
             self.audio.stop()
             self._sonar_audio_sequence = -1
@@ -6249,7 +6285,7 @@ class Game:
             preview_active=self.audio.preview_playing)
 
     def _open_analyzer_in_game(self) -> None:
-        """TUA im laufenden Spiel: Simulation steht, Esc kehrt ins Spiel zurueck."""
+        """TUA im laufenden Spiel: Simulation laeuft weiter, Esc kehrt ins Spiel zurueck."""
         self._clear_controls()
         self.editor = self._make_analyzer()
 
@@ -6440,9 +6476,7 @@ class Game:
                     self.score += config.SCORE_SUNK
                 else:
                     self.incident = True
-                self.flash(message("runtime.sunk.sub"), 4.0)
-                self.feed.add(self.world.format_time(), "mission",
-                              message("runtime.sunk.sub_feed", contact=sub.id))
+                self._report_breakup_noise(sub.x, sub.y, sub.depth, sub.id)
             if sub.sunk and sub.side == "hostile" and self.roe != "FREE":
                 self.roe = "FREE"
                 self.hq_msg(message("runtime.roe_free_confirmed"))
@@ -6518,7 +6552,9 @@ class Game:
                 self.announce(message("runtime.hit.asm", compartments=", ".join(
                     self.damage.compartments[k].name for k in hit)),
                     "schaden", 5.0)
-        observed_asms = {track.target_id: track for track in self.asm_tracks()}
+        observed_asms = {self._missile_seq(track): track
+                         for track in self.asm_tracks()
+                         if self._missile_seq(track) is not None}
         for essm in self.essms:
             track = observed_asms.get(essm.target_id)
             if (not essm.seeker_acquired and track is not None
@@ -6594,7 +6630,9 @@ class Game:
         if (not self.ecm_jammer.auto_enabled or self.softkill_store.ready <= 0
                 or self.damage.station_down("opz")):
             return
-        by_target = {track.target_id: track for track in self.asm_tracks()}
+        by_target = {self._missile_seq(track): track
+                     for track in self.asm_tracks()
+                     if self._missile_seq(track) is not None}
         softkill_range = self._air_defense_loadout["softkill"]["range_nm"]
         candidates = []
         for asm in self.asms:
@@ -6796,11 +6834,31 @@ class Game:
                         and not torpedo.target.sunk_score_awarded):
                     torpedo.target.sunk_score_awarded = True
                     self.score += config.SCORE_SUNK
-                    self.flash(message("runtime.sunk.warship"), 4.0)
-                    self.feed.add(self.world.format_time(), "mission",
-                                  message("runtime.sunk.warship_feed",
-                                          contact=torpedo.target.id))
+                    self._report_breakup_noise(
+                        torpedo.target.x, torpedo.target.y,
+                        getattr(torpedo.target, "depth", 0.0),
+                        torpedo.target.id)
         self.torpedoes = alive
+
+    def _report_breakup_noise(self, x: float, y: float, depth: float,
+                              key: int) -> None:
+        """A sinking hull is heard, not identified: bearing only, no class.
+
+        Kill assessment stays with the operator; the score is shown only in
+        the mission debrief.
+        """
+        if (self.damage.station_down("sonar")
+                or math.hypot(x - self.ship.x, y - self.ship.y)
+                > config.TORP_TRANSIENT_HEAR_NM
+                or self.world.sonar_path_blocked(x, y, depth,
+                                                 self.ship.x, self.ship.y, 5.0)):
+            return
+        bearing = threat_cue.measured_cue_bearing(
+            math.degrees(math.atan2(x - self.ship.x, -(y - self.ship.y))) % 360.0,
+            self.seed, 500_000 + int(key), self.sim_t)
+        notice = message("runtime.breakup_noise", bearing=f"{bearing:05.1f}")
+        self.flash(notice, 4.0)
+        self.feed.add(self.world.format_time(), "sonar", notice)
 
     def _update_helicopter_audio(self, dt: float, targets) -> None:
         """Synthesize only presently measured helicopter channels, at 4 Hz."""
@@ -6904,11 +6962,9 @@ class Game:
                 dy = contact.observed_y - self.ship.y
                 bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
                 range_nm = math.hypot(dx, dy)
-            observed_kind = {
-                "torpedo": "TORP",
-                "animal": "SUB",
-                "surface": "SURFACE",
-            }.get(contact.kind, "UNKNOWN")
+            # The domain symbol follows the operator's classification; the
+            # contact's underlying entity type is never published.
+            observed_kind = SONAR_CLASS_KINDS.get(contact.player_class, "UNKNOWN")
             self.air_picture.observe(
                 track_id=f"U-{contact.target_id}",
                 kind=observed_kind,
@@ -6940,14 +6996,8 @@ class Game:
                                range=f"{echo['range_nm']:.1f}"), 2.0)
         for contact in self.sonar.active_contacts():
             if contact.id not in prev_cts:
-                if contact.range_est:
-                    key = ("runtime.contact.new_range_torpedo"
-                           if contact.kind == "torpedo"
-                           else "runtime.contact.new_range")
-                else:
-                    key = ("runtime.contact.new_bearing_torpedo"
-                           if contact.kind == "torpedo"
-                           else "runtime.contact.new_bearing")
+                key = ("runtime.contact.new_range" if contact.range_est
+                       else "runtime.contact.new_bearing")
                 self.feed.add(self.world.format_time(), "sonar",
                               message(key,
                                       contact=contact.id,
@@ -6955,11 +7005,68 @@ class Game:
                                       range=(f"{contact.range_est:.1f}"
                                              if contact.range_est else ""),
                                       origin=contact.origin))
-                if (contact.kind == "torpedo"
-                        and contact.target_id not in self._observed_enemy_torpedoes):
-                    self._observed_enemy_torpedoes.add(contact.target_id)
-                    self.flash(message("runtime.sonar.torpedo",
-                                       contact=contact.id), 4.0)
+        self._update_torpedo_cues()
+
+    def current_torpedo_cues(self) -> list:
+        """Torpedo intercepts audible right now, as detached measurements.
+
+        A pure function of the saved torpedo state and simulation time: a
+        launch transient or HF seeker pulses on a noisy bearing. The weapon's
+        type or identity is never published; only the intercept is.
+        """
+        if self.damage.station_down("sonar"):
+            return []
+        cues = []
+        for torpedo in self.enemy_torpedoes:
+            if torpedo.state != "RUN":
+                continue
+            distance = math.hypot(torpedo.x - self.ship.x, torpedo.y - self.ship.y)
+            kind = threat_cue.torpedo_cue_kind(
+                torpedo.time_since_launch, torpedo.terminal_active, distance)
+            if kind is None or self.world.sonar_path_blocked(
+                    torpedo.x, torpedo.y, torpedo.depth,
+                    self.ship.x, self.ship.y, 5.0):
+                continue
+            true_bearing = math.degrees(math.atan2(
+                torpedo.x - self.ship.x, -(torpedo.y - self.ship.y))) % 360.0
+            key = (int(torpedo.launch_platform_id or 0) * 1000
+                   + int(getattr(torpedo, "idx", 0)))
+            cues.append({"kind": kind, "t": self.sim_t, "torpedo": torpedo,
+                         "bearing": threat_cue.measured_cue_bearing(
+                             true_bearing, self.seed, key, self.sim_t)})
+        return cues
+
+    def _update_torpedo_cues(self) -> None:
+        """Announce each intercept once and hold it briefly on the alarm board."""
+        self.torpedo_cues = [cue for cue in self.torpedo_cues
+                             if self.sim_t - cue["t"] <= config.TORP_CUE_HOLD_S]
+        for cue in self.current_torpedo_cues():
+            torpedo = cue.pop("torpedo")
+            reported = self._torpedo_cues_reported.setdefault(torpedo, set())
+            self.torpedo_cues = [held for held in self.torpedo_cues
+                                 if held["serial"] != id(torpedo)]
+            self.torpedo_cues.append(dict(cue, serial=id(torpedo)))
+            if cue["kind"] in reported:
+                continue
+            reported.add(cue["kind"])
+            notice = message(f"runtime.torpedo_cue.{cue['kind']}",
+                             bearing=f"{cue['bearing']:05.1f}")
+            self.flash(notice, 4.0)
+            self.audio.play_alert("danger")
+            self.feed.add(self.world.format_time(), "sonar", notice)
+
+    def torpedo_warnings(self, held: bool = True) -> list:
+        """Detached torpedo alarms: held intercepts plus operator-classified
+        TORPEDO contacts. `held=False` uses only intercepts audible now."""
+        cues = (self.torpedo_cues if held else self.current_torpedo_cues())
+        rows = [{"source": cue["kind"], "bearing": cue["bearing"],
+                 "age_s": self.sim_t - cue["t"], "contact": None}
+                for cue in cues]
+        rows += [{"source": "classified", "bearing": contact.bearing,
+                  "age_s": self.sim_t - contact.last_seen, "contact": contact.id}
+                 for contact in self.sonar.active_contacts()
+                 if contact.player_class == "TORPEDO"]
+        return sorted(rows, key=lambda row: (row["age_s"], row["bearing"]))
 
     def _update_damage_and_mission(self, dt: float) -> None:
         """Fortschritt von Schaden, Flugverkehr und Missionszielen."""
@@ -7258,7 +7365,7 @@ class Game:
             "asm_seq": max([self.asm_seq, self.asm_spawned] + list(asm_ids)
                            + [e.target_id for e in self.essms if e.target_id is not None]
                            + [t.target_id for t in self.air_picture._tracks.values()
-                              if t.kind == "ASM"]),
+                              if self._missile_seq(t) is not None]),
             "warship_asm_seq": self.warship_asm_seq,
             "vls_cells": self.vls_cells,
             "ciws_ammo": self.ciws_ammo,
@@ -7603,7 +7710,8 @@ class Game:
                                     for item in self.sonar._pending_clutter],
             },
             "sim_t": self.sim_t,
-            "time_scale_idx": config.TIME_SCALE_DEFAULT,
+            # Legacy v12 fields: the game always runs at 1x and never pauses.
+            "time_scale_idx": 0,
             "scenario_key": self.scenario_key,
             "ui": dict(
                 station=self.station.name,
@@ -7620,7 +7728,7 @@ class Game:
                 opz_map_cy=opz_map.cy,
                 opz_map_scale=opz_map.scale,
                 opz_map_follow=self.opz_map_follow,
-                paused=self.paused,
+                paused=False,
                 tooltips_enabled=getattr(self, "tooltips_enabled", True),
                 pinned_tooltip=layout.valid_tooltip(
                     getattr(self, "pinned_tooltip", None)),
@@ -7760,7 +7868,6 @@ class Game:
         self.score = data["score"]
         self.incident = data["incident"]
         self.sim_t = data["sim_t"]
-        self.time_scale_idx = config.TIME_SCALE_DEFAULT
         self.scenario_key = data["scenario_key"]
         self.level = data["level"]
         tp = data["torpedoes"]
@@ -7870,7 +7977,7 @@ class Game:
         self.ais.restore(data["ais"])
         self._raider_visible_last = any(
             track.track_id.startswith("R-")
-            for track in self.air_picture.tracks(self.sim_t, ("FLG",)))
+            for track in self.air_picture.tracks(self.sim_t, ("FLG", "ASM")))
         self.opz_affiliations = dict(data["opz_affiliations"])
         self.opz_track_labels = {}
         self.opz_selected_track_id = None
@@ -8414,9 +8521,13 @@ class Game:
                         "snapshot": dict(pd["snapshot"]),
                     })
         self._last_tow_state = self.sonar.tow_state
-        self._observed_enemy_torpedoes.update(
-            contact.target_id for contact in self.sonar.contacts.values()
-            if contact.kind == "torpedo")
+        # Intercepts already audible at save time were announced then.
+        self.torpedo_cues = []
+        self._torpedo_cues_reported = weakref.WeakKeyDictionary()
+        for cue in self.current_torpedo_cues():
+            torpedo = cue.pop("torpedo")
+            self._torpedo_cues_reported.setdefault(torpedo, set()).add(cue["kind"])
+            self.torpedo_cues.append(dict(cue, serial=id(torpedo)))
         # Phase 2: RNG-Zustaende (deterministischer Fortgang)
         rg = data["rngs"]
         self._restore_rng(rng, rg["world"])
@@ -8433,7 +8544,6 @@ class Game:
         ui = data.get("ui", {})
         self.station = Station[ui["station"]]
         self.station_page = 0
-        self.paused = bool(ui.get("paused", False))
         self.running = True
         self.held = set()
         self.msg = ""
@@ -8711,7 +8821,8 @@ class Game:
                     or len(row["track_id"]) != 18
                     or any(char not in "0123456789ABCDEF"
                            for char in row["track_id"][2:])
-                    or row["kind"] not in ("SURFACE", "SUB", "FLG")
+                    or row["kind"] not in ("SURFACE", "SUB", "FLG", "TORP",
+                                           "UNKNOWN")
                     or row["target_id"] != 0 or row["range_nm"] is None
                     or row["range_nm"] > config.LOOKOUT_AIR_RANGE_NM * (
                         1.0 + config.LOOKOUT_RANGE_ERR_FRAC)
@@ -10075,11 +10186,16 @@ class Game:
                     or not 0 <= data["time_scale_idx"] < 6):
                 return False
             runtime_catalog = self._catalog_for_save(data)
-            # Earlier saves may have been written while accelerated. Keep the
-            # save shape, but resume every accepted game at real-time speed.
-            if set(data) == SAVE_ROOT_FIELDS and data["time_scale_idx"] > 0:
+            # Earlier saves may have been written while accelerated or paused.
+            # Keep the save shape, but every accepted game resumes live at 1x.
+            ui = data.get("ui")
+            if set(data) == SAVE_ROOT_FIELDS and (
+                    data["time_scale_idx"] > 0
+                    or (isinstance(ui, dict) and ui.get("paused", False) is not False)):
                 data = copy.deepcopy(data)
-                data["time_scale_idx"] = config.TIME_SCALE_DEFAULT
+                data["time_scale_idx"] = 0
+                if isinstance(data["ui"], dict) and "paused" in data["ui"]:
+                    data["ui"]["paused"] = False
         except (KeyError, TypeError, ValueError, OverflowError, RecursionError):
             return False
         if not self._valid_save_document(data, runtime_catalog):
@@ -10089,8 +10205,9 @@ class Game:
         candidate.held = set(self.held)
         candidate.map_view = copy.copy(self.map_view)
         candidate.opz_map_view = copy.copy(self.opz_map_view)
-        candidate._observed_enemy_torpedoes = set(
-            self._observed_enemy_torpedoes)
+        candidate.torpedo_cues = list(self.torpedo_cues)
+        candidate._torpedo_cues_reported = weakref.WeakKeyDictionary(
+            self._torpedo_cues_reported)
         candidate.audio = copy.copy(self.audio)
         candidate.audio.stop_sonar = lambda immediate=False: None
         id_classes = (Sub, Animal, SurfaceShip, Decoy, EnemyTorpedo)
@@ -10242,7 +10359,7 @@ class Game:
                  and self.sim_t == 0.0 and self.mission_time == 0.0
                  and self.custom_mission_definition is None
                  and self.mission_result is None and not self.game_over
-                 and self.running and not self.paused)
+                 and self.running)
         self._prepared_menu_mission = None
         self.in_menu = False
         self.main_menu = False
@@ -10486,16 +10603,17 @@ class Game:
                 f"http://{address[0]}:{address[1]}/")),
                 (x, panel.y + 150, w, 32), config.COLOR_TEXT, size=22, align="center")
         layout.blit_line(s, message(
-            "eco.state.paused" if self.paused else "eco.state.running",
-            time=raw_text(self.world.format_time()),
-            scale=raw_text(str(self.time_scale))),
-            (x, panel.y + 200, w, 32),
-            config.COLOR_WARN if self.paused else config.COLOR_OK,
+            "eco.state.running", time=raw_text(self.world.format_time())),
+            (x, panel.y + 200, w, 32), config.COLOR_OK,
             size=24, align="center")
         layout.blit_line(s, "eco.hint", (x, panel.bottom - 56, w, 30),
                          config.COLOR_TEXT_DIM, size=16, align="center")
 
     def draw(self) -> None:
+        with layout.bottom_panel_regions(self.bottom_panel_mode()):
+            self._draw()
+
+    def _draw(self) -> None:
         self._apply_text_size()
         s = self.screen
         eco = self._eco_display_active()
@@ -10516,8 +10634,7 @@ class Game:
         elif eco:
             self.draw_top_bar()
             self.draw_eco_display()
-            self.draw_bottom_feed()
-            self.draw_bottom_telemetry()
+            self.draw_bottom_panel()
         else:
             self.draw_top_bar()
             map_station = (not self._station_overlay_open
@@ -10562,14 +10679,14 @@ class Game:
                             draw_eloka_view(self)
                         else:
                             draw_bridge_view(self)
-                if self.station is not Station.OPZ and not self.weather_station_open:
-                    self.draw_bottom_feed()
-                    self.draw_bottom_telemetry()
+                if (self.station is not Station.OPZ and not self.weather_station_open
+                        and not self.feed_overlay_open):
+                    self.draw_bottom_panel()
+                if self.feed_overlay_open:
+                    self.draw_feed_overlay()
                 self.draw_navigation_input()
                 if self.game_over:
                     self.draw_end_panel()
-                if self.paused and not self.administration_open:
-                    self.draw_pause_overlay()
             finally:
                 config.STATION_RECT = previous_rect
         if self.quit_confirm:
@@ -10639,70 +10756,184 @@ class Game:
         txt = self.tr("top.status", station=station, scenario=scenario,
                       time=self.world.format_time(), speed=f"{self.ship.speed:4.1f}",
                       course=f"{self.ship.course:4.0f}")
-        if self.paused:
-            txt += "   || PAUSE"
         layout.blit_line(s, txt, (10, 4, config.SCREEN_W - 20,
                                   config.TOP_BAR_H - 8),
                          config.COLOR_TEXT, size=18)
+
+    def draw_bottom_panel(self) -> None:
+        """Event feed and telemetry: docked band or one status ticker."""
+        if self.bottom_panel_mode() == "ticker":
+            self.draw_status_ticker()
+        else:
+            self.draw_bottom_feed()
+            self.draw_bottom_telemetry()
+
+    def _feed_lines(self, width: int, face) -> list:
+        """Wrap feed entries (oldest first) into (text, colour, is_first) rows.
+
+        Entries wrap onto continuation lines under the text column; nothing
+        is ever cut off with an ellipsis.
+        """
+        rows = []
+        for entry in self.feed.entries:
+            prefix = f"[{entry.stamp}] {entry.tag():4s} "
+            indent = face.size(prefix)[0]
+            wrapped = layout.wrap_text(localize(entry.text), face,
+                                       max(40, width - indent)) or [""]
+            rows.append((prefix, wrapped[0], entry.color(), indent))
+            rows.extend(("", line, entry.color(), indent) for line in wrapped[1:])
+        return rows
+
+    def _blit_feed_rows(self, rect, rows, scroll: int = 0) -> None:
+        """Draw wrapped feed rows bottom-up (newest at the bottom)."""
+        face = layout.font(16)
+        pitch = layout._line_height(face)
+        visible = max(1, rect.h // pitch)
+        end = max(0, len(rows) - scroll)
+        shown = rows[max(0, end - visible):end]
+        y = rect.bottom - len(shown) * pitch
+        with layout.clip_to(self.screen, rect):
+            for prefix, text, color, indent in shown:
+                if prefix:
+                    layout.blit_line(self.screen, raw_text(prefix),
+                                     (rect.x, y, indent, pitch),
+                                     config.COLOR_TEXT_DIM, size=16)
+                layout.blit_line(self.screen, raw_text(text),
+                                 (rect.x + indent, y, rect.w - indent, pitch),
+                                 color, size=16)
+                y += pitch
 
     @localized
     def draw_bottom_feed(self) -> None:
         s = self.screen
         x, y, w, h = config.FEED_RECT
-        pygame.draw.rect(s, (10, 18, 14), (x, y, w, h))
+        pygame.draw.rect(s, config.COLOR_FEED_BG, (x, y, w, h))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (x, y, w, h), 1)
-        s.blit(self.font.render(
-            localize(event_feed_heading(self.station)),
-            True, config.COLOR_TEXT_DIM), (x + 8, y + 5))
-        ly = y + 27
-        for e in self.feed.recent(6):
-            tag = e.tag()
-            col = e.color()
-            prefix = f"[{e.stamp}] {tag:4s} "
-            s.blit(self.font.render(prefix, True, config.COLOR_TEXT_DIM),
-                   (x + 8, ly))
-            txt = localize(e.text)
-            original = txt
-            pw = self.font.size(prefix)[0]
-            maxw = w - 16 - pw
-            while txt and self.font.size(txt)[0] > maxw:
-                txt = txt[:-1]
-            if txt != original:
-                txt += "…"
-            s.blit(self.font.render(txt, True, col),
-                   (x + 8 + pw, ly))
-            ly += 23
+        layout.blit_line(s, "feed.heading", (x + 8, y + 3, w - 16, 20),
+                         config.COLOR_TEXT_DIM, size=16)
+        body = pygame.Rect(x + 8, y + 25, w - 16, h - 29)
+        face = layout.font(16)
+        self._blit_feed_rows(body, self._feed_lines(body.w, face))
 
     @localized
     def draw_bottom_telemetry(self) -> None:
         s = self.screen
         x, y, w, h = config.TELEMETRY_RECT
-        pygame.draw.rect(s, (10, 18, 14), (x, y, w, h))
+        pygame.draw.rect(s, config.COLOR_FEED_BG, (x, y, w, h))
         pygame.draw.rect(s, config.COLOR_SONAR_RING, (x, y, w, h), 1)
-        s.blit(self.font.render(localize("TELEMETRIE"), True, config.COLOR_TEXT_DIM),
-               (x + 8, y + 5))
-        profile = self.sonar.bt_profile
-        thermo = (f"~{profile['thermocline_m']:.0f}m BT" if profile else "-- BT")
-        rows = [
-            ("telemetry.course_speed", f"{self.ship.course:4.0f}°  {self.ship.speed:4.1f} kn"),
-            ("telemetry.noise", f"{self.ship.noise_level() * 100:3.0f} %"
-                     + ("  KAV!" if self.ship.cavitating else "")),
-            ("telemetry.sea_state", f"GG {self.world.sea_state}  Thermo {thermo}"),
-            ("telemetry.flooding", f"{self.damage.total:3.0f}/"
-                         f"{len(self.damage.compartments) * 100} "
-                         f"({self.damage.avg_flood():.0f}%)"),
-            ("telemetry.torpedoes", f"{self.torpedo_count}/{self.torpedo_total}  "
-                         f"{self.torpedo_depth:3.0f} m"),
-            ("telemetry.vls_chaff", f"{self.vls_cells}/"
-             f"{self.vls_loadout_total} / {self.chaff_cd:.0f}s"),
-            ("telemetry.helo_roe", ("AN" if self.helo.airborne else "Hangar")
-                          + f"  |  ROE {self.roe}"),
-        ]
-        ly = y + 26
-        for label, val in rows:
-            layout.status_line(s, x + 8, ly, w - 16, label, val,
-                               label_w=100, size=13)
-            ly += 18
+        layout.blit_line(s, "panel.telemetry", (x + 8, y + 3, w - 16, 20),
+                         config.COLOR_TEXT_DIM, size=16)
+        self._blit_telemetry_rows(pygame.Rect(x + 8, y + 25, w - 16, h - 29),
+                                  short=True)
+
+    def _blit_telemetry_rows(self, rect, short: bool) -> None:
+        face = layout.font(16)
+        pitch = max(layout._line_height(face), rect.h // len(observations.TELEMETRY_KEYS))
+        rows = observations.telemetry_rows(self)
+        labels = [localize(observations.telemetry_label(key, short))
+                  for key, *_rest in rows]
+        label_w = max(face.size(label)[0] for label in labels) + 10
+        colors = {"ok": config.COLOR_TEXT, "warn": config.COLOR_WARN,
+                  "danger": config.COLOR_DANGER}
+        for index, ((_key, value, level, _compact), label) in enumerate(zip(rows, labels)):
+            y = rect.y + index * pitch
+            layout.blit_line(self.screen, raw_text(label), (rect.x, y, label_w, pitch),
+                             config.COLOR_TEXT_DIM, size=16)
+            layout.blit_line(self.screen, value, (rect.x + label_w, y,
+                                                  rect.w - label_w, pitch),
+                             colors[level], size=16)
+
+    def _ticker_telemetry_text(self, width: int | None = None) -> str:
+        """Compact telemetry for the ticker, most important readings first.
+
+        Readings that do not fit are left out whole (never clipped); the
+        F11 overlay always shows all of them.
+        """
+        parts = []
+        for key, _value, _level, compact in observations.telemetry_rows(self):
+            if key in observations.TICKER_KEYS:
+                label = observations.telemetry_label(key, short=True)
+                parts.append(f"{localize(label)} {localize(compact)}")
+        face = layout.font(16)
+        while width is not None and len(parts) > 1 and face.size(
+                " \u00b7 ".join(parts))[0] > width:
+            parts.pop()
+        return " \u00b7 ".join(parts)
+
+    @localized
+    def draw_status_ticker(self) -> None:
+        """One 22 px strip: newest event (scrolls if long) + key telemetry."""
+        s = self.screen
+        rect = layout.ticker_rect()
+        pygame.draw.rect(s, config.COLOR_FEED_BG, rect)
+        pygame.draw.line(s, config.COLOR_SONAR_RING, rect.topleft, rect.topright, 1)
+        face = layout.font(16)
+        telemetry = self._ticker_telemetry_text(int(rect.w * .6) - 16)
+        rows = observations.telemetry_rows(self)
+        level = ("danger" if any(row[2] == "danger" for row in rows)
+                 else "warn" if any(row[2] == "warn" for row in rows) else "ok")
+        colors = {"ok": config.COLOR_TEXT, "warn": config.COLOR_WARN,
+                  "danger": config.COLOR_DANGER}
+        tele_w = face.size(telemetry)[0] + 16
+        tele_rect = pygame.Rect(rect.right - tele_w, rect.y + 2, tele_w - 8, rect.h - 2)
+        layout.blit_line(s, raw_text(telemetry), tele_rect, colors[level],
+                         size=16, align="right")
+        hint = localize("ticker.hint")
+        hint_w = face.size(hint)[0] + 12
+        layout.blit_line(s, raw_text(hint), (rect.x + 6, rect.y + 2, hint_w, rect.h - 2),
+                         config.COLOR_TEXT_DIM, size=16)
+        feed_rect = pygame.Rect(rect.x + 6 + hint_w, rect.y + 2,
+                                tele_rect.x - 12 - (rect.x + 6 + hint_w), rect.h - 2)
+        latest = self.feed.recent(1)
+        if not latest or feed_rect.w <= 20:
+            return
+        entry = latest[0]
+        text = f"[{entry.stamp}] {entry.tag()} {localize(entry.text)}"
+        width = face.size(text)[0]
+        with layout.clip_to(s, feed_rect):
+            if width <= feed_rect.w:
+                layout.blit_line(s, raw_text(text), feed_rect, entry.color(), size=16)
+            else:
+                # Marquee instead of an ellipsis: the full line stays readable.
+                gap = 60
+                offset = int(self._t * config.TICKER_SCROLL_PX_S) % (width + gap)
+                surface = layout.font(16).render(text, True, entry.color())
+                s.blit(surface, (feed_rect.x - offset, feed_rect.y))
+                s.blit(surface, (feed_rect.x - offset + width + gap, feed_rect.y))
+
+    def feed_overlay_rect(self) -> pygame.Rect:
+        return pygame.Rect(0, config.SCREEN_H - 330, config.SCREEN_W, 330)
+
+    @localized
+    def draw_feed_overlay(self) -> None:
+        """F11: full event history and telemetry over the station (display only)."""
+        s = self.screen
+        rect = self.feed_overlay_rect()
+        shade = pygame.Surface(rect.size, pygame.SRCALPHA)
+        shade.fill((*config.COLOR_FEED_BG, 238))
+        s.blit(shade, rect.topleft)
+        pygame.draw.rect(s, config.COLOR_WARN, rect, 1)
+        tele_w = 360
+        feed = pygame.Rect(rect.x + 10, rect.y + 30, rect.w - tele_w - 30, rect.h - 40)
+        tele = pygame.Rect(rect.right - tele_w - 10, rect.y + 30, tele_w, rect.h - 40)
+        face = layout.font(16)
+        rows = self._feed_lines(feed.w, face)
+        visible = max(1, feed.h // layout._line_height(face))
+        self.feed_overlay_scroll = max(0, min(self.feed_overlay_scroll,
+                                              len(rows) - visible))
+        layout.blit_line(s, message("feed.overlay.title",
+                                    shown=min(len(rows), visible), total=len(rows)),
+                         (rect.x + 10, rect.y + 5, feed.w, 22), config.COLOR_WARN,
+                         size=16)
+        layout.blit_line(s, "panel.telemetry", (tele.x, rect.y + 5, tele.w, 22),
+                         config.COLOR_WARN, size=16)
+        self._blit_feed_rows(feed, rows, self.feed_overlay_scroll)
+        pygame.draw.line(s, config.COLOR_SONAR_RING, (tele.x - 10, feed.y),
+                         (tele.x - 10, feed.bottom), 1)
+        self._blit_telemetry_rows(pygame.Rect(tele.x, tele.y, tele.w, 7 * 26),
+                                  short=False)
+        layout.blit_block(s, "feed.overlay.hint", tele.x, tele.bottom - 44, tele.w,
+                          44, config.COLOR_TEXT_DIM, size=16)
 
     def _help_lines(self) -> tuple[list[str], int]:
         """Wrap before scrolling so every line remains reachable at either size."""
@@ -10837,7 +11068,7 @@ class Game:
                                          slot=slot, info=localize(info)),
                              (bx + 24, ly, bw - 48, 32), col, size=19)
             ly += 42
-        hint = "save.paused"
+        hint = "save.live"
         if self.save_confirm:
             hint = ("save.overwrite" if self.save_ui == "save"
                     else "save.replace")
@@ -10887,7 +11118,7 @@ class Game:
 
     @staticmethod
     def _options_row_rects():
-        return tuple(pygame.Rect(292, 132 + index * 46, 696, 42)
+        return tuple(pygame.Rect(292, 118 + index * 40, 696, 36)
                      for index in range(len(Game._OPTION_ROWS)))
 
     @localized
@@ -10914,6 +11145,8 @@ class Game:
             self.tr("option.high_contrast") + ": "
             + self.tr("common.on" if self.preferences.high_contrast else "common.off"),
             self.tr("option.frame_rate", fps=self.frame_rate()),
+            self.tr("option.bottom_panel") + ": "
+            + self.tr("option.bottom_panel." + self.bottom_panel_mode()),
             self.tr("option.live_traffic"),
             self.tr("commander.local.option"),
         )
@@ -10923,7 +11156,7 @@ class Game:
             layout.blit_line(self.screen, raw_text(prefix + value), row, color, size=20)
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
-                          292, 644, 696, 50, config.COLOR_TEXT_DIM, size=18,
+                          292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,
                           align="center")
 
     @staticmethod
@@ -11009,21 +11242,6 @@ class Game:
         if status == "error":
             return self.tr("live_traffic.test_error", reason=(reason or "?")[:80])
         return self.tr("live_traffic.test_idle")
-
-    @localized
-    def draw_pause_overlay(self) -> None:
-        s = self.screen
-        dim = pygame.Surface((config.SCREEN_W, config.SCREEN_H), pygame.SRCALPHA)
-        dim.fill((0, 0, 0, 90))
-        s.blit(dim, (0, 0))
-        pause = localize("PAUSE")
-        r = self.font_big.render(pause, True, config.COLOR_TEXT).get_rect(
-            center=(config.SCREEN_W // 2, config.SCREEN_H // 2 - 40))
-        s.blit(self.font_big.render(pause, True, config.COLOR_TEXT), r)
-        resume = localize("P = weiter")
-        r = self.font.render(resume, True, config.COLOR_TEXT_DIM).get_rect(
-            center=(config.SCREEN_W // 2, config.SCREEN_H // 2))
-        s.blit(self.font.render(resume, True, config.COLOR_TEXT_DIM), r)
 
     @localized
     def draw_quit_overlay(self) -> None:
@@ -11153,10 +11371,6 @@ class Game:
                 self.commander.pump(self)
                 if commander_started is not None:
                     self._perf_commander_s += time.perf_counter() - commander_started
-                if (self.web_mode and not self.in_menu and not self.main_menu
-                        and not self.game_over and self.commander.server is not None
-                        and not self.commander.server.web_host_present()):
-                    self.set_paused(True)
                 self.live_traffic.pump(self)
                 self.update(dt, audio_dt=wall_dt)
                 self._perf_debug_log(wall_dt)

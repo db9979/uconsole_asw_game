@@ -9,7 +9,7 @@ from contextlib import contextmanager
 import pygame
 
 from src.core import config
-from src.core.i18n import localize, message
+from src.core.i18n import localize, message, short_candidates
 
 # Font-Cache: pygame-Fonts sind teuer -> pro Größe einmal erzeugen.
 _FONT_CACHE: dict = {}
@@ -21,8 +21,46 @@ LARGE_TEXT_SCALE = 1.2
 _TEXT_SCALE = 1.0
 _GEOMETRY_TRACE = None
 _TEXT_TRACE = None
+_TRUNCATION_TRACE = None
 COMMAND_KEY_COLOR = (142, 232, 255)
 COMMAND_DESCRIPTION_COLOR = (205, 216, 222)
+
+
+# Bottom-panel modes: "docked" keeps the 180 px event feed + telemetry band
+# below every station; "ticker" folds both into one status strip so the
+# station display gains 158 px, with the full feed on demand (F11 overlay).
+TICKER_H = 22
+BOTTOM_PANEL_MODES = config.BOTTOM_PANEL_MODES
+_REGION_NAMES = ("MAIN_BOTTOM", "MAP_RECT", "STATION_RECT",
+                 "STATION_PANEL_RECT", "FULL_STATION_RECT")
+
+
+@contextmanager
+def bottom_panel_regions(mode: str):
+    """Size the main station regions for one bottom-panel mode, then restore.
+
+    The docked values in ``config`` stay the module defaults; a game applies
+    its mode only around its own draw, input and update calls, so draw and
+    hit-test geometry always agree and nothing leaks between games.
+    """
+    saved = {name: getattr(config, name) for name in _REGION_NAMES}
+    try:
+        if mode == "ticker":
+            top = config.MAIN_TOP
+            bottom = config.SCREEN_H - TICKER_H
+            config.MAIN_BOTTOM = bottom
+            config.MAP_RECT = (0, top, 640, bottom - top)
+            config.STATION_PANEL_RECT = (640, top, 640, bottom - top)
+            config.STATION_RECT = config.STATION_PANEL_RECT
+            config.FULL_STATION_RECT = (0, top, config.SCREEN_W, bottom - top)
+        yield
+    finally:
+        for name, value in saved.items():
+            setattr(config, name, value)
+
+
+def ticker_rect() -> pygame.Rect:
+    return pygame.Rect(0, config.SCREEN_H - TICKER_H, config.SCREEN_W, TICKER_H)
 
 
 def clear_font_cache() -> None:
@@ -85,6 +123,19 @@ def capture_text():
         yield captured
     finally:
         _TEXT_TRACE = previous
+
+
+@contextmanager
+def capture_truncations():
+    """Collect every text shortened with an ellipsis (the text-loss audit)."""
+    global _TRUNCATION_TRACE
+    previous = _TRUNCATION_TRACE
+    captured = []
+    _TRUNCATION_TRACE = captured
+    try:
+        yield captured
+    finally:
+        _TRUNCATION_TRACE = previous
 
 
 def record_text(text: str, rendered_rect, bounds) -> None:
@@ -168,6 +219,9 @@ def ellipsize(text: object, f: pygame.font.Font, width_px: int,
         return ""
     if f.size(value)[0] <= width_px:
         return value
+    if _TRUNCATION_TRACE is not None:
+        _TRUNCATION_TRACE.append({"text": value, "width": int(width_px),
+                                  "needed": int(f.size(value)[0])})
     if f.size(suffix)[0] > width_px:
         return ""
     low, high = 0, len(value)
@@ -200,17 +254,50 @@ def fit_text(text: str, size: int, width_px: int, height_px: int,
     lh = _line_height(f)
     max_lines = max(1, height_px // lh)
     if len(lines) > max_lines:
+        if _TRUNCATION_TRACE is not None:
+            _TRUNCATION_TRACE.append({"text": text, "width": int(width_px),
+                                      "needed": int(f.size(text)[0]),
+                                      "lines": len(lines), "max_lines": max_lines})
         lines = lines[:max_lines]
         last = lines[-1]
         lines[-1] = ellipsize(last + "...", f, width_px)
     return f, lines
 
 
+def _block_fits(text: str, w: int, h: int, min_size: int) -> bool:
+    f = font(min_size)
+    return len(wrap_text(text, f, w)) * _line_height(f) <= h
+
+
+def fit_block_text(value, w: int, h: int, min_size: int = MIN_OPERATIONAL_FONT) -> str:
+    """Pick the longest catalog form of ``value`` that fits (w, h) unabridged."""
+    text = localize(value)
+    if not text or _block_fits(text, w, h, min_size):
+        return text
+    candidates = [localize(item) for item in short_candidates(value)]
+    for candidate in candidates:
+        if _block_fits(candidate, w, h, min_size):
+            return candidate
+    return candidates[-1] if candidates else text
+
+
+def fit_line(value, f: pygame.font.Font, width_px: int) -> str:
+    """One line: full text, else its catalog abbreviation, else ellipsized."""
+    text = localize(value)
+    if f.size(text)[0] <= width_px:
+        return text
+    candidates = [localize(item) for item in short_candidates(value)]
+    for candidate in candidates:
+        if f.size(candidate)[0] <= width_px:
+            return candidate
+    return ellipsize(candidates[-1] if candidates else text, f, width_px)
+
+
 def blit_block(screen, text: str, x: int, y: int, w: int, h: int,
                color, size: int = 16, min_size: int = MIN_OPERATIONAL_FONT,
                align: str = "left", valign: str = "top") -> None:
     """Blendet einen Textblock, der garantiert in (x,y,w,h) bleibt."""
-    text = localize(text)
+    text = fit_block_text(text, w, h, min_size)
     if not text or w <= 0 or h <= 0:
         return
     rect = pygame.Rect(x, y, w, h)
@@ -309,11 +396,8 @@ def status_line(screen, x: int, y: int, w: int, label: str, value: str,
     f = font(size)
     col = color or config.COLOR_TEXT
     dcol = dim_color or config.COLOR_TEXT_DIM
-    lab = ellipsize(localize(label), f, label_w - 4)
-    value = localize(value)
-    val = value
-    rest = w - label_w - 4
-    val = ellipsize(value, f, rest)
+    lab = fit_line(label, f, label_w - 4)
+    val = fit_line(value, f, w - label_w - 4)
     with clip_to(screen, (x, y, w, f.get_linesize())):
         label_image = f.render(lab, True, dcol)
         value_image = f.render(val, True, col)
@@ -332,19 +416,19 @@ def command_segment(screen, rect, key: str, description: str,
     rect = pygame.Rect(rect)
     face = font(size)
     parts = (
-        (localize(key), COMMAND_KEY_COLOR),
-        (localize(description), COMMAND_DESCRIPTION_COLOR),
-        (localize(label), config.COLOR_TEXT_DIM),
-        (localize(value), config.COLOR_TEXT),
+        (key, COMMAND_KEY_COLOR),
+        (description, COMMAND_DESCRIPTION_COLOR),
+        (label, config.COLOR_TEXT_DIM),
+        (value, config.COLOR_TEXT),
     )
     x = rect.x + 6
     with clip_to(screen, rect):
         for index, (text, color) in enumerate(parts):
-            if not text or x >= rect.right - 4:
+            if not localize(text) or x >= rect.right - 4:
                 continue
             if index and x > rect.x + 6:
                 x += face.size(" ")[0]
-            shown = ellipsize(text, face, rect.right - 4 - x)
+            shown = fit_line(text, face, rect.right - 4 - x)
             image = face.render(shown, True, color)
             rendered = image.get_rect(topleft=(x, rect.y + max(
                 0, (rect.h - face.get_linesize()) // 2)))

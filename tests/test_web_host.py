@@ -247,8 +247,10 @@ def test_web_host_publishes_game_without_local_display_work(tmp_path, monkeypatc
                 game.commander.server._web_host_digest]["presence"] = time.monotonic() - 20
         game.draw = lambda: (_ for _ in ()).throw(AssertionError("headless drew a frame"))
         game.auto_quit = 2
+        before = game.sim_t
         game.run()
-        assert game.paused is True
+        # No auto-pause without a browser host: the mission keeps real time.
+        assert not hasattr(game, "paused") and game.sim_t > before
     finally:
         game.commander.stop()
         game.audio.shutdown()

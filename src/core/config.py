@@ -81,16 +81,14 @@ FULL_STATION_RECT = (0, MAIN_TOP, SCREEN_W, MAIN_BOTTOM - MAIN_TOP)
 OPZ_STATION_RECT = (0, MAIN_TOP, SCREEN_W, SCREEN_H - MAIN_TOP)
 FEED_RECT = (0, MAIN_BOTTOM, 960, BOTTOM_H)                    # (0,540,960,180)
 TELEMETRY_RECT = (960, MAIN_BOTTOM, 320, BOTTOM_H)             # (960,540,320,180)
+BOTTOM_PANEL_MODES = ("ticker", "docked")  # see layout.bottom_panel_regions
+TICKER_SCROLL_PX_S = 40.0           # marquee speed for a long ticker line (wall time)
 
 # --- Zeitsteuerung: eine gemeinsame physikalische Simulationszeit ---
-# Bei 1x gilt strikt: 1 reale Sekunde = 1 Simulationssekunde. Der Faktor bleibt
-# als Kompatibilitaetsname bestehen, darf aber keine versteckte Kompression sein.
-TACTICAL_TIME_SCALE = 1.0
+# Das Spiel laeuft immer in Echtzeit, ohne Pause und ohne Zeitraffer:
+# 1 reale Sekunde = 1 Simulationssekunde.
 # Spielminuten pro Simulationssekunde: ergibt eine reale 24-h-Uhr.
 GAME_TIME_PER_SEC = 1.0 / 60.0
-# Legacy save/protocol field: simulation always runs at real-time speed.
-TIME_SCALE_STEPS = (1,)
-TIME_SCALE_DEFAULT = 0
 PHYS_SUBSTEP_S = 0.05             # max. sim-Sekunden pro Physik-Substep (Anti-Tunneling:
                                   # 45 kn legen in 0.05 s ca. 0.000625 NM zurueck)
 PHYS_SUBSTEP_MAX = 240
@@ -223,13 +221,14 @@ LOOKOUT_LAND_CHECK_S = 10.0
 LOOKOUT_REPORTS_MAX = 24
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
 PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG",
-                  "FLUGZEUG")
+                  "FLUGZEUG", "TORPEDO")
 PLAYER_CLASS_LABELS = {
     "U_BOOT": "U-Boot",
     "KAMPFSCHIFF": "Kampfschiff",
     "BIOLOGISCH": "Biologisch",
     "FAHRZEUG": "Fahrzeug",
     "FLUGZEUG": "Flugzeug",
+    "TORPEDO": "Torpedo",
 }
 
 # OPZ/CIC: manuell gesetzte NATO-Zugehoerigkeit. Die Domaene (See, Luft,
@@ -432,6 +431,17 @@ TORP_MIDCOURSE_UPDATE_S = 0.5   # Draht-Mittelkurs-Update (Serpentin)
 TORP_SPOOLUP_S = 2.0            # Anlaufzeit bis Marschgeschwindigkeit
 TORP_SPOOLUP_MIN_FRAC = 0.25    # Anfangsgeschwindigkeit als Bruchteil (Rohrabschuss)
 TORP_RUNNING_NOISE_RANGE_NM = 6.0  # passive Eigenlaerm-Reichweite eines laufenden Torpedos
+# Measured torpedo cues (src/sensors/threat_cue.py): intercepts, never the
+# entity type. The launch transient carries as far as the frigate's own
+# launch is heard by submarines; HF seeker pulses are heard beyond homing range.
+TORP_TRANSIENT_HEAR_NM = SUB_TORPEDO_ALERT_NM
+TORP_SEEKER_INTERCEPT_NM = 6.0
+TORP_CUE_BEARING_SIGMA_DEG = 3.0
+TORP_CUE_HOLD_S = 60.0          # a cue stays on the alarm board this long
+# Radar threat evaluation: an inbound air track this fast and this low (or a
+# jamming strobe) raises the ASM cue. Low attack aircraft can trigger it too.
+ASM_CUE_SPEED_KN = 300.0
+ASM_CUE_ALTITUDE_M = 150.0
 HELO_FUEL_S = 7200.0
 HELO_FUEL_RESERVE_S = 1200.0
 HELO_RETURN_DIST_NM = 0.3
@@ -680,6 +690,8 @@ COLOR_FLIGHT = (220, 180, 90)
 # W2: OPZ-Domänenfarbe für Flugkörper/Torpedo - eigene Farbe, da COLOR_DANGER
 # und COLOR_CONTACT_UBOOT (Unterwasser-Domäne) sonst fast ununterscheidbar sind.
 COLOR_CONTACT_MISSILE = (235, 70, 180)
+COLOR_FEED_BG = (10, 18, 14)       # event feed / telemetry / ticker ground
+COLOR_PANEL_BG = (14, 24, 18)      # top bar and panel boxes
 
 # W3: Feed-Kategorien (Farbe, Kürzel)
 FEED_CATEGORIES = {

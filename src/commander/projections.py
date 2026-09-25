@@ -187,7 +187,7 @@ def _common(game, status, role):
                 seq=status["seq"], phase=status["phase"], role=role,
                 chart_revision=status["session"],
                 clock=dict(sim=_number(game.sim_t), mission=_number(game.mission_time),
-                           time_scale=game.time_scale, world=_number(game.world.hour)),
+                           world=_number(game.world.hour)),
                  environment=dict(
                      sea_state=game.world.sea_state,
                      effective_sea_state=_number(weather["sea_state"]),
@@ -531,8 +531,12 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
     water_available = airborne and helo.water_entry_clear(game.world)
     water_depth = (float(game.world.depth_m(helo.x, helo.y))
                    if water_available else None)
-    thermocline = (float(game.world.thermocline_depth_m(helo.x, helo.y))
-                   if water_available else None)
+    # Charted depth is known geography; the layer only once the lowered
+    # dome has passed through it.
+    layer = (float(game.world.thermocline_depth_m(helo.x, helo.y))
+             if water_available and helo.dip_state != "STOWED" else None)
+    thermocline = (layer if layer is not None and helo.dip_depth_m >= layer
+                   else None)
     dip_environment = dict(
         water_depth_m=_number(water_depth),
         thermocline_m=_number(thermocline),
@@ -836,13 +840,18 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                     count=sum(row["ref"] in asm_refs
                                               or row["affiliation"] == "HOSTILE"
                                               for row in rows if row.get("_opz")),
-                                    average_flood=_number(game.damage.avg_flood())),
+                                    average_flood=_number(game.damage.avg_flood()),
+                                    torpedoes=[dict(source=warning["source"],
+                                                    bearing=_number(warning["bearing"]),
+                                                    age_s=_number(warning["age_s"]))
+                                               for warning in game.torpedo_warnings()[:8]]),
                         systems=[dict(key=key, state=game.damage.station_state(key),
                                       down=game.damage.station_down(key))
                                  for key in sorted(game.damage.compartments)],
                          tactical_summary=[_observation(row, _TACTICAL_FIELDS)
                                            for row in rows
-                                          if row["source"] not in ("ESM", "FUSION")
+                                          if row.get("_opz")
+                                          and row["source"] not in ("ESM", "FUSION")
                                           and not row["source"].startswith("SONAR")],
                         sightings=_sightings(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),

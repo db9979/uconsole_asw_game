@@ -73,15 +73,15 @@ def test_frame_dt_catches_up_slow_frames_within_bounds():
     game.audio.shutdown()
 
 
-def test_frame_dt_never_catches_up_across_pause_or_load(monkeypatch):
+def test_frame_dt_never_catches_up_across_menu_or_load(monkeypatch):
     game = Game(seed=87, audio_enabled=False)
     game._frame_clock_reset = False
     game._frame_dt(.5)
     assert game._sim_debt_s > 0
-    game.set_paused(True)
+    game.in_menu = True
     game.update(game._frame_dt(1 / 30))
-    game.set_paused(False)
-    # Pause wall time is not simulated afterwards.
+    game.in_menu = False
+    # Menu wall time is not simulated afterwards.
     assert game._frame_dt(2.0) == pytest.approx(config.SIM_FRAME_DT_MAX)
     assert game._sim_debt_s == 0.0
     game._frame_dt(.5)
@@ -138,7 +138,6 @@ def test_sonar_audio_continues_at_fixed_realtime_speed(monkeypatch):
     assert spy.call_count == 2
     assert game._sonar_audio_sequence == receiver.sequence
     stop.assert_called_once()
-    assert game.time_scale == 1
     game.audio.shutdown()
 
 
@@ -149,8 +148,7 @@ def test_legacy_time_keys_do_not_change_simulation_rate():
         game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key, mod=0))
     before = game.sim_t
     game.update(.1)
-    assert game.time_scale == 1
-    assert game.time_scale_idx == 0
+    assert not hasattr(game, "time_scale") and not hasattr(game, "time_scale_idx")
     assert game.sim_t == pytest.approx(before + .1)
 
 
@@ -355,8 +353,8 @@ def test_sensor_picture_uses_generic_evidence_not_platform_truth(monkeypatch):
     game.flights.flights = []
     game.asms = []
     game._update_air_picture(full_scan=True)
-    track = game.air_picture._tracks[f"W-{warship.id}"]
-    assert track.label == f"W-{warship.id}"
+    track = game.air_picture._tracks[f"S-{warship.id}"]
+    assert track.label == f"S-{warship.id}"
     assert track.course is None and track.hostile is False
     assert warship.name not in track.label
 
@@ -397,14 +395,14 @@ def test_surface_radar_detection_is_capped_by_geometric_horizon(monkeypatch):
     beyond_horizon.emitter = True
     game.warships = [beyond_horizon]
     game._update_air_picture(full_scan=True)
-    assert f"W-{beyond_horizon.id}" not in game.air_picture._tracks
+    assert f"S-{beyond_horizon.id}" not in game.air_picture._tracks
 
     within_horizon = SurfaceShip(game.ship.x + horizon - 5.0, game.ship.y,
                                  random.Random(851), hostile=True)
     within_horizon.emitter = True
     game.warships = [within_horizon]
     game._update_air_picture(full_scan=True)
-    assert f"W-{within_horizon.id}" in game.air_picture._tracks
+    assert f"S-{within_horizon.id}" in game.air_picture._tracks
 
 
 def test_weapon_datum_uses_canonical_observed_position(monkeypatch):

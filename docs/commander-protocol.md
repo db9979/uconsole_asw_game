@@ -10,7 +10,7 @@ persistence.
 ## Ownership
 
 CommanderConsole controls the listener locally. CommanderBridge.pump executes
-once per main-loop wall frame before Game.update, including paused frames. It
+once per main-loop wall frame before Game.update, including menu frames. It
 reads public observations and own assets, validates commands and publishes
 detached JSON. HTTP handlers never import Game/Pygame, access simulation objects,
 or trigger sensor/TMA work. Candidate-load methods have no network side effects.
@@ -56,7 +56,7 @@ enables the lease's ordinary command grant immediately; direct-fire and
 sonar-audio grants remain separate. Exactly one retained lease is active and
 identified by a separate monotonic active generation. Station requests are
 additive; activation does not release another lease. Release, revocation,
-takeover, expiry, pause, focus loss, and world replacement invalidate authority
+takeover, expiry, and world replacement invalidate authority
 at their defined scope.
 
 Activation validates the target lease and its station generation but does not
@@ -101,6 +101,11 @@ per-client sequence, station generation, active generation, world
 session/epoch, resource revision, action, and exact bounded parameters. HTTP
 threads only enqueue detached envelopes. The main thread revalidates and applies
 accepted commands once in deterministic station and per-client FIFO order.
+Only operator annotations of the shared picture (classification, affiliation,
+track ID, release, fusion, qualification, ESM annotation, target proposal) must
+still match the resource revision the browser saw (`revision_conflict`); every
+other order resolves its opaque references at application time and is not
+rejected because an unrelated contact changed.
 Direct-fire actions additionally require the station's direct-fire grant and
 ordinary observation, readiness, inventory, ROE, and envelope checks. A queued
 response is never reported as successful before its terminal result.
@@ -196,8 +201,7 @@ public tracks and the environment summary. Proposals, events, command results an
 SimLog history use separate authenticated endpoints so each can enforce its own
 session, role, authority and grant boundary.
 Menu/editor/splash use the same schema with null own geometry and environment,
-plus empty mission, tracks, events and chart. Paused live missions retain a
-frozen read-only picture.
+plus empty mission, tracks, events and chart.
 
 Track references and neutral labels are observation-lifetime identities, not raw
 entity IDs. Replacement/reacquisition invalidates them. Only modeled AIS labels
@@ -255,11 +259,12 @@ transitions. World replacement revokes pairing and generates a new session at th
 next pump. The browser requires matching session/chart context before revealing
 the new picture. Old event backlog does not retrigger audio after reconnect.
 
-An active crew station keeps protocol phase `live` behind local F1 help, the
-in-game F8 contact analyzer, F9 crew administration, and F10 options. Opening or
-closing one of these owners still invalidates commands queued across the
-transition. Manual pause, focus loss, save/load, quit, nations, real editors,
-menus, and splash remain blocked.
+The mission always runs in real time and has no pause. Protocol phase stays
+`live` behind every local menu and overlay (help, options, save/load, quit
+confirmation, nations, F8 analyzer, F9 administration) and across focus loss;
+opening or closing them does not invalidate queued commands. Phases are `live`,
+`menu`, `blocked` (splash only) and `ended`; only world lifecycle changes move the
+epoch.
 
 The Lookout consumes only the current state snapshot, never chart geography or
 simulation objects. It is north-up and ship-centered: positioned observations
@@ -272,8 +277,8 @@ changes or resize, with device-pixel-aware backing dimensions.
 ## Solo Mode Additions (protocol v2, additive)
 
 The session body carries `host`: `null` normally, `{"generation": n}` for a solo
-session. `GET /api/v2/host` returns the detached host view (`phase`, `paused`,
-`time_scale`, `world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`) only to a
+session. `GET /api/v2/host` returns the detached host view (`phase`,
+`world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`) only to a
 session with `host`; other sessions get 403. Slot rows carry `saved` and `modified`
 from file metadata only, never save contents.
 
@@ -281,9 +286,8 @@ Host controls use the ordinary `POST /api/v2/commands` with the pseudo-role
 `"host"` (never a station lease; `STATIONS` and every projection stay nine).
 `station_generation` is the session's `host.generation`, `active_generation` must be
 0, and `world_session` must match; the epoch and resource revision are not checked
-because these actions reference no resource and pause/resume move the epoch
-themselves. Actions: `host_pause`, `host_resume`, `host_time_scale {index}`,
-`host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
+because these actions reference no resource and load/new game move the epoch
+themselves. There is no pause or time-scale action. Actions: `host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
 level?, seed?}`, and `host_instructor_environment {sea_state, event}`. The instructor
 action changes the save-compatible authoritative world field (0–6) and refreshes
 the derived weather endpoints. Its optional closed event enum changes all hostile

@@ -295,7 +295,7 @@ def test_revocation_clears_role_event_and_simlog_publications(server):
         world_session="published", world_epoch=0,
         entries_by_role={role: [{"seq": 1, "t": 1.0, "stamp": "00:01",
                                  "state": states[role],
-                                 "truth": {"mission_t": 1.0, "timescale": 0,
+                                 "truth": {"mission_t": 1.0,
                                      "result": None, "world": {}, "ship": {},
                                      "weapons": {}, "subs": [], "surfaces": [],
                                      "animals": [], "torpedoes": [],

@@ -77,7 +77,7 @@ def test_sonar_sidebar_uses_positioned_bearing_not_passive_bearing(monkeypatch):
     rendered = []
     monkeypatch.setattr(
         sonar_view, "_text",
-        lambda screen, text, *args, **kwargs: rendered.append(text))
+        lambda screen, text, *args, **kwargs: rendered.append(sonar_view.localize(text)))
 
     sonar_view._draw_contacts(game, pygame.Rect(900, 340, 350, 150))
 

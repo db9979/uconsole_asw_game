@@ -8,7 +8,8 @@ import numpy as np
 import pygame
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize, message as structured_message
+from src.core.i18n import (display_message, display_value, localized, localize,
+                            message as structured_message, short_candidates)
 from src.ui import layout
 from src.ui import observations
 
@@ -33,7 +34,8 @@ _WATERFALL_CACHE_SCREEN = None
 
 
 def message(key, **values):
-    return localize(structured_message(key, **values))
+    """A structured message: localized at draw time so layouts can abbreviate."""
+    return structured_message(key, **values)
 
 
 def _observed_bearing(observation) -> float:
@@ -387,12 +389,7 @@ def _text(screen, text, rect, color=TEXT, size=14, align="left"):
     if rect.w <= 0 or rect.h <= 0:
         return
     font = layout.font(size)
-    original = localize(text)
-    text = original
-    while text and font.size(text)[0] > rect.w:
-        text = text[:-1]
-    if text != original:
-        text = text[:-3] + "..." if len(text) >= 3 else ""
+    text = layout.fit_line(text, font, rect.w)
     x = rect.x
     if align == "right":
         x = rect.right - font.size(text)[0]
@@ -413,11 +410,28 @@ def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
     The small row bitmap is scaled once, not drawn as thousands of rectangles.
     """
     width, height = max(1, int(width)), max(1, int(height))
-    values = np.asarray(rows, dtype=np.float32)
-    if values.size == 0:
+    pixels = waterfall_pixels(rows, gain_db, black_level=black_level,
+                              contrast=contrast, palette=palette)
+    if pixels is None:
         surface = pygame.Surface((width, height))
         surface.fill(NAVY)
         return surface
+    small = pygame.surfarray.make_surface(pixels.transpose(1, 0, 2))
+    return pygame.transform.scale(small, (width, height))
+
+
+def waterfall_pixels(rows, gain_db=0.0, *, black_level=0.0, contrast=1.0,
+                     palette="cyan", colors=None):
+    """Pure phosphor mapping behind waterfall_surface: rows x bins x RGB.
+
+    Shared with the packaged contact-analysis images so their traces look
+    exactly like the station display; ``colors=(empty, full)`` swaps only the
+    end colours (the printed unit reference uses white paper and dark ink).
+    Returns None for empty input.
+    """
+    values = np.asarray(rows, dtype=np.float32)
+    if values.size == 0:
+        return None
     values = np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=0.0)
     values = np.clip(values[::-1] * 10.0 ** (gain_db / 20.0), 0.0, 1.0)
     black_level = float(np.clip(black_level, 0.0, .8))
@@ -429,11 +443,9 @@ def waterfall_surface(rows, width, height, gain_db=0.0, *, black_level=0.0,
     persistence = np.linspace(1.0, .22, len(values), dtype=np.float32)
     values *= persistence[:, None]
     # A navy-to-phosphor ramp leaves faint receiver noise visible, not invented.
-    low = np.asarray(NAVY)
-    high = np.asarray(PHOSPHOR_PALETTES.get(palette, CYAN))
-    pixels = (low + values[..., None] ** .72 * (high - low)).astype(np.uint8)
-    small = pygame.surfarray.make_surface(pixels.transpose(1, 0, 2))
-    return pygame.transform.scale(small, (width, height))
+    low, high = colors or (NAVY, PHOSPHOR_PALETTES.get(palette, CYAN))
+    low, high = np.asarray(low), np.asarray(high)
+    return (low + values[..., None] ** .72 * (high - low)).astype(np.uint8)
 
 
 def _circular_broadband(row, width):
@@ -499,7 +511,7 @@ def _display_controls(game):
 def _draw_display_status(game, panel):
     black, contrast, palette, history = _display_controls(game)
     value = f"P {palette.upper()}  C {contrast:.1f}  BL {black:.2f}  H {history:.0%}"
-    _text(game.screen, value, (panel.right - 310, panel.y + 11, 294, 18),
+    _text(game.screen, value, (panel.right - 336, panel.y + 11, 320, 18),
           DIM, 12, "right")
 
 
@@ -579,6 +591,114 @@ def _trace(screen, rect, values, color=CYAN):
               for i, v in enumerate(values)]
     with layout.clip_to(screen, rect):
         pygame.draw.lines(screen, color, False, points, 1)
+
+
+PEAK_LABEL_W = 40
+
+
+def spectrum_peaks(values, frequencies, limit=8, min_separation_hz=0.0):
+    """Prominent local maxima of a displayed spectrum as ``(hz, level)``.
+
+    A peak must stand clearly above the median floor and its own
+    neighbourhood; the frequency is refined by a parabola through the three
+    bins around it. Strongest first, thinned so labels cannot overlap, then
+    returned in frequency order. Pure and bounded (``limit``).
+    """
+    v = np.nan_to_num(np.asarray(values, dtype=float), nan=0.0,
+                      posinf=0.0, neginf=0.0)
+    f = np.asarray(frequencies, dtype=float)
+    if v.size < 3 or f.size != v.size or limit <= 0:
+        return []
+    top = float(v.max())
+    floor = float(np.median(v))
+    span = top - floor
+    if top < .03 or span <= 1e-6:
+        return []
+    threshold = max(floor + .25 * span, floor * 1.6, .03)
+    inner = v[1:-1]
+    local = np.flatnonzero((inner > v[:-2]) & (inner >= v[2:])
+                           & (inner >= threshold)) + 1
+    window = 4
+    candidates = []
+    for i in local:
+        left = v[max(0, i - window):i].min()
+        right = v[i + 1:i + 1 + window].min()
+        if v[i] - max(left, right) < .1 * span:
+            continue
+        x0, x1, x2 = f[i - 1], f[i], f[i + 1]
+        y0, y1, y2 = v[i - 1], v[i], v[i + 1]
+        denominator = (x0 - x1) * (x0 - x2) * (x1 - x2)
+        hz = x1
+        if abs(denominator) > 1e-12:
+            a = (x2 * (y1 - y0) + x1 * (y0 - y2) + x0 * (y2 - y1)) / denominator
+            b = (x2 * x2 * (y0 - y1) + x1 * x1 * (y2 - y0)
+                 + x0 * x0 * (y1 - y2)) / denominator
+            if a < 0:
+                hz = float(np.clip(-b / (2 * a), x0, x2))
+        candidates.append((float(v[i]), -int(i), float(hz)))
+    chosen = []
+    for level, _, hz in sorted(candidates, reverse=True):
+        if all(abs(hz - other) >= min_separation_hz for other, _ in chosen):
+            chosen.append((hz, level))
+            if len(chosen) >= limit:
+                break
+    return sorted(chosen)
+
+
+def peak_label(hz):
+    return f"{hz:.1f}" if hz < 100 else f"{hz:.0f}"
+
+
+def place_peak_labels(apexes, bounds, obstacles=(), height=12):
+    """Collision-free label boxes for ``(x, y, width, text, level)`` apexes.
+
+    Strongest first: above the apex when there is headroom, otherwise beside
+    it (right, then left, then one row lower). A label with no free place is dropped rather than
+    drawn over another value. Returns ``(box, text, x, y, above)``.
+    """
+    bounds = pygame.Rect(bounds)
+    taken = [pygame.Rect(box) for box in obstacles]
+    placed = []
+    for x, y, width, text, _ in sorted(apexes, key=lambda a: (-a[4], a[0])):
+        side_top = max(bounds.y + 1, y - height // 2)
+        options = [(pygame.Rect(x - width // 2, y - height - 3, width, height), True)]
+        options += [(pygame.Rect(left, top, width, height), False)
+                    for top in (side_top, side_top + height)
+                    for left in (x + 4, x - 4 - width)]
+        for box, above in options:
+            if (bounds.contains(box)
+                    and not any(box.inflate(4, 0).colliderect(other) for other in taken)):
+                taken.append(box)
+                placed.append((box, text, x, y, above))
+                break
+    return placed
+
+
+def _draw_peak_labels(screen, rect, values, frequencies, xmin, xmax,
+                      marker_hz=None, color=TEXT):
+    """Frequency value above every prominent peak of a spectrum strip."""
+    if rect.w < PEAK_LABEL_W or xmax <= xmin:
+        return
+    scale = (rect.w - 1) / (xmax - xmin)
+    font = layout.font(10)
+    obstacles, marker_x = [], None
+    if marker_hz is not None and np.isfinite(marker_hz) and xmin <= marker_hz <= xmax:
+        marker_x = rect.x + round((float(marker_hz) - xmin) * scale)
+        obstacles.append(pygame.Rect(marker_x + 4, rect.y + 2, 70, 18))
+    apexes = []
+    for hz, level in spectrum_peaks(values, frequencies, limit=12):
+        x = rect.x + round((hz - xmin) * scale)
+        if not xmin <= hz <= xmax or (marker_x is not None and abs(x - marker_x) < 4):
+            continue
+        y = rect.bottom - 1 - round(min(1.0, max(0.0, level)) * (rect.h - 1))
+        text = peak_label(hz)
+        apexes.append((x, y, font.size(text)[0], text, level))
+    for box, text, x, y, above in place_peak_labels(apexes, rect, obstacles,
+                                                    font.get_height()):
+        if above:
+            pygame.draw.line(screen, color, (x, y - 1), (x, y - 3), 1)
+        pygame.draw.rect(screen, NAVY, box)
+        _text(screen, text, box, color, 10, "center")
 
 
 def _translator(game, tr=None):
@@ -756,7 +876,8 @@ def _draw_waterfall(game, panel, page):
     timing = (message("sonar.line.history_timed", newest=f"{times[-1]:.1f}",
                       oldest=f"{times[0]:.1f}", rows=len(processed)) if len(times) else
               message("sonar.line.history_untimed", rows=len(processed)))
-    _text(screen, timing, (panel.x + 16, panel.y + 35, panel.w - 32, 20), DIM, 12)
+    _text(screen, timing, (panel.x + 16, panel.y + 35,
+                           panel.w - 32 - (196 if page == 1 else 0), 20), DIM, 12)
     if not len(processed):
         _text(screen, "sonar.no_receiver_data", (plot.x, plot.centery - 10, plot.w, 22),
               DIM, 16, "center")
@@ -795,10 +916,12 @@ def _draw_waterfall(game, panel, page):
         current = getattr(receiver, "spectrum", [])
         process = getattr(sonar, "process_lofar_column", None)
         if len(current):
-            latest = process(current, game.ship) if process else current
-            latest = _linear_lofar(latest, plot.w)
+            bins = process(current, game.ship) if process else current
+            latest = _linear_lofar(bins, plot.w)
+            labelled = (bins, _lofar_frequencies(len(bins)))
         else:
             latest = processed[-1] if len(processed) else []
+            labelled = (latest, np.linspace(0.0, config.LOFAR_FMAX_HZ, len(latest)))
         _trace(screen, spectrum_rect, latest)
         for frequency, label in ((40.0, "0-40"), (100.0, "40-100"),
                                  (300.0, "100-300")):
@@ -823,15 +946,20 @@ def _draw_waterfall(game, panel, page):
             peak = getattr(sonar, "peak_spectrum", getattr(receiver, "peak_spectrum", []))
             if peak is not None and len(peak):
                 peak = process(peak, game.ship) if process else peak
+                labelled = (peak, _lofar_frequencies(len(peak)))
                 peak = _linear_lofar(peak, plot.w)
             else:
                 peak = np.max(processed, axis=0) if len(processed) else []
+                labelled = (peak, np.linspace(0.0, config.LOFAR_FMAX_HZ, len(peak)))
             _trace(screen, spectrum_rect, peak, AMBER)
-        legend = pygame.Rect(spectrum_rect.x + 5, spectrum_rect.y + 2, 160, 18)
-        pygame.draw.rect(screen, NAVY, legend)
+        # Peak hold labels the held envelope, otherwise the live spectrum.
+        _draw_peak_labels(screen, spectrum_rect, *labelled, 0.0,
+                          config.LOFAR_FMAX_HZ)
+        # Above the strip, so it never hides the peak values of 0-40 Hz.
+        legend = pygame.Rect(panel.right - 196, panel.y + 35, 180, 20)
         _text(screen, message("sonar.live_peak", state=localize(
                   "sonar.peak_held" if held else "sonar.peak_off")),
-              legend, AMBER if held else DIM, 12)
+              legend, AMBER if held else DIM, 12, "right")
         bearings = getattr(sonar, "lofar_bearings", [])
         note = (message("sonar.line.row_bearings", newest=f"{bearings[-1] % 360:05.1f}",
                         oldest=f"{bearings[0] % 360:05.1f}")
@@ -901,6 +1029,11 @@ def _draw_demon(game, panel):
     visible_spectrum = spectrum[:int(DEMON_DISPLAY_MAX_HZ)]
     if visible_spectrum.size:
         _trace(screen, spectrum_rect, np.concatenate(([0.0], visible_spectrum)))
+        modulation = analysis.get("modulation_peak_hz")
+        _draw_peak_labels(screen, spectrum_rect, visible_spectrum,
+                          np.arange(1, visible_spectrum.size + 1, dtype=float),
+                          0.0, DEMON_DISPLAY_MAX_HZ,
+                          None if modulation is None else float(modulation))
     black, contrast, palette, history_fraction = _display_controls(game)
     history_rows = max(1, round(config.SONAR_DEMON_HISTORY_ROWS * history_fraction))
     rows = [np.asarray(row)[:int(DEMON_DISPLAY_MAX_HZ)]
@@ -1068,10 +1201,10 @@ def _draw_tma(game, panel):
                (plot.x, plot.bottom + 24, plot.w - 145, 18), DIM, 12)
         rate = (f"{summary['rate']:+.2f} deg/min"
                 if summary["rate"] is not None else "-- deg/min")
-        _text(screen, localize(message(
+        _text(screen, message(
                       "sonar.tma_summary", rate=rate, legs=summary["legs"],
-                      geometry=display_value("tma", summary["geometry"]),
-                      state=display_value("tma", summary["state"]))),
+                      geometry=display_message("tma", summary["geometry"]),
+                      state=display_message("tma", summary["state"])),
               (plot.x + 8, plot.y + 8, plot.w - 16, 20),
               AMBER if summary["state"] != "LOESUNG STABIL" else CYAN, 13)
     else:
@@ -1125,10 +1258,10 @@ def _draw_environment(game, panel):
     target = float(tow.get("depth_target_m", actual))
     ay = plot.y + round(min(actual, max_depth) / max_depth * (plot.h - 1))
     pygame.draw.line(screen, (120, 210, 170), (plot.x, ay), (plot.right - 1, ay), 1)
-    _text(screen, message("sonar.line.tow", state=display_value('tow', tow['state']),
+    _text(screen, message("sonar.line.tow", state=display_message('tow', tow['state']),
                           payout=f"{tow['payout_percent']:.0f}", actual=f"{actual:.0f}",
                           target=f"{target:.0f}"),
-          (plot.right - 180, ay - 19, 172, 18), (120, 210, 170), 12, "right")
+          (plot.right - 248, ay - 19, 240, 18), (120, 210, 170), 12, "right")
 
     y = plot.bottom + 29
     _text(screen, "sonar.array_comparison", (panel.x + 16, y, panel.w - 32, 20), CYAN, 14)
@@ -1402,9 +1535,10 @@ def _draw_contacts(game, rect):
             release = localize("sonar.release.short_released"
                                if getattr(contact, "released_to_opz", False)
                                else "sonar.release.short_private")
-            contact_line = (message("sonar.line.contact",
-                                    contact=observations.contact_display_id(game, contact),
-                                    label=label) + " " + release)
+            contact_line = (localize(message(
+                "sonar.line.contact",
+                contact=observations.contact_display_id(game, contact),
+                label=label)) + " " + release)
             _text(screen, contact_line,
                   (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)
             _text(screen, message("sonar.line.bearing_value",
@@ -1473,13 +1607,12 @@ def draw_sonar_view(game, tr=None) -> None:
         tow_pause = (" " + localize(message("ui.pause"))
                      if not tow["handling_ok"] and tow["state"] in (
                          "DEPLOYING", "RETRIEVING") else "")
-        tow_ready = (localize(message("ui.ready")) if tow["available"] else
-                     localize(message("sonar.stability",
-                                      value=f"{tow['performance']:.0%}")))
-        ping = (localize(message("sonar.ping_echo")) if getattr(sonar, "ping_active", False) else
-                localize(message("sonar.ping_ready")) if getattr(sonar, "ping_ready", True) else
-                 localize(message("sonar.ping_cooldown", seconds=
-                                  f"{getattr(sonar, 'ping_cooldown_remaining', 0):.0f}")))
+        tow_ready = (message("ui.ready") if tow["available"] else
+                     message("sonar.stability", value=f"{tow['performance']:.0%}"))
+        ping = (message("sonar.ping_echo") if getattr(sonar, "ping_active", False) else
+                message("sonar.ping_ready") if getattr(sonar, "ping_ready", True) else
+                message("sonar.ping_cooldown", seconds=
+                        f"{getattr(sonar, 'ping_cooldown_remaining', 0):.0f}"))
         audio_status = getattr(game, "sonar_audio_status", None)
         audio = (audio_status() if audio_status is not None else dict(
             global_enabled=bool(getattr(getattr(game, "audio", None), "enabled", False)),
@@ -1487,35 +1620,43 @@ def draw_sonar_view(game, tr=None) -> None:
             local_enabled=bool(getattr(game, "sonar_audio_enabled", False)),
             mode=getattr(sonar, "audition_mode", "BROADBAND"),
             volume=float(getattr(game, "sonar_volume", 0.0)),
-            muted_above_1x=False,
             audible=False))
+        on_off = lambda flag: message("ui.on" if flag else "ui.off")
         statuses = (
-            localize(message("sonar.status.array", array=display_value("array", mode),
-                             state=display_value("tow", tow["state"]),
-                             payout=f"{tow['payout_percent']:.0f}", ready=tow_ready,
-                             pause=tow_pause)),
-            localize(message("sonar.status.listen",
-                              bearing=f"{getattr(sonar, 'listen_bearing', 0) % 360:05.1f}",
-                              gain=f"{getattr(sonar, 'gain_db', 0):+.0f}", ping=ping)),
-            localize(message("sonar.status.filter",
-                             mode=display_value("audition_mode", audio["mode"]),
-                             low=f"{getattr(sonar, 'band_low_hz', 0):.0f}",
-                             high=f"{getattr(sonar, 'band_high_hz', 300):.0f}",
-                             notch=localize("ui.on" if getattr(sonar, "notch_enabled", False)
-                                             else "ui.off"))),
-            localize(message("sonar.status.audio",
-                             global_state=localize("ui.on" if audio["global_enabled"] else "ui.off"),
-                             device=localize("ui.on" if audio["device_available"] else "ui.off"),
-                             local_state=localize("ui.on" if audio["local_enabled"] else "ui.off"),
-                             volume=f"{audio['volume']:.0%}",
-                              state=localize("sonar.audio.stale" if audio.get("stale")
-                                             else "sonar.audio.audible" if audio["audible"]
-                                             else "sonar.audio.silent"))),
+            message("sonar.status.array", array=display_message("array", mode),
+                    state=display_message("tow", tow["state"]),
+                    payout=f"{tow['payout_percent']:.0f}", ready=tow_ready,
+                    pause=tow_pause),
+            message("sonar.status.listen",
+                    bearing=f"{getattr(sonar, 'listen_bearing', 0) % 360:05.1f}",
+                    gain=f"{getattr(sonar, 'gain_db', 0):+.0f}", ping=ping),
+            message("sonar.status.filter",
+                    mode=display_message("audition_mode", audio["mode"]),
+                    low=f"{getattr(sonar, 'band_low_hz', 0):.0f}",
+                    high=f"{getattr(sonar, 'band_high_hz', 300):.0f}",
+                    notch=on_off(getattr(sonar, "notch_enabled", False))),
+            message("sonar.status.audio",
+                    global_state=on_off(audio["global_enabled"]),
+                    device=on_off(audio["device_available"]),
+                    local_state=on_off(audio["local_enabled"]),
+                    volume=f"{audio['volume']:.0%}",
+                    state=message("sonar.audio.stale" if audio.get("stale")
+                                  else "sonar.audio.audible" if audio["audible"]
+                                  else "sonar.audio.silent")),
         )
-        status_w = (station.w - 28) // len(statuses)
-        for i, status in enumerate(statuses):
-            status_rect = pygame.Rect(station.x + 14 + i * status_w,
-                                      station.y + 43, status_w - 8, 23)
+        # Chips share the row by need: full wording when everything fits,
+        # otherwise the catalog abbreviations, never a clipped reading.
+        chip_font = layout.font(13)
+        room = station.w - 28 - 8 * len(statuses) - 14 * len(statuses)
+        forms = [layout.fit_line(item, chip_font, 10_000) for item in statuses]
+        if sum(chip_font.size(text)[0] for text in forms) > room:
+            forms = [localize((short_candidates(item) or [item])[-1]) for item in statuses]
+        natural = [max(1, chip_font.size(text)[0]) for text in forms]
+        spare = max(0, room - sum(natural)) // len(statuses)
+        x = station.x + 14
+        for status, width in zip(forms, natural):
+            status_rect = pygame.Rect(x, station.y + 43, width + spare + 14, 23)
+            x = status_rect.right + 8
             pygame.draw.rect(screen, PANEL, status_rect)
             _text(screen, status, status_rect.move(7, 3).inflate(-14, 0),
                   CYAN if i == 0 else DIM, 13)

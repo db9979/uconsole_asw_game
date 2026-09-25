@@ -68,7 +68,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 
 ## Wetter- & Sonar-Analyse (Taste 0) {#ref-weather-station}
 
-Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; auch in der Pause). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü.
+Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; die Simulation läuft weiter). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü.
 
 - **Umwelt:** Uhrzeit, Tageslicht (Tag, bürgerliche oder nautische Dämmerung, Nacht), Mondphase, Wetter und Niederschlag, Sicht, Wind mit Böen und Beaufort, Seegang, Barometer mit 3-Stunden-Tendenz (steigend, stabil, fallend, rasch fallend), Luft- und Wassertemperatur, Wolkenuntergrenze und Vereisung. Rasch fallender Luftdruck unter etwa 1004 hPa löst eine Sturmwarnung aus. Das Wetter ändert sich höchstens um eine Seegangsstufe pro Stunde, deshalb bewegt sich das Barometer schneller als ein echtes.
 - **Wettereinflüsse:** Sonne (starke Sprungschicht), Wind (tiefere Deckschicht) und Regen oder Schnee (süßeres Oberflächenwasser, Regenrauschen) leuchten, solange sie wirken.
@@ -110,3 +110,25 @@ U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint
 | HFDF | Kurzwellenpeilung (High Frequency Direction Finding) |
 | EMCON | Emissionskontrolle: Radare aus |
 | ROE | Einsatzregeln (Rules of Engagement) |
+
+## Bildschirm-Abkürzungen {#ref-abbreviations}
+
+Passt eine volle Beschriftung nicht auf den 1280x720-Bildschirm, zeigt die Station die Katalog-Abkürzung, statt den Text abzuschneiden. Das F11-Log und die Tooltips zeigen immer den vollen Wortlaut.
+
+| Kurz | Bedeutung |
+|---|---|
+| KRS/FRT | Kurs / Fahrt |
+| EGG, KAV | Eigengeräusch in %, Kavitation |
+| SG/SCHICHT | Seegang / gemessene Schichttiefe (BT) |
+| FLUT | Mittlere Flutung |
+| TORP, VLS/DÜPP | Verbleibende Torpedos, VLS-Zellen / Düppel-Nachladen |
+| HELO/ROE, HGR | Helikopterzustand / Einsatzregeln, Hangar |
+| PLG, G, N | Peilung, Verstärkung, Notch |
+| BB, FILT, HET | Breitband-, gefiltertes, Überlagerungs-Abhören |
+| VERST, AUSBR, EINH, AUSGEBR, STAB | Schleppsonar verstaut, ausbringen, einholen, ausgebracht, Stabilität |
+| BER, N/BER | Bereit, nicht bereit |
+| UNB, FRD, NEU, FEI | Zugehörigkeit: unbekannt, Freund, neutral, Feind |
+| SEE, UBT, LFT, FKR, TOR | Domäne: See, Unterwasser, Luft, Flugkörper, Torpedo |
+| RDR S/L | Radar See / Luft |
+| T, W, KZ | Tauchsonartiefe, Wassertiefe, Ping-Kühlzeit |
+| P-Rate, Soll | Peilrate, Sollwert |

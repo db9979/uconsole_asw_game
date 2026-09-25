@@ -42,7 +42,6 @@ Globale Tasten (alle Stationen):
 | `5 / 6 / 7 / 8` | OPZ / Funk / Maschine / Helikopter |
 | `9` | Elektronische Kampffuehrung / ESM |
 | `Nummer der aktiven Station` | Erneut druecken, um die Seite dieser Station weiterzuschalten |
-| `P` | Pause / Weiter (nur P) |
 | `Pfeiltasten` | Stationsbezogene Auswahl oder Einstellung |
 | `+ / -` | Telegraph (an jeder Station verfuegbar) |
 | `F1 / ?` | Hilfe (diese Anzeige) |
@@ -53,6 +52,7 @@ Globale Tasten (alle Stationen):
 | `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte) |
 | `F9` | Lokale Commander-LAN-Verwaltung oeffnen |
 | `F10` | Optionen: Sprache, Vollbild, Audio, grosser Text, Tooltips, Bildrate |
+| `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
 | `N` | Nationen & Einheiten; im Sonar: Notchfilter |
 | `S / L` | Speichern / Laden (Slots 1-5) |
 | `Alt+Enter` | Vollbild (alle Stationen) |
@@ -75,7 +75,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
 
-`F1` (oder `?`) öffnet jederzeit die Hilfe. Sie hat vier Kategorien: globale Tasten, aktuelle Station (Tasten und Standardablauf), Sensoren und Taktik sowie dieses Handbuch.
+Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; `F11` blendet das volle Ereignislog und die Telemetrie über der Station ein, ohne sie anzuhalten oder ihr die Tasten zu nehmen. `F1` (oder `?`) öffnet jederzeit die Hilfe. Sie hat vier Kategorien: globale Tasten, aktuelle Station (Tasten und Standardablauf), Sensoren und Taktik sowie dieses Handbuch.
 
 ### Unterwasserakustik in fünf Minuten
 
@@ -100,7 +100,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 
 - Entfernungen in Seemeilen (sm), Fahrt in Knoten (kn), Tiefe in Metern, Frequenz in Hz.
 - Kurse und Peilungen sind rechtweisende Grad: 000 Nord, im Uhrzeigersinn. Karten sind genordet.
-- Bei 1x ist eine echte Sekunde eine Simulationssekunde. Es gibt keine Zeitraffung; `P` pausiert.
+- Das Spiel läuft immer in Echtzeit: eine echte Sekunde ist eine Simulationssekunde. Es gibt weder Zeitraffer noch Pause; auch Menüs, Hilfe, Optionen, Speichern/Laden und ein Fokuswechsel halten die Simulation nicht an.
 - Das Schiff dreht höchstens 0,8 Grad pro Sekunde; Fahrtänderungen dauern Minuten. Manöver früh planen.
 
 ### Die erste Patrouille
@@ -118,7 +118,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 
 - Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
-- `F10` (oder `O` in der Pause): Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt).
+- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste.
 - `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen.
 
 ## 1 Brücke
@@ -150,7 +150,7 @@ Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt d
 
 - **Kurs / Ruder:** aktueller Kurs, befohlener Kurs, Ruderlage und Drehkreis.
 - **Fahrt / Akustik:** Telegraphenstufe, Fahrt, Eigenlärm in Prozent und Warnung KAVITATION über 15 kn.
-- **Taktische Lage:** beobachtete Bedrohungen (z. B. Torpedopeilung oder Flugkörperbedrohung), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht.
+- **Taktische Lage:** beobachtete Bedrohungen (gehörter Torpedo-Starttransient oder HF-Ortungsimpulse, ein vom Sonar als Torpedo klassifizierter Kontakt oder ein als möglicher Flugkörper markierter Luftkontakt), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht.
 - **Karte:** synthetische Kartentiefe und Küste, eigenes Schiff, von anderen Stationen veröffentlichte Tracks. Mausrad oder `Q`/`E` zoomen, Ziehen verschiebt, `K` folgt dem eigenen Schiff.
 
 ### Ausguck-Meldungen
@@ -206,8 +206,8 @@ Gefechtslage:
 
 ### Nicht modelliert
 
-- Keine Zeitraffung und keine Autopilot-Wegpunkte für die Fregatte.
-- Kein eigener Torpedoalarm-Ablauf: anlaufende Torpedos erscheinen nur als Sonarkontakt und in der taktischen Lage, wenn sie beobachtet werden; der Ausguck meldet nur eine sichtbare Laufbahn.
+- Keine Zeitraffung, keine Pause und keine Autopilot-Wegpunkte für die Fregatte.
+- Keine automatische Torpedoerkennung: der Alarm beruht nur auf gehörten Intercepts oder der Klassifizierung des Sonarbedieners; ein außerhalb der Suchkopfreichweite leise laufender Torpedo kann unangekündigt eintreffen. Der Ausguck meldet nur eine sichtbare Laufbahn.
 - Der Ausguck liest weder Schiffsnamen noch Flagge und meldet keine Lichter oder Signalkörper.
 
 ## 2 Sonar
@@ -253,6 +253,7 @@ Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen
 - Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie; `K` schaltet die erkannte Harmonischen-Hypothese.
 - Das eigene Schiff erzeugt eine Wellenlinie bei etwa 10 + 1,9 x eigene Fahrt Hz. `N` blendet sie per Notch aus.
 - `Leertaste` hält Spitzen, damit schwache Töne hervortreten.
+- Der Spektrumstreifen über dem Wasserfall schreibt die Frequenz über jede deutliche Linie (zwischen den Klassen interpoliert; mit `Leertaste` die gehaltene Hüllkurve). Wo sich Werte überdecken würden, behält die stärkere Linie ihre Beschriftung. Der Remote-Crew-Browser beschriftet seine Spektren genauso.
 - `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
 
 #### DEMON
@@ -269,7 +270,7 @@ DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraube
     Welle Blatt 2. Harmonische
 ```
 
-Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefenster sind bis zu 2 s lang: nach einer Peilungsänderung mindestens eine Sekunde horchen, bevor Sie urteilen. Gerankte Kandidaten aus dem Akustikkatalog erscheinen als Hinweis; die Klassifizierung bleibt Ihre Entscheidung.
+Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefenster sind bis zu 2 s lang: nach einer Peilungsänderung mindestens eine Sekunde horchen, bevor Sie urteilen. Gerankte Kandidaten aus dem Akustikkatalog erscheinen als Hinweis; die Klassifizierung bleibt Ihre Entscheidung. Der Spektrumstreifen beschriftet jede deutliche Modulationslinie mit ihrer Frequenz; die stärkste ist bernsteinfarben markiert.
 
 #### TMA, Umwelt und Aktiv
 
@@ -330,7 +331,7 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 | `K` | Erkannte Harmonik-Hypothese waehlen oder loeschen |
 | `SPACE` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA fuer ausgewaehlten Kontakt ein/aus |
-| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug) |
+| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
 | `G` | Gewaehlt Kontakt unabhaengig von der Klassifikation an OPZ freigeben / zurueckziehen |
 | `M` | Ausgewaehlten Kontakt als Ziel setzen |
 
@@ -344,7 +345,7 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 
 Gefechtslage:
 
-1. Ein neuer, hoher, schnell wandernder Kontakt kann ein Torpedo sein. Peilung sofort an die Brücke melden.
+1. Ein Starttransient, hochfrequente Ortungsimpulse oder ein neuer lauter Breitbandkontakt ohne Tonale mit schnell wandernder Peilung kann ein Torpedo sein. Als Torpedo klassifizieren (`C`) und die Peilung sofort an die Brücke melden.
 2. Fokus auf dem feindlichen U-Boot halten, damit das Draht-Datum des Torpedos frisch bleibt.
 3. Nur pingen, wenn die Tiefe für den Schuss fehlt oder der Kontakt verloren geht: das U-Boot hört einen Ping bis 60 sm und weicht aus.
 
@@ -360,6 +361,7 @@ Gefechtslage:
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
 - Wracks liefern echte Echos ohne Doppler. Ein U-Boot, das still neben einem kartierten Wrack auf Grund liegt, versteckt sich vor einem CW-Ping in dessen Echo (750 m Entfernungszelle); ein LFM-Ping löst etwa 8 m auf und kann Boot und Wrack trennen. Jedes Wrack, das der Gegner erreichen konnte, ist verdächtig.
 - Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.
+- Das Sonar benennt nie einen Torpedo oder ein U-Boot. Es meldet, was es hört: einen mechanischen Starttransient (hörbar bis 35 NM) oder hochfrequente Ortungsimpulse (etwa 6 NM) als Peilung, die der Brückenalarm 60 s hält, und Sinkgeräusche, wenn ein Rumpf sinkt. Das OPZ-Symbol eines Sonarkontakts folgt allein Ihrer Klassifizierung; ein unklassifizierter Kontakt bleibt unbekannt.
 
 ### Nicht modelliert
 
@@ -599,9 +601,11 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 ### Tipps für Profis
 
 - Radar ist eine Aussendung, die feindliches ESM auffassen kann. Radare abschalten (EMCON), wenn Tarnung wichtiger ist als das Luftlagebild.
+- Das Radar weiß nicht, was ein Luftkontakt ist. Die Bedrohungsbewertung markiert einen Luftkontakt nur aus seinen eigenen Messungen als möglichen Flugkörper (ASM): schneller als 300 kn in höchstens 150 m Höhe oder ein Störstrobe; ein tief und schnell anfliegendes Angriffsflugzeug kann dieselbe Markierung auslösen. Die Markierung braucht etwa eine Sekunde Plots, CIWS und ESSM bekämpfen nur markierte Tracks, und HFDF-Fixe sowie unklassifizierte Sonarkontakte tragen keine Domäne, bis Sie sie klassifizieren.
 - Seezielflugkörper fliegen in etwa 20 m Höhe (auf den letzten 5 sm in 5 m): das Radar sieht sie erst innerhalb etwa 20 sm, und ein störender Flugkörper liefert bis zum Durchbrennen nur eine Home-on-Jam-Peilung (HOJ). Flugkörper fliegen trägheitsgelenkt zu ihrem Startdatum; dann muss der Suchkopf das Schiff 1,5 s in seinem Kegel haben, bevor er ansteuert. Angriffsflugzeuge steigen vor jeder Salve für einige Sekunden auf etwa 300 m, um ihr Feuerleitradar aufzuschalten (eine ESM-Warnung und ein früher Radarkontakt).
 - Düppel legt neben dem Schiff eine Wolke, die in etwa 3 s aufblüht und mit dem Wind treibt; früh genug werfen, damit die Wolke aufblühen kann. Das CIWS muss erst auf den Flugkörper schwenken und trifft meist auf den letzten paar hundert Metern.
 - Zugehörigkeit ist Ihr Vermerk. Ein als FREUND oder NEUTRAL markierter Kontakt sperrt jeden Torpedoschuss darauf.
+- Kartensymbole folgen dem NATO-Stil auf der uConsole und auf jeder Remote-Crew-Karte: der Rahmen zeigt Ihre Zugehörigkeit (Feind Raute, Neutral Quadrat, Freund breites Rechteck, Unbekannt Vierpass), das innere Zeichen die beobachtete Domäne.
 - `J` vergibt eine gemeinsame Track-ID, die die ganze Crew (und Remote-Crew-Browser) sieht.
 - `Enter` bestätigt einen Angriff auf einen Live-Kontakt (echter Verkehr), nachdem Sie ihn als feindlich klassifiziert haben; auf unklassifizierte Kontakte wird nie automatisch gefeuert.
 
@@ -771,7 +775,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `Shift+B` | Modus der nächsten Boje PASSIV / AKTIV |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
-| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug) |
+| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
 | `G / Shift+G` | Tauchsonarkontakt waehlen / an OPZ freigeben oder zurueckziehen |
 | `Y` | Hubschrauber-Tauchsonar absenken / einholen |
 | `U / V` | Solltiefe des Tauchsonars heben / senken |
@@ -807,7 +811,7 @@ Angriffsablauf:
 
 ### Tipps für Profis
 
-- Das Tauchsonar unter die Schicht legen (mit dem Bathythermographen im Sonar messen), um tiefe U-Boote zu hören.
+- Das Tauchsonar unter die Schicht legen, um tiefe U-Boote zu hören. Die Tauchanzeige zeigt die Schicht am Helikopter erst, wenn der abgesenkte Dom sie durchfahren hat; vorher nur die Kartentiefe.
 - Bojen vor den geschätzten Zielkurs legen, nicht auf das letzte Datum.
 - `F` bestätigt einen Helikopterkontakt; `Shift+G` gibt ihn wie einen Sonarkontakt an die OPZ frei.
 - Auf der Akustikseite schaltet `T` die Horchquelle zwischen Tauchsonar und jeder passiven Boje.
@@ -961,7 +965,7 @@ Alle Werte sind die Standardwerte der aktuellen Spielversion. Eigene Schwierigke
 
 ### Wetter- & Sonar-Analyse (Taste 0)
 
-Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; auch in der Pause). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü.
+Taste `0` öffnet über jeder Station ein Analysepanel über den ganzen Bildschirm (`0` oder `Esc` schließt es; die Simulation läuft weiter). Im Web-Client öffnet jede Station es mit `0` oder über das Arbeitsplatz-Menü.
 
 - **Umwelt:** Uhrzeit, Tageslicht (Tag, bürgerliche oder nautische Dämmerung, Nacht), Mondphase, Wetter und Niederschlag, Sicht, Wind mit Böen und Beaufort, Seegang, Barometer mit 3-Stunden-Tendenz (steigend, stabil, fallend, rasch fallend), Luft- und Wassertemperatur, Wolkenuntergrenze und Vereisung. Rasch fallender Luftdruck unter etwa 1004 hPa löst eine Sturmwarnung aus. Das Wetter ändert sich höchstens um eine Seegangsstufe pro Stunde, deshalb bewegt sich das Barometer schneller als ein echtes.
 - **Wettereinflüsse:** Sonne (starke Sprungschicht), Wind (tiefere Deckschicht) und Regen oder Schnee (süßeres Oberflächenwasser, Regenrauschen) leuchten, solange sie wirken.
@@ -1003,3 +1007,25 @@ U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint
 | HFDF | Kurzwellenpeilung (High Frequency Direction Finding) |
 | EMCON | Emissionskontrolle: Radare aus |
 | ROE | Einsatzregeln (Rules of Engagement) |
+
+### Bildschirm-Abkürzungen
+
+Passt eine volle Beschriftung nicht auf den 1280x720-Bildschirm, zeigt die Station die Katalog-Abkürzung, statt den Text abzuschneiden. Das F11-Log und die Tooltips zeigen immer den vollen Wortlaut.
+
+| Kurz | Bedeutung |
+|---|---|
+| KRS/FRT | Kurs / Fahrt |
+| EGG, KAV | Eigengeräusch in %, Kavitation |
+| SG/SCHICHT | Seegang / gemessene Schichttiefe (BT) |
+| FLUT | Mittlere Flutung |
+| TORP, VLS/DÜPP | Verbleibende Torpedos, VLS-Zellen / Düppel-Nachladen |
+| HELO/ROE, HGR | Helikopterzustand / Einsatzregeln, Hangar |
+| PLG, G, N | Peilung, Verstärkung, Notch |
+| BB, FILT, HET | Breitband-, gefiltertes, Überlagerungs-Abhören |
+| VERST, AUSBR, EINH, AUSGEBR, STAB | Schleppsonar verstaut, ausbringen, einholen, ausgebracht, Stabilität |
+| BER, N/BER | Bereit, nicht bereit |
+| UNB, FRD, NEU, FEI | Zugehörigkeit: unbekannt, Freund, neutral, Feind |
+| SEE, UBT, LFT, FKR, TOR | Domäne: See, Unterwasser, Luft, Flugkörper, Torpedo |
+| RDR S/L | Radar See / Luft |
+| T, W, KZ | Tauchsonartiefe, Wassertiefe, Ping-Kühlzeit |
+| P-Rate, Soll | Peilrate, Sollwert |

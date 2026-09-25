@@ -23,7 +23,7 @@ const t = (key) => key;
 const finite = Number.isFinite;
 let protocolMode = 'v2', connected = true, generation = 1;
 let session = {client_id:'crew', csrf:'csrf', station:'sonar', station_generation:2, grants:{sonar_audio:true}};
-let v2State = {session:'world', epoch:1, role:'sonar', phase:'live', clock:{time_scale:1}, sonar:{settings:{station_down:false}}};
+let v2State = {session:'world', epoch:1, role:'sonar', phase:'live', clock:{}, sonar:{settings:{station_down:false}}};
 let sonarAudioEnabled = true, sonarAudioController = null, sonarAudioSources = [], sonarAudioSequence = null;
 let sonarAudioTimer = null, sonarAudioNextTime = 0, sonarAudioGeneration = 0;
 let sonarAudioSocket = null, sonarAudioWorklet = null, sonarAudioReconnect = null;

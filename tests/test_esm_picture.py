@@ -226,7 +226,7 @@ def test_radar_off_esm_on_and_parallel_evidence(monkeypatch):
     game.sim_t = 1.0
     game._update_air_picture(full_scan=True)
     game._update_esm_picture()
-    assert f"W-{actor.id}" in game.air_picture._tracks
+    assert f"S-{actor.id}" in game.air_picture._tracks
     assert game.eloka_tracks()
 
 

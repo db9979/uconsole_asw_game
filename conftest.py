@@ -21,6 +21,17 @@ def pytest_configure(config):
     config.add_cleanup(patch.undo)
     patch.setattr(game_config, "SAVE_DIR", saves.name)
     patch.setattr(game_config, "SAVE_PATH", os.path.join(saves.name, "save.json"))
+    # Session-wide guard as well: nothing in a test run (collection, threads
+    # outliving a test, helpers) may write the real ~/.u-jagd/settings.json.
+    from pathlib import Path
+    from src.core import preferences as preferences_module
+    real_path = preferences_module.default_preferences_path
+
+    def isolated_path():
+        return Path(saves.name) / "settings.json"
+
+    isolated_path.__wrapped__ = real_path
+    patch.setattr(preferences_module, "default_preferences_path", isolated_path)
 
 
 @pytest.fixture(autouse=True)

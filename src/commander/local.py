@@ -2,7 +2,7 @@
 
 Construction opens nothing. prepare() performs bounded interface discovery once;
 activate(game) is the only start path. pump(game) belongs to the main wall loop,
-including paused frames, and stop() uses the transport's bounded shutdown.
+including menu frames, and stop() uses the transport's bounded shutdown.
 """
 
 import ipaddress
@@ -469,11 +469,11 @@ class CommanderConsole:
                     server._rotate_code_locked()
                 ok = True
             elif action == "accept_target":
-                ok = not game.paused and self.bridge.accept_proposal(game)
+                ok = self.bridge.accept_proposal(game)
             elif action == "reject_target":
                 ok = self.bridge.reject_proposal(game)
             elif action == "accept_navigation":
-                ok = not game.paused and self.bridge.accept_navigation(game)
+                ok = self.bridge.accept_navigation(game)
             elif action == "reject_navigation":
                 ok = self.bridge.reject_navigation(game)
             else:
@@ -490,7 +490,7 @@ class CommanderConsole:
         self._confirm_mouse_selection = None
 
     def _decide_confirmation(self, game, accepted):
-        if not self.confirm_visible(game) or game.paused or game.input_mode is not None:
+        if not self.confirm_visible(game) or game.input_mode is not None:
             return
         decide = ((self.bridge.accept_proposal if accepted else self.bridge.reject_proposal)
                   if self.confirm_kind == "target" else
@@ -528,7 +528,7 @@ class CommanderConsole:
                 pygame.Rect(panel.x + 408, panel.bottom - 84, 338, 42))
 
     def handle_confirm_click(self, game, canvas):
-        if not self.confirm_visible(game) or game.paused or game.input_mode is not None:
+        if not self.confirm_visible(game) or game.input_mode is not None:
             return False
         if not self.confirm_rect().collidepoint(canvas):
             return False

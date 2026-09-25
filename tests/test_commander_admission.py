@@ -88,7 +88,7 @@ class Requests:
 
 
 @pytest.mark.parametrize("language", ["en", "de"])
-def test_popup_waits_for_input_owner_blocks_simulation_and_can_defer(language):
+def test_popup_waits_for_input_owner_keeps_simulation_live_and_can_defer(language):
     game = Game(seed=7, start_menu=False, audio_enabled=False, language=language)
     console = game.commander
     console.server = Requests()
@@ -102,7 +102,7 @@ def test_popup_waits_for_input_owner_blocks_simulation_and_can_defer(language):
     assert admission.request and game.commander_open and not game.held
     before = game.sim_t
     game.update(.1)
-    assert game.sim_t == before
+    assert game.sim_t > before
     console.draw(game)
     assert all(pygame.Rect(0, 0, 1280, 720).contains(rect) for rect in admission.rects())
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE))

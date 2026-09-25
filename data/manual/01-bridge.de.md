@@ -27,7 +27,7 @@ Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt d
 
 - **Kurs / Ruder:** aktueller Kurs, befohlener Kurs, Ruderlage und Drehkreis.
 - **Fahrt / Akustik:** Telegraphenstufe, Fahrt, Eigenlärm in Prozent und Warnung KAVITATION über 15 kn.
-- **Taktische Lage:** beobachtete Bedrohungen (z. B. Torpedopeilung oder Flugkörperbedrohung), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht.
+- **Taktische Lage:** beobachtete Bedrohungen (gehörter Torpedo-Starttransient oder HF-Ortungsimpulse, ein vom Sonar als Torpedo klassifizierter Kontakt oder ein als möglicher Flugkörper markierter Luftkontakt), Sensorzustand (Radar, TAS), Mittel (Helikopter, Bojen) und Wetter/Tag-Nacht.
 - **Karte:** synthetische Kartentiefe und Küste, eigenes Schiff, von anderen Stationen veröffentlichte Tracks. Mausrad oder `Q`/`E` zoomen, Ziehen verschiebt, `K` folgt dem eigenen Schiff.
 
 ## Ausguck-Meldungen {#bridge-lookout}
@@ -70,6 +70,6 @@ Gefechtslage:
 
 ## Nicht modelliert {#bridge-limits}
 
-- Keine Zeitraffung und keine Autopilot-Wegpunkte für die Fregatte.
-- Kein eigener Torpedoalarm-Ablauf: anlaufende Torpedos erscheinen nur als Sonarkontakt und in der taktischen Lage, wenn sie beobachtet werden; der Ausguck meldet nur eine sichtbare Laufbahn.
+- Keine Zeitraffung, keine Pause und keine Autopilot-Wegpunkte für die Fregatte.
+- Keine automatische Torpedoerkennung: der Alarm beruht nur auf gehörten Intercepts oder der Klassifizierung des Sonarbedieners; ein außerhalb der Suchkopfreichweite leise laufender Torpedo kann unangekündigt eintreffen. Der Ausguck meldet nur eine sichtbare Laufbahn.
 - Der Ausguck liest weder Schiffsnamen noch Flagge und meldet keine Lichter oder Signalkörper.

@@ -264,16 +264,19 @@ def test_all_runtime_views_draw_at_1280x720_in_both_languages_and_pseudolocale(t
     for translator in translators:
         game.translator = translator
         game.tr = translator.t
-        for large_text in (False, True):
-            game.preferences = replace(game.preferences, large_text=large_text)
+        for large_text, mode in ((False, "ticker"), (True, "ticker"),
+                                 (False, "docked"), (True, "docked")):
+            game.preferences = replace(game.preferences, large_text=large_text,
+                                       bottom_panel=mode)
             game._apply_text_size()
             for station in Station:
                 game.station = station
-                station_rect = pygame.Rect(
-                    config.STATION_PANEL_RECT if station in (
-                        Station.BRIDGE, Station.WEAPONS, Station.HELICOPTER)
-                    else config.OPZ_STATION_RECT if station is Station.OPZ
-                    else config.FULL_STATION_RECT)
+                with layout.bottom_panel_regions(mode):
+                    station_rect = pygame.Rect(
+                        config.STATION_PANEL_RECT if station in (
+                            Station.BRIDGE, Station.WEAPONS, Station.HELICOPTER)
+                        else config.OPZ_STATION_RECT if station is Station.OPZ
+                        else config.FULL_STATION_RECT)
                 pages = range(6) if station is Station.SONAR else range(1)
                 for page in pages:
                     game.sonar_page = page

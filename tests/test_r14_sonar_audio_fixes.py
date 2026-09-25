@@ -89,8 +89,7 @@ def test_audio_status_separates_device_and_local_controls():
     assert status["device_available"] is False
     assert status["local_enabled"] is True
     assert status["mode"] == "HETERODYNE" and not status["audible"]
-    assert game.time_scale == 1
-    assert game.sonar_audio_status()["muted_above_1x"] is False
+    assert "muted_above_1x" not in game.sonar_audio_status()
 
 
 def test_independent_fixes_coexist_have_separate_ages_and_expire_without_draw():

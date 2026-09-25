@@ -5,29 +5,35 @@ fingerprint diagram for each.
 This mirrors tools/gen_contact_analysis_images.py's philosophy: no
 third-party library, no embedded fonts (PDF's standard Helvetica/
 Helvetica-Bold), no timestamps, so two runs on the same catalog produce
-byte-identical output. The fingerprint diagrams are deliberately NOT the dark,
-on-screen analyzer images (data/contact_analysis/*.png) scaled up - those are
-tuned for a backlit uConsole panel, not paper. Instead this tool renders its
-own light, ink-sparing diagrams straight from the same catalog data (machine
-acoustic lines/broadband, radar emitters), with a bigger reference font so the
-axis numbers stay legible when printed.
+byte-identical output. The diagrams are deliberately NOT the dark on-screen
+analyzer images (data/contact_analysis/*.png) scaled up - those are tuned for
+a backlit uConsole panel, not paper. They are light, ink-sparing prints of the
+same station screens from the same data: the receiver's LOFAR/DEMON history
+and measured peaks of each catalog signature, and the ELOKA signal fingerprint
+of each catalog emitter, on white paper with a bigger reference font so the
+measured values stay legible when printed.
 """
 
 import argparse
-import math
 import os
 import sys
 import zlib
 from pathlib import Path
+
+import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.core.i18n import Translator  # noqa: E402
 from src.core.version import APP_VERSION  # noqa: E402
 from src.data.contact_analysis import project_contact_catalog  # noqa: E402
+from src.core import config  # noqa: E402
+from src.sensors.esm import signal_fingerprint  # noqa: E402
+from src.ui.sonar_view import (DEMON_DISPLAY_MAX_HZ, _linear_lofar,  # noqa: E402
+                               waterfall_pixels)
 from tools.gen_contact_analysis_images import (  # noqa: E402
-    RADAR_MAX_HZ, RADAR_MIN_HZ, RADAR_PRF_MAX_HZ, RADAR_PRF_MIN_HZ,
-    SPECTRUM_MAX_HZ, SPECTRUM_MIN_HZ, _DIGITS, _line, _pixel)
+    DISPLAY_BLACK, DISPLAY_CONTRAST, _DIGITS, _format_hz, _line, _pixel,
+    _receiver_history, _reference_track, _scaled, _signature_key)
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "dist" / "u-jagd-unit-reference.pdf"
@@ -42,22 +48,27 @@ IMAGE_KINDS = ("acoustic_cruise", "acoustic_high", "radar")
 # plot) than the on-screen dark diagrams - see the module docstring.
 PRINT_SIZE = (900, 510)
 FONT_SCALE = 7  # each _DIGITS bitmap pixel becomes an FONT_SCALE x FONT_SCALE block
-P_LEFT, P_RIGHT = 76, 880
-P_TOP, P_SPECTRAL_BOTTOM = 34, 326
-P_DEMON_TOP, P_DEMON_BOTTOM = 376, 456
+AXIS_SCALE = 5
+VALUE_SCALE = 5
+P_LEFT, P_RIGHT = 14, 885
+# (x, y, w, h) regions of the printed sonar screen.
+P_LOFAR_TRACE = (P_LEFT, 6, P_RIGHT - P_LEFT + 1, 64)
+P_LOFAR = (P_LEFT, 74, P_RIGHT - P_LEFT + 1, 172)
+P_DEMON_TRACE = (P_LEFT, 292, P_RIGHT - P_LEFT + 1, 50)
+P_DEMON = (P_LEFT, 346, P_RIGHT - P_LEFT + 1, 116)
 
 _BG = (255, 255, 255)
-_GRID = (226, 226, 226)
+_GRID = (205, 205, 205)
 _AXIS = (70, 70, 70)
 _LABEL = (25, 25, 25)
-_TONAL = (10, 95, 135)
-_BAND_LINE = (30, 110, 150)
-_BAND_FILL = (221, 236, 245)
-_SHAFT_COLOR = (15, 105, 150)
-_BLADE_COLOR = (190, 120, 15)
-# One fixed colour per emitter row, in catalog (listed) order - kept distinct
-# in both hue and lightness so it still reads on a grayscale/B&W printer.
-ROW_COLORS = ((25, 60, 140), (195, 95, 10), (15, 120, 70), (150, 15, 95))
+_INK = (10, 70, 105)       # waterfall energy: dark teal ink on white paper
+_TRACE = (20, 20, 20)
+_PEAK = (175, 95, 0)       # measured DEMON modulation peak (amber on screen)
+_ESM_BORDER = (120, 150, 130)
+_ESM_GRID = (220, 228, 224)
+_ESM_SPECTRUM = (175, 105, 0)
+_ESM_WAVEFORM = (15, 120, 70)
+ESM_LABEL_W = 214
 
 
 def _canvas():
@@ -113,9 +124,9 @@ def _hatch(pixels, x0, x1, y0, y1, color, step=9):
             _pixel(pixels, width, height, x, y, color)
 
 
-def _label(pixels, value, x, y, *, align="center", color=_LABEL):
-    advance = 4 * FONT_SCALE
-    label_width = len(value) * advance - FONT_SCALE
+def _label(pixels, value, x, y, *, align="center", color=_LABEL, scale=FONT_SCALE):
+    advance = 4 * scale
+    label_width = len(value) * advance - scale
     if align == "center":
         x -= label_width // 2
     elif align == "right":
@@ -130,176 +141,168 @@ def _label(pixels, value, x, y, *, align="center", color=_LABEL):
                 start = column
                 while column < len(bits) and bits[column] == "1":
                     column += 1
-                span_x0 = x + start * FONT_SCALE
-                span_x1 = x + column * FONT_SCALE - 1
-                for dy in range(FONT_SCALE):
-                    _fill_row(pixels, span_x0, span_x1, y + row * FONT_SCALE + dy, color)
+                span_x0 = x + start * scale
+                span_x1 = x + column * scale - 1
+                for dy in range(scale):
+                    _fill_row(pixels, span_x0, span_x1, y + row * scale + dy, color)
         x += advance
 
 
-def _log_x(value, vmin, vmax):
-    value = max(vmin, min(vmax, value))
-    span = math.log10(vmax / vmin)
-    return P_LEFT + round((P_RIGHT - P_LEFT) * math.log10(value / vmin) / span)
+def _label_width(value, scale):
+    return len(value) * 4 * scale - scale
 
 
-def spectral_x(frequency):
-    return _log_x(frequency, SPECTRUM_MIN_HZ, SPECTRUM_MAX_HZ)
+def _rect(pixels, rect, color, thickness=1):
+    x0, y0, w, h = rect
+    _hline(pixels, x0, x0 + w - 1, y0, color, thickness)
+    _hline(pixels, x0, x0 + w - 1, y0 + h - thickness, color, thickness)
+    _vline(pixels, x0, y0, y0 + h - 1, color, thickness)
+    _vline(pixels, x0 + w - thickness, y0, y0 + h - 1, color, thickness)
 
 
-def radar_spectral_x(frequency):
-    return _log_x(frequency, RADAR_MIN_HZ, RADAR_MAX_HZ)
+def _polyline(pixels, rect, values, color, thickness=2):
+    x0, y0, w, h = rect
+    values = [min(1.0, max(0.0, float(value))) for value in values]
+    points = [(x0 + round(i * (w - 1) / max(1, len(values) - 1)),
+               y0 + h - 1 - round(value * (h - 1)))
+              for i, value in enumerate(values)]
+    for offset in range(thickness):
+        for (ax, ay), (bx, by) in zip(points, points[1:]):
+            _line(pixels, *PRINT_SIZE, ax, ay + offset, bx, by + offset, color)
 
 
-def radar_prf_x(frequency):
-    return _log_x(frequency, RADAR_PRF_MIN_HZ, RADAR_PRF_MAX_HZ)
-
-
-def _tint(color, strength=6):
-    return tuple(255 - (255 - channel) // strength for channel in color)
-
-
-def print_acoustic_plot(machine, speed, *, include_hypotheses=False):
-    """A light, print-friendly acoustic fingerprint: a single connected
-    spectrum trace (ink proportional to the shape, not its filled area)
-    instead of the dark diagram's hatched/shaded peaks."""
-    pixels = _canvas()
-    lines = machine[f"{speed}_lines"]
-    broadband = machine[f"{speed}_broadband"]
-
-    for step in range(5):
-        y = P_TOP + (P_SPECTRAL_BOTTOM - P_TOP) * step // 4
-        _hline(pixels, P_LEFT, P_RIGHT, y, _GRID)
-    for frequency in (5, 10, 100, 1000, 10000):
-        _vline(pixels, spectral_x(frequency), P_TOP, P_SPECTRAL_BOTTOM, _GRID)
-
-    if broadband is not None:
-        x0, x1 = spectral_x(broadband[1]), spectral_x(broadband[2])
-        y0 = P_SPECTRAL_BOTTOM - round((P_SPECTRAL_BOTTOM - P_TOP) * broadband[0])
-        _hatch(pixels, x0, x1, y0, P_SPECTRAL_BOTTOM - 1, _BAND_FILL)
-        _hline(pixels, x0, x1, y0, _BAND_LINE, thickness=2)
-        _vline(pixels, x0, y0, P_SPECTRAL_BOTTOM, _BAND_LINE, thickness=2)
-        _vline(pixels, x1, y0, P_SPECTRAL_BOTTOM, _BAND_LINE, thickness=2)
-
+def _blit(pixels, image, x0, y0):
     width = PRINT_SIZE[0]
-    tonal_level = [0.0] * width
-    for frequency, level, line_width in sorted(lines):
-        center = spectral_x(frequency)
-        half_width = max(.05, line_width / 2.0)
-        x0 = min(center - 1, spectral_x(max(SPECTRUM_MIN_HZ, frequency - half_width)))
-        x1 = max(center + 1, spectral_x(min(SPECTRUM_MAX_HZ, frequency + half_width)))
-        x0, x1 = max(P_LEFT, x0), min(P_RIGHT, x1)
-        for x in range(x0, x1 + 1):
-            shape = (x - x0) / max(1, center - x0) if x <= center else (x1 - x) / max(1, x1 - center)
-            tonal_level[x] = max(tonal_level[x], level * max(0.0, shape))
-    previous = None
-    for x in range(P_LEFT, P_RIGHT + 1):
-        y = P_SPECTRAL_BOTTOM - round((P_SPECTRAL_BOTTOM - P_TOP) * tonal_level[x])
-        if previous is not None:
-            _line(pixels, *PRINT_SIZE, previous[0], previous[1], x, y, _TONAL)
-        previous = (x, y)
+    image = np.ascontiguousarray(image, dtype=np.uint8)
+    for row in range(image.shape[0]):
+        start = ((y0 + row) * width + x0) * 3
+        pixels[start:start + image.shape[1] * 3] = image[row].tobytes()
 
-    _hline(pixels, P_LEFT, P_RIGHT, P_SPECTRAL_BOTTOM, _AXIS, thickness=2)
-    _vline(pixels, P_LEFT, P_TOP, P_SPECTRAL_BOTTOM, _AXIS, thickness=2)
-    for value, y in (("1", P_TOP), (".5", (P_TOP + P_SPECTRAL_BOTTOM) // 2),
-                     ("0", P_SPECTRAL_BOTTOM)):
-        _label(pixels, value, P_LEFT - 10, y - 3 * FONT_SCALE // 2, align="right")
-    for frequency, value in ((5, "5"), (10, "10"), (100, "100"), (1000, "1k"), (10000, "10k")):
-        x = spectral_x(frequency)
-        _label(pixels, value, min(P_RIGHT, max(P_LEFT, x)), P_SPECTRAL_BOTTOM + 10,
-              align="right" if frequency == 10000 else "center")
 
-    for y in (P_DEMON_TOP, P_DEMON_BOTTOM):
-        _hline(pixels, P_LEFT, P_RIGHT, y, _AXIS, thickness=2)
-    for frequency in (0, 20, 40, 60, 80):
-        x = P_LEFT + round((P_RIGHT - P_LEFT) * frequency / 80)
-        _vline(pixels, x, P_DEMON_BOTTOM - 6, P_DEMON_BOTTOM, _AXIS, thickness=2)
-        _label(pixels, str(frequency), x, P_DEMON_BOTTOM + 10,
-              align="right" if frequency == 80 else "center")
-    shaft = machine["shaft_rpm"] if include_hypotheses else None
-    if shaft is not None:
-        def demon_x(frequency):
-            return P_LEFT + round((P_RIGHT - P_LEFT) * max(0.0, min(80.0, frequency)) / 80.0)
+def _plated_label(pixels, value, x, y, color, scale=VALUE_SCALE):
+    """A measured value on a white plate so it stays legible over traces."""
+    for row in range(y - scale, y + 6 * scale):
+        _fill_row(pixels, x - scale, x + _label_width(value, scale) + scale, row, _BG)
+    _label(pixels, value, x, y, align="left", color=color, scale=scale)
 
-        shaft_x0, shaft_x1 = demon_x(shaft[0] / 60.0), demon_x(shaft[-1] / 60.0)
-        shaft_y = P_DEMON_TOP + 18
-        _hline(pixels, shaft_x0, shaft_x1, shaft_y, _SHAFT_COLOR, thickness=3)
-        _vline(pixels, shaft_x0, shaft_y - 9, shaft_y + 9, _SHAFT_COLOR, thickness=3)
-        _vline(pixels, shaft_x1, shaft_y - 9, shaft_y + 9, _SHAFT_COLOR, thickness=3)
-        blades = machine["blade_count"]
-        if blades is not None:
-            blade_x0 = demon_x(shaft[0] * blades / 60.0)
-            blade_x1 = demon_x(shaft[-1] * blades / 60.0)
-            blade_y = P_DEMON_BOTTOM - 18
-            _hline(pixels, blade_x0, blade_x1, blade_y, _BLADE_COLOR, thickness=3)
-            _vline(pixels, blade_x0, blade_y - 9, blade_y + 9, _BLADE_COLOR, thickness=3)
-            _vline(pixels, blade_x1, blade_y - 9, blade_y + 9, _BLADE_COLOR, thickness=3)
+
+def _waterfall(pixels, rows, rect):
+    image = waterfall_pixels(rows, black_level=DISPLAY_BLACK,
+                             contrast=DISPLAY_CONTRAST, colors=(_BG, _INK))
+    _blit(pixels, _scaled(image, rect[3], rect[2]), rect[0], rect[1])
+
+
+def _axis(pixels, trace, rect, divisions, step, unit):
+    x0, _, w, _ = rect
+    bottom = rect[1] + rect[3] - 1
+    for index in range(divisions + 1):
+        x = x0 + round(index * (w - 1) / divisions)
+        _vline(pixels, x, trace[1], bottom, _GRID)
+        text = str(index * step) + (unit if index == divisions else "")
+        _label(pixels, text, x, bottom + 8, scale=AXIS_SCALE,
+               align="left" if index == 0 else "right" if index == divisions else "center")
+    _rect(pixels, trace, _GRID)
+    _rect(pixels, rect, _AXIS)
+
+
+def print_acoustic_plot(machine, speed):
+    """Light print of the reference sonar screen: LOFAR 0-300 Hz and DEMON
+    0-50 Hz waterfalls from the station receiver, with measured values."""
+    pixels = _canvas()
+    lofar_rows, demon_rows, demon_peak, lofar_peaks = _receiver_history(
+        _signature_key(machine[f"{speed}_lines"], machine[f"{speed}_broadband"]))
+    plot_w = P_RIGHT - P_LEFT + 1
+
+    lofar = np.asarray([_linear_lofar(row, plot_w)
+                        for row in np.clip(lofar_rows, 0.0, 1.0)])
+    _waterfall(pixels, lofar, P_LOFAR)
+    _axis(pixels, P_LOFAR_TRACE, P_LOFAR, 6, 50, "Hz")
+    _polyline(pixels, P_LOFAR_TRACE, lofar[-1], _TRACE)
+
+    def lofar_x(frequency):
+        return P_LEFT + round(frequency / config.LOFAR_FMAX_HZ * (plot_w - 1))
+
+    levels = [-100, -100]
+    for frequency in lofar_peaks:
+        text = _format_hz(round(frequency, 1))
+        x = lofar_x(frequency)
+        _vline(pixels, x, P_LOFAR_TRACE[1] + P_LOFAR_TRACE[3] - 14,
+               P_LOFAR_TRACE[1] + P_LOFAR_TRACE[3] - 1, _PEAK, thickness=2)
+        left = min(P_RIGHT - _label_width(text, VALUE_SCALE) - 6,
+                   max(P_LEFT + 6, x - _label_width(text, VALUE_SCALE) // 2))
+        for level, right in enumerate(levels):
+            if left > right + 2 * VALUE_SCALE:
+                levels[level] = left + _label_width(text, VALUE_SCALE)
+                _plated_label(pixels, text, left,
+                              P_LOFAR_TRACE[1] + 4 + level * 7 * VALUE_SCALE, _PEAK)
+                break
+
+    demon = np.asarray(demon_rows)[:, :int(DEMON_DISPLAY_MAX_HZ)]
+    _waterfall(pixels, demon, P_DEMON)
+    _axis(pixels, P_DEMON_TRACE, P_DEMON, 5, 10, "Hz")
+    _polyline(pixels, P_DEMON_TRACE, np.concatenate(([0.0], demon[-1])), _TRACE)
+    if demon_peak is not None and 0.0 <= demon_peak <= DEMON_DISPLAY_MAX_HZ:
+        x = P_LEFT + round(demon_peak / DEMON_DISPLAY_MAX_HZ * (plot_w - 1))
+        _vline(pixels, x - 1, P_DEMON_TRACE[1], P_DEMON[1] + P_DEMON[3] - 1,
+               _PEAK, thickness=3)
+        text = _format_hz(round(demon_peak, 1)) + "Hz"
+        width = _label_width(text, VALUE_SCALE)
+        label_x = x + 10 if x + 10 + width < P_RIGHT else x - 10 - width
+        _plated_label(pixels, text, label_x, P_DEMON_TRACE[1] + 8, _PEAK)
     return bytes(pixels)
 
 
+def _print_fingerprint(pixels, rect, track):
+    x0, y0, w, h = rect
+    _rect(pixels, rect, _ESM_BORDER, thickness=2)
+    _label(pixels, f"{track.frequency_hz / 1e9:.3f}GHz", x0 + 8, y0 + 7,
+           align="left", color=_ESM_SPECTRUM, scale=4)
+    if track.prf_hz is not None:
+        _label(pixels, f"{track.prf_hz:.0f}Hz", x0 + w - 9, y0 + 7,
+               align="right", color=_ESM_WAVEFORM, scale=4)
+    gx, gy, gw, gh = x0 + 8, y0 + 34, w - 16, h - 42
+    split = gy + gh // 2
+    for fraction in (.25, .5, .75):
+        _vline(pixels, gx + round(gw * fraction), gy, gy + gh - 1, _ESM_GRID, 2)
+    _hline(pixels, gx, gx + gw - 1, split, _ESM_GRID, 2)
+    fingerprint = signal_fingerprint(track, samples=48, bins=40)
+    _polyline(pixels, (gx, gy + 2, gw, split - gy - 6), fingerprint.spectrum,
+              _ESM_SPECTRUM, thickness=4)
+    _polyline(pixels, (gx, split + 4, gw, gy + gh - split - 6),
+              [(value + 1.0) / 2.0 for value in fingerprint.waveform],
+              _ESM_WAVEFORM, thickness=4)
+
+
 def print_radar_plot(emitters):
-    """A light, print-friendly radar/ESM fingerprint: one outlined row per
-    catalog emitter, in listed order (never a hidden identity)."""
+    """Light print of the ELOKA signal fingerprints: one row per catalog
+    emitter (RF/PRF band), one fingerprint per catalog modulation."""
     pixels = _canvas()
-
-    for step in range(5):
-        y = P_TOP + (P_SPECTRAL_BOTTOM - P_TOP) * step // 4
-        _hline(pixels, P_LEFT, P_RIGHT, y, _GRID)
-    for frequency in (1e9, 2e9, 4e9, 8e9, 18e9):
-        _vline(pixels, radar_spectral_x(frequency), P_TOP, P_SPECTRAL_BOTTOM, _GRID)
-    _hline(pixels, P_LEFT, P_RIGHT, P_SPECTRAL_BOTTOM, _AXIS, thickness=2)
-    _vline(pixels, P_LEFT, P_TOP, P_SPECTRAL_BOTTOM, _AXIS, thickness=2)
-    for frequency, value in ((1e9, "1"), (2e9, "2"), (4e9, "4"), (8e9, "8"), (18e9, "18")):
-        x = radar_spectral_x(frequency)
-        _label(pixels, value, min(P_RIGHT, max(P_LEFT, x)), P_SPECTRAL_BOTTOM + 10,
-              align="right" if frequency == 18e9 else "center")
-
-    for y in (P_DEMON_TOP, P_DEMON_BOTTOM):
-        _hline(pixels, P_LEFT, P_RIGHT, y, _AXIS, thickness=2)
-    for frequency, value in ((100.0, "100"), (1000.0, "1k"), (10_000.0, "10k")):
-        x = radar_prf_x(frequency)
-        _vline(pixels, x, P_DEMON_BOTTOM - 6, P_DEMON_BOTTOM, _AXIS, thickness=2)
-        _label(pixels, value, x, P_DEMON_BOTTOM + 10,
-              align="right" if frequency == 10_000.0 else "center")
-
-    rows = len(emitters)
-    row_span = (P_SPECTRAL_BOTTOM - P_TOP) / rows
+    width, height = PRINT_SIZE
+    rows = max(1, len(emitters))
+    row_h = (height - 8) // rows
     for index, emitter in enumerate(emitters):
-        color = ROW_COLORS[index % len(ROW_COLORS)]
-        fill = _tint(color)
-        y0 = P_TOP + round(row_span * index) + 6
-        y1 = P_TOP + round(row_span * (index + 1)) - 6
-        if y1 <= y0:
-            y1 = y0 + 1
-        lo, hi = emitter["frequency_band_hz"]
-        x0, x1 = radar_spectral_x(lo), radar_spectral_x(hi)
-        if x1 <= x0:
-            x1 = x0 + 1
-        _hatch(pixels, x0, x1, y0, y1, fill)
-        _hline(pixels, x0, x1, y0, color, thickness=2)
-        _hline(pixels, x0, x1, y1, color, thickness=2)
-        _vline(pixels, x0, y0, y1, color, thickness=2)
-        _vline(pixels, x1, y0, y1, color, thickness=2)
-
-        if emitter["prf_band_hz"] is None:
-            continue
-        row_y = (P_DEMON_TOP + 18 if rows == 1 else
-                 P_DEMON_TOP + 12 + round((P_DEMON_BOTTOM - P_DEMON_TOP - 24) * index / (rows - 1)))
-        plo, phi = emitter["prf_band_hz"]
-        px0, px1 = radar_prf_x(plo), radar_prf_x(phi)
-        if px1 <= px0:
-            px1 = px0 + 1
-        _hline(pixels, px0, px1, row_y, color, thickness=3)
-        _vline(pixels, px0, row_y - 9, row_y + 9, color, thickness=3)
-        _vline(pixels, px1, row_y - 9, row_y + 9, color, thickness=3)
+        y0 = 4 + index * row_h
+        low, high = emitter["frequency_band_hz"]
+        _label(pixels, f"{_format_hz(low / 1e9)}-{_format_hz(high / 1e9)}GHz",
+               6, y0 + row_h // 2 - 28, align="left", color=_ESM_SPECTRUM, scale=4)
+        if emitter["prf_band_hz"] is not None:
+            plow, phigh = emitter["prf_band_hz"]
+            _label(pixels, f"{_format_hz(plow)}-{_format_hz(phigh)}Hz",
+                   6, y0 + row_h // 2 + 6, align="left", color=_ESM_WAVEFORM, scale=4)
+        codes = emitter.get("modulation_codes") or ["unknown"]
+        box_w = (width - 4 - ESM_LABEL_W - 10 * (len(codes) - 1)) // len(codes)
+        for slot, modulation in enumerate(codes):
+            _print_fingerprint(
+                pixels, (ESM_LABEL_W + slot * (box_w + 10), y0 + 3, box_w, row_h - 6),
+                _reference_track(emitter, modulation))
     return bytes(pixels)
 
 
 def _print_image(kind, machine, emitters):
     if kind == "acoustic_cruise":
-        return print_acoustic_plot(machine, "cruise", include_hypotheses=True)
+        return print_acoustic_plot(machine, "cruise")
     if kind == "acoustic_high":
-        return print_acoustic_plot(machine, "high_speed", include_hypotheses=False)
+        return print_acoustic_plot(machine, "high_speed")
     return print_radar_plot(emitters)
 
 

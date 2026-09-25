@@ -427,9 +427,9 @@ def test_options_eight_and_f9_live_menu_ownership(game, monkeypatch):
     monkeypatch.setattr(game.commander, "prepare", Mock())
     key(game, pygame.K_F10)
     assert game.options_open
-    for _ in range(10):
+    for _ in range(11):
         key(game, pygame.K_DOWN)
-    assert game.options_sel == 10
+    assert game.options_sel == 11
     key(game, pygame.K_RETURN)
     assert game.commander_open and game.administration_open and not game.options_open
     key(game, pygame.K_ESCAPE)
@@ -456,7 +456,7 @@ def test_f9_does_not_steal_existing_owner(game, owner):
         assert getattr(game, owner) is value
 
 
-def test_admin_blocks_held_mouse_joystick_weapons_and_simulation(game):
+def test_admin_blocks_held_mouse_joystick_and_weapons_but_not_simulation(game):
     game.commander._prepared = True
     game.held.add(pygame.K_LEFT)
     game._joy_turn = 1
@@ -478,7 +478,10 @@ def test_admin_blocks_held_mouse_joystick_weapons_and_simulation(game):
     # Enter remains a local proposal decision, never station weapon input.
     assert game.commander.server is None
     game.update(.1)
-    assert (game.ship.target_course, game.ship.target_speed, game.sim_t, game.station) == before
+    # The administration overlay owns input; real time keeps running behind it.
+    assert (game.ship.target_course, game.ship.target_speed, game.station) == (
+        before[0], before[1], before[3])
+    assert game.sim_t == pytest.approx(before[2] + .1)
     assert not game.torpedoes and not game.held
 
 
@@ -504,16 +507,17 @@ def test_remote_lease_locks_matching_uconsole_station_but_preserves_host_keys(ga
 
 
 @pytest.mark.parametrize("solo", [False, True])
-def test_time_scale_keys_cannot_change_speed_under_the_station_lock(game, solo):
+def test_legacy_time_keys_do_nothing_under_the_station_lock(game, solo):
     game.commander.server = RosterTransport((roster_client(
         "crew", "Crew", 0, station="bridge", command=True),))
     game.commander.solo = solo
     game.station = Station.BRIDGE
     telegraph = game.ship.telegraph
-    before = game.time_scale_idx
 
     key(game, pygame.K_x, mod=0)
-    assert game.time_scale_idx == before == 0
+    before = game.sim_t
+    game.update(.1)
+    assert game.sim_t == pytest.approx(before + .1)
     key(game, pygame.K_PLUS, mod=0)
     assert game.ship.telegraph == telegraph  # station input stays locked either way
 
@@ -570,14 +574,13 @@ def test_paired_lobby_client_is_connected_but_not_active_crew(game):
 
     assert game.commander.connected
     assert not game.commander.active_crew
-    assert not game.crew_overlay_allows_simulation()
 
 
 def test_clicks_share_rows_and_reject_letterbox(game, monkeypatch):
     game.commander._prepared = True
     game._open_administration("options")
     monkeypatch.setattr(pygame.display, "get_window_size", lambda: (1280, 1000))
-    rect = game._options_row_rects()[10]
+    rect = game._options_row_rects()[11]
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
                                         pos=(rect.centerx, 20)))
     assert game.options_open
@@ -949,7 +952,7 @@ def test_crew_message_box_single_proposal_decisions_are_local_and_non_pausing(
     console.pump(game)
 
     assert console.confirm_visible(game) and console.confirm_kind == kind
-    assert not game.paused and not game.administration_open
+    assert not game.administration_open
     game.update(.1)
     assert game.sim_t > before_t
     key(game, pygame.K_F6 if accept else pygame.K_F7)
@@ -996,7 +999,7 @@ def test_crew_message_box_target_first_cycles_and_esc_suppresses_only_sequence(g
     assert console.confirm_visible(game) and console.confirm_kind == "navigation"
 
 
-def test_crew_message_box_open_clears_controls_once_and_pause_blocks_decisions(
+def test_crew_message_box_open_clears_controls_once_and_p_does_not_pause(
         game, monkeypatch):
     console, server, _ = session(game)
     clear = Mock(wraps=game._clear_controls)
@@ -1010,13 +1013,12 @@ def test_crew_message_box_open_clears_controls_once_and_pause_blocks_decisions(
     assert clear.call_count == 1
     assert not game.held and game._joy_turn == 0 and game._map_drag is None
 
+    before = game.sim_t
     key(game, pygame.K_p)
-    assert game.paused and console.confirm_visible(game)
+    game.update(.1)
+    assert game.sim_t > before and console.confirm_visible(game)
     key(game, pygame.K_F6)
-    assert console.bridge.proposal["status"] == "pending"
-    key(game, pygame.K_p)
-    key(game, pygame.K_F6)
-    assert not game.paused and console.bridge.proposal["status"] == "accepted"
+    assert console.bridge.proposal["status"] == "accepted"
 
 
 @pytest.mark.parametrize("owner,value", [
@@ -1162,9 +1164,9 @@ def test_failed_candidate_load_never_touches_console_completed_load_waits_for_pu
 
 
 @pytest.mark.parametrize("fail", [False, True])
-def test_run_pumps_before_update_even_paused_and_always_stops(game, monkeypatch, fail):
+def test_run_pumps_before_update_even_in_menu_and_always_stops(game, monkeypatch, fail):
     order = []
-    game.paused = True
+    game.in_menu = True
     monkeypatch.setattr(pygame.event, "get", lambda: [])
     monkeypatch.setattr(game.commander, "pump", lambda current: order.append("pump"))
     monkeypatch.setattr(game.commander, "stop", lambda: order.append("stop"))

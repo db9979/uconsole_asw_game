@@ -8,7 +8,7 @@ import tempfile
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
-from src.core.config import FPS_CHOICES, FPS_DEFAULT
+from src.core.config import BOTTOM_PANEL_MODES, FPS_CHOICES, FPS_DEFAULT
 from src.core.i18n import SUPPORTED_LANGUAGES, detect_system_language
 
 _MAX_CREDENTIAL_LEN = 256
@@ -26,6 +26,9 @@ class Preferences:
     high_contrast: bool = False
     # Frame-rate cap from FPS_CHOICES; the default 30 saves uConsole CPU.
     frame_rate: int = FPS_DEFAULT
+    # Event feed + telemetry: "ticker" (one status strip, full feed on F11)
+    # frees station space on the 1280x720 uConsole; "docked" is the 180 px band.
+    bottom_panel: str = "ticker"
     live_ais_enabled: bool = False
     live_adsb_enabled: bool = False
     aisstream_api_key: str = ""
@@ -64,6 +67,9 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     frame_rate = payload.get("frame_rate", defaults.frame_rate)
     values["frame_rate"] = (frame_rate if type(frame_rate) is int
                             and frame_rate in FPS_CHOICES else defaults.frame_rate)
+    bottom_panel = payload.get("bottom_panel", defaults.bottom_panel)
+    values["bottom_panel"] = (bottom_panel if bottom_panel in BOTTOM_PANEL_MODES
+                              else defaults.bottom_panel)
     for name in ("aisstream_api_key", "opensky_credentials"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value.strip()[:_MAX_CREDENTIAL_LEN] \

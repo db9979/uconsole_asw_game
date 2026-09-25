@@ -37,7 +37,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 <!-- keys:web -->
 
-`F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
+The bottom status ticker shows the newest event and key telemetry; `F11` opens the full event log and telemetry over the station without stopping it or taking its keys. `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
 
 ## Underwater acoustics in five minutes {#qs-acoustics}
 
@@ -62,7 +62,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Distances in nautical miles (NM), speed in knots (kn), depth in metres, frequency in Hz.
 - Courses and bearings are true degrees: 000 north, clockwise. Charts are north-up.
-- At 1x one real second is one simulated second. There is no time acceleration; `P` pauses.
+- The game always runs in real time: one real second is one simulated second. There is no time acceleration and no pause; menus, help, options, save/load and losing window focus do not stop the simulation either.
 - The ship turns at up to 0.8 degrees per second; speed changes take minutes. Plan manoeuvres early.
 
 ## Your first patrol {#qs-first-patrol}
@@ -80,5 +80,5 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10` (or `O` while paused): options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default).
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band.
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.

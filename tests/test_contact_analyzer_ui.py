@@ -149,7 +149,8 @@ def test_f8_opens_analyzer_in_running_game_and_esc_returns_to_game():
     assert isinstance(game.editor, ContactAnalyzer)
     assert not game.in_menu and not game.main_menu
     game.update(1.0)
-    assert game.sim_t == before  # Simulation steht waehrend der TUA offen ist
+    assert game.sim_t > before  # Echtzeit: die Simulation laeuft hinter der TUA weiter
+    before = game.sim_t
     game.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_F8, unicode="", mod=0))
     assert isinstance(game.editor, ContactAnalyzer)  # kein Re-Entry
@@ -158,18 +159,18 @@ def test_f8_opens_analyzer_in_running_game_and_esc_returns_to_game():
     assert game.editor is None
     assert not game.in_menu and not game.main_menu
     game.update(1.0)
-    assert game.sim_t > before  # Simulation laeuft wieder
+    assert game.sim_t > before
 
 
-def test_f8_analyzer_keeps_active_remote_crew_phase_live():
+@pytest.mark.parametrize("active_crew", [False, True])
+def test_f8_analyzer_keeps_remote_crew_phase_live(active_crew):
     from src.core.game import Game
 
     game = Game(seed=811, start_menu=False, audio_enabled=False)
-    game.commander.active_crew = True
+    game.commander.active_crew = active_crew
     game._open_analyzer_in_game()
     assert isinstance(game.editor, ContactAnalyzer)
     assert game.commander.bridge._phase(game) == "live"
-    assert game.commander.bridge._phase(game, local=True) == "blocked"
 
 
 def test_f8_keeps_commander_confirmation_priority(monkeypatch):

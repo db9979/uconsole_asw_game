@@ -72,7 +72,7 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 
 - Nine stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,
   Engineering, Helicopter Deck, and Electronic Warfare/ESM.
-- Four built-in scenarios, fully configurable custom difficulty, pause, and real-time simulation.
+- Four built-in scenarios, fully configurable custom difficulty, and continuous real-time simulation (no pause, no time acceleration).
 - Passive HMS and towed-array sonar, active sonar, broadband and LOFAR
   displays, DEMON analysis, bathythermograph readings, and bearing-only TMA.
 - Surface and air radar, AIS, ESM, HFDF, manual classification and affiliation,
@@ -97,7 +97,7 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
   same observation-led controls, and use separately granted direct fire.
   The browser console is a one-viewport desktop layout with a station tab bar.
   `python main.py --solo-crew` (or the F9 "Crew mode" row) lets one browser run
-  all nine stations plus pause, save/load and new game while the
+  all nine stations plus save/load and new game while the
   uConsole stays the simulation server; see [Remote Crew setup](docs/commander-coop.md).
 - Conservative station Autocrew with local `F2` control and an `F3` overview.
   Remote Crew temporarily suspends Autocrew only for the leased station.
@@ -197,12 +197,11 @@ most important global controls are:
 | `1` to `9` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter, Electronic Warfare/ESM; press the active station number again to advance its page when available |
 | `F` / `Shift+F` / `B` at ESM | Cycle signal-status, minimum-threat, and frequency-band filters |
 | `Tab` / `Shift+Tab` | Next / previous station |
-| `P` | Pause / resume |
 | `F1` | Context-sensitive help |
 | `F2` / `F3` | Toggle Autocrew for the current station / open the Autocrew overview |
 | `F4` | Open SimLog when enabled |
 | `F8` | Open the tactical unit analyzer; cycles a visible Commander proposal when applicable |
-| `F10` | Options; while paused, `O` also opens options |
+| `F10` | Options |
 | `F9` | Local Commander LAN administration |
 | `S` / `L` | Save / load using slots 1 to 5; at OPZ/CIC, `L` is the contextual fusion command |
 | `+` / `-` | Engine telegraph |
@@ -224,7 +223,7 @@ torpedo-depth adjustments use real time, not the selected simulation multiplier.
 
 The bottom event feed is shared by all stations. It retains operational reports,
 completed orders, and alerts—including mission outcome, weapon and defensive
-events, damage, radio traffic, navigation, and pause/time state. Short-lived
+events, damage, radio traffic, and navigation. Short-lived
 input prompts, invalid-entry hints, selections, and display settings remain in
 the transient status banner instead of displacing operational history.
 
@@ -346,14 +345,15 @@ full-truth snapshots, including hidden units; reconnecting establishes a silent
 event baseline rather than replaying old alarms.
 
 While a browser owns a station lease, matching station input on the uConsole is
-read-only. Host administration, pause, and switching to another station remain
+read-only. Host administration and switching to another station remain
 available; revoking the lease restores local operation immediately.
 
 The service starts **off on every launch**. Access and grants are not saved.
-World replacement revokes active authority on the next main-thread frame. Manual
-pause, focus loss, save/load, quit, nations, real editors, menus and splash lock
-browser changes. With an active crew station, F1 help, the in-game F8 analyzer,
-F9 crew administration and F10 options keep simulation and browser stations live.
+World replacement revokes active authority on the next main-thread frame. The
+mission always runs in real time: local menus and overlays (help, options, save/load,
+quit confirmation, F8 analyzer, F9 administration) and focus loss never pause it,
+so browser stations stay live behind them. Only the main menu and splash lock
+browser changes.
 Browser sonar sound requires an explicit host grant and a local user gesture;
 reconnecting does not replay old audio. Its Broadband, Filtered, and Heterodyne
 listening modes use the selected band, notch, and gain controls. Clicking or

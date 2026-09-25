@@ -58,7 +58,7 @@ Fehlerberichten.
   Anfrage; eine genehmigte Station wird automatisch geöffnet. Danach kann jede
   behaltene Lease über die stabile Stationsauswahl geöffnet werden.
 - Eine Station mit aktiver Lease ist auf der uConsole schreibgeschützt, bis der
-  Host ihre Lease widerruft. F9-Verwaltung, Pause und das Umschalten der lokalen
+  Host ihre Lease widerruft. F9-Verwaltung und das Umschalten der lokalen
   Anzeige auf eine andere Station bleiben verfügbar; behaltene inaktive
   Browser-Leases bleiben exklusiv.
 - Kontaktauswahl, Kartenverschiebung/-zoom/-verfolgung, Arbeitsplatzseiten,
@@ -96,11 +96,11 @@ Fehlerberichten.
 - Die Sprachkoordination erfolgt über eine vorhandene externe Sprachverbindung
   oder im direkten Gespräch. Es gibt weder integrierten Chat noch Mikrofonaufnahme
   oder allgemeine Befehlsausführung.
-- Manuelle Pause, Fokusverlust, Speichern/Laden, Beenden, Nationen, echte Editoren,
-  Menüs und der Splash-Sperrbildschirm sperren Remote-Änderungen. Bei einer aktiven
-  Besatzungsstation lassen F1-Hilfe, der spielinterne F8-Analyzer, die
-  F9-Besatzungsverwaltung und die F10-Optionen Simulation und Remote-Stationen
-  weiterlaufen; ohne aktive Besatzung behalten sie ihr normales Pausenverhalten.
+- Die Mission läuft immer in Echtzeit und lässt sich nicht pausieren. Lokale Menüs
+  und Overlays (F1-Hilfe, Optionen, Speichern/Laden, Beenden-Abfrage, Nationen, der
+  spielinterne F8-Analyzer, F9-Verwaltung) und ein Fokusverlust lassen Simulation
+  und Remote-Stationen weiterlaufen. Nur Hauptmenü und Splash sperren
+  Remote-Änderungen.
   Unbekannte oder veraltete Beobachtungen liefern nicht allein deshalb zusätzliche
   Informationen, weil Commander sie auswählt. Menü-, Editor- und Splash-Seiten
   geben keine vorgenerierte taktische Welt preis.
@@ -127,8 +127,7 @@ bezeichnet ihre projizierten Sonarbojen kurz als `SB01`, `SB02` und so weiter.
 
 Das Wetterinstrument der Brücke zeigt den maßgeblichen Tag-/Nachtzustand,
 effektiven Seegang, Wetterart, Wind, Regen und Sicht. Seine zurückhaltende Wellen-
-und Regenanimation folgt der projizierten Simulationszeit und friert bei Pause
-ein. Die Helikopterbereitschaft zeigt Wetterfreigaben für Start und Tauchsonar
+und Regenanimation folgt der projizierten Simulationszeit. Die Helikopterbereitschaft zeigt Wetterfreigaben für Start und Tauchsonar
 sowie Querwind getrennt an. Der Autocrew-Status ist in jeder Browserrolle nur
 lesbar; gesteuert wird Autocrew lokal durch den Host.
 
@@ -186,7 +185,7 @@ Direktfeuer, Sonar-Audio und SimLog, es kann nur ein Browser koppeln (ein zweite
 erhält `session_limit`, bis der erste im Roster entfernt wird), und Leases verfallen
 nicht. Ein Moduswechsel widerruft alle Sitzungen und rotiert den Code.
 
-Der Solo-Browser erhält zusätzlich eine **Spielsteuerungsleiste**: Pause/Fortsetzen,
+Der Solo-Browser erhält zusätzlich eine **Spielsteuerungsleiste**:
 Speichern und Laden (Slots 1-5) sowie Neues Spiel (Szenario,
 Welt, Schwierigkeit, optionaler Seed). Laden oder ein neues Spiel ersetzt die Welt,
 der Browser bleibt aber gekoppelt; alles, was er für die alte Welt vorbereitet hatte,

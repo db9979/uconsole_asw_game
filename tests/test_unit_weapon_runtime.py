@@ -515,7 +515,8 @@ def test_protected_observed_annotations_block_both_launchers(game, affiliation, 
     assert (game.helo.torps, game.torpedo_count) == before
 
 
-@pytest.mark.parametrize("prefix", ["U", "S", "W"])
+# Warships share the civilian S-<id> radar track form; no W- namespace exists.
+@pytest.mark.parametrize("prefix", ["U", "S"])
 def test_protected_annotation_survives_measurement_expiry(game, prefix):
     assign_contact(game)
     game.opz_affiliations[f"{prefix}-9001"] = "FRIEND"
@@ -565,7 +566,7 @@ def test_essm_terminal_acquisition_collision_and_loss():
 
 
 def test_essm_launch_on_observed_track_does_not_require_live_target(game):
-    game.air_picture.observe(track_id="A-10", kind="ASM", target_id=10,
+    game.air_picture.observe(track_id="M-10", kind="ASM", target_id=10,
                              source="RADAR-L", bearing=90, range_nm=8,
                              observer_x=game.ship.x, observer_y=game.ship.y,
                              course=None, quality=1, now=game.sim_t, label="ASM")
@@ -578,7 +579,7 @@ def test_essm_launch_on_observed_track_does_not_require_live_target(game):
 
 def test_essm_midcourse_refresh_is_observation_only_and_expires(game):
     track = game.air_picture.observe(
-        track_id="A-10", kind="ASM", target_id=10,
+        track_id="M-10", kind="ASM", target_id=10,
         source="RADAR-L", bearing=90, range_nm=20,
         observer_x=game.ship.x, observer_y=game.ship.y,
         course=None, quality=1, now=game.sim_t, label="ASM")

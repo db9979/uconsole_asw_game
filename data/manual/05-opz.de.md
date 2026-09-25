@@ -47,9 +47,11 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 ## Tipps für Profis {#opz-tips}
 
 - Radar ist eine Aussendung, die feindliches ESM auffassen kann. Radare abschalten (EMCON), wenn Tarnung wichtiger ist als das Luftlagebild.
+- Das Radar weiß nicht, was ein Luftkontakt ist. Die Bedrohungsbewertung markiert einen Luftkontakt nur aus seinen eigenen Messungen als möglichen Flugkörper (ASM): schneller als 300 kn in höchstens 150 m Höhe oder ein Störstrobe; ein tief und schnell anfliegendes Angriffsflugzeug kann dieselbe Markierung auslösen. Die Markierung braucht etwa eine Sekunde Plots, CIWS und ESSM bekämpfen nur markierte Tracks, und HFDF-Fixe sowie unklassifizierte Sonarkontakte tragen keine Domäne, bis Sie sie klassifizieren.
 - Seezielflugkörper fliegen in etwa 20 m Höhe (auf den letzten 5 sm in 5 m): das Radar sieht sie erst innerhalb etwa 20 sm, und ein störender Flugkörper liefert bis zum Durchbrennen nur eine Home-on-Jam-Peilung (HOJ). Flugkörper fliegen trägheitsgelenkt zu ihrem Startdatum; dann muss der Suchkopf das Schiff 1,5 s in seinem Kegel haben, bevor er ansteuert. Angriffsflugzeuge steigen vor jeder Salve für einige Sekunden auf etwa 300 m, um ihr Feuerleitradar aufzuschalten (eine ESM-Warnung und ein früher Radarkontakt).
 - Düppel legt neben dem Schiff eine Wolke, die in etwa 3 s aufblüht und mit dem Wind treibt; früh genug werfen, damit die Wolke aufblühen kann. Das CIWS muss erst auf den Flugkörper schwenken und trifft meist auf den letzten paar hundert Metern.
 - Zugehörigkeit ist Ihr Vermerk. Ein als FREUND oder NEUTRAL markierter Kontakt sperrt jeden Torpedoschuss darauf.
+- Kartensymbole folgen dem NATO-Stil auf der uConsole und auf jeder Remote-Crew-Karte: der Rahmen zeigt Ihre Zugehörigkeit (Feind Raute, Neutral Quadrat, Freund breites Rechteck, Unbekannt Vierpass), das innere Zeichen die beobachtete Domäne.
 - `J` vergibt eine gemeinsame Track-ID, die die ganze Crew (und Remote-Crew-Browser) sieht.
 - `Enter` bestätigt einen Angriff auf einen Live-Kontakt (echter Verkehr), nachdem Sie ihn als feindlich klassifiziert haben; auf unklassifizierte Kontakte wird nie automatisch gefeuert.
 

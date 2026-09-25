@@ -11,7 +11,7 @@ from src.core import config
 from src.core.game import Game
 from src.enemies import sub as sub_module
 from src.sonar import equation
-from src.ui import chart_symbols
+from src.ui import chart_symbols, layout
 from src.ui.map_view import map_hit_target
 
 
@@ -66,7 +66,8 @@ def test_hazard_symbols_are_drawn_on_the_bridge_chart(game):
     game.map_view.scale = 20.0
     game.draw()
     shown = copy.copy(game.map_view)
-    shown.set_rect(config.MAP_RECT)
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        shown.set_rect(config.MAP_RECT)
     px, py = shown.world_to_screen(wreck.x_nm, wreck.y_nm)
     colours = {tuple(game.screen.get_at((int(px) + dx, int(py)))[:3]) for dx in range(-5, 6)}
     assert chart_symbols.WRECK_COLOR in colours

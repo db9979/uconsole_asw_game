@@ -41,14 +41,19 @@ def test_default_save_paths_are_isolated(tmp_path):
     assert g.load_game()
 
 
-def test_accelerated_legacy_save_resumes_at_realtime_speed():
+def test_accelerated_or_paused_legacy_save_resumes_live_at_realtime_speed():
     source = Game(seed=2024, start_menu=False, audio_enabled=False)
     saved = json.loads(json.dumps(source.save_state()))
+    assert saved["time_scale_idx"] == 0 and saved["ui"]["paused"] is False
     saved["time_scale_idx"] = 3
+    saved["ui"]["paused"] = True
     restored = Game(seed=2025, start_menu=False, audio_enabled=False)
     assert restored._load_save_data(saved)
-    assert restored.time_scale == 1
     assert restored.save_state()["time_scale_idx"] == 0
+    assert restored.save_state()["ui"]["paused"] is False
+    before = restored.sim_t
+    restored.update(.5)
+    assert restored.sim_t == pytest.approx(before + .5)
     for invalid in (False, 6, -1, 1.5):
         malformed = dict(saved, time_scale_idx=invalid)
         assert not restored._load_save_data(malformed)

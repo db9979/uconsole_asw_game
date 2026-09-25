@@ -42,7 +42,6 @@ Global keys (all stations):
 | `5 / 6 / 7 / 8` | Operations / Radio / Engine / Helicopter |
 | `9` | Electronic warfare / ESM |
 | `Active station number` | Press again to advance that station's page |
-| `P` | Pause / resume (P only) |
 | `Arrow keys` | Station-specific selection or adjustment |
 | `+ / -` | Telegraph (available at every station) |
 | `F1 / ?` | Help (this display) |
@@ -53,6 +52,7 @@ Global keys (all stations):
 | `F4` | Simulation log view (live; requires simlog option; M: map of all contacts) |
 | `F9` | Open local Commander LAN administration |
 | `F10` | Options: language, fullscreen, audio, large text, tooltips, frame rate |
+| `F11` | Event log and full telemetry overlay (station stays live) |
 | `N` | Nations & units; in sonar: notch filter |
 | `S / L` | Save / load (slots 1-5) |
 | `Alt+Enter` | Fullscreen (all stations) |
@@ -75,7 +75,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 | `Mouse over map` | Details of the track, own ship, asset, wreck or chart position under the cursor |
 | `0` | Open or close the weather & sonar analysis |
 
-`F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
+The bottom status ticker shows the newest event and key telemetry; `F11` opens the full event log and telemetry over the station without stopping it or taking its keys. `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
 
 ### Underwater acoustics in five minutes
 
@@ -100,7 +100,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Distances in nautical miles (NM), speed in knots (kn), depth in metres, frequency in Hz.
 - Courses and bearings are true degrees: 000 north, clockwise. Charts are north-up.
-- At 1x one real second is one simulated second. There is no time acceleration; `P` pauses.
+- The game always runs in real time: one real second is one simulated second. There is no time acceleration and no pause; menus, help, options, save/load and losing window focus do not stop the simulation either.
 - The ship turns at up to 0.8 degrees per second; speed changes take minutes. Plan manoeuvres early.
 
 ### Your first patrol
@@ -118,7 +118,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10` (or `O` while paused): options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default).
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band.
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.
 
 ## 1 Bridge
@@ -150,7 +150,7 @@ Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) sh
 
 - **Course / rudder:** current course, ordered course, rudder angle and turn radius.
 - **Speed / acoustics:** telegraph order, speed, own noise in percent and a CAVITATION warning above 15 kn.
-- **Tactical picture:** observed threats (for example a torpedo bearing or missile threat), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night.
+- **Tactical picture:** observed threats (a heard torpedo launch transient or HF seeker pulses, a contact sonar classified as torpedo, or an air track flagged as a possible missile), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night.
 - **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. Wheel or `Q`/`E` zoom, drag pans, `K` follows own ship.
 
 ### Bridge lookout reports
@@ -206,8 +206,8 @@ Combat situation:
 
 ### Not modelled
 
-- No time acceleration and no autopilot waypoints for the frigate.
-- No separate torpedo alarm procedure: incoming torpedoes appear as sonar contacts and in the tactical picture only when observed; the lookout calls out only a visible wake.
+- No time acceleration, no pause and no autopilot waypoints for the frigate.
+- No automatic torpedo identification: the alarm rests only on heard intercepts or the sonar operator's classification; a torpedo running silent outside seeker range can arrive unannounced. The lookout calls out only a visible wake.
 - The lookout never reads a ship's name or flag and does not report navigation lights or day shapes.
 
 ## 2 Sonar
@@ -252,6 +252,7 @@ The x axis is frequency (0-300 Hz), time runs downwards. Bins are 1 Hz below 40 
 - Steady vertical lines are **tonals** (narrowband): generators, pumps, shaft lines. Several lines at integer multiples of one frequency are a harmonic family; `K` cycles the detected harmonic hypothesis.
 - Own ship produces a shaft line at about 10 + 1.9 x own speed Hz. `N` notches it out.
 - `Space` holds peaks so faint tonals stand out.
+- The spectrum strip above the waterfall prints the frequency over every prominent line (interpolated between bins; with `Space` the held envelope). Where values would overlap, the stronger line keeps its label. The Remote Crew browser labels its spectra the same way.
 - `F` selects the analysed band: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
 
 #### DEMON
@@ -268,7 +269,7 @@ DEMON demodulates the broadband noise envelope of the listening beam. Propeller 
     shaft blade 2nd harmonic
 ```
 
-The display shows measured modulation, not certain identity. The analysis windows are up to 2 s long: after changing the bearing listen for at least one second before judging. Ranked candidates from the acoustic catalogue appear as hints; the classification is still yours.
+The display shows measured modulation, not certain identity. The analysis windows are up to 2 s long: after changing the bearing listen for at least one second before judging. Ranked candidates from the acoustic catalogue appear as hints; the classification is still yours. The spectrum strip labels every prominent modulation line with its frequency; the strongest one is marked in amber.
 
 #### TMA, environment and active
 
@@ -329,7 +330,7 @@ The display shows measured modulation, not certain identity. The analysis window
 | `K` | Cycle or clear the detected harmonic hypothesis |
 | `SPACE` | LOFAR peak hold on/off |
 | `T` | TMA for selected contact on/off |
-| `C` | Classify contact (submarine / warship / biological / vessel) |
+| `C` | Classify contact (submarine / warship / biological / vessel / aircraft / torpedo) |
 | `G` | Release / withdraw selected contact to CIC independently of classification |
 | `M` | Set selected contact as target |
 
@@ -343,7 +344,7 @@ The display shows measured modulation, not certain identity. The analysis window
 
 Combat situation:
 
-1. A new high-pitched, fast-moving contact with rapidly changing bearing may be a torpedo. Report the bearing to the Bridge immediately.
+1. A launch transient, high-frequency sonar pulses, or a new loud broadband contact without tonals and with fast bearing drift may be a torpedo. Classify it as Torpedo (`C`) and report the bearing to the Bridge immediately.
 2. Keep focus on the hostile submarine so the torpedo wire datum stays fresh.
 3. Ping only when you need depth for the shot or the contact is about to be lost: the submarine hears a ping out to 60 NM and starts evading.
 
@@ -359,6 +360,7 @@ Combat situation:
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
 - Wrecks return real echoes without Doppler. A submarine lying still beside a charted wreck hides in that echo from a CW ping (750 m range cell); an LFM ping resolves about 8 m and can separate the boat from the wreck. Suspect every wreck the enemy could have reached.
 - The bathythermograph (`E`) measures to the seabed, at most 1500 m. Only after a measurement does the weather & sonar analysis (`0`) show the layer, the shadow zone below it and a SOFAR channel.
+- The sonar never names a torpedo or a submarine. It reports what it hears: a mechanical launch transient (heard out to 35 NM) or high-frequency seeker pulses (about 6 NM) as a bearing, held on the Bridge alarm for 60 s, and breaking-up noises when a hull sinks. The OPZ symbol of a sonar contact follows your classification only; an unclassified contact stays unknown.
 
 ### Not modelled
 
@@ -598,9 +600,11 @@ Air defence sequence (missile inbound):
 ### Pro tips
 
 - Radar is a transmission that hostile ESM can intercept. Switch radars off (EMCON) when stealth matters more than the air picture.
+- The radar does not know what an air contact is. Threat evaluation flags an air track as a possible missile (ASM) only from its own measurements: faster than 300 kn at or below 150 m, or a jamming strobe; a low, fast attack aircraft can raise the same flag. The flag needs about a second of plots, CIWS and ESSM engage only flagged tracks, and HFDF fixes and unclassified sonar contacts carry no domain until you classify them.
 - Anti-ship missiles skim at about 20 m (5 m in the last 5 NM): radar sees them only inside about 20 NM, and a jamming missile gives only a home-on-jam (HOJ) bearing until it burns through. Missiles fly inertially to their launch datum, then their seeker needs the ship inside its cone for 1.5 s before homing; attack aircraft pop up to about 300 m for a few seconds to lock their fire-control radar before each salvo (an ESM warning and an early radar contact).
 - Chaff lays a cloud beside the ship that blooms in about 3 s and drifts with the wind; fire it early enough for the cloud to bloom. CIWS must first slew onto the missile and kills mostly in the last few hundred metres.
 - Affiliation is your annotation. Marking a contact FRIEND or NEUTRAL blocks every torpedo shot on it.
+- Chart symbols follow NATO style on the uConsole and on every Remote Crew map: the frame shows your affiliation (hostile diamond, neutral square, friend wide rectangle, unknown quatrefoil), the inner glyph the observed domain.
 - `J` gives a track a shared ID that the whole crew (and Remote Crew browsers) sees.
 - `Enter` confirms an engagement against a live (real-world traffic) contact after you classified it hostile; nothing fires automatically on unclassified contacts.
 
@@ -770,7 +774,7 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 | `Shift+B` | Next sonobuoy mode PASSIVE / ACTIVE |
 | `T` | Sensor source: dipping sonar / sonobuoys |
 | `F` | Confirm / unconfirm selected helicopter contact |
-| `C` | Classify contact (submarine / warship / biological / vessel) |
+| `C` | Classify contact (submarine / warship / biological / vessel / aircraft / torpedo) |
 | `G / Shift+G` | Select dipping-sonar contact / release or withdraw it from CIC |
 | `Y` | Lower / retrieve helicopter dipping sonar |
 | `U / V` | Raise / lower dipping-sonar target depth |
@@ -806,7 +810,7 @@ Attack sequence:
 
 ### Pro tips
 
-- Put the dipping sonar below the layer (measure it with the bathythermograph at Sonar) to hear deep submarines.
+- Put the dipping sonar below the layer to hear deep submarines. The dip gauge shows the layer at the helicopter only once the lowered dome has passed through it; before that it shows only the charted water depth.
 - Lay buoys ahead of the target's estimated track, not on top of the last datum.
 - `F` confirms a helicopter contact; `Shift+G` releases it to Operations like a sonar contact.
 - On the acoustic page, `T` switches the listening source between the dip and each passive buoy.
@@ -960,7 +964,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 
 ### Weather & sonar analysis (key 0)
 
-Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes it; it also works while paused). In the web client every station opens it with `0` or from the workstation menu.
+Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes it; the simulation keeps running). In the web client every station opens it with `0` or from the workstation menu.
 
 - **Environment:** time, daylight (day, civil or nautical twilight, night), moon phase, weather and precipitation, visibility, wind with gusts and Beaufort force, sea state, barometer with its 3-hour tendency (rising, steady, falling, falling rapidly), air and sea temperature, cloud ceiling and icing. A rapidly falling glass below about 1004 hPa gives a storm warning. The weather system changes by at most one sea state per hour, so the barometer moves faster than a real one.
 - **Weather effects:** sun (strong layer), wind (deeper mixed layer) and rain or snow (fresher surface water, rain noise) light up while they act.
@@ -1002,3 +1006,25 @@ Submarine physics: the hull accelerates toward an ordered speed (no instant spri
 | HFDF | High-frequency direction finding |
 | EMCON | Emission control: radars off |
 | ROE | Rules of engagement |
+
+### Screen abbreviations
+
+When a full label does not fit the 1280x720 screen, the station shows its catalogue abbreviation instead of cutting the text off. The F11 log and tooltips always show the full wording.
+
+| Short | Meaning |
+|---|---|
+| CRS/SPD | Course / speed |
+| NOISE, CAV | Own radiated noise in %, cavitating |
+| SS/LAYER | Sea state / measured layer depth (BT) |
+| FLOOD | Mean flooding |
+| TORP, VLS/CHAFF | Torpedoes left, VLS cells / chaff reload |
+| HELO/ROE, HGR | Helicopter state / rules of engagement, hangar |
+| BRG, G, N | Bearing, gain, notch |
+| BB, FILT, HET | Broadband, filtered, heterodyne audition |
+| STOW, DEPLOY, RECOV, OUT, STAB | Towed array stowed, deploying, recovering, streamed, stability |
+| RDY, N/RDY | Ready, not ready |
+| UNK, FRD, NEU, HOS | Affiliation: unknown, friend, neutral, hostile |
+| SFC, SUB, AIR, MSL, TRP | Domain: surface, subsurface, air, missile, torpedo |
+| RDR S/A | Radar surface / air |
+| D, W, CD | Dipping sonar depth, water depth, ping cooldown |
+| B-rate, Tgt | Bearing rate, target |

@@ -104,12 +104,8 @@ async function run() {
   assert(blanked === 0, "the console was blanked by hotkey switching to a visited station");
 
   // Solo host controls.
-  await until(() => !$("host-pause").disabled, "host pause never enabled");
-  $("host-pause").click();
-  await until(() => $("host-pause").getAttribute("aria-pressed") === "true", "pause not reflected");
-  await until(() => !$("host-pause").disabled, "host controls stayed locked after pause");
-  $("host-pause").click();
-  await until(() => $("host-pause").getAttribute("aria-pressed") === "false", "resume not reflected");
+  // Real time only: no pause and no time compression control.
+  assert(!document.getElementById("host-pause"), "pause control remains visible");
   assert(!document.getElementById("host-time-scale"), "time compression control remains visible");
 
   await until(() => !$("host-save").disabled, "save locked");
@@ -205,8 +201,7 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
     try:
         while process.poll() is None and time.monotonic() - started < 80:
             console.pump(game)
-            if not game.paused:
-                game.update(.02)
+            game.update(.02)
             time.sleep(.02)
         stdout, stderr = process.communicate(timeout=5)
     finally:

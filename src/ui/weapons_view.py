@@ -241,8 +241,9 @@ def draw_weapons_overlay(game, tr=None) -> None:
                 ey = py - 300 * math.cos(brg)
                 pygame.draw.line(s, config.COLOR_DANGER, (int(px), int(py)),
                                  (int(ex), int(ey)), 1)
-                layout.blit_line(s, message("weapons.line.bearing_only",
-                                            contact=observations.contact_display_id(game, c)),
+                layout.blit_line(s, structured_message(
+                    "weapons.line.bearing_only",
+                    contact=observations.contact_display_id(game, c)),
                                  (int(px) + 12, int(py) - 22, 260, 22),
                                  config.COLOR_DANGER, size=14)
 

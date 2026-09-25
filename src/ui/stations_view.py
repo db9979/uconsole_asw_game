@@ -30,7 +30,8 @@ def _hfdf_error_deg(report) -> float:
     return (sigma * math.sqrt(3.0) if sigma else config.HFDF_BEARING_ERR_DEG)
 
 def message(key, **values):
-    return localize(structured_message(key, **values))
+    """A structured message: localized at draw time so layouts can abbreviate."""
+    return structured_message(key, **values)
 
 STATE_LABEL = {
     "OK": "damage.ok",
@@ -320,11 +321,15 @@ def draw_bridge_view(game, tr=None) -> None:
         else:
             threats.append(("ASM", message("bridge.line.asm_bearing_only",
                 bearing=observations.format_bearing(asm_tracks[0], game.ship))))
-    torp_contacts = [c for c in game.sonar.active_contacts()
-                     if c.kind == "torpedo"]
-    if torp_contacts:
-        threats.append(("TORPEDO", localize(message("bridge.line.torpedo_threat",
-                       bearing=observations.format_bearing(torp_contacts[0], game.ship)))))
+    # Torpedo alarms come from intercepts (launch transient, HF seeker
+    # pulses) or an operator TORPEDO classification, never the entity type.
+    torpedo_warnings = game.torpedo_warnings()
+    if torpedo_warnings:
+        warning = torpedo_warnings[0]
+        threats.append(("TORPEDO", localize(message(
+            "bridge.line.torpedo_" + warning["source"],
+            bearing=f"{warning['bearing']:05.1f}",
+            age=f"{warning['age_s']:.0f}"))))
     if game.damage.avg_flood() >= 25:
         threats.append((localize("station.damage"), localize(message(
             "station.tooltip.mean_flooding", flooding=f"{game.damage.avg_flood():.0f}"))))
@@ -391,16 +396,18 @@ def draw_bridge_view(game, tr=None) -> None:
         sx, sy, sw, _ = systems
         weather_w = min(200, sw // 3)
         text_w = sw - weather_w - 12
-        radar = localize(message("station.tooltip.radar_state",
-            surface=localize("common.on" if game.surface_radar_on else "common.off"),
-            air=localize("common.on" if game.air_radar_on else "common.off")))
+        radar = message("station.tooltip.radar_state",
+                        surface=structured_message("common.on" if game.surface_radar_on
+                                                   else "common.off"),
+                        air=structured_message("common.on" if game.air_radar_on
+                                               else "common.off"))
         layout.status_line(s, sx, sy, text_w, "panel.sensors",
                            message("bridge.line.sensors", count=len(game.sonar.active_contacts()), radar=radar),
                            size=18, label_w=100)
         layout.status_line(s, sx, sy + 30, text_w, "panel.assets",
                            message("bridge.line.assets", vls=game.vls_cells,
                                    torpedoes=game.torpedo_count,
-                                   helo=localize('enum.helo.' + game.helo.state)),
+                                   helo=structured_message('enum.helo.' + game.helo.state)),
                            size=18, label_w=120)
         weather = game.world.weather_values()
         layout.blit_line(s, message("bridge.line.weather",
@@ -429,13 +436,15 @@ def draw_bridge_view(game, tr=None) -> None:
 
 # --- OPZ / CIC (M12) -------------------------------------------------------
 
+# Three-letter domain codes for the dense OPZ track list (see the manual's
+# abbreviation table); catalog keys so EN and DE each use their own codes.
 OPZ_DOMAIN_CODES = {
-    "UNKNOWN": "UNK",
-    "SURFACE": "SEE",
-    "SUBSURFACE": "UBT",
-    "AIR": "LFT",
-    "MISSILE": "FKR",
-    "UNDERWATER_WEAPON": "TOR",
+    "UNKNOWN": "domain.code.unknown",
+    "SURFACE": "domain.code.surface",
+    "SUBSURFACE": "domain.code.subsurface",
+    "AIR": "domain.code.air",
+    "MISSILE": "domain.code.missile",
+    "UNDERWATER_WEAPON": "domain.code.underwater_weapon",
 }
 OPZ_DOMAIN_COLORS = {
     "UNKNOWN": config.COLOR_TEXT_DIM,
@@ -988,8 +997,9 @@ def draw_eloka_view(game, tr=None) -> None:
                 ("eloka.field.bearing", message("eloka.value.bearing",
                                                  bearing=f"{selected.bearing:05.1f}",
                                                  error=f"{selected.bearing_uncertainty_deg:.1f}")),
-                ("eloka.field.frequency", message("eloka.value.frequency",
-                                                   frequency=f"{selected.frequency_hz / 1e9:.3f}")
+                ("eloka.field.frequency", localize(message(
+                    "eloka.value.frequency",
+                    frequency=f"{selected.frequency_hz / 1e9:.3f}"))
                  + " / " + localize("eloka.band." + spectrum_band(
                      selected.frequency_hz).value)),
                 ("eloka.field.prf", prf),
@@ -1656,11 +1666,11 @@ def draw_opz_view(game, tr=None) -> None:
                 prefix = "*"
             displayed_range = observations.range_nm(track, game.ship)
             distance = f"{displayed_range:4.1f}" if displayed_range is not None else " -- "
-            codes = {"UNKNOWN": "UNK", "FRIEND": "FRD",
-                     "NEUTRAL": "NEU", "HOSTILE": "FEI"}
             pygame.draw.rect(s, OPZ_DOMAIN_COLORS[domain], (x, py + 5, 3, 14))
             text = message("opz.line.track", prefix=prefix, track=f"{track['label']:<7}",
-                           affiliation=codes[affiliation], domain=OPZ_DOMAIN_CODES[domain],
+                           affiliation=structured_message(
+                               "affil.code." + affiliation.lower()),
+                           domain=structured_message(OPZ_DOMAIN_CODES[domain]),
                             bearing=observations.format_bearing(track, game.ship), distance=distance)
             layout.blit_line(s, text, (x + 6, py, w - 6, 24), color, size=15)
             py += 28
@@ -2448,8 +2458,12 @@ def draw_helicopter_view(game, tr=None) -> None:
         gauge_x, gauge_y = int(px + pw * .62), py + 12
         gauge_h = min(160, max(80, ph // 3))
         depth_limit = (helo.dip_depth_limit(game.world) if helo.airborne else 0.0)
-        thermocline = (game.world.thermocline_depth_m(helo.x, helo.y)
-                       if depth_limit > 0 else None)
+        # The layer is known only once the lowered dome has passed through
+        # it (the dome's own temperature/sound-speed trace), never before.
+        layer = (game.world.thermocline_depth_m(helo.x, helo.y)
+                 if depth_limit > 0 and helo.dip_state != "STOWED" else None)
+        thermocline = (layer if layer is not None and helo.dip_depth_m >= layer
+                       else None)
         gauge_max = max(50.0, depth_limit)
         pygame.draw.rect(s, config.COLOR_GRID,
                          pygame.Rect(gauge_x, gauge_y, 22, gauge_h), 1)

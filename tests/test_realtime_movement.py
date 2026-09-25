@@ -17,7 +17,7 @@ def test_one_minute_at_one_x_uses_physical_ship_speed():
     ship = Ship(100.0, 100.0, course_deg=90.0, speed_kn=20.0)
     ship.update(60.0)
 
-    assert config.TACTICAL_TIME_SCALE == 1.0
+    assert not hasattr(config, "TACTICAL_TIME_SCALE")
     assert ship.x == pytest.approx(100.0 + 20.0 / 60.0)
     assert ship.y == pytest.approx(100.0)
 

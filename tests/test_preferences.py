@@ -6,7 +6,9 @@ from src.core.preferences import (Preferences, default_preferences_path,
 
 def test_required_default_preferences_path(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    assert default_preferences_path() == tmp_path / ".u-jagd" / "settings.json"
+    # conftest isolates the session; the wrapped function is the real one.
+    real = getattr(default_preferences_path, "__wrapped__", default_preferences_path)
+    assert real() == tmp_path / ".u-jagd" / "settings.json"
 
 
 def set_locale(monkeypatch, value):

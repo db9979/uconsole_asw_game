@@ -145,6 +145,6 @@ def test_pairing_does_not_restore_a_grant_across_a_new_game():
     assert game.commander_open and game.administration_open
     time_before = game.sim_t
     game.update(.1)
-    assert game.sim_t == time_before
+    assert game.sim_t > time_before  # F9 owns input only; real time keeps running
     game._open_administration("")
     assert not game.administration_open

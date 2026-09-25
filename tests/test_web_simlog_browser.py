@@ -117,7 +117,7 @@ def test_web_simlog_shows_all_projected_values_and_a_map_in_chromium(tmp_path):
     state["opz"]["source_classifications"] = [
         dict(ref="air-ref", source="RADAR-L", classification="FLUGZEUG")]
     state["opz"]["own_assets"]["ship"]["speed"] = 120.0
-    truth = dict(mission_t=10.0, timescale=0, result=None,
+    truth = dict(mission_t=10.0, result=None,
                  world=dict(hour=12.0, sea_state=2, night=False),
                  ship=dict(x=250.0, y=250.0, course=0.0, speed=120.0,
                            damage=0.0, sunk=False, stations={}),

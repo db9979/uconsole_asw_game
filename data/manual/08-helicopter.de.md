@@ -49,7 +49,7 @@ Angriffsablauf:
 
 ## Tipps für Profis {#helicopter-tips}
 
-- Das Tauchsonar unter die Schicht legen (mit dem Bathythermographen im Sonar messen), um tiefe U-Boote zu hören.
+- Das Tauchsonar unter die Schicht legen, um tiefe U-Boote zu hören. Die Tauchanzeige zeigt die Schicht am Helikopter erst, wenn der abgesenkte Dom sie durchfahren hat; vorher nur die Kartentiefe.
 - Bojen vor den geschätzten Zielkurs legen, nicht auf das letzte Datum.
 - `F` bestätigt einen Helikopterkontakt; `Shift+G` gibt ihn wie einen Sonarkontakt an die OPZ frei.
 - Auf der Akustikseite schaltet `T` die Horchquelle zwischen Tauchsonar und jeder passiven Boje.

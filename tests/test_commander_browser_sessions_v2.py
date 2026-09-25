@@ -781,13 +781,13 @@ async function run() {
   await sleep(120);
   baseObserver.disconnect();
   assert(baseRedraws <= 1, "OPZ redraws the whole map on every sweep frame");
-  states.opz.phase = "paused";
-  await until(() => $test("role-visual-state").textContent.includes("Paused") ||
-    $test("role-visual-state").textContent.includes("Pausiert"), "paused OPZ state missing");
+  states.opz.phase = "ended";
+  await until(() => $test("role-visual-state").textContent.includes("inactive") ||
+    $test("role-visual-state").textContent.includes("inaktiv"), "ended OPZ state missing");
   await sleep(80);
-  const pausedFrame = sweepLayer.toDataURL();
+  const endedFrame = sweepLayer.toDataURL();
   await sleep(120);
-  assert(sweepLayer.toDataURL() === pausedFrame, "OPZ sweep continues while paused");
+  assert(sweepLayer.toDataURL() === endedFrame, "OPZ sweep continues after the mission ended");
   states.opz.phase = "live";
   await until(() => !$test("opz-fire-target").disabled, "OPZ did not resume");
   states.opz.opz.radar.surface = false; states.opz.opz.radar.air = false;
@@ -909,7 +909,7 @@ window.addEventListener("DOMContentLoaded", () => run().catch((error) => {
 def _direct_fire_browser_states():
     common = dict(protocol=2, version="test", session="fire-world", epoch=2,
                    revision=7, seq=1, phase="live", chart_revision="fire-world",
-                   clock=dict(sim=10.0, mission=10.0, time_scale=1.0, world=12.0),
+                   clock=dict(sim=10.0, mission=10.0, world=12.0),
                    environment=dict(sea_state=2, effective_sea_state=2.4,
                                     is_night=False, weather="clear",
                                     wind_from_deg=245.0, wind_speed_kn=12.0,
@@ -992,7 +992,7 @@ def _direct_fire_browser_states():
         navigation=navigation, tactical_summary=[], sightings=[],
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
                     noise=.8, cavitating=False),
-        threat=dict(observations=[], count=0, average_flood=0.0),
+        threat=dict(observations=[], count=0, average_flood=0.0, torpedoes=[]),
         systems=[dict(key="bridge", state="OK", down=False)]))
     return {"weapons": weapons, "opz": opz, "helicopter": helicopter,
             "damage": damage, "bridge": bridge}
@@ -1134,7 +1134,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                                       "cavitating": False}
             common[role]["sightings"] = []
             common[role]["threat"] = {"observations": [], "count": 0,
-                                       "average_flood": 0.0}
+                                       "average_flood": 0.0, "torpedoes": []}
             common[role]["systems"] = [{"key": "bridge", "state": "OK",
                                          "down": False}]
         else:

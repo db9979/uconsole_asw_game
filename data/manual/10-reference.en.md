@@ -68,7 +68,7 @@ All values are the defaults of the current game version. Custom difficulty and m
 
 ## Weather & sonar analysis (key 0) {#ref-weather-station}
 
-Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes it; it also works while paused). In the web client every station opens it with `0` or from the workstation menu.
+Key `0` opens a full-screen analysis panel over any station (`0` or `Esc` closes it; the simulation keeps running). In the web client every station opens it with `0` or from the workstation menu.
 
 - **Environment:** time, daylight (day, civil or nautical twilight, night), moon phase, weather and precipitation, visibility, wind with gusts and Beaufort force, sea state, barometer with its 3-hour tendency (rising, steady, falling, falling rapidly), air and sea temperature, cloud ceiling and icing. A rapidly falling glass below about 1004 hPa gives a storm warning. The weather system changes by at most one sea state per hour, so the barometer moves faster than a real one.
 - **Weather effects:** sun (strong layer), wind (deeper mixed layer) and rain or snow (fresher surface water, rain noise) light up while they act.
@@ -110,3 +110,25 @@ Submarine physics: the hull accelerates toward an ordered speed (no instant spri
 | HFDF | High-frequency direction finding |
 | EMCON | Emission control: radars off |
 | ROE | Rules of engagement |
+
+## Screen abbreviations {#ref-abbreviations}
+
+When a full label does not fit the 1280x720 screen, the station shows its catalogue abbreviation instead of cutting the text off. The F11 log and tooltips always show the full wording.
+
+| Short | Meaning |
+|---|---|
+| CRS/SPD | Course / speed |
+| NOISE, CAV | Own radiated noise in %, cavitating |
+| SS/LAYER | Sea state / measured layer depth (BT) |
+| FLOOD | Mean flooding |
+| TORP, VLS/CHAFF | Torpedoes left, VLS cells / chaff reload |
+| HELO/ROE, HGR | Helicopter state / rules of engagement, hangar |
+| BRG, G, N | Bearing, gain, notch |
+| BB, FILT, HET | Broadband, filtered, heterodyne audition |
+| STOW, DEPLOY, RECOV, OUT, STAB | Towed array stowed, deploying, recovering, streamed, stability |
+| RDY, N/RDY | Ready, not ready |
+| UNK, FRD, NEU, HOS | Affiliation: unknown, friend, neutral, hostile |
+| SFC, SUB, AIR, MSL, TRP | Domain: surface, subsurface, air, missile, torpedo |
+| RDR S/A | Radar surface / air |
+| D, W, CD | Dipping sonar depth, water depth, ping cooldown |
+| B-rate, Tgt | Bearing rate, target |

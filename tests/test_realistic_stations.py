@@ -1,3 +1,4 @@
+import math
 """Regression tests for observation boundaries and workstation realism."""
 
 from types import SimpleNamespace
@@ -17,6 +18,11 @@ def scan_until_asm_track(game, revolutions=6):
     within a few antenna revolutions."""
     for _ in range(revolutions):
         game.sim_t += 4.0
+        # Missiles fly on: the ASM cue rests on measured speed and altitude.
+        for asm in game.asms:
+            step = config.kn_to_nm_per_s(asm.speed_kn) * 4.0
+            asm.x += step * math.sin(math.radians(asm.course))
+            asm.y -= step * math.cos(math.radians(asm.course))
         game._update_air_picture(full_scan=True)
         if game.asm_tracks():
             return

@@ -43,7 +43,6 @@ def _run_smoke() -> None:
     assert g.in_menu is False
 
     # --- W0: Echtzeit + Sub-Stepping ---
-    assert g.time_scale == 1
     before = g.sim_t
     g.update(.05)
     assert abs(g.sim_t - before - .05) < 1e-9

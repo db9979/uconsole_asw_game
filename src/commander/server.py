@@ -672,8 +672,10 @@ class CommanderServer:
     def __init__(self, translations=None, contact_analysis_assets=None,
                  web_auth: WebHostAuth | None = None, public_origin: str | None = None,
                  manual_pages=None):
-        if (web_auth is None) != (public_origin is None):
-            raise ValueError("web auth and public origin must be configured together")
+        # The web-host room always sits behind its proxy. The local Commander
+        # listener may add an HTTPS proxy origin next to its direct LAN address.
+        if web_auth is not None and public_origin is None:
+            raise ValueError("web auth requires a public origin")
         if public_origin is not None:
             parsed = urlsplit(public_origin)
             if (parsed.scheme != "https" or not parsed.hostname or parsed.path
@@ -2090,12 +2092,34 @@ class _HTTPServer(HTTPServer):
         self.upgrade_events = {}
         super().__init__(address, _Handler)
         host, port = self.server_address
-        self.hosts = {f"{host}:{port}"}
+        self.direct_hosts = {f"{host}:{port}"}
         if ipaddress.IPv4Address(host).is_loopback:
-            self.hosts.add(f"localhost:{port}")
+            self.direct_hosts.add(f"localhost:{port}")
+        self.public_hosts = set()
         if owner.public_origin is not None:
-            self.hosts.add(urlsplit(owner.public_origin).netloc)
-        self.expected_origin = owner.public_origin or f"http://{host}:{port}"
+            public = urlsplit(owner.public_origin)
+            self.public_hosts.add(public.netloc)
+            if public.port is None:
+                # Some proxies forward the default HTTPS port explicitly.
+                self.public_hosts.add(f"{public.netloc}:443")
+        self.hosts = self.direct_hosts | self.public_hosts
+
+    def allowed_origins(self, host) -> frozenset:
+        """Exact browser origins valid for a request that reached ``host``.
+
+        The web-host room is reachable only through its HTTPS proxy. The local
+        listener accepts its direct LAN origin and, when configured, the proxy
+        origin as well (a proxy may forward its own name or the upstream).
+        """
+        owner = self.owner
+        if owner.web_auth is not None and owner.public_origin is not None:
+            return frozenset((owner.public_origin,))
+        origins = set()
+        if owner.public_origin is not None:
+            origins.add(owner.public_origin)
+        if host in self.direct_hosts:
+            origins.add(f"http://{host}")
+        return frozenset(origins)
 
     def process_request(self, request, client_address):
         deadline = time.monotonic() + _CONNECTION_DEADLINE_S
@@ -2254,7 +2278,7 @@ class _Handler(BaseHTTPRequestHandler):
             if (not line.endswith(b"\r\n") or not separator or not name
                     or any(c not in b"!#$%&'*+-.^_`|~0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
                            for c in name)
-                    or any(c < 32 or c > 126 for c in value[:-2])):
+                    or any((c < 32 and c != 9) or c > 126 for c in value[:-2])):
                 self.send_error(400)
                 return
         else:
@@ -2281,9 +2305,8 @@ class _Handler(BaseHTTPRequestHandler):
         if host not in self.server.hosts:
             self.send_error(403)
             return
-        expected_origin = (self.server.expected_origin if self.server.owner.public_origin
-                           else f"http://{host}")
-        if (origin is not None and origin != expected_origin) or (self.command == "POST" and origin is None):
+        if ((origin is not None and origin not in self.server.allowed_origins(host))
+                or (self.command == "POST" and origin is None)):
             self.send_error(403)
             return
         if "Transfer-Encoding" in self.headers or "Expect" in self.headers:
@@ -2408,12 +2431,22 @@ class _Handler(BaseHTTPRequestHandler):
             session["last_get"] = time.monotonic()
         return session, digest, True
 
+    def _via_https_proxy(self) -> bool:
+        """This request came through the HTTPS proxy, not the direct LAN URL."""
+        owner = self.server.owner
+        return owner.public_origin is not None and (
+            owner.web_auth is not None
+            or self.headers.get("Origin") == owner.public_origin
+            or self.headers.get("Host") in self.server.public_hosts)
+
     def _v2_cookie(self, token):
-        secure = "; Secure" if self.server.owner.public_origin else ""
+        # Secure only on the HTTPS path: a browser drops a Secure cookie that
+        # arrives over the plain-HTTP LAN address.
+        secure = "; Secure" if self._via_https_proxy() else ""
         return f"{_V2_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict{secure}"
 
     def _clear_v2_cookie(self):
-        secure = "; Secure" if self.server.owner.public_origin else ""
+        secure = "; Secure" if self._via_https_proxy() else ""
         return (f"{_V2_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; "
                 f"Max-Age=0{secure}")
 
@@ -2424,9 +2457,8 @@ class _Handler(BaseHTTPRequestHandler):
     def _sonar_websocket(self):
         """Stream immutable projected samples to one active Sonar client."""
         owner = self.server.owner
-        expected_origin = (self.server.expected_origin if owner.public_origin
-                           else f"http://{self.headers.get('Host')}")
-        if (self.headers.get("Origin") != expected_origin
+        allowed_origins = self.server.allowed_origins(self.headers.get("Host"))
+        if (self.headers.get("Origin") not in allowed_origins
                 or self.headers.get("Upgrade", "").lower() != "websocket"
                 or "upgrade" not in {item.strip().lower() for item in
                                       self.headers.get("Connection", "").split(",")}
@@ -2517,9 +2549,8 @@ class _Handler(BaseHTTPRequestHandler):
     def _audio_websocket(self, role):
         """Send detached PCM to the current audio lease; never read game state."""
         owner = self.server.owner
-        expected_origin = (self.server.expected_origin if owner.public_origin
-                           else f"http://{self.headers.get('Host')}")
-        if (self.headers.get("Origin") != expected_origin
+        allowed_origins = self.server.allowed_origins(self.headers.get("Host"))
+        if (self.headers.get("Origin") not in allowed_origins
                 or self.headers.get("Upgrade", "").lower() != "websocket"
                 or "upgrade" not in {part.strip().lower() for part in
                                       self.headers.get("Connection", "").split(",")}
@@ -2624,11 +2655,10 @@ class _Handler(BaseHTTPRequestHandler):
     def _voice_websocket(self):
         """Relay authenticated, leased PTT audio without touching simulation."""
         owner = self.server.owner
-        expected_origin = (self.server.expected_origin if owner.public_origin
-                           else f"http://{self.headers.get('Host')}")
+        allowed_origins = self.server.allowed_origins(self.headers.get("Host"))
         protocols = [item.strip() for item in
                      self.headers.get("Sec-WebSocket-Protocol", "").split(",")]
-        if (owner.web_auth is None or self.headers.get("Origin") != expected_origin
+        if (owner.web_auth is None or self.headers.get("Origin") not in allowed_origins
                 or self.headers.get("Upgrade", "").lower() != "websocket"
                 or "upgrade" not in {item.strip().lower() for item in
                                       self.headers.get("Connection", "").split(",")}

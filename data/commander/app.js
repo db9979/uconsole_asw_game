@@ -153,7 +153,8 @@
   let sonarAudioMetrics = {buffered: 0, gaps: 0, concealed: 0, rate: 1, stale: false};
   let gameSoundContext = null;
   let gameSoundHighWater = 0;
-  const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry"]);
+  const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry",
+    "sonar_echo_cw", "sonar_echo_cw_faint", "sonar_echo_lfm", "sonar_echo_lfm_faint"]);
   const view = { x: 0, y: 0, zoom: 1, follow: false, initialized: false };
   const canvas = $("chart");
   const ctx = canvas.getContext("2d");
@@ -290,6 +291,9 @@
       torpedo_launch: [95, 38, .72, .16, "sawtooth"],
       missile_launch: [150, 1250, .9, .13, "sawtooth"], gunfire: [115, 52, .42, .16, "square"],
       explosion: [68, 25, 1.1, .20, "sawtooth"], water_entry: [260, 90, .58, .11, "triangle"],
+      // Returned echoes: CW a steady carrier tone, LFM a short 100 Hz sweep.
+      sonar_echo_cw: [900, 900, .55, .07, "sine"], sonar_echo_cw_faint: [900, 900, .55, .025, "sine"],
+      sonar_echo_lfm: [850, 950, .32, .08, "sine"], sonar_echo_lfm_faint: [850, 950, .32, .03, "sine"],
     }[kind];
     const [startHz, endHz, duration, gainLevel, type] = profile;
     const oscillator = audio.createOscillator();
@@ -297,7 +301,8 @@
     const now = audio.currentTime;
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(startHz, now);
-    oscillator.frequency.setValueAtTime(endHz, now + duration);
+    if (kind.startsWith("sonar_echo_lfm")) oscillator.frequency.linearRampToValueAtTime(endHz, now + duration);
+    else oscillator.frequency.setValueAtTime(endHz, now + duration);
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(volume * gainLevel, now + .012);
     gain.gain.linearRampToValueAtTime(0, now + duration);

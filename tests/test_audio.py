@@ -12,7 +12,7 @@ import src.audio.engine as audio_module
 from src.audio.database import TARGET_DATABASE, rank_signatures
 from src.audio.demon import DemonAnalyzer
 from src.audio.engine import AudioEngine
-from src.audio.synthesis import (active_sonar_ping, combat_effect,
+from src.audio.synthesis import (active_sonar_ping, combat_effect, sonar_echo,
                                   filtered_noise_event, fm_chirp,
                                   stereo_bearing, tone)
 from src.core import config
@@ -874,3 +874,39 @@ def test_unit_preview_is_safe_without_audio(mixer):
         ("sonar", "unit_preview", "x", "acoustic_cruise", 44100)) is False
     assert synth_calls == []
     engine.stop_preview()
+
+
+
+def test_sonar_echo_is_bounded_and_follows_pulse_and_strength():
+    rate = 8000
+    cw_loud, cw_faint = (sonar_echo(900, "CW", level, rate) for level in (1.0, 0.0))
+    lfm = sonar_echo(900, "LFM", 1.0, rate)
+    for signal in (cw_loud, cw_faint, lfm):
+        assert signal.dtype == np.float32 and np.isfinite(signal).all()
+        assert 0 < np.max(np.abs(signal)) <= 1
+        assert signal[0] == signal[-1] == 0
+    # LFM is the short pulse; CW is the long tone.
+    assert lfm.size < cw_loud.size
+    # A strong CW return concentrates energy on the carrier, a faint one
+    # is mostly reverberation noise around it.
+    def carrier_share(signal):
+        spectrum = np.abs(np.fft.rfft(signal)) ** 2
+        frequencies = np.fft.rfftfreq(signal.size, 1 / rate)
+        band = (frequencies > 880) & (frequencies < 920)
+        return spectrum[band].sum() / spectrum.sum()
+    assert carrier_share(cw_loud) > 2 * carrier_share(cw_faint)
+    assert np.array_equal(sonar_echo(900, "CW", .5, rate), sonar_echo(900, "CW", .5, rate))
+
+
+def test_echo_plays_on_ping_bus_and_queues_behind_a_busy_one(mixer):
+    _, channels, _ = mixer
+    engine = AudioEngine()
+    ping = channels[2]
+    assert engine.play_echo("CW", .8)
+    ping.play.assert_called_once()
+    ping.get_busy.return_value = True
+    assert engine.play_echo("LFM", .3)
+    ping.queue.assert_called_once()
+    ping.get_queue.return_value = ping.queue.call_args.args[0]
+    assert not engine.play_echo("CW", .5)
+    assert not AudioEngine(enabled=False).play_echo("CW", 1.0)

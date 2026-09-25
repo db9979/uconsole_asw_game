@@ -281,7 +281,10 @@ def test_runtime_language_switch_retranslates_feeds_and_keeps_legacy_strings(mon
 def test_initial_threat_intel_is_coarse_static_and_visible_to_radio():
     game = Game(seed=87, audio_enabled=False,
                 preferences=Preferences(language="en"))
-    report = game.messages[-1][1]
+    # Patrol adds the exact force report after the coarse position cue.
+    report = next(text for _, text in game.messages
+                  if text.get("__u_jagd_i18n__", "").startswith("runtime.hq.threat_"))
+    assert game.messages[-1][1]["__u_jagd_i18n__"] == "runtime.hq.intel_exact"
     params = report["params"]
     target = min(game.subs, key=lambda item: np.hypot(
         item.x - game.ship.x, item.y - game.ship.y))
@@ -292,8 +295,8 @@ def test_initial_threat_intel_is_coarse_static_and_visible_to_radio():
     assert params["range"] % 5 == 0
     assert abs(params["range"] - exact_range) <= 2.5
     assert set(params) == {"bearing", "range"}
-    assert game.feed.entries[-1].category == "funk"
-    assert game.feed.entries[-1].text is report
+    entry = next(item for item in game.feed.entries if item.text is report)
+    assert entry.category == "funk"
     initial = json.dumps(report, sort_keys=True)
     target.x += 100
     game.update(.1)

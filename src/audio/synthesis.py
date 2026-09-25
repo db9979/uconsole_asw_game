@@ -87,6 +87,48 @@ def active_sonar_ping(frequency_hz: float, sample_rate: int,
     return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
 
 
+ECHO_PULSES = ("CW", "LFM")
+
+
+def sonar_echo(frequency_hz: float, pulse: str, level: float,
+               sample_rate: int, amplitude: float = 0.30) -> np.ndarray:
+    """Returned active-sonar echo as heard on the operator's speaker.
+
+    ``level`` (0..1) is the measured echo strength. A CW return is a soft,
+    slightly smeared tone on the carrier; an LFM return is a short sweep
+    across the 100 Hz band. Weak returns sit in band-limited reverberation
+    noise, so a faint echo is heard as a tone emerging from the hiss.
+    """
+    pulse = pulse if pulse in ECHO_PULSES else "CW"
+    level = float(np.clip(level, 0.0, 1.0))
+    duration_s = .55 if pulse == "CW" else .32
+    count = max(1, int(duration_s * sample_rate))
+    t = np.arange(count, dtype=np.float64) / sample_rate
+    if pulse == "CW":
+        # Target motion and multipath spread the return a little in pitch.
+        phase = 2 * np.pi * (frequency_hz * t + 1.5 * np.sin(2 * np.pi * 3.0 * t) / (2 * np.pi * 3.0))
+        body = np.sin(phase) + .35 * np.sin(1.003 * phase + .7)
+        attack, release = .05, .22
+    else:
+        sweep = 100.0 / duration_s
+        body = np.sin(2 * np.pi * ((frequency_hz - 50.0) * t + .5 * sweep * t * t))
+        attack, release = .015, .08
+    envelope = np.ones(count)
+    rise = max(1, round(attack * sample_rate))
+    fall = max(1, round(release * sample_rate))
+    envelope[:rise] = np.linspace(0.0, 1.0, rise)
+    envelope[-fall:] *= np.exp(-np.linspace(0.0, 4.0, fall))
+    body = body / np.max(np.abs(body)) * envelope
+    noise = filtered_noise_event(duration_s, sample_rate, frequency_hz * .55,
+                                 frequency_hz * 1.6, 1.0,
+                                 seed=int(frequency_hz) * 7 + len(pulse))[:count]
+    signal = amplitude * ((.25 + .75 * level) * body + (.45 - .3 * level) * noise)
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[:edge] *= np.linspace(0.0, 1.0, edge)
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
 def combat_effect(kind: str, sample_rate: int,
                   amplitude: float = .28) -> np.ndarray:
     """Deterministic layered one-shot effects for local shipboard events."""

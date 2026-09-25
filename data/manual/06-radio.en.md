@@ -24,6 +24,7 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 - Logged lines and cross-fixes appear on the charts of Bridge, Weapons and Helicopter.
 - A second bearing of the same signal gives a cross-fix if it is taken at least 1 NM away from the first and within 300 s.
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
+- At mission start HQ reports the threat. With **coarse** intelligence it gives only a rough bearing and range of one threat. With **exact** intelligence it also names every hostile unit type committed to the mission with its number (for example "1x Altmetall (Diesel, älter), 2x air raid wave with anti-ship missiles"), using the names in the unit analyser (`F8`); positions stay unconfirmed. Patrol always gets exact intelligence, Double hunt and Nuclear intercept coarse, and the free hunt lets you choose on its difficulty screen (last row, "HQ intelligence").
 
 ## Keys {#radio-keys}
 

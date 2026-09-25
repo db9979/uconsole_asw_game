@@ -12,7 +12,7 @@ import pygame
 
 from src.audio.receiver import smooth_limit
 from src.audio.synthesis import (active_sonar_ping, combat_effect,
-                                 stereo_bearing, tone)
+                                 sonar_echo, stereo_bearing, tone)
 from src.core import config
 from src.core.debuglog import append_bounded_log
 
@@ -188,6 +188,37 @@ class AudioEngine:
             if sound is None:
                 return False
             self._ping_channel.play(sound)
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
+            return False
+        return True
+
+    def play_echo(self, pulse: str, level: float, frequency_hz: float = 900.0,
+                  volume: float = 0.35) -> bool:
+        """Play one returned echo on the ping bus; a busy bus queues it once.
+
+        ``level`` (0..1) is quantized so repeated echoes reuse cached sounds.
+        """
+        if (not self.enabled or not self.available or self._ping_channel is None):
+            return False
+        try:
+            level = round(float(np.clip(level, 0.0, 1.0)) * 10) / 10
+            volume = float(np.clip(volume, 0.0, self.SOURCE_LIMITS["ping"]))
+            sound = self._sound(
+                lambda: sonar_echo(frequency_hz, pulse, level, self.sample_rate,
+                                   volume),
+                ("ping", "echo", str(pulse), level, round(frequency_hz),
+                 round(volume, 2)))
+            if sound is None:
+                return False
+            if not self._ping_channel.get_busy():
+                self._ping_channel.play(sound)
+            elif self._ping_channel.get_queue() is None:
+                self._ping_channel.queue(sound)
+            else:
+                return False
         except pygame.error:
             self._latch_device_error()
             return False

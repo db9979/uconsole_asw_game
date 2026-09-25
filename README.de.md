@@ -347,6 +347,13 @@ Voreinstellung `127.0.0.1:8765` gilt nur für das lokale Gerät und ist von ande
 Geräten nicht erreichbar. Eine Router-Portweiterleitung ist weder erforderlich
 noch unterstützt.
 
+Soll dieselbe Crew- oder Solo-Sitzung zusätzlich über einen eigenen
+HTTPS-Reverse-Proxy erreichbar sein, starten Sie das Spiel mit
+`--public-origin https://asw.example.net` (bei Bedarf mit `--solo-crew`) und
+lassen den Proxy auf die in F9 angezeigte LAN-Adresse zeigen. Die LAN-Adresse
+bleibt nutzbar; F9 zeigt dann beide Adressen. Details und Sicherheitshinweise:
+[`docs/web-host.de.md`](docs/web-host.de.md).
+
 Alternativ kann die uConsole einen temporären WPA2-Hotspot für Remote Crew
 bereitstellen. Installieren Sie dafür einmalig den eng begrenzten Helper mit
 `sudo ./packaging/uconsole/install-hotspot-helper.sh`, wählen Sie in F9 den

@@ -367,6 +367,9 @@ class Game:
         self._frame_clock_reset = True
         self._sound_event_seq = 0
         self._sound_events = deque(maxlen=16)
+        # Pulse type per transmission time, for the echo sound only (audio,
+        # never saved; after a load the current pulse is used).
+        self._ping_pulses = {}
         self._eco_drawn_at = float("-inf")
         self._sensor_acc = 0.0
         self._esm_acc = 0.0
@@ -377,6 +380,8 @@ class Game:
         self.menu_difficulty = (dict(difficulty) if difficulty
                                 and _valid_difficulty_dict(difficulty)
                                 else dict(config.DEFAULT_DIFFICULTY))
+        # Free-hunt choice for the start report; fixed scenarios set their own.
+        self.menu_hq_intel = "coarse"
         self.in_menu = start_menu
         self.menu_sel = 0  # Index in DIFFICULTY_FIELD_ORDER or SCENARIO_ORDER
         self.seed = seed
@@ -451,6 +456,7 @@ class Game:
         self.audio.stop()
         self._frame_clock_reset = True
         self._sound_events.clear()
+        self._ping_pulses.clear()
         self._sonar_audio_sequence = -1
         scenario_key = scenario_key or self.scenario_key
         if scenario_key not in config.SCENARIOS:
@@ -785,12 +791,14 @@ class Game:
                       self._mission_started_notice())
         if publish_intel:
             self.hq_msg(self._initial_threat_notice())
+            if self.hq_intel_mode() == "exact":
+                self.hq_msg(self._threat_identification_notice())
         # Menu input cannot operate the simulation. Only this unstarted world
         # may be consumed by menu start; loads replace its world/sonar identity.
         self._prepared_menu_mission = (
             seed, self.scenario_key, self.world_mode,
             tuple(self.difficulty[name] for name in config.DIFFICULTY_FIELD_ORDER),
-            id(self.world), id(self.sonar)) if self.in_menu else None
+            self.hq_intel_mode(), id(self.world), id(self.sonar)) if self.in_menu else None
 
     def start_custom_mission(self, definition: dict) -> bool:
         """Start the currently runtime-effective subset of an authored mission.
@@ -1016,6 +1024,44 @@ class Game:
         distance = max(5, int((math.hypot(dx, dy) + 2.5) // 5.0) * 5)
         return message(f"runtime.hq.threat_{domain}", bearing=f"{bearing:03d}",
                        range=distance)
+
+    def hq_intel_mode(self) -> str:
+        """Start-report detail: fixed per scenario, chosen for the free hunt."""
+        fixed = config.SCENARIOS.get(self.scenario_key, {}).get("hq_intel")
+        mode = fixed if fixed is not None else self.menu_hq_intel
+        return mode if mode in config.HQ_INTEL_MODES else "coarse"
+
+    def _threat_identification_notice(self):
+        """HQ names the hostile forces committed to this mission.
+
+        Authored mission intelligence at the start, like the briefing: type
+        and number of the deployed hostile units (catalog names, as listed in
+        the analyser) and the expected air-raid waves. Positions stay coarse.
+        """
+        counts = {}
+        for unit in (*self.subs, *self.warships):
+            if getattr(unit, "side", "hostile") != "hostile":
+                continue
+            # A submarine keeps its catalog profile in ``stype.profile``.
+            profile = getattr(getattr(unit, "stype", None), "profile", None) \
+                or getattr(unit, "profile", None)
+            key = getattr(profile, "key", None)
+            name = self.profile_name(key) if key is not None else None
+            if not name or name == key:
+                name = getattr(profile, "name", None) or name
+            if name:
+                counts[name] = counts.get(name, 0) + 1
+        items = [message("runtime.hq.intel_unit", count=count, name=raw_text(name))
+                 for name, count in counts.items()]
+        if self.mission.asm_count:
+            items.append(message("runtime.hq.intel_air",
+                                 count=self.mission.asm_count))
+        if not items:
+            return message("runtime.hq.intel_none")
+        units = items[-1]
+        for item in reversed(items[:-1]):
+            units = message("runtime.hq.intel_list", first=item, rest=units)
+        return message("runtime.hq.intel_exact", units=units)
 
     def start_new_game(self, scenario_key: str, world_mode: str,
                        difficulty: dict = None, seed: int = None) -> bool:
@@ -1290,6 +1336,7 @@ class Game:
             return "not_ready"
         if not self.sonar.fire_ping():
             return "not_ready"
+        self._remember_ping_pulse()
         self._emit_sound("sonar_ping")
         self.sonar.queue_ping(self.ship, self._sonar_targets(), self.world,
                               self.sim_t, self._sonar_range_factor(),
@@ -1326,6 +1373,7 @@ class Game:
             return "sonar_down"
         if not self.helo.fire_dipping_ping():
             return "not_ready"
+        self._remember_ping_pulse()
         self._emit_sound("sonar_ping")
         self.sonar.queue_ping(self.helo, self._sonar_targets(), self.world,
                               self.sim_t, self._sonar_range_factor(),
@@ -6902,6 +6950,30 @@ class Game:
         self._sound_event_seq += 1
         self._sound_events.append(dict(seq=self._sound_event_seq, kind=kind))
 
+    ECHO_LOUD_SNR_DB = 12.0
+
+    def _remember_ping_pulse(self) -> None:
+        self._ping_pulses[self.sim_t] = self.sonar.ping_pulse
+        while len(self._ping_pulses) > 32:
+            del self._ping_pulses[next(iter(self._ping_pulses))]
+
+    def _emit_echo(self, echo: dict) -> None:
+        """Make one arrived echo audible: local synthesis and a browser cue.
+
+        The simulation already delays the echo by its two-way travel time;
+        this only turns the measured return (pulse, echo SNR) into sound.
+        """
+        pulse = self._ping_pulses.get(echo.get("t"), self.sonar.ping_pulse)
+        pulse = pulse if pulse in ("CW", "LFM") else "CW"
+        snr_db = float(echo.get("snr_db", 0.0))
+        level = config.clamp((snr_db + 5.0) / 35.0, 0.0, 1.0)
+        self.audio.play_echo(pulse, level)
+        cue = f"sonar_echo_{pulse.lower()}"
+        if snr_db < self.ECHO_LOUD_SNR_DB:
+            cue += "_faint"
+        self._sound_event_seq += 1
+        self._sound_events.append(dict(seq=self._sound_event_seq, kind=cue))
+
     def _play_unit_audio(self, profile_key: str, mode: str, machine) -> None:
         """Kontakt-Katalog-Hörprobe: deterministisches Einheiten-Sample abspielen."""
         rate = self.audio.sample_rate
@@ -7656,6 +7728,7 @@ class Game:
                 bearing_uncertainty_deg=contact.bearing_uncertainty_deg)
         while self.sonar.echo_events:
             echo = self.sonar.echo_events.pop(0)
+            self._emit_echo(echo)
             if echo["contact_id"] == 0:
                 self.feed.add(self.world.format_time(), "sonar",
                               message("runtime.echo.unassociated",
@@ -11065,7 +11138,7 @@ class Game:
         prepared = (self.seed, self.scenario_key, self.world_mode,
                     tuple(candidate_difficulty[name]
                           for name in config.DIFFICULTY_FIELD_ORDER),
-                    id(self.world), id(self.sonar))
+                    self.hq_intel_mode(), id(self.world), id(self.sonar))
         reuse = (self.in_menu and self._prepared_menu_mission == prepared
                  and self.sim_t == 0.0 and self.mission_time == 0.0
                  and self.custom_mission_definition is None
@@ -11107,6 +11180,10 @@ class Game:
         self.main_menu_sel = 0
         self.menu_screen = "scenario"
         self.menu_sel = 0
+
+    def hq_intel_mode_menu(self) -> str:
+        return (self.menu_hq_intel if self.menu_hq_intel in config.HQ_INTEL_MODES
+                else "coarse")
 
     def _handle_menu_key(self, key) -> None:
         if key == pygame.K_f:
@@ -11178,14 +11255,21 @@ class Game:
                 self.main_menu_sel = 0
             return
         if self.menu_screen == "difficulty":
-            n = len(config.DIFFICULTY_FIELD_ORDER)
-            name = config.DIFFICULTY_FIELD_ORDER[self.menu_sel]
-            kind, low, high, step, _default = config.DIFFICULTY_FIELDS[name]
+            # The last row (after the saved difficulty fields) is the HQ intel.
+            n = len(config.DIFFICULTY_FIELD_ORDER) + 1
+            intel_row = self.menu_sel == n - 1
             if key == pygame.K_UP:
                 self.menu_sel = (self.menu_sel - 1) % n
             elif key == pygame.K_DOWN:
                 self.menu_sel = (self.menu_sel + 1) % n
+            elif key in (pygame.K_LEFT, pygame.K_RIGHT) and intel_row:
+                modes = config.HQ_INTEL_MODES
+                self.menu_hq_intel = modes[(modes.index(self.hq_intel_mode_menu())
+                                            + (1 if key == pygame.K_RIGHT else -1))
+                                           % len(modes)]
             elif key in (pygame.K_LEFT, pygame.K_RIGHT):
+                name = config.DIFFICULTY_FIELD_ORDER[self.menu_sel]
+                kind, low, high, step, _default = config.DIFFICULTY_FIELDS[name]
                 delta = step * (1 if key == pygame.K_RIGHT else -1)
                 value = config.clamp(self.menu_difficulty[name] + delta, low, high)
                 self.menu_difficulty[name] = (
@@ -11259,6 +11343,14 @@ class Game:
                                label=self.tr("difficulty." + name),
                                value=value_text),
                        190 + i * row_h, color=col)
+            i = len(config.DIFFICULTY_FIELD_ORDER)
+            selected = i == self.menu_sel
+            center(message("menu.difficulty_choice",
+                           marker="► " if selected else "  ",
+                           label=self.tr("menu.hq_intel"),
+                           value=self.tr("menu.hq_intel." + self.hq_intel_mode_menu())),
+                   190 + i * row_h,
+                   color=config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
         else:  # briefing
             sc = config.SCENARIOS[self.scenario_key]
             scenario_key = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
@@ -11336,8 +11428,11 @@ class Game:
                           config.COLOR_TEXT, size=20, align="center", valign="center")
         address = getattr(self.commander, "address", None)
         if address is not None:
-            layout.blit_line(s, message("commander.local.url", url=raw_text(
-                f"http://{address[0]}:{address[1]}/")),
+            url = raw_text(f"http://{address[0]}:{address[1]}/")
+            proxy = getattr(self.commander, "public_origin", None)
+            layout.blit_line(s, message("commander.local.url_proxy", url=url,
+                                        proxy=raw_text(proxy + "/"))
+                             if proxy else message("commander.local.url", url=url),
                 (x, panel.y + 150, w, 32), config.COLOR_TEXT, size=22, align="center")
         layout.blit_line(s, message(
             "eco.state.running", time=raw_text(self.world.format_time())),

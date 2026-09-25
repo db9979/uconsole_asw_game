@@ -325,6 +325,12 @@ private IPv4 while the service is off, then enable it. Open the displayed URL on
 each crew device. The default `127.0.0.1:8765` is local-only, not reachable from
 another device. No router forwarding is needed or supported.
 
+To reach the same crew or solo session through your own HTTPS reverse proxy as
+well, start the game with `--public-origin https://asw.example.net` (optionally
+with `--solo-crew`) and point the proxy at the LAN URL shown in F9. The LAN URL
+keeps working; F9 then shows both addresses. Details and security notes:
+[`docs/web-host.de.md`](docs/web-host.de.md).
+
 Alternatively, the uConsole can create a temporary WPA2 Remote Crew hotspot.
 Install its narrowly scoped privileged helper once with
 `sudo ./packaging/uconsole/install-hotspot-helper.sh`, select the hotspot network

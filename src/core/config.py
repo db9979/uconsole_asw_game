@@ -603,6 +603,11 @@ MISSION_TYPES = {
 }
 
 # W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
+# hq_intel: "coarse" = HQ meldet nur grob Peilung/Entfernung einer Bedrohung,
+# "exact" = HQ benennt zusätzlich die eingesetzten feindlichen Einheiten
+# (Typ und Anzahl); None = im Menü wählbar. Nur die Startmeldung hängt davon
+# ab, deshalb gehört die Einstellung nicht in den gespeicherten Schwierigkeitssatz.
+HQ_INTEL_MODES = ("coarse", "exact")
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall")
 SCENARIOS = {
     "s1_patrouille": dict(
@@ -612,6 +617,7 @@ SCENARIOS = {
                        enemy_attack_mult=0.7, enemy_cooldown_s=1200.0,
                        second_sub_prob=0.0),
         mission_type="patrouille",
+        hq_intel="exact",
         ship_start=(300.0, 380.0), ship_course=300.0,
         # Kein Seename hier: Welt/Seed sind im Menü frei wählbar (W/R), die
         # tatsächliche Karte kann von jeder Namensnennung abweichen.
@@ -628,6 +634,7 @@ SCENARIOS = {
                        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
                        second_sub_prob=0.0),
         mission_type="doppeljagd",
+        hq_intel="coarse",
         ship_start=(250.0, 300.0), ship_course=0.0,
         briefing=("Auftrag: Zwei U-Boote operieren im Einsatzsektor (eines davon "
                   "möglicherweise AIP – nahezu stumm). Belegungen: ESM-Wellen "
@@ -643,6 +650,7 @@ SCENARIOS = {
                        enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
                        second_sub_prob=0.85),
         mission_type="nuklearer_abfang",
+        hq_intel="coarse",
         ship_start=(320.0, 250.0), ship_course=270.0,
         briefing=("Auftrag: Hochwertiges nukleares U-Boot (SSN) dringt in den "
                   "Sektor ein – extrem leise, taucht tief unter die Thermokline, "
@@ -655,6 +663,7 @@ SCENARIOS = {
         title="Freie Jagd (Zufall)",
         difficulty=None,     # Custom-Schwierigkeit-Bildschirm danach
         mission_type=None,   # aus difficulty zusammengesetzt
+        hq_intel=None,       # im Schwierigkeits-Bildschirm wählbar
         ship_start=None, ship_course=None,
         briefing="Zufällige Mission – Typ und Schwierigkeit nach Auswahl.",
         win_text="",

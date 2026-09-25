@@ -873,7 +873,11 @@ class CommanderConsole:
                              config.COLOR_WARN, size=26)
             url = (f"http://{self.address[0]}:{self.address[1]}/"
                    if self.address is not None else tr("commander.local.unavailable"))
-            layout.blit_line(screen, message("commander.local.url", url=raw_text(url)),
+            proxy = self.public_origin if not self.web_mode else None
+            layout.blit_line(screen, message("commander.local.url_proxy", url=raw_text(url),
+                                             proxy=raw_text(proxy + "/"))
+                             if proxy and self.address is not None else
+                             message("commander.local.url", url=raw_text(url)),
                              (124, 72, 1032, 34), config.COLOR_TEXT, size=24,
                              align="center")
             layout.blit_line(screen, message("commander.local.connection", state=tr(

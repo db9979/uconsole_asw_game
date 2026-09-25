@@ -26,7 +26,9 @@ def main(argv=None) -> int:
     parser.add_argument("--web-host", action="store_true",
                         help="run one browser-only room behind a local HTTPS reverse proxy")
     parser.add_argument("--public-origin", metavar="HTTPS_ORIGIN",
-                        help="exact public HTTPS origin used by the reverse proxy")
+                        help="exact public HTTPS origin used by the reverse proxy; "
+                             "without --web-host, Remote Crew (F9, crew or solo) "
+                             "answers on this proxy origin and on its LAN address")
     parser.add_argument("--web-port", type=int, default=8765)
     parser.add_argument("--web-bind", default="127.0.0.1", metavar="PRIVATE_IP",
                         help="IPv4 address to listen on; use the device's private LAN IP "
@@ -37,13 +39,11 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.web_host and (args.solo_crew or not args.public_origin):
         parser.error("--web-host requires --public-origin and excludes --solo-crew")
-    if args.public_origin and not args.web_host:
-        parser.error("--public-origin requires --web-host")
     if args.web_bind != "127.0.0.1" and not args.web_host:
         parser.error("--web-bind requires --web-host")
     if args.reset_web_host_password and not args.web_host:
         parser.error("--reset-web-host-password requires --web-host")
-    if args.web_host:
+    if args.public_origin is not None:
         try:
             origin = urlsplit(args.public_origin)
             valid_origin = (origin.scheme == "https" and bool(origin.hostname)
@@ -55,6 +55,7 @@ def main(argv=None) -> int:
             valid_origin = False
         if not valid_origin:
             parser.error("--public-origin must be an exact HTTPS origin")
+    if args.web_host:
         if not 1024 <= args.web_port <= 65535:
             parser.error("--web-port must be between 1024 and 65535")
         try:
@@ -92,6 +93,9 @@ def main(argv=None) -> int:
             print(f"Web host setup code (15 minutes): {auth.setup_code}", flush=True)
         print(f"Web room: {args.public_origin}/admin", flush=True)
         print(f"Proxy upstream: http://{args.web_bind}:{args.web_port}", flush=True)
+    elif args.public_origin is not None:
+        # Local game: Remote Crew (F9) also answers behind this HTTPS proxy.
+        game.commander.public_origin = args.public_origin
     if args.solo_crew:
         game.commander.autostart_solo()
     game.run()

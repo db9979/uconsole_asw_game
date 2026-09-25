@@ -19,20 +19,25 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v12_and_exact_v11_document_is_rejected():
+def test_save_is_v13_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (12, "u-jagd-save-v12")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (12, "u-jagd-save-v12")
+    assert (state["version"], state["save_schema"]) == (13, "u-jagd-save-v13")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (13, "u-jagd-save-v13")
     assert set(state) == SAVE_ROOT_FIELDS
+    before = game.save_state()
     legacy = copy.deepcopy(state)
     legacy["version"] = 11
     legacy["save_schema"] = "u-jagd-save-v11"
     del legacy["ais"]
     for row in legacy["subs"]:
         del row["active_ping_cd"]
-    before = game.save_state()
     assert not game._load_save_data(legacy)
+    # v12 differs only by the operator catalog assignment on sonar contacts.
+    v12 = copy.deepcopy(state)
+    v12["version"] = 12
+    v12["save_schema"] = "u-jagd-save-v12"
+    assert not game._load_save_data(v12)
     assert game.save_state() == before
 
 

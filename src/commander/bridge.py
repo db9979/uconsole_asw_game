@@ -342,6 +342,26 @@ def _sonar_set_operator_notch(game, params, _bindings):
     return game.set_sonar_operator_notch(params["frequency_hz"])
 
 
+def _sonar_tas_side(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None
+            else game.set_tas_side(contact, params["action"]))
+
+
+def _sonar_set_demon_band(game, params, _bindings):
+    return game.set_sonar_demon_band(float(params["low_hz"]), float(params["high_hz"]))
+
+
+def _sonar_set_heterodyne(game, params, _bindings):
+    return game.set_sonar_heterodyne(float(params["frequency_hz"]))
+
+
+def _sonar_assign_profile(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None else
+            game.assign_contact_profile(contact, params["profile_key"]))
+
+
 def _sonar_tma_set(game, params, bindings):
     contact = _sonar_contact(bindings, params["ref"])
     return ("unknown_ref" if contact is None else game.set_tma_hypothesis(
@@ -513,6 +533,10 @@ _V2_ACTION_HANDLERS = {
     "sonar_set_harmonic": _sonar_set_harmonic,
     "sonar_set_cursor": _sonar_set_cursor,
     "sonar_tma_set": _sonar_tma_set,
+    "sonar_assign_profile": _sonar_assign_profile,
+    "sonar_set_demon_band": _sonar_set_demon_band,
+    "sonar_tas_side": _sonar_tas_side,
+    "sonar_set_heterodyne": _sonar_set_heterodyne,
     "sonar_tma_accept": _sonar_tma_accept,
     "sonar_tma_copy_proposal": _sonar_tma_copy_proposal,
     "sonar_mark_line": _sonar_mark_line,
@@ -856,6 +880,10 @@ class CommanderBridge:
                                "FLG": "AIR", "ASM": "AIR"}.get(track.kind, "UNKNOWN"),
                         source=str(source)[:64], affiliation=game.opz_affiliation(key),
                         classification=getattr(track, "classification", None),
+                        profile=(game.profile_name(associated.player_profile)[:128]
+                                 if associated is not None
+                                 and getattr(associated, "player_profile", None)
+                                 else None),
                         bearing=_number(track.bearing),
                        range_nm=None,
                        x=_number(track.x) if positioned else None,

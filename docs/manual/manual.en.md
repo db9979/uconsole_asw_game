@@ -335,6 +335,9 @@ The display shows measured modulation, not identity. After changing the bearing 
 | `Q` | Integration time 2 (FFT)/8/16/64 s |
 | `Shift+Q` | LOFAR vernier: 20 Hz at native 0.5 Hz |
 | `Shift+N` | Notch at the cursor frequency |
+| `Shift+F` | DEMON carrier band 200-800 / 400-1400 / 1000-2000 Hz |
+| `Ctrl+F` | Heterodyne shift 400/700/1000/1200 Hz |
+| `X / Shift+X (BB)` | Broadband/fusion: TAS side of the selected contact flip / Shift: confirm |
 | `Z / X (TMA)` | TMA page: hypothesis course -/+ 5 deg (Shift 1 deg) |
 | `Ctrl+Z / Ctrl+X (TMA)` | TMA page: hypothesis speed -/+ 1 kn |
 | `Q / Shift+Q (TMA)` | TMA page: hypothesis range -/+ 1 NM (Ctrl 0.2 NM) |
@@ -367,7 +370,9 @@ Combat situation:
 - Put the TAS below the measured layer to hear deep targets; keep the HMS for shallow ones. Both arrays run in parallel.
 - The TMA page shows the closing rate derived from the accepted solution: positive means the target is closing.
 - If the TAS and HMS disagree by 9 degrees or more, treat the contact as a possible ghost (the display flags it) and turn to resolve it.
-- The towed array is a line: it cannot tell a bearing from its mirror about the cable. A contact heard only on the TAS is marked "TAS left/right ambiguous" with its mirror bearing and does not feed TMA; the shown side is right only half the time. Turn 20 degrees (or get the contact on the HMS) and the wrong side drops out. Bearings toward the cable ends (endfire) are also less accurate than broadside.
+- The towed array is a line: it cannot tell a bearing from its mirror about the cable. A contact heard only on the TAS is marked "TAS left/right ambiguous" with its mirror bearing and does not feed TMA; the display shows the side you choose (starboard by default). Turn 20 degrees and watch both traces: the true one stays continuous, the ghost jumps (the status then reads "turn made - compare traces"). On the broadband or fusion page `X` shows the other side and `Shift+X` confirms the shown side; nothing is resolved for you. A wrongly confirmed side stays mirrored (the TMA residuals will show it; `X` reopens the choice). A hull-sonar bearing resolves the side by measurement. Bearings toward the cable ends (endfire) are also less accurate than broadside.
+- `Shift+F` selects the DEMON carrier band (200-800, 400-1400 or 1000-2000 Hz): search the band where the cavitation noise is strongest. `Ctrl+F` sets the heterodyne shift (400/700/1000/1200 Hz) for listening to low tonals.
+- In the contact analyser (`F8`) with a contact selected, `Enter` assigns the browsed catalog profile to that contact and `Shift+Enter` clears it. The assignment is your annotation: it is shown in the contact list and saved, and it never changes the contact's classification or weapon interlocks.
 - A contact is lost 120 s after its last detection. Keep tracking weak contacts, or reacquire with a ping.
 - Wrecks return real echoes without Doppler. A submarine lying still beside a charted wreck hides in that echo from a CW ping (750 m range cell); an LFM ping resolves about 8 m and can separate the boat from the wreck. Suspect every wreck the enemy could have reached.
 - The bathythermograph (`E`) measures to the seabed, at most 1500 m. Only after a measurement does the weather & sonar analysis (`0`) show the layer, the shadow zone below it and a SOFAR channel.

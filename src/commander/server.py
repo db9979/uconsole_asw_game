@@ -294,6 +294,25 @@ def _sonar_band_params(params):
             and 0.0 <= params["low_hz"] < params["high_hz"] <= 300.0)
 
 
+def _tas_side_params(params):
+    return (type(params) is dict and set(params) == {"ref", "action"}
+            and type(params["ref"]) is str and 0 < len(params["ref"]) <= 64
+            and params["action"] in ("flip", "confirm"))
+
+
+def _demon_band_params(params):
+    return (type(params) is dict and set(params) == {"low_hz", "high_hz"}
+            and (params["low_hz"], params["high_hz"]) in ((200, 800), (400, 1400),
+                                                          (1000, 2000)))
+
+
+def _assign_profile_params(params):
+    key = params.get("profile_key") if type(params) is dict else None
+    return (type(params) is dict and set(params) == {"ref", "profile_key"}
+            and type(params["ref"]) is str and 0 < len(params["ref"]) <= 64
+            and (key is None or (type(key) is str and 0 < len(key) <= 64)))
+
+
 def _tma_hypothesis_params(params):
     return (type(params) is dict
             and set(params) == {"ref", "course", "speed_kn", "range_nm"}
@@ -497,6 +516,11 @@ V2_ACTION_REGISTRY = {
         _bounded_number_params("frequency_hz", 0.000001, 300, nullable=True)),
     "sonar_designate_target": V2Action(frozenset({"sonar"}), _single_ref_params),
     "sonar_tma_set": V2Action(frozenset({"sonar"}), _tma_hypothesis_params),
+    "sonar_assign_profile": V2Action(frozenset({"sonar"}), _assign_profile_params),
+    "sonar_tas_side": V2Action(frozenset({"sonar"}), _tas_side_params),
+    "sonar_set_demon_band": V2Action(frozenset({"sonar"}), _demon_band_params),
+    "sonar_set_heterodyne": V2Action(frozenset({"sonar"}),
+        _bounded_number_params("frequency_hz", 400, 1200)),
     "sonar_tma_accept": V2Action(frozenset({"sonar"}), _single_ref_params),
     "sonar_tma_copy_proposal": V2Action(frozenset({"sonar"}), _single_ref_params),
     "helicopter_launch": V2Action(frozenset({"helicopter"}), _no_params),
@@ -1656,7 +1680,8 @@ class CommanderServer:
         status_fields = {"protocol", "version", "session", "epoch", "revision",
                          "seq", "phase", "role", "chart_revision"}
         assigned_fields = status_fields | {"clock", "environment", "mission",
-                                           "autocrew", "audio", "weather_station"}
+                                           "autocrew", "autocrew_overview", "audio",
+                                           "weather_station"}
         if (not isinstance(states, dict) or not isinstance(charts, dict)
                 or set(states) != expected or set(charts) != expected):
             raise ValueError("invalid v2 publication")

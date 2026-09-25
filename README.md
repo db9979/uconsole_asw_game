@@ -23,7 +23,7 @@ logistics; the radar equation with a rotating antenna, ESM amplitude, HF
 propagation and a moonlit lookout; and missile flight physics with chaff
 clouds, CIWS ballistics, pop-up raiders, helicopter hover/deck limits and
 drifting buoys. Hostile submarines now need their own TMA before they know
-your range. **Saves are now format v12; 1.0.0 (v11) saves are rejected.** The
+your range. **Saves are now format v13 (manual catalog assignment of contacts); older saves are rejected.** The
 Remote Crew v2 protocol is unchanged apart from new ELOKA intercept fields.
 See [docs/simulation-gaps.md](docs/simulation-gaps.md) for the full record.
 
@@ -301,7 +301,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v12 game saves for deterministic restoration of existing sessions.
+in v13 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -405,8 +405,8 @@ Validated does not mean runtime-effective. In release 1.0.0:
 
 ## Saves and User Data
 
-This build writes and loads save format **v12** only. V12 requires the exact
-`u-jagd-save-v12` schema, including the current runtime catalog snapshot and all
+This build writes and loads save format **v13** only. V13 requires the exact
+`u-jagd-save-v13` schema, including the current runtime catalog snapshot and all
 deterministic continuation state. Older (including every 1.0.0 v11 save),
 newer, malformed, or incomplete saves are rejected without replacing the
 running game; there is no migration.

@@ -249,7 +249,7 @@ def test_one_solo_session_can_hold_target_and_navigation_proposals_at_once(serve
 def _publication():
     common = dict(protocol=2, version="t", session="s", epoch=0, revision=0, seq=1,
                   phase="live", chart_revision="s", clock={}, environment={},
-                  mission={}, autocrew={"enabled": False, "status": "off"},
+                  mission={}, autocrew={"enabled": False, "status": "off"}, autocrew_overview=[],
                   audio={"events": []}, weather_station=WEATHER_STATION)
     chart = dict(protocol=2, revision="s", size_nm=500, landmasses=[], disclaimer="")
     redacted = {key: common[key] for key in (

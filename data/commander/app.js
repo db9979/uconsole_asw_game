@@ -683,7 +683,8 @@
 
   function sonarEntries(row) {
     return [["reference", row.label], ["source", row.source],
-      ["classification", classificationText(row.classification)], ["bearing", unit(row.bearing, "\u00b0", 0)],
+      ["classification", classificationText(row.classification)], ["catalog_profile", row.profile || t("station_none")],
+      ["bearing", unit(row.bearing, "\u00b0", 0)],
       ["range", unit(row.range_nm, "NM")], ["position", position(row)], ["depth", unit(row.depth_m, "m", 0)],
       ["course", unit(row.course, "\u00b0", 0)], ["speed", unit(row.speed_kn, "kn")],
       ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
@@ -827,6 +828,8 @@
         rpm: finite(settings.tools.shaft_hz) ? number(settings.tools.shaft_hz * 60, 0) : "--"})],
       ["sonar_assist", yesNo(settings.tools.assist)]]);
     if (!stationDrafts.has("sonar-integration")) $("sonar-integration").value = String(settings.tools.integration_s);
+    if (!stationDrafts.has("sonar-demon-band")) $("sonar-demon-band").value = settings.tools.demon_band_hz.map((value) => number(value, 0).replace(/\D/g, "")).join("-");
+    if (!stationDrafts.has("sonar-heterodyne")) $("sonar-heterodyne").value = String(Math.round(settings.tools.heterodyne_hz));
     $("sonar-vernier").checked = settings.tools.vernier;
     const live = !settings.station_down;
     if (!stationDrafts.has("sonar-array-mode")) $("sonar-array-mode").value = settings.mode;
@@ -2824,6 +2827,10 @@
     $("analysis-key").textContent = profile.key;
     $("analysis-name").textContent = profile.name;
     $("analysis-resource").textContent = t(`analyzer_${profile.resource.slice(0, -5)}`);
+    // Sonar operators assign the compared profile to their selected contact.
+    const canAssign = session?.station === "sonar" && Boolean(selected) && stationActionAvailable();
+    $("analysis-assign").hidden = $("analysis-assign-clear").hidden = !canAssign;
+    $("analysis-assign-status").value = canAssign ? t("analyzer_assign_target", {contact: selectedTrack()?.label || selected}) : "";
     const reference = profile.reference;
     const machine = profile.machine;
     const joined = (items) => Array.isArray(items) && items.length ? items.join(", ") : t("unavailable");
@@ -3190,7 +3197,7 @@
       if (!exactKeys(state, status)) throw new Error("protocol");
       return;
     }
-    const common = [...status, "clock", "environment", "mission", "autocrew", "audio", "weather_station"];
+    const common = [...status, "clock", "environment", "mission", "autocrew", "autocrew_overview", "audio", "weather_station"];
     if (!stationNames.includes(state.role) || state.role !== session?.station ||
         !exactKeys(state, [...common, state.role]) || !exactKeys(state.clock, ["sim", "mission", "world"]) ||
         !exactKeys(state.environment, ["sea_state", "effective_sea_state", "is_night", "weather", "wind_from_deg", "wind_speed_kn", "rain_intensity", "visibility_nm"]) ||
@@ -3203,6 +3210,9 @@
         !finite(state.environment.visibility_nm) || state.environment.visibility_nm < .1 || state.environment.visibility_nm > 30 ||
         !exactKeys(state.autocrew, ["enabled", "status"]) || typeof state.autocrew.enabled !== "boolean" ||
         !["off", "active", "suspended_remote", "blocked_damage"].includes(state.autocrew.status) ||
+        !boundedArray(state.autocrew_overview, 9) || state.autocrew_overview.some((row) => !exactKeys(row, ["station", "enabled", "status"]) ||
+          !stationNames.includes(row.station) || typeof row.enabled !== "boolean" ||
+          !["off", "active", "suspended_remote", "blocked_damage"].includes(row.status)) ||
         !exactKeys(state.mission, ["name", "objective", "remaining_s"]) ||
         !exactKeys(state.audio, ["events"]) ||
         !boundedArray(state.audio.events, 16) ||
@@ -3235,7 +3245,7 @@
         if (row.altitude_m !== null && (!finite(row.altitude_m) || row.altitude_m < 0 || row.altitude_m > 30000)) throw new Error("protocol");
       });
     };
-    const sonarFields = ["ref", "label", "source", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
+    const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
     if (state.role === "bridge") {
       if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
       if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
@@ -3257,7 +3267,8 @@
       const settings = payload.settings;
       if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
           !["BOW", "TOWED"].includes(settings.mode) || typeof settings.station_down !== "boolean" ||
-          !exactKeys(settings.tools, ["assist", "lofar_cursor_hz", "demon_cursor_hz", "integration_s", "vernier", "shaft_hz", "blade_hz", "operator_notch_hz"]) ||
+          !exactKeys(settings.tools, ["assist", "lofar_cursor_hz", "demon_cursor_hz", "integration_s", "vernier", "shaft_hz", "blade_hz", "operator_notch_hz", "demon_band_hz", "heterodyne_hz"]) ||
+          !boundedArray(settings.tools.demon_band_hz, 2) || settings.tools.demon_band_hz.some((value) => !finite(value)) || !finite(settings.tools.heterodyne_hz) ||
           typeof settings.tools.assist !== "boolean" || typeof settings.tools.vernier !== "boolean" ||
           ![2, 8, 16, 64].includes(settings.tools.integration_s) ||
           [settings.tools.lofar_cursor_hz, settings.tools.demon_cursor_hz].some((value) => !finite(value) || value < 0 || value > 300) ||
@@ -4375,6 +4386,10 @@
     $("autocrew-status").textContent = v2State?.autocrew ? t("autocrew_status", {
       status: t(`autocrew_${v2State.autocrew.status}`),
     }) : "";
+    $("autocrew-overview").textContent = v2State?.autocrew_overview?.some((row) => row.enabled)
+      ? t("autocrew_overview", {stations: v2State.autocrew_overview.filter((row) => row.enabled)
+        .map((row) => `${t(`station_${row.station}`)}: ${t(`autocrew_${row.status}`)}`).join(", ")})
+      : t("autocrew_overview_none");
     metrics($("mission-metrics"), [
       ["remaining", unit(snapshot.mission.remaining_s, "s", 0)],
       ["mission_clock", unit(snapshot.clock.mission, "s", 0)],
@@ -5720,10 +5735,22 @@
     if (selected && [course, speed, range].every(finite) && course >= 0 && course < 360 && speed >= 0 && speed <= 45 && range >= .2 && range <= 60)
       sendStationAction("sonar_tma_set", {ref: selected, course, speed_kn: speed, range_nm: range});
   });
+  $("analysis-assign").addEventListener("click", () => {
+    const profile = analysisProfile();
+    if (profile && selected) sendStationAction("sonar_assign_profile", {ref: selected, profile_key: profile.key});
+  });
+  $("analysis-assign-clear").addEventListener("click", () => { if (selected) sendStationAction("sonar_assign_profile", {ref: selected, profile_key: null}); });
   $("sonar-tma-accept").addEventListener("click", () => { if (selected) sendStationAction("sonar_tma_accept", {ref: selected}); });
   $("sonar-tma-copy").addEventListener("click", () => { if (selected) sendStationAction("sonar_tma_copy_proposal", {ref: selected}); });
+  $("sonar-demon-band").addEventListener("change", () => {
+    const [low, high] = $("sonar-demon-band").value.split("-").map(Number);
+    sendStationAction("sonar_set_demon_band", {low_hz: low, high_hz: high});
+  });
+  $("sonar-heterodyne").addEventListener("change", () => sendStationAction("sonar_set_heterodyne", {frequency_hz: Number($("sonar-heterodyne").value)}));
   $("sonar-integration").addEventListener("change", () => sendStationAction("sonar_set_integration", {seconds: Number($("sonar-integration").value)}));
   $("sonar-vernier").addEventListener("change", () => sendStationAction("sonar_set_vernier", {enabled: $("sonar-vernier").checked}));
+  $("sonar-tas-flip").addEventListener("click", () => { if (selected) sendStationAction("sonar_tas_side", {ref: selected, action: "flip"}); });
+  $("sonar-tas-confirm").addEventListener("click", () => { if (selected) sendStationAction("sonar_tas_side", {ref: selected, action: "confirm"}); });
   $("sonar-demon-mark").addEventListener("click", () => sendStationAction("sonar_mark_line", {page: "demon"}));
   $("sonar-band-edges-form").addEventListener("submit", (event) => {
     event.preventDefault();

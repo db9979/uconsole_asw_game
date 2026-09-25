@@ -38,7 +38,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     game, bridge, server = published
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
-              "autocrew", "audio", "weather_station"}
+              "autocrew", "autocrew_overview", "audio", "weather_station"}
     assert set(server.v2_states) == {None, *ROLE_NAMES}
     assert server.v2_states[None] == dict(
         protocol=2, version=server.state["version"], session=bridge.status["session"],
@@ -171,6 +171,11 @@ def test_autocrew_projection_is_role_local_and_reports_damage_block(published):
     assert server.v2_states["bridge"]["autocrew"] == {
         "enabled": False, "status": "off"}
     assert "stations" not in server.v2_states["engine"]["autocrew"]
+    # The crew overview (uConsole F3) lists every station's automation.
+    overview = {row["station"]: row for row in server.v2_states["bridge"]["autocrew_overview"]}
+    assert overview["engine"] == {"station": "engine", "enabled": True,
+                                  "status": "blocked_damage"}
+    assert overview["bridge"]["enabled"] is False
 
 
 def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):

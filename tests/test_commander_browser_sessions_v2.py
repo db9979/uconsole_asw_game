@@ -916,7 +916,7 @@ def _direct_fire_browser_states():
                                     wind_from_deg=245.0, wind_speed_kn=12.0,
                                     rain_intensity=.1, visibility_nm=24.0),
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
-                   autocrew=dict(enabled=False, status="off"),
+                   autocrew=dict(enabled=False, status="off"), autocrew_overview=[],
                    audio=dict(events=[]), weather_station=WEATHER_STATION)
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
@@ -1108,7 +1108,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
             "fixes")}
         result.update(observer_x=legacy["ownship"]["x"],
-                      observer_y=legacy["ownship"]["y"], released_to_opz=False)
+                      observer_y=legacy["ownship"]["y"], released_to_opz=False,
+                      profile=None)
         return result
 
     def state_for(role):
@@ -1123,6 +1124,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             wind_from_deg=220.0, wind_speed_kn=10.0,
             rain_intensity=0.0, visibility_nm=30.0)
         common["autocrew"] = {"enabled": False, "status": "off"}
+        common["autocrew_overview"] = []
         common["audio"] = {"events": list(legacy["sound_events"])}
         common["weather_station"] = WEATHER_STATION
         if role == "bridge":
@@ -1163,7 +1165,9 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                               "tools": {"assist": False, "lofar_cursor_hz": 50.0,
                                         "demon_cursor_hz": 10.0, "integration_s": 2,
                                         "vernier": False, "shaft_hz": None,
-                                        "blade_hz": None, "operator_notch_hz": None}},
+                                        "blade_hz": None, "operator_notch_hz": None,
+                                        "demon_band_hz": [400.0, 1400.0],
+                                        "heterodyne_hz": 700.0}},
                 "visualization": {
                     "broadband": {"bearing_start_deg": 0.0,
                                   "bearing_step_deg": 4.0, "history": []},

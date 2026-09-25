@@ -124,6 +124,8 @@ class AcousticReceiver:
         self.seed = int(_finite(seed, 42)) % (2**64)
         self.sequence = -1
         self._history = np.zeros(2 * self.sample_rate, dtype=np.float32)
+        # Carrier band the DEMON envelope is taken from (operator choice).
+        self.demon_band_hz = (400.0, 1400.0)
         self._time = np.arange(1024) / self.sample_rate
         self._angles = np.arange(180) * 2.0
         self._frequencies = np.fft.rfftfreq(self._history.size, 1 / self.sample_rate)
@@ -534,7 +536,7 @@ class AcousticReceiver:
                     break
 
         # A low-frequency tone alone must not be mistaken for modulation.
-        envelope = analytic_envelope(data, self.sample_rate, 400.0, 1400.0)
+        envelope = analytic_envelope(data, self.sample_rate, *self.demon_band_hz)
         carrier_rms = float(np.sqrt(np.mean(envelope**2) / 2))
         envelope_mean = float(envelope.mean())
         modulation = np.abs(np.fft.rfft((envelope - envelope_mean) * window,

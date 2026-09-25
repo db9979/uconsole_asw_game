@@ -2490,6 +2490,9 @@ class Game:
                 if e.key == pygame.K_k:
                     self._cycle_sonar_harmonic()
                     return
+                if e.key == pygame.K_x and self.sonar_page in (0, 4):
+                    self._tas_side_key(e)
+                    return
                 if e.key in (pygame.K_z, pygame.K_x) and self.sonar_page in (1, 2):
                     self._sonar_cursor_key(e)
                     return
@@ -2862,7 +2865,22 @@ class Game:
                     self.flash(message("helo.source.buoy" if self.helo_sensor_source == "BUOY"
                                        else "helo.source.dip"))
             elif e.key == pygame.K_f:
-                if self.station is Station.SONAR:
+                if self.station is Station.SONAR and getattr(e, "mod", 0) & pygame.KMOD_SHIFT:
+                    bands = analysis_tools.DEMON_BANDS_HZ
+                    current = tuple(self.sonar.receiver.demon_band_hz)
+                    index = bands.index(current) if current in bands else -1
+                    low, high = bands[(index + 1) % len(bands)]
+                    self.set_sonar_demon_band(low, high)
+                    self.flash(message("runtime.demon_band", low=f"{low:.0f}",
+                                       high=f"{high:.0f}"), 1.5)
+                elif self.station is Station.SONAR and getattr(e, "mod", 0) & pygame.KMOD_CTRL:
+                    offsets = analysis_tools.HETERODYNE_OFFSETS_HZ
+                    current = self.sonar.heterodyne_hz
+                    index = offsets.index(current) if current in offsets else -1
+                    self.set_sonar_heterodyne(offsets[(index + 1) % len(offsets)])
+                    self.flash(message("runtime.heterodyne",
+                                       frequency=f"{self.sonar.heterodyne_hz:.0f}"), 1.5)
+                elif self.station is Station.SONAR:
                     self._cycle_sonar_band()
                 elif self.station is Station.ELOKA:
                     self._cycle_eloka_filter(
@@ -3384,6 +3402,60 @@ class Game:
         if self.damage.station_down("sonar"):
             return "sonar_down"
         self.sonar.band_low_hz, self.sonar.band_high_hz = float(low_hz), float(high_hz)
+        return True
+
+    def set_tas_side(self, contact, action: str):
+        """Operator decision on a towed-only contact's array side.
+
+        ``flip`` shows the other side (and reopens a confirmed choice);
+        ``confirm`` commits the shown side. Nothing is decided automatically.
+        """
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            return "stale_ref"
+        if action not in ("flip", "confirm"):
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        if action == "flip":
+            if not contact.towed_ambiguous:
+                if not contact.towed_resolved:
+                    return "not_ambiguous"
+                contact.towed_ambiguous, contact.towed_resolved = True, False
+                contact.ambiguity_axis = self.sonar.tow_heading_deg
+            contact.towed_side = "PORT" if contact.towed_side == "STBD" else "STBD"
+            return True
+        if not contact.towed_ambiguous:
+            return "not_ambiguous"
+        contact.towed_ambiguous, contact.towed_resolved = False, True
+        contact.mirror_bearing = contact.ambiguity_axis = None
+        return True
+
+    def _tas_side_key(self, e) -> None:
+        contact = self.selected_contact
+        action = "confirm" if getattr(e, "mod", 0) & pygame.KMOD_SHIFT else "flip"
+        result = self.set_tas_side(contact, action)
+        if result is True:
+            self.flash(message("runtime.tas_side.confirmed" if action == "confirm"
+                               else "runtime.tas_side.flipped",
+                               contact=self.contact_display_id(contact),
+                               side=contact.towed_side), 1.5)
+        else:
+            self.flash(message("runtime.tas_side.not_ambiguous"), 1.5)
+
+    def set_sonar_demon_band(self, low_hz, high_hz):
+        if (low_hz, high_hz) not in analysis_tools.DEMON_BANDS_HZ:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.receiver.demon_band_hz = (float(low_hz), float(high_hz))
+        return True
+
+    def set_sonar_heterodyne(self, frequency_hz):
+        if frequency_hz not in analysis_tools.HETERODYNE_OFFSETS_HZ:
+            return "invalid_value"
+        if self.damage.station_down("sonar"):
+            return "sonar_down"
+        self.sonar.heterodyne_hz = float(frequency_hz)
         return True
 
     def set_sonar_operator_notch(self, frequency_hz):
@@ -6562,9 +6634,52 @@ class Game:
             preview_active=self.audio.preview_playing)
 
     def _open_analyzer_in_game(self) -> None:
-        """TUA im laufenden Spiel: Simulation laeuft weiter, Esc kehrt ins Spiel zurueck."""
+        """TUA im laufenden Spiel: Simulation laeuft weiter, Esc kehrt ins Spiel zurueck.
+
+        With a sonar contact selected, Enter assigns the browsed profile to
+        it (the operator's catalog comparison result)."""
         self._clear_controls()
-        self.editor = self._make_analyzer()
+        contact = self.selected_contact
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            self.editor = self._make_analyzer()
+            return
+        analyzer = self._make_analyzer()
+        analyzer.on_assign = lambda key: self.assign_contact_profile(contact, key)
+        analyzer.assign_label = self.contact_display_id(contact)
+        analyzer.current_assignment = lambda: self.profile_name(contact.player_profile)
+        self.editor = analyzer
+
+    def profile_name(self, key):
+        """Display name of a catalog profile (as listed in the analyser)."""
+        if key is None:
+            return None
+        names = self.__dict__.get("_profile_names")
+        if names is None:
+            from src.data.contact_analysis import project_contact_catalog
+            names = {row["key"]: str(row["name"])
+                     for row in project_contact_catalog()["profiles"]}
+            self._profile_names = names
+        return names.get(key, key)
+
+    def assign_contact_profile(self, contact, profile_key):
+        """Operator annotation: this contact matches that catalog profile."""
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            return "stale_ref"
+        if profile_key is not None and (
+                type(profile_key) is not str
+                or profile_key not in self.runtime_catalog.profile_systems):
+            return "invalid_value"
+        contact.player_profile = profile_key
+        if profile_key is None:
+            notice = message("runtime.profile.cleared",
+                             contact=self.contact_display_id(contact))
+        else:
+            notice = message("runtime.profile.assigned",
+                             contact=self.contact_display_id(contact),
+                             profile=raw_text(self.profile_name(profile_key)))
+        self.flash(notice, 2.0)
+        self.feed.add(self.world.format_time(), "sonar", notice)
+        return True
 
     def _open_simlog_view(self) -> None:
         """F4: Live-Protokoll-Ansicht; nur bei aktiver simlog-Option."""
@@ -7894,6 +8009,7 @@ class Game:
                         quality=c.quality, last_seen=c.last_seen,
                         depth_est=c.depth_est, depth_sigma_m=c.depth_sigma_m,
                         player_class=c.player_class,
+                        player_profile=c.player_profile,
                         released_to_opz=c.released_to_opz,
                         dip_released_to_opz=c.dip_released_to_opz,
                         ship_observer_x=c.ship_observer_x,
@@ -7923,6 +8039,7 @@ class Game:
                                      if c.tma_ellipse is not None else None),
                         towed_ambiguous=c.towed_ambiguous,
                         towed_resolved=c.towed_resolved,
+                        towed_side=c.towed_side,
                         ambiguity_axis=c.ambiguity_axis,
                         mirror_bearing=c.mirror_bearing,
                         tonal_hz=c.tonal_hz,
@@ -8676,6 +8793,7 @@ class Game:
                 c.depth_est = cd.get("depth_est")
                 c.depth_sigma_m = cd.get("depth_sigma_m")
                 c.player_class = cd.get("player_class")
+                c.player_profile = cd["player_profile"]
                 c.released_to_opz = cd["released_to_opz"]
                 c.dip_released_to_opz = cd.get("dip_released_to_opz", False)
                 c.ship_observer_x = cd.get("ship_observer_x")
@@ -8712,6 +8830,7 @@ class Game:
                                  if cd["tma_ellipse"] is not None else None)
                 c.towed_ambiguous = cd["towed_ambiguous"]
                 c.towed_resolved = cd["towed_resolved"]
+                c.towed_side = cd["towed_side"]
                 c.ambiguity_axis = cd["ambiguity_axis"]
                 c.mirror_bearing = cd["mirror_bearing"]
                 c.tonal_hz = cd["tonal_hz"]
@@ -10295,6 +10414,14 @@ class Game:
                     and (not finite_number(uncertainty)
                          or not 0.0 <= uncertainty <= 180.0)):
                 return False
+            # v13: the operator's catalog assignment is required (None = none).
+            if "player_profile" not in contact:
+                return False
+            profile = contact["player_profile"]
+            if profile is not None and (
+                    type(profile) is not str or profile not in (
+                        runtime_catalog or CATALOG).profile_systems):
+                return False
             passive_bearing = contact.get("passive_bearing")
             if (passive_bearing is not None
                     and (not finite_number(passive_bearing)
@@ -10353,7 +10480,8 @@ class Game:
                     or not bounded(ellipse[1], 0.0, ellipse[0] + 1e-9)
                     or not bounded(ellipse[2], 0.0, 180.0)):
                 return False
-            if (type(contact.get("towed_ambiguous")) is not bool
+            if (contact.get("towed_side") not in ("STBD", "PORT")
+                    or type(contact.get("towed_ambiguous")) is not bool
                     or type(contact.get("towed_resolved")) is not bool
                     or (contact["towed_ambiguous"] and contact["towed_resolved"])
                     or (contact["towed_ambiguous"] and (

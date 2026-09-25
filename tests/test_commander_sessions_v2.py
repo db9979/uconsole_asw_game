@@ -83,10 +83,11 @@ def projection_states(revision="chart"):
     common = dict(protocol=2, version="test", session=revision, epoch=0,
                    revision=0, seq=1, phase="live", chart_revision=revision,
                    clock={}, environment={}, mission={},
-                   autocrew={"enabled": False, "status": "off"},
+                   autocrew={"enabled": False, "status": "off"}, autocrew_overview=[],
                    audio={"events": []}, weather_station=WEATHER_STATION)
     return {None: {key: value for key, value in common.items()
-                    if key not in ("clock", "environment", "mission", "autocrew", "audio",
+                    if key not in ("clock", "environment", "mission", "autocrew",
+                                   "autocrew_overview", "audio",
                                    "weather_station")} | {"role": None},
             **{role: dict(common, role=role, **{role: {}})
                for role in transport.STATIONS}}

@@ -23,6 +23,10 @@ MAX_INTEGRATION_COLUMNS = int(max(INTEGRATION_CHOICES_S) / COLUMN_S)
 LOFAR_CURSOR_RANGE_HZ = (0.5, 300.0)
 DEMON_CURSOR_RANGE_HZ = (0.5, 50.0)
 VERNIER_SPAN_HZ = 20.0
+# Operator-selectable DEMON carrier bands (cavitation noise band to search)
+# and heterodyne shift frequencies for audition.
+DEMON_BANDS_HZ = ((200.0, 800.0), (400.0, 1400.0), (1000.0, 2000.0))
+HETERODYNE_OFFSETS_HZ = (400.0, 700.0, 1000.0, 1200.0)
 HARMONIC_COUNT = 12
 
 

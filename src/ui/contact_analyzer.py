@@ -9,7 +9,7 @@ from typing import Mapping
 
 import pygame
 
-from src.core.i18n import raw_text, translation_scope
+from src.core.i18n import message, raw_text, translation_scope
 from src.data.catalog import CATALOG
 from src.data.contact_analysis import (ASSET_ROUTE_PREFIX,
                                        load_contact_analysis_assets,
@@ -41,8 +41,15 @@ class ContactAnalyzer:
 
     def __init__(self, tr=widgets.IDENTITY_TR, *, projection=None,
                  packaged_assets: Mapping[str, tuple[str, bytes]] | None = None,
-                 on_play_sample=None, on_stop_sample=None, preview_active=None):
+                 on_play_sample=None, on_stop_sample=None, preview_active=None,
+                 on_assign=None, assign_label=None, current_assignment=None):
         self.tr = tr
+        # In-game only: assign the selected profile to the operator's sonar
+        # contact (an annotation, like a manual classification).
+        self.on_assign = on_assign
+        self.assign_label = assign_label
+        self.current_assignment = current_assignment
+        self.assign_notice = None
         self.on_play_sample = on_play_sample
         self.on_stop_sample = on_stop_sample
         self.preview_active = preview_active
@@ -256,6 +263,16 @@ class ContactAnalyzer:
         list_rect = self._rects.get("list", pygame.Rect(28, 140, 370, 500))
         detail_rect = self._rects.get("detail", pygame.Rect(756, 130, 476, 490))
         if event.type == pygame.KEYDOWN:
+            if (event.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
+                    and self.on_assign is not None):
+                clear = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
+                profile = self.selected_profile
+                if clear or profile is not None:
+                    result = self.on_assign(None if clear else profile["key"])
+                    self.assign_notice = ("analyzer.assign.cleared" if clear and result is True
+                                          else "analyzer.assign.done" if result is True
+                                          else "analyzer.assign.failed")
+                return True
             if event.key == pygame.K_TAB:
                 self.focus = "detail" if self.focus == "list" else "list"
                 return True
@@ -381,7 +398,9 @@ class ContactAnalyzer:
                           (bounds.width - 430, 18, 410, 34), color=widgets.PALETTE.focus,
                           size=13, bold=True, align="right")
         footer = pygame.Rect(0, bounds.height - 42, bounds.width, 42)
-        content = pygame.Rect(20, 66, bounds.width - 40, footer.y - 76)
+        # In-game assignment adds one hint line above the footer.
+        assign_h = 28 if self.on_assign is not None else 0
+        content = pygame.Rect(20, 66, bounds.width - 40, footer.y - 76 - assign_h)
         left = pygame.Rect(content.x, content.y, 390, content.height)
         left_inner = widgets.panel(surface, left, "analyzer.contacts", tr=self.tr)
         filter_rect = pygame.Rect(left_inner.x, left_inner.y, left_inner.width, 34)
@@ -470,6 +489,15 @@ class ContactAnalyzer:
                     widgets.draw_text(surface, raw_text(line),
                                       (detail_rect.x + 7, detail_rect.y + 3 + row * line_height,
                                        detail_rect.width - 14, line_height), size=13)
+        if self.on_assign is not None:
+            current = self.current_assignment() if self.current_assignment else None
+            line = message("analyzer.assign.hint", contact=raw_text(self.assign_label or "--"),
+                           current=raw_text(current) if current else message("common.unknown"))
+            widgets.draw_text(surface, line, (20, footer.y - 26, bounds.width - 40, 22),
+                              size=14)
+            if self.assign_notice:
+                widgets.draw_text(surface, self.assign_notice,
+                                  (bounds.width - 420, footer.y - 26, 400, 22), size=14)
         widgets.draw_footer(surface, footer,
                             ("analyzer.filter_hint", "analyzer.select_hint",
                              "analyzer.image_hint", "analyzer.audio_hint",

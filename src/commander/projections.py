@@ -9,6 +9,7 @@ from copy import deepcopy
 import math
 
 from src.core import config
+from src.core.autocrew import AUTOCREW_STATIONS
 from src.sonar import analysis_tools
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
@@ -71,7 +72,7 @@ _TACTICAL_FIELDS = ("ref", "label", "domain", "source", "affiliation",
                     "altitude_m", "observer_x", "observer_y", "quality",
                     "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
                     "visual_class", "visual_type")
-_SONAR_FIELDS = ("ref", "label", "source", "classification", "bearing",
+_SONAR_FIELDS = ("ref", "label", "source", "classification", "profile", "bearing",
                  "range_nm", "x", "y", "depth_m", "course", "speed_kn",
                  "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg",
                  "range_uncertainty_nm", "observer_x", "observer_y",
@@ -473,7 +474,10 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                                   shaft_hz=_number(game.sonar_tools.shaft_hz),
                                   blade_hz=_number(game.sonar_tools.blade_hz),
                                   operator_notch_hz=_number(
-                                      getattr(game.sonar, "operator_notch_hz", None))),
+                                      getattr(game.sonar, "operator_notch_hz", None)),
+                                  demon_band_hz=[_number(value) for value in
+                                                 game.sonar.receiver.demon_band_hz],
+                                  heterodyne_hz=_number(game.sonar.heterodyne_hz)),
                               audio_enabled=bool(game.sonar_audio_enabled),
                               volume=_number(game.sonar_volume),
                               quiet_mode=bool(game.ship.quiet_mode)),
@@ -1006,6 +1010,9 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
     for role in ROLE_NAMES:
         state = deepcopy(common)
         state["role"] = role
+        overview = [dict(station=key, enabled=bool(game.autocrew.enabled[key]),
+                         status=game.autocrew.status(game, key))
+                    for key in AUTOCREW_STATIONS]
         if role != "eloka":
             state["audio"]["events"] = [
                 event for event in state["audio"]["events"]
@@ -1013,6 +1020,9 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
             ]
         state["autocrew"] = dict(enabled=bool(game.autocrew.enabled[role]),
                                  status=game.autocrew.status(game, role))
+        # The whole crew's automation state (as the uConsole F3 overview):
+        # own-crew configuration only, identical for every role.
+        state["autocrew_overview"] = overview
         state[role] = operational[role]
         result[role] = state
     return result

@@ -164,3 +164,19 @@ def test_lofar_and_demon_pages_draw_without_truncation_in_both_modes(sonar_game)
             with layout.capture_truncations() as cut:
                 game.draw()
             assert not cut, (assist, page, cut)
+
+
+def test_tas_side_is_the_operators_decision(sonar_game):
+    from src.sonar.sonar import Contact
+    game = sonar_game
+    contact = Contact(9, 8080, "passiv", "sub")
+    contact.towed_ambiguous, contact.ambiguity_axis = True, 0.0
+    game.sonar.contacts[8080] = contact
+    game.selected_contact = contact
+    game.sonar_page = 0
+    key(game, pygame.K_x)
+    assert contact.towed_side == "PORT" and contact.towed_ambiguous
+    key(game, pygame.K_x, pygame.KMOD_SHIFT)
+    assert contact.towed_resolved and not contact.towed_ambiguous
+    assert game.set_tas_side(contact, "flip") is True       # reopen
+    assert contact.towed_ambiguous and contact.towed_side == "STBD"

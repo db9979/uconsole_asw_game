@@ -1718,6 +1718,10 @@ def _draw_contacts(game, rect):
                 pygame.draw.rect(screen, CYAN, (row_rect.x, y, 3, row_rect.h))
             label = display_value("classification",
                                   getattr(contact, "player_class", None))
+            profile = getattr(contact, "player_profile", None)
+            if profile is not None and hasattr(game, "profile_name"):
+                # The operator's catalog assignment from the F8 analyser.
+                label = f"{label} / {game.profile_name(profile)}"
             release = localize("sonar.release.short_released"
                                if getattr(contact, "released_to_opz", False)
                                else "sonar.release.short_private")

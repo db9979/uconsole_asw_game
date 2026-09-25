@@ -213,6 +213,9 @@ class Contact:
         self.depth_est = None
         self.depth_sigma_m = None  # 1-sigma Unsicherheit der Tiefe
         self.player_class = None  # None|U_BOOT|KAMPFSCHIFF|BIOLOGISCH|FAHRZEUG|FLUGZEUG
+        # Operator's catalog assignment (profile key from the contact
+        # analyser); an annotation like player_class, never inferred.
+        self.player_profile = None
         self.released_to_opz = False
         self.passive_source = "SONAR-BRG"
         self.observer_x = 0.0
@@ -232,6 +235,9 @@ class Contact:
         self.mirror_bearing = None
         self.tonal_hz = None           # measured (Doppler-shifted) tonal
         self.towed_resolved = False
+        # Operator's choice of array side for a towed-only contact
+        # ("STBD" or "PORT"); the display follows it until resolved.
+        self.towed_side = "STBD"
         self.tma_seen = None
         self.buoy_fixes = []  # raw (t, x, y, quality), not ownship passive bearings
         self.buoy_reports = {}  # buoy sequence -> detached measured report
@@ -456,7 +462,9 @@ class Contact:
             key: value for key, value in self.array_observations.items()
             if t - value["last_seen"] <= 4.0}
         if len(self.array_observations) < 2:
-            self.fusion_status = ("TAS L/R?" if self.towed_ambiguous
+            ambiguous_status = (self.fusion_status if str(self.fusion_status)
+                                .startswith("TAS L/R?") else "TAS L/R?")
+            self.fusion_status = (ambiguous_status if self.towed_ambiguous
                                   and set(self.array_observations) == {"TOWED"}
                                   else "NUR " + next(iter(self.array_observations))
                                   if self.array_observations else "KEINE DATEN")
@@ -644,6 +652,8 @@ class SonarSystem:
         self.notch_enabled = False
         # Operator notch at a chosen frequency (display and audio, transient).
         self.operator_notch_hz = None
+        # Heterodyne shift for audition (operator choice, transient).
+        self.heterodyne_hz = 700.0
         # Automatic TMA proposals per target (transient training aid).
         self.tma_proposals = {}
         self.peak_hold = False
@@ -824,6 +834,7 @@ class SonarSystem:
     def _audition_process(self, samples, controls):
         mode, low_hz, high_hz, notch, own_line_hz, gain_db = controls[:6]
         operator_notch = controls[6] if len(controls) > 6 else None
+        heterodyne_hz = controls[7] if len(controls) > 7 else 700.0
         out = np.array(samples, copy=True)
         if mode != "BROADBAND":
             n = out.size
@@ -852,8 +863,9 @@ class SonarSystem:
                 out = np.fft.irfft(np.fft.rfft(out) * mask, n=n)
                 self._audition_ola_state = None
             if mode == "HETERODYNE":
-                # Translate the selected low-frequency beam band around 700 Hz.
-                phase = np.arange(out.size) * (2.0 * np.pi * 700.0
+                # Translate the selected low-frequency beam band up by the
+                # operator's heterodyne shift (default 700 Hz).
+                phase = np.arange(out.size) * (2.0 * np.pi * heterodyne_hz
                                                 / self.receiver.sample_rate)
                 out = 2.0 * out * np.cos(phase)
         return out * (10 ** (gain_db / 20))
@@ -880,7 +892,8 @@ class SonarSystem:
             raise ValueError("audition requires one complete mixed receiver block")
         controls = (self.audition_mode, self.band_low_hz, self.band_high_hz,
                      self.notch_enabled, self._own_line_hz, self.gain_db,
-                     getattr(self, "operator_notch_hz", None))
+                     getattr(self, "operator_notch_hz", None),
+                     getattr(self, "heterodyne_hz", 700.0))
         # A rejected playback block must retry byte-for-byte even if ship speed
         # changes the own-line notch before the next frame. New controls take
         # effect on the next receiver sequence.
@@ -1302,6 +1315,9 @@ class SonarSystem:
             ambiguous = False
             if bow is not None and "BOW" in observations:
                 # The hull array is unambiguous: it resolves the towed side.
+                if c.towed_ambiguous or c.towed_resolved:
+                    c.towed_side = ("STBD" if config.angle_diff_deg(
+                        bearing, self.tow_heading_deg) >= 0.0 else "PORT")
                 if c.towed_ambiguous:
                     c.towed_ambiguous, c.towed_resolved = False, True
                     c.mirror_bearing = c.ambiguity_axis = None
@@ -1309,20 +1325,26 @@ class SonarSystem:
                 axis = self.tow_heading_deg
                 if not c.towed_ambiguous and not c.towed_resolved:
                     c.towed_ambiguous, c.ambiguity_axis = True, axis
-                if c.towed_ambiguous and abs(config.angle_diff_deg(
-                        axis, c.ambiguity_axis)) >= config.TAS_AMBIGUITY_RESOLVE_DEG:
-                    # After an own turn only one side stays consistent.
-                    c.towed_ambiguous, c.towed_resolved = False, True
-                    c.mirror_bearing = c.ambiguity_axis = None
+                mirror = (2.0 * axis - bearing) % 360.0
+                true_side = ("STBD" if config.angle_diff_deg(bearing, axis) >= 0.0
+                             else "PORT")
                 if c.towed_ambiguous:
-                    mirror = (2.0 * axis - bearing) % 360.0
-                    # Without other evidence the display takes the starboard
-                    # candidate; it is the true one only half of the time.
-                    if config.angle_diff_deg(bearing, axis) < 0.0:
+                    # The line array cannot tell the sides apart: the display
+                    # shows the operator's chosen side (starboard by default).
+                    # After an own turn the ghost bearing jumps; the operator
+                    # compares the traces and confirms a side - no automatic
+                    # resolution.
+                    if c.towed_side != true_side:
                         bearing, mirror = mirror, bearing
                     c.mirror_bearing = mirror
-                    c.fusion_status = "TAS L/R?"
+                    turned = abs(config.angle_diff_deg(
+                        axis, c.ambiguity_axis)) >= config.TAS_AMBIGUITY_RESOLVE_DEG
+                    c.fusion_status = "TAS L/R? WENDE" if turned else "TAS L/R?"
                     ambiguous = True
+                elif c.towed_resolved and c.towed_side != true_side:
+                    # The operator confirmed the ghost side: the published
+                    # bearing stays mirrored (TMA residuals will show it).
+                    bearing = mirror
             sig = ""
             if c.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt \
                     >= config.CONTACT_SIG_CONF:

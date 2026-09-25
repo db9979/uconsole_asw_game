@@ -87,7 +87,7 @@ def test_towed_endfire_broadens_bearing_error():
     assert sonar._endfire_factor(5.0) > 1.8
 
 
-def test_towed_only_contact_is_side_ambiguous_until_own_turn():
+def test_towed_only_contact_is_side_ambiguous_until_the_operator_confirms():
     world = World(seed=5)
     frigate = Ship(250.0, 250.0, course_deg=0.0, speed_kn=6.0)
     sub = Sub(253.0, 250.0, 60.0, 90.0, "diesel_alt", random.Random(5))
@@ -111,6 +111,14 @@ def test_towed_only_contact_is_side_ambiguous_until_own_turn():
     assert sub.id not in sonar._tracks or not sonar._tracks[sub.id].pts
     sonar.tow_heading_deg = 30.0
     sonar.update(1.0, 12.0, frigate, [sub], world, mode="TOWED",
+                 advance_mechanics=False)
+    # An own turn only makes the ghost jump; the operator decides the side.
+    assert contact.towed_ambiguous and contact.fusion_status == "TAS L/R? WENDE"
+    # The boat bears 090 from the frigate, starboard of the 030 array axis.
+    contact.towed_side = "STBD"
+    contact.towed_ambiguous, contact.towed_resolved = False, True
+    contact.mirror_bearing = contact.ambiguity_axis = None
+    sonar.update(1.0, 13.0, frigate, [sub], world, mode="TOWED",
                  advance_mechanics=False)
     assert not contact.towed_ambiguous and contact.towed_resolved
     assert contact.mirror_bearing is None

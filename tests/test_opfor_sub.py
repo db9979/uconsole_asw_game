@@ -144,21 +144,26 @@ def test_same_seed_and_orders_give_the_same_state(monkeypatch):
     assert _first_difference(*runs) is None, _first_difference(*runs)
 
 
-def test_crew_binding_is_never_saved(tmp_path):
+def test_crew_binding_survives_save_and_load(tmp_path):
+    """Save v15: a crewed boat stays crewed after a load (no object leaks)."""
     game, _server, _bridge = _crewed()
+    sub_id = game.opfor.sub_id
     for _ in range(50):
         game._update_sim(0.1)
     data = game.save_state()
     assert "opfor" not in json.dumps(sorted(data))
+    assert data["crew"]["sub_id"] == sub_id
     path = tmp_path / "slot.json"
     path.write_text(json.dumps(data), encoding="utf-8")
     restored = _game()
     assert restored.load_game(str(path))
-    assert restored.opfor is None
-    # Loading over a crewed game drops the binding as well.
-    assert game.load_game(str(path)) and game.opfor is None
-    # load_game already requires a byte-exact re-serialisation of the save.
-    assert not any(sub.manual for sub in restored.subs)
+    assert restored.opfor is not None and restored.opfor.sub_id == sub_id
+    assert restored.opfor.sub.manual and restored.opfor.sub.crew is restored.opfor.orders
+    # Loading over a crewed game rebinds the saved boat, not the old object.
+    old_boat = game.opfor
+    assert game.load_game(str(path)) and game.opfor is not None
+    assert game.opfor is not old_boat and game.opfor.sub in game.subs
+    assert [sub.manual for sub in restored.subs].count(True) == 1
 
 
 def test_submarine_views_never_carry_frigate_truth():

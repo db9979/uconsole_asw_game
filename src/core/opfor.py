@@ -30,10 +30,11 @@ OPFOR_SONAR_DOWN_DAMAGE = 90.0
 
 
 class CrewOrders:
-    """Transient crew settings of the crewed boat (never saved).
+    """Crew settings of the crewed boat (save v15 ``crew.orders``).
 
     The ``Sub`` reads them only while ``manual``; they vanish with the crew
-    binding (release, reset, load), after which the AI commands the boat again.
+    binding (release, reset), after which the AI commands the boat again.  A
+    save keeps them, so a loaded boat resumes under its crew's last orders.
     """
 
     # Crew notices raised by the boat itself (key -> feed category).
@@ -86,9 +87,52 @@ class CrewOrders:
             return True
         return self.silent and sub.speed <= config.UBOOT_SILENT_MAX_KN + 1e-6
 
+    def to_save(self) -> dict:
+        """Exact save v15 ``crew.orders`` block (JSON-safe lists, sorted)."""
+        return dict(
+            silent=self.silent, bottomed=self.bottomed, mast=self.mast,
+            alarm_seq=self.alarm_seq, ping_bearing=self.ping_bearing,
+            torpedo_bearing=self.torpedo_bearing,
+            esm=[[bearing, quality, age] for bearing, quality, age in self.esm],
+            esm_seen=sorted(self._esm_seen, key=str),
+            wires={str(torpedo_id): wire.to_save()
+                   for torpedo_id, wire in sorted(self.wires.items())},
+            known_torpedoes=sorted(self._known_torpedoes),
+            last_course=self._last_course, torpedo_depth=self.torpedo_depth,
+            salvo=self.salvo, pending_bearing=self.pending_bearing,
+            steer_torpedo=self.steer_torpedo,
+            events=[[key, dict(values)] for key, values in self._events],
+            battery_state=self._battery_state, keel_warned=self._keel_warned,
+            obstacle_warned=self._obstacle_warned,
+            obstacle_ahead_nm=self.obstacle_ahead_nm)
+
+    def restore(self, data: dict) -> None:
+        """Restore a validated ``crew.orders`` block in place."""
+        self.silent = data["silent"]
+        self.bottomed = data["bottomed"]
+        self.mast = data["mast"]
+        self.alarm_seq = data["alarm_seq"]
+        self.ping_bearing = data["ping_bearing"]
+        self.torpedo_bearing = data["torpedo_bearing"]
+        self.esm = [tuple(row) for row in data["esm"]]
+        self._esm_seen = set(data["esm_seen"])
+        self.wires = {int(torpedo_id): CrewWire.from_save(int(torpedo_id), wire)
+                      for torpedo_id, wire in data["wires"].items()}
+        self._known_torpedoes = set(data["known_torpedoes"])
+        self._last_course = data["last_course"]
+        self.torpedo_depth = data["torpedo_depth"]
+        self.salvo = data["salvo"]
+        self.pending_bearing = data["pending_bearing"]
+        self.steer_torpedo = data["steer_torpedo"]
+        self._events = [(key, dict(values)) for key, values in data["events"]]
+        self._battery_state = data["battery_state"]
+        self._keel_warned = data["keel_warned"]
+        self._obstacle_warned = data["obstacle_warned"]
+        self.obstacle_ahead_nm = data["obstacle_ahead_nm"]
+
 
 class CrewWire:
-    """The guidance wire of one crew torpedo (transient; cut by a load).
+    """The guidance wire of one crew torpedo (save v15 ``crew.orders.wires``).
 
     Same spool and tension rules as the frigate's wire (``torpedo_dyn``),
     with the submarine's own speed and turn limits.
@@ -103,6 +147,18 @@ class CrewWire:
     @property
     def active(self) -> bool:
         return self.state == "ACTIVE"
+
+    def to_save(self) -> dict:
+        return dict(state=self.state, ship_out_nm=self.ship_out_nm,
+                    stress_s=self.stress_s)
+
+    @classmethod
+    def from_save(cls, torpedo_id: int, data: dict) -> "CrewWire":
+        wire = cls(torpedo_id)
+        wire.state = data["state"]
+        wire.ship_out_nm = data["ship_out_nm"]
+        wire.stress_s = data["stress_s"]
+        return wire
 
 
 class CrewedBoat:
@@ -139,6 +195,24 @@ class CrewedBoat:
         self.feed_seq += 1
         self.feed.append(dict(seq=self.feed_seq, t=float(sim_t), stamp=str(stamp),
                               category=category, text=text))
+
+    def to_save(self) -> dict:
+        """The boat-level part of the save v15 ``crew`` block (the game adds
+        ``sub_id``, ``hold_s`` and the sonar ``station``)."""
+        return dict(orders=self.orders.to_save(),
+                    command_page=int(self.command_page),
+                    chart_follow=bool(self.chart_follow),
+                    plot=self.plot.to_save(),
+                    feed=[dict(row) for row in self.feed],
+                    feed_seq=int(self.feed_seq))
+
+    def restore(self, data: dict) -> None:
+        self.orders.restore(data["orders"])
+        self.command_page = data["command_page"]
+        self.chart_follow = data["chart_follow"]
+        self.plot = PlotLayer.from_save(data["plot"])
+        self.feed = deque((dict(row) for row in data["feed"]), maxlen=OPFOR_FEED_MAX)
+        self.feed_seq = data["feed_seq"]
 
     def sonar_targets(self, game) -> list:
         """Everything this boat's sonar can hear (never the boat itself)."""

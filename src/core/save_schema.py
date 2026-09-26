@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v14`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v15`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -23,6 +23,32 @@ SAVE_ROOT_FIELDS = frozenset({
     "ciws_cooldown_s", "ciws_mount_deg", "chaff_clouds", "chaff_seq",
     "schedulers", "rngs", "ui",
     "autocrew", "ais", "plot",
+    "crew",
+})
+
+# Save v15: the crewed submarine binding (``Game._opfor``), or None.
+CREW_FIELDS = frozenset({
+    "sub_id", "orders", "command_page", "chart_follow", "plot", "feed",
+    "feed_seq", "hold_s", "station",
+})
+CREW_ORDERS_FIELDS = frozenset({
+    "silent", "bottomed", "mast", "alarm_seq", "ping_bearing",
+    "torpedo_bearing", "esm", "esm_seen", "wires", "known_torpedoes",
+    "last_course", "torpedo_depth", "salvo", "pending_bearing",
+    "steer_torpedo", "events", "battery_state", "keel_warned",
+    "obstacle_warned", "obstacle_ahead_nm",
+})
+CREW_WIRE_FIELDS = frozenset({"state", "ship_out_nm", "stress_s"})
+CREW_WIRE_STATES = ("ACTIVE", "BROKEN", "CUT")
+CREW_BATTERY_STATES = ("ok", "low", "empty")
+CREW_FEED_FIELDS = frozenset({"seq", "t", "stamp", "category", "text"})
+CREW_STATION_FIELDS = frozenset({
+    "mode", "controls", "sonar", "selected_contact_id", "target_id", "rng",
+})
+# Sub rows carry the crew-facing orders beside the AI state.
+SUB_CREW_FIELDS = frozenset({
+    "manual", "order_course", "order_speed", "order_depth", "last_bottom_m",
+    "manual_ping_pending",
 })
 
 RNG_STREAMS = frozenset({

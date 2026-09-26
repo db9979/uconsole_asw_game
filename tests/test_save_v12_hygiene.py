@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v14_and_older_documents_are_rejected():
+def test_save_is_v15_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (14, "u-jagd-save-v14")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (14, "u-jagd-save-v14")
+    assert (state["version"], state["save_schema"]) == (15, "u-jagd-save-v15")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (15, "u-jagd-save-v15")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -39,6 +39,17 @@ def test_save_is_v14_and_older_documents_are_rejected():
     v13["save_schema"] = "u-jagd-save-v13"
     del v13["plot"]
     assert not game._load_save_data(v13)
+    # v14 differs only by the crew block and the boat orders.
+    v14 = copy.deepcopy(state)
+    v14["version"] = 14
+    v14["save_schema"] = "u-jagd-save-v14"
+    del v14["crew"]
+    for row in v14["subs"]:
+        for key in ("manual", "order_course", "order_speed", "order_depth",
+                    "last_bottom_m", "manual_ping_pending"):
+            del row[key]
+    del v14["ui"]["local_side"]
+    assert not game._load_save_data(v14)
     assert game.save_state() == before
 
 

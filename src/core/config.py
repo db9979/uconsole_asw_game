@@ -226,6 +226,10 @@ UBOOT_BATTERY_WARN_FRACTION = 0.20 # battery warning / nearly empty
 UBOOT_BATTERY_EMPTY_FRACTION = 0.03
 UBOOT_SPEED_STEPS_KN = (0.0, 3.0, 6.0, 10.0, 15.0)   # telegraph steps (+ maximum)
 UBOOT_SALVO_SPREAD_DEG = 4.0       # two-torpedo spread: +/- this
+# Save v15: a loaded crewed boat keeps its crew binding this long (sim
+# seconds) while no station is held, so a returning crew resumes its orders;
+# afterwards the AI takes the boat back as after a crew's departure.
+UBOOT_RESTORE_HOLD_S = 600.0
 UBOOT_TORPEDO_MIN_DEPTH_M = 5.0
 UBOOT_TORPEDO_MAX_DEPTH_M = 300.0
 UBOOT_WIRE_TURN_DEG_S = 8.0       # wire-steered torpedo turn rate

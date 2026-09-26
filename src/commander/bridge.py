@@ -1344,7 +1344,10 @@ class CommanderBridge:
             leased = any(server.station_leased(role) for role in OPFOR_ROLES)
         if phase == "live" and (leased or local):
             game.claim_opfor_sub()
-        elif game.opfor is not None and not local:
+        elif (game.opfor is not None and not local
+              and getattr(game, "_opfor_hold_s", 0.0) <= 0.0):
+            # A boat restored by a load keeps its crew binding for the hold
+            # so a returning crew resumes its orders; then the AI takes over.
             game.release_opfor_sub()
             self._opfor_refs = {}
 

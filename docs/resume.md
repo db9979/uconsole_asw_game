@@ -1121,3 +1121,44 @@ Analyse lief auf dem Zielgeraet (CM5, 16 GB) mit dem neuen Lasttest.
   client`, `window.uJagdAudioDiagnostics`), WLAN-Stromsparen am uConsole
   abschalten (docs/install-uconsole). `test_real_v2_role_states_survive_...`
   (Helikopter-LOFAR-Ansicht zu klein) schlug bereits vor dieser Arbeit fehl.
+
+## Durchlauf 1.3 (ab 2026-09-26, Branch `plan-1.3`)
+
+Arbeitsvorlage: `docs/plan-1.3.md`. Ein Commit je Phasenschritt, kein Push.
+Wiederaufnahme: `git log --oneline main..plan-1.3` zeigt die fertigen
+Schritte; diese Tabelle nennt Stand, Zahlen und offene Punkte je Phase.
+
+| Phase | Stand | Commit | Suite | Offen |
+|---|---|---|---|---|
+| 0 Audio-Soak | fertig (Auftraggeber) | `ef45a4f` | siehe Abschnitt "Sonar-Audio ohne Aussetzer" | Hoerabnahme auf Hardware |
+| 1 Crew-Zustand (Save v15) | fertig | siehe `git log` | 3404 bestanden, 26 uebersprungen, 47 min seriell unter Last | zwei vorbestehende Fehlschlaege (unten) |
+
+Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
+Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
+(beide Aufloesungen, Helikopter-LOFAR-Ansicht) und
+`test_opfor_web.py::test_submarine_sonar_filters_and_audio_survive_host_input`
+(Stufe "audio after host input"). Beide sind Browser-Tests; sie werden je
+Phase mit `--deselect` ausgenommen und am Ende des Durchlaufs gemeldet.
+
+Notizen Phase 1:
+
+- `crew` ist ein Objekt oder `null` (ein besetztes Boot, `Game._opfor`), nicht
+  eine Liste: das Spiel kennt genau eine Crew-Bindung.
+- Sub-Zeile zusaetzlich: `manual`, `order_course`, `order_speed`,
+  `order_depth`, `last_bottom_m`, `manual_ping_pending`
+  (`SUB_CREW_FIELDS`); `endurance.manual` folgt `manual` beim Laden.
+- Der Sonar-Save/-Restore/-Validator der Fregatte ist in
+  `Game._sonar_controls_state`, `_sonar_system_state`,
+  `_restore_sonar_controls`, `_restore_sonar_system` und die Closures
+  `valid_sonar_controls`/`valid_sonar` gezogen und dient dem Boot unter
+  `sonar_perspective`. Fuer das Boot gelten zusaetzlich die Quell-IDs
+  `OWNSHIP_TARGET_ID` und `OWN_TORPEDO_TARGET_BASE + idx` als Kontaktziele.
+- Halte-Regel: nach einem Load bleibt die Crew-Bindung fuer
+  `UBOOT_RESTORE_HOLD_S` (600 s Sim) bestehen, auch ohne gehaltene Station;
+  `_sync_opfor` gibt das Boot erst danach an die KI. `crew.hold_s` haelt den
+  Restwert (exakter Round-Trip), ein Load setzt ihn auf das Maximum.
+- `ui.local_side` wird gespeichert und geladen (uConsole-Seite).
+- Anzeigehistorien des Sonars (Breitband/LOFAR/Echo) sind nach einem Load
+  nicht bitgleich (transienter Overlap-Add-Zustand des Audioempfaengers, wie
+  bei der Fregatte); der Continuation-Test vergleicht sie deshalb nicht,
+  alle Simulationsfelder sind ueber 300 s identisch.

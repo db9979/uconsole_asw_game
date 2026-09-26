@@ -125,7 +125,7 @@ Die obere Leiste zeigt die sechs Stationen des Boots als Reiter: `1` Führung, `
 - Der Crew-Zustand (Betriebsarten, Mast, Drähte, Plot, Alarmpeilungen) wird nicht gespeichert: nach dem Laden führt die KI das Boot, und jeder Crew-Torpedo hat seinen Draht verloren.
 - Das besetzte Boot funkt nicht und empfängt nichts; es gibt keine Kontaktmeldung von der Führung an Land.
 - Keine Leckwehr- oder Schadensteams an Bord; Schäden summieren sich nur.
-- Ein ausgefahrener Mast wird vom Fregattenradar nicht erfasst (das Fregattenradar erfasst keine U-Boote), und Schnorcheln erzeugt kein Dieselgeräusch: es beendet nur die Schleichfahrt.
+- Schnorcheln erzeugt kein Dieselgeräusch: es beendet nur die Schleichfahrt. Ein ausgefahrener Mast oder Schnorchelkopf erscheint auf dem Fregattenradar nur als bloßer Punkt (siehe Kapitel OPZ).
 - Kein Sehrohrbild und keine Sichtmeldungen vom Boot aus.
 
 ## Mission und Wertung {#ref-mission}

@@ -117,6 +117,7 @@ STATION_HELP = {
           ("G", "help.control.chaff"), ("R", "help.control.surface_radar"),
           ("Shift+R", "help.control.air_radar"), ("I", "help.control.ciws_release"),
           ("Backspace", "help.control.opz_clear_marks"),
+          ("B", "help.control.opz_blip"),
           ("Enter", "help.control.confirm_live_engage"),
           ("K", "help.control.follow")],
         ["help.note.radar", "help.note.ais_esm", "help.note.nato", "help.note.ciws",

@@ -350,6 +350,14 @@ RADAR_SURFACE_WEATHER_LOSS = 0.25
 RADAR_AIR_WEATHER_LOSS = 0.10
 RADAR_WEATHER_ERROR_GAIN = 1.5
 RADAR_TRACK_STALE_S = 30.0
+# A raised submarine mast or snorkel head: a tiny, low echo (relative to the
+# broadside reference ship) that sea clutter soon hides.  It shows as a bare
+# blip on the PPI only; the OPZ must mark it to start a radar track.
+SUB_MAST_HEIGHT_M = 1.5
+SUB_MAST_RCS_FACTOR = 0.01
+RADAR_BLIP_LIFE_S = 6.0
+RADAR_BLIP_MAX = 24
+RADAR_BLIP_GATE_NM = 1.0
 RADAR_BEARING_ERR_DEG = 0.8
 RADAR_RANGE_ERR_FRAC = 0.015
 # Air-search radar height estimate: a game model of a 3D radar's altitude

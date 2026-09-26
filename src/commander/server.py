@@ -569,6 +569,7 @@ V2_ACTION_REGISTRY = {
     "opz_dissolve_fusion": V2Action(frozenset({"opz"}), _single_ref_params,
         revision_bound=True),
     "opz_set_radar": V2Action(frozenset({"opz"}), _radar_params),
+    "opz_mark_blip": V2Action(frozenset({"opz"}), _single_ref_params),
     "opz_set_ciws": V2Action(frozenset({"opz"}), _bool_params("enabled")),
     "opz_set_range": V2Action(frozenset({"opz"}), _range_params),
     "opz_designate_target": V2Action(frozenset({"opz"}), _single_ref_params),

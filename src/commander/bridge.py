@@ -283,6 +283,14 @@ def _sonar_set_tow_depth(game, params, _bindings):
     return game.set_sonar_tow_depth(params["depth_m"])
 
 
+def _opz_mark_blip(game, params, _bindings):
+    # Blip refs are "blip-<sequence>": a display counter, never a target identity.
+    ref = params["ref"]
+    if not ref.startswith("blip-") or not ref[5:].isdigit() or len(ref) > 24:
+        return "unknown_ref"
+    return game.mark_radar_blip(int(ref[5:]))
+
+
 def _sonar_measure_bt(game, params, _bindings):
     return game.measure_sonar_bt()
 
@@ -622,6 +630,7 @@ _V2_ACTION_HANDLERS = {
     "opz_set_track_id": _opz_set_track_id,
     "opz_create_fusion": _opz_create_fusion,
     "opz_dissolve_fusion": _opz_dissolve_fusion,
+    "opz_mark_blip": _opz_mark_blip,
     "opz_set_radar": _opz_set_radar,
     "opz_set_ciws": _opz_set_ciws,
     "opz_set_range": _opz_set_range,

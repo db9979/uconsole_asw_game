@@ -1333,6 +1333,10 @@ def opz_action_at(game, pos, station_rect=None):
         point = _opz_track_point(game, track, chart, view)
         if point is not None and _near_point(pos, point, 15):
             return ("select", track.observation_id)
+    # A bare radar blip: clicking it marks it into a track.
+    for blip in reversed(game.radar_blip_view() if hasattr(game, "radar_blip_view") else []):
+        if _near_point(pos, view.world_to_screen(blip["x"], blip["y"]), 12):
+            return ("blip", blip["seq"])
     return None
 
 
@@ -1672,6 +1676,16 @@ def draw_opz_view(game, tr=None) -> None:
                                         px_per_nm, col, max_px=min(chart.size) * .3)
         layout.blit_line(s, track["source"],
                          (int(sx) - 22, int(sy) - 21, 66, 18), col, size=12)
+
+    # Unmarked mast/snorkel echoes: a bare afterglow dot, no symbol or label,
+    # dimming with the time since the sweep painted it.
+    for blip in (game.radar_blip_view() if hasattr(game, "radar_blip_view") else []):
+        px, py = view.world_to_screen(blip["x"], blip["y"])
+        if not chart.collidepoint(px, py):
+            continue
+        fade = 1.0 - (game.sim_t - blip["t"]) / config.RADAR_BLIP_LIFE_S
+        pygame.draw.circle(s, _scale_color((120, 255, 150), max(.2, fade)),
+                           (int(px), int(py)), 3)
 
     # Gemeinsames Lagebild: Oberflaeche, Luft und Flugkoerper im selben Scope.
     for track in (t for t in cic_tracks if _observation_position(t)[0] is not None):

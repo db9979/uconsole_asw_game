@@ -113,7 +113,7 @@ export function validateV2State(state) {
     bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"], sonar: ["observations", "settings", "visualization"],
     weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "own_weapons", "active_assets"],
     damage: ["compartments", "teams", "total", "sunk"],
-    opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "designated_target_ref", "own_assets"],
+    opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"], eloka: ["intercepts", "station_down", "status", "hardware"],
@@ -258,7 +258,9 @@ export function validateV2State(state) {
           !pictureRefs.has(row.ref) || typeof row.source !== "string" ||
           typeof row.classification !== "string" || !row.classification || row.classification.length > 128) ||
          new Set(payload.source_classifications.map((row) => row.ref)).size !== payload.source_classifications.length ||
-         !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready", "ciws_released"]) || typeof payload.defense.ciws_released !== "boolean") throw new Error("protocol");
+         !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready", "ciws_released"]) || typeof payload.defense.ciws_released !== "boolean" ||
+         !boundedArray(payload.radar_blips, 16) || payload.radar_blips.some((row) => !exactKeys(row, ["ref", "x", "y", "age_s"]) ||
+           typeof row.ref !== "string" || !/^blip-[0-9]{1,18}$/.test(row.ref) || [row.x, row.y, row.age_s].some((value) => !finite(value)))) throw new Error("protocol");
     tacticalRows(payload.asm_observations, 128);
     if (payload.designated_target_ref !== null && (typeof payload.designated_target_ref !== "string" || !pictureRefs.has(payload.designated_target_ref))) throw new Error("protocol");
     if (!exactKeys(payload.own_assets, ["ship", "helicopter", "weapons"]) ||

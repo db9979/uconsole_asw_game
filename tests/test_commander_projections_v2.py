@@ -116,7 +116,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                     "own_weapons", "active_assets"},
         "damage": {"compartments", "teams", "total", "sunk"},
         "opz": {"observations", "fusions", "radar", "source_classifications",
-                 "designated_target_ref", "own_assets", "defense",
+                 "radar_blips", "designated_target_ref", "own_assets", "defense",
                  "asm_observations"},
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
                    "station_down", "navigation", "tactical"},

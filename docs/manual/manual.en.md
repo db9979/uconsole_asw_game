@@ -573,6 +573,7 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 ```
 
 - **Surface radar:** 30 NM, limited by the radar horizon (20 m mast) and target height; submerged submarines are invisible.
+- **Mast and snorkel echoes:** a submarine at periscope depth with a raised mast or snorkel head (a crew's mast, a snorkelling boat or one at radio depth) returns a tiny echo: in calm sea about half the sweeps find it at 7 NM, at sea state 3 at about 2.5 NM, at sea state 5 under 1 NM. It shows only as a bare dot that glows for about 6 s, with no symbol, no label and no track. Click the dot on the PPI or press `B` (newest dot) to mark it: a radar track `R-…` starts from that measurement and further echoes of the same mast update it; without new echoes it fades after 30 s. Blips and the mark are not saved.
 - **Air radar:** 100 NM for aircraft and anti-ship missiles (ASM).
 - The antenna turns once every 4 s: a contact is updated only when the beam sweeps past it, and each sweep detects it with a probability that falls with range (50 % at the nominal range for a broadside ship; bow-on targets are seen later, fluctuating echoes can miss a sweep). Sea clutter grows with sea state (about -5 % at sea state 4, -25 % at 6) and rain attenuates the echo (-10 % surface, -20 % air); from sea state 5 measurement errors increase. Inside 3 NM the CIWS search/track radar holds an inbound missile continuously while CIWS is released.
 - **AIS:** civilian ships broadcast course and speed every 2-10 s (3 min at anchor) and their name about every 6 min. The VHF receiver hears them only within line of sight (about 20 NM). A radar track of a civilian shows name and course only after the matching AIS report has been received; radar alone gives position only. Optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
@@ -599,6 +600,7 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 | `Shift+R` | Air-search radar on/off (EMCON) |
 | `I` | Toggle CIWS fire release (withheld = never fires on inbound ASMs) |
 | `Backspace` | Clear all marked reports |
+| `B` | Mark the newest bare radar blip as a track (or click the blip) |
 | `Enter` | Confirm attack after classifying a real contact hostile |
 | `K` | Camera follow on/off |
 
@@ -1072,7 +1074,7 @@ The top bar shows the boat's six stations as tabs: `1` Command, `2` Sonar, `3` W
 - Crew state (modes, mast, wires, plot, alarm bearings) is not saved: after a load the AI commands the boat and every crew torpedo has lost its wire.
 - The crewed boat sends no radio traffic and receives none; there is no contact report from home.
 - No damage-control teams aboard the boat; damage only accumulates.
-- A raised mast is not detected by the frigate's radar (the frigate radar does not detect submarines), and snorkelling adds no diesel noise: it only ends silent running.
+- Snorkelling adds no diesel noise: it only ends silent running. A raised mast or snorkel head is seen by the frigate's radar only as a bare blip (see the OPZ chapter).
 - No periscope view and no visual sightings from the boat.
 
 ### Mission and scoring

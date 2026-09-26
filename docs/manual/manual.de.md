@@ -574,6 +574,7 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 ```
 
 - **Überwasserradar:** 30 sm, begrenzt durch Radarhorizont (20-m-Mast) und Zielhöhe; getauchte U-Boote sind unsichtbar.
+- **Mast- und Schnorchelechos:** ein U-Boot auf Sehrohrtiefe mit ausgefahrenem Mast oder Schnorchelkopf (Mast einer Crew, ein schnorchelndes Boot oder eines auf Funktiefe) gibt ein winziges Echo: bei ruhiger See findet es etwa jeder zweite Umlauf auf 7 sm, bei Seegang 3 auf etwa 2,5 sm, bei Seegang 5 unter 1 sm. Es erscheint nur als bloßer Punkt, der etwa 6 s nachleuchtet, ohne Symbol, Beschriftung und Track. Den Punkt im PPI anklicken oder `B` drücken (neuester Punkt) markiert ihn: aus dieser Messung beginnt ein Radartrack `R-…`, und weitere Echos desselben Masts führen ihn fort; ohne neue Echos verblasst er nach 30 s. Echos und Markierung werden nicht gespeichert.
 - **Luftradar:** 100 sm für Flugzeuge und Seezielflugkörper (ASM).
 - Die Antenne dreht sich alle 4 s einmal: ein Kontakt wird nur aktualisiert, wenn der Strahl über ihn streicht, und jeder Umlauf erfasst ihn mit einer Wahrscheinlichkeit, die mit der Entfernung sinkt (50 % bei Nennreichweite für ein Schiff in Breitseite; Ziele mit spitzem Aspekt werden später gesehen, schwankende Echos können einen Umlauf verfehlen). Seegangsclutter wächst mit dem Seegang (etwa -5 % bei Seegang 4, -25 % bei 6), Regen dämpft das Echo (-10 % Überwasser, -20 % Luft); ab Seegang 5 nehmen Messfehler zu. Innerhalb 3 sm hält das Such-/Folgeradar des CIWS einen anfliegenden Flugkörper ununterbrochen, solange das CIWS freigegeben ist.
 - **AIS:** zivile Schiffe senden Kurs und Fahrt alle 2-10 s (vor Anker alle 3 min) und ihren Namen etwa alle 6 min. Der UKW-Empfänger hört sie nur in Sichtlinie (etwa 20 NM). Ein Radartrack eines Zivilschiffs zeigt Name und Kurs erst, wenn die passende AIS-Meldung empfangen wurde; Radar allein liefert nur die Position. Optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
@@ -600,6 +601,7 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
 | `Backspace` | Alle markierten Meldungen abwählen |
+| `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
 | `Enter` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Kamera-Follow an/aus |
 
@@ -1073,7 +1075,7 @@ Die obere Leiste zeigt die sechs Stationen des Boots als Reiter: `1` Führung, `
 - Der Crew-Zustand (Betriebsarten, Mast, Drähte, Plot, Alarmpeilungen) wird nicht gespeichert: nach dem Laden führt die KI das Boot, und jeder Crew-Torpedo hat seinen Draht verloren.
 - Das besetzte Boot funkt nicht und empfängt nichts; es gibt keine Kontaktmeldung von der Führung an Land.
 - Keine Leckwehr- oder Schadensteams an Bord; Schäden summieren sich nur.
-- Ein ausgefahrener Mast wird vom Fregattenradar nicht erfasst (das Fregattenradar erfasst keine U-Boote), und Schnorcheln erzeugt kein Dieselgeräusch: es beendet nur die Schleichfahrt.
+- Schnorcheln erzeugt kein Dieselgeräusch: es beendet nur die Schleichfahrt. Ein ausgefahrener Mast oder Schnorchelkopf erscheint auf dem Fregattenradar nur als bloßer Punkt (siehe Kapitel OPZ).
 - Kein Sehrohrbild und keine Sichtmeldungen vom Boot aus.
 
 ### Mission und Wertung

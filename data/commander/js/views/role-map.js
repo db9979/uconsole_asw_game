@@ -375,6 +375,17 @@ export function drawRoleMap(role) {
     plot.context.strokeRect(x - 4, y - 4, 8, 8);
     plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
   }
+  if (role === "opz") {
+    // Bare mast/snorkel echoes: an afterglow dot, no symbol; a click marks it.
+    for (const blip of payload.radar_blips) {
+      const [x, y] = point(blip.x, blip.y);
+      addRoleMapHit(blip.ref, x, y);
+      plot.context.globalAlpha = Math.max(.25, 1 - blip.age_s / 6);
+      plot.context.fillStyle = palette().accent;
+      plot.context.beginPath(); plot.context.arc(x, y, 3, 0, Math.PI * 2); plot.context.fill();
+      plot.context.globalAlpha = 1;
+    }
+  }
   if (role === "opz" && hasPosition(data.own)) {
     if (payload.radar.live && (payload.radar.surface || payload.radar.air)) {
       for (const range of [payload.radar.surface_effective_range_nm, payload.radar.air_effective_range_nm]) if (finite(range)) { plot.context.strokeStyle = "#365d69"; plot.context.beginPath(); plot.context.arc(ox, oy, range * scale, 0, Math.PI * 2); plot.context.stroke(); }

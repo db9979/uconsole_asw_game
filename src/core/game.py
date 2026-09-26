@@ -797,6 +797,11 @@ class Game:
         self.asm_sel = 0
         self.air_picture = TrackPicture(
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
+        # Unmarked mast/snorkel echoes (transient display, never saved) and the
+        # boats whose echoes the OPZ marked into a track: sub id -> track id.
+        self.radar_blips = deque(maxlen=config.RADAR_BLIP_MAX)
+        self.radar_blip_seq = 0
+        self._radar_marked = {}
         self.ais = AISReceiver(seed)
         self.opz_selected_track_id = None
         self.opz_contact_filter = "ALL"
@@ -3020,6 +3025,8 @@ class Game:
                         self.deploy_buoys()
                 elif self.station is Station.ELOKA:
                     self._cycle_eloka_filter("band")
+                elif self.station is Station.OPZ:
+                    self._mark_newest_blip()
             elif e.key == pygame.K_y:
                 if self.station is Station.SONAR:
                     if self.damage.station_down("sonar"):
@@ -3302,6 +3309,8 @@ class Game:
                     action = opz_action_at(self, canvas, config.OPZ_STATION_RECT)
                     if isinstance(action, tuple) and action[0] == "select":
                         self.opz_selected_track_id = action[1]
+                    elif isinstance(action, tuple) and action[0] == "blip":
+                        self.mark_radar_blip(action[1])
                     elif action == "classify":
                         self._cycle_opz_classification()
                     elif action == "affiliate":
@@ -3899,6 +3908,98 @@ class Game:
         tick = math.floor(self.sim_t * 4.0 + 1e-6)
         return (detrand.u01(self.seed, "radar-look-" + domain, key, tick)
                 < radar_physics.pd_from_sinr(sinr))
+
+    @staticmethod
+    def _mast_up(sub) -> bool:
+        """A mast or snorkel head above the water: the crew's raised mast or
+        snorkel, or an AI boat snorkelling or at radio depth."""
+        from src.sensors.platform import MAST_DEPTH_M
+        if sub.sunk or sub.depth > MAST_DEPTH_M:
+            return False
+        crew = getattr(sub, "crew", None)
+        if sub.manual and crew is not None and crew.mast:
+            return True
+        endurance = sub.endurance
+        return endurance is not None and endurance.phase in ("SNORKEL", "RADIO")
+
+    def _update_mast_echoes(self, surface_live, swept_deg, error_scale) -> None:
+        """Surface-radar looks at raised masts: a bare blip, or an update of
+        the track the OPZ marked for that boat."""
+        for sub_id, (_track_id, last) in tuple(self._radar_marked.items()):
+            if self.sim_t - last > config.RADAR_TRACK_STALE_S:
+                del self._radar_marked[sub_id]
+        if not surface_live:
+            return
+        horizon = config.radar_horizon_nm(config.RADAR_ANTENNA_HEIGHT_M,
+                                          config.SUB_MAST_HEIGHT_M)
+        tick = math.floor(self.sim_t * 4.0 + 1e-6)
+        for sub in self.subs:
+            if not self._mast_up(sub):
+                continue
+            dist = math.hypot(sub.x - self.ship.x, sub.y - self.ship.y)
+            bearing = math.degrees(math.atan2(sub.x - self.ship.x,
+                                              -(sub.y - self.ship.y))) % 360.0
+            if (dist > horizon or not self._radar_look(
+                    "surface", sub.sensor_seed, dist, bearing, swept_deg=swept_deg,
+                    rcs_factor=config.SUB_MAST_RCS_FACTOR)
+                    or self.world.land_blocks_line(self.ship.x, self.ship.y, sub.x, sub.y)):
+                continue
+            bearing_error = config.RADAR_BEARING_ERR_DEG * error_scale
+            range_error = config.RADAR_RANGE_ERR_FRAC * error_scale
+            brg = (bearing + detrand.uniform(-bearing_error, bearing_error, self.seed,
+                                             "radar-mast-brg", sub.sensor_seed, tick)) % 360.0
+            measured = max(0.0, dist * (1.0 + detrand.uniform(
+                -range_error, range_error, self.seed, "radar-mast-rng", sub.sensor_seed, tick)))
+            marked = self._radar_marked.get(sub.id)
+            if marked is not None:
+                self._observe_mast(marked[0], sub.id, brg, measured,
+                                   self.ship.x, self.ship.y, bearing_error)
+                continue
+            self.radar_blip_seq += 1
+            rad = math.radians(brg)
+            self.radar_blips.append(dict(
+                seq=self.radar_blip_seq, t=float(self.sim_t), target=sub.id,
+                bearing=brg, range_nm=measured, error=bearing_error,
+                observer_x=self.ship.x, observer_y=self.ship.y,
+                x=self.ship.x + measured * math.sin(rad),
+                y=self.ship.y - measured * math.cos(rad)))
+
+    def _observe_mast(self, track_id, sub_id, bearing, range_nm, observer_x, observer_y,
+                      bearing_error) -> None:
+        self._radar_marked[sub_id] = (track_id, float(self.sim_t))
+        self.air_picture.observe(track_id=track_id, kind="SURFACE", target_id=sub_id,
+            source="RADAR-S", bearing=bearing, range_nm=range_nm,
+            observer_x=observer_x, observer_y=observer_y, course=None, quality=.5,
+            now=self.sim_t, label=track_id,
+            bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+
+    def radar_blip_view(self) -> list:
+        """Unmarked radar blips still glowing (measured positions only)."""
+        if not (self.surface_radar_on and not self.damage.station_down("opz")):
+            return []
+        return [blip for blip in self.radar_blips
+                if 0.0 <= self.sim_t - blip["t"] < config.RADAR_BLIP_LIFE_S
+                and blip["target"] not in self._radar_marked]
+
+    def mark_radar_blip(self, seq):
+        """OPZ: start a radar track from a blip (its measurement only)."""
+        if type(seq) is not int:
+            return "invalid_value"
+        blip = next((item for item in self.radar_blip_view() if item["seq"] == seq), None)
+        if blip is None:
+            return "stale_ref"
+        track_id = f"R-{blip['seq']}"
+        self._observe_mast(track_id, blip["target"], blip["bearing"], blip["range_nm"],
+                           blip["observer_x"], blip["observer_y"], blip["error"])
+        self.announce(message("runtime.opz.blip_marked", track=track_id), "opz", 2.0)
+        return True
+
+    def _mark_newest_blip(self) -> None:
+        blips = self.radar_blip_view()
+        if not blips:
+            self.flash(message("runtime.opz.no_blip"), 1.5)
+            return
+        self.mark_radar_blip(blips[-1]["seq"])
 
     def radar_sweep_bearing(self) -> float:
         """Nautische Peilung: zunehmende Werte drehen Nord -> Ost rechtsherum."""
@@ -4801,6 +4902,7 @@ class Game:
                     course=None, quality=.9, now=self.sim_t,
                     label=f"S-{w.id}",
                     bearing_uncertainty_deg=bearing_error / math.sqrt(3.0))
+        self._update_mast_echoes(surface_live, swept_deg, error_scale)
         for f in self.flights.flights:
             dist = f.distance_nm(self.ship)
             bearing = f.bearing_to_frigate(self.ship)

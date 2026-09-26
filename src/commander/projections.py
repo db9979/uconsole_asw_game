@@ -1003,6 +1003,11 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                            for row in rows if row.get("_opz")
                            and row["ref"] in direct_fire_refs["opz"]],
                       source_classifications=source_classifications,
+                      # Bare mast/snorkel echoes: measured position and age only.
+                      radar_blips=[dict(ref=f"blip-{blip['seq']}", x=_number(blip["x"]),
+                                        y=_number(blip["y"]),
+                                        age_s=_age(game.sim_t, blip["t"]))
+                                   for blip in game.radar_blip_view()][-16:],
                       designated_target_ref=(target_ref if any(
                           row.get("_opz") and row["ref"] == target_ref
                           for row in rows) else None),

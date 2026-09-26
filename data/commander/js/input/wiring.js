@@ -759,6 +759,8 @@ export function init() {
         const geometry = roleMapGeometry(gesture.role), state = roleMapViews[gesture.role];
         if (geometry) plotClick(gesture.role, state.x + (x - rect.width / 2) / geometry.scale,
           state.y + (y - rect.height / 2) / geometry.scale);
+      } else if (contact && contact.ref.startsWith("blip-")) {
+        sendStationAction("opz_mark_blip", {ref: contact.ref});
       } else if (contact) {
         selectTrack(contact.ref);
       } else if (!hits.length && gesture.role === "helicopter" && stationActionAvailable() &&

@@ -125,7 +125,7 @@ The top bar shows the boat's six stations as tabs: `1` Command, `2` Sonar, `3` W
 - Crew state (modes, mast, wires, plot, alarm bearings) is not saved: after a load the AI commands the boat and every crew torpedo has lost its wire.
 - The crewed boat sends no radio traffic and receives none; there is no contact report from home.
 - No damage-control teams aboard the boat; damage only accumulates.
-- A raised mast is not detected by the frigate's radar (the frigate radar does not detect submarines), and snorkelling adds no diesel noise: it only ends silent running.
+- Snorkelling adds no diesel noise: it only ends silent running. A raised mast or snorkel head is seen by the frigate's radar only as a bare blip (see the OPZ chapter).
 - No periscope view and no visual sightings from the boat.
 
 ## Mission and scoring {#ref-mission}

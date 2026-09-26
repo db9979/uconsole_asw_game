@@ -239,6 +239,127 @@ def _map_label(surface, game, text, pos, color, chart) -> None:
         surface.blit(image, rendered)
 
 
+def draw_chart_geography(game, view, r) -> None:
+    """Known geography of a chart: bathymetry, grid, land, airbases, hazards.
+
+    Shared by the frigate map and the crewed submarine's chart; it reads only
+    the world's public chart data.  The caller clips to ``r``.
+    """
+    s = game.screen
+    w = game.world
+    coast = w.coast
+    # Seedbasierte Bathymetrie: dezente taktische Tiefenfaerbung.
+    if coast.has_bathymetry:
+        # UI-only, one world/snapshot and at most 4096 chart cells. Compare
+        # the small depth grid too, so in-place snapshot edits invalidate.
+        bathymetry = getattr(coast, "_bathymetry", None)
+        colors = {}
+        if bathymetry is not None:
+            key = (w.size_nm, coast.world_size_nm,
+                   bathymetry["size"],
+                   tuple(tuple(row) for row in bathymetry["values"]),
+                   tuple(coast.landmasses),
+                   config.COLOR_SHALLOW, config.COLOR_DEEP)
+            cached = getattr(draw_map_view, "_bathymetry_cache", None)
+            if (cached is None or cached[0] is not w
+                    or cached[1] is not coast or cached[2] != key):
+                cached = (w, coast, key, colors)
+                draw_map_view._bathymetry_cache = cached
+            colors = cached[3]
+        cell_nm = 10.0 if view.scale >= 4.0 else 25.0
+        wl, wt = view.screen_to_world(r[0], r[1])
+        wr, wb = view.screen_to_world(r[0] + r[2], r[1] + r[3])
+        x0 = max(0.0, math.floor(min(wl, wr) / cell_nm) * cell_nm)
+        y0 = max(0.0, math.floor(min(wt, wb) / cell_nm) * cell_nm)
+        x1 = min(w.size_nm, max(wl, wr) + cell_nm)
+        y1 = min(w.size_nm, max(wt, wb) + cell_nm)
+        y_nm = y0
+        while y_nm < y1:
+            x_nm = x0
+            while x_nm < x1:
+                cell = (cell_nm, x_nm, y_nm)
+                if cell not in colors:
+                    depth = w.depth_m(x_nm + cell_nm * .5,
+                                      y_nm + cell_nm * .5)
+                    color = None
+                    if depth > 0.0:
+                        deep = max(0.0, min(1.0, depth / 900.0))
+                        color = tuple(
+                            int(shallow + (deep_color - shallow) * deep)
+                            for shallow, deep_color in zip(
+                                config.COLOR_SHALLOW, config.COLOR_DEEP))
+                    if len(colors) >= 4096:
+                        colors.clear()
+                    colors[cell] = color
+                color = colors[cell]
+                if color is not None:
+                    px, py = view.world_to_screen(x_nm, y_nm)
+                    px2, py2 = view.world_to_screen(
+                        x_nm + cell_nm, y_nm + cell_nm)
+                    pygame.draw.rect(s, color,
+                                     (int(px), int(py),
+                                      max(1, int(px2 - px) + 1),
+                                      max(1, int(py2 - py) + 1)))
+                x_nm += cell_nm
+            y_nm += cell_nm
+    # Gitter (sichtbare 50-NM-Linien)
+    step = 10 if view.scale >= 8 else (25 if view.scale >= 3 else 50)
+    wl, wt = view.screen_to_world(r[0], r[1])
+    wr, wb = view.screen_to_world(r[0] + r[2], r[1] + r[3])
+    gx0 = int(max(0.0, min(wl, wr)) // step) * step
+    gx1 = int(min(w.size_nm, max(wl, wr)) // step) * step
+    gy0 = int(max(0.0, min(wt, wb)) // step) * step
+    gy1 = int(min(w.size_nm, max(wt, wb)) // step) * step
+    for g in range(gx0, gx1 + 1, step):
+        x, _ = view.world_to_screen(g, 0)
+        if r[0] <= x <= r[0] + r[2]:
+            pygame.draw.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
+            s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
+                   (int(x) + 3, r[1] + r[3] - 18))
+    for g in range(gy0, gy1 + 1, step):
+        _, y = view.world_to_screen(0, g)
+        if r[1] <= y <= r[1] + r[3]:
+            pygame.draw.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
+            s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
+                   (r[0] + 3, int(y) + 3))
+
+    # Land / Inseln. Legacy/fake coast providers retain their old API.
+    landmasses = getattr(coast, "landmasses", None)
+    visible_land = (_visible_landmasses(coast, view, r)
+                    if landmasses is not None else None)
+    polygons = ([[view.world_to_screen(px, py) for px, py in land.points]
+                 for land in visible_land]
+                if visible_land is not None else coast.land_points_px(view))
+    for poly in polygons:
+        pygame.draw.polygon(s, config.COLOR_LAND, poly)
+        pygame.draw.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
+    shown_countries = set()
+    for land in visible_land or ():
+        if land.name in shown_countries:
+            continue
+        px, py = view.world_to_screen(*land.centroid)
+        if _in_rect(px, py, r, 18.0):
+            shown_countries.add(land.name)
+            layout.blit_line(s, land.name.upper(),
+                             (int(px) - 70, int(py) - 9, 140, 18),
+                             config.COLOR_LAND_EDGE, size=12,
+                             align="center")
+    # Airbases
+    for base, px, py in coast.airbase_px(view):
+        if not _in_rect(px, py, r, 0.0):
+            # Off-chart bases would have their labels pinned to the edge.
+            continue
+        col = config.COLOR_DANGER if base.get("gameplay_role") == "hostile" \
+            else config.COLOR_FLIGHT
+        pygame.draw.rect(s, col, (int(px) - 4, int(py) - 4, 8, 8), 2)
+        _map_label(s, game, raw_text(base["name"]), (int(px) + 7, int(py) - 8),
+                   config.COLOR_TEXT_DIM, r)
+    # Charted wrecks and underwater rocks (public chart information).
+    hazards = getattr(w, "charted_hazards", None)
+    if hazards is not None:
+        chart_symbols.draw_hazards(s, hazards(), view.world_to_screen, r, view.scale)
+
+
 @localized
 def draw_map_view(game, tr=None) -> None:
     layout.configure_for(game)
@@ -252,113 +373,7 @@ def draw_map_view(game, tr=None) -> None:
     # See-Hintergrund; bleibt auch ausserhalb der Weltgrenzen sichtbar.
     pygame.draw.rect(s, config.COLOR_GEO_BG, r)
     with layout.clip_to(s, r):
-        # Seedbasierte Bathymetrie: dezente taktische Tiefenfaerbung.
-        if coast.has_bathymetry:
-            # UI-only, one world/snapshot and at most 4096 chart cells. Compare
-            # the small depth grid too, so in-place snapshot edits invalidate.
-            bathymetry = getattr(coast, "_bathymetry", None)
-            colors = {}
-            if bathymetry is not None:
-                key = (w.size_nm, coast.world_size_nm,
-                       bathymetry["size"],
-                       tuple(tuple(row) for row in bathymetry["values"]),
-                       tuple(coast.landmasses),
-                       config.COLOR_SHALLOW, config.COLOR_DEEP)
-                cached = getattr(draw_map_view, "_bathymetry_cache", None)
-                if (cached is None or cached[0] is not w
-                        or cached[1] is not coast or cached[2] != key):
-                    cached = (w, coast, key, colors)
-                    draw_map_view._bathymetry_cache = cached
-                colors = cached[3]
-            cell_nm = 10.0 if view.scale >= 4.0 else 25.0
-            wl, wt = view.screen_to_world(r[0], r[1])
-            wr, wb = view.screen_to_world(r[0] + r[2], r[1] + r[3])
-            x0 = max(0.0, math.floor(min(wl, wr) / cell_nm) * cell_nm)
-            y0 = max(0.0, math.floor(min(wt, wb) / cell_nm) * cell_nm)
-            x1 = min(w.size_nm, max(wl, wr) + cell_nm)
-            y1 = min(w.size_nm, max(wt, wb) + cell_nm)
-            y_nm = y0
-            while y_nm < y1:
-                x_nm = x0
-                while x_nm < x1:
-                    cell = (cell_nm, x_nm, y_nm)
-                    if cell not in colors:
-                        depth = w.depth_m(x_nm + cell_nm * .5,
-                                          y_nm + cell_nm * .5)
-                        color = None
-                        if depth > 0.0:
-                            deep = max(0.0, min(1.0, depth / 900.0))
-                            color = tuple(
-                                int(shallow + (deep_color - shallow) * deep)
-                                for shallow, deep_color in zip(
-                                    config.COLOR_SHALLOW, config.COLOR_DEEP))
-                        if len(colors) >= 4096:
-                            colors.clear()
-                        colors[cell] = color
-                    color = colors[cell]
-                    if color is not None:
-                        px, py = view.world_to_screen(x_nm, y_nm)
-                        px2, py2 = view.world_to_screen(
-                            x_nm + cell_nm, y_nm + cell_nm)
-                        pygame.draw.rect(s, color,
-                                         (int(px), int(py),
-                                          max(1, int(px2 - px) + 1),
-                                          max(1, int(py2 - py) + 1)))
-                    x_nm += cell_nm
-                y_nm += cell_nm
-        # Gitter (sichtbare 50-NM-Linien)
-        step = 10 if view.scale >= 8 else (25 if view.scale >= 3 else 50)
-        wl, wt = view.screen_to_world(r[0], r[1])
-        wr, wb = view.screen_to_world(r[0] + r[2], r[1] + r[3])
-        gx0 = int(max(0.0, min(wl, wr)) // step) * step
-        gx1 = int(min(w.size_nm, max(wl, wr)) // step) * step
-        gy0 = int(max(0.0, min(wt, wb)) // step) * step
-        gy1 = int(min(w.size_nm, max(wt, wb)) // step) * step
-        for g in range(gx0, gx1 + 1, step):
-            x, _ = view.world_to_screen(g, 0)
-            if r[0] <= x <= r[0] + r[2]:
-                pygame.draw.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
-                s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
-                       (int(x) + 3, r[1] + r[3] - 18))
-        for g in range(gy0, gy1 + 1, step):
-            _, y = view.world_to_screen(0, g)
-            if r[1] <= y <= r[1] + r[3]:
-                pygame.draw.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
-                s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
-                       (r[0] + 3, int(y) + 3))
-
-        # Land / Inseln. Legacy/fake coast providers retain their old API.
-        landmasses = getattr(coast, "landmasses", None)
-        visible_land = (_visible_landmasses(coast, view, r)
-                        if landmasses is not None else None)
-        polygons = ([[view.world_to_screen(px, py) for px, py in land.points]
-                     for land in visible_land]
-                    if visible_land is not None else coast.land_points_px(view))
-        for poly in polygons:
-            pygame.draw.polygon(s, config.COLOR_LAND, poly)
-            pygame.draw.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
-        shown_countries = set()
-        for land in visible_land or ():
-            if land.name in shown_countries:
-                continue
-            px, py = view.world_to_screen(*land.centroid)
-            if _in_rect(px, py, r, 18.0):
-                shown_countries.add(land.name)
-                layout.blit_line(s, land.name.upper(),
-                                 (int(px) - 70, int(py) - 9, 140, 18),
-                                 config.COLOR_LAND_EDGE, size=12,
-                                 align="center")
-        # Airbases
-        for base, px, py in coast.airbase_px(view):
-            col = config.COLOR_DANGER if base.get("gameplay_role") == "hostile" \
-                else config.COLOR_FLIGHT
-            pygame.draw.rect(s, col, (int(px) - 4, int(py) - 4, 8, 8), 2)
-            _map_label(s, game, raw_text(base["name"]), (int(px) + 7, int(py) - 8),
-                       config.COLOR_TEXT_DIM, r)
-        # Charted wrecks and underwater rocks (public chart information).
-        hazards = getattr(w, "charted_hazards", None)
-        if hazards is not None:
-            chart_symbols.draw_hazards(s, hazards(), view.world_to_screen, r, view.scale)
+        draw_chart_geography(game, view, r)
 
         tracks = game.radar_tracks()
 
@@ -548,11 +563,17 @@ def draw_map_view(game, tr=None) -> None:
                        col, r)
         draw_plot(s, game, view, r)
 
+    draw_chart_frame(game, view, r, getattr(game, "map_follow", True))
+
+
+def draw_chart_frame(game, view, r, following: bool) -> None:
+    """Chart border and the region / zoom / follow line."""
+    s = game.screen
+    coast = game.world.coast
     pygame.draw.rect(s, config.COLOR_GEO_GRID, r, 1)
     # Zoom-Stufenanzeige
     zoom_nm = r[3] / view.scale
-    follow = structured_message("common.on" if getattr(game, "map_follow", True)
-                                else "common.off")
+    follow = structured_message("common.on" if following else "common.off")
     metadata = getattr(coast, "metadata", None) or {}
     region = metadata.get("name")
     prefix = region if region else getattr(game, "world_mode", "fixed").upper()

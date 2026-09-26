@@ -9,7 +9,17 @@
   const phases = { live: "phase_live", menu: "phase_menu", blocked: "phase_blocked", ended: "phase_ended" };
   const damageStates = { OK: "damage_ok", FLUTEND: "damage_flooding", BESCHAEDIGT: "damage_damaged", ZERSTOERT: "damage_destroyed" };
   const heloStates = { HANGAR: "helo_stowed", AUF: "helo_airborne", ZURUECK: "helo_returning", VERLOREN: "helo_lost" };
-  const stationNames = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka"];
+  // Nine frigate stations, then the crewed submarine's two roles (the
+  // opposing side). A session only ever holds roles of one side.
+  const stationNames = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka", "uboot", "uboot_sonar"];
+  const opforRoles = new Set(["uboot", "uboot_sonar"]);
+  // Both sonar rooms share one panel; the submarine's has no towed array.
+  const sonarRoles = new Set(["sonar", "uboot_sonar"]);
+  const isSonar = (role) => sonarRoles.has(role);
+  const panelRole = (role) => (role === "uboot_sonar" ? "sonar" : role);
+  // Station hotkeys/numbers count within one side: 1-9 frigate, 1-2 submarine.
+  const sideStations = (station) => stationNames.filter((name) => opforRoles.has(name) === opforRoles.has(station));
+  const stationKey = (station) => sideStations(station).indexOf(station) + 1;
   const reasons = {
     invalid_schema: "reason_invalid_schema", unauthorized: "reason_unauthorized",
     stale_session: "reason_stale_session", stale_epoch: "reason_stale_epoch",
@@ -194,8 +204,8 @@
     "sonar-tma-plot", "sonar-environment", "sonar-active", "sonar-a-scan", "damage-schematic",
     "engine-instruments", "eloka-scope", "weapons-system", "helicopter-broadband-canvas",
     "helicopter-lofar-canvas", "helicopter-demon-canvas"];
-  const mapRoles = new Set(["bridge", "weapons", "opz", "radio", "helicopter"]);
-  const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
+  const mapRoles = new Set(["bridge", "weapons", "opz", "radio", "helicopter", "uboot"]);
+  const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka", "uboot", "uboot_sonar"]);
   const roleMapViews = Object.fromEntries([...mapRoles].map((role) => [role, {x: 250, y: 250, zoom: 1}]));
   const maxRoleMapHits = 512;
   let roleMapHits = [];
@@ -259,10 +269,14 @@
   // State polling and browser network hints can fail while the dedicated audio
   // request still works. The audio endpoint rechecks the session on every block.
   const sonarAudioAuthorized = () => !document.hidden &&
-    ["sonar", "helicopter"].includes(session?.station) && session.grants.sonar_audio === true &&
+    audioRoles.has(session?.station) && session.grants.sonar_audio === true &&
     v2State?.role === session.station && v2State.phase === "live" &&
     v2State.sonar?.settings?.station_down !== true &&
     (session.station !== "helicopter" || v2State.helicopter?.acoustic?.ready === true);
+  // Listening streams: frigate sonar, helicopter and the submarine's sonar room.
+  const audioRoles = new Set(["sonar", "helicopter", "uboot_sonar"]);
+  const audioRoute = (role) => (role === "helicopter" ? "helicopter" : role === "uboot_sonar" ? "uboot" : "sonar");
+  const audioPollRoutes = {helicopter: "/api/v2/helicopter/audio", uboot_sonar: "/api/v2/uboot/audio"};
   // Blocks arrive at real-time rate, so the standing buffer is the start lead. It
   // must outlast a browser main-thread stall or a Wi-Fi hiccup, otherwise every
   // such hiccup is an audible gap; live listening tolerates the extra latency.
@@ -333,7 +347,7 @@
     const button = $("sonar-live-toggle");
     button.textContent = t(sonarAudioEnabled ? "sonar_live_stop" : "sonar_live_start");
     button.setAttribute("aria-pressed", String(sonarAudioEnabled));
-    button.disabled = !sonarAudioEnabled && !(["sonar", "helicopter"].includes(session?.station) && session?.grants.sonar_audio === true &&
+    button.disabled = !sonarAudioEnabled && !(audioRoles.has(session?.station) && session?.grants.sonar_audio === true &&
       (session.station !== "helicopter" || v2State?.helicopter?.acoustic?.ready === true));
     const receiverRequired = session?.station === "helicopter" && v2State?.helicopter?.acoustic?.ready !== true;
     $("sonar-live-status").textContent = t(receiverRequired ? "sonar_live_receiver_required" :
@@ -376,6 +390,9 @@
     renderSonarAudio(key);
   }
 
+  // World session/epoch the live audio last saw; a change resumes the stream.
+  let sonarAudioWorld = null;
+
   function scheduleSonarAudioPoll(delay = 0) {
     clearTimeout(sonarAudioTimer);
     if (sonarAudioEnabled && !sonarAudioSocket) sonarAudioTimer = setTimeout(pollSonarAudio, delay);
@@ -394,10 +411,14 @@
       session?.client_id === client && session?.station === role &&
       session?.station_generation === lease && session?.active_generation === active &&
       v2State?.session === world && v2State?.epoch === epoch;
+    // Same listener, lease and role; only the world epoch moved on.
+    const resumable = () => sonarAudioEnabled && streamGeneration === sonarAudioGeneration &&
+      session?.client_id === client && session?.station === role &&
+      session?.station_generation === lease && session?.active_generation === active;
     let socket;
     try {
       const scheme = location.protocol === "https:" ? "wss:" : "ws:";
-      socket = new WebSocket(`${scheme}//${location.host}/ws/v2/${role}/audio`, "u-jagd-audio-v2");
+      socket = new WebSocket(`${scheme}//${location.host}/ws/v2/${audioRoute(role)}/audio`, "u-jagd-audio-v2");
     } catch (_) { scheduleSonarAudioPoll(0); return; }
     socket.binaryType = "arraybuffer";
     sonarAudioSocket = socket;
@@ -419,6 +440,10 @@
       if (current()) {
         scheduleSonarAudioPoll(0);
         sonarAudioReconnect = setTimeout(openSonarAudioSocket, 2000);
+      } else if (resumable()) {
+        // The host's local input advanced the epoch: reconnect at once.
+        clearTimeout(sonarAudioReconnect);
+        sonarAudioReconnect = setTimeout(openSonarAudioSocket, 50);
       }
     };
     socket.onerror = () => socket.close();
@@ -468,12 +493,18 @@
       session?.station_generation === expectedSession.station_generation &&
       session?.active_generation === expectedSession.active_generation &&
       v2State?.session === expectedSession.world && v2State?.epoch === expectedSession.epoch;
+    // Same listener and lease, only the world epoch moved on (the host's local
+    // input advances it): the next poll carries the new epoch and continues.
+    const resumable = () => context === generation && streamGeneration === sonarAudioGeneration &&
+      sonarAudioEnabled && session?.client_id === expectedSession.client_id &&
+      session?.station_generation === expectedSession.station_generation &&
+      session?.active_generation === expectedSession.active_generation;
     const controller = new AbortController();
     sonarAudioController = controller;
     const timeout = setTimeout(() => controller.abort(), 2000);
     let response;
     try {
-      response = await fetch(session?.station === "helicopter" ? "/api/v2/helicopter/audio" : "/api/v2/sonar/audio", {
+      response = await fetch(audioPollRoutes[session?.station] ?? "/api/v2/sonar/audio", {
         method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", mode: "same-origin",
         signal: controller.signal,
         headers: {Accept: "audio/pcm", "Content-Type": "application/json", "X-U-Jagd-CSRF": expectedSession.csrf},
@@ -556,6 +587,7 @@
       // Every nonterminal exit must keep the stream alive, including timeouts
       // and session metadata refreshes concurrent with this request.
       if (currentStream()) scheduleSonarAudioPoll(response?.status === 200 ? 20 : 100);
+      else if (resumable()) scheduleSonarAudioPoll(20);
     }
   }
 
@@ -614,7 +646,7 @@
   function clearFireDrafts() {
     clearFireConfirmation();
     for (const id of ["weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target",
-      "helicopter-fire-depth", "opz-fire-target"]) {
+      "helicopter-fire-depth", "opz-fire-target", "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range"]) {
       stationDrafts.delete(id);
       $(id).value = "";
     }
@@ -813,6 +845,11 @@
 
   function renderSonarStation(payload) {
     const settings = payload.settings;
+    // The submarine's sonar room: hull array only, no OPZ to release to.
+    const submarine = session?.station === "uboot_sonar";
+    for (const id of ["sonar-array-mode", "sonar-array-apply", "sonar-tas", "sonar-depth-form", "sonar-tas-flip", "sonar-tas-confirm"])
+      $(id).hidden = submarine;
+    $("station-sonar-title").textContent = t(submarine ? "station_uboot_sonar" : "station_sonar");
     const auditionMode = payload.visualization.receiver.listen_mode;
     metrics($("sonar-settings"), [["sonar_mode", settings.mode], ["sonar_page", number(settings.page, 0)],
       ["sonar_listen_bearing", unit(settings.listen_bearing, "\u00b0", 0)], ["sonar_focus", settings.focus_ref || t("station_none")],
@@ -859,8 +896,36 @@
     $("sonar-tas").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state !== "FAULT");
     $("sonar-depth-submit").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state === "STREAMED");
     $("sonar-depth").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state === "STREAMED");
-    stationRows($("sonar-observations"), payload.observations, (row) => [...sonarEntries(row),
+    stationRows($("sonar-observations"), payload.observations, (row) => submarine ? sonarEntries(row) : [...sonarEntries(row),
       ["opz_release_status", t(row.released_to_opz ? "opz_release_active" : "opz_release_private")]]);
+  }
+
+  function renderUbootStation(payload) {
+    const nav = payload.navigation, status = payload.status, weapons = payload.weapons;
+    metrics($("uboot-navigation"), [["position", position(nav)], ["course", unit(nav.course, "\u00b0", 0)],
+      ["uboot_ordered_course", unit(nav.target_course, "\u00b0", 0)], ["speed", unit(nav.speed, "kn")],
+      ["uboot_ordered_speed", unit(nav.target_speed, "kn")], ["depth", unit(nav.depth_m, "m", 0)],
+      ["uboot_ordered_depth", unit(nav.target_depth_m, "m", 0)], ["uboot_safe_depth", unit(nav.safe_depth_m, "m", 0)],
+      ["uboot_water_depth", unit(nav.water_depth_m, "m", 0)], ["uboot_cavitating", yesNo(nav.cavitating)],
+      ["uboot_noise", number(nav.noise, 2)]]);
+    const alarms = payload.alarms;
+    metrics($("uboot-status"), [["state", t(`uboot_state_${status.state}`)], ["uboot_damage", unit(status.damage, "%", 0)],
+      ["uboot_battery", status.battery === null ? t("unavailable") : unit(status.battery * 100, "%", 0)],
+      ["uboot_endurance_phase", status.endurance_phase || t("unavailable")], ["uboot_transmitting", yesNo(status.transmitting)],
+      ["uboot_blow_available", yesNo(status.blow_available)], ["uboot_emergency_ascent", yesNo(status.emergency_ascent)],
+      ["torpedoes", number(weapons.torpedoes, 0)], ["uboot_tubes_ready", number(weapons.tubes_ready, 0)],
+      ["reload", unit(weapons.reload_s, "s", 0)], ["uboot_decoys", number(weapons.decoys, 0)],
+      ["uboot_ping_heard", alarms.ping_age_s === null ? t("station_none") : unit(alarms.ping_age_s, "s", 0)],
+      ["uboot_torpedo_alarm", alarms.torpedo_age_s === null ? t("station_none") : unit(alarms.torpedo_age_s, "s", 0)]]);
+    document.body.classList.toggle("uboot-torpedo-alarm", alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 60);
+    if (!stationDrafts.has("uboot-depth")) $("uboot-depth").max = String(nav.max_depth_m);
+    if (!stationDrafts.has("uboot-speed")) $("uboot-speed").max = String(nav.max_speed_kn);
+    $("uboot-decoy").dataset.ready = String(weapons.decoy_ready);
+    $("uboot-blow").dataset.ready = String(status.blow_available && !status.emergency_ascent && nav.depth_m > 30);
+    fillFireTargets("uboot-fire-target", payload.contacts);
+    stationRows($("uboot-contacts"), payload.contacts, sonarEntries);
+    stationRows($("uboot-feed"), [...payload.feed].reverse().map((row) => ({...row, key: row.seq})),
+      (row) => [["age", unit(row.age_s, "s", 0)], ["uboot_log_entry", row.message]]);
   }
 
   function renderWeaponsStation(payload) {
@@ -1448,7 +1513,7 @@
 
   function syncPlotAnimation() {
     const role = v2State?.role;
-    const active = !document.hidden && connected && v2State?.phase === "live" && (role === "sonar" || role === "helicopter") &&
+    const active = !document.hidden && connected && v2State?.phase === "live" && (isSonar(role) || role === "helicopter") &&
       !$("role-visuals").hidden && [...animatedPlots.values()].some((plot) => plot.role === role);
     if (active && plotFrame === null) plotFrame = requestAnimationFrame(plotAnimation);
     if (!active && plotFrame !== null) { cancelAnimationFrame(plotFrame); plotFrame = null; }
@@ -1926,6 +1991,13 @@
     if (role === "weapons") return {own: payload.navigation, observations: payload.tactical, assets: payload.active_assets, bearingLogs: [], fixes: []};
     if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
     if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
+    if (role === "uboot") {
+      // The boat's own position (legitimate truth) and its own sonar contacts only.
+      const nav = payload.navigation;
+      return {own: {x: nav.x, y: nav.y, course: nav.course, speed: nav.speed},
+        observations: payload.contacts.map((row) => ({...row, domain: "UNKNOWN", affiliation: "UNKNOWN"})),
+        assets: payload.own_weapons, bearingLogs: [], fixes: []};
+    }
     return {own: payload.navigation, observations: payload.tactical,
       assets: [payload.asset, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),
         ...(payload.waypoint ? [{...payload.waypoint, waypoint: true}] : [])], bearingLogs: [], fixes: []};
@@ -2405,7 +2477,8 @@
 
   function visualStationDown(role) {
     const payload = v2State?.[role];
-    return role === "sonar" ? payload.settings.station_down : role === "weapons" ? payload.readiness.station_down :
+    return isSonar(role) ? payload.settings.station_down : role === "uboot" ? ["sinking", "sunk"].includes(payload.status.state) :
+      role === "weapons" ? payload.readiness.station_down :
       role === "opz" ? !payload.radar.live : role === "radio" ? payload.station_down :
       role === "engine" ? payload.machinery.station_state === "ZERSTOERT" : role === "eloka" ? payload.station_down : false;
   }
@@ -2435,7 +2508,7 @@
     if (!role || $("role-visuals").hidden) return;
     if (mapRoles.has(role) && $("map-visual").hidden === false) drawRoleMap(role);
     if (role === "helicopter") drawHelicopterAcoustic();
-    if (role === "sonar") drawSonarVisuals();
+    if (isSonar(role)) drawSonarVisuals();
     if (role === "damage") drawDamageVisual();
     if (role === "engine") drawEngineVisual();
     if (role === "eloka") drawElokaVisual();
@@ -2460,9 +2533,11 @@
       $(`helicopter-acoustic-plot-tabs`).querySelector(`[data-helicopter-plot-tab="${plot}"]`)
         .setAttribute("aria-selected", String(helicopterPlot === plot));
     }
-    for (const [id, active] of [["map-visual", mapRoles.has(role) && (role !== "helicopter" || helicopterVisualPage === "map")], ["sonar-visual", role === "sonar"],
+    for (const [id, active] of [["map-visual", mapRoles.has(role) && (role !== "helicopter" || helicopterVisualPage === "map")], ["sonar-visual", isSonar(role)],
       ["damage-visual", role === "damage"], ["engine-visual", role === "engine"],
       ["eloka-visual", role === "eloka"], ["weapons-visual", role === "weapons"]]) $(id).hidden = !active;
+    // The grease-pencil plot is the frigate crew's; the submarine never sees or edits it.
+    $("plot-tools").hidden = opforRoles.has(role);
     if (!role) { clearVisuals(); return; }
     const stateKey = !connected ? "visual_stale" : v2State.phase !== "live" ? "visual_inactive" : visualStationDown(role) ? "visual_station_down" : "visual_live";
     $("role-visual-state").textContent = t(stateKey);
@@ -2491,10 +2566,10 @@
     if (active) {
       $("workstation-guide-title").textContent = t(`station_${active}`);
       $("workstation-guide-body").textContent = t(`workstation_help_${active}`);
-      $("workstation-manual-link").href = `/manual-${language}#station-${active}`;
+      $("workstation-manual-link").href = `/manual-${language}#${opforRoles.has(active) ? "ref-opfor" : `station-${active}`}`;
     }
     if (active) {
-      const section = $(`station-${active}`), grid = section.querySelector(".station-grid");
+      const section = $(`station-${panelRole(active)}`), grid = section.querySelector(".station-grid");
       section.classList.toggle("track-workstation", trackRoles.has(active));
       if ($("role-visuals").parentElement !== section) section.insertBefore($("role-visuals"), grid);
       if (active === "bridge" && $("bridge-orders").parentElement !== grid) grid.prepend($("bridge-orders"));
@@ -2509,7 +2584,7 @@
         $("role-visuals").insertBefore($("helicopter-buoy-console"), $("map-visual"));
       if (active === "helicopter" && $("sonar-live-toggle").parentElement?.parentElement !== $("helicopter-buoy-console"))
         $("helicopter-buoy-console").prepend($("sonar-live-toggle").parentElement);
-      if (active === "sonar" && $("sonar-live-toggle").parentElement?.parentElement !== $("sonar-visual"))
+      if (isSonar(active) && $("sonar-live-toggle").parentElement?.parentElement !== $("sonar-visual"))
         $("sonar-visual").prepend($("sonar-live-toggle").parentElement);
       if (trackRoles.has(active) && $("operations-workspace").parentElement !== section)
         section.insertBefore($("operations-workspace"), grid);
@@ -2526,7 +2601,7 @@
     }
     $("station-view").hidden = !active;
     for (const section of document.querySelectorAll("[data-station-role]")) {
-      section.hidden = section.dataset.stationRole !== active;
+      section.hidden = section.dataset.stationRole !== panelRole(active);
       if (section.hidden) for (const container of section.querySelectorAll("dl, .station-list")) container.replaceChildren();
     }
     $("operations-workspace").hidden = Boolean(active) && !trackRoles.has(active);
@@ -2537,7 +2612,8 @@
     stationRenderSignature = signature;
     const renderers = {bridge: renderBridgeStation, sonar: renderSonarStation, weapons: renderWeaponsStation,
       damage: renderDamageStation, opz: renderOpzStation, radio: renderRadioStation, engine: renderEngineStation,
-      helicopter: renderHelicopterStation, eloka: renderElokaStation};
+      helicopter: renderHelicopterStation, eloka: renderElokaStation,
+      uboot: renderUbootStation, uboot_sonar: renderSonarStation};
     renderers[active](v2State[active]);
     queueVisualDraw();
   }
@@ -2591,7 +2667,8 @@
     $("bridge-course-form").reset();
     $("bridge-speed-form").reset();
     for (const id of ["sonar-bearing-form", "sonar-depth-form", "sonar-gain-form", "sonar-harmonic-form",
-      "engine-course-form", "engine-speed-form", "helicopter-waypoint-form", "helicopter-dip-depth-form"]) $(id).reset();
+      "engine-course-form", "engine-speed-form", "helicopter-waypoint-form", "helicopter-dip-depth-form",
+      "uboot-course-form", "uboot-speed-form", "uboot-depth-form"]) $(id).reset();
     $("sonar-control-page").value = "listen";
     renderSonarControlPage();
     $("navigation-status").textContent = "";
@@ -2691,7 +2768,9 @@
       select.disabled = stationMutation;
     }
     renderStationTabs(leasedStations, displayedStation);
-    $("workstation-add-station").hidden = leasedStations.length === stationNames.length;
+    // A session only ever holds one side, so "all" means every role of that side.
+    $("workstation-add-station").hidden =
+      leasedStations.length === sideStations(session.station ?? "bridge").length;
     $("workstation-release").hidden = solo;
     renderHost();
     renderDisabledReasons();
@@ -2928,7 +3007,7 @@
     $("analysis-name").textContent = profile.name;
     $("analysis-resource").textContent = t(`analyzer_${profile.resource.slice(0, -5)}`);
     // Sonar operators assign the compared profile to their selected contact.
-    const canAssign = session?.station === "sonar" && Boolean(selected) && stationActionAvailable();
+    const canAssign = isSonar(session?.station) && Boolean(selected) && stationActionAvailable();
     $("analysis-assign").hidden = $("analysis-assign-clear").hidden = !canAssign;
     $("analysis-assign-status").value = canAssign ? t("analyzer_assign_target", {contact: selectedTrack()?.label || selected}) : "";
     const reference = profile.reference;
@@ -3189,7 +3268,7 @@
         Object.values(value.grants).some((grant) => typeof grant !== "boolean") ||
         (value.grants.command && value.station === null) ||
         (value.grants.direct_fire && (!value.grants.command || !["weapons", "helicopter", "opz"].includes(value.station))) ||
-        (value.grants.sonar_audio && !["sonar", "helicopter"].includes(value.station)) ||
+        (value.grants.sonar_audio && !audioRoles.has(value.station)) ||
         typeof value.simlog !== "boolean" || value.grants.simlog !== value.simlog ||
         (value.host !== null && (!exactKeys(value.host, ["generation"]) ||
           !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
@@ -3207,7 +3286,7 @@
           Object.values(record.grants).some((grant) => typeof grant !== "boolean") ||
           (record.status === "mine") !== (record.station_generation !== null) ||
           record.grants.direct_fire && (!record.grants.command || !["weapons", "helicopter", "opz"].includes(station)) ||
-          record.grants.sonar_audio && !["sonar", "helicopter"].includes(station)) throw new Error("session");
+          record.grants.sonar_audio && !audioRoles.has(station)) throw new Error("session");
     }
     const mine = stationNames.filter((station) => value.stations[station].status === "mine");
     if ((value.station === null) !== (mine.length === 0) ||
@@ -3350,6 +3429,8 @@
       radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
       engine: ["propulsion", "machinery", "controls", "environment_effects"],
       helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"], eloka: ["intercepts", "station_down", "status", "hardware"],
+      uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
+      uboot_sonar: ["observations", "settings", "visualization"],
     };
     if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
     const rowsExact = (rows, maximum, fields) => {
@@ -3383,7 +3464,7 @@
           !exactKeys(row, ["time", "sighted", "code", "type", "bearing", "range_nm"]) || typeof row.time !== "string" || row.time.length > 8 ||
           (row.code === null ? !sightingKinds.includes(row.sighted) || row.type !== null : row.sighted !== null || !validSightingClass(row.code, row.type)) ||
           !finite(row.bearing) || row.bearing < 0 || row.bearing >= 360 || !finite(row.range_nm) || row.range_nm < 0 || row.range_nm > 1000)) throw new Error("protocol");
-    } else if (state.role === "sonar") {
+    } else if (isSonar(state.role)) {
       rowsExact(payload.observations, 256, sonarFields);
       const settings = payload.settings;
       if (!exactKeys(settings, ["mode", "page", "listen_bearing", "focus_ref", "target_ref", "station_down", "tow", "bt", "ping", "tma_enabled", "gain_db", "band_preset", "band_hz", "notch", "peak_hold", "harmonic_hz", "harmonic_candidates_hz", "audio_enabled", "volume", "quiet_mode", "tools"]) ||
@@ -3425,6 +3506,29 @@
           (visual.bt !== null && (!exactKeys(visual.bt, ["age_s", "thermocline_m", "water_depth_m", "sea_state", "depths_m", "speeds_m_s", "cz_bands_nm"]) || !boundedArray(visual.bt.depths_m, 64) || !boundedArray(visual.bt.speeds_m_s, 64) || visual.bt.depths_m.length !== visual.bt.speeds_m_s.length || !boundedArray(visual.bt.cz_bands_nm, 8) || visual.bt.cz_bands_nm.some((band) => !boundedArray(band, 2) || band.length !== 2))) ||
           !boundedArray(visual.active_echoes, 40) || visual.active_echoes.some((row) => !exactKeys(row, ["age_s", "bearing", "range_nm", "depth_m", "range_uncertainty_nm", "depth_uncertainty_m", "snr_db", "array"])) ||
           !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"]) || !["BROADBAND", "FILTERED", "HETERODYNE"].includes(visual.receiver.listen_mode) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
+    } else if (state.role === "uboot") {
+      const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
+      const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "max_speed_kn", "noise"];
+      if (!exactKeys(nav, [...navNumbers, "water_depth_m", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
+          (nav.water_depth_m !== null && !finite(nav.water_depth_m)) || typeof nav.cavitating !== "boolean" ||
+          !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting"]) ||
+          !["manual", "ai", "sinking", "sunk"].includes(status.state) || !finite(status.damage) ||
+          [status.emergency_ascent, status.blow_available, status.transmitting].some((value) => typeof value !== "boolean") ||
+          (status.battery !== null && !finite(status.battery)) ||
+          (status.endurance_phase !== null && (typeof status.endurance_phase !== "string" || status.endurance_phase.length > 16)) ||
+          !exactKeys(weapons, ["torpedoes", "tubes_ready", "reload_s", "ready", "reason", "arc_center_deg", "arc_width_deg", "decoys", "decoy_ready"]) ||
+          [weapons.torpedoes, weapons.tubes_ready, weapons.decoys].some((value) => !Number.isInteger(value) || value < 0) ||
+          typeof weapons.ready !== "boolean" || typeof weapons.decoy_ready !== "boolean" ||
+          (weapons.reason !== null && !["not_ready", "no_torpedoes", "reloading", "out_of_arc"].includes(weapons.reason)) ||
+          [weapons.reload_s, weapons.arc_center_deg, weapons.arc_width_deg].some((value) => value !== null && !finite(value)) ||
+          !exactKeys(alarms, ["ping_age_s", "torpedo_age_s"]) || [alarms.ping_age_s, alarms.torpedo_age_s].some((value) => value !== null && !finite(value)) ||
+          (payload.designated_target_ref !== null && typeof payload.designated_target_ref !== "string") ||
+          !boundedArray(payload.feed, 16) || payload.feed.some((row) => !exactKeys(row, ["seq", "age_s", "message"]) ||
+            !Number.isSafeInteger(row.seq) || typeof row.message !== "string" || row.message.length > 256 ||
+            (row.age_s !== null && !finite(row.age_s)))) throw new Error("protocol");
+      rowsExact(payload.contacts, 128, sonarFields);
+      if (!boundedArray(payload.own_weapons, 16) || payload.own_weapons.some((row) =>
+        !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"]))) throw new Error("protocol");
     } else if (state.role === "weapons") {
       if (!exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
           !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "aa_ready", "state", "interlock", "reload_s"]) ||
@@ -3545,7 +3649,7 @@
   }
 
   function accumulateSonarHistory(state) {
-    if (state.role !== "sonar" || !finite(state.clock?.sim)) return;
+    if (!isSonar(state.role) || !finite(state.clock?.sim)) return;
     const context = `${state.session}:${state.epoch}`;
     if (sonarHistory.context !== context) {
       sonarHistory.context = context;
@@ -3585,7 +3689,7 @@
   }
 
   function acceptSonarStreamFrame(buffer) {
-    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 60 || !v2State || v2State.role !== "sonar") throw new Error("sonar_stream_protocol");
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 60 || !v2State || !isSonar(v2State.role)) throw new Error("sonar_stream_protocol");
     const view = new DataView(buffer);
     if (view.getUint8(0) !== 85 || view.getUint8(1) !== 74 || view.getUint8(2) !== 83 || view.getUint8(3) !== 50 ||
         view.getUint8(4) !== 1 || view.getUint8(5) !== 0 || view.getUint16(6, true) !== 60) throw new Error("sonar_stream_protocol");
@@ -3616,8 +3720,8 @@
   }
 
   function syncSonarStream() {
-    const allowed = authenticated() && connected && !document.hidden && session?.station === "sonar" &&
-      v2State?.role === "sonar" && v2State.phase === "live";
+    const allowed = authenticated() && connected && !document.hidden && isSonar(session?.station) &&
+      isSonar(v2State?.role) && v2State.phase === "live";
     if (!allowed) { if (sonarStream.socket) stopSonarStream(); return; }
     if (sonarStream.socket) return;
     const streamGeneration = ++sonarStream.generation;
@@ -3645,15 +3749,29 @@
   }
 
   function useV2State(state) {
+    // Both sonar rooms render through one panel reading ``state.sonar``; the
+    // alias is non-enumerable so exact-key checks still see the wire shape.
+    if (state.role === "uboot_sonar" && !Object.hasOwn(state, "sonar"))
+      Object.defineProperty(state, "sonar", {value: state.uboot_sonar, enumerable: false, configurable: true});
     accumulateSonarHistory(state);
     sampleDisplayClock(state);
     v2State = state;
-    if (state.role === "sonar" && sonarStream.connected) {
+    if (isSonar(state.role) && sonarStream.connected) {
       state.sonar.visualization.lofar.spectrum = sonarStream.lofarSpectrum;
       state.sonar.visualization.demon.spectrum = sonarStream.demonSpectrum;
     }
     updateOpzSweepSample(state);
     syncGameAudio();
+    // A new world epoch (the host's local input advances it) closes the live
+    // audio socket; resume it once the state for the new epoch has arrived.
+    const audioWorld = `${state.session}:${state.epoch}`;
+    if (audioWorld !== sonarAudioWorld) {
+      sonarAudioWorld = audioWorld;
+      if (sonarAudioEnabled && !sonarAudioSocket && sonarAudioAuthorized()) {
+        if (sonarAudioWorklet) openSonarAudioSocket();
+        else if (!sonarAudioController) scheduleSonarAudioPoll(0);
+      }
+    }
     syncSonarStream();
     syncPlotAnimation();
   }
@@ -3664,7 +3782,13 @@
     let observations = [];
     const payload = state[state.role];
     if (state.role === "bridge") { Object.assign(ownship, payload.navigation); observations = payload.tactical_summary; }
-    if (state.role === "sonar") observations = payload.observations;
+    if (isSonar(state.role)) observations = payload.observations;
+    if (state.role === "uboot") {
+      const nav = payload.navigation;
+      Object.assign(ownship, {x: nav.x, y: nav.y, course: nav.course, speed: nav.speed,
+        target_course: nav.target_course, target_speed: nav.target_speed});
+      observations = payload.contacts;
+    }
     if (state.role === "weapons") { Object.assign(ownship, payload.navigation); ownship.inventory = payload.inventory; observations = payload.tactical; }
     if (state.role === "damage") ownship.damage = payload.compartments.map((room) => ({...room, teams: payload.teams.filter((team) => team.compartment === room.key).map((team) => team.team)}));
     if (state.role === "opz") {
@@ -3694,7 +3818,7 @@
       bearing_uncertainty_deg: row.bearing_uncertainty_deg ?? null,
       range_uncertainty_nm: row.range_uncertainty_nm ?? null, fixes: row.fixes || [],
       members: row.members || [],
-      can_classify: state.role === "sonar" || state.role === "helicopter" || (state.role === "opz" &&
+      can_classify: isSonar(state.role) || state.role === "helicopter" || (state.role === "opz" &&
         (row.source.startsWith("RADAR") || row.source.startsWith("SONAR") ||
          ["HOJ", "FUSION"].includes(row.source))),
       can_propose: state.role === "sonar"})).filter((row) => state.role !== "opz" || opzManage || !opzSuppressed.has(row.ref));
@@ -3867,7 +3991,7 @@
       }
       if (session.host !== null) await pollHost(context);
       if (context !== generation) return;
-      const stateRoute = sonarStream.connected && session.station === "sonar" ? "/state?sonar=stream" : "/state";
+      const stateRoute = sonarStream.connected && isSonar(session.station) ? "/state?sonar=stream" : "/state";
       let next = await request(stateRoute);
       if (context !== generation) return;
       if (next?.role !== null && next?.role !== session.station) {
@@ -3876,6 +4000,7 @@
         acceptSession(metadata);
       }
       validateState(next);
+      const previousRole = v2State?.role ?? null;
       if (next.role !== null) { useV2State(next); next = buildDisplayModel(next); }
       if (!chartMatches(next)) {
         // Chart has no session field. Sandwich it between matching snapshots;
@@ -3927,7 +4052,11 @@
       const changed = !sameContext(snapshot, next);
       const advanced = changed || !snapshot || next.seq > snapshot.seq;
       if (changed) {
-        if (sonarAudioEnabled) stopSonarAudio("sonar_live_unavailable");
+        // A bare epoch step (the host's local input advances it) keeps the
+        // same world and role: live listening continues on the new epoch.
+        const listeningContinues = epochChanged && previousRole !== null &&
+          previousRole === v2State?.role;
+        if (sonarAudioEnabled && !listeningContinues) stopSonarAudio("sonar_live_unavailable");
         if (pending) commandMessage = { key: "command_context_changed", status: "rejected" };
         pending = null;
         clearFireDrafts();
@@ -3941,7 +4070,8 @@
           $("opz-manage").checked = false;
           stationDrafts.clear();
           for (const id of ["sonar-bearing-form", "sonar-depth-form", "sonar-gain-form", "sonar-harmonic-form",
-            "engine-course-form", "engine-speed-form", "helicopter-waypoint-form"]) $(id).reset();
+            "engine-course-form", "engine-speed-form", "helicopter-waypoint-form",
+            "uboot-course-form", "uboot-speed-form", "uboot-depth-form"]) $(id).reset();
           $("sonar-control-page").value = "listen";
           renderSonarControlPage();
         }
@@ -3997,8 +4127,8 @@
 
   function flushSonarFocus() {
     if (!queuedSonarFocus) return;
-    if (!(connected && session?.station === "sonar" &&
-          session.grants.command === true && v2State?.role === "sonar" && v2State.phase === "live" &&
+    if (!(connected && isSonar(session?.station) &&
+          session.grants.command === true && isSonar(v2State?.role) && v2State.phase === "live" &&
           chartMatches(snapshot) && snapshot.tracks.some((track) => track.ref === queuedSonarFocus))) {
       queuedSonarFocus = null;
       return;
@@ -4025,7 +4155,7 @@
     renderDetail(true);
     queueDraw();
     queueVisualDraw();
-    if (changed && role === "sonar" && track && v2State.sonar.settings.focus_ref !== ref &&
+    if (changed && isSonar(role) && track && v2State.sonar.settings.focus_ref !== ref &&
         connected && session?.grants.command === true && v2State.phase === "live" && chartMatches(snapshot))
       queuedSonarFocus = ref;
     flushSonarFocus();
@@ -4075,14 +4205,14 @@
 
   function renderDetail(resetDraft = false) {
     const track = selectedTrack();
-    $("classification-form").hidden = !["sonar", "helicopter", "opz"].includes(session?.station);
+    $("classification-form").hidden = !["sonar", "uboot_sonar", "helicopter", "opz"].includes(session?.station);
     $("affiliation-form").hidden = session?.station !== "opz";
     $("no-selection").hidden = Boolean(track);
     $("track-detail").hidden = !track;
     if (track) {
       let stationActions = document.getElementById("selection-station-actions");
       if (!stationActions) { stationActions = node("div", undefined, "station-row-actions"); stationActions.id = "selection-station-actions"; $("track-detail").append(stationActions); }
-      if (session?.station === "sonar") {
+      if (isSonar(session?.station)) {
         const key = `${track.ref}:${stationActionAvailable()}:${language}`;
         if (stationActions.dataset.key !== key) {
           stationActions.replaceChildren(actionButton("sonar_focus", "sonar_set_focus", {ref: track.ref}),
@@ -4152,7 +4282,7 @@
     $("follow").setAttribute("aria-pressed", String(view.follow));
     const stationEnabled = stationActionAvailable();
     const sonarAction = stationEnabled &&
-      (session.station === "sonar" || session.station === "helicopter") &&
+      (isSonar(session.station) || session.station === "helicopter") &&
       track?.can_classify === true;
     const opzAction = stationEnabled && session.station === "opz";
     $("apply-classification").disabled = !(sonarAction || opzAction && track?.can_classify === true);
@@ -4160,7 +4290,7 @@
     $("apply-classification").textContent = t("apply");
     const dipReport = v2State?.helicopter?.dip_observations.find((row) => row.ref === track?.ref);
     const buoyReport = v2State?.helicopter?.buoy_observations.find((row) => row.ref === track?.ref);
-    $("sonar-release").disabled = !(sonarAction && track &&
+    $("sonar-release").disabled = !(sonarAction && track && session.station !== "uboot_sonar" &&
       (session.station !== "helicopter" || dipReport && (dipReport.qualified || dipReport.released_to_opz)));
     $("helicopter-qualify").disabled = !(stationEnabled && session.station === "helicopter" && track);
     $("helicopter-buoy-release").disabled = !(stationEnabled && session.station === "helicopter" &&
@@ -4219,6 +4349,19 @@
       readiness: [payload?.asset.state, payload?.asset.airborne, payload?.asset.torpedoes,
         payload?.readiness, payload?.target_choices.map((row) => row.ref)]};
     }
+    if (role === "uboot" && action === "uboot_fire") {
+      const ref = $("uboot-fire-target").value;
+      const bearing = $("uboot-fire-bearing").valueAsNumber;
+      const range = $("uboot-fire-range").valueAsNumber;
+      const target = Boolean(ref) && Boolean(payload?.contacts.some((row) => row.ref === ref));
+      const freeBearing = !ref && finite(bearing) && bearing >= 0 && bearing < 360;
+      const rangeValue = finite(range) && range >= 0.05 && range <= 40 ? range : null;
+      return {ref: target ? ref : freeBearing ? `bearing:${bearing}` : "",
+        params: {ref: target ? ref : null, bearing: target || !freeBearing ? null : bearing,
+          range_nm: target ? null : rangeValue},
+        ready: Boolean(payload?.weapons.ready) && (target || freeBearing),
+        readiness: [payload?.weapons, payload?.contacts.map((row) => row.ref)]};
+    }
     if (role === "opz" && ["opz_launch_essm", "opz_launch_chaff"].includes(action)) {
       const ref = $("opz-fire-target").value;
       const target = payload?.asm_observations.some((row) => row.ref === ref);
@@ -4250,12 +4393,12 @@
   function renderDirectFireControls() {
     const role = session?.station;
     const status = role === "weapons" ? $("weapons-fire-status") : role === "opz" ? $("opz-fire-status") :
-      role === "helicopter" ? $("helicopter-fire-status") : null;
+      role === "helicopter" ? $("helicopter-fire-status") : role === "uboot" ? $("uboot-fire-status") : null;
     if (!status) { clearFireConfirmation(); return; }
     let pendingConfirm = false;
     let anyReady = false;
     for (const button of document.querySelectorAll("[data-fire-action]")) {
-      const owned = button.closest("[data-station-role]")?.dataset.stationRole === role;
+      const owned = button.closest("[data-station-role]")?.dataset.stationRole === panelRole(role);
       const spec = directFireSpec(button.dataset.fireAction);
       const fingerprint = directFireFingerprint(button.dataset.fireAction, spec);
       const isTarget = fireConfirmation?.action === button.dataset.fireAction;
@@ -4274,7 +4417,7 @@
       pendingConfirm ||= stillPending;
     }
     for (const control of document.querySelectorAll(".direct-fire-controls input, .direct-fire-controls select")) {
-      const owned = control.closest("[data-station-role]")?.dataset.stationRole === role;
+      const owned = control.closest("[data-station-role]")?.dataset.stationRole === panelRole(role);
       control.disabled = !owned || !directFireAvailable();
     }
     const stateKey = fireStatusKey();
@@ -4331,7 +4474,7 @@
     const available = stationActionAvailable();
     for (const control of document.querySelectorAll("[data-station-action], .station-controls input, .station-controls select, .station-controls button, #helicopter-waypoint-form input, #helicopter-waypoint-form button")) {
       const local = control.id === "sonar-control-page";
-      const owned = control.closest("[data-station-role]")?.dataset.stationRole === session?.station;
+      const owned = control.closest("[data-station-role]")?.dataset.stationRole === panelRole(session?.station);
       control.disabled = !owned || !local && (!available || control.dataset.ready === "false");
     }
     const sonar = v2State?.sonar?.settings;
@@ -4452,7 +4595,7 @@
         control.dataset.disabledReason = text;
         control.setAttribute("aria-disabled", "true");
         const stationPanel = control.closest("[data-station-role]");
-        const relevant = stationPanel ? stationPanel.dataset.stationRole === session?.station
+        const relevant = stationPanel ? stationPanel.dataset.stationRole === panelRole(session?.station)
           : !control.closest("[hidden]");
         if (relevant && !visibleReasons.includes(text)) {
           visibleReasons.push(text);
@@ -5693,7 +5836,7 @@
   // tap-vs-drag disambiguation: a touch that starts a scroll/pan gesture
   // must not also silently set the listen bearing.
   $("sonar-broadband").addEventListener("pointerdown", (event) => {
-    if (session?.station !== "sonar" || !stationActionAvailable() || !broadbandVisible()
+    if (!isSonar(session?.station) || !stationActionAvailable() || !broadbandVisible()
         || !event.isPrimary || event.button !== 0) return;
     const canvas = $("sonar-broadband");
     canvas.setPointerCapture(event.pointerId);
@@ -5718,7 +5861,7 @@
     const gesture = sonarBroadbandDrag;
     sonarBroadbandDrag = null;
     $("sonar-broadband").releasePointerCapture(event.pointerId);
-    if (gesture.moved || session?.station !== "sonar" || !stationActionAvailable()
+    if (gesture.moved || !isSonar(session?.station) || !stationActionAvailable()
         || !broadbandVisible()) return;
     const canvas = $("sonar-broadband");
     const bounds = canvas.getBoundingClientRect();
@@ -5813,12 +5956,12 @@
   });
   $("sonar-lofar").addEventListener("click", (event) => {
     const hz = sonarFrequencyAt($("sonar-lofar"), event, 300);
-    if (hz !== null && session?.station === "sonar" && stationActionAvailable()) sendStationAction("sonar_set_harmonic", {frequency_hz: hz});
+    if (hz !== null && isSonar(session?.station) && stationActionAvailable()) sendStationAction("sonar_set_harmonic", {frequency_hz: hz});
   });
   $("sonar-demon-spectrum").addEventListener("click", (event) => {
     const hz = sonarFrequencyAt($("sonar-demon-spectrum"), event, 50);
     if (hz === null) return;
-    if (session?.station === "sonar" && stationActionAvailable())
+    if (isSonar(session?.station) && stationActionAvailable())
       sendStationAction("sonar_set_cursor", {page: "demon", frequency_hz: Math.round(hz * 2) / 2});
     if (sonarDisplay.demonCursor === null) {
       sonarDisplay.demonCursor = hz;
@@ -5903,7 +6046,7 @@
   $("classification-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const classification = $("classification").value || null;
-    if (session?.station === "sonar" || session?.station === "helicopter")
+    if (isSonar(session?.station) || session?.station === "helicopter")
       sendStationAction("sonar_classify", {ref: selected, classification});
     else if (session?.station === "opz") sendStationAction("opz_classify", {ref: selected, classification});
   });
@@ -5970,8 +6113,9 @@
   };
   for (const id of ["sonar-array-mode", "sonar-audition-mode", "sonar-band", "sonar-listen-band", "sonar-bearing", "sonar-depth", "sonar-gain",
     "sonar-harmonic-input", "engine-telegraph", "engine-course", "engine-speed", "helicopter-x", "helicopter-y",
-    "helicopter-dip-depth",
-    "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target"]) {
+    "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth",
+    "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
+    "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range"]) {
     $(id).addEventListener("input", () => stationDrafts.add(id));
     $(id).addEventListener("change", () => stationDrafts.add(id));
     if (id.includes("fire")) for (const eventName of ["input", "change"]) $(id).addEventListener(eventName, () => {
@@ -6073,6 +6217,17 @@
     event.preventDefault(); numberAction("engine-speed-form", "engine-speed", "engine_set_speed", "speed_kn", 0, 25);
   });
   $("engine-quiet").addEventListener("click", () => sendStationAction("engine_set_quiet_mode", {enabled: !v2State.engine.propulsion.quiet_mode}));
+  $("uboot-course-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("uboot-course-form", "uboot-course", "uboot_set_course", "course", 0, 359.99999999999994);
+  });
+  $("uboot-speed-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("uboot-speed-form", "uboot-speed", "uboot_set_speed", "speed_kn", 0, 40);
+  });
+  $("uboot-depth-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("uboot-depth-form", "uboot-depth", "uboot_set_depth", "depth_m", 0, 1000);
+  });
+  $("uboot-decoy").addEventListener("click", () => sendStationAction("uboot_decoy", {}));
+  $("uboot-blow").addEventListener("click", () => sendStationAction("uboot_blow", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));
   $("helicopter-return").addEventListener("click", () => sendStationAction("helicopter_return", {}));
   $("helicopter-waypoint-form").addEventListener("submit", (event) => {
@@ -6221,7 +6376,7 @@
   });
   $("sonar-live-toggle").addEventListener("click", async () => {
     if (sonarAudioEnabled) { stopSonarAudio(); return; }
-    if (!(["sonar", "helicopter"].includes(session?.station) && session.grants.sonar_audio === true)) return;
+    if (!(audioRoles.has(session?.station) && session.grants.sonar_audio === true)) return;
     try {
       const Audio = window.AudioContext || window.webkitAudioContext;
       if (!Audio) throw new Error("audio");
@@ -6526,7 +6681,8 @@
   // One tab per station this client holds, in fixed station order. The digit on
   // a tab is its station number (1-9), also usable as a hotkey.
   const stationTabText = {bridge: "tab_bridge", sonar: "tab_sonar", weapons: "tab_weapons", damage: "tab_damage",
-    opz: "tab_opz", radio: "tab_radio", engine: "tab_engine", helicopter: "tab_helicopter", eloka: "tab_eloka"};
+    opz: "tab_opz", radio: "tab_radio", engine: "tab_engine", helicopter: "tab_helicopter", eloka: "tab_eloka",
+    uboot: "tab_uboot", uboot_sonar: "tab_uboot_sonar"};
   function renderStationTabs(leased, shown) {
     const bar = $("station-tabs");
     const signature = leased.map((station) => `${station}:${t(stationTabText[station])}`).join("|");
@@ -6539,7 +6695,7 @@
         tab.setAttribute("aria-controls", "panel-operations");
         tab.dataset.station = station;
         tab.setAttribute("aria-label", t(`station_${station}`));
-        tab.append(node("span", String(stationNames.indexOf(station) + 1), "station-key"),
+        tab.append(node("span", String(stationKey(station)), "station-key"),
           node("span", t(stationTabText[station]), "station-name"));
         tab.addEventListener("click", () => chooseStation(station));
         tab.addEventListener("keydown", (event) => {
@@ -6562,7 +6718,7 @@
       const on = tab.dataset.station === shown;
       tab.setAttribute("aria-selected", String(on));
       tab.tabIndex = on ? 0 : -1;
-      tab.title = `${t(`station_${tab.dataset.station}`)} \u00b7 ${t("station_tab_hint", {key: stationNames.indexOf(tab.dataset.station) + 1})}`;
+      tab.title = `${t(`station_${tab.dataset.station}`)} \u00b7 ${t("station_tab_hint", {key: stationKey(tab.dataset.station)})}`;
     }
   }
 
@@ -6586,8 +6742,9 @@
     if (target instanceof Element && (target.closest("input, select, textarea, dialog[open]") ||
         target.isContentEditable)) return;
     if (/^[1-9]$/.test(event.key)) {
-      const station = stationNames[Number(event.key) - 1];
-      if (session.stations[station].status === "mine") { event.preventDefault(); chooseStation(station); }
+      const held = stationNames.find((name) => session.stations[name].status === "mine");
+      const station = sideStations(held ?? "bridge")[Number(event.key) - 1];
+      if (station && session.stations[station].status === "mine") { event.preventDefault(); chooseStation(station); }
     } else if (event.key === "[" || event.key === "]") {
       event.preventDefault();
       stepStation(event.key === "]" ? 1 : -1);

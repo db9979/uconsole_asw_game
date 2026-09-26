@@ -181,8 +181,9 @@ def test_v2_roles_have_dedicated_payload_renderers():
     html = ASSETS.joinpath("index.html").read_text()
     js = ASSETS.joinpath("app.js").read_text()
     document = Document(html)
+    # The submarine sonar room shares the sonar section; its commander has one.
     roles = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
-             "engine", "helicopter", "eloka")
+             "engine", "helicopter", "eloka", "uboot")
     sections = {attrs.get("data-station-role"): attrs for _, attrs in document.elements
                 if attrs.get("data-station-role")}
     renderers = js[js.index("  function tacticalEntries"):js.index("  function visualContext")]
@@ -196,6 +197,7 @@ def test_v2_roles_have_dedicated_payload_renderers():
     distinctive = {
         "Bridge": ("navigation", "orders", "tactical_summary", "rudder_angle", "yaw_rate"),
         "Sonar": ("observations", "settings", "harmonic_hz", "audio_enabled", "quiet_mode"),
+        "Uboot": ("navigation", "status", "weapons", "alarms", "contacts", "feed"),
         "Weapons": ("inventory", "readiness", "designated_target", "own_weapons", "chaff_ready"),
         "Damage": ("compartments", "teams", "total", "sunk"),
         "Opz": ("observations", "fusions", "radar", "source_classifications", "own_assets"),
@@ -215,7 +217,8 @@ def test_v2_roles_have_dedicated_payload_renderers():
     assert "v2State[active]" in station_dispatch
     assert 'section.querySelectorAll("dl, .station-list")' in station_dispatch
     assert "!trackRoles.has(active)" in station_dispatch
-    assert 'const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"])' in js
+    assert ('const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", '
+            '"helicopter", "eloka", "uboot", "uboot_sonar"])') in js
     assert "innerHTML" not in station_dispatch
 
 

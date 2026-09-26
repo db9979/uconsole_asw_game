@@ -16,7 +16,8 @@ import pygame
 from src.commander.access_point import HotspotController
 from src.commander.bridge import CommanderBridge
 from src.commander.admission import StationAdmission
-from src.commander.server import CommanderServer, STATIONS
+from src.commander.server import (CommanderServer, DIRECT_FIRE_ROLES, ROLES,
+                                  SONAR_AUDIO_ROLES, STATIONS)
 from src.core import config, manual
 from src.core.i18n import load_catalog, message, raw_text, translation_scope
 from src.data.contact_analysis import load_contact_analysis_assets
@@ -151,9 +152,17 @@ class CommanderConsole:
         return "station.ew" if station == "eloka" else f"station.{station}"
 
     @staticmethod
-    def _requested_station(status):
-        return next((station for station in STATIONS
-                     if status["stations"][station]["requested"]), None)
+    def _station_row(status, station):
+        """One roster row; a server without the role reports it idle."""
+        return status["stations"].get(station) or dict(
+            leased=False, requested=False, station_generation=None,
+            request_generation=0,
+            grants=dict(command=False, direct_fire=False, sonar_audio=False))
+
+    @classmethod
+    def _requested_station(cls, status):
+        return next((station for station in ROLES
+                     if cls._station_row(status, station)["requested"]), None)
 
     def _select_client(self, direction):
         statuses = self._roster()
@@ -165,8 +174,8 @@ class CommanderConsole:
         self.roster_client_id = ids[(index + direction) % len(ids)]
         selected = self._selected_client(statuses)
         station = self._requested_station(selected) or selected["active_station"]
-        if station in STATIONS:
-            self.roster_station = STATIONS.index(station)
+        if station in ROLES:
+            self.roster_station = ROLES.index(station)
         self.roster_status = None
         self._roster_mouse_confirm = None
 
@@ -191,41 +200,41 @@ class CommanderConsole:
         client_id = selected["client_id"]
         name = raw_text(selected["name"])
         if action == "approve":
-            selected_station = STATIONS[self.roster_station]
+            selected_station = ROLES[self.roster_station]
             station = (selected_station
-                       if selected["stations"][selected_station]["requested"]
+                       if self._station_row(selected, selected_station)["requested"]
                        else self._requested_station(selected))
             if station is None:
                 self.roster_status = "commander.roster.error.no_request"
                 return
-            detail = selected["stations"][station]
+            detail = self._station_row(selected, station)
             ok = self.server.resolve_station_request(
                 client_id, station, detail["request_generation"],
                 dict(command=True, direct_fire=False, sonar_audio=False))
             if ok:
-                self.roster_station = STATIONS.index(station)
+                self.roster_station = ROLES.index(station)
             success = message("commander.roster.status.assigned", client=name,
                               station=message(self._station_key(station)))
         elif action == "reject":
-            selected_station = STATIONS[self.roster_station]
+            selected_station = ROLES[self.roster_station]
             station = (selected_station
-                       if selected["stations"][selected_station]["requested"]
+                       if self._station_row(selected, selected_station)["requested"]
                        else self._requested_station(selected))
             if station is None:
                 self.roster_status = "commander.roster.error.no_request"
                 return
             ok = self.server.reject_station_request(
-                client_id, station, selected["stations"][station]["request_generation"])
+                client_id, station, self._station_row(selected, station)["request_generation"])
             success = message("commander.roster.status.rejected", client=name)
         elif action == "assign":
-            station = STATIONS[self.roster_station]
+            station = ROLES[self.roster_station]
             ok = self.server.grant_station(client_id, station)
             success = message("commander.roster.status.assigned", client=name,
                               station=message(self._station_key(station)))
         elif action in ("command", "direct_fire", "simlog", "sonar_audio"):
-            station = STATIONS[self.roster_station]
+            station = ROLES[self.roster_station]
             enabled = (not selected["simlog"] if action == "simlog" else
-                       not selected["stations"][station]["grants"][action])
+                       not self._station_row(selected, station)["grants"][action])
             ok = (self.server.set_client_grant(client_id, action, enabled)
                   if action == "simlog" else
                   self.server.set_client_grant(client_id, station, action, enabled))
@@ -236,8 +245,8 @@ class CommanderConsole:
                 self.roster_status = "commander.roster.error.grant"
                 return
         elif action == "revoke_station":
-            station = STATIONS[self.roster_station]
-            if not selected["stations"][station]["leased"]:
+            station = ROLES[self.roster_station]
+            if not self._station_row(selected, station)["leased"]:
                 self.roster_status = "commander.roster.error.no_station"
                 return
             ok = self.server.revoke_station(station)
@@ -454,8 +463,9 @@ class CommanderConsole:
                 ok = server.grant_station(client_id, station)
                 if ok and client_id == host_id:
                     server.set_client_grant(client_id, station, "direct_fire",
-                                            station in ("weapons", "opz", "helicopter"))
-                    server.set_client_grant(client_id, station, "sonar_audio", station in ("sonar", "helicopter"))
+                                            station in DIRECT_FIRE_ROLES)
+                    server.set_client_grant(client_id, station, "sonar_audio",
+                                            station in SONAR_AUDIO_ROLES)
             elif action == "revoke":
                 ok = server.revoke_station(station)
             elif action == "revoke_client":
@@ -701,7 +711,7 @@ class CommanderConsole:
             selected = self._selected_client(statuses)
             station = ((self._requested_station(selected) or selected["active_station"])
                        if selected is not None else None)
-            self.roster_station = STATIONS.index(station) if station in STATIONS else 0
+            self.roster_station = ROLES.index(station) if station in ROLES else 0
         elif self.selection == 5:
             self.set_solo(not self.solo)
 
@@ -743,7 +753,7 @@ class CommanderConsole:
                      pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_MINUS, pygame.K_KP_PLUS):
             direction = -1 if key in (pygame.K_LEFT, pygame.K_MINUS,
                                       pygame.K_KP_MINUS) else 1
-            self.roster_station = (self.roster_station + direction) % len(STATIONS)
+            self.roster_station = (self.roster_station + direction) % len(ROLES)
             self.roster_status = None
             self._roster_mouse_confirm = None
         elif key in (pygame.K_RETURN, pygame.K_KP_ENTER):
@@ -808,14 +818,14 @@ class CommanderConsole:
             if rect.collidepoint(canvas):
                 self.roster_client_id = status["client_id"]
                 station = self._requested_station(status) or status["active_station"]
-                if station in STATIONS:
-                    self.roster_station = STATIONS.index(station)
+                if station in ROLES:
+                    self.roster_station = ROLES.index(station)
                 self.roster_status = None
                 self._roster_mouse_confirm = None
                 return
         for direction, rect in zip((-1, 1), self.roster_station_cycle_rects()):
             if rect.collidepoint(canvas):
-                self.roster_station = (self.roster_station + direction) % len(STATIONS)
+                self.roster_station = (self.roster_station + direction) % len(ROLES)
                 self.roster_status = None
                 self._roster_mouse_confirm = None
                 return
@@ -986,13 +996,13 @@ class CommanderConsole:
             layout.blit_line(screen, text, rect.inflate(-10, -2),
                              config.COLOR_WARN if chosen else config.COLOR_TEXT, size=16)
         state = "common.on" if selected is not None else "common.off"
-        selected_station = STATIONS[self.roster_station]
-        station_grants = (selected["stations"][selected_station]["grants"]
+        selected_station = ROLES[self.roster_station]
+        station_grants = (self._station_row(selected, selected_station)["grants"]
                           if selected else {})
         action_texts = (
             "commander.roster.approve", "commander.roster.reject",
             message("commander.roster.assign", station=message(
-                self._station_key(STATIONS[self.roster_station]))),
+                self._station_key(ROLES[self.roster_station]))),
             message("commander.roster.toggle", capability=message(
                 "commander.roster.capability.command"), state=message(
                     "common.on" if station_grants.get("command") else "common.off")),

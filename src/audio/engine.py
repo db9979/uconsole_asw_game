@@ -53,6 +53,9 @@ class AudioEngine:
         self.channels = channels
         self.configured_enabled = bool(enabled)
         self.enabled = self.configured_enabled
+        # Local one-shot effects (pings, echoes, combat, alerts). Off while the
+        # uConsole plays the submarine: it must never hear the frigate's cues.
+        self.local_effects = True
         self.available = False
         self.fatal_error = False
         self._cache_size = max(0, cache_size)
@@ -175,7 +178,8 @@ class AudioEngine:
         return sound
 
     def play_ping(self, frequency_hz: float = 900.0, volume: float = 0.35) -> bool:
-        if (not self.enabled or not self.available or self._ping_channel is None):
+        if (not self.enabled or not self.available or self._ping_channel is None
+                or not self.local_effects):
             return False
         try:
             if self._ping_channel.get_busy():
@@ -201,7 +205,8 @@ class AudioEngine:
 
         ``level`` (0..1) is quantized so repeated echoes reuse cached sounds.
         """
-        if (not self.enabled or not self.available or self._ping_channel is None):
+        if (not self.enabled or not self.available or self._ping_channel is None
+                or not self.local_effects):
             return False
         try:
             level = round(float(np.clip(level, 0.0, 1.0)) * 10) / 10
@@ -231,7 +236,8 @@ class AudioEngine:
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
                         "explosion", "water_entry"}:
             return False
-        if (not self.enabled or not self.available or self._alert_channel is None):
+        if (not self.enabled or not self.available or self._alert_channel is None
+                or not self.local_effects):
             return False
         try:
             if (self._alert_channel.get_busy()
@@ -265,7 +271,8 @@ class AudioEngine:
             "damage": (110.0, 0.35, 0.32),
         }
         frequency, duration, volume = tones.get(kind, tones["danger"])
-        if (not self.enabled or not self.available or self._alert_channel is None):
+        if (not self.enabled or not self.available or self._alert_channel is None
+                or not self.local_effects):
             return False
         try:
             if (self._alert_channel.get_busy()

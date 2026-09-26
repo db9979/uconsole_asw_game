@@ -4,7 +4,8 @@ The browser (data/commander/app.js) checks every published role state with
 exact key sets and freezes the picture on any mismatch.  Hand-written
 fixtures cannot catch a projection that grows a field, so this test drives a
 feature-rich game, collects what the bridge actually publishes for all nine
-stations and runs the extracted ``validateV2State`` in headless Chromium.
+stations and both crewed-submarine roles and runs the extracted
+``validateV2State`` in headless Chromium.
 """
 
 import html
@@ -21,6 +22,7 @@ from src.air.asm import ASM
 from src.commander.bridge import CommanderBridge
 from src.core.game import Game
 from src.sonar.sonar import Contact
+from src.weapons.torpedo import EnemyTorpedo
 
 sys.path.insert(0, str(Path(__file__).parent))
 from test_commander_bridge import Server  # noqa: E402
@@ -28,11 +30,18 @@ from test_commander_bridge import Server  # noqa: E402
 APP = Path("data/commander/app.js")
 
 
+class _CrewedSubmarineServer(Server):
+    """Publication target whose submarine roles are held by a crew."""
+
+    def station_leased(self, role):
+        return role in ("uboot", "uboot_sonar")
+
+
 def _collect_states():
     samples = []
     game = Game(seed=31, start_menu=False, audio_enabled=False, language="en")
     game.world.land_blocks_line = lambda *args: False
-    bridge, server = CommanderBridge(), Server()
+    bridge, server = CommanderBridge(), _CrewedSubmarineServer()
     clock = [100.0]
 
     def pump():
@@ -60,8 +69,29 @@ def _collect_states():
     game.deploy_nixie_result()
     pump()                      # weather station without a BT measurement
     assert game.measure_sonar_bt() is True
+    boat = game.opfor
+    assert boat is not None and boat.sub is sub
     for step in range(260):
         game._update_sim(0.1)
+        if step == 20:
+            with game.sonar_perspective(boat.station):
+                assert game.measure_sonar_bt() is True
+            assert sub.set_orders(course=270.0, speed=5.0, depth=90.0) is True
+        if step == 50:
+            with game.sonar_perspective(boat.station):
+                assert game.send_active_ping() is True
+            assert sub.command_decoy() in (True, "not_ready", "no_decoys")
+            # A torpedo of the crewed boat (the fixture parks the boat on
+            # land, so place it in open water) appears in ``own_weapons``.
+            water = next((game.ship.x + dx, game.ship.y + dy)
+                         for dx in range(-60, 61, 4) for dy in range(-60, 61, 4)
+                         if game.world.depth_m(game.ship.x + dx, game.ship.y + dy) > 200.0
+                         and game.world.depth_m(game.ship.x + dx + 3.0,
+                                                game.ship.y + dy) > 200.0)
+            game.enemy_torpedoes.append(EnemyTorpedo(
+                water[0], water[1], 90.0, 50.0, 1,
+                profile=game.runtime_catalog.torpedoes["enemy_torp"],
+                launch_platform_id=sub.id))
         if step == 60:
             game.set_helicopter_dipping(True)
         if step == 100:
@@ -86,6 +116,8 @@ def _collect_states():
         if step % 20 == 0:
             pump()
     assert game.eloka_tracks() and game.buoys
+    assert any(sample["uboot"]["uboot"]["own_weapons"] for sample in samples
+               if "uboot" in sample.get("uboot", {}))
     bridge_states = [sample["bridge"]["bridge"] for sample in samples[1:]]
     assert any(row["visual_class"] for state in bridge_states
                for row in state["tactical_summary"])
@@ -123,7 +155,8 @@ def _validator_page(states) -> str:
              for role, state in sample.items() if role not in ("None", "null")
              and state is not None]
     script = "\n".join([
-        statement(r"^  const stationNames = "), statement(r"^  const finite = "),
+        statement(r"^  const stationNames = "), statement(r"^  const sonarRoles = "),
+        statement(r"^  const isSonar = "), statement(r"^  const finite = "),
         statement(r"^  const gameEffectKinds = "),
         "let session = null; let lastMismatch = null;", validator,
         f"const cases = {json.dumps(cases)};",
@@ -147,7 +180,7 @@ def test_published_role_states_pass_the_browser_validator(tmp_path):
     states = _collect_states()
     roles = {role for sample in states for role in sample if role not in ("None", "null")}
     assert roles == {"bridge", "sonar", "weapons", "damage", "opz", "radio",
-                     "engine", "helicopter", "eloka"}
+                     "engine", "helicopter", "eloka", "uboot", "uboot_sonar"}
     page = tmp_path / "validate.html"
     page.write_text(_validator_page(states), encoding="utf-8")
     result = subprocess.run(

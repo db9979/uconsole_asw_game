@@ -199,6 +199,34 @@ _WEB_HELP = (
 )
 
 
+# The uConsole playing the hostile submarine (--play-sub / Options page 2).
+_UBOOT_HELP = (
+    "help.uboot.title",
+    [
+        ("1 / 2 / Tab", "help.uboot.views"),
+        ("C / V / D", "help.uboot.orders"),
+        ("help.key.page", "help.uboot.pages"),
+        ("Q / E", "help.uboot.zoom"),
+        ("K", "help.uboot.follow"),
+        ("help.key.uboot_drag", "help.uboot.drag"),
+        ("help.key.arrows", "help.uboot.contact"),
+        ("help.key.uboot_fire", "help.uboot.fire"),
+        ("F", "help.uboot.fire_bearing"),
+        ("X", "help.uboot.decoy"),
+        ("help.key.uboot_blow", "help.uboot.blow"),
+        ("help.key.uboot_sonar", "help.uboot.sonar"),
+        ("S / L / F9", "help.uboot.admin"),
+    ],
+)
+
+
+def get_uboot_help(tr=None) -> tuple:
+    """Return the localized key table of the local submarine side."""
+    tr = tr or Translator("de").t
+    title, controls = _UBOOT_HELP
+    return tr(title), [(tr(key), tr(action)) for key, action in controls]
+
+
 def _translate_help(data, tr):
     intro, controls, notes, tactics = data
     return (tr(intro), [(tr(key), tr(action)) for key, action in controls],

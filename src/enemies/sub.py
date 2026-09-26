@@ -47,6 +47,8 @@ SUB_WRECK_TRANSIT_KN = 4.0
 SUB_WRECK_MAX_DEPTH_FRACTION = 0.85
 # States in which the boat runs silent (lurking, or lying by a wreck).
 QUIET_STATES = ("LAUER", "WRACK")
+# A crewed boat keeps at most this many fired torpedoes waiting for launch.
+SUB_MAX_PENDING_TORPEDOES = 2
 
 
 class SubType:
@@ -185,11 +187,24 @@ class Sub:
             "contact": None,
         }
         self.decision_reason = "Patrouille"
+        # Crew control (transient, never saved): while ``manual`` the AI state
+        # machine is bypassed and the boat follows only the crew's orders.
+        self.manual = False
+        self.order_course = self.course
+        self.order_speed = self.speed
+        self.order_depth = self.target_depth
+        self._manual_ping_pending = False
 
     # --- Ereignisse ---
 
     def hear_ping(self) -> None:
         """U-Boot hört einen aktiven Ping -> Ausweichen."""
+        if self.manual:
+            # A crewed boat only notes the intercept; the crew decides.
+            if not self.sunk and self.state != "SINKING":
+                self.heard_ping = True
+                self.memory["last_ping_age"] = 0.0
+            return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
             self.evac_left = config.SUB_EVADE_DURATION_S
@@ -208,6 +223,9 @@ class Sub:
         """Torpedo heard: after the crew's recognition time, evade hard."""
         if self.sunk or self.state == "SINKING":
             return
+        if self.manual:
+            self.memory["last_torpedo_age"] = 0.0
+            return
         if self.state == "EVADE" or self.torpedo_alarm_left == 0.0:
             # Already evading, or the recognition time has elapsed.
             self._react_to_torpedo()
@@ -218,6 +236,8 @@ class Sub:
     def _react_to_torpedo(self) -> None:
         """W2: Feindtorpedo gehört -> harte Ausweichreaktion + ggf. Dekoy."""
         self.torpedo_alarm_left = -1.0
+        if self.manual:
+            return
         if not self.sunk and self.state != "SINKING":
             self.torpedo_alerted = True
             self.heard_ping = True
@@ -268,7 +288,7 @@ class Sub:
         if self.damage >= 100.0:
             self.state = "SINKING"
             self.sink_left = 20.0
-        else:
+        elif not self.manual:
             self.state = "EVADE"
             self.evac_left = max(self.evac_left, config.SUB_EVADE_DURATION_S)
 
@@ -340,32 +360,38 @@ class Sub:
         if rate > 0 and self.asw_rng.random() < rate * dt:
             n = min(2 if dist is not None and dist < 12.0
                     and self.stype.aggression > .8 else 1,
-                    self.torpedoes_left, 2 - len(self.pending_torpedoes))
-            launched = 0
-            for _ in range(n):
-                profile = self.enemy_torpedo_profile
-                fired_key = None
-                if self.weapon_battery is not None:
-                    fired_key = self.weapon_battery.fire()
-                    if fired_key is None:
-                        break
-                    runtime_key = self.runtime_catalog.weapons[
-                        fired_key].runtime_profile_key
-                    if runtime_key is None:
-                        break
-                    profile = self.runtime_catalog.torpedoes[runtime_key]
-                self.pending_torpedoes.append(
-                    (*self._launch_data(observation, profile), profile.key,
-                     self.id, fired_key))
-                launched += 1
-            if launched:
-                self.torpedoes_left = (self.weapon_battery.remaining_total
-                                       if self.weapon_battery is not None
-                                       else self.torpedoes_left - launched)
+                    self.torpedoes_left,
+                    SUB_MAX_PENDING_TORPEDOES - len(self.pending_torpedoes))
+            if self._fire_salvo(observation, n):
                 self.attack_left = self.attack_cooldown
-                # Tube discharge: a loud, short launch transient.
-                self.transient_left = max(self.transient_left,
-                                          sub_physics.LAUNCH_TRANSIENT_S)
+
+    def _fire_salvo(self, observation: PlatformObservation, count: int) -> int:
+        """Load up to ``count`` torpedoes on ``observation``; returns fired."""
+        launched = 0
+        for _ in range(count):
+            profile = self.enemy_torpedo_profile
+            fired_key = None
+            if self.weapon_battery is not None:
+                fired_key = self.weapon_battery.fire()
+                if fired_key is None:
+                    break
+                runtime_key = self.runtime_catalog.weapons[
+                    fired_key].runtime_profile_key
+                if runtime_key is None:
+                    break
+                profile = self.runtime_catalog.torpedoes[runtime_key]
+            self.pending_torpedoes.append(
+                (*self._launch_data(observation, profile), profile.key,
+                 self.id, fired_key))
+            launched += 1
+        if launched:
+            self.torpedoes_left = (self.weapon_battery.remaining_total
+                                   if self.weapon_battery is not None
+                                   else self.torpedoes_left - launched)
+            # Tube discharge: a loud, short launch transient.
+            self.transient_left = max(self.transient_left,
+                                      sub_physics.LAUNCH_TRANSIENT_S)
+        return launched
 
     def _maybe_active_ping(self, dt: float) -> bool:
         """W2: ein aggressives Boot mit frischem Kontakt riskiert selten einen
@@ -575,7 +601,7 @@ class Sub:
         self._update_hull_stress(dt)
         if self.state == "SINKING":
             return
-        if (self.blow_available and not self.emergency_ascent
+        if (self.blow_available and not self.emergency_ascent and not self.manual
                 and self.damage >= sub_physics.EMERGENCY_BLOW_DAMAGE
                 and self.depth > 30.0):
             # Flooding: blow main ballast with the high-pressure air store.
@@ -626,8 +652,13 @@ class Sub:
                 signal=remembered["noise"], last_seen=0.0,
                 bearing_uncertainty_deg=None, range_uncertainty_nm=None,
                 depth_uncertainty_m=None, label=None)
-        self._maybe_attack(dt, tactical_observation)
-        self.pinged_this_tick = self._maybe_active_ping(dt)
+        if self.manual:
+            self._active_ping_cd = max(0.0, self._active_ping_cd - dt)
+            self.pinged_this_tick = self._manual_ping_pending
+            self._manual_ping_pending = False
+        else:
+            self._maybe_attack(dt, tactical_observation)
+            self.pinged_this_tick = self._maybe_active_ping(dt)
 
         surface_steps = 0
         if self.endurance is not None and self.endurance.surface_operation:
@@ -637,7 +668,9 @@ class Sub:
                 return
             old_depth = self.depth
 
-        if self.state == "EVADE":
+        if self.manual:
+            self._steer_to_orders(dt, safe_depth)
+        elif self.state == "EVADE":
             self.evac_left -= dt
             if self.evac_left <= 0:
                 # W2: In der Nähe der Fregatte -> still halten und lauschen
@@ -947,6 +980,151 @@ class Sub:
             self.speed = 0.0
             self.target_depth = max(0.0, bottom - SUB_BOTTOM_CLEARANCE_M)
         self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
+
+    # --- crew control (a player crew commands this boat) -------------------
+
+    def claim_manual(self) -> None:
+        """Hand the boat to a crew: the AI stops deciding from now on."""
+        self.manual = True
+        if self.state in ("EVADE", "LAUER", "WRACK"):
+            self.state = "PATROLLE"
+        self.evac_left = 0.0
+        self.torpedo_alarm_left = -1.0
+        self.torpedo_alerted = False
+        self.order_course = self.course
+        self.order_speed = self.speed_order
+        self.order_depth = self.target_depth
+        self._manual_ping_pending = False
+
+    def release_manual(self) -> None:
+        """Return the boat to the AI, which resumes from its current state."""
+        self.manual = False
+        self._manual_ping_pending = False
+        self.target_course = self.course
+        self.turn_left = min(self.turn_left, 60.0)
+
+    def safe_depth_m(self, world) -> float:
+        """Deepest ordered depth: test depth, and 25 m clear of the bottom."""
+        bottom = getattr(world, "depth_m", lambda x, y: 1000.0)(self.x, self.y)
+        return min(self.stype.max_depth_m, max(0.0, bottom - 25.0))
+
+    def set_orders(self, *, course=None, speed=None, depth=None):
+        """Crew orders; each value is checked before any is applied."""
+        values = [value for value in (course, speed, depth) if value is not None]
+        if any(type(value) not in (int, float) or isinstance(value, bool)
+               or not math.isfinite(value) for value in values):
+            return "invalid_value"
+        if course is not None and not 0.0 <= course < 360.0:
+            return "invalid_value"
+        if speed is not None and not 0.0 <= speed <= self.motion.maximum_speed_kn:
+            return "invalid_value"
+        if depth is not None and not 0.0 <= depth <= self.stype.max_depth_m:
+            return "invalid_value"
+        if not self.manual or self.sunk or self.state == "SINKING":
+            return "not_ready"
+        if course is not None:
+            self.order_course = float(course)
+        if speed is not None:
+            self.order_speed = float(speed)
+        if depth is not None:
+            self.order_depth = float(depth)
+        return True
+
+    def _steer_to_orders(self, dt: float, safe_depth: float) -> None:
+        """Follow the crew's orders within the boat's handling limits."""
+        self.target_course = self.order_course % 360.0
+        diff = config.angle_diff_deg(self.target_course, self.course)
+        self.course = (self.course + config.clamp(
+            diff, -self.motion.turn_rate_deg_s * dt,
+            self.motion.turn_rate_deg_s * dt)) % 360.0
+        self.target_depth = config.clamp(self.order_depth, 0.0, safe_depth)
+        self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
+        self.speed = config.clamp(self.order_speed, 0.0, self.speed_for_state())
+
+    def fire_readiness(self, bearing=None):
+        """Why a crew torpedo shot is impossible now, or None when ready."""
+        if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
+            return "not_ready"
+        if self.torpedoes_left <= 0:
+            return "no_torpedoes"
+        if self.weapon_battery is not None and self.weapon_battery.ready_count <= 0:
+            return "reloading"
+        if len(self.pending_torpedoes) >= SUB_MAX_PENDING_TORPEDOES:
+            return "reloading"
+        if bearing is not None and self.weapon_battery is not None:
+            launcher = self.runtime_catalog.launchers[self.weapon_battery.launcher_key]
+            arc_center = (self.course + launcher.arc_center_deg) % 360.0
+            if abs(config.angle_diff_deg(bearing, arc_center)) \
+                    > launcher.arc_width_deg / 2.0:
+                return "out_of_arc"
+        return None
+
+    def command_fire(self, bearing, range_nm=None, target_course=None,
+                     target_speed_kn=None, now: float = 0.0):
+        """Fire one torpedo down a crew-chosen bearing.
+
+        ``range_nm`` places the guidance datum; with a crew solution
+        (``target_course``/``target_speed_kn``) the shot is led as the AI's
+        interception course.  All values are crew estimates, never truth.
+        """
+        numbers = [value for value in (bearing, range_nm, target_course,
+                                       target_speed_kn) if value is not None]
+        if bearing is None or any(
+                type(value) not in (int, float) or isinstance(value, bool)
+                or not math.isfinite(value) for value in numbers):
+            return "invalid_value"
+        if (not 0.0 <= bearing < 360.0
+                or (range_nm is not None and not 0.05 <= range_nm <= 40.0)
+                or (target_course is not None and not 0.0 <= target_course < 360.0)
+                or (target_speed_kn is not None and not 0.0 <= target_speed_kn <= 60.0)
+                or ((target_course is None) != (target_speed_kn is None))
+                or (target_course is not None and range_nm is None)):
+            return "invalid_value"
+        reason = self.fire_readiness(bearing)
+        if reason is not None:
+            return reason
+        x = y = None
+        if range_nm is not None:
+            x = self.x + range_nm * math.sin(math.radians(bearing))
+            y = self.y - range_nm * math.cos(math.radians(bearing))
+        observation = PlatformObservation(
+            track_id="CREW", domain="sonar", source="SONAR",
+            observer_x=self.x, observer_y=self.y, bearing=float(bearing),
+            range_nm=range_nm, x=x, y=y, course=target_course,
+            speed_kn=target_speed_kn, depth_m=None, quality=1.0, signal=0.0,
+            last_seen=now, bearing_uncertainty_deg=None,
+            range_uncertainty_nm=None, depth_uncertainty_m=None, label=None)
+        return True if self._fire_salvo(observation, 1) else "not_ready"
+
+    def command_decoy(self):
+        if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
+            return "not_ready"
+        if (self.countermeasure_store is None or self._decoy_cd > 0.0
+                or self.pending_decoys):
+            return "not_ready"
+        if not self.countermeasure_store.fire():
+            return "no_decoys"
+        self.pending_decoys.append((self.x, self.y))
+        self._decoy_cd = self.decoy_profile.cooldown_s
+        return True
+
+    def command_ping(self):
+        """Transmit once: every ship in reach hears it on the next update."""
+        if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
+            return "not_ready"
+        self._manual_ping_pending = True
+        return True
+
+    def command_blow(self):
+        """Blow main ballast with the one high-pressure air charge."""
+        if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
+            return "not_ready"
+        if not self.blow_available or self.emergency_ascent or self.depth <= 30.0:
+            return "not_ready"
+        self.blow_available = False
+        self.emergency_ascent = True
+        self.transient_left = max(self.transient_left, 20.0)
+        return True
 
     def speed_for_state(self) -> float:
         """Fahrt bei Schaden: langsamer je nach Schadensgrad."""

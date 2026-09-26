@@ -13,7 +13,8 @@ from src.core.autocrew import AUTOCREW_STATIONS
 from src.sonar import analysis_tools
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
-from src.commander.server import CHART_MAX_BYTES, STATE_MAX_BYTES, STATIONS
+from src.commander.server import (CHART_MAX_BYTES, OPFOR_ROLES, STATE_MAX_BYTES,
+                                  STATIONS)
 from src.sensors.esm import (
     ESMCorrelationEvidence,
     ESM_BROADBAND_SENSOR_COUNT,
@@ -255,9 +256,21 @@ def _tma_summary(track, now):
     return dict(rate_deg_min=_number(summary["rate"]), legs=int(summary["legs"]))
 
 
+def _sonar_observer(game):
+    """The active sonar workstation's listening platform (frigate or boat)."""
+    observer = getattr(game, "sonar_observer", None)
+    return game.ship if observer is None else observer
+
+
+def _sonar_station_down(game):
+    down = getattr(game, "_sonar_down", None)
+    return bool(down()) if down is not None else game.damage.station_down("sonar")
+
+
 def _sonar_visualization(game, rows, sonar_refs):
     sonar = game.sonar
     receiver = sonar.receiver
+    observer = _sonar_observer(game)
     broadband = []
     long_available = bool(getattr(sonar, "broadband_long_history", ()))
     bb_source = (sonar.broadband_long_history if long_available
@@ -283,7 +296,7 @@ def _sonar_visualization(game, rows, sonar_refs):
     lf_bearings = list(sonar.lofar_bearings)[-len(lf_rows):]
     for stamp, bearing, values in zip(lf_times, lf_bearings, lf_rows):
         bins = [round(value, 5) for value in sonar.process_lofar_column(
-            _series(values, config.LOFAR_BINS), game.ship)]
+            _series(values, config.LOFAR_BINS), observer)]
         age = _age(game.sim_t, stamp)
         if age is not None and _number(bearing) is not None and bins:
             lofar.append(dict(age_s=age, bearing=_number(bearing), bins=bins))
@@ -295,7 +308,7 @@ def _sonar_visualization(game, rows, sonar_refs):
             if columns else receiver.spectrum)
     spectrum = [round(value, 5) for value in sonar.process_lofar_column(
         _series(sonar.peak_spectrum if held else list(live),
-                config.LOFAR_BINS), game.ship)]
+                config.LOFAR_BINS), observer)]
     demon_spectrum = (analysis_tools.integrate([column[2] for column in columns],
                                                tools.integration_s)
                       if columns else receiver.demon_spectrum)
@@ -443,7 +456,8 @@ def _sonar_visualization(game, rows, sonar_refs):
 
 
 def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
-    tow = game.sonar.tow_status(game.ship.speed)
+    observer = _sonar_observer(game)
+    tow = game.sonar.tow_status(observer.speed)
     band = (game.sonar.band_low_hz, game.sonar.band_high_hz)
     presets = {"FULL": (0.0, 300.0), "LOW": (4.0, 80.0),
                "SHAFT": (8.0, 55.0), "MID": (20.0, 120.0)}
@@ -455,12 +469,12 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                               listen_bearing=_number(game.sonar.listen_bearing),
                               focus_ref=focus_ref if game.sonar.focus_locked else None,
                               target_ref=target_ref,
-                              station_down=game.damage.station_down("sonar"),
+                              station_down=_sonar_station_down(game),
                                tow=dict(state=str(tow["state"])[:32],
                                         payout=_number(tow["payout"]),
                                         available=bool(tow["available"]),
                                         handling_ok=bool(tow["handling_ok"]),
-                                        speed_kn=_number(game.ship.speed),
+                                        speed_kn=_number(observer.speed),
                                         speed_min_kn=config.SONAR_TOWED_HANDLING_MIN_KN,
                                         speed_max_kn=config.SONAR_TOWED_HANDLING_MAX_KN,
                                         depth_m=_number(tow["depth_m"]),
@@ -500,7 +514,7 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                                   heterodyne_hz=_number(game.sonar.heterodyne_hz)),
                               audio_enabled=bool(game.sonar_audio_enabled),
                               volume=_number(game.sonar_volume),
-                              quiet_mode=bool(game.ship.quiet_mode)),
+                              quiet_mode=bool(getattr(observer, "quiet_mode", False))),
                 visualization=_sonar_visualization(game, rows, sonar_refs))
 
 
@@ -1052,5 +1066,111 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
         # own-crew configuration only, identical for every role.
         state["autocrew_overview"] = overview
         state[role] = operational[role]
+        result[role] = state
+    return result
+
+
+def _opfor_common(game, status, role, boat):
+    """Common block of a submarine role: the boat's own instruments only.
+
+    No frigate plot, audio cue, autocrew or mission framing ever reaches the
+    opposing side; the weather block is read through the boat's workstation.
+    """
+    with game.sonar_perspective(boat.station):
+        common = _common(game, status, role)
+    common["plot"] = dict(objects=[], max_objects=plot.MAX_OBJECTS,
+                          max_label=plot.MAX_LABEL)
+    common["mission"]["objective"] = localize(
+        "uboot.objective" if not boat.sub.sunk else "uboot.objective_lost", game.tr)
+    common["audio"] = dict(events=[])
+    common["autocrew"] = dict(enabled=False, status="off")
+    common["autocrew_overview"] = []
+    return common
+
+
+def _uboot_weapons(game, boat, asset_refs):
+    """The boat's own torpedoes in the water (same rows as the frigate's)."""
+    return [dict(ref=asset_refs[("uboot_torpedo", id(item))], x=_number(item.x),
+                 y=_number(item.y), depth_m=_number(item.depth),
+                 course=_number(item.course), state=str(item.state)[:32])
+            for item in sorted(game.enemy_torpedoes, key=lambda weapon: weapon.id)
+            if ("uboot_torpedo", id(item)) in asset_refs][:16]
+
+
+def _uboot(game, boat, rows, target_ref, asset_refs):
+    """The crewed submarine's commander: own boat (legitimate truth), its
+    orders, weapons and the boat's own sonar contacts."""
+    sub = boat.sub
+    endurance = sub.endurance
+    battery = None
+    phase = None
+    if endurance is not None:
+        capacity = endurance.profile.battery_capacity_kwh
+        battery = (endurance.battery_kwh / capacity) if capacity else None
+        phase = str(endurance.phase)[:16]
+    launcher = (game.runtime_catalog.launchers[sub.weapon_battery.launcher_key]
+                if sub.weapon_battery is not None else None)
+    reason = sub.fire_readiness()
+    store = sub.countermeasure_store
+    alarms = sub.memory
+    state = ("sunk" if sub.sunk else "sinking" if sub.state == "SINKING"
+             else "manual" if sub.manual else "ai")
+    return dict(
+        navigation=dict(
+            x=_number(sub.x), y=_number(sub.y), course=_number(sub.course),
+            target_course=_number(sub.order_course), speed=_number(sub.speed),
+            target_speed=_number(sub.order_speed), depth_m=_number(sub.depth),
+            target_depth_m=_number(sub.order_depth),
+            safe_depth_m=_number(sub.safe_depth_m(game.world)),
+            max_depth_m=_number(float(sub.stype.max_depth_m)),
+            max_speed_kn=_number(sub.motion.maximum_speed_kn),
+            water_depth_m=_number(game.world.depth_m(sub.x, sub.y)),
+            cavitating=bool(sub.cavitating), noise=_number(sub.noise_level())),
+        status=dict(
+            state=state, damage=_number(sub.damage),
+            emergency_ascent=bool(sub.emergency_ascent),
+            blow_available=bool(sub.blow_available),
+            battery=_number(battery), endurance_phase=phase,
+            transmitting=bool(sub.transmitting)),
+        weapons=dict(
+            torpedoes=int(sub.torpedoes_left),
+            tubes_ready=(int(sub.weapon_battery.ready_count)
+                         if sub.weapon_battery is not None else 0),
+            reload_s=(_number(sub.weapon_battery.next_reload_s)
+                      if sub.weapon_battery is not None else None),
+            ready=reason is None, reason=reason,
+            arc_center_deg=(_number(launcher.arc_center_deg)
+                            if launcher is not None else None),
+            arc_width_deg=(_number(launcher.arc_width_deg)
+                           if launcher is not None else None),
+            decoys=(int(store.remaining_total) if store is not None else 0),
+            decoy_ready=bool(store is not None and store.ready > 0
+                             and sub._decoy_cd <= 0.0 and not sub.pending_decoys)),
+        alarms=dict(
+            ping_age_s=(_number(alarms["last_ping_age"])
+                        if math.isfinite(alarms["last_ping_age"]) else None),
+            torpedo_age_s=(_number(alarms["last_torpedo_age"])
+                           if math.isfinite(alarms["last_torpedo_age"]) else None)),
+        contacts=[_observation(row, _SONAR_FIELDS) for row in rows],
+        own_weapons=_uboot_weapons(game, boat, asset_refs),
+        designated_target_ref=target_ref,
+        feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
+                   message=str(localize(row["text"], game.tr))[:256])
+              for row in list(boat.feed)[-16:]])
+
+
+def build_opfor_states(game, status, boat, rows, target_ref, focus_ref, sonar_refs,
+                       asset_refs=None):
+    """Canonical views of the submarine roles, or ``{}`` without a boat."""
+    if boat is None:
+        return {}
+    result = {}
+    for role in OPFOR_ROLES:
+        state = _opfor_common(game, status, role, boat)
+        if role == "uboot":
+            state[role] = _uboot(game, boat, rows, target_ref, asset_refs or {})
+        else:
+            with game.sonar_perspective(boat.station):
+                state[role] = _sonar(game, rows, focus_ref, target_ref, sonar_refs)
         result[role] = state
     return result

@@ -81,5 +81,5 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates).
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates). Page 2 (`PgDn`/`Tab`): which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved.
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.

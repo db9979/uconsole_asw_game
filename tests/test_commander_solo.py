@@ -8,7 +8,8 @@ import time
 
 import pytest
 
-from src.commander.server import (CommanderServer, STATIONS, V2_ACTION_REGISTRY,
+from src.commander.server import (CommanderServer, OPFOR_ROLES, ROLES, STATIONS,
+                                  V2_ACTION_REGISTRY,
                                   V2CommandEnvelope)
 from src.core import config
 from src.core.game import Game
@@ -92,15 +93,19 @@ def test_solo_pairing_leases_every_station_with_full_grants(server):
     assert session["host"] == {"generation": 1}
     assert session["active_station"] == session["station"] == "bridge"
     assert session["simlog"] is True and session["grants"]["simlog"] is True
-    assert list(session["stations"]) == list(STATIONS)
-    for station, row in session["stations"].items():
+    assert list(session["stations"]) == list(ROLES)
+    # Solo is the frigate console: the submarine roles are never part of it.
+    assert all(session["stations"][role]["status"] == "available" for role in OPFOR_ROLES)
+    for station in STATIONS:
+        row = session["stations"][station]
         assert row["status"] == "mine" and row["station_generation"] >= 1
         assert row["grants"] == {
             "command": True,
             "direct_fire": station in ("weapons", "helicopter", "opz"),
             "sonar_audio": station in ("sonar", "helicopter")}
     # Generations are independent per-station counters.
-    assert {row["station_generation"] for row in session["stations"].values()} == {1}
+    assert {session["stations"][station]["station_generation"]
+            for station in STATIONS} == {1}
 
 
 def test_solo_allows_exactly_one_session_until_the_host_removes_it(server):
@@ -193,7 +198,7 @@ def test_world_replacement_keeps_a_solo_browser_but_revokes_a_crew_browser(
     assert server.pairing_code == code
     after = request(server, "/api/v2/session", cookie=cookie)
     assert after[0] == 200 and after[2]["client_id"] == session["client_id"]
-    assert all(row["status"] == "mine" for row in after[2]["stations"].values())
+    assert all(after[2]["stations"][station]["status"] == "mine" for station in STATIONS)
     assert after[2]["host"]["generation"] == 2
 
     # The same replacement in crew mode is a hard security boundary.
@@ -256,8 +261,8 @@ def _publication():
         "protocol", "version", "session", "epoch", "revision", "seq", "phase",
         "chart_revision")} | {"role": None}
     states = {None: redacted, **{role: dict(common, role=role, **{role: {}})
-                                 for role in STATIONS}}
-    return states, {None: chart, **{role: chart for role in STATIONS}}
+                                 for role in ROLES}}
+    return states, {None: chart, **{role: chart for role in ROLES}}
 
 
 def test_publication_serialises_a_shared_chart_once_and_serves_every_role(server):
@@ -462,7 +467,7 @@ def test_host_save_and_load_round_trip_through_a_temporary_slot(solo):
     # The browser is still paired, under fresh generations, with the result readable.
     after = session_of(solo)
     assert after["stations"]["sonar"]["station_generation"] > generation
-    assert all(row["status"] == "mine" for row in after["stations"].values())
+    assert all(after["stations"][station]["status"] == "mine" for station in STATIONS)
 
 
 def test_a_corrupt_slot_fails_the_load_and_leaves_the_live_game_unchanged(solo):

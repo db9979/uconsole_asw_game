@@ -12,6 +12,7 @@ import pytest
 from src.commander import projections
 from src.enemies.surface import SurfaceShip
 from src.commander.projections import ROLE_NAMES, STATE_MAX_BYTES
+from src.commander.server import OPFOR_ROLES, ROLES
 from src.core import config
 from src.core.game import Game
 from src.sonar.sonar import Contact
@@ -39,7 +40,11 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
               "autocrew", "autocrew_overview", "audio", "weather_station", "plot"}
-    assert set(server.v2_states) == {None, *ROLE_NAMES}
+    assert set(server.v2_states) == {None, *ROLES}
+    # Without a crewed submarine its roles are published redacted.
+    assert all(server.v2_states[role] == server.v2_states[None]
+               and server.v2_charts[role] == server.v2_charts[None]
+               for role in OPFOR_ROLES)
     assert server.v2_states[None] == dict(
         protocol=2, version=server.state["version"], session=bridge.status["session"],
         epoch=bridge.status["epoch"], revision=bridge.status["revision"],
@@ -535,7 +540,7 @@ def test_in_game_analyzer_keeps_every_role_live(published):
     game.editor = object()
     bridge.pump(game, server, now=10.1)
     assert all(state["phase"] == "live" and state["role"] == role
-               for role, state in server.v2_states.items() if role is not None)
+               for role, state in server.v2_states.items() if role in ROLE_NAMES)
 
 
 def test_world_replacement_publishes_one_immediate_redacted_generation(published):

@@ -69,7 +69,7 @@ Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bed
 
 | Taste | Funktion |
 |---|---|
-| `1-9` | Eine eigene Station öffnen |
+| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-2) |
 | `[ / ]` | Vorherige / nächste eigene Station |
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
@@ -123,7 +123,7 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 - Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
-- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste, Bedienerassistenz aus (Standard: Rohdaten und manuelle Analyse) oder Training (automatische Linienbeschriftung, Blattfrequenz- und Katalog-/Senderkandidaten).
+- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste, Bedienerassistenz aus (Standard: Rohdaten und manuelle Analyse) oder Training (automatische Linienbeschriftung, Blattfrequenz- und Katalog-/Senderkandidaten). Seite 2 (`Bild ab`/`Tab`): welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert.
 - `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen.
 
 ## 1 Brücke
@@ -315,7 +315,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 | Taste | Funktion |
 |---|---|
 | `Shift+A` | Aktiv-Ping abfeuern (Kühlzeit, verrät Position!) |
-| `Shift+B` | Empfangsarray zwischen HMS und TAS wechseln |
+| `Umschalt+B` | Empfangsarray zwischen HMS und TAS wechseln |
 | `Y` | TAS ausbringen / einholen (nur bei 3-12 kn) |
 | `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
 | `2` | 2 erneut drücken, um die Sonarseite weiterzuschalten |
@@ -795,7 +795,7 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
 | `B` | Eine Sonarboje an aktueller Position aussetzen |
-| `Shift+B` | Modus der nächsten Boje PASSIV / AKTIV |
+| `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -1017,6 +1017,38 @@ Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle R
 U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus, können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen.
 
 U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes Boot hält seine Position gegen die Strömung. U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung erst nach eigenen TMA-Schlägen (einige Minuten), ESM nur mit ausgefahrenem Mast, den Datalink nur auf Masttiefe oder beim Schnorcheln, und ein Torpedoalarm braucht einige Sekunden Reaktionszeit der Besatzung (2-15 s), bevor das Boot ausweicht. Überwasserschiffe verlieren bei schwerer See Höchstfahrt (kleine Schiffe mehr).
+
+### Besetztes Gegner-U-Boot (Remote Crew)
+
+Eine zweite Crew kann den Gegner spielen: Im Remote-Crew-Roster (`F9`) vergibt der Host die Rollen „U-Boot-Führung“ und „U-Boot-Sonar“. Solange eine davon besetzt ist, folgt das lebende feindliche U-Boot mit der kleinsten Nummer nur den Befehlen dieser Crew; werden die Rollen abgegeben, vom Host entzogen oder ein Spielstand geladen, übernimmt die KI das Boot wieder dort, wo es gerade ist. Ein Browser hält nur Rollen einer Seite (Fregatte oder U-Boot), nie beide, und der Solo-Modus enthält die U-Boot-Rollen nie.
+
+- **U-Boot-Führung:** befiehlt Kurs, Fahrt und Tiefe (das Boot folgt im Rahmen seiner Wende-, Tiefen- und Beschleunigungsgrenzen; der Batterie- und Schnorchelzyklus läuft selbst). Schießt einen Torpedo auf die gemessene Peilung eines Sonarkontakts, mit Ping-Fix oder TMA-Lösung, solange aktuell, oder auf eine freie Peilung mit optionaler Entfernung; der Schuss braucht die Direktfeuer-Freigabe des Hosts, ein klares Rohr und das Ziel im Schussfeld der Rohre. Stößt einen Täuschkörper aus und bläst einmal notfallmäßig an.
+- **U-Boot-Sonar:** derselbe Sonararbeitsplatz wie auf der Fregatte (Breitband, LOFAR, DEMON, TMA, Aktivechos, Klassifizierung, Horch-Audio), aber das Rumpfsonar horcht in der eigenen Tauchtiefe, die Sprungschicht wirkt also für und gegen die Crew. Es gibt keine Schleppantenne und keine Freigabe an eine OPZ. Ein Aktivping liefert Echos und wird von der Fregatte gehört.
+- **Was die U-Boot-Crew sieht:** das eigene Boot, die bekannte Seekarte, die eigenen Sonarmessungen und die eigenen Torpedos im Wasser. Position, Plot, Ereignisse und Missionsmeldungen der Fregatte sieht sie nie; die Fregatten-Crew kann ein besetztes Boot nicht von der KI unterscheiden.
+- **Mission:** unverändert. Sinkt die Fregatte, hat das U-Boot gewonnen; sinkt das Boot, sieht seine Crew „Boot verloren“.
+- **Speichern:** die Crew-Bindung wird nicht gespeichert. Nach dem Laden führt die KI das Boot, bis eine Crew die Rollen wieder übernimmt, und das Sonarbild des Boots beginnt leer.
+
+#### U-Boot am uConsole spielen
+
+Im Hauptmenü unter Optionen (`F10`) auf Seite 2 (`Bild ab` oder `Tab`) **uConsole spielt** auf *Feindliches U-Boot* stellen (oder mit `--play-sub` starten): Dann führt der uConsole das feindliche U-Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt oder fährt mit Autocrew. Der uConsole zeigt nur das Lagebild des Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie, und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
+
+Die **U-Boot-Führung** ist aufgebaut wie die Brücke: links die Seekarte (bekannte Geografie, das eigene Boot mit Sollkurs und Fahrtvektor, die Peilstriche der eigenen Sonarkontakte bzw. ihr Symbol bei aktuellem Ping- oder TMA-Fix, die eigenen Torpedos `T1`…), rechts die Station mit Bedrohungsleiste (Torpedoalarm, gehörtes Aktivsonar, Rumpfschaden, Kavitation, schwache Batterie) und zwei Seiten. **Navigation** zeigt Kurs und Tiefe, Fahrt, Eigenlärm und Batterie sowie die Wassersäule unter dem Boot: Bootstiefe, befohlene Tiefe, sichere Tiefe und Grund; die Sprungschicht erscheint dort erst nach einer eigenen BT-Messung (`E` am U-Boot-Sonar). **Waffen & Kontakte** zeigt Feuerbereitschaft, Torpedos, klare Rohre, Nachladen, Täuschkörper, Notanblasen und die eigenen Sonarkontakte. Unten stehen Bootslog und Telemetrie des Boots, als Leiste oder Statuszeile wie in den Optionen eingestellt; Befehle, Schüsse und Täuschkörper werden dort protokolliert.
+
+| Taste | Funktion |
+|---|---|
+| `1 / 2 / Tab` | U-Boot-Führung / U-Boot-Sonar / wechseln |
+| `C / V / D` | Kurs / Fahrt / Tiefe befehlen (Zahl, Enter) |
+| `Bild auf/ab` | Führungsseiten: Navigation / Waffen & Kontakte |
+| `Q / E` | Karte heraus- / hineinzoomen |
+| `K` | Karte folgt dem Boot an/aus |
+| `Mausrad / Ziehen` | Karte zoomen / verschieben (Maus auf der Karte) |
+| `Pfeiltasten` | Eigenen Sonarkontakt wählen |
+| `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen |
+| `F` | Torpedo auf eine eingegebene Peilung schießen |
+| `X` | Täuschkörper ausstoßen |
+| `Umschalt+B` | Notanblasen (einmal) |
+| `Sonartasten` | Wie am Fregattensonar, ohne Schleppantenne, OPZ-Freigabe, Plot und Telegraph |
+| `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 
 ### Mission und Wertung
 

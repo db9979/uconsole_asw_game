@@ -23,7 +23,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files as _resource_files
 
-from src.core.help import (_GLOBAL_HELP, _WEB_HELP, STATION_HELP, STATION_SOP)
+from src.core.help import (_GLOBAL_HELP, _UBOOT_HELP, _WEB_HELP, STATION_HELP,
+                           STATION_SOP)
 from src.core.i18n import Translator
 from src.core.station import Station
 
@@ -77,6 +78,8 @@ def _key_table(name: str, tr) -> tuple:
         rows = _GLOBAL_HELP[1]
     elif name == "web":
         rows = _WEB_HELP[1]
+    elif name == "uboot":
+        rows = _UBOOT_HELP[1]
     elif name in _CHAPTER_STATIONS:
         rows = STATION_HELP[_CHAPTER_STATIONS[name]][1]
     else:

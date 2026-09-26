@@ -91,11 +91,11 @@ async function run() {
     $("role-visuals").hidden = false;
     const visualFor = {bridge: "map-visual", sonar: "sonar-visual", weapons: "weapons-visual",
       damage: "damage-visual", opz: "map-visual", radio: "map-visual", engine: "engine-visual",
-      helicopter: "map-visual", eloka: "eloka-visual"};
+      helicopter: "map-visual", eloka: "eloka-visual", uboot: "map-visual"};
     for (const panel of document.querySelectorAll("#role-visuals > .visual-panel")) {
       panel.hidden = panel.id !== visualFor[role];
     }
-    const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
+    const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka", "uboot"]);
     section.classList.toggle("track-workstation", trackRoles.has(role));
     if (trackRoles.has(role) && $("operations-workspace").parentElement !== section) {
       section.insertBefore($("operations-workspace"), grid);
@@ -147,7 +147,7 @@ async function run() {
         bounds.left >= controls.left - 1 && bounds.right <= controls.right + 1)};
   };
   document.body.classList.add("workstation-mode");
-  const roles = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka"];
+  const roles = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "uboot", "eloka"];
   const workstations = Object.fromEntries(roles.map((role) => [role, workstationBounds(role)]));
   const report = {
     cards: cards.length,
@@ -319,7 +319,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
         '<script src="./app.js" defer>',
         '<script src="./lobby-layout.js" defer></script><script src="./app.js" defer>')
     stations = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
-                "engine", "helicopter", "eloka")
+                "engine", "helicopter", "eloka", "uboot", "uboot_sonar")
     empty_grants = {"command": False, "direct_fire": False, "sonar_audio": False}
     session = {"protocol": 2, "client_id": "layout-client", "name": "Layout Lobby",
                "csrf": "layout-csrf", "ordinal": 0, "presence": 1.0,
@@ -403,9 +403,9 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     root = next(attrs for tag, attrs in Document(result.stdout).elements if tag == "html")
     report = json.loads(root["data-lobby-layout"])
     assert "error" not in report, report
-    assert report["cards"] == 9 and report["order"] == list(stations)
+    assert report["cards"] == 11 and report["order"] == list(stations)
     assert report["viewport"] == [css_width, css_height]
-    assert report["pageWidth"] <= css_width + 1 and report["pageHeight"] <= css_height + 1
+    assert report["pageWidth"] <= css_width + 1 and report["pageHeight"] <= css_height + 1, report
     assert report["controls"]
     assert report["bridge"]["controls"] and report["bridge"]["labels"]
     assert report["bridge"]["bounds"][0] >= -1
@@ -417,7 +417,8 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     assert report["weapons"]["bounds"][0] >= -1
     assert report["weapons"]["bounds"][2] <= css_width + 1
     assert report["lobby"][0] >= -1 and report["lobby"][2] <= css_width + 1
-    assert set(report["workstations"]) == set(stations)
+    # The submarine sonar room shares the sonar section.
+    assert set(report["workstations"]) == set(stations) - {"uboot_sonar"}
     for role, dashboard in report["workstations"].items():
         assert not dashboard["intersects"], (role, dashboard)
         assert dashboard["childIntersections"] == 0, (role, dashboard)

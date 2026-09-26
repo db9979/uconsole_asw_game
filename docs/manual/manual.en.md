@@ -69,7 +69,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 | Key | Action |
 |---|---|
-| `1-9` | Open one of your own stations |
+| `1-9` | Open one of your own stations (submarine crew: 1-2) |
 | `[ / ]` | Previous / next own station |
 | `?` | Open guide and station help |
 | `Arrow keys` | Move within focused tab bar, track list or chart |
@@ -123,7 +123,7 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates).
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates). Page 2 (`PgDn`/`Tab`): which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved.
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.
 
 ## 1 Bridge
@@ -1016,6 +1016,38 @@ The crew keeps one shared grease-pencil plot. Every station and every Remote Cre
 Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less. Near the frigate a boat may instead creep to a charted wreck within 8 NM and lie still on the bottom beside it for 15-30 minutes.
 
 Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded boat blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking boat holds its position against the current. Submarines sense like you do: passive bearings from their own sonar, a range only after their own TMA legs (a few minutes), ESM only with the mast up, the datalink only at mast depth or snorkelling, and a torpedo alarm takes the crew a few seconds (2-15 s) before the boat evades. Surface ships lose top speed in heavy seas (small ships more).
+
+### Crewed opposing submarine (Remote Crew)
+
+A second crew can play the enemy: in the Remote Crew roster (`F9`) the host grants the roles "Submarine command" and "Submarine sonar". As long as one of them is held, the living hostile submarine with the lowest number follows only that crew's orders; when the roles are released, the host revokes them or a game is loaded, the AI takes the boat back from where it is. A browser holds roles of one side only (frigate or submarine), never both, and solo mode never includes the submarine roles.
+
+- **Submarine command:** orders course, speed and depth (the boat follows within its turn, depth and acceleration limits; the battery and snorkel cycle runs by itself). Fires a torpedo down a sonar contact's measured bearing, with its ping fix or TMA solution while current, or down a free bearing with an optional range; firing needs the host's direct-fire grant, a ready tube and the target inside the tube arc. Launches a decoy and makes the one emergency blow.
+- **Submarine sonar:** the same sonar workstation as on the frigate (broadband, LOFAR, DEMON, TMA, active echoes, classification, listening audio), but the hull array listens at the boat's own depth, so the layer works for and against the crew. There is no towed array and no release to an OPZ. An active ping gives echoes and is heard by the frigate.
+- **What the submarine crew sees:** its own boat, the known chart, its own sonar measurements and its own torpedoes in the water. It never sees the frigate's position, its plot, its events or its mission messages; the frigate crew cannot tell a crewed boat from the AI.
+- **Mission:** unchanged. If the frigate sinks, the submarine has won; if the boat sinks, its crew sees "Boat lost".
+- **Saving:** the crew binding is not saved. After a load the AI commands the boat until a crew takes its roles again, and the boat's sonar picture starts empty.
+
+#### Playing the submarine on the uConsole
+
+In the main menu, open Options (`F10`), switch to page 2 (`PgDn` or `Tab`) and set **uConsole plays** to *Hostile submarine* (or start with `--play-sub`): the uConsole then commands the hostile submarine instead of the frigate. The frigate is then crewed from the browsers through Remote Crew (`F9`) or runs on autocrew. The uConsole shows only the boat's own picture; the frigate's banners, event log, sound cues, plot and tooltips never appear, and its trackball and telegraph controls are disabled. The side can only be changed outside a mission; it lasts for this launch and is never saved, so every launch starts with the frigate.
+
+The **submarine command** station is laid out like the Bridge: the chart on the left (known geography, the boat with its ordered course and motion vector, the bearing lines of its own sonar contacts or their symbol while a ping or TMA fix is current, its own torpedoes `T1`…), the station on the right with a threat bar (torpedo alarm, active sonar heard, hull damage, cavitation, low battery) and two pages. **Navigation** shows course and depth, speed, own noise and battery, and the water column under the boat: boat depth, ordered depth, safe depth and seabed; the layer appears there only after the boat's own BT measurement (`E` at the submarine sonar). **Weapons & contacts** shows fire readiness, torpedoes, tubes ready, reload, decoys, emergency blow and the boat's own sonar contacts. Below are the boat log and the boat's telemetry, as a band or a status ticker as set in the options; orders, shots and decoys are logged there.
+
+| Key | Action |
+|---|---|
+| `1 / 2 / Tab` | Submarine command / submarine sonar / switch |
+| `C / V / D` | Order course / speed / depth (number, Enter) |
+| `Page Up/Down` | Command pages: Navigation / Weapons & contacts |
+| `Q / E` | Chart zoom out / in |
+| `K` | Chart follows the boat on/off |
+| `Wheel / drag` | Zoom / pan the chart (mouse on the chart) |
+| `Arrow keys` | Select an own sonar contact |
+| `Ctrl+Enter` | Fire a torpedo at the selected contact |
+| `F` | Fire a torpedo down an entered bearing |
+| `X` | Launch a decoy |
+| `Shift+B` | Emergency blow (once) |
+| `Sonar keys` | As on the frigate sonar, without towed array, OPZ release, plot and telegraph |
+| `S / L / F9` | Save / load / Remote Crew (the frigate's crew) |
 
 ### Mission and scoring
 

@@ -35,6 +35,12 @@ _WATERFALL_CACHE = OrderedDict()
 _WATERFALL_CACHE_SCREEN = None
 
 
+
+def _sonar_observer(game):
+    """Listening platform of the active sonar workstation (frigate or boat)."""
+    observer = getattr(game, "sonar_observer", None)
+    return getattr(game, "ship", None) if observer is None else observer
+
 def message(key, **values):
     """A structured message: localized at draw time so layouts can abbreviate."""
     return structured_message(key, **values)
@@ -46,7 +52,7 @@ def _observed_bearing(observation) -> float:
 
 def _bearing_line(game, bearing) -> str:
     return layout.format_bearing_pair(
-        bearing, getattr(getattr(game, "ship", None), "course", 0.0))
+        bearing, getattr(_sonar_observer(game), "course", 0.0))
 
 
 def _panels(game, page):
@@ -265,7 +271,7 @@ def sonar_hit_target(game, pos):
                     message("sonar.tooltip.contact_title",
                             contact=observations.contact_display_id(game, contact)),
                     observations.format_bearing_pair(
-                        contact, getattr(game, "ship", None)),
+                        contact, _sonar_observer(game)),
                     message("observation.bearing_uncertainty", uncertainty=f"{observations.bearing_uncertainty(contact):.1f}")
                     if observations.bearing_uncertainty(contact) is not None else None,
                     message("sonar.tooltip.classification", classification=label),
@@ -530,7 +536,7 @@ def _waterfall_controls(game, page):
     return (getattr(sonar, "gain_db", 0.0),
             getattr(sonar, "band_low_hz", 0.0) if filters else 0.0,
             getattr(sonar, "band_high_hz", 300.0) if filters else 300.0,
-            notch, getattr(getattr(game, "ship", None), "speed", 0.0) if notch else 0.0,
+            notch, getattr(_sonar_observer(game), "speed", 0.0) if notch else 0.0,
             getattr(sonar, "operator_notch_hz", None) if filters else None,
             getattr(tools, "integration_s", 2) if page in (1, 2) else 2)
 
@@ -967,7 +973,7 @@ def _draw_waterfall(game, panel, page):
             latest = np.clip(native[inside] * gain, 0.0, 1.0)
             labelled = (latest, native_hz[inside])
         elif len(current):
-            bins = process(list(current), game.ship) if process else current
+            bins = process(list(current), _sonar_observer(game)) if process else current
             latest = _linear_lofar(bins, plot.w)
             labelled = (np.asarray(bins), _lofar_frequencies(len(bins)))
         else:
@@ -1003,7 +1009,7 @@ def _draw_waterfall(game, panel, page):
         if held and not vernier:
             peak = getattr(sonar, "peak_spectrum", getattr(receiver, "peak_spectrum", []))
             if peak is not None and len(peak):
-                peak = process(peak, game.ship) if process else peak
+                peak = process(peak, _sonar_observer(game)) if process else peak
                 labelled = (peak, _lofar_frequencies(len(peak)))
                 peak = _linear_lofar(peak, plot.w)
             else:
@@ -1393,7 +1399,7 @@ def _draw_environment(game, panel):
               (plot.x, plot.centery + 8, plot.w, 20), DIM, 14, "center")
 
     max_depth = (float(max(profile.get("depths_m", [300]))) if profile else 300.0)
-    tow = _tow_status(sonar, getattr(getattr(game, "ship", None), "speed", 0.0))
+    tow = _tow_status(sonar, getattr(_sonar_observer(game), "speed", 0.0))
     actual = float(tow.get("depth_m", config.SONAR_TOWED_DEPTH_M))
     target = float(tow.get("depth_target_m", actual))
     ay = plot.y + round(min(actual, max_depth) / max_depth * (plot.h - 1))
@@ -1550,7 +1556,7 @@ def _detail_rows(game, page):
         return rows
     if page == 4:
         profile = getattr(sonar, "bt_profile", None)
-        tow = _tow_status(sonar, getattr(getattr(game, "ship", None), "speed", 0.0))
+        tow = _tow_status(sonar, getattr(_sonar_observer(game), "speed", 0.0))
         actual = float(tow.get("depth_m", config.SONAR_TOWED_DEPTH_M))
         target = float(tow.get("depth_target_m", actual))
         lines = [message("sonar.line.tow_status", state=display_value('tow', tow['state']),
@@ -1637,7 +1643,7 @@ def _detail_rows(game, page):
                           speed=f"{speed:.1f}" if speed is not None else "--"),
                   "sonar.depth_not_tma"]
         closing_kn = tma_closing_rate_kn(
-            game.ship, getattr(contact, "bearing", 0.0), course, speed)
+            _sonar_observer(game), getattr(contact, "bearing", 0.0), course, speed)
         lines.append(message(
             "sonar.line.tma_closing_rate",
             rate=f"{closing_kn:+.1f}" if closing_kn is not None else "--"))
@@ -1744,7 +1750,7 @@ def _draw_contacts(game, rect):
                   (rect.x + 14, y + 2, rect.w - 105, 19), TEXT, 14)
             _text(screen, message("sonar.line.bearing_value",
                                   bearing=observations.format_bearing(
-                                      contact, getattr(game, "ship", None))),
+                                      contact, _sonar_observer(game))),
                   (rect.right - 94, y + 2, 82, 19), CYAN, 13, "right")
             age = max(0, getattr(game, "sim_t", 0) - getattr(contact, "last_seen", 0))
             uncertainty = observations.bearing_uncertainty(contact)
@@ -1804,7 +1810,7 @@ def draw_sonar_view(game, tr=None) -> None:
                   tab.move(6, 3).inflate(-12, 0),
                    CYAN if i == page else DIM, 14)
         mode = getattr(game, 'sonar_mode', 'BOW')
-        tow = _tow_status(sonar, getattr(getattr(game, "ship", None), "speed", 0.0))
+        tow = _tow_status(sonar, getattr(_sonar_observer(game), "speed", 0.0))
         tow_pause = (" " + localize(message("ui.pause"))
                      if not tow["handling_ok"] and tow["state"] in (
                          "DEPLOYING", "RETRIEVING") else "")

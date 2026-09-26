@@ -49,9 +49,23 @@ _V2_STATION_LEASE_S = 15.0
 _V2_SESSION_LIMIT = 12
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
             "engine", "helicopter", "eloka")
+# The crewed hostile submarine: the opposing side's commander and sonar room.
+# Its roles are leased like stations but never belong to the frigate crew: a
+# session holds roles of one side only, solo/web-host grant-all stays frigate.
+OPFOR_ROLES = ("uboot", "uboot_sonar")
+ROLES = STATIONS + OPFOR_ROLES
+# Roles with a sonar room (waterfall stream), and the gated capabilities.
+SONAR_ROLES = ("sonar", "uboot_sonar")
+DIRECT_FIRE_ROLES = ("weapons", "helicopter", "opz", "uboot")
+SONAR_AUDIO_ROLES = ("sonar", "helicopter", "uboot_sonar")
 # Pseudo-role of the solo host command surface. It is never a station lease:
 # only a solo session carries it, and STATIONS (and every projection) stays nine.
 HOST_ROLE = "host"
+
+
+def role_side(role):
+    """``"opfor"`` for the crewed submarine's roles, else ``"frigate"``."""
+    return "opfor" if role in OPFOR_ROLES else "frigate"
 HOST_MAX_BYTES = 16 * 1024
 STATE_MAX_BYTES = 512 * 1024
 CHART_MAX_BYTES = 2 * 1024 * 1024
@@ -64,7 +78,11 @@ SONAR_AUDIO_FRAMES = 1024
 SONAR_AUDIO_RATE = 4096
 SONAR_STREAM_ROUTE = "/ws/v2/sonar"
 SONAR_AUDIO_STREAM_ROUTES = {"/ws/v2/sonar/audio": "sonar",
-                            "/ws/v2/helicopter/audio": "helicopter"}
+                            "/ws/v2/helicopter/audio": "helicopter",
+                            "/ws/v2/uboot/audio": "uboot_sonar"}
+_AUDIO_POLL_ROUTES = {"/api/v2/sonar/audio": "sonar",
+                      "/api/v2/helicopter/audio": "helicopter",
+                      "/api/v2/uboot/audio": "uboot_sonar"}
 VOICE_STREAM_ROUTE = "/ws/v2/voice"
 SONAR_STREAM_MAGIC = b"UJS2"
 SONAR_STREAM_VERSION = 1
@@ -105,10 +123,10 @@ def _quantized(values, maximum):
     return bytes(result)
 
 
-def _sonar_stream_payload(state, sequence):
+def _sonar_stream_payload(state, sequence, role="sonar"):
     """Pack one detached projected sonar sample; never inspect simulation objects."""
     try:
-        visual = state["sonar"]["visualization"]
+        visual = state[role]["visualization"]
         broadband_rows = visual["broadband"]["history"]
         lofar_rows = visual["lofar"]["history"]
         demon_rows = visual["demon"]["history"]
@@ -377,6 +395,37 @@ def _waypoint_params(params):
                     for key in ("x", "y")))
 
 
+def _uboot_depth_params(params):
+    return (type(params) is dict and set(params) == {"depth_m"}
+            and type(params["depth_m"]) in (int, float)
+            and math.isfinite(params["depth_m"])
+            and 0 <= params["depth_m"] <= 1000)
+
+
+def _uboot_speed_params(params):
+    return (type(params) is dict and set(params) == {"speed_kn"}
+            and type(params["speed_kn"]) in (int, float)
+            and math.isfinite(params["speed_kn"])
+            and 0 <= params["speed_kn"] <= 40)
+
+
+def _uboot_fire_params(params):
+    """A crew shot: a sonar contact ref, or a free bearing with optional range."""
+    if type(params) is not dict or set(params) != {"ref", "bearing", "range_nm"}:
+        return False
+    ref, bearing, range_nm = params["ref"], params["bearing"], params["range_nm"]
+    if (ref is None) == (bearing is None):
+        return False
+    if ref is not None and not _ref(ref):
+        return False
+    if bearing is not None and not (type(bearing) in (int, float)
+                                    and math.isfinite(bearing) and 0 <= bearing < 360):
+        return False
+    return range_nm is None or (type(range_nm) in (int, float)
+                                and math.isfinite(range_nm)
+                                and 0.05 <= range_nm <= 40)
+
+
 def _bearing_params(params):
     return (type(params) is dict and set(params) == {"bearing"}
             and type(params["bearing"]) in (int, float)
@@ -449,7 +498,7 @@ _HOST_REPLACING = frozenset({"live", "menu", "ended"})
 _HOST_STATIONS = frozenset({HOST_ROLE})
 
 V2_ACTION_REGISTRY = {
-    "acknowledge": V2Action(frozenset(STATIONS), _no_params),
+    "acknowledge": V2Action(frozenset(ROLES), _no_params),
     # Shared chart plot: every station may draw, relabel and erase.
     "plot_add": V2Action(frozenset(STATIONS), _plot_add_params),
     "plot_remove": V2Action(frozenset(STATIONS), _plot_remove_params),
@@ -467,7 +516,7 @@ V2_ACTION_REGISTRY = {
     "bridge_set_speed": V2Action(frozenset({"bridge"}), _speed_params),
     "propose_navigation": V2Action(frozenset({"bridge"}),
                                     _navigation_proposal_params),
-    "sonar_classify": V2Action(frozenset({"sonar", "helicopter"}), _classification_params,
+    "sonar_classify": V2Action(frozenset({"sonar", "helicopter", "uboot_sonar"}), _classification_params,
         revision_bound=True),
     "sonar_set_release": V2Action(frozenset({"sonar", "helicopter"}), _release_params,
         revision_bound=True),
@@ -511,46 +560,46 @@ V2_ACTION_REGISTRY = {
     "eloka_set_technique": V2Action(
         frozenset({"eloka"}), _ecm_technique_params),
     "eloka_set_auto": V2Action(frozenset({"eloka"}), _bool_params("enabled")),
-    "sonar_set_listen_bearing": V2Action(frozenset({"sonar"}), _bearing_params),
-    "sonar_set_focus": V2Action(frozenset({"sonar"}), _single_ref_params),
-    "sonar_clear_focus": V2Action(frozenset({"sonar"}), _no_params),
+    "sonar_set_listen_bearing": V2Action(frozenset({"sonar", "uboot_sonar"}), _bearing_params),
+    "sonar_set_focus": V2Action(frozenset({"sonar", "uboot_sonar"}), _single_ref_params),
+    "sonar_clear_focus": V2Action(frozenset({"sonar", "uboot_sonar"}), _no_params),
     "sonar_set_array_mode": V2Action(frozenset({"sonar"}),
         _enum_params("mode", ("BOW", "TOWED"))),
     "sonar_set_tas": V2Action(frozenset({"sonar"}), _bool_params("deployed")),
     "sonar_set_tow_depth": V2Action(frozenset({"sonar"}),
         _bounded_number_params("depth_m", 20, 260)),
-    "sonar_measure_bt": V2Action(frozenset({"sonar"}), _no_params),
-    "sonar_active_ping": V2Action(frozenset({"sonar"}), _no_params),
-    "sonar_set_tma_enabled": V2Action(frozenset({"sonar"}),
+    "sonar_measure_bt": V2Action(frozenset({"sonar", "uboot_sonar"}), _no_params),
+    "sonar_active_ping": V2Action(frozenset({"sonar", "uboot_sonar"}), _no_params),
+    "sonar_set_tma_enabled": V2Action(frozenset({"sonar", "uboot_sonar"}),
                                       _bool_params("enabled")),
-    "sonar_set_gain": V2Action(frozenset({"sonar"}),
+    "sonar_set_gain": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _bounded_number_params("gain_db", -12, 24)),
-    "sonar_set_audition_mode": V2Action(frozenset({"sonar"}),
+    "sonar_set_audition_mode": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _enum_params("mode", ("BROADBAND", "FILTERED", "HETERODYNE"))),
-    "sonar_set_band_preset": V2Action(frozenset({"sonar"}),
+    "sonar_set_band_preset": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _enum_params("preset", ("FULL", "LOW", "SHAFT", "MID"))),
-    "sonar_set_notch": V2Action(frozenset({"sonar"}), _bool_params("enabled")),
-    "sonar_set_cursor": V2Action(frozenset({"sonar"}), _sonar_cursor_params),
-    "sonar_mark_line": V2Action(frozenset({"sonar"}),
+    "sonar_set_notch": V2Action(frozenset({"sonar", "uboot_sonar"}), _bool_params("enabled")),
+    "sonar_set_cursor": V2Action(frozenset({"sonar", "uboot_sonar"}), _sonar_cursor_params),
+    "sonar_mark_line": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _enum_params("page", ("lofar", "demon"))),
-    "sonar_set_integration": V2Action(frozenset({"sonar"}), _integration_params),
-    "sonar_set_vernier": V2Action(frozenset({"sonar"}), _bool_params("enabled")),
-    "sonar_set_band": V2Action(frozenset({"sonar"}), _sonar_band_params),
-    "sonar_set_operator_notch": V2Action(frozenset({"sonar"}),
+    "sonar_set_integration": V2Action(frozenset({"sonar", "uboot_sonar"}), _integration_params),
+    "sonar_set_vernier": V2Action(frozenset({"sonar", "uboot_sonar"}), _bool_params("enabled")),
+    "sonar_set_band": V2Action(frozenset({"sonar", "uboot_sonar"}), _sonar_band_params),
+    "sonar_set_operator_notch": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _bounded_number_params("frequency_hz", 0.000001, 300, nullable=True)),
-    "sonar_set_peak_hold": V2Action(frozenset({"sonar"}),
+    "sonar_set_peak_hold": V2Action(frozenset({"sonar", "uboot_sonar"}),
                                     _bool_params("enabled")),
-    "sonar_set_harmonic": V2Action(frozenset({"sonar"}),
+    "sonar_set_harmonic": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _bounded_number_params("frequency_hz", 0.000001, 300, nullable=True)),
-    "sonar_designate_target": V2Action(frozenset({"sonar"}), _single_ref_params),
-    "sonar_tma_set": V2Action(frozenset({"sonar"}), _tma_hypothesis_params),
-    "sonar_assign_profile": V2Action(frozenset({"sonar"}), _assign_profile_params),
+    "sonar_designate_target": V2Action(frozenset({"sonar", "uboot_sonar"}), _single_ref_params),
+    "sonar_tma_set": V2Action(frozenset({"sonar", "uboot_sonar"}), _tma_hypothesis_params),
+    "sonar_assign_profile": V2Action(frozenset({"sonar", "uboot_sonar"}), _assign_profile_params),
     "sonar_tas_side": V2Action(frozenset({"sonar"}), _tas_side_params),
-    "sonar_set_demon_band": V2Action(frozenset({"sonar"}), _demon_band_params),
-    "sonar_set_heterodyne": V2Action(frozenset({"sonar"}),
+    "sonar_set_demon_band": V2Action(frozenset({"sonar", "uboot_sonar"}), _demon_band_params),
+    "sonar_set_heterodyne": V2Action(frozenset({"sonar", "uboot_sonar"}),
         _bounded_number_params("frequency_hz", 400, 1200)),
-    "sonar_tma_accept": V2Action(frozenset({"sonar"}), _single_ref_params),
-    "sonar_tma_copy_proposal": V2Action(frozenset({"sonar"}), _single_ref_params),
+    "sonar_tma_accept": V2Action(frozenset({"sonar", "uboot_sonar"}), _single_ref_params),
+    "sonar_tma_copy_proposal": V2Action(frozenset({"sonar", "uboot_sonar"}), _single_ref_params),
     "helicopter_launch": V2Action(frozenset({"helicopter"}), _no_params),
     "helicopter_return": V2Action(frozenset({"helicopter"}), _no_params),
     "helicopter_set_waypoint": V2Action(frozenset({"helicopter"}),
@@ -593,6 +642,14 @@ V2_ACTION_REGISTRY = {
         frozenset({"opz"}), _single_ref_params, direct_fire=True),
     "opz_launch_chaff": V2Action(
         frozenset({"opz"}), _single_ref_params, direct_fire=True),
+    # The crewed submarine's commander.
+    "uboot_set_course": V2Action(frozenset({"uboot"}), _course_params),
+    "uboot_set_speed": V2Action(frozenset({"uboot"}), _uboot_speed_params),
+    "uboot_set_depth": V2Action(frozenset({"uboot"}), _uboot_depth_params),
+    "uboot_fire": V2Action(frozenset({"uboot"}), _uboot_fire_params,
+                           direct_fire=True),
+    "uboot_decoy": V2Action(frozenset({"uboot"}), _no_params),
+    "uboot_blow": V2Action(frozenset({"uboot"}), _no_params),
 }
 
 
@@ -702,18 +759,23 @@ class CommanderServer:
         self._sessions_v2 = {}
         self._solo = False
         self._next_v2_ordinal = 0
-        self._station_generations = {station: 0 for station in STATIONS}
+        self._station_generations = {station: 0 for station in ROLES}
         self._sonar_audio = deque(maxlen=SONAR_AUDIO_RING_BLOCKS)
         self._sonar_audio_context = None
         self._sonar_audio_sequence = 0
         self._helicopter_audio = deque(maxlen=SONAR_AUDIO_RING_BLOCKS)
         self._helicopter_audio_context = None
         self._helicopter_audio_sequence = 0
+        self._uboot_audio = deque(maxlen=SONAR_AUDIO_RING_BLOCKS)
+        self._uboot_audio_context = None
+        self._uboot_audio_sequence = 0
         self._audio_condition = threading.Condition(self._lock)
         self._audio_clients = {}
         self._sonar_stream_sequence = 0
         self._sonar_stream_context = None
         self._sonar_stream_payload = None
+        self._uboot_stream_context = None
+        self._uboot_stream_payload = None
         self._sonar_stream_condition = threading.Condition(self._lock)
         self._sonar_stream_clients = {}
         self._voice_enabled = False
@@ -730,10 +792,10 @@ class CommanderServer:
         empty_chart = dict(protocol=2, revision="unpublished", size_nm=500,
                            landmasses=[], disclaimer="")
         self._v2_states = {role: _json_bytes(unpublished)
-                           for role in (None, *STATIONS)}
+                           for role in (None, *ROLES)}
         self._v2_sonar_compact_state = self._v2_states["sonar"]
         self._v2_charts = {role: _json_bytes(empty_chart)
-                           for role in (None, *STATIONS)}
+                           for role in (None, *ROLES)}
         supplied = {} if contact_analysis_assets is None else contact_analysis_assets
         if not isinstance(supplied, dict) or len(supplied) > _MAX_PREBUILT_ROUTES:
             raise ValueError("invalid prebuilt Commander assets")
@@ -898,9 +960,12 @@ class CommanderServer:
         self._voice_peers.clear()
         self._clear_sonar_audio_locked()
         self._clear_helicopter_audio_locked()
+        self._clear_uboot_audio_locked()
         self._sonar_stream_sequence += 1
         self._sonar_stream_context = None
         self._sonar_stream_payload = None
+        self._uboot_stream_context = None
+        self._uboot_stream_payload = None
         self._sonar_stream_condition.notify_all()
         self._sonar_stream_clients.clear()
         for session in self._sessions_v2.values():
@@ -931,10 +996,44 @@ class CommanderServer:
         self._helicopter_audio_sequence = 0
         self._audio_condition.notify_all()
 
+    def _clear_uboot_audio_locked(self):
+        self._uboot_audio.clear()
+        self._uboot_audio_context = None
+        self._uboot_audio_sequence = 0
+        self._audio_condition.notify_all()
+
+    def _clear_role_audio_locked(self, role):
+        if role == "sonar":
+            self._clear_sonar_audio_locked()
+        elif role == "helicopter":
+            self._clear_helicopter_audio_locked()
+        elif role == "uboot_sonar":
+            self._clear_uboot_audio_locked()
+
+    def _audio_ring(self, role):
+        """(blocks, context) of one audio role's stream."""
+        if role == "sonar":
+            return self._sonar_audio, self._sonar_audio_context
+        if role == "helicopter":
+            return self._helicopter_audio, self._helicopter_audio_context
+        return self._uboot_audio, self._uboot_audio_context
+
+    def _stream_for(self, role):
+        """(context, payload) of one sonar room's waterfall stream."""
+        if role == "uboot_sonar":
+            return self._uboot_stream_context, self._uboot_stream_payload
+        return self._sonar_stream_context, self._sonar_stream_payload
+
+    @staticmethod
+    def _side_conflict(session, station):
+        """A session never holds (or requests into) roles of both sides."""
+        side = role_side(station)
+        return any(role_side(role) != side for role in session["leases"])
+
     @staticmethod
     def _station_grants(station=None):
         return {
-            "command": station in STATIONS,
+            "command": station in ROLES,
             "direct_fire": False,
             "sonar_audio": False,
         }
@@ -952,6 +1051,8 @@ class CommanderServer:
             self._clear_sonar_audio_locked()
         if "helicopter" in (session["active_station"], station):
             self._clear_helicopter_audio_locked()
+        if "uboot_sonar" in (session["active_station"], station):
+            self._clear_uboot_audio_locked()
         session["active_station"] = station
         session["active_generation"] += 1
         session["held_commands"].clear()
@@ -983,16 +1084,18 @@ class CommanderServer:
             self._clear_sonar_audio_locked()
         if station == "helicopter":
             self._clear_helicopter_audio_locked()
+        if station == "uboot_sonar":
+            self._clear_uboot_audio_locked()
         del session["leases"][station]
         session["requests"].pop(station, None)
         self._station_generations[station] += 1
         if session["active_station"] == station:
-            replacement = next((item for item in STATIONS if item in session["leases"]), None)
+            replacement = next((item for item in ROLES if item in session["leases"]), None)
             self._set_active_station_locked(session, replacement, reason)
         return True
 
     def _clear_session_authority_locked(self, session, reason="session_revoked"):
-        for station in tuple(STATIONS):
+        for station in tuple(ROLES):
             if station in session["leases"]:
                 self._release_station_locked(session, station, reason)
         session["requests"].clear()
@@ -1360,6 +1463,7 @@ class CommanderServer:
             self._expire_locked()
             self._clear_sonar_audio_locked()
             self._clear_helicopter_audio_locked()
+            self._clear_uboot_audio_locked()
             self._v2_proposals.clear()
             self._v2_host = _json_bytes({"protocol": 2, "phase": "blocked"})
             self._v2_events.clear()
@@ -1379,11 +1483,11 @@ class CommanderServer:
         """Return a detached, deterministic local-host roster."""
         with self._lock:
             self._expire_locked()
-            station_order = {station: index for index, station in enumerate(STATIONS)}
+            station_order = {station: index for index, station in enumerate(ROLES)}
             sessions = sorted(
                 self._sessions_v2.values(),
                 key=lambda session: (
-                    station_order.get(session["active_station"], len(STATIONS)),
+                    station_order.get(session["active_station"], len(ROLES)),
                     session["ordinal"],
                 ),
             )
@@ -1404,14 +1508,14 @@ class CommanderServer:
                         "grants": (dict(session["leases"][station]["grants"])
                                    if station in session["leases"]
                                    else self._station_grants()),
-                    } for station in STATIONS
+                    } for station in ROLES
                 },
                 "presence": session["presence"],
             } for session in sessions]
 
     def station_leased(self, station: str) -> bool:
         """Return whether a v2 client currently owns this station."""
-        if station not in STATIONS:
+        if station not in ROLES:
             raise ValueError("invalid station")
         with self._lock:
             self._expire_locked()
@@ -1419,12 +1523,12 @@ class CommanderServer:
                        for session in self._sessions_v2.values())
 
     def grant_station(self, client_id, station) -> bool:
-        if not isinstance(client_id, str) or station not in STATIONS:
+        if not isinstance(client_id, str) or station not in ROLES:
             raise ValueError("invalid client or station")
         with self._lock:
             self._expire_locked()
             session = self._session_by_client_locked(client_id)
-            if session is None:
+            if session is None or self._side_conflict(session, station):
                 return False
             holder = next((candidate for candidate in self._sessions_v2.values()
                            if station in candidate["leases"]), None)
@@ -1449,7 +1553,7 @@ class CommanderServer:
     def resolve_station_request(self, client_id, station, request_generation, grants=None) -> bool:
         """Atomically decide an exact pending request; never take over a lease."""
         capabilities = {"command", "direct_fire", "sonar_audio"}
-        if (type(client_id) is not str or station not in STATIONS
+        if (type(client_id) is not str or station not in ROLES
                 or type(request_generation) is not int
                 or grants is not None and (type(grants) is not dict
                     or set(grants) != capabilities
@@ -1457,8 +1561,8 @@ class CommanderServer:
             return False
         if grants is not None and (
                 not grants["command"]
-                or grants["direct_fire"] and station not in ("weapons", "helicopter", "opz")
-                or grants["sonar_audio"] and station not in ("sonar", "helicopter")):
+                or grants["direct_fire"] and station not in DIRECT_FIRE_ROLES
+                or grants["sonar_audio"] and station not in SONAR_AUDIO_ROLES):
             return False
         with self._lock:
             self._expire_locked()
@@ -1468,7 +1572,8 @@ class CommanderServer:
             if grants is None:
                 del session["requests"][station]
                 return True
-            if any(station in item["leases"] for item in self._sessions_v2.values()):
+            if (any(station in item["leases"] for item in self._sessions_v2.values())
+                    or self._side_conflict(session, station)):
                 return False
             self._station_generations[station] += 1
             session["leases"][station] = {
@@ -1480,7 +1585,7 @@ class CommanderServer:
             return True
 
     def reject_station_request(self, client_id, station=None, request_generation=None) -> bool:
-        if (not isinstance(client_id, str) or station is not None and station not in STATIONS
+        if (not isinstance(client_id, str) or station is not None and station not in ROLES
                 or request_generation is not None and type(request_generation) is not int):
             raise ValueError("invalid client")
         with self._lock:
@@ -1489,7 +1594,7 @@ class CommanderServer:
             if session is None:
                 return False
             if station is None:
-                station = next((item for item in STATIONS if item in session["requests"]), None)
+                station = next((item for item in ROLES if item in session["requests"]), None)
             if station is None or station not in session["requests"]:
                 return False
             if (request_generation is not None
@@ -1499,7 +1604,7 @@ class CommanderServer:
             return True
 
     def revoke_station(self, station) -> bool:
-        if station not in STATIONS:
+        if station not in ROLES:
             raise ValueError("invalid station")
         with self._lock:
             self._expire_locked()
@@ -1549,7 +1654,7 @@ class CommanderServer:
                 session["simlog"] = enabled
                 return True
             station = session["active_station"] if station is None else station
-            if station not in STATIONS:
+            if station not in ROLES:
                 if explicit_station:
                     raise ValueError("invalid client grant")
                 return False
@@ -1558,9 +1663,9 @@ class CommanderServer:
                 return False
             if capability == "direct_fire" and enabled and (
                     not lease["grants"]["command"]
-                    or station not in ("weapons", "helicopter", "opz")):
+                    or station not in DIRECT_FIRE_ROLES):
                 return False
-            if capability == "sonar_audio" and enabled and station not in ("sonar", "helicopter"):
+            if capability == "sonar_audio" and enabled and station not in SONAR_AUDIO_ROLES:
                 return False
             changed = lease["grants"][capability] != enabled
             lease["grants"][capability] = enabled
@@ -1573,14 +1678,11 @@ class CommanderServer:
             elif capability == "direct_fire" and not enabled:
                 self._reject_direct_fire_commands_locked(session, station)
             elif capability == "sonar_audio" and not enabled:
-                if station == "helicopter":
-                    self._clear_helicopter_audio_locked()
-                else:
-                    self._clear_sonar_audio_locked()
+                self._clear_role_audio_locked(station)
             return True
 
     def activate_station(self, client_id, station, station_generation) -> bool:
-        if (not isinstance(client_id, str) or station not in STATIONS
+        if (not isinstance(client_id, str) or station not in ROLES
                 or type(station_generation) is not int):
             raise ValueError("invalid station activation")
         with self._lock:
@@ -1605,6 +1707,7 @@ class CommanderServer:
         with self._lock:
             self._clear_sonar_audio_locked()
             self._clear_helicopter_audio_locked()
+            self._clear_uboot_audio_locked()
             for session in self._sessions_v2.values():
                 self._reject_session_commands_locked(session, reason)
 
@@ -1613,7 +1716,7 @@ class CommanderServer:
         with self._lock:
             self._expire_locked()
             # Host controls run first in a frame, then stations in fixed order.
-            order = {station: index for index, station in enumerate(STATIONS)}
+            order = {station: index for index, station in enumerate(ROLES)}
             order[HOST_ROLE] = -1
             result = []
             for session in self._sessions_v2.values():
@@ -1706,7 +1809,7 @@ class CommanderServer:
 
     def publish_v2(self, states: dict, charts: dict):
         """Atomically replace immutable, role-keyed protocol-v2 publications."""
-        expected = {None, *STATIONS}
+        expected = {None, *ROLES}
         status_fields = {"protocol", "version", "session", "epoch", "revision",
                          "seq", "phase", "role", "chart_revision"}
         assigned_fields = status_fields | {"clock", "environment", "mission",
@@ -1720,7 +1823,7 @@ class CommanderServer:
         # Roles with identical visibility share one chart object, so it is
         # serialised once per publication instead of once per role.
         chart_bytes_by_object = {}
-        for role in (None, *STATIONS):
+        for role in (None, *ROLES):
             state, chart = states[role], charts[role]
             redacted = state == states[None] and chart == charts[None]
             if (not isinstance(state, dict) or not isinstance(chart, dict)
@@ -1768,6 +1871,14 @@ class CommanderServer:
                 self._sonar_stream_payload = None
             else:
                 self._sonar_stream_context, self._sonar_stream_payload = packed
+            packed = (_sonar_stream_payload(states["uboot_sonar"],
+                                             self._sonar_stream_sequence, "uboot_sonar")
+                      if states["uboot_sonar"].get("role") == "uboot_sonar" else None)
+            if packed is None:
+                self._uboot_stream_context = None
+                self._uboot_stream_payload = None
+            else:
+                self._uboot_stream_context, self._uboot_stream_payload = packed
             self._sonar_stream_condition.notify_all()
 
     def publish_host_v2(self, host: dict):
@@ -1865,7 +1976,7 @@ class CommanderServer:
                 or type(latest_seq) is not int
                 or not 0 <= latest_seq <= _SAFE_INTEGER_MAX
                 or type(events_by_role) is not dict
-                or set(events_by_role) != set(STATIONS)
+                or set(events_by_role) != set(ROLES)
                 or any(not self._event_rows(rows)
                        or rows and rows[-1]["seq"] > latest_seq
                        for rows in events_by_role.values())
@@ -1874,7 +1985,7 @@ class CommanderServer:
         with self._lock:
             self._expire_locked()
             base = {}
-            for role in STATIONS:
+            for role in ROLES:
                 base[role] = _json_bytes({
                     "protocol": 2, "session": world_session, "epoch": world_epoch,
                     "role": role, "latest_seq": latest_seq,
@@ -1907,7 +2018,7 @@ class CommanderServer:
         if (not _ref(world_session) or type(world_epoch) is not int
                 or not 0 <= world_epoch <= _SAFE_INTEGER_MAX
                 or type(entries_by_role) is not dict
-                or set(entries_by_role) != set(STATIONS)):
+                or set(entries_by_role) != set(ROLES)):
             raise ValueError("invalid v2 simlog publication")
         encoded = {}
         for role, entries in entries_by_role.items():
@@ -1961,6 +2072,70 @@ class CommanderServer:
     def clear_helicopter_audio(self):
         with self._lock:
             self._clear_helicopter_audio_locked()
+
+    def clear_uboot_audio(self):
+        with self._lock:
+            self._clear_uboot_audio_locked()
+
+    def _uboot_audio_holder_locked(self):
+        return next(((digest, session) for digest, session
+                     in self._sessions_v2.items()
+                     if "uboot_sonar" in session["leases"]
+                     and session["active_station"] == "uboot_sonar"), None)
+
+    def prepare_uboot_audio(self, *, world_session: str, world_epoch: int):
+        """Bind an empty stream to the current granted submarine sonar holder."""
+        if threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("uboot audio preparation requires the main thread")
+        if (type(world_session) is not str or not world_session
+                or type(world_epoch) is not int or world_epoch < 0):
+            raise ValueError("invalid uboot audio context")
+        with self._lock:
+            self._expire_locked()
+            holder = self._uboot_audio_holder_locked()
+            if (holder is None
+                    or not holder[1]["leases"]["uboot_sonar"]["grants"]["sonar_audio"]):
+                self._clear_uboot_audio_locked()
+                return None
+            generation = holder[1]["leases"]["uboot_sonar"]["generation"]
+            context = (holder[0], generation, holder[1]["active_generation"],
+                       world_session, world_epoch)
+            if context != self._uboot_audio_context:
+                self._clear_uboot_audio_locked()
+                self._uboot_audio_context = context
+            return generation
+
+    def publish_uboot_audio(self, pcm: bytes, *, world_session: str,
+                            world_epoch: int, station_generation: int):
+        """Publish one submarine sonar receiver block from the main thread."""
+        if threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("uboot audio publication requires the main thread")
+        if (type(pcm) is not bytes or len(pcm) != SONAR_AUDIO_BYTES
+                or type(world_session) is not str or not world_session
+                or type(world_epoch) is not int or world_epoch < 0
+                or type(station_generation) is not int or station_generation < 0):
+            raise ValueError("invalid uboot audio publication")
+        with self._lock:
+            self._expire_locked()
+            holder = self._uboot_audio_holder_locked()
+            if holder is None:
+                self._clear_uboot_audio_locked()
+                return False
+            lease = holder[1]["leases"]["uboot_sonar"]
+            context = (holder[0], station_generation,
+                       holder[1]["active_generation"], world_session, world_epoch)
+            if (not lease["grants"]["sonar_audio"]
+                    or lease["generation"] != station_generation
+                    or context != self._uboot_audio_context):
+                self._clear_uboot_audio_locked()
+                return False
+            if self._uboot_audio_sequence >= _SAFE_INTEGER_MAX:
+                self._clear_uboot_audio_locked()
+                self._uboot_audio_context = context
+            self._uboot_audio_sequence += 1
+            self._uboot_audio.append((self._uboot_audio_sequence, pcm))
+            self._audio_condition.notify_all()
+            return True
 
     def prepare_helicopter_audio(self, *, world_session: str, world_epoch: int):
         if threading.current_thread() is not threading.main_thread():
@@ -2359,7 +2534,7 @@ class _Handler(BaseHTTPRequestHandler):
                     for station in candidate["leases"]}
         active = session["active_station"]
         active_lease = session["leases"].get(active)
-        requested = next((station for station in STATIONS
+        requested = next((station for station in ROLES
                           if station in session["requests"]), None)
         active_grants = (CommanderServer._station_grants() if active_lease is None
                          else dict(active_lease["grants"]))
@@ -2396,7 +2571,7 @@ class _Handler(BaseHTTPRequestHandler):
                                if station in session["leases"] else
                                CommanderServer._station_grants()),
                 }
-                for station in STATIONS
+                for station in ROLES
             },
         }
 
@@ -2485,10 +2660,11 @@ class _Handler(BaseHTTPRequestHandler):
             if session is None:
                 self._v2_unauthorized(presented)
                 return
-            lease = session["leases"].get("sonar")
-            if (session["active_station"] != "sonar" or lease is None
-                    or owner._sonar_stream_payload is None
-                    or owner._sonar_stream_context is None):
+            stream_role = session["active_station"]
+            lease = session["leases"].get(stream_role)
+            stream_context, stream_payload = owner._stream_for(stream_role)
+            if (stream_role not in SONAR_ROLES or lease is None
+                    or stream_payload is None or stream_context is None):
                 self.send_error(403)
                 return
             if digest in owner._sonar_stream_clients:
@@ -2496,7 +2672,7 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             station_generation = lease["generation"]
             active_generation = session["active_generation"]
-            world_context = owner._sonar_stream_context
+            world_context = stream_context
             owner._sonar_stream_clients[digest] = client_token
         accept = base64.b64encode(hashlib.sha1(
             key.encode("ascii") + _WEBSOCKET_GUID).digest()).decode("ascii")
@@ -2515,21 +2691,22 @@ class _Handler(BaseHTTPRequestHandler):
                 with owner._sonar_stream_condition:
                     owner._expire_locked()
                     current = owner._sessions_v2.get(digest)
-                    lease = None if current is None else current["leases"].get("sonar")
+                    lease = None if current is None else current["leases"].get(stream_role)
+                    stream_context, stream_payload = owner._stream_for(stream_role)
                     valid = (owner._running and current is session
                              and owner._sonar_stream_clients.get(digest) is client_token
-                             and current["active_station"] == "sonar"
+                             and current["active_station"] == stream_role
                              and lease is not None
                              and lease["generation"] == station_generation
                              and current["active_generation"] == active_generation
-                             and owner._sonar_stream_context == world_context)
+                             and stream_context == world_context)
                     if not valid:
                         break
                     if owner._sonar_stream_sequence == last_sequence:
                         owner._sonar_stream_condition.wait(timeout=1.0)
                         continue
                     last_sequence = owner._sonar_stream_sequence
-                    payload = owner._sonar_stream_payload
+                    payload = stream_payload
                     current["last_get"] = time.monotonic()
                 if payload is not None:
                     self.connection.sendall(_websocket_frame(payload))
@@ -2578,8 +2755,7 @@ class _Handler(BaseHTTPRequestHandler):
                 self._v2_unauthorized(presented)
                 return
             lease = session["leases"].get(role)
-            context = (owner._sonar_audio_context if role == "sonar"
-                       else owner._helicopter_audio_context)
+            context = owner._audio_ring(role)[1]
             if (session["active_station"] != role or lease is None
                     or not lease["grants"]["sonar_audio"] or context is None
                     or context[:3] != (digest, lease["generation"],
@@ -2617,16 +2793,14 @@ class _Handler(BaseHTTPRequestHandler):
                     owner._expire_locked()
                     current = owner._sessions_v2.get(digest)
                     lease = None if current is None else current["leases"].get(role)
-                    audio_context = (owner._sonar_audio_context if role == "sonar"
-                                     else owner._helicopter_audio_context)
+                    audio_context = owner._audio_ring(role)[1]
                     if (not owner._running or current is not session
                             or owner._audio_clients.get(client_key) is not marker
                             or current["active_station"] != role or lease is None
                             or not lease["grants"]["sonar_audio"]
                             or audio_context != context):
                         break
-                    blocks = (owner._sonar_audio if role == "sonar"
-                              else owner._helicopter_audio)
+                    blocks = owner._audio_ring(role)[0]
                     available = [entry for entry in blocks
                                  if last_sequence is None or entry[0] > last_sequence]
                     if not available:
@@ -2952,12 +3126,12 @@ class _Handler(BaseHTTPRequestHandler):
                           or type(body["client_id"]) is not str
                           or len(body["client_id"]) > 64
                           or type(body["station"]) is not str
-                          or body["station"] not in (*STATIONS, "")
+                          or body["station"] not in (*ROLES, "")
                           or type(body["value"]) is not bool):
                         status, response = 400, {"error": "invalid_request"}
                     elif ((body["action"] in {"assign", "revoke", "command",
                                                  "direct_fire", "sonar_audio"}
-                           and (not body["client_id"] or body["station"] not in STATIONS))
+                           and (not body["client_id"] or body["station"] not in ROLES))
                           or (body["action"] in {"revoke_client", "simlog"}
                               and (not body["client_id"] or body["station"] != ""))
                           or (body["action"] in {"rotate_code", "accept_target",
@@ -3046,7 +3220,7 @@ class _Handler(BaseHTTPRequestHandler):
                         status, response = 403, {"error": "forbidden"}
                     elif self.path.endswith("/request"):
                         if (not isinstance(body, dict) or body.keys() != {"station"}
-                                or body["station"] not in STATIONS):
+                                or body["station"] not in ROLES):
                             status, response = 400, {"error": "invalid_request"}
                         else:
                             station = body["station"]
@@ -3058,7 +3232,7 @@ class _Handler(BaseHTTPRequestHandler):
                     elif (type(body) is not dict
                           or set(body) != {"station", "station_generation",
                                            "active_generation"}
-                          or body["station"] not in STATIONS
+                          or body["station"] not in ROLES
                           or type(body["station_generation"]) is not int
                           or not 0 <= body["station_generation"] <= _SAFE_INTEGER_MAX
                           or type(body["active_generation"]) is not int
@@ -3160,9 +3334,8 @@ class _Handler(BaseHTTPRequestHandler):
                             session["last_command_seq"] = body["seq"]
                             owner._trim_command_history_locked(session)
                             status, response = 202, {"status": "pending", "id": body["id"]}
-            elif self.path in ("/api/v2/sonar/audio", "/api/v2/helicopter/audio"):
-                audio_role = ("helicopter" if self.path == "/api/v2/helicopter/audio"
-                              else "sonar")
+            elif self.path in _AUDIO_POLL_ROUTES:
+                audio_role = _AUDIO_POLL_ROUTES[self.path]
                 try:
                     session, digest, presented = self._authenticated_v2_locked(renew=True)
                 except (UnicodeEncodeError, ValueError):
@@ -3202,10 +3375,7 @@ class _Handler(BaseHTTPRequestHandler):
                         context = (digest, session["leases"][audio_role]["generation"],
                                    session["active_generation"],
                                    body["world_session"], body["world_epoch"])
-                        audio_context = (owner._helicopter_audio_context if audio_role == "helicopter"
-                                         else owner._sonar_audio_context)
-                        audio_blocks = (owner._helicopter_audio if audio_role == "helicopter"
-                                        else owner._sonar_audio)
+                        audio_blocks, audio_context = owner._audio_ring(audio_role)
                         if audio_context != context:
                             status, response = 503, {"error": "unavailable"}
                         else:

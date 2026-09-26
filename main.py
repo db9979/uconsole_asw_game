@@ -23,6 +23,10 @@ def main(argv=None) -> int:
                         help="start Remote Crew in solo mode for this launch: one "
                              "paired browser operates every station and the game "
                              "controls (never persisted)")
+    parser.add_argument("--play-sub", action="store_true",
+                        help="the uConsole plays the hostile submarine for this "
+                             "launch; the frigate is crewed through Remote Crew "
+                             "(F9) or runs on autocrew (never persisted)")
     parser.add_argument("--web-host", action="store_true",
                         help="run one browser-only room behind a local HTTPS reverse proxy")
     parser.add_argument("--public-origin", metavar="HTTPS_ORIGIN",
@@ -98,6 +102,8 @@ def main(argv=None) -> int:
         game.commander.public_origin = args.public_origin
     if args.solo_crew:
         game.commander.autostart_solo()
+    if getattr(args, "play_sub", False):
+        game.local_side = "uboot"
     game.run()
     return 0
 

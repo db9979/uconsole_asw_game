@@ -196,7 +196,10 @@ def test_host_setup_login_and_station_transfer(tmp_path):
         assert request(server, "/api/v2/session", cookie=crew_cookie)[2]["station"] is None
         rebased = request(server, "/api/v2/session", cookie=replacement_cookie)[2]
         assert rebased["host"] is not None
-        assert all(row["status"] == "mine" for row in rebased["stations"].values())
+        # The host holds every frigate station; the submarine roles are
+        # never part of the web-host room.
+        assert set(station for station, detail in rebased["stations"].items()
+                   if detail["status"] == "mine") == set(STATIONS)
     finally:
         server.stop()
 

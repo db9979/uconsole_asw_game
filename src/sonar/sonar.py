@@ -28,6 +28,12 @@ def tgt_gone(tgt) -> bool:
     return bool(getattr(tgt, "hit", False))
 
 
+def hull_array_depth_m(observer) -> float:
+    """Depth of the observer's hull array: 5 m under a surface ship, the
+    boat's own depth for a submarine observer (``sonar_depth_m``)."""
+    return float(getattr(observer, "sonar_depth_m", 5.0))
+
+
 def snr_db(passive_range_nm: float, dist_nm: float) -> float:
     """SNR: 20*log10(R_eff/d). 0 dB = am Rande der Detektion."""
     return 20.0 * math.log10(max(passive_range_nm, 1e-6)
@@ -960,7 +966,7 @@ class SonarSystem:
                 continue
             source_depth = (self.towed_depth_m if mode == "TOWED" else
                             getattr(frigate, "dip_depth_m", 5.0)
-                            if mode == "DIPPING" else 5.0)
+                            if mode == "DIPPING" else hull_array_depth_m(frigate))
             if (hasattr(world, "sonar_path_blocked")
                     and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
                                                  target.x, target.y,
@@ -1027,7 +1033,8 @@ class SonarSystem:
             1.0, int(equation.REFERENCE_SEA_STATE)) / config.SONAR_PASSIVE_BASE_NM
         target_bonus = (1.0 + 0.8 * (1.0 - tgt.quiet_factor())) * source_level_factor(tgt)
         thermo = world.thermocline_depth_m(tgt.x, tgt.y)
-        sensor_depth = self.towed_depth_m if mode == "TOWED" else 5.0
+        sensor_depth = (self.towed_depth_m if mode == "TOWED"
+                        else hull_array_depth_m(frigate))
         same_layer = (sensor_depth < thermo) == (tgt.depth < thermo)
         array_factor = 1.0
         if mode == "TOWED":
@@ -1666,7 +1673,8 @@ class SonarSystem:
         ocean = getattr(world, "ocean", None)
         if ocean is None:
             return
-        source_depth = self.towed_depth_m if mode == "TOWED" else 5.0
+        source_depth = (self.towed_depth_m if mode == "TOWED"
+                        else hull_array_depth_m(frigate))
         for index, hazard in enumerate(ocean.hazards):
             if (hazard.kind != "wreck"
                     or len(self._pending_clutter) >= self.MAX_PENDING_CLUTTER):
@@ -1929,7 +1937,8 @@ class SonarSystem:
                         and hasattr(tgt, "hear_ping"))
             if dist >= active_range and not can_hear:
                 continue
-            source_depth = self.towed_depth_m if mode == "TOWED" else 5.0
+            source_depth = (self.towed_depth_m if mode == "TOWED"
+                            else hull_array_depth_m(frigate))
             if (hasattr(world, "sonar_path_blocked")
                     and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
                                                  tgt.x, tgt.y,

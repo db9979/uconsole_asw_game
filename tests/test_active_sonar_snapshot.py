@@ -36,7 +36,7 @@ def test_moving_geometry_and_later_terrain_cannot_remeasure_echo(monkeypatch):
     ship, target, world = scene()
     sonar, immediate = SonarSystem(7), SonarSystem(7)
     heard = []
-    target.hear_ping = lambda: heard.append(True)
+    target.hear_ping = lambda **_: heard.append(True)
     expected = immediate.apply_ping(ship, [target], world, 10, notify_ping=False)[0]
     rng_state = sonar.rng.getstate(), random.getstate()
     sonar.queue_ping(ship, [target], world, 10)
@@ -101,7 +101,7 @@ def test_intercept_only_does_not_create_future_echo_opportunity():
     ship, target, world = scene()
     target.x = ship.x + (config.SONAR_ACTIVE_BASE_NM + config.SONAR_PING_HEAR_RANGE_NM) / 2
     heard = []
-    target.hear_ping = lambda: heard.append(True)
+    target.hear_ping = lambda **_: heard.append(True)
     sonar = SonarSystem()
     sonar.queue_ping(ship, [target], world, 0)
     assert heard == [True] and not sonar._pending_pings

@@ -63,7 +63,7 @@ class Target:
         return math.degrees(math.atan2(
             self.x - observer.x, -(self.y - observer.y))) % 360.0
 
-    def hear_ping(self):
+    def hear_ping(self, source=None):
         self.heard += 1
 
 

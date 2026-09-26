@@ -87,7 +87,7 @@ export function init() {
   on("session:forgotten", forgetPage);
   on("connection", (message) => {
     renderConnection();
-    if (message) $("connection").textContent = t(message);
+    if (message) $("connection").textContent = $("connection").title = t(message);
     renderActionState();
     renderHost();
     if (S.v2State?.role) renderRoleVisuals(S.v2State.role);

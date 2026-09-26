@@ -5,6 +5,14 @@ export const t = (key, values = {}) => (S.catalog[prefix + key] || "").replace(/
 export const finite = (value) => typeof value === "number" && Number.isFinite(value);
 export const hasPosition = (entity) => finite(entity?.x) && finite(entity?.y);
 export const number = (value, digits = 1) => finite(value) ? value.toLocaleString(S.language, { minimumFractionDigits: digits, maximumFractionDigits: digits }) : t("unavailable");
+// Durations as h:mm:ss (m:ss below an hour); world time of day as hh:mm.
+export const duration = (seconds) => {
+  if (!finite(seconds)) return t("unavailable");
+  const total = Math.max(0, Math.round(seconds)), h = Math.floor(total / 3600), m = Math.floor(total / 60) % 60, s = total % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`;
+};
+export const timeOfDay = (hours) => finite(hours)
+  ? `${String(Math.floor(hours) % 24).padStart(2, "0")}:${String(Math.floor(hours * 60) % 60).padStart(2, "0")}` : t("unavailable");
 export const unit = (value, symbol, digits = 1) => finite(value) ? `${number(value, digits)} ${symbol}` : t("unavailable");
 export const enumText = (map, value) => t(map[value] || "unknown");
 export const classificationText = (value) => Object.hasOwn(classes, value) ? enumText(classes, value) :

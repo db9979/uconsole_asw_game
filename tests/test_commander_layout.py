@@ -874,3 +874,96 @@ def test_native_crew_confirmation_layout_is_bounded(language, large, kind, monke
         game.commander.stop()
         game.audio.shutdown()
         layout.configure_for(large_text=False)
+
+
+@pytest.mark.parametrize("width", [1280, 1536, 1920])
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_status_bar_items_never_overlap(tmp_path, width, language):
+    """The one-row status bar gives way (hides, truncates) instead of overlapping."""
+    from commander_web import run_module_probe
+    source = catalogs()[language == "de"]
+    probe = r"""
+import { loadLanguage } from "./js/core/i18n.js";
+import { metrics } from "./js/views/dom.js";
+import { duration, t, timeOfDay } from "./js/core/format.js";
+const $ = (id) => document.getElementById(id);
+await loadLanguage("__LANG__");
+$("bootstrap").hidden = true; $("shell").hidden = false; $("pairing").hidden = true;
+document.body.classList.add("workstation-mode");
+$("operations").hidden = false; $("workstation-station-label").hidden = false;
+$("workstation-tools").hidden = false; $("disconnect").hidden = false; $("disabled-control-explain").hidden = false;
+for (const [key, name] of [["1", "bridge"], ["2", "sonar"], ["6", "radio"], ["9", "eloka"]]) {
+  const tab = document.createElement("button"); tab.className = "station-tab";
+  const badge = document.createElement("span"); badge.className = "station-key"; badge.textContent = key;
+  tab.append(badge, t(`station_${name}`)); $("station-tabs").append(tab);
+}
+$("mission-name").textContent = "Doppeljagd im Nordmeer"; $("phase").textContent = t("phase_live");
+metrics($("mission-metrics"), [["status_remaining", duration(10794)], ["status_elapsed", duration(3725)],
+  ["status_world", timeOfDay(7.5)]]);
+$("utc-clock").textContent = "10:25:18";
+$("connection").dataset.state = "connected"; $("connection").textContent = t("connection_connected", {age: 0});
+$("sound").textContent = t("sound_off");
+requestAnimationFrame(() => {
+  const items = [...$("statusbar").querySelectorAll(":scope > *, .status-actions > *, .status-clocks > *, .status-mission > *")]
+    .filter((element) => getComputedStyle(element).display !== "none" && element.getClientRects().length);
+  const boxes = items.map((element) => [element, element.getBoundingClientRect()]);
+  const overlaps = [];
+  boxes.forEach(([a, first], index) => boxes.slice(index + 1).forEach(([b, second]) => {
+    if (a.contains(b) || b.contains(a)) return;
+    if (Math.min(first.right, second.right) - Math.max(first.left, second.left) > 1 &&
+        Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top) > 1)
+      overlaps.push(`${a.id || a.className} / ${b.id || b.className}`);
+  }));
+  const bar = $("statusbar").getBoundingClientRect();
+  document.documentElement.dataset.result = JSON.stringify({overlaps, height: bar.height,
+    rightmost: Math.max(...boxes.map(([, box]) => box.right)), width: innerWidth,
+    remaining: $("mission-metrics").textContent});
+});
+""".replace("__LANG__", language)
+    ui = json.dumps({key: value for key, value in source.items() if key.startswith(PREFIX)}).encode()
+    root = run_module_probe(tmp_path, probe, window=(width, 400),
+                            routes={f"/api/v2/ui?lang={language}": ("application/json", ui)})
+    assert "data-result" in root, root.get("data-failure")
+    report = json.loads(root["data-result"])
+    assert report["overlaps"] == [], report
+    assert report["rightmost"] <= report["width"] + 1, report
+    assert report["height"] < 60, report          # one row
+    assert "2:59:54" in report["remaining"] and "1:02:05" in report["remaining"], report
+
+
+@pytest.mark.parametrize("width,height", [(1280, 720), (1920, 1080), (2560, 1440)])
+@pytest.mark.parametrize("tab", ["guide", "contacts", "lookout"])
+def test_overlays_stay_inside_the_viewport_with_a_visible_close_button(tmp_path, width, height, tab):
+    from commander_web import run_module_probe
+    source = catalogs()[0]
+    probe = r"""
+import { loadLanguage } from "./js/core/i18n.js";
+import { activateTab } from "./js/views/lobby.js";
+const $ = (id) => document.getElementById(id);
+await loadLanguage("en");
+$("bootstrap").hidden = true; $("shell").hidden = false; $("pairing").hidden = true;
+document.body.classList.add("workstation-mode");
+$("operations").hidden = false;
+activateTab("__TAB__", false);
+requestAnimationFrame(() => {
+  const box = (element) => element.getBoundingClientRect();
+  const panel = box($("panel-__TAB__"));
+  const close = $("panel-__TAB__").querySelector(".overlay-close");
+  const button = box(close);
+  const topmost = document.elementFromPoint(button.left + button.width / 2, button.top + button.height / 2);
+  document.documentElement.dataset.result = JSON.stringify({
+    panel: [panel.left, panel.top, panel.right, panel.bottom], viewport: [innerWidth, innerHeight],
+    button: [button.left, button.top, button.right, button.bottom], closeOnTop: topmost === close,
+    operationsVisible: !$("panel-operations").hidden});
+});
+""".replace("__TAB__", tab)
+    ui = json.dumps({key: value for key, value in source.items() if key.startswith(PREFIX)}).encode()
+    root = run_module_probe(tmp_path, probe, window=(width, height),
+                            routes={"/api/v2/ui?lang=en": ("application/json", ui)})
+    assert "data-result" in root, root.get("data-failure")
+    report = json.loads(root["data-result"])
+    left, top, right, bottom = report["panel"]
+    assert left >= 0 and top >= 0 and right <= width and bottom <= height, report
+    bl, bt, br, bb = report["button"]
+    assert left <= bl and br <= right and top <= bt and bb <= bottom and br - bl >= 24, report
+    assert report["closeOnTop"] and report["operationsVisible"], report

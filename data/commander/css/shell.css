@@ -30,7 +30,8 @@
 .brand-mark::after { content: ""; position: absolute; inset: .22rem; border-top: 2px solid var(--live); border-left: 2px solid var(--live); }
 
 .workstation-station { display: flex; align-items: center; gap: .3rem; flex: 0 1 auto; min-width: 0; }
-.station-tabs { display: flex; gap: .15rem; min-width: 0; overflow-x: auto; }
+.station-tabs { display: flex; gap: .15rem; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.station-tabs::-webkit-scrollbar { display: none; }
 .station-tab {
   display: inline-flex; align-items: center; gap: .35rem; flex: 0 0 auto; min-height: 2rem; padding: .15rem .6rem;
   border: 1px solid transparent; border-bottom: 2px solid transparent; border-radius: var(--radius) var(--radius) 0 0;
@@ -41,24 +42,24 @@
 .station-tab[aria-selected="true"] .station-key { border-color: var(--live); color: var(--live); }
 #workstation-add-station { flex: 0 0 auto; min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
 
-.status-mission { display: flex; align-items: center; gap: .5rem; flex: 1 1 8rem; min-width: 0; }
+.status-mission { display: flex; align-items: center; gap: .5rem; flex: 1 1 8rem; min-width: 0; overflow: hidden; }
 .status-mission h1 { font-size: var(--font-md); font-weight: 600; letter-spacing: 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.badge { display: inline-block; flex: 0 0 auto; padding: .1rem .45rem; border: 1px solid var(--line-strong); border-radius: 2px; color: var(--text-dim); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .06em; }
+.badge { display: inline-block; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .1rem .45rem; border: 1px solid var(--line-strong); border-radius: 2px; color: var(--text-dim); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .06em; }
 .badge:empty { display: none; }
 
 .status-clocks { display: flex; align-items: center; gap: .9rem; flex: 0 0 auto; }
 .status-clocks .metrics { display: flex; gap: .9rem; }
-.status-clocks .metrics > div, .utc-clock { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.status-clocks .metrics > div, .utc-clock { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; cursor: default; }
 .status-clocks dt, .utc-clock span { font-size: .62rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: .1em; white-space: nowrap; }
 .status-clocks dd, .utc-clock time { font-size: var(--font-sm); color: var(--live); white-space: nowrap; }
 .status-clocks .metrics:empty { display: none; }
 
 .connection {
-  display: flex; align-items: center; gap: .45rem; flex: 0 1 auto; min-width: 0; max-width: 22rem; margin: 0;
+  display: block; flex: 0 1 auto; min-width: 0; max-width: 22rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   padding: .2rem .6rem; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-2);
   color: var(--live-2); font-size: var(--font-xs); line-height: 1.3;
 }
-.connection::before { content: ""; flex: 0 0 auto; width: .55rem; height: .55rem; border-radius: 50%; background: currentColor; box-shadow: 0 0 .5rem currentColor; }
+.connection::before { content: ""; display: inline-block; vertical-align: .05em; margin-right: .45rem; width: .55rem; height: .55rem; border-radius: 50%; background: currentColor; box-shadow: 0 0 .5rem currentColor; }
 .connection[data-state="syncing"], .connection[data-state="lobby"] { color: var(--info); }
 .connection[data-state="reconnecting"] { color: var(--info); }
 .connection[data-state="reconnecting"]::before, .connection[data-state="syncing"]::before { animation: pulse 1.2s ease-in-out infinite; }
@@ -77,6 +78,19 @@
 .status-actions { display: flex; align-items: center; gap: .3rem; flex: 0 0 auto; margin-left: auto; }
 .status-actions > button, .menu > summary { min-height: 2rem; padding: .15rem .55rem; font-size: var(--font-xs); }
 #disabled-control-explain { width: 2rem; padding: 0; color: var(--caution); }
+
+/* One row at every desktop width: the least important items give way first. */
+@media (max-width: 1599px) {
+  .brand strong span, .status-mission .badge { display: none; }
+  .connection { max-width: 12rem; }
+  .statusbar { gap: .6rem; }
+}
+@media (max-width: 1279px) {
+  .status-mission, .utc-clock { display: none; }
+  /* Only the state lamp stays; the full text is the tooltip. */
+  .connection { max-width: 2rem; padding-inline: .5rem; font-size: 0; }
+  .connection::before { margin-right: 0; }
+}
 
 /* Pop-over menus (settings, station tools). */
 .menu, #workstation-tools { position: relative; flex: 0 0 auto; }

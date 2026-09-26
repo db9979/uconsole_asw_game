@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { $, phases } from "../core/base.js";
-import { authenticated, enumText, finite, hasPosition, number, t, unit } from "../core/format.js";
+import { authenticated, duration, enumText, finite, hasPosition, number, t } from "../core/format.js";
 import { palette } from "../core/palette.js";
 import { request } from "../net/request.js";
 import { drawSymbolOn } from "../plot/symbols.js";
@@ -356,8 +356,8 @@ function roleHistorySummary(entry, expanded = false) {
   root.append(simlogMetricBlock("mission", [
     ["mission", state.mission.name],
     ["phase", enumText(phases, state.phase)],
-    ["remaining", unit(state.mission.remaining_s, "s", 0)],
-    ["mission_clock", unit(state.clock.mission, "s", 0)],
+    ["remaining", duration(state.mission.remaining_s)],
+    ["mission_clock", duration(state.clock.mission)],
   ]));
   root.append(simlogMetricBlock("station_dashboard", [
     ["role_assigned", t(`station_${state.role}`)],

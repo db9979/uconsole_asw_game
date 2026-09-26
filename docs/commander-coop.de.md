@@ -167,14 +167,30 @@ meldet abgelaufene Aktionen in der Warteschlange als Ablehnungen.
 
 ## Web-Konsole und Solo-Modus
 
-Die Browser-Konsole ist für einen Desktop-PC gedacht, nicht für die uConsole: ein
-Viewport ohne Seitenscroll, eine Stations-Tab-Leiste (1-9 wählen eine Station,
-`[`/`]` schalten durch die gehaltenen), Kontakte links neben einem Instrument in
-voller Höhe, rechts Steuerung und Kontaktdetail. Ab etwa 1800 px Breite bekommt das
-Detail eine vierte Spalte und die Sonar-Übersicht zeigt alle sechs Plots. Die Rückkehr
-zu einer bereits besuchten Station zeichnet aus einem Cache (Kartenzoom, Auswahl und
-Eingaben bleiben); der erste Besuch einer Station braucht einen Round-Trip. Schmale
-Fenster fallen auf eine einzelne, nicht optimierte Spalte zurück.
+Die Browser-Konsole ist für einen Desktop-PC mit großem Monitor gedacht, nicht
+für die uConsole. Sie ist ein dunkles OPZ-Layout in einem Viewport ohne
+Seitenscroll:
+
+- eine schmale Statusleiste mit den Stations-Tabs (1-9 wählen eine Station,
+  `[`/`]` schalten durch die gehaltenen), Missionsname und Phase, Missions- und
+  Weltuhr, UTC, Verbindungsstatus sowie Einstellungs- und Hilfemenü;
+- ein Alarmband, das unter der Statusleiste pulsiert, solange eine neue Warnung
+  aus dem Einsatzprotokoll frisch ist;
+- das Instrument (Karte, Sonar-Plots, Schadensbild, ...) groß in der Mitte, mit
+  Docks ringsum: Kontakte links, der Stationsbereich rechts, das Kontaktdetail
+  darunter und das Einsatzprotokoll als Schublade unter dem Instrument. `,` und
+  `.` klappen Kontakt- und Stationsdock ein oder aus, `L` das Protokoll; jedes
+  Dock hat dafür auch einen eigenen Knopf.
+
+Ab 1600 px Breite sind alle drei Spalten offen; ab 2400 px (2560-px- und
+4K-Monitore) bekommt das Kontaktdetail eine vierte Spalte, die Stationskarten
+laufen zweispaltig und der Hubschrauber zeigt die Akustik-Konsole neben der
+Karte. Die Schrift wächst mit dem Bildschirm. Die Sonar-Übersicht zeigt ab
+1800 px alle sechs Plots. Leitfaden, Ausguck und Kontaktbibliothek öffnen als
+Overlay über der laufenden Station (`Esc` schließt sie). Die Rückkehr zu einer
+bereits besuchten Station zeichnet aus einem Cache (Kartenzoom, Auswahl und
+Eingaben bleiben); der erste Besuch einer Station braucht einen Round-Trip.
+Schmale Fenster fallen auf eine einzelne scrollende Spalte zurück.
 
 Der **Solo-Modus** lässt eine Person das ganze Spiel aus einem Browser bedienen,
 während die uConsole der Simulations-Server bleibt. Start mit

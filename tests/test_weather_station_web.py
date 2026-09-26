@@ -7,6 +7,7 @@ import subprocess
 import time
 
 import pytest
+from commander_web import copy_assets, index_html, inject_probe
 
 from src.commander import server
 from src.core.game import Game
@@ -91,16 +92,8 @@ def test_weather_dialog_opens_with_0_and_shows_profile_only_after_bt(
     console._contact_analysis_assets = {}
     # Pre-rendered like the assets: resources.files is redirected below.
     console._manual_pages = {}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./weather-test.js" defer></script><script src="./app.js" defer>')
-    for name, payload in (("index.html", html),
-                          ("app.js", ASSETS.joinpath("app.js").read_text()),
-                          ("style.css", ASSETS.joinpath("style.css").read_text()),
-                          ("sonar-audio-worklet.js",
-                           ASSETS.joinpath("sonar-audio-worklet.js").read_text()),
-                          ("manual.css", ASSETS.joinpath("manual.css").read_text())):
-        (tmp_path / name).write_text(payload, encoding="utf-8")
+    html = inject_probe(index_html(), "weather-test.js")
+    copy_assets(tmp_path, html)
     monkeypatch.setattr(server.resources, "files", lambda _package: tmp_path)
     console.activate(game)
     none_text = en[PREFIX + "weather_profile_none"]

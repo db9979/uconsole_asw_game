@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "U-Jagd - a frigate anti-submarine warfare game for the uConsole"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md", "data/commander/fonts/ofl-*.txt"]
 authors = [
     {name = "Dominik Bornhäußer"},
 ]
@@ -50,7 +50,8 @@ namespaces = true
 "data.coastlines" = ["*.json", "*.json.gz"]
 "data.editor_templates" = ["*.json"]
 "data.i18n" = ["*.json"]
-"data.commander" = ["*.html", "*.js", "*.css"]
+"data.commander" = ["*.html", "*.js", "*.css", "css/*.css", "js/**/*.js",
+                    "fonts/*.woff2", "fonts/*.txt"]
 "data.manual" = ["*.md"]
 "data.contact_analysis" = ["manifest.json", "*.png"]
 

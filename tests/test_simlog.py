@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 import pygame
 import pytest
+from commander_web import top_level_files
 
 from src.commander.bridge import CommanderBridge
 from src.commander.server import CommanderServer
@@ -229,8 +230,7 @@ def test_options_menu_toggles_night_mode_and_draw_applies_the_overlay(game):
 
 @pytest.fixture
 def assets(tmp_path, monkeypatch):
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js", "manual.css"):
+    for name in top_level_files():
         (tmp_path / name).write_text(f"fixture {name}", encoding="utf-8")
 
     def files(package):

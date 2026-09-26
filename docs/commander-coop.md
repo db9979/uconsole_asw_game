@@ -139,14 +139,30 @@ the current picture. The server reports expired queued actions as rejections.
 
 ## Web Console and Solo Mode
 
-The browser console is built for a desktop PC, not the uConsole: one viewport
-without page scroll, a station tab bar (1-9 select a station, `[`/`]` step through
-the held ones), contacts left of a full-height instrument and the controls and
-contact detail on the right. From about 1800 px wide the detail gets its own
-fourth column and the sonar overview shows all six plots. Returning to a station
-already visited repaints from a cache (map zoom, selection and typed values stay);
-the first visit to a station takes one round trip. Narrow windows fall back to a
-single unoptimised column.
+The browser console is built for a desktop PC with a large monitor, not the
+uConsole. It is a dark combat-information-centre layout in one viewport without
+page scroll:
+
+- a slim status bar with the station tabs (1-9 select a station, `[`/`]` step
+  through the held ones), mission name and phase, mission/world clock, UTC, the
+  link state and the settings and help menus;
+- an alert band that pulses under the status bar while a new warning from the
+  operational log is fresh;
+- the instrument (chart, sonar plots, damage schematic, ...) as the centrepiece,
+  with docks around it: contacts on the left, the station panel on the right,
+  the contact detail below it and the operational log as a drawer under the
+  instrument. `,` and `.` collapse or expand the contact and station docks,
+  `L` the log; every dock also has its own button.
+
+From 1600 px wide all three columns are open; from 2400 px (2560 px and 4K
+monitors) the contact detail gets a fourth column, the station cards flow into
+two columns and the helicopter shows its acoustic console beside the map. The
+type scales with the screen. The sonar overview shows all six plots from 1800 px.
+The guide, lookout and contact library open as overlays above the running
+station (`Esc` closes them). Returning to a station already visited repaints
+from a cache (map zoom, selection and typed values stay); the first visit to a
+station takes one round trip. Narrow windows fall back to a single scrolling
+column.
 
 **Solo mode** lets one person run the whole game from one browser while the uConsole
 stays the simulation server. Start it with `python main.py --solo-crew` (this launch

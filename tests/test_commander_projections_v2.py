@@ -627,7 +627,8 @@ def test_own_asset_refs_rotate_after_world_change(published):
 
 
 def test_browser_exact_validator_accepts_unified_own_weapon_shape():
-    script = files("data.commander").joinpath("app.js").read_text(encoding="utf-8")
+    from commander_web import client_js
+    script = client_js()
     schema = ('!exactKeys(row, ["ref", "x", "y", "depth_m", '
               '"course", "state"])')
     assert schema in script

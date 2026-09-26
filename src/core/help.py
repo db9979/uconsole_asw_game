@@ -181,7 +181,7 @@ _SOP_SLUGS = {
 STATION_SOP = {station: tuple(f"help.sop.{slug}.{step}" for step in range(1, 6))
                for station, slug in _SOP_SLUGS.items()}
 
-# Remote Crew browser keys (``data/commander/app.js`` keydown handlers).
+# Remote Crew browser keys (``data/commander/js`` keydown handlers).
 _WEB_HELP = (
     "help.web.title",
     [
@@ -195,6 +195,9 @@ _WEB_HELP = (
         ("help.key.web_map_hover", "help.web.map_hover"),
         ("0", "help.web.weather_station"),
         ("help.key.web_plot", "help.web.plot"),
+        (", / .", "help.web.docks"),
+        ("L", "help.web.log"),
+        ("Esc", "help.web.overlay_close"),
     ],
 )
 

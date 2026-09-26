@@ -130,10 +130,10 @@ def test_dip_layer_is_unknown_until_the_dome_passes_it(game, monkeypatch):
 
 
 def test_web_maps_draw_nato_symbols_from_published_fields():
-    from pathlib import Path
-    app = Path("data/commander/app.js").read_text(encoding="utf-8")
-    role_map = app[app.index("  function drawRoleMap"):app.index("  function drawRoleMap") + 12000]
-    chart = app[app.index("  function drawChart()"):app.index("  function drawSymbolOn")]
+    from commander_web import client_js
+    app = client_js()
+    role_map = app[app.index("function drawRoleMap"):app.index("function drawRoleMap") + 12000]
+    chart = app[app.index("function drawChart()"):app.index("function drawSymbolOn")]
     # Both web maps use the same affiliation frame + domain glyph as the
     # uConsole, fed only by the operator affiliation and observed domain.
     assert "drawNatoSymbol(plot.context, x, y, row.affiliation, row.domain" in role_map

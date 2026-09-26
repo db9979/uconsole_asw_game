@@ -21,7 +21,7 @@ Methoden zum Laden eines Kandidaten haben keine Netzwerknebenwirkungen.
 
 | Methode / Route | Vertrag |
 |---|---|
-| GET /, /app.js, /style.css | Feste paketierte Ressourcen, beim Serverstart zwischengespeichert |
+| GET /, /js/**, /css/**, /fonts/** | Feste paketierte Ressourcen (exakte Routentabelle aus `src/commander/assets.py`), beim Serverstart zwischengespeichert |
 | GET /api/v2/ui?lang=en or de | Nur `commander.web.*`-Zeichenketten aus den Root-Katalogen |
 | GET /api/v2/contacts | Öffentlicher paketierter Kontaktreferenzkatalog |
 | POST /api/v2/pair | JSON-Kopplungscode; Erfolg erzeugt Cookie-Sitzung und CSRF-Zustand |

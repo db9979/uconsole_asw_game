@@ -57,8 +57,8 @@ def test_echo_strength_selects_loud_or_faint_cue(snr_db, cue):
 
 
 def test_browser_knows_every_echo_cue():
-    from pathlib import Path
-    app = (Path(__file__).resolve().parents[1] / "data/commander/app.js").read_text()
+    from commander_web import client_js
+    app = client_js()
     for pulse in ("cw", "lfm"):
         for suffix in ("", "_faint"):
             assert f'"sonar_echo_{pulse}{suffix}"' in app

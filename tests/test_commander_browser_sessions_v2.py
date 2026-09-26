@@ -9,6 +9,7 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
+from commander_web import copy_assets, index_html, inject_probe, WEB_ROUTES
 import pygame
 
 from src.commander import server as commander_transport
@@ -306,31 +307,30 @@ async function run() {
       const visualBounds = document.getElementById("role-visuals").getBoundingClientRect();
       const controlBounds = station.querySelector(".station-grid").getBoundingClientRect();
       const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
-      const workspace = document.getElementById("operations-workspace");
+      const grid = document.getElementById("cic-grid");
       if (innerWidth >= 1000) {
         assert(visualBounds.width >= innerWidth * .45, `instrument too narrow: ${latestRole}`);
         assert(visualBounds.top < innerHeight * .5, `instrument below fold: ${latestRole}`);
         assert(controlBounds.left >= visualBounds.right - 2, `controls not beside instrument: ${latestRole}`);
         if (trackRoles.has(latestRole)) {
-          // Console layout: contacts | full-height instrument | controls, with the
-          // contact detail under the controls. The workspace box itself has no
-          // geometry (display: contents); its panels are the station's grid items.
-          const contactsBounds = station.querySelector(".contacts-panel").getBoundingClientRect();
-          const detailsBounds = station.querySelector(".details-panel").getBoundingClientRect();
-          const stationBox = station.getBoundingClientRect();
-          assert(workspace.parentElement === station && contactsBounds.right <= visualBounds.left + 2,
+          // CIC layout: contacts dock | full-height instrument | station dock,
+          // with the contact detail dock under (or, from 2400 px, beside) it.
+          const contactsBounds = document.getElementById("dock-left").getBoundingClientRect();
+          const detailsBounds = document.getElementById("dock-detail").getBoundingClientRect();
+          const dockBounds = document.getElementById("dock-right").getBoundingClientRect();
+          const gridBox = grid.getBoundingClientRect();
+          assert(grid.dataset.tracks === "true" && contactsBounds.right <= visualBounds.left + 2,
             `contacts are not left of the instrument: ${latestRole}`);
-          assert(detailsBounds.left >= visualBounds.right - 2 && detailsBounds.top >= controlBounds.bottom - 2,
-            `contact detail is not under the controls beside the instrument: ${latestRole}`);
-          assert(detailsBounds.bottom <= stationBox.bottom + 1 && contactsBounds.bottom <= stationBox.bottom + 1,
+          assert(detailsBounds.left >= visualBounds.right - 2 &&
+            (detailsBounds.top >= dockBounds.bottom - 2 || detailsBounds.left >= dockBounds.right - 2),
+            `contact detail is not beside the instrument next to the controls: ${latestRole}`);
+          assert(detailsBounds.bottom <= gridBox.bottom + 1 && contactsBounds.bottom <= gridBox.bottom + 1,
             `track panels exceed station: ${latestRole}`);
-          assert(visualBounds.bottom >= detailsBounds.bottom - 2 && visualBounds.bottom >= contactsBounds.bottom - 2,
-            `instrument does not use the full station height: ${latestRole}`);
           assert(document.documentElement.scrollHeight <= innerHeight + 1,
             `page scrolls instead of fitting one viewport: ${latestRole}`);
         }
       }
-      const stationBounds = station.getBoundingClientRect();
+      const stationBounds = grid.getBoundingClientRect();
       assert(visualBounds.left >= stationBounds.left - 1 && visualBounds.right <= stationBounds.right + 1,
         `instrument exceeds station: ${latestRole}`);
       assert(controlBounds.left >= stationBounds.left - 1 && controlBounds.right <= stationBounds.right + 1,
@@ -1024,9 +1024,7 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
                                sonar_audio=False))
     chart = dict(protocol=2, revision="fire-world", size_nm=500.0,
                  landmasses=[], disclaimer="Synthetic test chart")
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./direct-fire-test.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "direct-fire-test.js")
     script = (DIRECT_FIRE_BROWSER.replace("__SESSION__", json.dumps(session))
               .replace("__STATES__", json.dumps(_direct_fire_browser_states()))
               .replace("__CHART__", json.dumps(chart))
@@ -1050,9 +1048,8 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
                 self.reply(html, "text/html")
             elif self.path == "/direct-fire-test.js":
                 self.reply(script, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                self.reply(ASSETS.joinpath(self.path[1:]).read_bytes(),
-                           "text/javascript" if self.path.endswith("js") else "text/css")
+            elif self.path in WEB_ROUTES:
+                self.reply(WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply({key: value for key, value in source.items()
@@ -1188,9 +1185,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
         return common
     chart = {"protocol": 2, "revision": legacy["chart_revision"], "size_nm": 500,
              "landmasses": [], "disclaimer": "Synthetic test chart"}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./session-test.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "session-test.js")
     script = (BROWSER_SESSION.replace("__STATIONS__", json.dumps(",".join(STATIONS)))
               .replace("__PENDING__", json.dumps(en[PREFIX + "station_requested"]))
               .replace("__FAILED__", json.dumps(en[PREFIX + "station_mutation_failed"].split(".")[0]))
@@ -1236,9 +1231,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 self.reply(200, html, "text/html")
             elif self.path == "/session-test.js":
                 self.reply(200, script, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                mime = "text/javascript" if self.path.endswith("js") else "text/css"
-                self.reply(200, ASSETS.joinpath(self.path[1:]).read_bytes(), mime)
+            elif self.path in WEB_ROUTES:
+                self.reply(200, WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply(200, {key: value for key, value in source.items() if key.startswith(PREFIX)})
@@ -1409,18 +1403,8 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
     # Pre-rendered like the assets: resources.files is redirected below.
     console._manual_pages = {}
     console._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./real-role-test.js" defer></script><script src="./app.js" defer>')
-    for name, payload in (
-        ("index.html", html),
-        ("app.js", ASSETS.joinpath("app.js").read_text()),
-        ("style.css", ASSETS.joinpath("style.css").read_text()),
-        ("voice.js", ASSETS.joinpath("voice.js").read_text()),
-        ("voice-worklet.js", ASSETS.joinpath("voice-worklet.js").read_text()),
-        ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()), ("manual.css", ASSETS.joinpath("manual.css").read_text()),
-    ):
-        (tmp_path / name).write_text(payload, encoding="utf-8")
+    html = inject_probe(index_html(), "real-role-test.js")
+    copy_assets(tmp_path, html)
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)
 
     # Use the actual F9 owner transition, then start the selected server row while

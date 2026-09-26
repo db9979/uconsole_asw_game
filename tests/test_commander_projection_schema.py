@@ -1,6 +1,6 @@
 """Real role projections must pass the browser's own v2 state validator.
 
-The browser (data/commander/app.js) checks every published role state with
+The browser (data/commander/js/state/schema.js) checks every published role state with
 exact key sets and freezes the picture on any mismatch.  Hand-written
 fixtures cannot catch a projection that grows a field, so this test drives a
 feature-rich game, collects what the bridge actually publishes for all nine
@@ -26,8 +26,8 @@ from src.weapons.torpedo import EnemyTorpedo
 
 sys.path.insert(0, str(Path(__file__).parent))
 from test_commander_bridge import Server  # noqa: E402
+from commander_web import module_source  # noqa: E402
 
-APP = Path("data/commander/app.js")
 
 
 class _CrewedSubmarineServer(Server):
@@ -128,41 +128,32 @@ def _collect_states():
 
 
 def _validator_page(states) -> str:
-    app = APP.read_text(encoding="utf-8").split("\n")
+    def statement(relative, marker):
+        text = module_source(relative, marker)
+        return text[:text.index(";\n") + 1]
 
-    def line_of(pattern):
-        return next(i for i, line in enumerate(app) if re.search(pattern, line))
-
-    def statement(pattern):
-        index = line_of(pattern)
-        lines = [app[index]]
-        while not lines[-1].rstrip().endswith(";"):
-            index += 1
-            lines.append(app[index])
-        return "\n".join(lines)
-
-    start = line_of(r"^  const exactKeys = ")
-    begin = line_of(r"^  function validateV2State\(state\)")
-    end = next(i for i in range(begin + 1, len(app)) if app[i] == "  }")
-    validator = "\n".join(app[start:end + 1]).replace(
+    schema = module_source("state/schema.js", "const exactKeys = ")
+    end = schema.index("\n}\n", schema.index("function validateV2State(state)")) + 3
+    validator = schema[:end].replace(
         "const exactKeys = (value, keys) =>", "const exactKeysRaw = (value, keys) =>", 1)
-    validator = validator.replace("  const boundedArray", (
-        "  const exactKeys = (value, keys) => { const ok = exactKeysRaw(value, keys);"
+    validator = validator.replace("const boundedArray", (
+        "const exactKeys = (value, keys) => { const ok = exactKeysRaw(value, keys);"
         " if (!ok) lastMismatch = {got: value && typeof value === 'object'"
         " ? Object.keys(value).sort() : typeof value, want: [...keys].sort()};"
-        " return ok; };\n  const boundedArray"), 1)
+        " return ok; };\nconst boundedArray"), 1)
     cases = [(index, role, state) for index, sample in enumerate(states)
              for role, state in sample.items() if role not in ("None", "null")
              and state is not None]
     script = "\n".join([
-        statement(r"^  const stationNames = "), statement(r"^  const sonarRoles = "),
-        statement(r"^  const isSonar = "), statement(r"^  const finite = "),
-        statement(r"^  const gameEffectKinds = "),
-        "let session = null; let lastMismatch = null;", validator,
+        statement("core/base.js", "const stationNames = "),
+        statement("core/base.js", "const sonarRoles = "),
+        statement("core/base.js", "const isSonar = "), statement("core/format.js", "const finite = "),
+        statement("state/shared.js", "const gameEffectKinds = "),
+        "const S = {session: null}; let lastMismatch = null;", validator,
         f"const cases = {json.dumps(cases)};",
         "const failures = [];",
         "for (const [index, role, state] of cases) {",
-        "  session = {station: role}; lastMismatch = null;",
+        "  S.session = {station: role}; lastMismatch = null;",
         "  try { validateV2State(state); } catch (error) {",
         "    failures.push(`${index}:${role}:${error.message} ${JSON.stringify(lastMismatch)}`); }",
         "}",

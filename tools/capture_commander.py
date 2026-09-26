@@ -69,6 +69,7 @@ def capture_specs() -> tuple[Capture, ...]:
         Capture("commander-v2-de-multi-station-mobile.png", "de", *MOBILE,
                 "bridge", scene="multi", extra_roles=("sonar", "radio")),
         Capture("commander-wide.png", "en", 2560, 1440, "sonar"),
+        Capture("commander-4k.png", "en", 3840, 2160, "bridge"),
     ))
     return tuple(captures)
 
@@ -163,11 +164,11 @@ AUTOMATION = r"""
     if (scene === "lobby") {
       const cards = [...$("station-cards").children];
       report.captureRole = "lobby";
-      report.capturePainted = String(cards.length === 9 && cards.every((card) => card.querySelector("button")));
+      report.capturePainted = String(cards.length === 11 && cards.every((card) => card.querySelector("button")));
       report.captureSelector = "true";
       report.captureMessage = "true";
       report.captureReady = String(connection === "lobby" && !$("lobby").hidden &&
-        cards.length === 9 && !overflow && !errors && !$("code").value);
+        cards.length === 11 && !overflow && !errors && !$("code").value);
       positionMobileScene();
       return;
     }
@@ -228,10 +229,9 @@ def _grant_capture(server, client_id: str, spec: Capture) -> None:
 
 
 def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
-                  game, bridge, pygame, production_asset, production_index,
+                  game, bridge, pygame, production_index,
                   capture_clock,
                   budget_ms: int):
-    content_type, production_script = production_asset
     index_type, production_html = production_index
     nonce = secrets.token_urlsafe(24)
     capture_name = f"Screenshot {nonce[:12]}"
@@ -243,10 +243,14 @@ def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
                   .replace("__LANGUAGE__", json.dumps(spec.language))
                   .replace("__ROLE__", json.dumps(spec.role))
                   .replace("__SCENE__", json.dumps(spec.scene)))
+    # The automation is its own classic script, run before the module client.
+    entry = b'<script type="module" src="./js/main.js"></script>'
+    assert entry in production_html
     server._http.assets[script_path] = (
-        content_type, production_script + automation.encode("ascii"))
+        "text/javascript; charset=utf-8", automation.encode("ascii"))
     server._http.assets[page_path] = (
-        index_type, production_html.replace(b"./app.js", script_path.encode("ascii")))
+        index_type, production_html.replace(
+            entry, b'<script src="' + script_path.encode("ascii") + b'" defer></script>' + entry, 1))
     del automation
 
     image = temporary / spec.name
@@ -268,7 +272,7 @@ def _capture_one(spec: Capture, temporary: Path, chromium: str, server,
     code_rotated = False
     try:
         with ThreadPoolExecutor(max_workers=1) as reader:
-            result = reader.submit(process.communicate, timeout=40)
+            result = reader.submit(process.communicate, timeout=40 + spec.width * spec.height // 150_000)
             while not result.done():
                 # Chromium advances performance.now() using virtual time. Advance
                 # publication time too so a frozen simulation does not look stale.
@@ -370,17 +374,16 @@ def capture_all(output: Path, seed: int, chromium: str, budget_ms: int = 8000) -
                     capture_clock = [time.monotonic()]
                     bridge.pump(game, server, now=capture_clock[0])
                     server.start("127.0.0.1", 0)
-                    production_asset = server._http.assets["/app.js"]
                     production_index = server._http.assets["/"]
-                    css_type, css = server._http.assets["/style.css"]
-                    server._http.assets["/style.css"] = (css_type, css + (
+                    css_type, css = server._http.assets["/css/base.css"]
+                    server._http.assets["/css/base.css"] = (css_type, css + (
                         b"\n*,*::before,*::after{animation:none!important;"
                         b"transition:none!important;caret-color:transparent!important}\n"))
                     for spec in (item for item in capture_specs()
                                  if item.language == language):
                         image, report = _capture_one(
                             spec, temporary, chromium, server, game, bridge, pygame,
-                            production_asset, production_index, capture_clock, budget_ms)
+                            production_index, capture_clock, budget_ms)
                         staged.append((image, (spec.name, *spec.aliases), report))
                 finally:
                     http, listener = server._http, server._thread

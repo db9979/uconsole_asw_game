@@ -1,0 +1,141 @@
+/* Instruments on the stage and station-specific arrangement. */
+
+.role-visuals { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; padding: .45rem .55rem .35rem; overflow: hidden; background: var(--bg-0); }
+.visual-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; flex: 0 0 auto; padding-bottom: .3rem; }
+.visual-heading h3 { color: var(--live); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .14em; font-weight: 650; }
+.visual-state { color: var(--text-dim); font: var(--font-xs) var(--font-mono); }
+.visual-panel { min-width: 0; }
+.visual-panel:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+#map-visual:not([hidden]) { flex-grow: 2.2; }
+
+/* Canvases scale with the stage; the bitmap follows the CSS size. */
+.role-canvas { display: block; width: 100%; height: clamp(14rem, 42vh, 28rem); min-width: 0; min-height: 6rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--scope); touch-action: none; }
+.stage .role-canvas { flex: 1; height: auto; }
+.role-map-frame { position: relative; flex: 1; width: 100%; min-width: 0; min-height: 8rem; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--scope); }
+#role-map, #role-map-sweep { position: absolute; inset: 0; display: block; width: 100%; height: 100%; min-height: 0; border: 0; }
+#role-map-sweep { pointer-events: none; }
+.actionable-canvas { cursor: crosshair; }
+
+/* Canvas prose equivalents stay for screen readers, not for the eye. */
+.visual-equivalent, #role-map-help {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Instrument tabs and toolbars. */
+.visual-toolbar { flex: 0 0 auto; padding-bottom: .3rem; }
+.visual-tabs { display: flex; flex-wrap: wrap; gap: .2rem; flex: 0 0 auto; margin-bottom: .3rem; }
+.visual-tabs button, .helicopter-visual-tabs button {
+  min-height: 1.9rem; padding: .1rem .7rem; border-radius: var(--radius) var(--radius) 0 0; border-color: transparent;
+  border-bottom: 2px solid var(--line); background: transparent; color: var(--text-dim); font-size: var(--font-xs);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.visual-tabs button[aria-selected="true"], .helicopter-visual-tabs button[aria-selected="true"] { color: var(--live-strong); border-bottom-color: var(--live); background: var(--bg-2); }
+.helicopter-visual-tabs { display: flex; gap: .2rem; flex: 0 0 auto; margin-bottom: .3rem; }
+.plot-tools { flex: 0 0 auto; padding-bottom: .25rem; }
+.plot-tools > summary { cursor: pointer; color: var(--plot); font-size: var(--font-xs); min-height: 1.5rem; }
+.plot-toolbar { align-items: center; }
+.plot-toolbar label { color: var(--plot); font-size: var(--font-xs); }
+.plot-toolbar #plot-speed { width: 5.5rem; }
+.plot-toolbar #plot-label-input { width: 10rem; }
+.plot-list { display: flex; flex-wrap: wrap; gap: .2rem .8rem; margin: .3rem 0 0; padding: 0; list-style: none; color: var(--plot); font: var(--font-xs) var(--font-mono); }
+.plot-list button { min-height: 1.7rem; padding: .1rem .4rem; font-size: var(--font-xs); }
+
+/* Sonar: listening strip, display controls, plots. */
+.sonar-live-audio { display: flex; align-items: center; gap: .6rem; flex: 0 0 auto; min-width: 0; padding-bottom: .3rem; }
+.sonar-live-audio p { color: var(--text-dim); font-size: var(--font-sm); line-height: 1.3; }
+#sonar-live-toggle[aria-pressed="true"] { background: var(--live-bg); border-color: var(--live-2); color: var(--live-2); }
+.sonar-audition-controls, .sonar-display-controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .55rem; flex: 0 0 auto; min-width: 0;
+  padding: .25rem .45rem; margin-bottom: .3rem; background: var(--bg-1); border: 1px solid var(--line-faint); border-radius: var(--radius);
+}
+.sonar-audition-controls .check { font-size: var(--font-xs); color: var(--text); }
+.sonar-audition-controls > label:not(.check), .sonar-display-controls label { color: var(--text-dim); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .05em; }
+.sonar-audition-controls select, .sonar-display-controls select, .sonar-display-controls button { min-height: 1.8rem; padding: .05rem .4rem; font-size: var(--font-xs); }
+.sonar-audition-controls input[type="range"], .sonar-display-controls input[type="range"] { width: 6.5rem; }
+.sonar-audition-controls output, .sonar-display-controls output { color: var(--live); font-size: var(--font-xs); white-space: nowrap; }
+.sonar-cursor-readout { flex: 1 1 12rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.sonar-plots { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.sonar-plots > section:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
+.sonar-plots[data-layout="overview"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+.sonar-plots[data-layout="overview-wide"] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: .35rem; }
+.spectrum-canvas { flex: 0 0 5rem !important; height: 5rem !important; min-height: 5rem; margin-top: .3rem; }
+.sonar-band-plots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; flex: 0 0 6rem; margin-top: .3rem; }
+.sonar-plots:not([data-layout="single"]) .sonar-band-plots { display: none; }
+.band-canvas { height: 6rem !important; min-height: 0; flex: none !important; }
+.sonar-active-plots { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); grid-template-rows: minmax(0, 1fr); flex: 1; min-height: 0; gap: .35rem; }
+.sonar-active-plots > canvas { height: 100% !important; min-width: 0; min-height: 6rem; }
+
+/* Split stage (ultra-wide screens): helicopter acoustic console beside the map. */
+.role-visuals[data-split="on"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto minmax(0, 1fr); column-gap: .6rem; }
+.role-visuals[data-split="on"] > .visual-heading { grid-column: 1 / -1; }
+.role-visuals[data-split="on"] > .visual-panel:not([hidden]) { grid-row: 2; }
+
+/* Damage / engine / ESM / weapons instruments. */
+.damage-visual-controls { display: flex; align-items: center; gap: .5rem; flex: 0 0 auto; padding-bottom: .3rem; }
+.damage-visual-controls label { color: var(--text-dim); font-size: var(--font-xs); }
+
+/* Helicopter: dip picture and buoy console on the stage. */
+#helicopter-dip-display:not([hidden]) { flex: 1 1 40%; min-height: 0; overflow-y: auto; }
+#helicopter-dip-canvas { display: block; width: 100%; max-width: 560px; height: auto; margin: .35rem auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--scope); }
+.helicopter-acoustic-visual:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; gap: .3rem; }
+.helicopter-acoustic-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .55rem; font-size: var(--font-xs); }
+.helicopter-acoustic-controls select { flex: 1; min-width: 8rem; }
+.helicopter-acoustic-controls input[type="range"] { flex: 1; min-width: 7rem; }
+.helicopter-acoustic-controls output { min-width: 3.5rem; color: var(--live); font-size: var(--font-xs); }
+.helicopter-inline-form { display: flex; flex: 1; align-items: center; gap: .35rem; }
+.helicopter-inline-form input { width: 7rem; }
+#helicopter-audio-controls { padding: .25rem .45rem; border: 1px solid var(--line); border-radius: var(--radius); }
+#helicopter-audio-controls summary { cursor: pointer; color: var(--live); font-size: var(--font-xs); }
+#helicopter-audio-controls[open] { max-height: 13rem; overflow: auto; }
+.helicopter-acoustic-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, 25%); gap: .5rem; flex: 1; min-height: 0; }
+.helicopter-acoustic-plots { display: flex; min-height: 0; }
+.helicopter-acoustic-plots > div:not([hidden]) { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.helicopter-acoustic-plots .role-canvas { flex: 1; height: auto; min-height: 12rem; }
+.helicopter-acoustic-plots .helicopter-spectrum-canvas { flex: none; height: 7rem; min-height: 7rem; margin-bottom: .35rem; }
+.helicopter-acoustic-rail { display: flex; flex-direction: column; min-height: 0; padding: .35rem; border: 1px solid var(--line); border-radius: var(--radius); }
+#helicopter-buoy-observations { flex: 1; min-height: 0; overflow: auto; }
+
+/* Lists duplicated by the contacts dock stay out of the station dock. */
+body.workstation-mode .station-grid > :has(#bridge-tactical),
+body.workstation-mode .station-grid > :has(#sonar-observations),
+body.workstation-mode .station-grid > :has(#opz-observations),
+body.workstation-mode .station-grid > :has(#radio-observations) { display: none; }
+body.workstation-mode .bridge-order-heading p, body.workstation-mode #bridge-order-values { display: none; }
+body.workstation-mode .station-list { display: block; max-height: none; overflow: visible; }
+body.workstation-mode .station-list > .station-row + .station-row { margin-top: .35rem; }
+/* Station cards flow into as many columns as the dock is wide (two on
+   2560 px and 4K monitors, one on a 1920 px screen). */
+body.workstation-mode .station-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); align-content: start; }
+body.workstation-mode .station-grid > .station-controls, body.workstation-mode .station-grid > .direct-fire-controls { grid-column: 1 / -1; }
+
+/* A just-switched station shows its cached picture; dim it only if the fresh
+   state takes noticeably long, so a normal switch does not flicker. */
+body[data-role-stale="true"] .stage, body[data-role-stale="true"] .dock-right { opacity: .55; transition: opacity .15s ease .3s; }
+
+/* Crewed-submarine torpedo alarm tints the whole frame. */
+body.uboot-torpedo-alarm .statusbar { border-bottom-color: var(--alarm); box-shadow: inset 0 -2px 0 var(--alarm); }
+
+/* Detached sonar plot window (?scope=...): only the plot. */
+body[data-sonar-scope][data-remote-role="assigned"] #shell { grid-template-rows: minmax(0, 1fr); }
+body[data-sonar-scope][data-remote-role="assigned"] .statusbar,
+body[data-sonar-scope][data-remote-role="assigned"] .alert-band,
+body[data-sonar-scope][data-remote-role="assigned"] .tablist,
+body[data-sonar-scope][data-remote-role="assigned"] .dock,
+body[data-sonar-scope][data-remote-role="assigned"] .drawer,
+body[data-sonar-scope][data-remote-role="assigned"] #station-command-status,
+body[data-sonar-scope][data-remote-role="assigned"] #sonar-page-tabs { display: none !important; }
+body[data-sonar-scope][data-remote-role="assigned"] .cic-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "stage"; }
+
+@media (max-width: 899px) {
+  .stage { overflow: visible; }
+  .role-visuals { overflow: visible; }
+  .stage .role-canvas { flex: none; height: min(54svh, 22rem); }
+  .role-map-frame { flex: none; height: min(54svh, 22rem); }
+  .sonar-plots[data-layout="overview"], .sonar-plots[data-layout="overview-wide"] { display: flex; flex-direction: column; }
+  .sonar-active-plots { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; }
+  .sonar-active-plots > canvas { height: 18rem !important; }
+  .sonar-band-plots { grid-template-columns: minmax(0, 1fr); flex-basis: auto; }
+  .helicopter-acoustic-workspace { display: flex; flex-direction: column; }
+  .helicopter-acoustic-plots { min-height: 16rem; }
+  .role-visuals[data-split="on"] { display: flex; }
+}

@@ -1,7 +1,10 @@
 # Assets
 
 Dieses Verzeichnis ist die vorgesehene Ablage für künftige Medien des Spiels.
-Der aktuelle Stand benötigt keine externen Bild-, Schrift- oder Audiodateien:
+Der aktuelle Stand benötigt keine externen Bild- oder Audiodateien. Die einzigen
+übernommenen Schriften (Inter, JetBrains Mono; OFL-1.1) gehören zur
+Web-Oberfläche und liegen als Paketressource unter `data/commander/fonts/`;
+Herkunft und Prüfsummen stehen in `THIRD_PARTY_NOTICES.md`.
 
 - Oberfläche, CRT-Effekt und taktische Symbole werden zur Laufzeit mit Pygame
   gezeichnet.

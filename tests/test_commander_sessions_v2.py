@@ -10,6 +10,7 @@ import threading
 from types import SimpleNamespace
 
 import pytest
+from commander_web import top_level_files
 
 from src.commander import CommanderServer
 from src.commander import server as transport
@@ -18,8 +19,7 @@ from commander_fixtures import PLOT, WEATHER_STATION
 
 @pytest.fixture
 def server(tmp_path, monkeypatch):
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js", "manual.css"):
+    for name in top_level_files():
         (tmp_path / name).write_text(name, encoding="utf-8")
     monkeypatch.setattr(transport.resources, "files", lambda package: tmp_path)
     instance = CommanderServer()

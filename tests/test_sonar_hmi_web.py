@@ -5,6 +5,7 @@ import subprocess
 import time
 
 import pytest
+from commander_web import client_css, client_js, copy_assets, index_html, inject_probe
 
 from src.commander import bridge, server
 from src.core.game import Game
@@ -16,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_sonar_hmi_assets_expose_bounded_operator_controls():
     html = (ROOT / "data/commander/index.html").read_text()
-    js = (ROOT / "data/commander/app.js").read_text()
-    css = (ROOT / "data/commander/style.css").read_text()
+    js = client_js()
+    css = client_css()
 
     for element_id in (
         "sonar-black-level", "sonar-contrast", "sonar-history",
@@ -35,11 +36,13 @@ def test_sonar_hmi_assets_expose_bounded_operator_controls():
     assert 'value="0"' in html
     assert 'contrast: 2.5' in js
     assert "?scope=${encodeURIComponent(scope)}" in js
-    assert '.station-section:not([hidden]) > :not(#role-visuals)' in css
+    # A detached scope window shows only the stage: bars and docks are hidden,
+    # never the instrument itself.
     detached_hide = css.split(
-        'body[data-sonar-scope][data-remote-role="assigned"] .masthead,', 1)[1]
+        'body[data-sonar-scope][data-remote-role="assigned"] .statusbar,', 1)[1]
     detached_hide = detached_hide.split('{ display: none !important; }', 1)[0]
-    assert '.station-section,' not in detached_hide
+    assert '.dock,' in detached_hide and '.drawer,' in detached_hide
+    assert '.stage' not in detached_hide and 'role-visuals' not in detached_hide
 
 
 def test_instructor_environment_is_solo_host_only_and_refreshes_weather():
@@ -130,14 +133,8 @@ def test_detached_broadband_scope_renders_live_energy_in_chromium(tmp_path, monk
     console._contact_analysis_assets = {}
     # Pre-rendered like the assets: resources.files is redirected below.
     console._manual_pages = {}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./scope-test.js" defer></script><script src="./app.js" defer>')
-    for name, payload in (("index.html", html),
-                          ("app.js", ASSETS.joinpath("app.js").read_text()),
-                          ("style.css", ASSETS.joinpath("style.css").read_text()),
-                          ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()), ("manual.css", ASSETS.joinpath("manual.css").read_text())):
-        (tmp_path / name).write_text(payload, encoding="utf-8")
+    html = inject_probe(index_html(), "scope-test.js")
+    copy_assets(tmp_path, html)
     monkeypatch.setattr(server.resources, "files", lambda _package: tmp_path)
     console.activate(game)
     console.server._http.assets["/scope-test.js"] = (

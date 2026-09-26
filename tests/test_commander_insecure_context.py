@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from commander_web import client_js
+
 ASSETS = Path("data/commander")
 
 
@@ -28,7 +30,7 @@ def _function_source(text: str, name: str) -> str:
 
 
 def test_request_ids_never_call_random_uuid_unguarded():
-    for path in ASSETS.glob("*.js"):
+    for path in sorted(ASSETS.rglob("*.js")):
         text = path.read_text(encoding="utf-8")
         for match in re.finditer(r"crypto\.randomUUID\(\)", text):
             line = text[text.rfind("\n", 0, match.start()) + 1:text.find("\n", match.end())]
@@ -40,7 +42,7 @@ def test_request_id_fallback_works_without_random_uuid(tmp_path):
     if chromium is None:
         pytest.skip("Chromium is not installed")
     admin = _function_source((ASSETS / "admin.js").read_text(encoding="utf-8"), "requestId")
-    app = _function_source((ASSETS / "app.js").read_text(encoding="utf-8"), "secureId")
+    app = _function_source(client_js(), "secureId")
     script = "\n".join([
         # Emulate a non-secure context: the method is absent.
         "Object.defineProperty(Crypto.prototype, 'randomUUID', {value: undefined});",

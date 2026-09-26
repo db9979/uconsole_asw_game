@@ -79,6 +79,9 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 | `Mouse over map` | Details of the track, own ship, asset, wreck or chart position under the cursor |
 | `0` | Open or close the weather & sonar analysis |
 | `Plot tool + click` | Draw on the shared plot: pick a tool above the map, click once (mark, bearing line) or twice (ruler, circle, DR line) |
+| `, / .` | Collapse or expand the contact list (,) or the station panel (.) |
+| `L` | Open or close the operational log |
+| `Esc` | Close the guide, lookout or contact library and return to the station |
 
 The bottom status ticker shows the newest event and key telemetry; `F11` opens the full event log and telemetry over the station without stopping it or taking its keys. `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
 

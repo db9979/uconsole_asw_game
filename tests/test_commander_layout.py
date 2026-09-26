@@ -11,6 +11,7 @@ from unittest.mock import Mock
 
 import pygame
 import pytest
+from commander_web import ASSET_DIR, ENTRY_TAG, client_css, index_html, inject_probe, WEB_ROUTES
 
 from src.commander import local
 from src.core.game import Game
@@ -51,7 +52,7 @@ async function run() {
     bounds: [bridgeBounds.left, bridgeBounds.top, bridgeBounds.right, bridgeBounds.bottom],
     controls: bridgeControls.every((control) => {
       const bounds = control.getBoundingClientRect();
-      return bounds.width >= 44 && bounds.height >= 40;
+      return bounds.width >= 24 && bounds.height >= 24;
     }),
     labels: ["bridge-course", "bridge-speed"].every((id) =>
       document.querySelector(`label[for="${id}"]`)?.control === $(id)),
@@ -64,7 +65,7 @@ async function run() {
     bounds: [sonarBounds.left, sonarBounds.top, sonarBounds.right, sonarBounds.bottom],
     controls: sonarControls.length >= 16 && [...sonarControls, ...sonarToggles].every((control) => {
       const bounds = control.getBoundingClientRect();
-      return bounds.width >= 44 && bounds.height >= 40;
+      return bounds.width >= 24 && bounds.height >= 24;
     }),
     labels: ["sonar-control-page", "sonar-bearing", "sonar-array-mode", "sonar-depth",
       "sonar-gain", "sonar-band", "sonar-harmonic-input"].every((id) =>
@@ -78,7 +79,7 @@ async function run() {
     bounds: [weaponsBounds.left, weaponsBounds.top, weaponsBounds.right, weaponsBounds.bottom],
     controls: fireControls.length === 5 && fireControls.every((control) => {
       const bounds = control.getBoundingClientRect();
-      return bounds.width >= 44 && bounds.height >= 40;
+      return bounds.width >= 24 && bounds.height >= 24;
     }),
     labels: ["weapons-fire-target", "weapons-fire-depth"].every((id) =>
       document.querySelector(`label[for="${id}"]`)?.control === $(id)),
@@ -87,7 +88,6 @@ async function run() {
     const section = $(`station-${role}`), grid = section.querySelector(".station-grid");
     for (const candidate of document.querySelectorAll("[data-station-role]")) candidate.hidden = candidate !== section;
     section.hidden = false;
-    section.insertBefore($("role-visuals"), grid);
     $("role-visuals").hidden = false;
     const visualFor = {bridge: "map-visual", sonar: "sonar-visual", weapons: "weapons-visual",
       damage: "damage-visual", opz: "map-visual", radio: "map-visual", engine: "engine-visual",
@@ -96,11 +96,8 @@ async function run() {
       panel.hidden = panel.id !== visualFor[role];
     }
     const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka", "uboot"]);
-    section.classList.toggle("track-workstation", trackRoles.has(role));
-    if (trackRoles.has(role) && $("operations-workspace").parentElement !== section) {
-      section.insertBefore($("operations-workspace"), grid);
-    }
-    $("operations-workspace").hidden = !trackRoles.has(role);
+    const tracks = trackRoles.has(role);
+    $("cic-grid").dataset.tracks = String(tracks);
     $("bridge-orders").hidden = role !== "bridge";
     $("opz-controls").hidden = role !== "opz";
     $("helicopter-dipping-controls").hidden = role !== "helicopter";
@@ -117,31 +114,33 @@ async function run() {
         container.append(row);
       }
     }
-    if (role === "bridge") grid.prepend($("bridge-orders"));
-    if (role === "opz") grid.prepend($("opz-controls"));
-    if (role === "helicopter") grid.prepend($("helicopter-dipping-controls"));
-    const outer = section.getBoundingClientRect(), visual = $("role-visuals").getBoundingClientRect();
-    const controls = grid.getBoundingClientRect();
-    const intersects = Math.min(visual.right, controls.right) - Math.max(visual.left, controls.left) > 1 &&
-      Math.min(visual.bottom, controls.bottom) - Math.max(visual.top, controls.top) > 1;
+    const box = (element) => element.getBoundingClientRect();
+    const overlaps = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+      Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
+    // The CIC areas (stage, docks, log drawer) never overlap each other.
+    const areaIds = ["stage", "dock-right", "log-drawer", ...(tracks ? ["dock-left", "dock-detail"] : [])];
+    const areas = areaIds.map((id) => [id, box($(id))]).filter(([, bounds]) => bounds.width > 0 && bounds.height > 0);
+    let intersects = false;
+    areas.forEach(([, first], index) => areas.slice(index + 1).forEach(([, second]) => {
+      if (overlaps(first, second)) intersects = true;
+    }));
+    const outer = box($("cic-grid")), visual = box($("stage")), controls = box(grid);
+    const size = (bounds) => bounds.width * bounds.height;
+    const stageLargest = areas.every(([id, bounds]) => id === "stage" || size(bounds) <= size(visual));
     const children = [...grid.children].filter((element) =>
       !element.hidden && getComputedStyle(element).display !== "none");
     const childBounds = children.map((element) => element.getBoundingClientRect());
     const childIntersections = [];
     childBounds.forEach((first, index) => childBounds.slice(index + 1).forEach((second) => {
-      if (Math.min(first.right, second.right) - Math.max(first.left, second.left) > 1 &&
-          Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top) > 1) {
-        childIntersections.push(index);
-      }
+      if (overlaps(first, second)) childIntersections.push(index);
     }));
-    const textOverflow = [...section.querySelectorAll("h2, h3, h4, p, dt, dd, label, button, summary, output")]
+    const textOverflow = [...$("dock-right").querySelectorAll("h2, h3, h4, p, dt, dd, label, button, summary, output")]
       .filter((element) => !element.hidden && getComputedStyle(element).display !== "none" && element.clientWidth > 1)
       .filter((element) => element.scrollWidth > element.clientWidth + 2)
       .map((element) => `${element.tagName.toLowerCase()}#${element.id}.${element.className}: ${element.textContent.slice(0, 40)}`);
-    return {intersects, outer: [outer.left, outer.top, outer.right, outer.bottom],
+    return {intersects, stageLargest, outer: [outer.left, outer.top, outer.right, outer.bottom],
       visual: [visual.left, visual.top, visual.right, visual.bottom],
       controls: [controls.left, controls.top, controls.right, controls.bottom],
-      controlsOverflow: getComputedStyle(grid).overflowY,
       childIntersections: childIntersections.length, textOverflow,
       childrenContained: childBounds.every((bounds) =>
         bounds.left >= controls.left - 1 && bounds.right <= controls.right + 1)};
@@ -172,9 +171,8 @@ def test_simlog_and_map_stay_inside_web_viewport(tmp_path, width, height):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser")
     if not chromium:
         pytest.skip("Optional SimLog layout regression: no installed Chromium")
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer></script>',
-        '<script src="./simlog-layout.js" defer></script>')
+    # Styles only: the probe replaces the client entry point.
+    html = index_html().replace(ENTRY_TAG, '<script src="./simlog-layout.js" defer></script>')
     probe = r"""
 document.body.classList.add("workstation-mode");
 document.body.dataset.remoteRole = "assigned";
@@ -225,8 +223,8 @@ requestAnimationFrame(() => {
                 body, mime = outer.encode(), "text/html"
             elif self.path == "/app":
                 body, mime = html.encode(), "text/html"
-            elif self.path == "/style.css":
-                body, mime = ASSETS.joinpath("style.css").read_bytes(), "text/css"
+            elif self.path in WEB_ROUTES and not self.path.endswith(".js"):
+                mime, body = WEB_ROUTES[self.path]
             elif self.path == "/simlog-layout.js":
                 body, mime = probe.encode(), "text/javascript"
             else:
@@ -272,40 +270,31 @@ requestAnimationFrame(() => {
     assert layout_data["plot"]["right"] <= layout_data["dialog"]["right"] + 1, layout_data
 
 
-def test_station_dashboards_have_bounded_responsive_layout_rules():
-    css = ASSETS.joinpath("style.css").read_text()
-    assert re.search(r"\.station-grid \{[^}]*grid-template-columns:[^}]*auto-fit", css)
-    assert re.search(r"\.station-list \{[^}]*max-height:[^}]*overflow: auto", css)
-    mobile = css.split("@media (max-width: 700px)", 1)[1]
-    assert ".station-section" in mobile and ".station-list" in mobile
-    assert re.search(r"\.station-controls \{[^}]*auto-fit", css)
-    assert re.search(r"\.station-row-actions \{[^}]*flex-wrap: wrap", css)
-    assert ".station-controls, .control-page" in mobile
-    assert ".fire-grid { grid-template-columns: minmax(0, 1fr); }" in mobile
-    assert re.search(r"\.role-canvas \{[^}]*width: 100%[^}]*height: clamp", css)
-    assert re.search(r"\.visual-equivalent \{[^}]*max-height:[^}]*overflow: auto", css)
-    assert re.search(r"\.visual-tabs \{[^}]*grid-template-columns: repeat\(7", css)
-    assert ".visual-tabs { grid-template-columns: repeat(2" in mobile
-    assert ".role-canvas { height: min(54svh, 22rem); }" in mobile
-    assert re.search(r"body\.workstation-mode \.operations-panel \{[^}]*overflow: hidden", css)
-    assert re.search(r"body\.workstation-mode \.station-view \{[^}]*min-height: 0[^}]*overflow: hidden", css)
-    assert re.search(r"body\.workstation-mode \.station-section \{[^}]*grid-template-rows: minmax\(0, 1fr\)[^}]*overflow: hidden", css)
-    # Track stations: contacts | instrument | controls, contact detail under the controls.
-    assert re.search(r"\.station-section\.track-workstation \{[^}]*grid-template-columns: clamp\(13rem, 16vw, 21rem\) minmax\(0, 1fr\) clamp", css)
-    assert re.search(r"body\.workstation-mode \.station-grid \{[^}]*min-height: 0[^}]*overflow-y: auto", css)
-    assert re.search(r"body\.workstation-mode \.track-workstation #operations-workspace \{[^}]*display: contents", css)
-    assert re.search(r"body\.workstation-mode \.contacts-panel \{[^}]*grid-column: 1", css)
-    assert re.search(r"body\.workstation-mode \.details-panel \{[^}]*grid-column: 3", css)
-    # Wide desktop screens gain a fourth column for the contact detail.
-    desktop = css.split("@media (min-width: 1500px) and (min-height: 760px)", 1)[1]
-    assert re.search(r"\.station-section:not\(\.track-workstation\) \.station-grid \{[^}]*grid-template-columns: repeat\(2", desktop)
-    assert re.search(r"\.station-grid > \.station-wide \{[^}]*grid-column: 1 / -1", desktop)
-    wide = css.split("@media (min-width: 1800px) and (min-height: 850px)", 1)[1]
-    assert re.search(r"\.details-panel \{[^}]*grid-column: 4", wide)
+def test_cic_layout_rules_are_grid_based_and_bounded():
+    css = client_css()
+    shell = ASSET_DIR.joinpath("css", "shell.css").read_text()
+    # One grid with named areas; docks collapse to a rail; lists scroll, the page does not.
+    assert re.search(r"\.cic-grid \{[^}]*display: grid[^}]*grid-template-areas:", shell)
+    assert re.search(r"\.cic-grid\[data-left=\"closed\"\] \{ --left: var\(--rail-w\)", shell)
+    assert re.search(r"\.cic-grid\[data-tracks=\"false\"\] \{[^}]*grid-template-areas:", shell)
+    assert re.search(r"\.dock-body \{[^}]*overflow-y: auto", shell)
+    assert re.search(r"#shell \{[^}]*overflow: clip", shell)
+    # Breakpoints: single column below 900 px, a fourth column from 2400 px.
+    assert "@media (max-width: 899px)" in shell and "@media (min-width: 2400px)" in shell
+    wide = shell.split("@media (min-width: 2400px)", 1)[1]
+    assert '"left stage right detail"' in wide
+    # Critical alerts pulse; reduced motion switches every animation off.
+    assert re.search(r"\.alert-band \{[^}]*animation: glow", css)
+    assert "@media (prefers-reduced-motion: reduce)" in css
+    # Thin scrollbars and the design tokens drive every colour.
+    assert "scrollbar-width: thin" in css and "::-webkit-scrollbar" in css
+    assert re.search(r"--font-mono: \"JetBrains Mono\"", css) and re.search(r"--font-ui: \"Inter\"", css)
+    # Secondary tools open as overlays above the running station.
+    assert re.search(r"body\.workstation-mode \.tab-panel:not\(#panel-operations\):not\(\[hidden\]\) \{[^}]*position: fixed", css)
 
 
 @pytest.mark.parametrize("width,height,zoom", [
-    (1920, 1080, 1), (1280, 720, 1), (390, 844, 1), (1280, 1024, 4),
+    (3840, 2160, 1), (2560, 1440, 1), (1920, 1080, 1), (1280, 720, 1), (390, 844, 1), (1280, 1024, 4),
 ])
 @pytest.mark.parametrize("language", ["en", "de", "pseudo"])
 def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
@@ -315,9 +304,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     css_width, css_height = width // zoom, height // zoom
     source = catalogs()[language == "de"]
     catalog = pseudolocale(source) if language == "pseudo" else source
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./lobby-layout.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "lobby-layout.js")
     stations = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
                 "engine", "helicopter", "eloka", "uboot", "uboot_sonar")
     empty_grants = {"command": False, "direct_fire": False, "sonar_audio": False}
@@ -365,9 +352,8 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
                 self.reply(html, "text/html")
             elif self.path == "/lobby-layout.js":
                 self.reply(LOBBY_LAYOUT, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                self.reply(ASSETS.joinpath(self.path[1:]).read_bytes(),
-                           "text/javascript" if self.path.endswith("js") else "text/css")
+            elif self.path in WEB_ROUTES:
+                self.reply(WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path.startswith("/api/v2/ui?"):
                 self.reply({key: value for key, value in catalog.items() if key.startswith(PREFIX)})
             elif self.path == "/api/v2/contacts":
@@ -429,6 +415,9 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
         assert dashboard["visual"][2] <= dashboard["outer"][2] + 1
         assert dashboard["controls"][0] >= dashboard["outer"][0] - 1
         assert dashboard["controls"][2] <= dashboard["outer"][2] + 1
+        # On a desktop the instrument is the centrepiece: no dock is larger.
+        if css_width >= 900:
+            assert dashboard["stageLargest"], (role, dashboard)
 
 
 LAYOUT_SCENARIO = r"""
@@ -661,15 +650,14 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
     prototype["reference"]["roles"] = ["LongReferenceRole" * 7 for _ in range(64)]
     analysis["profiles"] = [dict(prototype, key=f"reference_{index}",
                                  name=f"Reference profile {index}") for index in range(160)]
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>', '<script src="./layout.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "layout.js")
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_args):
             pass
 
         def reply(self, content, mime="application/json"):
-            body = content.encode()
+            body = content if isinstance(content, bytes) else content.encode()
             self.send_response(200)
             self.send_header("Content-Type", mime)
             self.send_header("Content-Length", str(len(body)))
@@ -689,8 +677,8 @@ def test_dense_commander_layout(tmp_path, width, height, zoom, language):
                 self.reply(html, "text/html")
             elif self.path == "/layout.js":
                 self.reply(LAYOUT_SCENARIO, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                self.reply(ASSETS.joinpath(self.path[1:]).read_text(), "text/javascript" if self.path.endswith("js") else "text/css")
+            elif self.path in WEB_ROUTES:
+                self.reply(WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path.startswith("/api/v2/ui?"):
                 self.reply(json.dumps({key: value for key, value in catalog.items() if key.startswith(PREFIX)}))
             elif self.path == "/api/v2/state":

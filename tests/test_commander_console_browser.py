@@ -10,6 +10,7 @@ import subprocess
 import time
 
 import pytest
+from commander_web import copy_assets, index_html, inject_probe
 
 from src.commander import server as commander_transport
 from src.core import config
@@ -170,16 +171,8 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
     # Pre-rendered like the assets: resources.files is redirected below.
     console._manual_pages = {}
     console._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./console-test.js" defer></script><script src="./app.js" defer>')
-    for name, payload in (("index.html", html),
-                          ("app.js", ASSETS.joinpath("app.js").read_text()),
-                          ("style.css", ASSETS.joinpath("style.css").read_text()),
-                          ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()), ("manual.css", ASSETS.joinpath("manual.css").read_text()),
-                          ("voice.js", ASSETS.joinpath("voice.js").read_text()),
-                          ("voice-worklet.js", ASSETS.joinpath("voice-worklet.js").read_text())):
-        (tmp_path / name).write_text(payload, encoding="utf-8")
+    html = inject_probe(index_html(), "console-test.js")
+    copy_assets(tmp_path, html)
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)
 
     console.activate(game)

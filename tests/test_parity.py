@@ -41,12 +41,19 @@ def test_web_styles_use_tokens_and_the_pygame_theme_covers_chrome():
     import re
     from pathlib import Path
     from src.ui import theme
-    css = Path("data/commander/style.css").read_text(encoding="utf-8")
-    root, rest = css[:css.index("}")], css[css.index("}"):]
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from commander_web import client_css_files
+    files = client_css_files()
+    assert files[0].name == "tokens.css"
+    tokens = files[0].read_text(encoding="utf-8")
+    root = tokens[:tokens.index("}")]
     for token in ("--aff-unknown", "--aff-friend", "--aff-neutral", "--aff-hostile"):
         assert token + ":" in root
-    # Only the translucent drop shadow remains a literal outside the tokens.
-    assert re.findall(r"#[0-9a-fA-F]{3,8}\b", rest) == ["#0008"]
+    # Every colour literal lives in the token file; the rest uses var(--...).
+    assert tokens.count("}") == 1
+    for path in files[1:]:
+        assert not re.findall(r"#[0-9a-fA-F]{3,8}\b", path.read_text(encoding="utf-8")), path.name
     for name in ("COLOR_PANEL_BG", "COLOR_FEED_BG", "COLOR_OVERLAY_BG",
                  "COLOR_SELECT_BG", "COLOR_ALARM_BG", "COLOR_TAB_ACTIVE"):
         assert name in theme.CONFIG_COLORS_STANDARD

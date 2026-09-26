@@ -27,6 +27,7 @@ import select
 import unicodedata
 from urllib.parse import urlsplit
 
+from src.commander.assets import static_assets
 from src.commander.web_auth import WebHostAuth
 from src.core import plot
 from src.commander.voice import PCM_BYTES as VOICE_PCM_BYTES, VoicePeer, read_frames
@@ -854,35 +855,9 @@ class CommanderServer:
             with self._lock:
                 if self._running:
                     raise RuntimeError("Commander server already started")
-            root = resources.files("data.commander")
-            assets = {
-                route: (content_type, root.joinpath(name).read_bytes())
-                for route, name, content_type in (
-                    ("/", "index.html", "text/html; charset=utf-8"),
-                    ("/app.js", "app.js", "text/javascript; charset=utf-8"),
-                    ("/style.css", "style.css", "text/css; charset=utf-8"),
-                    ("/sonar-audio-worklet.js", "sonar-audio-worklet.js", "text/javascript; charset=utf-8"),
-                    ("/manual.css", "manual.css", "text/css; charset=utf-8"),
-                )
-            }
+            assets = static_assets(self.web_auth is not None,
+                                   resources.files("data.commander"))
             assets.update(self._manual_pages)
-            if self.web_auth is not None:
-                assets.update({
-                    route: (content_type, root.joinpath(name).read_bytes())
-                    for route, name, content_type in (
-                        ("/admin", "admin.html", "text/html; charset=utf-8"),
-                        ("/admin.js", "admin.js", "text/javascript; charset=utf-8"),
-                        ("/admin.css", "admin.css", "text/css; charset=utf-8"),
-                        ("/voice-worklet.js", "voice-worklet.js", "text/javascript; charset=utf-8"),
-                        ("/voice.js", "voice.js", "text/javascript; charset=utf-8"),
-                    )
-                })
-            else:
-                # The local uConsole crew listener has no web-admin voice option.
-                mime, page = assets["/"]
-                page = page.replace(b'<script src="./voice.js" defer></script>', b'')
-                page = re.sub(rb'\s*<div class="voice-controls"[^\n]*</div>', b'', page)
-                assets["/"] = (mime, page)
             if assets.keys() & self._prebuilt_assets.keys():
                 raise ValueError("duplicate Commander asset route")
             assets.update(self._prebuilt_assets)
@@ -2389,7 +2364,7 @@ class _Handler(BaseHTTPRequestHandler):
             ("Referrer-Policy", "no-referrer"),
             ("Permissions-Policy", "camera=(), microphone=(self), geolocation=()"),
             ("Content-Security-Policy", "default-src 'none'; script-src 'self'; "
-             "style-src 'self'; img-src 'self'; connect-src 'self'; "
+             "style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; "
              "base-uri 'none'; frame-ancestors 'none'; form-action 'self'"),
         ):
             self.send_header(key, value)

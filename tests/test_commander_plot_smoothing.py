@@ -7,14 +7,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from test_commander_assets import ASSETS, Document
+from commander_web import module_source
+from test_commander_assets import Document
 
 
 SCRIPT = r"""
 let clock = 0;
 const performance = {now: () => clock};
 const finite = Number.isFinite;
-let v2State = null;
+const S = {v2State: null, connected: true};
 const sonarDisplay = {black: 0, contrast: 1, history: 300, palette: "green", demonCursor: null};
 const heatmapRasters = new Map();
 const registerAnimatedPlot = () => {};
@@ -84,8 +85,8 @@ try {
   // Between publications the raster is only blitted lower, never rebuilt.
   displayClock.context = null;
   clock = 1000;
-  v2State = state(10);
-  sampleDisplayClock(v2State);
+  S.v2State = state(10);
+  sampleDisplayClock(S.v2State);
   const rows = [];
   for (let stamp = 0; stamp <= 10; stamp += .25) rows.push({stamp, bins: Array(36).fill(Math.abs(stamp - 5) < .01 ? 1 : 0)});
   heatmap("waterfall", rows, null, null, null, 20);
@@ -125,19 +126,15 @@ try {
 """
 
 
-def _between(js, start, end):
-    return js[js.index(start):js.index(end)]
-
-
 def test_waterfalls_and_spectra_move_smoothly_between_publications(tmp_path):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser")
     if chromium is None:
         pytest.skip("Chromium unavailable")
-    js = ASSETS.joinpath("app.js").read_text()
     script = (SCRIPT
-              .replace("__CLOCK__", _between(js, "  const DISPLAY_CLOCK_LAG_S", "  // Plots redrawn on every animation frame"))
-              .replace("__HEATMAP__", _between(js, "  function heatmap(", "  // Spectra ease towards"))
-              .replace("__SPECTRUM__", _between(js, "  const SPECTRUM_SMOOTHING_S", "  function drawSpectrum")))
+              .replace("__CLOCK__", module_source("state/display-clock.js", "const DISPLAY_CLOCK_LAG_S"))
+              .replace("__HEATMAP__", module_source("plot/heatmap.js", "function heatmap("))
+              .replace("__SPECTRUM__", module_source("plot/spectrum.js", "const SPECTRUM_SMOOTHING_S",
+                                                     "function drawSpectrum")))
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_args):

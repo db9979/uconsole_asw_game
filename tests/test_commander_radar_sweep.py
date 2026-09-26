@@ -7,14 +7,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from test_commander_assets import ASSETS, Document
+from commander_web import module_source
+from test_commander_assets import Document
 
 
 SCRIPT = r"""
 let clock = 0;
 const performance = {now: () => clock};
 const finite = Number.isFinite;
-let opzSweepSample = null;
+const S = {opzSweepSample: null, v2State: null, connected: true};
 const stopOpzSweepAnimation = () => {};
 __IMPLEMENTATION__
 const wrap180 = (value) => wrap360(value + 180) - 180;
@@ -27,7 +28,7 @@ const random = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483
 const state = (sim, rate) => ({session: "s", epoch: 1, phase: "live", role: "opz", clock: {sim},
   opz: {radar: {sweep_bearing: wrap360(37 + sim * rate), sweep_rate_deg_s: rate}}});
 function run(rate, label) {
-  opzSweepSample = null;
+  S.opzSweepSample = null;
   displayClock.context = null;
   clock = 1000;
   const start = clock;
@@ -80,9 +81,8 @@ def test_radar_strobe_is_smooth_despite_late_published_bearings(tmp_path):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser")
     if chromium is None:
         pytest.skip("Chromium unavailable")
-    js = ASSETS.joinpath("app.js").read_text()
-    implementation = (js[js.index("  const DISPLAY_CLOCK_LAG_S"):js.index("  // Plots redrawn on every")] +
-                      js[js.index("  const wrap360"):js.index("  function opzSweepActive")])
+    implementation = (module_source("state/display-clock.js", "const DISPLAY_CLOCK_LAG_S") +
+                      module_source("views/role-map.js", "const wrap360", "function opzSweepActive"))
     script = SCRIPT.replace("__IMPLEMENTATION__", implementation)
 
     class Handler(BaseHTTPRequestHandler):

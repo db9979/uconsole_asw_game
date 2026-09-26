@@ -10,7 +10,8 @@ import numpy as np
 import pytest
 
 from src.ui import sonar_view
-from test_commander_assets import ASSETS, Document
+from commander_web import module_source
+from test_commander_assets import Document
 
 
 def _cases():
@@ -35,8 +36,7 @@ def test_browser_peak_finder_matches_python(tmp_path):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser")
     if chromium is None:
         pytest.skip("Chromium unavailable")
-    js = ASSETS.joinpath("app.js").read_text()
-    finder = js[js.index("  const PEAK_LABEL_W"):js.index("  function drawPeakLabels")]
+    finder = module_source("plot/peaks.js", "const PEAK_LABEL_W", "function drawPeakLabels")
     placements = [
         [(100, 60, 28, "a", .9), (112, 60, 28, "b", .5), (125, 62, 28, "c", .4), (200, 5, 28, "d", .8),
          (100, 60, 28, "e", .1)],

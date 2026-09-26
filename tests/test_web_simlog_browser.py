@@ -7,6 +7,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
+from commander_web import index_html, inject_probe, WEB_ROUTES
 
 from test_commander_assets import ASSETS, PREFIX, Document, catalogs
 from test_commander_browser_sessions_v2 import (STATIONS, _direct_fire_browser_states,
@@ -139,9 +140,7 @@ def test_web_simlog_shows_all_projected_values_and_a_map_in_chromium(tmp_path):
                                             state=state, truth=truth)])
     chart = dict(protocol=2, revision=state["session"], size_nm=500.0,
                  landmasses=[], disclaimer="Synthetic test chart")
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./simlog-test.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "simlog-test.js")
     script = (SIMLOG_BROWSER.replace("__SESSION__", json.dumps(session))
               .replace("__SIMLOG__", json.dumps(simlog))
               .replace("__STATE__", json.dumps(state))
@@ -168,9 +167,8 @@ def test_web_simlog_shows_all_projected_values_and_a_map_in_chromium(tmp_path):
                 self.reply(html, "text/html")
             elif self.path == "/simlog-test.js":
                 self.reply(script, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                self.reply(ASSETS.joinpath(self.path[1:]).read_bytes(),
-                           "text/javascript" if self.path.endswith("js") else "text/css")
+            elif self.path in WEB_ROUTES:
+                self.reply(WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply({key: value for key, value in source.items()

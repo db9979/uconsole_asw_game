@@ -8,6 +8,8 @@ import zipfile
 from importlib import resources
 from pathlib import Path
 
+from commander_web import top_level_files, tree_files
+
 
 ROOT = Path(__file__).parents[1]
 TEMPLATE_NAMES = {
@@ -62,9 +64,10 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
         wheel_names = set(archive.namelist())
     for name in TEMPLATE_NAMES:
         assert f"data/editor_templates/{name}" in wheel_names
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js", "manual.css"):
+    for name in top_level_files():
         assert f"data/commander/{name}" in wheel_names
+    for relative in tree_files():
+        assert f"data/commander/{relative.as_posix()}" in wheel_names
     for name in MANUAL_NAMES:
         assert f"data/manual/{name}" in wheel_names
     for name in CONTACT_NAMES:
@@ -89,9 +92,11 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
         source_names = set(archive.getnames())
     for name in TEMPLATE_NAMES:
         assert any(path.endswith(f"/data/editor_templates/{name}") for path in source_names)
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js", "manual.css"):
+    for name in top_level_files():
         assert any(path.endswith(f"/data/commander/{name}") for path in source_names)
+    for relative in tree_files():
+        assert any(path.endswith(f"/data/commander/{relative.as_posix()}")
+                   for path in source_names)
     for name in MANUAL_NAMES:
         assert any(path.endswith(f"/data/manual/{name}") for path in source_names)
     for name in CONTACT_NAMES:
@@ -136,7 +141,7 @@ def test_source_and_wheel_contain_editor_templates(tmp_path):
           "server=CommanderServer(); server.start('127.0.0.1',0); server.stop(); "
           "from src.core import manual; page=manual.html_page('de'); assert 'station-sonar' in page; "
           "server=CommanderServer(manual_pages={'de': page}); server.start('127.0.0.1',0); server.stop(); "
-          "assert resources.files('data.commander').joinpath('app.js').is_file(); "
+          "assert resources.files('data.commander').joinpath('js', 'main.js').is_file(); "
            "assert resources.files('data.contacts').joinpath('sources.json').is_file(); "
             "assert resources.files('data.loadouts').joinpath('ownship.json').is_file(); "
             "from src.data.contact_analysis import load_contact_analysis_assets; "

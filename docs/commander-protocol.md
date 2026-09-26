@@ -19,7 +19,7 @@ or trigger sensor/TMA work. Candidate-load methods have no network side effects.
 
 | Method / route | Contract |
 |---|---|
-| GET /, /app.js, /style.css | Fixed packaged resources, cached at server start |
+| GET /, /js/**, /css/**, /fonts/** | Fixed packaged resources (exact route table from `src/commander/assets.py`), cached at server start |
 | GET /api/v2/ui?lang=en or de | Only `commander.web.*` strings from root catalogs |
 | GET /api/v2/contacts | Public packaged contact-reference catalog |
 | POST /api/v2/pair | JSON pairing code; success creates a cookie session and returns CSRF state |

@@ -102,7 +102,8 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 - Optional trusted-LAN Remote Crew: multiple authenticated browser clients can
   hold exclusive station roles, switch among their retained roles, operate the
   same observation-led controls, and use separately granted direct fire.
-  The browser console is a one-viewport desktop layout with a station tab bar.
+  The browser console is a one-viewport combat-information-centre layout for
+  large desktop monitors: status bar, central instrument and collapsible docks.
   `python main.py --solo-crew` (or the F9 "Crew mode" row) lets one browser run
   all nine stations plus save/load and new game while the
   uConsole stays the simulation server; see [Remote Crew setup](docs/commander-coop.md).

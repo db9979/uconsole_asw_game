@@ -974,7 +974,7 @@ Der Browser rendert eine zulässige, abgetrennte Projektion. Er erhält keine fr
 ### Quellen
 
 - [src/commander/projections.py](../../src/commander/projections.py)
-- [data/commander/app.js](../../data/commander/app.js)
+- [data/commander/js/main.js](../../data/commander/js/main.js)
 - [docs/screenshots/commander-v2-de-opz-desktop.png](../../docs/screenshots/commander-v2-de-opz-desktop.png)
 
 ## 48 · Live-Verkehr ist eine externe Eingangsgröße

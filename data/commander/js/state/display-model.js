@@ -1,6 +1,6 @@
 import { S } from "./store.js";
 import { emit } from "../core/events.js";
-import { isSonar, stationNames } from "../core/base.js";
+import { isBoatCommand, isSonar, stationNames } from "../core/base.js";
 import { finite } from "../core/format.js";
 import { boundedArray, exactKeys, validateV2State } from "./schema.js";
 import { filteredEloka } from "./shared.js";
@@ -12,7 +12,7 @@ export function buildDisplayModel(state) {
   const payload = state[state.role];
   if (state.role === "bridge") { Object.assign(ownship, payload.navigation); observations = payload.tactical_summary; }
   if (isSonar(state.role)) observations = payload.observations;
-  if (state.role === "uboot") {
+  if (isBoatCommand(state.role)) {
     const nav = payload.navigation;
     Object.assign(ownship, {x: nav.x, y: nav.y, course: nav.course, speed: nav.speed,
       target_course: nav.target_course, target_speed: nav.target_speed});

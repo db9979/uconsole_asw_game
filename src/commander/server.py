@@ -50,14 +50,17 @@ _V2_STATION_LEASE_S = 15.0
 _V2_SESSION_LIMIT = 12
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
             "engine", "helicopter", "eloka")
-# The crewed hostile submarine: the opposing side's commander and sonar room.
-# Its roles are leased like stations but never belong to the frigate crew: a
-# session holds roles of one side only, solo/web-host grant-all stays frigate.
-OPFOR_ROLES = ("uboot", "uboot_sonar")
+# The crewed hostile submarine's six stations (command, sonar, weapons,
+# engine, mast/ESM, navigation). They are leased like the frigate's but never
+# belong to the frigate crew: a session holds roles of one side only.
+OPFOR_ROLES = ("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm",
+               "uboot_nav")
+# Boat stations served by the command projection (everything but its sonar room).
+UBOOT_COMMAND_ROLES = tuple(role for role in OPFOR_ROLES if role != "uboot_sonar")
 ROLES = STATIONS + OPFOR_ROLES
 # Roles with a sonar room (waterfall stream), and the gated capabilities.
 SONAR_ROLES = ("sonar", "uboot_sonar")
-DIRECT_FIRE_ROLES = ("weapons", "helicopter", "opz", "uboot")
+DIRECT_FIRE_ROLES = ("weapons", "helicopter", "opz", "uboot_weapons")
 SONAR_AUDIO_ROLES = ("sonar", "helicopter", "uboot_sonar")
 # Pseudo-role of the solo host command surface. It is never a station lease:
 # only a solo session carries it, and STATIONS (and every projection) stays nine.
@@ -521,15 +524,17 @@ def _new_game_params(params):
 _HOST_ANY = frozenset({"live"})
 _HOST_REPLACING = frozenset({"live", "menu", "ended"})
 _HOST_STATIONS = frozenset({HOST_ROLE})
+# The boat's own plot: its commander and navigator draw on it.
+_UBOOT_PLOT = ("uboot", "uboot_nav")
 
 V2_ACTION_REGISTRY = {
     "acknowledge": V2Action(frozenset(ROLES), _no_params),
     # Shared chart plot: every station may draw, relabel and erase.
     # The submarine commander's plot actions reach the boat's own plot.
-    "plot_add": V2Action(frozenset((*STATIONS, "uboot")), _plot_add_params),
-    "plot_remove": V2Action(frozenset((*STATIONS, "uboot")), _plot_remove_params),
-    "plot_relabel": V2Action(frozenset((*STATIONS, "uboot")), _plot_relabel_params),
-    "plot_clear": V2Action(frozenset((*STATIONS, "uboot")), _no_params),
+    "plot_add": V2Action(frozenset((*STATIONS, *_UBOOT_PLOT)), _plot_add_params),
+    "plot_remove": V2Action(frozenset((*STATIONS, *_UBOOT_PLOT)), _plot_remove_params),
+    "plot_relabel": V2Action(frozenset((*STATIONS, *_UBOOT_PLOT)), _plot_relabel_params),
+    "plot_clear": V2Action(frozenset((*STATIONS, *_UBOOT_PLOT)), _no_params),
     # Solo-only host controls: admitted only for a session carrying the host
     # surface, and each action states the exact phases it may run in.
     "host_save": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_ANY),
@@ -670,19 +675,21 @@ V2_ACTION_REGISTRY = {
     "opz_launch_chaff": V2Action(
         frozenset({"opz"}), _single_ref_params, direct_fire=True),
     # The crewed submarine's commander.
-    "uboot_set_course": V2Action(frozenset({"uboot"}), _course_params),
-    "uboot_set_speed": V2Action(frozenset({"uboot"}), _uboot_speed_params),
-    "uboot_set_depth": V2Action(frozenset({"uboot"}), _uboot_depth_params),
-    "uboot_fire": V2Action(frozenset({"uboot"}), _uboot_fire_params,
+    # Each boat order belongs to the station that does it aboard; the commander
+    # keeps course, speed and depth.
+    "uboot_set_course": V2Action(frozenset({"uboot", "uboot_nav"}), _course_params),
+    "uboot_set_speed": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_speed_params),
+    "uboot_set_depth": V2Action(frozenset({"uboot", "uboot_nav"}), _uboot_depth_params),
+    "uboot_fire": V2Action(frozenset({"uboot_weapons"}), _uboot_fire_params,
                            direct_fire=True),
-    "uboot_decoy": V2Action(frozenset({"uboot"}), _no_params),
-    "uboot_blow": V2Action(frozenset({"uboot"}), _no_params),
-    "uboot_snorkel": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
-    "uboot_mast": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
-    "uboot_wire_steer": V2Action(frozenset({"uboot"}), _uboot_wire_params),
-    "uboot_wire_cut": V2Action(frozenset({"uboot"}), _single_ref_params),
-    "uboot_silent": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
-    "uboot_bottom": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
+    "uboot_decoy": V2Action(frozenset({"uboot_weapons"}), _no_params),
+    "uboot_blow": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
+    "uboot_snorkel": V2Action(frozenset({"uboot_engine"}), _bool_params("enabled")),
+    "uboot_mast": V2Action(frozenset({"uboot_esm"}), _bool_params("enabled")),
+    "uboot_wire_steer": V2Action(frozenset({"uboot_weapons"}), _uboot_wire_params),
+    "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),
+    "uboot_silent": V2Action(frozenset({"uboot", "uboot_engine"}), _bool_params("enabled")),
+    "uboot_bottom": V2Action(frozenset({"uboot", "uboot_nav"}), _bool_params("enabled")),
 }
 
 

@@ -1,5 +1,5 @@
 import { S } from "../state/store.js";
-import { $, affiliations } from "../core/base.js";
+import { $, affiliations, isBoatCommand } from "../core/base.js";
 import { classificationText, enumText, finite, hasPosition, number, t, unit } from "../core/format.js";
 import { colors, palette } from "../core/palette.js";
 import { drawNatoSymbol } from "../plot/symbols.js";
@@ -16,7 +16,7 @@ export function mapPayload(role) {
   if (role === "weapons") return {own: payload.navigation, observations: payload.tactical, assets: payload.active_assets, bearingLogs: [], fixes: []};
   if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
   if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
-  if (role === "uboot") {
+  if (isBoatCommand(role)) {
     // The boat's own position (legitimate truth) and its own sonar contacts only.
     const nav = payload.navigation;
     const weapons = payload.weapons;

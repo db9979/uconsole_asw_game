@@ -1086,7 +1086,7 @@ def _opfor_common(game, status, role, boat):
     with game.sonar_perspective(boat.station):
         common = _common(game, status, role)
     # The commander sees the boat's own plot; the sonar room has none.
-    common["plot"] = (_plot(game, boat.plot, boat.sub) if role == "uboot" else
+    common["plot"] = (_plot(game, boat.plot, boat.sub) if role in ("uboot", "uboot_nav") else
                       dict(objects=[], max_objects=plot.MAX_OBJECTS,
                            max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(
@@ -1198,10 +1198,15 @@ def build_opfor_states(game, status, boat, rows, target_ref, focus_ref, sonar_re
     if boat is None:
         return {}
     result = {}
+    command = None
     for role in OPFOR_ROLES:
         state = _opfor_common(game, status, role, boat)
-        if role == "uboot":
-            state[role] = _uboot(game, boat, rows, target_ref, asset_refs or {})
+        if role != "uboot_sonar":
+            # The boat's command stations share one picture of their own boat;
+            # each browser station shows the part its watch operates.
+            if command is None:
+                command = _uboot(game, boat, rows, target_ref, asset_refs or {})
+            state[role] = deepcopy(command)
         else:
             with game.sonar_perspective(boat.station):
                 state[role] = _sonar(game, rows, focus_ref, target_ref, sonar_refs)

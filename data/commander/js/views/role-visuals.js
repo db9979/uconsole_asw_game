@@ -1,5 +1,5 @@
 import { S } from "../state/store.js";
-import { $, damageStates, isSonar, opforRoles } from "../core/base.js";
+import { $, damageStates, isBoatCommand, isSonar, opforRoles } from "../core/base.js";
 import { enumText, finite, number, t } from "../core/format.js";
 import { palette } from "../core/palette.js";
 import { syncPlotAnimation } from "../plot/clock.js";
@@ -110,7 +110,7 @@ function drawWeaponsVisual() {
 }
 function visualStationDown(role) {
   const payload = S.v2State?.[role];
-  return isSonar(role) ? payload.settings.station_down : role === "uboot" ? ["sinking", "sunk"].includes(payload.status.state) :
+  return isSonar(role) ? payload.settings.station_down : isBoatCommand(role) ? ["sinking", "sunk"].includes(payload.status.state) :
     role === "weapons" ? payload.readiness.station_down :
     role === "opz" ? !payload.radar.live : role === "radio" ? payload.station_down :
     role === "engine" ? payload.machinery.station_state === "ZERSTOERT" : role === "eloka" ? payload.station_down : false;
@@ -169,7 +169,7 @@ export function renderRoleVisuals(role) {
     ["eloka-visual", role === "eloka"], ["weapons-visual", role === "weapons"], ["radio-visual", role === "radio"]]) $(id).hidden = !active;
   // Each side has its own grease-pencil plot: the submarine commander draws on
   // the boat's, never the frigate's; the boat's sonar room has none.
-  $("plot-tools").hidden = role === "uboot_sonar";
+  $("plot-tools").hidden = opforRoles.has(role) && !["uboot", "uboot_nav"].includes(role);
   if (!role) { clearVisuals(); return; }
   const stateKey = !S.connected ? "visual_stale" : S.v2State.phase !== "live" ? "visual_inactive" : visualStationDown(role) ? "visual_station_down" : "visual_live";
   $("role-visual-state").textContent = t(stateKey);

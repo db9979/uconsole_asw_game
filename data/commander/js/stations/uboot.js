@@ -10,7 +10,16 @@ const alarmText = (age, bearing) => age === null ? t("station_none")
 // Telegraph steps as on the uConsole (config.UBOOT_SPEED_STEPS_KN plus the maximum).
 export const ubootSpeedSteps = (maximum) => [...[0, 3, 6, 10, 15].filter((speed) => speed < maximum), maximum];
 
+// Every boat station shares one panel; each shows the cards its watch
+// operates (data-uboot-stations lists the stations that see an element).
+function showStationCards(role) {
+  for (const element of document.querySelectorAll("#station-uboot [data-uboot-stations]"))
+    element.hidden = !element.dataset.ubootStations.split(" ").includes(role);
+  $("station-uboot-title").textContent = t(`station_${role}`);
+}
+
 export function renderUbootStation(payload) {
+  showStationCards(S.v2State?.role || "uboot");
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons;
   metrics($("uboot-navigation"), [["position", position(nav)], ["course", unit(nav.course, "\u00b0", 0)],
     ["uboot_ordered_course", unit(nav.target_course, "\u00b0", 0)], ["speed", unit(nav.speed, "kn")],
@@ -41,12 +50,18 @@ export function renderUbootStation(payload) {
     ["uboot_battery", status.battery === null ? t("unavailable") : unit(status.battery * 100, "%", 0)],
     ["uboot_endurance_phase", status.endurance_phase || t("unavailable")], ["uboot_transmitting", yesNo(status.transmitting)],
     ["uboot_quiet", yesNo(status.quiet)], ["uboot_snorkeling", yesNo(status.snorkeling)],
+    ["uboot_cavitating", yesNo(nav.cavitating)], ["uboot_noise", number(nav.noise, 2)],
     ["uboot_blow_available", yesNo(status.blow_available)], ["uboot_emergency_ascent", yesNo(status.emergency_ascent)],
-    ["torpedoes", number(weapons.torpedoes, 0)], ["uboot_tubes_ready", number(weapons.tubes_ready, 0)],
-    ["reload", unit(weapons.reload_s, "s", 0)], ["uboot_decoys", number(weapons.decoys, 0)],
+    ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
+    ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
+  metrics($("uboot-weapon-status"), [["torpedoes", number(weapons.torpedoes, 0)],
+    ["uboot_tubes_ready", number(weapons.tubes_ready, 0)], ["reload", unit(weapons.reload_s, "s", 0)],
+    ["uboot_decoys", number(weapons.decoys, 0)],
+    ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
+  metrics($("uboot-alarms"), [["uboot_mast", yesNo(status.mast)], ["depth", unit(nav.depth_m, "m", 0)],
     ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)],
-    ["uboot_mast", yesNo(status.mast)]]);
+    ["uboot_transmitting", yesNo(status.transmitting)]]);
   stationRows($("uboot-esm"), alarms.esm.map((row, index) => ({...row, key: index})),
     (row) => [["bearing", unit(row.bearing, "\u00b0", 0)], ["quality", unit(row.quality * 100, "%", 0)], ["age", unit(row.age_s, "s", 0)]],
     status.mast ? "uboot_esm_none" : "uboot_esm_mast_down");

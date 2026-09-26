@@ -77,7 +77,7 @@ from src.core import config, opfor
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.sensors import lookout_id
-from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, SIMLOG_ENTRIES_MAX,
+from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
 from src.commander.projections import (ROLE_NAMES, build_opfor_states,
                                        build_role_states, known_chart,
@@ -1352,7 +1352,7 @@ class CommanderBridge:
         if boat is None:
             return "not_ready"
         _rows, bindings = self._opfor_tracks(game, boat)
-        if role == "uboot" and action in ("uboot_wire_steer", "uboot_wire_cut"):
+        if role != "uboot_sonar" and action in ("uboot_wire_steer", "uboot_wire_cut"):
             torpedo = next((asset for (namespace, _key), (asset, ref)
                             in self._asset_refs.items()
                             if namespace == "uboot_torpedo" and ref == params["ref"]), None)
@@ -1361,13 +1361,13 @@ class CommanderBridge:
             if action == "uboot_wire_cut":
                 return opfor.wire_cut(boat, torpedo)
             return opfor.wire_steer(boat, torpedo, params["bearing"], params["range_nm"])
-        if role == "uboot" and action.startswith("plot_"):
-            # The commander draws on the boat's own plot, never the frigate's.
+        if role != "uboot_sonar" and action.startswith("plot_"):
+            # The boat's crew draws on the boat's own plot, never the frigate's.
             return _V2_ACTION_HANDLERS[action](game, params, bindings, layer=boat.plot)
         if role == "uboot" and action in ("sonar_active_ping", "sonar_measure_bt"):
             with game.sonar_perspective(boat.station):
                 return _V2_ACTION_HANDLERS[action](game, params, bindings)
-        if role == "uboot":
+        if role in UBOOT_COMMAND_ROLES:
             handler = _UBOOT_ACTION_HANDLERS.get(action)
             return False if handler is None else handler(game, boat, params, bindings)
         handler = _V2_ACTION_HANDLERS.get(action)

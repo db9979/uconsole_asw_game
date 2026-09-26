@@ -1,5 +1,5 @@
 import { S } from "./store.js";
-import { isSonar, stationNames } from "../core/base.js";
+import { isBoatCommand, isSonar, stationNames } from "../core/base.js";
 import { finite, t } from "../core/format.js";
 import { gameEffectKinds } from "./shared.js";
 
@@ -118,6 +118,10 @@ export function validateV2State(state) {
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"], eloka: ["intercepts", "station_down", "status", "hardware"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
     uboot_sonar: ["observations", "settings", "visualization"],
   };
   if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
@@ -194,7 +198,7 @@ export function validateV2State(state) {
         (visual.bt !== null && (!exactKeys(visual.bt, ["age_s", "thermocline_m", "water_depth_m", "sea_state", "depths_m", "speeds_m_s", "cz_bands_nm"]) || !boundedArray(visual.bt.depths_m, 64) || !boundedArray(visual.bt.speeds_m_s, 64) || visual.bt.depths_m.length !== visual.bt.speeds_m_s.length || !boundedArray(visual.bt.cz_bands_nm, 8) || visual.bt.cz_bands_nm.some((band) => !boundedArray(band, 2) || band.length !== 2))) ||
         !boundedArray(visual.active_echoes, 40) || visual.active_echoes.some((row) => !exactKeys(row, ["age_s", "bearing", "range_nm", "depth_m", "range_uncertainty_nm", "depth_uncertainty_m", "snr_db", "array"])) ||
         !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"]) || !["BROADBAND", "FILTERED", "HETERODYNE"].includes(visual.receiver.listen_mode) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
-  } else if (state.role === "uboot") {
+  } else if (isBoatCommand(state.role)) {
     const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
     const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "max_speed_kn", "noise"];
     if (!exactKeys(nav, [...navNumbers, "water_depth_m", "under_keel_m", "obstacle_ahead_nm", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||

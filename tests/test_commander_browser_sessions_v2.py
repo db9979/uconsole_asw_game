@@ -22,7 +22,8 @@ from commander_fixtures import PLOT, WEATHER_STATION
 
 
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
-            "engine", "helicopter", "eloka", "uboot", "uboot_sonar")
+            "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
+            "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav")
 
 
 def _station_record(status="available", *, requested=False, request_generation=0,
@@ -96,7 +97,7 @@ async function run() {
     await until(() => $test("pairing").hidden && !$test("simlog-view").hidden,
       "pair preserves the initial unassigned SimLog route");
     const cards = [...$test("station-cards").children];
-    assert(cards.length === 11, "lobby has nine frigate and two submarine station cards");
+    assert(cards.length === 15, "lobby has nine frigate and six submarine station cards");
     assert(cards.map((card) => card.dataset.station).join(",") === __STATIONS__, "canonical station order");
     assert(cards[1].classList.contains("station-occupied") && cards[0].classList.contains("station-available"), "occupancy is rendered");
     assert(operational().length === 0, "unassigned client fetches no operational state");

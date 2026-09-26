@@ -45,8 +45,9 @@ export const visualCanvasIds = ["role-map", "role-map-sweep", "sonar-broadband",
   "engine-instruments", "eloka-scope", "weapons-system", "helicopter-broadband-canvas",
   "helicopter-lofar-canvas", "helicopter-demon-canvas"];
 // The radio room has no chart: its instrument is the HF/DF scope.
-export const mapRoles = new Set(["bridge", "weapons", "opz", "helicopter", "uboot"]);
-export const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "helicopter", "eloka", "uboot", "uboot_sonar"]);
+export const mapRoles = new Set(["bridge", "weapons", "opz", "helicopter", "uboot", "uboot_weapons", "uboot_nav"]);
+export const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "helicopter", "eloka", "uboot", "uboot_sonar",
+  "uboot_weapons", "uboot_nav"]);
 export const roleMapViews = Object.fromEntries([...mapRoles].map((role) => [role, {x: 250, y: 250, zoom: 1}]));
 export const maxRoleMapHits = 512;
 export const defaultSonarPage = () => matchMedia("(min-width: 851px)").matches ? "overview" : "broadband";

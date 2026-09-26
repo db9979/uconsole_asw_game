@@ -83,7 +83,7 @@ function directFireSpec(action) {
     readiness: [payload?.asset.state, payload?.asset.airborne, payload?.asset.torpedoes,
       payload?.readiness, payload?.target_choices.map((row) => row.ref)]};
   }
-  if (role === "uboot" && action === "uboot_fire") {
+  if (role === "uboot_weapons" && action === "uboot_fire") {
     const ref = $("uboot-fire-target").value;
     const bearing = $("uboot-fire-bearing").valueAsNumber;
     const range = $("uboot-fire-range").valueAsNumber;
@@ -126,7 +126,7 @@ function fireStatusKey() {
 export function renderDirectFireControls() {
   const role = S.session?.station;
   const status = role === "weapons" ? $("weapons-fire-status") : role === "opz" ? $("opz-fire-status") :
-    role === "helicopter" ? $("helicopter-fire-status") : role === "uboot" ? $("uboot-fire-status") : null;
+    role === "helicopter" ? $("helicopter-fire-status") : role === "uboot_weapons" ? $("uboot-fire-status") : null;
   if (!status) { clearFireConfirmation(); return; }
   let pendingConfirm = false;
   let anyReady = false;
@@ -253,7 +253,7 @@ function directFireUnavailableReason(control) {
     if (!payload.asset.airborne) return unavailable("reason_not_airborne");
     if (payload.asset.torpedoes <= 0) return unavailable("reason_no_inventory");
   }
-  if (S.session.station === "uboot" && ["no_torpedoes", "reloading"].includes(payload.weapons.reason))
+  if (S.session.station === "uboot_weapons" && ["no_torpedoes", "reloading"].includes(payload.weapons.reason))
     return unavailable(`reason_uboot_${payload.weapons.reason}`);
   return unavailable("reason_not_ready");
 }

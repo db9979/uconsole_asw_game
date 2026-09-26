@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { emit } from "../core/events.js";
 import { stopSonarAudio } from "../audio/audio.js";
-import { $, isSonar, opforRoles, panelRole } from "../core/base.js";
+import { $, isBoatCommand, isSonar, opforRoles, panelRole } from "../core/base.js";
 import { t } from "../core/format.js";
 import { stopSonarStream } from "../net/sonar-stream.js";
 import { defaultSonarPage, lookoutView, roleCache, roleMapViews, sonarHistory, tabNames, trackRoles, view } from "../state/shared.js";
@@ -75,7 +75,7 @@ export function renderStationView() {
     damage: renderDamageStation, opz: renderOpzStation, radio: renderRadioStation, engine: renderEngineStation,
     helicopter: renderHelicopterStation, eloka: renderElokaStation,
     uboot: renderUbootStation, uboot_sonar: renderSonarStation};
-  renderers[active](S.v2State[active]);
+  (isBoatCommand(active) ? renderUbootStation : renderers[active])(S.v2State[active]);
   queueVisualDraw();
 }
 export function clearRoleState() {

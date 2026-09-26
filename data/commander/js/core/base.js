@@ -6,14 +6,17 @@ export const classes = { U_BOOT: "class_submarine", KAMPFSCHIFF: "class_warship"
 export const phases = { live: "phase_live", menu: "phase_menu", blocked: "phase_blocked", ended: "phase_ended" };
 export const damageStates = { OK: "damage_ok", FLUTEND: "damage_flooding", BESCHAEDIGT: "damage_damaged", ZERSTOERT: "damage_destroyed" };
 export const heloStates = { HANGAR: "helo_stowed", AUF: "helo_airborne", ZURUECK: "helo_returning", VERLOREN: "helo_lost" };
-// Nine frigate stations, then the crewed submarine's two roles (the
-// opposing side). A session only ever holds roles of one side.
-export const stationNames = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka", "uboot", "uboot_sonar"];
-export const opforRoles = new Set(["uboot", "uboot_sonar"]);
+// Nine frigate stations, then the crewed submarine's six (the opposing
+// side). A session only ever holds roles of one side.
+export const stationNames = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka",
+  "uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav"];
+export const opforRoles = new Set(["uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav"]);
+// The boat's stations besides its sonar room share one projection and panel.
+export const isBoatCommand = (role) => opforRoles.has(role) && role !== "uboot_sonar";
 // Both sonar rooms share one panel; the submarine's has no towed array.
 const sonarRoles = new Set(["sonar", "uboot_sonar"]);
 export const isSonar = (role) => sonarRoles.has(role);
-export const panelRole = (role) => (role === "uboot_sonar" ? "sonar" : role);
+export const panelRole = (role) => (role === "uboot_sonar" ? "sonar" : isBoatCommand(role) ? "uboot" : role);
 // Station hotkeys/numbers count within one side: 1-9 frigate, 1-2 submarine.
 export const sideStations = (station) => stationNames.filter((name) => opforRoles.has(name) === opforRoles.has(station));
 export const stationKey = (station) => sideStations(station).indexOf(station) + 1;
@@ -45,4 +48,4 @@ export const reasons = {
 };
 // Listening streams: frigate sonar, helicopter and the submarine's sonar room.
 export const audioRoles = new Set(["sonar", "helicopter", "uboot_sonar"]);
-export const directFireRoles = new Set(["weapons", "helicopter", "opz", "uboot"]);
+export const directFireRoles = new Set(["weapons", "helicopter", "opz", "uboot_weapons"]);

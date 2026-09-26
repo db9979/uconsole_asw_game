@@ -10,7 +10,8 @@ import { toggleWeatherStation } from "./weather.js";
 // a tab is its station number (1-9), also usable as a hotkey.
 const stationTabText = {bridge: "tab_bridge", sonar: "tab_sonar", weapons: "tab_weapons", damage: "tab_damage",
   opz: "tab_opz", radio: "tab_radio", engine: "tab_engine", helicopter: "tab_helicopter", eloka: "tab_eloka",
-  uboot: "tab_uboot", uboot_sonar: "tab_uboot_sonar"};
+  uboot: "tab_uboot", uboot_sonar: "tab_uboot_sonar", uboot_weapons: "tab_uboot_weapons",
+  uboot_engine: "tab_uboot_engine", uboot_esm: "tab_uboot_esm", uboot_nav: "tab_uboot_nav"};
 export function renderStationTabs(leased, shown) {
   const bar = $("station-tabs");
   const signature = leased.map((station) => `${station}:${t(stationTabText[station])}`).join("|");

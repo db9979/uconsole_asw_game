@@ -308,7 +308,8 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     catalog = pseudolocale(source) if language == "pseudo" else source
     html = inject_probe(index_html(), "lobby-layout.js")
     stations = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
-                "engine", "helicopter", "eloka", "uboot", "uboot_sonar")
+                "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
+            "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav")
     empty_grants = {"command": False, "direct_fire": False, "sonar_audio": False}
     session = {"protocol": 2, "client_id": "layout-client", "name": "Layout Lobby",
                "csrf": "layout-csrf", "ordinal": 0, "presence": 1.0,
@@ -391,7 +392,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     root = next(attrs for tag, attrs in Document(result.stdout).elements if tag == "html")
     report = json.loads(root["data-lobby-layout"])
     assert "error" not in report, report
-    assert report["cards"] == 11 and report["order"] == list(stations)
+    assert report["cards"] == 15 and report["order"] == list(stations)
     assert report["viewport"] == [css_width, css_height]
     assert report["pageWidth"] <= css_width + 1 and report["pageHeight"] <= css_height + 1, report
     assert report["controls"]
@@ -405,8 +406,10 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     assert report["weapons"]["bounds"][0] >= -1
     assert report["weapons"]["bounds"][2] <= css_width + 1
     assert report["lobby"][0] >= -1 and report["lobby"][2] <= css_width + 1
-    # The submarine sonar room shares the sonar section.
-    assert set(report["workstations"]) == set(stations) - {"uboot_sonar"}
+    # The submarine sonar room shares the sonar section, the boat's other
+    # stations share the submarine panel.
+    assert set(report["workstations"]) == set(stations) - {
+        "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav"}
     for role, dashboard in report["workstations"].items():
         assert not dashboard["intersects"], (role, dashboard)
         assert dashboard["childIntersections"] == 0, (role, dashboard)

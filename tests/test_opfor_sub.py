@@ -28,6 +28,17 @@ class CrewedServer(Server):
         return self.crewed and role in OPFOR_ROLES
 
 
+def _boat_apply(game, bridge):
+    """Apply a boat action from the first boat station that owns it."""
+    from src.commander.server import UBOOT_COMMAND_ROLES, V2_ACTION_REGISTRY
+
+    def apply(action, params):
+        role = next(role for role in UBOOT_COMMAND_ROLES
+                    if role in V2_ACTION_REGISTRY[action].stations)
+        return bridge._apply_opfor_action(game, action, params, role)
+    return apply
+
+
 def _game(seed=83):
     return Game(seed=seed, start_menu=False, audio_enabled=False, language="en")
 
@@ -516,7 +527,7 @@ def test_telegraph_steps_run_from_stop_to_the_maximum():
 
 def test_web_crew_modes_and_boat_reasons():
     game, _server, bridge = _crewed()
-    apply = lambda action, params: bridge._apply_opfor_action(game, action, params, "uboot")
+    apply = _boat_apply(game, bridge)
     assert apply("uboot_silent", {"enabled": True}) is True
     assert game.opfor.orders.silent
     sub = game.opfor.sub
@@ -617,7 +628,7 @@ def test_wire_steers_the_datum_breaks_on_strain_and_can_be_cut():
 def test_web_fire_parameters_and_wire_actions():
     game, server, bridge = _crewed()
     sub = game.opfor.sub
-    apply = lambda action, params: bridge._apply_opfor_action(game, action, params, "uboot")
+    apply = _boat_apply(game, bridge)
     assert apply("uboot_fire", {"ref": None, "bearing": _arc_bearing(game, sub), "range_nm": 6.0,
                                 "depth_m": 60.0, "salvo": 1}) is True
     _run(game, 1)
@@ -710,7 +721,7 @@ def test_web_mast_alarms_and_commander_sensors():
     game, server, bridge = _crewed()
     boat = game.opfor
     sub = boat.sub
-    apply = lambda action, params: bridge._apply_opfor_action(game, action, params, "uboot")
+    apply = _boat_apply(game, bridge)
     sub.depth = sub.target_depth = sub.order_depth = 12.0
     assert apply("uboot_mast", {"enabled": True}) is True
     sub.hear_ping(source=(sub.x + 3.0, sub.y))
@@ -809,3 +820,21 @@ def test_local_nav_page_shows_keel_and_obstacle():
     assert any("OBSTACLE AHEAD" in text for text in texts)
     boat.command_page = 0
     game.draw()
+
+
+def test_each_boat_station_owns_its_own_orders():
+    from src.commander.server import DIRECT_FIRE_ROLES, V2_ACTION_REGISTRY
+    game, _server, bridge = _crewed()
+    sub = game.opfor.sub
+    owners = {action: spec.stations for action, spec in V2_ACTION_REGISTRY.items()
+              if action.startswith("uboot_")}
+    assert owners["uboot_fire"] == {"uboot_weapons"} and "uboot_weapons" in DIRECT_FIRE_ROLES
+    assert owners["uboot_mast"] == {"uboot_esm"}
+    assert owners["uboot_snorkel"] == {"uboot_engine"}
+    assert "uboot_nav" in owners["uboot_set_course"]
+    # The commander no longer fires; the weapons station does.
+    params = {"ref": None, "bearing": sub.course, "range_nm": None, "depth_m": None, "salvo": 1}
+    assert bridge._apply_opfor_action(game, "uboot_fire", params, "uboot") is False
+    assert bridge._apply_opfor_action(game, "uboot_mast", {"enabled": False}, "uboot_weapons") is False
+    assert bridge._apply_opfor_action(game, "uboot_set_course", {"course": 45.0}, "uboot_nav") is True
+    assert sub.order_course == 45.0

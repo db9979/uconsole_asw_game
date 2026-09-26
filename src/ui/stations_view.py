@@ -381,6 +381,8 @@ def draw_bridge_view(game, tr=None) -> None:
         layout.blit_line(s, noise, (dx, dy + 102, dw, 24),
                          config.COLOR_DANGER if game.ship.cavitating else config.COLOR_OK,
                          size=18)
+    elif page == 2:
+        _draw_bridge_lookout(game, s, pygame.Rect(x, y2, w, content_h - alarm_h - 12))
     else:
         # MISSION page: mission + tactical systems
         half_box = (content_h - alarm_h - 12 - 10) // 2
@@ -431,10 +433,103 @@ def draw_bridge_view(game, tr=None) -> None:
     _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
         ("←/→", "bridge.footer.course"),
         ("↑/↓", "bridge.footer.telegraph"),
+        (", / .", "bridge.footer.lookout_range"),
+    ) if page == 2 else (
+        ("←/→", "bridge.footer.course"),
+        ("↑/↓", "bridge.footer.telegraph"),
         ("U", "bridge.footer.set_course"),
         ("V", "bridge.footer.set_speed"),
     ))
 
+
+
+_LOOKOUT_KIND_COLORS = {
+    "SURFACE": config.COLOR_CONTACT_ZIVIL,
+    "SUB": config.COLOR_CONTACT_UBOOT,
+    "FLG": config.COLOR_FLIGHT,
+    "TORP": config.COLOR_CONTACT_MISSILE,
+}
+
+
+def _lookout_scope_rect(area: pygame.Rect) -> pygame.Rect:
+    """Square scope on the left of the lookout page (shared with tooltips)."""
+    return pygame.Rect(area.x, area.y, max(40, int(area.w * .58)), max(40, area.h))
+
+
+def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
+    """Bridge lookout page: north-up scope of the visual sightings.
+
+    Only the lookout's own reports are drawn (measured bearing and range of
+    each ``LOOKOUT`` track, what he made out); the same picture as the Remote
+    Crew bridge lookout view.
+    """
+    scope = _lookout_scope_rect(area)
+    layout.box(s, scope, "panel.lookout_scope")
+    range_nm = float(getattr(game, "lookout_range_nm", 12.0))
+    cx, cy = scope.centerx, scope.centery + 10
+    radius = max(10, min(scope.w - 70, scope.h - 70) // 2)
+    night = game.world.is_night()
+    ring = config.COLOR_SONAR_RING
+    for fraction in (.25, .5, .75, 1.0):
+        pygame.draw.circle(s, ring, (cx, cy), int(radius * fraction), 1)
+    layout.blit_line(s, message("bridge.line.lookout_ring", range=f"{range_nm:.0f}"),
+                     (scope.x + 10, scope.y + 30, scope.w - 20, 18), config.COLOR_TEXT_DIM,
+                     size=14, align="right")
+    for bearing in (0, 90, 180, 270):
+        angle = math.radians(bearing)
+        tx, ty = cx + math.sin(angle) * (radius + 14), cy - math.cos(angle) * (radius + 12)
+        layout.blit_line(s, f"{bearing:03d}", (int(tx) - 16, int(ty) - 9, 32, 18),
+                         config.COLOR_TEXT_DIM, size=14, align="center")
+    sightings = game.lookout_sightings()
+    scale = radius / max(.1, range_nm)
+    for track in sightings:
+        dx, dy = track.x - game.ship.x, track.y - game.ship.y
+        if math.hypot(dx, dy) > range_nm:
+            angle = math.radians(track.bearing or 0.0)
+            px, py = cx + math.sin(angle) * radius, cy - math.cos(angle) * radius
+            pygame.draw.circle(s, _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM),
+                               (int(px), int(py)), 3, 1)
+            continue
+        px, py = int(cx + dx * scale), int(cy + dy * scale)
+        color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
+        pygame.draw.circle(s, color, (px, py), 5)
+        what = game.lookout_visual_what(track.label)
+        if what is not None and px + 10 < scope.right - 4:
+            layout.blit_line(s, what, (px + 8, py - 18, scope.right - px - 12, 16),
+                             color, size=13)
+    heading = math.radians(game.ship.course)
+    tip = (cx + math.sin(heading) * 12, cy - math.cos(heading) * 12)
+    left = (cx + math.sin(heading + 2.5) * 8, cy - math.cos(heading + 2.5) * 8)
+    right = (cx + math.sin(heading - 2.5) * 8, cy - math.cos(heading - 2.5) * 8)
+    pygame.draw.polygon(s, config.COLOR_OK, (tip, left, right), 0)
+    pygame.draw.line(s, config.COLOR_OK, tip,
+                     (cx + math.sin(heading) * min(40, radius * .5),
+                      cy - math.cos(heading) * min(40, radius * .5)), 1)
+
+    info = layout.box(s, (scope.right + 10, area.y, area.right - scope.right - 10, area.h),
+                      "panel.lookout_reports")
+    ix, iy, iw, ih = info
+    weather = game.world.weather_values()
+    layout.blit_line(s, message("bridge.line.lookout_visibility",
+                                visibility=f"{weather['visibility_nm']:.1f}"),
+                     (ix, iy, iw, 20), config.COLOR_TEXT, size=15)
+    layout.blit_line(s, message("bridge.line.lookout_sea_light", sea=f"{weather['sea_state']:.0f}",
+                                light=localize("weather.night" if night else "weather.day")),
+                     (ix, iy + 21, iw, 20), config.COLOR_TEXT, size=15)
+    layout.blit_line(s, message("bridge.line.lookout_count", count=len(sightings)),
+                     (ix, iy + 42, iw, 20), config.COLOR_TEXT_DIM, size=15)
+    ry = iy + 70
+    reports = list(game.lookout_reports)[-8:]
+    if not reports:
+        layout.blit_block(s, "bridge.line.lookout_none", ix, ry, iw, max(40, iy + ih - ry),
+                          color=config.COLOR_TEXT_DIM, size=14)
+    for report in reversed(reports):
+        if ry + 74 > iy + ih:
+            break
+        layout.blit_line(s, report["stamp"], (ix, ry, iw, 16), config.COLOR_TEXT_DIM, size=13)
+        layout.blit_block(s, game.lookout_report_text(report), ix, ry + 16, iw, 56,
+                          color=config.COLOR_TEXT, size=13)
+        ry += 76
 
 # --- OPZ / CIC (M12) -------------------------------------------------------
 
@@ -653,6 +748,16 @@ def station_hit_target(game, pos):
                     message("station.tooltip.telegraph_noise", telegraph=game.ship.telegraph, noise=f"{game.ship.noise_level():.0%}"),
                     "control.bridge_speed",
                     target_id="bridge:speed")
+        elif page == 2:
+            content_h = rect.bottom - cy - 30
+            area = pygame.Rect(x, y2, width, content_h - alarm_h - 12)
+            if _lookout_scope_rect(area).collidepoint(pos):
+                return layout.tooltip_payload(
+                    "panel.lookout_scope",
+                    message("bridge.line.lookout_count", count=len(game.lookout_sightings())),
+                    message("bridge.line.lookout_ring", range=f"{game.lookout_range_nm:.0f}"),
+                    "control.bridge_lookout",
+                    target_id="bridge:lookout")
         else:
             half_box = (rect.bottom - y2 - 30 - 10) // 2
             if pygame.Rect(x, y2, width, half_box).collidepoint(pos):

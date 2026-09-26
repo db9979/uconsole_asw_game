@@ -213,6 +213,8 @@ LOOKOUT_SEA_STATE_LOSS = 0.08
 LOOKOUT_BEARING_ERR_DEG = 0.6
 LOOKOUT_RANGE_ERR_FRAC = 0.06
 LOOKOUT_EPOCH_S = 0.5
+# Display scales of the bridge lookout page (NM, radius of the scope).
+LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
 # Land in sight: day/clear range of a coast with 50 m hills, checked on a
 # slow cadence; a landmass is reported again only after it dropped out of
 # sight.

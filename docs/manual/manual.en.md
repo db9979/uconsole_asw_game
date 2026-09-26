@@ -137,7 +137,7 @@ The Bridge conns the frigate: course, speed and position relative to coast, cont
 
 ### Displays and instruments
 
-Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing.
+Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope.
 
 ```text
 +---------------------------+----------------------+
@@ -163,7 +163,7 @@ Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) sh
 
 ### Bridge lookout reports
 
-The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". A contact is reported in up to three steps as it closes, each step once:
+The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". Bridge page 3 (the lookout scope) shows the sightings north up around the own ship at the range and bearing the lookout measured, coloured by kind (surface, submarine, aircraft, torpedo) and labelled with what he made out, next to visibility, sea state, day/night and the latest reports; `,` and `.` change the scope radius (2 to 30 NM). A contact is reported in up to three steps as it closes, each step once:
 
 - **Sighted:** only the kind of object is clear (vessel, aircraft, small object on the surface).
 - **Class:** the silhouette shows the class, for example merchant ship, warship, aircraft carrier, fishing vessel, speedboat, surfaced submarine, airliner or military aircraft.
@@ -183,6 +183,7 @@ Class and type need a finer resolved silhouette than the sighting (Johnson crite
 | `Chart` | Mouse wheel: zoom, mouse drag: pan |
 | `Q / E` | Zoom chart out/in |
 | `K` | Camera follow on/off |
+| `, / .` | Lookout page: scope radius smaller / larger |
 
 The trackball steers the rudder while the Bridge is selected. `U` and `V` open direct numeric entry; the simulation keeps running while you type. `Enter` confirms, `Esc` cancels.
 

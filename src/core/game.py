@@ -729,6 +729,7 @@ class Game:
         self.sonar_mode = "BOW"                      # "BOW" | "TOWED"
         self.sonar_page = 0
         self.station_page = 0
+        self.lookout_range_nm = 12.0                 # bridge lookout page scale (UI only)
         self.helo_acoustic_page = 1
         self.sonar_harmonic_hz = None
         # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).
@@ -2869,6 +2870,9 @@ class Game:
                 self.flash(message("runtime.sonar_audio.on" if self.helo_audio_enabled
                                    else "runtime.sonar_audio.off"))
             elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
+                    and self.station is Station.BRIDGE and self.station_page == 2:
+                self._cycle_lookout_range(1 if e.key == pygame.K_PERIOD else -1)
+            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
                     and self.station is Station.HELICOPTER and self.station_page == 3:
                 self.sonar_volume = round(config.clamp(self.sonar_volume +
                     (.1 if e.key == pygame.K_PERIOD else -.1), 0.0, 1.0), 1)
@@ -3811,6 +3815,19 @@ class Game:
             return "invalid_value"
         self.opz_range_nm = float(range_nm)
         return True
+
+    def _cycle_lookout_range(self, delta: int) -> None:
+        """Bridge lookout page: step the display scale (presentation only)."""
+        scales = config.LOOKOUT_DISPLAY_RANGES_NM
+        current = getattr(self, "lookout_range_nm", 12.0)
+        index = min(range(len(scales)), key=lambda i: abs(scales[i] - current))
+        self.lookout_range_nm = scales[max(0, min(len(scales) - 1, index + delta))]
+        self.flash(message("runtime.lookout.range", range=f"{self.lookout_range_nm:.0f}"), 1.5)
+
+    def lookout_sightings(self) -> list:
+        """Current bridge-lookout tracks (measured bearing/range, visual label)."""
+        return [track for track in self.air_picture.tracks(self.sim_t)
+                if track.source == "LOOKOUT" and track.x is not None and track.y is not None]
 
     def _cycle_radar_range(self, delta: int) -> None:
         scales = config.RADAR_RANGE_SCALES_NM

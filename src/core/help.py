@@ -47,7 +47,8 @@ STATION_HELP = {
         [("<- / ->", "help.control.rudder"), ("help.key.up_down", "help.control.telegraph_up"),
          ("U", "help.control.course_input"), ("V", "help.control.speed_input"),
          ("+ / -", "help.control.engine_order"), ("help.key.chart", "help.control.mouse_map"),
-         ("Q / E", "help.control.zoom"), ("K", "help.control.follow")],
+         ("Q / E", "help.control.zoom"), ("K", "help.control.follow"),
+         (", / .", "help.bridge.lookout_range")],
         ["help.note.bridge_noise", "help.note.bridge_coast"], "help.note.bridge_tactic"),
     Station.SONAR: _station(
         "help.sonar.intro",

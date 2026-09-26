@@ -14,7 +14,6 @@ SONAR_PAGES = (
 )
 
 TWO_PAGE_STATIONS = {
-    Station.BRIDGE: ("BRIDGE_NAV", "BRIDGE_MISSION"),
     Station.WEAPONS: ("WEAPONS_TARGET", "WEAPONS_AMMO"),
     Station.DAMAGE: ("DAMAGE_PLAN", "DAMAGE_DETAIL"),
     Station.OPZ: ("OPZ_PICTURE", "OPZ_TARGET"),
@@ -28,6 +27,7 @@ def test_page_metadata_covers_every_canonical_station():
     assert set(STATION_PAGES) == set(Station)
     assert STATION_PAGES[Station.SONAR] == SONAR_PAGES
     assert STATION_PAGES[Station.HELICOPTER] == ("HELO_STATUS", "HELO_MISSION", "HELO_SONAR", "HELO_ACOUSTIC")
+    assert STATION_PAGES[Station.BRIDGE] == ("BRIDGE_NAV", "BRIDGE_MISSION", "BRIDGE_LOOKOUT")
     for station, pages in TWO_PAGE_STATIONS.items():
         assert STATION_PAGES[station] == pages
 
@@ -37,7 +37,8 @@ def test_page_metadata_covers_every_canonical_station():
         assert pages
         assert all(isinstance(page, str) and page for page in pages)
         assert len(pages) == (6 if station is Station.SONAR else
-                              4 if station is Station.HELICOPTER else 2)
+                              4 if station is Station.HELICOPTER else
+                              3 if station is Station.BRIDGE else 2)
 
 
 def test_helicopter_sonar_page_wraps():

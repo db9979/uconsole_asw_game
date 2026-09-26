@@ -1039,11 +1039,49 @@ class CommanderServer:
 
     @staticmethod
     def _station_grants(station=None):
+        """A granted station always carries every right it can have; the host
+        only ever takes rights away (``set_client_grant``) or the station."""
         return {
             "command": station in ROLES,
-            "direct_fire": False,
-            "sonar_audio": False,
+            "direct_fire": station in DIRECT_FIRE_ROLES,
+            "sonar_audio": station in SONAR_AUDIO_ROLES,
         }
+
+    def _station_free_locked(self, session, station):
+        """Free for ``session``: unheld, or held only as the web host's placeholder."""
+        holder = next((candidate for candidate in self._sessions_v2.values()
+                       if station in candidate["leases"]), None)
+        return holder is None or (holder is not session and holder.get("web_host")
+                                  and not session.get("web_host"))
+
+    def _auto_grant_locked(self, session, station):
+        """Lease a free station straight away with its full rights (no host step)."""
+        if (station in session["leases"] or self._side_conflict(session, station)
+                or not self._station_free_locked(session, station)):
+            return False
+        holder = next((candidate for candidate in self._sessions_v2.values()
+                       if station in candidate["leases"]), None)
+        if holder is not None:
+            self._release_station_locked(holder, station)
+        else:
+            self._station_generations[station] += 1
+        session["leases"][station] = {
+            "generation": self._station_generations[station],
+            "grants": self._station_grants(station),
+        }
+        session["requests"].pop(station, None)
+        self._set_active_station_locked(session, station)
+        return True
+
+    def _grant_waiting_requests_locked(self):
+        """Oldest waiting request first: a station that became free goes to it."""
+        waiting = sorted(((session["ordinal"], generation, station, session)
+                          for session in self._sessions_v2.values()
+                          for station, generation in session["requests"].items()),
+                         key=lambda row: row[:3])
+        for _ordinal, _generation, station, session in waiting:
+            if station in session["requests"]:
+                self._auto_grant_locked(session, station)
 
     def _set_active_station_locked(self, session, station, reason="active_station_changed"):
         if station is not None and station not in session["leases"]:
@@ -1203,6 +1241,7 @@ class CommanderServer:
                 self._clear_session_authority_locked(session, "role_revoked")
         if self._web_host_digest not in self._sessions_v2:
             self._web_host_digest = None
+        self._grant_waiting_requests_locked()
 
     def _new_session_locked(self, name: str, *, web_host=False):
         token = secrets.token_urlsafe(32)
@@ -1435,11 +1474,7 @@ class CommanderServer:
 
     @staticmethod
     def _solo_grants(station):
-        return {
-            "command": True,
-            "direct_fire": station in ("weapons", "helicopter", "opz"),
-            "sonar_audio": station in ("sonar", "helicopter"),
-        }
+        return CommanderServer._station_grants(station)
 
     def _solo_grant_all_locked(self, session, active=None):
         """Lease every station to the single solo session with full grants."""
@@ -1557,8 +1592,10 @@ class CommanderServer:
                 self._set_active_station_locked(session, station)
             return True
 
-    def resolve_station_request(self, client_id, station, request_generation, grants=None) -> bool:
-        """Atomically decide an exact pending request; never take over a lease."""
+    def resolve_station_request(self, client_id, station, request_generation, grants=None,
+                                *, takeover=False) -> bool:
+        """Atomically decide an exact pending request; only a host decision with
+        ``takeover`` hands a held station over (with its full rights)."""
         capabilities = {"command", "direct_fire", "sonar_audio"}
         if (type(client_id) is not str or station not in ROLES
                 or type(request_generation) is not int
@@ -1579,10 +1616,14 @@ class CommanderServer:
             if grants is None:
                 del session["requests"][station]
                 return True
-            if (any(station in item["leases"] for item in self._sessions_v2.values())
-                    or self._side_conflict(session, station)):
+            holder = next((item for item in self._sessions_v2.values()
+                           if station in item["leases"]), None)
+            if (holder is not None and not takeover) or self._side_conflict(session, station):
                 return False
-            self._station_generations[station] += 1
+            if holder is not None:
+                self._release_station_locked(holder, station)
+            else:
+                self._station_generations[station] += 1
             session["leases"][station] = {
                 "generation": self._station_generations[station],
                 "grants": dict(grants),
@@ -3232,7 +3273,11 @@ class _Handler(BaseHTTPRequestHandler):
                             status, response = 400, {"error": "invalid_request"}
                         else:
                             station = body["station"]
-                            if station not in session["leases"] and station not in session["requests"]:
+                            if (not owner._auto_grant_locked(session, station)
+                                    and station not in session["leases"]
+                                    and station not in session["requests"]
+                                    and not owner._side_conflict(session, station)):
+                                # Held by a crewmate: the host decides (takeover).
                                 session["next_request_generation"] += 1
                                 session["requests"][station] = session["next_request_generation"]
                             status = 200

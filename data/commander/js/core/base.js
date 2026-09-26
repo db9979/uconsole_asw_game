@@ -45,3 +45,4 @@ export const reasons = {
 };
 // Listening streams: frigate sonar, helicopter and the submarine's sonar room.
 export const audioRoles = new Set(["sonar", "helicopter", "uboot_sonar"]);
+export const directFireRoles = new Set(["weapons", "helicopter", "opz", "uboot"]);

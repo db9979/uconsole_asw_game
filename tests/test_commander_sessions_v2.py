@@ -323,20 +323,21 @@ def test_station_request_requires_cookie_csrf_and_exact_schema(server):
                  {"station": 1}, [], None):
         assert request(server, route, "POST", body, cookie, session["csrf"])[0] == 400
 
-    status, _, requested = request(
+    # A free station is leased at once, with all of its rights.
+    status, _, taken = request(
         server, route, "POST", {"station": "sonar"}, cookie, session["csrf"])
     assert status == 200
-    assert requested["requested_station"] == "sonar"
-    assert requested["station"] is None
-    assert requested["stations"]["sonar"]["status"] == "available"
-    assert requested["stations"]["sonar"]["requested"] is True
-    status = server.client_statuses()[0]
-    assert status["stations"]["sonar"]["requested"] and status["active_station"] is None
+    assert taken["requested_station"] is None and taken["station"] == "sonar"
+    assert taken["stations"]["sonar"]["status"] == "mine"
+    assert taken["grants"]["sonar_audio"] is True
 
+    # A station a crewmate holds becomes a request for the host to decide.
+    _, _, _, holder = pair_v2(server, "Holder")
+    assert server.grant_station(holder["client_id"], "bridge")
     second = request(server, route, "POST", {"station": "bridge"}, cookie,
                      session["csrf"])[2]
-    assert second["stations"]["sonar"]["requested"]
     assert second["stations"]["bridge"]["requested"]
+    assert second["stations"]["bridge"]["status"] == "occupied"
     assert second["requested_station"] == "bridge"  # Canonical compatibility alias.
 
 
@@ -443,9 +444,7 @@ def test_host_station_lease_query_tracks_exclusive_ownership(server):
     assert not server.station_leased("bridge")
     assert request(server, "/api/v2/stations/request", "POST",
                    {"station": "bridge"}, alpha_cookie, alpha["csrf"])[0] == 200
-    assert not server.station_leased("bridge")
-    assert server.grant_station(alpha["client_id"], "bridge")
-    assert server.station_leased("bridge")
+    assert server.station_leased("bridge")  # Taken at once while free.
     assert server.set_client_grant(alpha["client_id"], "command", False)
     assert server.station_leased("bridge")
     assert server.grant_station(bravo["client_id"], "bridge")
@@ -567,7 +566,8 @@ def test_independent_revoke_reject_revoke_all_and_roster_order(server):
         "Bridge", "Engine", "Unassigned first", "Unassigned last"]
 
     requester = clients["Unassigned first"][1]
-    assert request(server, "/api/v2/stations/request", "POST", {"station": "opz"},
+    # The bridge is held, so this stays a request the host can reject.
+    assert request(server, "/api/v2/stations/request", "POST", {"station": "bridge"},
                    clients["Unassigned first"][0], requester["csrf"])[0] == 200
     assert server.reject_station_request(requester["client_id"])
     assert server.revoke_station("engine")
@@ -695,6 +695,8 @@ def test_sonar_audio_fails_closed_for_auth_schema_role_grant_and_context(server)
     assert request(server, route, "POST", body, cookie, paired["csrf"],
                    {"Origin": f"http://localhost:{port}"})[0] == 403
     assert server.grant_station(paired["client_id"], "sonar")
+    # Granted with all rights; the host may still take audio away.
+    assert server.set_client_grant(paired["client_id"], "sonar_audio", False)
     assigned = request(server, "/api/v2/session", cookie=cookie)[2]
     body["station_generation"] = assigned["station_generation"]
     body["active_generation"] = assigned["active_generation"]

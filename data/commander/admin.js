@@ -66,7 +66,7 @@ function render(room) {
         row.append(button("admin_revoke",()=>action("revoke",client.client_id,station)));
         for (const capability of ["command","direct_fire","sonar_audio"]) {
           if (capability==="direct_fire" && !["weapons","opz","helicopter","uboot"].includes(station)) continue;
-          if (capability==="sonar_audio" && !["sonar","uboot_sonar"].includes(station)) continue;
+          if (capability==="sonar_audio" && !["sonar","helicopter","uboot_sonar"].includes(station)) continue;
           const current=detail.grants[capability];
           const control=button(current?"admin_disable":"admin_enable",
             ()=>action(capability,client.client_id,station,!current));

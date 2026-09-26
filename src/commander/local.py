@@ -210,7 +210,8 @@ class CommanderConsole:
             detail = self._station_row(selected, station)
             ok = self.server.resolve_station_request(
                 client_id, station, detail["request_generation"],
-                dict(command=True, direct_fire=False, sonar_audio=False))
+                dict(command=True, direct_fire=station in DIRECT_FIRE_ROLES,
+                     sonar_audio=station in SONAR_AUDIO_ROLES), takeover=True)
             if ok:
                 self.roster_station = ROLES.index(station)
             success = message("commander.roster.status.assigned", client=name,
@@ -355,7 +356,7 @@ class CommanderConsole:
             statuses = self.server.client_statuses()
             self.connected = self.connected or bool(statuses)
             self.active_crew = self.active_crew or any(
-                status["active_station"] in STATIONS for status in statuses)
+                status["active_station"] in ROLES for status in statuses)
         else:
             self.active_crew = self.connected
         if self.station_leased(game.station):
@@ -460,12 +461,8 @@ class CommanderConsole:
             station = body["station"]
             value = body["value"]
             if action == "assign":
+                # A granted station always carries all of its rights.
                 ok = server.grant_station(client_id, station)
-                if ok and client_id == host_id:
-                    server.set_client_grant(client_id, station, "direct_fire",
-                                            station in DIRECT_FIRE_ROLES)
-                    server.set_client_grant(client_id, station, "sonar_audio",
-                                            station in SONAR_AUDIO_ROLES)
             elif action == "revoke":
                 ok = server.revoke_station(station)
             elif action == "revoke_client":

@@ -65,10 +65,11 @@ export function renderLobby() {
     card.className = `station-card station-${state}`;
     heading.textContent = t(`station_${station}`);
     occupancy.textContent = t(`occupancy_${state}`);
-    button.textContent = record.requested ? t("station_requested") : t("station_request");
-    // The web host initially holds every station and may transfer any of them.
-    button.disabled = S.stationMutation || requested !== null ||
-      (state !== "available" && !S.webHostAvailable);
+    // A free station is taken at once with all its rights; one a crewmate
+    // holds is requested from the host, who may hand it over.
+    button.textContent = record.requested ? t("station_requested")
+      : t(state === "available" ? "station_take" : "station_request");
+    button.disabled = S.stationMutation || requested !== null || state === "mine";
   });
   if (!assigned) { renderDisabledReasons(); return; }
   const role = t(`station_${S.session.station}`);
@@ -194,8 +195,7 @@ export async function mutateStation(path, body) {
   }
 }
 function requestStation(station) {
-  if (!stationNames.includes(station) ||
-      (S.session?.stations[station]?.status !== "available" && !S.webHostAvailable) ||
+  if (!stationNames.includes(station) || S.session?.stations[station]?.status === "mine" ||
       S.session.requested_station !== null) return;
   mutateStation("/stations/request", { station });
 }

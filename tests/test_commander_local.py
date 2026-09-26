@@ -219,7 +219,8 @@ class RosterTransport:
             selected["active_station"] = station
         return True
 
-    def resolve_station_request(self, client_id, station, generation, grants=None):
+    def resolve_station_request(self, client_id, station, generation, grants=None,
+                                takeover=False):
         self.calls.append(("resolve_station_request", client_id, station, generation, grants))
         selected = self._client(client_id)
         detail = selected["stations"][station] if selected is not None else None
@@ -769,8 +770,9 @@ def test_roster_keyboard_actions_grant_requests_assign_and_revoke(game):
     console.handle_key(game, pygame.K_RETURN)
     assert server._client("alpha")["stations"]["bridge"]["leased"]
     assert server._client("bravo")["active_station"] == "sonar"
+    # Approval always carries every right of the station.
     assert server._client("bravo")["stations"]["sonar"]["grants"] == {
-        "command": True, "direct_fire": False, "sonar_audio": False}
+        "command": True, "direct_fire": False, "sonar_audio": True}
     console.handle_key(game, pygame.K_c)
     assert not server._client("bravo")["stations"]["sonar"]["grants"]["command"]
     before = server.client_statuses()

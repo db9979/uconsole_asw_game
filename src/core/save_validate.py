@@ -1858,4 +1858,3 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             finite_number=finite_number, sim_t=save_sim_t):
         return False
     return True
-

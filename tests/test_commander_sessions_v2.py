@@ -14,6 +14,7 @@ from commander_web import top_level_files
 
 from src.commander import CommanderServer
 from src.commander import server as transport
+from src.commander.v2 import routes
 from commander_fixtures import PLOT, WEATHER_STATION
 
 
@@ -164,6 +165,7 @@ def test_multiple_pairings_reload_and_read_only_snapshots(server):
 def test_cookie_get_renews_eight_hour_idle_session(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(routes, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     _, cookie, _, body = pair_v2(server, "Helm")
     clock[0] += 8 * 60 * 60 - 1
     resumed = request(server, "/api/v2/session", cookie=cookie)[2]
@@ -201,6 +203,7 @@ def test_logout_requires_csrf_and_isolates_other_sessions(server):
 def test_twelve_session_limit_and_expiry_reopens_slot(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(routes, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     cookies = [pair_v2(server, f"Client {index}")[1] for index in range(12)]
     code = server.pairing_code
     status, _, body = request(
@@ -535,6 +538,7 @@ def test_capability_invariants_and_release(server):
 def test_presence_expiry_releases_role_but_session_reconnects(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(routes, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     _, cookie, _, session = pair_v2(server, "Quiet")
     assert server.grant_station(session["client_id"], "radio")
     assert server.set_client_grant(session["client_id"], "command", True)

@@ -2694,8 +2694,14 @@ class Game:
                     if self.measure_sonar_bt() is True:
                         depth = self.sonar.bt_profile["thermocline_m"]
                         self.flash(message("runtime.bt.measured", depth=f"{depth:.0f}"))
-                        self.feed.add(self.world.format_time(), "sonar",
-                                      message("runtime.bt.feed", depth=f"{depth:.0f}"))
+                        # The log of the listening side: never the frigate's
+                        # feed while the uConsole plays the submarine.
+                        notice = message("runtime.bt.feed", depth=f"{depth:.0f}")
+                        if self._sonar_ctx is self._frigate_sonar:
+                            self.feed.add(self.world.format_time(), "sonar", notice)
+                        elif self._opfor is not None and self._sonar_ctx is self._opfor.station:
+                            self._opfor.notice(self.sim_t, "sonar", notice,
+                                               stamp=self.world.format_time())
                     else:
                         self.flash(message("runtime.bt.cooldown",
                                            seconds=f"{self.sonar.bt_cooldown:.0f}"))
@@ -8045,6 +8051,7 @@ class Game:
             self._update_sensors(sensor_dt)
             if self._opfor is not None:
                 opfor.update_sonar(self, self._opfor, sensor_dt)
+                opfor.update_crew(self, self._opfor)
         if self._esm_acc >= .5:
             self._esm_acc = 0.0
             self._update_esm_picture()

@@ -213,6 +213,20 @@ LOOKOUT_SEA_STATE_LOSS = 0.08
 LOOKOUT_BEARING_ERR_DEG = 0.6
 LOOKOUT_RANGE_ERR_FRAC = 0.06
 LOOKOUT_EPOCH_S = 0.5
+# Crewed hostile submarine (manual crew controls; the AI never uses these).
+UBOOT_SILENT_MAX_KN = 5.0          # silent running: speed ceiling
+UBOOT_SNORKEL_MAX_KN = 6.0         # snorkelling: speed ceiling (mast drag)
+UBOOT_BOTTOM_CLEARANCE_M = 3.0     # lying on the bottom: keel clearance
+UBOOT_BATTERY_WARN_FRACTION = 0.20 # battery warning / nearly empty
+UBOOT_BATTERY_EMPTY_FRACTION = 0.03
+UBOOT_SPEED_STEPS_KN = (0.0, 3.0, 6.0, 10.0, 15.0)   # telegraph steps (+ maximum)
+UBOOT_SALVO_SPREAD_DEG = 4.0       # two-torpedo spread: +/- this
+UBOOT_TORPEDO_MIN_DEPTH_M = 5.0
+UBOOT_WIRE_MAX_KN = 10.0           # own speed that strains the wire
+UBOOT_WIRE_MAX_YAW_DEG_S = 1.5
+UBOOT_OBSTACLE_LOOKAHEAD_NM = 5.0  # chart check ahead of the ordered course
+UBOOT_UNDER_KEEL_WARN_M = 15.0
+
 # Display scales of the bridge lookout page (NM, radius of the scope).
 LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
 # Land in sight: day/clear range of a coast with 50 m hills, checked on a

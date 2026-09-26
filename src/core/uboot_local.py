@@ -15,7 +15,7 @@ import math
 
 import pygame
 
-from src.core import config
+from src.core import config, opfor
 from src.core.i18n import message
 from src.core.station import Station
 
@@ -31,6 +31,8 @@ _SONAR_BLOCKED = frozenset({
     pygame.K_0, pygame.K_KP0,
 })
 UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearing")
+# Rejections of boat-mode orders that have their own local text.
+UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth")
 
 
 def playing(game) -> bool:
@@ -103,6 +105,16 @@ def _announce(game, category: str, text, seconds: float = 2.0) -> None:
     current = boat(game)
     if current is not None:
         current.notice(game.sim_t, category, text, stamp=game.world.format_time())
+
+
+def _mode_notice(game, mode: str, on: bool, result) -> None:
+    """Banner and boat log for a boat-mode toggle (silent/snorkel/bottom)."""
+    if result is True:
+        _announce(game, "navigation", message(f"uboot.local.{mode}_{'on' if on else 'off'}"))
+    else:
+        game.flash(message("uboot.local.mode_rejected", reason=message(
+            f"uboot.reason.{result}" if result in UBOOT_LOCAL_REASONS
+            else "uboot.reason.not_ready")), 2.5)
 
 
 def _fire_notice(game, result) -> None:
@@ -329,6 +341,21 @@ def _command_key(game, current, key, mods) -> None:
             _announce(game, "waffen", message("uboot.local.decoy"))
         else:
             game.flash(message("uboot.local.decoy_unavailable"), 2.0)
+    elif key == pygame.K_g:
+        bottom = bool(mods & pygame.KMOD_SHIFT)
+        orders = current.orders
+        on = not (orders.bottomed if bottom else orders.silent)
+        result = sub.command_bottom(on) if bottom else sub.command_silent(on)
+        _mode_notice(game, ("bottom" if bottom else "silent"), on, result)
+    elif key == pygame.K_n:
+        on = not sub.snorkeling
+        _mode_notice(game, "snorkel", on, sub.command_snorkel(on))
+    elif key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS,
+                 pygame.K_MINUS, pygame.K_KP_MINUS):
+        up = key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS)
+        if opfor.step_speed(sub, 1 if up else -1) is True:
+            _announce(game, "navigation", message(
+                "uboot.local.speed_ordered", speed=f"{sub.order_speed:.1f}"), 1.5)
     elif key == pygame.K_b and mods & pygame.KMOD_SHIFT:
         result = sub.command_blow()
         if result is True:

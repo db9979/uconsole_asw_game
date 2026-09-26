@@ -168,3 +168,6 @@ body.workstation-mode .chart-panel { display: none; }
   font: var(--font-sm)/1.35 var(--font-mono); box-shadow: 0 .6rem 1.4rem -.4rem var(--shadow);
 }
 .map-tooltip strong { color: var(--live-strong); }
+
+/* Crewed submarine: boat-mode toggles (silent running, snorkel, bottom). */
+.uboot-modes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .35rem; }

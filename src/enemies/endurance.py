@@ -38,6 +38,9 @@ class SubmarineEndurance:
         self.return_depth_m = profile.snorkel_depth_m
         self.radio_left_s = 0.0
         self.last_flow = EnergyFlow(0.0, 0.0, 0.0, 0.0, 0.0)
+        # A human crew runs the plant: no automatic ascent, snorkel or radio
+        # call (transient, set by the boat each update; never saved).
+        self.manual = False
 
     @property
     def surface_operation(self) -> bool:
@@ -47,6 +50,17 @@ class SubmarineEndurance:
     def transmitting(self) -> bool:
         return self.phase == "RADIO"
 
+    def start_snorkel(self, depth_m: float) -> bool:
+        """Crew: run the diesels at snorkel depth (charges the battery)."""
+        if depth_m > self.profile.snorkel_depth_m + 1.0:
+            return False
+        self.phase = "SNORKEL"
+        return True
+
+    def stop_snorkel(self) -> None:
+        if self.phase == "SNORKEL":
+            self.phase = "SUBMERGED"
+
     def load_kw(self, speed_kn: float, maximum_speed_kn: float) -> float:
         ratio = min(1.0, max(0.0, speed_kn) / max(maximum_speed_kn, 1e-9))
         return (self.profile.hotel_load_kw
@@ -54,6 +68,18 @@ class SubmarineEndurance:
                 * ratio ** self.profile.propulsion_exponent)
 
     def _start_reserve_cycle(self, depth_m: float) -> None:
+        if self.manual:
+            # The AIP plant still takes over the hotel load by itself; going
+            # up to snorkel is the crew's decision (``start_snorkel``).
+            start = self.profile.battery_capacity_kwh * self.profile.reserve_start_fraction
+            stop = self.profile.battery_capacity_kwh * self.profile.reserve_stop_fraction
+            if self.phase == "AIP" and (self.battery_kwh >= stop - self.ENERGY_EPSILON_KWH
+                                        or self.aip_energy_kwh <= self.ENERGY_EPSILON_KWH):
+                self.phase = "SUBMERGED"
+            elif (self.phase == "SUBMERGED" and self.battery_kwh <= start + self.ENERGY_EPSILON_KWH
+                  and self.profile.aip_power_kw is not None and self.aip_energy_kwh > 0.0):
+                self.phase = "AIP"
+            return
         if self.phase not in ("SUBMERGED", "AIP"):
             return
         start = self.profile.battery_capacity_kwh * self.profile.reserve_start_fraction
@@ -75,6 +101,11 @@ class SubmarineEndurance:
             self.phase = "ASCENDING"
 
     def _advance_instantaneous(self, depth_m: float) -> None:
+        if self.manual:
+            if self.phase in ("ASCENDING", "RADIO", "DESCENDING"):
+                self.phase = "SUBMERGED"
+            self._start_reserve_cycle(depth_m)
+            return
         self._start_reserve_cycle(depth_m)
         reached_snorkel = depth_m <= (
             self.profile.snorkel_depth_m + self.DEPTH_TOLERANCE_M)
@@ -117,6 +148,9 @@ class SubmarineEndurance:
                                      depth_m: float) -> float:
         """Return the submerged part of an interval before ascent begins."""
         self._validate_inputs(dt, speed_kn, maximum_speed_kn, depth_m)
+        if self.manual:
+            self._advance_instantaneous(depth_m)
+            return dt
         self._advance_instantaneous(depth_m)
         if self.surface_operation or dt == 0.0:
             return 0.0
@@ -167,7 +201,7 @@ class SubmarineEndurance:
             charge_rate = self.profile.generator_power_kw / 3600.0 - load_rate
             if charge_rate > 0.0:
                 stop = (self.profile.battery_capacity_kwh
-                        * self.profile.reserve_stop_fraction)
+                        * (1.0 if self.manual else self.profile.reserve_stop_fraction))
                 return max(0.0, (stop - self.battery_kwh) / charge_rate)
         if self.phase == "RADIO":
             return self.radio_left_s

@@ -190,6 +190,10 @@ class Sub:
         # Crew control (transient, never saved): while ``manual`` the AI state
         # machine is bypassed and the boat follows only the crew's orders.
         self.manual = False
+        # Transient crew settings of a crewed boat (``opfor.CrewOrders``);
+        # None for the AI. Never saved, like the crew binding itself.
+        self.crew = None
+        self.last_bottom_m = None
         self.order_course = self.course
         self.order_speed = self.speed
         self.order_depth = self.target_depth
@@ -547,7 +551,10 @@ class Sub:
         self.transient_left = max(0.0, self.transient_left - dt)
         depth_at = getattr(world, "depth_m", lambda x, y: 1000.0)
         bottom = depth_at(self.x, self.y)
-        safe_depth = min(self.stype.max_depth_m, max(0.0, bottom - 25.0))
+        self.last_bottom_m = bottom
+        safe_depth = min(self.stype.max_depth_m, max(0.0, bottom - self._bottom_clearance_m()))
+        if self.endurance is not None:
+            self.endurance.manual = bool(self.manual)
         self.target_depth = config.clamp(self.target_depth, 0.0, safe_depth)
         old_depth = self.depth
         for key in ("last_ping_age", "last_torpedo_age"):
@@ -661,7 +668,8 @@ class Sub:
             self.pinged_this_tick = self._maybe_active_ping(dt)
 
         surface_steps = 0
-        if self.endurance is not None and self.endurance.surface_operation:
+        if (self.endurance is not None and self.endurance.surface_operation
+                and not self.manual):
             dt, surface_steps = self._update_surface_cycle(
                 dt, safe_depth, SubmarineEndurance.MAX_SUBSTEPS)
             if dt <= 0.0:
@@ -793,10 +801,17 @@ class Sub:
             nx += config.kn_to_nm_per_s(cu) * motion_dt
             ny -= config.kn_to_nm_per_s(cv) * motion_dt
         if (world.on_land(nx, ny) or underwater_path_blocked(
-                world, self.x, self.y, old_depth + 25.0 - 1e-6,
-                nx, ny, self.depth + 25.0 - 1e-6)):
-            self.target_course = (self.course + 90.0) % 360.0
-            self.course = self.target_course
+                world, self.x, self.y, old_depth + self._bottom_clearance_m() - 1e-6,
+                nx, ny, self.depth + self._bottom_clearance_m() - 1e-6)):
+            if self.manual:
+                # A crewed boat stops short of the obstacle instead of
+                # veering: the crew must choose a new course.
+                self.speed = self.order_speed = 0.0
+                if self.crew is not None:
+                    self.crew.event("obstacle")
+            else:
+                self.target_course = (self.course + 90.0) % 360.0
+                self.course = self.target_course
         else:
             self.x, self.y = nx, ny
 
@@ -880,6 +895,9 @@ class Sub:
             q -= 0.30
         if self.state in QUIET_STATES:
             q = max(0.97, q + 0.08)
+        if self.manual and self.crew is not None and self.crew.quiet_active(self):
+            # Crew silent running or lying on the bottom: the lurker's quiet.
+            q = max(0.97, q + 0.08)
         if self.transmitting:
             q += config.SNOCKEL_TRANSMIT_NOISE  # M13: Senden macht lauter
         return config.clamp(q, 0.0, 1.0)
@@ -920,8 +938,11 @@ class Sub:
     @property
     def bottomed(self) -> bool:
         """Lying still on the seabed (wreck hide): no way ordered, no drift.
-        Derived from saved state, so it survives save/load."""
-        return self.state == "WRACK" and self.speed_order <= 0.0
+        Derived from saved state, so it survives save/load (a crew's
+        bottoming is transient like the crew binding)."""
+        return ((self.state == "WRACK" and self.speed_order <= 0.0)
+                or (self.manual and self.crew is not None and self.crew.bottomed
+                    and self.speed <= 0.05))
 
     def wreck_hiding_spot(self, world):
         """Nearest charted wreck within reach whose bottom this boat can lie
@@ -995,18 +1016,32 @@ class Sub:
         self.order_speed = self.speed_order
         self.order_depth = self.target_depth
         self._manual_ping_pending = False
+        if self.endurance is not None:
+            # The crew runs the plant: an automatic ascent/radio call ends.
+            self.endurance.manual = True
+            if self.endurance.phase in ("ASCENDING", "RADIO", "DESCENDING"):
+                self.endurance.phase = "SUBMERGED"
 
     def release_manual(self) -> None:
         """Return the boat to the AI, which resumes from its current state."""
         self.manual = False
+        self.crew = None
+        if self.endurance is not None:
+            self.endurance.manual = False
         self._manual_ping_pending = False
         self.target_course = self.course
         self.turn_left = min(self.turn_left, 60.0)
 
+    def _bottom_clearance_m(self) -> float:
+        """25 m above the bottom; a crew that lies the boat down goes closer."""
+        if self.manual and self.crew is not None and self.crew.bottomed:
+            return config.UBOOT_BOTTOM_CLEARANCE_M
+        return 25.0
+
     def safe_depth_m(self, world) -> float:
         """Deepest ordered depth: test depth, and 25 m clear of the bottom."""
         bottom = getattr(world, "depth_m", lambda x, y: 1000.0)(self.x, self.y)
-        return min(self.stype.max_depth_m, max(0.0, bottom - 25.0))
+        return min(self.stype.max_depth_m, max(0.0, bottom - self._bottom_clearance_m()))
 
     def set_orders(self, *, course=None, speed=None, depth=None):
         """Crew orders; each value is checked before any is applied."""
@@ -1022,6 +1057,9 @@ class Sub:
             return "invalid_value"
         if not self.manual or self.sunk or self.state == "SINKING":
             return "not_ready"
+        if self.crew is not None and self.crew.bottomed and (
+                (speed is not None and speed > 0.0) or depth is not None):
+            self.crew.bottomed = False          # any way or depth order lifts off
         if course is not None:
             self.order_course = float(course)
         if speed is not None:
@@ -1037,9 +1075,24 @@ class Sub:
         self.course = (self.course + config.clamp(
             diff, -self.motion.turn_rate_deg_s * dt,
             self.motion.turn_rate_deg_s * dt)) % 360.0
-        self.target_depth = config.clamp(self.order_depth, 0.0, safe_depth)
+        crew = self.crew
+        ceiling = self.speed_for_state()
+        order_depth = self.order_depth
+        if crew is not None:
+            if crew.bottomed:
+                order_depth, ceiling = safe_depth, 0.0
+            if crew.silent:
+                ceiling = min(ceiling, config.UBOOT_SILENT_MAX_KN)
+            if self.snorkeling:
+                ceiling = min(ceiling, config.UBOOT_SNORKEL_MAX_KN)
+        self.target_depth = config.clamp(order_depth, 0.0, safe_depth)
         self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
-        self.speed = config.clamp(self.order_speed, 0.0, self.speed_for_state())
+        self.speed = config.clamp(self.order_speed, 0.0, ceiling)
+        if self.snorkeling and self.depth > self.endurance.profile.snorkel_depth_m + 1.0:
+            # Dived below snorkel depth: the head valve shuts, diesels stop.
+            self.endurance.stop_snorkel()
+            if crew is not None:
+                crew.event("snorkel_stopped")
 
     def fire_readiness(self, bearing=None):
         """Why a crew torpedo shot is impossible now, or None when ready."""
@@ -1124,6 +1177,59 @@ class Sub:
         self.blow_available = False
         self.emergency_ascent = True
         self.transient_left = max(self.transient_left, 20.0)
+        return True
+
+    @property
+    def snorkeling(self) -> bool:
+        return self.endurance is not None and self.endurance.phase == "SNORKEL"
+
+    def _crew_ready(self) -> bool:
+        return (self.manual and self.crew is not None and not self.sunk
+                and self.state not in ("SINKING", "SUNK"))
+
+    def command_snorkel(self, on):
+        """Crew: raise the snorkel and run the diesels (or stop them)."""
+        if type(on) is not bool:
+            return "invalid_value"
+        if not self._crew_ready():
+            return "not_ready"
+        if self.endurance is None:
+            return "uboot_no_snorkel"           # nuclear boat: no diesels
+        if not on:
+            self.endurance.stop_snorkel()
+            return True
+        if self.depth > self.endurance.profile.snorkel_depth_m + 1.0:
+            return "uboot_too_deep"
+        self.crew.bottomed = False
+        self.order_depth = self.endurance.profile.snorkel_depth_m
+        self.endurance.start_snorkel(self.depth)
+        return True
+
+    def command_silent(self, on):
+        """Crew: silent running (speed ceiling, the lurker's quiet)."""
+        if type(on) is not bool:
+            return "invalid_value"
+        if not self._crew_ready():
+            return "not_ready"
+        self.crew.silent = on
+        return True
+
+    def command_bottom(self, on):
+        """Crew: lie the boat on the bottom (all stop, 3 m keel clearance)."""
+        if type(on) is not bool:
+            return "invalid_value"
+        if not self._crew_ready():
+            return "not_ready"
+        if not on:
+            self.crew.bottomed = False
+            self.order_depth = self.depth
+            return True
+        if self.last_bottom_m is None or self.last_bottom_m > self.stype.max_depth_m:
+            return "uboot_too_deep"
+        if self.snorkeling:
+            self.endurance.stop_snorkel()
+        self.crew.bottomed = True
+        self.order_speed = 0.0
         return True
 
     def speed_for_state(self) -> float:

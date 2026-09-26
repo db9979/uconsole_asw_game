@@ -199,7 +199,8 @@ export function validateV2State(state) {
     const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "max_speed_kn", "noise"];
     if (!exactKeys(nav, [...navNumbers, "water_depth_m", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
         (nav.water_depth_m !== null && !finite(nav.water_depth_m)) || typeof nav.cavitating !== "boolean" ||
-        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting"]) ||
+        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting", "snorkel_available", "snorkeling", "silent", "quiet", "bottomed"]) ||
+        [status.snorkel_available, status.snorkeling, status.silent, status.quiet, status.bottomed].some((value) => typeof value !== "boolean") ||
         !["manual", "ai", "sinking", "sunk"].includes(status.state) || !finite(status.damage) ||
         [status.emergency_ascent, status.blow_available, status.transmitting].some((value) => typeof value !== "boolean") ||
         (status.battery !== null && !finite(status.battery)) ||

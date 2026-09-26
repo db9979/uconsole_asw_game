@@ -399,3 +399,149 @@ def test_submarine_chart_and_pages_are_the_boats_own_controls():
         key(value)
     row = list(boat.feed)[-1]
     assert row["category"] == "navigation" and row["stamp"] == game.world.format_time()
+
+
+# --- Crew control of the boat: plant, silent running, bottom, telegraph -----
+
+def _run(game, seconds, dt=0.1):
+    for _ in range(int(seconds / dt)):
+        game._update_sim(dt)
+
+
+def _feed_texts(game):
+    from src.core.i18n import localize
+    return [str(localize(row["text"], game.tr)) for row in game.opfor.feed]
+
+
+def test_crewed_plant_never_ascends_or_calls_by_itself():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    if sub.endurance is None:
+        pytest.skip("nuclear boat: no battery cycle")
+    endurance = sub.endurance
+    endurance.battery_kwh = endurance.profile.battery_capacity_kwh * .02
+    endurance.aip_energy_kwh = 0.0
+    sub.set_orders(depth=120.0, speed=6.0)
+    _run(game, 60)
+    assert endurance.phase == "SUBMERGED"
+    assert not sub.transmitting and sub.depth > 60.0
+    # An empty battery limits the way the plant can serve instead.
+    endurance.battery_kwh = 0.0
+    _run(game, 10)
+    assert sub.speed < 6.0
+
+
+def test_snorkel_charges_only_at_snorkel_depth_and_stops_below():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    if sub.endurance is None:
+        assert sub.command_snorkel(True) == "uboot_no_snorkel"
+        return
+    endurance = sub.endurance
+    snorkel_depth = endurance.profile.snorkel_depth_m
+    sub.depth = sub.target_depth = sub.order_depth = 80.0
+    assert sub.command_snorkel(True) == "uboot_too_deep"
+    sub.depth = sub.target_depth = snorkel_depth
+    endurance.battery_kwh = endurance.profile.battery_capacity_kwh * .3
+    assert sub.command_snorkel(True) is True and sub.snorkeling
+    sub.set_orders(speed=12.0)
+    before = endurance.battery_kwh
+    _run(game, 120)
+    assert sub.snorkeling and endurance.battery_kwh > before
+    assert sub.speed <= config.UBOOT_SNORKEL_MAX_KN + 1e-6
+    sub.set_orders(depth=60.0)
+    _run(game, 30)
+    assert not sub.snorkeling
+    assert any("snorkel depth" in text for text in _feed_texts(game))
+
+
+def test_silent_running_caps_speed_and_gives_the_lurker_quiet():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    sub.set_orders(speed=12.0, depth=100.0)
+    _run(game, 60)
+    loud = sub.quiet_factor()
+    assert sub.command_silent(True) is True
+    _run(game, 60)
+    assert sub.speed <= config.UBOOT_SILENT_MAX_KN + 1e-6
+    assert sub.quiet_factor() >= 0.97 > loud
+    assert sub.command_silent("yes") == "invalid_value"
+    assert sub.command_silent(False) is True
+    sub.release_manual()
+    assert sub.command_silent(True) == "not_ready"
+
+
+def test_lying_on_the_bottom_is_quiet_and_lifts_off_with_way():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    game.world.depth_m = lambda x, y: 150.0
+    sub.depth = sub.target_depth = sub.order_depth = 120.0
+    _run(game, 1)
+    assert sub.command_bottom(True) is True
+    _run(game, 240)
+    assert abs(sub.depth - (150.0 - config.UBOOT_BOTTOM_CLEARANCE_M)) < 1.0
+    assert sub.speed <= 0.05 and sub.bottomed and sub.quiet_factor() >= 0.97
+    assert sub.set_orders(speed=4.0) is True
+    assert not game.opfor.orders.bottomed
+    game.world.depth_m = lambda x, y: sub.stype.max_depth_m + 200.0
+    _run(game, 1)
+    assert sub.command_bottom(True) == "uboot_too_deep"
+
+
+def test_crewed_boat_stops_before_land_instead_of_veering():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    sub.set_orders(speed=8.0)
+    _run(game, 30)
+    course = sub.course
+    game.world.on_land = lambda x, y: True
+    _run(game, 2)
+    assert sub.order_speed == 0.0 and abs(config.angle_diff_deg(sub.course, course)) < 5.0
+    assert any("Obstacle ahead" in text for text in _feed_texts(game))
+
+
+def test_telegraph_steps_run_from_stop_to_the_maximum():
+    from src.core import opfor
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    steps = opfor.speed_steps(sub)
+    assert steps[0] == 0.0 and steps[-1] == sub.motion.maximum_speed_kn
+    sub.set_orders(speed=0.0)
+    for expected in steps[1:]:
+        assert opfor.step_speed(sub, 1) is True and sub.order_speed == expected
+    assert opfor.step_speed(sub, 1) is True and sub.order_speed == steps[-1]
+    assert opfor.step_speed(sub, -1) is True and sub.order_speed == steps[-2]
+
+
+def test_web_crew_modes_and_boat_reasons():
+    game, _server, bridge = _crewed()
+    apply = lambda action, params: bridge._apply_opfor_action(game, action, params, "uboot")
+    assert apply("uboot_silent", {"enabled": True}) is True
+    assert game.opfor.orders.silent
+    sub = game.opfor.sub
+    sub.depth = sub.target_depth = sub.order_depth = 200.0
+    expected = "uboot_no_snorkel" if sub.endurance is None else "uboot_too_deep"
+    assert apply("uboot_snorkel", {"enabled": True}) == expected
+    sub.fire_readiness = lambda bearing=None: "no_torpedoes"
+    assert apply("uboot_fire", {"ref": None, "bearing": sub.course, "range_nm": None}) \
+        == "uboot_no_torpedoes"
+
+
+def test_local_boat_mode_keys():
+    game = _game()
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+
+    def key(value, mod=0):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=mod, unicode=""))
+
+    key(pygame.K_g)
+    assert boat.orders.silent
+    key(pygame.K_g)
+    assert not boat.orders.silent
+    speed = boat.sub.order_speed
+    key(pygame.K_PLUS)
+    assert boat.sub.order_speed > speed
+    key(pygame.K_MINUS)
+    game.draw()

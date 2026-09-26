@@ -37,6 +37,10 @@ export const reasons = {
   action_rejected: "reason_action_rejected", expired: "reason_expired",
   context_invalidated: "reason_context_invalidated",
   direct_fire_unavailable: "reason_direct_fire_unavailable",
+  uboot_no_torpedoes: "reason_uboot_no_torpedoes", uboot_reloading: "reason_uboot_reloading",
+  uboot_out_of_arc: "reason_uboot_out_of_arc", uboot_no_decoys: "reason_uboot_no_decoys",
+  uboot_too_deep: "reason_uboot_too_deep", uboot_no_snorkel: "reason_uboot_no_snorkel",
+  uboot_no_wire: "reason_uboot_no_wire", uboot_mast_depth: "reason_uboot_mast_depth",
   ok: "reason_ok",
 };
 // Listening streams: frigate sonar, helicopter and the submarine's sonar room.

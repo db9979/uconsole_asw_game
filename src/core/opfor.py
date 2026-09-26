@@ -26,12 +26,51 @@ _SONAR_SEED_SALT = 0x0B0A7
 OPFOR_SONAR_DOWN_DAMAGE = 90.0
 
 
+class CrewOrders:
+    """Transient crew settings of the crewed boat (never saved).
+
+    The ``Sub`` reads them only while ``manual``; they vanish with the crew
+    binding (release, reset, load), after which the AI commands the boat again.
+    """
+
+    # Crew notices raised by the boat itself (key -> feed category).
+    EVENTS = {"obstacle": "navigation", "snorkel_stopped": "navigation",
+              "battery_low": "navigation", "battery_empty": "navigation",
+              "shallow_water": "navigation"}
+
+    def __init__(self):
+        self.silent = False
+        self.bottomed = False
+        self.mast = False
+        self._events = []
+        self._battery_state = "ok"
+        self._keel_warned = False
+
+    def event(self, key: str) -> None:
+        if key in self.EVENTS and key not in self._events:
+            self._events.append(key)
+
+    def drain_events(self) -> list:
+        events, self._events = self._events, []
+        return events
+
+    def quiet_active(self, sub) -> bool:
+        """Silent running within its speed ceiling, or lying on the bottom."""
+        if sub.snorkeling or sub.pinged_this_tick:
+            return False
+        if self.bottomed:
+            return True
+        return self.silent and sub.speed <= config.UBOOT_SILENT_MAX_KN + 1e-6
+
+
 class CrewedBoat:
     """One crewed submarine: the boat, its sonar workstation and its feed."""
 
     def __init__(self, sub, runtime_catalog):
         self.sub = sub
         self.sub_id = sub.id
+        self.orders = CrewOrders()
+        sub.crew = self.orders
         platform = SubSonarPlatform(sub)
         sonar = SonarSystem(seed=(int(sub.sensor_seed) ^ _SONAR_SEED_SALT) & 0x7FFFFFFF,
                             acoustic_profiles=runtime_catalog.acoustic_profiles)
@@ -129,6 +168,50 @@ def update_sonar(game, boat: CrewedBoat, dt: float) -> None:
                 key, contact=contact.id, bearing=f"{contact.bearing:4.0f}",
                 range=f"{contact.range_est:.1f}" if contact.range_est else "",
                 origin=contact.origin))
+
+
+def speed_steps(sub) -> tuple:
+    """Telegraph steps of the crewed boat (knots), ending at its maximum."""
+    maximum = float(sub.motion.maximum_speed_kn)
+    return tuple(step for step in config.UBOOT_SPEED_STEPS_KN if step < maximum) + (maximum,)
+
+
+def step_speed(sub, delta: int):
+    """One telegraph step faster (+1) or slower (-1) from the ordered speed."""
+    steps = speed_steps(sub)
+    index = min(range(len(steps)), key=lambda i: abs(steps[i] - sub.order_speed))
+    return sub.set_orders(speed=steps[max(0, min(len(steps) - 1, index + delta))])
+
+
+def battery_fraction(sub):
+    endurance = sub.endurance
+    if endurance is None or not endurance.profile.battery_capacity_kwh:
+        return None
+    return endurance.battery_kwh / endurance.profile.battery_capacity_kwh
+
+
+def update_crew(game, boat: CrewedBoat) -> None:
+    """Crew warnings from the boat's own state (0.25 s cadence)."""
+    sub, orders = boat.sub, boat.orders
+    if sub.sunk:
+        return
+    battery = battery_fraction(sub)
+    if battery is not None:
+        state = ("empty" if battery <= config.UBOOT_BATTERY_EMPTY_FRACTION
+                 else "low" if battery <= config.UBOOT_BATTERY_WARN_FRACTION else "ok")
+        if state != orders._battery_state:
+            if state in ("low", "empty"):
+                orders.event("battery_" + state)
+            orders._battery_state = state
+    bottom = sub.last_bottom_m
+    shallow = (bottom is not None and not orders.bottomed
+               and bottom - sub.depth < config.UBOOT_UNDER_KEEL_WARN_M)
+    if shallow and not orders._keel_warned:
+        orders.event("shallow_water")
+    orders._keel_warned = shallow
+    for key in orders.drain_events():
+        boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(f"uboot.event.{key}"),
+                    stamp=game.world.format_time())
 
 
 def advance_mechanics(game, boat: CrewedBoat, dt: float) -> None:

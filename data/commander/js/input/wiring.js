@@ -480,6 +480,9 @@ export function init() {
   });
   $("uboot-decoy").addEventListener("click", () => sendStationAction("uboot_decoy", {}));
   $("uboot-blow").addEventListener("click", () => sendStationAction("uboot_blow", {}));
+  // Boat modes: each button toggles its own published state.
+  for (const [id, action] of [["uboot-silent", "uboot_silent"], ["uboot-snorkel", "uboot_snorkel"], ["uboot-bottom", "uboot_bottom"]])
+    $(id).addEventListener("click", () => sendStationAction(action, {enabled: $(id).getAttribute("aria-pressed") !== "true"}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));
   $("helicopter-return").addEventListener("click", () => sendStationAction("helicopter_return", {}));
   $("helicopter-waypoint-form").addEventListener("submit", (event) => {

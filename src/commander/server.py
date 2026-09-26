@@ -272,6 +272,13 @@ def _range_params(params):
             and params["range_nm"] in RADAR_RANGE_SCALES_NM)
 
 
+# Rejections of the crewed submarine's own orders (their own vocabulary,
+# never the frigate's words).
+UBOOT_REASONS = frozenset((
+    "uboot_no_torpedoes", "uboot_reloading", "uboot_out_of_arc", "uboot_no_decoys",
+    "uboot_too_deep", "uboot_no_snorkel", "uboot_no_wire", "uboot_mast_depth"))
+
+
 def _bool_params(name):
     return lambda params: (type(params) is dict and set(params) == {name}
                            and type(params[name]) is bool)
@@ -651,6 +658,9 @@ V2_ACTION_REGISTRY = {
                            direct_fire=True),
     "uboot_decoy": V2Action(frozenset({"uboot"}), _no_params),
     "uboot_blow": V2Action(frozenset({"uboot"}), _no_params),
+    "uboot_snorkel": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
+    "uboot_silent": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
+    "uboot_bottom": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
 }
 
 
@@ -1777,7 +1787,8 @@ class CommanderServer:
                                "salvo_limit", "empty", "no_tube",
                                "weapons_down", "weapons_degraded", "out_of_range",
                                 "opz_degraded", "active_limit", "no_fuel",
-                                "weather_unsafe", "no_save", "save_failed"}
+                                "weather_unsafe", "no_save", "save_failed",
+                                *UBOOT_REASONS}
                           else "action_rejected")
             return self._finish_v2_locked(
                 session, envelope, "applied" if reason == "ok" else "rejected", reason)

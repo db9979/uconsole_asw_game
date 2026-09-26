@@ -15,6 +15,7 @@ export function renderUbootStation(payload) {
   metrics($("uboot-status"), [["state", t(`uboot_state_${status.state}`)], ["uboot_damage", unit(status.damage, "%", 0)],
     ["uboot_battery", status.battery === null ? t("unavailable") : unit(status.battery * 100, "%", 0)],
     ["uboot_endurance_phase", status.endurance_phase || t("unavailable")], ["uboot_transmitting", yesNo(status.transmitting)],
+    ["uboot_quiet", yesNo(status.quiet)], ["uboot_snorkeling", yesNo(status.snorkeling)],
     ["uboot_blow_available", yesNo(status.blow_available)], ["uboot_emergency_ascent", yesNo(status.emergency_ascent)],
     ["torpedoes", number(weapons.torpedoes, 0)], ["uboot_tubes_ready", number(weapons.tubes_ready, 0)],
     ["reload", unit(weapons.reload_s, "s", 0)], ["uboot_decoys", number(weapons.decoys, 0)],
@@ -25,6 +26,11 @@ export function renderUbootStation(payload) {
   if (!S.stationDrafts.has("uboot-speed")) $("uboot-speed").max = String(nav.max_speed_kn);
   $("uboot-decoy").dataset.ready = String(weapons.decoy_ready);
   $("uboot-blow").dataset.ready = String(status.blow_available && !status.emergency_ascent && nav.depth_m > 30);
+  for (const [id, pressed] of [["uboot-silent", status.silent], ["uboot-snorkel", status.snorkeling], ["uboot-bottom", status.bottomed]])
+    $(id).setAttribute("aria-pressed", String(pressed));
+  $("uboot-snorkel").dataset.ready = String(status.snorkel_available);
+  $("uboot-battery-warning").hidden = status.battery === null || status.battery > .2;
+  $("uboot-battery-warning").textContent = status.battery !== null && status.battery <= .03 ? t("uboot_battery_empty") : t("uboot_battery_low");
   fillFireTargets("uboot-fire-target", payload.contacts);
   stationRows($("uboot-contacts"), payload.contacts, sonarEntries);
   stationRows($("uboot-feed"), [...payload.feed].reverse().map((row) => ({...row, key: row.seq})),

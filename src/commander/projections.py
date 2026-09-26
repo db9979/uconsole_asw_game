@@ -1135,7 +1135,12 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             emergency_ascent=bool(sub.emergency_ascent),
             blow_available=bool(sub.blow_available),
             battery=_number(battery), endurance_phase=phase,
-            transmitting=bool(sub.transmitting)),
+            transmitting=bool(sub.transmitting),
+            snorkel_available=sub.endurance is not None,
+            snorkeling=bool(sub.snorkeling),
+            silent=bool(sub.crew is not None and sub.crew.silent),
+            quiet=bool(sub.crew is not None and sub.crew.quiet_active(sub)),
+            bottomed=bool(sub.crew is not None and sub.crew.bottomed)),
         weapons=dict(
             torpedoes=int(sub.torpedoes_left),
             tubes_ready=(int(sub.weapon_battery.ready_count)

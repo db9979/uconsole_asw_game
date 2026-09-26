@@ -509,9 +509,9 @@ def _opz_launch_chaff(game, params, bindings):
     return game.launch_chaff_at(binding[4])
 
 
-# Crew shot results in the transport's existing rejection vocabulary.
-_UBOOT_REASONS = {"no_torpedoes": "empty", "no_decoys": "empty",
-                  "reloading": "no_tube", "out_of_arc": "invalid_target"}
+# Crew results in the boat's own rejection vocabulary.
+_UBOOT_REASONS = {"no_torpedoes": "uboot_no_torpedoes", "no_decoys": "uboot_no_decoys",
+                  "reloading": "uboot_reloading", "out_of_arc": "uboot_out_of_arc"}
 
 
 def _uboot_result(result):
@@ -573,6 +573,18 @@ def _uboot_blow(game, boat, params, _bindings):
     return boat.sub.command_blow()
 
 
+def _uboot_snorkel(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_snorkel(params["enabled"]))
+
+
+def _uboot_silent(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_silent(params["enabled"]))
+
+
+def _uboot_bottom(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_bottom(params["enabled"]))
+
+
 _UBOOT_ACTION_HANDLERS = {
     "acknowledge": lambda game, boat, params, _bindings: params == {},
     "uboot_set_course": _uboot_set_course,
@@ -581,6 +593,9 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_fire": _uboot_fire,
     "uboot_decoy": _uboot_decoy,
     "uboot_blow": _uboot_blow,
+    "uboot_snorkel": _uboot_snorkel,
+    "uboot_silent": _uboot_silent,
+    "uboot_bottom": _uboot_bottom,
 }
 
 

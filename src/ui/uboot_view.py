@@ -424,6 +424,14 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     _bar(s, (dx, dy + 110, dw, 10), battery,
          config.COLOR_DANGER if battery is not None and battery < .15 else
          config.COLOR_WARN if battery is not None and battery < .3 else config.COLOR_OK)
+    modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
+                                 ("uboot.mode.snorkel", sub.snorkeling),
+                                 ("uboot.mode.bottom", boat.orders.bottomed)) if on]
+    quiet = boat.orders.quiet_active(sub)
+    layout.blit_line(s, message("uboot.line.modes", modes=raw_text(" · ".join(
+        str(localize(key)) for key in modes)) if modes else localize("uboot.mode.none")),
+                     (dx, dy + 124, dw, 20),
+                     config.COLOR_OK if quiet else config.COLOR_TEXT_DIM, size=16)
     ladder_y = y + box_h + 10
     ladder_h = y + h - ladder_y
     if ladder_h >= 70:

@@ -225,6 +225,7 @@ _UBOOT_HELP = (
         ("G", "help.uboot.silent"),
         ("Shift+G", "help.uboot.bottom"),
         ("N", "help.uboot.snorkel"),
+        ("P", "help.uboot.mast"),
         ("+ / -", "help.uboot.telegraph"),
         ("help.key.uboot_sonar", "help.uboot.sonar"),
         ("S / L / F9", "help.uboot.admin"),

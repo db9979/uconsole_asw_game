@@ -1152,7 +1152,8 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             snorkeling=bool(sub.snorkeling),
             silent=bool(sub.crew is not None and sub.crew.silent),
             quiet=bool(sub.crew is not None and sub.crew.quiet_active(sub)),
-            bottomed=bool(sub.crew is not None and sub.crew.bottomed)),
+            bottomed=bool(sub.crew is not None and sub.crew.bottomed),
+            mast=bool(sub.crew is not None and sub.crew.mast)),
         weapons=dict(
             torpedoes=int(sub.torpedoes_left),
             tubes_ready=(int(sub.weapon_battery.ready_count)
@@ -1171,7 +1172,11 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             ping_age_s=(_number(alarms["last_ping_age"])
                         if math.isfinite(alarms["last_ping_age"]) else None),
             torpedo_age_s=(_number(alarms["last_torpedo_age"])
-                           if math.isfinite(alarms["last_torpedo_age"]) else None)),
+                           if math.isfinite(alarms["last_torpedo_age"]) else None),
+            ping_bearing=_number(getattr(sub.crew, "ping_bearing", None)),
+            torpedo_bearing=_number(getattr(sub.crew, "torpedo_bearing", None)),
+            esm=[dict(bearing=_number(bearing), quality=_number(quality), age_s=_number(age))
+                 for bearing, quality, age in (sub.crew.esm if sub.crew is not None else [])]),
         contacts=[_observation(row, _SONAR_FIELDS) for row in rows],
         own_weapons=_uboot_weapons(game, boat, asset_refs),
         designated_target_ref=target_ref,

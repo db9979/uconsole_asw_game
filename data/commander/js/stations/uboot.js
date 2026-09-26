@@ -3,6 +3,10 @@ import { $ } from "../core/base.js";
 import { number, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, position, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 
+// Alarm age with the boat's own measured bearing (never the source's truth).
+const alarmText = (age, bearing) => age === null ? t("station_none")
+  : bearing === null ? unit(age, "s", 0) : t("uboot_alarm_bearing", {bearing: number(bearing, 0), age: number(age, 0)});
+
 export function renderUbootStation(payload) {
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons;
   metrics($("uboot-navigation"), [["position", position(nav)], ["course", unit(nav.course, "\u00b0", 0)],
@@ -19,19 +23,24 @@ export function renderUbootStation(payload) {
     ["uboot_blow_available", yesNo(status.blow_available)], ["uboot_emergency_ascent", yesNo(status.emergency_ascent)],
     ["torpedoes", number(weapons.torpedoes, 0)], ["uboot_tubes_ready", number(weapons.tubes_ready, 0)],
     ["reload", unit(weapons.reload_s, "s", 0)], ["uboot_decoys", number(weapons.decoys, 0)],
-    ["uboot_ping_heard", alarms.ping_age_s === null ? t("station_none") : unit(alarms.ping_age_s, "s", 0)],
-    ["uboot_torpedo_alarm", alarms.torpedo_age_s === null ? t("station_none") : unit(alarms.torpedo_age_s, "s", 0)]]);
+    ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
+    ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)],
+    ["uboot_mast", yesNo(status.mast)]]);
+  stationRows($("uboot-esm"), alarms.esm.map((row, index) => ({...row, key: index})),
+    (row) => [["bearing", unit(row.bearing, "\u00b0", 0)], ["quality", unit(row.quality * 100, "%", 0)], ["age", unit(row.age_s, "s", 0)]],
+    status.mast ? "uboot_esm_none" : "uboot_esm_mast_down");
   document.body.classList.toggle("uboot-torpedo-alarm", alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 60);
   if (!S.stationDrafts.has("uboot-depth")) $("uboot-depth").max = String(nav.max_depth_m);
   if (!S.stationDrafts.has("uboot-speed")) $("uboot-speed").max = String(nav.max_speed_kn);
   $("uboot-decoy").dataset.ready = String(weapons.decoy_ready);
   $("uboot-blow").dataset.ready = String(status.blow_available && !status.emergency_ascent && nav.depth_m > 30);
-  for (const [id, pressed] of [["uboot-silent", status.silent], ["uboot-snorkel", status.snorkeling], ["uboot-bottom", status.bottomed]])
+  for (const [id, pressed] of [["uboot-silent", status.silent], ["uboot-snorkel", status.snorkeling],
+    ["uboot-bottom", status.bottomed], ["uboot-mast", status.mast]])
     $(id).setAttribute("aria-pressed", String(pressed));
   $("uboot-snorkel").dataset.ready = String(status.snorkel_available);
   $("uboot-battery-warning").hidden = status.battery === null || status.battery > .2;
   $("uboot-battery-warning").textContent = status.battery !== null && status.battery <= .03 ? t("uboot_battery_empty") : t("uboot_battery_low");
-  fillFireTargets("uboot-fire-target", payload.contacts);
+  fillFireTargets("uboot-fire-target", payload.contacts, payload.designated_target_ref);
   const wired = payload.own_weapons.map((row, index) => ({...row, label: `T${index + 1}`}));
   stationRows($("uboot-weapons"), wired, (row) => [["reference", row.label], ["depth", unit(row.depth_m, "m", 0)],
     ["course", unit(row.course, "\u00b0", 0)], ["uboot_wire", t(row.wire === "CUT" ? "uboot_wire_cut_state" : `uboot_wire_${(row.wire || "none").toLowerCase()}`)],

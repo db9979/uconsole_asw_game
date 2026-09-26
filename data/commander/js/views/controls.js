@@ -253,6 +253,8 @@ function directFireUnavailableReason(control) {
     if (!payload.asset.airborne) return unavailable("reason_not_airborne");
     if (payload.asset.torpedoes <= 0) return unavailable("reason_no_inventory");
   }
+  if (S.session.station === "uboot" && ["no_torpedoes", "reloading"].includes(payload.weapons.reason))
+    return unavailable(`reason_uboot_${payload.weapons.reason}`);
   return unavailable("reason_not_ready");
 }
 function disabledReason(control) {

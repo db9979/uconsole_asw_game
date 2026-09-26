@@ -64,9 +64,10 @@ export function clearFireDrafts() {
     $(id).value = "";
   }
 }
-export function fillFireTargets(id, rows) {
+export function fillFireTargets(id, rows, designated = null) {
   const select = $(id);
-  const previous = S.stationDrafts.has(id) ? select.value : "";
+  // Without an operator draft, the sonar room's designated target is preselected.
+  const previous = S.stationDrafts.has(id) ? select.value : designated || "";
   select.replaceChildren(node("option", t("fire_select_target")));
   select.firstElementChild.value = "";
   for (const row of rows) {

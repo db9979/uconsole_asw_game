@@ -491,8 +491,11 @@ export function init() {
     if ($("uboot-wire-weapon").value) sendStationAction("uboot_wire_cut", {ref: $("uboot-wire-weapon").value});
   });
   // Boat modes: each button toggles its own published state.
-  for (const [id, action] of [["uboot-silent", "uboot_silent"], ["uboot-snorkel", "uboot_snorkel"], ["uboot-bottom", "uboot_bottom"]])
+  for (const [id, action] of [["uboot-silent", "uboot_silent"], ["uboot-snorkel", "uboot_snorkel"], ["uboot-bottom", "uboot_bottom"],
+    ["uboot-mast", "uboot_mast"]])
     $(id).addEventListener("click", () => sendStationAction(action, {enabled: $(id).getAttribute("aria-pressed") !== "true"}));
+  $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
+  $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));
   $("helicopter-return").addEventListener("click", () => sendStationAction("helicopter_return", {}));
   $("helicopter-waypoint-form").addEventListener("submit", (event) => {

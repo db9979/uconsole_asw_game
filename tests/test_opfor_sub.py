@@ -657,3 +657,88 @@ def test_local_fire_asks_bearing_then_range_with_presets():
         game._update_sim(0.05)
     fired = _crew_torpedoes(game, boat.sub)
     assert fired and fired[0].target_depth == 90.0
+
+
+# --- Situation picture: alarm bearings, mast/ESM, commander sensors --------
+
+def test_alarm_bearings_are_measured_noisy_and_deterministic():
+    bearings = []
+    for _ in range(2):
+        game, _server, _bridge = _crewed()
+        sub = game.opfor.sub
+        source = (sub.x + 3.0, sub.y)  # due east of the boat
+        sub.hear_ping(source=source)
+        sub.alert_torpedo(source=(sub.x, sub.y + 2.0))  # due south
+        orders = game.opfor.orders
+        assert abs(config.angle_diff_deg(orders.ping_bearing, 90.0)) < 10.0
+        assert orders.ping_bearing != 90.0
+        assert abs(config.angle_diff_deg(orders.torpedo_bearing, 180.0)) < 20.0
+        _run(game, 0.5)
+        texts = _feed_texts(game)
+        assert any("Active ping intercepted" in text for text in texts)
+        assert any("Torpedo screws" in text for text in texts)
+        bearings.append((orders.ping_bearing, orders.torpedo_bearing))
+    assert bearings[0] == bearings[1]
+
+
+def test_mast_only_at_periscope_depth_lowers_itself_and_reports_esm():
+    from types import SimpleNamespace
+    from src.sensors.platform import MAST_DEPTH_M
+    game, _server, _bridge = _crewed()
+    boat = game.opfor
+    sub = boat.sub
+    sub.depth = sub.target_depth = sub.order_depth = 100.0
+    assert sub.command_mast(True) == "uboot_mast_depth"
+    sub.depth = sub.target_depth = sub.order_depth = MAST_DEPTH_M - 3.0
+    assert sub.command_mast(True) is True and boat.orders.mast
+    # A radar intercept from the boat's own ESM picture reaches the crew.
+    fake = SimpleNamespace(track_id="esm-1", bearing=47.0, quality=0.8, last_seen=game.sim_t)
+    picture = sub.sensor_suite.local_picture
+    original = picture.tracks
+    picture.tracks = lambda now, domains=None: [fake] if domains == ("esm",) else original(now, domains)
+    _run(game, 0.5)
+    assert [row[0] for row in boat.orders.esm] == [47.0]
+    assert any("radar searching, bearing 047" in text for text in _feed_texts(game))
+    # Diving lowers the mast by itself; the ESM picture clears.
+    sub.set_orders(depth=80.0)
+    _run(game, 60)
+    assert not boat.orders.mast and boat.orders.esm == []
+    assert any("mast lowered" in text for text in _feed_texts(game))
+
+
+def test_web_mast_alarms_and_commander_sensors():
+    game, server, bridge = _crewed()
+    boat = game.opfor
+    sub = boat.sub
+    apply = lambda action, params: bridge._apply_opfor_action(game, action, params, "uboot")
+    sub.depth = sub.target_depth = sub.order_depth = 12.0
+    assert apply("uboot_mast", {"enabled": True}) is True
+    sub.hear_ping(source=(sub.x + 3.0, sub.y))
+    frigate_bt = game.sonar.bt_profile
+    assert apply("sonar_measure_bt", {}) is True
+    assert boat.station.sonar.bt_profile is not None and game.sonar.bt_profile is frigate_bt
+    bridge.pump(game, server, now=5.0)
+    state = server.v2_states["uboot"]["uboot"]
+    assert state["status"]["mast"] is True
+    assert set(state["alarms"]) == {"ping_age_s", "torpedo_age_s", "ping_bearing",
+                                    "torpedo_bearing", "esm"}
+    assert state["alarms"]["ping_bearing"] is not None
+    assert state["alarms"]["torpedo_bearing"] is None
+    json.dumps(state, allow_nan=False)
+
+
+def test_local_mast_key_and_threat_bar_bearing():
+    from src.ui import uboot_view
+    from src.core.i18n import localize
+    game = _game()
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+    sub = boat.sub
+    sub.depth = sub.target_depth = sub.order_depth = 12.0
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p, mod=0, unicode=""))
+    assert boat.orders.mast
+    sub.alert_torpedo(source=(sub.x + 2.0, sub.y))
+    text, level = uboot_view.threats(game, boat)[0]
+    assert level == "danger" and "TORPEDO 0" in str(localize(text, game.tr))
+    game.draw()

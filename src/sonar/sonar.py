@@ -979,7 +979,7 @@ class SonarSystem:
                 if distance < active_range else None)
             if distance <= config.SONAR_PING_HEAR_RANGE_NM \
                     and hasattr(target, "hear_ping"):
-                target.hear_ping()
+                target.hear_ping(source=(frigate.x, frigate.y))
             if snapshot is None or len(self._pending_pings) >= self.MAX_PENDING_PINGS:
                 continue
             self._pending_pings.append({
@@ -1947,7 +1947,7 @@ class SonarSystem:
 
             # Hört das U-Boot den Ping?
             if can_hear:
-                tgt.hear_ping()
+                tgt.hear_ping(source=(frigate.x, frigate.y))
 
             # Echo erhalten?  A stopped boat lying beside a wreck returns an
             # echo that merges with the wreck's own clutter echo.

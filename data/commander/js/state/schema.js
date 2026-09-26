@@ -199,8 +199,8 @@ export function validateV2State(state) {
     const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "max_speed_kn", "noise"];
     if (!exactKeys(nav, [...navNumbers, "water_depth_m", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
         (nav.water_depth_m !== null && !finite(nav.water_depth_m)) || typeof nav.cavitating !== "boolean" ||
-        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting", "snorkel_available", "snorkeling", "silent", "quiet", "bottomed"]) ||
-        [status.snorkel_available, status.snorkeling, status.silent, status.quiet, status.bottomed].some((value) => typeof value !== "boolean") ||
+        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting", "snorkel_available", "snorkeling", "silent", "quiet", "bottomed", "mast"]) ||
+        [status.snorkel_available, status.snorkeling, status.silent, status.quiet, status.bottomed, status.mast].some((value) => typeof value !== "boolean") ||
         !["manual", "ai", "sinking", "sunk"].includes(status.state) || !finite(status.damage) ||
         [status.emergency_ascent, status.blow_available, status.transmitting].some((value) => typeof value !== "boolean") ||
         (status.battery !== null && !finite(status.battery)) ||
@@ -210,7 +210,10 @@ export function validateV2State(state) {
         typeof weapons.ready !== "boolean" || typeof weapons.decoy_ready !== "boolean" ||
         (weapons.reason !== null && !["not_ready", "no_torpedoes", "reloading", "out_of_arc"].includes(weapons.reason)) ||
         [weapons.reload_s, weapons.arc_center_deg, weapons.arc_width_deg].some((value) => value !== null && !finite(value)) ||
-        !exactKeys(alarms, ["ping_age_s", "torpedo_age_s"]) || [alarms.ping_age_s, alarms.torpedo_age_s].some((value) => value !== null && !finite(value)) ||
+        !exactKeys(alarms, ["ping_age_s", "torpedo_age_s", "ping_bearing", "torpedo_bearing", "esm"]) ||
+        [alarms.ping_age_s, alarms.torpedo_age_s, alarms.ping_bearing, alarms.torpedo_bearing].some((value) => value !== null && !finite(value)) ||
+        !boundedArray(alarms.esm, 16) || alarms.esm.some((row) => !exactKeys(row, ["bearing", "quality", "age_s"]) ||
+          [row.bearing, row.quality, row.age_s].some((value) => !finite(value))) ||
         (payload.designated_target_ref !== null && typeof payload.designated_target_ref !== "string") ||
         !boundedArray(payload.feed, 16) || payload.feed.some((row) => !exactKeys(row, ["seq", "age_s", "message"]) ||
           !Number.isSafeInteger(row.seq) || typeof row.message !== "string" || row.message.length > 256 ||

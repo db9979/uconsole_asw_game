@@ -6932,7 +6932,7 @@ class Game:
                     and not self.world.sonar_path_blocked(
                         self.ship.x, self.ship.y, 5.0,
                         sub.x, sub.y, sub.depth)):
-                sub.alert_torpedo()
+                sub.alert_torpedo(source=(self.ship.x, self.ship.y))
         for warship in self.warships:
             if (not warship.sunk and warship.doctrine == "surface_combatant"
                     and math.hypot(self.ship.x - warship.x, self.ship.y - warship.y)
@@ -7690,7 +7690,7 @@ class Game:
                         and not self.world.sonar_path_blocked(
                             torpedo.x, torpedo.y, torpedo.depth,
                             sub.x, sub.y, sub.depth)):
-                    sub.alert_torpedo()
+                    sub.alert_torpedo(source=(torpedo.x, torpedo.y))
                     break
                 # W2: graduated passive notice of a running torpedo's own
                 # noise, between pure terminal homing and the loud one-time
@@ -7699,7 +7699,7 @@ class Game:
                         and not self.world.sonar_path_blocked(
                             torpedo.x, torpedo.y, torpedo.depth,
                             sub.x, sub.y, sub.depth)):
-                    sub.alert_torpedo()
+                    sub.alert_torpedo(source=(torpedo.x, torpedo.y))
                     break
         for torpedo in self.torpedoes:
             target_id = getattr(torpedo.target, "id", None)

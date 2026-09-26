@@ -420,6 +420,9 @@ def _command_key(game, current, key, mods) -> None:
         on = not (orders.bottomed if bottom else orders.silent)
         result = sub.command_bottom(on) if bottom else sub.command_silent(on)
         _mode_notice(game, ("bottom" if bottom else "silent"), on, result)
+    elif key == pygame.K_p:
+        on = not current.orders.mast
+        _mode_notice(game, "mast", on, sub.command_mast(on))
     elif key == pygame.K_n:
         on = not sub.snorkeling
         _mode_notice(game, "snorkel", on, sub.command_snorkel(on))

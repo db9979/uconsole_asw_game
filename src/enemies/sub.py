@@ -14,6 +14,7 @@ from src.sonar.tma import BearingTrack, solve_tma
 from src.data import catalog
 from src.data import fingerprint as fingerprint_mod
 from src.sensors.platform import (
+    MAST_DEPTH_M,
     PlatformObservation,
     PlatformSensorSuite,
     machine_acoustics,
@@ -201,13 +202,29 @@ class Sub:
 
     # --- Ereignisse ---
 
-    def hear_ping(self) -> None:
+    def _crew_alarm(self, source, tag: str, sigma_deg: float, previous_age: float):
+        """A crewed boat's measured bearing to an alarm source (with a
+        deterministic error); logged once per alarm episode."""
+        crew = self.crew
+        if not self.manual or crew is None or source is None:
+            return
+        crew.alarm_seq += 1
+        true = math.degrees(math.atan2(source[0] - self.x, -(source[1] - self.y)))
+        bearing = (true + sigma_deg * detrand.normal(
+            self.sensor_seed, tag, crew.alarm_seq)) % 360.0
+        setattr(crew, f"{tag}_bearing", bearing)
+        if previous_age >= 20.0:
+            crew.event(f"{tag}_heard", bearing=f"{bearing:03.0f}")
+
+    def hear_ping(self, source=None) -> None:
         """U-Boot hört einen aktiven Ping -> Ausweichen."""
         if self.manual:
             # A crewed boat only notes the intercept; the crew decides.
             if not self.sunk and self.state != "SINKING":
                 self.heard_ping = True
+                previous = self.memory["last_ping_age"]
                 self.memory["last_ping_age"] = 0.0
+                self._crew_alarm(source, "ping", 2.0, previous)
             return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
@@ -223,12 +240,14 @@ class Sub:
         return config.clamp(math.exp(math.log(SUB_REACTION_MEDIAN_S) + 0.5 * spread),
                             2.0, 15.0)
 
-    def alert_torpedo(self) -> None:
+    def alert_torpedo(self, source=None) -> None:
         """Torpedo heard: after the crew's recognition time, evade hard."""
         if self.sunk or self.state == "SINKING":
             return
         if self.manual:
+            previous = self.memory["last_torpedo_age"]
             self.memory["last_torpedo_age"] = 0.0
+            self._crew_alarm(source, "torpedo", 5.0, previous)
             return
         if self.state == "EVADE" or self.torpedo_alarm_left == 0.0:
             # Already evading, or the recognition time has elapsed.
@@ -1088,6 +1107,9 @@ class Sub:
         self.target_depth = config.clamp(order_depth, 0.0, safe_depth)
         self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
         self.speed = config.clamp(self.order_speed, 0.0, ceiling)
+        if crew is not None and crew.mast and self.depth > MAST_DEPTH_M + 1.0:
+            crew.mast = False                   # masts come down when diving
+            crew.event("mast_lowered")
         if self.snorkeling and self.depth > self.endurance.profile.snorkel_depth_m + 1.0:
             # Dived below snorkel depth: the head valve shuts, diesels stop.
             self.endurance.stop_snorkel()
@@ -1231,6 +1253,17 @@ class Sub:
         self.crew.bottomed = False
         self.order_depth = self.endurance.profile.snorkel_depth_m
         self.endurance.start_snorkel(self.depth)
+        return True
+
+    def command_mast(self, on):
+        """Crew: raise the ESM/radar-warning mast (periscope depth only)."""
+        if type(on) is not bool:
+            return "invalid_value"
+        if not self._crew_ready():
+            return "not_ready"
+        if on and self.depth > MAST_DEPTH_M:
+            return "uboot_mast_depth"
+        self.crew.mast = on
         return True
 
     def command_silent(self, on):

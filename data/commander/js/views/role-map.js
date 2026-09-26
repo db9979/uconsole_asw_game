@@ -19,7 +19,10 @@ export function mapPayload(role) {
   if (role === "uboot") {
     // The boat's own position (legitimate truth) and its own sonar contacts only.
     const nav = payload.navigation;
-    return {own: {x: nav.x, y: nav.y, course: nav.course, speed: nav.speed},
+    const weapons = payload.weapons;
+    return {own: {x: nav.x, y: nav.y, course: nav.course, speed: nav.speed,
+      arc: finite(weapons.arc_center_deg) && finite(weapons.arc_width_deg) && weapons.arc_width_deg < 360
+        ? {center: weapons.arc_center_deg, width: weapons.arc_width_deg} : null},
       observations: payload.contacts.map((row) => ({...row, domain: "UNKNOWN", affiliation: "UNKNOWN"})),
       assets: payload.own_weapons, bearingLogs: [], fixes: []};
   }
@@ -311,7 +314,15 @@ export function drawRoleMap(role) {
     plot.context.save(); plot.context.translate(ox, oy); plot.context.rotate(data.own.course * Math.PI / 180);
     plot.context.strokeStyle = palette().accent; plot.context.fillStyle = palette().accent; plot.context.beginPath();
     plot.context.moveTo(0, -9); plot.context.lineTo(-5, 6); plot.context.lineTo(5, 6); plot.context.closePath(); plot.context.fill();
-    plot.context.beginPath(); plot.context.moveTo(0, -9); plot.context.lineTo(0, -35); plot.context.stroke(); plot.context.restore();
+    plot.context.beginPath(); plot.context.moveTo(0, -9); plot.context.lineTo(0, -35); plot.context.stroke();
+    if (data.own.arc) {
+      // Submarine tube firing arc, relative to the bow (own-ship truth).
+      const half = data.own.arc.width / 2, center = data.own.arc.center, toRad = Math.PI / 180;
+      plot.context.globalAlpha = .18; plot.context.beginPath(); plot.context.moveTo(0, 0);
+      plot.context.arc(0, 0, 80, (center - half - 90) * toRad, (center + half - 90) * toRad); plot.context.closePath();
+      plot.context.fill(); plot.context.globalAlpha = 1; plot.context.stroke();
+    }
+    plot.context.restore();
   }
   for (const row of data.observations) {
     const isSelected = row.ref === S.selected;

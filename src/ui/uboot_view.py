@@ -219,6 +219,15 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         pygame.draw.circle(s, config.COLOR_WARN, (int(px), int(py)), 3)
         _label(s, game, raw_text(f"T{index}"), (int(px) + 10, int(py) - 22),
                config.COLOR_WARN, r)
+    # Tube firing arc relative to the bow (own-ship truth).
+    launcher = (sub.runtime_catalog.launchers[sub.weapon_battery.launcher_key]
+                if sub.weapon_battery is not None else None)
+    if launcher is not None and launcher.arc_width_deg < 360.0:
+        for edge in (-0.5, 0.5):
+            ang = math.radians(sub.course + launcher.arc_center_deg
+                               + edge * launcher.arc_width_deg - 90.0)
+            pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
+                             (int(bx + 70 * math.cos(ang)), int(by + 70 * math.sin(ang))), 1)
     # The boat: ordered course, heading, NATO subsurface symbol, motion vector.
     target = math.radians(sub.order_course - 90.0)
     pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
@@ -265,13 +274,26 @@ def threats(game, boat) -> list:
     rows = []
     alarms = sub.memory
     torpedo_age = alarms["last_torpedo_age"]
+    crew = sub.crew
     if math.isfinite(torpedo_age) and torpedo_age < ALARM_WINDOW_S:
-        rows.append((message("uboot.threat.torpedo", age=_fmt(torpedo_age)), "danger"))
+        if crew is not None and crew.torpedo_bearing is not None:
+            rows.append((message("uboot.threat.torpedo_bearing", age=_fmt(torpedo_age),
+                                 bearing=f"{crew.torpedo_bearing:03.0f}"), "danger"))
+        else:
+            rows.append((message("uboot.threat.torpedo", age=_fmt(torpedo_age)), "danger"))
     if sub.damage >= 50:
         rows.append((message("uboot.threat.damage", value=_fmt(sub.damage)), "danger"))
     ping_age = alarms["last_ping_age"]
     if math.isfinite(ping_age) and ping_age < ALARM_WINDOW_S:
-        rows.append((message("uboot.threat.ping", age=_fmt(ping_age)), "warn"))
+        if crew is not None and crew.ping_bearing is not None:
+            rows.append((message("uboot.threat.ping_bearing", age=_fmt(ping_age),
+                                 bearing=f"{crew.ping_bearing:03.0f}"), "warn"))
+        else:
+            rows.append((message("uboot.threat.ping", age=_fmt(ping_age)), "warn"))
+    if crew is not None and crew.esm:
+        bearing, _quality, _age = crew.esm[0]
+        rows.append((message("uboot.threat.esm", bearing=f"{bearing:03.0f}",
+                             count=len(crew.esm)), "warn"))
     if sub.cavitating:
         rows.append((message("uboot.threat.cavitation"), "warn"))
     battery = _battery_fraction(sub)

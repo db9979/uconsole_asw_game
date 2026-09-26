@@ -38,12 +38,20 @@ class CrewOrders:
     # Crew notices raised by the boat itself (key -> feed category).
     EVENTS = {"obstacle": "navigation", "snorkel_stopped": "navigation",
               "battery_low": "navigation", "battery_empty": "navigation",
-              "shallow_water": "navigation", "wire_broken": "waffen"}
+              "shallow_water": "navigation", "wire_broken": "waffen",
+              "ping_heard": "sonar", "torpedo_heard": "sonar",
+              "mast_lowered": "navigation", "esm_intercept": "sonar"}
 
     def __init__(self):
         self.silent = False
         self.bottomed = False
         self.mast = False
+        # Measured alarm bearings (the boat's own intercepts) and ESM picture.
+        self.alarm_seq = 0
+        self.ping_bearing = None
+        self.torpedo_bearing = None
+        self.esm = []
+        self._esm_seen = set()
         # Wire-guided crew torpedoes: EnemyTorpedo id -> CrewWire.
         self.wires = {}
         self._known_torpedoes = set()
@@ -57,9 +65,9 @@ class CrewOrders:
         self._battery_state = "ok"
         self._keel_warned = False
 
-    def event(self, key: str) -> None:
-        if key in self.EVENTS and key not in self._events:
-            self._events.append(key)
+    def event(self, key: str, **values) -> None:
+        if key in self.EVENTS and (values or all(k != key for k, _ in self._events)):
+            self._events.append((key, values))
 
     def drain_events(self) -> list:
         events, self._events = self._events, []
@@ -309,8 +317,20 @@ def update_crew(game, boat: CrewedBoat) -> None:
     if shallow and not orders._keel_warned:
         orders.event("shallow_water")
     orders._keel_warned = shallow
-    for key in orders.drain_events():
-        boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(f"uboot.event.{key}"),
+    # ESM with the mast up: the boat's own intercepts of radar emitters.
+    esm = []
+    if orders.mast:
+        for observation in sub.sensor_suite.local_picture.tracks(game.sim_t, ("esm",)):
+            age = max(0.0, game.sim_t - observation.last_seen)
+            esm.append((observation.bearing % 360.0, observation.quality, age))
+            if observation.track_id not in orders._esm_seen:
+                orders._esm_seen.add(observation.track_id)
+                orders.event("esm_intercept", bearing=f"{observation.bearing % 360.0:03.0f}")
+    else:
+        orders._esm_seen.clear()
+    orders.esm = sorted(esm)[:16]
+    for key, values in orders.drain_events():
+        boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(f"uboot.event.{key}", **values),
                     stamp=game.world.format_time())
 
 

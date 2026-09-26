@@ -578,6 +578,10 @@ def _uboot_snorkel(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_snorkel(params["enabled"]))
 
 
+def _uboot_mast(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_mast(params["enabled"]))
+
+
 def _uboot_silent(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_silent(params["enabled"]))
 
@@ -595,6 +599,7 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_decoy": _uboot_decoy,
     "uboot_blow": _uboot_blow,
     "uboot_snorkel": _uboot_snorkel,
+    "uboot_mast": _uboot_mast,
     "uboot_silent": _uboot_silent,
     "uboot_bottom": _uboot_bottom,
 }
@@ -1356,6 +1361,9 @@ class CommanderBridge:
             if action == "uboot_wire_cut":
                 return opfor.wire_cut(boat, torpedo)
             return opfor.wire_steer(boat, torpedo, params["bearing"], params["range_nm"])
+        if role == "uboot" and action in ("sonar_active_ping", "sonar_measure_bt"):
+            with game.sonar_perspective(boat.station):
+                return _V2_ACTION_HANDLERS[action](game, params, bindings)
         if role == "uboot":
             handler = _UBOOT_ACTION_HANDLERS.get(action)
             return False if handler is None else handler(game, boat, params, bindings)

@@ -62,7 +62,13 @@ def pytest_collection_modifyitems(config, items):
             # of CPU on a four-core host and time out their virtual-time
             # budgets, which makes DOM-probe tests flaky.
             group = sum(map(ord, str(item.fspath))) % 2
-            item.add_marker(pytest.mark.xdist_group(f"browser-{group}"))
+            if str(item.fspath).endswith("test_commander_console_browser.py"):
+                # The solo console pumps a live game for minutes of wall
+                # time; it gets a worker of its own instead of queueing
+                # behind other Chromium runs.
+                item.add_marker(pytest.mark.xdist_group("browser-console"))
+            else:
+                item.add_marker(pytest.mark.xdist_group(f"browser-{group}"))
 
 
 @pytest.fixture(autouse=True)

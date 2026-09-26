@@ -492,10 +492,17 @@ export function init() {
   $("uboot-wire-cut").addEventListener("click", () => {
     if ($("uboot-wire-weapon").value) sendStationAction("uboot_wire_cut", {ref: $("uboot-wire-weapon").value});
   });
-  // Boat modes: each button toggles its own published state.
-  for (const [id, action] of [["uboot-silent", "uboot_silent"], ["uboot-snorkel", "uboot_snorkel"], ["uboot-bottom", "uboot_bottom"],
-    ["uboot-mast", "uboot_mast"]])
-    $(id).addEventListener("click", () => sendStationAction(action, {enabled: $(id).getAttribute("aria-pressed") !== "true"}));
+  // Boat modes: explicit on/off buttons (mast up / down, snorkel up / down, ...).
+  for (const button of document.querySelectorAll("[data-uboot-mode]"))
+    button.addEventListener("click", () => sendStationAction(button.dataset.ubootMode,
+      {enabled: button.dataset.enabled === "true"}));
+  // One-step depth orders (periscope, snorkel, above / below the measured layer, deep).
+  for (const button of document.querySelectorAll("[data-uboot-depth-preset]"))
+    button.addEventListener("click", () => {
+      const depth = Number(button.dataset.depth);
+      if (button.dataset.depth && finite(depth) && depth >= 0 && depth <= 1000)
+        sendStationAction("uboot_set_depth", {depth_m: depth});
+    });
   for (const button of document.querySelectorAll("[data-uboot-speed-step]"))
     button.addEventListener("click", () => {
       const speed = Number(button.dataset.speed);

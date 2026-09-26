@@ -170,6 +170,10 @@ body.workstation-mode .tablist { display: none; }
 .cic-grid[data-layout="radio"] > .dock-left { display: none; }
 .cic-grid[data-layout="radio"] > .dock-detail { display: flex; }
 .cic-grid[data-layout="radio"][data-right="closed"] { grid-template-areas: "stage right" "stage right" "drawer right"; }
+/* Boat stations: chart and a wide instrument dock; contacts sit in the dock. */
+.cic-grid[data-layout="boat"] { --right: var(--dock-boat-w); grid-template-columns: minmax(0, 1fr) var(--right); grid-template-areas: "stage right" "stage right" "drawer right"; }
+.cic-grid[data-layout="boat"][data-right="closed"] { --right: var(--rail-w); }
+.cic-grid[data-layout="boat"] > .dock-left, .cic-grid[data-layout="boat"] > .dock-detail { display: none; }
 .dock-left { grid-area: left; }
 .stage { grid-area: stage; }
 .dock-right { grid-area: right; }
@@ -230,6 +234,7 @@ body.workstation-mode .tablist { display: none; }
   }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] { --detail: var(--rail-w); }
   .cic-grid[data-layout="radio"] { grid-template-columns: minmax(0, 1fr) var(--right) var(--detail); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "stage right detail" "drawer right detail"; }
+  .cic-grid[data-layout="boat"] { grid-template-columns: minmax(0, 1fr) var(--right); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "stage right" "drawer right"; }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] .dock-detail .dock-bar { flex-direction: column; height: 100%; padding: .4rem 0; }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] .dock-detail .dock-title { writing-mode: vertical-rl; transform: rotate(180deg); }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] .dock-detail .dock-toggle { order: -1; }

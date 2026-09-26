@@ -201,7 +201,9 @@ export function validateV2State(state) {
   } else if (isBoatCommand(state.role)) {
     const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
     const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "max_speed_kn", "noise"];
-    if (!exactKeys(nav, [...navNumbers, "water_depth_m", "under_keel_m", "obstacle_ahead_nm", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
+    if (!exactKeys(nav, [...navNumbers, "water_depth_m", "under_keel_m", "obstacle_ahead_nm", "depth_presets", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
+        !exactKeys(nav.depth_presets, ["periscope", "snorkel", "above_layer", "below_layer", "deep", "layer"]) ||
+        Object.values(nav.depth_presets).some((value) => value !== null && (!finite(value) || value < 0 || value > 1000)) ||
         [nav.water_depth_m, nav.under_keel_m, nav.obstacle_ahead_nm].some((value) => value !== null && !finite(value)) || typeof nav.cavitating !== "boolean" ||
         !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting", "snorkel_available", "snorkeling", "silent", "quiet", "bottomed", "mast"]) ||
         [status.snorkel_available, status.snorkeling, status.silent, status.quiet, status.bottomed, status.mast].some((value) => typeof value !== "boolean") ||

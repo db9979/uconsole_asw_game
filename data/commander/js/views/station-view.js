@@ -59,7 +59,8 @@ export function renderStationView() {
   }
   $("cic-grid").dataset.tracks = String(!active || trackRoles.has(active));
   // The radio room keeps the contact detail (opened from a receiver channel).
-  $("cic-grid").dataset.layout = active === "radio" ? "radio" : "";
+  // The boat's stations: the chart plus a wide station dock, no contact docks.
+  $("cic-grid").dataset.layout = active === "radio" ? "radio" : isBoatCommand(active) ? "boat" : "";
   emit("layout:station", active);
   $("station-view").hidden = !active;
   for (const section of document.querySelectorAll("[data-station-role]")) {

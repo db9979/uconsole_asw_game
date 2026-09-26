@@ -427,6 +427,7 @@ _KEY_ACTIONS = {
     pygame.K_d: "uboot_set_depth", pygame.K_f: "uboot_fire", pygame.K_x: "uboot_decoy",
     pygame.K_t: "uboot_fire", pygame.K_y: "uboot_fire", pygame.K_w: "uboot_wire_steer",
     pygame.K_p: "uboot_mast", pygame.K_n: "uboot_snorkel",
+    pygame.K_u: "uboot_set_depth", pygame.K_j: "uboot_set_depth", pygame.K_h: "uboot_set_depth",
     pygame.K_PLUS: "uboot_set_speed", pygame.K_EQUALS: "uboot_set_speed",
     pygame.K_KP_PLUS: "uboot_set_speed", pygame.K_MINUS: "uboot_set_speed",
     pygame.K_KP_MINUS: "uboot_set_speed",
@@ -464,6 +465,21 @@ def _command_key(game, current, key, mods) -> None:
         begin_input(game, "uboot_speed")
     elif key == pygame.K_d:
         begin_input(game, "uboot_depth")
+    elif key in (pygame.K_u, pygame.K_j, pygame.K_h):
+        # One-step depth orders: U periscope (Shift: snorkel depth), J below the
+        # measured layer (Shift: above it), H deep (safe depth).
+        shift = bool(mods & pygame.KMOD_SHIFT)
+        name = {pygame.K_u: "snorkel" if shift else "periscope",
+                pygame.K_j: "above_layer" if shift else "below_layer",
+                pygame.K_h: "deep"}[key]
+        depth = opfor.depth_presets(game, current).get(name)
+        if depth is None:
+            game.flash(message("uboot.local.preset_unavailable",
+                               preset=message(f"uboot.preset.{name}")), 2.0)
+        elif sub.set_orders(depth=round(depth)) is True:
+            _announce(game, "navigation", message(
+                "uboot.local.depth_preset", preset=message(f"uboot.preset.{name}"),
+                depth=f"{round(depth):.0f}"), 1.5)
     elif key == pygame.K_f:
         begin_input(game, "uboot_bearing")
     elif key in (pygame.K_UP, pygame.K_DOWN):

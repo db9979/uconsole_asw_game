@@ -210,6 +210,7 @@ _UBOOT_HELP = (
     [
         ("1 … 6 / Tab", "help.uboot.views"),
         ("C / V / D", "help.uboot.orders"),
+        ("U / J / H", "help.uboot.presets"),
         ("help.key.page", "help.uboot.pages"),
         ("Q / E", "help.uboot.zoom"),
         ("K", "help.uboot.follow"),

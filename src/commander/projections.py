@@ -1152,6 +1152,8 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             max_speed_kn=_number(sub.motion.maximum_speed_kn),
             water_depth_m=_number(game.world.depth_m(sub.x, sub.y)),
             under_keel_m=_number(game.world.depth_m(sub.x, sub.y) - sub.depth),
+            depth_presets={key: _number(value) for key, value
+                           in opfor.depth_presets(game, boat).items()},
             obstacle_ahead_nm=_number(boat.orders.obstacle_ahead_nm),
             cavitating=bool(sub.cavitating), noise=_number(sub.noise_level())),
         status=dict(

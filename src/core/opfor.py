@@ -305,6 +305,36 @@ def battery_fraction(sub):
     return endurance.battery_kwh / endurance.profile.battery_capacity_kwh
 
 
+def measured_layer_m(boat):
+    """The layer the boat's own BT measurement found, else None (no truth)."""
+    profile = boat.station.sonar.bt_profile
+    return float(profile["thermocline_m"]) if profile else None
+
+
+def depth_presets(game, boat) -> dict:
+    """Ordered depths the crew can pick in one step (metres, None = unavailable).
+
+    Periscope depth keeps the mast usable; snorkel depth needs a snorkel; the
+    layer presets exist only after the boat's own BT measurement; "deep" is
+    the safe depth over the charted bottom.
+    """
+    from src.sensors.platform import MAST_DEPTH_M
+    sub = boat.sub
+    safe = float(sub.safe_depth_m(game.world))
+    endurance = sub.endurance
+    layer = measured_layer_m(boat)
+    above = below = None
+    if layer is not None:
+        above = max(config.UBOOT_PRESET_MIN_M, layer - config.UBOOT_LAYER_MARGIN_M)
+        below = layer + 2.0 * config.UBOOT_LAYER_MARGIN_M
+        above = above if above < layer and above <= safe else None
+        below = below if below <= safe else None
+    return dict(periscope=min(safe, MAST_DEPTH_M - 3.0),
+                snorkel=(min(safe, float(endurance.profile.snorkel_depth_m))
+                         if endurance is not None else None),
+                above_layer=above, below_layer=below, deep=safe, layer=layer)
+
+
 def obstacle_ahead_nm(world, sub):
     """Distance to the first charted obstacle (land, or a seabed shallower than
     the boat's keel) along the ordered course, within the look-ahead; else None.

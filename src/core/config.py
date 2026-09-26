@@ -228,6 +228,8 @@ UBOOT_WIRE_MAX_KN = 10.0           # own speed that strains the wire
 UBOOT_WIRE_MAX_YAW_DEG_S = 1.5
 UBOOT_OBSTACLE_LOOKAHEAD_NM = 5.0  # chart check ahead of the ordered course
 UBOOT_UNDER_KEEL_WARN_M = 15.0
+UBOOT_LAYER_MARGIN_M = 15.0   # depth presets: this far above / twice below the layer
+UBOOT_PRESET_MIN_M = 20.0
 
 # Display scales of the bridge lookout page (NM, radius of the scope).
 LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)

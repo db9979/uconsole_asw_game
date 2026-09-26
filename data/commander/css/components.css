@@ -170,4 +170,38 @@ body.workstation-mode .chart-panel { display: none; }
 .map-tooltip strong { color: var(--live-strong); }
 
 /* Crewed submarine: boat-mode toggles (silent running, snorkel, bottom). */
+/* ---- Boat stations: dense two-column instrument panel ------------------ */
+#station-uboot .uboot-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr)); grid-auto-flow: row dense; align-content: start; gap: .45rem; }
+#station-uboot .station-card-view { padding: .5rem .6rem; display: flex; flex-direction: column; align-items: stretch; gap: .4rem; }
+body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.station-wide) { grid-column: auto; }
+#station-uboot .control-form label { margin: 0; }
+#station-uboot .station-card-view > h3 { margin-bottom: 0; }
+#station-uboot .control-form { display: grid; grid-template-columns: minmax(0, 1fr) 6.5rem auto; gap: .35rem; align-items: center; }
+#station-uboot .compact-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .15rem .6rem; }
+#station-uboot .compact-list { max-height: none; }
+.uboot-strip { background: var(--bg-3); border-top: 2px solid var(--live); }
+.uboot-readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .45rem; }
+.uboot-readout { position: relative; display: grid; gap: .05rem; padding: .35rem .5rem; overflow: hidden; background: var(--bg-2); border: 1px solid var(--line); border-left: 3px solid var(--live); border-radius: var(--radius); }
+.uboot-readout strong { color: var(--text); font-family: var(--font-mono); font-size: 1.45rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.uboot-readout-label { color: var(--text-dim); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .1em; }
+.uboot-readout-sub { color: var(--text-dim); font-family: var(--font-mono); font-size: var(--font-sm); }
+.uboot-readout[data-level="caution"] { border-left-color: var(--caution); }
+.uboot-readout[data-level="caution"] strong { color: var(--caution); }
+.uboot-readout[data-level="alarm"] { border-left-color: var(--alarm); }
+.uboot-readout[data-level="alarm"] strong { color: var(--alarm); }
+.uboot-readout[data-gauge="true"]::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: var(--fill, 0%); background: var(--live); }
+.uboot-readout[data-gauge="true"][data-level="caution"]::after { background: var(--caution); }
+.uboot-readout[data-gauge="true"][data-level="alarm"]::after { background: var(--alarm); }
+.uboot-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.uboot-chip { padding: .15rem .5rem; border: 1px solid var(--line); border-radius: 999px; color: var(--text-faint); font-size: var(--font-xs); font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
+.uboot-chip[data-level="on"] { color: var(--live-strong); background: var(--live-bg); border-color: var(--live); }
+.uboot-chip[data-level="caution"] { color: var(--bg-0); background: var(--caution); border-color: var(--caution); }
+.uboot-chip[data-level="alarm"] { color: var(--bg-0); background: var(--alarm); border-color: var(--alarm); }
+.uboot-canvas { display: block; width: 100%; height: clamp(14rem, 30vh, 24rem); border: 1px solid var(--line); border-radius: var(--radius); }
+.uboot-presets, .uboot-telegraph, .uboot-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); gap: .3rem; }
+.uboot-presets button, .uboot-telegraph button, .uboot-pair button { min-height: 2.5rem; }
+.uboot-grid[data-role="uboot_esm"] .uboot-esm-card { grid-column: 1 / -1; }
+.uboot-grid[data-role="uboot_esm"] .uboot-esm-card .uboot-canvas { height: clamp(18rem, 48vh, 36rem); }
+.uboot-log-line { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: .5rem; padding: .15rem 0; border-bottom: 1px solid var(--line); font-size: var(--font-sm); }
+.uboot-log-age { color: var(--text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .uboot-modes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .35rem; }

@@ -924,3 +924,40 @@ def test_browser_held_boat_station_is_not_operated_from_the_uconsole():
     assert boat.sub.order_speed == speed
     game.draw()
     game.audio.shutdown()
+
+
+def test_depth_presets_need_their_basis_and_follow_the_local_keys():
+    from src.core import opfor
+    game = Game(seed=83, start_menu=False, audio_enabled=False, language="en")
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+    sub = boat.sub
+    presets = opfor.depth_presets(game, boat)
+    # No layer presets before the boat's own BT measurement.
+    assert presets["layer"] is None and presets["below_layer"] is None
+    assert presets["above_layer"] is None and presets["periscope"] <= 18.0
+    assert presets["deep"] == sub.safe_depth_m(game.world)
+
+    def key(value, mod=0):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=mod, unicode=""))
+
+    key(pygame.K_u)
+    assert sub.order_depth == round(presets["periscope"])
+    key(pygame.K_j)  # Not offered without a BT.
+    assert sub.order_depth == round(presets["periscope"])
+    with game.sonar_perspective(boat.station):
+        assert game.measure_sonar_bt() is True
+    measured = opfor.depth_presets(game, boat)
+    assert measured["layer"] is not None
+    if measured["below_layer"] is not None:
+        key(pygame.K_j)
+        assert sub.order_depth == round(measured["below_layer"])
+    key(pygame.K_h)
+    assert sub.order_depth == round(measured["deep"])
+    # The weapons station does not order depth.
+    key(pygame.K_3)
+    key(pygame.K_u)
+    assert sub.order_depth == round(measured["deep"])
+    game.draw()
+    game.audio.shutdown()

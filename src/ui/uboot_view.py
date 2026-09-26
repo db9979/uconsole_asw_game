@@ -583,13 +583,13 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
 # Key legend of each station page (only keys that station may use).
 _FOOTERS = {
     ("uboot", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("V", "uboot.footer.speed"),
-                             ("D", "uboot.footer.depth"), ("Q/E", "uboot.footer.chart")),
+                             ("D", "uboot.footer.depth"), ("U/J/H", "uboot.footer.presets")),
     ("uboot", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"), ("G", "uboot.footer.silent"),
                                  ("Shift+G", "uboot.footer.bottom"),
                                  ("Q/E", "uboot.footer.chart")),
     ("uboot_nav", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
-                                 ("Shift+G", "uboot.footer.bottom"),
-                                 ("Q/E", "uboot.footer.chart")),
+                                 ("U/J/H", "uboot.footer.presets"),
+                                 ("Shift+G", "uboot.footer.bottom")),
     ("uboot_weapons", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"),
                                          ("help.key.uboot_fire", "uboot.footer.fire"),
                                          ("F", "uboot.footer.fire_bearing"),
@@ -629,7 +629,11 @@ def draw_command_panel(game, boat) -> None:
     drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_WEAPONS": _draw_weapons_page,
               "UBOOT_ENGINE": _draw_engine_page, "UBOOT_ESM": _draw_esm_page}[name]
     drawer(s, game, boat, x, content_y, w, content_h)
-    _footer(s, (x, station_rect.bottom - 26, w, 20), _FOOTERS[(station, name)])
+    specs = tuple(
+        (key, "uboot.footer.mast_down" if text == "uboot.footer.mast" and boat.orders.mast
+         else "uboot.footer.snorkel_down" if text == "uboot.footer.snorkel" and boat.sub.snorkeling
+         else text) for key, text in _FOOTERS[(station, name)])
+    _footer(s, (x, station_rect.bottom - 26, w, 20), specs)
 
 
 def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
@@ -670,6 +674,10 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
                        message("common.yes" if sub.blow_available else "common.no"),
                        size=16, label_w=150)
     tele_y = y + box_h + 10
+    ladder_y = tele_y + 80
+    if y + h - ladder_y >= 90:
+        inner = layout.box(s, (x, ladder_y, w, y + h - ladder_y), "uboot.panel.depth_ladder")
+        draw_depth_ladder(s, game, boat, inner)
     telegraph = layout.box(s, (x, tele_y, w, min(70, y + h - tele_y)), "uboot.panel.telegraph")
     tx, ty, tw, _ = telegraph
     steps = opfor.speed_steps(sub)
@@ -689,6 +697,42 @@ def _alarm_value(age, bearing):
     if not math.isfinite(age) or age >= ALARM_WINDOW_S:
         return message("uboot.value.no_alarm")
     return message("uboot.value.alarm", bearing=_fmt(bearing, "{:03.0f}"), age=_fmt(age))
+
+
+def _draw_esm_rose(s, game, boat, rect) -> None:
+    """Bearing rose: own heading, ESM strobes and the alarm bearings (own measurements)."""
+    sub, orders = boat.sub, boat.orders
+    pygame.draw.rect(s, config.COLOR_GEO_BG, rect)
+    pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
+    radius = max(20, min(rect.w, rect.h) // 2 - 18)
+    cx, cy = rect.center
+
+    def at(bearing, r):
+        rad = math.radians(bearing)
+        return int(cx + r * math.sin(rad)), int(cy - r * math.cos(rad))
+
+    pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), radius, 1)
+    pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), radius // 2, 1)
+    for bearing in range(0, 360, 30):
+        pygame.draw.line(s, config.COLOR_TEXT_DIM, at(bearing, radius), at(bearing, radius - 7), 1)
+        tx, ty = at(bearing, radius + 10)
+        layout.blit_line(s, raw_text("N" if bearing == 0 else f"{bearing:03d}"),
+                         (tx - 16, ty - 7, 32, 14), config.COLOR_TEXT_DIM, size=11, align="center")
+    pygame.draw.line(s, nato_symbols.AFFILIATION_COLORS["FRIEND"], (cx, cy),
+                     at(sub.course, radius * .35), 2)
+    for bearing, _quality, _age in orders.esm:
+        pygame.draw.line(s, config.COLOR_WARN, (cx, cy), at(bearing, radius), 2)
+    memory = sub.memory
+    for age, bearing, color in ((memory["last_ping_age"], orders.ping_bearing, config.COLOR_WARN),
+                                (memory["last_torpedo_age"], orders.torpedo_bearing,
+                                 config.COLOR_DANGER)):
+        if bearing is None or not math.isfinite(age) or age >= ALARM_WINDOW_S:
+            continue
+        end = at(bearing, radius)
+        for step in range(0, 10, 2):
+            a = (cx + (end[0] - cx) * step / 10, cy + (end[1] - cy) * step / 10)
+            b = (cx + (end[0] - cx) * (step + 1) / 10, cy + (end[1] - cy) * (step + 1) / 10)
+            pygame.draw.line(s, color, a, b, 3)
 
 
 def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
@@ -712,7 +756,10 @@ def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
         memory["last_torpedo_age"], orders.torpedo_bearing)), (ax, ay + 24, aw, 22),
         config.COLOR_TEXT, size=17)
     esm_y = alarm_y + 94
-    listing = layout.box(s, (x, esm_y, w, y + h - esm_y), "uboot.panel.esm")
+    rose_w = min(w // 2, y + h - esm_y)
+    _draw_esm_rose(s, game, boat, pygame.Rect(x, esm_y, rose_w, y + h - esm_y))
+    listing = layout.box(s, (x + rose_w + 10, esm_y, w - rose_w - 10, y + h - esm_y),
+                         "uboot.panel.esm")
     lx, ly, lw, lh = listing
     if not orders.mast or not orders.esm:
         layout.blit_line(s, "uboot.line.no_esm" if orders.mast else "uboot.line.esm_mast_down",

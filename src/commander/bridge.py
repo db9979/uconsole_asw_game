@@ -73,7 +73,7 @@ import numpy as np
 
 from src.audio.receiver import smooth_limit
 from src.sonar.sonar import SonarSystem
-from src.core import config
+from src.core import config, opfor
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.sensors import lookout_id
@@ -562,7 +562,8 @@ def _uboot_fire(game, boat, params, bindings):
             return "stale_ref"
         bearing %= 360.0
     return _uboot_result(sub.command_fire(bearing, range_nm, course, speed,
-                                          now=game.sim_t))
+                                          now=game.sim_t, depth_m=params["depth_m"],
+                                          salvo=params["salvo"]))
 
 
 def _uboot_decoy(game, boat, params, _bindings):
@@ -1346,6 +1347,15 @@ class CommanderBridge:
         if boat is None:
             return "not_ready"
         _rows, bindings = self._opfor_tracks(game, boat)
+        if role == "uboot" and action in ("uboot_wire_steer", "uboot_wire_cut"):
+            torpedo = next((asset for (namespace, _key), (asset, ref)
+                            in self._asset_refs.items()
+                            if namespace == "uboot_torpedo" and ref == params["ref"]), None)
+            if torpedo is None or torpedo.state != "RUN":
+                return "unknown_ref"
+            if action == "uboot_wire_cut":
+                return opfor.wire_cut(boat, torpedo)
+            return opfor.wire_steer(boat, torpedo, params["bearing"], params["range_nm"])
         if role == "uboot":
             handler = _UBOOT_ACTION_HANDLERS.get(action)
             return False if handler is None else handler(game, boat, params, bindings)

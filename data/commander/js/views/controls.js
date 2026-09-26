@@ -90,9 +90,12 @@ function directFireSpec(action) {
     const target = Boolean(ref) && Boolean(payload?.contacts.some((row) => row.ref === ref));
     const freeBearing = !ref && finite(bearing) && bearing >= 0 && bearing < 360;
     const rangeValue = finite(range) && range >= 0.05 && range <= 40 ? range : null;
+    const depth = $("uboot-fire-depth").valueAsNumber;
     return {ref: target ? ref : freeBearing ? `bearing:${bearing}` : "",
       params: {ref: target ? ref : null, bearing: target || !freeBearing ? null : bearing,
-        range_nm: target ? null : rangeValue},
+        range_nm: target ? null : rangeValue,
+        depth_m: finite(depth) && depth >= 5 && depth <= 300 ? depth : null,
+        salvo: $("uboot-fire-salvo").value === "2" ? 2 : 1},
       ready: Boolean(payload?.weapons.ready) && (target || freeBearing),
       readiness: [payload?.weapons, payload?.contacts.map((row) => row.ref)]};
   }

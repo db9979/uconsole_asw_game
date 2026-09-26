@@ -8051,6 +8051,7 @@ class Game:
             self._update_sensors(sensor_dt)
             if self._opfor is not None:
                 opfor.update_sonar(self, self._opfor, sensor_dt)
+                opfor.update_wires(self, self._opfor, sensor_dt)
                 opfor.update_crew(self, self._opfor)
         if self._esm_acc >= .5:
             self._esm_acc = 0.0

@@ -1,6 +1,7 @@
 """The crewed hostile submarine: orders, weapons, sonar, boundary and sides."""
 
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -522,9 +523,9 @@ def test_web_crew_modes_and_boat_reasons():
     sub.depth = sub.target_depth = sub.order_depth = 200.0
     expected = "uboot_no_snorkel" if sub.endurance is None else "uboot_too_deep"
     assert apply("uboot_snorkel", {"enabled": True}) == expected
-    sub.fire_readiness = lambda bearing=None: "no_torpedoes"
-    assert apply("uboot_fire", {"ref": None, "bearing": sub.course, "range_nm": None}) \
-        == "uboot_no_torpedoes"
+    sub.fire_readiness = lambda bearing=None, salvo=1: "no_torpedoes"
+    assert apply("uboot_fire", {"ref": None, "bearing": sub.course, "range_nm": None,
+                                "depth_m": None, "salvo": 1}) == "uboot_no_torpedoes"
 
 
 def test_local_boat_mode_keys():
@@ -545,3 +546,114 @@ def test_local_boat_mode_keys():
     assert boat.sub.order_speed > speed
     key(pygame.K_MINUS)
     game.draw()
+
+
+# --- Torpedo employment: depth, spread, wire -------------------------------
+
+def _arc_bearing(game, sub):
+    launcher = game.runtime_catalog.launchers[sub.weapon_battery.launcher_key]
+    return (sub.course + launcher.arc_center_deg) % 360.0
+
+
+def _crew_torpedoes(game, sub):
+    return sorted((item for item in game.enemy_torpedoes
+                   if item.launch_platform_id == sub.id), key=lambda item: item.id)
+
+
+def test_crew_sets_run_depth_and_fires_a_two_torpedo_spread():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    bearing = _arc_bearing(game, sub)
+    assert sub.command_fire(bearing, 6.0, depth_m=2.0) == "invalid_value"
+    assert sub.command_fire(bearing, 6.0, salvo=3) == "invalid_value"
+    if sub.weapon_battery.ready_count < 2:
+        pytest.skip("boat has a single tube")
+    assert sub.command_fire(bearing, 6.0, now=game.sim_t, depth_m=80.0, salvo=2) is True
+    for _ in range(4):
+        game._update_sim(0.05)
+    fired = _crew_torpedoes(game, sub)
+    assert len(fired) == 2
+    assert all(item.target_depth == 80.0 for item in fired)
+    # Each torpedo has its own datum, turned by the spread about the boat.
+    datums = [math.degrees(math.atan2(item.guidance_x - sub.x, -(item.guidance_y - sub.y)))
+              for item in fired]
+    spread = abs(config.angle_diff_deg(datums[0] % 360.0, datums[1] % 360.0))
+    assert abs(spread - 2 * config.UBOOT_SALVO_SPREAD_DEG) < 0.5
+
+
+def test_wire_steers_the_datum_breaks_on_strain_and_can_be_cut():
+    from src.core import opfor
+    game, _server, _bridge = _crewed()
+    boat = game.opfor
+    sub = boat.sub
+    sub.set_orders(speed=4.0)
+    assert sub.command_fire(_arc_bearing(game, sub), 8.0, now=game.sim_t) is True
+    _run(game, 1)
+    torpedo = _crew_torpedoes(game, sub)[0]
+    assert opfor.wire_state(boat, torpedo) == "ACTIVE"
+    new_bearing = (_arc_bearing(game, sub) + 40.0) % 360.0
+    assert opfor.wire_steer(boat, torpedo, new_bearing, 6.0) is True
+    _run(game, 15)
+    desired = math.degrees(math.atan2(torpedo.guidance_x - torpedo.x,
+                                      -(torpedo.guidance_y - torpedo.y))) % 360.0
+    assert abs(config.angle_diff_deg(torpedo.course, desired)) < 5.0
+    # Too fast for the wire: it breaks and the log says so.
+    sub.set_orders(speed=sub.motion.maximum_speed_kn)
+    _run(game, 150)
+    assert opfor.wire_state(boat, torpedo) == "BROKEN"
+    assert opfor.wire_steer(boat, torpedo, 10.0, 5.0) == "uboot_no_wire"
+    assert any("Wire broken" in text for text in _feed_texts(game))
+    # A second shot is cut on order.
+    sub.set_orders(speed=3.0)
+    _run(game, 30)
+    if sub.fire_readiness(_arc_bearing(game, sub)) is None:
+        assert sub.command_fire(_arc_bearing(game, sub), 8.0, now=game.sim_t) is True
+        _run(game, 1)
+        second = _crew_torpedoes(game, sub)[-1]
+        assert opfor.wire_cut(boat, second) is True
+        assert opfor.wire_state(boat, second) == "CUT"
+
+
+def test_web_fire_parameters_and_wire_actions():
+    game, server, bridge = _crewed()
+    sub = game.opfor.sub
+    apply = lambda action, params: bridge._apply_opfor_action(game, action, params, "uboot")
+    assert apply("uboot_fire", {"ref": None, "bearing": _arc_bearing(game, sub), "range_nm": 6.0,
+                                "depth_m": 60.0, "salvo": 1}) is True
+    _run(game, 1)
+    bridge.pump(game, server, now=5.0)
+    weapons = server.v2_states["uboot"]["uboot"]["own_weapons"]
+    assert weapons and weapons[0]["wire"] == "ACTIVE" and weapons[0]["datum_range_nm"] is not None
+    ref = weapons[0]["ref"]
+    assert apply("uboot_wire_steer", {"ref": ref, "bearing": 10.0, "range_nm": 4.0}) is True
+    assert apply("uboot_wire_cut", {"ref": ref}) is True
+    assert apply("uboot_wire_cut", {"ref": ref}) == "uboot_no_wire"
+    assert apply("uboot_wire_cut", {"ref": "unknown-reference-000"}) == "unknown_ref"
+
+
+def test_local_fire_asks_bearing_then_range_with_presets():
+    game = _game()
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+
+    def key(value, mod=0):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=mod, unicode=""))
+
+    def type_number(text):
+        for char in text:
+            key(pygame.K_0 + int(char))
+        key(pygame.K_RETURN)
+
+    key(pygame.K_t)
+    type_number("90")
+    assert boat.orders.torpedo_depth == 90.0
+    bearing = int(round(_arc_bearing(game, boat.sub))) % 360
+    key(pygame.K_f)
+    type_number(f"{bearing:03d}")
+    assert game.input_mode == "uboot_range"
+    type_number("6")
+    for _ in range(4):
+        game._update_sim(0.05)
+    fired = _crew_torpedoes(game, boat.sub)
+    assert fired and fired[0].target_depth == 90.0

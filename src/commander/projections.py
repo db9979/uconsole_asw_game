@@ -8,7 +8,7 @@ simulation object.
 from copy import deepcopy
 import math
 
-from src.core import config, plot
+from src.core import config, opfor, plot
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.sonar import analysis_tools
 from src.core.i18n import localize
@@ -1092,11 +1092,23 @@ def _opfor_common(game, status, role, boat):
     return common
 
 
+def _uboot_datum(boat, item):
+    """Bearing/range from the boat to a torpedo's commanded datum (crew data)."""
+    if item.guidance_x is None or item.guidance_y is None:
+        return None, None
+    dx, dy = item.guidance_x - boat.sub.x, item.guidance_y - boat.sub.y
+    return (_number(math.degrees(math.atan2(dx, -dy)) % 360.0),
+            _number(math.hypot(dx, dy)))
+
+
 def _uboot_weapons(game, boat, asset_refs):
-    """The boat's own torpedoes in the water (same rows as the frigate's)."""
+    """The boat's own torpedoes in the water, with their wire and datum."""
     return [dict(ref=asset_refs[("uboot_torpedo", id(item))], x=_number(item.x),
                  y=_number(item.y), depth_m=_number(item.depth),
-                 course=_number(item.course), state=str(item.state)[:32])
+                 course=_number(item.course), state=str(item.state)[:32],
+                 wire=opfor.wire_state(boat, item),
+                 datum_bearing=_uboot_datum(boat, item)[0],
+                 datum_range_nm=_uboot_datum(boat, item)[1])
             for item in sorted(game.enemy_torpedoes, key=lambda weapon: weapon.id)
             if ("uboot_torpedo", id(item)) in asset_refs][:16]
 

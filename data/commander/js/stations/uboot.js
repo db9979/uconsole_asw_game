@@ -32,6 +32,15 @@ export function renderUbootStation(payload) {
   $("uboot-battery-warning").hidden = status.battery === null || status.battery > .2;
   $("uboot-battery-warning").textContent = status.battery !== null && status.battery <= .03 ? t("uboot_battery_empty") : t("uboot_battery_low");
   fillFireTargets("uboot-fire-target", payload.contacts);
+  const wired = payload.own_weapons.map((row, index) => ({...row, label: `T${index + 1}`}));
+  stationRows($("uboot-weapons"), wired, (row) => [["reference", row.label], ["depth", unit(row.depth_m, "m", 0)],
+    ["course", unit(row.course, "\u00b0", 0)], ["uboot_wire", t(row.wire === "CUT" ? "uboot_wire_cut_state" : `uboot_wire_${(row.wire || "none").toLowerCase()}`)],
+    ["uboot_datum", row.datum_bearing === null ? t("unavailable") : `${unit(row.datum_bearing, "\u00b0", 0)} / ${unit(row.datum_range_nm, "NM")}`]], "uboot_no_weapons");
+  const select = $("uboot-wire-weapon"), active = wired.filter((row) => row.wire === "ACTIVE");
+  const previous = select.value;
+  select.replaceChildren(...active.map((row) => Object.assign(document.createElement("option"), {value: row.ref, textContent: row.label})));
+  if (active.some((row) => row.ref === previous)) select.value = previous;
+  $("uboot-wire-steer").dataset.ready = $("uboot-wire-cut").dataset.ready = String(active.length > 0);
   stationRows($("uboot-contacts"), payload.contacts, sonarEntries);
   stationRows($("uboot-feed"), [...payload.feed].reverse().map((row) => ({...row, key: row.seq})),
     (row) => [["age", unit(row.age_s, "s", 0)], ["uboot_log_entry", row.message]]);

@@ -1026,7 +1026,7 @@ Submarine physics: the hull accelerates toward an ordered speed (no instant spri
 
 A second crew can play the enemy: in the Remote Crew roster (`F9`) the host grants the roles "Submarine command" and "Submarine sonar". As long as one of them is held, the living hostile submarine with the lowest number follows only that crew's orders; when the roles are released, the host revokes them or a game is loaded, the AI takes the boat back from where it is. A browser holds roles of one side only (frigate or submarine), never both, and solo mode never includes the submarine roles.
 
-- **Submarine command:** orders course, speed and depth (the boat follows within its turn, depth and acceleration limits); telegraph steps (stop, 3, 6, 10, 15 kn, maximum) set the speed quickly. Fires a torpedo down a sonar contact's measured bearing, with its ping fix or TMA solution while current, or down a free bearing with an optional range; firing needs the host's direct-fire grant, a ready tube and the target inside the tube arc. Launches a decoy and makes the one emergency blow.
+- **Submarine command:** orders course, speed and depth (the boat follows within its turn, depth and acceleration limits); telegraph steps (stop, 3, 6, 10, 15 kn, maximum) set the speed quickly. Fires a torpedo down a sonar contact's measured bearing, with its ping fix or TMA solution while current, or down a free bearing with an optional range; firing needs the host's direct-fire grant, a ready tube and the target inside the tube arc. The crew sets the run depth (5-300 m, otherwise a shallow default) and fires one torpedo or two in a ±4° spread, each with its own datum. Every crew torpedo runs on a wire: the crew can move its datum (bearing and distance from the boat) and the wire turns it onto the new datum until its seeker acquires; faster than 10 kn or turning harder than 1.5°/s for 5 s breaks the wire, as does running out of either spool, and the crew can cut it. Launches a decoy and makes the one emergency blow.
 - **Plant and boat modes:** a crewed boat never goes up, snorkels or calls home by itself. The battery drains with speed and hotel load; below 20 % the log warns, and an empty battery limits the speed to what the plant can serve (an AIP plant still takes over the load by itself). **Snorkel** runs the diesels at snorkel depth and charges the battery, at most 6 kn; diving deeper shuts the head valve. **Silent running** limits the boat to 5 kn and makes it as quiet as a lurking AI boat. **Lie on bottom** stops the boat 3 m above the seabed where the water is no deeper than test depth: silent and no drift; any speed or depth order lifts off. The boat stops short of land or a seamount instead of turning away, and the log warns in shallow water.
 - **Submarine sonar:** the same sonar workstation as on the frigate (broadband, LOFAR, DEMON, TMA, active echoes, classification, listening audio), but the hull array listens at the boat's own depth, so the layer works for and against the crew. There is no towed array and no release to an OPZ. An active ping gives echoes and is heard by the frigate.
 - **What the submarine crew sees:** its own boat, the known chart, its own sonar measurements and its own torpedoes in the water. It never sees the frigate's position, its plot, its events or its mission messages; the frigate crew cannot tell a crewed boat from the AI.
@@ -1049,9 +1049,13 @@ The **submarine command** station is laid out like the Bridge: the chart on the 
 | `Wheel / drag` | Zoom / pan the chart (mouse on the chart) |
 | `Arrow keys` | Select an own sonar contact |
 | `Ctrl+Enter` | Fire a torpedo at the selected contact |
-| `F` | Fire a torpedo down an entered bearing |
+| `F` | Fire a torpedo down an entered bearing, then the distance to the datum (Enter: none) |
 | `X` | Launch a decoy |
 | `Shift+B` | Emergency blow (once) |
+| `T` | Torpedo run depth (5-300 m) |
+| `Y` | One torpedo or a two-torpedo spread |
+| `W` | Steer the newest wired torpedo: new datum bearing, then distance |
+| `Shift+W` | Cut the newest torpedo's wire |
 | `G` | Silent running on/off (at most 5 kn) |
 | `Shift+G` | Lie on the bottom / lift off |
 | `N` | Snorkel up/down (diesels charge at snorkel depth) |

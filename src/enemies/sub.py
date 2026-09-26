@@ -1094,15 +1094,17 @@ class Sub:
             if crew is not None:
                 crew.event("snorkel_stopped")
 
-    def fire_readiness(self, bearing=None):
+    def fire_readiness(self, bearing=None, salvo: int = 1):
         """Why a crew torpedo shot is impossible now, or None when ready."""
         if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
             return "not_ready"
         if self.torpedoes_left <= 0:
             return "no_torpedoes"
-        if self.weapon_battery is not None and self.weapon_battery.ready_count <= 0:
+        if self.torpedoes_left < salvo:
+            return "no_torpedoes"
+        if self.weapon_battery is not None and self.weapon_battery.ready_count < salvo:
             return "reloading"
-        if len(self.pending_torpedoes) >= SUB_MAX_PENDING_TORPEDOES:
+        if len(self.pending_torpedoes) + salvo > SUB_MAX_PENDING_TORPEDOES:
             return "reloading"
         if bearing is not None and self.weapon_battery is not None:
             launcher = self.runtime_catalog.launchers[self.weapon_battery.launcher_key]
@@ -1113,7 +1115,8 @@ class Sub:
         return None
 
     def command_fire(self, bearing, range_nm=None, target_course=None,
-                     target_speed_kn=None, now: float = 0.0):
+                     target_speed_kn=None, now: float = 0.0, *, depth_m=None,
+                     salvo: int = 1):
         """Fire one torpedo down a crew-chosen bearing.
 
         ``range_nm`` places the guidance datum; with a crew solution
@@ -1121,7 +1124,9 @@ class Sub:
         interception course.  All values are crew estimates, never truth.
         """
         numbers = [value for value in (bearing, range_nm, target_course,
-                                       target_speed_kn) if value is not None]
+                                       target_speed_kn, depth_m) if value is not None]
+        if type(salvo) is not int or salvo not in (1, 2):
+            return "invalid_value"
         if bearing is None or any(
                 type(value) not in (int, float) or isinstance(value, bool)
                 or not math.isfinite(value) for value in numbers):
@@ -1131,9 +1136,11 @@ class Sub:
                 or (target_course is not None and not 0.0 <= target_course < 360.0)
                 or (target_speed_kn is not None and not 0.0 <= target_speed_kn <= 60.0)
                 or ((target_course is None) != (target_speed_kn is None))
-                or (target_course is not None and range_nm is None)):
+                or (target_course is not None and range_nm is None)
+                or (depth_m is not None and not config.UBOOT_TORPEDO_MIN_DEPTH_M
+                    <= depth_m <= config.UBOOT_TORPEDO_MAX_DEPTH_M)):
             return "invalid_value"
-        reason = self.fire_readiness(bearing)
+        reason = self.fire_readiness(bearing, salvo)
         if reason is not None:
             return reason
         x = y = None
@@ -1147,7 +1154,28 @@ class Sub:
             speed_kn=target_speed_kn, depth_m=None, quality=1.0, signal=0.0,
             last_seen=now, bearing_uncertainty_deg=None,
             range_uncertainty_nm=None, depth_uncertainty_m=None, label=None)
-        return True if self._fire_salvo(observation, 1) else "not_ready"
+        launched = self._fire_salvo(observation, salvo)
+        if not launched:
+            return "not_ready"
+        # Crew presets on the rows just loaded: run depth, and a two-torpedo
+        # spread either side of the fire-control course.
+        first = len(self.pending_torpedoes) - launched
+        for index in range(first, len(self.pending_torpedoes)):
+            row = list(self.pending_torpedoes[index])
+            if depth_m is not None:
+                row[3] = float(depth_m)
+            if launched == 2:
+                # Each torpedo gets its own datum, turned about the boat by
+                # the same angle, so the wire keeps the spread open.
+                offset = config.UBOOT_SALVO_SPREAD_DEG * (-1 if index == first else 1)
+                row[2] = (row[2] + offset) % 360.0
+                if row[4] is not None and row[5] is not None:
+                    angle = math.radians(offset)
+                    dx, dy = row[4] - self.x, row[5] - self.y
+                    row[4] = self.x + dx * math.cos(angle) - dy * math.sin(angle)
+                    row[5] = self.y + dx * math.sin(angle) + dy * math.cos(angle)
+            self.pending_torpedoes[index] = tuple(row)
+        return True
 
     def command_decoy(self):
         if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):

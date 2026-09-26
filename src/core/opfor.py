@@ -11,9 +11,11 @@ frigate, its torpedoes and every other radiating target through the ordinary
 """
 
 from collections import deque
+import math
 
 from src.core import config
 from src.core.i18n import message
+from src.physics import torpedo_dyn
 from src.sonar.platforms import (OwnShipAcousticSource, OwnTorpedoAcousticSource,
                                  SubSonarPlatform)
 from src.sonar.sonar import SonarSystem
@@ -36,12 +38,21 @@ class CrewOrders:
     # Crew notices raised by the boat itself (key -> feed category).
     EVENTS = {"obstacle": "navigation", "snorkel_stopped": "navigation",
               "battery_low": "navigation", "battery_empty": "navigation",
-              "shallow_water": "navigation"}
+              "shallow_water": "navigation", "wire_broken": "waffen"}
 
     def __init__(self):
         self.silent = False
         self.bottomed = False
         self.mast = False
+        # Wire-guided crew torpedoes: EnemyTorpedo id -> CrewWire.
+        self.wires = {}
+        self._known_torpedoes = set()
+        self._last_course = None
+        # Local fire-control presets (the web sends them with each shot).
+        self.torpedo_depth = None
+        self.salvo = 1
+        self.pending_bearing = None
+        self.steer_torpedo = None
         self._events = []
         self._battery_state = "ok"
         self._keel_warned = False
@@ -61,6 +72,24 @@ class CrewOrders:
         if self.bottomed:
             return True
         return self.silent and sub.speed <= config.UBOOT_SILENT_MAX_KN + 1e-6
+
+
+class CrewWire:
+    """The guidance wire of one crew torpedo (transient; cut by a load).
+
+    Same spool and tension rules as the frigate's wire (``torpedo_dyn``),
+    with the submarine's own speed and turn limits.
+    """
+
+    def __init__(self, torpedo_id: int):
+        self.torpedo_id = torpedo_id
+        self.state = "ACTIVE"          # ACTIVE | BROKEN | CUT
+        self.ship_out_nm = 0.0
+        self.stress_s = 0.0
+
+    @property
+    def active(self) -> bool:
+        return self.state == "ACTIVE"
 
 
 class CrewedBoat:
@@ -168,6 +197,77 @@ def update_sonar(game, boat: CrewedBoat, dt: float) -> None:
                 key, contact=contact.id, bearing=f"{contact.bearing:4.0f}",
                 range=f"{contact.range_est:.1f}" if contact.range_est else "",
                 origin=contact.origin))
+
+
+def _crew_torpedoes(game, boat) -> dict:
+    return {torpedo.id: torpedo for torpedo in game.enemy_torpedoes
+            if torpedo.launch_platform_id == boat.sub_id and torpedo.state == "RUN"}
+
+
+def update_wires(game, boat, dt: float) -> None:
+    """Pay out, strain and steer the wires of the crew's running torpedoes."""
+    sub, orders = boat.sub, boat.orders
+    running = _crew_torpedoes(game, boat)
+    for torpedo_id in sorted(running):
+        if torpedo_id not in orders._known_torpedoes:
+            orders._known_torpedoes.add(torpedo_id)
+            orders.wires[torpedo_id] = CrewWire(torpedo_id)
+    orders._known_torpedoes &= set(running)
+    orders.wires = {key: wire for key, wire in orders.wires.items() if key in running}
+    yaw = 0.0
+    if orders._last_course is not None and dt > 0.0:
+        yaw = abs(config.angle_diff_deg(sub.course, orders._last_course)) / dt
+    orders._last_course = sub.course
+    for torpedo_id, wire in sorted(orders.wires.items()):
+        if not wire.active:
+            continue
+        torpedo = running[torpedo_id]
+        wire.ship_out_nm += config.kn_to_nm_per_s(max(0.0, sub.speed)) * dt
+        overload = sub.speed > config.UBOOT_WIRE_MAX_KN or yaw > config.UBOOT_WIRE_MAX_YAW_DEG_S
+        wire.stress_s = wire.stress_s + dt if overload else 0.0
+        if (sub.sunk or wire.stress_s >= torpedo_dyn.WIRE_TENSION_BREAK_S
+                or wire.ship_out_nm >= torpedo_dyn.WIRE_SHIP_SPOOL_NM
+                or torpedo.travel >= torpedo.range_nm * torpedo_dyn.WIRE_TORPEDO_SPOOL_FACTOR):
+            wire.state = "BROKEN"
+            orders.event("wire_broken")
+            continue
+        if (torpedo.seeker_acquired or torpedo.guidance_x is None
+                or torpedo.guidance_y is None):
+            continue
+        # The wire turns the torpedo onto its (possibly updated) datum.
+        desired = math.degrees(math.atan2(torpedo.guidance_x - torpedo.x,
+                                          -(torpedo.guidance_y - torpedo.y))) % 360.0
+        step = config.UBOOT_WIRE_TURN_DEG_S * dt
+        torpedo.course = (torpedo.course + config.clamp(
+            config.angle_diff_deg(desired, torpedo.course), -step, step)) % 360.0
+
+
+def wire_steer(boat, torpedo, bearing: float, range_nm: float):
+    """Crew: move a wired torpedo's datum to ``bearing``/``range_nm`` from the boat."""
+    wire = boat.orders.wires.get(torpedo.id)
+    if wire is None or not wire.active:
+        return "uboot_no_wire"
+    if (type(bearing) not in (int, float) or type(range_nm) not in (int, float)
+            or not math.isfinite(bearing) or not math.isfinite(range_nm)
+            or not 0.0 <= bearing < 360.0 or not 0.05 <= range_nm <= 40.0):
+        return "invalid_value"
+    sub = boat.sub
+    torpedo.guidance_x = sub.x + range_nm * math.sin(math.radians(bearing))
+    torpedo.guidance_y = sub.y - range_nm * math.cos(math.radians(bearing))
+    return True
+
+
+def wire_cut(boat, torpedo):
+    wire = boat.orders.wires.get(torpedo.id)
+    if wire is None or not wire.active:
+        return "uboot_no_wire"
+    wire.state = "CUT"
+    return True
+
+
+def wire_state(boat, torpedo) -> str | None:
+    wire = boat.orders.wires.get(torpedo.id)
+    return None if wire is None else wire.state
 
 
 def speed_steps(sub) -> tuple:

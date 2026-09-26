@@ -417,11 +417,28 @@ def _uboot_speed_params(params):
             and 0 <= params["speed_kn"] <= 40)
 
 
+def _uboot_wire_params(params):
+    """Steer a wired crew torpedo: its ref and the new datum from the boat."""
+    return (type(params) is dict and set(params) == {"ref", "bearing", "range_nm"}
+            and _ref(params["ref"])
+            and all(type(params[key]) in (int, float) and math.isfinite(params[key])
+                    for key in ("bearing", "range_nm"))
+            and 0 <= params["bearing"] < 360 and 0.05 <= params["range_nm"] <= 40)
+
+
 def _uboot_fire_params(params):
-    """A crew shot: a sonar contact ref, or a free bearing with optional range."""
-    if type(params) is not dict or set(params) != {"ref", "bearing", "range_nm"}:
+    """A crew shot: a sonar contact ref, or a free bearing with optional range;
+    run depth (optional) and one or two torpedoes."""
+    if type(params) is not dict or set(params) != {"ref", "bearing", "range_nm",
+                                                    "depth_m", "salvo"}:
         return False
     ref, bearing, range_nm = params["ref"], params["bearing"], params["range_nm"]
+    depth = params["depth_m"]
+    if type(params["salvo"]) is not int or params["salvo"] not in (1, 2):
+        return False
+    if depth is not None and not (type(depth) in (int, float) and math.isfinite(depth)
+                                  and 5 <= depth <= 300):
+        return False
     if (ref is None) == (bearing is None):
         return False
     if ref is not None and not _ref(ref):
@@ -659,6 +676,8 @@ V2_ACTION_REGISTRY = {
     "uboot_decoy": V2Action(frozenset({"uboot"}), _no_params),
     "uboot_blow": V2Action(frozenset({"uboot"}), _no_params),
     "uboot_snorkel": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
+    "uboot_wire_steer": V2Action(frozenset({"uboot"}), _uboot_wire_params),
+    "uboot_wire_cut": V2Action(frozenset({"uboot"}), _single_ref_params),
     "uboot_silent": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
     "uboot_bottom": V2Action(frozenset({"uboot"}), _bool_params("enabled")),
 }

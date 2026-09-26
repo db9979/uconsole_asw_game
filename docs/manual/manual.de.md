@@ -1027,7 +1027,7 @@ U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint
 
 Eine zweite Crew kann den Gegner spielen: Im Remote-Crew-Roster (`F9`) vergibt der Host die Rollen „U-Boot-Führung“ und „U-Boot-Sonar“. Solange eine davon besetzt ist, folgt das lebende feindliche U-Boot mit der kleinsten Nummer nur den Befehlen dieser Crew; werden die Rollen abgegeben, vom Host entzogen oder ein Spielstand geladen, übernimmt die KI das Boot wieder dort, wo es gerade ist. Ein Browser hält nur Rollen einer Seite (Fregatte oder U-Boot), nie beide, und der Solo-Modus enthält die U-Boot-Rollen nie.
 
-- **U-Boot-Führung:** befiehlt Kurs, Fahrt und Tiefe (das Boot folgt im Rahmen seiner Wende-, Tiefen- und Beschleunigungsgrenzen); Fahrtstufen (Stopp, 3, 6, 10, 15 kn, Maximum) setzen die Fahrt schnell. Schießt einen Torpedo auf die gemessene Peilung eines Sonarkontakts, mit Ping-Fix oder TMA-Lösung, solange aktuell, oder auf eine freie Peilung mit optionaler Entfernung; der Schuss braucht die Direktfeuer-Freigabe des Hosts, ein klares Rohr und das Ziel im Schussfeld der Rohre. Stößt einen Täuschkörper aus und bläst einmal notfallmäßig an.
+- **U-Boot-Führung:** befiehlt Kurs, Fahrt und Tiefe (das Boot folgt im Rahmen seiner Wende-, Tiefen- und Beschleunigungsgrenzen); Fahrtstufen (Stopp, 3, 6, 10, 15 kn, Maximum) setzen die Fahrt schnell. Schießt einen Torpedo auf die gemessene Peilung eines Sonarkontakts, mit Ping-Fix oder TMA-Lösung, solange aktuell, oder auf eine freie Peilung mit optionaler Entfernung; der Schuss braucht die Direktfeuer-Freigabe des Hosts, ein klares Rohr und das Ziel im Schussfeld der Rohre. Die Crew stellt die Lauftiefe ein (5-300 m, sonst eine flache Voreinstellung) und schießt einen Torpedo oder zwei im Fächer von ±4°, jeder mit eigenem Datum. Jeder Crew-Torpedo läuft am Draht: die Crew kann sein Datum versetzen (Peilung und Entfernung vom Boot), und der Draht dreht ihn darauf ein, bis sein Suchkopf erfasst; schneller als 10 kn oder stärker als 1,5°/s drehen für 5 s lässt den Draht reißen, ebenso eine abgelaufene Spule, und die Crew kann ihn kappen. Stößt einen Täuschkörper aus und bläst einmal notfallmäßig an.
 - **Anlage und Bootsbetrieb:** ein besetztes Boot taucht nie von selbst auf, schnorchelt nicht und funkt nicht von selbst. Die Batterie entlädt sich mit Fahrt und Bordnetz; unter 20 % warnt das Bootslog, eine leere Batterie begrenzt die Fahrt auf das, was die Anlage noch liefert (eine AIP-Anlage übernimmt die Last weiterhin selbst). **Schnorcheln** betreibt die Diesel auf Schnorcheltiefe und lädt die Batterie, höchstens 6 kn; tieferes Tauchen schließt das Kopfventil. **Schleichfahrt** begrenzt das Boot auf 5 kn und macht es so leise wie ein lauerndes KI-Boot. **Auf Grund legen** stoppt das Boot 3 m über dem Grund, wo das Wasser nicht tiefer als die Tauchtiefe ist: leise und ohne Drift; jeder Fahrt- oder Tiefenbefehl hebt ab. Vor Land oder einer Untiefe stoppt das Boot, statt auszuweichen, und das Log warnt bei wenig Wasser unter dem Kiel.
 - **U-Boot-Sonar:** derselbe Sonararbeitsplatz wie auf der Fregatte (Breitband, LOFAR, DEMON, TMA, Aktivechos, Klassifizierung, Horch-Audio), aber das Rumpfsonar horcht in der eigenen Tauchtiefe, die Sprungschicht wirkt also für und gegen die Crew. Es gibt keine Schleppantenne und keine Freigabe an eine OPZ. Ein Aktivping liefert Echos und wird von der Fregatte gehört.
 - **Was die U-Boot-Crew sieht:** das eigene Boot, die bekannte Seekarte, die eigenen Sonarmessungen und die eigenen Torpedos im Wasser. Position, Plot, Ereignisse und Missionsmeldungen der Fregatte sieht sie nie; die Fregatten-Crew kann ein besetztes Boot nicht von der KI unterscheiden.
@@ -1050,9 +1050,13 @@ Die **U-Boot-Führung** ist aufgebaut wie die Brücke: links die Seekarte (bekan
 | `Mausrad / Ziehen` | Karte zoomen / verschieben (Maus auf der Karte) |
 | `Pfeiltasten` | Eigenen Sonarkontakt wählen |
 | `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen |
-| `F` | Torpedo auf eine eingegebene Peilung schießen |
+| `F` | Torpedo auf eine eingegebene Peilung schießen, danach Entfernung zum Datum (Enter: keine) |
 | `X` | Täuschkörper ausstoßen |
 | `Umschalt+B` | Notanblasen (einmal) |
+| `T` | Torpedo-Lauftiefe (5-300 m) |
+| `Y` | Ein Torpedo oder Zweierfächer |
+| `W` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung des neuen Datums |
+| `Shift+W` | Draht des neuesten Torpedos kappen |
 | `G` | Schleichfahrt ein/aus (höchstens 5 kn) |
 | `Shift+G` | Auf Grund legen / abheben |
 | `N` | Schnorchel aus-/einfahren (Diesel laden auf Schnorcheltiefe) |

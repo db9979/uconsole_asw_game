@@ -465,9 +465,16 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
               if sub.countermeasure_store is not None else 0)
     layout.status_line(s, fx + half + 10, fy + 62, half, "uboot.label.decoys",
                        raw_text(f"{decoys}"), size=17, label_w=150)
-    layout.status_line(s, fx, fy + 88, fw, "uboot.label.blow",
+    layout.status_line(s, fx, fy + 88, half, "uboot.label.blow",
                        message("common.yes" if sub.blow_available else "common.no"),
                        size=17, label_w=150)
+    orders = boat.orders
+    wired = sum(1 for wire in orders.wires.values() if wire.active)
+    layout.blit_line(s, message(
+        "uboot.line.fire_presets",
+        depth=_fmt(orders.torpedo_depth) if orders.torpedo_depth else message("uboot.value.auto_depth"),
+        salvo=orders.salvo, wires=wired),
+        (fx + half + 10, fy + 88, half, 20), config.COLOR_TEXT_DIM, size=15)
     contacts_y = y + box_h + 10
     listing = layout.box(s, (x, contacts_y, w, y + h - contacts_y), "uboot.local.contacts")
     lx, ly, lw, lh = listing

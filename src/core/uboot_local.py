@@ -30,7 +30,9 @@ _SONAR_BLOCKED = frozenset({
     pygame.K_F2, pygame.K_F3, pygame.K_F4, pygame.K_F8, pygame.K_F11,
     pygame.K_0, pygame.K_KP0,
 })
-UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearing")
+UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearing",
+                     "uboot_range", "uboot_torpedo_depth", "uboot_wire_bearing",
+                     "uboot_wire_range")
 # Rejections of boat-mode orders that have their own local text.
 UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth")
 
@@ -96,7 +98,8 @@ def fire_at_contact(game, current, contact):
             speed = min(60.0, max(0.0, contact.tma_speed))
     if bearing is None or not math.isfinite(bearing):
         return "stale_ref"
-    return sub.command_fire(bearing % 360.0, range_nm, course, speed, now=game.sim_t)
+    return sub.command_fire(bearing % 360.0, range_nm, course, speed, now=game.sim_t,
+                            depth_m=current.orders.torpedo_depth, salvo=current.orders.salvo)
 
 
 def _announce(game, category: str, text, seconds: float = 2.0) -> None:
@@ -117,6 +120,22 @@ def _mode_notice(game, mode: str, on: bool, result) -> None:
             else "uboot.reason.not_ready")), 2.5)
 
 
+def _fire_bearing(game, current, range_nm):
+    orders = current.orders
+    bearing, orders.pending_bearing = orders.pending_bearing, None
+    if bearing is None:
+        return "not_ready"
+    return current.sub.command_fire(bearing, range_nm, now=game.sim_t,
+                                    depth_m=orders.torpedo_depth, salvo=orders.salvo)
+
+
+def _latest_wire(game, current):
+    running = {item.id: item for item in game.enemy_torpedoes if item.state == "RUN"}
+    active = [key for key, wire in current.orders.wires.items()
+              if wire.active and key in running]
+    return running[max(active)] if active else None
+
+
 def _fire_notice(game, result) -> None:
     if result is True:
         _announce(game, "waffen", message("uboot.local.fired"))
@@ -124,7 +143,8 @@ def _fire_notice(game, result) -> None:
         game.flash(message("uboot.local.fire_rejected",
                            reason=message(f"uboot.reason.{result}")
                            if result in ("not_ready", "no_torpedoes", "reloading",
-                                         "out_of_arc", "stale_ref", "unknown_ref")
+                                         "out_of_arc", "stale_ref", "unknown_ref",
+                                         "uboot_no_wire", "invalid_value")
                            else message("uboot.reason.not_ready")), 2.5)
 
 
@@ -140,6 +160,12 @@ def begin_input(game, mode: str) -> None:
         "uboot_speed": f"{sub.order_speed:.1f}" if sub else "---",
         "uboot_depth": f"{sub.order_depth:.0f}" if sub else "---",
         "uboot_bearing": "---",
+        "uboot_range": "---",
+        "uboot_torpedo_depth": (f"{current.orders.torpedo_depth:.0f}"
+                                if current is not None and current.orders.torpedo_depth
+                                else "---"),
+        "uboot_wire_bearing": "---",
+        "uboot_wire_range": "---",
     }[mode]
     prompt = message(f"uboot.input.{mode}", current=current_value)
     game.flash(message("runtime.input.pending", prompt=prompt, value=""), 60.0)
@@ -149,6 +175,11 @@ def finish_input(game) -> bool:
     """Apply a pending boat entry; ``False`` keeps the entry open (invalid)."""
     current = boat(game)
     mode = game.input_mode
+    if mode == "uboot_range" and not game.input_buffer.strip() and current is not None:
+        # No range: the datum goes 10 NM down the bearing (as the web).
+        game.input_mode, game.input_buffer = None, ""
+        _fire_notice(game, _fire_bearing(game, current, None))
+        return True
     try:
         number = float(game.input_buffer.replace(",", "."))
     except ValueError:
@@ -158,12 +189,39 @@ def finish_input(game) -> bool:
         game.input_mode, game.input_buffer = None, ""
         return True
     sub = current.sub
-    if mode == "uboot_bearing":
+    orders = current.orders
+    if mode in ("uboot_bearing", "uboot_wire_bearing"):
         if not 0.0 <= number < 360.0:
             game.flash(message("runtime.numeric.angle"), 2.0)
             return False
+        orders.pending_bearing = number
+        begin_input(game, "uboot_range" if mode == "uboot_bearing" else "uboot_wire_range")
+        return True
+    if mode in ("uboot_range", "uboot_wire_range"):
+        if not 0.05 <= number <= 40.0:
+            game.flash(message("event.invalid_input"), 2.0)
+            return False
         game.input_mode, game.input_buffer = None, ""
-        _fire_notice(game, sub.command_fire(number, None, now=game.sim_t))
+        if mode == "uboot_range":
+            _fire_notice(game, _fire_bearing(game, current, number))
+        else:
+            torpedo = next((item for item in game.enemy_torpedoes
+                            if item.id == orders.steer_torpedo and item.state == "RUN"), None)
+            result = ("uboot_no_wire" if torpedo is None or orders.pending_bearing is None
+                      else opfor.wire_steer(current, torpedo, orders.pending_bearing, number))
+            if result is True:
+                _announce(game, "waffen", message("uboot.local.wire_steered",
+                          bearing=f"{orders.pending_bearing:03.0f}", range=f"{number:.1f}"))
+            else:
+                _fire_notice(game, result)
+        return True
+    if mode == "uboot_torpedo_depth":
+        if not config.UBOOT_TORPEDO_MIN_DEPTH_M <= number <= config.UBOOT_TORPEDO_MAX_DEPTH_M:
+            game.flash(message("event.invalid_input"), 2.0)
+            return False
+        orders.torpedo_depth = number
+        game.input_mode, game.input_buffer = None, ""
+        _announce(game, "waffen", message("uboot.local.torpedo_depth", depth=f"{number:.0f}"))
         return True
     field = {"uboot_course": "course", "uboot_speed": "speed",
              "uboot_depth": "depth"}[mode]
@@ -341,6 +399,21 @@ def _command_key(game, current, key, mods) -> None:
             _announce(game, "waffen", message("uboot.local.decoy"))
         else:
             game.flash(message("uboot.local.decoy_unavailable"), 2.0)
+    elif key == pygame.K_t:
+        begin_input(game, "uboot_torpedo_depth")
+    elif key == pygame.K_y:
+        current.orders.salvo = 2 if current.orders.salvo == 1 else 1
+        game.flash(message("uboot.local.salvo", count=current.orders.salvo), 1.5)
+    elif key == pygame.K_w:
+        torpedo = _latest_wire(game, current)
+        if torpedo is None:
+            _fire_notice(game, "uboot_no_wire")
+        elif mods & pygame.KMOD_SHIFT:
+            if opfor.wire_cut(current, torpedo) is True:
+                _announce(game, "waffen", message("uboot.local.wire_cut"))
+        else:
+            current.orders.steer_torpedo = torpedo.id
+            begin_input(game, "uboot_wire_bearing")
     elif key == pygame.K_g:
         bottom = bool(mods & pygame.KMOD_SHIFT)
         orders = current.orders

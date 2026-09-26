@@ -217,7 +217,9 @@ export function validateV2State(state) {
           (row.age_s !== null && !finite(row.age_s)))) throw new Error("protocol");
     rowsExact(payload.contacts, 128, sonarFields);
     if (!boundedArray(payload.own_weapons, 16) || payload.own_weapons.some((row) =>
-      !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"]))) throw new Error("protocol");
+      !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state", "wire", "datum_bearing", "datum_range_nm"]) ||
+      ![null, "ACTIVE", "BROKEN", "CUT"].includes(row.wire) ||
+      [row.datum_bearing, row.datum_range_nm].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
         !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "aa_ready", "state", "interlock", "reload_s"]) ||

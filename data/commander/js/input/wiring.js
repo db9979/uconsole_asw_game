@@ -367,7 +367,8 @@ export function init() {
     "sonar-harmonic-input", "engine-telegraph", "engine-course", "engine-speed", "helicopter-x", "helicopter-y",
     "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth",
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
-    "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range"]) {
+    "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range", "uboot-fire-depth",
+    "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range"]) {
     $(id).addEventListener("input", () => S.stationDrafts.add(id));
     $(id).addEventListener("change", () => S.stationDrafts.add(id));
     if (id.includes("fire")) for (const eventName of ["input", "change"]) $(id).addEventListener(eventName, () => {
@@ -480,6 +481,15 @@ export function init() {
   });
   $("uboot-decoy").addEventListener("click", () => sendStationAction("uboot_decoy", {}));
   $("uboot-blow").addEventListener("click", () => sendStationAction("uboot_blow", {}));
+  // Wire guidance of a running crew torpedo: new datum from the boat, or cut.
+  $("uboot-wire-steer").addEventListener("click", () => {
+    const ref = $("uboot-wire-weapon").value, bearing = $("uboot-wire-bearing").valueAsNumber, range = $("uboot-wire-range").valueAsNumber;
+    if (!ref || !finite(bearing) || bearing < 0 || bearing >= 360 || !finite(range) || range < .05 || range > 40) return;
+    sendStationAction("uboot_wire_steer", {ref, bearing, range_nm: range});
+  });
+  $("uboot-wire-cut").addEventListener("click", () => {
+    if ($("uboot-wire-weapon").value) sendStationAction("uboot_wire_cut", {ref: $("uboot-wire-weapon").value});
+  });
   // Boat modes: each button toggles its own published state.
   for (const [id, action] of [["uboot-silent", "uboot_silent"], ["uboot-snorkel", "uboot_snorkel"], ["uboot-bottom", "uboot_bottom"]])
     $(id).addEventListener("click", () => sendStationAction(action, {enabled: $(id).getAttribute("aria-pressed") !== "true"}));

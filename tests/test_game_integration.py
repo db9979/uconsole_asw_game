@@ -7,6 +7,7 @@ import pygame
 import pytest
 
 import src.core.game as game_module
+from src.core import game_draw
 from src.core import config
 from src.core.game import Game
 from src.core.station import Station
@@ -201,8 +202,12 @@ def test_audio_replacement_and_run_shutdown_old_engines(monkeypatch):
     initial = game.audio
     monkeypatch.setattr(initial, "shutdown", Mock(wraps=initial.shutdown))
     replacement = Mock(available=False)
-    monkeypatch.setattr(game_module, "AudioEngine", Mock(return_value=replacement))
-    monkeypatch.setattr(game_module, "save_preferences", Mock())
+    # The engine is constructed by the display half (game_draw); the same
+    # factory mock is visible through both modules.
+    factory = Mock(return_value=replacement)
+    monkeypatch.setattr(game_module, "AudioEngine", factory)
+    monkeypatch.setattr(game_draw, "AudioEngine", factory)
+    monkeypatch.setattr(game_draw, "save_preferences", Mock())
     game._set_preference("audio", True)
     old = game_module.AudioEngine.return_value
     assert game.audio is old
@@ -226,7 +231,7 @@ def test_options_apply_global_tooltip_preference_and_language_state(monkeypatch)
     game = Game(seed=82, audio_enabled=False,
                 preferences=Preferences(language="en", tooltips=True))
     save = Mock()
-    monkeypatch.setattr(game_module, "save_preferences", save)
+    monkeypatch.setattr(game_draw, "save_preferences", save)
     game.pinned_tooltip = {"title": "old", "lines": []}
     game._set_preference("tooltips", False)
     assert not game.tooltips_enabled and not game.preferences.tooltips
@@ -273,7 +278,7 @@ def test_runtime_notices_are_structured_for_bt_listening_and_launches(monkeypatc
 def test_runtime_language_switch_retranslates_feeds_and_keeps_legacy_strings(monkeypatch):
     game = Game(seed=87, audio_enabled=False,
                 preferences=Preferences(language="en"))
-    monkeypatch.setattr(game_module, "save_preferences", Mock())
+    monkeypatch.setattr(game_draw, "save_preferences", Mock())
     structured = message("runtime.helo.return")
     game.feed.add("12:00", "mission", structured)
     game.feed.add("12:01", "mission", "Saved")

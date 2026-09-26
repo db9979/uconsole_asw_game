@@ -14,6 +14,7 @@ from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.game import Game
 from src.core import game as game_module
+from src.core import game_draw
 import pygame
 
 
@@ -221,7 +222,7 @@ def test_host_password_file_is_private_and_reset_is_local(tmp_path):
 
 def test_web_host_publishes_game_without_local_display_work(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
-    monkeypatch.setattr(game_module, "save_preferences", lambda prefs: tmp_path / "settings.json")
+    monkeypatch.setattr(game_draw, "save_preferences", lambda prefs: tmp_path / "settings.json")
     game = Game(seed=31, start_menu=True, fullscreen=False,
                 audio_enabled=False, language="en", web_mode=True)
     game.world_mode = "fixed"

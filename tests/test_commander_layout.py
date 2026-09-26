@@ -33,7 +33,9 @@ async function run() {
   const cards = [...$("station-cards").children];
   const root = document.documentElement;
   const lobby = $("lobby").getBoundingClientRect();
-  const lobbyControls = cards.every((card) => {
+  // One unit at a time: the frigate's cards, then the side choice.
+  const sideControls = [...$("side-choice").querySelectorAll("button")];
+  const lobbyControls = sideControls.length === 2 && [...cards.filter((card) => !card.hidden), ...sideControls.map((button) => ({querySelector: () => button}))].every((card) => {
     const button = card.querySelector("button");
     const bounds = button.getBoundingClientRect();
     return button.type === "button" && bounds.width >= 44 && bounds.height >= 40;

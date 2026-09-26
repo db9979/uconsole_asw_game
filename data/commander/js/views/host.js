@@ -5,6 +5,8 @@ import { renderDisabledReasons, unavailable } from "./controls.js";
 import { node } from "./dom.js";
 import { simlogActive } from "./simlog.js";
 import { sendHostAction } from "../net/host.js";
+import { switchSoloSide } from "./lobby.js";
+import { opforRoles } from "../core/base.js";
 
 // ---- Solo host surface --------------------------------------------------
 const scenarioText = {s1_patrouille: "scenario_s1_patrouille", s2_doppeljagd: "scenario_s2_doppeljagd",
@@ -32,7 +34,7 @@ export function renderHost() {
   $("host-screen").hidden = !menu || simlogActive();
   if (!active) {
     for (const id of ["host-save", "host-load", "host-new",
-                      "host-instructor", "host-screen-new", "host-screen-load",
+                      "host-instructor", "host-side", "host-screen-new", "host-screen-load",
                       "host-new-start"]) $(id).disabled = true;
     for (const button of $("host-slot-list").querySelectorAll("button"))
       button.disabled = true;
@@ -45,6 +47,9 @@ export function renderHost() {
   $("host-load").disabled = !replacing;
   $("host-new").disabled = !replacing;
   $("host-instructor").disabled = !any;
+  const boat = opforRoles.has(S.session.station);
+  $("host-side").textContent = t(boat ? "host_play_frigate" : "host_play_opfor");
+  $("host-side").disabled = !ready || S.stationMutation;
   $("host-screen-new").disabled = !replacing;
   $("host-screen-load").disabled = !replacing;
   $("host-new-start").disabled = !replacing;
@@ -154,6 +159,7 @@ export function init() {
   for (const id of ["host-save"]) $(id).addEventListener("click", () => openSlotDialog("save"));
   for (const id of ["host-load", "host-screen-load"]) $(id).addEventListener("click", () => openSlotDialog("load"));
   for (const id of ["host-new", "host-screen-new"]) $(id).addEventListener("click", openNewGameDialog);
+  $("host-side").addEventListener("click", switchSoloSide);
   $("host-instructor").addEventListener("click", () => {
     if (!S.hostView) return;
     const dialog = $("instructor-dialog");

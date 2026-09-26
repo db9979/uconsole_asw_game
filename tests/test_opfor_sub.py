@@ -197,7 +197,7 @@ def test_submarine_sonar_commands_never_touch_the_frigate_sonar():
                                       "uboot") is False
 
 
-def test_solo_never_holds_and_one_session_never_mixes_sides():
+def test_solo_starts_on_the_frigate_and_one_session_never_mixes_sides():
     server = CommanderServer()
     with server._lock:
         _token, crew = server._new_session_locked("crew", web_host=False)
@@ -838,3 +838,21 @@ def test_each_boat_station_owns_its_own_orders():
     assert bridge._apply_opfor_action(game, "uboot_mast", {"enabled": False}, "uboot_weapons") is False
     assert bridge._apply_opfor_action(game, "uboot_set_course", {"course": 45.0}, "uboot_nav") is True
     assert sub.order_course == 45.0
+
+
+def test_new_game_asks_which_unit_the_uconsole_plays():
+    game = Game(seed=83, start_menu=True, audio_enabled=False, language="de")
+    assert game.main_menu
+    game._handle_menu_key(pygame.K_RETURN)
+    assert game.menu_screen == "side" and game.menu_sel == 0
+    game.draw()
+    game._handle_menu_key(pygame.K_2)
+    game._handle_menu_key(pygame.K_RETURN)
+    assert game.local_side == "uboot" and game.menu_screen == "scenario"
+    game._handle_menu_key(pygame.K_ESCAPE)
+    game._handle_menu_key(pygame.K_RETURN)
+    assert game.menu_screen == "side" and game.menu_sel == 1  # Last choice preselected.
+    game._handle_menu_key(pygame.K_UP)
+    game._handle_menu_key(pygame.K_RETURN)
+    assert game.local_side == "frigate"
+    game.audio.shutdown()

@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { renderSonarAudio, sonarAudioAuthorized, stopSonarAudio } from "../audio/audio.js";
-import { $, sideStations, stationNames } from "../core/base.js";
+import { $, opforRoles, sideStations, stationNames } from "../core/base.js";
 import { authenticated, t } from "../core/format.js";
 import { poll } from "../net/poll.js";
 import { request } from "../net/request.js";
@@ -57,8 +57,15 @@ export function renderLobby() {
       return card;
     }));
   }
+  // One unit at a time: the side of the held stations, else the lobby choice.
+  const side = S.session.station !== null ? (opforRoles.has(S.session.station) ? "opfor" : "frigate") : S.lobbySide;
+  for (const button of $("side-choice").querySelectorAll("button")) {
+    button.setAttribute("aria-pressed", String(button.dataset.side === side));
+    button.disabled = S.session.station !== null && button.dataset.side !== side;
+  }
   stationNames.forEach((station, index) => {
     const record = S.session.stations[station];
+    $("station-cards").children[index].hidden = (opforRoles.has(station) ? "opfor" : "frigate") !== side;
     const state = record.status;
     const card = $("station-cards").children[index];
     const [heading, occupancy, button] = card.children;
@@ -193,6 +200,17 @@ export async function mutateStation(path, body) {
       renderLobby();
     }
   }
+}
+export function chooseSide(side) {
+  if (!["frigate", "opfor"].includes(side)) return;
+  S.lobbySide = side;
+  renderLobby();
+}
+// Solo: the one browser plays the other unit; the server moves every station.
+export function switchSoloSide() {
+  if (S.session?.host === null || S.session?.station == null || S.stationMutation) return;
+  const target = opforRoles.has(S.session.station) ? "bridge" : "uboot";
+  mutateStation("/stations/request", { station: target });
 }
 function requestStation(station) {
   if (!stationNames.includes(station) || S.session?.stations[station]?.status === "mine" ||

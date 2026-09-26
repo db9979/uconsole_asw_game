@@ -27,7 +27,7 @@
       <div class="status-mission"><h1 id="mission-name"></h1><span id="phase" class="badge"></span></div>
       <div class="status-clocks" data-i18n-aria="status_clocks"><dl id="mission-metrics" class="metrics"></dl><div class="utc-clock"><span data-i18n="status_utc"></span><time id="utc-clock"></time></div></div>
       <p id="connection" class="connection" role="status" aria-live="polite"></p>
-      <div id="host-bar" class="host-bar" role="group" data-i18n-aria="host_bar" hidden><a id="web-admin-link" href="/admin" data-i18n="admin_room" hidden></a><button id="host-save" type="button" data-i18n="host_save"></button><button id="host-load" type="button" data-i18n="host_load"></button><button id="host-new" type="button" data-i18n="host_new"></button><button id="host-instructor" type="button" data-i18n="instructor_open"></button><span id="host-status" class="host-status" role="status" aria-live="polite"></span></div>
+      <div id="host-bar" class="host-bar" role="group" data-i18n-aria="host_bar" hidden><a id="web-admin-link" href="/admin" data-i18n="admin_room" hidden></a><button id="host-save" type="button" data-i18n="host_save"></button><button id="host-load" type="button" data-i18n="host_load"></button><button id="host-new" type="button" data-i18n="host_new"></button><button id="host-instructor" type="button" data-i18n="instructor_open"></button><button id="host-side" type="button"></button><span id="host-status" class="host-status" role="status" aria-live="polite"></span></div>
       <div class="status-actions">
         <button id="sound" type="button" aria-pressed="false" data-i18n="sound_off"></button>
         <button id="disabled-control-explain" type="button" aria-expanded="false" aria-controls="disabled-control-help" data-i18n-aria="disabled_control_explain" hidden>?</button>
@@ -55,6 +55,7 @@
     <main id="lobby" class="lobby" hidden>
       <header class="lobby-heading"><p class="eyebrow" data-i18n="lobby_eyebrow"></p><h1 data-i18n="lobby_title"></h1><p data-i18n="lobby_intro"></p><button id="lobby-back" type="button" data-i18n="lobby_back" hidden></button></header>
       <p id="lobby-status" class="lobby-status" role="status" aria-live="polite"></p>
+      <div id="side-choice" class="side-choice" role="group" data-i18n-aria="side_choice"><button id="side-frigate" type="button" data-side="frigate" aria-pressed="true" data-i18n="side_frigate"></button><button id="side-opfor" type="button" data-side="opfor" aria-pressed="false" data-i18n="side_opfor"></button></div>
       <div id="station-cards" class="station-cards" data-i18n-aria="lobby_stations"></div>
     </main>
     <aside id="role-rail" class="role-rail" hidden aria-labelledby="role-rail-title">

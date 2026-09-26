@@ -11402,9 +11402,10 @@ class Game:
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
                 action = entries[self.main_menu_sel]
                 if action == "new":
+                    # A new game first asks which unit the uConsole plays.
                     self.main_menu = False
-                    self.menu_screen = "scenario"
-                    self.menu_sel = 0
+                    self.menu_screen = "side"
+                    self.menu_sel = 1 if self.local_side == "uboot" else 0
                 elif action == "load":
                     self._open_administration("load")
                 elif action == "mission_editor":
@@ -11420,6 +11421,19 @@ class Game:
                     self._open_administration("quit")
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self._open_administration("quit")
+            return
+        if self.menu_screen == "side":
+            if key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_TAB):
+                self.menu_sel = 1 - self.menu_sel
+            elif key in (pygame.K_1, pygame.K_2):
+                self.menu_sel = 0 if key == pygame.K_1 else 1
+            elif key in (pygame.K_RETURN, pygame.K_SPACE):
+                self.local_side = ("frigate", "uboot")[self.menu_sel]
+                self.menu_screen = "scenario"
+                self.menu_sel = 0
+            elif key in (pygame.K_ESCAPE, pygame.K_q):
+                self.main_menu = True
+                self.main_menu_sel = 0
             return
         if self.menu_screen == "scenario":
             n = len(config.SCENARIO_ORDER)
@@ -11497,6 +11511,17 @@ class Game:
                 color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
                 center(message("menu.choice", marker=marker,
                                label=self.tr(key).upper()), 185 + i * 47, color=color)
+        elif self.menu_screen == "side":
+            center(self.tr("menu.choose_side"), 170, color=config.COLOR_TEXT_DIM)
+            for i, side in enumerate(("frigate", "uboot")):
+                selected = i == self.menu_sel
+                center(message("menu.choice", marker="► " if selected else "  ",
+                               label=self.tr(f"menu.side.{side}")),
+                       250 + i * 90, self.menu_font_big if selected else None,
+                       config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM)
+                layout.blit_line(s, f"menu.side.{side}.note", (cx - 420, 285 + i * 90, 840, 26),
+                                 config.COLOR_TEXT_DIM, size=18, align="center")
+            center(self.tr("menu.side_hint"), 470, color=config.COLOR_TEXT_DIM)
         elif self.menu_screen == "scenario":
             center(self.tr("menu.choose_scenario"),
                    150, color=config.COLOR_TEXT_DIM)

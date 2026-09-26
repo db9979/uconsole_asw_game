@@ -94,7 +94,8 @@ def test_solo_pairing_leases_every_station_with_full_grants(server):
     assert session["active_station"] == session["station"] == "bridge"
     assert session["simlog"] is True and session["grants"]["simlog"] is True
     assert list(session["stations"]) == list(ROLES)
-    # Solo is the frigate console: the submarine roles are never part of it.
+    # Solo starts on the frigate; the boat's stations are not held until the
+    # player chooses the submarine.
     assert all(session["stations"][role]["status"] == "available" for role in OPFOR_ROLES)
     for station in STATIONS:
         row = session["stations"][station]
@@ -577,3 +578,23 @@ def test_a_replayed_host_command_id_is_applied_once(solo):
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
     assert solo.game.world.sea_state == 2
     assert send(solo, dict(body, action="host_save", params={"slot": 1}))[0] == 409
+
+
+def test_solo_player_switches_the_whole_session_to_the_other_unit(server):
+    cookie, session = solo_pair(server)
+    status, _, boat = request(server, "/api/v2/stations/request", "POST",
+                              {"station": "uboot"}, cookie, session["csrf"])
+    assert status == 200 and boat["station"] == "uboot" and boat["host"] is not None
+    assert all(boat["stations"][role]["status"] == "mine" for role in OPFOR_ROLES)
+    assert all(boat["stations"][role]["status"] == "available" for role in STATIONS)
+    assert boat["stations"]["uboot_weapons"]["grants"]["direct_fire"] is True
+    assert boat["stations"]["uboot_sonar"]["grants"]["sonar_audio"] is True
+    # A rebase (new world) keeps the chosen unit.
+    server.solo_rebase()
+    again = request(server, "/api/v2/session", cookie=cookie)[2]
+    assert all(again["stations"][role]["status"] == "mine" for role in OPFOR_ROLES)
+    status, _, frigate = request(server, "/api/v2/stations/request", "POST",
+                                 {"station": "bridge"}, cookie, again["csrf"])
+    assert status == 200 and frigate["station"] == "bridge"
+    assert all(frigate["stations"][role]["status"] == "mine" for role in STATIONS)
+    assert all(frigate["stations"][role]["status"] == "available" for role in OPFOR_ROLES)

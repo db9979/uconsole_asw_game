@@ -406,7 +406,9 @@ def test_quit_dialog_returns_to_main_menu_without_saving(game):
     sim_t = game.sim_t
     game.update(1.0)
     assert game.sim_t == sim_t
-    # "New game" -> scenario list -> briefing starts a fresh mission.
+    # "New game" -> unit (frigate) -> scenario list -> briefing starts a fresh mission.
+    press(game, pygame.K_RETURN)
+    assert game.menu_screen == "side"
     press(game, pygame.K_RETURN)
     press(game, pygame.K_2)
     press(game, pygame.K_RETURN)

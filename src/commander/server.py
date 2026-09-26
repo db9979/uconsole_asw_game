@@ -1484,8 +1484,11 @@ class CommanderServer:
         return CommanderServer._station_grants(station)
 
     def _solo_grant_all_locked(self, session, active=None):
-        """Lease every station to the single solo session with full grants."""
-        for station in STATIONS:
+        """Lease every station of one side to the single solo session with full
+        grants: the frigate's nine, or the boat's six when ``active`` is a boat
+        station (the solo player chose to play the submarine)."""
+        stations = OPFOR_ROLES if role_side(active) == "opfor" else STATIONS
+        for station in stations:
             self._station_generations[station] += 1
             session["leases"][station] = {
                 "generation": self._station_generations[station],
@@ -1497,7 +1500,13 @@ class CommanderServer:
         session["host_generation"] += 1
         session["active_station"] = None
         self._set_active_station_locked(
-            session, active if active in session["leases"] else STATIONS[0])
+            session, active if active in session["leases"] else stations[0])
+
+    def _solo_switch_side_locked(self, session, station):
+        """The solo player picks the other unit: all stations change side."""
+        for held in tuple(session["leases"]):
+            self._release_station_locked(session, held, "role_revoked")
+        self._solo_grant_all_locked(session, station)
 
     def solo_rebase(self):
         """Keep the solo session across a world replacement, as a fresh authority.
@@ -3280,7 +3289,12 @@ class _Handler(BaseHTTPRequestHandler):
                             status, response = 400, {"error": "invalid_request"}
                         else:
                             station = body["station"]
-                            if (not owner._auto_grant_locked(session, station)
+                            if session["solo_host"] and owner._solo and owner._side_conflict(
+                                    session, station):
+                                # Solo: choosing a station of the other unit moves
+                                # the whole session to that unit.
+                                owner._solo_switch_side_locked(session, station)
+                            elif (not owner._auto_grant_locked(session, station)
                                     and station not in session["leases"]
                                     and station not in session["requests"]
                                     and not owner._side_conflict(session, station)):

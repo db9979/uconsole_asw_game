@@ -66,7 +66,8 @@ def test_normal_menu_start_keeps_world_pairing_grant_and_session(game, paired_me
     world, sonar = game.world, game.sonar
     assigned = request(server, "/api/v2/session", cookie=cookie)[2]
     station_generation = assigned["station_generation"]
-    key(game, confirm)  # Main menu -> scenarios.
+    key(game, confirm)  # Main menu -> which unit.
+    key(game, confirm)  # Frigate -> scenarios.
     key(game, confirm)  # Default patrol -> briefing.
     assert game.menu_screen == "briefing" and game.in_menu
     game.commander.pump(game)
@@ -104,7 +105,8 @@ def test_real_replacements_still_revoke_on_next_pump(game, paired_menu, change):
     elif change == "load":
         game.load_state(game.save_state())  # Includes a sim_t == 0 save.
     else:
-        key(game, pygame.K_RETURN)
+        key(game, pygame.K_RETURN)  # New game -> which unit.
+        key(game, pygame.K_RETURN)  # Frigate -> scenarios.
         if change == "seed":
             key(game, pygame.K_r)
         elif change == "world_mode":
@@ -151,7 +153,7 @@ def test_late_failed_load_preserves_preparation_and_pairing(game, paired_menu, m
         "station_generation"] == assigned["station_generation"]
     game.commander.pump(game)
     assert bridge.status == before
-    for _ in range(3):
+    for _ in range(4):  # New game, frigate, patrol, start.
         key(game, pygame.K_RETURN)
     game.commander.pump(game)
     assert game.world is world and game.sonar is sonar

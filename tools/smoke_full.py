@@ -171,8 +171,10 @@ def _run_smoke() -> None:
     # --- W4: Menue (Hauptmenue -> Szenario -> Custom-Difficulty -> Briefing) ---
     g2 = Game(seed=42, start_menu=True)
     assert g2.in_menu and g2.main_menu
-    g2._handle_menu_key(pygame.K_RETURN)     # New Game -> scenario
-    assert not g2.main_menu and g2.menu_screen == "scenario"
+    g2._handle_menu_key(pygame.K_RETURN)     # New Game -> which unit
+    assert not g2.main_menu and g2.menu_screen == "side"
+    g2._handle_menu_key(pygame.K_RETURN)     # Frigate -> scenario
+    assert g2.local_side == "frigate" and g2.menu_screen == "scenario"
     g2._handle_menu_key(pygame.K_4)          # s4_zufall
     g2._handle_menu_key(pygame.K_RETURN)     # -> Custom-Difficulty
     assert g2.menu_screen == "difficulty"

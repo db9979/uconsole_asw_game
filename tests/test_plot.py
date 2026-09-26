@@ -180,7 +180,8 @@ def test_plot_draws_inside_the_chart_without_ellipsis(game, station):
 
 def test_remote_commands_validate_strictly_and_apply(game):
     actions = server.V2_ACTION_REGISTRY
-    assert all(actions[name].stations == frozenset(server.STATIONS)
+    # Every frigate station, plus the submarine commander (the boat's own plot).
+    assert all(actions[name].stations == frozenset((*server.STATIONS, "uboot"))
                for name in ("plot_add", "plot_remove", "plot_relabel", "plot_clear"))
     check = actions["plot_add"].validate_params
     assert check({"shape": "circle", "x": 10, "y": 10, "label": "", "radius_nm": 2.5})

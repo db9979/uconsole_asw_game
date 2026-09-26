@@ -15,6 +15,7 @@ import math
 
 from src.core import config
 from src.core.i18n import message
+from src.core.plot import PlotLayer
 from src.physics import torpedo_dyn
 from src.sonar.platforms import (OwnShipAcousticSource, OwnTorpedoAcousticSource,
                                  SubSonarPlatform)
@@ -40,7 +41,8 @@ class CrewOrders:
               "battery_low": "navigation", "battery_empty": "navigation",
               "shallow_water": "navigation", "wire_broken": "waffen",
               "ping_heard": "sonar", "torpedo_heard": "sonar",
-              "mast_lowered": "navigation", "esm_intercept": "sonar"}
+              "mast_lowered": "navigation", "esm_intercept": "sonar",
+              "obstacle_ahead": "navigation"}
 
     def __init__(self):
         self.silent = False
@@ -64,6 +66,9 @@ class CrewOrders:
         self._events = []
         self._battery_state = "ok"
         self._keel_warned = False
+        self._obstacle_warned = False
+        # Chart check along the ordered course (0.25 s cadence), for the displays.
+        self.obstacle_ahead_nm = None
 
     def event(self, key: str, **values) -> None:
         if key in self.EVENTS and (values or all(k != key for k, _ in self._events)):
@@ -115,6 +120,8 @@ class CrewedBoat:
         self.station.down = self.sonar_down
         self.feed = deque(maxlen=OPFOR_FEED_MAX)
         self.feed_seq = 0
+        # The boat's own grease-pencil plot (transient, never the frigate's).
+        self.plot = PlotLayer()
         # Local command-station UI (display only): chart camera and page.
         self.chart_view = None
         self.chart_follow = True
@@ -298,6 +305,23 @@ def battery_fraction(sub):
     return endurance.battery_kwh / endurance.profile.battery_capacity_kwh
 
 
+def obstacle_ahead_nm(world, sub):
+    """Distance to the first charted obstacle (land, or a seabed shallower than
+    the boat's keel) along the ordered course, within the look-ahead; else None.
+    Known geography only: the chart the crew holds, no other vessel."""
+    step = 0.25
+    keel = max(sub.depth, sub.order_depth) + config.UBOOT_BOTTOM_CLEARANCE_M
+    rad = math.radians(sub.order_course)
+    distance = step
+    while distance <= config.UBOOT_OBSTACLE_LOOKAHEAD_NM + 1e-9:
+        x = sub.x + distance * math.sin(rad)
+        y = sub.y - distance * math.cos(rad)
+        if world.on_land(x, y) or world.charted_depth_m(x, y) < keel:
+            return distance
+        distance += step
+    return None
+
+
 def update_crew(game, boat: CrewedBoat) -> None:
     """Crew warnings from the boat's own state (0.25 s cadence)."""
     sub, orders = boat.sub, boat.orders
@@ -317,6 +341,10 @@ def update_crew(game, boat: CrewedBoat) -> None:
     if shallow and not orders._keel_warned:
         orders.event("shallow_water")
     orders._keel_warned = shallow
+    ahead = orders.obstacle_ahead_nm = obstacle_ahead_nm(game.world, sub)
+    if ahead is not None and sub.order_speed > 0.0 and not orders._obstacle_warned:
+        orders.event("obstacle_ahead", distance=f"{ahead:.1f}")
+    orders._obstacle_warned = ahead is not None and sub.order_speed > 0.0
     # ESM with the mast up: the boat's own intercepts of radar emitters.
     esm = []
     if orders.mast:

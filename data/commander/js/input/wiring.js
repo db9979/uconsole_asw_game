@@ -494,6 +494,11 @@ export function init() {
   for (const [id, action] of [["uboot-silent", "uboot_silent"], ["uboot-snorkel", "uboot_snorkel"], ["uboot-bottom", "uboot_bottom"],
     ["uboot-mast", "uboot_mast"]])
     $(id).addEventListener("click", () => sendStationAction(action, {enabled: $(id).getAttribute("aria-pressed") !== "true"}));
+  for (const button of document.querySelectorAll("[data-uboot-speed-step]"))
+    button.addEventListener("click", () => {
+      const speed = Number(button.dataset.speed);
+      if (finite(speed) && speed >= 0 && speed <= 40) sendStationAction("uboot_set_speed", {speed_kn: speed});
+    });
   $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));

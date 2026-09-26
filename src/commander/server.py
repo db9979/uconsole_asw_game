@@ -525,10 +525,11 @@ _HOST_STATIONS = frozenset({HOST_ROLE})
 V2_ACTION_REGISTRY = {
     "acknowledge": V2Action(frozenset(ROLES), _no_params),
     # Shared chart plot: every station may draw, relabel and erase.
-    "plot_add": V2Action(frozenset(STATIONS), _plot_add_params),
-    "plot_remove": V2Action(frozenset(STATIONS), _plot_remove_params),
-    "plot_relabel": V2Action(frozenset(STATIONS), _plot_relabel_params),
-    "plot_clear": V2Action(frozenset(STATIONS), _no_params),
+    # The submarine commander's plot actions reach the boat's own plot.
+    "plot_add": V2Action(frozenset((*STATIONS, "uboot")), _plot_add_params),
+    "plot_remove": V2Action(frozenset((*STATIONS, "uboot")), _plot_remove_params),
+    "plot_relabel": V2Action(frozenset((*STATIONS, "uboot")), _plot_relabel_params),
+    "plot_clear": V2Action(frozenset((*STATIONS, "uboot")), _no_params),
     # Solo-only host controls: admitted only for a session carrying the host
     # surface, and each action states the exact phases it may run in.
     "host_save": V2Action(_HOST_STATIONS, _slot_params, phases=_HOST_ANY),

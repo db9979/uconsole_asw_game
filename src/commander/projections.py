@@ -183,10 +183,13 @@ def _weather_station(game):
                 flight=flight, profile=profile)
 
 
-def _plot(game):
-    """The shared crew plot: detached copies plus the DR line's CPA to own ship."""
+def _plot(game, layer=None, own=None):
+    """The shared crew plot: detached copies plus the DR line's CPA to own ship.
+
+    ``layer``/``own`` give another crew's plot and platform (the crewed boat)."""
     objects = []
-    for item in game.plot.objects:
+    own = game.ship if own is None else own
+    for item in (game.plot if layer is None else layer).objects:
         # "shape", not "kind": the browser rejects any "kind" key as a
         # possible entity-type leak.
         row = {("shape" if key == "kind" else key):
@@ -194,8 +197,8 @@ def _plot(game):
                for key, value in item.items()}
         if item["kind"] == "dr":
             now_x, now_y = plot.dr_position(item, game.sim_t)
-            distance, seconds = plot.cpa(item, game.sim_t, game.ship.x, game.ship.y,
-                                         game.ship.course, game.ship.speed)
+            distance, seconds = plot.cpa(item, game.sim_t, own.x, own.y,
+                                         own.course, own.speed)
             row.update(now_x=_number(now_x), now_y=_number(now_y),
                        cpa_nm=_number(distance), cpa_s=_number(seconds))
         objects.append(row)
@@ -1082,8 +1085,10 @@ def _opfor_common(game, status, role, boat):
     """
     with game.sonar_perspective(boat.station):
         common = _common(game, status, role)
-    common["plot"] = dict(objects=[], max_objects=plot.MAX_OBJECTS,
-                          max_label=plot.MAX_LABEL)
+    # The commander sees the boat's own plot; the sonar room has none.
+    common["plot"] = (_plot(game, boat.plot, boat.sub) if role == "uboot" else
+                      dict(objects=[], max_objects=plot.MAX_OBJECTS,
+                           max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(
         "uboot.objective" if not boat.sub.sunk else "uboot.objective_lost", game.tr)
     common["audio"] = dict(events=[])
@@ -1141,6 +1146,8 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             max_depth_m=_number(float(sub.stype.max_depth_m)),
             max_speed_kn=_number(sub.motion.maximum_speed_kn),
             water_depth_m=_number(game.world.depth_m(sub.x, sub.y)),
+            under_keel_m=_number(game.world.depth_m(sub.x, sub.y) - sub.depth),
+            obstacle_ahead_nm=_number(boat.orders.obstacle_ahead_nm),
             cavitating=bool(sub.cavitating), noise=_number(sub.noise_level())),
         status=dict(
             state=state, damage=_number(sub.damage),

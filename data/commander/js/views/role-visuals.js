@@ -167,8 +167,9 @@ export function renderRoleVisuals(role) {
   for (const [id, active] of [["map-visual", mapRoles.has(role) && (role !== "helicopter" || split || S.helicopterVisualPage === "map")], ["sonar-visual", isSonar(role)],
     ["damage-visual", role === "damage"], ["engine-visual", role === "engine"],
     ["eloka-visual", role === "eloka"], ["weapons-visual", role === "weapons"], ["radio-visual", role === "radio"]]) $(id).hidden = !active;
-  // The grease-pencil plot is the frigate crew's; the submarine never sees or edits it.
-  $("plot-tools").hidden = opforRoles.has(role);
+  // Each side has its own grease-pencil plot: the submarine commander draws on
+  // the boat's, never the frigate's; the boat's sonar room has none.
+  $("plot-tools").hidden = role === "uboot_sonar";
   if (!role) { clearVisuals(); return; }
   const stateKey = !S.connected ? "visual_stale" : S.v2State.phase !== "live" ? "visual_inactive" : visualStationDown(role) ? "visual_station_down" : "visual_live";
   $("role-visual-state").textContent = t(stateKey);

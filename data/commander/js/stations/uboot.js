@@ -7,14 +7,35 @@ import { fillFireTargets, metrics, position, sonarEntries, stationRows, yesNo } 
 const alarmText = (age, bearing) => age === null ? t("station_none")
   : bearing === null ? unit(age, "s", 0) : t("uboot_alarm_bearing", {bearing: number(bearing, 0), age: number(age, 0)});
 
+// Telegraph steps as on the uConsole (config.UBOOT_SPEED_STEPS_KN plus the maximum).
+export const ubootSpeedSteps = (maximum) => [...[0, 3, 6, 10, 15].filter((speed) => speed < maximum), maximum];
+
 export function renderUbootStation(payload) {
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons;
   metrics($("uboot-navigation"), [["position", position(nav)], ["course", unit(nav.course, "\u00b0", 0)],
     ["uboot_ordered_course", unit(nav.target_course, "\u00b0", 0)], ["speed", unit(nav.speed, "kn")],
     ["uboot_ordered_speed", unit(nav.target_speed, "kn")], ["depth", unit(nav.depth_m, "m", 0)],
     ["uboot_ordered_depth", unit(nav.target_depth_m, "m", 0)], ["uboot_safe_depth", unit(nav.safe_depth_m, "m", 0)],
-    ["uboot_water_depth", unit(nav.water_depth_m, "m", 0)], ["uboot_cavitating", yesNo(nav.cavitating)],
+    ["uboot_water_depth", unit(nav.water_depth_m, "m", 0)], ["uboot_under_keel", unit(nav.under_keel_m, "m", 0)],
+    ["uboot_obstacle_ahead", nav.obstacle_ahead_nm === null ? t("station_none") : unit(nav.obstacle_ahead_nm, "NM")],
+    ["uboot_cavitating", yesNo(nav.cavitating)],
     ["uboot_noise", number(nav.noise, 2)]]);
+  // Chart check along the ordered course and water under the keel.
+  const obstacle = nav.obstacle_ahead_nm !== null && nav.target_speed > 0;
+  const shallow = nav.under_keel_m !== null && nav.under_keel_m < 15 && !status.bottomed;
+  $("uboot-nav-warning").hidden = !obstacle && !shallow;
+  $("uboot-nav-warning").textContent = obstacle ? t("uboot_obstacle_warning", {distance: number(nav.obstacle_ahead_nm, 1)})
+    : shallow ? t("uboot_shallow_warning", {depth: number(nav.under_keel_m, 0)}) : "";
+  const steps = ubootSpeedSteps(nav.max_speed_kn);
+  for (const button of document.querySelectorAll("[data-uboot-speed-step]")) {
+    // Six buttons: stop, the intermediate steps below the maximum, then AK.
+    const index = Number(button.dataset.ubootSpeedStep);
+    const step = index === 5 ? steps.length - 1 : index;
+    button.hidden = index !== 5 && index >= steps.length - 1;
+    button.dataset.speed = String(steps[step]);
+    button.textContent = t(`uboot_step_${index}`, {speed: number(steps[step], 0)});
+    button.setAttribute("aria-pressed", String(Math.abs(nav.target_speed - steps[step]) < .05));
+  }
   const alarms = payload.alarms;
   metrics($("uboot-status"), [["state", t(`uboot_state_${status.state}`)], ["uboot_damage", unit(status.damage, "%", 0)],
     ["uboot_battery", status.battery === null ? t("unavailable") : unit(status.battery * 100, "%", 0)],

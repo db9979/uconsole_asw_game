@@ -5266,24 +5266,27 @@ class Game:
         self.plot_anchor = None
         self._plot_dr_pending = None
 
-    def plot_add(self, kind, x, y, label="", **fields):
+    # ``layer`` selects another crew's plot (the crewed submarine's own);
+    # by default the frigate crew's shared plot.
+    def plot_add(self, kind, x, y, label="", *, layer=None, **fields):
         """Add one crew drawing at sim time now; returns its id or an error."""
         if kind not in plot_geometry.KINDS:
             return "invalid_value"
-        return self.plot.add({"kind": kind, "label": label,
-                              "t": float(self.sim_t), "x": x, "y": y, **fields})
+        target = self.plot if layer is None else layer
+        return target.add({"kind": kind, "label": label,
+                           "t": float(self.sim_t), "x": x, "y": y, **fields})
 
-    def plot_remove(self, object_id):
-        return True if self.plot.remove(object_id) else "stale_ref"
+    def plot_remove(self, object_id, *, layer=None):
+        return True if (self.plot if layer is None else layer).remove(object_id) else "stale_ref"
 
-    def plot_clear(self):
-        self.plot.clear()
+    def plot_clear(self, *, layer=None):
+        (self.plot if layer is None else layer).clear()
         return True
 
-    def plot_relabel(self, object_id, label):
+    def plot_relabel(self, object_id, label, *, layer=None):
         if not plot_geometry.valid_label(label):
             return "invalid_value"
-        return True if self.plot.relabel(object_id, label) else "stale_ref"
+        return True if (self.plot if layer is None else layer).relabel(object_id, label) else "stale_ref"
 
     def _plot_view(self):
         """The chart camera of the current station, or None without a chart."""

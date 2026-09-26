@@ -296,6 +296,9 @@ def threats(game, boat) -> list:
                              count=len(crew.esm)), "warn"))
     if sub.cavitating:
         rows.append((message("uboot.threat.cavitation"), "warn"))
+    ahead = crew.obstacle_ahead_nm if crew is not None else None
+    if ahead is not None and sub.order_speed > 0.0:
+        rows.append((message("uboot.threat.obstacle", distance=f"{ahead:.1f}"), "warn"))
     battery = _battery_fraction(sub)
     if battery is not None and battery < .15:
         rows.append((message("uboot.threat.battery", value=_fmt(battery * 100)), "warn"))
@@ -425,6 +428,16 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     layout.status_line(s, nx, ny + 98, nw, "ui.target_value_short",
                        message("uboot.line.depth", depth=_fmt(sub.order_depth)),
                        size=18, label_w=80)
+    bottom = game.world.depth_m(sub.x, sub.y)
+    keel = message("uboot.line.under_keel", depth=_fmt(bottom - sub.depth))
+    ahead = boat.orders.obstacle_ahead_nm
+    if ahead is not None:
+        keel = message("uboot.line.keel_obstacle", depth=_fmt(bottom - sub.depth),
+                       distance=f"{ahead:.1f}")
+    layout.blit_line(s, keel, (nx, ny + 124, nw, 20),
+                     config.COLOR_WARN if ahead is not None
+                     or bottom - sub.depth < config.UBOOT_UNDER_KEEL_WARN_M
+                     else config.COLOR_TEXT_DIM, size=16)
     drive = layout.box(s, (x + half + 10, y, half, box_h), "panel.speed_acoustics",
                        border=config.COLOR_WARN if sub.cavitating else config.COLOR_TEXT)
     dx, dy, dw, _ = drive
@@ -448,7 +461,8 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
          config.COLOR_WARN if battery is not None and battery < .3 else config.COLOR_OK)
     modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
                                  ("uboot.mode.snorkel", sub.snorkeling),
-                                 ("uboot.mode.bottom", boat.orders.bottomed)) if on]
+                                 ("uboot.mode.bottom", boat.orders.bottomed),
+                                 ("uboot.mode.mast", boat.orders.mast)) if on]
     quiet = boat.orders.quiet_active(sub)
     layout.blit_line(s, message("uboot.line.modes", modes=raw_text(" · ".join(
         str(localize(key)) for key in modes)) if modes else localize("uboot.mode.none")),

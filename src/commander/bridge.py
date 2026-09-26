@@ -327,25 +327,25 @@ def _sonar_mark_line(game, params, _bindings):
     return game.mark_sonar_cursor(params["page"])
 
 
-def _plot_add(game, params, _bindings):
+def _plot_add(game, params, _bindings, layer=None):
     fields = {key: value for key, value in params.items()
               if key not in ("shape", "x", "y", "label")}
     result = game.plot_add(params["shape"], params["x"], params["y"],
-                           params["label"], **fields)
+                           params["label"], layer=layer, **fields)
     return "active_limit" if result == "full" else (
         True if type(result) is int else result)
 
 
-def _plot_remove(game, params, _bindings):
-    return game.plot_remove(params["id"])
+def _plot_remove(game, params, _bindings, layer=None):
+    return game.plot_remove(params["id"], layer=layer)
 
 
-def _plot_relabel(game, params, _bindings):
-    return game.plot_relabel(params["id"], params["label"])
+def _plot_relabel(game, params, _bindings, layer=None):
+    return game.plot_relabel(params["id"], params["label"], layer=layer)
 
 
-def _plot_clear(game, _params, _bindings):
-    return game.plot_clear()
+def _plot_clear(game, _params, _bindings, layer=None):
+    return game.plot_clear(layer=layer)
 
 
 def _sonar_set_integration(game, params, _bindings):
@@ -1361,6 +1361,9 @@ class CommanderBridge:
             if action == "uboot_wire_cut":
                 return opfor.wire_cut(boat, torpedo)
             return opfor.wire_steer(boat, torpedo, params["bearing"], params["range_nm"])
+        if role == "uboot" and action.startswith("plot_"):
+            # The commander draws on the boat's own plot, never the frigate's.
+            return _V2_ACTION_HANDLERS[action](game, params, bindings, layer=boat.plot)
         if role == "uboot" and action in ("sonar_active_ping", "sonar_measure_bt"):
             with game.sonar_perspective(boat.station):
                 return _V2_ACTION_HANDLERS[action](game, params, bindings)

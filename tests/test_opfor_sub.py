@@ -742,3 +742,70 @@ def test_local_mast_key_and_threat_bar_bearing():
     text, level = uboot_view.threats(game, boat)[0]
     assert level == "danger" and "TORPEDO 0" in str(localize(text, game.tr))
     game.draw()
+
+
+# --- Navigation and plot ----------------------------------------------------
+
+def test_boat_plot_is_separate_from_the_frigate_plot():
+    game, server, bridge = _crewed()
+    boat = game.opfor
+    apply = lambda action, params, role="uboot": bridge._apply_opfor_action(game, action, params, role)
+    frigate_before = list(game.plot.objects)
+    sub = boat.sub
+    assert apply("plot_add", {"shape": "mark", "x": sub.x + 1.0, "y": sub.y, "label": "Z"}) is True
+    assert apply("plot_add", {"shape": "dr", "x": sub.x, "y": sub.y - 2.0, "course": 90.0,
+                              "speed_kn": 8.0, "label": "F"}) is True
+    assert len(boat.plot.objects) == 2 and game.plot.objects == frigate_before
+    # The sonar room has no plot; the frigate's projections never carry the boat's.
+    assert apply("plot_add", {"shape": "mark", "x": 1.0, "y": 1.0, "label": ""},
+                 "uboot_sonar") is False
+    bridge.pump(game, server, now=5.0)
+    state = server.v2_states["uboot"]
+    assert [row["label"] for row in state["plot"]["objects"]] == ["Z", "F"]
+    assert state["plot"]["objects"][1]["cpa_nm"] is not None
+    assert server.v2_states["uboot_sonar"]["plot"]["objects"] == []
+    ident = state["plot"]["objects"][0]["id"]
+    assert apply("plot_relabel", {"id": ident, "label": "Y"}) is True
+    assert apply("plot_remove", {"id": ident}) is True
+    assert apply("plot_clear", {}) is True and boat.plot.objects == []
+    assert game.plot.objects == frigate_before
+
+
+def test_chart_check_reports_an_obstacle_on_the_ordered_course():
+    from src.core import opfor
+    game, server, bridge = _crewed()
+    boat = game.opfor
+    sub = boat.sub
+    assert sub.set_orders(course=90.0, speed=6.0) is True
+    east = sub.x + 2.0
+    game.world.on_land = lambda x, y: x >= east
+    _run(game, 0.5)
+    ahead = opfor.obstacle_ahead_nm(game.world, sub)
+    assert ahead is not None and abs(ahead - 2.0) <= 0.3
+    assert boat.orders.obstacle_ahead_nm == ahead
+    assert any("obstacle" in text and "ahead on the ordered course" in text
+               for text in _feed_texts(game))
+    bridge.pump(game, server, now=5.0)
+    nav = server.v2_states["uboot"]["uboot"]["navigation"]
+    assert nav["obstacle_ahead_nm"] == ahead and nav["under_keel_m"] is not None
+    # Turning away clears the warning.
+    sub.set_orders(course=270.0)
+    _run(game, 0.5)
+    assert boat.orders.obstacle_ahead_nm is None
+
+
+def test_local_nav_page_shows_keel_and_obstacle():
+    from src.ui import uboot_view
+    from src.core.i18n import localize
+    game = _game()
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+    boat.sub.set_orders(course=0.0, speed=6.0)
+    north = boat.sub.y - 1.0
+    game.world.on_land = lambda x, y: y <= north
+    _run(game, 0.5)
+    texts = [str(localize(text, game.tr)) for text, _level in uboot_view.threats(game, boat)]
+    assert any("OBSTACLE AHEAD" in text for text in texts)
+    boat.command_page = 0
+    game.draw()

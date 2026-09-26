@@ -6,6 +6,8 @@ import zlib
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.slow  # generation/calibration runs above 20 s
+
 from tools.gen_contact_analysis_images import (DEMON_RECT, DEMON_TRACE_RECT,
                                                ESM_BORDER, ESM_SPECTRUM,
                                                ESM_WAVEFORM, LABEL_COLOR,

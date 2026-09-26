@@ -3,6 +3,9 @@
 import importlib.util
 import json
 import os
+import pytest
+
+pytestmark = pytest.mark.slow  # generation/calibration runs above 20 s
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

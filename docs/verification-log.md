@@ -3,6 +3,8 @@
 This append-only ledger records historical verification against an exact commit
 or working-tree description. `docs/resume.md` remains the current handoff; an old
 green entry here is never evidence that a later dirty tree is green.
+Hardware checkpoints that CI cannot answer live in `docs/hardware-acceptance.md`;
+an entry below states which of them were run on the uConsole for its revision.
 
 ## 2026-09-07 Commander Baseline
 

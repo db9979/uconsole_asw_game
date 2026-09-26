@@ -30,7 +30,7 @@ Repository = "https://github.com/db9979/uconsole_asw_game"
 Issues = "https://github.com/db9979/uconsole_asw_game/issues"
 
 [project.optional-dependencies]
-dev = ["build>=1", "pytest>=8"]
+dev = ["build>=1", "pytest>=8", "pytest-xdist>=3"]
 
 [project.scripts]
 u-jagd = "main:main"
@@ -60,3 +60,13 @@ version = {attr = "src.core.version.APP_VERSION"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Parallel by default (pytest-xdist); "-n 0" runs serially.  Every worker
+# process gets its own SDL dummy drivers and save/settings directory from
+# conftest.py, and the loopback test servers bind ephemeral ports.
+addopts = "-n auto --dist loadgroup"
+markers = [
+    "browser: drives headless Chromium (skipped when it is not installed)",
+    "xdist_group: pytest-xdist scheduling group (browser tests share two)",
+    "slow: takes more than about 20 s on the development host",
+    "hardware: needs the real uConsole (never run in CI)",
+]

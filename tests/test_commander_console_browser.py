@@ -192,7 +192,10 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     started = time.monotonic()
     try:
-        while process.poll() is None and time.monotonic() - started < 80:
+        # Wall-clock budget: the page needs about 80 s on an idle four-core
+        # host; under a parallel test run (pytest-xdist) Chromium gets less
+        # CPU, so the pump keeps going for up to 150 s before giving up.
+        while process.poll() is None and time.monotonic() - started < 150:
             console.pump(game)
             game.update(.02)
             time.sleep(.02)

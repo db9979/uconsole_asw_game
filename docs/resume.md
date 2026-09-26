@@ -1133,6 +1133,24 @@ Schritte; diese Tabelle nennt Stand, Zahlen und offene Punkte je Phase.
 | 0 Audio-Soak | fertig (Auftraggeber) | `ef45a4f` | siehe Abschnitt "Sonar-Audio ohne Aussetzer" | Hoerabnahme auf Hardware |
 | 1 Crew-Zustand (Save v15) | fertig | siehe `git log` | 3404 bestanden, 26 uebersprungen, 47 min seriell unter Last | zwei vorbestehende Fehlschlaege (unten) |
 
+| 3 Tests/Checkliste | fertig | siehe `git log` | 3406 bestanden parallel in 16:34 (seriell unter Last 47 min) | Ziel 2 min verfehlt: kritischer Pfad ist `test_calibration` (556 s, jetzt `slow`) |
+
+Notizen Phase 3:
+
+- pytest-xdist 3.8 in `.venv` und im `dev`-Extra; `addopts = "-n auto --dist
+  loadgroup"`. `conftest.py` markiert jedes Modul, das Chromium startet, als
+  `browser` und verteilt diese Module auf zwei `xdist_group`-Gruppen, damit
+  hoechstens zwei Chromium-Instanzen gleichzeitig laufen (mehr davon liessen
+  DOM-Probe-Tests unter Last ausfallen).
+- `slow` markiert: `test_calibration.py`, `test_smoke_full.py`,
+  `test_contact_analysis_images.py`, `test_unit_reference_pdf.py`. Lokal
+  iterieren mit `-m "not browser and not slow"`.
+- `test_solo_console_tabs_keep_state_and_host_controls_drive_the_game` pumpt
+  das Spiel mit Wanduhr-Budget; unter Last brauchte Chromium ueber 80 s, das
+  Budget ist jetzt 150 s.
+- `docs/hardware-acceptance.md` angelegt; `docs/verification-log.md`
+  verweist darauf. `tests/test_project_config.py` haelt die pyproject-Vertraege.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

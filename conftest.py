@@ -34,6 +34,37 @@ def pytest_configure(config):
     patch.setattr(preferences_module, "default_preferences_path", isolated_path)
 
 
+_BROWSER_MARKS = {}
+
+
+def drives_browser(path) -> bool:
+    """True for a test module that launches headless Chromium (directly or
+    through the ``commander_web`` helpers)."""
+    path = str(path)
+    if path not in _BROWSER_MARKS:
+        try:
+            with open(path, encoding="utf-8") as handle:
+                text = handle.read()
+        except OSError:
+            text = ""
+        _BROWSER_MARKS[path] = ("chromium" in text or "commander_web" in text)
+    return _BROWSER_MARKS[path]
+
+
+def pytest_collection_modifyitems(config, items):
+    """Mark every test of a module that drives headless Chromium as ``browser``
+    so a local iteration can leave them out (``-m "not browser"``)."""
+    for item in items:
+        if drives_browser(item.fspath):
+            item.add_marker(pytest.mark.browser)
+            # Under pytest-xdist (``--dist loadgroup``) at most two headless
+            # Chromium instances run at once; more of them starve each other
+            # of CPU on a four-core host and time out their virtual-time
+            # budgets, which makes DOM-probe tests flaky.
+            group = sum(map(ord, str(item.fspath))) % 2
+            item.add_marker(pytest.mark.xdist_group(f"browser-{group}"))
+
+
 @pytest.fixture(autouse=True)
 def isolated_saves(tmp_path, monkeypatch):
     from src.core import config

@@ -677,9 +677,78 @@ def test_sonar_audio_endpoint_is_bounded_context_bound_and_does_not_renew_presen
     status, headers, payload = request(
         server, "/api/v2/sonar/audio", "POST", body, cookie, session["csrf"])
     assert status == 200 and payload == blocks[0]
-    assert headers["X-U-Jagd-Audio-Sequence"] == "1"
+    # Numbering never restarts within a server run: the cleared stream skips
+    # one number (the restart is a gap), then continues above the old cursor.
+    assert headers["X-U-Jagd-Audio-Sequence"] == str(len(blocks) + 2)
+    assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
+    # A cursor ahead of everything ever published (a host restart) is rebased.
+    body["after"] = len(blocks) + 10
+    status, headers, payload = request(
+        server, "/api/v2/sonar/audio", "POST", body, cookie, session["csrf"])
+    assert status == 200 and payload == blocks[0]
+    assert headers["X-U-Jagd-Audio-Sequence"] == str(len(blocks) + 2)
     assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
     assert lock_checks and all(lock_checks), "audio socket writes must not block the main-thread lock"
+
+
+@pytest.mark.parametrize("role", ("sonar", "uboot_sonar", "helicopter"))
+def test_audio_sequence_is_monotonic_across_clears_and_context_changes(server, role):
+    """An epoch step clears the ring but never renumbers from 1.
+
+    The browser worklet de-duplicates by sequence; a restart at 1 made it drop
+    every new block until the count passed the old one (minutes of silence
+    after any host key press). Clears and retunes now appear as gaps.
+    """
+    _, cookie, _, paired = pair_v2(server, "Audio")
+    client_id = paired["client_id"]
+    assert server.grant_station(client_id, role)
+    assert server.set_client_grant(client_id, role, "sonar_audio", True)
+    prepare = {"sonar": server.prepare_sonar_audio, "uboot_sonar": server.prepare_uboot_audio,
+               "helicopter": server.prepare_helicopter_audio}[role]
+    publish = {"sonar": server.publish_sonar_audio, "uboot_sonar": server.publish_uboot_audio,
+               "helicopter": server.publish_helicopter_audio}[role]
+    ring = lambda: server._audio_ring(role)[0]
+    pcm = bytes(transport.SONAR_AUDIO_BYTES)
+    generation = prepare(world_session="world-a", world_epoch=7)
+    assert generation is not None
+    for _ in range(3):
+        assert publish(pcm, world_session="world-a", world_epoch=7, station_generation=generation)
+    assert [entry[0] for entry in ring()] == [1, 2, 3]
+    # Idle clears of an already empty stream do not burn numbers.
+    server.clear_sonar_audio(); server.clear_uboot_audio(); server.clear_helicopter_audio()
+    assert prepare(world_session="world-a", world_epoch=7) == generation
+    server.clear_sonar_audio(); server.clear_uboot_audio(); server.clear_helicopter_audio()
+    # The host's local input advanced the epoch: new context, ring cleared,
+    # numbering continues above the old cursor with one skipped number.
+    assert prepare(world_session="world-a", world_epoch=8) == generation
+    assert publish(pcm, world_session="world-a", world_epoch=8, station_generation=generation)
+    assert [entry[0] for entry in ring()] == [5]
+    # A retuned receiver marks a discontinuity: one number is skipped.
+    assert server.mark_audio_discontinuity(role) is True
+    assert publish(pcm, world_session="world-a", world_epoch=8, station_generation=generation)
+    assert [entry[0] for entry in ring()] == [5, 7]
+    assert server.audio_stream_stats()[role]["discontinuities"] == 1
+    # Other roles are independent and unbound streams are never marked.
+    other = next(name for name in transport.SONAR_AUDIO_ROLES if name != role)
+    assert server.mark_audio_discontinuity(other) is False
+    with pytest.raises(ValueError):
+        server.mark_audio_discontinuity("weapons")
+    route = {"sonar": "/api/v2/sonar/audio", "uboot_sonar": "/api/v2/uboot/audio",
+             "helicopter": "/api/v2/helicopter/audio"}[role]
+    session = request(server, "/api/v2/session", cookie=cookie)[2]
+    body = {"protocol": 2, "after": 3, "world_session": "world-a", "world_epoch": 8,
+            "station_generation": session["station_generation"],
+            "active_generation": session["active_generation"]}
+    # A cursor older than the cleared ring is an overrun: newest block, gap.
+    status, headers, _ = request(server, route, "POST", body, cookie, session["csrf"])
+    assert status == 200 and headers["X-U-Jagd-Audio-Sequence"] == "7"
+    assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
+    body["after"] = 5
+    status, headers, _ = request(server, route, "POST", body, cookie, session["csrf"])
+    assert status == 200 and headers["X-U-Jagd-Audio-Sequence"] == "7"
+    assert headers["X-U-Jagd-Audio-Discontinuity"] == "0"  # the browser sees 5 -> 7 itself
+    body["after"] = 7
+    assert request(server, route, "POST", body, cookie, session["csrf"])[0] == 204
 
 
 def test_sonar_audio_fails_closed_for_auth_schema_role_grant_and_context(server):

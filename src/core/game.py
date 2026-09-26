@@ -369,6 +369,9 @@ class Game:
         self._perf_substeps = 0
         self._perf_audio_s = 0.0
         self._perf_commander_s = 0.0
+        self._perf_commander_max_s = 0.0
+        self._perf_events_s = 0.0
+        self._perf_traffic_s = 0.0
         self._perf_draw_s = 0.0
         self._perf_frame_max_s = 0.0
         self._sim_debt_s = 0.0
@@ -12535,6 +12538,8 @@ class Game:
         frames = self._perf_frames
         line = ("t={t:.1f} fps={fps} substeps_avg={sub:.2f} sim_ms={sim:.2f} "
                 "audio_ms={audio:.2f} commander_ms={cmd:.2f} "
+                "commander_max_ms={cmdmax:.1f} events_ms={events:.2f} "
+                "traffic_ms={traffic:.2f} "
                 "draw_ms={draw:.2f} frame_max_ms={fmax:.1f} "
                 "sim_lag_ms={lag:.1f} sim_dropped_ms={drop:.1f}\n").format(
             t=time.monotonic(), fps=frames, sub=self._perf_substeps / frames,
@@ -12543,6 +12548,9 @@ class Game:
             sim=1000 * self._perf_sim_s / frames,
             audio=1000 * self._perf_audio_s / frames,
             cmd=1000 * self._perf_commander_s / frames,
+            cmdmax=1000 * self._perf_commander_max_s,
+            events=1000 * self._perf_events_s / frames,
+            traffic=1000 * self._perf_traffic_s / frames,
             draw=1000 * self._perf_draw_s / frames)
         append_bounded_log(config.SAVE_DIR, "perf_debug.log", line,
                            config.PERF_DEBUG_LOG_MAX_BYTES)
@@ -12551,6 +12559,9 @@ class Game:
         self._perf_substeps = 0
         self._perf_audio_s = 0.0
         self._perf_commander_s = 0.0
+        self._perf_commander_max_s = 0.0
+        self._perf_events_s = 0.0
+        self._perf_traffic_s = 0.0
         self._perf_draw_s = 0.0
         self._perf_frame_max_s = 0.0
 
@@ -12596,17 +12607,27 @@ class Game:
                 wall_dt = self.clock.tick(self.frame_rate()) / 1000.0
                 dt = self._frame_dt(wall_dt)
                 self._t += dt
+                events_started = (time.perf_counter()
+                                  if self._perf_debug_enabled else None)
                 for e in pygame.event.get():
                     if not self.web_mode:
                         self.handle_event(e)
                         if e.type in _ECO_REFRESH_EVENTS:
                             self._eco_drawn_at = float("-inf")
+                if events_started is not None:
+                    self._perf_events_s += time.perf_counter() - events_started
                 commander_started = (time.perf_counter()
                                      if self._perf_debug_enabled else None)
                 self.commander.pump(self)
                 if commander_started is not None:
-                    self._perf_commander_s += time.perf_counter() - commander_started
+                    now = time.perf_counter()
+                    self._perf_commander_s += now - commander_started
+                    self._perf_commander_max_s = max(
+                        self._perf_commander_max_s, now - commander_started)
+                    commander_started = now
                 self.live_traffic.pump(self)
+                if commander_started is not None:
+                    self._perf_traffic_s += time.perf_counter() - commander_started
                 self.update(dt, audio_dt=wall_dt)
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:

@@ -111,7 +111,7 @@ Gefechtslage:
 
 - Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Ctrl+I`/`Ctrl+O`) und Kontrast (`Shift+I`/`Shift+O`) heben schwache Spuren hervor; `Shift+C` wechselt die Phosphorfarbe.
 - `D` oder `A`/`B`/`H` wählen Breitband-, gefiltertes oder Überlagerungs-Abhören. Überlagerung verschiebt das tiefe Band auf etwa 700 Hz, damit tiefe Töne hörbar werden.
-- Das Abhör-Audio läuft etwa eine Sekunde hinter der Anzeige, damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach etwa einer Sekunde in den neuen über; der Ton bricht nicht ab.
+- Das Abhör-Audio läuft etwa anderthalb Sekunden hinter der Anzeige (Remote-Crew-Browser etwa zwei Sekunden), damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach dieser Verzögerung in den neuen über; der Ton bricht nicht ab.
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
 - Die TMA-Seite zeigt die aus der übernommenen Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.

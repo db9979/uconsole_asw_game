@@ -63,6 +63,13 @@ def test_frame_dt_catches_up_slow_frames_within_bounds():
     assert sum(dts) == pytest.approx(sum(walls))
     assert game._sim_debt_s == pytest.approx(0.0)
     assert game._sim_dropped_s == 0.0
+    # A stall as long as the catch-up bound is fully recovered: nothing lost.
+    assert config.SIM_CATCHUP_MAX_S == pytest.approx(2.5)
+    recovered = [game._frame_dt(config.SIM_CATCHUP_MAX_S)]
+    while game._sim_debt_s > 0:
+        recovered.append(game._frame_dt(0.0))
+    assert sum(recovered) == pytest.approx(config.SIM_CATCHUP_MAX_S)
+    assert game._sim_dropped_s == 0.0
     # A hang beyond the catch-up bound drops only the excess.
     assert game._frame_dt(3.0) == pytest.approx(config.SIM_FRAME_DT_MAX)
     assert game._sim_dropped_s == pytest.approx(3.0 - config.SIM_CATCHUP_MAX_S)
@@ -180,6 +187,8 @@ def test_perf_debug_log_is_opt_in_throttled_and_does_not_affect_sim(
     assert "fps=2" in lines[0]
     assert "sim_ms=" in lines[0] and "audio_ms=" in lines[0]
     assert "commander_ms=" in lines[0] and "draw_ms=" in lines[0]
+    assert "commander_max_ms=" in lines[0] and "events_ms=" in lines[0]
+    assert "traffic_ms=" in lines[0]
     debug._perf_debug_log(0.8)
     assert len((debug_root / "perf_debug.log").read_text().splitlines()) == 1
     debug._perf_debug_log(0.3)

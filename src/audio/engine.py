@@ -26,20 +26,30 @@ class AudioEngine:
     ALERT_CHANNEL = 3
     FADE_MS = 35
     SONAR_HOLD_MAX = 2
-    SONAR_BUFFER_S = 1.0
-    SONAR_BUFFER_MAX_S = 2.0
+    # Buffered listening starts once SONAR_BUFFER_S is queued (the standing
+    # lead behind the display) and retains at most SONAR_BUFFER_MAX_S. The
+    # maximum must cover target + SIM_CATCHUP_MAX_S + one block (with margin),
+    # so a catch-up burst after a long frame never rejects a block (a rejected
+    # block would be evicted from the receiver's two-block window: a gap).
+    SONAR_BUFFER_S = 1.5
+    SONAR_BUFFER_MAX_S = 5.0
     # Elastic buffered playback: the queued (not yet mixer-held) duration is
     # steered towards SONAR_TARGET_S by resampling at most SONAR_RATE_MAX
     # faster or slower, in SONAR_RATE_STEP increments. After an underrun the
     # queue refills to SONAR_REFILL_S under concealment instead of stuttering.
-    SONAR_TARGET_S = 0.5
+    # The 1.5 s lead outlasts main-thread stalls (Remote Crew publication,
+    # catch-up frames) that the 2 % steering could never make up.
+    SONAR_TARGET_S = 1.5
     SONAR_RATE_MAX = 0.02
     SONAR_RATE_STEP = 0.0025
     SONAR_RATE_GAIN = 0.05
     SONAR_LEVEL_SMOOTHING = 0.05
-    SONAR_REFILL_S = 0.5
-    SONAR_STALE_S = 2.0
+    SONAR_REFILL_S = 1.0
+    SONAR_STALE_S = 3.0
     SONAR_CONCEAL_GRAIN_S = 0.128
+    # A pump iteration later than this counts as late: the mixer holds only
+    # the current and one queued block, so a starved worker lets it run dry.
+    SONAR_PUMP_LATE_S = 0.25
 
     # Post-limiter per-channel PCM ceilings, NOT input volume caps. The gains
     # keep all three reserved buses below full scale even at coincident peaks.
@@ -84,6 +94,16 @@ class AudioEngine:
         self.sonar_stale = False
         self.sonar_local_underruns = 0
         self.sonar_neutral_blocks = 0
+        # True audible gaps: the primed mixer channel was found idle.
+        self.sonar_channel_idle = 0
+        # Worker scheduling: iterations later than SONAR_PUMP_LATE_S, and the
+        # longest gap between two iterations since the last debug line.
+        self.sonar_pump_late = 0
+        self.sonar_pump_late_max_s = 0.0
+        self._sonar_pump_last_at = None
+        # Receiver sequence breaks seen by the producer (retunes and blocks
+        # the frame loop never got to play before the receiver replaced them).
+        self.sonar_input_gaps = 0
         self._sonar_hold_streak = 0
         self._sonar_buffer = deque()
         self._sonar_buffer_duration = 0.0
@@ -305,8 +325,8 @@ class AudioEngine:
         With hold=True an idle channel re-plays the previous block (bounded to
         SONAR_HOLD_MAX consecutive holds) before the new one, so simulation
         clock lag does not open a silent gap at the 4 Hz block boundary.
-        Buffered local listening retains at most two seconds of sounds. The
-        mixer still holds only its current and next sound.
+        Buffered local listening retains at most SONAR_BUFFER_MAX_S of sounds.
+        The mixer still holds only its current and next sound.
         Volume spans 0..1 before the bus limiter. Linear streaming resampling
         delays by one source sample, so interpolation never predicts a future
         sample or replaces the start of every block with a constant crossfade.
@@ -535,14 +555,28 @@ class AudioEngine:
         with self._sonar_lock:
             if (not self._sonar_buffered or not self.available
                     or pygame.mixer.get_init() is None):
+                self._sonar_pump_last_at = None
                 return
             try:
                 if not self._sonar_primed:
                     if self._sonar_buffer_duration < self.SONAR_BUFFER_S - 1e-6:
                         return
                     self._sonar_primed = True
+                    self._sonar_pump_last_at = None
+                now = time.monotonic()
+                if self._sonar_pump_last_at is not None:
+                    gap = now - self._sonar_pump_last_at
+                    if gap > self.SONAR_PUMP_LATE_S:
+                        self.sonar_pump_late += 1
+                    self.sonar_pump_late_max_s = max(self.sonar_pump_late_max_s, gap)
+                self._sonar_pump_last_at = now
                 if self._sonar_channel.get_queue() is not None:
                     return
+                if (self._sonar_last_fresh_at is not None
+                        and not self._sonar_channel.get_busy()):
+                    # The mixer ran dry between two iterations: an audible dip
+                    # (the next play() fades in) that no other counter sees.
+                    self.sonar_channel_idle += 1
                 if (self._sonar_refilling and self._sonar_buffer_duration
                         >= self.SONAR_REFILL_S - 1e-6):
                     self._sonar_refilling = False
@@ -621,6 +655,7 @@ class AudioEngine:
     def discontinue_sonar_input(self) -> None:
         """Restart resampling after a lost receiver block without cutting playback."""
         with self._sonar_lock:
+            self.sonar_input_gaps += 1
             self._sonar_rate = None
             self._sonar_input_count = 0
             self._sonar_output_count = 0
@@ -667,6 +702,7 @@ class AudioEngine:
         self._sonar_last_fresh_at = None
         self.sonar_stale = False
         self._sonar_hold_streak = 0
+        self._sonar_pump_last_at = None
 
     def stop(self) -> None:
         self.stop_sonar()
@@ -755,17 +791,23 @@ class AudioEngine:
         produced = (0 if self._audio_debug_receiver_last is None else
                     max(0, receiver_blocks - self._audio_debug_receiver_last))
         self._audio_debug_receiver_last = receiver_blocks
+        with self._sonar_lock:
+            late_max_ms = self.sonar_pump_late_max_s * 1000.0
+            self.sonar_pump_late_max_s = 0.0
         line = ("t={t:.1f} receiver_blocks_per_s={rb} sonar_drops={sd} "
                 "sonar_holds={sh} alert_drops={ad} "
                 "sonar_underruns={su} sonar_concealed={sc} sonar_neutral={sn} "
                 "sonar_stale={ss} buffer_s={bs:.2f} rate_adj={ra:+.4f} "
-                "evictions={ev} rate={r} ch={c}\n").format(
+                "channel_idle={ci} pump_late={pl} pump_late_max_ms={pm:.0f} "
+                "input_gaps={ig} evictions={ev} rate={r} ch={c}\n").format(
             sc=self.sonar_concealed_blocks, ra=self.sonar_rate_adjust,
             t=time.monotonic(), sd=self.sonar_dropped_blocks,
             sh=self.sonar_holds, ad=self.alert_dropped_events, ev=evictions,
             rb=produced,
             su=self.sonar_local_underruns, sn=self.sonar_neutral_blocks,
             ss=int(self.sonar_stale), bs=self._sonar_buffer_duration,
+            ci=self.sonar_channel_idle, pl=self.sonar_pump_late, pm=late_max_ms,
+            ig=self.sonar_input_gaps,
             r=self.sample_rate, c=self.channels)
         append_bounded_log(config.SAVE_DIR, "audio_debug.log", line,
                            self.DEBUG_LOG_MAX_BYTES)

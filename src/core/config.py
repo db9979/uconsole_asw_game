@@ -40,8 +40,10 @@ FPS_DEFAULT = 30
 # debt and caught up over the following frames. Sonar audio is produced in
 # simulation time and played in wall time, so dropping that time would drain
 # every playback buffer. Debt beyond SIM_CATCHUP_MAX_S (a real hang) is dropped.
+# 2.5 s matches the sonar listening leads (1.5 s local, 2 s browser) so a
+# stall that long is concealed and then fully caught up instead of cut.
 SIM_FRAME_DT_MAX = 0.1
-SIM_CATCHUP_MAX_S = 1.0
+SIM_CATCHUP_MAX_S = 2.5
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 AUDIO_UPDATE_S = 0.25
@@ -50,12 +52,15 @@ AUDIO_UPDATE_S = 0.25
 ECO_REDRAW_S = 0.25
 ECO_PRESENCE_POLL_S = 0.5
 ECO_PRESENCE_MAX_AGE_S = 5.0
-# Pygame specifies its mixer buffer in samples. 512 samples are about 23 ms at
-# 22050 Hz. Longer scheduling gaps are handled in software: locally by the
-# AudioEngine's two-second buffered-sonar queue (SONAR_BUFFER_MAX_S), and for
-# Remote Crew by the server's 40-block ring buffer of 0.25 s blocks, ~10 s
-# (SONAR_AUDIO_RING_BLOCKS in src/commander/server.py).
-AUDIO_MIXER_BUFFER_SAMPLES = 512
+# Pygame specifies its mixer buffer in samples. 2048 samples are about 93 ms
+# at 22050 Hz: the SDL audio thread then survives PipeWire/CPU scheduling
+# hiccups of that length on the uConsole without an xrun crackle (one-shot
+# cues start up to 93 ms later, which is not noticeable). Longer gaps are
+# handled in software: locally by the AudioEngine's buffered-sonar queue
+# (SONAR_BUFFER_MAX_S), and for Remote Crew by the server's 40-block ring
+# buffer of 0.25 s blocks, ~10 s (SONAR_AUDIO_RING_BLOCKS in
+# src/commander/server.py).
+AUDIO_MIXER_BUFFER_SAMPLES = 2048
 # Mono output: halves per-block synthesis, resampling and mixer workload on
 # the low-power uConsole; stereo bearing panning is skipped in mono.
 AUDIO_CHANNELS = 1

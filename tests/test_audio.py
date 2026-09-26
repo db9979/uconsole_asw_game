@@ -174,6 +174,8 @@ def test_audio_debug_log_is_opt_in_and_throttled(monkeypatch, tmp_path):
     assert "sonar_drops=3" in lines[0]
     assert "sonar_holds=4" in lines[0]
     assert "evictions=0" in lines[0]
+    assert "channel_idle=0" in lines[0] and "pump_late=0" in lines[0]
+    assert "pump_late_max_ms=0" in lines[0] and "input_gaps=0" in lines[0]
     debug.debug_log(0.8)
     assert len((debug_root / "audio_debug.log").read_text().splitlines()) == 1
     debug.debug_log(0.1)
@@ -184,14 +186,16 @@ def test_audio_debug_log_truncates_at_bounded_size(monkeypatch, tmp_path):
     monkeypatch.setenv("U_JAGD_AUDIO_DEBUG", "1")
     monkeypatch.setattr(config, "SAVE_DIR", str(tmp_path))
     path = tmp_path / "audio_debug.log"
-    path.write_text("x" * 300, encoding="utf-8")
+    # A file already at the bound is truncated before the new line (about
+    # 270 bytes) is appended, so only that line remains.
+    path.write_text("x" * 600, encoding="utf-8")
     debug = AudioEngine(enabled=False)
-    monkeypatch.setattr(debug, "DEBUG_LOG_MAX_BYTES", 256)
+    monkeypatch.setattr(debug, "DEBUG_LOG_MAX_BYTES", 512)
 
     debug.debug_log(1.0)
 
     content = path.read_text(encoding="utf-8")
-    assert len(content) < 256
+    assert len(content) < 512
     assert content.startswith("t=") and "sonar_drops=" in content
 
 
@@ -389,21 +393,23 @@ def test_sonar_queue_is_bounded_and_not_cached(mixer):
     assert not engine._cache
 
 
-def test_buffered_sonar_waits_one_second_and_discards_audio_on_stop(mixer):
+def test_buffered_sonar_waits_for_its_lead_and_discards_audio_on_stop(mixer):
     _, channels, _ = mixer
     engine = AudioEngine()
     # Drive the worker's mixer step synchronously; it must not consume a block
-    # before the one-second startup cushion exists.
+    # before the startup cushion (SONAR_BUFFER_S, 1.5 s = six blocks) exists.
     engine._sonar_worker = Mock()
     block = np.ones(1024, dtype=np.float32)
-    for _ in range(3):
+    lead_blocks = round(AudioEngine.SONAR_BUFFER_S / .25)
+    assert lead_blocks == 6
+    for _ in range(lead_blocks - 1):
         assert engine.play_sonar(block, 4096, buffered=True)
         engine._pump_sonar_once()
     channels[1].play.assert_not_called()
     assert engine.play_sonar(block, 4096, buffered=True)
     engine._pump_sonar_once()
     channels[1].play.assert_called_once()
-    assert len(engine._sonar_buffer) == 3
+    assert len(engine._sonar_buffer) == lead_blocks - 1
     channels[1].get_busy.return_value = True
     engine._pump_sonar_once()
     channels[1].queue.assert_called_once()
@@ -418,7 +424,11 @@ def test_buffered_sonar_rejects_overflow_without_advancing_stream(mixer):
     engine = AudioEngine()
     engine._sonar_worker = Mock()
     block = np.ones(1024, dtype=np.float32)
-    for _ in range(8):
+    # The queue holds SONAR_BUFFER_MAX_S (5 s = 20 blocks): enough for the
+    # standing lead plus a full SIM_CATCHUP_MAX_S burst plus one block.
+    assert (AudioEngine.SONAR_BUFFER_MAX_S >= AudioEngine.SONAR_TARGET_S
+            + config.SIM_CATCHUP_MAX_S + .25)
+    for _ in range(round(AudioEngine.SONAR_BUFFER_MAX_S / .25)):
         assert engine.play_sonar(block, 4096, buffered=True)
     before = (engine._sonar_input_count, engine._sonar_output_count,
               engine._sonar_previous)
@@ -455,9 +465,10 @@ def test_buffered_sonar_conceals_then_uses_neutral_sound_and_refills(mixer, monk
     clock = [100.0]
     monkeypatch.setattr(audio_module.time, "monotonic", lambda: clock[0])
     block = np.linspace(-.2, .2, 1024, dtype=np.float32)
-    for _ in range(4):
+    lead_blocks = round(AudioEngine.SONAR_BUFFER_S / .25)
+    for _ in range(lead_blocks):
         assert engine.play_sonar(block, 4096, buffered=True)
-    for _ in range(4):
+    for _ in range(lead_blocks):
         engine._pump_sonar_once()
     assert not engine._sonar_buffer
     channels[1].get_busy.return_value = True
@@ -467,24 +478,28 @@ def test_buffered_sonar_conceals_then_uses_neutral_sound_and_refills(mixer, monk
     assert engine.sonar_local_underruns == 1
     assert engine.sonar_concealed_blocks == 2
     assert not engine.sonar_stale
-    fresh = make_sound.call_args_list[3].args[0]
+    fresh = make_sound.call_args_list[lead_blocks - 1].args[0]
     for call in make_sound.call_args_list[-2:]:
         concealed = call.args[0]
         assert concealed.shape == fresh.shape
         assert not np.array_equal(concealed, fresh)
     assert not np.array_equal(make_sound.call_args_list[-1].args[0],
                               make_sound.call_args_list[-2].args[0])
-    clock[0] += 2.1
+    clock[0] += AudioEngine.SONAR_STALE_S + .1
     engine._pump_sonar_once()
     assert engine.sonar_stale and engine.sonar_neutral_blocks == 1
-    # Recovery waits for a short refill instead of stuttering block by block.
-    assert engine.play_sonar(block * .5, 4096, buffered=True)
-    engine._pump_sonar_once()
-    assert engine.sonar_stale and engine.sonar_neutral_blocks == 2
+    # Recovery waits for a short refill (SONAR_REFILL_S, four blocks) instead
+    # of stuttering block by block.
+    refill_blocks = round(AudioEngine.SONAR_REFILL_S / .25)
+    assert refill_blocks == 4
+    for played in range(1, refill_blocks):
+        assert engine.play_sonar(block * .5, 4096, buffered=True)
+        engine._pump_sonar_once()
+        assert engine.sonar_stale and engine.sonar_neutral_blocks == 1 + played
     assert engine.play_sonar(block * .5, 4096, buffered=True)
     engine._pump_sonar_once()
     assert not engine.sonar_stale
-    assert engine.sonar_neutral_blocks == 2
+    assert engine.sonar_neutral_blocks == refill_blocks
     engine.stop_sonar(immediate=True)
     assert not engine.sonar_stale and not engine._sonar_buffer
     engine.shutdown()
@@ -531,7 +546,9 @@ def test_elastic_rate_holds_queue_near_target_under_clock_drift(mixer, producer_
             levels.append(engine._sonar_buffer_duration)
     assert engine.sonar_local_underruns == 0
     assert engine.sonar_dropped_blocks == 0
-    assert .2 <= np.mean(levels) <= 1.0
+    assert engine.sonar_channel_idle == 0
+    assert (AudioEngine.SONAR_TARGET_S - .5 <= np.mean(levels)
+            <= AudioEngine.SONAR_TARGET_S + 1.0)
     # The correction cancels the drift and stays steady (no audible wobble).
     assert np.mean(adjust) == pytest.approx(1 - producer_ratio, abs=.002)
     assert np.std(adjust) < .002
@@ -910,3 +927,36 @@ def test_echo_plays_on_ping_bus_and_queues_behind_a_busy_one(mixer):
     ping.get_queue.return_value = ping.queue.call_args.args[0]
     assert not engine.play_echo("CW", .5)
     assert not AudioEngine(enabled=False).play_echo("CW", 1.0)
+
+
+def test_pump_counts_idle_channel_and_late_iterations(mixer, monkeypatch):
+    """A dry mixer channel and a starved worker are counted, never guessed."""
+    _, channels, _ = mixer
+    engine = AudioEngine()
+    engine._sonar_worker = Mock()
+    clock = [50.0]
+    monkeypatch.setattr(audio_module.time, "monotonic", lambda: clock[0])
+    block = np.ones(1024, dtype=np.float32)
+    for _ in range(round(AudioEngine.SONAR_BUFFER_S / .25) + 2):
+        assert engine.play_sonar(block, 4096, buffered=True)
+    channels[1].get_busy.return_value = True
+    engine._pump_sonar_once()               # primes and plays the first block
+    assert engine._sonar_primed and engine.sonar_channel_idle == 0
+    # Regular 20 ms iterations are on time.
+    for _ in range(5):
+        clock[0] += .02
+        engine._pump_sonar_once()
+    assert engine.sonar_pump_late == 0
+    # The worker was starved for 0.4 s and finds the channel idle: one late
+    # iteration, one audible gap, both reported once in the debug line.
+    clock[0] += .4
+    channels[1].get_busy.return_value = False
+    engine._pump_sonar_once()
+    assert engine.sonar_pump_late == 1
+    assert engine.sonar_pump_late_max_s == pytest.approx(.4)
+    assert engine.sonar_channel_idle == 1
+    channels[1].get_busy.return_value = True
+    clock[0] += .02
+    engine._pump_sonar_once()
+    assert engine.sonar_channel_idle == 1 and engine.sonar_pump_late == 1
+    engine.shutdown()

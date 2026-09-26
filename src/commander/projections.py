@@ -7,6 +7,7 @@ simulation object.
 
 from copy import deepcopy
 import math
+import weakref
 
 from src.core import config, opfor, plot
 from src.core.autocrew import AUTOCREW_STATIONS
@@ -61,8 +62,16 @@ def _own_navigation(game):
         "rudder_angle", "yaw_rate", "turn_radius_nm")}
 
 
+_ATOMIC = (type(None), bool, int, float, str)
+
+
+def _detach(value):
+    """Detached copy of a projection value; scalars need no deepcopy call."""
+    return value if type(value) in _ATOMIC else deepcopy(value)
+
+
 def _observation(row, fields):
-    observation = {key: deepcopy(row[key]) for key in fields}
+    observation = {key: _detach(row[key]) for key in fields}
     if "label" in observation and "_display_id" in row:
         observation["label"] = row["_display_id"]
     return observation
@@ -270,6 +279,37 @@ def _sonar_station_down(game):
     return bool(down()) if down is not None else game.damage.station_down("sonar")
 
 
+# Quantized history rows per sonar workstation. A history row is appended once
+# and never changes, so its projected bins depend only on the row and the
+# operator settings; recomputing 600 s of rows on every 2 Hz publication was
+# the largest main-thread cost of Remote Crew. Keyed weakly by the workstation
+# (no aliasing after a world reset); rows are keyed by identity and stamp and
+# pruned to the rows still shown, so the cache is bounded by the histories.
+_ROW_CACHE = weakref.WeakKeyDictionary()
+
+
+def _cached_rows(sonar, name, settings, stamps, rows, compute):
+    """Return ``[(stamp, bins)]`` for the rows, computing only unseen ones."""
+    caches = _ROW_CACHE.get(sonar)
+    if caches is None:
+        caches = _ROW_CACHE[sonar] = {}
+    cache = caches.get(name)
+    if cache is None or cache[0] != settings:
+        cache = caches[name] = (settings, {})
+    previous = cache[1]
+    current = {}
+    result = []
+    for stamp, values in zip(stamps, rows):
+        key = (id(values), stamp)
+        bins = previous.get(key)
+        if bins is None:
+            bins = compute(values)
+        current[key] = bins
+        result.append((stamp, bins))
+    caches[name] = (settings, current)
+    return result
+
+
 def _sonar_visualization(game, rows, sonar_refs):
     sonar = game.sonar
     receiver = sonar.receiver
@@ -284,11 +324,15 @@ def _sonar_visualization(game, rows, sonar_refs):
     bb_bins = _BROADBAND_LONG_BINS_MAX if long_available else _BROADBAND_BINS_MAX
     bb_rows = list(bb_source)[-bb_limit:]
     bb_times = list(bb_time_source)[-len(bb_rows):]
-    for stamp, values in zip(bb_times, bb_rows):
+    bb_gain = 10 ** (sonar.gain_db / 20)
+
+    def broadband_bins(values):
         source_bins = (_mean_binned_series(values, bb_bins) if long_available
                        else _series(values, bb_bins))
-        bins = [round(min(1.0, max(0.0, value * 10 ** (sonar.gain_db / 20))), 5)
-                for value in source_bins]
+        return [round(min(1.0, max(0.0, value * bb_gain)), 5) for value in source_bins]
+
+    for stamp, bins in _cached_rows(sonar, "broadband", (long_available, sonar.gain_db),
+                                    bb_times, bb_rows, broadband_bins):
         age = _age(game.sim_t, stamp)
         if age is not None and bins:
             broadband.append(dict(age_s=age, bins=bins))
@@ -297,9 +341,25 @@ def _sonar_visualization(game, rows, sonar_refs):
     lf_rows = list(sonar.lofar_history)[-_HISTORY_ROWS_MAX:]
     lf_times = list(sonar.lofar_times)[-len(lf_rows):]
     lf_bearings = list(sonar.lofar_bearings)[-len(lf_rows):]
-    for stamp, bearing, values in zip(lf_times, lf_bearings, lf_rows):
-        bins = [round(value, 5) for value in sonar.process_lofar_column(
+    # Everything process_lofar_column reads besides the column itself. The
+    # own-shaft notch follows the observer's speed continuously, so the key
+    # holds the set of notched bins, which only changes when a bin enters or
+    # leaves the window: exact results, no recompute while accelerating.
+    shaft = 10.0 + 1.9 * observer.speed
+    notched = (tuple(index for index in range(config.LOFAR_BINS)
+                     if abs(config.lofar_bin_freq(index) - shaft) < 5.0)
+               if sonar.notch_enabled else ())
+    lofar_settings = (sonar.gain_db, sonar.band_low_hz, sonar.band_high_hz,
+                      bool(sonar.notch_enabled), getattr(sonar, "operator_notch_hz", None),
+                      notched)
+
+    def lofar_bins(values):
+        return [round(value, 5) for value in sonar.process_lofar_column(
             _series(values, config.LOFAR_BINS), observer)]
+
+    for (stamp, bins), bearing in zip(
+            _cached_rows(sonar, "lofar", lofar_settings, lf_times, lf_rows, lofar_bins),
+            lf_bearings):
         age = _age(game.sim_t, stamp)
         if age is not None and _number(bearing) is not None and bins:
             lofar.append(dict(age_s=age, bearing=_number(bearing), bins=bins))
@@ -344,8 +404,9 @@ def _sonar_visualization(game, rows, sonar_refs):
     demon_history = []
     dm_rows = list(getattr(sonar, "demon_history", ()))[-_DEMON_HISTORY_ROWS_MAX:]
     dm_times = list(getattr(sonar, "demon_times", ()))[-len(dm_rows):]
-    for stamp, values in zip(dm_times, dm_rows):
-        bins = [round(value, 5) for value in _series(values, 80)]
+    for stamp, bins in _cached_rows(
+            sonar, "demon", (), dm_times, dm_rows,
+            lambda values: [round(value, 5) for value in _series(values, 80)]):
         age = _age(game.sim_t, stamp)
         if age is not None and bins:
             demon_history.append(dict(age_s=age, bins=bins))
@@ -1061,17 +1122,20 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
         "eloka": _eloka(game, rows, esm_refs, candidate_refs),
     }
     result = {}
+    overview = [dict(station=key, enabled=bool(game.autocrew.enabled[key]),
+                     status=game.autocrew.status(game, key))
+                for key in AUTOCREW_STATIONS]
     for role in ROLE_NAMES:
-        state = deepcopy(common)
+        # Shallow per-role copies: the common blocks are fresh for this
+        # publication, shared read-only between roles, encoded at once and
+        # never mutated afterwards (a deep copy per role cost more than the
+        # projection itself on the uConsole).
+        state = dict(common)
         state["role"] = role
-        overview = [dict(station=key, enabled=bool(game.autocrew.enabled[key]),
-                         status=game.autocrew.status(game, key))
-                    for key in AUTOCREW_STATIONS]
-        if role != "eloka":
-            state["audio"]["events"] = [
-                event for event in state["audio"]["events"]
-                if event["cue"] != "esm_contact"
-            ]
+        state["audio"] = dict(common["audio"], events=[
+            dict(event) for event in common["audio"]["events"]
+            if role == "eloka" or event["cue"] != "esm_contact"
+        ])
         state["autocrew"] = dict(enabled=bool(game.autocrew.enabled[role]),
                                  status=game.autocrew.status(game, role))
         # The whole crew's automation state (as the uConsole F3 overview):

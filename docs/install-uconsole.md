@@ -116,6 +116,21 @@ das Erzeugen und Entfernen des fluechtigen U-Jagd-Hotspots. Zum Entfernen der
 Systemintegration dient
 `sudo ./packaging/uconsole/install-hotspot-helper.sh --uninstall`.
 
+**WLAN-Stromsparen:** Der WLAN-Treiber des Compute Module (brcmfmac) schaltet
+im Stromsparmodus die Funkverbindung zwischen Paketen ab; das erzeugt
+Latenzspitzen von einigen hundert Millisekunden, die im Browser als Sonar-
+Aussetzer hörbar werden können. Für Remote Crew das Stromsparen auf dem uConsole
+abschalten (`iw dev wlan0 get power_save` zeigt den Zustand):
+
+```sh
+sudo iw dev wlan0 set power_save off
+```
+
+Dauerhaft über NetworkManager: eine Datei
+`/etc/NetworkManager/conf.d/wifi-powersave.conf` mit `[connection]` und
+`wifi.powersave = 2` anlegen und den Dienst neu starten. Dasselbe gilt für
+Browser-PCs im selben WLAN.
+
 **Sicherheit:** HTTP ist unverschlüsselt. Nur in einem vertrauenswürdigen LAN
 verwenden. Internet-Hosting, Wildcard-Bindung, CDN, entfernte
 ROE-/Zeit-/Speichersteuerung oder verborgene Entitätsdaten werden nicht

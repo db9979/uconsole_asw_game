@@ -131,19 +131,26 @@ wird im Hauptthread anhand des projizierten Sonar-Abhörmodus sowie der Einstell
 für Band, Notch und Gain gefiltert. Der Server hält die letzten 40 Blöcke (zehn
 Sekunden), damit ein kurz stockender Client der Reihe nach aufholt; ältere Blöcke
 werden verworfen und als Diskontinuität gemeldet. Der Browser startet die Wiedergabe
-etwa eine Sekunde hinter dem neuesten Block. Das AudioWorklet regelt diesen
-Vorlauf, indem es den Strom um höchstens 2 % schneller oder langsamer liest;
-Uhrendrift und Jitter leeren oder überfüllen ihn so nicht. Bei einem Unterlauf
-spielt es einen nicht periodischen, granular aus der letzten halben Sekunde
-erzeugten Ersatz und puffert eine halbe Sekunde nach, bevor frische Daten
-weiterlaufen; nach zwei Sekunden ohne Daten spielt es leises neutrales Rauschen
-und kennzeichnet den Strom als veraltet. Überblendet wird nur an echten
-Brüchen. Der uConsole-Mixer-Worker nutzt denselben elastischen Vorlauf, dieselbe
-Verdeckung und dieselbe Zwei-Sekunden-Grenze. Ein vorübergehender Fehler der
+etwa zwei Sekunden (acht Blöcke) hinter dem neuesten Block. Das AudioWorklet regelt
+diesen Vorlauf, indem es den Strom um höchstens 2 % schneller oder langsamer liest;
+Uhrendrift und Jitter leeren oder überfüllen ihn so nicht; es hält höchstens sechs
+Sekunden. Bei einem Unterlauf spielt es einen nicht periodischen, granular aus der
+letzten halben Sekunde erzeugten Ersatz und puffert eine Sekunde (vier Blöcke) nach,
+bevor frische Daten weiterlaufen; nach drei Sekunden ohne Daten spielt es leises
+neutrales Rauschen und kennzeichnet den Strom als veraltet. Überblendet wird nur an
+echten Brüchen. Der uConsole-Mixer-Worker nutzt dasselbe elastische Verfahren mit
+1,5 s Vorlauf, fünf Sekunden Warteschlangengrenze und derselben Drei-Sekunden-Regel;
+die Hauptschleife holt bis zu 2,5 s eines hängenden Frames nach, Audio dieser Länge
+wird also verdeckt, nie abgeschnitten. Ein vorübergehender Fehler der
 Zustandsabfrage oder HTTP 503 verwirft gepuffertes Audio nicht; der Audio-Endpunkt
-prüft Sitzung und Stationsrecht weiterhin bei jeder Anfrage.
-Ein neu gestarteter Stream setzt eine gegenüber seiner Blocknummer vorauseilende
-Browser-Blocknummer zurück. Es gibt kein dauerhaftes Eigenschiff-Ambientgeräusch,
+prüft Sitzung und Stationsrecht weiterhin bei jeder Anfrage. Die Blocknummerierung
+ist über die Lebensdauer des Host-Prozesses monoton: Ein geleerter Stream (ein
+Epoch-Schritt nach lokaler Eingabe am Host, eine neue Freigabe) zählt oberhalb aller
+bisher gesendeten Nummern weiter und überspringt eine, sodass der Neustart als Lücke
+erscheint; ein umgestimmter Empfänger (Peilungsschwenk) überspringt ebenfalls eine
+Nummer, damit Browser überblenden statt fremdes Audio zu verbinden. Nur eine Nummer
+vor allem je Veröffentlichten (Neustart des Hosts) wird mit Diskontinuität
+zurückgesetzt. Es gibt kein dauerhaftes Eigenschiff-Ambientgeräusch,
 weder lokal noch im Browser; die Tonfreigabe aktiviert nur synthetisierte
 Alarm-/Gefechtseffekt-Signale und diesen Live-Sonar-/Hubschrauber-Stream.
 
@@ -151,19 +158,28 @@ Der zusaetzliche Audio-WebSocket verwendet das Subprotokoll `u-jagd-audio-v2`,
 das HttpOnly-Sitzungscookie, den genauen Origin sowie aktive Station und
 Audiofreigabe. Jede binaere Nachricht mit 2060 Byte enthaelt `UJA2`, eine
 Little-Endian-Sequenznummer mit 64 Bit und 1024 Mono-PCM-Samples mit 16 Bit
-bei 4096 Hz. Sequenzluecken zeigen verworfene Bloecke an. Nach einem langsamen
-Client sendet der Server hoechstens die neuesten vier ausstehenden Bloecke.
+bei 4096 Hz. Sequenzluecken zeigen uebersprungene Bloecke, einen Epoch-Schritt
+oder einen Peilungsschwenk an. Ein ohne Cursor geoeffneter Socket erhaelt hoechstens
+die neuesten acht ausstehenden Bloecke; ein Reconnect uebergibt `?after=<Sequenz>`
+(streng geprueft), sodass nichts erneut gesendet wird, was das Worklet schon haelt;
+eine doppelte Nummer zaehlt das Worklet und verwirft sie. Der Audio-Socket
+toleriert einen Sendestau von sechs Sekunden, bevor er schliesst.
 Die HTTP-Abfrage bleibt der Fallback. Beide Transporte nehmen weder Browseraudio
 noch Simulationsbefehle an.
 
 Für die Diagnose auf dem Gerät schreibt `U_JAGD_AUDIO_DEBUG=1` begrenzte,
 kontaktfreie Werte zu Receiver-Blockrate, Mixer-Unterläufen, verdeckten
-Blöcken, Ratenkorrektur, Pufferstand und Verlusten nach
+Blöcken, Ratenkorrektur, Pufferstand, leer gelaufenem Mixerkanal, verspäteten
+Worker-Durchläufen, Eingangslücken und Verlusten nach
 `~/.u-jagd/audio_debug.log`; `U_JAGD_PERF_DEBUG=1` ergänzt in `perf_debug.log`
-Frame-Spitzen und das Nachholen der Simulationszeit. Im Browser zeigen die
-Entwicklerwerkzeuge `window.uJagdAudioDiagnostics` mit Puffersekunden,
-Sequenzlücken, verworfenen und verdeckten Blöcken, Wiedergaberate,
-Veraltet-Zustand und Transport. Beides bleibt außerhalb der Spielstände.
+Frame-Spitzen, die Hauptthread-Zeiten je Phase (Simulation, Audio, Remote-Crew-
+Veröffentlichung, Ereignisse, Live-Verkehr, Zeichnen) und das Nachholen der
+Simulationszeit. Im Browser zeigen die Entwicklerwerkzeuge
+`window.uJagdAudioDiagnostics` mit Puffersekunden, Sequenzlücken, verworfenen
+Duplikaten, verdrängten und verdeckten Blöcken, Wiedergaberate, Veraltet-Zustand
+und Transport. `tools/audio_soak.py` fährt die gesamte Kette headless mit
+simulierten Browsern (oder als Client auf einem anderen Rechner) und meldet die
+Kontinuität. Beide Protokolle bleiben außerhalb der Spielstände.
 
 Die Sonarrollenprojektion erhält nur die
 begrenzte Eigenschifffahrt und die TAS-Handhabungsgrenzen, die zur Erklärung eines

@@ -1073,3 +1073,51 @@ ist exakt; v11-Staende von 1.0.0 werden abgelehnt. Versioniert als 1.1.0.
   Verhalten der 4-s-Radarumlaeufe auf dem OPZ-Bild.
 - Merge: der Branch entstand parallel zu einer Handbuch-Session auf `main`
   (AGENTS.md, README, Handbuch); beim Zusammenfuehren diese Dateien pruefen.
+
+## Sonar-Audio ohne Aussetzer (2026-09-26)
+
+Die seit dem 22.09. offene Diagnose der Browser-Aussetzer ist abgeschlossen; die
+Analyse lief auf dem Zielgeraet (CM5, 16 GB) mit dem neuen Lasttest.
+
+- Ursache der Aussetzer "nach Tastendruck am uConsole": jede lokale
+  Eingabeaenderung (F1, F9, Optionen, Zahleneingabe) erhoehte die Welt-Epoche,
+  `prepare_*_audio` leerte den Ring und setzte die Blocknummer auf 0. Der
+  Browser verband den Socket neu, das Worklet behielt aber `lastSequence` und
+  verwarf jeden neuen Block (`sequence <= lastSequence`), bis die Zaehlung den
+  alten Stand ueberholte: Granular-Ersatz, dann Stale-Rauschen, so lange, wie
+  der Client vorher zugehoert hatte. Fix: Nummerierung je Rolle monoton ueber
+  die Server-Lebensdauer (Clear ueberspringt eine Nummer), Retune markiert eine
+  Diskontinuitaet (`mark_audio_discontinuity`), Reconnect mit `?after=` statt
+  Neusendung, Duplikate werden im Worklet gezaehlt statt stumm verworfen.
+- Messung: Empfaenger-Synthese 4-19 ms pro 0,25-s-Block (2-24 Quellen), Filter,
+  Resampling und PCM zusammen unter 0,6 ms; die Audioerzeugung war nie das
+  Problem. Der Remote-Crew-Publish kostete pro 2-Hz-Veroeffentlichung 60-120 ms
+  Hauptthread (5 Mio. `deepcopy`-Aufrufe, Requantisierung der kompletten
+  600-s-Sonar-Historien, `json.loads`/Re-Encode der Sonarprojektion, Roster pro
+  Frame). Nach Zeilen-Cache je Sonarstation (schwach referenziert, exakt gleiche
+  Ergebnisse), flachen Rollenkopien, Bytes-basierter Kompaktprojektion und 4-Hz-
+  Roster: rund ein Sechstel der Pump-Zeit.
+- Puffer fuer 16 GB: lokal Vorlauf/Ziel 1,5 s, Warteschlange 5 s, Refill 1 s,
+  Stale 3 s, SDL-Mixerpuffer 2048 Samples (93 ms); Browser Prime/Ziel 2 s, Max
+  6 s, Refill 4 Bloecke, Stale 3 s; `SIM_CATCHUP_MAX_S` 2,5 s (Invariante:
+  Warteschlange >= Ziel + Catch-up + Block, damit im Aufholen nie ein Block
+  abgelehnt und aus dem Zwei-Block-Empfaengerfenster verdraengt wird);
+  Audio-Socket 6 s Sendetoleranz, neueste acht Bloecke fuer cursorlose Sockets.
+- Neue Zaehler: `channel_idle` (Mixerkanal leer bei geprimtem Strom = hoerbarer
+  Dip), `pump_late`/`pump_late_max_ms`, `input_gaps`; `perf_debug.log` mit
+  `commander_max_ms`, `events_ms`, `traffic_ms`; Server `audio_stream_stats()`
+  (uebersprungene Bloecke, Sendetimeouts, Diskontinuitaeten, Verbindungen);
+  Browser `droppedBlocks`/`evictedBlocks`.
+- `tools/audio_soak.py host` (echter Mixer oder `--dummy-audio`, N Clients,
+  Epoch-Sprung/Retune-Takt, `--profile`) und `client` (PC im WLAN). Ergebnis
+  auf dem CM5 mit echtem Mixer, 9 Clients, 14 Epoch-Spruengen, 4 Retunes ueber
+  67 s: 0 Unterlaeufe, 0 leere Kanaele, 0 Stillen > 0,75 s in beiden Streams,
+  frame_max ausserhalb des Starts 168 ms (vor Phase D), sim_dropped 0.
+- Regressionstests: monotone Sequenzen je Rolle, Resume-Cursor, Duplikat-
+  Zaehlung im Worklet, Bridge-Diskontinuitaet bei Retune, Browsertest prueft
+  jetzt weiterlaufende, streng steigende Bloecke nach Epoch-Spruengen, Idle-/
+  Late-Zaehler, Puffer-Invariante, Soak-Werkzeug headless.
+- Offen: Hoerabnahme mit echtem Browser-PC ueber WLAN (`tools/audio_soak.py
+  client`, `window.uJagdAudioDiagnostics`), WLAN-Stromsparen am uConsole
+  abschalten (docs/install-uconsole). `test_real_v2_role_states_survive_...`
+  (Helikopter-LOFAR-Ansicht zu klein) schlug bereits vor dieser Arbeit fehl.

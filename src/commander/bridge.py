@@ -1744,8 +1744,10 @@ class CommanderBridge:
             navigation_authority=self._navigation_lease,
             navigation=self.navigation_proposal)
         self._publish_events_v2(server, game)
+        # Fresh objects per publication, encoded above and never mutated
+        # afterwards; _publish_role_simlog copies the ones it appends.
         self._last_v2_states = (None if redacted or world_replaced else
-                                {role: deepcopy(states[role]) for role in ROLES})
+                                {role: states[role] for role in ROLES})
         self._last_publish = now
         self._dirty = False
 
@@ -1810,7 +1812,10 @@ class CommanderBridge:
             return
         for sequence, samples in receiver.blocks_since(self._audio_receiver_sequence):
             if sequence != self._audio_receiver_sequence + 1:
+                # The receiver restarted (retune): the browser must crossfade.
                 self._audio_filter.reset_audition_audio()
+                if hasattr(server, "mark_audio_discontinuity"):
+                    server.mark_audio_discontinuity("sonar")
             self._audio_filter.audition_mode = game.sonar.audition_mode
             self._audio_filter.band_low_hz = game.sonar.band_low_hz
             self._audio_filter.band_high_hz = game.sonar.band_high_hz
@@ -1852,6 +1857,8 @@ class CommanderBridge:
             audition = self._uboot_audio_filter
             if sequence != self._uboot_audio_receiver_sequence + 1:
                 audition.reset_audition_audio()
+                if hasattr(server, "mark_audio_discontinuity"):
+                    server.mark_audio_discontinuity("uboot_sonar")
             audition.audition_mode = sonar.audition_mode
             audition.band_low_hz = sonar.band_low_hz
             audition.band_high_hz = sonar.band_high_hz
@@ -1898,6 +1905,8 @@ class CommanderBridge:
             audition = self._helicopter_audio_filter
             if sequence != self._helicopter_audio_receiver_sequence + 1:
                 audition.reset_audition_audio()
+                if hasattr(server, "mark_audio_discontinuity"):
+                    server.mark_audio_discontinuity("helicopter")
             controls = game.helo_audition
             audition.audition_mode = controls.audition_mode
             audition.band_low_hz = controls.band_low_hz

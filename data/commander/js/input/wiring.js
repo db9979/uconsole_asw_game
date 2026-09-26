@@ -686,8 +686,8 @@ export function init() {
             if (data?.type === "metrics") {
               S.sonarAudioMetrics = data;
               window.uJagdAudioDiagnostics = Object.freeze({
-                bufferedSeconds: Math.max(0, Math.min(6, data.buffered * .25)),
-                sequenceGaps: data.gaps, droppedBlocks: data.evictions,
+                bufferedSeconds: Math.max(0, Math.min(8, data.buffered * .25)),
+                sequenceGaps: data.gaps, droppedBlocks: data.dropped, evictedBlocks: data.evictions,
                 concealedBlocks: data.concealed, playbackRate: data.rate,
                 stale: data.stale, transport: S.sonarAudioSocket ? "websocket" : "http"});
             }

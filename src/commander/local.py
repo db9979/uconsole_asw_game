@@ -46,6 +46,7 @@ class CommanderConsole:
         self.selection = 0
         self.connected = False
         self.active_crew = False
+        self._statuses_cache = None
         self.pairing_code = None
         self._prepared = False
         self._translations = None
@@ -353,7 +354,12 @@ class CommanderConsole:
         self.connected = self.server.connected
         self.active_crew = False
         if hasattr(self.server, "client_statuses"):
-            statuses = self.server.client_statuses()
+            # Building the roster copies every session; 4 Hz is plenty for
+            # the two flags read here and saves main-thread time per frame.
+            if (self._statuses_cache is None or self._statuses_cache[0] != id(self.server)
+                    or now - self._statuses_cache[1] >= .25):
+                self._statuses_cache = (id(self.server), now, self.server.client_statuses())
+            statuses = self._statuses_cache[2]
             self.connected = self.connected or bool(statuses)
             self.active_crew = self.active_crew or any(
                 status["active_station"] in ROLES for status in statuses)

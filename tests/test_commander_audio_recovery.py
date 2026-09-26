@@ -37,7 +37,7 @@ const check = (ok, label) => { if (!ok) throw new Error(label); };
     'X-U-Jagd-Audio-Sequence':'1', 'X-U-Jagd-Audio-Discontinuity':'0'}}));
   await pending;
   check(S.sonarAudioSequence === 1 && starts.length === 1, 'metadata refresh dropped valid audio');
-  check(starts[0] >= 2.0 && starts[0] <= 2.1, 'bounded startup jitter buffer');
+  check(starts[0] >= 3.0 && starts[0] <= 3.1, 'bounded startup jitter buffer');
   check(timers.has(S.sonarAudioTimer), 'audio poll not rescheduled');
   S.audio.currentTime = 1.1;
   globalThis.fetch = async () => new Response(new Uint8Array(2048), {status:200, headers:{
@@ -76,7 +76,7 @@ const check = (ok, label) => { if (!ok) throw new Error(label); };
     'X-U-Jagd-Sample-Rate':'4096', 'X-U-Jagd-Audio-Frames':'1024',
     'X-U-Jagd-Audio-Sequence':'3', 'X-U-Jagd-Audio-Discontinuity':'0'}});
   await pollSonarAudio();
-  check(starts.length === 3 && starts[2] >= 9.0 && starts[2] <= 9.1,
+  check(starts.length === 3 && starts[2] >= 10.0 && starts[2] <= 10.1,
     'proxied PCM or underrun was rejected');
   const queued = S.sonarAudioSources.at(-1);
   globalThis.fetch = async () => new Response(new Uint8Array(2048), {status:200, headers:{

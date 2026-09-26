@@ -78,6 +78,13 @@ SONAR_AUDIO_BYTES = 2048
 # Ten seconds of blocks: a client that stalls for a moment catches up in order
 # instead of losing audio; older blocks are dropped and reported as a discontinuity.
 SONAR_AUDIO_RING_BLOCKS = 40
+# A (re)connecting audio socket without a resume cursor receives at most this
+# many pending blocks (the browser's priming lead); older ones are skipped and
+# the skip shows up as a sequence gap.
+SONAR_AUDIO_RESUME_BLOCKS = 8
+# Inactivity timeout of an upgraded audio socket. A Wi-Fi stall shorter than
+# this keeps the stream; the request-phase timeout (1.5 s) does not apply.
+AUDIO_SOCKET_TIMEOUT_S = 6.0
 SONAR_AUDIO_FRAMES = 1024
 SONAR_AUDIO_RATE = 4096
 SONAR_STREAM_ROUTE = "/ws/v2/sonar"
@@ -88,6 +95,18 @@ _AUDIO_POLL_ROUTES = {"/api/v2/sonar/audio": "sonar",
                       "/api/v2/helicopter/audio": "helicopter",
                       "/api/v2/uboot/audio": "uboot_sonar"}
 VOICE_STREAM_ROUTE = "/ws/v2/voice"
+_AUDIO_RESUME_QUERY = re.compile(r"after=(0|[1-9][0-9]{0,15})").fullmatch
+
+
+def _audio_resume_cursor(query: str):
+    """None (no cursor), an int cursor, or False for a malformed query."""
+    if query == "":
+        return None
+    match = _AUDIO_RESUME_QUERY(query)
+    if match is None:
+        return False
+    value = int(match.group(1))
+    return value if value <= _SAFE_INTEGER_MAX else False
 SONAR_STREAM_MAGIC = b"UJS2"
 SONAR_STREAM_VERSION = 1
 SONAR_STREAM_HEADER_BYTES = 60
@@ -812,6 +831,7 @@ class CommanderServer:
         self._uboot_audio_sequence = 0
         self._audio_condition = threading.Condition(self._lock)
         self._audio_clients = {}
+        self._audio_stats = {}
         self._sonar_stream_sequence = 0
         self._sonar_stream_context = None
         self._sonar_stream_payload = None
@@ -1000,21 +1020,36 @@ class CommanderServer:
             self._rotate_code_locked()
 
     def _clear_sonar_audio_locked(self):
+        # Numbering never restarts while the server lives: a browser worklet
+        # de-duplicates by sequence, so a restart at 1 would make it drop every
+        # new block until the count passed the old one. A cleared stream that
+        # had content skips one number so the restart shows as a gap.
+        if self._sonar_audio:
+            self._sonar_audio_sequence += 1
         self._sonar_audio.clear()
         self._sonar_audio_context = None
-        self._sonar_audio_sequence = 0
         self._audio_condition.notify_all()
 
     def _clear_helicopter_audio_locked(self):
+        # Numbering never restarts while the server lives: a browser worklet
+        # de-duplicates by sequence, so a restart at 1 would make it drop every
+        # new block until the count passed the old one. A cleared stream that
+        # had content skips one number so the restart shows as a gap.
+        if self._helicopter_audio:
+            self._helicopter_audio_sequence += 1
         self._helicopter_audio.clear()
         self._helicopter_audio_context = None
-        self._helicopter_audio_sequence = 0
         self._audio_condition.notify_all()
 
     def _clear_uboot_audio_locked(self):
+        # Numbering never restarts while the server lives: a browser worklet
+        # de-duplicates by sequence, so a restart at 1 would make it drop every
+        # new block until the count passed the old one. A cleared stream that
+        # had content skips one number so the restart shows as a gap.
+        if self._uboot_audio:
+            self._uboot_audio_sequence += 1
         self._uboot_audio.clear()
         self._uboot_audio_context = None
-        self._uboot_audio_sequence = 0
         self._audio_condition.notify_all()
 
     def _clear_role_audio_locked(self, role):
@@ -1916,14 +1951,17 @@ class CommanderServer:
             if (role == "sonar" and state.get("role") == "sonar"
                     and isinstance(state.get("sonar"), dict)
                     and isinstance(state["sonar"].get("visualization"), dict)):
-                compact = json.loads(state_bytes.decode("ascii"))
-                visual = compact["sonar"]["visualization"]
-                visual["broadband"]["history"] = []
-                visual["lofar"]["history"] = []
-                visual["lofar"]["spectrum"] = []
-                visual["demon"]["history"] = []
-                visual["demon"]["spectrum"] = []
-                compact_sonar = _json_bytes(compact)
+                # Shallow copies down to the streamed arrays: the poll view
+                # shares every other (immutable, already encoded) value.
+                visual = dict(state["sonar"]["visualization"])
+                for name, keys in (("broadband", ("history",)),
+                                   ("lofar", ("history", "spectrum")),
+                                   ("demon", ("history", "spectrum"))):
+                    section = visual.get(name)
+                    if isinstance(section, dict):
+                        visual[name] = dict(section, **{key: [] for key in keys})
+                compact_sonar = _json_bytes(
+                    dict(state, sonar=dict(state["sonar"], visualization=visual)))
         with self._lock:
             self._v2_states = encoded_states
             self._v2_charts = encoded_charts
@@ -2143,6 +2181,45 @@ class CommanderServer:
         with self._lock:
             self._clear_uboot_audio_locked()
 
+    def mark_audio_discontinuity(self, role: str) -> bool:
+        """Skip one sequence number of a live stream (main thread only).
+
+        The receiver restarted (a retuned listening bearing), so the next block
+        does not continue the previous waveform. Every browser transport sees
+        the gap and crossfades instead of joining unrelated audio. Nothing is
+        marked on an unbound stream.
+        """
+        if threading.current_thread() is not threading.main_thread():
+            raise RuntimeError("audio discontinuity requires the main thread")
+        if role not in SONAR_AUDIO_ROLES:
+            raise ValueError("unknown audio role")
+        with self._lock:
+            if self._audio_ring(role)[1] is None:
+                return False
+            if role == "sonar":
+                self._sonar_audio_sequence += 1
+            elif role == "helicopter":
+                self._helicopter_audio_sequence += 1
+            else:
+                self._uboot_audio_sequence += 1
+            self.audio_stream_stats_locked(role)["discontinuities"] += 1
+            return True
+
+    def audio_stream_stats_locked(self, role: str) -> dict:
+        """Bounded per-role transport counters (diagnostics only)."""
+        stats = self._audio_stats.get(role)
+        if stats is None:
+            stats = self._audio_stats[role] = {
+                "skipped_blocks": 0, "send_timeouts": 0, "discontinuities": 0,
+                "connections": 0}
+        return stats
+
+    def audio_stream_stats(self) -> dict:
+        """Detached copy of the per-role audio transport counters."""
+        with self._lock:
+            return {role: dict(self.audio_stream_stats_locked(role))
+                    for role in SONAR_AUDIO_ROLES}
+
     def _uboot_audio_holder_locked(self):
         return next(((digest, session) for digest, session
                      in self._sessions_v2.items()
@@ -2197,6 +2274,7 @@ class CommanderServer:
                 return False
             if self._uboot_audio_sequence >= _SAFE_INTEGER_MAX:
                 self._clear_uboot_audio_locked()
+                self._uboot_audio_sequence = 0
                 self._uboot_audio_context = context
             self._uboot_audio_sequence += 1
             self._uboot_audio.append((self._uboot_audio_sequence, pcm))
@@ -2246,6 +2324,10 @@ class CommanderServer:
                     != station_generation or context != self._helicopter_audio_context):
                 self._clear_helicopter_audio_locked()
                 return False
+            if self._helicopter_audio_sequence >= _SAFE_INTEGER_MAX:
+                self._clear_helicopter_audio_locked()
+                self._helicopter_audio_sequence = 0
+                self._helicopter_audio_context = context
             self._helicopter_audio_sequence += 1
             self._helicopter_audio.append((self._helicopter_audio_sequence, pcm))
             self._audio_condition.notify_all()
@@ -2304,6 +2386,7 @@ class CommanderServer:
                 return False
             if self._sonar_audio_sequence >= _SAFE_INTEGER_MAX:
                 self._clear_sonar_audio_locked()
+                self._sonar_audio_sequence = 0
                 self._sonar_audio_context = context
             self._sonar_audio_sequence += 1
             self._sonar_audio.append((self._sonar_audio_sequence, pcm))
@@ -2789,8 +2872,12 @@ class _Handler(BaseHTTPRequestHandler):
                 pass
         self.close_connection = True
 
-    def _audio_websocket(self, role):
-        """Send detached PCM to the current audio lease; never read game state."""
+    def _audio_websocket(self, role, after=None):
+        """Send detached PCM to the current audio lease; never read game state.
+
+        ``after`` is the browser's last accepted sequence: a reconnect resumes
+        behind it instead of re-sending blocks the worklet already holds.
+        """
         owner = self.server.owner
         allowed_origins = self.server.allowed_origins(self.headers.get("Host"))
         if (self.headers.get("Origin") not in allowed_origins
@@ -2833,6 +2920,7 @@ class _Handler(BaseHTTPRequestHandler):
                 self._reply(409, {"error": "stream_exists"})
                 return
             owner._audio_clients[client_key] = marker
+            owner.audio_stream_stats_locked(role)["connections"] += 1
         accept = base64.b64encode(hashlib.sha1(
             key.encode("ascii") + _WEBSOCKET_GUID).digest()).decode("ascii")
         self.send_response_only(101)
@@ -2852,7 +2940,11 @@ class _Handler(BaseHTTPRequestHandler):
             self.connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         except (OSError, AttributeError):
             pass
-        last_sequence = None
+        try:
+            self.connection.settimeout(AUDIO_SOCKET_TIMEOUT_S)
+        except OSError:
+            pass
+        last_sequence = after
         try:
             while True:
                 with owner._audio_condition:
@@ -2874,12 +2966,20 @@ class _Handler(BaseHTTPRequestHandler):
                         continue
                     # A slow socket skips old samples; never build an unbounded
                     # per-client backlog or hold the simulation lock while sending.
-                    sequence, pcm = available[-4] if len(available) > 4 else available[0]
+                    if len(available) > SONAR_AUDIO_RESUME_BLOCKS:
+                        owner.audio_stream_stats_locked(role)["skipped_blocks"] += (
+                            len(available) - SONAR_AUDIO_RESUME_BLOCKS)
+                        sequence, pcm = available[-SONAR_AUDIO_RESUME_BLOCKS]
+                    else:
+                        sequence, pcm = available[0]
                     last_sequence = sequence
                     current["last_get"] = time.monotonic()
                 self.connection.sendall(_websocket_frame(
                     b"UJA2" + struct.pack("<Q", sequence) + pcm))
-        except (OSError, TimeoutError, ValueError):
+        except TimeoutError:
+            with owner._audio_condition:
+                owner.audio_stream_stats_locked(role)["send_timeouts"] += 1
+        except (OSError, ValueError):
             pass
         finally:
             with owner._audio_condition:
@@ -3056,8 +3156,13 @@ class _Handler(BaseHTTPRequestHandler):
             self._reply(200, body)
         elif self.path == SONAR_STREAM_ROUTE:
             self._sonar_websocket()
-        elif self.path in SONAR_AUDIO_STREAM_ROUTES:
-            self._audio_websocket(SONAR_AUDIO_STREAM_ROUTES[self.path])
+        elif self.path.partition("?")[0] in SONAR_AUDIO_STREAM_ROUTES:
+            route, _, query = self.path.partition("?")
+            after = _audio_resume_cursor(query)
+            if after is False:
+                self.send_error(400)
+            else:
+                self._audio_websocket(SONAR_AUDIO_STREAM_ROUTES[route], after=after)
         elif self.path == VOICE_STREAM_ROUTE:
             self._voice_websocket()
         elif self.path in SONAR_SCOPE_ROUTES:

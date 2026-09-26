@@ -376,7 +376,7 @@ Combat situation:
 
 - Gain (`I`/`O`) changes display and audio only, not detection. Black level (`Ctrl+I`/`Ctrl+O`) and contrast (`Shift+I`/`Shift+O`) help faint traces stand out; `Shift+C` changes the phosphor colour.
 - `D` or `A`/`B`/`H` choose broadband, filtered or heterodyne audition. Heterodyne shifts the low band up to about 700 Hz so low tonals become audible.
-- The listening audio runs about one second behind the display so a busy moment never interrupts it. After steering the listening bearing the old beam fades into the new one after about a second; the stream is not cut.
+- The listening audio runs about one and a half seconds behind the display (Remote Crew browsers about two seconds) so a busy moment never interrupts it. After steering the listening bearing the old beam fades into the new one after that delay; the stream is not cut.
 - Put the TAS below the measured layer to hear deep targets; keep the HMS for shallow ones. Both arrays run in parallel.
 - The TMA page shows the closing rate derived from the accepted solution: positive means the target is closing.
 - If the TAS and HMS disagree by 9 degrees or more, treat the contact as a possible ghost (the display flags it) and turn to resolve it.

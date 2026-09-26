@@ -113,7 +113,10 @@ def test_audio_websocket_is_leased_sequenced_and_revoked(server, role):
     generation = prepare(world_session="audio-world", world_epoch=3)
     assert generation is not None
     pcm = bytes(transport.SONAR_AUDIO_BYTES)
-    for _ in range(6):
+    # Ten pending blocks: a fresh socket gets the newest eight (the browser's
+    # priming lead), the first two are skipped.
+    published = transport.SONAR_AUDIO_RESUME_BLOCKS + 2
+    for _ in range(published):
         assert publish(pcm, world_session="audio-world",
                        world_epoch=3, station_generation=generation)
     host, port = server.address
@@ -148,6 +151,7 @@ def test_audio_websocket_is_leased_sequenced_and_revoked(server, role):
         payload = frame[4:4 + size]
         assert len(payload) == 2060 and payload[:4] == b"UJA2"
         assert struct.unpack("<Q", payload[4:12])[0] == 3
+        assert server.audio_stream_stats()[role]["skipped_blocks"] == 2
         assert payload[12:] == pcm
         assert server.set_client_grant(client_id, role, "sonar_audio", False)
         # Already queued frames may arrive first. The worker must close after
@@ -165,3 +169,58 @@ def test_audio_websocket_is_leased_sequenced_and_revoked(server, role):
         while b"\r\n\r\n" not in response:
             response.extend(reconnected.recv(4096))
         assert response.startswith(b"HTTP/1.1 101")
+        _, frame = bytes(response).split(b"\r\n\r\n", 1)
+        while len(frame) < 16:
+            frame += reconnected.recv(4096)
+        # The regranted stream continues above every sequence sent before.
+        assert struct.unpack("<Q", frame[8:16])[0] > published
+
+
+def test_audio_websocket_resumes_behind_the_browser_cursor(server):
+    """``?after=N`` resumes a reconnect without re-sending held blocks."""
+    _, cookie, _, paired = pair_v2(server, "Resume")
+    client_id = paired["client_id"]
+    assert server.grant_station(client_id, "sonar")
+    assert server.set_client_grant(client_id, "sonar", "sonar_audio", True)
+    generation = server.prepare_sonar_audio(world_session="audio-world", world_epoch=1)
+    blocks = [bytes([value]) * transport.SONAR_AUDIO_BYTES for value in range(1, 13)]
+    for pcm in blocks:
+        assert server.publish_sonar_audio(pcm, world_session="audio-world",
+                                          world_epoch=1, station_generation=generation)
+    host, port = server.address
+
+    def handshake(query):
+        key = base64.b64encode(os.urandom(16)).decode("ascii")
+        return (f"GET /ws/v2/sonar/audio{query} HTTP/1.1\r\nHost: {host}:{port}\r\n"
+                f"Origin: http://{host}:{port}\r\nUpgrade: websocket\r\n"
+                f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\n"
+                "Sec-WebSocket-Version: 13\r\nSec-WebSocket-Protocol: u-jagd-audio-v2\r\n"
+                f"Cookie: {cookie}\r\n\r\n").encode("ascii")
+
+    def first_frame(query):
+        with socket.create_connection(server.address, timeout=3) as connection:
+            connection.settimeout(3)
+            connection.sendall(handshake(query))
+            received = bytearray()
+            while b"\r\n\r\n" not in received:
+                received.extend(connection.recv(4096))
+            headers, frame = bytes(received).split(b"\r\n\r\n", 1)
+            if not headers.startswith(b"HTTP/1.1 101"):
+                return headers.split(b"\r\n", 1)[0], None
+            while len(frame) < 16:
+                frame += connection.recv(4096)
+            return headers.split(b"\r\n", 1)[0], struct.unpack("<Q", frame[8:16])[0]
+
+    # Without a cursor: the newest priming lead only, older blocks skipped.
+    assert first_frame("") == (b"HTTP/1.1 101 Switching Protocols",
+                               len(blocks) - transport.SONAR_AUDIO_RESUME_BLOCKS + 1)
+    assert server.audio_stream_stats()["sonar"]["skipped_blocks"] == (
+        len(blocks) - transport.SONAR_AUDIO_RESUME_BLOCKS)
+    # Behind a cursor inside the lead: exactly the next block, nothing repeated.
+    assert first_frame(f"?after={len(blocks) - 2}") == (b"HTTP/1.1 101 Switching Protocols", len(blocks) - 1)
+    # Malformed cursors are refused before the upgrade.
+    for query in ("?after=x", "?after=-1", "?after=01", "?after=1&x=2", "?since=3",
+                  f"?after={2**53}"):
+        status, sequence = first_frame(query)
+        assert status == b"HTTP/1.1 400 Bad Request" and sequence is None, query
+    assert server.audio_stream_stats()["sonar"]["connections"] == 2

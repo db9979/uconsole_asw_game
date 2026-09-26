@@ -6,18 +6,22 @@
  * non-periodic granular stand-in built from the last half second and refills
  * to REFILL_BLOCKS before fresh audio resumes; after STALE_S without data a
  * low neutral noise marks the stream stale. Crossfades are applied only at
- * real discontinuities, never at ordinary block joins. */
+ * real discontinuities, never at ordinary block joins.
+ *
+ * The two-second lead (PRIME_BLOCKS, TARGET_S) outlasts a Wi-Fi power-save
+ * hiccup, a browser main-thread stall and the host's bounded catch-up after
+ * a slow frame; MAX_BLOCKS bounds the delay when a tab resumes. */
 const BLOCK = 1024;
 const SOURCE_RATE = 4096;
-const PRIME_BLOCKS = 5;
-const MAX_BLOCKS = 12;
-const REFILL_BLOCKS = 2;
-const TARGET_S = 1.0;
+const PRIME_BLOCKS = 8;
+const MAX_BLOCKS = 24;
+const REFILL_BLOCKS = 4;
+const TARGET_S = 2.0;
 const RATE_MAX = .02;
 const RATE_STEP = .0025;
 const RATE_GAIN = .05;
 const LEVEL_SMOOTHING = .05;
-const STALE_S = 2;
+const STALE_S = 3;
 const GRAIN = 512;
 
 class SonarAudioProcessor extends AudioWorkletProcessor {
@@ -27,6 +31,7 @@ class SonarAudioProcessor extends AudioWorkletProcessor {
     for (let i = 0; i < GRAIN; i++) this.window[i] = Math.sin(Math.PI * (i + .5) / GRAIN);
     this.gaps = 0;
     this.evictions = 0;
+    this.dropped = 0;
     this.concealed = 0;
     this.outputFrames = 0;
     this.noise = 0x5a17;
@@ -36,7 +41,9 @@ class SonarAudioProcessor extends AudioWorkletProcessor {
       if (data?.type === "reset") { this.resetStream(); return; }
       if (data?.type !== "pcm" || !(data.bytes instanceof ArrayBuffer) ||
           data.bytes.byteLength !== 2048 || !Number.isSafeInteger(data.sequence) || data.sequence < 1) return;
-      if (this.lastSequence !== null && data.sequence <= this.lastSequence) return;
+      // Sequences never go backwards within a host run: an old or repeated
+      // number is a duplicate (a reconnect re-sent it) and is counted, not played.
+      if (this.lastSequence !== null && data.sequence <= this.lastSequence) { this.dropped++; return; }
       const gap = this.lastSequence !== null && data.sequence !== this.lastSequence + 1;
       if (gap) this.gaps++;
       this.lastSequence = data.sequence;
@@ -180,7 +187,7 @@ class SonarAudioProcessor extends AudioWorkletProcessor {
     if (this.outputFrames >= sampleRate) {
       this.outputFrames -= sampleRate;
       this.port.postMessage({type: "metrics", buffered: this.blocks.length + (this.current ? 1 - this.cursor / BLOCK : 0),
-        gaps: this.gaps, evictions: this.evictions, concealed: this.concealed,
+        gaps: this.gaps, evictions: this.evictions, dropped: this.dropped, concealed: this.concealed,
         rate: this.rate, stale: this.stale});
     }
     return true;

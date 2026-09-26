@@ -275,3 +275,47 @@ def test_only_main_thread_may_access_game(game):
                              (bridge.reject_proposal, (game,))):
             with pytest.raises(RuntimeError, match="main thread"):
                 executor.submit(method, *args).result()
+
+
+class AudioServer(Server):
+    """Fake transport recording the live-audio publication calls."""
+
+    def __init__(self):
+        super().__init__()
+        self.audio = []
+        self.discontinuities = []
+
+    def prepare_sonar_audio(self, *, world_session, world_epoch):
+        return 1
+
+    def publish_sonar_audio(self, pcm, *, world_session, world_epoch, station_generation):
+        assert type(pcm) is bytes and len(pcm) == 2048
+        self.audio.append(pcm)
+        return True
+
+    def mark_audio_discontinuity(self, role):
+        self.discontinuities.append(role)
+        return True
+
+
+def test_retuned_receiver_marks_exactly_one_audio_discontinuity(game):
+    """A listening-bearing change restarts the receiver; browsers must crossfade."""
+    bridge, server = CommanderBridge(), AudioServer()
+    receiver = game.sonar.receiver
+    now = 100.0
+    bridge.pump(game, server, now=now)          # binds the stream, skips retained blocks
+    for _ in range(3):
+        game.update(.25)
+        now += .25
+        bridge.pump(game, server, now=now)
+    assert len(server.audio) >= 2 and server.discontinuities == []
+    published = len(server.audio)
+    game.set_sonar_listen_bearing(receiver_bearing := 135.0)
+    assert receiver.sequence >= 0 and not receiver.blocks_since(-1)
+    for _ in range(3):
+        game.update(.25)
+        now += .25
+        bridge.pump(game, server, now=now)
+    assert len(server.audio) > published
+    assert server.discontinuities == ["sonar"]
+    assert game.sonar.listen_bearing == receiver_bearing

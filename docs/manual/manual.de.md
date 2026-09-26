@@ -1041,30 +1041,30 @@ Eine zweite Crew kann den Gegner spielen. Das Boot hat sechs Stationen: Führung
 
 Jedes neue Spiel fragt zuerst **Welche Einheit spielst du?**: *Fregatte F-217* oder *Feindliches U-Boot* (`Auf`/`Ab` oder `1`/`2`, `Enter`; die letzte Wahl ist vorausgewählt, `--play-sub` wählt das U-Boot vor). Außerhalb einer Mission ändert auch Optionen (`F10`) Seite 2 **uConsole spielt** die Wahl, etwa vor dem Laden eines Spielstands. Mit dem U-Boot führt der uConsole das feindliche Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt oder fährt mit Autocrew. Der uConsole zeigt nur das Lagebild des Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie, und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
 
-Die **U-Boot-Führung** ist aufgebaut wie die Brücke: links die Seekarte (bekannte Geografie, das eigene Boot mit Sollkurs und Fahrtvektor, die Peilstriche der eigenen Sonarkontakte bzw. ihr Symbol bei aktuellem Ping- oder TMA-Fix, die eigenen Torpedos `T1`…, ein begrenztes Schussfeld der Rohre), rechts die Station mit Bedrohungsleiste (Torpedoalarm und gehörtes Aktivsonar mit gemessener Peilung, Rumpfschaden, Kavitation, schwache Batterie, ESM-Radarerfassung) und zwei Seiten. **Navigation** zeigt Kurs und Tiefe, das Wasser unter dem Kiel und ein kartiertes Hindernis voraus, Fahrt, Eigenlärm, Batterie und die aktiven Betriebsarten sowie die Wassersäule unter dem Boot: Bootstiefe, befohlene Tiefe, sichere Tiefe und Grund; die Sprungschicht erscheint dort erst nach einer eigenen BT-Messung (`E` am U-Boot-Sonar). **Waffen & Kontakte** zeigt Feuerbereitschaft, Torpedos, klare Rohre, Nachladen, Täuschkörper, Notanblasen und die eigenen Sonarkontakte. Unten stehen Bootslog und Telemetrie des Boots, als Leiste oder Statuszeile wie in den Optionen eingestellt; Befehle, Schüsse und Täuschkörper werden dort protokolliert.
+Die obere Leiste zeigt die sechs Stationen des Boots als Reiter: `1` Führung, `2` Sonar, `3` Waffen, `4` Maschine, `5` Mast & ESM, `6` Navigation (`Tab` oder ein Klick auf den Reiter wechselt). Jede Befehlstaste wirkt nur an der Station, zu der der Befehl gehört, wie im Browser; sonst nennt ein Banner die richtige Station. Browser können gleichzeitig die übrigen Stationen des Boots besetzen; eine Station, die ein Browser hält, ist in der oberen Leiste markiert und wird nicht vom uConsole bedient. Jede Station außer dem Sonarraum ist aufgebaut wie die Brücke: links die Seekarte (bekannte Geografie, das eigene Boot mit Sollkurs und Fahrtvektor, die Peilstriche der eigenen Sonarkontakte bzw. ihr Symbol bei aktuellem Ping- oder TMA-Fix, die eigenen Torpedos `T1`…, ein begrenztes Schussfeld der Rohre), rechts die Station mit Bedrohungsleiste (Torpedoalarm und gehörtes Aktivsonar mit gemessener Peilung, Rumpfschaden, Kavitation, schwache Batterie, ESM-Radarerfassung) und die Seite der Station. Die **Führung** hat zwei Seiten (erneut `1` oder `Bild auf`/`Bild ab`). **Navigation** (Seite und Station) zeigt Kurs und Tiefe, das Wasser unter dem Kiel und ein kartiertes Hindernis voraus, Fahrt, Eigenlärm, Batterie und die aktiven Betriebsarten sowie die Wassersäule unter dem Boot: Bootstiefe, befohlene Tiefe, sichere Tiefe und Grund; die Sprungschicht erscheint dort erst nach einer eigenen BT-Messung (`E` am U-Boot-Sonar). **Waffen & Kontakte** (Seite und Station Waffen) zeigt Feuerbereitschaft, Torpedos, klare Rohre, Nachladen, Täuschkörper, Notanblasen und die eigenen Sonarkontakte. Die **Maschine** zeigt Fahrt, Eigenlärm, Batterie, die Betriebsarten und die Telegrafenstufen; **Mast & ESM** zeigt den Mast, die Alarmpeilungen und die ESM-Erfassungen. Unten stehen Bootslog und Telemetrie des Boots, als Leiste oder Statuszeile wie in den Optionen eingestellt; Befehle, Schüsse und Täuschkörper werden dort protokolliert.
 
 | Taste | Funktion |
 |---|---|
-| `1 / 2 / Tab` | U-Boot-Führung / U-Boot-Sonar / wechseln |
-| `C / V / D` | Kurs / Fahrt / Tiefe befehlen (Zahl, Enter) |
-| `Bild auf/ab` | Führungsseiten: Navigation / Waffen & Kontakte |
+| `1 … 6 / Tab` | Stationen: 1 Führung, 2 Sonar, 3 Waffen, 4 Maschine, 5 Mast & ESM, 6 Navigation; Tab weiter (oder Reiter anklicken) |
+| `C / V / D` | Kurs / Fahrt / Tiefe befehlen (Führung; Kurs und Tiefe auch Navigation, Fahrt auch Maschine) |
+| `Bild auf/ab` | Führungsseiten: Navigation / Waffen & Kontakte (oder erneut 1) |
 | `Q / E` | Karte heraus- / hineinzoomen |
 | `K` | Karte folgt dem Boot an/aus |
 | `Mausrad / Ziehen` | Karte zoomen / verschieben (Maus auf der Karte) |
 | `Pfeiltasten` | Eigenen Sonarkontakt wählen |
-| `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen |
-| `F` | Torpedo auf eine eingegebene Peilung schießen, danach Entfernung zum Datum (Enter: keine) |
-| `X` | Täuschkörper ausstoßen |
-| `Umschalt+B` | Notanblasen (einmal) |
-| `T` | Torpedo-Lauftiefe (5-300 m) |
-| `Y` | Ein Torpedo oder Zweierfächer |
-| `W` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung des neuen Datums |
-| `Shift+W` | Draht des neuesten Torpedos kappen |
-| `G` | Schleichfahrt ein/aus (höchstens 5 kn) |
-| `Shift+G` | Auf Grund legen / abheben |
-| `N` | Schnorchel aus-/einfahren (Diesel laden auf Schnorcheltiefe) |
-| `P` | Mast aus-/einfahren (nur Sehrohrtiefe): ESM hört Radare |
-| `+ / -` | Fahrtstufe schneller / langsamer |
+| `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen (Waffen) |
+| `F` | Auf eine eingegebene Peilung schießen, danach Entfernung zum Datum (Enter: keine) (Waffen) |
+| `X` | Täuschkörper ausstoßen (Waffen) |
+| `Umschalt+B` | Notanblasen, einmal (Führung, Maschine) |
+| `T` | Torpedo-Lauftiefe 5-300 m (Waffen) |
+| `Y` | Ein Torpedo oder Zweierfächer (Waffen) |
+| `W` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung (Waffen) |
+| `Shift+W` | Draht des neuesten Torpedos kappen (Waffen) |
+| `G` | Schleichfahrt ein/aus, höchstens 5 kn (Führung, Maschine) |
+| `Shift+G` | Auf Grund legen / abheben (Führung, Navigation) |
+| `N` | Schnorchel aus-/einfahren, Diesel laden auf Schnorcheltiefe (Maschine) |
+| `P` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare (Mast & ESM) |
+| `+ / -` | Fahrtstufe schneller / langsamer (Führung, Maschine) |
 | `Sonartasten` | Wie am Fregattensonar, ohne Schleppantenne, OPZ-Freigabe, Plot und Telegraph |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 

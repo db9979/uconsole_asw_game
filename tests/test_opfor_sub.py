@@ -10,7 +10,7 @@ import pytest
 
 from src.commander.bridge import CommanderBridge
 from src.commander.server import CommanderServer, OPFOR_ROLES, STATIONS
-from src.core import config
+from src.core import config, uboot_local
 from src.core.game import Game
 from src.core.station import Station
 from src.ui import layout
@@ -227,6 +227,8 @@ def test_local_submarine_side_keeps_frigate_controls_and_banners_away():
     key(pygame.K_PLUS)
     key(pygame.K_3)
     assert game.ship.target_speed == target_speed and game.station is Station.BRIDGE
+    assert uboot_local.local_station(game) == "uboot_weapons"
+    key(pygame.K_1)
     key(pygame.K_d)
     for value in (pygame.K_1, pygame.K_5, pygame.K_0, pygame.K_RETURN):
         key(value)
@@ -656,6 +658,7 @@ def test_local_fire_asks_bearing_then_range_with_presets():
             key(pygame.K_0 + int(char))
         key(pygame.K_RETURN)
 
+    key(pygame.K_3)  # The weapons station owns the shot.
     key(pygame.K_t)
     type_number("90")
     assert boat.orders.torpedo_depth == 90.0
@@ -747,6 +750,7 @@ def test_local_mast_key_and_threat_bar_bearing():
     boat = game.opfor
     sub = boat.sub
     sub.depth = sub.target_depth = sub.order_depth = 12.0
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_5, mod=0, unicode=""))
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p, mod=0, unicode=""))
     assert boat.orders.mast
     sub.alert_torpedo(source=(sub.x + 2.0, sub.y))
@@ -855,4 +859,68 @@ def test_new_game_asks_which_unit_the_uconsole_plays():
     game._handle_menu_key(pygame.K_UP)
     game._handle_menu_key(pygame.K_RETURN)
     assert game.local_side == "frigate"
+    game.audio.shutdown()
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_local_boat_has_six_stations_and_orders_stay_at_their_station(language):
+    from src.ui import uboot_view
+    game = Game(seed=83, start_menu=False, audio_enabled=False, language=language)
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+    sub = boat.sub
+
+    def key(value, mod=0):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=mod, unicode=""))
+
+    for number, role in enumerate(("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine",
+                                   "uboot_esm", "uboot_nav"), start=1):
+        key(pygame.K_0 + number)
+        assert uboot_local.local_station(game) == role
+        assert (game.station is Station.SONAR) == (role == "uboot_sonar")
+        game.draw()
+    # Navigation may not raise the mast; the ESM station may.
+    sub.depth = sub.target_depth = sub.order_depth = 12.0
+    game.msg = ""
+    key(pygame.K_p)
+    assert not boat.orders.mast
+    key(pygame.K_5)
+    key(pygame.K_p)
+    assert boat.orders.mast
+    # The engine room runs the telegraph; the weapons station does not.
+    key(pygame.K_3)
+    speed = sub.order_speed
+    key(pygame.K_PLUS)
+    assert sub.order_speed == speed
+    key(pygame.K_4)
+    key(pygame.K_PLUS)
+    assert sub.order_speed > speed
+    # Tab cycles, and the top-bar tabs are clickable.
+    key(pygame.K_TAB)
+    assert uboot_local.local_station(game) == "uboot_esm"
+    rect = uboot_view.station_tab_rects()[5]
+    if game._window_to_canvas(rect.center) == rect.center:
+        game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=rect.center))
+        assert uboot_local.local_station(game) == "uboot_nav"
+    game.draw()
+    game.audio.shutdown()
+
+
+def test_browser_held_boat_station_is_not_operated_from_the_uconsole():
+    game = Game(seed=83, start_menu=False, audio_enabled=False, language="en")
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+
+    class Held:
+        def station_leased(self, role):
+            return role == "uboot_engine"
+
+    game.commander.server = Held()
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_4, mod=0, unicode=""))
+    speed = boat.sub.order_speed
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_PLUS, mod=0, unicode=""))
+    assert boat.sub.order_speed == speed
+    game.draw()
     game.audio.shutdown()

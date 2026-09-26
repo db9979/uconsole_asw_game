@@ -112,6 +112,8 @@ DISPLAY_KEYS = {
         "BRIDGE_LOOKOUT": "station.page.bridge_lookout",
         "UBOOT_NAV": "station.page.uboot_nav",
         "UBOOT_WEAPONS": "station.page.uboot_weapons",
+        "UBOOT_ENGINE": "station.page.uboot_engine",
+        "UBOOT_ESM": "station.page.uboot_esm",
         "WEAPONS_TARGET": "station.page.weapons_target",
         "WEAPONS_AMMO": "station.page.weapons_ammo",
         "DAMAGE_PLAN": "station.page.damage_plan",

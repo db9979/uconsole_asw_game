@@ -1,10 +1,14 @@
 """The uConsole playing the hostile submarine (``--play-sub`` / menu ``U``).
 
 The frigate then belongs to the Remote Crew browsers (or to its autocrew);
-the local screen, keys and sound serve only the crewed boat.  Two local
-views exist: the submarine command (``Station.BRIDGE`` slot) and the
-submarine sonar (``Station.SONAR`` slot, the ordinary sonar workstation
-drawn and operated inside ``Game.sonar_perspective``).
+the local screen, keys and sound serve only the crewed boat.  The boat has the
+six stations of its Remote Crew roles (keys 1-6 or Tab): command, sonar,
+weapons, engine room, mast & ESM and navigation.  The sonar room uses the
+``Station.SONAR`` slot (the ordinary sonar workstation drawn and operated
+inside ``Game.sonar_perspective``), every other station the ``Station.BRIDGE``
+slot.  Each order key works only at the station that owns the order, exactly
+as the browser's action allowlist; a station a browser holds is not operated
+from the uConsole.
 
 Nothing here reads frigate truth for display: the boat, the known chart and
 the boat's own sonar contacts only.  Frigate flashes, its event feed and its
@@ -15,6 +19,7 @@ import math
 
 import pygame
 
+from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
 from src.core import config, opfor
 from src.core.i18n import message
 from src.core.station import Station
@@ -39,6 +44,41 @@ UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot
 
 def playing(game) -> bool:
     return getattr(game, "local_side", "frigate") == "uboot"
+
+
+def local_station(game) -> str:
+    """The boat station the uConsole shows (a Remote Crew boat role)."""
+    if game.station is Station.SONAR:
+        return "uboot_sonar"
+    station = getattr(game, "uboot_station", "uboot")
+    # The sonar slot decides the sonar room (a reset returns to Station.BRIDGE).
+    return station if station in OPFOR_ROLES and station != "uboot_sonar" else "uboot"
+
+
+def set_local_station(game, station) -> None:
+    if station not in OPFOR_ROLES:
+        return
+    game._clear_controls()
+    game.uboot_station = station
+    game.station = Station.SONAR if station == "uboot_sonar" else Station.BRIDGE
+
+
+def station_remote(game) -> bool:
+    """A browser holds the station the uConsole shows: it is not operated here."""
+    query = getattr(getattr(game.commander, "server", None), "station_leased", None)
+    return bool(query and query(local_station(game)))
+
+
+def order_allowed(game, action) -> bool:
+    """Order keys follow the Remote Crew allowlist of the shown station."""
+    spec = V2_ACTION_REGISTRY.get(action)
+    if spec is not None and local_station(game) in spec.stations:
+        return True
+    owner = next((role for role in OPFOR_ROLES if spec is not None and role in spec.stations),
+                 None)
+    game.flash(message("uboot.local.wrong_station", station=message(
+        f"station.{owner}" if owner else "station.uboot")), 2.0)
+    return False
 
 
 def toggle_side(game) -> str:
@@ -297,16 +337,22 @@ def handle_key(game, event) -> None:
         if key in (pygame.K_s, pygame.K_l) and game.station is not Station.SONAR:
             game._open_administration("save" if key == pygame.K_s else "load")
             return
-        if key in (pygame.K_1, pygame.K_2, pygame.K_TAB):
-            destination = (Station.BRIDGE if key == pygame.K_1 else Station.SONAR
-                           if key == pygame.K_2 else
-                           Station.SONAR if game.station is not Station.SONAR
-                           else Station.BRIDGE)
-            game._clear_controls()
-            if destination is game.station and destination is Station.SONAR and current:
+        if pygame.K_1 <= key <= pygame.K_6 or key == pygame.K_TAB:
+            shown = local_station(game)
+            if key == pygame.K_TAB:
+                step = -1 if mods & pygame.KMOD_SHIFT else 1
+                destination = OPFOR_ROLES[(OPFOR_ROLES.index(shown) + step) % len(OPFOR_ROLES)]
+            else:
+                destination = OPFOR_ROLES[key - pygame.K_1]
+            if destination == shown == "uboot_sonar" and current:
+                # Its own key again pages the sonar room, as on the frigate.
                 _dispatch_sonar(game, current, pygame.event.Event(
                     pygame.KEYDOWN, key=pygame.K_2, mod=0))
-            game.station = destination
+                return
+            if destination == shown == "uboot" and current:
+                current.command_page = (current.command_page + 1) % 2
+                return
+            set_local_station(game, destination)
             return
         if game.game_over:
             if key in (pygame.K_r, pygame.K_m):
@@ -316,7 +362,11 @@ def handle_key(game, event) -> None:
                 finally:
                     game._uboot_dispatch = False
             return
-        if current is None or pygame.K_3 <= key <= pygame.K_9:
+        if current is None or pygame.K_7 <= key <= pygame.K_9:
+            return
+        if station_remote(game):
+            game.flash(message("uboot.local.station_remote",
+                               station=message(f"station.{local_station(game)}")), 2.0)
             return
         if game.station is Station.SONAR:
             if key in _SONAR_BLOCKED or (key == pygame.K_b and mods & pygame.KMOD_SHIFT) \
@@ -347,6 +397,10 @@ def handle_pointer(game, event) -> None:
         if pointer is not None:
             _chart_zoom(game, current, config.MAP_ZOOM_WHEEL_FACTOR ** event.y, pointer)
     elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        station = uboot_view.station_tab_at(game, pos)
+        if station is not None:
+            set_local_station(game, station)
+            return
         page = uboot_view.page_tab_at(game, pos)
         if page is not None:
             current.command_page = page
@@ -367,8 +421,33 @@ def handle_pointer(game, event) -> None:
         game._uboot_chart_drag = None
 
 
+# Order keys -> the Remote Crew action they are (its allowlist names the stations).
+_KEY_ACTIONS = {
+    pygame.K_c: "uboot_set_course", pygame.K_v: "uboot_set_speed",
+    pygame.K_d: "uboot_set_depth", pygame.K_f: "uboot_fire", pygame.K_x: "uboot_decoy",
+    pygame.K_t: "uboot_fire", pygame.K_y: "uboot_fire", pygame.K_w: "uboot_wire_steer",
+    pygame.K_p: "uboot_mast", pygame.K_n: "uboot_snorkel",
+    pygame.K_PLUS: "uboot_set_speed", pygame.K_EQUALS: "uboot_set_speed",
+    pygame.K_KP_PLUS: "uboot_set_speed", pygame.K_MINUS: "uboot_set_speed",
+    pygame.K_KP_MINUS: "uboot_set_speed",
+}
+
+
+def _key_action(key, mods):
+    if key == pygame.K_g:
+        return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_silent"
+    if key == pygame.K_b and mods & pygame.KMOD_SHIFT:
+        return "uboot_blow"
+    if key in (pygame.K_RETURN, pygame.K_KP_ENTER) and mods & pygame.KMOD_CTRL:
+        return "uboot_fire"
+    return _KEY_ACTIONS.get(key)
+
+
 def _command_key(game, current, key, mods) -> None:
     sub = current.sub
+    action = _key_action(key, mods)
+    if action is not None and not order_allowed(game, action):
+        return
     if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
         current.command_page = (current.command_page
                                 + (-1 if key == pygame.K_PAGEUP else 1)) % 2

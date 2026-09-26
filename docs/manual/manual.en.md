@@ -1040,30 +1040,30 @@ A second crew can play the enemy. The boat has six stations: Command, Sonar, Wea
 
 Every new game first asks **Which unit do you play?**: *Frigate F-217* or *Hostile submarine* (`Up`/`Down` or `1`/`2`, `Enter`; the last choice is preselected, `--play-sub` preselects the submarine). Outside a mission, Options (`F10`) page 2 **uConsole plays** changes it as well, for example before loading a game. With the submarine the uConsole commands the hostile boat instead of the frigate. The frigate is then crewed from the browsers through Remote Crew (`F9`) or runs on autocrew. The uConsole shows only the boat's own picture; the frigate's banners, event log, sound cues, plot and tooltips never appear, and its trackball and telegraph controls are disabled. The side can only be changed outside a mission; it lasts for this launch and is never saved, so every launch starts with the frigate.
 
-The **submarine command** station is laid out like the Bridge: the chart on the left (known geography, the boat with its ordered course and motion vector, the bearing lines of its own sonar contacts or their symbol while a ping or TMA fix is current, its own torpedoes `T1`…, a limited tube firing arc), the station on the right with a threat bar (torpedo alarm and active sonar heard with measured bearing, hull damage, cavitation, low battery, ESM radar intercept) and two pages. **Navigation** shows course and depth, water under the keel and any charted obstacle ahead, speed, own noise, battery and the active modes, and the water column under the boat: boat depth, ordered depth, safe depth and seabed; the layer appears there only after the boat's own BT measurement (`E` at the submarine sonar). **Weapons & contacts** shows fire readiness, torpedoes, tubes ready, reload, decoys, emergency blow and the boat's own sonar contacts. Below are the boat log and the boat's telemetry, as a band or a status ticker as set in the options; orders, shots and decoys are logged there.
+The top bar shows the boat's six stations as tabs: `1` Command, `2` Sonar, `3` Weapons, `4` Engine room, `5` Mast & ESM, `6` Navigation (`Tab` or a click on a tab switches). Each order key works only at the station that owns it, as in the browser; elsewhere a banner names the right station. Browsers can crew the boat's other stations at the same time; a station a browser holds is marked in the top bar and is not operated from the uConsole. Every station but the sonar room is laid out like the Bridge: the chart on the left (known geography, the boat with its ordered course and motion vector, the bearing lines of its own sonar contacts or their symbol while a ping or TMA fix is current, its own torpedoes `T1`…, a limited tube firing arc), the station on the right with a threat bar (torpedo alarm and active sonar heard with measured bearing, hull damage, cavitation, low battery, ESM radar intercept) and the station's page. **Command** has two pages (`1` again or `PgUp`/`PgDn`). **Navigation** (page and station) shows course and depth, water under the keel and any charted obstacle ahead, speed, own noise, battery and the active modes, and the water column under the boat: boat depth, ordered depth, safe depth and seabed; the layer appears there only after the boat's own BT measurement (`E` at the submarine sonar). **Weapons & contacts** (page and Weapons station) shows fire readiness, torpedoes, tubes ready, reload, decoys, emergency blow and the boat's own sonar contacts. The **Engine room** shows speed, own noise, battery, the modes and the telegraph steps; **Mast & ESM** shows the mast, the alarm bearings and the ESM intercepts. Below are the boat log and the boat's telemetry, as a band or a status ticker as set in the options; orders, shots and decoys are logged there.
 
 | Key | Action |
 |---|---|
-| `1 / 2 / Tab` | Submarine command / submarine sonar / switch |
-| `C / V / D` | Order course / speed / depth (number, Enter) |
-| `Page Up/Down` | Command pages: Navigation / Weapons & contacts |
+| `1 … 6 / Tab` | Stations: 1 Command, 2 Sonar, 3 Weapons, 4 Engine room, 5 Mast & ESM, 6 Navigation; Tab next (click a tab too) |
+| `C / V / D` | Order course / speed / depth (Command; course and depth also Navigation, speed also Engine room) |
+| `Page Up/Down` | Command pages: Navigation / Weapons & contacts (or 1 again) |
 | `Q / E` | Chart zoom out / in |
 | `K` | Chart follows the boat on/off |
 | `Wheel / drag` | Zoom / pan the chart (mouse on the chart) |
 | `Arrow keys` | Select an own sonar contact |
-| `Ctrl+Enter` | Fire a torpedo at the selected contact |
-| `F` | Fire a torpedo down an entered bearing, then the distance to the datum (Enter: none) |
-| `X` | Launch a decoy |
-| `Shift+B` | Emergency blow (once) |
-| `T` | Torpedo run depth (5-300 m) |
-| `Y` | One torpedo or a two-torpedo spread |
-| `W` | Steer the newest wired torpedo: new datum bearing, then distance |
-| `Shift+W` | Cut the newest torpedo's wire |
-| `G` | Silent running on/off (at most 5 kn) |
-| `Shift+G` | Lie on the bottom / lift off |
-| `N` | Snorkel up/down (diesels charge at snorkel depth) |
-| `P` | Raise/lower mast (periscope depth only): ESM hears radars |
-| `+ / -` | Telegraph step faster / slower |
+| `Ctrl+Enter` | Fire a torpedo at the selected contact (Weapons) |
+| `F` | Fire down an entered bearing, then the distance to the datum (Enter: none) (Weapons) |
+| `X` | Launch a decoy (Weapons) |
+| `Shift+B` | Emergency blow, once (Command, Engine room) |
+| `T` | Torpedo run depth 5-300 m (Weapons) |
+| `Y` | One torpedo or a two-torpedo spread (Weapons) |
+| `W` | Steer the newest wired torpedo: bearing, then distance (Weapons) |
+| `Shift+W` | Cut the newest torpedo's wire (Weapons) |
+| `G` | Silent running on/off, at most 5 kn (Command, Engine room) |
+| `Shift+G` | Lie on the bottom / lift off (Command, Navigation) |
+| `N` | Snorkel up/down, diesels charge at snorkel depth (Engine room) |
+| `P` | Raise/lower mast at periscope depth: ESM hears radars (Mast & ESM) |
+| `+ / -` | Telegraph step faster / slower (Command, Engine room) |
 | `Sonar keys` | As on the frigate sonar, without towed array, OPZ release, plot and telegraph |
 | `S / L / F9` | Save / load / Remote Crew (the frigate's crew) |
 

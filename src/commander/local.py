@@ -359,7 +359,7 @@ class CommanderConsole:
                 status["active_station"] in ROLES for status in statuses)
         else:
             self.active_crew = self.connected
-        if self.station_leased(game.station):
+        if getattr(game, "local_side", "frigate") != "uboot" and self.station_leased(game.station):
             game._clear_station_input()
             game.input_mode = None
             game.input_buffer = ""

@@ -1330,12 +1330,9 @@ class CommanderBridge:
         local = getattr(game, "local_side", "frigate") == "uboot"
         leased = False
         if hasattr(server, "station_leased"):
+            # Browsers may crew the boat's stations beside the uConsole; the
+            # uConsole then leaves a browser-held station alone.
             leased = any(server.station_leased(role) for role in OPFOR_ROLES)
-            if local and leased and hasattr(server, "revoke_station"):
-                # The uConsole itself crews the boat: no browser holds its roles.
-                for role in OPFOR_ROLES:
-                    server.revoke_station(role)
-                leased = False
         if phase == "live" and (leased or local):
             game.claim_opfor_sub()
         elif game.opfor is not None and not local:

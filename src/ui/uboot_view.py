@@ -14,7 +14,8 @@ import math
 
 import pygame
 
-from src.core import config
+from src.commander.server import OPFOR_ROLES
+from src.core import config, opfor, uboot_local
 from src.core.i18n import display_value, localize, message, raw_text
 from src.core.station import Station
 from src.ui import layout, nato_symbols
@@ -26,6 +27,12 @@ from src.ui.stations_view import (_panel, _station_content_top,
 from src.ui.viewport import Viewport
 
 UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS")
+# Panel pages of each boat station beside the chart (the sonar room is full screen).
+STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
+                 "uboot_engine": ("UBOOT_ENGINE",), "uboot_esm": ("UBOOT_ESM",),
+                 "uboot_nav": ("UBOOT_NAV",)}
+# Station tabs in the top bar: (x, width) of each, in station key order.
+STATION_TAB_W = 104
 CONTACT_ROWS = 10
 # Alarms stay on the threat bar this long after the event (s).
 ALARM_WINDOW_S = 120.0
@@ -70,11 +77,25 @@ def chart_pointer(game, pos):
 
 
 def page_tab_at(game, pos):
-    if game.station is Station.SONAR:
+    if game.station is Station.SONAR or uboot_local.local_station(game) != "uboot":
         return None
     canvas = game._window_to_canvas(pos)
     return station_page_tab_at(canvas, pygame.Rect(config.STATION_PANEL_RECT),
                                len(UBOOT_PAGES))
+
+
+def station_tab_rects() -> list:
+    return [pygame.Rect(4 + index * (STATION_TAB_W + 4), 3, STATION_TAB_W,
+                        config.TOP_BAR_H - 6) for index in range(len(OPFOR_ROLES))]
+
+
+def station_tab_at(game, pos):
+    """The boat station whose top-bar tab is at ``pos``, else None."""
+    canvas = game._window_to_canvas(pos)
+    if canvas is None:
+        return None
+    return next((role for role, rect in zip(OPFOR_ROLES, station_tab_rects())
+                 if rect.collidepoint(canvas)), None)
 
 
 # --- top bar and bottom band ---------------------------------------------------
@@ -86,15 +107,30 @@ def draw_top_bar(game, boat) -> None:
     pygame.draw.line(s, config.COLOR_SONAR_RING, (0, config.TOP_BAR_H - 1),
                      (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
     sub = boat.sub if boat is not None else None
-    view = message("uboot.view.sonar" if game.station is Station.SONAR
-                   else "uboot.view.command")
-    text = message("uboot.top.status", view=view, scenario=raw_text(game.top_bar_scenario()),
+    # The boat's six stations as tabs (key number and short name); a station a
+    # browser crews is marked and not operated from here.
+    shown = uboot_local.local_station(game)
+    leased = getattr(getattr(game.commander, "server", None), "station_leased", None)
+    tabs = station_tab_rects()
+    for index, (role, rect) in enumerate(zip(OPFOR_ROLES, tabs)):
+        active = role == shown
+        remote = bool(leased and leased(role))
+        if active:
+            pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
+            pygame.draw.line(s, config.COLOR_SONAR_RING, rect.bottomleft,
+                             (rect.right - 1, rect.bottom), 2)
+        label = message("uboot.tab", number=index + 1, name=message(f"uboot.tab.{role}"))
+        layout.blit_line(s, label, rect, config.COLOR_WARN if remote else
+                         config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
+                         size=14, align="center")
+    text = message("uboot.top.status", scenario=raw_text(game.top_bar_scenario()),
                    time=game.world.format_time(),
                    course=_fmt(sub.course if sub else None, "{:03.0f}"),
                    speed=_fmt(sub.speed if sub else None, "{:.1f}"),
                    depth=_fmt(sub.depth if sub else None))
-    layout.blit_line(s, text, (10, 4, config.SCREEN_W - 20, config.TOP_BAR_H - 8),
-                     config.COLOR_TEXT, size=18)
+    left = tabs[-1].right + 12
+    layout.blit_line(s, text, (left, 4, config.SCREEN_W - left - 10, config.TOP_BAR_H - 8),
+                     config.COLOR_TEXT, size=16, align="right")
 
 
 def feed_entries(boat) -> list:
@@ -544,21 +580,37 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
                          config.COLOR_WARN if is_selected else config.COLOR_TEXT, size=16)
 
 
-_FOOTERS = (
-    (("C", "uboot.footer.course"), ("V", "uboot.footer.speed"),
-     ("D", "uboot.footer.depth"), ("Q/E", "uboot.footer.chart")),
-    (("↑/↓", "uboot.footer.contact"), ("help.key.uboot_fire", "uboot.footer.fire"),
-     ("F", "uboot.footer.fire_bearing"), ("X", "uboot.footer.decoy")),
-)
+# Key legend of each station page (only keys that station may use).
+_FOOTERS = {
+    ("uboot", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("V", "uboot.footer.speed"),
+                             ("D", "uboot.footer.depth"), ("Q/E", "uboot.footer.chart")),
+    ("uboot", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"), ("G", "uboot.footer.silent"),
+                                 ("Shift+G", "uboot.footer.bottom"),
+                                 ("Q/E", "uboot.footer.chart")),
+    ("uboot_nav", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
+                                 ("Shift+G", "uboot.footer.bottom"),
+                                 ("Q/E", "uboot.footer.chart")),
+    ("uboot_weapons", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"),
+                                         ("help.key.uboot_fire", "uboot.footer.fire"),
+                                         ("F", "uboot.footer.fire_bearing"),
+                                         ("W", "uboot.footer.wire"), ("X", "uboot.footer.decoy")),
+    ("uboot_engine", "UBOOT_ENGINE"): (("+/-", "uboot.footer.telegraph"),
+                                       ("G", "uboot.footer.silent"),
+                                       ("N", "uboot.footer.snorkel"),
+                                       ("help.key.uboot_blow", "uboot.footer.blow")),
+    ("uboot_esm", "UBOOT_ESM"): (("P", "uboot.footer.mast"), ("Q/E", "uboot.footer.chart")),
+}
 
 
 def draw_command_panel(game, boat) -> None:
     s = game.screen
-    page = boat.command_page % len(UBOOT_PAGES) if boat is not None else 0
-    r, _y = _panel(game, title="uboot.panel.title")
+    station = uboot_local.local_station(game)
+    pages = STATION_PAGES.get(station, UBOOT_PAGES)
+    page = boat.command_page % len(pages) if boat is not None else 0
+    r, _y = _panel(game, title=f"uboot.panel.station.{station}")
     station_rect = pygame.Rect(config.STATION_RECT)
-    draw_station_page_tabs(s, station_rect, UBOOT_PAGES, page)
-    top = _station_content_top(station_rect, len(UBOOT_PAGES))
+    draw_station_page_tabs(s, station_rect, pages, page)
+    top = _station_content_top(station_rect, len(pages))
     x, w = r[0] + 14, r[2] - 28
     if boat is None:
         layout.blit_block(s, "uboot.local.no_boat", x, top + 10, w, 60,
@@ -567,11 +619,112 @@ def draw_command_panel(game, boat) -> None:
     alarm_h = _draw_threat_bar(s, game, boat, x, top, w)
     content_y = top + alarm_h + 12
     content_h = station_rect.bottom - 30 - content_y
-    if page == 0:
-        _draw_nav_page(s, game, boat, x, content_y, w, content_h)
-    else:
-        _draw_weapons_page(s, game, boat, x, content_y, w, content_h)
-    _footer(s, (x, station_rect.bottom - 26, w, 20), _FOOTERS[page])
+    if uboot_local.station_remote(game):
+        layout.blit_block(s, message("uboot.local.station_remote",
+                                     station=message(f"station.{station}")),
+                          x, content_y, w, 50, config.COLOR_WARN, size=18)
+        content_y += 54
+        content_h -= 54
+    name = pages[page]
+    drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_WEAPONS": _draw_weapons_page,
+              "UBOOT_ENGINE": _draw_engine_page, "UBOOT_ESM": _draw_esm_page}[name]
+    drawer(s, game, boat, x, content_y, w, content_h)
+    _footer(s, (x, station_rect.bottom - 26, w, 20), _FOOTERS[(station, name)])
+
+
+def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
+    """Engine room: speed and telegraph, plant modes, battery and own noise."""
+    sub = boat.sub
+    box_h = min(150, h // 2)
+    plant = layout.box(s, (x, y, w, box_h), "uboot.panel.plant",
+                       border=config.COLOR_WARN if sub.cavitating else config.COLOR_TEXT)
+    px, py, pw, _ = plant
+    half = (pw - 10) // 2
+    layout.blit_line(s, message("bridge.line.speed", speed=f"{sub.speed:04.1f}"),
+                     (px, py, half, 34), config.COLOR_TEXT, size=28)
+    layout.status_line(s, px, py + 36, half, "ui.target_value_short",
+                       message("bridge.line.speed", speed=f"{sub.order_speed:.1f}"),
+                       size=18, label_w=80)
+    noise = "bridge.cavitation" if sub.cavitating else message(
+        "bridge.line.own_noise", noise=f"{sub.noise_level() * 100:.0f}")
+    layout.blit_line(s, noise, (px, py + 64, half, 22),
+                     config.COLOR_DANGER if sub.cavitating else config.COLOR_OK, size=18)
+    battery = _battery_fraction(sub)
+    phase = sub.endurance.phase if sub.endurance is not None else None
+    layout.blit_line(s, message("uboot.line.battery",
+                                value=_fmt(None if battery is None else battery * 100),
+                                phase=raw_text(str(phase or "--"))),
+                     (px + half + 10, py, half, 22), config.COLOR_TEXT, size=17)
+    _bar(s, (px + half + 10, py + 26, half, 12), battery,
+         config.COLOR_DANGER if battery is not None and battery < .15 else
+         config.COLOR_WARN if battery is not None and battery < .3 else config.COLOR_OK)
+    modes = [key for key, on in (("uboot.mode.silent", boat.orders.silent),
+                                 ("uboot.mode.snorkel", sub.snorkeling),
+                                 ("uboot.mode.bottom", boat.orders.bottomed)) if on]
+    layout.blit_line(s, message("uboot.line.modes", modes=raw_text(" · ".join(
+        str(localize(key)) for key in modes)) if modes else localize("uboot.mode.none")),
+                     (px + half + 10, py + 46, half, 20),
+                     config.COLOR_OK if boat.orders.quiet_active(sub) else config.COLOR_TEXT_DIM,
+                     size=16)
+    layout.status_line(s, px + half + 10, py + 70, half, "uboot.label.blow",
+                       message("common.yes" if sub.blow_available else "common.no"),
+                       size=16, label_w=150)
+    tele_y = y + box_h + 10
+    telegraph = layout.box(s, (x, tele_y, w, min(70, y + h - tele_y)), "uboot.panel.telegraph")
+    tx, ty, tw, _ = telegraph
+    steps = opfor.speed_steps(sub)
+    width = tw // len(steps)
+    for index, speed in enumerate(steps):
+        current = abs(sub.order_speed - speed) < 0.05
+        rect = pygame.Rect(tx + index * width, ty, width - 4, 26)
+        if current:
+            pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
+        layout.blit_line(s, message("uboot.line.telegraph_step", marker="> " if current else "",
+                                    speed=_fmt(speed, "{:.0f}")), rect,
+                         config.COLOR_TEXT if current else config.COLOR_TEXT_DIM,
+                         size=16, align="center")
+
+
+def _alarm_value(age, bearing):
+    if not math.isfinite(age) or age >= ALARM_WINDOW_S:
+        return message("uboot.value.no_alarm")
+    return message("uboot.value.alarm", bearing=_fmt(bearing, "{:03.0f}"), age=_fmt(age))
+
+
+def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
+    """Mast & ESM: mast state, the boat's own radar intercepts and alarm bearings."""
+    from src.sensors.platform import MAST_DEPTH_M
+    sub, orders = boat.sub, boat.orders
+    mast = layout.box(s, (x, y, w, 64), "uboot.panel.mast",
+                      border=config.COLOR_WARN if orders.mast else config.COLOR_TEXT)
+    mx, my, mw, _ = mast
+    layout.blit_line(s, message("uboot.line.mast_up" if orders.mast else "uboot.line.mast_down",
+                                depth=_fmt(MAST_DEPTH_M)), (mx, my, mw, 26),
+                     config.COLOR_WARN if orders.mast else config.COLOR_TEXT, size=20)
+    alarm_y = y + 74
+    alarms = layout.box(s, (x, alarm_y, w, 84), "uboot.panel.alarms")
+    ax, ay, aw, _ = alarms
+    memory = sub.memory
+    layout.blit_line(s, message("uboot.line.alarm_ping", value=_alarm_value(
+        memory["last_ping_age"], orders.ping_bearing)), (ax, ay, aw, 22),
+        config.COLOR_TEXT, size=17)
+    layout.blit_line(s, message("uboot.line.alarm_torpedo", value=_alarm_value(
+        memory["last_torpedo_age"], orders.torpedo_bearing)), (ax, ay + 24, aw, 22),
+        config.COLOR_TEXT, size=17)
+    esm_y = alarm_y + 94
+    listing = layout.box(s, (x, esm_y, w, y + h - esm_y), "uboot.panel.esm")
+    lx, ly, lw, lh = listing
+    if not orders.mast or not orders.esm:
+        layout.blit_line(s, "uboot.line.no_esm" if orders.mast else "uboot.line.esm_mast_down",
+                         (lx, ly, lw, 22), config.COLOR_TEXT_DIM, size=16)
+        return
+    for index, (bearing, quality, age) in enumerate(orders.esm):
+        row_y = ly + index * 24
+        if row_y + 24 > ly + lh:
+            break
+        layout.blit_line(s, message("uboot.line.esm_row", bearing=_fmt(bearing, "{:03.0f}"),
+                                    quality=_fmt(quality * 100), age=_fmt(age)),
+                         (lx, row_y + 2, lw, 20), config.COLOR_WARN, size=16)
 
 
 def _footer(s, rect, specs) -> None:

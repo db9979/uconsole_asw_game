@@ -207,7 +207,7 @@ _WEB_HELP = (
 _UBOOT_HELP = (
     "help.uboot.title",
     [
-        ("1 / 2 / Tab", "help.uboot.views"),
+        ("1 … 6 / Tab", "help.uboot.views"),
         ("C / V / D", "help.uboot.orders"),
         ("help.key.page", "help.uboot.pages"),
         ("Q / E", "help.uboot.zoom"),

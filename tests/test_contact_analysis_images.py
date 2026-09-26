@@ -6,11 +6,13 @@ import zlib
 import numpy as np
 import pytest
 
-from tools.gen_contact_analysis_images import (LABEL_COLOR, PLOT_LEFT,
-                                               PLOT_RIGHT, ROW_COLORS, _plot,
-                                               _radar_plot, check, generate,
-                                               radar_prf_x, radar_spectral_x,
-                                               spectral_x)
+from tools.gen_contact_analysis_images import (DEMON_RECT, DEMON_TRACE_RECT,
+                                               ESM_BORDER, ESM_SPECTRUM,
+                                               ESM_WAVEFORM, LABEL_COLOR,
+                                               LOFAR_RECT, PLOT_LEFT, PLOT_RIGHT,
+                                               LOFAR_TRACE_RECT, SCREEN_AMBER,
+                                               VALUE_COLOR, _format_hz, _plot,
+                                               _radar_plot, check, generate)
 from src.data.contact_analysis import project_contact_catalog
 
 
@@ -54,109 +56,87 @@ def test_two_generations_are_byte_identical_and_manifest_hashes_match(tmp_path):
         assert asset["sha256"] == hashlib.sha256(payload).hexdigest()
 
 
-def test_composite_diagrams_have_fixed_log_spectrum_and_separate_demon_hypotheses(tmp_path):
-    output = tmp_path / "assets"
-    generate(output)
-    manifest = json.loads((output / "manifest.json").read_text())
-    images = [decode((output / item["filename"]).read_bytes())
-              for item in manifest["assets"]]
-    # Every diagram has the fixed 5 Hz-10 kHz grid and separated hypothesis boundary.
-    for pixels in images[::37]:
-        for x in (24, 50, 136, 222, 308):
-            assert np.any(pixels[10:113, x] != (8, 17, 24))
-        assert np.any(pixels[134] != (8, 17, 24))
-        assert not np.any(np.all(pixels[113:134] == (229, 174, 71), axis=2))
-    assert any(np.any(np.all(pixels[134:170] == (229, 174, 71), axis=2))
-               for pixels in images)
-    assert any(np.any(np.all(pixels[:113] == (42, 137, 145), axis=2))
-               for pixels in images)
-
-    profiles = {profile["key"]: profile for profile in project_contact_catalog()["profiles"]}
-    manifest_by_name = {item["filename"]: item for item in manifest["assets"]}
-    profile = next(item for item in profiles.values()
-                   if item["machine"]["cruise_lines"]
-                   and item["machine"]["cruise_broadband"] is not None)
-    pixels = decode((output / manifest_by_name[
-        profile["assets"]["acoustic_cruise"].rsplit("/", 1)[-1]]["filename"]).read_bytes())
-    frequency = profile["machine"]["cruise_lines"][0][0]
-    expected_x = spectral_x(frequency)
-    assert np.any(np.all(pixels[:113, max(0, expected_x - 3):expected_x + 4]
-                         == (115, 220, 194), axis=2))
-    broadband = profile["machine"]["cruise_broadband"]
-    x0 = spectral_x(broadband[1])
-    x1 = spectral_x(broadband[2])
-    assert np.any(np.all(pixels[:113, x0:x1 + 1] == (42, 137, 145), axis=2))
-
-    no_demon = next(item for item in profiles.values()
-                    if item["machine"]["shaft_rpm"] is None
-                    and "acoustic_cruise" in item["assets"])
-    no_demon_pixels = decode((output / no_demon["assets"]["acoustic_cruise"].rsplit(
-        "/", 1)[-1]).read_bytes())
-    assert not np.any(np.all(no_demon_pixels[134:170] == (77, 190, 219), axis=2))
-    assert not np.any(np.all(no_demon_pixels[134:170] == (229, 174, 71), axis=2))
+def lofar_x(frequency):
+    return PLOT_LEFT + round(frequency / 300.0 * (PLOT_RIGHT - PLOT_LEFT))
 
 
-def test_diagrams_label_relative_level_and_both_frequency_scales():
-    machine = {"cruise_lines": [], "cruise_broadband": None,
-               "shaft_rpm": None, "blade_count": None}
-    pixels = decode(_plot(machine, "cruise"))
-    label = np.array(LABEL_COLOR)
-    # Tick numbers are part of the packaged image, shared by the native and
-    # browser analyzer. These locations correspond to the plotted grid lines.
-    for x, y in ((19, 8), (19, 59), (19, 110),
-                 (24, 117), (50, 117), (136, 117),
-                 (222, 117), (308, 117),
-                 (24, 173), (95, 173), (166, 173),
-                 (237, 173), (308, 173)):
-        nearby = pixels[y:y + 5, max(0, x - 13):min(320, x + 2)]
-        assert np.any(np.all(nearby == label, axis=2)), (x, y)
+def demon_x(frequency):
+    return PLOT_LEFT + round(frequency / 50.0 * (PLOT_RIGHT - PLOT_LEFT))
 
 
-def test_every_profiles_tonal_columns_are_exact_and_distinct(tmp_path):
+def machine(lines, broadband=None):
+    return {"cruise_lines": lines, "cruise_broadband": broadband}
+
+
+def test_acoustic_images_are_station_lofar_and_demon_screens(tmp_path):
     output = tmp_path / "assets"
     generate(output)
     profiles = project_contact_catalog()["profiles"]
-    assert {frequency: spectral_x(frequency)
-            for frequency in (6, 8, 8.5, 9.75)} == {
-                6: 31, 8: 42, 8.5: 44, 9.75: 49,
-            }
+    checked = 0
     for profile in profiles:
         for kind, field in (("acoustic_cruise", "cruise_lines"),
                             ("acoustic_high", "high_speed_lines")):
-            lines = profile["machine"][field]
-            columns = [spectral_x(line[0]) for line in lines]
-            assert len(columns) == len(set(columns)), (profile["key"], field)
-            if not lines:
+            lines = [line for line in profile["machine"][field] if line[0] <= 295]
+            if kind not in profile["assets"] or not lines:
                 continue
-            pixels = decode((output / profile["assets"][kind].rsplit("/", 1)[-1]).read_bytes())
-            for frequency, column in zip((line[0] for line in lines), columns):
-                assert np.any(np.all(pixels[10:113, column] == (115, 220, 194), axis=1)), \
-                    (profile["key"], field, frequency, column)
+            pixels = decode((output / profile["assets"][kind].rsplit("/", 1)[-1])
+                            .read_bytes()).astype(int)
+            newest = pixels[LOFAR_RECT[1] + 1, PLOT_LEFT:PLOT_RIGHT + 1, 1]
+            strongest = max(lines, key=lambda line: line[1])
+            column = lofar_x(strongest[0]) - PLOT_LEFT
+            # The receiver's strongest catalog tonal is a bright vertical
+            # trace in the newest waterfall row, well above the noise floor.
+            assert newest[max(0, column - 2):column + 3].max() > 2 * np.median(newest) + 10, \
+                (profile["key"], kind, strongest)
+            checked += 1
+    assert checked > 150
 
 
-def test_tonal_records_are_discrete_max_composed_peaks_and_hypotheses_appear_once():
-    machine = {
-        "cruise_lines": [[10, .4, 1], [10.2, .8, 1], [100, .7, 2]],
-        "high_speed_lines": [[10, .4, 1], [100, .7, 2]],
-        "cruise_broadband": [.3, 20, 40],
-        "high_speed_broadband": None,
-        "shaft_rpm": [60, 120],
-        "blade_count": 4,
-    }
-    cruise = decode(_plot(machine, "cruise", include_hypotheses=True))
-    high = decode(_plot(machine, "high_speed", include_hypotheses=False))
-    midpoint = (spectral_x(10) + spectral_x(100)) // 2
-    tonal_colors = ((115, 220, 194), (42, 115, 104), (89, 181, 166))
-    assert not any(np.any(np.all(cruise[10:112, midpoint] == color, axis=1))
-                   for color in tonal_colors)
-    assert not np.any(np.all(cruise[:113] == (89, 181, 166), axis=2))
-    overlap = spectral_x(10.2)
-    composed_y = 112 - round((112 - 10) * .8)
-    assert np.array_equal(cruise[composed_y, overlap], (115, 220, 194))
-    assert np.any(np.all(cruise[134:170] == (77, 190, 219), axis=2))
-    assert np.any(np.all(cruise[134:170] == (229, 174, 71), axis=2))
-    assert not np.any(np.all(high[134:170] == (77, 190, 219), axis=2))
-    assert not np.any(np.all(high[134:170] == (229, 174, 71), axis=2))
+def test_lofar_trace_position_and_demon_peak_follow_the_receiver():
+    pixels = decode(_plot(machine([[20.0, 1.0, 0.2], [150.0, .8, .5]]), "cruise")).astype(int)
+    newest = pixels[LOFAR_RECT[1] + 1, :, 1]
+    for frequency in (20.0, 150.0):
+        x = lofar_x(frequency)
+        assert newest[x - 2:x + 3].max() > 3 * np.median(newest[PLOT_LEFT:PLOT_RIGHT]), frequency
+    # A narrow first tonal in 2-80 Hz modulates the carrier, so the station's
+    # DEMON analysis measures a peak there and marks it in amber.
+    amber = np.all(pixels[DEMON_TRACE_RECT[1]:DEMON_RECT[1] + DEMON_RECT[3]]
+                   == SCREEN_AMBER, axis=2)
+    assert np.any(amber[:, demon_x(20.0) - 1:demon_x(20.0) + 2])
+
+    broadband_only = decode(_plot(machine([], [.5, 20.0, 400.0]), "cruise"))
+    assert not np.any(np.all(broadband_only == SCREEN_AMBER, axis=2))
+    silent = decode(_plot(machine([]), "cruise")).astype(int)
+    band = broadband_only.astype(int)[LOFAR_RECT[1] + 1, PLOT_LEFT:PLOT_RIGHT, 1]
+    quiet = silent[LOFAR_RECT[1] + 1, PLOT_LEFT:PLOT_RIGHT, 1]
+    assert band.mean() > quiet.mean() + 3
+
+
+def test_measured_peak_frequencies_are_written_into_the_image():
+    pixels = decode(_plot(machine([[20.0, 1.0, 0.2], [150.0, .8, .5]]), "cruise"))
+    strip = pixels[LOFAR_TRACE_RECT[1]:LOFAR_TRACE_RECT[1] + LOFAR_TRACE_RECT[3]]
+    value = np.all(strip == VALUE_COLOR, axis=2)
+    for frequency in (20.0, 150.0):
+        x = lofar_x(frequency)
+        assert np.any(value[:, x - 6:x + 7]), frequency
+    # The DEMON value label sits beside the amber measured-peak line.
+    demon = pixels[DEMON_TRACE_RECT[1]:DEMON_TRACE_RECT[1] + DEMON_TRACE_RECT[3]]
+    amber = np.all(demon == SCREEN_AMBER, axis=2)
+    x = demon_x(20.0)
+    assert np.any(amber[:, x + 3:x + 20])
+    silent = decode(_plot(machine([]), "cruise"))
+    assert not np.any(np.all(silent == VALUE_COLOR, axis=2))
+
+
+def test_acoustic_images_label_both_linear_axes():
+    pixels = decode(_plot(machine([]), "cruise"))
+    label = np.array(LABEL_COLOR)
+    for rect, count in ((LOFAR_RECT, 7), (DEMON_RECT, 6)):
+        y = rect[1] + rect[3] + 3
+        for index in range(count):
+            x = PLOT_LEFT + round(index * (PLOT_RIGHT - PLOT_LEFT) / (count - 1))
+            nearby = pixels[y:y + 5, max(0, x - 12):min(320, x + 12)]
+            assert np.any(np.all(nearby == label, axis=2)), (rect, index)
 
 
 def test_check_accepts_exact_set_and_rejects_missing_extra_modified(tmp_path):
@@ -206,39 +186,55 @@ def test_generate_and_check_reject_symlinked_assets(tmp_path):
     assert target.read_bytes() == b"outside"
 
 
-def test_radar_axis_helpers_map_the_fixed_ghz_and_prf_bounds_to_the_shared_columns():
-    assert radar_spectral_x(0.5e9) == PLOT_LEFT
-    assert radar_spectral_x(18e9) == PLOT_RIGHT
-    assert radar_prf_x(100.0) == PLOT_LEFT
-    assert radar_prf_x(10_000.0) == PLOT_RIGHT
-    # Out-of-range inputs clamp rather than wrap or extrapolate.
-    assert radar_spectral_x(1e12) == PLOT_RIGHT
-    assert radar_prf_x(0.0) == PLOT_LEFT
+def fingerprint_boxes(pixels, row):
+    """Count ESM border runs (box edges) crossing one pixel row."""
+    border = np.all(pixels[row] == ESM_BORDER, axis=1)
+    return int(np.sum(border[1:] & ~border[:-1]) + border[0]) // 2
 
 
-def test_radar_plot_draws_one_row_per_listed_emitter_and_skips_missing_prf():
+def test_radar_plot_draws_eloka_fingerprints_per_emitter_and_modulation():
     emitters = [
-        {"frequency_band_hz": [1e9, 2e9], "prf_band_hz": [200, 400]},
-        {"frequency_band_hz": [8e9, 12e9], "prf_band_hz": None},
-        {"frequency_band_hz": [12e9, 18e9], "prf_band_hz": [1000, 5000]},
+        {"frequency_band_hz": [1e9, 2e9], "prf_band_hz": [200, 400],
+         "modulation_codes": ["pulse"]},
+        {"frequency_band_hz": [8e9, 12e9], "prf_band_hz": None,
+         "modulation_codes": ["frequency_agile", "continuous_wave"]},
+        {"frequency_band_hz": [12e9, 18e9], "prf_band_hz": [1000, 5000],
+         "modulation_codes": ["pulse_doppler"]},
     ]
     pixels = decode(_radar_plot(emitters))
-    row_span = (112 - 10) / len(emitters)
+    row_h = (180 - 4) // len(emitters)
     for index, emitter in enumerate(emitters):
-        color = ROW_COLORS[index % len(ROW_COLORS)]
-        y0 = 10 + round(row_span * index) + 2
-        y1 = 10 + round(row_span * (index + 1)) - 2
-        x0 = radar_spectral_x(emitter["frequency_band_hz"][0])
-        x1 = radar_spectral_x(emitter["frequency_band_hz"][1])
-        assert np.any(np.all(pixels[y0:y1 + 1, x0:x1 + 1] == color, axis=2)), index
-    # Rows with a PRF band draw their row colour in the bottom panel; the
-    # middle emitter supplies none and must leave that colour entirely absent.
-    assert np.any(np.all(pixels[134:170] == ROW_COLORS[0], axis=2))
-    assert np.any(np.all(pixels[134:170] == ROW_COLORS[2], axis=2))
-    assert not np.any(np.all(pixels[134:170] == ROW_COLORS[1], axis=2))
+        top, bottom = 2 + index * row_h, 2 + (index + 1) * row_h
+        middle = top + row_h // 2
+        assert fingerprint_boxes(pixels, middle) == len(emitter["modulation_codes"])
+        region = pixels[top + 9:bottom, 62:]
+        assert np.any(np.all(region == ESM_SPECTRUM, axis=2)), index
+        assert np.any(np.all(region == ESM_WAVEFORM, axis=2)), index
+        labels = pixels[top:bottom, :60]
+        assert np.any(np.all(labels == ESM_SPECTRUM, axis=2)), index
+        # The PRF label is drawn only when the catalog supplies a PRF band.
+        assert np.any(np.all(labels == ESM_WAVEFORM, axis=2)) == (
+            emitter["prf_band_hz"] is not None), index
 
 
-def test_radar_plot_single_emitter_still_produces_one_row():
-    pixels = decode(_radar_plot([{"frequency_band_hz": [8e9, 12e9], "prf_band_hz": [400, 1200]}]))
-    assert np.any(np.all(pixels[10:113] == ROW_COLORS[0], axis=2))
-    assert np.any(np.all(pixels[134:170] == ROW_COLORS[0], axis=2))
+def test_radar_fingerprints_are_headed_by_the_reference_rf_and_prf():
+    with_prf = decode(_radar_plot([{"frequency_band_hz": [9e9, 9.5e9],
+                                    "prf_band_hz": [500, 2000],
+                                    "modulation_codes": ["pulse"]}]))
+    without = decode(_radar_plot([{"frequency_band_hz": [9e9, 9.5e9],
+                                   "prf_band_hz": None,
+                                   "modulation_codes": ["pulse"]}]))
+    for pixels in (with_prf, without):
+        assert np.any(np.all(pixels[3:10, 62:200] == ESM_SPECTRUM, axis=2))
+    assert np.any(np.all(with_prf[3:10, 200:] == ESM_WAVEFORM, axis=2))
+    assert not np.any(np.all(without[3:10, 200:] == ESM_WAVEFORM, axis=2))
+
+
+def test_radar_plot_single_emitter_uses_the_whole_image_and_compact_labels():
+    pixels = decode(_radar_plot([{"frequency_band_hz": [9e9, 9.5e9],
+                                  "prf_band_hz": [500, 2000],
+                                  "modulation_codes": ["pulse"]}]))
+    assert fingerprint_boxes(pixels, 90) == 1
+    assert np.any(np.all(pixels[150:175, 62:] == ESM_WAVEFORM, axis=2))
+    assert (_format_hz(9.0), _format_hz(9.5), _format_hz(300.0),
+            _format_hz(1200.0), _format_hz(5000.0)) == ("9", "9.5", "300", "1.2k", "5k")

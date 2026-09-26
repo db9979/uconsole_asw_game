@@ -10,15 +10,16 @@ import threading
 from types import SimpleNamespace
 
 import pytest
+from commander_web import top_level_files
 
 from src.commander import CommanderServer
 from src.commander import server as transport
+from commander_fixtures import PLOT, WEATHER_STATION
 
 
 @pytest.fixture
 def server(tmp_path, monkeypatch):
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+    for name in top_level_files():
         (tmp_path / name).write_text(name, encoding="utf-8")
     monkeypatch.setattr(transport.resources, "files", lambda package: tmp_path)
     instance = CommanderServer()
@@ -82,12 +83,14 @@ def projection_states(revision="chart"):
     common = dict(protocol=2, version="test", session=revision, epoch=0,
                    revision=0, seq=1, phase="live", chart_revision=revision,
                    clock={}, environment={}, mission={},
-                   autocrew={"enabled": False, "status": "off"},
-                   audio={"events": []})
+                   autocrew={"enabled": False, "status": "off"}, autocrew_overview=[],
+                   audio={"events": []}, weather_station=WEATHER_STATION, plot=PLOT)
     return {None: {key: value for key, value in common.items()
-                    if key not in ("clock", "environment", "mission", "autocrew", "audio")} | {"role": None},
+                    if key not in ("clock", "environment", "mission", "autocrew",
+                                   "autocrew_overview", "audio",
+                                   "weather_station", "plot")} | {"role": None},
             **{role: dict(common, role=role, **{role: {}})
-               for role in transport.STATIONS}}
+               for role in transport.ROLES}}
 
 
 def assert_session(body, name):
@@ -110,7 +113,7 @@ def assert_session(body, name):
     assert body["station"] is body["requested_station"] is None
     assert body["grants"] == {"command": False, "direct_fire": False, "simlog": False,
                               "sonar_audio": False}
-    assert list(body["stations"]) == list(transport.STATIONS)
+    assert list(body["stations"]) == list(transport.ROLES)
     assert all(row == {
         "status": "available", "requested": False, "request_generation": 0,
         "station_generation": None,
@@ -137,7 +140,7 @@ def test_pair_sets_host_only_cookie_and_stores_digest_only(server):
 def test_multiple_pairings_reload_and_read_only_snapshots(server):
     states = projection_states()
     charts = {role: {"protocol": 2, "revision": "chart", "role_marker": role}
-              for role in (None, *transport.STATIONS)}
+              for role in (None, *transport.ROLES)}
     server.publish_v2(states, charts)
     code = server.pairing_code
     sessions = []
@@ -282,18 +285,18 @@ def test_revocation_clears_role_event_and_simlog_publications(server):
     states = projection_states("published")
     charts = {role: {"protocol": 2, "revision": "published",
                      "role_marker": role}
-              for role in (None, *transport.STATIONS)}
+              for role in (None, *transport.ROLES)}
     server.publish_v2(states, charts)
     server.publish_events_v2(
         world_session="published", world_epoch=0, latest_seq=1,
         events_by_role={role: [{"seq": 1, "kind": "mission",
                                "severity": "warning", "message": "old"}]
-                        for role in transport.STATIONS})
+                        for role in transport.ROLES})
     server.publish_simlog_v2(
         world_session="published", world_epoch=0,
         entries_by_role={role: [{"seq": 1, "t": 1.0, "stamp": "00:01",
                                  "state": states[role],
-                                 "truth": {"mission_t": 1.0, "timescale": 0,
+                                 "truth": {"mission_t": 1.0,
                                      "result": None, "world": {}, "ship": {},
                                      "weapons": {}, "subs": [], "surfaces": [],
                                      "animals": [], "torpedoes": [],
@@ -301,7 +304,7 @@ def test_revocation_clears_role_event_and_simlog_publications(server):
                                      "asms": [], "essms": [], "asrocs": [],
                                      "nixies": [], "buoys": [], "helo": {},
                                      "flights": [], "raiders": [], "radars": {}}}]
-                         for role in transport.STATIONS})
+                         for role in transport.ROLES})
 
     server.revoke()
 
@@ -456,7 +459,7 @@ def test_host_station_lease_query_tracks_exclusive_ownership(server):
 def test_state_and_chart_selection_follows_current_role_atomically(server):
     states = projection_states("r")
     charts = {role: {"protocol": 2, "revision": "r", "role_marker": role}
-              for role in (None, *transport.STATIONS)}
+              for role in (None, *transport.ROLES)}
     server.publish_v2(states, charts)
     _, first_cookie, _, first = pair_v2(server, "First")
     _, second_cookie, _, second = pair_v2(server, "Second")
@@ -474,7 +477,7 @@ def test_state_and_chart_selection_follows_current_role_atomically(server):
 def test_v2_publication_is_bounded_exact_and_atomic(server):
     states = projection_states("r")
     charts = {role: {"protocol": 2, "revision": "r"}
-              for role in (None, *transport.STATIONS)}
+              for role in (None, *transport.ROLES)}
     server.publish_v2(states, charts)
     previous = dict(server._v2_states)
     with pytest.raises(ValueError):

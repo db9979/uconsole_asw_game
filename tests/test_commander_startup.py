@@ -162,7 +162,6 @@ def test_late_failed_load_preserves_preparation_and_pairing(game, paired_menu, m
 @pytest.mark.parametrize("field,value", [
     ("sim_t", .1), ("mission_time", .1), ("custom_mission_definition", {}),
     ("mission_result", "SIEG"), ("game_over", True), ("running", False),
-    ("paused", True),
     # A changed custom-difficulty choice only matters once the scenario
     # actually consults it (s4_zufall) - both fields change together.
     (("scenario_key", "menu_difficulty"),
@@ -179,7 +178,7 @@ def test_nonpristine_or_changed_configuration_is_not_reused(game, field, value):
     assert game.world is not world
     assert game.sim_t == game.mission_time == 0.0
     assert game.custom_mission_definition is None and game.mission_result is None
-    assert not game.game_over and game.running and not game.paused
+    assert not game.game_over and game.running
 
 
 def test_preparation_is_one_use_and_load_identity_cannot_reuse_it(game):

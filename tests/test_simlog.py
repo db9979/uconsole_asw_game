@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 import pygame
 import pytest
+from commander_web import top_level_files
 
 from src.commander.bridge import CommanderBridge
 from src.commander.server import CommanderServer
@@ -192,8 +193,9 @@ def test_in_game_simlog_view_draws_all_languages_and_large_text(game):
     game.simlog_view_open = False
 
 
-def test_options_menu_has_ten_rows_and_toggles_simlog(game):
-    assert len(game._options_row_rects()) == 10
+def test_options_menu_rows_and_simlog_toggle(game):
+    assert len(game._options_row_rects()) == len(game._OPTION_ROWS)
+    assert game._OPTION_ROWS.index("simlog") == 5
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_F10))
     assert game.options_open
     for _ in range(5):
@@ -217,11 +219,9 @@ def test_options_menu_toggles_night_mode_and_draw_applies_the_overlay(game):
     game.draw()  # must not crash with the overlay active
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
     assert game.preferences.night_mode is False
-    # Commander-Eintrag liegt jetzt hinter high_contrast und Echtzeit-Verkehr
-    # auf Zeile 9.
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
-    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
+    # Commander-Eintrag ist die letzte Zeile hinter night_mode.
+    for _ in range(game._OPTION_ROWS.index("commander") - 6):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
     assert game.commander_open
 
@@ -230,8 +230,7 @@ def test_options_menu_toggles_night_mode_and_draw_applies_the_overlay(game):
 
 @pytest.fixture
 def assets(tmp_path, monkeypatch):
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+    for name in top_level_files():
         (tmp_path / name).write_text(f"fixture {name}", encoding="utf-8")
 
     def files(package):
@@ -378,7 +377,7 @@ def test_remote_simlog_rebaselines_on_nonredacted_epoch_change(game, server):
     bridge.pump(game, server, now=time.monotonic() + 1.2)
     previous_epoch = remote_simlog(server, cookie)["epoch"]
 
-    game.help_open = True
+    game.game_over = True
     bridge.pump(game, server, now=time.monotonic() + 1.8)
     body = remote_simlog(server, cookie)
     assert body["epoch"] == previous_epoch + 1

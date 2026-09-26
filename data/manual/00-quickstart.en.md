@@ -8,7 +8,8 @@ You command the ASW frigate F-217 and man nine stations. Your job: detect, track
 
 - **Win:** sink every assigned target submarine, or survive until the time limit (depends on the mission).
 - **Lose:** own ship sinks, a civilian vessel is hit, the target escapes more than 150 NM from its start point, or time runs out on a sink mission.
-- Deadline warnings arrive at 5, 2 and 1 minutes remaining.
+- Time warnings arrive at 5, 2 and 1 minutes remaining: on a sink mission as a deadline, on a survive (convoy) mission as the time until the convoy is safe.
+- When the mission ends, `R` restarts it with the same seed (an editor mission restarts itself) and `M` returns to the main menu. During a mission, `Esc` offers "Main menu (without saving)" next to save-and-exit.
 - Score: 1000 per submarine sunk, 200 per unused torpedo, 500 for no civilian losses, up to 500 time bonus.
 
 ## Stations {#qs-stations}
@@ -37,15 +38,15 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 <!-- keys:web -->
 
-`F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
+The bottom status ticker shows the newest event and key telemetry; `F11` opens the full event log and telemetry over the station without stopping it or taking its keys. `F1` (or `?`) opens the help overlay at any time. It has four categories: global keys, the current station (keys and standard procedure), sensors and tactics, and this manual.
 
 ## Underwater acoustics in five minutes {#qs-acoustics}
 
 - **Passive sonar gives bearing only.** Every contact starts as a line of bearing. Range comes from active ping, TMA, sonobuoys or a cross-fix.
-- **Detection is signal against noise.** SNR = 20 log10(effective range / distance). A contact is detected at SNR >= 0 dB. Quiet targets and high sea state shrink the effective range.
+- **Detection is signal against noise.** The passive sonar equation SE = SL - TL - NL + DI - DT decides: the target's source level (louder = farther), transmission loss (spreading, absorption, layer and path losses), noise (own self noise plus wind, rain and nearby shipping), and the array gain. A contact is detected at SE >= 0 dB. Wind and rain matter most when you run slow and quiet; at high own speed your own noise dominates.
 - **Own speed is own noise.** Self-noise rises from 4 kn to 25 kn. Above 15 kn the propellers cavitate and passive range drops to about a third.
-- **The layer (thermocline) splits the water.** Sensor and target on different sides of the layer lose about 6.5 dB. A ping into the shadow zone below the layer reaches only 35 % of its range.
-- **Convergence zones** at roughly 40-70 NM and 90-130 NM return sound from far away (+8 dB).
+- **The layer (thermocline) bends sound.** Passive propagation is ray traced through the real sound-speed profile: above the layer a surface duct carries sound far, below it lies a shadow zone a few miles wide. In deep water the shadow is strong; in water of a few hundred metres, bottom bounce and multipath fill it beyond about 10 NM, so hiding below the layer mainly works close in. A ping into the shadow zone reaches only 35 % of its range.
+- **Seabed and surface matter.** Rock and gravel reflect sound well, silt and mud absorb it; a rough sea scatters high frequencies. **Convergence zones** appear only where the water is deep enough for rays to turn back up.
 - **Baffles:** own-ship noise is a soft 70 degree lobe astern of the hull array (and along the cable of the towed array). It masks, it does not blank.
 
 ```text
@@ -62,7 +63,7 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Distances in nautical miles (NM), speed in knots (kn), depth in metres, frequency in Hz.
 - Courses and bearings are true degrees: 000 north, clockwise. Charts are north-up.
-- At 1x one real second is one simulated second. There is no time acceleration; `P` pauses.
+- The game always runs in real time: one real second is one simulated second. There is no time acceleration and no pause; menus, help, options, save/load and losing window focus do not stop the simulation either.
 - The ship turns at up to 0.8 degrees per second; speed changes take minutes. Plan manoeuvres early.
 
 ## Your first patrol {#qs-first-patrol}
@@ -80,5 +81,5 @@ In the Remote Crew browser (Commander, `F9`) stations are operated with buttons;
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10` (or `O` while paused): options - language, fullscreen, audio, large text, tooltips.
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates). Page 2 (`PgDn`/`Tab`): which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved.
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.

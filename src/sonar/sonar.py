@@ -7,12 +7,13 @@ Aktiv: Ping -> exakte Distanz + Tiefe (verrät Position).
 
 import math
 import random
+from collections import deque
 from enum import Enum
 
 import numpy as np
 
 from src.core import config
-from src.sonar import propagation
+from src.sonar import equation, propagation
 from src.sonar.tma import BearingTrack, solve_tma
 from src.audio.database import rank_signatures
 from src.audio.receiver import AcousticReceiver, directional_gain
@@ -27,10 +28,116 @@ def tgt_gone(tgt) -> bool:
     return bool(getattr(tgt, "hit", False))
 
 
+def hull_array_depth_m(observer) -> float:
+    """Depth of the observer's hull array: 5 m under a surface ship, the
+    boat's own depth for a submarine observer (``sonar_depth_m``)."""
+    return float(getattr(observer, "sonar_depth_m", 5.0))
+
+
 def snr_db(passive_range_nm: float, dist_nm: float) -> float:
     """SNR: 20*log10(R_eff/d). 0 dB = am Rande der Detektion."""
     return 20.0 * math.log10(max(passive_range_nm, 1e-6)
                              / max(dist_nm, 1e-6))
+
+
+_HULL_LENGTH_FALLBACK_M = (("torpedo_class", 6.0), ("atype", 15.0),
+                           ("kind", 3.0), ("stype", 70.0))
+
+
+def hull_length_m(tgt) -> float:
+    """Catalogued hull length of an echo target (bounded fallbacks)."""
+    catalog = getattr(tgt, "runtime_catalog", None)
+    key = getattr(getattr(tgt, "stype", None), "key", None) or getattr(
+        tgt, "signature_key", None)
+    if catalog is not None and key is not None:
+        systems = catalog.profile_systems.get(key)
+        reference = (catalog.references.get(systems.reference_key)
+                     if systems is not None and systems.reference_key else None)
+        if reference is not None and reference.length_m:
+            return float(reference.length_m)
+    if hasattr(tgt, "length_m"):
+        return float(tgt.length_m)
+    if hasattr(tgt, "signature_key"):
+        return 120.0
+    for attribute, length in _HULL_LENGTH_FALLBACK_M:
+        if hasattr(tgt, attribute):
+            return length
+    return equation.REFERENCE_TARGET_LENGTH_M
+
+
+class _WreckEcho:
+    """Stationary echo source for a charted wreck (hard, flat-lying hull)."""
+
+    speed = 0.0
+    extra_ts_db = 3.0
+
+    def __init__(self, index: int, hazard, seed: int):
+        from src.core import detrand
+
+        self.id = 0
+        self.x, self.y = hazard.x_nm, hazard.y_nm
+        self.depth = hazard.top_depth_m + 6.0
+        self.length_m = hazard.length_m
+        self.course = detrand.uniform(0.0, 360.0, seed, "wreck-heading", index)
+        self.sensor_seed = int(detrand.bits(seed, "wreck-echo", index) & 0x7FFFFFFF)
+
+    def bearing_from_frigate(self, frigate) -> float:
+        return math.degrees(math.atan2(self.x - frigate.x,
+                                       -(self.y - frigate.y))) % 360.0
+
+
+def _lambert_mu_db(world, x_nm: float, y_nm: float) -> float:
+    from src.world.ocean import SEDIMENTS
+
+    seabed = getattr(world, "seabed_at", None)
+    if seabed is None:
+        return SEDIMENTS["sand"][3]
+    return SEDIMENTS[seabed(x_nm, y_nm)][3]
+
+
+SOUND_SPEED_KN = config.SOUND_SPEED_M_S * 3600.0 / 1852.0
+DOPPLER_SIGMA_HZ = 0.02
+DOPPLER_MIN_QUALITY = 0.3
+
+
+def source_level_factor(tgt) -> float:
+    """Amplitude factor of a target's speed/cavitation/transient source level."""
+    offset = getattr(tgt, "source_level_offset_db", None)
+    return 10.0 ** (offset() / 20.0) if offset is not None else 1.0
+
+
+def doppler_factor(tgt, observer) -> float:
+    """Received/emitted frequency ratio from the closing speed (knots)."""
+    dx, dy = observer.x - tgt.x, observer.y - tgt.y
+    distance = math.hypot(dx, dy)
+    if distance < 1e-6:
+        return 1.0
+    ux, uy = dx / distance, dy / distance
+    speed_t = getattr(tgt, "speed", None)
+    if speed_t is None:
+        speed_t = getattr(tgt, "speed_kn", 0.0)
+    course_t = math.radians(getattr(tgt, "course", 0.0))
+    course_o = math.radians(getattr(observer, "course", 0.0))
+    speed_o = getattr(observer, "speed", 0.0) or 0.0
+    vx = speed_t * math.sin(course_t) - speed_o * math.sin(course_o)
+    vy = -speed_t * math.cos(course_t) + speed_o * math.cos(course_o)
+    closing = vx * ux + vy * uy
+    return 1.0 + closing / SOUND_SPEED_KN
+
+
+def _surface_temperature(world) -> float:
+    ocean = getattr(world, "ocean", None)
+    if ocean is None:
+        return 10.0
+    return ocean.sea_surface_temperature_c(getattr(world, "hour", 12.0))
+
+
+def _echo_delay(world, distance_nm: float, frigate, target) -> float:
+    """Two-way echo latency with the modelled sound speed on the path."""
+    if hasattr(world, "mean_sound_speed_m_s"):
+        return world.echo_delay_s(distance_nm, (frigate.x + target.x) * .5,
+                                  (frigate.y + target.y) * .5)
+    return world.echo_delay_s(distance_nm)
 
 
 def _target_acoustic_signature(tgt):
@@ -112,6 +219,9 @@ class Contact:
         self.depth_est = None
         self.depth_sigma_m = None  # 1-sigma Unsicherheit der Tiefe
         self.player_class = None  # None|U_BOOT|KAMPFSCHIFF|BIOLOGISCH|FAHRZEUG|FLUGZEUG
+        # Operator's catalog assignment (profile key from the contact
+        # analyser); an annotation like player_class, never inferred.
+        self.player_profile = None
         self.released_to_opz = False
         self.passive_source = "SONAR-BRG"
         self.observer_x = 0.0
@@ -123,6 +233,17 @@ class Contact:
         self.tma_course = None
         self.tma_speed = None
         self.tma_quality = 0.0
+        self.tma_ellipse = None   # (major NM, minor NM, orientation deg)
+        # Towed-array left/right ambiguity: the line array cannot tell a
+        # bearing from its mirror about the array axis until resolved.
+        self.towed_ambiguous = False
+        self.ambiguity_axis = None     # tow heading when the ambiguity began
+        self.mirror_bearing = None
+        self.tonal_hz = None           # measured (Doppler-shifted) tonal
+        self.towed_resolved = False
+        # Operator's choice of array side for a towed-only contact
+        # ("STBD" or "PORT"); the display follows it until resolved.
+        self.towed_side = "STBD"
         self.tma_seen = None
         self.buoy_fixes = []  # raw (t, x, y, quality), not ownship passive bearings
         self.buoy_reports = {}  # buoy sequence -> detached measured report
@@ -218,7 +339,7 @@ class Contact:
         if self.range_source == "ping" and self.ping_pos is not None:
             self.observed_x, self.observed_y = self.ping_pos
         elif self.range_source == "tma" and self.tma_pos is not None:
-            self.observed_x, self.observed_y = self.tma_pos
+            self.observed_x, self.observed_y = self.tma_position_at(t)
         if self.observed_x is not None and self.observed_y is not None:
             self.bearing = math.degrees(math.atan2(
                 self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
@@ -325,6 +446,7 @@ class Contact:
                 or self.tma_speed is not None) and (tma_seen is None or
                 t - tma_seen > config.SONAR_CONTACT_LOST_S):
             self.tma_pos = self.tma_course = self.tma_speed = None
+            self.tma_ellipse = None
             self.tma_quality = 0.0
             self.tma_seen = None
         max_age = (config.SONAR_PING_FIX_MAX_AGE_S
@@ -346,7 +468,11 @@ class Contact:
             key: value for key, value in self.array_observations.items()
             if t - value["last_seen"] <= 4.0}
         if len(self.array_observations) < 2:
-            self.fusion_status = ("NUR " + next(iter(self.array_observations))
+            ambiguous_status = (self.fusion_status if str(self.fusion_status)
+                                .startswith("TAS L/R?") else "TAS L/R?")
+            self.fusion_status = (ambiguous_status if self.towed_ambiguous
+                                  and set(self.array_observations) == {"TOWED"}
+                                  else "NUR " + next(iter(self.array_observations))
                                   if self.array_observations else "KEINE DATEN")
             self.fusion_delta_deg = None
             self.fused_quality = max((report["quality"] for report in
@@ -382,6 +508,55 @@ class Contact:
         self.range_seen = t
         self.origin = "bojenkreuzpeilung"
 
+    def tma_range_sigma_nm(self, quality: float) -> float:
+        """1-sigma position uncertainty: the covariance semi-major axis, never
+        more optimistic than the observability-based quality heuristic (the
+        linearized covariance is overconfident in poor geometry)."""
+        heuristic = max(0.1, (1.0 - quality) * 12.0)
+        if self.tma_ellipse is not None:
+            return config.clamp(max(self.tma_ellipse[0], heuristic), 0.1, 12.0)
+        return heuristic
+
+    def accept_operator_tma(self, pos, course: float, speed: float,
+                            quality: float, t: float) -> None:
+        """Take the operator's accepted solution as the contact's TMA fix.
+
+        The position is dead-reckoned along course/speed until the fix ages
+        out; the operator refines and re-accepts as bearings accumulate.
+        """
+        self.expire_ping_fix(t)
+        self.tma_pos = (float(pos[0]), float(pos[1]))
+        self.tma_course = float(course) % 360.0
+        self.tma_speed = float(speed)
+        self.tma_quality = float(quality)
+        self.tma_seen = t
+        self.tma_ellipse = None
+        sigma = self.tma_range_sigma_nm(quality)
+        self._publish_fix("TMA", t, t, self.tma_pos[0], self.tma_pos[1], sigma,
+                          self.tma_quality)
+        if self.range_source not in ("ping", "buoy"):
+            self.observed_x, self.observed_y = self.tma_pos
+            self.bearing = math.degrees(math.atan2(
+                self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
+            self.range_est = math.hypot(self.observed_x - self._fx,
+                                        self.observed_y - self._fy)
+            self.range_sigma_nm = sigma
+            self.range_source = "tma"
+            self.range_seen = t
+            self.bearing_uncertainty_deg = None
+            self.depth_est = self.depth_sigma_m = None
+
+    def tma_position_at(self, t: float):
+        """The accepted TMA position dead-reckoned to time ``t``."""
+        if self.tma_pos is None:
+            return None
+        if self.tma_seen is None or self.tma_course is None or self.tma_speed is None:
+            return self.tma_pos
+        step = config.kn_to_nm_per_s(self.tma_speed) * max(0.0, t - self.tma_seen)
+        course = math.radians(self.tma_course)
+        return (self.tma_pos[0] + step * math.sin(course),
+                self.tma_pos[1] - step * math.cos(course))
+
     def update_tma(self, sol, t: float, fixed_at: float = None):
         """TMA-Estimate übernehmen (nur, solange kein frischerer Ping)."""
         self.expire_ping_fix(t)
@@ -409,10 +584,12 @@ class Contact:
                 self.tma_speed += (sol.speed - self.tma_speed) * alpha
             self.tma_quality += (sol.quality - self.tma_quality) * alpha
         self.tma_seen = t
+        self.tma_ellipse = (tuple(float(v) for v in sol.ellipse)
+                            if getattr(sol, "ellipse", None) is not None else None)
+        sigma = self.tma_range_sigma_nm(sol.quality)
         if sol.quality >= config.TMA_RANGE_MIN_QUALITY:
             self._publish_fix("TMA", t, t if fixed_at is None else fixed_at,
-                              self.tma_pos[0], self.tma_pos[1],
-                              max(0.1, (1.0 - sol.quality) * 12.0),
+                              self.tma_pos[0], self.tma_pos[1], sigma,
                               self.tma_quality)
         if self.range_source not in ("ping", "buoy") and \
                 sol.quality >= config.TMA_RANGE_MIN_QUALITY:
@@ -421,7 +598,7 @@ class Contact:
                 self.observed_x - self._fx, -(self.observed_y - self._fy))) % 360.0
             self.range_est = math.hypot(self.observed_x - self._fx,
                                         self.observed_y - self._fy)
-            self.range_sigma_nm = max(0.1, (1.0 - sol.quality) * 12.0)
+            self.range_sigma_nm = sigma
             self.range_source = "tma"
             self.range_seen = t
             self.bearing_uncertainty_deg = None
@@ -448,6 +625,8 @@ class Contact:
 
 
 class SonarSystem:
+    MAX_PENDING_CLUTTER = 8
+    CLUTTER_SEARCH_NM = 30.0
     MAX_PENDING_PINGS = 10000
     STOWED = TowState.STOWED
     DEPLOYING = TowState.DEPLOYING
@@ -477,6 +656,12 @@ class SonarSystem:
         self.band_low_hz = 0.0
         self.band_high_hz = config.LOFAR_FMAX_HZ
         self.notch_enabled = False
+        # Operator notch at a chosen frequency (display and audio, transient).
+        self.operator_notch_hz = None
+        # Heterodyne shift for audition (operator choice, transient).
+        self.heterodyne_hz = 700.0
+        # Automatic TMA proposals per target (transient training aid).
+        self.tma_proposals = {}
         self.peak_hold = False
         self.focus_locked = False
         self.tma_enabled = True
@@ -490,6 +675,9 @@ class SonarSystem:
         self._audition_ola_out = None
         self._audition_previous_source = None
         self.receiver = AcousticReceiver(seed)
+        # Operator integration buffer (display only, transient like the
+        # receiver): (LOFAR bins, native 0.5 Hz spectrum, DEMON spectrum).
+        self.integration_columns = deque(maxlen=256)
         self.broadband_history = []
         self.history_times = []
         self.broadband_long_history = []
@@ -503,6 +691,13 @@ class SonarSystem:
         self._own_line_hz = 10.0
         self.towed_depth_m = config.SONAR_TOWED_DEPTH_M
         self.towed_depth_target_m = config.SONAR_TOWED_DEPTH_M
+        # Distant-shipping noise input (civilian contacts nearby, set by the
+        # game each tick) and the selected active pulse.
+        self.shipping_contacts = equation.REFERENCE_SHIPPING_CONTACTS
+        self.ping_pulse = equation.DEFAULT_PULSE
+        self.last_passive_terms = None
+        # Frozen false echoes from charted wrecks awaiting their return time.
+        self._pending_clutter: list[dict] = []
         self.tow_state = TowState.STOWED
         self.tow_payout = 0.0
         self.tow_heading_deg = 0.0
@@ -577,11 +772,16 @@ class SonarSystem:
         true_thermo = world.thermocline_depth_m(frigate.x, frigate.y)
         measured_thermo = config.clamp(true_thermo + self.rng.uniform(-3.0, 3.0),
                                        20.0, water_depth)
-        max_depth = min(water_depth, 400.0)
+        max_depth = min(water_depth, config.SONAR_BT_MAX_DEPTH_M)
         depths = np.linspace(0.0, max_depth, 21)
         speeds = []
+        true_speed = getattr(world, "sound_speed_m_s", None)
         for depth in depths:
-            speed = propagation.synthetic_sound_speed_m_s(depth, measured_thermo)
+            # The probe measures the real modelled temperature profile
+            # (Mackenzie sound speed) with a small sensor noise.
+            speed = (true_speed(float(depth), frigate.x, frigate.y)
+                     if true_speed is not None else
+                     propagation.synthetic_sound_speed_m_s(depth, measured_thermo))
             speeds.append(speed + self.rng.uniform(-.15, .15))
         self.bt_profile = dict(t=t, x=frigate.x, y=frigate.y,
                                thermocline_m=measured_thermo,
@@ -605,6 +805,7 @@ class SonarSystem:
         self.lofar_history.clear()
         self.lofar_times.clear()
         self.lofar_bearings.clear()
+        self.integration_columns.clear()
         self.peak_spectrum = []
         self.demon_analysis = None
         self.demon_history.clear()
@@ -637,7 +838,9 @@ class SonarSystem:
         return True
 
     def _audition_process(self, samples, controls):
-        mode, low_hz, high_hz, notch, own_line_hz, gain_db = controls
+        mode, low_hz, high_hz, notch, own_line_hz, gain_db = controls[:6]
+        operator_notch = controls[6] if len(controls) > 6 else None
+        heterodyne_hz = controls[7] if len(controls) > 7 else 700.0
         out = np.array(samples, copy=True)
         if mode != "BROADBAND":
             n = out.size
@@ -645,6 +848,8 @@ class SonarSystem:
             mask = ((frequencies >= low_hz) & (frequencies <= high_hz)).astype(float)
             if notch:
                 mask[abs(frequencies - own_line_hz) < 5] *= .15
+            if operator_notch is not None:
+                mask[abs(frequencies - operator_notch) < 2.5] *= .15
             if n >= 2 and n % 2 == 0:
                 half = n // 2
                 previous, overlap = self._audition_states.get(
@@ -664,8 +869,9 @@ class SonarSystem:
                 out = np.fft.irfft(np.fft.rfft(out) * mask, n=n)
                 self._audition_ola_state = None
             if mode == "HETERODYNE":
-                # Translate the selected low-frequency beam band around 700 Hz.
-                phase = np.arange(out.size) * (2.0 * np.pi * 700.0
+                # Translate the selected low-frequency beam band up by the
+                # operator's heterodyne shift (default 700 Hz).
+                phase = np.arange(out.size) * (2.0 * np.pi * heterodyne_hz
                                                 / self.receiver.sample_rate)
                 out = 2.0 * out * np.cos(phase)
         return out * (10 ** (gain_db / 20))
@@ -691,7 +897,9 @@ class SonarSystem:
                 or not np.all(np.isfinite(source))):
             raise ValueError("audition requires one complete mixed receiver block")
         controls = (self.audition_mode, self.band_low_hz, self.band_high_hz,
-                     self.notch_enabled, self._own_line_hz, self.gain_db)
+                     self.notch_enabled, self._own_line_hz, self.gain_db,
+                     getattr(self, "operator_notch_hz", None),
+                     getattr(self, "heterodyne_hz", 700.0))
         # A rejected playback block must retry byte-for-byte even if ship speed
         # changes the own-line notch before the next frame. New controls take
         # effect on the next receiver sequence.
@@ -752,20 +960,23 @@ class SonarSystem:
                 continue
             distance = target.distance_nm(frigate)
             active_range = self._active_range_nm(
-                target, world, range_factor, mode)
+                target, world, range_factor, mode, frigate)
             if (distance >= active_range
                     and distance > config.SONAR_PING_HEAR_RANGE_NM):
                 continue
             source_depth = (self.towed_depth_m if mode == "TOWED" else
                             getattr(frigate, "dip_depth_m", 5.0)
-                            if mode == "DIPPING" else 5.0)
+                            if mode == "DIPPING" else hull_array_depth_m(frigate))
             if (hasattr(world, "sonar_path_blocked")
                     and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
                                                  target.x, target.y,
                                                  getattr(target, "depth", 0.0))):
                 continue
-            snapshot = (self._measure_ping(frigate, target, t_real, distance, active_range)
-                        if distance < active_range else None)
+            snapshot = (self._measure_ping(
+                frigate, target, t_real, distance,
+                self.active_terms(target, frigate, world, range_factor,
+                                  mode).signal_excess_db, self.ping_pulse)
+                if distance < active_range else None)
             if distance <= config.SONAR_PING_HEAR_RANGE_NM \
                     and hasattr(target, "hear_ping"):
                 target.hear_ping()
@@ -776,11 +987,13 @@ class SonarSystem:
                 "frigate": frigate,
                 "world": world,
                 "sent_at": t_real,
-                "ready_at": t_real + world.echo_delay_s(distance),
+                "ready_at": t_real + _echo_delay(world, distance,
+                                                 frigate, target),
                 "range_factor": range_factor,
                 "mode": mode,
                 "snapshot": snapshot,
             })
+        self._queue_clutter(frigate, world, t_real, range_factor, mode)
 
     def passive_range_nm(self, tgt, dist_nm: float, frigate, world,
                           range_factor: float, mode: str) -> float:
@@ -796,22 +1009,43 @@ class SonarSystem:
                            tow_available: bool,
                            apply_propagation: bool = True,
                            spectral_out: list | None = None) -> float:
-        passive_range = frigate.passive_sonar_range_nm(
-            tgt.quiet_factor(), getattr(world, "effective_sea_state",
-                                        world.sea_state))
+        """Equivalent detection range from the passive sonar equation.
+
+        Returns ``R`` with ``snr_db(R, d) == SE`` so existing consumers keep
+        their range-based interface; SE itself is SL - TL - NL + DI - DT per
+        ``src/sonar/equation.py``.
+        """
+        terms = self.passive_terms(tgt, dist_nm, frigate, world, range_factor,
+                                   mode, true_bearing, tow_available,
+                                   apply_propagation, spectral_out)
+        if terms is None:
+            return 0.0
+        self.last_passive_terms = terms
+        return equation.equivalent_range_nm(dist_nm, terms.signal_excess_db)
+
+    def passive_terms(self, tgt, dist_nm: float, frigate, world,
+                      range_factor: float, mode: str, true_bearing: float,
+                      tow_available: bool, apply_propagation: bool = True,
+                      spectral_out: list | None = None):
+        # Own-ship self noise: the calibrated own-noise/cavitation penalty
+        # (target bonus 1, reference sea state) becomes a self-noise level.
+        own_factor = frigate.passive_sonar_range_nm(
+            1.0, int(equation.REFERENCE_SEA_STATE)) / config.SONAR_PASSIVE_BASE_NM
+        target_bonus = (1.0 + 0.8 * (1.0 - tgt.quiet_factor())) * source_level_factor(tgt)
         thermo = world.thermocline_depth_m(tgt.x, tgt.y)
-        sensor_depth = self.towed_depth_m if mode == "TOWED" else 5.0
+        sensor_depth = (self.towed_depth_m if mode == "TOWED"
+                        else hull_array_depth_m(frigate))
         same_layer = (sensor_depth < thermo) == (tgt.depth < thermo)
+        array_factor = 1.0
         if mode == "TOWED":
             if not tow_available:
-                return 0.0
+                return None
             full_arr = max(0.5, config.SONAR_ARRAY_TOWED_PASSIVE
                            - config.SONAR_TOWED_SPEED_PENALTY * frigate.speed)
-            arr = 1.0 + (full_arr - 1.0) * self.tow_performance
-            passive_range *= arr
+            array_factor = 1.0 + (full_arr - 1.0) * self.tow_performance
             # A deep array gains most when it occupies the target's layer.
             if same_layer and self.towed_depth_m >= 30.0:
-                passive_range *= 1.0 + (config.SONAR_TOWED_DEEP_BONUS - 1.0) \
+                array_factor *= 1.0 + (config.SONAR_TOWED_DEEP_BONUS - 1.0) \
                     * self.tow_performance
         own_noise = frigate.noise_level()
         isotropic_penalty = max(0.2, 1.0 - 0.8 * own_noise)
@@ -819,8 +1053,20 @@ class SonarSystem:
             * self._receiver_noise_factor(mode) \
             * directional_gain(true_bearing,
                                self._own_noise_bearing(mode, frigate.course))
-        passive_range *= directional_penalty / isotropic_penalty
-        passive_range *= range_factor
+        own_factor *= directional_penalty / isotropic_penalty
+        # The own wake astern adds bubble noise to the hull array.
+        wake = getattr(frigate, "wake_strength_at", None)
+        if mode == "BOW" and wake is not None and frigate.speed > 0.0:
+            astern = (frigate.course + 180.0) % 360.0
+            if abs(config.angle_diff_deg(true_bearing, astern)) < 30.0:
+                own_factor *= 1.0 - 0.3 * wake(
+                    frigate.x - 0.2 * math.sin(math.radians(frigate.course)),
+                    frigate.y + 0.2 * math.cos(math.radians(frigate.course)))
+        array_factor *= range_factor
+        frequency = representative_frequency_hz(tgt)
+        excess = legacy_absorption = 0.0
+        absorption = 0.0
+        sea_state = float(getattr(world, "effective_sea_state", world.sea_state))
         if apply_propagation:
             midpoint_x = (frigate.x + tgt.x) * .5
             midpoint_y = (frigate.y + tgt.y) * .5
@@ -832,15 +1078,33 @@ class SonarSystem:
                               float(getattr(tgt, "depth", 0.0)), midpoint_thermo)
             result = propagation.propagate(
                 frigate.x, frigate.y, sensor_depth, tgt.x, tgt.y,
-                getattr(tgt, "depth", 0.0),
-                representative_frequency_hz(tgt),
-                 midpoint_thermo, water_depth, sea_state=getattr(
-                     world, "effective_sea_state", world.sea_state),
+                getattr(tgt, "depth", 0.0), frequency,
+                midpoint_thermo, water_depth, sea_state=sea_state,
                 terrain_blocked=getattr(world, "sonar_path_blocked", None))
-            passive_range *= propagation.passive_range_factor(result, dist_nm)
+            if result.best_path is None:
+                return None
+            excess = result.best_path.loss_db - 20.0 * math.log10(1.0 + dist_nm)
+            legacy_absorption = result.best_path.distance_nm \
+                * propagation.ABSORPTION_DB_PER_NM[frequency]
+            ray = propagation.ray_excess_db(
+                world, frigate.x, frigate.y, sensor_depth, tgt.x, tgt.y,
+                float(getattr(tgt, "depth", 0.0)), frequency)
+            if ray is not None:
+                excess, legacy_absorption = ray, 0.0
+            absorption = equation.francois_garrison_db_per_km(
+                frequency, _surface_temperature(world),
+                min(water_depth, 200.0))
             if spectral_out is not None:
                 spectral_out.append(result.spectral_gains)
-        return passive_range
+        return equation.passive_terms(
+            frequency_hz=frequency, distance_nm=dist_nm,
+            target_bonus=target_bonus, excess_path_loss_db=excess,
+            absorption_db_per_km=absorption,
+            legacy_absorption_db=legacy_absorption,
+            own_range_factor=own_factor, array_range_factor=array_factor,
+            sea_state=sea_state,
+            rain=float(getattr(world, "rain_intensity", 0.0)),
+            shipping_contacts=self.shipping_contacts)
 
     def update_dipping_passive(self, dt: float, t: float, helicopter,
                                targets, world, range_factor: float = 1.0) -> None:
@@ -853,25 +1117,47 @@ class SonarSystem:
                 continue
             dx, dy = tgt.x - helicopter.x, tgt.y - helicopter.y
             distance = math.hypot(dx, dy)
-            target_bonus = 1.0 + 0.8 * (1.0 - tgt.quiet_factor())
-            sea_state = getattr(world, "effective_sea_state", world.sea_state)
-            sea = 1.0 - config.SEA_STATE_SONAR_FACTOR * max(0, sea_state - 1)
-            effective_range = (config.HELO_DIP_PASSIVE_RANGE_NM * target_bonus
-                               * sea * range_factor)
+            target_bonus = ((1.0 + 0.8 * (1.0 - tgt.quiet_factor()))
+                            * source_level_factor(tgt))
+            sea_state = float(getattr(world, "effective_sea_state", world.sea_state))
             midpoint_x = (helicopter.x + tgt.x) * .5
             midpoint_y = (helicopter.y + tgt.y) * .5
             thermocline = world.thermocline_depth_m(midpoint_x, midpoint_y)
             water_depth = max(float(world.depth_m(midpoint_x, midpoint_y)),
                               sensor_depth, float(getattr(tgt, "depth", 0.0)),
                               thermocline)
+            frequency = representative_frequency_hz(tgt)
             result = propagation.propagate(
                 helicopter.x, helicopter.y, sensor_depth, tgt.x, tgt.y,
-                getattr(tgt, "depth", 0.0),
-                representative_frequency_hz(tgt),
-                 thermocline, water_depth, sea_state=getattr(
-                     world, "effective_sea_state", world.sea_state),
+                getattr(tgt, "depth", 0.0), frequency,
+                thermocline, water_depth, sea_state=sea_state,
                 terrain_blocked=getattr(world, "sonar_path_blocked", None))
-            effective_range *= propagation.passive_range_factor(result, distance)
+            if result.best_path is None:
+                continue
+            ray = propagation.ray_excess_db(
+                world, helicopter.x, helicopter.y, sensor_depth, tgt.x, tgt.y,
+                float(getattr(tgt, "depth", 0.0)), frequency)
+            terms = equation.passive_terms(
+                frequency_hz=frequency, distance_nm=distance,
+                target_bonus=target_bonus,
+                excess_path_loss_db=(ray if ray is not None else
+                                     result.best_path.loss_db
+                                     - 20.0 * math.log10(1.0 + distance)),
+                absorption_db_per_km=equation.francois_garrison_db_per_km(
+                    frequency, _surface_temperature(world),
+                    min(water_depth, 200.0)),
+                legacy_absorption_db=(0.0 if ray is not None else
+                                      result.best_path.distance_nm
+                                      * propagation.ABSORPTION_DB_PER_NM[frequency]),
+                own_range_factor=1.0,
+                array_range_factor=(config.HELO_DIP_PASSIVE_RANGE_NM
+                                    / config.SONAR_PASSIVE_BASE_NM) * range_factor,
+                sea_state=sea_state,
+                rain=float(getattr(world, "rain_intensity", 0.0)),
+                shipping_contacts=self.shipping_contacts,
+                hull_self_noise=False)
+            effective_range = equation.equivalent_range_nm(
+                distance, terms.signal_excess_db)
             if distance >= effective_range:
                 continue
             signal = snr_db(effective_range, distance)
@@ -979,6 +1265,8 @@ class SonarSystem:
                     tgt, true_bearing, frigate, quality, array_mode, t)
                 uncertainty = bearing_error_deg(
                     array_mode, frigate.speed, quality) / math.sqrt(3.0)
+                if array_mode == "TOWED":
+                    uncertainty *= self._endfire_factor(true_bearing)
                 observations[array_mode] = dict(
                     bearing=bearing, quality=quality, snr=s_db, last_seen=t,
                     uncertainty_deg=uncertainty)
@@ -1031,6 +1319,39 @@ class SonarSystem:
                 c.fusion_status = "NUR " + next(iter(observations))
                 c.fusion_delta_deg = None
                 c.fused_quality = quality
+            ambiguous = False
+            if bow is not None and "BOW" in observations:
+                # The hull array is unambiguous: it resolves the towed side.
+                if c.towed_ambiguous or c.towed_resolved:
+                    c.towed_side = ("STBD" if config.angle_diff_deg(
+                        bearing, self.tow_heading_deg) >= 0.0 else "PORT")
+                if c.towed_ambiguous:
+                    c.towed_ambiguous, c.towed_resolved = False, True
+                    c.mirror_bearing = c.ambiguity_axis = None
+            elif set(observations) == {"TOWED"}:
+                axis = self.tow_heading_deg
+                if not c.towed_ambiguous and not c.towed_resolved:
+                    c.towed_ambiguous, c.ambiguity_axis = True, axis
+                mirror = (2.0 * axis - bearing) % 360.0
+                true_side = ("STBD" if config.angle_diff_deg(bearing, axis) >= 0.0
+                             else "PORT")
+                if c.towed_ambiguous:
+                    # The line array cannot tell the sides apart: the display
+                    # shows the operator's chosen side (starboard by default).
+                    # After an own turn the ghost bearing jumps; the operator
+                    # compares the traces and confirms a side - no automatic
+                    # resolution.
+                    if c.towed_side != true_side:
+                        bearing, mirror = mirror, bearing
+                    c.mirror_bearing = mirror
+                    turned = abs(config.angle_diff_deg(
+                        axis, c.ambiguity_axis)) >= config.TAS_AMBIGUITY_RESOLVE_DEG
+                    c.fusion_status = "TAS L/R? WENDE" if turned else "TAS L/R?"
+                    ambiguous = True
+                elif c.towed_resolved and c.towed_side != true_side:
+                    # The operator confirmed the ghost side: the published
+                    # bearing stays mirrored (TMA residuals will show it).
+                    bearing = mirror
             sig = ""
             if c.confidence + config.SONAR_CONF_PASSIVE_PER_S * dt \
                     >= config.CONTACT_SIG_CONF:
@@ -1043,17 +1364,23 @@ class SonarSystem:
                 t=t,
                 snr=s_db,
                 bearing_uncertainty_deg=uncertainty)
-            # W1: Peilungs-Track (TMA-Datenbasis)
+            # W1: Peilungs-Track (TMA-Datenbasis). Side-ambiguous towed
+            # bearings stay out of TMA until the ambiguity is resolved.
             tr = self._tracks.setdefault(tgt.id, BearingTrack())
-            tr.add(t, bearing, frigate.x, frigate.y, frigate.course,
-                   uncertainty)
+            if not ambiguous and (not tr.pts or t - tr.pts[-1].t
+                                  >= config.BEARING_TRACK_MIN_INTERVAL_S):
+                c.tonal_hz = self._measure_tonal(tgt, frigate, quality, t)
+                tr.add(t, bearing, frigate.x, frigate.y, frigate.course,
+                       uncertainty, c.tonal_hz, frigate.speed)
             detected_ids.add(tgt.id)
             listen_observation = observations.get(mode)
             if sample_due and listen_observation is not None:
                 broadband = getattr(tgt, "broadband", lambda: {})()
                 source = {"bearing": listen_observation["bearing"],
                           "level": listen_observation["quality"],
-                          "lines": tgt.lofar_lines(t),
+                          "lines": [(line[0] * doppler_factor(tgt, frigate),)
+                                    + tuple(line[1:])
+                                    for line in tgt.lofar_lines(t)],
                           "seed": getattr(tgt, "sensor_seed", tgt.id),
                           "spectral_gains": spectral_by_mode.get(
                               mode, ((100.0, 1.0),))}
@@ -1081,17 +1408,44 @@ class SonarSystem:
                 if getattr(b, "mode", "PASSIVE") == "ACTIVE" and b.seq not in ping_buoys:
                     continue
                 dist = math.hypot(tgt.x - b.x, tgt.y - b.y)
-                if dist >= config.BUOY_RANGE_NM:
+                if dist >= config.BUOY_RANGE_NM * 1.8:
                     continue
                 if (hasattr(world, "sonar_path_blocked")
                         and world.sonar_path_blocked(
                             b.x, b.y, 5.0, tgt.x, tgt.y,
                             getattr(tgt, "depth", 0.0))):
                     continue
-                quality = config.clamp(1.0 - dist / config.BUOY_RANGE_NM,
+                # Passive sonar equation for the buoy hydrophone: ambient
+                # limited, small aperture, ray-traced path from its depth.
+                buoy_depth = float(getattr(b, "hydrophone_depth_m", 30.0))
+                frequency = representative_frequency_hz(tgt)
+                ray = propagation.ray_excess_db(
+                    world, b.x, b.y, buoy_depth, tgt.x, tgt.y,
+                    float(getattr(tgt, "depth", 0.0)), frequency)
+                if ray is None:
+                    ray = (6.5 if (tgt.depth > world.thermocline_depth_m(b.x, b.y))
+                           != (buoy_depth > world.thermocline_depth_m(b.x, b.y))
+                           else 0.0)
+                terms = equation.passive_terms(
+                    frequency_hz=frequency, distance_nm=dist,
+                    target_bonus=(1.0 + 0.8 * (1.0 - tgt.quiet_factor()))
+                    * source_level_factor(tgt),
+                    excess_path_loss_db=ray,
+                    absorption_db_per_km=equation.francois_garrison_db_per_km(
+                        frequency, _surface_temperature(world)),
+                    legacy_absorption_db=0.0, own_range_factor=1.0,
+                    array_range_factor=config.BUOY_RANGE_NM
+                    / config.SONAR_PASSIVE_BASE_NM,
+                    sea_state=float(getattr(world, "effective_sea_state",
+                                            world.sea_state)),
+                    rain=float(getattr(world, "rain_intensity", 0.0)),
+                    shipping_contacts=self.shipping_contacts,
+                    hull_self_noise=False)
+                excess = terms.signal_excess_db
+                if excess <= 0.0:
+                    continue
+                quality = config.clamp(excess / config.SONAR_SNR_QUALITY_SPAN_DB,
                                        .2, .9)
-                if tgt.depth > world.thermocline_depth_m(b.x, b.y):
-                    quality *= .55
                 true_bearing = math.degrees(
                     math.atan2(tgt.x - b.x, -(tgt.y - b.y))) % 360.0
                 rng = random.Random(getattr(tgt, "sensor_seed", tgt.id) * 1543
@@ -1110,6 +1464,10 @@ class SonarSystem:
                     contact.update_buoy(observed_x, observed_y, quality, t)
                 else:
                     reports.append((b, bearing, quality))
+                    # Multi-static TMA: the buoy bearing joins the contact's
+                    # bearing track with the buoy as the observer.
+                    track = self._tracks.setdefault(tgt.id, BearingTrack())
+                    track.add(t, bearing, b.x, b.y, 0.0, error / math.sqrt(3))
                 contact.buoy_reports[b.seq] = dict(
                     mode=getattr(b, "mode", "PASSIVE"), bearing=bearing,
                     bearing_uncertainty_deg=error / math.sqrt(3),
@@ -1185,6 +1543,10 @@ class SonarSystem:
             self.broadband_history.append(list(self.receiver.broadband))
             self.history_times.append(stamp)
             self.lofar_history.append(list(self.receiver.spectrum))
+            self.integration_columns.append((
+                tuple(self.receiver.spectrum),
+                np.array(getattr(self.receiver, "native_spectrum", ()), dtype=float),
+                tuple(self.receiver.demon_spectrum)))
             self.lofar_times.append(stamp)
             self.lofar_bearings.append(self.listen_bearing)
             for history in (self.broadband_history, self.history_times, self.lofar_history,
@@ -1275,16 +1637,107 @@ class SonarSystem:
             data["blade_rate_hz"], None, data["tonal_hz"], data["cavitation"],
             self.acoustic_profiles)
 
-    @staticmethod
-    def _active_range_nm(tgt, world, range_factor: float, mode: str) -> float:
+    def cycle_pulse(self) -> str:
+        order = tuple(equation.PULSES)
+        self.ping_pulse = order[(order.index(self.ping_pulse) + 1) % len(order)]
+        return self.ping_pulse
+
+    def _masked_by_wreck(self, tgt, frigate, world, mode: str) -> bool:
+        """Target echo hidden in a wreck echo (same range cell and beam, no
+        Doppler).  The finer LFM range resolution can separate them."""
+        ocean = getattr(world, "ocean", None)
+        if ocean is None or not hasattr(tgt, "stype"):
+            return False
+        bearing = math.degrees(math.atan2(tgt.x - frigate.x, -(tgt.y - frigate.y))) % 360.0
+        radial = getattr(tgt, "speed", 0.0) * math.cos(math.radians(
+            config.angle_diff_deg((bearing + 180.0) % 360.0, getattr(tgt, "course", 0.0))))
+        target_range = math.hypot(tgt.x - frigate.x, tgt.y - frigate.y) * 1852.0
+        beam = 6.0 if mode == "TOWED" else equation.ACTIVE_BEAMWIDTH_DEG
+        for hazard in ocean.hazards:
+            if hazard.kind != "wreck":
+                continue
+            if math.hypot(hazard.x_nm - tgt.x, hazard.y_nm - tgt.y) > 0.5:
+                continue
+            if equation.echo_merges_with_clutter(
+                    target_range, bearing, radial,
+                    math.hypot(hazard.x_nm - frigate.x, hazard.y_nm - frigate.y) * 1852.0,
+                    math.degrees(math.atan2(hazard.x_nm - frigate.x,
+                                            -(hazard.y_nm - frigate.y))) % 360.0,
+                    self.ping_pulse, beam):
+                return True
+        return False
+
+    def _queue_clutter(self, frigate, world, t_real: float,
+                       range_factor: float, mode: str) -> None:
+        """Wrecks on the seabed return real echoes that no contact owns."""
+        ocean = getattr(world, "ocean", None)
+        if ocean is None:
+            return
+        source_depth = (self.towed_depth_m if mode == "TOWED"
+                        else hull_array_depth_m(frigate))
+        for index, hazard in enumerate(ocean.hazards):
+            if (hazard.kind != "wreck"
+                    or len(self._pending_clutter) >= self.MAX_PENDING_CLUTTER):
+                continue
+            distance = math.hypot(hazard.x_nm - frigate.x, hazard.y_nm - frigate.y)
+            if distance > self.CLUTTER_SEARCH_NM or distance < 0.05:
+                continue
+            echo = _WreckEcho(index, hazard, ocean.seed)
+            terms = self.active_terms(echo, frigate, world, range_factor, mode)
+            if terms.signal_excess_db <= 0.0:
+                continue
+            if (hasattr(world, "sonar_path_blocked")
+                    and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
+                                                 echo.x, echo.y, echo.depth)):
+                continue
+            snapshot = self._measure_ping(frigate, echo, t_real, distance,
+                                          terms.signal_excess_db, self.ping_pulse)
+            self._pending_clutter.append({
+                "ready_at": t_real + _echo_delay(world, distance, frigate, echo),
+                "mode": mode, "snapshot": snapshot})
+
+    def active_terms(self, tgt, frigate, world, range_factor: float,
+                     mode: str, pulse: str | None = None):
+        """Active sonar equation for one echo from ``tgt``."""
         ping_mult = (config.SONAR_ARRAY_TOWED_PING if mode == "TOWED"
                      else config.SONAR_ARRAY_BOW_PING)
-        active_range = (config.HELO_DIP_ACTIVE_RANGE_NM if mode == "DIPPING"
-                        else config.SONAR_ACTIVE_BASE_NM * ping_mult)
+        gain = (config.HELO_DIP_ACTIVE_RANGE_NM / config.SONAR_ACTIVE_BASE_NM
+                if mode == "DIPPING" else ping_mult) * range_factor
+        layer = 1.0
         if getattr(tgt, "depth", 0.0) >= world.thermocline_depth_m(tgt.x, tgt.y):
-            active_range *= config.SONAR_THERMO_ACTIVE_BELOW
-        sea_state = getattr(world, "effective_sea_state", world.sea_state)
-        return active_range * (1.0 - 0.03 * sea_state) * range_factor
+            layer = config.SONAR_THERMO_ACTIVE_BELOW
+        distance = max(1e-6, math.hypot(tgt.x - frigate.x, tgt.y - frigate.y))
+        to_observer = math.degrees(math.atan2(frigate.x - tgt.x,
+                                              -(frigate.y - tgt.y))) % 360.0
+        aspect = config.angle_diff_deg(to_observer, getattr(tgt, "course", 0.0))
+        speed = getattr(tgt, "speed", None)
+        if speed is None:
+            speed = getattr(tgt, "speed_kn", 0.0)
+        radial = speed * math.cos(math.radians(aspect))
+        mx, my = (frigate.x + tgt.x) * .5, (frigate.y + tgt.y) * .5
+        return equation.active_terms(
+            distance_nm=distance,
+            target_ts_db=(equation.target_strength_db(hull_length_m(tgt), aspect)
+                          + getattr(tgt, "extra_ts_db", 0.0)),
+            legacy_range_factor=layer, gain_factor=gain,
+            sea_state=float(getattr(world, "effective_sea_state", world.sea_state)),
+            rain=float(getattr(world, "rain_intensity", 0.0)),
+            pulse=pulse or self.ping_pulse,
+            water_depth_m=float(getattr(world, "depth_m", lambda x, y: 1000.0)(mx, my)),
+            lambert_mu_db=_lambert_mu_db(world, mx, my),
+            wind_kn=float(getattr(world, "wind_speed_kn", 10.0)),
+            absorption_db_per_km=equation.francois_garrison_db_per_km(
+                equation.ACTIVE_FREQUENCY_HZ, _surface_temperature(world)),
+            radial_speed_kn=radial)
+
+    def _active_range_nm(self, tgt, world, range_factor: float, mode: str,
+                         frigate=None) -> float:
+        """Equivalent range: the echo is detectable while distance < R."""
+        if frigate is None:
+            return 0.0
+        terms = self.active_terms(tgt, frigate, world, range_factor, mode)
+        distance = math.hypot(tgt.x - frigate.x, tgt.y - frigate.y)
+        return max(distance, 1e-6) * 10.0 ** (terms.signal_excess_db / 40.0)
 
     def process_lofar_column(self, column, frigate) -> list:
         """Apply operator gain and frequency controls to one LOFAR column."""
@@ -1296,7 +1749,9 @@ class SonarSystem:
             if not self.band_low_hz <= freq <= self.band_high_hz:
                 result.append(0.0)
                 continue
-            if self.notch_enabled and abs(freq - shaft) < 5.0:
+            operator_notch = getattr(self, "operator_notch_hz", None)
+            if ((self.notch_enabled and abs(freq - shaft) < 5.0)
+                    or (operator_notch is not None and abs(freq - operator_notch) < 2.5)):
                 result.append(min(1.0, value * gain * 0.15))
             else:
                 result.append(min(1.0, value * gain))
@@ -1309,6 +1764,19 @@ class SonarSystem:
         is internal association only; neither geometry nor propagation is read
         again. Measurement timestamps never become reception timestamps.
         """
+        clutter = []
+        for echo in self._pending_clutter:
+            if t >= echo["ready_at"]:
+                entry = {key: value for key, value in echo["snapshot"].items()
+                         if key not in ("observer_x", "observer_y")}
+                entry.update(contact_id=0, mode=echo["mode"])
+                self.echo_history.append(entry)
+                del self.echo_history[:-config.SONAR_ECHO_HISTORY_MAX]
+                self.echo_events.append(dict(entry))
+                del self.echo_events[:-config.SONAR_ECHO_HISTORY_MAX]
+            else:
+                clutter.append(echo)
+        self._pending_clutter = clutter
         pending = []
         for ping in self._pending_pings:
             target = ping["target"]
@@ -1330,7 +1798,8 @@ class SonarSystem:
         limits = {"t": (0, 1e12), "observer_x": (-1e6, 1e6),
                   "observer_y": (-1e6, 1e6), "bearing": (0, 360),
                   "range_nm": (0, 10000), "depth_m": (0, 10000),
-                  "range_sigma_nm": (1e-9, config.SONAR_PING_RANGE_ERROR_NM),
+                  "range_sigma_nm": (1e-9, equation.range_resolution_m(
+                      "CW") / 1852.0 / math.sqrt(2.0)),
                   "depth_sigma_m": (1e-9, config.SONAR_PING_DEPTH_ERROR_M),
                   "snr_db": (-200, 200)}
         if not isinstance(snapshot, dict) or set(snapshot) != set(limits):
@@ -1345,20 +1814,25 @@ class SonarSystem:
             return False
 
     @staticmethod
-    def _measure_ping(frigate, target, t: float, distance: float, active_range: float):
-        """Deterministic noisy snapshot; no shared RNG or contact allocation."""
-        signal = snr_db(active_range, distance)
+    def _measure_ping(frigate, target, t: float, distance: float,
+                      signal: float, pulse: str = equation.DEFAULT_PULSE):
+        """Deterministic noisy snapshot; no shared RNG or contact allocation.
+
+        Range accuracy follows the pulse (CW resolution c*tau/2, LFM c/2B)
+        and the echo SNR (Cramer-Rao); bearing and depth errors shrink with
+        SNR as before."""
         error_scale = 1.0 / max(1.0, 1.0 + signal / 8.0)
         seed = getattr(target, "sensor_seed", target.id)
+        range_sigma = equation.range_sigma_m(pulse, signal) / 1852.0
         snapshot = dict(
             t=t, observer_x=frigate.x, observer_y=frigate.y,
             bearing=(target.bearing_from_frigate(frigate) + 1.5 * error_scale
                      * _correlated_uniform(seed, t, 1.0, 101)) % 360.0,
-            range_nm=max(0.0, distance + config.SONAR_PING_RANGE_ERROR_NM
-                         * error_scale * _correlated_uniform(seed, t, 1.0, 211)),
+            range_nm=max(0.0, distance + math.sqrt(3.0) * range_sigma
+                         * _correlated_uniform(seed, t, 1.0, 211)),
             depth_m=max(0.0, target.depth + config.SONAR_PING_DEPTH_ERROR_M
                         * error_scale * _correlated_uniform(seed, t, 1.0, 307)),
-            range_sigma_nm=config.SONAR_PING_RANGE_ERROR_NM * error_scale / math.sqrt(3),
+            range_sigma_nm=range_sigma,
             depth_sigma_m=config.SONAR_PING_DEPTH_ERROR_M * error_scale / math.sqrt(3),
             snr_db=signal)
         if not SonarSystem.valid_ping_snapshot(snapshot):
@@ -1387,10 +1861,31 @@ class SonarSystem:
         del self.echo_history[:-config.SONAR_ECHO_HISTORY_MAX]
         return c
 
+    def _measure_tonal(self, tgt, frigate, quality: float, t: float):
+        """Doppler-shifted frequency of the strongest tonal (None if weak)."""
+        if quality < DOPPLER_MIN_QUALITY:
+            return None
+        lines = [line for line in (tgt.lofar_lines(t) or ()) if line[0] > 1.0]
+        if not lines:
+            return None
+        frequency = max(lines, key=lambda line: (line[1], -line[0]))[0]
+        seed = getattr(tgt, "sensor_seed", tgt.id)
+        noise = (DOPPLER_SIGMA_HZ * (1.4 - 0.8 * quality)
+                 * _correlated_uniform(seed, t, 10.0, 613))
+        return frequency * doppler_factor(tgt, frigate) + noise
+
+    def _endfire_factor(self, true_bearing: float) -> float:
+        """Line-array bearing accuracy degrades as 1/sqrt(sin) toward endfire
+        (beam broadening; Cramer-Rao ~ 1/sin of the angle off the axis)."""
+        off_axis = abs(math.sin(math.radians(true_bearing - self.tow_heading_deg)))
+        return 1.0 / math.sqrt(max(off_axis, 0.25))
+
     def _observed_bearing(self, tgt, true_bearing: float, frigate,
                           quality: float, mode: str, t: float) -> float:
         """Peilung mit deterministisch korreliertem, glatt interpoliertem Fehler."""
         err = bearing_error_deg(mode, frigate.speed, quality)
+        if mode == "TOWED":
+            err *= self._endfire_factor(true_bearing)
         seed = getattr(tgt, "sensor_seed", tgt.id)
         salt = 17 if mode == "TOWED" else 0
         return (true_bearing + err * _correlated_uniform(
@@ -1412,10 +1907,16 @@ class SonarSystem:
         c = self.contacts.get(tgt.id)
         if c is None:
             return
-        sol = solve_tma(tr, previous_course=c.tma_course,
-                        previous_speed=c.tma_speed)
-        if sol is not None:
-            c.update_tma(sol, tr.pts[-1].t, fixed_at=t)
+        # The solver only proposes (a training aid, shown with operator
+        # assistance on). The contact's TMA fix is written solely when the
+        # operator accepts a solution (Game.accept_tma).
+        previous = self.tma_proposals.get(tgt.id)
+        sol = solve_tma(tr, previous_course=getattr(previous, "course", None),
+                        previous_speed=getattr(previous, "speed", None))
+        if sol is not None:   # a failed re-solve keeps the last proposal
+            self.tma_proposals[tgt.id] = sol
+        for key in [key for key in self.tma_proposals if key not in self.contacts]:
+            del self.tma_proposals[key]
         self._tma_versions[tgt.id] = tr.version
         self._tma_next[tgt.id] = t + config.TMA_RESOLVE_EVERY_S
 
@@ -1430,12 +1931,14 @@ class SonarSystem:
             if tgt_gone(tgt):
                 continue
             dist = tgt.distance_nm(frigate)
-            active_range = self._active_range_nm(tgt, world, range_factor, mode)
+            active_range = self._active_range_nm(tgt, world, range_factor, mode,
+                                                 frigate)
             can_hear = (notify_ping and dist <= config.SONAR_PING_HEAR_RANGE_NM
                         and hasattr(tgt, "hear_ping"))
             if dist >= active_range and not can_hear:
                 continue
-            source_depth = self.towed_depth_m if mode == "TOWED" else 5.0
+            source_depth = (self.towed_depth_m if mode == "TOWED"
+                            else hull_array_depth_m(frigate))
             if (hasattr(world, "sonar_path_blocked")
                     and world.sonar_path_blocked(frigate.x, frigate.y, source_depth,
                                                  tgt.x, tgt.y,
@@ -1446,9 +1949,14 @@ class SonarSystem:
             if can_hear:
                 tgt.hear_ping()
 
-            # Echo erhalten?
-            if dist < active_range:
-                snapshot = self._measure_ping(frigate, tgt, t_real, dist, active_range)
+            # Echo erhalten?  A stopped boat lying beside a wreck returns an
+            # echo that merges with the wreck's own clutter echo.
+            if dist < active_range and not self._masked_by_wreck(
+                    tgt, frigate, world, mode):
+                snapshot = self._measure_ping(
+                    frigate, tgt, t_real, dist,
+                    self.active_terms(tgt, frigate, world, range_factor,
+                                      mode).signal_excess_db, self.ping_pulse)
                 contacts.append(self._apply_ping_snapshot(tgt, snapshot, mode))
         return contacts
 

@@ -1,8 +1,10 @@
+import math
 """Stations-Audit: Eingaben, Zustandsuebergaben und Rendering-Smoke."""
 
 import pygame
 import pytest
 
+from src.core import config
 from src.core.game import Game
 from src.core.i18n import localize
 from src.core.station import Station
@@ -56,15 +58,12 @@ def test_sonar_to_weapon_handoff_requires_valid_track():
     assert game.target.range_est is not None
 
 
-def test_pause_blocks_simulation_and_resume_continues():
+def test_p_key_never_pauses_the_real_time_simulation():
     game = Game(seed=31415, start_menu=False)
     before = game.sim_t
     key(game, pygame.K_p)
     game.update(1.0)
-    assert game.sim_t == before
-    key(game, pygame.K_p)
-    game.update(1.0 / 60.0)
-    assert game.sim_t > before
+    assert abs(game.sim_t - before - 1.0) < 1e-9
 
 
 def test_map_wheel_without_position_does_not_crash():
@@ -145,7 +144,7 @@ def test_save_load_restores_navigation_ui_state():
     assert restored.map_view.scale == 4.0
 
 
-def test_save_load_restores_independent_opz_map_and_accepts_prior_ui():
+def test_save_load_restores_independent_opz_map_and_rejects_prior_ui():
     game = Game(seed=31415, start_menu=False)
     game.opz_map_follow = False
     game.opz_map_view.cx = 210.0
@@ -163,10 +162,8 @@ def test_save_load_restores_independent_opz_map_and_accepts_prior_ui():
                 "opz_map_follow"):
         del data["ui"][key]
     legacy = Game(seed=1000, start_menu=False)
-    legacy.load_state(data)
-    assert legacy.opz_map_follow is True
-    assert (legacy.opz_map_view.cx, legacy.opz_map_view.cy) == pytest.approx(
-        (legacy.ship.x, legacy.ship.y))
+    with pytest.raises(ValueError):
+        legacy.load_state(data)
 
 
 def test_escape_requires_explicit_quit_confirmation():
@@ -184,6 +181,13 @@ def test_escape_requires_explicit_quit_confirmation():
     key(game, pygame.K_ESCAPE)
     key(game, pygame.K_DOWN)
     key(game, pygame.K_DOWN)
+    key(game, pygame.K_RETURN)
+    # Third entry: main menu without saving; the game keeps running.
+    assert game.running is True and game.in_menu and game.main_menu
+    game = Game(seed=31415, start_menu=False)
+    key(game, pygame.K_ESCAPE)
+    for _ in range(3):
+        key(game, pygame.K_DOWN)
     key(game, pygame.K_RETURN)
     assert game.running is False
 
@@ -262,7 +266,7 @@ def test_unknown_opz_affiliation_keeps_existing_ship_launch_policy():
     assert len(game.torpedoes) == 1
 
 
-def test_enemy_launch_is_hidden_until_first_sonar_observation(monkeypatch):
+def test_enemy_launch_is_heard_as_transient_not_as_torpedo(monkeypatch):
     game = Game(seed=2720, start_menu=False)
     sub = game.subs[0]
     profile = sub.enemy_torpedo_profile
@@ -283,16 +287,25 @@ def test_enemy_launch_is_hidden_until_first_sonar_observation(monkeypatch):
     assert game.msg == "unrelated"
 
     torpedo = game.enemy_torpedoes[0]
+    monkeypatch.setattr(game.world, "sonar_path_blocked", lambda *args: False)
 
     def observe_torpedo(*args, **kwargs):
+        # A sonar contact on the weapon itself carries no torpedo wording.
         contact = Contact(88, torpedo.id, "passiv", "torpedo")
         contact.update_passive(180.0, .8, .8, "", game.sim_t)
         game.sonar.contacts[torpedo.id] = contact
 
     monkeypatch.setattr(game.sonar, "update", observe_torpedo)
     game._update_sensors(.25)
-    assert localize(game.msg, game.tr) == game.tr(
-        "runtime.sonar.torpedo", contact=88)
+    text = localize(game.msg, game.tr)
+    assert text.startswith("SONAR: mechanical launch transient")
+    assert "K88" not in text and "torpedo" not in text.lower()
+    true_bearing = math.degrees(math.atan2(
+        torpedo.x - game.ship.x, -(torpedo.y - game.ship.y))) % 360.0
+    warning = game.torpedo_warnings()[0]
+    assert warning["source"] == "transient" and warning["contact"] is None
+    assert abs((warning["bearing"] - true_bearing + 180.0) % 360.0 - 180.0) <= 4 * \
+        config.TORP_CUE_BEARING_SIGMA_DEG
     game.sonar.contacts.clear()
     game.msg = "keine neue Warnung"
     game._update_sensors(.25)

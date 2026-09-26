@@ -1,0 +1,144 @@
+/* Secondary tools open over the CIC instead of replacing it: the lookout,
+   the guide and the contact library are overlay sheets; the weather/sonar
+   analysis, SimLog map, fire confirmation and host dialogs are <dialog>s. */
+
+.overlay-close { display: none; }
+body.workstation-mode .tab-panel:not(#panel-operations):not([hidden]) {
+  position: fixed; z-index: var(--z-overlay); inset: calc(var(--bar-h) + .6rem) clamp(.5rem, 3vw, 4rem) clamp(.5rem, 3vh, 3rem);
+  padding: 1rem 1.2rem; background: var(--bg-1); border: 1px solid var(--line-strong); border-radius: calc(var(--radius) * 2);
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bg-0) 70%, transparent), 0 1.5rem 3rem -1rem var(--shadow);
+}
+body.workstation-mode .tab-panel:not(#panel-operations):not([hidden]) > .overlay-close {
+  display: inline-flex; align-items: center; justify-content: center; position: absolute; z-index: 1; top: .5rem; right: .5rem;
+  width: 2.2rem; min-height: 2.2rem; padding: 0; font-size: 1.2rem; line-height: 1;
+}
+
+/* Lookout (bridge optics). */
+.lookout-panel:not([hidden]) { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: .5rem; overflow: hidden; }
+.lookout-bar { display: grid; grid-template-columns: minmax(8rem, 1fr) auto auto; align-items: center; gap: .6rem 1rem; min-width: 0; padding-right: 2.5rem; }
+.lookout-title .eyebrow { margin-bottom: .1rem; }
+.lookout-title h1 { font-size: var(--font-lg); }
+.lookout-environment { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem 1rem; color: var(--text-dim); font-size: var(--font-sm); }
+.lookout-environment strong { color: var(--live); font: var(--font-sm) var(--font-mono); }
+.lookout-toolbar { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); align-items: center; gap: .3rem; }
+.lookout-toolbar button { min-height: 2rem; padding: .1rem .5rem; font-size: var(--font-xs); }
+.lookout-toolbar output { grid-column: 1 / -1; text-align: right; color: var(--text-dim); font-size: var(--font-xs); }
+.lookout-scope { min-width: 0; min-height: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--scope); }
+#lookout { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; touch-action: none; }
+.lookout-note { color: var(--text-dim); font-size: var(--font-xs); line-height: 1.35; }
+
+/* Guide. */
+.guide-panel:not([hidden]) { display: block; }
+.guide-header { max-width: 60rem; padding: .3rem 2.5rem 1rem .2rem; border-bottom: 1px solid var(--line); }
+.guide-header > p:last-child { max-width: 58rem; margin-top: .5rem; color: var(--text-dim); }
+.guide-manual a { color: var(--live); font-weight: 600; }
+.guide-layout { display: grid; grid-template-columns: minmax(13rem, .6fr) minmax(0, 2fr); align-items: start; gap: 1rem; max-width: 80rem; margin: 1rem auto 0; }
+.guide-nav { position: sticky; top: 0; padding: .6rem; }
+.guide-nav ol { display: grid; gap: .15rem; margin: .4rem 0 0; padding: 0; list-style: none; }
+.guide-nav a { display: block; min-height: 2.1rem; padding: .4rem .6rem; border-left: 2px solid var(--line); color: var(--text-dim); font-size: var(--font-sm); text-decoration: none; }
+.guide-nav a:hover { border-left-color: var(--live); background: var(--bg-3); color: var(--live); }
+.guide-copy { display: grid; gap: .7rem; min-width: 0; padding-bottom: 1rem; }
+.guide-copy section { min-width: 0; padding: 1rem; scroll-margin-top: 1rem; background: var(--bg-2); border: 1px solid var(--line); border-top: 2px solid var(--line-strong); border-radius: var(--radius); }
+.guide-copy section:focus { border-top-color: var(--live); outline: 2px solid var(--live); outline-offset: -2px; }
+.guide-copy h2 { margin-bottom: .6rem; color: var(--live); }
+.guide-copy p { color: var(--text-dim); }
+.guide-copy p + p { margin-top: .6rem; }
+.guide-copy .guide-warning { border-top-color: var(--caution); background: var(--caution-bg); }
+.guide-copy .guide-warning h2 { color: var(--caution); }
+#workstation-guide { max-width: 60rem; margin: 1rem 0; }
+
+/* Contact library (analyzer). */
+.analyzer-panel:not([hidden]) { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: .6rem; overflow: hidden; }
+.analyzer-header { display: flex; justify-content: space-between; align-items: end; gap: 1rem; min-width: 0; padding-right: 2.5rem; }
+.analyzer-header .eyebrow { margin-bottom: .1rem; }
+.analyzer-workspace { display: grid; grid-template-columns: minmax(15rem, .7fr) minmax(0, 2fr); gap: .7rem; min-width: 0; min-height: 0; overflow: hidden; }
+.analyzer-browser { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: .6rem; overflow: hidden; }
+.analyzer-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; }
+.analyzer-filters label { color: var(--text-dim); font-size: var(--font-xs); }
+.analysis-list { display: flex; flex-direction: column; gap: .3rem; min-width: 0; min-height: 0; padding: 2px; margin: -2px; overflow-y: auto; overscroll-behavior: contain; }
+.analysis-item { flex: 0 0 auto; width: 100%; padding: .5rem .6rem; text-align: left; background: var(--bg-2); border-color: var(--line); }
+.analysis-item span { display: block; }
+.analysis-item small { display: block; margin-top: .15rem; color: var(--text-dim); font-weight: 400; }
+.analysis-item[aria-pressed="true"] { background: var(--live-bg); border-color: var(--live); color: var(--text); }
+.analyzer-detail { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+#analysis-name { font-size: 1.15rem; text-transform: none; letter-spacing: 0; color: var(--live-strong); }
+.analysis-images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin: .7rem 0; }
+.analysis-image { margin: 0; min-width: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--scope); }
+.analysis-image img { display: block; width: 100%; height: auto; }
+.analysis-image figcaption { padding: .35rem .5rem; color: var(--text-dim); font-size: var(--font-xs); }
+.analysis-legend { margin-top: .6rem; padding: .5rem .6rem; border-left: 2px solid var(--live); background: var(--bg-2); color: var(--text-dim); font-size: var(--font-xs); line-height: 1.4; }
+.analysis-legend p + p { margin-top: .3rem; }
+.analyzer-metrics { padding-top: .3rem; }
+.analysis-components { padding-top: .8rem; border-top: 1px solid var(--line); }
+.analysis-components h3 { margin-bottom: .6rem; }
+.analysis-component-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; margin-top: .6rem; }
+.analysis-component-groups > section { min-width: 0; }
+.analysis-component-list { display: grid; gap: .4rem; }
+.analysis-component { min-width: 0; padding: .5rem; background: var(--bg-2); border-left: 3px solid var(--info); border-radius: var(--radius); }
+.analysis-component h4 { margin: 0 0 .45rem; }
+.analysis-component .detail-metrics { grid-template-columns: minmax(0, 1fr); gap: .3rem; }
+.analysis-component .detail-metrics > div { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 1.4fr); align-items: baseline; gap: .6rem; padding-bottom: .25rem; border-bottom: 1px solid var(--line-faint); }
+.analysis-component .detail-metrics dd { text-align: right; }
+
+/* Dialogs share one frame. */
+dialog { color: var(--text); background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: calc(var(--radius) * 2); padding: 1rem; box-shadow: 0 1.5rem 3rem -1rem var(--shadow); }
+dialog::backdrop { background: color-mix(in srgb, var(--bg-0) 82%, transparent); }
+dialog h2 { margin-bottom: .5rem; color: var(--live); }
+#fire-confirm-dialog { width: min(92vw, 32rem); border-color: var(--alarm); }
+#fire-confirm-dialog h2 { color: var(--alarm); }
+#fire-confirm-dialog p { margin-bottom: 1rem; }
+.fire-confirm-actions, .host-dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .8rem; }
+.host-dialog { width: min(92vw, 30rem); }
+.host-dialog label { display: block; margin-top: .5rem; color: var(--text-dim); font-size: var(--font-xs); }
+.host-dialog select, .host-dialog input { width: 100%; }
+.host-slot-list { display: grid; gap: .35rem; margin: .7rem 0; padding: 0; list-style: none; }
+.host-slot-list button { width: 100%; text-align: left; font-family: var(--font-mono); }
+#host-new-dialog { width: min(92vw, 42rem); }
+.host-new-difficulty-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem .9rem; margin: .5rem 0 .8rem; }
+.host-new-difficulty-grid .field { display: flex; flex-direction: column; gap: .1rem; }
+.host-new-difficulty-grid .field label { margin: 0; }
+
+/* Weather station and sound-speed profile (key 0). */
+#weather-dialog { width: min(96vw, 110rem); max-width: none; max-height: 94dvh; padding: 0; border-color: var(--live); }
+.weather-shell { display: grid; gap: .6rem; min-width: 0; padding: .9rem; }
+.weather-header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+.weather-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: .7rem; min-width: 0; }
+.weather-box { min-width: 0; padding: .6rem; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--radius); }
+.weather-box h3 { margin-bottom: .4rem; color: var(--live); }
+.weather-profile-box { grid-column: 1 / -1; }
+#weather-profile { display: block; width: 100%; height: clamp(14rem, 38vh, 26rem); }
+#weather-profile-text { margin-top: .4rem; color: var(--text-dim); }
+.weather-effects { display: flex; flex-wrap: wrap; gap: .35rem; margin: .5rem 0 0; padding: 0; list-style: none; }
+.weather-effects li { padding: .12rem .45rem; border: 1px solid var(--line); border-radius: 2px; color: var(--text-dim); font-size: var(--font-sm); }
+.weather-effects li[data-active="true"] { color: var(--caution); border-color: var(--caution); }
+.weather-flight-status { font-size: 1.25rem; font-weight: 700; }
+.weather-flight-status[data-status="clear"] { color: var(--live-2); }
+.weather-flight-status[data-status="limited"] { color: var(--caution); }
+.weather-flight-status[data-status="no_go"] { color: var(--alarm); }
+
+/* SimLog replay map. */
+#simlog-map-dialog { width: min(96vw, 96rem); max-width: none; height: min(94dvh, 64rem); max-height: none; padding: 0; border-color: var(--live); }
+.simlog-map-shell { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: .6rem; height: 100%; min-width: 0; min-height: 0; padding: .85rem; overflow: hidden; }
+.simlog-map-header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+.simlog-map-header .eyebrow { margin-bottom: .2rem; }
+.simlog-map-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.simlog-map-toolbar button { min-height: 2rem; font-size: var(--font-xs); }
+.simlog-map-toolbar output { margin-left: auto; color: var(--text-dim); font-size: var(--font-xs); }
+.simlog-map-layout { display: grid; grid-template-columns: minmax(0, 4fr) minmax(13rem, 1fr); gap: .6rem; min-width: 0; min-height: 0; }
+.simlog-map-plot { min-width: 0; min-height: 15rem; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--scope); }
+#simlog-map { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.simlog-map-sidebar { min-width: 0; min-height: 0; overflow: auto; padding: .6rem; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--radius); }
+.simlog-map-sidebar h3 { margin-bottom: .45rem; color: var(--live); }
+.simlog-map-sidebar ol { display: grid; gap: .2rem; margin: 0; padding: 0; list-style: none; }
+.simlog-map-sidebar li { padding-left: .5rem; border-left: 3px solid var(--unit-color); color: var(--text-dim); font: var(--font-xs)/1.4 var(--font-mono); }
+
+@media (max-width: 899px) {
+  body.workstation-mode .tab-panel:not(#panel-operations):not([hidden]) { inset: 0; border-radius: 0; padding: .8rem; }
+  .lookout-bar { grid-template-columns: minmax(0, 1fr) auto; }
+  .lookout-title { display: none; }
+  .guide-layout, .analyzer-workspace, .analysis-images, .analysis-component-groups, .weather-grid, .simlog-map-layout { grid-template-columns: minmax(0, 1fr); }
+  .guide-nav { position: static; }
+  .analyzer-workspace { grid-template-rows: minmax(0, .8fr) minmax(0, 1.2fr); }
+  #weather-dialog, #simlog-map-dialog { width: 100vw; max-height: 100dvh; height: 100dvh; border-width: 0; border-radius: 0; }
+  .simlog-map-layout { grid-template-rows: minmax(12rem, 2fr) minmax(6rem, 1fr); }
+}

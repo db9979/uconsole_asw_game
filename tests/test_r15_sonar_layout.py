@@ -146,10 +146,11 @@ def test_harmonic_aid_requires_explicit_transient_operator_selection():
     game.sonar.receiver.peaks = [(12.0, .8), (24.0, .7)]
     assert game.sonar_harmonic_hz is None
     assert "sonar_harmonic_hz" not in game.save_state()["sonar_controls"]
+    # The fundamental is wherever the operator put the cursor, not a
+    # detected peak; K on the same frequency clears it again.
+    game.sonar_tools.lofar_cursor_hz = 13.5
     press(game, pygame.K_k)
-    assert game.sonar_harmonic_hz == 12.0
-    press(game, pygame.K_k)
-    assert game.sonar_harmonic_hz == 24.0
+    assert game.sonar_harmonic_hz == 13.5
     press(game, pygame.K_k)
     assert game.sonar_harmonic_hz is None
 

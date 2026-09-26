@@ -2,7 +2,7 @@
 
 [Deutsch](commander-protocol.de.md)
 
-Application 1.0.0, API protocol 2, save format v11-only. These versions are independent.
+Application 1.0.0, API protocol 2, save format v12-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
 persistence.
@@ -10,7 +10,7 @@ persistence.
 ## Ownership
 
 CommanderConsole controls the listener locally. CommanderBridge.pump executes
-once per main-loop wall frame before Game.update, including paused frames. It
+once per main-loop wall frame before Game.update, including menu frames. It
 reads public observations and own assets, validates commands and publishes
 detached JSON. HTTP handlers never import Game/Pygame, access simulation objects,
 or trigger sensor/TMA work. Candidate-load methods have no network side effects.
@@ -19,7 +19,7 @@ or trigger sensor/TMA work. Candidate-load methods have no network side effects.
 
 | Method / route | Contract |
 |---|---|
-| GET /, /app.js, /style.css | Fixed packaged resources, cached at server start |
+| GET /, /js/**, /css/**, /fonts/** | Fixed packaged resources (exact route table from `src/commander/assets.py`), cached at server start |
 | GET /api/v2/ui?lang=en or de | Only `commander.web.*` strings from root catalogs |
 | GET /api/v2/contacts | Public packaged contact-reference catalog |
 | POST /api/v2/pair | JSON pairing code; success creates a cookie session and returns CSRF state |
@@ -56,7 +56,7 @@ enables the lease's ordinary command grant immediately; direct-fire and
 sonar-audio grants remain separate. Exactly one retained lease is active and
 identified by a separate monotonic active generation. Station requests are
 additive; activation does not release another lease. Release, revocation,
-takeover, expiry, pause, focus loss, and world replacement invalidate authority
+takeover, expiry, and world replacement invalidate authority
 at their defined scope.
 
 Activation validates the target lease and its station generation but does not
@@ -75,9 +75,24 @@ observation-lifetime references.
 Every assigned v2 role receives the same detached environment summary: authored
 integer `sea_state`, transitioning `effective_sea_state`, authoritative
 `is_night`, weather class, nautical wind-from direction, wind speed in knots,
-rain intensity and visibility in NM. The Helicopter role additionally receives
-only derived launch/dipping safety booleans and crosswind; it receives no hidden
-aircraft or weather state. Each role's Autocrew projection contains only that
+rain intensity and visibility in NM. Every role also receives the common
+`weather_station` block for the analysis dialog (key 0): own-ship `atmosphere`
+(barometer and 3-hour tendency, air/sea temperature, gusts, Beaufort, ceiling,
+icing, daylight, moon phase), qualitative weather `effects`, the derived
+helicopter `flight` decision (CLEAR/LIMITED/NO-GO with values and configured
+limits) and `profile`. `profile` is null until the sonar has taken a
+bathythermograph measurement; it then carries only that measurement (age, offset,
+stale flag, layer, depths and speeds, SOFAR axis or null, CZ bands) with at most
+nine rays of 64 points and a bounded shadow grid computed from it. The
+Helicopter role additionally receives derived launch/dipping safety booleans and
+crosswind; no role receives hidden aircraft or weather state, and no true ocean
+profile. Tactical observation rows carry `visual_class` and `visual_type`:
+null except on bridge-lookout reports, where they hold the class the lookout
+made out (a fixed code list) and, once identified, a warship's or military
+aircraft's catalog type name. They are observations, never the operator
+classification or affiliation. The Bridge role additionally receives `sightings`, the newest
+24 lookout reports (time, sighted kind or class code, type, bearing, range);
+merchant names and live-traffic identities are never included. Each role's Autocrew projection contains only that
 role's enabled flag and status. Credentials, leases and Autocrew commands are
 not part of this projection.
 
@@ -86,6 +101,11 @@ per-client sequence, station generation, active generation, world
 session/epoch, resource revision, action, and exact bounded parameters. HTTP
 threads only enqueue detached envelopes. The main thread revalidates and applies
 accepted commands once in deterministic station and per-client FIFO order.
+Only operator annotations of the shared picture (classification, affiliation,
+track ID, release, fusion, qualification, ESM annotation, target proposal) must
+still match the resource revision the browser saw (`revision_conflict`); every
+other order resolves its opaque references at application time and is not
+rejected because an unrelated contact changed.
 Direct-fire actions additionally require the station's direct-fire grant and
 ordinary observation, readiness, inventory, ROE, and envelope checks. A queued
 response is never reported as successful before its terminal result.
@@ -96,9 +116,12 @@ active sonar generation, and filtered on the main thread using the projected
 Sonar audition mode, band, notch, and gain. The server keeps the last 40 blocks
 (ten seconds) so a briefly stalled client catches up in order; older blocks are dropped
 and reported as a discontinuity. The browser starts playback about one second behind the newest
-block. Its AudioWorklet repeats the last block for at most two seconds after fresh data ends,
-then plays quiet neutral noise and marks the stream stale. The uConsole mixer worker uses the
-same one-second lead and two-second continuation. A transient
+block. Its AudioWorklet steers that lead by reading the stream up to 2 % faster or slower,
+so clock drift and jitter neither drain nor overflow it. On an underrun it plays a
+non-periodic granular stand-in built from the last half second and refills half a second
+before fresh audio resumes; after two seconds without data it plays quiet neutral noise and
+marks the stream stale. Crossfades are applied only at real discontinuities. The uConsole
+mixer worker uses the same elastic lead, concealment and two-second limit. A transient
 state-poll failure or HTTP 503 does not discard queued audio; the audio endpoint
 still checks session and station authority on each request. A restarted stream
 rebases a browser cursor that is ahead of its new sequence. There is no continuous
@@ -111,10 +134,12 @@ samples at 4096 Hz. Sequence gaps signal dropped blocks; the server sends at mos
 the newest four pending blocks after a slow client. HTTP audio polling remains the
 fallback. Neither transport accepts browser audio or simulation commands.
 For on-device diagnosis, `U_JAGD_AUDIO_DEBUG=1` writes bounded, contact-free
-receiver block rate, mixer underruns, queue fill and loss counters to
-`~/.u-jagd/audio_debug.log`. Browser developer tools can read the bounded
-`window.uJagdAudioDiagnostics` snapshot (buffer seconds, sequence gaps,
-dropped blocks, repeats, stale state and transport). Neither is persisted in
+receiver block rate, mixer underruns, concealed blocks, rate correction, queue
+fill and loss counters to `~/.u-jagd/audio_debug.log`; `U_JAGD_PERF_DEBUG=1`
+adds frame-time peaks and simulation catch-up to `perf_debug.log`. Browser
+developer tools can read the bounded `window.uJagdAudioDiagnostics` snapshot
+(buffer seconds, sequence gaps, dropped blocks, concealed blocks, playback
+rate, stale state and transport). Neither is persisted in
 game saves.
 The Sonar role receives only bounded own-ship speed and TAS handling limits needed
 to explain a disabled array control; hover reasons never inspect hidden entities.
@@ -176,8 +201,7 @@ public tracks and the environment summary. Proposals, events, command results an
 SimLog history use separate authenticated endpoints so each can enforce its own
 session, role, authority and grant boundary.
 Menu/editor/splash use the same schema with null own geometry and environment,
-plus empty mission, tracks, events and chart. Paused live missions retain a
-frozen read-only picture.
+plus empty mission, tracks, events and chart.
 
 Track references and neutral labels are observation-lifetime identities, not raw
 entity IDs. Replacement/reacquisition invalidates them. Only modeled AIS labels
@@ -188,8 +212,11 @@ The ELOKA v2 intercept row additionally carries derived `signal_state`
 (`LIVE`, `RECENT`, `MEMORY`, or `UNCONFIRMED`) and boolean `operational` fields.
 Browser status, minimum-threat, and frequency-band filters are client-local and
 apply one identical subset to the intercept list, contacts, scope, and accessible
-text alternative. Active ECM targets remain visible. No range or hidden emitter
-identity is projected or filterable.
+text alternative. Active ECM targets remain visible. Rows also carry the
+measured peak `signal_db`, the measured antenna `scan_period_s` (or null) and a
+`range_estimate_nm` derived only from that level and the power class of the
+best catalog hypothesis (or null); no true range or hidden emitter identity is
+projected or filterable.
 
 Commands carry protocol, cryptographic request ID, client sequence, station,
 station and active generations, world session/epoch, resource revision, action,
@@ -232,11 +259,12 @@ transitions. World replacement revokes pairing and generates a new session at th
 next pump. The browser requires matching session/chart context before revealing
 the new picture. Old event backlog does not retrigger audio after reconnect.
 
-An active crew station keeps protocol phase `live` behind local F1 help, the
-in-game F8 contact analyzer, F9 crew administration, and F10 options. Opening or
-closing one of these owners still invalidates commands queued across the
-transition. Manual pause, focus loss, save/load, quit, nations, real editors,
-menus, and splash remain blocked.
+The mission always runs in real time and has no pause. Protocol phase stays
+`live` behind every local menu and overlay (help, options, save/load, quit
+confirmation, nations, F8 analyzer, F9 administration) and across focus loss;
+opening or closing them does not invalidate queued commands. Phases are `live`,
+`menu`, `blocked` (splash only) and `ended`; only world lifecycle changes move the
+epoch.
 
 The Lookout consumes only the current state snapshot, never chart geography or
 simulation objects. It is north-up and ship-centered: positioned observations
@@ -249,8 +277,8 @@ changes or resize, with device-pixel-aware backing dimensions.
 ## Solo Mode Additions (protocol v2, additive)
 
 The session body carries `host`: `null` normally, `{"generation": n}` for a solo
-session. `GET /api/v2/host` returns the detached host view (`phase`, `paused`,
-`time_scale`, `world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`) only to a
+session. `GET /api/v2/host` returns the detached host view (`phase`,
+`world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`) only to a
 session with `host`; other sessions get 403. Slot rows carry `saved` and `modified`
 from file metadata only, never save contents.
 
@@ -258,9 +286,8 @@ Host controls use the ordinary `POST /api/v2/commands` with the pseudo-role
 `"host"` (never a station lease; `STATIONS` and every projection stay nine).
 `station_generation` is the session's `host.generation`, `active_generation` must be
 0, and `world_session` must match; the epoch and resource revision are not checked
-because these actions reference no resource and pause/resume move the epoch
-themselves. Actions: `host_pause`, `host_resume`, `host_time_scale {index}`,
-`host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
+because these actions reference no resource and load/new game move the epoch
+themselves. There is no pause or time-scale action. Actions: `host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
 level?, seed?}`, and `host_instructor_environment {sea_state, event}`. The instructor
 action changes the save-compatible authoritative world field (0–6) and refreshes
 the derived weather endpoints. Its optional closed event enum changes all hostile

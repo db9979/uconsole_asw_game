@@ -55,12 +55,7 @@ def draw_symbol(surface, center, affiliation: str, domain: str,
     elif affiliation == "FRIEND":
         pygame.draw.rect(surface, color,
                          (x - half - 2, y - height, half * 2 + 4, height * 2), 2)
-    else:
-        # Unbekannt: stilisierter Vierpass statt fontabhaengigem APP-6-Glyph.
-        frame = [(x - half, y), (x - half // 2, y - height),
-                 (x + half // 2, y - height), (x + half, y),
-                 (x + half // 2, y + height), (x - half // 2, y + height)]
-        pygame.draw.polygon(surface, color, frame, 2)
+    # Unknown affiliation: no frame, only the domain glyph (colour marks it).
 
     if domain == "AIR":
         pygame.draw.lines(surface, color, False,

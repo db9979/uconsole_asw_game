@@ -12,7 +12,33 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.0.0**
+Aktuelle Version: **1.2.0**
+
+Version 1.2.0 verbessert den Spielfluss und die Übergabe zwischen den
+Stationen: Der `Esc`-Dialog und das Missionsende führen zurück ins Hauptmenü
+(`M`), `R` startet eine Editor-Mission als sie selbst neu, Konvoimissionen
+melden die Restzeit als Fortschritt, und eine OPZ-Fusion aus einem
+Sonarkontakt lässt sich der Waffenzentrale zuweisen; ihre Klassifizierung und
+Zugehörigkeit gelten für die Feuerleitung (FREUND/NEUTRAL auf einer Fusion
+sperrt jeden Torpedoschuss). Spielstände bleiben v14.
+
+Version 1.1.0 ersetzt die verbliebenen kinematischen Vereinfachungen durch
+physikalische Modelle und hält dabei die Spielbalance von 1.0.0 (geprüft durch
+einen Kalibrierungs-Harness): kraftbasierte Schiffshydrodynamik und
+Seegangsbewegungen; ein zeitlich veränderlicher Ozean mit Gezeiten,
+Deckschicht, Sedimenten und Wracks; passive/aktive Sonargleichungen mit
+Strahlverfolgung; Seiten-Mehrdeutigkeit der Schleppantenne, Doppler und TMA mit
+Kovarianz; U-Boot- und Torpedophysik (Energie, Flossen, Draht,
+Annäherungszünder); Täuschkörper-Diskriminierung; Abteilungsflutung,
+Stabilität, Brand und Reparaturlogistik; die Radargleichung mit drehender
+Antenne, ESM-Pegel, KW-Ausbreitung und ein Ausguck mit Mondlicht; sowie
+Flugkörper-Flugphysik mit Düppelwolken, CIWS-Ballistik, Pop-up-Angriffen,
+Helikopter-Schwebeflug/Decklimits und treibenden Bojen. Feindliche U-Boote
+brauchen jetzt eine eigene TMA, bevor sie Ihre Entfernung kennen.
+**Spielstände haben jetzt das Format v14 (Katalogzuordnung, gemeinsamer Kartenplot);
+ältere Spielstände werden abgelehnt.** Das Remote-Crew-v2-Protokoll bleibt bis auf neue ELOKA-Felder
+unverändert. Die vollständige Übersicht steht in
+[docs/simulation-gaps.md](docs/simulation-gaps.md).
 
 Version 1.0.0 teilt jede Arbeitsstation in zwei per Tab wählbare Unterseiten,
 ergänzt manuelle Freigabeschalter für CIWS und FLAK neben den bestehenden
@@ -62,7 +88,7 @@ Commander-Browser: [OPZ/CIC mit 1920 x 1080](docs/screenshots/commander-v2-de-op
 
 - Neun Stationen: Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk,
   Maschinenraum, Helikopterdeck und Elektronische Kampfführung/ESM.
-- Vier integrierte Szenarien, drei Schwierigkeitsgrade, Pause und Echtzeitsimulation.
+- Vier integrierte Szenarien, drei Schwierigkeitsgrade und durchgehende Echtzeitsimulation (keine Pause, kein Zeitraffer).
 - Passives HMS und Schleppsonar, aktives Sonar, Breitband- und LOFAR-Anzeigen,
   DEMON-Analyse, Bathythermografmessungen und rein peilungsbasierte TMA.
 - Seeziel- und Luftraumradar, AIS, ESM, HFDF, manuelle Klassifikation und
@@ -171,7 +197,16 @@ aufzuklären.
 
 ## Steuerung
 
-Drücken Sie im Spiel `F1`, um die kontextsensitive Hilfe aufzurufen. Eine
+Drücken Sie im Spiel `F1` (oder `?`), um die kontextsensitive Hilfe aufzurufen;
+ihre vierte Kategorie ist das vollständige Spielerhandbuch (Schnellstart, ein
+Kapitel je Station mit Anzeigen, Tasten, Standardablauf und Tipps sowie
+Referenzdaten). Dasselbe Handbuch liegt als
+[`docs/manual/manual.de.md`](docs/manual/manual.de.md) /
+[`manual.en.md`](docs/manual/manual.en.md) vor und wird von Remote Crew unter
+`/manual-de` und `/manual-en` ausgeliefert. Druckfassungen liegen als
+[`docs/manual/handbuch.de.pdf`](docs/manual/handbuch.de.pdf) /
+[`manual.en.pdf`](docs/manual/manual.en.pdf) vor (`python tools/build_manual_pdf.py`,
+benötigt ein lokales Chromium). Eine
 vollständige druckbare Übersicht der lokalen Tastenkürzel steht als
 [`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf) bereit; die
 Textquelle ist [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md).
@@ -182,12 +217,15 @@ Die wichtigsten globalen Bedienelemente sind:
 | `1` bis `9` | Brücke, Sonar, Waffen, Schadensabwehr, OPZ/CIC, Funk, Maschinenraum, Helikopter, Elektronische Kampfführung/ESM; erneutes Drücken der Nummer der aktiven Station wechselt, sofern vorhanden, zur nächsten Seite |
 | `F` / `Umschalt+F` / `B` bei ESM | Signalstatus-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
 | `Tab` / `Shift+Tab` | Nächste / vorherige Station |
-| `P` | Pause / fortsetzen |
-| `F1` | Kontextsensitive Hilfe |
+| `F1` / `?` | Kontextsensitive Hilfe; Kategorie 4 ist das vollständige Handbuch |
+| `0` | Wetter- und Sonar-Analysefeld über jeder Station |
+| `F11` | Vollständiges Ereignislog und Telemetrie über der Station (läuft weiter) |
+| `N` | Nationen und Einheiten (am Sonar: Notchfilter) |
+| `P` | Plotmodus auf Brücken-/Waffen-/Helikopterkarte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (`M R B C D`, `Enter`/Klick, `Backspace`) |
 | `F2` / `F3` | Autocrew der aktuellen Station umschalten / Autocrew-Übersicht öffnen |
 | `F4` | SimLog öffnen, sofern aktiviert |
 | `F8` | Taktischen Einheitenanalysator öffnen; gegebenenfalls sichtbaren Commander-Vorschlag wechseln |
-| `F10` | Optionen; während der Pause öffnet auch `O` die Optionen |
+| `F10` | Optionen |
 | `F9` | Lokale Commander-LAN-Verwaltung |
 | `S` / `L` | Speichern / Laden über die Plätze 1 bis 5; in der OPZ ist `L` der kontextbezogene Fusionsbefehl |
 | `+` / `-` | Maschinentelegraf |
@@ -196,7 +234,8 @@ Die wichtigsten globalen Bedienelemente sind:
 | `Q` / `E` oder Mausrad | Sichtbare Karten an den Stationen Brücke, Waffen und Helikopter zoomen |
 | Ziehen mit der Maus | Eine sichtbare Karte verschieben und die Kameraverfolgung ausschalten |
 | `K` | Kameraverfolgung auf einer sichtbaren Karte umschalten |
-| `Esc` | Einen fixierten Hinweis entfernen, die aktuelle Ansicht/Eingabe abbrechen oder die Beenden-Bestätigung öffnen |
+| `Esc` | Einen fixierten Hinweis entfernen, die aktuelle Ansicht/Eingabe abbrechen oder die Beenden-Bestätigung öffnen (zurück zum Spiel, speichern und beenden, Hauptmenü, ohne Speichern beenden) |
+| `R` / `M` nach Missionsende | Neustart mit gleichem Seed / zurück zum Hauptmenü |
 
 Stationstasten sind bewusst kontextabhängig. Beispielsweise sendet `Shift+A` am
 Sonar einen aktiven Ping, während dort `A` den Breitband-Hörmodus wählt und im
@@ -211,7 +250,7 @@ Echtzeit.
 
 Der Ereignis-Feed am unteren Rand gilt stationsübergreifend. Er bewahrt operative
 Meldungen, abgeschlossene Befehle und Alarme auf, darunter Missionsergebnis,
-Waffen- und Abwehrereignisse, Schaden, Funkverkehr, Navigation sowie Pause.
+Waffen- und Abwehrereignisse, Schaden, Funkverkehr und Navigation.
 Kurzlebige Eingabe-, Fehler-, Auswahl- und Anzeigehinweise bleiben im
 Statusbanner, damit sie die operative Historie nicht verdrängen.
 
@@ -297,7 +336,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v11 gespeichert.
+v14 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -307,6 +346,13 @@ ihn anschließend. Öffnen Sie auf jedem Besatzungsgerät die angezeigte URL. Di
 Voreinstellung `127.0.0.1:8765` gilt nur für das lokale Gerät und ist von anderen
 Geräten nicht erreichbar. Eine Router-Portweiterleitung ist weder erforderlich
 noch unterstützt.
+
+Soll dieselbe Crew- oder Solo-Sitzung zusätzlich über einen eigenen
+HTTPS-Reverse-Proxy erreichbar sein, starten Sie das Spiel mit
+`--public-origin https://asw.example.net` (bei Bedarf mit `--solo-crew`) und
+lassen den Proxy auf die in F9 angezeigte LAN-Adresse zeigen. Die LAN-Adresse
+bleibt nutzbar; F9 zeigt dann beide Adressen. Details und Sicherheitshinweise:
+[`docs/web-host.de.md`](docs/web-host.de.md).
 
 Alternativ kann die uConsole einen temporären WPA2-Hotspot für Remote Crew
 bereitstellen. Installieren Sie dafür einmalig den eng begrenzten Helper mit
@@ -347,7 +393,7 @@ versteckter Einheiten; eine Neuverbindung setzt eine stille
 Ereignis-Ausgangsbasis, anstatt alte Alarme erneut abzuspielen.
 
 Solange ein Browser eine Stations-Lease besitzt, ist die Bedienung der
-entsprechenden Station auf der uConsole schreibgeschützt. Host-Verwaltung, Pause
+entsprechenden Station auf der uConsole schreibgeschützt. Host-Verwaltung
 und der Wechsel zu einer anderen Station bleiben verfügbar; der Widerruf der
 Lease stellt die lokale Bedienung sofort wieder her.
 
@@ -355,11 +401,11 @@ Der Dienst startet **bei jedem Programmstart ausgeschaltet**. Zugriffe und
 Freigaben werden nicht gespeichert. Zugangsdaten, Clients, Stations-Leases,
 Netzwerkwarteschlangen, Entwürfe und nicht angenommene Befehle gelangen weder in
 Spielstände noch in die Einstellungen. Ein Austausch der Welt widerruft aktive
-Berechtigungen im nächsten Frame des Hauptthreads. Manuelle Pause, Fokusverlust,
-Speichern/Laden, Beenden, Länderübersicht, die eigentlichen Editoren, Menüs und
-Splashscreen sperren Änderungen aus dem Browser. Bei einer aktiven Crew-Station
-lassen die F1-Hilfe, der spielinterne F8-Analysator, die Crew-Verwaltung mit F9
-und die Optionen mit F10 Simulation und Browser-Stationen weiterlaufen.
+Berechtigungen im nächsten Frame des Hauptthreads. Die Mission läuft immer in
+Echtzeit: lokale Menüs und Overlays (Hilfe, Optionen, Speichern/Laden,
+Beenden-Abfrage, F8-Analysator, F9-Verwaltung) und ein Fokusverlust pausieren sie
+nie, Browser-Stationen bleiben dahinter bedienbar. Nur Hauptmenü und Splashscreen
+sperren Änderungen aus dem Browser.
 Sonarklang im Browser erfordert eine ausdrückliche Host-Freigabe und eine lokale
 Benutzeraktion; nach einer Neuverbindung werden alte Audiodaten nicht
 nachgespielt. Die Hörmodi Broadband, Filtered und Heterodyne verwenden die
@@ -372,7 +418,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.0.0**, API-Protokoll **v2** und Speicherformat **v11** sind
+Anwendungsversion **1.0.0**, API-Protokoll **v2** und Speicherformat **v14** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -424,11 +470,12 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Version 1.0.0 schreibt und lädt ausschließlich das Speicherformat **v11**. V11
-verlangt das exakte Schema `u-jagd-save-v11` einschließlich des aktuellen
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v14**. V14
+verlangt das exakte Schema `u-jagd-save-v14` einschließlich des aktuellen
 Schnappschusses des Laufzeitkatalogs und des gesamten Zustands für die
-deterministische Fortsetzung. Ältere, neuere, fehlerhafte oder unvollständige
-Spielstände werden abgelehnt, ohne das laufende Spiel zu ersetzen.
+deterministische Fortsetzung. Ältere (auch alle v11-Spielstände von 1.0.0),
+neuere, fehlerhafte oder unvollständige Spielstände werden ohne Migration
+abgelehnt, ohne das laufende Spiel zu ersetzen.
 
 Die fünf Speicherplätze sind `~/.u-jagd/slot1.json` bis `slot5.json`.
 Spielstände enthalten einen Schnappschuss der Küstengeometrie und der

@@ -287,7 +287,7 @@ def draw_simlog_view(game) -> None:
     line_h = int(face.get_linesize() * 1.15)
     title_face = layout.font(18, bold=True)
     top = pygame.Rect(0, 0, config.SCREEN_W, 44)
-    pygame.draw.rect(s, (14, 24, 18), top)
+    pygame.draw.rect(s, config.COLOR_PANEL_BG, top)
     pygame.draw.line(s, config.COLOR_SONAR_RING, (0, top.bottom),
                      (config.SCREEN_W, top.bottom), 1)
     s.blit(title_face.render(tr("simlog.view.title"), True, config.COLOR_TEXT),

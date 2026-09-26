@@ -21,6 +21,7 @@ import numpy as np
 
 from src.audio.hydroacoustics import analytic_envelope
 from src.core import config
+from src.physics import ship_dynamics
 
 _BROADBAND_GAIN = 0.04      # rms-Skalierung der Bandrauschaudio
 _OWN_CAV_GAIN = 0.10        # rms-Skalierung der Eigen-Kavitation
@@ -71,6 +72,16 @@ def directional_gain(bearing_deg: float, center_deg: float,
     return float(gain) if np.ndim(gain) == 0 else gain
 
 
+def beam_pattern_gain(bearing_deg, center_deg: float, width_deg: float):
+    """Uniform line-aperture beam: |sinc| main lobe of the given amplitude
+    FWHM with the first side lobes at -13 dB, so a loud source leaks into
+    neighbouring beams (grating/side-lobe response of a real array)."""
+    delta = (center_deg - np.asarray(bearing_deg, dtype=float) + 180.0) % 360.0 - 180.0
+    x = 1.2067 * delta / max(width_deg, 1e-6)
+    gain = np.abs(np.sinc(x))
+    return float(gain) if np.ndim(gain) == 0 else gain
+
+
 class AcousticReceiver:
     """4096 Hz mono receiver, advanced by exactly .25 s per update.
 
@@ -113,6 +124,8 @@ class AcousticReceiver:
         self.seed = int(_finite(seed, 42)) % (2**64)
         self.sequence = -1
         self._history = np.zeros(2 * self.sample_rate, dtype=np.float32)
+        # Carrier band the DEMON envelope is taken from (operator choice).
+        self.demon_band_hz = (400.0, 1400.0)
         self._time = np.arange(1024) / self.sample_rate
         self._angles = np.arange(180) * 2.0
         self._frequencies = np.fft.rfftfreq(self._history.size, 1 / self.sample_rate)
@@ -148,6 +161,8 @@ class AcousticReceiver:
         self.elapsed = 0.0
         self.samples = np.zeros(1024, dtype=np.float32)
         self.spectrum = [0.0] * config.LOFAR_BINS
+        # Native 0.5 Hz FFT bins 0..300 Hz for the operator vernier display.
+        self.native_spectrum = np.zeros(601)
         self.broadband = [0.0] * 180
         self.demon_spectrum = [0.0] * 80
         self.demon_analysis = None
@@ -328,7 +343,8 @@ class AcousticReceiver:
         audio += shaft
         self.ownship_tonals = [{
             "label": "OWN SHAFT", "frequency_hz": shaft_hz,
-            "rpm": speed * config.SHIP_RPM_PER_KN + config.SHIP_RPM_MIN,
+            "rpm": max(ship_dynamics.HULL.idle_rpm, ship_dynamics.HULL.steady_rps(
+                speed * ship_dynamics.KN) * 60.0),
         }] if speed > 0 else []
         # Shaft frequency is machinery/RPM evidence, not a bearing return.
         scan = np.full(180, (ambient_rms**2 + np.mean(shaft**2)) / .25**2)
@@ -439,11 +455,11 @@ class AcousticReceiver:
             if key in entries:
                 next_states[key] = (direction, state, bb_ola, bb_params)
                 next_spectral_states[key] = curve
-            audio += source_audio * directional_gain(bearing, direction, width)
+            audio += source_audio * beam_pattern_gain(bearing, direction, width)
             # Actual unsteered block energy, not source presence or current beam
             # amplitude. Incoherent source powers add; normalize all terms alike.
             scan += (np.mean(source_audio**2) / .25**2
-                     * directional_gain(self._angles, direction, width)**2)
+                     * beam_pattern_gain(self._angles, direction, width)**2)
         self._source_states = next_states
         self._spectral_states = next_spectral_states
         if own_cav > 0:
@@ -503,6 +519,7 @@ class AcousticReceiver:
         amplitudes = np.abs(np.fft.rfft(data * window, n=self._history.size)) * scale
         low = amplitudes[self._frequencies <= 300]
         self.spectrum = np.clip(np.maximum.reduceat(low, self._bin_starts) / .25, 0, 1).tolist()
+        self.native_spectrum = np.clip(low[:601] / .25, 0, 1)
         if data.size < self.sample_rate:
             return
         floor = float(np.median(low))
@@ -519,7 +536,7 @@ class AcousticReceiver:
                     break
 
         # A low-frequency tone alone must not be mistaken for modulation.
-        envelope = analytic_envelope(data, self.sample_rate, 400.0, 1400.0)
+        envelope = analytic_envelope(data, self.sample_rate, *self.demon_band_hz)
         carrier_rms = float(np.sqrt(np.mean(envelope**2) / 2))
         envelope_mean = float(envelope.mean())
         modulation = np.abs(np.fft.rfft((envelope - envelope_mean) * window,

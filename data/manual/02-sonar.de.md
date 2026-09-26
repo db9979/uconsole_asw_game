@@ -38,10 +38,13 @@ Neueste Daten stehen oben. Eine gerade senkrechte Spur ist ein Kontakt mit stehe
 
 Die x-Achse ist die Frequenz (0-300 Hz), die Zeit läuft nach unten. Die Klassen sind 1 Hz breit unter 40 Hz, 2 Hz bis 100 Hz und 5 Hz darüber. Alle 0,25 s kommt eine Zeile hinzu; 80 Zeilen bleiben stehen.
 
-- Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie; `K` schaltet die erkannte Harmonischen-Hypothese.
+- Stehende senkrechte Linien sind **Töne** (Schmalband): Generatoren, Pumpen, Wellenlinien. Mehrere Linien bei ganzzahligen Vielfachen einer Frequenz bilden eine Harmonischenfamilie: den weißen Cursor mit `Z`/`X` auf eine Linie setzen (`Umschalt`: 10-Hz-Schritte) und mit `K` als Grundton markieren; bernsteinfarbene Hilfslinien zeigen dann 2f, 3f usw. `K` auf derselben Frequenz löscht ihn.
 - Das eigene Schiff erzeugt eine Wellenlinie bei etwa 10 + 1,9 x eigene Fahrt Hz. `N` blendet sie per Notch aus.
 - `Leertaste` hält Spitzen, damit schwache Töne hervortreten.
-- `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz.
+- Der Spektrumstreifen über dem Wasserfall schreibt die Frequenz über jede deutliche Linie (zwischen den Klassen interpoliert; mit `Leertaste` die gehaltene Hüllkurve). Wo sich Werte überdecken würden, behält die stärkere Linie ihre Beschriftung. Der Remote-Crew-Browser beschriftet seine Spektren genauso.
+- `F` wählt das Analyseband: FULL 0-300, LOW 4-80, SHAFT 8-55, MID 20-120 Hz. `Strg+Z` / `Strg+X` setzen die untere / obere Bandkante auf den Cursor für jeden Band-, Tief- oder Hochpass; `Umschalt+N` legt einen zusätzlichen Notch auf die Cursorfrequenz.
+- `Q` wählt die Integrationszeit: 2 s (die FFT des Empfängers), 8, 16 oder 64 s. Längere Integration mittelt aufeinanderfolgende Spektren, sodass ein schwacher stehender Ton aus dem Rauschen tritt; eine wandernde Linie verschmiert dabei. `Umschalt+Q` öffnet den Nonius: 20 Hz um den Cursor in der nativen 0,5-Hz-Auflösung.
+- Die Detailspalte liest den Pegel am Cursor. Automatisch beschriftet der Streifen Linien nur mit Bedienerassistenz Training (`F10`).
 
 ### DEMON {#sonar-demon}
 
@@ -57,13 +60,14 @@ DEMON demoduliert die Hüllkurve des Breitbandrauschens im Horchstrahl. Schraube
     Welle Blatt 2. Harmonische
 ```
 
-Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefenster sind bis zu 2 s lang: nach einer Peilungsänderung mindestens eine Sekunde horchen, bevor Sie urteilen. Gerankte Kandidaten aus dem Akustikkatalog erscheinen als Hinweis; die Klassifizierung bleibt Ihre Entscheidung.
+Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsänderung einige Sekunden horchen, bevor Sie urteilen. Blätter selbst zählen: den Cursor (`Z`/`X`, 0,5 Hz) auf die Wellenlinie setzen und `K` drücken, dann auf die Blattlinie und erneut `K`; die Spalte zeigt Blätter = Blattfrequenz / Wellenfrequenz (mit der Abweichung von einer ganzen Zahl) und die Wellendrehzahl. Ein drittes `K` löscht beide Marken. Das Ergebnis mit den Referenzen im Kontaktanalysator (`F8`) vergleichen. Mit Bedienerassistenz Training (`F10`) beschriftet das Sonar zusätzlich Modulationslinien, schlägt Drehzahlen für 3-7 Blätter vor und rankt Katalogkandidaten.
 
 ### TMA, Umwelt und Aktiv {#sonar-tma-env}
 
-- **TMA** löst Entfernung, Kurs und Fahrt aus einer Peilungsreihe des fokussierten Kontakts. Nötig sind mindestens 4 Peilungen über 180 s und eine eigene Kursänderung von mindestens 6 Grad; die Entfernung gilt ab Qualität 0,35. Tiefe schätzt TMA nicht.
-- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert.
-- **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung (+/-0,18 sm) und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s.
+- **TMA** machen Sie selbst. Die Seite zeichnet die Peilungen des gewählten Kontakts über der Zeit. Stellen Sie eine Hypothese auf: `Z`/`X` Kurs (`Umschalt`: 1 Grad), `Strg+Z`/`Strg+X` Fahrt, `Q`/`Umschalt+Q` Entfernung auf der neuesten Peilung (`Strg`: 0,2 sm). Die bernsteinfarbene Kurve zeigt die Peilungen, die diese Hypothese vorhersagt, die Punkte am Fuß die Residuen (gemessen minus vorhergesagt). Gute Hypothesen lassen die Residuen um null streuen; ein falscher Kurs, eine falsche Fahrt oder Entfernung hinterlässt einen Trend. Die Spalte zeigt RMS der Residuen, den systematischen Trend nach Mittelung, die Passung und die Beobachtbarkeit. Die Entfernung ist erst nach einer eigenen Kursänderung beobachtbar (mindestens 6 Grad, besser 30-60); ohne sie verweigert `K`. `K` übernimmt die Hypothese als TMA-Fix des Kontakts; er wird auf Kurs und Fahrt mitgekoppelt und veraltet nach 120 s, also verfeinern und erneut übernehmen, wenn Peilungen hinzukommen. Verrauschte Peilungen ergeben auch bei guter Passung eine große Entfernungsunsicherheit. Tiefe schätzt TMA nicht. Mit Bedienerassistenz Training (`F10`) wird ein automatischer Solver-Vorschlag (er braucht mindestens 4 Peilungen über 180 s) als dünne Linie gezeichnet, und `Umschalt+K` kopiert ihn in die Hypothese. Sonobojen-Peilungen gehen mit der Boje als Beobachter in den Track ein.
+- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert. Die Schicht ist nicht fest: Nachmittagssonne macht sie flacher (etwa 8 m), starker Wind mischt sie über Stunden tiefer, und interne Wellen verschieben sie um einige Meter. Den BT nach einigen Stunden oder einem Wetterwechsel wiederholen. Das gemessene Profil ist die echte temperaturabhängige Schallgeschwindigkeit (Mackenzie-Gleichung) und fällt deshalb unterhalb der Schicht ab. Mit der Maus über dem Profil lesen Sie die genaue Tiefe, die dortige Schallgeschwindigkeit und ob die Tiefe über oder unter der Schicht liegt (uConsole und Web). Im Web-Client beschriftet die Grafik zusätzlich Schicht, Meeresgrund und das Schallgeschwindigkeitsminimum.
+- **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s. `W` wählt den Puls: **CW** (1-s-Ton) misst die Entfernung grob (etwa 0,1-0,3 sm), trennt aber über den Doppler ein bewegtes Ziel vom Nachhall des Meeresbodens; **LFM** (100-Hz-Sweep) misst die Entfernung auf wenige Meter und gewinnt 20 dB gegen Rauschen, ein langsames oder stehendes Ziel bleibt aber im Nachhall. Die Echostärke hängt vom Aspekt (breitseits etwa 15 dB stärker als von vorn) und der Größe des Ziels ab. Felsgrund hallt viel stärker nach als Schlick; kartierte Wracks liefern echte Echos ohne zugehörigen Kontakt ("nicht zugeordnetes Echo").
+- **Das Echo hören:** Jede Rückkehr ist hörbar, sobald sie eintrifft, nach ihrer echten Laufzeit hin und zurück (etwa 2,5 s je Seemeile Entfernung), für das Schiffssonar ebenso wie für das Tauchsonar des Helikopters. Ein CW-Echo ist ein weicher Ton auf der Trägerfrequenz, ein LFM-Echo ein kurzer Sweep; maßgeblich ist der Puls, mit dem gepingt wurde. Ein starkes Echo hebt sich deutlich ab, ein schwaches steigt kaum aus dem Nachhallrauschen. Im Remote-Crew-Browser klingt das Echo über den allgemeinen Ton (laut oder leise).
 
 ## Bugsonar und Schleppsonar {#sonar-arrays}
 
@@ -99,7 +103,7 @@ Die Anzeige zeigt gemessene Modulation, keine sichere Identität. Die Analysefen
 
 Gefechtslage:
 
-1. Ein neuer, hoher, schnell wandernder Kontakt kann ein Torpedo sein. Peilung sofort an die Brücke melden.
+1. Ein Starttransient, hochfrequente Ortungsimpulse oder ein neuer lauter Breitbandkontakt ohne Tonale mit schnell wandernder Peilung kann ein Torpedo sein. Als Torpedo klassifizieren (`C`) und die Peilung sofort an die Brücke melden.
 2. Fokus auf dem feindlichen U-Boot halten, damit das Draht-Datum des Torpedos frisch bleibt.
 3. Nur pingen, wenn die Tiefe für den Schuss fehlt oder der Kontakt verloren geht: das U-Boot hört einen Ping bis 60 sm und weicht aus.
 
@@ -107,15 +111,21 @@ Gefechtslage:
 
 - Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Ctrl+I`/`Ctrl+O`) und Kontrast (`Shift+I`/`Shift+O`) heben schwache Spuren hervor; `Shift+C` wechselt die Phosphorfarbe.
 - `D` oder `A`/`B`/`H` wählen Breitband-, gefiltertes oder Überlagerungs-Abhören. Überlagerung verschiebt das tiefe Band auf etwa 700 Hz, damit tiefe Töne hörbar werden.
+- Das Abhör-Audio läuft etwa eine Sekunde hinter der Anzeige, damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach etwa einer Sekunde in den neuen über; der Ton bricht nicht ab.
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
-- Die TMA-Seite zeigt die aus der Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
+- Die TMA-Seite zeigt die aus der übernommenen Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
+- Die Schleppantenne ist eine Linie: sie kann eine Peilung nicht von ihrem Spiegelbild zum Kabel unterscheiden. Ein nur auf der TAS gehörter Kontakt wird als "TAS links/rechts mehrdeutig" mit Spiegelpeilung markiert und speist keine TMA; die Anzeige zeigt die von Ihnen gewählte Seite (Standard Steuerbord). 20 Grad drehen und beide Spuren beobachten: die echte bleibt stetig, die Geisterspur springt (der Status lautet dann "Wende gefahren - Spuren vergleichen"). Auf der Breitband- oder Fusionsseite zeigt `X` die andere Seite, `Umschalt+X` bestätigt die angezeigte; nichts wird für Sie entschieden. Eine falsch bestätigte Seite bleibt gespiegelt (die TMA-Residuen zeigen es; `X` öffnet die Wahl wieder). Eine Peilung des Rumpfsonars löst die Seite durch Messung auf. Peilungen zu den Kabelenden (Endfire) sind zudem ungenauer als querab.
+- `Umschalt+F` wählt das DEMON-Trägerband (200-800, 400-1400 oder 1000-2000 Hz): das Band suchen, in dem das Kavitationsrauschen am stärksten ist. `Strg+F` stellt den Überlagerungsversatz (400/700/1000/1200 Hz) zum Abhören tiefer Töne ein.
+- Im Kontaktanalysator (`F8`) ordnet `Enter` bei gewähltem Kontakt das angezeigte Katalogprofil diesem Kontakt zu, `Umschalt+Enter` löscht die Zuordnung. Die Zuordnung ist Ihr Vermerk: sie erscheint in der Kontaktliste, wird gespeichert und ändert nie die Klassifizierung oder die Waffensperren des Kontakts.
 - Ein Kontakt geht 120 s nach der letzten Ortung verloren. Schwache Kontakte weiter verfolgen oder per Ping wieder erfassen.
+- Wracks liefern echte Echos ohne Doppler. Ein U-Boot, das still neben einem kartierten Wrack auf Grund liegt, versteckt sich vor einem CW-Ping in dessen Echo (750 m Entfernungszelle); ein LFM-Ping löst etwa 8 m auf und kann Boot und Wrack trennen. Jedes Wrack, das der Gegner erreichen konnte, ist verdächtig.
+- Der Bathythermograph (`E`) misst bis zum Grund, höchstens 1500 m. Erst nach einer Messung zeigt die Wetter- & Sonar-Analyse (`0`) die Schicht, die Schattenzone darunter und einen SOFAR-Kanal.
+- Das Sonar benennt nie einen Torpedo oder ein U-Boot. Es meldet, was es hört: einen mechanischen Starttransient (hörbar bis 35 NM) oder hochfrequente Ortungsimpulse (etwa 6 NM) als Peilung, die der Brückenalarm 60 s hält, und Sinkgeräusche, wenn ein Rumpf sinkt. Das OPZ-Symbol eines Sonarkontakts folgt allein Ihrer Klassifizierung; ein unklassifizierter Kontakt bleibt unbekannt.
 
 ## Nicht modelliert {#sonar-limits}
 
-- Keine manuelle TMA (Punktstapel, manuelle Lösungseingabe); nur der automatische Löser, geschaltet mit `T`.
+- Kein Punktstapel und keine Ekelund-Entfernung; TMA ist das obige Hypothesen-/Residuenverfahren. `T` schaltet den Solver hinter der Trainingshilfe.
 - Keine wählbare Split-Window-Normalisierung (TPSW); stattdessen Verstärkung, Schwarzwert und Kontrast nutzen.
 - Kein harter blinder Baffle-Sektor; Eigenlärm ist eine weiche Keule.
-- Keine akustische Dopplerverschiebung tonaler Linien; die Annäherungsrate kommt nur aus der TMA-Lösung.
 - Kein vom TAS getrenntes Tiefensonar (VDS).

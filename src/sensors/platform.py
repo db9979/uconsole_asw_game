@@ -8,7 +8,8 @@ import random
 from dataclasses import asdict, dataclass
 
 from src.core import config
-from src.sonar import propagation
+from src.sensors import radar as radar_physics
+from src.sonar import equation, propagation
 
 
 SIDES = ("friendly", "neutral", "hostile")
@@ -174,6 +175,9 @@ class PlatformSensorSuite:
                 float(now) + phase)
         self.local_picture = ObservationPicture(30.0, MAX_LOCAL_TRACKS)
         self.datalink_picture = ObservationPicture(30.0, MAX_DATALINK_TRACKS)
+        # Radio reachability for the datalink this tick (a submerged boat
+        # only exchanges with its antenna at mast depth); set by the owner.
+        self.datalink_reachable = True
 
     @property
     def datalink_id(self) -> str:
@@ -213,7 +217,11 @@ class PlatformSensorSuite:
         target_domain = getattr(candidate, "sensor_domain", "surface")
         owner_domain = getattr(owner, "sensor_domain", "surface")
         if profile.domain in ("radar", "esm", "ais") and owner_domain == "subsurface":
-            return
+            # Masts only work at periscope/snorkel depth: ESM needs the
+            # antenna above the surface; a submerged boat's radar/AIS never.
+            if (profile.domain != "esm"
+                    or getattr(owner, "depth", 0.0) > MAST_DEPTH_M):
+                return
         if ((profile.domain in ("radar", "esm", "ais")
              and target_domain == "subsurface")
                 or (profile.domain == "ais" and target_domain != "surface")
@@ -222,25 +230,23 @@ class PlatformSensorSuite:
         if profile.domain == "radar":
             sea_state = getattr(world, "effective_sea_state",
                                 getattr(world, "sea_state", 0.0))
-            sea = config.clamp(
-                (sea_state - (config.RADAR_WEATHER_THRESHOLD - 1)) / 2.0,
-                0.0, 1.0)
             rain = config.clamp(getattr(world, "rain_intensity", 0.0), 0.0, 1.0)
-            sea_loss = (config.RADAR_AIR_WEATHER_LOSS
-                        if target_domain == "air"
-                        else config.RADAR_SURFACE_WEATHER_LOSS)
-            rain_loss = (config.RADAR_RAIN_AIR_LOSS
-                         if target_domain == "air"
-                         else config.RADAR_RAIN_SURFACE_LOSS)
-            availability *= (1.0 - sea_loss * sea) * (1.0 - rain_loss * rain)
-            # Radar cross-section is catalog metadata, not a physics model: a
-            # small, bounded scaling factor around a ~500 m2 reference target,
-            # not a rewrite of the range-based detection formula.
+            # Radar equation: sea clutter and rain attenuation shorten the
+            # Pd = 0.5 range of this radar.
+            availability *= radar_physics.detection_fraction(
+                "air" if target_domain == "air" else "surface", sea_state,
+                rain, max(profile.synthetic_range_nm or 1.0, 1.0))
+            # Radar equation: detection range scales with RCS^(1/4) around a
+            # ~500 m2 reference target (bounded for catalog outliers).
             rcs = getattr(getattr(candidate, "profile", None), "rcs_m2", None)
             if rcs is not None:
                 availability *= config.clamp((rcs / 500.0) ** 0.25, 0.5, 1.5)
         maximum = (profile.synthetic_range_nm or 0.0) * availability
-        if maximum <= 0.0 or distance > maximum:
+        # A passive sonar hears a loud target beyond its reference range
+        # (source level up to +5 dB); the sonar equation decides below.
+        reach = maximum * (1.8 if profile.domain == "sonar"
+                           and "active" not in profile.modes else 1.0)
+        if maximum <= 0.0 or distance > reach:
             return
         if getattr(world, "land_blocks_line", lambda *args: False)(
                 owner.x, owner.y, candidate.x, candidate.y):
@@ -267,22 +273,65 @@ class PlatformSensorSuite:
                 thermo = (float(thermo_at(mx, my)) if thermo_at is not None
                           else min(100.0, water_depth))
                 water_depth = max(water_depth, thermo)
+                frequency = propagation.representative_frequency_hz(
+                    _candidate_acoustic_signature(candidate))
+                sea_state = float(getattr(world, "effective_sea_state",
+                                          getattr(world, "sea_state", 0)))
                 result = propagation.propagate(
                     owner.x, owner.y, source_depth,
-                    candidate.x, candidate.y, target_depth,
-                    propagation.representative_frequency_hz(
-                        _candidate_acoustic_signature(candidate)),
-                     thermo, water_depth, sea_state=getattr(
-                         world, "effective_sea_state", getattr(world, "sea_state", 0)),
+                    candidate.x, candidate.y, target_depth, frequency,
+                    thermo, water_depth, sea_state=sea_state,
                     terrain_blocked=getattr(world, "sonar_path_blocked", None))
-                maximum *= propagation.passive_range_factor(result, distance)
-                if maximum <= 0.0 or distance > maximum:
+                if result.best_path is None:
                     return
             source_noise = (candidate.noise_level()
                             if hasattr(candidate, "noise_level") else
                             1.0 - getattr(candidate, "quiet_factor", lambda: 0.0)())
-            received_signal = max(0.0, source_noise) * max(
-                0.0, 1.0 - distance / maximum)
+            if "passive" in profile.modes and not active_sonar:
+                # Passive sonar equation: the catalog synthetic range is the
+                # figure of merit against a silent reference target; a
+                # louder target raises source level, the platform's own
+                # radiated noise raises its self noise.
+                owner_noise = (owner.noise_level() if hasattr(owner, "noise_level")
+                               else 1.0 - getattr(owner, "quiet_factor",
+                                                  lambda: 1.0)())
+                ray = propagation.ray_excess_db(
+                    world, owner.x, owner.y, source_depth, candidate.x,
+                    candidate.y, target_depth, frequency)
+                terms = equation.passive_terms(
+                    frequency_hz=frequency, distance_nm=distance,
+                    target_bonus=(1.0 + 0.8 * config.clamp(source_noise, 0.0, 1.0))
+                    * (10.0 ** (candidate.source_level_offset_db() / 20.0)
+                       if hasattr(candidate, "source_level_offset_db") else 1.0),
+                    excess_path_loss_db=(ray if ray is not None else
+                                         result.best_path.loss_db
+                                         - 20.0 * math.log10(1.0 + distance)),
+                    absorption_db_per_km=equation.francois_garrison_db_per_km(
+                        frequency, 10.0, min(water_depth, 200.0)),
+                    legacy_absorption_db=(0.0 if ray is not None else
+                                          result.best_path.distance_nm
+                                          * propagation.ABSORPTION_DB_PER_NM[frequency]),
+                    # The catalog range already includes self noise at a
+                    # typical operating level; only louder operation deafens.
+                    own_range_factor=min(1.0, (1.0 - 0.8 * config.clamp(
+                        owner_noise, 0.0, 1.0)) / (1.0 - 0.8 * NPC_REFERENCE_NOISE)),
+                    array_range_factor=maximum / config.SONAR_PASSIVE_BASE_NM,
+                    sea_state=sea_state,
+                    rain=float(getattr(world, "rain_intensity", 0.0)),
+                    shipping_contacts=equation.REFERENCE_SHIPPING_CONTACTS,
+                    # Receiver sensitivity relative to the catalog reference
+                    # (-100 dB): a more sensitive receiver gains directivity.
+                    sensitivity_db=config.clamp(
+                        NPC_REFERENCE_SENSITIVITY_DB - profile.sensitivity_db,
+                        -12.0, 12.0) if profile.sensitivity_db is not None else 0.0)
+                excess = terms.signal_excess_db
+                if excess <= 0.0:
+                    return
+                received_signal = config.clamp(
+                    excess / config.SONAR_SNR_QUALITY_SPAN_DB, 0.0, 2.0)
+            else:
+                received_signal = max(0.0, source_noise) * max(
+                    0.0, 1.0 - distance / maximum)
             if received_signal <= 0.01:
                 return
         token = _candidate_token(candidate)
@@ -391,7 +440,8 @@ def exchange_friendly_datalink(
     never across groups.
     """
     eligible = sorted(
-        (suite for suite in suites if suite.datalink_group is not None),
+        (suite for suite in suites if suite.datalink_group is not None
+         and suite.datalink_reachable),
         key=lambda suite: suite.datalink_id)
     reports = {
         suite.datalink_id: tuple(
@@ -424,6 +474,12 @@ def exchange_friendly_datalink(
 def side_datalink_group(side: str) -> str | None:
     """W2: same-side datalink group key - hostile units coordinate like blue does."""
     return {"friendly": "blue", "hostile": "red"}.get(side)
+
+
+# Own radiated-noise level at which catalog passive ranges were tuned.
+NPC_REFERENCE_NOISE = 0.8
+MAST_DEPTH_M = 18.0
+NPC_REFERENCE_SENSITIVITY_DB = -100.0
 
 
 def motion_limits(catalog, profile_key: str, *, cruise_speed: float,

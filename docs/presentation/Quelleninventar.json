@@ -1,0 +1,4664 @@
+{
+  "date": "2026-09-24",
+  "version": "1.1.0",
+  "base_commit": "5d74b5dc364b20df46b7c5509280cb0685982391",
+  "working_tree": " M data/commander/app.js\n M data/commander/index.html\n M data/commander/style.css\n M data/i18n/de.json\n M data/i18n/en.json\n M data/manual/02-sonar.de.md\n M data/manual/02-sonar.en.md\n M data/manual/08-helicopter.de.md\n M data/manual/08-helicopter.en.md\n M data/manual/10-reference.de.md\n M data/manual/10-reference.en.md\n M docs/commander-protocol.de.md\n M docs/commander-protocol.md\n M docs/manual/manual.de.md\n M docs/manual/manual.en.md\n M docs/simulation-gaps.md\n M src/air/helicopter.py\n M src/commander/projections.py\n M src/commander/server.py\n M src/core/config.py\n M src/core/game.py\n M src/core/help.py\n M src/sonar/propagation.py\n M src/sonar/raytrace.py\n M src/sonar/sonar.py\n M src/world/ocean.py\n M src/world/world.py\n M tests/calibration/deviations.json\n M tests/test_commander_browser_sessions_v2.py\n M tests/test_commander_console_browser.py\n M tests/test_commander_projection_schema.py\n M tests/test_commander_projections_v2.py\n M tests/test_sonar_hmi_web.py\n?? docs/presentation/\n?? src/ui/weather_station.py\n?? src/world/atmosphere.py\n?? tests/test_weather_station.py\n?? tests/test_weather_station_web.py\n",
+  "scope": "AST-Inventur aller src-Pythonmodule; fachliche Vertiefung gemäß Folienquellen. Keine Behauptung einer vollständigen Zeilenprüfung.",
+  "counts": {
+    "air": 8,
+    "audio": 8,
+    "commander": 9,
+    "core": 16,
+    "data": 6,
+    "enemies": 7,
+    "nations": 2,
+    "network": 5,
+    "physics": 5,
+    "sensors": 9,
+    "ship": 3,
+    "sonar": 6,
+    "ui": 19,
+    "weapons": 5,
+    "world": 8
+  },
+  "modules": [
+    {
+      "path": "src/air/__init__.py",
+      "sha256": "8b2a172c3c2adf0c6d4b73f91cc9773003424e48dd4f1b69ccad9d3acdcaaefc",
+      "lines": 1,
+      "docstring": "Luftsysteme: Hubschrauber (M15), Sonarbojen (M15), Raketen (M16).",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/air/asm.py",
+      "sha256": "354cf37082fce617208e746edff417a87251976141afc7fc0ac316cb73578d67",
+      "lines": 298,
+      "docstring": "M16: Fliegerabwehr – See-Skimming-ASMs (feindlich) + ESSM (eigene).\n\nZeitbasis: Simulationssekunden; bei 1x identisch zu Echtzeit.",
+      "internal_imports": [
+        "src.air",
+        "src.core",
+        "src.physics",
+        "src.weapons.air_defense",
+        "src.weapons.torpedo"
+      ],
+      "symbols": [
+        "ASM:15",
+        "ESSM:215",
+        "__init__:30",
+        "distance_nm:68",
+        "bearing_to_frigate:71",
+        "jamming:77",
+        "seeker_active:82",
+        "launch_chaff:89",
+        "_ecm_decision:110",
+        "_turn_towards:121",
+        "_guide:126",
+        "update:167",
+        "__init__:222",
+        "update:245",
+        "viable:249"
+      ]
+    },
+    {
+      "path": "src/air/chaff.py",
+      "sha256": "4a0cd6cfb3d413bc1740205605a9f07d59f2a07f6f4bea08b441e3d4101591fa",
+      "lines": 82,
+      "docstring": "Chaff clouds: drifting, blooming radar reflectors (own ship softkill).\n\nA rocket lays the cloud beside the ship, off the threat axis, inside the\nmissile seeker's resolution cell.  The dipoles bloom to full cross-section\nover a few seconds, drift with the wind and fall out after about 90 s.  The\nmissile decides between cloud and ship when it is launched against (see\n``ASM.launch_chaff``); a cloud that has not bloomed by the time the missile\narrives is less likely to win.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "ChaffCloud:25",
+        "lay_position:51",
+        "seduction_probability:60",
+        "valid_row:74",
+        "__init__:26",
+        "active:33",
+        "bloom:36",
+        "update:40",
+        "to_dict:47",
+        "number:75"
+      ]
+    },
+    {
+      "path": "src/air/flights.py",
+      "sha256": "7e117939956c1bd0493e32475365aad3b5f1f0afd5ad4f400b93a809e636a656",
+      "lines": 313,
+      "docstring": "W3: Luftfahrt – zivile Flüge zwischen Airbases + militärische Patrouillen.\n\nFlüge sind oberflächennahe, nie im Sonar sichtbar; Radar/ESM zeigen sie\n(militärische Patrouillen nur als ESM-Peilung jenseits der Radarreichweite,\ninnerhalb als Track \"FLG\").",
+      "internal_imports": [
+        "src.core",
+        "src.data.catalog",
+        "src.sensors.platform"
+      ],
+      "symbols": [
+        "Flight:20",
+        "FlightManager:195",
+        "__init__:25",
+        "altitude_m:114",
+        "update:117",
+        "distance_nm:178",
+        "bearing_to_frigate:181",
+        "ais_transmitting:187",
+        "sensor_domain:191",
+        "__init__:200",
+        "next_seq:212",
+        "_is_hostile_base:224",
+        "_civil_via:231",
+        "_spawn_flight:261",
+        "_spawn_initial:267",
+        "update:278",
+        "military:309",
+        "civil:312"
+      ]
+    },
+    {
+      "path": "src/air/helicopter.py",
+      "sha256": "820994088e99d86a94f38a76a2c4b2c78d472a4b06ed76423c4f535fa403c682",
+      "lines": 309,
+      "docstring": "M15: Hubschrauber HSP-5 (Sea Lynx) – Sonarbojen + Leichttorpedos.\n\nZustände: HANGAR | AUF (Einsatz) | ZURUECK (Rückkehr).\nBewegung, Treibstoff und Zeitfenster verwenden dieselbe Simulationszeit.\n\nFlight physics: hovering (dipping) needs more power than cruise, so fuel\nburns faster; in the hover the wind pushes the aircraft off its hover point\nand the pilot holds it back (a small steady downwind offset).  Launch and\nrecovery wait for a deck-motion window (roll/pitch limits).",
+      "internal_imports": [
+        "src.air.sonobuoy",
+        "src.core",
+        "src.data.catalog",
+        "src.weapons.torpedo"
+      ],
+      "symbols": [
+        "ReleaseDatum:28",
+        "deck_within_limits:46",
+        "Helicopter:50",
+        "__init__:53",
+        "airborne:74",
+        "launch:77",
+        "set_waypoint:91",
+        "order_return:95",
+        "hovering:102",
+        "dip_available:106",
+        "dip_ping_ready:110",
+        "dip_depth_limit:113",
+        "set_dip_depth:120",
+        "set_dipping:131",
+        "fire_dipping_ping:147",
+        "_update_dipping:153",
+        "update:176",
+        "_hold_hover:226",
+        "water_entry_clear:239",
+        "deploy_buoy:246",
+        "release_datum_from_ship_observation:256",
+        "drop_torpedo:282"
+      ]
+    },
+    {
+      "path": "src/air/live_aircraft.py",
+      "sha256": "9550fc20c2af9bf236ae13c03f88ff36e290150a5f9a59630bc14266cd5fb3e4",
+      "lines": 122,
+      "docstring": "Live-Flugzeug-Kontakt aus dem OpenSky-ADS-B-Feed.\n\nMinimal an ``src.air.raid.Raider`` angelehnt (per-Instanz ``altitude_m`` fuer\nden Radarhorizont), aber mit Interpolation zwischen zwei Zustandsvektor-\nFixes fuer eine fluessige Darstellung zwischen den ~15-30s REST-Polls.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "_Fix:16",
+        "LiveAircraft:29",
+        "__init__:19",
+        "__init__:32",
+        "push_fix:58",
+        "last_fix_at:66",
+        "advance:70",
+        "distance_nm:99",
+        "bearing_from_frigate:102",
+        "radar_emitting:108",
+        "ais_transmitting:112",
+        "sensor_domain:116",
+        "hit:119"
+      ]
+    },
+    {
+      "path": "src/air/raid.py",
+      "sha256": "5c861289d57ea7fec2ba93147eb6a976fb6fc8ab602734a8abcca7b876d2bfe9",
+      "lines": 156,
+      "docstring": "R20: Luftangriff – feindliche Angriffsflugzeuge gegen die Fregatte.\n\nRaider sind Simulationsentitaeten (KI/Physik duerfen die Wahrwerte nutzen).\nBeobachtung laeuft ausschliesslich ueber das Air Picture als anonymer\nFLG-Track; die Flak feuert nur gegen frische Radar-Beobachtungen.\n\nPhasenmaschine:\n    APPROACH -> (Waffenbereich) -> ATTACK -> (Fenster abgelaufen /\n    Bereich verlassen) -> RETREAT -> (Rausradius / Weltende) -> Despawn\n\nFlight physics: coordinated turns (rate = g tan(bank) / v at the bank\nlimit) and, for every salvo, a pop-up: the raider climbs from its\nsea-skimming approach height to acquire the ship with its fire-control\nradar (an ESM-visible emission and a radar-horizon spike), releases after\nthe lock time and descends again.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "RaidPhase:25",
+        "coordinated_turn_rate_deg_s:45",
+        "Raider:50",
+        "parse:31",
+        "__init__:56",
+        "distance_nm:81",
+        "bearing_from_frigate:84",
+        "course_to_frigate:90",
+        "fc_radar_on:95",
+        "_climb:98",
+        "update:104"
+      ]
+    },
+    {
+      "path": "src/air/sonobuoy.py",
+      "sha256": "0f658c3e0b7d7d1f530a632e800f9b633c4599a0634d87300a55bf512a766480",
+      "lines": 38,
+      "docstring": "M15: Sonarboje – passiver Hörer mit begrenztem Batterieleben.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "Sonobuoy:10",
+        "__init__:13",
+        "active:25",
+        "update:28"
+      ]
+    },
+    {
+      "path": "src/audio/__init__.py",
+      "sha256": "9a37f6d3797c347556e3ae949b54a3c6fa86f24e62ac3d6a8cde680b5b353d7c",
+      "lines": 8,
+      "docstring": "Nicht-blockierende Audio- und Akustiksignalverarbeitung.",
+      "internal_imports": [
+        "src.audio.demon",
+        "src.audio.engine",
+        "src.audio.synthesis"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "src/audio/database.py",
+      "sha256": "2d4b713f26a88cedda813b34225e89a9e9787f0f7642bd765959886df61eb641",
+      "lines": 21,
+      "docstring": "Kompatibilitaets-Shim: Akustik-Datenbank lebt jetzt in src.data.catalog.\n\nAlle Imports aus dieser Datei (TARGET_DATABASE, CIVILIAN_SIGNATURES,\nsignature_for_key, rank_signatures, TargetSignature) bleiben bestehen;\ndie Daten kommen aus dem Kontakt-Katalog (data/contacts/*.json oder\neingebauter Default).",
+      "internal_imports": [
+        "src.data.catalog"
+      ],
+      "symbols": [
+        "signature_for_key:16"
+      ]
+    },
+    {
+      "path": "src/audio/demon.py",
+      "sha256": "4975fb9c383fe82de626c9422ca224bcbbc2eb1d51ba8e18de859ae7891802a1",
+      "lines": 54,
+      "docstring": "DEMON: Huellenspektrum zur Blattfrequenz- und RPM-Schaetzung.",
+      "internal_imports": [],
+      "symbols": [
+        "DemonResult:9",
+        "DemonAnalyzer:16",
+        "__init__:19",
+        "analyze:26"
+      ]
+    },
+    {
+      "path": "src/audio/engine.py",
+      "sha256": "4d41d199965f176d603111532b220bffbb8dcf684f7e86043fc7e988fc2a3496",
+      "lines": 616,
+      "docstring": "Nicht-blockierende Pygame-Audioausgabe mit NumPy-Synthese.",
+      "internal_imports": [
+        "src.audio.receiver",
+        "src.audio.synthesis",
+        "src.core",
+        "src.core.debuglog"
+      ],
+      "symbols": [
+        "AudioEngine:20",
+        "__init__:37",
+        "availability_status:117",
+        "_latch_device_error:125",
+        "_make_sound:135",
+        "_sound:143",
+        "play_ping:157",
+        "play_effect:178",
+        "play_alert:207",
+        "play_sonar:241",
+        "_stop_orphaned_worker:353",
+        "_pump_sonar:358",
+        "_pump_sonar_once:374",
+        "stop_sonar:426",
+        "discontinue_sonar_input:448",
+        "hold_sonar:458",
+        "_reset_sonar_stream:476",
+        "stop:492",
+        "play_unit_preview:497",
+        "stop_preview:533",
+        "preview_playing:545",
+        "debug_log:555",
+        "_hard_stop:593",
+        "shutdown:605"
+      ]
+    },
+    {
+      "path": "src/audio/hydroacoustics.py",
+      "sha256": "1e52df76cecfa71c64ba059b043d3d614196d8fca7c28900fde77d8bfb32763f",
+      "lines": 406,
+      "docstring": "Reusable synthetic hydroacoustic synthesis, channel, and PCM analysis.\n\nThese routines are deterministic game/audio models.  They are not measured\nsignatures, calibrated propagation, or physically accurate ocean acoustics.\nThey deliberately own no target identity and the analyzers inspect PCM only.",
+      "internal_imports": [],
+      "symbols": [
+        "_number:33",
+        "_integer:43",
+        "_pcm:49",
+        "_sample_rate:58",
+        "analytic_envelope:62",
+        "AcousticSignature:77",
+        "HydroacousticChannel:201",
+        "LOFARResult:294",
+        "DEMONHypothesis:300",
+        "DEMONResult:307",
+        "analyze_lofar:331",
+        "analyze_demon:354",
+        "__init__:85",
+        "set_operating_point:130",
+        "_one_pole:139",
+        "render_frame:147",
+        "update:195",
+        "__init__:210",
+        "set_geometry:224",
+        "_target_gain:238",
+        "transmission_loss_db:241",
+        "_target_cutoff:249",
+        "process_frame:253",
+        "update:282",
+        "blade_rate_hz:315",
+        "rpm_hypotheses:320",
+        "confidence:326"
+      ]
+    },
+    {
+      "path": "src/audio/preview.py",
+      "sha256": "a820939ca5632b3147f95254dd4f1b852aca3b9751a4b1fc34ebaef41385fb2e",
+      "lines": 110,
+      "docstring": "Deterministic per-unit acoustic previews (reference clips, not recordings).\n\nA preview drives a dedicated transient AcousticReceiver with the catalog\nmachine lines/broadband of one speed mode only: no own-ship layers, no\npropagation path (flat spectral curve), full beam. The result is a bounded\nfloat32 clip at the caller's output rate, identical across runs for the same\ninputs.",
+      "internal_imports": [
+        "src.audio.receiver"
+      ],
+      "symbols": [
+        "preview_seed:30",
+        "_field:38",
+        "_lines_of:44",
+        "_broadband_of:57",
+        "preview_available:65",
+        "unit_sonar_preview:71"
+      ]
+    },
+    {
+      "path": "src/audio/receiver.py",
+      "sha256": "e1538b37b063d42433e8bbdc70cca6b64e873f80755acb0e959d556481c3ea6d",
+      "lines": 569,
+      "docstring": "Synthetic beam audio and sample-derived spectra; no target classification.\n\nThe first line, if narrow and in 2..80 Hz, illustratively modulates a 700 Hz\ncarrier. This is NOT a measurement of true propeller blades. The same rule\napplies to every source, and DEMON measures only the resulting mixed audio.\n\nBroadband: sources may carry a \"broadband\" dict {level, low_hz, high_hz}\n(target-internal band energy). Every source receives an independent,\nseed-derived, replayable and block-continuous noise stream (the band limit is\napplied with 50% overlap-add, so consecutive 250 ms blocks stay sample-\ncontinuous at their boundary). Frequencies and levels are illustrative\nsynthesis parameters, not recordings or claims about real platform spectra.",
+      "internal_imports": [
+        "src.audio.hydroacoustics",
+        "src.core",
+        "src.physics"
+      ],
+      "symbols": [
+        "RPMHypothesis:33",
+        "smooth_limit:39",
+        "_finite:59",
+        "directional_gain:67",
+        "beam_pattern_gain:75",
+        "AcousticReceiver:85",
+        "__init__:123",
+        "reset:142",
+        "blocks_since:170",
+        "_components:182",
+        "_band_mask:212",
+        "_spectral_curve:232",
+        "_curve_gain:252",
+        "_frame_audio:257",
+        "_band_audio:261",
+        "update:298",
+        "_analyze:503"
+      ]
+    },
+    {
+      "path": "src/audio/synthesis.py",
+      "sha256": "be770b83b73d4b7d1f4de6ac4b0ddd67cb2d8ee88fae653a9dca33f82fdf05c3",
+      "lines": 144,
+      "docstring": "Vektorisierte, kleine Audio-Synthese-Bausteine fuer Pygame.",
+      "internal_imports": [],
+      "symbols": [
+        "tone:8",
+        "fm_chirp:19",
+        "filtered_noise_event:40",
+        "active_sonar_ping:63",
+        "combat_effect:90",
+        "stereo_bearing:134"
+      ]
+    },
+    {
+      "path": "src/commander/__init__.py",
+      "sha256": "a3ecb1a80f3f4d7baa7da3c28d847d36173462169ed85d3f8be8448399867746",
+      "lines": 5,
+      "docstring": "Optional, observation-only Commander LAN transport.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/commander/access_point.py",
+      "sha256": "8b9b7a5f83fe5d1a4d1335a1589c1ee75522e1c304be1afea7b327ce3d942c09",
+      "lines": 233,
+      "docstring": "Bounded client for the optional privileged uConsole hotspot helper.",
+      "internal_imports": [],
+      "symbols": [
+        "HotspotDetails:31",
+        "HotspotController:38",
+        "__init__:41",
+        "available:55",
+        "active:62",
+        "start:65",
+        "request_stop:82",
+        "poll:91",
+        "close:112",
+        "_emit:124",
+        "_read_startup:131",
+        "_validate_details:159",
+        "_finish_process:179",
+        "_run:195"
+      ]
+    },
+    {
+      "path": "src/commander/admission.py",
+      "sha256": "e10d02ed646951ab5b2814c77fae81b8cecbab8aa84df9a85837f93618b18c3a",
+      "lines": 122,
+      "docstring": "Main-thread station admission dialog; all state is transient.",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.ui"
+      ],
+      "symbols": [
+        "StationAdmission:10",
+        "__init__:11",
+        "key:20",
+        "close:23",
+        "sync:29",
+        "rects:63",
+        "activate:66",
+        "handle_key:85",
+        "handle_click:93",
+        "draw:100"
+      ]
+    },
+    {
+      "path": "src/commander/bridge.py",
+      "sha256": "32b08faf1ede2c8e6b50c9dd7ef248028c79a9aacbe652fb0915ec654045a5eb",
+      "lines": 1626,
+      "docstring": "Main-thread, observation-only Commander projection and command authority.\n\nIntegration: call ``pump(game, server, now=None)`` exactly once per wall frame,\nbefore Game.update(), including blocked frames. ``now`` is monotonic wall time,\nnot simulation time. HTTP handlers only read server-owned published copies.\n\n``allowed`` is a local grant (initially False), bound on explicit assignment to\nthe current server's ``lease_generation``. Missing/invalid generations fail\nclosed. Expiry, re-pairing or transport replacement cannot inherit the grant.\nWorld/sonar replacement revokes the server lease and grant. Only an explicit\ngrant before the first pump may defer binding until that pump's active lease.\n``proposal`` is a detached dict (ref, label, status) or None. ``status`` is a\ndetached local dict: phase, connected, commands_allowed, session, epoch,\nrevision, seq. Neither property polls Game. Local accept/reject return bool;\nonly target acceptance changes Game.target, never selection, focus or weapons.\nNavigation requests stage a separate course/speed proposal, never remote steering.\nOnly local accept_navigation changes helm setpoints after atomic validation.\nnavigation_proposal is omitted from snapshots when absent; otherwise it contains\ncourse/speed_kn (nullable) and status. It is not persisted or carried across worlds.\nThe Commander overlay is identified by ``game.commander_open``. Local proposal\ndecisions may run there, but not in other administration or paused gameplay.\n\nEpoch changes invalidate requests across input-owner/grant/connection changes;\nrevision tracks annotations, observation enums/eligibility, crew target and\nproposal decisions, not movement. References bind to observation AND contact\nobject identity; the bounded private registry never exposes either object.\nAll observations, including verified sonar, receive neutral lifetime labels\nC001, C002, ... alongside their opaque refs. Producer labels/contact numbers\nand the external origin of live-traffic entities are never forwarded.\nReincarnation rotates both ref and neutral label. The registry retains at most\n256 entries; the label counter never wraps, is bounded by 2**53 - 1 and resets\nwith the session. At exhaustion new observations are omitted until reset.\nIdentical duplicate IDs replay their original result without applying again;\ndifferent payloads with the same ID are rejected. The last 128 IDs are retained.\nDamage events mark state/onset/resolution changes, not every percentage tick.\nEvent seq stays monotonic across sessions for the local alarm's last-seq check.\nChart geometry is copied once per world (20,000 vertices / 1,024 polygons max).\nAn invalid/oversized chart is omitted in its entirety, never partially drawn.\nMenu/editor/splash publish status only: clock/environment values null, mission\nname/objective empty and remaining_s null, ownship numeric fields null, damage\n[], inventory values null, every helo value null, tracks/events [],\ncrew_target/proposal null.\nResults retain {id, status, reasoncode}; no legacy reason alias is published.\nThe redacted chart is {revision: session, size_nm: 500, landmasses: [],\ndisclaimer: \"\"}. Its revision stays session; redaction and return both republish\nthe chart. Pause/administration retain the read-only observed picture.\nHelicopter x/y/course are published only while airborne (AUF/ZURUECK), never\nhangar defaults or the last position of a lost asset.\nMission alerts use known remaining seconds crossing 300/120/60 or a transition\nto mission_result SIEG/VERLOREN, never hidden objective progress. First-observed\nstate is a silent baseline; skipped deadlines produce only the most urgent alert.\n\nNew translation keys required by the integrating branch (no placeholders):\ncommander.chart.disclaimer, commander.chart.omitted, commander.event.damage,\ncommander.event.threat, commander.event.proposal.pending,\ncommander.event.proposal.accepted, commander.event.proposal.rejected,\ncommander.event.proposal.expired, commander.event.mission.warning_300,\ncommander.event.mission.warning_120, commander.event.mission.warning_60,\ncommander.event.mission.won, commander.event.mission.lost.\nMissing keys are displayed as key reports.",
+      "internal_imports": [
+        "src.audio.receiver",
+        "src.commander.projections",
+        "src.commander.server",
+        "src.core",
+        "src.core.i18n",
+        "src.core.version",
+        "src.sonar.sonar"
+      ],
+      "symbols": [
+        "_acknowledge:85",
+        "_bridge_set_course:89",
+        "_bridge_set_speed:93",
+        "_bound:97",
+        "_sonar_classify:101",
+        "_sonar_set_release:108",
+        "_helicopter_qualify:114",
+        "_helicopter_buoy_release:120",
+        "_opz_id:126",
+        "_opz_classify:132",
+        "_opz_affiliate:138",
+        "_opz_set_track_id:144",
+        "_opz_create_fusion:150",
+        "_opz_dissolve_fusion:159",
+        "_opz_set_radar:168",
+        "_opz_set_range:172",
+        "_opz_designate_target:176",
+        "_engine_set_telegraph:181",
+        "_engine_set_course:185",
+        "_engine_set_speed:189",
+        "_engine_set_quiet_mode:193",
+        "_damage_assign_team:197",
+        "_damage_unassign_team:201",
+        "_radio_capture_hfdf:205",
+        "_eloka_annotate:212",
+        "_eloka_clear_annotation:224",
+        "_eloka_set_jamming:231",
+        "_eloka_set_technique:238",
+        "_eloka_set_auto:245",
+        "_sonar_contact:249",
+        "_sonar_set_listen_bearing:255",
+        "_sonar_set_focus:259",
+        "_sonar_clear_focus:264",
+        "_sonar_set_array_mode:268",
+        "_sonar_set_tas:272",
+        "_sonar_set_tow_depth:276",
+        "_sonar_measure_bt:280",
+        "_sonar_active_ping:284",
+        "_sonar_set_tma_enabled:288",
+        "_sonar_set_gain:292",
+        "_sonar_set_audition_mode:296",
+        "_sonar_set_band_preset:300",
+        "_sonar_set_notch:304",
+        "_sonar_set_peak_hold:308",
+        "_sonar_set_harmonic:312",
+        "_sonar_designate_target:316",
+        "_helicopter_launch:321",
+        "_helicopter_return:325",
+        "_helicopter_set_waypoint:329",
+        "_helicopter_deploy_buoy:333",
+        "_helicopter_set_buoy_mode:337",
+        "_helicopter_set_listen_source:341",
+        "_helicopter_set_listen_bearing:345",
+        "_helicopter_clear_listen_bearing:349",
+        "_helicopter_set_audio_mode:353",
+        "_helicopter_set_audio_band:357",
+        "_helicopter_set_audio_gain:361",
+        "_helicopter_set_audio_notch:365",
+        "_helicopter_set_dipping:369",
+        "_helicopter_set_dip_depth:373",
+        "_helicopter_dipping_ping:377",
+        "_direct_observation:381",
+        "_weapons_launch_torpedo:387",
+        "_helicopter_launch_torpedo:397",
+        "_weapons_deploy_nixie:407",
+        "_opz_launch_essm:411",
+        "_opz_launch_chaff:418",
+        "_host_pause:492",
+        "_host_resume:496",
+        "_host_save:500",
+        "_host_load:508",
+        "_host_new_game:512",
+        "_host_instructor_environment:517",
+        "_host_instructor_event:528",
+        "_number:560",
+        "_age:569",
+        "_fresh:574",
+        "sonar_pcm_s16le:579",
+        "CommanderBridge:588",
+        "__init__:589",
+        "allowed:645",
+        "allowed:649",
+        "proposal:659",
+        "navigation_proposal:663",
+        "status:667",
+        "proposal_sequence:671",
+        "invalidate_commands:675",
+        "_main_thread:689",
+        "_phase:694",
+        "_event:714",
+        "_proposal_status:726",
+        "_contact:741",
+        "_tracks:756",
+        "_annotations:906",
+        "_refresh_direct_fire_refs:922",
+        "_build_chart:952",
+        "_apply_v2_action:996",
+        "_apply_proposal_v2:1004",
+        "_commands_v2:1041",
+        "_settle_gate:1108",
+        "pump:1130",
+        "_slot_rows:1380",
+        "_host_view:1394",
+        "_publish_sonar_audio:1415",
+        "_publish_helicopter_audio:1457",
+        "_publish_role_simlog:1503",
+        "_publish_events_v2:1541",
+        "_decide:1558",
+        "accept_proposal:1580",
+        "reject_proposal:1583",
+        "_decide_navigation:1586",
+        "accept_navigation:1621",
+        "reject_navigation:1625",
+        "apply_action:1085"
+      ]
+    },
+    {
+      "path": "src/commander/local.py",
+      "sha256": "cab1a7db57bd9b0752cc32bb7a067c2c543331d48f867a6c94c0bdb0704860b6",
+      "lines": 1024,
+      "docstring": "Local-only Commander lifecycle and crew administration, never persisted.\n\nConstruction opens nothing. prepare() performs bounded interface discovery once;\nactivate(game) is the only start path. pump(game) belongs to the main wall loop,\nincluding paused frames, and stop() uses the transport's bounded shutdown.",
+      "internal_imports": [
+        "src.commander.access_point",
+        "src.commander.admission",
+        "src.commander.bridge",
+        "src.commander.server",
+        "src.core",
+        "src.core.i18n",
+        "src.data.contact_analysis",
+        "src.ui"
+      ],
+      "symbols": [
+        "CommanderConsole:26",
+        "__init__:27",
+        "prepare:76",
+        "invalidate_commands:103",
+        "_stop_transport:106",
+        "deactivate:120",
+        "stop:126",
+        "_close_roster:130",
+        "_roster:136",
+        "_selected_client:144",
+        "_station_key:150",
+        "_requested_station:154",
+        "_select_client:158",
+        "_roster_result:173",
+        "_roster_action:177",
+        "_pending:253",
+        "_confirmation_state:256",
+        "_close_confirmation:270",
+        "_sync_confirmation:276",
+        "confirm_visible:302",
+        "station_leased:318",
+        "pump:322",
+        "_web_live_status:405",
+        "_pump_web_admin:423",
+        "cycle_confirmation:483",
+        "_decide_confirmation:492",
+        "handle_confirm_key:503",
+        "confirm_rect:521",
+        "confirm_button_rects:525",
+        "handle_confirm_click:530",
+        "draw_confirm:545",
+        "_prepare_transport:589",
+        "eco_display_ready:608",
+        "set_solo:626",
+        "autostart_solo:637",
+        "start_web:650",
+        "_start_transport:660",
+        "activate:668",
+        "handle_key:708",
+        "_handle_roster_key:732",
+        "row_rects:771",
+        "roster_client_rects:776",
+        "roster_action_rects:780",
+        "roster_station_cycle_rects:784",
+        "handle_click:789",
+        "_handle_roster_click:805",
+        "_hotspot_qr:837",
+        "_url_qr:849",
+        "draw:861",
+        "_draw_roster:957"
+      ]
+    },
+    {
+      "path": "src/commander/projections.py",
+      "sha256": "85086cc5fb39b67ba5ca5fa5c113d61f7faa4b147a8f061bccfb9bcf15725fa3",
+      "lines": 925,
+      "docstring": "Detached, role-scoped Remote Crew protocol-v2 projections.\n\nThe caller owns main-thread access to ``game``.  Every value returned here is a\nJSON scalar or a newly allocated container; transport threads never receive a\nsimulation object.",
+      "internal_imports": [
+        "src.commander.server",
+        "src.core",
+        "src.core.i18n",
+        "src.core.version",
+        "src.sensors.esm"
+      ],
+      "symbols": [
+        "_number:31",
+        "_age:36",
+        "_own_navigation:41",
+        "_observation:48",
+        "_series:79",
+        "_mean_binned_series:92",
+        "_map_rows:108",
+        "_weapon_observation:114",
+        "_direct_fire_observations:122",
+        "_weather_station:134",
+        "_common:169",
+        "redacted_state:195",
+        "redacted_chart:203",
+        "known_chart:208",
+        "_sonar_visualization:215",
+        "_sonar:356",
+        "_weapons:404",
+        "_damage:447",
+        "_radio:462",
+        "_helicopter:497",
+        "_eloka:695",
+        "build_role_states:784"
+      ]
+    },
+    {
+      "path": "src/commander/server.py",
+      "sha256": "9c5b7867712a46cc3694ae805871676db7f5b1da73e7a97b1f95e27b8f1da3e6",
+      "lines": 3094,
+      "docstring": "Bounded HTTP transport for Remote Crew protocol v2.\n\nThe original Commander listener is unencrypted and trusted-LAN-only. The\noptional web-host configuration binds to an explicit trusted LAN address behind\nan exact HTTPS proxy.\nThis module neither imports simulation code nor starts on import.",
+      "internal_imports": [
+        "src.commander.voice",
+        "src.commander.web_auth",
+        "src.core.config"
+      ],
+      "symbols": [
+        "_json_bytes:91",
+        "_quantized:96",
+        "_sonar_stream_payload:107",
+        "_websocket_frame:147",
+        "V2Action:162",
+        "_no_params:171",
+        "_course_params:175",
+        "_speed_params:181",
+        "_ref:187",
+        "_classification_params:192",
+        "_release_params:199",
+        "_affiliation_params:204",
+        "_fusion_refs_params:210",
+        "_single_ref_params:216",
+        "_track_label_params:220",
+        "_torpedo_params:230",
+        "_radar_params:238",
+        "_range_params:244",
+        "_bool_params:250",
+        "_enum_params:255",
+        "_bounded_number_params:261",
+        "_team_compartment_params:277",
+        "_annotation_params:284",
+        "_ecm_technique_params:289",
+        "_waypoint_params:296",
+        "_bearing_params:303",
+        "_navigation_proposal_params:310",
+        "_ref_enabled_params:323",
+        "_slot_params:329",
+        "_instructor_environment_params:334",
+        "_new_game_params:343",
+        "V2CommandEnvelope:491",
+        "_v2_command_valid:510",
+        "_object:535",
+        "_number:544",
+        "CommanderServer:551",
+        "_HTTPServer:1975",
+        "_Handler:2068",
+        "validate:262",
+        "body:505",
+        "__init__:563",
+        "start:670",
+        "stop:733",
+        "address:756",
+        "pairing_code:763",
+        "connected:769",
+        "_rotate_code_locked:774",
+        "_revoke_locked:785",
+        "_clear_sonar_audio_locked:811",
+        "_clear_helicopter_audio_locked:817",
+        "_station_grants:824",
+        "_set_active_station_locked:831",
+        "_reject_station_commands_locked:850",
+        "_release_station_locked:861",
+        "_clear_session_authority_locked:883",
+        "_trim_command_history_locked:895",
+        "_pending_command_count_locked:905",
+        "_finish_v2_locked:908",
+        "_reject_session_commands_locked:919",
+        "_reject_direct_fire_commands_locked:925",
+        "_session_by_client_locked:940",
+        "_authority_current_locked:944",
+        "authority_current_v2:964",
+        "_expire_locked:970",
+        "_new_session_locked:986",
+        "web_host_present:1023",
+        "web_host_session:1029",
+        "_web_grant_available_locked:1034",
+        "web_rebase:1046",
+        "web_reclaim_available:1065",
+        "drain_web_admin:1071",
+        "reject_web_admin_pending:1078",
+        "finish_web_admin:1084",
+        "_enqueue_web_admin_locked:1093",
+        "publish_web_options:1121",
+        "voice_talker:1129",
+        "voice_enabled:1136",
+        "set_voice_enabled:1140",
+        "_voice_valid_locked:1150",
+        "_voice_status_locked:1160",
+        "_voice_disconnect_locked:1167",
+        "publish_web_proposals:1174",
+        "revoke:1181",
+        "solo_mode:1188",
+        "solo_browser_present:1192",
+        "set_solo_mode:1205",
+        "_solo_grants:1222",
+        "_solo_grant_all_locked:1229",
+        "solo_rebase:1245",
+        "client_statuses:1273",
+        "station_leased:1307",
+        "grant_station:1316",
+        "resolve_station_request:1344",
+        "reject_station_request:1377",
+        "revoke_station:1396",
+        "revoke_client:1408",
+        "set_client_grant:1420",
+        "activate_station:1477",
+        "revoke_all:1489",
+        "invalidate_v2_commands:1496",
+        "drain_commands_v2:1506",
+        "apply_command_v2:1520",
+        "publish_v2:1601",
+        "publish_host_v2:1666",
+        "_proposal_value:1681",
+        "publish_proposals_v2:1700",
+        "_event_rows:1736",
+        "publish_events_v2:1753",
+        "publish_simlog_v2:1798",
+        "clear_sonar_audio:1849",
+        "clear_helicopter_audio:1854",
+        "prepare_helicopter_audio:1858",
+        "publish_helicopter_audio:1879",
+        "prepare_sonar_audio:1906",
+        "publish_sonar_audio:1931",
+        "__init__:1979",
+        "process_request:1995",
+        "_interrupt_connection:2021",
+        "_work:2027",
+        "mark_upgraded:2055",
+        "handle_error:2063",
+        "log_message:2071",
+        "send_error:2074",
+        "_reply:2077",
+        "_sonar_audio_reply:2098",
+        "handle_one_request:2118",
+        "handle_expect_100:2224",
+        "_session_v2_body:2229",
+        "_cookie_v2:2275",
+        "_authenticated_v2_locked:2292",
+        "_v2_cookie:2306",
+        "_clear_v2_cookie:2310",
+        "_v2_unauthorized:2315",
+        "_sonar_websocket:2319",
+        "_audio_websocket:2412",
+        "_voice_websocket:2513",
+        "_get:2636",
+        "_post:2756",
+        "interrupt_if_http:2033"
+      ]
+    },
+    {
+      "path": "src/commander/voice.py",
+      "sha256": "bfd455bcb61ee6378581624c21da3657c06b924626bd698934b91c84e0003651",
+      "lines": 48,
+      "docstring": "Bounded wire format for transient Remote Crew voice WebSockets.",
+      "internal_imports": [],
+      "symbols": [
+        "VoicePeer:10",
+        "read_frames:24",
+        "__init__:11",
+        "enqueue:20"
+      ]
+    },
+    {
+      "path": "src/commander/web_auth.py",
+      "sha256": "e8e448321e29d6784c234ea975d1e88253bbf6489bb810353d7dda36294d71c3",
+      "lines": 118,
+      "docstring": "Persistent web-host password and one-time local setup secret.",
+      "internal_imports": [],
+      "symbols": [
+        "WebHostAuth:16",
+        "__init__:17",
+        "_read:24",
+        "configured:44",
+        "_allowed:47",
+        "_failure:52",
+        "setup:55",
+        "verify:73",
+        "reset_local:87",
+        "_write:100"
+      ]
+    },
+    {
+      "path": "src/core/__init__.py",
+      "sha256": "d6f9884bf43d4a290c25a6ba333ff30d1f75b12626ff328a1410d58a7b963183",
+      "lines": 1,
+      "docstring": "u-jagd core – Game-Loop, Konfiguration, Einheiten.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/core/autocrew.py",
+      "sha256": "77e61bf5296c7a6f6c5cb07c94eb438e835ba2c192b6a33876046f12b4023a84",
+      "lines": 351,
+      "docstring": "Deterministic, observation-bounded automation for individual stations.",
+      "internal_imports": [
+        "src.core",
+        "src.core.station"
+      ],
+      "symbols": [
+        "_nearest_threat:39",
+        "station_key:62",
+        "AutocrewController:70",
+        "__init__:73",
+        "set_enabled:78",
+        "toggle:88",
+        "status:92",
+        "update:104",
+        "serialize:115",
+        "restore:129",
+        "valid_state:140",
+        "_bridge:166",
+        "_sonar:204",
+        "_weapons:231",
+        "_damage:256",
+        "_opz:281",
+        "_radio:312",
+        "_engine:326",
+        "_helicopter:334",
+        "_eloka:339",
+        "safe:167",
+        "priority:268"
+      ]
+    },
+    {
+      "path": "src/core/commands.py",
+      "sha256": "c920c637a54fcb131749debea63905a8d1f4ad531a74fcc6a8ecce2e0be0f614",
+      "lines": 101,
+      "docstring": "Shared station command metadata used by input and contextual hints.",
+      "internal_imports": [
+        "src.core.i18n",
+        "src.core.station"
+      ],
+      "symbols": [
+        "event_feed_heading:55",
+        "station_page_step:60",
+        "sonar_page_step:65",
+        "toggle_tas:70",
+        "station_command_hint:95"
+      ]
+    },
+    {
+      "path": "src/core/config.py",
+      "sha256": "5e768c3248caf6fe22c591160f44036f40f734ef8713f203c624476a4c2ddc25",
+      "lines": 744,
+      "docstring": "Globale Konfiguration & Einheitenkonversionen.\n\nEinheiten: Nautische Meilen (NM) und Knoten (kn).\n1 kn = 1 NM/h.\n\nLayout: Widescreen-Grid 1280x720 (Top-Bar / 2x Hauptpanel / Bottom-Feed).",
+      "internal_imports": [
+        "src.data.catalog"
+      ],
+      "symbols": [
+        "_required_catalog_profile:15",
+        "flight_altitude_m:376",
+        "measure_altitude_m:383",
+        "aspect_rcs_factor:686",
+        "radar_horizon_nm:694",
+        "nm_to_px:704",
+        "km_to_nm:708",
+        "kn_to_nm_per_s:712",
+        "clamp:717",
+        "angle_diff_deg:721",
+        "lofar_bin:729",
+        "lofar_bin_freq:738"
+      ]
+    },
+    {
+      "path": "src/core/debuglog.py",
+      "sha256": "3d271693b1cdeff5900da41ddcae31570205f874ec083693b79715d0341c657e",
+      "lines": 42,
+      "docstring": "Shared helper for small, bounded, symlink-safe opt-in diagnostic logs.\n\nUsed by ``AudioEngine.debug_log`` (``U_JAGD_AUDIO_DEBUG``) and ``Game``'s\nperf-debug hook (``U_JAGD_PERF_DEBUG``): both are opt-in via an environment\nvariable, write a bounded log file under ``config.SAVE_DIR``, and must never\nfollow a symlinked root directory or log file, matching this project's\ngeneral rule against writing through a symlinked destination.",
+      "internal_imports": [],
+      "symbols": [
+        "append_bounded_log:13"
+      ]
+    },
+    {
+      "path": "src/core/detrand.py",
+      "sha256": "175095e08111fe1dabc403a6b2f9fb8fbd1e2d8a98de41b4ba206b41c56e8457",
+      "lines": 59,
+      "docstring": "Stateless, counter-based deterministic randomness.\n\nNew simulation draws use these helpers instead of adding more mutable\n``random.Random`` streams: a draw is a pure function of ``(seed, tag, key,\ncounter)``.  Nothing has to be saved, the existing saved streams keep their\nsequences, and the result never depends on hash randomization, wall clock,\nrender rate or evaluation order.",
+      "internal_imports": [],
+      "symbols": [
+        "_mix:17",
+        "_tag_value:25",
+        "bits:33",
+        "u01:41",
+        "uniform:46",
+        "normal:50",
+        "phase:57"
+      ]
+    },
+    {
+      "path": "src/core/game.py",
+      "sha256": "2f0a4f9232ae9090b5f622a4c52adebac9acbd2b259ebf61450e5e776f0e7997",
+      "lines": 10992,
+      "docstring": "Haupt-Game-Loop: Widescreen-Grid, Echtzeit, Szenarien und Multi-Slot-Save.",
+      "internal_imports": [
+        "src.air",
+        "src.air.asm",
+        "src.air.flights",
+        "src.air.helicopter",
+        "src.air.raid",
+        "src.air.sonobuoy",
+        "src.audio.engine",
+        "src.audio.preview",
+        "src.audio.receiver",
+        "src.commander.local",
+        "src.core",
+        "src.core.autocrew",
+        "src.core.commands",
+        "src.core.debuglog",
+        "src.core.help",
+        "src.core.i18n",
+        "src.core.mission",
+        "src.core.mission_definition",
+        "src.core.preferences",
+        "src.core.save_schema",
+        "src.core.station",
+        "src.core.version",
+        "src.data",
+        "src.data.catalog",
+        "src.enemies.animal",
+        "src.enemies.civilian",
+        "src.enemies.decoy",
+        "src.enemies.endurance",
+        "src.enemies.sub",
+        "src.enemies.surface",
+        "src.nations.nations",
+        "src.network.adsb_client",
+        "src.network.ais_client",
+        "src.network.connectivity",
+        "src.network.live_traffic",
+        "src.physics",
+        "src.sensors",
+        "src.sensors.ais",
+        "src.sensors.esm",
+        "src.sensors.fusion",
+        "src.sensors.platform",
+        "src.sensors.tracks",
+        "src.ship",
+        "src.ship.damage",
+        "src.ship.ship",
+        "src.sonar",
+        "src.sonar.sonar",
+        "src.sonar.tma",
+        "src.ui",
+        "src.ui.contact_analyzer",
+        "src.ui.editor_widgets",
+        "src.ui.feedback",
+        "src.ui.map_view",
+        "src.ui.mission_editor",
+        "src.ui.simlog_view",
+        "src.ui.sonar_view",
+        "src.ui.splash_view",
+        "src.ui.stations_view",
+        "src.ui.unit_editor",
+        "src.ui.viewport",
+        "src.ui.weapons_view",
+        "src.ui.weather_station",
+        "src.weapons",
+        "src.weapons.air_defense",
+        "src.weapons.asw",
+        "src.weapons.torpedo",
+        "src.world",
+        "src.world.coastline",
+        "src.world.grounding",
+        "src.world.ocean",
+        "src.world.real_coast",
+        "src.world.world"
+      ],
+      "symbols": [
+        "_read_save_document:171",
+        "_valid_difficulty_dict:181",
+        "_same_save_value:201",
+        "_same_save_value_strict:216",
+        "letterbox_layout:229",
+        "make_scanlines:238",
+        "make_night_overlay:246",
+        "Game:274",
+        "__init__:275",
+        "_apply_text_size:395",
+        "radar_range_nm:406",
+        "radar_range_nm:410",
+        "reset:413",
+        "start_custom_mission:752",
+        "flash:864",
+        "announce:868",
+        "mission_name_display:878",
+        "mission_level_display:887",
+        "mission_description_display:890",
+        "mission_objective_display:897",
+        "_mission_started_notice:921",
+        "_initial_threat_notice:927",
+        "time_scale:947",
+        "set_paused:950",
+        "start_new_game:962",
+        "hq_msg:990",
+        "_begin_numeric_input:998",
+        "_begin_track_id_input:1017",
+        "_navigation_order_live:1028",
+        "_set_course_order:1036",
+        "order_course:1055",
+        "set_engine_course:1059",
+        "order_speed:1063",
+        "set_engine_telegraph:1087",
+        "_cycle_engine_telegraph:1108",
+        "set_engine_speed:1114",
+        "set_quiet_mode:1119",
+        "assign_damage_team:1127",
+        "unassign_damage_team:1138",
+        "set_sonar_listen_bearing:1148",
+        "set_sonar_focus:1158",
+        "clear_sonar_focus:1173",
+        "set_sonar_array_mode:1181",
+        "set_sonar_tas:1189",
+        "set_sonar_tow_depth:1202",
+        "measure_sonar_bt:1219",
+        "send_active_ping:1225",
+        "set_helicopter_dipping:1239",
+        "set_helicopter_dip_depth:1252",
+        "send_helicopter_dipping_ping:1264",
+        "set_sonar_tma_enabled:1275",
+        "set_sonar_gain:1283",
+        "set_sonar_audition_mode:1292",
+        "set_sonar_band_preset:1300",
+        "set_sonar_notch:1309",
+        "set_sonar_peak_hold:1317",
+        "sonar_harmonic_candidates:1325",
+        "set_sonar_harmonic:1331",
+        "designate_sonar_target:1348",
+        "_finish_numeric_input:1359",
+        "_handle_numeric_input:1417",
+        "_feed_ping:1448",
+        "toggle_fullscreen:1469",
+        "_set_preference:1488",
+        "_record_simlog:1520",
+        "_record_simlog_state:1537",
+        "_simlog_state_data:1560",
+        "compose_frame:1675",
+        "_open_joystick:1704",
+        "administration_open:1714",
+        "crew_overlay_allows_simulation:1719",
+        "_clear_station_input:1729",
+        "_clear_controls:1737",
+        "_local_station_input_locked:1741",
+        "_stop_sonar_audio:1750",
+        "_open_administration:1757",
+        "_handle_administration_key:1804",
+        "_start_live_traffic_test:1906",
+        "_live_traffic_can_enable:1938",
+        "_handle_live_traffic_key:1945",
+        "_window_to_canvas:1984",
+        "_map_pointer:1999",
+        "_map_station_visible:2009",
+        "_opz_map_pointer:2014",
+        "tooltip_at:2025",
+        "_pin_tooltip_at:2048",
+        "handle_event:2061",
+        "_handle_owned_event:2078",
+        "_assign_selected_team:3035",
+        "steering_input:3043",
+        "_cycle_sonar_mode:3059",
+        "_handle_sonar_click:3064",
+        "_cycle_sonar_harmonic:3120",
+        "_adjust_sonar_gain:3133",
+        "_cycle_sonar_display_palette:3137",
+        "_adjust_sonar_display_contrast:3145",
+        "_adjust_sonar_display_black:3151",
+        "_cycle_sonar_display_history:3157",
+        "_set_sonar_audition_mode:3165",
+        "sonar_audio_status:3173",
+        "_cycle_sonar_band:3186",
+        "radar_on:3201",
+        "radar_on:3206",
+        "toggle_radar:3210",
+        "set_opz_radar:3224",
+        "set_opz_range:3233",
+        "_cycle_radar_range:3241",
+        "radar_weather_severity:3252",
+        "radar_rain_severity:3259",
+        "radar_effective_range:3262",
+        "_asm_jammer_to_noise:3272",
+        "_radar_conditions:3281",
+        "_radar_look:3290",
+        "radar_sweep_bearing:3306",
+        "toggle_helo:3310",
+        "atmosphere:3328",
+        "helicopter_weather:3373",
+        "weather_station_data:3420",
+        "_weather_station_profile:3458",
+        "launch_helicopter:3488",
+        "return_helicopter:3498",
+        "set_helicopter_waypoint:3504",
+        "_helo_waypoint_polar:3515",
+        "_adjust_helo_waypoint:3522",
+        "deploy_buoys:3533",
+        "deploy_helicopter_buoy:3549",
+        "set_helicopter_buoy_mode:3567",
+        "set_helicopter_listen_source:3573",
+        "set_helicopter_listen_bearing:3591",
+        "set_helicopter_audio_mode:3599",
+        "set_helicopter_audio_band:3604",
+        "set_helicopter_audio_gain:3612",
+        "set_helicopter_audio_notch:3619",
+        "helicopter_audio_ready:3625",
+        "launch_helo_torpedo:3636",
+        "launch_helicopter_torpedo_at:3645",
+        "_cycle_asm_track:3701",
+        "launch_essm:3708",
+        "launch_essm_at:3713",
+        "launch_chaff:3751",
+        "launch_chaff_at:3756",
+        "deploy_nixie:3796",
+        "deploy_nixie_result:3800",
+        "set_flak_authorized:3816",
+        "set_ciws_authorized:3826",
+        "_joy_step:3836",
+        "_joy_horizontal_step:3862",
+        "_smooth_sensor_noise:3880",
+        "_observation_key:3892",
+        "lunar_age_days:3896",
+        "moon_illumination:3901",
+        "_lookout_observe:3905",
+        "_update_lookout_picture:3941",
+        "_update_air_picture:3979",
+        "radar_tracks:4180",
+        "_opz_observation_id:4203",
+        "opz_track_label:4206",
+        "contact_display_id:4210",
+        "set_opz_track_label:4214",
+        "_detached_air_observations:4232",
+        "_sonar_opz_observations:4261",
+        "private_sonar_observations:4334",
+        "_helicopter_opz_observations:4339",
+        "_buoy_opz_observations:4381",
+        "opz_source_observations:4405",
+        "opz_published_observations:4417",
+        "asm_tracks:4429",
+        "opz_tracks:4433",
+        "filtered_opz_tracks:4441",
+        "_cycle_opz_contact_filter:4459",
+        "selected_opz_track:4474",
+        "designate_opz_track:4478",
+        "designate_opz_observation:4494",
+        "opz_affiliation:4514",
+        "opz_source_classification:4534",
+        "classify_sonar_contact:4538",
+        "release_sonar_contact:4551",
+        "qualify_helicopter_contact:4585",
+        "classify_opz_observation:4609",
+        "affiliate_opz_observation:4636",
+        "_live_aircraft_icao_for_track_id:4651",
+        "_sync_live_engagement_hold:4664",
+        "live_engagement_pending_for_observation:4686",
+        "confirm_live_engagement:4695",
+        "create_opz_fusion:4709",
+        "dissolve_opz_fusion:4728",
+        "_cycle_opz_track:4738",
+        "_cycle_opz_affiliation:4750",
+        "_cycle_opz_classification:4763",
+        "_toggle_opz_mark:4784",
+        "_create_opz_fusion:4793",
+        "_dissolve_opz_fusion:4798",
+        "_toggle_opz_suppression:4802",
+        "eloka_tracks:4812",
+        "eloka_visible_tracks:4816",
+        "_reconcile_eloka_selection:4827",
+        "_cycle_eloka_filter:4834",
+        "selected_eloka_track:4848",
+        "_cycle_eloka_track:4852",
+        "eloka_candidates:4866",
+        "eloka_analysis:4875",
+        "eloka_range_estimate:4894",
+        "deploy_jamming:4905",
+        "set_jamming_technique:4913",
+        "_cycle_jamming_technique:4920",
+        "set_jamming:4932",
+        "set_ecm_auto:4942",
+        "_update_ecm:4953",
+        "eloka_annotation:4980",
+        "eloka_emitter_name:4985",
+        "eloka_annotation_name:4991",
+        "annotate_eloka_intercept:4995",
+        "clear_eloka_annotation:5014",
+        "_remove_released_esm:5026",
+        "_cycle_eloka_annotation:5031",
+        "_publish_released_esm:5054",
+        "released_esm_labels:5071",
+        "eloka_correlations:5083",
+        "_emitter_profile:5141",
+        "_asm_seeker_emitter:5151",
+        "_radar_signals:5161",
+        "own_radar_signals:5175",
+        "_signal_measurements:5195",
+        "_ecm_effect_against_asm:5210",
+        "_esm_measurement:5225",
+        "_update_esm_picture:5255",
+        "hfdf_bearings:5327",
+        "hfdf_display_id:5331",
+        "_update_radio_picture:5336",
+        "_cycle_hfdf:5371",
+        "_bearing_intersection:5376",
+        "capture_hfdf:5393",
+        "capture_hfdf_report:5401",
+        "_drain_warship_asm:5467",
+        "_next_asm_sequence:5487",
+        "_maybe_spawn_asm:5491",
+        "_spawn_raid_wave:5516",
+        "_update_raiders:5533",
+        "_drain_raider_asm:5640",
+        "set_target:5656",
+        "torpedo_readiness:5671",
+        "_contact_affiliations:5697",
+        "contact_affiliation:5716",
+        "_target_affiliation_interlock:5723",
+        "_contact_range_fresh:5732",
+        "_cycle_selected_contact:5741",
+        "_cycle_helo_contact:5757",
+        "_cycle_classification:5781",
+        "_toggle_sonar_release:5797",
+        "_find_target:5815",
+        "launch_torpedo:5836",
+        "launch_torpedo_at:5844",
+        "_sonar_range_factor:5955",
+        "_sonar_targets:5963",
+        "_drain_enemy_torpedoes:5973",
+        "update:5990",
+        "_update_audio:6045",
+        "_emit_sound:6077",
+        "_play_unit_audio:6091",
+        "_make_analyzer:6098",
+        "_open_analyzer_in_game:6105",
+        "_open_simlog_view:6110",
+        "_close_simlog_view:6120",
+        "_scroll_simlog_view:6126",
+        "_update_navigation:6129",
+        "_shipping_noise_contacts:6164",
+        "_update_platform_sensors:6169",
+        "_update_underwater_entities:6274",
+        "_update_aviation:6324",
+        "_update_asw_stores:6342",
+        "_update_air_defense:6352",
+        "_auto_ecm_softkill:6446",
+        "_update_enemy_torpedoes:6465",
+        "_drain_asrocs:6487",
+        "_update_asrocs:6502",
+        "_hull_impact:6524",
+        "_incoming_hit_zone:6539",
+        "_sub_hears_torpedo:6549",
+        "_update_player_torpedoes:6581",
+        "_update_helicopter_audio:6659",
+        "_update_sensors:6716",
+        "_update_damage_and_mission:6818",
+        "_update_sim:6825",
+        "_mission_time_warning:6894",
+        "_torus_dist:6911",
+        "_check_mission_end:6915",
+        "_end_mission:6943",
+        "_rng_state:6966",
+        "save_state:6970",
+        "save_game:7497",
+        "_restore_rng:7516",
+        "load_state:7519",
+        "_restore_state:7524",
+        "load_game:8336",
+        "_catalog_for_save:8347",
+        "_valid_save_document:8354",
+        "_load_save_data:9923",
+        "save_to_slot:9988",
+        "load_from_slot:9995",
+        "_reset_map_view:10012",
+        "_configure_opz_map_view:10029",
+        "_opz_map_save_values:10041",
+        "_reroll_menu_seed:10056",
+        "_start_menu_mission:10081",
+        "_handle_menu_key:10108",
+        "draw_menu:10203",
+        "_station_overlay_open:10297",
+        "_eco_display_active:10302",
+        "_skip_eco_frame:10313",
+        "draw_eco_display:10324",
+        "draw:10348",
+        "draw_navigation_input:10459",
+        "draw_top_bar:10476",
+        "draw_bottom_feed:10499",
+        "draw_bottom_telemetry:10527",
+        "_help_lines:10557",
+        "draw_help_overlay:10584",
+        "draw_nations_overlay:10619",
+        "draw_save_ui:10668",
+        "draw_end_panel:10698",
+        "_options_row_rects:10739",
+        "draw_options_overlay:10743",
+        "_live_traffic_row_rects:10778",
+        "_mask_credential:10782",
+        "draw_live_traffic_overlay:10789",
+        "_live_traffic_test_label:10849",
+        "draw_pause_overlay:10862",
+        "draw_quit_overlay:10877",
+        "_perf_debug_log:10907",
+        "run:10947",
+        "at_dist:474",
+        "r2:1562",
+        "r1:1565",
+        "_run:1925",
+        "fc_range:6388",
+        "restore_entity:7527",
+        "restore_platform:7533",
+        "finite_number:8355",
+        "finite_tree:8362",
+        "bounded:8377",
+        "identity:8380",
+        "platform_speed_limit:8516",
+        "center:10209",
+        "measurements:5261"
+      ]
+    },
+    {
+      "path": "src/core/help.py",
+      "sha256": "b43736289d90bee4e4031ed428e6a4d61a0b8d03775a44dd35cb74f9d62bc558",
+      "lines": 217,
+      "docstring": "Catalog-keyed, context-sensitive help for all nine stations.",
+      "internal_imports": [
+        "src.core.i18n",
+        "src.core.station"
+      ],
+      "symbols": [
+        "_station:37",
+        "_translate_help:184",
+        "get_global_help:190",
+        "get_help:200",
+        "get_sop:207",
+        "get_web_help:213"
+      ]
+    },
+    {
+      "path": "src/core/i18n.py",
+      "sha256": "c5ae0d5d46c24d1680b6056cd6bb01ac2ede72d8aa19a33834d58d54d4cee703",
+      "lines": 438,
+      "docstring": "Small, dependency-free translation catalog loader.",
+      "internal_imports": [],
+      "symbols": [
+        "TranslationError:145",
+        "normalize_language:149",
+        "detect_system_language:162",
+        "_placeholders:178",
+        "validate_catalog:195",
+        "_read_catalog:219",
+        "load_catalog:233",
+        "_alternate_german_spelling:248",
+        "Translator:256",
+        "get_translator:308",
+        "message:312",
+        "RawText:317",
+        "raw_text:328",
+        "is_message:332",
+        "_is_raw_text:338",
+        "display_value:343",
+        "localize:355",
+        "translation_scope:384",
+        "localized:393",
+        "pseudolocalize:414",
+        "pseudolocale:433",
+        "__init__:259",
+        "translate:275",
+        "display:294",
+        "_display_cached:298",
+        "__init__:320",
+        "value:324",
+        "wrapped:396"
+      ]
+    },
+    {
+      "path": "src/core/manual.py",
+      "sha256": "4eeb427f0d5a18a82c2b5e4542a5a4e54c45f72484342fc12f345eb415ab9968",
+      "lines": 429,
+      "docstring": "Bilingual player manual built from packaged Markdown chapters.\n\nChapter prose lives in ``data/manual/<nn>-<chapter>.<lang>.md``. Key tables and\nstandard procedures are never written into the prose: the markers\n``<!-- keys:<table> -->`` and ``<!-- sop:<station> -->`` expand from\n``src/core/help.py`` and the i18n catalogs, so the F1 overlay, the in-game\nmanual reader, the Remote Crew web page, and the exported ``docs/manual``\nMarkdown always show the same bindings.\n\nOnly a small Markdown subset is accepted (headings with explicit anchors,\nparagraphs, lists, pipe tables, fenced blocks, ``>`` notes, inline\n``code``/``**strong**``); anything the parser does not understand stays plain\ntext. The module is Pygame-free: the game wraps ``text_lines`` output and the\ncommander server serves ``html_page`` output.",
+      "internal_imports": [
+        "src.core.help",
+        "src.core.i18n",
+        "src.core.station"
+      ],
+      "symbols": [
+        "ManualError:48",
+        "Block:53",
+        "chapter_filename:64",
+        "load_source:68",
+        "_key_table:75",
+        "_sop:87",
+        "_cells:93",
+        "parse:97",
+        "_cached_blocks:198",
+        "chapter_blocks:202",
+        "chapter_title:209",
+        "manual_language:216",
+        "plain:224",
+        "_wrap:228",
+        "_table_lines:234",
+        "text_lines:261",
+        "_md_cell:307",
+        "markdown:311",
+        "_inline_html:344",
+        "_chapter_html:358",
+        "html_page:401",
+        "flush:104",
+        "gap:266"
+      ]
+    },
+    {
+      "path": "src/core/mission.py",
+      "sha256": "6a90a28c147f97722546189191adbbe29256f216181fb7cc175a5a4c3cdc666e",
+      "lines": 77,
+      "docstring": "Missions-System (M6): seed-basierte Typ-Auswahl + Spawn-Plan + Zieltext.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "Mission:8",
+        "__init__:16",
+        "objective:58",
+        "remaining_s:72",
+        "format_remaining:75"
+      ]
+    },
+    {
+      "path": "src/core/mission_definition.py",
+      "sha256": "be6dee46443c050ba0a4794f9fba53266969abd2061079dabb7ce6247e8603f1",
+      "lines": 322,
+      "docstring": "Standalone mission authoring model, validation, and seeded static preview.",
+      "internal_imports": [
+        "src.data.validation"
+      ],
+      "symbols": [
+        "FieldMetadata:24",
+        "default_mission:47",
+        "_obj:65",
+        "_placement:72",
+        "validate_mission:90",
+        "_stable_seed:253",
+        "static_preview:258",
+        "MissionDefinition:298",
+        "locate:267",
+        "__init__:299",
+        "key:303",
+        "field_metadata:307",
+        "validate:310",
+        "preview:313",
+        "clone:316",
+        "to_dict:321"
+      ]
+    },
+    {
+      "path": "src/core/preferences.py",
+      "sha256": "306590de13d60bfc1cc3b1476add36312b9c0eb80b78f7569ec950349be44891",
+      "lines": 93,
+      "docstring": "Persistent user preferences with atomic, corruption-safe storage.",
+      "internal_imports": [
+        "src.core.i18n"
+      ],
+      "symbols": [
+        "Preferences:17",
+        "default_preferences_path:36",
+        "load_preferences:40",
+        "save_preferences:68",
+        "defaults:32"
+      ]
+    },
+    {
+      "path": "src/core/save_schema.py",
+      "sha256": "4429d48afc07fcc83a591d4173ef5d4b4dee88e75f16a0ae73535584257f3251",
+      "lines": 50,
+      "docstring": "Declarative exact key sets for the ``u-jagd-save-v12`` document.\n\nEvery persisted block whose shape is validated exactly is declared here, so a\nnew saved field is added in exactly three places: this module,\n``Game.save_state()`` and ``Game._restore_state()``.  The loader additionally\nre-serializes every restored candidate and requires byte-for-byte equality\nwith the input, so a field missing from any of the three places fails loudly.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/core/station.py",
+      "sha256": "3ca2b88ff5ec152f141f10ed68f9e65dc36652f8f7ea1e5543f43c0fa82b7dc9",
+      "lines": 20,
+      "docstring": "Stationen an Bord der Fregatte.",
+      "internal_imports": [],
+      "symbols": [
+        "Station:6",
+        "label:19"
+      ]
+    },
+    {
+      "path": "src/core/version.py",
+      "sha256": "ff98381e3ea30288ba2de4dd1dc6518de45b65dce39c4056fc7b3fe90ed189de",
+      "lines": 13,
+      "docstring": "Application release metadata.\n\nThis module is deliberately dependency-free because setuptools imports the\nversion while building the project.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/data/catalog.py",
+      "sha256": "23c989f311033d647cee7303a0fad42ee36fd17bdd3df35e69d5f47c39ee11be",
+      "lines": 2104,
+      "docstring": "Kontakt-Katalog: alle Plattformprofile (Akustik + Verhalten) an einer Stelle.\n\nDie eingebauten Profile werden aus den paketierten ``data.contacts``-JSON-\nRessourcen geladen. Der Katalog enthält:\n\n- 23 U-Boot-Profile (3 Legacy-Archetypen + 20 benannte Klassen); der zufällige\n  Spawn-Pool (``spawn_weight``) ist auf die russischen Klassen konzentriert\n- 5 Kampfschiff-Profile in ``warships.json`` (KAMPFSCHIFF); der tatsächliche\n  Zufalls-Feind-Pool (``LEGACY_HOSTILE_SURFACE_KEYS``) ist auf die russischen\n  Klassen + Projekt 20380 begrenzt; die neue F217 *Bayern* ist dort ebenfalls\n  gelistet, aber ``default_faction: \"FREUND\"`` und nicht im Zufalls-Pool\n- 80 zivile Schiffe (Tanker/Passagier/Fracht/Sonstiges), davon 25 real-benannte\n  Marinen, die zu neutralem Drittparteien-Verkehr umklassifiziert wurden\n- Flugzeugprofile (sonar-invisible, nur Radar/ESM)\n- 3 Meerestier-Typen, 3 Torpedo-Profile, 1 Dekoy-Profil\n\nSiehe \"Russland-Feindgrundlage\" weiter unten für den Hintergrund dieser\nUmklassifizierung und die neuen optionalen Felder (``wiki_url``,\n``default_faction``, ``rcs_m2``, akustische LOFAR-Zusatzfelder).\n\nKontakte sind nie an ein einzelnes Profil gebunden: pro Instanz wird aus\nBlätterzahl, Takt-Skala und Linien-Offsets ein Fingerprint gerollt\n(src/data/fingerprint.py), damit zwei gleiche Klassen unterschiedlich klingen.",
+      "internal_imports": [],
+      "symbols": [
+        "TargetSignature:55",
+        "SubProfile:84",
+        "SurfaceProfile:110",
+        "AircraftProfile:128",
+        "AnimalProfile:145",
+        "TorpedoProfile:159",
+        "DecoyProfile:170",
+        "ReferenceProfile:182",
+        "AcousticLine:189",
+        "MachineProfile:196",
+        "EnduranceProfile:213",
+        "SensorProfile:229",
+        "EmitterProfile:244",
+        "WeaponProfile:258",
+        "LauncherProfile:271",
+        "MagazineProfile:284",
+        "CountermeasureProfile:291",
+        "ProfileSystems:301",
+        "CatalogSource:313",
+        "ProvenanceClaim:325",
+        "build_catalog:333",
+        "ContactCatalog:342",
+        "_weighted_pick:531",
+        "_schema_object:665",
+        "_schema_number:674",
+        "_schema_text:686",
+        "_schema_wiki_url:693",
+        "_schema_pair:702",
+        "_schema_lines:711",
+        "_schema_number_array:722",
+        "_schema_acoustic:729",
+        "validate_contact_entry:766",
+        "_schema_key:848",
+        "_schema_nullable_text:854",
+        "_schema_nullable_number:859",
+        "_schema_nullable_pair:864",
+        "_schema_string_array:872",
+        "_schema_key_array:883",
+        "_nullable_pair:889",
+        "_nullable_broadband:895",
+        "_acoustic_lines:906",
+        "_reference_from_dict:911",
+        "_machine_from_dict:921",
+        "_endurance_from_dict:956",
+        "_sensor_from_dict:980",
+        "_emitter_from_dict:1018",
+        "_weapon_from_dict:1053",
+        "_launcher_from_dict:1081",
+        "_magazine_from_dict:1111",
+        "_countermeasure_from_dict:1119",
+        "_profile_systems_from_dict:1136",
+        "_v2_to_dict:1153",
+        "_source_to_dict:1235",
+        "_claim_to_dict:1243",
+        "_unique_json_object:1251",
+        "_read_json:1260",
+        "_schema_object_array:1271",
+        "_read_document:1302",
+        "_read_entries:1333",
+        "_source_url:1337",
+        "_source_from_dict:1368",
+        "_claim_from_dict:1394",
+        "_read_provenance:1414",
+        "_pair:1428",
+        "_entry_values:1435",
+        "_acoustic_from_dict:1439",
+        "_load_subs:1461",
+        "_load_surfaces:1482",
+        "_load_aircraft:1504",
+        "_load_animals:1525",
+        "_load_torpedoes:1543",
+        "_load_decoys:1561",
+        "_load_library_signatures:1577",
+        "_validate:1585",
+        "_collect_v2:1614",
+        "_claim_value:1748",
+        "_validate_provenance:1789",
+        "_catalog_from_documents:1871",
+        "_normalize_legacy_emitters:1925",
+        "catalog_from_runtime_snapshot:1950",
+        "_load_catalog_from:2037",
+        "load_catalog:2055",
+        "rank_signatures:2071",
+        "is_nuclear:99",
+        "requires_air:104",
+        "__init__:345",
+        "emitter_name:427",
+        "pick_surface:435",
+        "pick_civilian_by_category:440",
+        "pick_sub:447",
+        "pick_aircraft:454",
+        "pick_animal:460",
+        "get_torpedo:463",
+        "get_decoy:466",
+        "acoustic_for:469",
+        "reconstruct_documents:472",
+        "reconstruct_provenance:498",
+        "runtime_snapshot:508"
+      ]
+    },
+    {
+      "path": "src/data/contact_analysis.py",
+      "sha256": "5a752ee3d8fdeb9838ef12194a7313d8625bcef1b509fa00d1afd0e630cd622d",
+      "lines": 254,
+      "docstring": "Bounded, presentation-only projection and packaged analyzer resources.",
+      "internal_imports": [
+        "src.data.catalog"
+      ],
+      "symbols": [
+        "_asset_filename:31",
+        "_lines:40",
+        "_reference_summary:45",
+        "_machine_summary:49",
+        "_component_summaries:68",
+        "_profile_name:122",
+        "project_contact_catalog:130",
+        "_json_object:157",
+        "_finite_number:166",
+        "_read_bounded:173",
+        "_png_dimensions:181",
+        "load_contact_analysis_assets:188"
+      ]
+    },
+    {
+      "path": "src/data/fingerprint.py",
+      "sha256": "7232bf31b71645c7de29526b7903839a59c0c2985cd789b162705d9dcf77cdc3",
+      "lines": 66,
+      "docstring": "Individueller akustischer Fingerprint pro Kontakt-Instanz.\n\nZwei Schiffe derselben Klasse klingen nicht identisch: jeder Kontakt\nzieht bei der Erschaffung Blätterzahl, Takt-Skala (Drehzahl), Linien-\nOffsets (Profil-Fehler/Montagetoleranz) und Kavitationsschwelle aus dem\nRNG-Stream. Der Fingerprint ist ein Datenobjekt und wird in Saves\npersistiert; alte Saves (ohne Fingerprint) rollen ihn deterministisch\naus dem sensor_seed neu.",
+      "internal_imports": [],
+      "symbols": [
+        "Fingerprint:24",
+        "roll_fingerprint:48",
+        "roll_from_seed:64",
+        "to_dict:33",
+        "from_dict:37"
+      ]
+    },
+    {
+      "path": "src/data/user_content.py",
+      "sha256": "49a3ee4f989e88b50e03abbb8ab47ea2020f195df50e1c11300d78f95df91da9",
+      "lines": 281,
+      "docstring": "Safe persistence and portable bundles for editor-authored content.",
+      "internal_imports": [
+        "src.core.mission_definition",
+        "src.data.validation",
+        "src.ui.unit_editor"
+      ],
+      "symbols": [
+        "ContentRecord:23",
+        "atomic_write_json:35",
+        "_stage_json:47",
+        "_stage_bytes:67",
+        "_remove_if_present:82",
+        "UserContentStore:89",
+        "default_store:277",
+        "read_only:31",
+        "__init__:92",
+        "_kind:99",
+        "path_for:105",
+        "validate:111",
+        "save:127",
+        "load:132",
+        "list:139",
+        "delete:156",
+        "export_bundle:164",
+        "import_bundle:173",
+        "_validate_bundle:247"
+      ]
+    },
+    {
+      "path": "src/data/validation.py",
+      "sha256": "05cf3faee914f20aa2a56e309209a8387fad99427c209f3d7d678711cfff6640",
+      "lines": 171,
+      "docstring": "Shared validation primitives for user-authored editor content.",
+      "internal_imports": [],
+      "symbols": [
+        "ValidationIssue:16",
+        "ContentValidationError:26",
+        "issue:34",
+        "localized_issue:39",
+        "localized_error:50",
+        "is_number:56",
+        "finite_number:60",
+        "integer:74",
+        "text:81",
+        "enum:95",
+        "mapping:103",
+        "sequence:107",
+        "pair:111",
+        "unique:124",
+        "validate_user_key:138",
+        "safe_content_path:145",
+        "raise_for_issues:168",
+        "__str__:22",
+        "__init__:29"
+      ]
+    },
+    {
+      "path": "src/data/wiki_import.py",
+      "sha256": "bba63ae6605b7387e69b1d0a86baa3b60bdca30e8a39c8b3781d524f0bf569fc",
+      "lines": 320,
+      "docstring": "Live Wikipedia import + physics-based suggestion helpers for the Unit Editor.\n\nFetches a Wikipedia article's infobox via the public MediaWiki Action API\n(stdlib ``urllib`` only, no new dependency - matches the project's existing\nstdlib-only networking convention, e.g. ``src/commander/server.py``) and maps\na curated set of well-known German infobox keys onto editor-friendly values.\nAnything not published on Wikipedia (LOFAR/DEMON acoustics, in-game damage/\nhit-chance numbers) is never scraped - it is estimated by\n``suggest_missing_fields()`` from simple, documented physical heuristics and\ntagged so the caller can show the developer which fields are sourced facts\nand which are engine-side guesses to double check.\n\nThe device this game runs on is a handheld with no guaranteed connectivity,\nso every network/parse failure is caught and re-raised as ``WikiImportError``\n- callers should always expect this to fail and show a status message rather\nthan let it propagate.",
+      "internal_imports": [],
+      "symbols": [
+        "WikiImportError:33",
+        "_parse_wiki_url:37",
+        "fetch_wikitext:57",
+        "_strip_wikitext:96",
+        "_find_infobox_block:111",
+        "parse_infobox:134",
+        "_first_number:217",
+        "_speed_to_kn:227",
+        "map_infobox_to_fields:236",
+        "_guess_propulsion_key:280",
+        "suggest_missing_fields:293",
+        "flush:149"
+      ]
+    },
+    {
+      "path": "src/enemies/__init__.py",
+      "sha256": "ac86e826a9d307a708a7a63cdfb1440485c1306b791ccec296ae0ac9601a0e12",
+      "lines": 1,
+      "docstring": "Gegner: U-Boote, (M4: zivile Schiffe, Tiere).",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/enemies/animal.py",
+      "sha256": "98a62feeb7c9989652cd456c315be894496da88f2d1e518fe9cfa6e906d8c2b3",
+      "lines": 147,
+      "docstring": "Meerestiere: Falschkontakte im Sonar (Captain's Log §6.2).\n\nProfile kommen aus dem Kontakt-Katalog (src/data/catalog.py).",
+      "internal_imports": [
+        "src.core",
+        "src.data.catalog",
+        "src.weapons.torpedo"
+      ],
+      "symbols": [
+        "AnimalType:14",
+        "Animal:32",
+        "__init__:15",
+        "__init__:37",
+        "sunk:63",
+        "state:67",
+        "hit:70",
+        "quiet_factor:73",
+        "lofar_lines:76",
+        "acoustic_signature:82",
+        "update:89",
+        "_decision_interval:134",
+        "distance_nm:141",
+        "bearing_from_frigate:144"
+      ]
+    },
+    {
+      "path": "src/enemies/civilian.py",
+      "sha256": "b2e74be7102fe74320ec787c47e68c9732fd32fa6acd1b9316e44141271c7ae0",
+      "lines": 9,
+      "docstring": "Zivile Schiffe – Kompatibilitaets-Import.\n\nCivilianShip ist jetzt ein Alias fuer SurfaceShip (zivile Variante).\nNeues Spiel: src/enemies/surface.py.",
+      "internal_imports": [
+        "src.enemies.surface"
+      ],
+      "symbols": []
+    },
+    {
+      "path": "src/enemies/decoy.py",
+      "sha256": "60f39e183b303ac8dc6e50088b0547954f8e0ea169294666b377b3f5e8c1ad77",
+      "lines": 121,
+      "docstring": "W2: Akustische Dekoy – driftet vom U-Boot weg und maskiert es kurz.\n\nParameter (Lebensdauer, Speed, Rauschlinien) kommen aus dem Kontakt-Katalog.",
+      "internal_imports": [
+        "src.core",
+        "src.data.catalog",
+        "src.weapons.torpedo"
+      ],
+      "symbols": [
+        "Decoy:18",
+        "__init__:23",
+        "sunk:44",
+        "update:47",
+        "quiet_factor:74",
+        "speed_kn:79",
+        "battery_fraction:82",
+        "source_level_offset_db:85",
+        "acoustic_signature:89",
+        "lofar_lines:95",
+        "broadband:106",
+        "distance_nm:115",
+        "bearing_from_frigate:118"
+      ]
+    },
+    {
+      "path": "src/enemies/endurance.py",
+      "sha256": "bf81abe71a933c2beee125a805053cf4cfc4ff22f8335357b8d7523c17b6321e",
+      "lines": 282,
+      "docstring": "Deterministic fictional battery, AIP, snorkel, and radio endurance model.",
+      "internal_imports": [
+        "src.data.catalog"
+      ],
+      "symbols": [
+        "EnergyFlow:18",
+        "SubmarineEndurance:26",
+        "__init__:33",
+        "surface_operation:43",
+        "transmitting:47",
+        "load_kw:50",
+        "_start_reserve_cycle:56",
+        "_advance_instantaneous:77",
+        "supported_speed:92",
+        "time_until_surface_operation:115",
+        "_seconds_to_event:149",
+        "_validate_inputs:177",
+        "update:186",
+        "_update_step:213",
+        "serialize:241",
+        "restore:252"
+      ]
+    },
+    {
+      "path": "src/enemies/sub.py",
+      "sha256": "2a38120a7622ea03fff09beb8a28273f898b5bc2ac971c1efc84677fdc5fc0b8",
+      "lines": 965,
+      "docstring": "U-Boot-Modell: Typen-Daten aus dem Kontakt-Katalog + Patrouillen/Ausweich-KI (M2).\n\nPro Instanz: sensor_seed + Fingerprint (Blattzahl, Raten-Skala, Tonal-Offsets,\nKavitation/Breitband-Level) – Details in docs/contacts-db.md.",
+      "internal_imports": [
+        "src.core",
+        "src.data",
+        "src.enemies.endurance",
+        "src.physics",
+        "src.sensors.platform",
+        "src.sonar.tma",
+        "src.weapons.asw",
+        "src.weapons.torpedo"
+      ],
+      "symbols": [
+        "SubType:40",
+        "Sub:63",
+        "__init__:43",
+        "__init__:68",
+        "hear_ping:179",
+        "reaction_delay_s:189",
+        "alert_torpedo:195",
+        "_react_to_torpedo:206",
+        "utility_scores:218",
+        "tactical_decision:238",
+        "hit:246",
+        "_launch_data:265",
+        "_maybe_attack:298",
+        "_maybe_active_ping:358",
+        "transmitting:382",
+        "_ingest_bearing:390",
+        "_update_hull_stress:411",
+        "cavitation_onset_kn:424",
+        "cavitating:433",
+        "source_level_offset_db:437",
+        "_advance_depth:445",
+        "update:477",
+        "_update_inner:507",
+        "_update_surface_cycle:768",
+        "quiet_factor:824",
+        "noise_level:835",
+        "torpedo_notice_range_nm:838",
+        "acoustic_signature:847",
+        "speed_for_state:868",
+        "distance_nm:872",
+        "bearing_from_frigate:875",
+        "sensor_domain:882",
+        "lofar_lines:887",
+        "broadband:937"
+      ]
+    },
+    {
+      "path": "src/enemies/surface.py",
+      "sha256": "a9208c63ac413fabcb989af204c28abe8d1484add1dc64ce13b47bab1b3a4967",
+      "lines": 470,
+      "docstring": "Oberflächenschiffe: Zivil (AIS/ESM) + feindliche Kriegsschiffe (KAMPFSCHIFF).\n\nEinheitliche Klasse; feindliche Variante lochert um Ankerpunkt und feuert\nASM-Salven. Akustik und Profil aus dem Kontakt-Katalog (src/data/catalog.py).",
+      "internal_imports": [
+        "src.core",
+        "src.data",
+        "src.physics",
+        "src.sensors.platform",
+        "src.weapons.asw"
+      ],
+      "symbols": [
+        "SurfaceShip:34",
+        "__init__:39",
+        "hostile:123",
+        "speed_cap_kn:127",
+        "hull_length_m:132",
+        "source_level_offset_db:139",
+        "radar_emitting:145",
+        "ais_transmitting:150",
+        "hit:155",
+        "_progressive_flooding:163",
+        "alert_torpedo:171",
+        "update:180",
+        "_update_civil:191",
+        "_update_combatant:203",
+        "_maybe_asroc:269",
+        "_steer:304",
+        "_move:340",
+        "_maybe_asm:364",
+        "quiet_factor:382",
+        "noise_level:387",
+        "acoustic_signature:390",
+        "lofar_lines:405",
+        "broadband:437",
+        "distance_nm:460",
+        "bearing_from_frigate:463",
+        "sensor_domain:469"
+      ]
+    },
+    {
+      "path": "src/nations/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "lines": 0,
+      "docstring": null,
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/nations/nations.py",
+      "sha256": "f943b3b481da5541d881a9b0fa1230b3d32107aaf5244e42f163b7bd24be2071",
+      "lines": 28,
+      "docstring": "Public chart and platform reference for the N overlay.\n\nLive entities do not belong here: they could reveal unobserved contacts.",
+      "internal_imports": [
+        "src.data.catalog"
+      ],
+      "symbols": [
+        "reference_summary:9"
+      ]
+    },
+    {
+      "path": "src/network/__init__.py",
+      "sha256": "bd4f911e2b5f6d5bbc529fa9dc81279f69ad056ee534902e8cb263db970706c8",
+      "lines": 6,
+      "docstring": "Optionale Echtwelt-Netzwerk-Integration (AIS Stream, OpenSky ADS-B).\n\nAlles hier ist strikt optional: ohne Internetverbindung oder API-Key bleibt\ndas Spiel unverändert. Netzwerk-I/O läuft ausschließlich in Daemon-Threads,\nniemals im Pygame-Hauptthread.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/network/adsb_client.py",
+      "sha256": "9a7af99d92dc46fb8aabe4a669222b3799e870ed316647c5bd21c639fd68488f",
+      "lines": 183,
+      "docstring": "OpenSky Network REST-Client (https://opensky-network.org/api/states/all).\n\nStdlib-only (``urllib``), passend zur bestehenden Projekt-Konvention\n(siehe ``src/data/wiki_import.py``). Läuft in einem normalen\n``threading.Thread``-Polling-Loop; kein asyncio notwendig, da REST/Polling.\n\nOhne Zugangsdaten wird anonym (stark ratenlimitiert) abgefragt. Mit\n``client_id:client_secret`` wird zunächst ein OAuth2-Client-Credentials-Token\ngeholt (neues OpenSky-Auth-Schema seit 2024) und als Bearer-Token verwendet.",
+      "internal_imports": [],
+      "symbols": [
+        "_rate_limit_wait_seconds:32",
+        "OpenSkyClient:47",
+        "test_connection:171",
+        "__init__:56",
+        "start:75",
+        "stop:83",
+        "_run:90",
+        "_publish:118",
+        "set_bounding_box:132",
+        "_fetch_states:137",
+        "_ensure_token:152"
+      ]
+    },
+    {
+      "path": "src/network/ais_client.py",
+      "sha256": "4f99536f9555662e4c42b11ac1f33717e3d47b3b12a3624ef292c8baa8dfd1f3",
+      "lines": 290,
+      "docstring": "AIS Stream (wss://stream.aisstream.io) Client.\n\nLäuft in einem eigenen Daemon-Thread mit einer eigenen asyncio-Event-Loop\n(``asyncio.run``); der Rest des Spiels bleibt synchron. Empfangene\nPositions- und statische Schiffsnachrichten werden zu flachen dicts\nnormalisiert und über eine thread-sichere ``queue.Queue`` an den\nPygame-Hauptthread übergeben (siehe ``LiveTrafficManager.pump``).\n\nRobust gegen Verbindungsabbrüche: automatischer Reconnect mit exponentiellem\nBackoff (1s..30s). Alle Ausnahmen werden im Thread abgefangen; ein\nNetzwerkfehler bringt niemals das Spiel zum Absturz.",
+      "internal_imports": [],
+      "symbols": [
+        "_number:37",
+        "_integer:48",
+        "_text:61",
+        "_dimensions:69",
+        "AisStreamClient:81",
+        "test_connection:247",
+        "__init__:93",
+        "start:102",
+        "stop:110",
+        "_thread_main:117",
+        "_run:124",
+        "_handle_message:160",
+        "_probe:257"
+      ]
+    },
+    {
+      "path": "src/network/connectivity.py",
+      "sha256": "7cb0ae4146a9e5d53a7e085d4d29892cb1436e6a70d27927cae2ac3206355039",
+      "lines": 59,
+      "docstring": "Leichter Internet-Erreichbarkeits-Check, threaded und nicht blockierend.\n\nDas Optionsmenü fragt ``ConnectivityMonitor.online`` jeden Frame ab; der\neigentliche Socket-Connect läuft in einem Daemon-Thread, damit ein\nhängendes Netzwerk niemals die Spiel-Loop blockiert.",
+      "internal_imports": [],
+      "symbols": [
+        "check_internet_sync:19",
+        "ConnectivityMonitor:28",
+        "__init__:36",
+        "start:42",
+        "stop:50",
+        "_run:56"
+      ]
+    },
+    {
+      "path": "src/network/live_traffic.py",
+      "sha256": "643d6784dbbf7ef2515c8ffd175809aaee0bd1522757c8f0610facd22399fecf",
+      "lines": 445,
+      "docstring": "Orchestriert AIS-Stream- und OpenSky-ADS-B-Verkehr in der Spielwelt.\n\n``LiveTrafficManager`` ist die einzige Andockstelle, die ``Game`` kennen\nmuss: ``configure()`` einmal pro neuer Welt/Mission, ``pump()`` einmal pro\nFrame (analog zu ``Commander.pump``), ``stop()`` beim Beenden. Alles\nNetzwerk-/Threading-Detail bleibt in ``ais_client``/``adsb_client``\ngekapselt; hier werden nur Queues geleert und Spiel-Entities erzeugt/\naktualisiert - ausschliesslich im Hauptthread.",
+      "internal_imports": [
+        "src.air.live_aircraft",
+        "src.enemies.surface",
+        "src.network.adsb_client",
+        "src.network.ais_client",
+        "src.world.projection"
+      ],
+      "symbols": [
+        "_category_for_ais_type:57",
+        "_valid_cog:70",
+        "_valid_sog:78",
+        "LiveTrafficManager:86",
+        "__init__:89",
+        "configure:115",
+        "stop:148",
+        "_bounding_box_latlon:156",
+        "_adsb_bounding_box:166",
+        "_refresh_adsb_bounding_box:184",
+        "mark_ship_destroyed:197",
+        "mark_aircraft_destroyed:208",
+        "pump:217",
+        "_prune_ships:229",
+        "_prune_aircraft:256",
+        "_drain_ais:267",
+        "_merge_ais_metadata:291",
+        "_apply_ais_metadata:306",
+        "_remove_simulated_ais_ship:319",
+        "_apply_ais_report:329",
+        "_drain_adsb:396"
+      ]
+    },
+    {
+      "path": "src/physics/__init__.py",
+      "sha256": "832dbe968d53da0debf2071a6c24cdd38b1fc649658f1d60e4864e9d21c45d72",
+      "lines": 1,
+      "docstring": "Deterministic physics models shared by simulation entities.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/physics/missile.py",
+      "sha256": "b8d59a237e134e9bc0822a676aefb657dd7b7d9564ed3ac0bbd4ce1b355ee919",
+      "lines": 81,
+      "docstring": "Anti-ship missile flight physics (pure helpers).\n\nPoint-mass 3-DOF model: horizontal position/heading, altitude, speed.\n\n* Boost: a ship- or air-launched round accelerates from its launch speed to\n  the profiled cruise speed at the booster acceleration; the sustainer then\n  holds cruise speed (thrust = drag).  Fuel is the profiled range.\n* Altitude: climb/descent to the sea-skimming cruise height at a limited\n  vertical speed, dropping to the terminal height inside the terminal range.\n  The missile's own height sets its radar horizon.\n* Mid-course: inertial flight towards the launch datum with the profiled\n  (gentle, waypoint) turn rate.\n* Terminal: the active seeker must see the target inside its field of view\n  for the lock delay; locked, the missile flies proportional navigation\n  (commanded turn rate = N x line-of-sight rate) limited by its lateral g.",
+      "internal_imports": [],
+      "symbols": [
+        "boost_time_s:36",
+        "speed_step:40",
+        "altitude_step:46",
+        "commanded_altitude_m:51",
+        "max_turn_rate_deg_s:56",
+        "in_field_of_view:62",
+        "pn_turn_rate_deg_s:67",
+        "flight_time_bound_s:77"
+      ]
+    },
+    {
+      "path": "src/physics/ship_dynamics.py",
+      "sha256": "0ddbf68723f64ade110b3c7a778780a501b45814776389bd3469852c3d9990d5",
+      "lines": 468,
+      "docstring": "Surface-ship hydrodynamics: surge, propeller, cavitation, steering,\nseakeeping, sinkage and wake.\n\nThe model is force based and calibrated at load time against the 1.0.0\ngameplay references (``src/core/config.py``): top speed, the time to reach\n90 % of FULL, the stop distance, the steady turn at FULL and the cavitation\nonset.  Physical inputs (hull, propeller, stability) come from\n``data/loadouts/ownship_hull.json``.\n\nSurge integrates exactly: with the propeller speed held over a step the\nequation of motion ``M dv/dt = a0 - a1 v - a2 v^2`` is a constant-coefficient\nRiccati equation with a closed-form solution, so one long step equals many\nshort ones.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "load_hull_data:52",
+        "riccati_step:72",
+        "riccati_time_to:96",
+        "HullModel:107",
+        "_exp_linear_step:178",
+        "_exp_linear_time_to:185",
+        "surge_step:192",
+        "_time_to_fraction:250",
+        "calibrate:268",
+        "_wave_components:372",
+        "wave_slope_rad:390",
+        "turn_heel_rad:405",
+        "squat_m:411",
+        "hydrostatic_draft_m:421",
+        "seakeeping_step:433",
+        "steady_rps:146",
+        "thrust_n:149",
+        "added_resistance_n:152",
+        "effective_mass_kg:161",
+        "cavitation_number:164",
+        "shaft_power_w:172",
+        "speed_at:254",
+        "with_:313"
+      ]
+    },
+    {
+      "path": "src/physics/submarine.py",
+      "sha256": "b44b18aa0bfbd8886a3d461860f6808bcae8bf531c1cab106ce41dd11ee53286",
+      "lines": 86,
+      "docstring": "Submarine and hostile-hull physics helpers (pure functions).\n\n* Hydroplanes produce lift proportional to dynamic pressure, so the\n  achievable depth-change rate falls with speed squared; below a few knots the\n  boat relies on slow trim/ballast changes.\n* Propeller cavitation onset rises with the static pressure at the screw:\n  v_c(z) = v_c0 * sqrt(1 + z / 10.3 m).\n* Radiated source level grows with speed (machinery/flow noise ~40 log v\n  below cavitation) and jumps when the screw cavitates.\n* Operating below test depth accumulates pressure-hull fatigue; the crush\n  depth has a safety factor of 1.5.\n* A bounded high-pressure-air store allows one emergency blow.\n* Surface ships lose speed in waves (added resistance ~ Hs^2 B^2 / L,\n  relative to their own resistance at top speed).",
+      "internal_imports": [
+        "src.physics.ship_dynamics"
+      ],
+      "symbols": [
+        "plane_authority:39",
+        "cavitation_speed_kn:45",
+        "source_speed_db:50",
+        "crush_depth_m:60",
+        "fatigue_rate_per_s:64",
+        "wave_speed_fraction:71"
+      ]
+    },
+    {
+      "path": "src/physics/torpedo_dyn.py",
+      "sha256": "4852381265f35eadd8657750a7720ecdd85d98373a8398466c9951a4e5e79dee",
+      "lines": 88,
+      "docstring": "Torpedo physics helpers (pure functions).\n\n* Energy: the battery/fuel store is expressed in \"cruise seconds\" - the\n  catalog range at catalog speed.  Propulsive power grows with the cube of\n  speed, so running slower (a throttled turn) stretches the store.  When it\n  is empty the motor stops and the weapon coasts down against drag\n  (dv/dt = -k v^2) until it sinks/self-destructs.\n* Turning: a constant minimum turning radius, so the turn rate is\n  proportional to speed.\n* Depth: fins give a pitch/depth acceleration proportional to dynamic\n  pressure; the depth rate follows a proportional command at that\n  acceleration limit (small overshoot emerges).\n* Warhead: a proximity fuze fires at closest approach inside its radius;\n  damage follows the underwater-explosion shock factor SF = sqrt(W) / R.\n* Wire: finite payout on both spools, and tension breaks the wire when the\n  launching ship runs too fast or turns too hard for long enough.",
+      "internal_imports": [],
+      "symbols": [
+        "energy_budget_s:41",
+        "energy_rate:46",
+        "coast_step:51",
+        "turn_rate_deg_s:56",
+        "depth_step:61",
+        "shock_factor:77",
+        "submarine_damage:81",
+        "surface_damage:86"
+      ]
+    },
+    {
+      "path": "src/sensors/__init__.py",
+      "sha256": "a2e9fba3e2fa621f8a1bf331c4a70c90f293c8387d386795ae12d337532096ee",
+      "lines": 7,
+      "docstring": "Observed sensor tracks shared by the tactical workstations.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/sensors/ais.py",
+      "sha256": "cdab853af996104a2d941a75cc7a5e99c13cef437ab2a4eaeedfe96523e23d74",
+      "lines": 176,
+      "docstring": "Simulated AIS VHF receiver for the own ship.\n\nCivilian ships that transmit AIS broadcast their own name, course and speed.\nThose broadcasts are legitimate observations: the receiver only learns what a\nreport contained, only when a report was actually sent (ITU-R M.1371 class-A\nreporting cadence) and only inside VHF line-of-sight.  Radar observations of\ncivilian ships therefore no longer carry the ship's true name or course; the\nlabel/course come from the latest received AIS report instead.\n\nThe transmission phase of each ship is a stateless function of its sensor\nseed, so the schedule needs no saved clock.  What the receiver has decoded is\nsaved and restored exactly.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "reporting_interval_s:32",
+        "vhf_range_nm:43",
+        "AISReport:50",
+        "AISReceiver:61",
+        "__init__:64",
+        "_epoch:68",
+        "update:73",
+        "forget:114",
+        "label_for:118",
+        "course_for:122",
+        "serialize:133",
+        "valid_state:137",
+        "restore:175",
+        "finite:143"
+      ]
+    },
+    {
+      "path": "src/sensors/esm.py",
+      "sha256": "4072405c8202718130dcbd72d8034510c1049c1b7d5367ce299974b67ef8fd34",
+      "lines": 1110,
+      "docstring": "Bounded passive ESM observations without entity identity.",
+      "internal_imports": [],
+      "symbols": [
+        "SpectrumBand:34",
+        "spectrum_band:43",
+        "SignalType:60",
+        "RadarSignal:98",
+        "_stable_u64:119",
+        "RadarSuiteController:125",
+        "ESMMeasurement:192",
+        "ESMTrack:207",
+        "live_window_s:232",
+        "estimated_range_nm:238",
+        "signal_state:244",
+        "track_is_operational:258",
+        "filter_and_sort_tracks:265",
+        "ESMCandidate:306",
+        "ESMAnalysis:312",
+        "ESMSignalFingerprint:320",
+        "ESMAnimatedSignal:328",
+        "signal_fingerprint:337",
+        "animated_signal_fingerprint:384",
+        "ECMChannel:452",
+        "ECMTechnique:465",
+        "ECMEffect:476",
+        "ECMJammer:487",
+        "ESMCorrelationEvidence:670",
+        "ESMCorrelation:681",
+        "_angle_difference:688",
+        "_measurement_sort_key:692",
+        "_association_cost:702",
+        "ESMPicture:736",
+        "_signed_angle_difference:876",
+        "rank_emitters:880",
+        "analyze_signal:901",
+        "antenna_main_beam_on:916",
+        "scan_for_signals:931",
+        "_band_score:975",
+        "correlate_observations:984",
+        "valid_esm_state:1014",
+        "_validate_measurement:1055",
+        "_validate_track:1081",
+        "_track_sequence:1101",
+        "_finite_number:1108",
+        "pri_s:115",
+        "__init__:130",
+        "active_signals:135",
+        "age:225",
+        "display_quality:228",
+        "__init__:501",
+        "recommended_technique:506",
+        "deploy_jamming:515",
+        "set_technique:540",
+        "update:554",
+        "effect_on:591",
+        "effect_details_on:599",
+        "serialize:629",
+        "restore:633",
+        "__init__:739",
+        "tracks:746",
+        "expire:752",
+        "observe_batch:758",
+        "_allocate_key:820",
+        "_update_track:827",
+        "serialize:851",
+        "restore:855",
+        "checked:759"
+      ]
+    },
+    {
+      "path": "src/sensors/fusion.py",
+      "sha256": "81d1c156d015ac524fafd99b1f0daa515f5bfb1b7ae45f5244c665848628d3a0",
+      "lines": 157,
+      "docstring": "Transient, operator-directed OPZ observations and display-only fusions.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "OPZObservation:15",
+        "ManualFusion:55",
+        "OPZFusionPicture:61",
+        "source_classification:154",
+        "track_id:40",
+        "__getitem__:43",
+        "age:47",
+        "display_quality:50",
+        "__init__:64",
+        "clear:73",
+        "prune:82",
+        "create:93",
+        "dissolve:106",
+        "computed:115",
+        "visible:143"
+      ]
+    },
+    {
+      "path": "src/sensors/hfdf.py",
+      "sha256": "048063b5246b9e38fdbe8233813121293c71a16982a9973fdbd3533fdd8b9fc0",
+      "lines": 70,
+      "docstring": "HF propagation for the HFDF receiver (pure functions).\n\n* A submarine calls a distant shore station and picks the optimum working\n  frequency for that path: OWF = 0.85 x MUF, MUF = foF2 sqrt(1 + (d/2h)^2)\n  (flat-Earth single hop off the F2 layer, virtual height h).  foF2 follows\n  the day/night ionosphere.\n* Ground wave over sea water: the usable range falls with frequency.  It is\n  anchored so that a typical 15 MHz call is heard to the 1.0.0 HFDF range.\n* Sky wave returns to the sea surface only beyond the skip distance\n  d_skip = 2h sqrt((f/foF2)^2 - 1); sky-wave bearings suffer ionospheric\n  tilt errors and are about twice as uncertain as ground-wave bearings.\n\nThe measured carrier frequency and the propagation mode are observable; the\nreceiver never learns the true range from them.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "fof2_mhz:36",
+        "muf_mhz:40",
+        "transmit_frequency_mhz:44",
+        "ground_wave_range_nm:51",
+        "skip_distance_nm:56",
+        "propagation_mode:63"
+      ]
+    },
+    {
+      "path": "src/sensors/platform.py",
+      "sha256": "77900f50fecb320145dbbc4283233d19f5012a7557544dd9933772289a73cfe0",
+      "lines": 649,
+      "docstring": "Deterministic platform sensor controllers and observation-only datalink.",
+      "internal_imports": [
+        "src.core",
+        "src.sensors",
+        "src.sonar"
+      ],
+      "symbols": [
+        "_candidate_acoustic_signature:27",
+        "_stable_int:41",
+        "PlatformObservation:47",
+        "ObservationPicture:72",
+        "SensorController:124",
+        "MotionLimits:145",
+        "PlatformSensorSuite:154",
+        "exchange_friendly_datalink:433",
+        "side_datalink_group:474",
+        "motion_limits:485",
+        "machine_acoustics:509",
+        "snapshot_observation:541",
+        "_validate_observation:562",
+        "_validate_suite_state:595",
+        "validate_suite_state:633",
+        "_finite_between:641",
+        "_candidate_token:647",
+        "__init__:75",
+        "observe:80",
+        "expire:89",
+        "tracks:95",
+        "serialize:103",
+        "restore:107",
+        "consume_due:132",
+        "__init__:157",
+        "datalink_id:183",
+        "update:186",
+        "_observe_candidate:210",
+        "tactical_tracks:384",
+        "tracks_for_candidate:390",
+        "serialize:400",
+        "restore:418"
+      ]
+    },
+    {
+      "path": "src/sensors/radar.py",
+      "sha256": "69355b57d403139eaa371360b9edb6abebb0b8411a5c658a5c872a1755664df6",
+      "lines": 153,
+      "docstring": "Radar detection physics (pure functions).\n\n* Radar equation: the signal-to-noise ratio of a point target falls with\n  R^-4 and rises with its cross-section.  It is anchored so that the\n  nominal instrumented range of each radar is the range at which a\n  reference (broadside) target is detected with Pd = 0.5 in a calm sea.\n* Swerling-1 target fluctuation with a cell-averaging CFAR detector:\n  Pd = (1 + T / (1 + SINR))^-N with T = Pfa^(-1/N) - 1 (exact closed form\n  for N reference cells).  The CFAR adapts its threshold to the local\n  interference, so clutter and jamming act as extra noise.\n* Sea clutter (GIT-type): the clutter-to-noise ratio of a resolution cell\n  grows about 3 dB per sea state and falls with R^-3 (illuminated area ~ R,\n  two-way spreading ~ R^-4).  Air search uses MTI and suffers less.\n* Rain: two-way specific attenuation proportional to the rain intensity.\n* Self-screening noise jammer: jammer-to-noise ratio ~ R^-2 (one-way), so\n  the skin return burns through inside a finite range; the jammer power is\n  solved from the profiled burn-through range.\n\nThe legacy range multipliers (weather 25 %/10 %, rain 10 %/20 %, aspect\n0.55..1) are reproduced at their anchor points, which the calibration\nharness checks.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "pd_from_sinr:48",
+        "snr:55",
+        "_clutter_coefficient:62",
+        "clutter_to_noise:73",
+        "_rain_coefficient:82",
+        "rain_loss_db:89",
+        "jammer_to_noise:96",
+        "sinr:103",
+        "detection_range_nm:115",
+        "_detection_fraction:128",
+        "detection_fraction:135",
+        "swept:146"
+      ]
+    },
+    {
+      "path": "src/sensors/tracks.py",
+      "sha256": "5e2dfb86cdc3691b285e28b6bd94be70b5079ec4e1aba594d0170d137d89f9b2",
+      "lines": 278,
+      "docstring": "Persistent, smoothed observations without exposing simulation truth.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "SensorTrack:10",
+        "TrackPicture:90",
+        "age:41",
+        "display_quality:44",
+        "_raw_fit_motion:47",
+        "derived_motion:77",
+        "__init__:93",
+        "_measurement_policy:100",
+        "_relative_geometry:119",
+        "observe:125",
+        "expire:255",
+        "tracks:259",
+        "serialize:266",
+        "restore:269"
+      ]
+    },
+    {
+      "path": "src/sensors/visual.py",
+      "sha256": "284fcdf64e6b32d37b18bfa043698c0a11bbe1b98261b8483213751671f8fbf9",
+      "lines": 112,
+      "docstring": "Visual detection physics for lookouts (pure functions).\n\n* Koschmieder's law: the apparent contrast of a target against the horizon\n  sky decays as C(R) = C0 exp(-3.912 R / V), V = meteorological visibility.\n* The eye's contrast threshold rises for small targets (Blackwell-type):\n  eps(alpha) = EPS0 (1 + (ALPHA0 / alpha)^2), alpha = target height / range.\n* Whitecaps raise the background clutter of sea-level targets by a factor\n  per sea state (small, low targets such as a sail suffer most); aircraft\n  are seen against the sky.\n* Night: the threshold rises by the ratio of adaptation luminances, and the\n  moon's illuminated fraction (from its phase) interpolates between a dark\n  new-moon night and a full-moon night.\n* A target is visible only above the geometric horizon of lookout eye height\n  plus target height.\n\nThe inherent contrast C0 of each target kind is solved so that the 1.0.0\nday, calm, clear-air ranges are reproduced exactly; the night multipliers\nare solved so that a half moon reproduces the 1.0.0 night factor for a\nsurface ship.",
+      "internal_imports": [],
+      "symbols": [
+        "optical_horizon_nm:43",
+        "threshold:48",
+        "apparent_contrast:53",
+        "inherent_contrast:57",
+        "night_multiplier:65",
+        "moon_illumination:75",
+        "LookoutModel:80",
+        "__init__:83",
+        "night_factor:93",
+        "margin:98"
+      ]
+    },
+    {
+      "path": "src/ship/__init__.py",
+      "sha256": "f6200ad1f86fd13f04f54837e3df60be4fea43c9ea4343c749bce2a44779cd97",
+      "lines": 1,
+      "docstring": "Fregatte-Modell.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/ship/damage.py",
+      "sha256": "4648d51ccb68517a318b16ed77314c474641ddf2e8755ed6b10e9980b8e9cd1f",
+      "lines": 530,
+      "docstring": "Schadensmodell: Abteilungen mit Wassereinbruch, Stabilität, Brand und\nReparaturtrupps.\n\nPhysics (phase 10):\n\n* Each compartment has a volume, permeability, centroid and height.  A hole\n  (area in m^2) below the waterline floods it with the orifice law\n  Q = Cd A sqrt(2 g h), where h is the head between the outside waterline\n  (dynamic draft plus heel on that side) and the water already inside, so\n  flooding slows and stops as the levels equalize.  Teams first patch holes\n  (consuming a patch kit), then pump.\n* Floodwater adds displacement; free surfaces reduce GM; the transverse\n  moment of off-centre water gives the heel (list).  The ship sinks when the\n  floodwater exceeds its reserve buoyancy and capsizes when GM is lost or the\n  heel passes the downflooding angle.\n* Fire intensity grows with the compartment's fuel load and oxygen, is\n  smothered by flooding, spreads deterministically through hot bulkheads,\n  can start from flooded switchboards and can cook off the magazine.\n* Teams walk the compartment graph (transit time per hop).\n* Station capability degrades continuously with flooding and fire.\n\nThe legacy percentages (flood 0..70 = destroyed, fire 0..100) and state\nnames remain the public interface for the UI and saves.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "_reference_hole_m2:106",
+        "orifice_inflow_m3_s:116",
+        "Compartment:122",
+        "DamageModel:164",
+        "__init__:125",
+        "geometry:136",
+        "water_m3:139",
+        "water_level_m:142",
+        "hit:147",
+        "capability:156",
+        "__init__:169",
+        "torpedo_hit:187",
+        "_impact_compartments:205",
+        "_zone_compartments:221",
+        "missile_hit:239",
+        "grounding_impact:248",
+        "flood_mass_kg:280",
+        "gm_effective_m:283",
+        "_heel_rad:294",
+        "_recompute_totals:301",
+        "repair_candidates:312",
+        "_travel_s:316",
+        "_send:333",
+        "assign_team_cycle:340",
+        "assign_team:354",
+        "unassign_team:361",
+        "teams_on:364",
+        "repair_rates:369",
+        "_inflow_pct_s:376",
+        "compartment_trend:385",
+        "station_state:406",
+        "station_down:409",
+        "station_degraded:412",
+        "capability:416",
+        "avg_flood:419",
+        "list_deg:422",
+        "engine_speed_cap:427",
+        "_fire_growth:439",
+        "_update_compartment:446",
+        "_spread_fire:486",
+        "_cook_off:497",
+        "update:512"
+      ]
+    },
+    {
+      "path": "src/ship/ship.py",
+      "sha256": "adf4028635f66eef3ac5d7c8560f9ab8f161a0914247ecace372956e3e9181ea",
+      "lines": 386,
+      "docstring": "Fregatte-Modell: Position, Kurs, Geschwindigkeit, Lärmpegel.",
+      "internal_imports": [
+        "src.core",
+        "src.physics",
+        "src.world.grounding"
+      ],
+      "symbols": [
+        "Ship:13",
+        "__init__:14",
+        "steer_input:51",
+        "telegraph:64",
+        "cycle_telegraph:70",
+        "grounded:87",
+        "effective_target_kn:92",
+        "mass_kg:99",
+        "_propulsion:105",
+        "shaft_immersion_m:117",
+        "cavitating:124",
+        "rpm:138",
+        "max_rpm:146",
+        "fuel_burn_kg_h:149",
+        "fuel_endurance_h:164",
+        "fuel_range_nm:168",
+        "update_fuel:174",
+        "update:183",
+        "dynamic_draft_m:248",
+        "trim_deg:257",
+        "_update_wake:264",
+        "wake_strength_at:274",
+        "_advance:286",
+        "_update_roll_pitch:322",
+        "noise_level:338",
+        "passive_sonar_range_nm:347",
+        "pos_nm:365",
+        "course_error_deg:369",
+        "time_to_course_s:373",
+        "heel_deg:377",
+        "turn_radius_nm:382"
+      ]
+    },
+    {
+      "path": "src/sonar/equation.py",
+      "sha256": "8ead204e63d9b588b6a470affb826768b77c2feee068234e8e5f9007eca23871",
+      "lines": 390,
+      "docstring": "Passive and active sonar equations in dB (per canonical band).\n\nPassive:  SE = SL - TL - NL + DI - DT\nActive:   SE = SL_a - 2 TL + TS - max(NL - DI, RL) - DT + PG\n\nThe terms are physical in shape (spherical spreading, Francois-Garrison\nabsorption, Wenz/Knudsen ambient noise, power-summed self noise, aspect\ndependent target strength, bottom/surface/volume reverberation, pulse\nprocessing gain).  The reference constants are calibrated so that at the\n1.0.0 reference conditions the signal excess reproduces the historical\ndetection ranges (see ``tools/calibrate.py``).\n\nEverything here is a pure function; nothing owns state.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "_db_sum:72",
+        "francois_garrison_db_per_km:77",
+        "spreading_loss_db:103",
+        "ambient_noise_db:108",
+        "self_noise_floor_db:130",
+        "reference_noise_db:135",
+        "self_noise_db:141",
+        "PassiveTerms:160",
+        "passive_figure_of_merit_offset:174",
+        "passive_terms:180",
+        "target_strength_db:217",
+        "surface_scattering_db:228",
+        "bottom_scattering_db:235",
+        "reverberation_level_db:241",
+        "ActiveTerms:262",
+        "active_noise_db:288",
+        "reference_target_strength_db:293",
+        "_two_way_absorption_db:300",
+        "_active_budget_db:304",
+        "active_range_factor_db:311",
+        "active_source_level_db:319",
+        "cw_doppler_rejection_db:329",
+        "active_terms:342",
+        "range_resolution_m:375",
+        "range_sigma_m:382",
+        "equivalent_range_nm:388",
+        "signal_excess_db:169",
+        "signal_excess_db:272",
+        "reverberation_limited:279"
+      ]
+    },
+    {
+      "path": "src/sonar/propagation.py",
+      "sha256": "02d57cfb8b7803ec63249054ecb281804b836004fd5293b2bcc444fc8284b384",
+      "lines": 360,
+      "docstring": "Bounded synthetic one-way acoustic propagation for passive sensors.\n\nThis is a deterministic game model, not a representation of measured ocean\nconditions.  It owns no simulation state and deliberately accepts only the\nfixed bands used by the game.",
+      "internal_imports": [
+        "src.core",
+        "src.sonar",
+        "src.sonar.raytrace",
+        "src.world.ocean"
+      ],
+      "symbols": [
+        "PathKind:31",
+        "SoundSpeedProfile:39",
+        "AcousticPoint:47",
+        "PathSegment:54",
+        "PropagationPath:63",
+        "PropagationResult:72",
+        "_geometry_key:87",
+        "_number:100",
+        "synthetic_sound_speed_m_s:110",
+        "synthetic_sound_speed_profile:118",
+        "_segment:130",
+        "propagate:150",
+        "representative_frequency_hz:241",
+        "passive_range_factor:256",
+        "_profile_from_key:274",
+        "_spherical_db:295",
+        "ray_anchor_db:299",
+        "ray_environment_key:314",
+        "ray_excess_db:331",
+        "ray_reference_excess_db:351",
+        "best_path:80"
+      ]
+    },
+    {
+      "path": "src/sonar/raytrace.py",
+      "sha256": "19674c44252fedd793b44d94ebb84355ed8bd1ccb091aefb8d260a49229ae22f",
+      "lines": 291,
+      "docstring": "Bounded, vectorized acoustic ray tracing and transmission-loss tables.\n\nA fan of rays leaves the source with launch angles within +/-FAN_DEG.  Each\nray obeys Snell's law in the range-independent sound-speed profile\n(``cos(theta)/c = const``), turns where the invariant demands it, reflects\nat the surface (Beckmann-Spizzichino roughness loss) and at the seabed\n(Rayleigh fluid-fluid loss of the local sediment).  Ray energy is summed\nincoherently on a (range x depth) grid with the geometric flux through each\ncell, giving transmission loss ``TL(r, z)`` per canonical band.  Surface\nducts, shadow zones, bottom bounce and convergence zones emerge from the\nprofile instead of being prescribed.\n\nTables are pure functions of a quantized environment key and are cached in\na bounded LRU; a table costs one vectorized trace (48 rays x 370 range\nsteps) and is rebuilt only when the quantized environment changes.",
+      "internal_imports": [
+        "src.world.ocean"
+      ],
+      "symbols": [
+        "_surface_loss_db:45",
+        "quantize:57",
+        "depth_edges:61",
+        "_profile_speed:70",
+        "trace_table:75",
+        "cached_table:156",
+        "lookup_tl_db:175",
+        "clear_cache:195",
+        "ray_picture:214"
+      ]
+    },
+    {
+      "path": "src/sonar/sonar.py",
+      "sha256": "78146c27c670408345c447c24aa9e370aca536dcd9eeb5e6c2b839c3bd30bec7",
+      "lines": 1872,
+      "docstring": "W1: Sonar-System – SNR-Modell, Peilfehler, TMA, LOFAR-Wasserfall.\n\nPassiv: nur Peilung (± Peilfehler je Array/Eigenfahrt/Qualität).\nTMA: Peilungsreihe + Fregattenmanöver -> Position + Geschwindigkeit.\nAktiv: Ping -> exakte Distanz + Tiefe (verrät Position).",
+      "internal_imports": [
+        "src.audio.database",
+        "src.audio.receiver",
+        "src.core",
+        "src.sonar",
+        "src.sonar.tma",
+        "src.world.ocean"
+      ],
+      "symbols": [
+        "tgt_gone:21",
+        "snr_db:30",
+        "hull_length_m:40",
+        "_WreckEcho:61",
+        "_lambert_mu_db:82",
+        "source_level_factor:96",
+        "doppler_factor:102",
+        "_surface_temperature:121",
+        "_echo_delay:128",
+        "_target_acoustic_signature:136",
+        "representative_frequency_hz:150",
+        "bearing_error_deg:160",
+        "_correlated_uniform:168",
+        "TowState:180",
+        "Contact:188",
+        "SonarSystem:572",
+        "__init__:67",
+        "bearing_from_frigate:77",
+        "__init__:195",
+        "update_passive:267",
+        "update_dip_passive:341",
+        "_publish_fix:362",
+        "active_fixes:374",
+        "update_ping:386",
+        "expire_ping_fix:415",
+        "update_buoy:466",
+        "tma_range_sigma_nm:496",
+        "update_tma:505",
+        "decay:552",
+        "positioned:564",
+        "display_label:568",
+        "__init__:582",
+        "toggle_tow:647",
+        "_tow_speed_ok:660",
+        "_tow_available:664",
+        "tow_performance:669",
+        "tow_status:677",
+        "adjust_towed_depth:692",
+        "measure_environment:703",
+        "set_listen_bearing:731",
+        "reset_listening_history:738",
+        "reset_audition_audio:751",
+        "listen_filtered:761",
+        "listen_filtered:766",
+        "set_audition_mode:769",
+        "_audition_process:775",
+        "listening_samples:809",
+        "ping_ready:861",
+        "ping_cooldown_remaining:865",
+        "fire_ping:868",
+        "queue_ping:876",
+        "passive_range_nm:926",
+        "_passive_range_nm:935",
+        "passive_terms:954",
+        "update_dipping_passive:1036",
+        "advance_mechanics:1121",
+        "update:1144",
+        "_bearing_fix:1492",
+        "_update_tow:1510",
+        "_own_noise_bearing:1533",
+        "_receiver_noise_factor:1538",
+        "_update_signature_analysis:1543",
+        "cycle_pulse:1554",
+        "_queue_clutter:1559",
+        "active_terms:1587",
+        "_active_range_nm:1621",
+        "process_lofar_column:1630",
+        "_process_pending_pings:1646",
+        "valid_ping_snapshot:1682",
+        "_measure_ping:1703",
+        "_apply_ping_snapshot:1728",
+        "_measure_tonal:1750",
+        "_endfire_factor:1763",
+        "_observed_bearing:1769",
+        "_update_tma:1780",
+        "apply_ping:1803",
+        "_get_contact:1840",
+        "_decay_contact:1861",
+        "active_contacts:1871"
+      ]
+    },
+    {
+      "path": "src/sonar/tma.py",
+      "sha256": "ce81942a28a13cf361016b4199aef0ae228de91451905daefd2b5bc34554e6d6",
+      "lines": 287,
+      "docstring": "W1: TMA – Position + Geschwindigkeit aus einer Peilungsreihe\n(bearing-only Tracking).\n\nDeterministisch: Gittersuche über (Kurs, Geschwindigkeit) des Ziels;\npro Kandidat wird die Startposition P0 per Least Squares so gelöst,\ndass alle (bewegte) Fregatten-Positionen + Zielbahn die Peilstriche\nmöglichst gut treffen. Der Peil-RMSE liefert die Qualität.\n\nZeiten in sim-Sekunden, Distanzen in NM.",
+      "internal_imports": [
+        "src.core",
+        "src.sonar"
+      ],
+      "symbols": [
+        "BearingPoint:24",
+        "BearingTrack:44",
+        "TMASolution:78",
+        "_bearing_dir:96",
+        "_line_position:102",
+        "_candidate_errors:123",
+        "_try_candidate:136",
+        "solve_tma:181",
+        "__init__:28",
+        "__init__:45",
+        "add:49",
+        "span_s:61",
+        "course_span_deg:64",
+        "doppler_observable:71",
+        "__init__:82",
+        "manoeuvre_of:261"
+      ]
+    },
+    {
+      "path": "src/sonar/tma_lm.py",
+      "sha256": "ba28cca85a0090bd30fee76f98da1b07811e38490d6f03fd7d6c5ecd8a8e2447",
+      "lines": 163,
+      "docstring": "Levenberg-Marquardt refinement and covariance for bearing(-Doppler) TMA.\n\nThe coarse grid search in ``tma.py`` finds the basin; this module refines the\nconstant-velocity target state (position at the newest measurement, velocity\nand, when frequency measurements exist, the unshifted tonal frequency f0)\nby damped Gauss-Newton on the weighted bearing and Doppler residuals, and\nreturns the state covariance ``(J^T W J)^-1``.\n\nDoppler makes range observable without an own-ship manoeuvre: the received\ntonal is f = f0 (1 + v_c / c) with the closing speed v_c of the geometry.\nEverything is deterministic, bounded (at most MAX_ITERATIONS) and uses no\ntarget truth.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "_bearing:29",
+        "_residuals:33",
+        "_state:60",
+        "_jacobian:66",
+        "refine:79",
+        "covariance_at:141",
+        "ellipse:157"
+      ]
+    },
+    {
+      "path": "src/ui/contact_analyzer.py",
+      "sha256": "a5982398816789b7f364e3813bee2f09c1cf9c55976ddee3315efe47d5e67baa",
+      "lines": 476,
+      "docstring": "Read-only tactical unit analyzer for the detached contact catalog.",
+      "internal_imports": [
+        "src.core.i18n",
+        "src.data.catalog",
+        "src.data.contact_analysis",
+        "src.ui"
+      ],
+      "symbols": [
+        "_wiki_url_for:26",
+        "ContactAnalyzer:37",
+        "__init__:42",
+        "selected_profile:70",
+        "_list_labels:75",
+        "_set_filter:79",
+        "_asset_kinds:94",
+        "_decode_surface:100",
+        "_prepare_selected_image:114",
+        "_selection_changed:123",
+        "_current_sample:129",
+        "_sample_available:139",
+        "_stop_sample:143",
+        "_play_sample:150",
+        "_open_wiki:163",
+        "_shown:173",
+        "_detail_lines:184",
+        "_scroll_detail:240",
+        "handle_event:246",
+        "_row_height:339",
+        "draw:342",
+        "_draw:346"
+      ]
+    },
+    {
+      "path": "src/ui/editor_widgets.py",
+      "sha256": "3f3a75d909e537a97f0a10c1223a09ada9a789d8bdad5ede81007d45777ef1e0",
+      "lines": 596,
+      "docstring": "Small bounded pygame widgets shared by standalone editors.",
+      "internal_imports": [
+        "src.core.i18n",
+        "src.data.validation",
+        "src.ui"
+      ],
+      "symbols": [
+        "EditorPalette:23",
+        "font:40",
+        "clear_font_cache:44",
+        "clipped:50",
+        "ellipsize:59",
+        "draw_text:63",
+        "panel:82",
+        "event_position:95",
+        "ListBox:100",
+        "TextField:168",
+        "FilterField:231",
+        "FieldRow:293",
+        "section_header:303",
+        "value_text:309",
+        "parse_value:319",
+        "FieldList:369",
+        "_leaf_rows:540",
+        "mapping_rows:560",
+        "draw_footer:592",
+        "__init__:103",
+        "set_items:108",
+        "move:112",
+        "handle_event:119",
+        "draw:147",
+        "__init__:169",
+        "handle_event:175",
+        "handle_text:198",
+        "draw:213",
+        "__init__:241",
+        "set:246",
+        "handle_event:249",
+        "matches:278",
+        "draw:282",
+        "reject_constant:342",
+        "__init__:372",
+        "selected_row:382",
+        "set_rows:385",
+        "_land_on_selectable:394",
+        "begin_edit:409",
+        "cancel_edit:421",
+        "apply_edit:428",
+        "move:445",
+        "handle_event:463",
+        "draw:502",
+        "assign:553",
+        "assign:585"
+      ]
+    },
+    {
+      "path": "src/ui/feedback.py",
+      "sha256": "7e0b03cdcd301ed1c4a932a6b55ad7bb2f3af207de6ed5cef1f7cd58fa1da5f0",
+      "lines": 45,
+      "docstring": "W0: stationsübergreifender Ereignis-Feed für operative Meldungen.\n\nErsetzt/erweitert das alte Teletype (nur Funk): Navigation, Funk, Sonar, Waffen,\nOPZ, Schaden, Mission und Weltzustand werden kategorisiert und farbcodiert in\nder Bottom-Leiste gehalten. Max. FEED_MAX_ENTRIES Einträge.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "FeedEntry:11",
+        "EventFeed:28",
+        "__init__:14",
+        "color:19",
+        "tag:23",
+        "__init__:29",
+        "add:34",
+        "recent:41",
+        "clear:44"
+      ]
+    },
+    {
+      "path": "src/ui/layout.py",
+      "sha256": "36c0d46841171c85a702015559ef1871d741299277cb5198d10b96cde1731c9b",
+      "lines": 474,
+      "docstring": "W0: Layout-Helfer – 3-Teil-Grid, Text-Einpassung (Wrap/Autofit/Clip).\n\nText darf niemals über Box-Grenzen hinausragen: alle Views rendern über\ndie Helfer hier (Word-Wrap, dynamische Schriftgröße, Surface-Clipping).",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.ui"
+      ],
+      "symbols": [
+        "clear_font_cache:28",
+        "set_text_scale:35",
+        "configure_for:46",
+        "text_scale:56",
+        "scaled_size:60",
+        "capture_geometry:65",
+        "capture_text:78",
+        "record_text:90",
+        "record_geometry:99",
+        "font:108",
+        "_line_height:130",
+        "wrap_text:134",
+        "ellipsize:163",
+        "fit_text:183",
+        "blit_block:209",
+        "box:237",
+        "blit_line:254",
+        "blit_lines:262",
+        "clip_to:278",
+        "panel:288",
+        "status_line:305",
+        "command_segment:329",
+        "tooltip_payload:356",
+        "valid_tooltip:366",
+        "tooltip_rect:380",
+        "draw_tooltip:431",
+        "bearing_pair:459",
+        "format_bearing_pair:466"
+      ]
+    },
+    {
+      "path": "src/ui/map_view.py",
+      "sha256": "a0555ddd189b7672b566f2e6555b3b147604c8e0bd45547e4d7eb6e081d3ac26",
+      "lines": 532,
+      "docstring": "W0/W3: Taktische Karte im linken Hauptbereich (640x510, Zoom/Pan).\n\nZeigt: Land/Inseln, Airbases, Fregatte, Zivile (AIS), Flüge, Torpedos,\nASMs, HSP-5, Peilstrich des ausgewählten Kontakts + Ziel-Kreuz (TMA/Ping).",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.ui",
+        "src.world.projection"
+      ],
+      "symbols": [
+        "message:19",
+        "_near:23",
+        "observed_position:27",
+        "observed_bearing:32",
+        "contact_position:37",
+        "active_fix_markers:51",
+        "_fix_marker_radius:65",
+        "map_hit_target:70",
+        "_in_rect:199",
+        "_visible_landmasses:204",
+        "draw_map_view:216"
+      ]
+    },
+    {
+      "path": "src/ui/mission_editor.py",
+      "sha256": "b43e2dd778b741c94e7bc6173fc6a78b0611e70cdcc1993e14c9421a642c0f76",
+      "lines": 610,
+      "docstring": "Standalone mission browser/editor/controller with static map preview.",
+      "internal_imports": [
+        "src.core.i18n",
+        "src.core.mission_definition",
+        "src.data.user_content",
+        "src.data.validation",
+        "src.ui"
+      ],
+      "symbols": [
+        "MissionEditor:20",
+        "__init__:30",
+        "refresh:56",
+        "selected:65",
+        "tab:69",
+        "field_metadata:73",
+        "new:76",
+        "open_selected:82",
+        "clone_selected:94",
+        "set_value:103",
+        "add_sector:117",
+        "add_exact_unit:123",
+        "add_random_group:138",
+        "add_event:149",
+        "_data:154",
+        "validate:159",
+        "preview:164",
+        "save:169",
+        "export_bundle:180",
+        "import_bundle:189",
+        "_next_id:195",
+        "_sync_fields:202",
+        "_add_exact:283",
+        "_add_group:293",
+        "_add_event_ui:302",
+        "_delete_target:309",
+        "_delete:319",
+        "_begin_path:328",
+        "_handle_path:334",
+        "handle_event:360",
+        "draw:477",
+        "_draw:483",
+        "_draw_browser:509",
+        "_draw_editor:528",
+        "_draw_preview:576"
+      ]
+    },
+    {
+      "path": "src/ui/nato_symbols.py",
+      "sha256": "f35a5b283124df29c89ea98eabcacb1acc9b479fd9334bda89b76678fa4bec6e",
+      "lines": 114,
+      "docstring": "Kleine APP-6-aehnliche Symbole fuer das gemeinsame Lagebild.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "domain_for_kind:27",
+        "draw_symbol:40",
+        "draw_motion_vector:95"
+      ]
+    },
+    {
+      "path": "src/ui/observations.py",
+      "sha256": "4175f37ac5269d4657207d57a6712d131ec631b5eef73e44f309446fafd3637a",
+      "lines": 121,
+      "docstring": "Canonical presentation policy for public sensor observations.",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.sensors.fusion",
+        "src.sensors.tracks",
+        "src.ui"
+      ],
+      "symbols": [
+        "value:12",
+        "contact_display_id:20",
+        "position:28",
+        "bearing:45",
+        "range_nm:59",
+        "bearing_uncertainty:69",
+        "bearing_decimals:81",
+        "format_bearing:88",
+        "format_bearing_pair:95",
+        "observation_age:109",
+        "position_age:117"
+      ]
+    },
+    {
+      "path": "src/ui/qr.py",
+      "sha256": "812271642c7deda0c27ba65a342284f5f92448bc015a9160b4ee8402c6763ecf",
+      "lines": 421,
+      "docstring": "Self-contained QR Code encoder for bounded on-screen connection helpers.",
+      "internal_imports": [],
+      "symbols": [
+        "_gmul:54",
+        "_poly_mul:60",
+        "_rs_generator:71",
+        "_rs_encode:78",
+        "_select_version:89",
+        "_data_codewords:98",
+        "_interleave:128",
+        "_mask:151",
+        "_base_matrix:169",
+        "_map_data:221",
+        "_bch15:252",
+        "_bch18:259",
+        "_write_format_info:266",
+        "_write_version_info:286",
+        "_penalty:297",
+        "encode:355",
+        "wifi_payload:385",
+        "to_surface:401",
+        "put:103",
+        "escape:390"
+      ]
+    },
+    {
+      "path": "src/ui/simlog_map.py",
+      "sha256": "551e9198861a37a76549a6b16414fc62b5daee3f1436549a811fad9db37e3c3d",
+      "lines": 237,
+      "docstring": "F4 map page: every contact in the game on one chart.\n\nHost-local diagnostics only (same trust level as the F4 list): the items come\nfrom ``Game._simlog_state_data()``, i.e. simulation truth, never from the\nobservation pictures. Read-only; the land layer is cached per view so the\ndraw path does no per-frame polygon transforms on the uConsole.",
+      "internal_imports": [
+        "src.core",
+        "src.ui"
+      ],
+      "symbols": [
+        "map_items:49",
+        "_bounds:93",
+        "_land_surface:107",
+        "_draw_marker:129",
+        "_draw_grid:150",
+        "draw_map:168",
+        "add:53"
+      ]
+    },
+    {
+      "path": "src/ui/simlog_view.py",
+      "sha256": "3e44bbcc809c05405ad20aa5be7efc693115b51500c3a322ba9398c5f68c4f32",
+      "lines": 327,
+      "docstring": "F4: Live-Simulationsprotokoll-Ansicht (Vollbild, Simulation laeuft weiter).\n\nDiagnose-Ansicht: nur mit aktivierter simlog-Option (F10) oeffenbar. Sie\nliest den aktuellen Simulationszustand direkt (gleiche Struktur wie\nGame._simlog_state_data()) und das aufgezeichnete Ereignisprotokoll. Sie ist\nkeine Workstation: kein Targeting, rein lesend, ohne Input-Effekt auf die\nSimulation.",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.ui"
+      ],
+      "symbols": [
+        "_f:35",
+        "_i:39",
+        "_b:43",
+        "_distance_nm:47",
+        "_table:56",
+        "_unit_tables:77",
+        "_events_lines:224",
+        "_build_lines:240",
+        "draw_simlog_view:280"
+      ]
+    },
+    {
+      "path": "src/ui/sonar_view.py",
+      "sha256": "7507cb8c34c5c6fd02d4c51d09736c40c908f59f2d55a6034ee02c1fc3510d69",
+      "lines": 1552,
+      "docstring": "Read-only sonar instruments. All plots use receiver data or observations.",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.ui"
+      ],
+      "symbols": [
+        "message:35",
+        "_observed_bearing:39",
+        "_bearing_line:43",
+        "_panels:48",
+        "_waterfall_plot:68",
+        "_history_for_page:74",
+        "_visible_contacts:85",
+        "_visible_echoes:94",
+        "_list_rows:102",
+        "sonar_geometry:114",
+        "sonar_click_target:150",
+        "sonar_hit_target:189",
+        "_text:384",
+        "waterfall_surface:408",
+        "_circular_broadband:439",
+        "_linear_lofar:451",
+        "_lofar_frequencies:461",
+        "_process_lofar_rows:465",
+        "_waterfall_controls:482",
+        "_display_controls:492",
+        "_draw_display_status:499",
+        "_waterfall:506",
+        "_grid:562",
+        "_trace:573",
+        "_translator:584",
+        "_tow_status:588",
+        "active_echoes:611",
+        "_echo_color:630",
+        "_active_geometry:635",
+        "_echo_point:647",
+        "_ascope_point:657",
+        "_draw_active:665",
+        "_draw_waterfall:742",
+        "_harmonic_candidates:856",
+        "_selected_harmonic:863",
+        "_demon_evidence:874",
+        "_draw_demon:886",
+        "_bearing_series:939",
+        "_tma_plot:946",
+        "tma_observation_summary:959",
+        "tma_closing_rate_kn:1011",
+        "_draw_tma:1033",
+        "_draw_environment:1082",
+        "_detail_evidence:1158",
+        "_detail_rows:1201",
+        "_draw_details:1364",
+        "_draw_contacts:1381",
+        "_draw_echo_list:1422",
+        "draw_sonar_view:1448",
+        "point:730"
+      ]
+    },
+    {
+      "path": "src/ui/splash_view.py",
+      "sha256": "8a6267670939b4d8348409317fe16a1e46d220bd8107c40e7385032df648f43c",
+      "lines": 98,
+      "docstring": "Procedural startup artwork for the uConsole release.",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.core.version",
+        "src.ui"
+      ],
+      "symbols": [
+        "draw_splash:18"
+      ]
+    },
+    {
+      "path": "src/ui/stations_view.py",
+      "sha256": "9f94b4ad1dbccf49a747f14e98c08c258d635a012e539fb768e04f1623ee9027",
+      "lines": 2787,
+      "docstring": "W0: Stations-Views im rechten Hauptpanel (STATION_RECT: 640x510).\n\nAlle Views rendern ausschließlich innerhalb des Rechtecks\n(config.STATION_RECT) – die Seekarte bleibt links sichtbar.",
+      "internal_imports": [
+        "src.core",
+        "src.core.commands",
+        "src.core.i18n",
+        "src.core.station",
+        "src.sensors.esm",
+        "src.ship.damage",
+        "src.ship.ship",
+        "src.ui",
+        "src.ui.viewport"
+      ],
+      "symbols": [
+        "_hfdf_error_deg:26",
+        "message:31",
+        "_to_morse:53",
+        "_srect:60",
+        "_panel:68",
+        "_shortcut_footer:74",
+        "_station_page_tab_rects:95",
+        "draw_station_page_tabs:112",
+        "station_page_tab_at:130",
+        "_station_content_top:140",
+        "draw_autocrew_overview:151",
+        "_observation_bearing:179",
+        "_observation_position:183",
+        "_displayed_bearing:187",
+        "_state_color:191",
+        "_compartment_name:200",
+        "_draw_bridge_weather:210",
+        "draw_bridge_view:290",
+        "helo_dip_contacts:449",
+        "_helo_dip_contact_line:465",
+        "_track_tooltip:492",
+        "opz_hit_target:519",
+        "station_hit_target:566",
+        "_near_point:788",
+        "eloka_regions:793",
+        "_eloka_visible_tracks:809",
+        "_draw_eloka_signal:817",
+        "eloka_track_at:873",
+        "draw_eloka_view:893",
+        "opz_regions:1089",
+        "opz_ppi_rect:1114",
+        "_opz_view:1118",
+        "_opz_bearing_ray:1139",
+        "_opz_track_point:1177",
+        "opz_action_at:1186",
+        "_opz_radar_range_nm:1205",
+        "_radar_sweep_age:1212",
+        "_radar_glow:1217",
+        "_scale_color:1224",
+        "_draw_radar_clutter:1228",
+        "_bounds_intersect_circle:1255",
+        "_contour_segments_in_circle:1262",
+        "_opz_basemap_surface:1310",
+        "draw_opz_view:1409",
+        "draw_radio_view:1753",
+        "draw_engine_view:1825",
+        "helicopter_regions:1997",
+        "_helicopter_waterfall:2033",
+        "_helicopter_trace:2067",
+        "_helicopter_acoustic_observations:2088",
+        "helicopter_acoustic_geometry:2106",
+        "helicopter_acoustic_hit:2129",
+        "_draw_helicopter_acoustic_view:2151",
+        "draw_helicopter_view:2292",
+        "damage_regions:2554",
+        "damage_compartment_at:2631",
+        "draw_damage_view:2649",
+        "faded:849",
+        "points:2582",
+        "_label_w:2318"
+      ]
+    },
+    {
+      "path": "src/ui/theme.py",
+      "sha256": "8534b0d50eea9f777cd2d2bfc307da08033f56901816535dcf661f06b2295fac",
+      "lines": 134,
+      "docstring": "Central color theme, consolidating what used to be three separate,\nhardcoded palettes (config.COLOR_*, sonar_view's module colors, and\neditor_widgets.EditorPalette) and applying a high-contrast/colorblind-safe\nvariant on request.\n\nSTANDARD mirrors the previously hardcoded values exactly, so the default\nappearance is unchanged. HIGH_CONTRAST boosts background/text contrast and\nseparates the friend/neutral/hostile/warn/danger/ok hues using an\nOkabe-Ito-style palette, which stays distinguishable under the common forms\nof color-vision deficiency.",
+      "internal_imports": [
+        "src.core",
+        "src.ui"
+      ],
+      "symbols": [
+        "_high_contrast_enabled:104",
+        "configure_for:109"
+      ]
+    },
+    {
+      "path": "src/ui/unit_editor.py",
+      "sha256": "ba2f9299ec3df49e367798f9cdfd113ef76be6252a073ea9958baf9c18e1ecca",
+      "lines": 983,
+      "docstring": "Standalone unit-profile model and pygame browser/editor controller.",
+      "internal_imports": [
+        "src.core.i18n",
+        "src.data",
+        "src.data.catalog",
+        "src.data.user_content",
+        "src.data.validation",
+        "src.ui"
+      ],
+      "symbols": [
+        "UnitFieldMetadata:37",
+        "unit_field_metadata:117",
+        "_acoustic_default:127",
+        "default_unit:135",
+        "_tonals:164",
+        "_validate_acoustic:179",
+        "_validate_weapons:238",
+        "_validate_countermeasures:264",
+        "_validate_wiki_import_fields:280",
+        "validate_unit:308",
+        "_plain_builtin:394",
+        "catalog_builtins:432",
+        "UnitDefinition:443",
+        "UnitEditor:480",
+        "lists:423",
+        "__init__:444",
+        "field_metadata:448",
+        "validate:452",
+        "clone:455",
+        "to_dict:459",
+        "set_value:462",
+        "clone_builtin:474",
+        "__init__:483",
+        "refresh:506",
+        "_record_label:512",
+        "_apply_filter:517",
+        "_set_filter:527",
+        "selected:534",
+        "new:539",
+        "set_value:544",
+        "open_selected:549",
+        "clone_selected:563",
+        "save:576",
+        "export_bundle:587",
+        "import_bundle:596",
+        "_sync_fields:601",
+        "_begin_path:609",
+        "_handle_path:615",
+        "_delete_selected:639",
+        "handle_event:647",
+        "open_wiki_url:753",
+        "_begin_wiki_import:765",
+        "_fetch_wiki:772",
+        "_apply_wiki_result:798",
+        "_handle_wiki_import:834",
+        "draw:851",
+        "_draw:857"
+      ]
+    },
+    {
+      "path": "src/ui/viewport.py",
+      "sha256": "2e8042776e49b9de06b0dd055ac8b45acbe6b7e65fc38676899708ab0aa7e334",
+      "lines": 91,
+      "docstring": "W0: Viewport-Kamera für Karte & Scopes (stufenlos Zoom + Pan).\n\nWeltkoordinaten: NM (0..world_size, y nach Süden). Screen: Pixel im\nangegebenen Rect. 0° = Norden (oben), 90° = Osten (rechts).",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "Viewport:10",
+        "__init__:11",
+        "set_rect:23",
+        "rect:28",
+        "fits_world:31",
+        "world_to_screen:40",
+        "screen_to_world:46",
+        "zoom:54",
+        "pan_px:73",
+        "clamp_center:79"
+      ]
+    },
+    {
+      "path": "src/ui/weapons_view.py",
+      "sha256": "07d7e10e61901601b0db49e6f3570dbad7bdd85566e9b7785904fa8e4fdebe69",
+      "lines": 405,
+      "docstring": "W0/W1: Waffenzentrale – Overlay auf der Seekarte + Panel im STATION_RECT.",
+      "internal_imports": [
+        "src.core",
+        "src.core.commands",
+        "src.core.i18n",
+        "src.core.station",
+        "src.ui",
+        "src.ui.stations_view"
+      ],
+      "symbols": [
+        "message:15",
+        "_observed_bearing:19",
+        "_observed_position:23",
+        "_contact_position:27",
+        "_display_range:39",
+        "_display_bearing:43",
+        "_readiness_text:47",
+        "_inventory_state:67",
+        "weapons_regions:77",
+        "_active_row_pitch:107",
+        "_content_top:113",
+        "weapons_hit_target:119",
+        "draw_weapons_overlay:199",
+        "draw_weapons_panel:251"
+      ]
+    },
+    {
+      "path": "src/ui/weather_station.py",
+      "sha256": "f6a2067d1d204117d9c8c6206b6e7fada1766f23efecffe524038a29347b4c79",
+      "lines": 221,
+      "docstring": "Weather & sonar analysis panel (key 0), drawn over the station area.\n\nConsumes only ``Game.weather_station_data()`` (an observation-safe DTO):\nown-ship atmosphere and flight weather, and - only after a sonar\nbathythermograph measurement - the measured ocean profile with its layer,\nshadow zone, SOFAR axis and a few sound rays.",
+      "internal_imports": [
+        "src.core",
+        "src.core.i18n",
+        "src.ui"
+      ],
+      "symbols": [
+        "_fmt:29",
+        "_line:33",
+        "_environment:37",
+        "_effects:72",
+        "_flight:85",
+        "_profile:123",
+        "draw_weather_station:207",
+        "depth_y:145"
+      ]
+    },
+    {
+      "path": "src/weapons/__init__.py",
+      "sha256": "118512fdf19667dbbc190d4f8c28275cad9c3263259581ccad2fd136eb9eb363",
+      "lines": 1,
+      "docstring": "Waffensystem: Torpedos.",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/weapons/air_defense.py",
+      "sha256": "b9296e07134d645e831905abecefa339880d4ed7a760843175aa773be868067f",
+      "lines": 267,
+      "docstring": "Profile-driven missile defense loadout and strict persistent stores.",
+      "internal_imports": [
+        "src.sensors.esm",
+        "src.weapons.asw"
+      ],
+      "symbols": [
+        "_object:21",
+        "_number:27",
+        "_key:34",
+        "air_defense_loadout:42",
+        "validate_air_defense_loadout:48",
+        "make_softkill_store:161",
+        "_valid_raider_row:168",
+        "_is_finite:208",
+        "bounded_range:213",
+        "valid_air_defense_state:217"
+      ]
+    },
+    {
+      "path": "src/weapons/asw.py",
+      "sha256": "20e62796cb5177ea803ef4435b0569fcf3cdc704c20d4bbe943f68aa0518d3aa",
+      "lines": 766,
+      "docstring": "Bounded ASW stores, launchers, ASROC transit, and acoustic softkill.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "_integer:22",
+        "_number:28",
+        "_key:35",
+        "_object:42",
+        "ownship_loadout:49",
+        "validate_ownship_loadout:57",
+        "MagazineState:115",
+        "TubeState:123",
+        "WeaponBattery:130",
+        "valid_battery_state:290",
+        "battery_matches_catalog:355",
+        "ConsumableStore:383",
+        "valid_consumable_state:463",
+        "consumable_matches_catalog:489",
+        "ASROC:507",
+        "TowedAcousticDecoy:577",
+        "valid_asw_state:650",
+        "__init__:133",
+        "from_catalog:151",
+        "ownship:178",
+        "_reserve_weapon:187",
+        "ready_count:197",
+        "loading_count:201",
+        "remaining_total:205",
+        "capacity_total:210",
+        "next_reload_s:214",
+        "fire:219",
+        "_start_reload:231",
+        "update:241",
+        "serialize:254",
+        "restore:275",
+        "__init__:386",
+        "from_catalog:398",
+        "ownship:413",
+        "remaining_total:419",
+        "fire:422",
+        "update:434",
+        "serialize:446",
+        "restore:453",
+        "__init__:510",
+        "update:529",
+        "serialize:551",
+        "restore:559",
+        "__init__:590",
+        "_place:606",
+        "update:616",
+        "serialize:634",
+        "restore:641"
+      ]
+    },
+    {
+      "path": "src/weapons/ciws.py",
+      "sha256": "5bf73acd9b2fb008818b65a91a2a0d35a25ae65d8565f46eae814610404dc03b",
+      "lines": 55,
+      "docstring": "Close-in weapon system fire control (pure helpers).\n\n* The mount slews at a finite rate; a burst is fired only once the barrel is\n  on the predicted bearing.\n* Rounds need their time of flight to reach the aim point; a missile that\n  impacts before the burst arrives cannot be stopped by it.\n* Hit probability per round follows the circular-normal miss distance at\n  the target: gun dispersion (angular, grows with range), the prediction\n  error of the fire-control track (velocity error x time of flight) and\n  extra angle noise while the target jams.  A round that hits kills with\n  the profiled kill probability; a burst kills with 1 - (1 - p_hit pk)^n.\n\n``LETHAL_AREA_M2`` is the effective area around the aim point inside which a\nround defeats the missile (airframe, seeker and warhead initiation); it is\ncalibrated so that a single sea-skimmer leaks through CIWS at the 1.0.0 rate\n(calibration section ``air``).  Most kills therefore happen in the last few\nhundred metres, where dispersion and prediction error are small.",
+      "internal_imports": [],
+      "symbols": [
+        "slew:33",
+        "on_target:39",
+        "time_of_flight_s:43",
+        "burst_kill_probability:47"
+      ]
+    },
+    {
+      "path": "src/weapons/torpedo.py",
+      "sha256": "f2dc39fa88a2a282a4833a18e8ad0fb10628d816cd7d5c5844b192e25a3921f1",
+      "lines": 702,
+      "docstring": "Torpedo model: launch, commanded-datum wire guidance, and terminal search.",
+      "internal_imports": [
+        "src.core",
+        "src.data.catalog",
+        "src.physics"
+      ],
+      "symbols": [
+        "_required_torpedo_profile:10",
+        "underwater_path_blocked:21",
+        "seeker_level_db:53",
+        "choose_seeker_target:80",
+        "_apply_warhead:96",
+        "radiated_source_db:108",
+        "Torpedo:113",
+        "EnemyTorpedo:493",
+        "__init__:127",
+        "speed_nm_per_s:187",
+        "_spoolup_factor:191",
+        "distance_to_target_nm:198",
+        "guidance_distance_nm:203",
+        "wire_state:210",
+        "speed_fraction:219",
+        "wire_tension_update:223",
+        "break_wire:237",
+        "wire_update:241",
+        "evaluate_seeker_candidates:252",
+        "_bearing_to:276",
+        "update:280",
+        "source_level_offset_db:441",
+        "quiet_factor:444",
+        "lofar_lines:447",
+        "_swept_hit_fraction:455",
+        "_swept_dist:482",
+        "__init__:503",
+        "_spoolup_factor:542",
+        "speed_fraction:545",
+        "source_level_offset_db:548",
+        "dead:552",
+        "speed_nm_per_s:556",
+        "_candidate:559",
+        "update:573",
+        "_wake_course:654",
+        "distance_nm:665",
+        "bearing_from_frigate:668",
+        "quiet_factor:673",
+        "lofar_lines:676",
+        "broadband:687",
+        "acoustic_signature:696"
+      ]
+    },
+    {
+      "path": "src/world/__init__.py",
+      "sha256": "8d46c2a61409c29da91cb07e3f04721a5cb433466fe726269899e11b730c4c1f",
+      "lines": 1,
+      "docstring": "Welt-Modell (Meer, Thermokline, Wetter).",
+      "internal_imports": [],
+      "symbols": []
+    },
+    {
+      "path": "src/world/atmosphere.py",
+      "sha256": "bf21a0296ad1d20a3abf3a6651044f27808faf8b047d59b97b9123a3ddcb48db",
+      "lines": 192,
+      "docstring": "Derived atmosphere for the weather station (pure functions).\n\nEverything here is a deterministic function of state the world already\nkeeps (sea state, the current weather epoch and its target, wind, rain,\nvisibility, clock, season, sea-surface temperature), so nothing new has to\nbe saved.  The values are a game model of real processes, compressed to the\ngame's hourly weather epochs; they are not a real forecast.\n\n* Pressure: a seeded synoptic offset plus an equilibrium that falls with\n  sea state.  The barometer leads the sea: over each weather epoch it moves\n  from the current state's equilibrium towards the coming one, so a front\n  announces itself by a falling glass before the sea builds.\n* Air temperature: sea-surface temperature minus a seasonal air-sea\n  difference, a diurnal swing (damped by cloud and rain) and a cold-air\n  outbreak with strong northerly wind; sub-zero air is possible in winter.\n* Precipitation type, gusts, cloud ceiling, icing, Beaufort force.\n* Sun elevation and twilight from latitude, day of year and local time.\n* Lunar phase names from the lunar age.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "pressure_equilibrium_hpa:59",
+        "pressure_offset_hpa:63",
+        "barometer:67",
+        "pressure_trend:82",
+        "storm_warning:92",
+        "cloud_cover:97",
+        "air_temperature_c:103",
+        "precipitation:115",
+        "gust_kn:121",
+        "beaufort:125",
+        "cloud_ceiling_ft:132",
+        "icing:143",
+        "sun_elevation_deg:156",
+        "daylight:166",
+        "moon_phase:176"
+      ]
+    },
+    {
+      "path": "src/world/coastline.py",
+      "sha256": "ee8aaa2fb6afe4358dc6d5deeaa51f884255cf36f2dd5acde2c4c15c10e470cc",
+      "lines": 819,
+      "docstring": "W3: Kuestenlinien & Inseln - Landgeometrie, Kollisionsabfrage, Airbases.\n\nFixed data uses region.json; generated mode selects an offline real-world sector.\nKoordinaten in NM, y nach Sueden. 0° = Nord (oben).",
+      "internal_imports": [
+        "src.core",
+        "src.world.real_coast"
+      ],
+      "symbols": [
+        "_point_in_poly:27",
+        "_distance_to_segment:41",
+        "_segment_intersection_parameters:53",
+        "_valid_provenance:84",
+        "_clip_polygon_axis:103",
+        "Landmass:127",
+        "Coastline:155",
+        "__init__:128",
+        "contains:138",
+        "contains_strict:144",
+        "__init__:156",
+        "load:168",
+        "from_dict:179",
+        "valid_snapshot:185",
+        "generate:289",
+        "_add_synthetic_shallows:317",
+        "_distance_to_coast:345",
+        "_generate_bathymetry:353",
+        "depth_m:376",
+        "physical_depth_m:394",
+        "minimum_physical_depth_in_polygon:412",
+        "first_physical_land_intersection:472",
+        "_memoized_occlusion:523",
+        "occlusion_cache_entries:534",
+        "clear_occlusion_cache:538",
+        "_canonical_line_key:542",
+        "_land_blocks_line:545",
+        "land_blocks_line:581",
+        "_depth_along_line:598",
+        "_sonar_path_blocked:613",
+        "sonar_path_blocked:656",
+        "has_bathymetry:681",
+        "to_dict:684",
+        "on_land:701",
+        "landmass_at:709",
+        "nearest_water:715",
+        "contour_segments_in_circle:732",
+        "airbases_of:777",
+        "hostile_base:780",
+        "friendly_bases:790",
+        "neutral_base:795",
+        "land_points_px:807",
+        "airbase_px:814",
+        "number:187",
+        "text:196",
+        "bottom_clearance:634",
+        "depth:443"
+      ]
+    },
+    {
+      "path": "src/world/grounding.py",
+      "sha256": "aebf5da57ed8df7134bd36f329f64492f116a8816979a05443561e9d66eb8334",
+      "lines": 557,
+      "docstring": "Pure bounded hull-footprint and swept grounding queries.\n\nAll dimensions are fictional U-Jagd gameplay assumptions.  This module is\ndeliberately independent from acoustic propagation and sonar terrain queries.",
+      "internal_imports": [],
+      "symbols": [
+        "HullSpec:19",
+        "GroundingContact:47",
+        "GroundingSweep:58",
+        "_hull_points:68",
+        "_segments_intersect:89",
+        "_convex_hull:103",
+        "_point_in_convex:125",
+        "_point_in_polygon:140",
+        "_point_segment_distance:153",
+        "_polygons_within:164",
+        "_land_normal:185",
+        "_turning_region:214",
+        "_conservative_turn_contact:244",
+        "_exact_translational_land_contact:271",
+        "grounding_contact:343",
+        "hull_is_safe:435",
+        "grounding_contact_is_consistent:440",
+        "swept_grounding:494",
+        "__post_init__:26",
+        "minimum_depth_m:34",
+        "to_dict:37",
+        "cross:108",
+        "inside_interval:299",
+        "pose:512"
+      ]
+    },
+    {
+      "path": "src/world/ocean.py",
+      "sha256": "b2b7825fb2f41380fb7fbd0bf2777e063d56ae592ed12237c8f7d9930adad748",
+      "lines": 345,
+      "docstring": "Time-varying ocean environment: tides, mixed layer, temperature/sound\nspeed, wind drift, seabed sediment and charted underwater hazards.\n\nEverything here is a deterministic function of the world seed, the\nbathymetry, the saved environment clock and one saved relaxation state (the\nwind-mixing deepening of the surface layer).  The values are a game model of\nreal ocean processes; they are not claims about any real sea area.",
+      "internal_imports": [
+        "src.core"
+      ],
+      "symbols": [
+        "Hazard:78",
+        "mackenzie_sound_speed:86",
+        "temperature_profile_c:95",
+        "salinity_psu:104",
+        "sofar_axis_m:115",
+        "rayleigh_bottom_loss_db:133",
+        "OceanEnvironment:151",
+        "__init__:154",
+        "_build_sediment:190",
+        "_build_hazards:214",
+        "tide_m:241",
+        "wind_mix_target_m:255",
+        "update:259",
+        "mixed_layer_depth_m:269",
+        "sea_surface_temperature_c:281",
+        "temperature_c:289",
+        "sound_speed_m_s:292",
+        "wind_drift_kn:302",
+        "sediment_at:311",
+        "rock_top_depth_m:318",
+        "serialize:329",
+        "valid_state:333",
+        "restore:343"
+      ]
+    },
+    {
+      "path": "src/world/projection.py",
+      "sha256": "3491fbb670833009757c41354ef2ff0711a32af9d4be2950eaf711977dbfc9c6",
+      "lines": 25,
+      "docstring": "Small local map projection used by the offline coastline catalog.",
+      "internal_imports": [],
+      "symbols": [
+        "lonlat_to_nm:9",
+        "nm_to_lonlat:18"
+      ]
+    },
+    {
+      "path": "src/world/real_coast.py",
+      "sha256": "e7e659f7cf77395fba924afa8e916c63e5ecd8dae205c51c5c7db47bd7726ea1",
+      "lines": 87,
+      "docstring": "Validated loader for the committed real-world coastline sector catalog.",
+      "internal_imports": [],
+      "symbols": [
+        "_validate:19",
+        "load_catalog:49",
+        "sector_for_seed:64",
+        "_is_spurious_strip:79"
+      ]
+    },
+    {
+      "path": "src/world/world.py",
+      "sha256": "02a50e342abf679ee608f52f7c3fe334486babd9a7a54d3f87b66cb14d4db56c",
+      "lines": 344,
+      "docstring": "Welt: Meer, Küsten (W3), Thermokline, Wetter, Tag/Nacht, Schallfeld (W2).",
+      "internal_imports": [
+        "src.core",
+        "src.world.coastline",
+        "src.world.grounding",
+        "src.world.ocean"
+      ],
+      "symbols": [
+        "World:14",
+        "__init__:22",
+        "_weather_endpoint:60",
+        "refresh_weather:92",
+        "_weather_blend:104",
+        "weather_values:111",
+        "weather_epoch:130",
+        "latitude_deg:137",
+        "effective_sea_state:146",
+        "wind_from_deg:150",
+        "wind_speed_kn:154",
+        "rain_intensity:158",
+        "visibility_nm:162",
+        "weather_kind:165",
+        "_cell:177",
+        "charted_depth_m:195",
+        "_actual:201",
+        "tide_m:210",
+        "depth_m:214",
+        "physical_depth_m:218",
+        "grounding_contact:225",
+        "hull_is_safe:229",
+        "swept_grounding:232",
+        "nearest_safe_hull:235",
+        "thermocline_depth_m:253",
+        "sound_speed_m_s:260",
+        "seabed_at:267",
+        "current_vec:270",
+        "on_land:284",
+        "nearest_water:287",
+        "landmass_at:290",
+        "land_blocks_line:293",
+        "sonar_path_blocked:298",
+        "echo_delay_s:309",
+        "mean_sound_speed_m_s:319",
+        "update:327",
+        "is_night:338",
+        "format_time:341"
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "path": "data/coastlines/real_sectors.json.gz",
+      "sha256": "595b70d6b9290bfcb10a500f7d1be2162b6b5337fc7e7f0f6932dfe7bd8c6979"
+    },
+    {
+      "path": "data/coastlines/region.json",
+      "sha256": "ffbb79a2046143c65ff54740c0d1beb901e523933cd8778e3d67d30a7703109a"
+    },
+    {
+      "path": "data/commander/admin.css",
+      "sha256": "78f505b1e030245ec33e1f1be9032641e061d9f7f0ad5f29f53dacb0eebca99e"
+    },
+    {
+      "path": "data/commander/admin.html",
+      "sha256": "3318a67421675a78fd3cd72ca2033fdaa971f580817abca4978249bffba38980"
+    },
+    {
+      "path": "data/commander/admin.js",
+      "sha256": "23c1c0a0b7d4bf7d57d7b0135defad2a4aaf0154233605c9a7393d027537a1c1"
+    },
+    {
+      "path": "data/commander/app.js",
+      "sha256": "6eb72ddbb4ca2653214b8c50c812c0a4ca2c1c1a5155bf9f9363c630de4deca0"
+    },
+    {
+      "path": "data/commander/index.html",
+      "sha256": "c4441934da40f6174a536670bbaa2b322cfea55dd790d00047171722634fc40f"
+    },
+    {
+      "path": "data/commander/manual.css",
+      "sha256": "75178be0cdab1da6b5c802d2283a48241c6363e35030503778345511a0da323e"
+    },
+    {
+      "path": "data/commander/sonar-audio-worklet.js",
+      "sha256": "ae0cc0f3ec4530ae1b2d80df1223435e0249e0a605a3548721d574bc677d2397"
+    },
+    {
+      "path": "data/commander/style.css",
+      "sha256": "9f5190b111968d16e091cbcccc4b8c88ee59b6e4281e374351053abe8372d19e"
+    },
+    {
+      "path": "data/commander/voice-worklet.js",
+      "sha256": "b195545d0c0aceade637d22bfa1c55355a465e636cdb667d65935b6574589f82"
+    },
+    {
+      "path": "data/commander/voice.js",
+      "sha256": "b226fd9e60250de0a116b6ae9cd9ba3d1ecaa45799c24357d6600a58bd5b01f4"
+    },
+    {
+      "path": "data/contact_analysis/manifest.json",
+      "sha256": "2fe4f31f0af38361d0bf555fbbdaa47d5e4bb93d3632da4817fbce68143925a6"
+    },
+    {
+      "path": "data/contacts/acoustics.json",
+      "sha256": "da165158deeffa1184ca3be548f6ff9e4de7a3221e6e97cb780512032e4d598a"
+    },
+    {
+      "path": "data/contacts/aircraft.json",
+      "sha256": "4e0d39aa302870392ffe2c969f87a80fb291e868755e6adb505d64db2fab80c8"
+    },
+    {
+      "path": "data/contacts/animals.json",
+      "sha256": "86bbe2f9318f1c08c68f97dc537069c637027fd171bb6ed605b9c64fb58a4d3b"
+    },
+    {
+      "path": "data/contacts/civilians.json",
+      "sha256": "62370febc94792645dfaf93a2806a3461c0673d88a972cdb94073f7c701ba714"
+    },
+    {
+      "path": "data/contacts/decoys.json",
+      "sha256": "06efb5fa89b16afad4fa483de3fd72fc0882230ad7e3c87f1b1fb25db08fc1d4"
+    },
+    {
+      "path": "data/contacts/sources.json",
+      "sha256": "0e707cf5fb1f3c22cbb15eebdce7f9b01921a10f6936080b4e8db002ef33babc"
+    },
+    {
+      "path": "data/contacts/subs.json",
+      "sha256": "a89653c63a2d822139be7df77cb4f84b12a6c58bd66212cd2399ec200ffc7dc5"
+    },
+    {
+      "path": "data/contacts/torpedoes.json",
+      "sha256": "3815aae2d765f5d4563211a6eda44cc3fc6e11656f1773045e1bd280d49b45c7"
+    },
+    {
+      "path": "data/contacts/warships.json",
+      "sha256": "b65a7b2577568c662dd91c64abef4307e97cf16562363e2741ac2be5fda128a3"
+    },
+    {
+      "path": "data/editor_templates/mission.json",
+      "sha256": "53c773c35afbe1ab88661cfc29c6a6a2235082060d22ec41ce857d194920de4c"
+    },
+    {
+      "path": "data/editor_templates/unit_aircraft.json",
+      "sha256": "232fa06b3f5080f770de72b83906dd4cf0d8d35bd50ee504bdcdf82b396bf77f"
+    },
+    {
+      "path": "data/editor_templates/unit_animal.json",
+      "sha256": "d133e1858c19702655b924a1f7c8ad59b46bfd6ef080cb596a5d8164d4ab9aba"
+    },
+    {
+      "path": "data/editor_templates/unit_decoy.json",
+      "sha256": "9c7938fd02ab117c48b385999dc7494920055e67676c98698e4eee94911a21e8"
+    },
+    {
+      "path": "data/editor_templates/unit_sub.json",
+      "sha256": "2972203f5dc7e1186f7d92e4a4d2f60c720a27abc526230acfdd777a8753439d"
+    },
+    {
+      "path": "data/editor_templates/unit_surface.json",
+      "sha256": "ccd678db55e8b816f5e8947d8b831050eb2f0af92b59c4755ad8e8800a56087f"
+    },
+    {
+      "path": "data/editor_templates/unit_torpedo.json",
+      "sha256": "6670c4c7e0ff301371d6370805f3b6583c12dc4c61dfb98559624d3658d6c030"
+    },
+    {
+      "path": "data/i18n/de.json",
+      "sha256": "574dcdf4e7b64e3bb185ed5d5ebb3fd70e5ea641134a3d00870425283e77a756"
+    },
+    {
+      "path": "data/i18n/en.json",
+      "sha256": "fddf07d2db683f48182f2404f915f4f1efa512b50dc81adce4c0f91c8f7c164b"
+    },
+    {
+      "path": "data/loadouts/air_defense.json",
+      "sha256": "92414917b0c1108efef8d0bd6beaad19e9b3808bf1df2b6fa51e79784bcbddc3"
+    },
+    {
+      "path": "data/loadouts/ownship.json",
+      "sha256": "e90390f70576a77fa4b9e2c7d49c3d5e899eb4335600b3ff74c4a29f38431587"
+    },
+    {
+      "path": "data/loadouts/ownship_hull.json",
+      "sha256": "aa88155c351b5070e8738fb4eb0c6c866915f63e82941ba3ee1d9bc025ec5098"
+    },
+    {
+      "path": "data/manual/00-quickstart.de.md",
+      "sha256": "af6db4f0861214de5e14953272f2b40fa947dc0cb97053c61a85156ebb1ae427"
+    },
+    {
+      "path": "data/manual/01-bridge.de.md",
+      "sha256": "f4f755ecdd21141736d11a345b0943f54434aaec709292b0412daf0d0124737a"
+    },
+    {
+      "path": "data/manual/02-sonar.de.md",
+      "sha256": "501e18a39038a620ede1d897d30bb898c3ae5e5e771a345757fee95342785126"
+    },
+    {
+      "path": "data/manual/03-weapons.de.md",
+      "sha256": "464ab4a7d89cc64c3602e55036ad7ee258509cfca11b06422dde1494158031da"
+    },
+    {
+      "path": "data/manual/04-damage.de.md",
+      "sha256": "de7dbeb6930a73af3c25fdaf22309a398b6eeef818d304e7ee653cc70707a192"
+    },
+    {
+      "path": "data/manual/05-opz.de.md",
+      "sha256": "f05ec3148feb45781bca87b3e1e1e1d2688fdcba67e2c64c8faf123c70c19bcf"
+    },
+    {
+      "path": "data/manual/06-radio.de.md",
+      "sha256": "80c87f864e5750a9b00e21ad60701097c5f1c4128c2816e87706fcb590a56efc"
+    },
+    {
+      "path": "data/manual/07-engine.de.md",
+      "sha256": "826fd465b5918ca7e83b8c7e41b5f79619970b4083fcb9ae447a1981a3777735"
+    },
+    {
+      "path": "data/manual/08-helicopter.de.md",
+      "sha256": "3fa7f3ca3b488333b224092a8afb36ae793304d3cba27f68fe69a7140f6434a6"
+    },
+    {
+      "path": "data/manual/09-eloka.de.md",
+      "sha256": "bbfab6a01d429f0f1e0646f7a080d4e13d8184209d9e84f5bf96a7c688399ffc"
+    },
+    {
+      "path": "data/manual/10-reference.de.md",
+      "sha256": "5a9c60a2dd186ffbc44a3e723295e93406b4e9de8fb5e68e470ce03abcf76f2d"
+    },
+    {
+      "path": "tests/calibration/deviations.json",
+      "sha256": "6cd1f780215aa1690011000213bbf4812a5f75d5c810fbd2f2df020450814249"
+    },
+    {
+      "path": "tests/calibration/golden.json",
+      "sha256": "721bf14b91a1cfe2a734144ac673018740dda3e62580d1df96a44a4992696fb9"
+    },
+    {
+      "path": "tests/test_active_sonar.py",
+      "sha256": "bf62518aed12e8e118189f7144640f5bbb046c138ea29948ce1fd841c60c91ff"
+    },
+    {
+      "path": "tests/test_active_sonar_snapshot.py",
+      "sha256": "73780f32230dc26dd69f18c4d410b7f4202f0a08e8d1e243390e2588a52ccccb"
+    },
+    {
+      "path": "tests/test_air_altitude_and_class.py",
+      "sha256": "e349c46494696293b21e466384d401af4fbd36cd8125093d262550111c627c99"
+    },
+    {
+      "path": "tests/test_air_defense_r9.py",
+      "sha256": "8ab3066fd607a461ad2fb0a5ee2af145ee5f8d5260b8f5d804430a8b5bdb0f41"
+    },
+    {
+      "path": "tests/test_air_missile_physics.py",
+      "sha256": "0b04223afa6ffe6c09ad5360f160a33957c35e81ce3bd362a466840dda7ccb3a"
+    },
+    {
+      "path": "tests/test_air_raid.py",
+      "sha256": "8f77dea0b1c1c45b2127edd0808615207df017fab04fb92d8e3a16a9c8108ff8"
+    },
+    {
+      "path": "tests/test_arrays_doppler_tma.py",
+      "sha256": "f9549218958f2ab9d837bcd88e6057cfb5e246b322086e0ee7d5e60290e196ad"
+    },
+    {
+      "path": "tests/test_asw_core.py",
+      "sha256": "13055d90d839c38e1f8fc9aa243dd04651d5c2960bd15c5d6404c5f949e54ecd"
+    },
+    {
+      "path": "tests/test_asw_runtime.py",
+      "sha256": "1246202949952afdf91954f51bdcb569065d3d58921f4ac67c4dd075bc484459"
+    },
+    {
+      "path": "tests/test_audio.py",
+      "sha256": "9231fcddd31d196b4cda10511f5fa5cba5787f2503f86b51d66028893c317a2e"
+    },
+    {
+      "path": "tests/test_audio_coherence.py",
+      "sha256": "1c0db03ca0e8546ee6ab4cbb55e7fa5cb79f24b0b06c5d33c1ead6820b8cdacc"
+    },
+    {
+      "path": "tests/test_audio_preview.py",
+      "sha256": "432d48731d0f732784e2cb47bbe657a586d4a6f3388d4c3314e1e6e92089977f"
+    },
+    {
+      "path": "tests/test_autocrew.py",
+      "sha256": "27a8e5b3eb4bf42032baebf3bfb8c9147bedd53dd5679b0cfbc9dbe95c09d73a"
+    },
+    {
+      "path": "tests/test_calibration.py",
+      "sha256": "ef17fef540f54a8e8b3aafb9a72e671f28cb2345d5ee422cb2b95e8b3d949f62"
+    },
+    {
+      "path": "tests/test_catalog_contracts.py",
+      "sha256": "24fce02c5f9cf0b300d11498f1e239f570e66c74850f381f245bd9aa1486dc59"
+    },
+    {
+      "path": "tests/test_catalog_runtime.py",
+      "sha256": "1049a3541f9f3bf7c0b9a221529b59d8487ec620612ddbd5b7d3cba14de605a7"
+    },
+    {
+      "path": "tests/test_catalog_v2.py",
+      "sha256": "636c3494bb8347bc84c96dadde3b4c77a41b62f8ad7b3edfb281649ac84e1171"
+    },
+    {
+      "path": "tests/test_civil_flights.py",
+      "sha256": "1685bba96d3e06192753b40f29c42b83a8f24edd4d30c929a318e6aeb391f83c"
+    },
+    {
+      "path": "tests/test_coastline_occlusion.py",
+      "sha256": "9b8685d48edc2fb8569adb3f15f8aefb5abe3a3c041b49b58673236f2e0bcff4"
+    },
+    {
+      "path": "tests/test_coastline_radar.py",
+      "sha256": "bf6dbecb924b1674e075f40ad3759f5abc3c4502b092ad4231ad627112486889"
+    },
+    {
+      "path": "tests/test_commander_access_point.py",
+      "sha256": "8c3ede8ab1cff43881030e5d29a8889649efac3b1d4863e19f755957275d319e"
+    },
+    {
+      "path": "tests/test_commander_admission.py",
+      "sha256": "c8b3850b492ccf7995496f9ce0b7b2604fa63f52d9ced21483a864ce35e6a835"
+    },
+    {
+      "path": "tests/test_commander_assets.py",
+      "sha256": "0b31d3e3dfa8c43f550b27002f2fca25c117168d5895a2dd66214d4a777fb324"
+    },
+    {
+      "path": "tests/test_commander_audio_recovery.py",
+      "sha256": "57ff0c8eca5e751f57b1a6a8baee498da385eabf9ab53cff5ce17da271011b43"
+    },
+    {
+      "path": "tests/test_commander_audio_worklet.py",
+      "sha256": "2b4418322d3e45fe7477a6995667ba95715a49322549551d601b8b12a877c76b"
+    },
+    {
+      "path": "tests/test_commander_bridge.py",
+      "sha256": "fd138d63cd423926c018d6876ac0bd0da1d22d1751f8e4f474f4743932952de8"
+    },
+    {
+      "path": "tests/test_commander_browser_sessions_v2.py",
+      "sha256": "f6176657a2dfd4062086bed1fe838a3f4f4befd176b8835fc49c3e924dfc27a2"
+    },
+    {
+      "path": "tests/test_commander_commands_v2.py",
+      "sha256": "5c8cc28d955bc50b8815e698d91c126140852860a83a8a6e6f8a16a48c6584e7"
+    },
+    {
+      "path": "tests/test_commander_console_browser.py",
+      "sha256": "e97986bdf0d8e284e67ee7cba072e618f0a7f3ba9739f3a80c412d2029736283"
+    },
+    {
+      "path": "tests/test_commander_events_v2.py",
+      "sha256": "2260dce32eef4298634cd0b6e66dca3beff6b2e25b7ae73c15a7712e9c24cfeb"
+    },
+    {
+      "path": "tests/test_commander_insecure_context.py",
+      "sha256": "213e2cb2cb5b42f7ff7ef91f9d075381d9bc2f49cce714f74133e83b9c1e2289"
+    },
+    {
+      "path": "tests/test_commander_integration.py",
+      "sha256": "479232e1474fc6768e9b7017cbd8e36e9cef1e84ba83106145c0554f9ba3e8af"
+    },
+    {
+      "path": "tests/test_commander_layout.py",
+      "sha256": "3220de0c4c2a7e9ccd4ccb97f42e756dcf98e8d9b717ef6959377078760c5e28"
+    },
+    {
+      "path": "tests/test_commander_local.py",
+      "sha256": "55ae508fd4897111fc3c13f254bcbd2efc29e0082e01492bf4497fd0eab8dd72"
+    },
+    {
+      "path": "tests/test_commander_navigation.py",
+      "sha256": "85393d24ee882ff04148b4da3c7779e30541b3cc68bd37f2ddcc9e23afa839e2"
+    },
+    {
+      "path": "tests/test_commander_projection_schema.py",
+      "sha256": "f9f8c084d662812b2269e9840ad5e6f25b2f1f6d733a39f8380daabdb1ca3bf1"
+    },
+    {
+      "path": "tests/test_commander_projections_v2.py",
+      "sha256": "b446970bb234a6ec1493e1f3cfc1db628c5a730a2778947101e0f3afb4a9fca3"
+    },
+    {
+      "path": "tests/test_commander_radar_sweep.py",
+      "sha256": "c1ebcea9a9b574cd241ccbd49215b6af64a95427dfab7102c9d8fd7ff676dba0"
+    },
+    {
+      "path": "tests/test_commander_server.py",
+      "sha256": "9d59bb72e97a1b168656ae4ada7f382f2dd9e1cb0c700a0337947fb423cf6871"
+    },
+    {
+      "path": "tests/test_commander_sessions_v2.py",
+      "sha256": "4f3dc4f5d91a09cf34ec901febd1a2ba7a372f4a9ba928123e38b43b445afe75"
+    },
+    {
+      "path": "tests/test_commander_solo.py",
+      "sha256": "63be714138c9f77034a5a740aa5f7d549ccc1a7ca17fa8df7757a422952b9ff7"
+    },
+    {
+      "path": "tests/test_commander_sonar_websocket.py",
+      "sha256": "844efe117f72fce551922c7e8761bea957d02b2d1d7aee4add88b8e30bd5cc5d"
+    },
+    {
+      "path": "tests/test_commander_startup.py",
+      "sha256": "aa1445be9ff76334e66bb8a38f722b73cd7e21093b90497bc838aaa89475f4b5"
+    },
+    {
+      "path": "tests/test_commander_voice.py",
+      "sha256": "4309aeeb96501006ecca3e22461e5cd8ecac71647ad739c4dc2d9783df572253"
+    },
+    {
+      "path": "tests/test_connectivity.py",
+      "sha256": "ba49e1b3013e6a08b13e2bb6d539aacc441f54c1e5bcb5a244d74181f9b889be"
+    },
+    {
+      "path": "tests/test_contact_analysis.py",
+      "sha256": "da939ddb967875a6867f7ce307af034ffbf3d0f2181e3a1da2efb6a0b1ce4c60"
+    },
+    {
+      "path": "tests/test_contact_analysis_images.py",
+      "sha256": "6c93d8a8df534ab9e8b7131dc9cc03656e85b727b9704540ca172086926a2981"
+    },
+    {
+      "path": "tests/test_contact_analyzer_ui.py",
+      "sha256": "3103229e54c378aafa0b830ddc4d72549fe44b6ff061b60a32c527c22136998d"
+    },
+    {
+      "path": "tests/test_contacts_catalog.py",
+      "sha256": "8cd2aed670270233ca52ea6fbac0141202bf323d8ad3b57b525f28c3c27eeacf"
+    },
+    {
+      "path": "tests/test_damage.py",
+      "sha256": "0eae95289df3603aaa537ad0c365eb8d713e1f1ae26e953daffdde594ecaa5c1"
+    },
+    {
+      "path": "tests/test_damage_schematic.py",
+      "sha256": "084b3d193867d654b4060e619b0be2e21ac71f7a8c531a95ce79de196ce29c1f"
+    },
+    {
+      "path": "tests/test_damage_stability.py",
+      "sha256": "842913dfc58505e20c0394baa1ca3230bc0783bbce96aea99acd7064068daa61"
+    },
+    {
+      "path": "tests/test_decoys_countermeasures.py",
+      "sha256": "a5b7aa89fea9aed03fd32852de734aa86dafe7e94e2c89cfc0d18cb036c449c1"
+    },
+    {
+      "path": "tests/test_determinism.py",
+      "sha256": "a2142a518b15abd8396a79a0c1f02877e0b65e641bb255a074d3cb4250934510"
+    },
+    {
+      "path": "tests/test_eco_display.py",
+      "sha256": "6c7321a02726d0db509f2f49108595650c15f27ed0e94d7b0a949b4445386ad9"
+    },
+    {
+      "path": "tests/test_editor_validation.py",
+      "sha256": "381db52d85f80074a925113a6e7d1b3c39ffb1ab1f38ab43a03055648bebdb6b"
+    },
+    {
+      "path": "tests/test_editor_widgets.py",
+      "sha256": "744ed98835e34285a8edfb941a2b32496b2e62a36f0bf20e72d98d5387400ac4"
+    },
+    {
+      "path": "tests/test_endurance_r16.py",
+      "sha256": "b5c1860fbd03314560cf3d7525c5240d343312a08275e4943c93be46c13d479b"
+    },
+    {
+      "path": "tests/test_esm_picture.py",
+      "sha256": "0f3d0ea31699d8e55cba9780e70fdd981a491aeb9d293738deab0a5fe66722a3"
+    },
+    {
+      "path": "tests/test_esm_stabilization.py",
+      "sha256": "cd2481e446dab11f4ae19064e0770f80b411866d2eb49c99dbfad5815199a8bb"
+    },
+    {
+      "path": "tests/test_event_feed_and_help.py",
+      "sha256": "77cf813ad606aaa7f2ee67d9441502775d4a188938e4b18fe03226486542c373"
+    },
+    {
+      "path": "tests/test_fingerprint.py",
+      "sha256": "a9cd5bad0466479f7502663932993eedd87fae028e1bbdd6df3186d258cbac09"
+    },
+    {
+      "path": "tests/test_game_integration.py",
+      "sha256": "0923352b2cc4020bace8320926b9e8d93699180c3d118b9c1ff66c5c3a0364c5"
+    },
+    {
+      "path": "tests/test_gen_contacts.py",
+      "sha256": "29912f5b3557812187587d04f4ec7d5313d74cc7c024309395fd5e4e36bfca34"
+    },
+    {
+      "path": "tests/test_grounding_r18.py",
+      "sha256": "b51c0ab6f11409684260e9643b9153fe7ead277acc78154d349731cc9203b71f"
+    },
+    {
+      "path": "tests/test_helicopter_dipping_sonar.py",
+      "sha256": "6330e82cbf50c5b9dc15070a5757e82799a3fd2cfc2311962e9e90fabd316958"
+    },
+    {
+      "path": "tests/test_helicopter_sonobuoys.py",
+      "sha256": "635526bc77945a148d095e474095dbd470243c7b25947625ede13640225c0ea4"
+    },
+    {
+      "path": "tests/test_hostile_platform_physics.py",
+      "sha256": "2ae5737aff4398beff9dd5f030905f922c4d72aeb9b240acc46ee5292c40b8dd"
+    },
+    {
+      "path": "tests/test_hostile_sensors_ai.py",
+      "sha256": "9b4ddb088b8d7556217f18a7db7052e2af9cf63804c4ed7f462b8b8a0c7708b8"
+    },
+    {
+      "path": "tests/test_hydroacoustics.py",
+      "sha256": "b2fe854350fd1c9248763598cab2e634d846e94533d16c625ae8227ba5c68930"
+    },
+    {
+      "path": "tests/test_i18n.py",
+      "sha256": "7798d159e1637b19ca27bb6c8fd770ae1110c7bc6a69477c4b0f859df94be8fd"
+    },
+    {
+      "path": "tests/test_input_consistency.py",
+      "sha256": "65dded6842f2703101cf77759073076525937ea1513b675cdc36d5dd222a71dc"
+    },
+    {
+      "path": "tests/test_input_focus.py",
+      "sha256": "eea11aef4cecfa0613804e62e4b7bb628cbdebb36e005ea48572bda7956b8eff"
+    },
+    {
+      "path": "tests/test_layout.py",
+      "sha256": "842fbab59326ffeef924e51743b1db73749ae2682b6c25b95c2414f06fcf9ed2"
+    },
+    {
+      "path": "tests/test_live_air_defense.py",
+      "sha256": "d98b227adba78a3f2e123de03db769e2bda7fc99cf93ffe5fd8214b6975c0c83"
+    },
+    {
+      "path": "tests/test_live_aircraft.py",
+      "sha256": "02b17b1d598fc496ceb2b53e92cd2229970c1e4290822cdd4d77c7c261d7b4a3"
+    },
+    {
+      "path": "tests/test_live_traffic.py",
+      "sha256": "d7e981f00789f628feef4f7b4db7894422626bb676220081244ee08319800cc7"
+    },
+    {
+      "path": "tests/test_live_traffic_clients.py",
+      "sha256": "a9483834888f72f4c700172d3527903aeeb70cd60e5f9e1dda3e100c0890f886"
+    },
+    {
+      "path": "tests/test_manual.py",
+      "sha256": "204bc58a7aebb1cf300d19ae8665cc68071b4e0f6629b89b4caf74957470854f"
+    },
+    {
+      "path": "tests/test_map_palette.py",
+      "sha256": "88fe145de0c0201aa7a55546658fc20f6e87ce8141feeccf9800db919fe530cf"
+    },
+    {
+      "path": "tests/test_mission_editor.py",
+      "sha256": "ee4dc4f1869a81b47f2d0472e9f7e48a2962f2550b99f23512ac4e8a62b63b90"
+    },
+    {
+      "path": "tests/test_nations_overlay.py",
+      "sha256": "a0ce1a42ed8b1505d97d07106c4350063ad06d8f29e85cd0bfefd70c6ebd061f"
+    },
+    {
+      "path": "tests/test_native_layout.py",
+      "sha256": "0167e3db362ffcd6e9c7af6161a0db77384030c5b5254fbcedb81df1fe61c14a"
+    },
+    {
+      "path": "tests/test_observation_smoothing.py",
+      "sha256": "ba959c557e4ae62be83afdb2be7de358aeb1aa153e4a0e07223d7915119036ab"
+    },
+    {
+      "path": "tests/test_ocean_environment.py",
+      "sha256": "b3c3d29f41378f34d36d9b1e0399eca170fd1878fc2559319f4189cb2b1230b3"
+    },
+    {
+      "path": "tests/test_opz_fusion.py",
+      "sha256": "83a1710210ca8f0e6063118219facf16f880847688a457d3903d89a418f1e28d"
+    },
+    {
+      "path": "tests/test_opz_picture_inputs.py",
+      "sha256": "ec6c3b9faf8b701c3cad1715f95c765b6dda33303571c6608181e74e58d2e96e"
+    },
+    {
+      "path": "tests/test_opz_workstation.py",
+      "sha256": "0d75cbaebf1160922a91e112a4060d52f8e32e0838fc78f8bd94461757c2a5e2"
+    },
+    {
+      "path": "tests/test_packaging.py",
+      "sha256": "1f6848285cd77f56e1369980f18ef59927900a6bcd49ed317b0582bbf8a3ced1"
+    },
+    {
+      "path": "tests/test_platform_sensors.py",
+      "sha256": "7091f6279f96a8cff1af6e2ebb6f150d1f8963427b6f221ec18b0f9531b959c2"
+    },
+    {
+      "path": "tests/test_preferences.py",
+      "sha256": "5ddbc5c7189c59d0801589e8ebef7ecdb0f9b280ec84575c23c6d9f424a20812"
+    },
+    {
+      "path": "tests/test_qr.py",
+      "sha256": "65f391392d41f861cba9c104f445747a89c3c93c8e0da1e0a6d30c9ca899c4f9"
+    },
+    {
+      "path": "tests/test_r14_sonar_audio_fixes.py",
+      "sha256": "3ba8f84a967cb7daf18e24b42cba547b07ac2fcbecd0cd9803a57be284e7113e"
+    },
+    {
+      "path": "tests/test_r15_sonar_layout.py",
+      "sha256": "def7f944100d61d670624cb5f4954917a2278c51604aa74953c6c4cc20232a5a"
+    },
+    {
+      "path": "tests/test_radar_emissions_ecm.py",
+      "sha256": "4cb6d2731fdcbc413b1daac23f43bbe0e3bfe90b6a30bb6c18c78212621eef81"
+    },
+    {
+      "path": "tests/test_radar_esm_lookout.py",
+      "sha256": "32712a2fd54b3c448b5eb32893deb7b975f7ce7528b52a302f042387957bf025"
+    },
+    {
+      "path": "tests/test_raytrace.py",
+      "sha256": "ab96fccf4a503a61deafe9a0bbe683da1586b97c0bf7b6a2b3bbffa5be22f73c"
+    },
+    {
+      "path": "tests/test_real_coast_data.py",
+      "sha256": "daf803d53b77cb523c01fd609291d504c99646ddc2fbabd597816a00ba060dcc"
+    },
+    {
+      "path": "tests/test_realistic_stations.py",
+      "sha256": "01761260161da0dbbef040baef82cae19d9cb40b125a476e8d6c99d687d49b0d"
+    },
+    {
+      "path": "tests/test_realtime_movement.py",
+      "sha256": "d4a0938a34f9c1814f683b15a82de3f1ac6d70e2421baadd3a25e84eb01753d0"
+    },
+    {
+      "path": "tests/test_receiver.py",
+      "sha256": "d305532c979ba32fba94636a7078de5f529a99c0d3521d01fd8b828d90061bd2"
+    },
+    {
+      "path": "tests/test_review_integration.py",
+      "sha256": "f1ecc3b4846de899a97288184ec08b2b87eedb1dc1add6e46adcba538b13f56b"
+    },
+    {
+      "path": "tests/test_review_performance.py",
+      "sha256": "231b7fc7a99fe6a9d443aa13d88a843d8436bc465d3084556816c6723f7fddcc"
+    },
+    {
+      "path": "tests/test_runtime_continuation.py",
+      "sha256": "873cde8119d6c468a50abae5454e5bc6a0a4b8627312d3c01bce8731515a6f10"
+    },
+    {
+      "path": "tests/test_runtime_observation_followup.py",
+      "sha256": "5d3ed9ec553cabec6283ebbcba063a45494dcb63bfc05662db13c275103d4631"
+    },
+    {
+      "path": "tests/test_save_catalog_snapshot.py",
+      "sha256": "137b2341b81996e0da3a38669cdcc41dfb43694789158b429404de7304ad3178"
+    },
+    {
+      "path": "tests/test_save_load.py",
+      "sha256": "a039890d588af63649509eae19fb153e935526d52fc0231ca4558091f4a13e3a"
+    },
+    {
+      "path": "tests/test_save_v12_hygiene.py",
+      "sha256": "e2146aeb9bbd757ccd13ff3c5efdf82668b8051c32c4cbc65cbb55363681e7f7"
+    },
+    {
+      "path": "tests/test_sensor_tracks_core.py",
+      "sha256": "ee49307060eb8e8be96bdb3265853b4f8d49a1224f30eb20a37aef440a54b57b"
+    },
+    {
+      "path": "tests/test_ship_hydrodynamics.py",
+      "sha256": "e1517d8719c52b99d14992af5e613557cfb6ac364dbb059c084b9ef09c3b1461"
+    },
+    {
+      "path": "tests/test_simlog.py",
+      "sha256": "3de20dc70f26912c40288880ee170424ea8567c033dadfde0a489b387031ec98"
+    },
+    {
+      "path": "tests/test_smoke_full.py",
+      "sha256": "8f6a3fb0ed9689f11b271bb5f754a43da61cd6bcac37869792ec6ec07eebb9b2"
+    },
+    {
+      "path": "tests/test_sonar_commands.py",
+      "sha256": "df639756c950f88534e31ff2659a9d976d545387bf1f33523fd1e181201b0f82"
+    },
+    {
+      "path": "tests/test_sonar_equation.py",
+      "sha256": "ed80551f85d0c29fcd8f2a9931b9ef9b3551ca7eafaadb013d1a219099a433a3"
+    },
+    {
+      "path": "tests/test_sonar_evidence.py",
+      "sha256": "ae7870317187cc486a3c2eb93e35e8b0a7b0c4ecc3d7785721ecf88f8e7c5db5"
+    },
+    {
+      "path": "tests/test_sonar_hmi_web.py",
+      "sha256": "895675678dfba2b12e38255b1c00581b2620296250b5f6288a504ef920a6af93"
+    },
+    {
+      "path": "tests/test_sonar_propagation_r17.py",
+      "sha256": "e14f5d28df872e3539026ac6826daf68726d9b25a3cf8d07a371d7d4f558eae7"
+    },
+    {
+      "path": "tests/test_sonar_stabilization.py",
+      "sha256": "938bce0a0e14cfa40c0e17e7a0e6df9df45c86fbe450e792e63b2b882b7c71f7"
+    },
+    {
+      "path": "tests/test_sonar_track_publication.py",
+      "sha256": "4683f326547914385f1983e94e7932abbce4b4361a13df16e69ede1693442d70"
+    },
+    {
+      "path": "tests/test_sonar_view.py",
+      "sha256": "d6082ead6445ea1f6e4a6fe61efc6ec89c69d05d8358ce1c94d0a07658b35dc0"
+    },
+    {
+      "path": "tests/test_sonar_workstation.py",
+      "sha256": "4dc4f33a3785ffe40fee202c853e6cbc3a6a71fd685ceeb70128a0e6f9c8c508"
+    },
+    {
+      "path": "tests/test_startup.py",
+      "sha256": "8450995cf7c60001bf339213caff0a50d2bfb38929a503f0efe294da94fce324"
+    },
+    {
+      "path": "tests/test_station_page_metadata.py",
+      "sha256": "95001e8585508271bf0cf783022e1b74c62cd9ab4c4636c0f5ef3711b0a834dc"
+    },
+    {
+      "path": "tests/test_station_readouts.py",
+      "sha256": "390003893845f6a04211aa54b8481131b7b912ce41acc2be21ab55ec360929ac"
+    },
+    {
+      "path": "tests/test_stations.py",
+      "sha256": "33f463f7fd905fa8ca2a906318c439614b3077dbd271e119851905a17782a1b6"
+    },
+    {
+      "path": "tests/test_theme.py",
+      "sha256": "f2a50fa4609f454829d0b0e7e994dfa2c81e02f7a78b0403c78a18bf7f005203"
+    },
+    {
+      "path": "tests/test_tooltips.py",
+      "sha256": "31f472415616a15568b6b9a651ceaf7798498961eb773f6d13e929ff55ab862f"
+    },
+    {
+      "path": "tests/test_torpedo_physics.py",
+      "sha256": "9dcaa899849071d50ab03fc3c00d4d83f485a2a52ce9701a8e9a370b0570a3dd"
+    },
+    {
+      "path": "tests/test_towed_sonar.py",
+      "sha256": "68073ea6c34ef7a34a97395de5aeda9a19ce18b10b46fd96dcb0b4f82e44d70c"
+    },
+    {
+      "path": "tests/test_uconsole_hotspot_helper.py",
+      "sha256": "63d2cef49be974890426ad2625c476739785a6d565f87effa6428a66eae6ed09"
+    },
+    {
+      "path": "tests/test_ui_observations.py",
+      "sha256": "86a3828b0117a4ca2fae2ca657cb355c9e4b56bc12fc4980033937f8ac687572"
+    },
+    {
+      "path": "tests/test_ui_performance.py",
+      "sha256": "4f192a2db14a60dc69760f3343d858a68bd1089649af645a87525d4b07857f18"
+    },
+    {
+      "path": "tests/test_unit_editor.py",
+      "sha256": "f441c689843c98ef60a82e4b06186c64f6a169f0a9b9ad506117285d8f75346e"
+    },
+    {
+      "path": "tests/test_unit_reference_pdf.py",
+      "sha256": "1577a1d553f0876fd8232d455bb117215fb20d178062c14376f6d9b905e2b7ab"
+    },
+    {
+      "path": "tests/test_unit_weapon_runtime.py",
+      "sha256": "2767d50d6cfc0817410185c88621b35b9535d8da48a178d811d85be3c097309c"
+    },
+    {
+      "path": "tests/test_voice_radio_demo.py",
+      "sha256": "49e328032b094405d7e0896f24dc74bc63490fb43502a3ad3a3f5b08f2266b3a"
+    },
+    {
+      "path": "tests/test_warship.py",
+      "sha256": "00f52267c81852fa78b9b76ee76ef2918b6a70f55c98702bd4ea4396570a8725"
+    },
+    {
+      "path": "tests/test_weapon_realism.py",
+      "sha256": "493a165beb8ed964a6b52cd540a5722c3f56d2d5678c249f96589da0a698ee2a"
+    },
+    {
+      "path": "tests/test_weather.py",
+      "sha256": "84b1cdf382541eabb8574224cda4fb4b6c4147ece2eafd150aa74839605566b5"
+    },
+    {
+      "path": "tests/test_weather_station.py",
+      "sha256": "76ffb58e45df061038f56121c2f869c745128306986676a50ac7cb5def7aa8aa"
+    },
+    {
+      "path": "tests/test_weather_station_web.py",
+      "sha256": "f053031561676fbb28499d349f431ab13e1acf3bbf49e4d57f1cd58a72f1d653"
+    },
+    {
+      "path": "tests/test_web_host.py",
+      "sha256": "24759aaa512d74d8c9090199f1bb9a7506d913290677093f094d8e677cf9e3d9"
+    },
+    {
+      "path": "tests/test_web_host_browser.py",
+      "sha256": "851937c4f4dfbf74310006201aaf05691000fea9693e1fd15409671ed541f2a7"
+    },
+    {
+      "path": "tests/test_web_simlog_browser.py",
+      "sha256": "34eccd2e58cd9fac5a4a721b81523c8a93d2593dd18b5abe6bc4f3b324dfac2d"
+    },
+    {
+      "path": "tests/test_wiki_import.py",
+      "sha256": "c93d260399545e96d2915353a9b4b765b7e1ab35b45e1b2e4f8099bdba7c3878"
+    },
+    {
+      "path": "tests/test_world_generation.py",
+      "sha256": "8f528b8684ccd0c43da9ad5cd10f8a22dd12c83327ee9f6d7e537fb00c007d80"
+    },
+    {
+      "path": "tests/test_world_projection.py",
+      "sha256": "e23464ab8af4e14abad2552201520d0849011dfd5e81cd71324f14fe90d79733"
+    },
+    {
+      "path": "tools/build_coastline_sectors.py",
+      "sha256": "2a15b53d2a730027c8e1a919f6c71549b936a139a870c5a301e41986bbc60bc9"
+    },
+    {
+      "path": "tools/build_manual.py",
+      "sha256": "1c9d6d8f9610014626bdd90bb73e6b8f390f0fc9903f4350fa6986d42dc2e174"
+    },
+    {
+      "path": "tools/build_station_shortcuts_pdf.py",
+      "sha256": "e2fcb912345ea963fc4b50d576dc0e82ffd9afb75252de3b53dd9ebbe96223f7"
+    },
+    {
+      "path": "tools/calibrate.py",
+      "sha256": "5825f076aa7a32d664f2eb4a69c83b84a39705bcc67f74478dab1ef9a7a58627"
+    },
+    {
+      "path": "tools/capture_commander.py",
+      "sha256": "71a54670a7115fb1a7728a695eefa25aac57cefa256937a783789701d5a4250c"
+    },
+    {
+      "path": "tools/capture_screenshots.py",
+      "sha256": "f0531ce977f80aa9fef581e0f28437242ea29d3f9757672925b396648605a73a"
+    },
+    {
+      "path": "tools/demo_hydroacoustics.py",
+      "sha256": "fcf6e15498ce28cb4c36238ca7ecebc70b9c2c07230de815732b065c3abd9aac"
+    },
+    {
+      "path": "tools/gen_contact_analysis_images.py",
+      "sha256": "73535b31dedd262a72bc2e2446984913dfe9c58ce7b7f34c480c2ab7d035b58e"
+    },
+    {
+      "path": "tools/gen_contacts.py",
+      "sha256": "044448574178253fb600a69b0f4436cb69461e07d85350480a65af51420306f0"
+    },
+    {
+      "path": "tools/gen_unit_reference_pdf.py",
+      "sha256": "8fac684b25e0e6e80aa5a769b879344fe747230e542359383605262825574796"
+    },
+    {
+      "path": "tools/smoke_full.py",
+      "sha256": "60237456ecb7fea282f6e64f2c0039e829b307f4a45d20786be251c7003199af"
+    }
+  ]
+}

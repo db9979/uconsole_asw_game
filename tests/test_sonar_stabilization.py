@@ -185,8 +185,12 @@ def test_low_quality_tma_does_not_move_an_acquired_fix():
              contact.bearing, contact.range_est, contact.range_seen)
 
     contact.update_tma(poor, 182.0)
-    contact.update_passive(90.0, 1.0, .8, "", 184.0)
-
     assert (contact.tma_pos, contact.tma_course, contact.tma_speed,
             contact.tma_quality, contact.observed_x, contact.observed_y,
             contact.bearing, contact.range_est, contact.range_seen) == state
+    # Between solutions the accepted fix is dead-reckoned on its own
+    # course/speed, never moved toward the poor solution.
+    contact.update_passive(90.0, 1.0, .8, "", 184.0)
+    assert (contact.observed_x, contact.observed_y) == pytest.approx(
+        contact.tma_position_at(184.0))
+    assert contact.tma_pos == state[0] and contact.range_seen == state[-1]

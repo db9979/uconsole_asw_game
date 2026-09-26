@@ -167,14 +167,13 @@ def test_audition_gain_retains_float_headroom_for_playback(gain_db):
     assert np.max(np.abs(samples)) > (.75 if gain_db == 12 else 3.0)
 
 
-@pytest.mark.parametrize("action", [pygame.K_p, pygame.K_F1, pygame.K_j, pygame.K_1])
-def test_audio_stops_on_pause_administration_mute_and_station_change(game, monkeypatch, action):
+@pytest.mark.parametrize("action", [pygame.K_F1, pygame.K_j, pygame.K_1])
+def test_audio_stops_on_administration_mute_and_station_change(game, monkeypatch, action):
     calls = []
     monkeypatch.setattr(game.audio, "stop_sonar", lambda *a, **kw: calls.append(kw))
     press(game, action)
     assert calls
-    if action in (pygame.K_F1, pygame.K_j, pygame.K_1):
-        assert calls[-1] == {"immediate": True}
+    assert calls[-1] == {"immediate": True}
 
 
 def test_sonar_page_cycle_via_hotkey_keeps_audio_stream(game, monkeypatch):

@@ -16,6 +16,7 @@ from src.ship.ship import Ship
 from src.sonar.sonar import Contact, SonarSystem
 from src.sonar.tma import BearingTrack, solve_tma
 from src.ui import layout, sonar_view as view
+from src.core.i18n import localize
 
 
 def solution(pos=(3.0, -4.0), quality=.8):
@@ -182,6 +183,11 @@ def test_delayed_tma_solve_does_not_redate_measurement(monkeypatch):
     monkeypatch.setattr("src.sonar.sonar.solve_tma",
                         lambda tr, **kwargs: solution())
     sonar._update_tma(target, 20)
+    # The solver only proposes; the contact carries no fix until the
+    # operator accepts one.
+    assert sonar.tma_proposals[1] is not None
+    assert contact.tma_pos is None and contact.range_seen is None
+    contact.update_tma(solution(), track.pts[-1].t, fixed_at=20)
     assert contact.range_seen == contact.tma_seen == 10
     sonar.advance_mechanics(1, 131, Ship(0, 0))
     sonar._tma_versions.clear()
@@ -264,13 +270,14 @@ def test_lofar_harmonics_require_current_operator_selection(display_game):
     game = display_game
     game.sonar_page = 1
     assert view._selected_harmonic(game) is None
-    assert not any("2f" in str(row[0]) for row in view._detail_rows(game, 1))
+    assert not any("2f" in localize(row[0], game.tr) for row in view._detail_rows(game, 1))
     game.sonar_harmonic_hz = 20.0
     assert view._selected_harmonic(game) == 20.0
-    assert any("2f" in str(row[0]) for row in view._detail_rows(game, 1))
+    assert any("2f" in localize(row[0], game.tr) for row in view._detail_rows(game, 1))
+    # The operator's fundamental does not depend on detected peaks.
     game.sonar.receiver.peaks = [(30.0, .8)]
-    assert view._selected_harmonic(game) is None
-    game.sonar.receiver.peaks = [(20.0, .8)]
+    assert view._selected_harmonic(game) == 20.0
+    game.sonar_harmonic_hz = None
     assert view._selected_harmonic(game) is None
 
 

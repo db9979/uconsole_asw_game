@@ -12,17 +12,28 @@ import pygame
 import numpy as np
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize, message as structured_message
+from src.core.i18n import (display_value, localized, localize, raw_text,
+                            message as structured_message)
 from src.core.station import Station
 from src.ship.damage import COMPARTMENTS
+from src.ship.ship import Ship
 from src.sensors.esm import animated_signal_fingerprint, spectrum_band
+from src.ui.plot_view import draw_plot
 from src.ui import layout
+from src.ui import chart_symbols
 from src.ui import nato_symbols
 from src.ui import observations
 
 
+
+def _hfdf_error_deg(report) -> float:
+    """Half-width of the HFDF bearing error (uniform sigma x sqrt(3))."""
+    sigma = getattr(report, "bearing_uncertainty_deg", None)
+    return (sigma * math.sqrt(3.0) if sigma else config.HFDF_BEARING_ERR_DEG)
+
 def message(key, **values):
-    return localize(structured_message(key, **values))
+    """A structured message: localized at draw time so layouts can abbreviate."""
+    return structured_message(key, **values)
 
 STATE_LABEL = {
     "OK": "damage.ok",
@@ -110,7 +121,7 @@ def draw_station_page_tabs(screen, station_rect, pages, current_page,
     for i, (name, tab) in enumerate(zip(pages, tabs)):
         active = (i == current_page)
         if active:
-            pygame.draw.rect(screen, (21, 55, 68), tab)
+            pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE, tab)
             pygame.draw.line(screen, config.COLOR_SONAR_RING,
                               tab.topleft, (tab.right - 1, tab.top), 2)
         label = display_value("station_page", name, tr)
@@ -312,11 +323,15 @@ def draw_bridge_view(game, tr=None) -> None:
         else:
             threats.append(("ASM", message("bridge.line.asm_bearing_only",
                 bearing=observations.format_bearing(asm_tracks[0], game.ship))))
-    torp_contacts = [c for c in game.sonar.active_contacts()
-                     if c.kind == "torpedo"]
-    if torp_contacts:
-        threats.append(("TORPEDO", localize(message("bridge.line.torpedo_threat",
-                       bearing=observations.format_bearing(torp_contacts[0], game.ship)))))
+    # Torpedo alarms come from intercepts (launch transient, HF seeker
+    # pulses) or an operator TORPEDO classification, never the entity type.
+    torpedo_warnings = game.torpedo_warnings()
+    if torpedo_warnings:
+        warning = torpedo_warnings[0]
+        threats.append(("TORPEDO", localize(message(
+            "bridge.line.torpedo_" + warning["source"],
+            bearing=f"{warning['bearing']:05.1f}",
+            age=f"{warning['age_s']:.0f}"))))
     if game.damage.avg_flood() >= 25:
         threats.append((localize("station.damage"), localize(message(
             "station.tooltip.mean_flooding", flooding=f"{game.damage.avg_flood():.0f}"))))
@@ -325,7 +340,7 @@ def draw_bridge_view(game, tr=None) -> None:
         "bridge.line.threat", kind=threats[0][0], detail=threats[0][1]))
     alarm_color = config.COLOR_OK if not threats else config.COLOR_DANGER
     alarm_h = 54 if len(threats) > 1 else 38
-    pygame.draw.rect(s, (18, 28, 22), (x, cy, w, alarm_h))
+    pygame.draw.rect(s, config.COLOR_ALARM_BG, (x, cy, w, alarm_h))
     pygame.draw.rect(s, alarm_color, (x, cy, w, alarm_h), 2)
     layout.blit_line(s, alarm, (x + 10, cy + 5, w - 20, 28), alarm_color,
                      size=20, align="center")
@@ -383,16 +398,18 @@ def draw_bridge_view(game, tr=None) -> None:
         sx, sy, sw, _ = systems
         weather_w = min(200, sw // 3)
         text_w = sw - weather_w - 12
-        radar = localize(message("station.tooltip.radar_state",
-            surface=localize("common.on" if game.surface_radar_on else "common.off"),
-            air=localize("common.on" if game.air_radar_on else "common.off")))
+        radar = message("station.tooltip.radar_state",
+                        surface=structured_message("common.on" if game.surface_radar_on
+                                                   else "common.off"),
+                        air=structured_message("common.on" if game.air_radar_on
+                                               else "common.off"))
         layout.status_line(s, sx, sy, text_w, "panel.sensors",
                            message("bridge.line.sensors", count=len(game.sonar.active_contacts()), radar=radar),
                            size=18, label_w=100)
         layout.status_line(s, sx, sy + 30, text_w, "panel.assets",
                            message("bridge.line.assets", vls=game.vls_cells,
                                    torpedoes=game.torpedo_count,
-                                   helo=localize('enum.helo.' + game.helo.state)),
+                                   helo=structured_message('enum.helo.' + game.helo.state)),
                            size=18, label_w=120)
         weather = game.world.weather_values()
         layout.blit_line(s, message("bridge.line.weather",
@@ -421,13 +438,15 @@ def draw_bridge_view(game, tr=None) -> None:
 
 # --- OPZ / CIC (M12) -------------------------------------------------------
 
+# Three-letter domain codes for the dense OPZ track list (see the manual's
+# abbreviation table); catalog keys so EN and DE each use their own codes.
 OPZ_DOMAIN_CODES = {
-    "UNKNOWN": "UNK",
-    "SURFACE": "SEE",
-    "SUBSURFACE": "UBT",
-    "AIR": "LFT",
-    "MISSILE": "FKR",
-    "UNDERWATER_WEAPON": "TOR",
+    "UNKNOWN": "domain.code.unknown",
+    "SURFACE": "domain.code.surface",
+    "SUBSURFACE": "domain.code.subsurface",
+    "AIR": "domain.code.air",
+    "MISSILE": "domain.code.missile",
+    "UNDERWATER_WEAPON": "domain.code.underwater_weapon",
 }
 OPZ_DOMAIN_COLORS = {
     "UNKNOWN": config.COLOR_TEXT_DIM,
@@ -482,6 +501,11 @@ def _helo_dip_contact_line(game) -> str:
         count=len(contacts), released=released)
 
 
+def _lookout_line(game, visual):
+    what = game.lookout_visual_what(visual) if visual is not None else None
+    return None if what is None else message("lookout.tooltip", what=what)
+
+
 def _track_tooltip(game, track):
     affiliation = game.opz_affiliation(track.track_id)
     domain = nato_symbols.domain_for_kind(track.kind)
@@ -504,6 +528,7 @@ def _track_tooltip(game, track):
         message("observation.fix_age", age=f"{observations.position_age(track, game.sim_t):.1f}")
         if observations.position_age(track, game.sim_t) is not None else None,
         message("opz.tooltip.source", source=track.source),
+        _lookout_line(game, getattr(track, "visual", None)),
         message("runtime.cic.hostile_confirm_required", track=track.label) if pending else None,
         target_id=f"opz:track:{track.track_id}")
 
@@ -688,7 +713,12 @@ def station_hit_target(game, pos):
                         message("radio.tooltip.hfdf_title",
                                 label=game.hfdf_display_id(report)),
                         observations.format_bearing_pair(report, game.ship),
-                        message("radio.tooltip.error", error=f"{config.HFDF_BEARING_ERR_DEG:.0f}"),
+                        message("radio.tooltip.error", error=f"{_hfdf_error_deg(report):.0f}"),
+                        message("radio.hfdf.frequency",
+                                frequency=(f"{report.frequency_hz / 1e3:.0f}"
+                                           if report.frequency_hz else "--"),
+                                mode=localize("radio.hfdf.mode." + report.propagation)
+                                if report.propagation in ("GROUND", "SKY") else ""),
                         message("radio.tooltip.age", age=f"{report.age(game.sim_t):.0f}"),
                         "control.radio_tooltip",
                         target_id=f"radio:{game.hfdf_display_id(report)}")
@@ -919,7 +949,7 @@ def draw_eloka_view(game, tr=None) -> None:
             for track in tracks:
                 selected = track.track_key == game.eloka_selected_track_key
                 if selected:
-                    pygame.draw.rect(surface, (30, 44, 30),
+                    pygame.draw.rect(surface, config.COLOR_SELECT_BG,
                                      (bx - 5, by - 2, bw + 10, row_h - 4))
                     pygame.draw.rect(surface, config.COLOR_WARN,
                                      (bx - 5, by - 2, 3, row_h - 4))
@@ -958,7 +988,7 @@ def draw_eloka_view(game, tr=None) -> None:
         else:
             modulation = localize("eloka.modulation." + selected.modulation_code)
             prf = f"{selected.prf_hz:.0f} Hz" if selected.prf_hz is not None else "--"
-            analysis = game.eloka_analysis(selected)
+            analysis = game.eloka_display_analysis(selected)
             channel = next((item for item in game.ecm_jammer.channels
                             if item.track_key == selected.track_key), None)
             values = (
@@ -969,8 +999,9 @@ def draw_eloka_view(game, tr=None) -> None:
                 ("eloka.field.bearing", message("eloka.value.bearing",
                                                  bearing=f"{selected.bearing:05.1f}",
                                                  error=f"{selected.bearing_uncertainty_deg:.1f}")),
-                ("eloka.field.frequency", message("eloka.value.frequency",
-                                                   frequency=f"{selected.frequency_hz / 1e9:.3f}")
+                ("eloka.field.frequency", localize(message(
+                    "eloka.value.frequency",
+                    frequency=f"{selected.frequency_hz / 1e9:.3f}"))
                  + " / " + localize("eloka.band." + spectrum_band(
                      selected.frequency_hz).value)),
                 ("eloka.field.prf", prf),
@@ -979,10 +1010,16 @@ def draw_eloka_view(game, tr=None) -> None:
                     "eloka.value.quality_age",
                     quality=f"{selected.display_quality(game.sim_t):.0%}",
                     age=f"{selected.age(game.sim_t):.1f}")),
+                ("eloka.field.signal", message(
+                    "eloka.value.signal", level=f"{selected.signal_db:.0f}",
+                    range=(f"{estimate:.0f}" if (estimate := game.eloka_display_range(
+                        selected)) is not None else "--"),
+                    scan=(f"{selected.revisit_s:.1f}" if selected.revisit_s > 0.0
+                          else "--"))),
                 ("eloka.field.radar_type", localize(
                     "eloka.radar_type." + (analysis.radar_type.value
                     if analysis is not None and analysis.radar_type is not None
-                    else "surface_search"))),
+                    else "unassessed"))),
                 ("eloka.field.threat", localize(
                     "eloka.threat." + (analysis.threat_level
                     if analysis is not None else "unknown"))),
@@ -1024,16 +1061,26 @@ def draw_eloka_view(game, tr=None) -> None:
                     surface, (analysis_x, analysis_y, analysis_w, signal_h),
                     selected, game.sim_t, channel)
                 analysis_y += signal_h + 10
-                layout.blit_line(surface, "eloka.heading.candidates",
+                assist = game.operator_assist()
+                layout.blit_line(surface, "eloka.heading.candidates" if assist
+                                 else "eloka.heading.library",
                                  (analysis_x, analysis_y, analysis_w, 24),
                                  config.COLOR_TEXT, size=17)
                 analysis_y += 28
-                for candidate in game.eloka_candidates(selected)[:3]:
+                shown = game.eloka_display_candidates(selected)
+                for candidate in shown[:3]:
+                    name = (game.eloka_emitter_name(candidate.emitter_key)
+                            or candidate.emitter_key)
                     layout.blit_line(surface, message(
-                        "eloka.line.candidate",
-                        emitter=game.eloka_emitter_name(candidate.emitter_key)
-                        or candidate.emitter_key,
-                        score=f"{candidate.score:.0%}"),
+                        "eloka.line.candidate", emitter=name,
+                        score=f"{candidate.score:.0%}") if candidate.score is not None
+                        else raw_text(name),
+                        (analysis_x, analysis_y, analysis_w, 25),
+                        config.COLOR_TEXT_DIM, size=16)
+                    analysis_y += 28
+                if not assist:
+                    layout.blit_line(surface, message(
+                        "eloka.library_hint", count=len(shown)),
                         (analysis_x, analysis_y, analysis_w, 25),
                         config.COLOR_TEXT_DIM, size=16)
                     analysis_y += 28
@@ -1378,6 +1425,13 @@ def _opz_basemap_surface(game, map_rect: pygame.Rect, view) -> pygame.Surface:
                          else config.COLOR_FLIGHT)
                 pygame.draw.rect(layer, color, (px - 3, py - 3, 7, 7), 1)
 
+    hazards = getattr(world, "charted_hazards", None)
+    if hazards is not None:
+        chart_symbols.draw_hazards(
+            layer, hazards(),
+            lambda x, y: (center_x + (x - bucket_x) * scale, center_y + (y - bucket_y) * scale),
+            (0, 0, map_rect.w, map_rect.h), scale)
+
     world_left = int(center_x - bucket_x * scale)
     world_top = int(center_y - bucket_y * scale)
     world_size_px = int(world_size_nm * scale)
@@ -1427,6 +1481,14 @@ def draw_opz_view(game, tr=None) -> None:
         pygame.draw.line(s, config.COLOR_SONAR_RING,
                          (int(own_x), int(own_y - radar_radius)),
                          (int(own_x), int(own_y + radar_radius)), 1)
+        # Range labels at the top of each ring, beside the north axis.
+        for ring_index in range(1, 5):
+            rr = radar_radius * ring_index / 4.0
+            layout.blit_line(
+                s, message("map.tooltip.range_value",
+                           range=f"{max_nm * ring_index / 4.0:g}"),
+                (int(own_x) + 4, int(own_y - rr) + 1, 80, 18),
+                config.COLOR_TEXT_DIM, size=layout.MIN_OPERATIONAL_FONT)
 
         if station_live and game.surface_radar_on:
             coast_range = min(max_nm, game.radar_effective_range("surface"))
@@ -1465,6 +1527,26 @@ def draw_opz_view(game, tr=None) -> None:
                                             px_per_nm, hcol, max_px=min(chart.size) * .3)
             layout.blit_line(s, "HSP-5 DL",
                              (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
+    # Own weapons are commanded own assets (wire/datalink), not sensor tracks:
+    # torpedoes from ship, helicopter or ASROC payload, ASROC and ESSM flights.
+    own_weapons = (
+        [(item, "UNDERWATER_WEAPON", f"T{item.idx}")
+         for item in getattr(game, "torpedoes", ())]
+        + [(item, "MISSILE", f"ASROC {item.seq}")
+           for item in getattr(game, "asrocs", ())]
+        + [(item, "MISSILE", "ESSM") for item in getattr(game, "essms", ())])
+    for item, domain, label in own_weapons:
+        wx, wy = view.world_to_screen(item.x, item.y)
+        if not chart.collidepoint(wx, wy):
+            continue
+        wcol = nato_symbols.draw_symbol(s, (wx, wy), "FRIEND", domain, 12)
+        course = getattr(item, "course", None)
+        if course is not None:
+            rad = math.radians(course)
+            pygame.draw.line(s, wcol, (int(wx), int(wy)),
+                             (int(wx + 12 * math.sin(rad)), int(wy - 12 * math.cos(rad))), 1)
+        layout.blit_line(s, raw_text(label),
+                         (int(wx) + 10, int(wy) - 9, 80, 17), wcol, size=12)
     cic_tracks = (game.opz_tracks() if hasattr(game, "opz_tracks")
                   else game.radar_tracks())
     selected_id = game.opz_selected_track_id
@@ -1537,6 +1619,7 @@ def draw_opz_view(game, tr=None) -> None:
             continue
         if i == min(game.asm_sel, len(asm_tracks) - 1):
             pygame.draw.circle(s, config.COLOR_DANGER, (int(bx), int(by)), 16, 1)
+    draw_plot(s, game, view, chart)
 
     s.set_clip(previous_clip)
     side_top = regions["sidebar"].y
@@ -1616,11 +1699,11 @@ def draw_opz_view(game, tr=None) -> None:
                 prefix = "*"
             displayed_range = observations.range_nm(track, game.ship)
             distance = f"{displayed_range:4.1f}" if displayed_range is not None else " -- "
-            codes = {"UNKNOWN": "UNK", "FRIEND": "FRD",
-                     "NEUTRAL": "NEU", "HOSTILE": "FEI"}
             pygame.draw.rect(s, OPZ_DOMAIN_COLORS[domain], (x, py + 5, 3, 14))
             text = message("opz.line.track", prefix=prefix, track=f"{track['label']:<7}",
-                           affiliation=codes[affiliation], domain=OPZ_DOMAIN_CODES[domain],
+                           affiliation=structured_message(
+                               "affil.code." + affiliation.lower()),
+                           domain=structured_message(OPZ_DOMAIN_CODES[domain]),
                             bearing=observations.format_bearing(track, game.ship), distance=distance)
             layout.blit_line(s, text, (x + 6, py, w - 6, 24), color, size=15)
             py += 28
@@ -1739,7 +1822,34 @@ def draw_radio_view(game, tr=None) -> None:
     box_h = station_rect.bottom - cy - 34
 
     if page == 0:
-        left = layout.box(s, (x, cy, w, box_h), "panel.hfdf")
+        # Current intercepts left; the operator's logged bearings and the
+        # resulting cross-fixes right (same data as the Remote Crew radio).
+        split = int(w * .56)
+        left = layout.box(s, (x, cy, split - 6, box_h), "panel.hfdf")
+        log_box = layout.box(s, (x + split + 6, cy, w - split - 6, box_h), "panel.hfdf_log")
+        gx, gy, gw, gh = log_box
+        logged = list(game.hfdf_log)[-6:]
+        if not logged:
+            layout.blit_line(s, "radio.log_empty", (gx, gy, gw, 24),
+                             config.COLOR_TEXT_DIM, size=16)
+        for row in reversed(logged):
+            layout.blit_line(s, message(
+                "radio.line.logged", label=raw_text(row["label"]),
+                bearing=f"{row['bearing'] % 360:05.1f}",
+                x=f"{row['observer_x']:.1f}", y=f"{row['observer_y']:.1f}",
+                age=f"{max(0.0, game.sim_t - row['t']):.0f}"),
+                (gx, gy, gw, 24), config.COLOR_TEXT, size=16)
+            gy += 26
+        gy += 8
+        for fix in list(game.hfdf_fixes.values())[-4:]:
+            if gy + 24 > log_box[1] + gh:
+                break
+            layout.blit_line(s, message(
+                "radio.line.fix", label=raw_text(fix["label"]),
+                sigma=f"{fix['sigma_nm']:.1f}",
+                age=f"{max(0.0, game.sim_t - fix['t']):.0f}"),
+                (gx, gy, gw, 24), config.COLOR_OK, size=16)
+            gy += 26
         lx, ly, lw, _ = left
         reports = game.hfdf_bearings()
         row_h = 34
@@ -1754,7 +1864,7 @@ def draw_radio_view(game, tr=None) -> None:
             for i, report in enumerate(reports[start:start + capacity], start):
                 selected = i == selected_idx
                 if selected:
-                    pygame.draw.rect(s, (30, 44, 30),
+                    pygame.draw.rect(s, config.COLOR_SELECT_BG,
                                      (lx - 5, ly - 2, lw + 10, row_h - 4))
                     pygame.draw.rect(s, config.COLOR_WARN,
                                      (lx - 5, ly - 2, 3, row_h - 4))
@@ -1763,7 +1873,7 @@ def draw_radio_view(game, tr=None) -> None:
                     s, message("radio.line.signal", prefix='>' if selected else ' ',
                                 label=game.hfdf_display_id(report),
                                 bearing=observations.format_bearing(report, game.ship),
-                               error=f"{config.HFDF_BEARING_ERR_DEG:.0f}", age=f"{age:.0f}"),
+                               error=f"{_hfdf_error_deg(report):.0f}", age=f"{age:.0f}"),
                     (lx, ly, lw, row_h - 8),
                     config.COLOR_WARN if selected else
                     config.COLOR_TEXT if age < 30 else config.COLOR_TEXT_DIM,
@@ -1846,7 +1956,7 @@ def draw_engine_view(game, tr=None) -> None:
                            label_w=140, size=20)
         py += 40
         bar_w = int(pw * 0.72)
-        max_rpm = config.SHIP_RPM_MIN + config.SHIP_SPEED_MAX_KN * config.SHIP_RPM_PER_KN
+        max_rpm = Ship.max_rpm()
         frac = min(1.0, ship.rpm() / max_rpm)
         pygame.draw.rect(s, config.COLOR_GRID, (px, py, bar_w, 16))
         pygame.draw.rect(s, config.COLOR_TEXT, (px, py, int(bar_w * frac), 16))
@@ -2131,7 +2241,7 @@ def _draw_helicopter_acoustic_view(game, rect):
                      (rect.x + 14, rect.y + 10, 245, 27),
                      config.COLOR_TEXT, size=19)
     for index, tab in enumerate(geo["tabs"]):
-        pygame.draw.rect(screen, (21, 55, 68) if index == page else (9, 30, 39), tab)
+        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if index == page else (9, 30, 39), tab)
         pygame.draw.rect(screen, config.COLOR_SONAR_RING if index == page
                          else config.COLOR_GRID, tab, 1)
         layout.blit_line(screen, _HELO_ACOUSTIC_TABS[index], tab,
@@ -2242,7 +2352,7 @@ def _draw_helicopter_acoustic_view(game, rect):
             break
         selected = contact is game.selected_contact
         row = pygame.Rect(rail.x + 8, y, rail.w - 16, 43)
-        pygame.draw.rect(screen, (21, 55, 68) if selected else (12, 32, 40), row)
+        pygame.draw.rect(screen, config.COLOR_TAB_ACTIVE if selected else (12, 32, 40), row)
         layout.blit_line(screen, message("helo.acoustic.contact",
             contact=contact.id, bearing=f"{observed:05.1f}"),
             (row.x + 7, row.y + 3, row.w - 14, 19), config.COLOR_TEXT, size=14)
@@ -2408,8 +2518,12 @@ def draw_helicopter_view(game, tr=None) -> None:
         gauge_x, gauge_y = int(px + pw * .62), py + 12
         gauge_h = min(160, max(80, ph // 3))
         depth_limit = (helo.dip_depth_limit(game.world) if helo.airborne else 0.0)
-        thermocline = (game.world.thermocline_depth_m(helo.x, helo.y)
-                       if depth_limit > 0 else None)
+        # The layer is known only once the lowered dome has passed through
+        # it (the dome's own temperature/sound-speed trace), never before.
+        layer = (game.world.thermocline_depth_m(helo.x, helo.y)
+                 if depth_limit > 0 and helo.dip_state != "STOWED" else None)
+        thermocline = (layer if layer is not None and helo.dip_depth_m >= layer
+                       else None)
         gauge_max = max(50.0, depth_limit)
         pygame.draw.rect(s, config.COLOR_GRID,
                          pygame.Rect(gauge_x, gauge_y, 22, gauge_h), 1)

@@ -1,3 +1,4 @@
+import pytest
 """Fokustests fuer mathematische ASW-Grundmechaniken."""
 
 import random
@@ -105,7 +106,8 @@ def test_damage_zone_biases_expected_compartment():
 def test_active_ping_echo_is_delayed_by_sound_travel_time():
     world = World(seed=3)
     frigate = Ship(250.0, 250.0, speed_kn=4.0)
-    sub = Sub(265.0, 250.0, 60.0, 180.0, "diesel_alt", random.Random(3))
+    # Shallow target: stays in the surface layer whatever the diurnal layer.
+    sub = Sub(265.0, 250.0, 30.0, 180.0, "diesel_alt", random.Random(3))
     sonar = SonarSystem(seed=3)
     sonar.queue_ping(frigate, [sub], world, 0.0)
     assert sub.state == "EVADE"
@@ -146,13 +148,19 @@ def test_ship_helm_state_survives_save_load():
     assert other.ship.yaw_rate == game.ship.yaw_rate
 
 
-def test_ship_fuel_uses_simulation_time_and_ordered_load():
-    ship = Ship(0.0, 0.0, speed_kn=12.0)
+def test_ship_fuel_uses_simulation_time_and_delivered_power():
+    ship = Ship(0.0, 0.0, speed_kn=15.0)
     ship.target_speed = 15.0
+    # At steady speed the delivered power is the effective power k v^3 / eta,
+    # which reproduces the 1.0.0 cubic load law exactly.
     expected_burn = (config.SHIP_FUEL_HOTEL_KG_H
                      + config.SHIP_FUEL_MAX_PROPULSION_KG_H
                      * (15.0 / config.SHIP_SPEED_MAX_KN) ** 3)
-    assert ship.fuel_burn_kg_h() == expected_burn
+    assert ship.fuel_burn_kg_h() == pytest.approx(expected_burn, rel=1e-9)
+    accelerating = Ship(0.0, 0.0, speed_kn=8.0)
+    accelerating.target_speed = 15.0
+    assert accelerating.fuel_burn_kg_h() > config.SHIP_FUEL_HOTEL_KG_H
+    expected_burn = ship.fuel_burn_kg_h()
     ship.update_fuel(3600.0)
     assert abs(ship.fuel_kg - (config.SHIP_FUEL_CAPACITY_KG - expected_burn)) < 1e-9
     assert ship.fuel_endurance_h() > 100.0
@@ -185,7 +193,7 @@ def test_ship_fuel_survives_save_load():
 def test_focused_sonar_track_exposes_signature_analysis():
     world = World(seed=6)
     frigate = Ship(250.0, 250.0, speed_kn=4.0)
-    sub = Sub(255.0, 250.0, 60.0, 180.0, "diesel_alt", random.Random(6))
+    sub = Sub(255.0, 250.0, 30.0, 180.0, "diesel_alt", random.Random(6))
     sonar = SonarSystem(seed=6)
     sonar.set_listen_bearing(90.0)
     sonar.update(1.0, 1.0, frigate, [sub], world, focus_tgt=sub)

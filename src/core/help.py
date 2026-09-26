@@ -12,23 +12,27 @@ _GLOBAL_HELP = (
         ("5 / 6 / 7 / 8", "help.global.stations_2"),
         ("9", "help.global.stations_3"),
         ("help.key.station_number", "help.repeat_station"),
-        ("P", "help.pause"),
         ("help.key.arrows", "help.station_control"),
         ("+ / -", "help.global.telegraph"),
         ("F1 / ?", "help.global.display"),
         ("F2", "help.global.autocrew_toggle"),
         ("F3", "help.global.autocrew_overview"),
+        ("0", "help.global.weather_station"),
         ("F8", "help.global.analyzer"),
         ("F4", "help.global.simlog_view"),
         ("F9", "help.global.commander"),
         ("F10", "control.help.options"),
+        ("F11", "help.global.feed_overlay"),
         ("N", "help.global.nations"),
         ("S / L", "help.save_load"),
         ("Alt+Enter", "help.fullscreen"),
         ("help.key.mouse_zoom", "help.global.map_zoom"),
         ("Drag", "help.global.map_pan"),
         ("K", "help.global.map_follow"),
+        ("P", "help.global.plot"),
+        ("help.key.plot_keys", "help.global.plot_keys"),
         ("Esc", "help.cancel"),
+        ("R / M", "help.global.mission_end"),
     ],
 )
 
@@ -50,6 +54,7 @@ STATION_HELP = {
         [("Shift+A", "help.control.active_ping"), ("Shift+B", "help.control.array"),
          ("Y", "help.control.tas"), ("help.key.page_spaced", "help.control.pages"),
          ("2", "help.control.repeat_sonar_page"), ("E", "help.control.bt"),
+         ("W", "help.control.pulse"),
          ("U / V", "help.control.tas_depth"), ("R", "help.control.listen_input"),
          ("<- / ->", "help.control.bearing_step"), ("help.key.up_down", "help.control.contact_select"),
          ("Enter", "help.control.track_bearing"), ("J | , / .", "help.control.audio"),
@@ -61,6 +66,18 @@ STATION_HELP = {
           ("Shift+H", "help.control.display_history"),
           ("F", "help.control.band"), ("N", "help.control.notch"),
           ("K", "help.control.harmonic"),
+          ("Z / X", "help.control.sonar_cursor"),
+          ("Ctrl+Z / Ctrl+X", "help.control.sonar_band_edges"),
+          ("Q", "help.control.sonar_integration"),
+          ("Shift+Q", "help.control.sonar_vernier"),
+          ("Shift+N", "help.control.sonar_operator_notch"),
+          ("Shift+F", "help.control.sonar_demon_band"),
+          ("Ctrl+F", "help.control.sonar_heterodyne"),
+          ("X / Shift+X (BB)", "help.control.tas_side"),
+          ("Z / X (TMA)", "help.control.tma_course"),
+          ("Ctrl+Z / Ctrl+X (TMA)", "help.control.tma_speed"),
+          ("Q / Shift+Q (TMA)", "help.control.tma_range"),
+          ("K / Shift+K (TMA)", "help.control.tma_accept"),
           ("SPACE", "help.control.peak"), ("T", "help.control.tma"),
           ("C", "help.control.classify"), ("G", "help.control.sonar_release"),
           ("M", "help.control.target")],
@@ -164,7 +181,7 @@ _SOP_SLUGS = {
 STATION_SOP = {station: tuple(f"help.sop.{slug}.{step}" for step in range(1, 6))
                for station, slug in _SOP_SLUGS.items()}
 
-# Remote Crew browser keys (``data/commander/app.js`` keydown handlers).
+# Remote Crew browser keys (``data/commander/js`` keydown handlers).
 _WEB_HELP = (
     "help.web.title",
     [
@@ -175,8 +192,42 @@ _WEB_HELP = (
         ("Home / End", "help.web.list_ends"),
         ("+ / -", "help.web.map_zoom"),
         ("help.key.web_map_pan", "help.web.map_pan"),
+        ("help.key.web_map_hover", "help.web.map_hover"),
+        ("0", "help.web.weather_station"),
+        ("help.key.web_plot", "help.web.plot"),
+        (", / .", "help.web.docks"),
+        ("L", "help.web.log"),
+        ("Esc", "help.web.overlay_close"),
     ],
 )
+
+
+# The uConsole playing the hostile submarine (--play-sub / Options page 2).
+_UBOOT_HELP = (
+    "help.uboot.title",
+    [
+        ("1 / 2 / Tab", "help.uboot.views"),
+        ("C / V / D", "help.uboot.orders"),
+        ("help.key.page", "help.uboot.pages"),
+        ("Q / E", "help.uboot.zoom"),
+        ("K", "help.uboot.follow"),
+        ("help.key.uboot_drag", "help.uboot.drag"),
+        ("help.key.arrows", "help.uboot.contact"),
+        ("help.key.uboot_fire", "help.uboot.fire"),
+        ("F", "help.uboot.fire_bearing"),
+        ("X", "help.uboot.decoy"),
+        ("help.key.uboot_blow", "help.uboot.blow"),
+        ("help.key.uboot_sonar", "help.uboot.sonar"),
+        ("S / L / F9", "help.uboot.admin"),
+    ],
+)
+
+
+def get_uboot_help(tr=None) -> tuple:
+    """Return the localized key table of the local submarine side."""
+    tr = tr or Translator("de").t
+    title, controls = _UBOOT_HELP
+    return tr(title), [(tr(key), tr(action)) for key, action in controls]
 
 
 def _translate_help(data, tr):

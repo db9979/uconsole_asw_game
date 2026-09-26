@@ -40,7 +40,7 @@ DISPLAY_KEYS = {
         "WARSHIP": "class.warship", "BIOLOGISCH": "class.biological",
         "BIOLOGICAL": "class.biological", "FAHRZEUG": "class.vehicle",
         "VEHICLE": "class.vehicle", "FLUGZEUG": "class.aircraft",
-        "AIRCRAFT": "class.aircraft",
+        "AIRCRAFT": "class.aircraft", "TORPEDO": "class.torpedo",
     },
     "affiliation": {
         "UNKNOWN": "affiliation.unknown", "FRIEND": "affiliation.friend",
@@ -71,6 +71,8 @@ DISPLAY_KEYS = {
         "KEINE DATEN": "enum.fusion.none", "KEINE FUSION": "enum.fusion.none",
         "BESTAETIGT": "enum.fusion.confirmed", "DIVERGENT": "enum.fusion.divergent",
         "MOEGLICHER GEISTERKONTAKT": "enum.fusion.ghost",
+        "TAS L/R?": "enum.fusion.ambiguous",
+        "TAS L/R? WENDE": "enum.fusion.ambiguous_turned",
     },
     "weapon_mode": {"DRAHT": "enum.weapon.wire", "SUCHER": "enum.weapon.seeker"},
     "profile_kind": {
@@ -107,6 +109,8 @@ DISPLAY_KEYS = {
     "station_page": {
         "BRIDGE_NAV": "station.page.bridge_nav",
         "BRIDGE_MISSION": "station.page.bridge_mission",
+        "UBOOT_NAV": "station.page.uboot_nav",
+        "UBOOT_WEAPONS": "station.page.uboot_weapons",
         "WEAPONS_TARGET": "station.page.weapons_target",
         "WEAPONS_AMMO": "station.page.weapons_ammo",
         "DAMAGE_PLAN": "station.page.damage_plan",
@@ -252,6 +256,15 @@ def _alternate_german_spelling(text: str) -> str:
     return text
 
 
+def _ascii_german_spelling(text: str) -> str:
+    """Transliterate umlauts and sharp s back to the legacy ASCII spelling."""
+    for unicode_text, ascii_text in (("Ä", "Ae"), ("Ö", "Oe"), ("Ü", "Ue"),
+                                     ("ä", "ae"), ("ö", "oe"), ("ü", "ue"),
+                                     ("ß", "ss")):
+        text = text.replace(unicode_text, ascii_text)
+    return text
+
+
 class Translator:
     """Translate message keys and safely substitute named placeholders."""
 
@@ -270,6 +283,11 @@ class Translator:
         self._literal_sources.update({value: key for key, value in self.german.items()})
         self._literal_sources.update({_alternate_german_spelling(value): key
                                       for key, value in self.german.items()})
+        # Older code literals spell the catalog's umlauts as ae/oe/ue/ss.
+        self._literal_sources.update({_ascii_german_spelling(value): key
+                                      for key, value in self.german.items()
+                                      if _ascii_german_spelling(value)
+                                      not in self._literal_sources})
 
     def translate(self, key: str, **values: object) -> str:
         message = self.catalog.get(key)
@@ -339,6 +357,55 @@ def _is_raw_text(value: object) -> bool:
             and isinstance(value.get(_RAW_TEXT_KEY), str))
 
 
+def _active_catalog() -> Mapping[str, str]:
+    translator = _ACTIVE_TRANSLATOR.get()
+    owner = getattr(translator, "__self__", translator)
+    catalog = getattr(owner, "catalog", None)
+    return catalog if isinstance(catalog, Mapping) else load_catalog(DEFAULT_LANGUAGE)
+
+
+def short_candidates(value: object, _depth: int = 0) -> list:
+    """Shorter catalog forms of a key or message, most complete first.
+
+    A catalog entry ``<key>.short`` is the operator abbreviation of ``<key>``
+    (same facts, fewer characters). Message parameters are shortened before
+    the template itself, so the layout helpers lose words, never information.
+    """
+    if _depth > 3:
+        return []
+    catalog = _active_catalog()
+    if is_message(value):
+        key = value[_MESSAGE_KEY]
+        params = dict(value.get("params", {}))
+        shortened = {}
+        for name, param in params.items():
+            options = short_candidates(param, _depth + 1)
+            if options:
+                best = options[-1]
+                # A plain-string parameter is literal text: its abbreviation
+                # must be passed on as a message so it is translated too.
+                shortened[name] = (best if is_message(best)
+                                   else {_MESSAGE_KEY: best, "params": {}})
+        candidates = []
+        if shortened:
+            candidates.append({_MESSAGE_KEY: key, "params": {**params, **shortened}})
+        if key + ".short" in catalog:
+            candidates.append({_MESSAGE_KEY: key + ".short", "params": params})
+            if shortened:
+                candidates.append({_MESSAGE_KEY: key + ".short",
+                                   "params": {**params, **shortened}})
+        return candidates
+    if isinstance(value, str) and not _is_raw_text(value):
+        if value + ".short" in catalog:
+            return [value + ".short"]
+        translator = _ACTIVE_TRANSLATOR.get()
+        owner = getattr(translator, "__self__", translator)
+        source = getattr(owner, "_literal_sources", {}).get(value)
+        if source is not None and source + ".short" in catalog:
+            return [source + ".short"]
+    return []
+
+
 def display_value(kind: str, value: object, tr=None) -> str:
     """Translate a display enum without changing its internal stored value."""
     key = DISPLAY_KEYS.get(kind, {}).get(value)
@@ -349,6 +416,14 @@ def display_value(kind: str, value: object, tr=None) -> str:
         return str(value)
     translator = translator or get_translator().t
     return str(translator(key))
+
+
+def display_message(kind: str, value: object):
+    """A display enum as a localizable message (so layouts can abbreviate it)."""
+    key = DISPLAY_KEYS.get(kind, {}).get(value)
+    if key is None:
+        key = DISPLAY_KEYS.get(kind, {}).get(str(value))
+    return raw_text(str(value)) if key is None else message(key)
 
 
 def localize(value: object, tr=None) -> str:

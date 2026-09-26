@@ -7,6 +7,12 @@ FLG-Track; die Flak feuert nur gegen frische Radar-Beobachtungen.
 Phasenmaschine:
     APPROACH -> (Waffenbereich) -> ATTACK -> (Fenster abgelaufen /
     Bereich verlassen) -> RETREAT -> (Rausradius / Weltende) -> Despawn
+
+Flight physics: coordinated turns (rate = g tan(bank) / v at the bank
+limit) and, for every salvo, a pop-up: the raider climbs from its
+sea-skimming approach height to acquire the ship with its fire-control
+radar (an ESM-visible emission and a radar-horizon spike), releases after
+the lock time and descends again.
 """
 
 import math
@@ -29,6 +35,18 @@ class RaidPhase(str, Enum):
         raise ValueError(f"unknown raid phase: {value!r}")
 
 
+G = 9.80665
+MAX_BANK_DEG = 56.0
+POPUP_ALTITUDE_M = 300.0
+CLIMB_RATE_MPS = 40.0
+FC_LOCK_S = 4.0
+
+
+def coordinated_turn_rate_deg_s(speed_kn: float, bank_deg: float = MAX_BANK_DEG) -> float:
+    speed = max(speed_kn * 1852.0 / 3600.0, 1.0)
+    return math.degrees(G * math.tan(math.radians(bank_deg)) / speed)
+
+
 class Raider:
     """Feindliches Angriffsflugzeug mit ASM-Salvenlast."""
 
@@ -49,8 +67,10 @@ class Raider:
         self.hp = self.profile["hp"]
         self.max_hp = self.profile["hp"]
         self.evasion = self.profile["evasion"]
-        self.turn_deg_s = config.RAIDER_TURN_DEG_S
+        self.turn_deg_s = coordinated_turn_rate_deg_s(self.speed_kn)
         self.phase = RaidPhase.APPROACH
+        # Seconds at pop-up height with the fire-control radar on (-1 = low).
+        self.popup_t = -1.0
         self.attack_t = 0.0
         self.salto_cd = 0.0
         self.pending_asm = 0
@@ -71,6 +91,14 @@ class Raider:
         """Steuerkurs vom Raider zur Fregatte (Umkehr der Peilung)."""
         return (self.bearing_from_frigate(frigate) + 180.0) % 360.0
 
+    @property
+    def fc_radar_on(self) -> bool:
+        return self.popup_t >= 0.0 and self.altitude_m >= 0.9 * POPUP_ALTITUDE_M
+
+    def _climb(self, target_m: float, dt: float) -> None:
+        step = CLIMB_RATE_MPS * dt
+        self.altitude_m += config.clamp(target_m - self.altitude_m, -step, step)
+
     # --- Phasenmaschine ---
 
     def update(self, dt: float, frigate, world=None) -> None:
@@ -90,13 +118,23 @@ class Raider:
         if self.phase is RaidPhase.ATTACK:
             self.attack_t += dt
             self.salto_cd -= dt
-            if self.salto_cd <= 0.0:
-                self.salto_cd = profile["weapon_cooldown_s"]
-                lo, hi = profile["salvo"]
-                self.pending_asm += lo + self.rng.randint(0, hi - lo)
+            if self.salto_cd <= 0.0 and self.popup_t < 0.0:
+                self.popup_t = 0.0
+            if self.popup_t >= 0.0:
+                self._climb(POPUP_ALTITUDE_M, dt)
+                if self.fc_radar_on:
+                    self.popup_t += dt
+                if self.popup_t >= FC_LOCK_S:
+                    self.salto_cd = profile["weapon_cooldown_s"]
+                    lo, hi = profile["salvo"]
+                    self.pending_asm += lo + self.rng.randint(0, hi - lo)
+                    self.popup_t = -1.0
             if (self.attack_t >= config.RAIDER_ATTACK_WINDOW_S
                     or dist > profile["weapon_range_nm"] * 1.25):
                 self.phase = RaidPhase.RETREAT
+                self.popup_t = -1.0
+        if self.popup_t < 0.0:
+            self._climb(profile["altitude_m"], dt)
         if self.phase is RaidPhase.APPROACH:
             target = to_frigate
         elif self.phase is RaidPhase.ATTACK:

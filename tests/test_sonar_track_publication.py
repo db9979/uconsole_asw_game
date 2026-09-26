@@ -26,9 +26,13 @@ def test_generic_underwater_contact_publishes_unknown_domain(monkeypatch):
     assert track.hostile is False
 
 
-def test_observed_torpedo_preserves_underwater_weapon_domain(monkeypatch):
+def test_torpedo_domain_comes_only_from_operator_classification(monkeypatch):
     game = Game(seed=902, audio_enabled=False)
     contact = Contact(8, 800, "passiv", "torpedo")
+    # The weapon itself publishes no domain until the operator classifies it.
+    assert _publish(game, monkeypatch, contact).kind == "UNKNOWN"
+    contact.player_class = "TORPEDO"
+    game.sim_t += 1.0   # next measurement epoch
 
     track = _publish(game, monkeypatch, contact)
 
@@ -38,14 +42,15 @@ def test_observed_torpedo_preserves_underwater_weapon_domain(monkeypatch):
     assert track.hostile is False
 
 
-def test_biological_contact_publishes_generic_subsurface_domain(monkeypatch):
+def test_biological_contact_publishes_no_domain_hint(monkeypatch):
     game = Game(seed=903, audio_enabled=False)
     contact = Contact(9, 900, "passiv", "animal")
 
     track = _publish(game, monkeypatch, contact)
 
-    assert track.kind == "SUB"
-    assert domain_for_kind(track.kind) == "SUBSURFACE"
+    # A whale once published SUBSURFACE while real boats stayed UNKNOWN.
+    assert track.kind == "UNKNOWN"
+    assert domain_for_kind(track.kind) == "UNKNOWN"
     assert track.label == "K9"
     assert track.hostile is False
 

@@ -366,7 +366,9 @@ def test_stale_measurement_does_not_refresh_surface_contact_age():
 
 def test_component_damage_can_degrade_or_disable_only_due_sensors():
     owner = target(id=1, x=0.0)
-    detected = target(x=30.0)
+    # Degraded sonar halves the 40 NM figure of merit; even a loud target
+    # (source level at most +5 dB, reach x1.8) is not heard beyond 36 NM.
+    detected = target(x=36.5)
     suite = PlatformSensorSuite(
         CATALOG, "warship_01", 14, side="friendly",
         doctrine="surface_combatant")

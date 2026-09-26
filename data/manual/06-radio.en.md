@@ -19,10 +19,13 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
    pos B *------------------/
 ```
 
-- Bearing error is +/-8 degrees; signals older than 30 s can no longer be logged.
+- Bearing error is +/-8 degrees for a ground wave and +/-16 degrees for a sky wave; signals older than 30 s can no longer be logged.
+- Each signal shows its frequency and propagation. A submarine calling a distant shore station picks a high frequency by day (ground wave heard to about 95 NM) and a lower one at night (about 150 NM). Beyond the skip distance, several hundred NM away, the sky wave arrives instead.
 - Logged lines and cross-fixes appear on the charts of Bridge, Weapons and Helicopter.
+- In the Remote Crew browser the radio room has no chart: an HF/DF bearing scope (one strobe per signal, fan width is the bearing error, logged bearings dashed), receiver channels with frequency, propagation, signal meter and a log button, and the teletype. Selecting a channel opens the contact detail for annotation; logged bearings and cross-fixes are listed in the station panel.
 - A second bearing of the same signal gives a cross-fix if it is taken at least 1 NM away from the first and within 300 s.
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
+- At mission start HQ reports the threat. With **coarse** intelligence it gives only a rough bearing and range of one threat. With **exact** intelligence it also names every hostile unit type committed to the mission with its number (for example "1x Altmetall (Diesel, älter), 2x air raid wave with anti-ship missiles"), using the names in the unit analyser (`F8`); positions stay unconfirmed. Patrol always gets exact intelligence, Double hunt and Nuclear intercept coarse, and the free hunt lets you choose on its difficulty screen (last row, "HQ intelligence").
 
 ## Keys {#radio-keys}
 
@@ -41,4 +44,4 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 ## Not modelled {#radio-limits}
 
 - No own radio transmissions or reports to HQ; no communication plan or crypto.
-- No frequency tuning: HFDF lists the detected signals directly.
+- No frequency tuning: HFDF monitors the whole HF band and lists the detected signals with their frequency.

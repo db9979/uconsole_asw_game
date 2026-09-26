@@ -12,6 +12,7 @@ from pathlib import Path
 from string import Formatter
 
 import pytest
+from commander_web import client_css, client_js, function_source, index_html, inject_probe, WEB_ROUTES
 
 from src.core.version import APP_VERSION
 from src.data.contact_analysis import project_contact_catalog
@@ -38,10 +39,10 @@ def catalogs():
 
 
 def test_commander_resources_are_self_contained_and_csp_safe():
-    assert all(ASSETS.joinpath(name).is_file() for name in ("__init__.py", "index.html", "app.js", "style.css", "voice.js", "voice-worklet.js", "sonar-audio-worklet.js"))
+    assert all(ASSETS.joinpath(name).is_file() for name in ("__init__.py", "index.html", "js/main.js", "css/tokens.css", "voice.js", "voice-worklet.js", "sonar-audio-worklet.js"))
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
-    css = ASSETS.joinpath("style.css").read_text()
+    js = client_js()
+    css = client_css()
     document = Document(html)
     ids = [attrs["id"] for _, attrs in document.elements if "id" in attrs]
     assert len(ids) == len(set(ids))
@@ -74,7 +75,8 @@ def test_commander_resources_are_self_contained_and_csp_safe():
         assert tag not in {"iframe", "img", "object", "embed", "style"}
         for key in ("src", "href"):
             if key in attrs:
-                assert (attrs[key] in {"./app.js", "./voice.js", "./style.css"}
+                assert (attrs[key] in {"./js/main.js", "./voice.js"}
+                        or key == "href" and re.fullmatch(r"\./css/[a-z]+\.css", attrs[key])
                         or key == "href" and attrs[key].startswith("#guide-")
                         or key == "href" and attrs[key] == "/manual-en"
                         and attrs.get("target") == "_blank"
@@ -91,7 +93,11 @@ def test_commander_resources_are_self_contained_and_csp_safe():
         assert forbidden not in js
     assert 'new window.WebSocket(`${scheme}//${location.host}/ws/v2/sonar`, "u-jagd-sonar-v2")' in js
     assert "socket.binaryType = \"arraybuffer\"" in js
-    assert "@import" not in css and "url(" not in css
+    assert "@import" not in css
+    # The only external references are the bundled fonts.
+    assert set(re.findall(r"url\(([^)]*)\)", css)) == {
+        '"../fonts/inter-variable.woff2"', '"../fonts/jetbrains-mono-regular.woff2"',
+        '"../fonts/jetbrains-mono-bold.woff2"'}
     assert "AbortController" in js and "Authorization" not in js
     assert 'credentials: "same-origin"' in js and 'request("/session", { auth: false })' in js
     assert "protocolMode" not in js and "adaptV2State" not in js
@@ -102,17 +108,17 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert 'mutateStation("/stations/request", { station })' in js
     assert 'mutateStation("/stations/activate"' in js
     assert 'mutateStation("/stations/release"' in js
-    assert "active_generation: session.active_generation" in js
-    assert 'started - lastSessionFetch >= 1000' in js
+    assert "active_generation: S.session.active_generation" in js
+    assert 'started - S.lastSessionFetch >= 1000' in js
     assert 'window.addEventListener("pagehide"' not in js
     assert "crypto.randomUUID" in js and "crypto.getRandomValues" in js
     assert 'const stateRoute = sonarStream.connected' in js and 'request(stateRoute)' in js and 'request("/chart")' in js
     assert 'request("/commands"' in js and 'expected: 202' in js
     assert 'request("/results"' in js and "next_command_seq" in js
-    assert "nextCommandSeq = Math.max(nextCommandSeq, command.body.seq + 1)" in js
-    assert "eventContext !== key || eventBaselinePending || document.hidden || !navigator.onLine" in js
-    assert 'if (document.hidden) eventBaselinePending = true' in js
-    assert 'window.addEventListener("offline", () => { eventBaselinePending = true;' in js
+    assert "S.nextCommandSeq = Math.max(S.nextCommandSeq, command.body.seq + 1)" in js
+    assert "S.eventContext !== key || S.eventBaselinePending || document.hidden || !navigator.onLine" in js
+    assert 'if (document.hidden) S.eventBaselinePending = true' in js
+    assert 'window.addEventListener("offline", () => { S.eventBaselinePending = true;' in js
     assert "`bridge_set_${kind}`" in js
     bridge_sender = js.split("async function sendBridgeOrder", 1)[1].split(
         "async function pollV2Result", 1)[0]
@@ -123,8 +129,7 @@ def test_commander_resources_are_self_contained_and_csp_safe():
         "function changeLookoutRange", 1)[0]
     assert "chart" not in lookout_renderer and "sendCommand" not in lookout_renderer
     assert "snapshot.tracks" in lookout_renderer and "snapshot.ownship" in lookout_renderer
-    analyzer_renderer = js.split("function renderContactAnalysis()", 1)[1].split(
-        "function renderConnection", 1)[0]
+    analyzer_renderer = function_source(js, "renderContactAnalysis")
     assert "sendCommand" not in analyzer_renderer and 'request("/commands"' not in analyzer_renderer
     assert "analysisSelected" in analyzer_renderer and "textContent" in analyzer_renderer
     assert 'request("/contacts", { auth: false })' in js
@@ -136,12 +141,12 @@ def test_commander_resources_are_self_contained_and_csp_safe():
     assert sonar_toggle["type"] == "button" and sonar_toggle["aria-pressed"] == "false"
     assert '"/api/v2/sonar/audio"' in js
     assert '"/api/v2/helicopter/audio"' in js
-    assert "if (!sonarAudioEnabled || sonarAudioController || sonarAudioSocket?.readyState" in js
-    assert 'new AudioWorkletNode(audio, "sonar-audio-v2"' in js
+    assert "if (!S.sonarAudioEnabled || S.sonarAudioController || S.sonarAudioSocket?.readyState" in js
+    assert 'new AudioWorkletNode(S.audio, "sonar-audio-v2"' in js
     assert '"u-jagd-audio-v2"' in js
     assert "sonarAudioSources.length >= sonarAudioMaxSources" in js
     assert "queuedAhead >= sonarAudioTargetAhead" in js
-    assert "start > audio.currentTime + 7.0" in js
+    assert "start > S.audio.currentTime + 7.0" in js
     assert "raster = {canvas: off, context, image, pixels:" in js
     assert "const image = raster.context.createImageData" not in js
     assert "offset + value.byteLength > output.byteLength" in js
@@ -159,7 +164,7 @@ def test_commander_resources_are_self_contained_and_csp_safe():
 
 def test_v2_proposal_event_and_role_simlog_contracts_are_strict_and_role_scoped():
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     assert "future-v2" not in html
     assert {"target-proposal-controls", "target-proposal", "navigation-proposal"} <= {
         attrs["id"] for _, attrs in Document(html).elements if "id" in attrs
@@ -179,13 +184,14 @@ def test_v2_proposal_event_and_role_simlog_contracts_are_strict_and_role_scoped(
 
 def test_v2_roles_have_dedicated_payload_renderers():
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     document = Document(html)
+    # The submarine sonar room shares the sonar section; its commander has one.
     roles = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
-             "engine", "helicopter", "eloka")
+             "engine", "helicopter", "eloka", "uboot")
     sections = {attrs.get("data-station-role"): attrs for _, attrs in document.elements
                 if attrs.get("data-station-role")}
-    renderers = js[js.index("  function tacticalEntries"):js.index("  function visualContext")]
+    renderers = js[js.index("function tacticalEntries"):js.index("function visualContext")]
     labels = set(re.findall(r'\["([a-z][a-z_]+)",', renderers))
     en, de = catalogs()
     assert not {key for key in labels if PREFIX + key not in en or PREFIX + key not in de}
@@ -196,6 +202,7 @@ def test_v2_roles_have_dedicated_payload_renderers():
     distinctive = {
         "Bridge": ("navigation", "orders", "tactical_summary", "rudder_angle", "yaw_rate"),
         "Sonar": ("observations", "settings", "harmonic_hz", "audio_enabled", "quiet_mode"),
+        "Uboot": ("navigation", "status", "weapons", "alarms", "contacts", "feed"),
         "Weapons": ("inventory", "readiness", "designated_target", "own_weapons", "chaff_ready"),
         "Damage": ("compartments", "teams", "total", "sunk"),
         "Opz": ("observations", "fusions", "radar", "source_classifications", "own_assets"),
@@ -214,14 +221,15 @@ def test_v2_roles_have_dedicated_payload_renderers():
     station_dispatch = js.split("function renderStationView()", 1)[1].split("function clearRoleState()", 1)[0]
     assert "v2State[active]" in station_dispatch
     assert 'section.querySelectorAll("dl, .station-list")' in station_dispatch
-    assert "!trackRoles.has(active)" in station_dispatch
-    assert 'const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"])' in js
+    assert 'dataset.tracks = String(!active || trackRoles.has(active))' in station_dispatch
+    assert ('const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", '
+            '"helicopter", "eloka", "uboot", "uboot_sonar"])') in js
     assert "innerHTML" not in station_dispatch
 
 
 def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     document = Document(html)
     ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
     canvases = {attrs["id"] for tag, attrs in document.elements
@@ -241,7 +249,8 @@ def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
                              "active_echoes", "receiver"),
             "drawRoleMap": ("landmasses", "range_uncertainty_nm", "bearingLogs",
                             "fixes", "assets", "members", "drawOpzSweepOverlay"),
-            "drawOpzSweepOverlay": ("sweep_bearing", "range_nm",
+            "drawOpzSweepOverlay": ("sweep_bearing", "surface_effective_range_nm",
+                                     "air_effective_range_nm",
                                      "roleMapSweepCtx"),
         "drawDamageVisual": ("compartments", "flood", "fire", "trend", "teams"),
         "drawEngineVisual": ("telegraph", "rpm", "speed", "noise",
@@ -251,7 +260,7 @@ def test_v2_enriched_visualizations_use_canvases_and_accessible_equivalents():
         "drawWeaponsVisual": ("readiness", "interlock", "tubes", "nixies",
                               "active_assets"),
     }.items():
-        body = js.split(f"function {function}", 1)[1].split("\n  function ", 1)[0]
+        body = js.split(f"function {function}", 1)[1].split("\nfunction ", 1)[0]
         assert "getContext" in js
         assert all(field in body for field in fields), (function, fields)
     assert all(field in js.split("function mapPayload", 1)[1].split(
@@ -279,7 +288,7 @@ def test_simlog_map_dialog_toolbar_is_structured_and_wired():
     block flow), and its three toolbar buttons (close/fit-to-world/
     fit-to-units) had no click handlers at all - silently dead controls."""
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     document = Document(html)
     dialog = next(attrs for tag, attrs in document.elements if attrs.get("id") == "simlog-map-dialog")
     assert "hidden" in dialog
@@ -306,7 +315,7 @@ def test_simlog_map_dialog_toolbar_is_structured_and_wired():
 
 def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     ids = {attrs["id"] for _, attrs in Document(html).elements if "id" in attrs}
     assert {"damage-team", "analysis-sensors", "analysis-emitters"} <= ids
     assert "const maxRoleMapHits = 512" in js
@@ -324,7 +333,7 @@ def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
     animation = js.split("function currentOpzSweepBearing", 1)[1].split(
         "function roleMapGeometry", 1)[0]
     assert "requestAnimationFrame(animate)" in animation
-    assert "cancelAnimationFrame(opzSweepFrame)" in animation
+    assert "cancelAnimationFrame(S.opzSweepFrame)" in animation
     assert "document.hidden" in animation and 'v2State?.phase === "live"' in animation
     assert "radar.surface || radar.air" in animation
     assert "radar.sweep_rate_deg_s" in animation and ": 90" in animation
@@ -342,7 +351,7 @@ def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
     assert 'item.display || item.ref || t("helicopter")' in role_map
     lobby = js.split("function renderLobby", 1)[1].split("function acceptSession", 1)[0]
     assert 'if (select.dataset.options !== signature)' in lobby
-    assert "document.activeElement !== select || stationMutation" in lobby
+    assert "document.activeElement !== select || S.stationMutation" in lobby
     helicopter = js.split("function renderHelicopterStation", 1)[1].split(
         "function renderElokaStation", 1)[0]
     assert '["reference", row.label]' in helicopter
@@ -350,7 +359,7 @@ def test_v2_browser_presentation_interactions_are_bounded_and_guarded():
 
 
 def test_browser_game_audio_uses_one_shot_events_without_ambient_loops():
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     audio = js.split("function playGameEffect", 1)[1].split(
         "function renderSonarAudio", 1)[0]
     assert "gameEffectKinds.has(kind)" in audio
@@ -362,7 +371,7 @@ def test_browser_game_audio_uses_one_shot_events_without_ambient_loops():
 
 
 def test_disabled_web_controls_publish_specific_localized_reasons():
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     resolver = js.split("const unavailable =", 1)[1].split(
         "function renderOpzControls", 1)[0]
     assert 'document.querySelectorAll("button, input, select")' in resolver
@@ -393,8 +402,8 @@ def test_commander_capture_keeps_pairing_code_out_of_public_assets():
 
 
 def test_reference_catalog_renders_existing_sensor_and_emitter_details():
-    js = ASSETS.joinpath("app.js").read_text()
-    css = ASSETS.joinpath("style.css").read_text()
+    js = client_js()
+    css = client_css()
     renderer = js.split("function renderContactAnalysis", 1)[1].split(
         "function request", 1)[0]
     for field in ("modes", "emits", "synthetic_range_nm", "sensitivity_db",
@@ -411,7 +420,7 @@ def test_reference_catalog_renders_existing_sensor_and_emitter_details():
 
 def test_v2_nonlethal_station_controls_are_native_and_exactly_wired():
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     document = Document(html)
     ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
     assert {
@@ -449,7 +458,7 @@ def test_v2_nonlethal_station_controls_are_native_and_exactly_wired():
 
 def test_v2_direct_fire_controls_use_opaque_projections_and_exact_actions():
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     document = Document(html)
     ids = {attrs["id"] for _, attrs in document.elements if "id" in attrs}
     assert {
@@ -469,7 +478,7 @@ def test_v2_direct_fire_controls_use_opaque_projections_and_exact_actions():
     assert "selectedTrack" not in direct and "selected =" not in direct
     assert "target_id" not in direct and "track_id" not in direct
     assert "session?.grants.direct_fire === true" in direct
-    assert "chartMatches(snapshot)" in direct and "!pending" in js.split(
+    assert "chartMatches(S.snapshot)" in direct and "!S.pending" in js.split(
         "function stationActionAvailable", 1)[1].split("function renderOpzControls", 1)[0]
     assert "performance.now() + 5000" in direct
     assert "station_generation" in direct and "v2State?.epoch" in direct
@@ -480,8 +489,8 @@ def test_v2_direct_fire_controls_use_opaque_projections_and_exact_actions():
 
 def test_guide_is_complete_static_content_with_panel_local_navigation():
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
-    css = ASSETS.joinpath("style.css").read_text()
+    js = client_js()
+    css = client_css()
     document = Document(html)
     guide = next(attrs for _, attrs in document.elements
                  if attrs.get("id") == "panel-guide")
@@ -507,7 +516,7 @@ def test_guide_is_complete_static_content_with_panel_local_navigation():
 
 def test_contacts_panel_owns_bounded_browser_and_detail_scrolling():
     html = ASSETS.joinpath("index.html").read_text()
-    css = ASSETS.joinpath("style.css").read_text()
+    css = client_css()
     document = Document(html)
     contacts = next(attrs for _, attrs in document.elements
                     if attrs.get("id") == "panel-contacts")
@@ -520,12 +529,12 @@ def test_contacts_panel_owns_bounded_browser_and_detail_scrolling():
     assert re.search(r"\.analyzer-panel:not\(\[hidden\]\).*overflow: hidden", css)
     assert re.search(r"\.analysis-list \{[^}]*overflow-y: auto", css)
     assert re.search(r"\.analyzer-detail \{[^}]*overflow-y: auto", css)
-    assert "silhouette" not in ASSETS.joinpath("app.js").read_text().lower()
+    assert "silhouette" not in client_js().lower()
     for catalog in catalogs():
         spectrum = catalog[PREFIX + "analyzer_spectrum_legend"]
         hypothesis = catalog[PREFIX + "analyzer_hypothesis_legend"]
-        assert "5 Hz-10 kHz" in spectrum
-        assert "0-80" in hypothesis
+        assert "LOFAR" in spectrum and "0-300 Hz" in spectrum
+        assert "0-50 Hz" in hypothesis
         assert "DEMON" in hypothesis
         assert any(word in hypothesis.lower() for word in ("measurement", "messung"))
 
@@ -542,7 +551,7 @@ def test_commander_catalogs_cover_markup_and_script():
         assert fields(value) == fields(german[key])
         assert all(field.isidentifier() for field in fields(value))
     html = ASSETS.joinpath("index.html").read_text()
-    js = ASSETS.joinpath("app.js").read_text()
+    js = client_js()
     markup_keys = set(re.findall(r'data-i18n(?:-aria)?="([\w]+)"', html))
     literal_keys = set(re.findall(r'\bt\("([\w]+)"', js))
     metric_keys = set(re.findall(r'\["([a-z_]+)", (?:unit\(|number\(|t\(|`|track\.|item\.|helo\.|typeof |finite\()', js))
@@ -596,7 +605,7 @@ const liveFixture = __STATE__;
 const statusFixture = __STATUS_STATE__;
 const fixture = structuredClone(statusFixture);
 const simlogFixture = [{seq: 1, t: 10, stamp: "00:10", cat: "state", text: "", data: {
-  mission_t: 10, timescale: 1, result: null,
+  mission_t: 10, result: null,
   ship: {x: 250, y: 250, course: 15, speed: 12, damage: 0, sunk: false, stations: {}},
   world: {hour: 12, sea_state: 3, night: false}, weapons: {},
   subs: [{id: 1, x: 100, y: 100}], surfaces: [{id: 2, x: 150, y: 150}],
@@ -1017,7 +1026,7 @@ async function runContract() {
   $test("language").value = "de";
   $test("language").dispatchEvent(new Event("change"));
   await until(() => document.documentElement.lang === "de", "rejection language switch");
-  assert($test("command-status").textContent.includes("Die Bewertung hat sich geaendert."), "stored reason code retranslates into German");
+  assert($test("command-status").textContent.includes("Die Bewertung hat sich geändert."), "stored reason code retranslates into German");
   $test("language").value = "en";
   $test("language").dispatchEvent(new Event("change"));
   await until(() => document.documentElement.lang === "en", "restore English after rejection check");
@@ -1220,7 +1229,7 @@ def browser_state():
         uncertainty_nm=1.5, depth_m=70, depth_uncertainty_m=2, quality=.9)]
     return dict(version=APP_VERSION, session="session-A", epoch=1, revision=12,
                  seq=1, phase="live", commands_allowed=True, language="en",
-                 clock=dict(sim=90, mission=90, time_scale=1, world=12.5),
+                 clock=dict(sim=90, mission=90, world=12.5),
                  environment=dict(sea_state=3, is_night=False),
                 mission=dict(name="Northern watch <img src=x onerror=alert(1)>", objective="Maintain the observation picture", remaining_s=900),
                 ownship=dict(x=250, y=250, course=15, speed=12, target_course=20, target_speed=15,
@@ -1272,8 +1281,7 @@ def _superseded_commander_browser_contract(tmp_path, width, height):
     chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
     if not chromium:
         pytest.skip("Optional browser contract: no installed Chromium")
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>', '<script src="./contract.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "contract.js")
     script = (BROWSER_CONTRACT.replace("__STATE__", json.dumps(browser_state()))
               .replace("__STATUS_STATE__", json.dumps(browser_status_state()))
               .replace("__WIDTH__", str(width)))
@@ -1286,7 +1294,7 @@ def _superseded_commander_browser_contract(tmp_path, width, height):
             pass
 
         def reply(self, status, content, mime):
-            content = content.encode()
+            content = content if isinstance(content, bytes) else content.encode()
             self.send_response(status)
             self.send_header("Content-Type", mime)
             self.send_header("Content-Length", str(len(content)))
@@ -1309,8 +1317,8 @@ def _superseded_commander_browser_contract(tmp_path, width, height):
                 self.reply(200, html, "text/html")
             elif self.path == "/contract.js":
                 self.reply(200, script, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                self.reply(200, ASSETS.joinpath(self.path[1:]).read_text(), "text/javascript" if self.path.endswith("js") else "text/css")
+            elif self.path in WEB_ROUTES:
+                self.reply(200, WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply(200, json.dumps({key: value for key, value in source.items() if key.startswith(PREFIX)}), "application/json")
@@ -1365,9 +1373,7 @@ def test_contact_analyzer_rejects_schema_error_when_chromium_available(tmp_path)
     chromium = shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
     if not chromium:
         pytest.skip("Optional browser contract: no installed Chromium")
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./schema-test.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "schema-test.js")
     en = catalogs()[0]
     requests = []
     malformed_analysis = project_contact_catalog()
@@ -1387,7 +1393,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             pass
 
         def reply(self, content, mime="application/json"):
-            body = content.encode()
+            body = content if isinstance(content, bytes) else content.encode()
             self.send_response(200)
             self.send_header("Content-Type", mime)
             self.send_header("Content-Length", str(len(body)))
@@ -1400,9 +1406,8 @@ window.addEventListener("DOMContentLoaded", async () => {
                 self.reply(html, "text/html")
             elif self.path == "/schema-test.js":
                 self.reply(probe, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                mime = "text/javascript" if self.path.endswith("js") else "text/css"
-                self.reply(ASSETS.joinpath(self.path[1:]).read_text(), mime)
+            elif self.path in WEB_ROUTES:
+                self.reply(WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path == "/api/v2/ui?lang=en":
                 self.reply(json.dumps({key: value for key, value in en.items()
                                        if key.startswith(PREFIX)}))

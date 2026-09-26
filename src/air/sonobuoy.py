@@ -1,6 +1,10 @@
 """M15: Sonarboje – passiver Hörer mit begrenztem Batterieleben."""
 
+import math
+
 from src.core import config
+
+BUOY_LEEWAY = 0.02   # windage of the float and antenna, fraction of wind
 
 
 class Sonobuoy:
@@ -21,5 +25,14 @@ class Sonobuoy:
     def active(self) -> bool:
         return self.battery_s > 0.0
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, world=None) -> None:
         self.battery_s = max(0.0, self.battery_s - dt)
+        if world is None:
+            return
+        # The float drifts with the surface current (which already carries
+        # the 3 % wind drift) plus its own windage on the exposed antenna.
+        u, v = world.current_vec(self.x, self.y)
+        wind = config.kn_to_nm_per_s(world.wind_speed_kn) * BUOY_LEEWAY
+        towards = math.radians((world.wind_from_deg + 180.0) % 360.0)
+        self.x += config.kn_to_nm_per_s(u) * dt + wind * math.sin(towards) * dt
+        self.y -= config.kn_to_nm_per_s(v) * dt + wind * math.cos(towards) * dt

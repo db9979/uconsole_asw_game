@@ -44,6 +44,7 @@ def test_net_trends_match_simulation_and_diminishing_teams(monkeypatch, mult, te
     room.state, room.flood, room.fire = state, 60.0, 40.0
     for team in range(1, teams + 1):
         model.assign_team(team, "engine")
+        model.team_eta[team] = 0.0      # teams have arrived (transit tested elsewhere)
     before_rng = model.rng.getstate()
     trend = model.compartment_trend("engine")
     assert trend["repairable"]

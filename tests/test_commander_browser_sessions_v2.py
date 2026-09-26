@@ -9,17 +9,20 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
+from commander_web import copy_assets, index_html, inject_probe, WEB_ROUTES
 import pygame
 
 from src.commander import server as commander_transport
 from src.core.game import Game
 from src.sonar.sonar import Contact
+from src.core import manual
 from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_analysis,
                                    browser_state, catalogs)
+from commander_fixtures import PLOT, WEATHER_STATION
 
 
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
-            "engine", "helicopter", "eloka")
+            "engine", "helicopter", "eloka", "uboot", "uboot_sonar")
 
 
 def _station_record(status="available", *, requested=False, request_generation=0,
@@ -93,7 +96,7 @@ async function run() {
     await until(() => $test("pairing").hidden && !$test("simlog-view").hidden,
       "pair preserves the initial unassigned SimLog route");
     const cards = [...$test("station-cards").children];
-    assert(cards.length === 9, "lobby has exactly nine station cards");
+    assert(cards.length === 11, "lobby has nine frigate and two submarine station cards");
     assert(cards.map((card) => card.dataset.station).join(",") === __STATIONS__, "canonical station order");
     assert(cards[1].classList.contains("station-occupied") && cards[0].classList.contains("station-available"), "occupancy is rendered");
     assert(operational().length === 0, "unassigned client fetches no operational state");
@@ -286,10 +289,10 @@ async function run() {
   let previousRole = null;
   const visualFor = {bridge: "role-map", sonar: "sonar-broadband", opz: "role-map",
     eloka: "eloka-scope", engine: "engine-instruments", damage: "damage-schematic",
-    radio: "role-map", helicopter: "helicopter-lofar-canvas", weapons: "weapons-system"};
+    radio: "radio-df-scope", helicopter: "helicopter-lofar-canvas", weapons: "weapons-system"};
   const equivalentFor = {bridge: "role-map-text", sonar: "sonar-broadband-text", opz: "role-map-text",
     eloka: "eloka-scope-text", engine: "engine-instruments-text", damage: "damage-schematic-text",
-    radio: "role-map-text", helicopter: "helicopter-acoustic-text", weapons: "weapons-system-text"};
+    radio: "radio-df-scope-text", helicopter: "helicopter-acoustic-text", weapons: "weapons-system-text"};
   let commandSent = false;
   let fusionSent = false;
   let opzDiagnostic = "";
@@ -303,32 +306,31 @@ async function run() {
       const station = document.getElementById(`station-${latestRole}`);
       const visualBounds = document.getElementById("role-visuals").getBoundingClientRect();
       const controlBounds = station.querySelector(".station-grid").getBoundingClientRect();
-      const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
-      const workspace = document.getElementById("operations-workspace");
+      const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "helicopter", "eloka"]);
+      const grid = document.getElementById("cic-grid");
       if (innerWidth >= 1000) {
         assert(visualBounds.width >= innerWidth * .45, `instrument too narrow: ${latestRole}`);
         assert(visualBounds.top < innerHeight * .5, `instrument below fold: ${latestRole}`);
         assert(controlBounds.left >= visualBounds.right - 2, `controls not beside instrument: ${latestRole}`);
         if (trackRoles.has(latestRole)) {
-          // Console layout: contacts | full-height instrument | controls, with the
-          // contact detail under the controls. The workspace box itself has no
-          // geometry (display: contents); its panels are the station's grid items.
-          const contactsBounds = station.querySelector(".contacts-panel").getBoundingClientRect();
-          const detailsBounds = station.querySelector(".details-panel").getBoundingClientRect();
-          const stationBox = station.getBoundingClientRect();
-          assert(workspace.parentElement === station && contactsBounds.right <= visualBounds.left + 2,
+          // CIC layout: contacts dock | full-height instrument | station dock,
+          // with the contact detail dock under (or, from 2400 px, beside) it.
+          const contactsBounds = document.getElementById("dock-left").getBoundingClientRect();
+          const detailsBounds = document.getElementById("dock-detail").getBoundingClientRect();
+          const dockBounds = document.getElementById("dock-right").getBoundingClientRect();
+          const gridBox = grid.getBoundingClientRect();
+          assert(grid.dataset.tracks === "true" && contactsBounds.right <= visualBounds.left + 2,
             `contacts are not left of the instrument: ${latestRole}`);
-          assert(detailsBounds.left >= visualBounds.right - 2 && detailsBounds.top >= controlBounds.bottom - 2,
-            `contact detail is not under the controls beside the instrument: ${latestRole}`);
-          assert(detailsBounds.bottom <= stationBox.bottom + 1 && contactsBounds.bottom <= stationBox.bottom + 1,
+          assert(detailsBounds.left >= visualBounds.right - 2 &&
+            (detailsBounds.top >= dockBounds.bottom - 2 || detailsBounds.left >= dockBounds.right - 2),
+            `contact detail is not beside the instrument next to the controls: ${latestRole}`);
+          assert(detailsBounds.bottom <= gridBox.bottom + 1 && contactsBounds.bottom <= gridBox.bottom + 1,
             `track panels exceed station: ${latestRole}`);
-          assert(visualBounds.bottom >= detailsBounds.bottom - 2 && visualBounds.bottom >= contactsBounds.bottom - 2,
-            `instrument does not use the full station height: ${latestRole}`);
           assert(document.documentElement.scrollHeight <= innerHeight + 1,
             `page scrolls instead of fitting one viewport: ${latestRole}`);
         }
       }
-      const stationBounds = station.getBoundingClientRect();
+      const stationBounds = grid.getBoundingClientRect();
       assert(visualBounds.left >= stationBounds.left - 1 && visualBounds.right <= stationBounds.right + 1,
         `instrument exceeds station: ${latestRole}`);
       assert(controlBounds.left >= stationBounds.left - 1 && controlBounds.right <= stationBounds.right + 1,
@@ -763,9 +765,10 @@ async function run() {
   const edge = roleMapSweepEndpoint;
   const sweepLength = Math.hypot(edge.x - roleMapSweepOrigin.x, edge.y - roleMapSweepOrigin.y);
   // Default OPZ zoom fits the selected radar range to the shorter map dimension
-  // (viewState.zoom = chart.size_nm / (2 * range_nm)), so the beam should reach
-  // exactly that radius regardless of bearing, never the canvas edge itself.
-  const expectedSweepLength = Math.min(sweepLayer.clientWidth, sweepLayer.clientHeight) / 2;
+  // (viewState.zoom = chart.size_nm / (2 * range_nm)). The beam reaches the
+  // longest *effective* radar range (38 of 40 NM in this fixture, weather),
+  // regardless of bearing, never the canvas edge itself.
+  const expectedSweepLength = Math.min(sweepLayer.clientWidth, sweepLayer.clientHeight) / 2 * 38 / 40;
   assert(Math.abs(sweepLength - expectedSweepLength) < 3,
     `OPZ sweep length ${sweepLength} does not match the radar range (expected ~${expectedSweepLength})`);
   const sweepRect = sweepLayer.getBoundingClientRect();
@@ -779,13 +782,13 @@ async function run() {
   await sleep(120);
   baseObserver.disconnect();
   assert(baseRedraws <= 1, "OPZ redraws the whole map on every sweep frame");
-  states.opz.phase = "paused";
-  await until(() => $test("role-visual-state").textContent.includes("Paused") ||
-    $test("role-visual-state").textContent.includes("Pausiert"), "paused OPZ state missing");
+  states.opz.phase = "ended";
+  await until(() => $test("role-visual-state").textContent.includes("inactive") ||
+    $test("role-visual-state").textContent.includes("inaktiv"), "ended OPZ state missing");
   await sleep(80);
-  const pausedFrame = sweepLayer.toDataURL();
+  const endedFrame = sweepLayer.toDataURL();
   await sleep(120);
-  assert(sweepLayer.toDataURL() === pausedFrame, "OPZ sweep continues while paused");
+  assert(sweepLayer.toDataURL() === endedFrame, "OPZ sweep continues after the mission ended");
   states.opz.phase = "live";
   await until(() => !$test("opz-fire-target").disabled, "OPZ did not resume");
   states.opz.opz.radar.surface = false; states.opz.opz.radar.air = false;
@@ -907,17 +910,17 @@ window.addEventListener("DOMContentLoaded", () => run().catch((error) => {
 def _direct_fire_browser_states():
     common = dict(protocol=2, version="test", session="fire-world", epoch=2,
                    revision=7, seq=1, phase="live", chart_revision="fire-world",
-                   clock=dict(sim=10.0, mission=10.0, time_scale=1.0, world=12.0),
+                   clock=dict(sim=10.0, mission=10.0, world=12.0),
                    environment=dict(sea_state=2, effective_sea_state=2.4,
                                     is_night=False, weather="clear",
                                     wind_from_deg=245.0, wind_speed_kn=12.0,
                                     rain_intensity=.1, visibility_nm=24.0),
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
-                   autocrew=dict(enabled=False, status="off"),
-                   audio=dict(events=[]))
+                   autocrew=dict(enabled=False, status="off"), autocrew_overview=[],
+                   audio=dict(events=[]), weather_station=WEATHER_STATION, plot=PLOT)
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
-                      yaw_rate=0.0)
+                      yaw_rate=0.0, turn_radius_nm=None)
     weapon_row = dict(ref="weapon-ref-a", label="Eligible sonar observation",
                       domain="SUBSURFACE", source="SONAR", affiliation="HOSTILE",
                       classification="U_BOOT", bearing=30.0, range_nm=4.0,
@@ -926,7 +929,8 @@ def _direct_fire_browser_states():
                       bearing_uncertainty_deg=1.0, range_uncertainty_nm=.2)
     tactical_row = {key: value for key, value in weapon_row.items()
                     if key not in {"classification", "depth_m", "fix_age_s"}}
-    tactical_row.update(observer_x=250.0, observer_y=250.0, altitude_m=None)
+    tactical_row.update(observer_x=250.0, observer_y=250.0, altitude_m=None,
+                       visual_class=None, visual_type=None)
     weapons = dict(common, role="weapons", weapons=dict(
         inventory=dict(torpedoes=4, vls=8, ciws=200, aa=40,
                        chaff_ready=True, nixies=2),
@@ -950,9 +954,12 @@ def _direct_fire_browser_states():
                    sweep_bearing=20.0, sweep_rate_deg_s=180.0, weather_severity=.1,
                    surface_effective_range_nm=35.0, air_effective_range_nm=38.0),
         defense=dict(vls=8, ciws=200, aa=40, chaff_ready=True,
-                     ciws_ready=True, aa_ready=True), asm_observations=[asm_row],
+                     ciws_ready=True, aa_ready=True, ciws_released=True),
+        asm_observations=[asm_row],
         source_classifications=[], designated_target_ref=None,
-        own_assets=dict(ship=navigation, helicopter=helicopter_asset)))
+        own_assets=dict(ship=navigation, helicopter=helicopter_asset, weapons=[
+            dict(ref="opaque-torpedo-reference-one", x=251.0, y=249.0, depth_m=60.0,
+                 course=90.0, state="RUN")])))
     helicopter = dict(common, role="helicopter", helicopter=dict(
         asset=dict(helicopter_asset, buoy_mode="PASSIVE"), waypoint=None,
         buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,
@@ -986,10 +993,10 @@ def _direct_fire_browser_states():
         teams=[dict(team=1, compartment=None), dict(team=2, compartment="engine")],
         total=15.0, sunk=False))
     bridge = dict(common, role="bridge", bridge=dict(
-        navigation=navigation, tactical_summary=[],
+        navigation=navigation, tactical_summary=[], sightings=[],
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
                     noise=.8, cavitating=False),
-        threat=dict(observations=[], count=0, average_flood=0.0),
+        threat=dict(observations=[], count=0, average_flood=0.0, torpedoes=[]),
         systems=[dict(key="bridge", state="OK", down=False)]))
     return {"weapons": weapons, "opz": opz, "helicopter": helicopter,
             "damage": damage, "bridge": bridge}
@@ -1017,9 +1024,7 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
                                sonar_audio=False))
     chart = dict(protocol=2, revision="fire-world", size_nm=500.0,
                  landmasses=[], disclaimer="Synthetic test chart")
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./direct-fire-test.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "direct-fire-test.js")
     script = (DIRECT_FIRE_BROWSER.replace("__SESSION__", json.dumps(session))
               .replace("__STATES__", json.dumps(_direct_fire_browser_states()))
               .replace("__CHART__", json.dumps(chart))
@@ -1043,9 +1048,8 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
                 self.reply(html, "text/html")
             elif self.path == "/direct-fire-test.js":
                 self.reply(script, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                self.reply(ASSETS.joinpath(self.path[1:]).read_bytes(),
-                           "text/javascript" if self.path.endswith("js") else "text/css")
+            elif self.path in WEB_ROUTES:
+                self.reply(WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply({key: value for key, value in source.items()
@@ -1092,7 +1096,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             "range_nm", "x", "y", "course", "speed_kn", "quality", "age_s",
             "bearing_uncertainty_deg", "range_uncertainty_nm")}
         result.update(observer_x=legacy["ownship"]["x"],
-                      observer_y=legacy["ownship"]["y"], altitude_m=None)
+                      observer_y=legacy["ownship"]["y"], altitude_m=None,
+                      visual_class=None, visual_type=None)
         return result
 
     def sonar_row(row):
@@ -1102,7 +1107,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
             "fixes")}
         result.update(observer_x=legacy["ownship"]["x"],
-                      observer_y=legacy["ownship"]["y"], released_to_opz=False)
+                      observer_y=legacy["ownship"]["y"], released_to_opz=False,
+                      profile=None)
         return result
 
     def state_for(role):
@@ -1117,18 +1123,22 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             wind_from_deg=220.0, wind_speed_kn=10.0,
             rain_intensity=0.0, visibility_nm=30.0)
         common["autocrew"] = {"enabled": False, "status": "off"}
+        common["autocrew_overview"] = []
         common["audio"] = {"events": list(legacy["sound_events"])}
+        common["weather_station"] = WEATHER_STATION
+        common["plot"] = PLOT
         if role == "bridge":
             common[role] = {"navigation": {key: legacy["ownship"][key] for key in (
                 "x", "y", "course", "speed", "target_course", "target_speed")},
                             "tactical_summary": [tactical_row(row)
                                                  for row in legacy["tracks"]]}
-            common[role]["navigation"].update(rudder_angle=0.0, yaw_rate=0.0)
+            common[role]["navigation"].update(rudder_angle=0.0, yaw_rate=0.0, turn_radius_nm=None)
             common[role]["orders"] = {"station_down": False, "speed_max_kn": 25,
                                       "telegraph": "HALF", "noise": .2,
                                       "cavitating": False}
+            common[role]["sightings"] = []
             common[role]["threat"] = {"observations": [], "count": 0,
-                                       "average_flood": 0.0}
+                                       "average_flood": 0.0, "torpedoes": []}
             common[role]["systems"] = [{"key": "bridge", "state": "OK",
                                          "down": False}]
         else:
@@ -1151,14 +1161,20 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                              "harmonic_hz": None,
                              "harmonic_candidates_hz": [12.5, 25.0],
                              "audio_enabled": True, "volume": .5,
-                              "quiet_mode": False},
+                              "quiet_mode": False,
+                              "tools": {"assist": False, "lofar_cursor_hz": 50.0,
+                                        "demon_cursor_hz": 10.0, "integration_s": 2,
+                                        "vernier": False, "shaft_hz": None,
+                                        "blade_hz": None, "operator_notch_hz": None,
+                                        "demon_band_hz": [400.0, 1400.0],
+                                        "heterodyne_hz": 700.0}},
                 "visualization": {
                     "broadband": {"bearing_start_deg": 0.0,
                                   "bearing_step_deg": 4.0, "history": []},
                     "lofar": {"frequency_min_hz": 0.0,
                               "frequency_max_hz": 300.0,
                               "bin_frequencies_hz": [], "history": [],
-                              "spectrum": [], "held": False},
+                              "spectrum": [], "held": False, "vernier": None},
                         "demon": {"frequency_min_hz": 1.0,
                                   "frequency_max_hz": 80.0, "bin_step_hz": 1.0,
                                   "spectrum": [], "history": [], "analysis": None},
@@ -1169,9 +1185,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
         return common
     chart = {"protocol": 2, "revision": legacy["chart_revision"], "size_nm": 500,
              "landmasses": [], "disclaimer": "Synthetic test chart"}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./session-test.js" defer></script><script src="./app.js" defer>')
+    html = inject_probe(index_html(), "session-test.js")
     script = (BROWSER_SESSION.replace("__STATIONS__", json.dumps(",".join(STATIONS)))
               .replace("__PENDING__", json.dumps(en[PREFIX + "station_requested"]))
               .replace("__FAILED__", json.dumps(en[PREFIX + "station_mutation_failed"].split(".")[0]))
@@ -1217,9 +1231,8 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                 self.reply(200, html, "text/html")
             elif self.path == "/session-test.js":
                 self.reply(200, script, "text/javascript")
-            elif self.path in ("/app.js", "/style.css"):
-                mime = "text/javascript" if self.path.endswith("js") else "text/css"
-                self.reply(200, ASSETS.joinpath(self.path[1:]).read_bytes(), mime)
+            elif self.path in WEB_ROUTES:
+                self.reply(200, WEB_ROUTES[self.path][1], WEB_ROUTES[self.path][0])
             elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 source = de if self.path.endswith("de") else en
                 self.reply(200, {key: value for key, value in source.items() if key.startswith(PREFIX)})
@@ -1387,18 +1400,11 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
         "de": {key: value for key, value in de.items() if key.startswith(PREFIX)},
     }
     console._contact_analysis_assets = {}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./real-role-test.js" defer></script><script src="./app.js" defer>')
-    for name, payload in (
-        ("index.html", html),
-        ("app.js", ASSETS.joinpath("app.js").read_text()),
-        ("style.css", ASSETS.joinpath("style.css").read_text()),
-        ("voice.js", ASSETS.joinpath("voice.js").read_text()),
-        ("voice-worklet.js", ASSETS.joinpath("voice-worklet.js").read_text()),
-        ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()),
-    ):
-        (tmp_path / name).write_text(payload, encoding="utf-8")
+    # Pre-rendered like the assets: resources.files is redirected below.
+    console._manual_pages = {}
+    console._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
+    html = inject_probe(index_html(), "real-role-test.js")
+    copy_assets(tmp_path, html)
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)
 
     # Use the actual F9 owner transition, then start the selected server row while

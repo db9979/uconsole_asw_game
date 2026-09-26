@@ -6,7 +6,9 @@ from src.core.preferences import (Preferences, default_preferences_path,
 
 def test_required_default_preferences_path(monkeypatch, tmp_path):
     monkeypatch.setenv("HOME", str(tmp_path))
-    assert default_preferences_path() == tmp_path / ".u-jagd" / "settings.json"
+    # conftest isolates the session; the wrapped function is the real one.
+    real = getattr(default_preferences_path, "__wrapped__", default_preferences_path)
+    assert real() == tmp_path / ".u-jagd" / "settings.json"
 
 
 def set_locale(monkeypatch, value):
@@ -120,3 +122,14 @@ def test_credential_fields_are_length_limited(tmp_path):
     path.write_text(json.dumps({"aisstream_api_key": "x" * 500}),
                     encoding="utf-8")
     assert len(load_preferences(path).aisstream_api_key) == 256
+
+
+def test_frame_rate_round_trip_and_invalid_values(tmp_path):
+    path = tmp_path / "preferences.json"
+    assert Preferences().frame_rate == 30
+    save_preferences(Preferences(language="en", frame_rate=60), path)
+    assert load_preferences(path).frame_rate == 60
+    for bad in (45, 60.0, "60", True, None, -30):
+        path.write_text(json.dumps({"language": "en", "frame_rate": bad}),
+                        encoding="utf-8")
+        assert load_preferences(path).frame_rate == 30

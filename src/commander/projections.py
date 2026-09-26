@@ -8,10 +8,13 @@ simulation object.
 from copy import deepcopy
 import math
 
-from src.core import config
+from src.core import config, plot
+from src.core.autocrew import AUTOCREW_STATIONS
+from src.sonar import analysis_tools
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
-from src.commander.server import CHART_MAX_BYTES, STATE_MAX_BYTES, STATIONS
+from src.commander.server import (CHART_MAX_BYTES, OPFOR_ROLES, STATE_MAX_BYTES,
+                                  STATIONS)
 from src.sensors.esm import (
     ESMCorrelationEvidence,
     ESM_BROADBAND_SENSOR_COUNT,
@@ -38,11 +41,24 @@ def _age(now, stamp):
     return now - stamp if stamp is not None and 0 <= stamp <= now else None
 
 
+_SIGHTINGS_MAX = config.LOOKOUT_REPORTS_MAX
+
+
+def _sightings(game):
+    """Bridge-lookout reports, newest first; codes are localized in the browser."""
+    return [dict(time=str(row["stamp"])[:8],
+                 sighted=row["kind"] if row["code"] is None else None,
+                 code=row["code"],
+                 type=None if row["type_name"] is None else str(row["type_name"])[:80],
+                 bearing=_number(row["bearing"]), range_nm=_number(row["range_nm"]))
+            for row in reversed(getattr(game, "lookout_reports", [])[-_SIGHTINGS_MAX:])]
+
+
 def _own_navigation(game):
     ship = game.ship
     return {key: _number(getattr(ship, key)) for key in (
         "x", "y", "course", "speed", "target_course", "target_speed",
-        "rudder_angle", "yaw_rate")}
+        "rudder_angle", "yaw_rate", "turn_radius_nm")}
 
 
 def _observation(row, fields):
@@ -55,8 +71,9 @@ def _observation(row, fields):
 _TACTICAL_FIELDS = ("ref", "label", "domain", "source", "affiliation",
                     "bearing", "range_nm", "x", "y", "course", "speed_kn",
                     "altitude_m", "observer_x", "observer_y", "quality",
-                    "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm")
-_SONAR_FIELDS = ("ref", "label", "source", "classification", "bearing",
+                    "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
+                    "visual_class", "visual_type")
+_SONAR_FIELDS = ("ref", "label", "source", "classification", "profile", "bearing",
                  "range_nm", "x", "y", "depth_m", "course", "speed_kn",
                  "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg",
                  "range_uncertainty_nm", "observer_x", "observer_y",
@@ -131,6 +148,60 @@ def _direct_fire_observations(rows, refs):
     return result[:_MAP_ROWS_MAX]
 
 
+def _weather_station(game):
+    """Observation-safe weather & sonar analysis block for every role.
+
+    Own-ship atmosphere and flight weather; the ocean profile only after a
+    sonar bathythermograph measurement (``profile`` is null before)."""
+    data = game.weather_station_data()
+    a, f, p = data["atmosphere"], data["flight"], data["profile"]
+    atmosphere = {key: (_number(value) if isinstance(value, float) else value)
+                  for key, value in a.items()}
+    flight = {key: (_number(value) if isinstance(value, float) else value)
+              for key, value in f.items() if key != "limits"}
+    flight["limits"] = {key: _number(float(value)) for key, value in f["limits"].items()}
+    profile = None
+    if p is not None:
+        profile = dict(
+            age_s=_number(p["age_s"]), offset_nm=_number(p["offset_nm"]),
+            stale=bool(p["stale"]), thermocline_m=_number(p["thermocline_m"]),
+            water_depth_m=_number(p["water_depth_m"]),
+            depths_m=[_number(float(value)) for value in p["depths_m"]][:64],
+            speeds_m_s=[_number(float(value)) for value in p["speeds_m_s"]][:64],
+            sofar_axis_m=(None if p["sofar_axis_m"] is None
+                          else _number(float(p["sofar_axis_m"]))),
+            cz_bands_nm=[[_number(float(a_)), _number(float(b_))]
+                         for a_, b_ in p["cz_bands_nm"]][:8],
+            range_nm=_number(p["range_nm"]),
+            rays=[[[_number(float(r)), _number(float(z))] for r, z in ray][:64]
+                  for ray in p["rays"]][:9],
+            depth_edges_m=[_number(float(value)) for value in p["depth_edges_m"]][:32],
+            shadow=[[bool(cell) for cell in row][:32] for row in p["shadow"]][:32],
+            dip_relative_to_layer=p["dip_relative_to_layer"])
+    return dict(atmosphere=atmosphere, effects={key: bool(value) for key, value
+                                                in data["effects"].items()},
+                flight=flight, profile=profile)
+
+
+def _plot(game):
+    """The shared crew plot: detached copies plus the DR line's CPA to own ship."""
+    objects = []
+    for item in game.plot.objects:
+        # "shape", not "kind": the browser rejects any "kind" key as a
+        # possible entity-type leak.
+        row = {("shape" if key == "kind" else key):
+               (_number(value) if type(value) is float else value)
+               for key, value in item.items()}
+        if item["kind"] == "dr":
+            now_x, now_y = plot.dr_position(item, game.sim_t)
+            distance, seconds = plot.cpa(item, game.sim_t, game.ship.x, game.ship.y,
+                                         game.ship.course, game.ship.speed)
+            row.update(now_x=_number(now_x), now_y=_number(now_y),
+                       cpa_nm=_number(distance), cpa_s=_number(seconds))
+        objects.append(row)
+    return dict(objects=objects, max_objects=plot.MAX_OBJECTS, max_label=plot.MAX_LABEL)
+
+
 def _common(game, status, role):
     weather = game.world.weather_values()
     return dict(protocol=2, version=APP_VERSION, session=status["session"],
@@ -138,7 +209,7 @@ def _common(game, status, role):
                 seq=status["seq"], phase=status["phase"], role=role,
                 chart_revision=status["session"],
                 clock=dict(sim=_number(game.sim_t), mission=_number(game.mission_time),
-                           time_scale=game.time_scale, world=_number(game.world.hour)),
+                           world=_number(game.world.hour)),
                  environment=dict(
                      sea_state=game.world.sea_state,
                      effective_sea_state=_number(weather["sea_state"]),
@@ -148,6 +219,8 @@ def _common(game, status, role):
                      wind_speed_kn=_number(weather["wind_speed_kn"]),
                      rain_intensity=_number(weather["rain_intensity"]),
                      visibility_nm=_number(weather["visibility_nm"])),
+                weather_station=_weather_station(game),
+                plot=_plot(game),
                 mission=dict(name=localize(game.mission_name_display(), game.tr),
                              objective=localize(game.mission_objective_display(), game.tr),
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),
@@ -176,9 +249,28 @@ def known_chart(status, chart):
                 disclaimer=str(chart["disclaimer"])[:512])
 
 
+def _tma_summary(track, now):
+    """Bearing rate and own-ship legs, as on the uConsole TMA page."""
+    from src.ui.sonar_view import tma_observation_summary
+    summary = tma_observation_summary(track, now)
+    return dict(rate_deg_min=_number(summary["rate"]), legs=int(summary["legs"]))
+
+
+def _sonar_observer(game):
+    """The active sonar workstation's listening platform (frigate or boat)."""
+    observer = getattr(game, "sonar_observer", None)
+    return game.ship if observer is None else observer
+
+
+def _sonar_station_down(game):
+    down = getattr(game, "_sonar_down", None)
+    return bool(down()) if down is not None else game.damage.station_down("sonar")
+
+
 def _sonar_visualization(game, rows, sonar_refs):
     sonar = game.sonar
     receiver = sonar.receiver
+    observer = _sonar_observer(game)
     broadband = []
     long_available = bool(getattr(sonar, "broadband_long_history", ()))
     bb_source = (sonar.broadband_long_history if long_available
@@ -204,17 +296,34 @@ def _sonar_visualization(game, rows, sonar_refs):
     lf_bearings = list(sonar.lofar_bearings)[-len(lf_rows):]
     for stamp, bearing, values in zip(lf_times, lf_bearings, lf_rows):
         bins = [round(value, 5) for value in sonar.process_lofar_column(
-            _series(values, config.LOFAR_BINS), game.ship)]
+            _series(values, config.LOFAR_BINS), observer)]
         age = _age(game.sim_t, stamp)
         if age is not None and _number(bearing) is not None and bins:
             lofar.append(dict(age_s=age, bearing=_number(bearing), bins=bins))
     held = bool(sonar.peak_hold and sonar.peak_spectrum)
+    tools = game.sonar_tools
+    columns = list(getattr(sonar, "integration_columns", ()))
+    live = (analysis_tools.integrate([column[0] for column in columns],
+                                     tools.integration_s)
+            if columns else receiver.spectrum)
     spectrum = [round(value, 5) for value in sonar.process_lofar_column(
-        _series(sonar.peak_spectrum if held else receiver.spectrum,
-                config.LOFAR_BINS), game.ship)]
+        _series(sonar.peak_spectrum if held else list(live),
+                config.LOFAR_BINS), observer)]
+    demon_spectrum = (analysis_tools.integrate([column[2] for column in columns],
+                                               tools.integration_s)
+                      if columns else receiver.demon_spectrum)
+    vernier = None
+    if tools.vernier and columns:
+        low, high = analysis_tools.vernier_window(tools.lofar_cursor_hz)
+        native = analysis_tools.integrate([column[1] for column in columns],
+                                          tools.integration_s)
+        first, last = int(round(low * 2)), int(round(high * 2))
+        vernier = dict(low_hz=_number(low), high_hz=_number(high), step_hz=0.5,
+                       bins=[round(float(value), 5) for value in native[first:last + 1]])
 
     analysis = None
-    if isinstance(sonar.demon_analysis, dict):
+    # Automatic modulation analysis is a training aid only.
+    if isinstance(sonar.demon_analysis, dict) and game.operator_assist():
         data = sonar.demon_analysis
         hypotheses = []
         for item in list(data.get("harmonic_rpm_hypotheses", ()))[:20]:
@@ -263,7 +372,36 @@ def _sonar_visualization(game, rows, sonar_refs):
                                 contact.tma_quality), age_s=_age(
                                     game.sim_t, contact.tma_seen),
                             uncertainty_nm=row["range_uncertainty_nm"])
-        tma.append(dict(ref=row["ref"], bearings=points, solution=solution))
+        # Operator hypothesis with its residuals (aligned with the newest
+        # bearings sent above); the solver proposal only as a training aid.
+        hypothesis = game.tma_hypothesis(contact)
+        evaluation = game.tma_evaluation(contact)
+        all_points = [] if track is None else list(track.pts)
+        residual_rows = ([] if evaluation is None else
+                         [round(float(value), 3) for value in
+                          evaluation["residuals"][-len(points):]]) if points else []
+        proposal = None
+        if game.operator_assist():
+            candidate = sonar.tma_proposals.get(contact.target_id)
+            if candidate is not None and all_points:
+                ref = all_points[-1]
+                proposal = dict(course=_number(candidate.course),
+                                speed_kn=_number(candidate.speed),
+                                range_nm=_number(math.hypot(candidate.pos[0] - ref.fx,
+                                                            candidate.pos[1] - ref.fy)))
+        tma.append(dict(
+            ref=row["ref"], bearings=points, solution=solution,
+            hypothesis=dict(course=_number(hypothesis.course),
+                            speed_kn=_number(hypothesis.speed_kn),
+                            range_nm=_number(hypothesis.range_nm)),
+            summary=_tma_summary(track, game.sim_t),
+            evaluation=None if evaluation is None else dict(
+                rms_deg=_number(evaluation["rms_deg"]),
+                systematic_deg=_number(evaluation["systematic_deg"]),
+                fit=_number(evaluation["fit"]),
+                observability=_number(evaluation["observability"])),
+            residuals_deg=residual_rows if len(residual_rows) == len(points) else [],
+            proposal=proposal))
         if len(tma) == _TMA_CONTACTS_MAX:
             break
 
@@ -304,9 +442,9 @@ def _sonar_visualization(game, rows, sonar_refs):
         lofar=dict(frequency_min_hz=0.0, frequency_max_hz=config.LOFAR_FMAX_HZ,
                    bin_frequencies_hz=[config.lofar_bin_freq(i)
                                        for i in range(config.LOFAR_BINS)],
-                   history=lofar, spectrum=spectrum, held=held),
+                   history=lofar, spectrum=spectrum, held=held, vernier=vernier),
         demon=dict(frequency_min_hz=1.0, frequency_max_hz=80.0,
-                   bin_step_hz=1.0, spectrum=_series(receiver.demon_spectrum, 80),
+                   bin_step_hz=1.0, spectrum=_series(list(demon_spectrum), 80),
                    history=demon_history, analysis=analysis),
         tma=tma, bt=bt_data, active_echoes=echoes,
         receiver=dict(array=str(sonar._receiver_mode)[:16],
@@ -318,7 +456,8 @@ def _sonar_visualization(game, rows, sonar_refs):
 
 
 def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
-    tow = game.sonar.tow_status(game.ship.speed)
+    observer = _sonar_observer(game)
+    tow = game.sonar.tow_status(observer.speed)
     band = (game.sonar.band_low_hz, game.sonar.band_high_hz)
     presets = {"FULL": (0.0, 300.0), "LOW": (4.0, 80.0),
                "SHAFT": (8.0, 55.0), "MID": (20.0, 120.0)}
@@ -330,12 +469,12 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                               listen_bearing=_number(game.sonar.listen_bearing),
                               focus_ref=focus_ref if game.sonar.focus_locked else None,
                               target_ref=target_ref,
-                              station_down=game.damage.station_down("sonar"),
+                              station_down=_sonar_station_down(game),
                                tow=dict(state=str(tow["state"])[:32],
                                         payout=_number(tow["payout"]),
                                         available=bool(tow["available"]),
                                         handling_ok=bool(tow["handling_ok"]),
-                                        speed_kn=_number(game.ship.speed),
+                                        speed_kn=_number(observer.speed),
                                         speed_min_kn=config.SONAR_TOWED_HANDLING_MIN_KN,
                                         speed_max_kn=config.SONAR_TOWED_HANDLING_MAX_KN,
                                         depth_m=_number(tow["depth_m"]),
@@ -357,19 +496,30 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                               notch=bool(game.sonar.notch_enabled),
                               peak_hold=bool(game.sonar.peak_hold),
                               harmonic_hz=_number(game.sonar_harmonic_hz),
-                              harmonic_candidates_hz=[_number(value) for value in
-                                                      game.sonar_harmonic_candidates()],
+                              harmonic_candidates_hz=([_number(value) for value in
+                                                       game.sonar_harmonic_candidates()]
+                                                      if game.operator_assist() else []),
+                              tools=dict(
+                                  assist=bool(game.operator_assist()),
+                                  lofar_cursor_hz=_number(game.sonar_tools.lofar_cursor_hz),
+                                  demon_cursor_hz=_number(game.sonar_tools.demon_cursor_hz),
+                                  integration_s=int(game.sonar_tools.integration_s),
+                                  vernier=bool(game.sonar_tools.vernier),
+                                  shaft_hz=_number(game.sonar_tools.shaft_hz),
+                                  blade_hz=_number(game.sonar_tools.blade_hz),
+                                  operator_notch_hz=_number(
+                                      getattr(game.sonar, "operator_notch_hz", None)),
+                                  demon_band_hz=[_number(value) for value in
+                                                 game.sonar.receiver.demon_band_hz],
+                                  heterodyne_hz=_number(game.sonar.heterodyne_hz)),
                               audio_enabled=bool(game.sonar_audio_enabled),
                               volume=_number(game.sonar_volume),
-                              quiet_mode=bool(game.ship.quiet_mode)),
+                              quiet_mode=bool(getattr(observer, "quiet_mode", False))),
                 visualization=_sonar_visualization(game, rows, sonar_refs))
 
 
-def _weapons(game, rows, target_ref, asset_refs, direct_refs):
-    tactical = [row for row in rows if row.get("_opz")
-                and row["ref"] == target_ref][:_MAP_ROWS_MAX]
-    designated = next((_weapon_observation(row) for row in tactical
-                       if row["ref"] == target_ref), None)
+def _own_weapon_assets(game, asset_refs):
+    """Commanded own weapons in the water or air (torpedoes, ASROC, Nixie)."""
     torpedoes = [dict(ref=asset_refs[("torpedo", id(item))], x=_number(item.x), y=_number(item.y),
                       depth_m=_number(item.depth), course=_number(item.course),
                       state=str(item.state)[:32])
@@ -381,6 +531,15 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                     y=_number(item.y), depth_m=_number(item.depth), course=None,
                     state=str(item.state)[:32])
                for item in sorted(game.nixies, key=lambda decoy: decoy.seq)[:8]]
+    return torpedoes, asrocs, nixies
+
+
+def _weapons(game, rows, target_ref, asset_refs, direct_refs):
+    tactical = [row for row in rows if row.get("_opz")
+                and row["ref"] == target_ref][:_MAP_ROWS_MAX]
+    designated = next((_weapon_observation(row) for row in tactical
+                       if row["ref"] == target_ref), None)
+    torpedoes, asrocs, nixies = _own_weapon_assets(game, asset_refs)
     battery = getattr(game, "player_torpedo_battery", None)
     tubes = ([] if battery is None else [dict(
         tube=item.index, state=("ready" if item.loaded_weapon_key is not None else
@@ -430,6 +589,10 @@ def _radio(game, rows, ref_by_track):
         if row["source"] != "HFDF":
             continue
         observation = _observation(row, _RADIO_FIELDS)
+        frequency = row.get("_frequency_hz")
+        observation["frequency_khz"] = (round(frequency / 1e3, 1)
+                                        if frequency is not None and frequency > 0 else None)
+        observation["propagation"] = row.get("_propagation")
         observation["can_capture"] = (not station_down
                                       and row["age_s"] is not None
                                       and row["age_s"] <= config.RADAR_TRACK_STALE_S)
@@ -481,8 +644,12 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
     water_available = airborne and helo.water_entry_clear(game.world)
     water_depth = (float(game.world.depth_m(helo.x, helo.y))
                    if water_available else None)
-    thermocline = (float(game.world.thermocline_depth_m(helo.x, helo.y))
-                   if water_available else None)
+    # Charted depth is known geography; the layer only once the lowered
+    # dome has passed through it.
+    layer = (float(game.world.thermocline_depth_m(helo.x, helo.y))
+             if water_available and helo.dip_state != "STOWED" else None)
+    thermocline = (layer if layer is not None and helo.dip_depth_m >= layer
+                   else None)
     dip_environment = dict(
         water_depth_m=_number(water_depth),
         thermocline_m=_number(thermocline),
@@ -678,12 +845,15 @@ def _eloka(game, rows, esm_refs, candidate_refs):
         age = _age(game.sim_t, track.last_seen)
         if age is None or age > game.esm_picture.stale_s:
             continue
+        # Scores and catalog-derived radar type/threat/range are a training
+        # aid; with operator assistance off the browser gets the unranked
+        # library range lookup and raw parameters only (as the uConsole).
         candidates = [dict(ref=candidate_refs[(track.track_key, item.emitter_key)],
                             name=(game.eloka_emitter_name(item.emitter_key) or "")[:128],
-                            score=_number(item.score))
-                      for item in game.eloka_candidates(track)[:5]]
+                            score=None if item.score is None else _number(item.score))
+                      for item in game.eloka_display_candidates(track)[:32]]
         annotation = game.eloka_annotation_name(track.track_key)
-        analysis = game.eloka_analysis(track)
+        analysis = game.eloka_display_analysis(track)
         channel = next((item for item in game.ecm_jammer.channels
                         if item.track_key == track.track_key), None)
         threat = "unknown" if analysis is None else analysis.threat_level
@@ -720,6 +890,9 @@ def _eloka(game, rows, esm_refs, candidate_refs):
                 jamming=channel is not None),
             ambiguous=False if analysis is None else analysis.ambiguous,
             synthetic_assumption=bool(track.synthetic_assumption),
+            signal_db=_number(track.signal_db),
+            range_estimate_nm=_number(game.eloka_display_range(track)),
+            scan_period_s=_number(track.revisit_s) if track.revisit_s > 0.0 else None,
             auto_jamming=bool(game.ecm_jammer.auto_enabled),
             jamming=channel is not None,
             jamming_effectiveness=(None if channel is None else
@@ -783,14 +956,20 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                     count=sum(row["ref"] in asm_refs
                                               or row["affiliation"] == "HOSTILE"
                                               for row in rows if row.get("_opz")),
-                                    average_flood=_number(game.damage.avg_flood())),
+                                    average_flood=_number(game.damage.avg_flood()),
+                                    torpedoes=[dict(source=warning["source"],
+                                                    bearing=_number(warning["bearing"]),
+                                                    age_s=_number(warning["age_s"]))
+                                               for warning in game.torpedo_warnings()[:8]]),
                         systems=[dict(key=key, state=game.damage.station_state(key),
                                       down=game.damage.station_down(key))
                                  for key in sorted(game.damage.compartments)],
                          tactical_summary=[_observation(row, _TACTICAL_FIELDS)
                                            for row in rows
-                                          if row["source"] not in ("ESM", "FUSION")
-                                          and not row["source"].startswith("SONAR")]),
+                                          if row.get("_opz")
+                                          and row["source"] not in ("ESM", "FUSION")
+                                          and not row["source"].startswith("SONAR")],
+                        sightings=_sightings(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),
         "weapons": _weapons(game, rows, target_ref, asset_refs,
                             direct_fire_refs["weapons"]),
@@ -813,7 +992,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                     aa=game.aa_ammo,
                                      chaff_ready=game.softkill_store.ready > 0,
                                     ciws_ready=game.ciws_cooldown_s <= 0,
-                                    aa_ready=game.aa_cooldown_s <= 0),
+                                    aa_ready=game.aa_cooldown_s <= 0,
+                                    ciws_released=bool(game.ciws_authorized)),
                        asm_observations=[dict(
                            _observation(row, _TACTICAL_FIELDS),
                            ref=direct_fire_refs["opz"][row["ref"]])
@@ -826,7 +1006,9 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                       own_assets=dict(ship=_own_navigation(game),
                                        helicopter=_helicopter(
                                            game, rows, asset_refs, buoy_labels,
-                                           asset_only=True)["asset"])),
+                                           asset_only=True)["asset"],
+                                       weapons=[row for group in _own_weapon_assets(
+                                           game, asset_refs) for row in group])),
         "radio": _radio(game, rows, ref_by_track),
         "engine": dict(propulsion=dict(course=_number(game.ship.course),
                     target_course=_number(game.ship.target_course),
@@ -874,6 +1056,9 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
     for role in ROLE_NAMES:
         state = deepcopy(common)
         state["role"] = role
+        overview = [dict(station=key, enabled=bool(game.autocrew.enabled[key]),
+                         status=game.autocrew.status(game, key))
+                    for key in AUTOCREW_STATIONS]
         if role != "eloka":
             state["audio"]["events"] = [
                 event for event in state["audio"]["events"]
@@ -881,6 +1066,115 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
             ]
         state["autocrew"] = dict(enabled=bool(game.autocrew.enabled[role]),
                                  status=game.autocrew.status(game, role))
+        # The whole crew's automation state (as the uConsole F3 overview):
+        # own-crew configuration only, identical for every role.
+        state["autocrew_overview"] = overview
         state[role] = operational[role]
+        result[role] = state
+    return result
+
+
+def _opfor_common(game, status, role, boat):
+    """Common block of a submarine role: the boat's own instruments only.
+
+    No frigate plot, audio cue, autocrew or mission framing ever reaches the
+    opposing side; the weather block is read through the boat's workstation.
+    """
+    with game.sonar_perspective(boat.station):
+        common = _common(game, status, role)
+    common["plot"] = dict(objects=[], max_objects=plot.MAX_OBJECTS,
+                          max_label=plot.MAX_LABEL)
+    common["mission"]["objective"] = localize(
+        "uboot.objective" if not boat.sub.sunk else "uboot.objective_lost", game.tr)
+    common["audio"] = dict(events=[])
+    common["autocrew"] = dict(enabled=False, status="off")
+    common["autocrew_overview"] = []
+    return common
+
+
+def _uboot_weapons(game, boat, asset_refs):
+    """The boat's own torpedoes in the water (same rows as the frigate's)."""
+    return [dict(ref=asset_refs[("uboot_torpedo", id(item))], x=_number(item.x),
+                 y=_number(item.y), depth_m=_number(item.depth),
+                 course=_number(item.course), state=str(item.state)[:32])
+            for item in sorted(game.enemy_torpedoes, key=lambda weapon: weapon.id)
+            if ("uboot_torpedo", id(item)) in asset_refs][:16]
+
+
+def _uboot(game, boat, rows, target_ref, asset_refs):
+    """The crewed submarine's commander: own boat (legitimate truth), its
+    orders, weapons and the boat's own sonar contacts."""
+    sub = boat.sub
+    endurance = sub.endurance
+    battery = None
+    phase = None
+    if endurance is not None:
+        capacity = endurance.profile.battery_capacity_kwh
+        battery = (endurance.battery_kwh / capacity) if capacity else None
+        phase = str(endurance.phase)[:16]
+    launcher = (game.runtime_catalog.launchers[sub.weapon_battery.launcher_key]
+                if sub.weapon_battery is not None else None)
+    reason = sub.fire_readiness()
+    store = sub.countermeasure_store
+    alarms = sub.memory
+    state = ("sunk" if sub.sunk else "sinking" if sub.state == "SINKING"
+             else "manual" if sub.manual else "ai")
+    return dict(
+        navigation=dict(
+            x=_number(sub.x), y=_number(sub.y), course=_number(sub.course),
+            target_course=_number(sub.order_course), speed=_number(sub.speed),
+            target_speed=_number(sub.order_speed), depth_m=_number(sub.depth),
+            target_depth_m=_number(sub.order_depth),
+            safe_depth_m=_number(sub.safe_depth_m(game.world)),
+            max_depth_m=_number(float(sub.stype.max_depth_m)),
+            max_speed_kn=_number(sub.motion.maximum_speed_kn),
+            water_depth_m=_number(game.world.depth_m(sub.x, sub.y)),
+            cavitating=bool(sub.cavitating), noise=_number(sub.noise_level())),
+        status=dict(
+            state=state, damage=_number(sub.damage),
+            emergency_ascent=bool(sub.emergency_ascent),
+            blow_available=bool(sub.blow_available),
+            battery=_number(battery), endurance_phase=phase,
+            transmitting=bool(sub.transmitting)),
+        weapons=dict(
+            torpedoes=int(sub.torpedoes_left),
+            tubes_ready=(int(sub.weapon_battery.ready_count)
+                         if sub.weapon_battery is not None else 0),
+            reload_s=(_number(sub.weapon_battery.next_reload_s)
+                      if sub.weapon_battery is not None else None),
+            ready=reason is None, reason=reason,
+            arc_center_deg=(_number(launcher.arc_center_deg)
+                            if launcher is not None else None),
+            arc_width_deg=(_number(launcher.arc_width_deg)
+                           if launcher is not None else None),
+            decoys=(int(store.remaining_total) if store is not None else 0),
+            decoy_ready=bool(store is not None and store.ready > 0
+                             and sub._decoy_cd <= 0.0 and not sub.pending_decoys)),
+        alarms=dict(
+            ping_age_s=(_number(alarms["last_ping_age"])
+                        if math.isfinite(alarms["last_ping_age"]) else None),
+            torpedo_age_s=(_number(alarms["last_torpedo_age"])
+                           if math.isfinite(alarms["last_torpedo_age"]) else None)),
+        contacts=[_observation(row, _SONAR_FIELDS) for row in rows],
+        own_weapons=_uboot_weapons(game, boat, asset_refs),
+        designated_target_ref=target_ref,
+        feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
+                   message=str(localize(row["text"], game.tr))[:256])
+              for row in list(boat.feed)[-16:]])
+
+
+def build_opfor_states(game, status, boat, rows, target_ref, focus_ref, sonar_refs,
+                       asset_refs=None):
+    """Canonical views of the submarine roles, or ``{}`` without a boat."""
+    if boat is None:
+        return {}
+    result = {}
+    for role in OPFOR_ROLES:
+        state = _opfor_common(game, status, role, boat)
+        if role == "uboot":
+            state[role] = _uboot(game, boat, rows, target_ref, asset_refs or {})
+        else:
+            with game.sonar_perspective(boat.station):
+                state[role] = _sonar(game, rows, focus_ref, target_ref, sonar_refs)
         result[role] = state
     return result

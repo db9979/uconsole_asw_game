@@ -65,7 +65,7 @@ def test_hostile_classification_alone_still_withholds_fire_pending_confirmation(
     itself and must never auto-authorize weapons - the AA gun stays silent
     until the player separately confirms the attack."""
     aircraft = _place_close_low_aircraft(game, "unconfirmed1")
-    for _ in range(5):
+    for _ in range(45):  # one antenna revolution (4 s) plus margin
         game.update(0.1, audio_dt=0.1)
     _classify_as_hostile(game, aircraft)
     assert game.live_engage_confirm_pending == "unconfirmed1"
@@ -77,7 +77,7 @@ def test_hostile_classification_alone_still_withholds_fire_pending_confirmation(
 
 def test_manually_classified_hostile_aircraft_can_be_engaged_after_confirmation(game):
     aircraft = _place_close_low_aircraft(game, "hostile1")
-    for _ in range(5):
+    for _ in range(45):  # one antenna revolution (4 s) plus margin
         game.update(0.1, audio_dt=0.1)
     _classify_as_hostile(game, aircraft)
     assert game.confirm_live_engagement() is True
@@ -93,7 +93,7 @@ def test_reclassifying_hostile_again_requires_a_fresh_confirmation(game):
     IFF affiliation away and back to HOSTILE (or a stray re-classification)
     revokes the earlier confirmation and demands a renewed one."""
     aircraft = _place_close_low_aircraft(game, "hostile3")
-    for _ in range(5):
+    for _ in range(45):  # one antenna revolution (4 s) plus margin
         game.update(0.1, audio_dt=0.1)
     _classify_as_hostile(game, aircraft)
     assert game.confirm_live_engagement() is True
@@ -113,7 +113,7 @@ def test_reclassifying_hostile_again_requires_a_fresh_confirmation(game):
 
 def test_destroyed_icao24_is_removed_from_active_tracking(game):
     aircraft = _place_close_low_aircraft(game, "hostile2")
-    for _ in range(5):
+    for _ in range(45):  # one antenna revolution (4 s) plus margin
         game.update(0.1, audio_dt=0.1)
     _classify_as_hostile(game, aircraft)
     assert game.confirm_live_engagement() is True
@@ -133,7 +133,7 @@ def test_live_aircraft_track_id_is_indistinguishable_from_simulated_flights(game
     simulated_seq_before = game.flights.next_seq()
     aircraft = _place_close_low_aircraft(game, "abc123")
     assert aircraft.seq == simulated_seq_before + 1  # same monotonic counter
-    for _ in range(5):
+    for _ in range(45):  # one antenna revolution (4 s) plus margin
         game.update(0.1, audio_dt=0.1)
     track_id = f"A-{aircraft.seq}"
     tracks = {t.track_id for t in game.air_picture.tracks(game.sim_t, ("FLG",))}

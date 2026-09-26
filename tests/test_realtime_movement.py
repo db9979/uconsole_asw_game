@@ -17,7 +17,7 @@ def test_one_minute_at_one_x_uses_physical_ship_speed():
     ship = Ship(100.0, 100.0, course_deg=90.0, speed_kn=20.0)
     ship.update(60.0)
 
-    assert config.TACTICAL_TIME_SCALE == 1.0
+    assert not hasattr(config, "TACTICAL_TIME_SCALE")
     assert ship.x == pytest.approx(100.0 + 20.0 / 60.0)
     assert ship.y == pytest.approx(100.0)
 
@@ -39,21 +39,22 @@ def test_ship_speed_response_is_dt_agnostic_and_asymptotic():
     assert 0.0 < big.speed < 25.0
 
 
-def test_ship_rudder_authority_scales_quadratically_with_speed():
-    """W2: rudder force scales with dynamic pressure (~v^2), not linearly -
-    doubling speed should roughly quadruple the yaw rate a hard rudder order
-    builds up to (until the shared max-yaw-rate cap kicks in)."""
+def test_ship_turn_rate_scales_linearly_with_speed_nomoto():
+    """Phase 2: Nomoto steering r = K (V/L) delta - rudder force grows with
+    dynamic pressure but so does the hull's yaw damping, so the steady turn
+    rate doubles with speed and the turning circle stays nearly constant."""
     slow = Ship(100.0, 100.0, course_deg=0.0, speed_kn=4.0)
     slow.target_speed = 4.0
     slow.target_course = 90.0
     fast = Ship(100.0, 100.0, course_deg=0.0, speed_kn=8.0)
     fast.target_speed = 8.0
     fast.target_course = 90.0
-    for _ in range(20):
-        slow.update(1.0)
-        fast.update(1.0)
+    for _ in range(300):
+        for ship in (slow, fast):
+            ship.target_course = (ship.course + 90.0) % 360.0   # hold hard rudder
+            ship.update(1.0)
 
-    assert fast.yaw_rate == pytest.approx(4.0 * slow.yaw_rate, rel=0.1)
+    assert fast.yaw_rate == pytest.approx(2.0 * slow.yaw_rate, rel=0.02)
 
 
 def test_ship_drifts_with_ocean_current_when_stopped():

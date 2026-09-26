@@ -9,6 +9,7 @@ import threading
 import time
 
 import pytest
+from commander_web import top_level_files
 
 from src.commander import CommanderServer
 from src.commander import server as transport
@@ -16,8 +17,7 @@ from src.commander import server as transport
 
 @pytest.fixture
 def assets(tmp_path, monkeypatch):
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+    for name in top_level_files():
         (tmp_path / name).write_text(f"fixture {name}", encoding="utf-8")
     calls = []
 
@@ -137,11 +137,10 @@ def test_reject_invalid_ports(port, assets):
 
 
 def test_static_resources_cached_and_security_headers(server, assets):
-    for name in ("index.html", "app.js", "style.css", "voice.js", "voice-worklet.js",
-                 "sonar-audio-worklet.js"):
+    for name in top_level_files():
         (assets[0] / name).unlink()
-    for route, name in (("/", "index.html"), ("/app.js", "app.js"),
-                        ("/style.css", "style.css")):
+    for route, name in (("/", "index.html"), ("/sonar-audio-worklet.js", "sonar-audio-worklet.js"),
+                        ("/manual.css", "manual.css")):
         status, headers, body = request(server, route)
         assert status == 200 and body == f"fixture {name}".encode()
         assert headers["Cache-Control"] == "no-store"
@@ -318,3 +317,54 @@ def test_no_keepalive_or_pipeline_dispatch(server):
     host = "%s:%s" % server.address
     payload = f"GET / HTTP/1.1\r\nHost: {host}\r\nConnection: keep-alive\r\n\r\n".encode()
     assert raw_request(server, payload + payload).count(b"HTTP/1.1 200") == 1
+
+
+@pytest.fixture
+def proxied_server(assets):
+    """Local Commander listener that also answers behind an HTTPS proxy."""
+    instance = CommanderServer({"en": {"commander.web.title": "Commander"}},
+                               public_origin="https://crew.example.lan")
+    instance.start("127.0.0.1", 0)
+    try:
+        yield instance
+    finally:
+        instance.stop()
+
+
+@pytest.mark.parametrize("host_header, origin, expected, secure", [
+    ("{direct}", "http://{direct}", 200, False),           # LAN, no proxy
+    ("crew.example.lan", "https://crew.example.lan", 200, True),   # Host passed
+    ("{direct}", "https://crew.example.lan", 200, True),   # Host rewritten
+    ("crew.example.lan:443", "https://crew.example.lan", 200, True),
+    ("crew.example.lan", "http://{direct}", 403, None),    # mixed up
+    ("evil.test", "https://crew.example.lan", 403, None),
+    ("crew.example.lan", "https://evil.test", 403, None),
+])
+def test_local_listener_pairs_directly_and_through_https_proxy(
+        proxied_server, host_header, origin, expected, secure):
+    direct = "%s:%s" % proxied_server.address
+    headers = {"Host": host_header.format(direct=direct),
+               "Origin": origin.format(direct=direct),
+               "X-Forwarded-For": "192.168.1.20", "X-Forwarded-Proto": "https"}
+    assert request(proxied_server, "/", headers={"Host": headers["Host"]})[0] == (
+        403 if host_header == "evil.test" else 200)
+    status, response_headers, _ = request(
+        proxied_server, "/api/v2/pair", "POST",
+        {"code": proxied_server.pairing_code, "name": "Crew"}, headers)
+    assert status == expected
+    if expected == 200:
+        cookie = response_headers["Set-Cookie"]
+        assert "HttpOnly" in cookie and "SameSite=Strict" in cookie
+        assert ("; Secure" in cookie) is secure
+
+
+def test_without_public_origin_the_proxy_name_stays_rejected(server):
+    status = request(server, "/", headers={"Host": "crew.example.lan"})[0]
+    assert status == 403
+
+
+def test_header_values_may_contain_horizontal_tab(server):
+    host = "%s:%s" % server.address
+    response = raw_request(server, (f"GET / HTTP/1.1\r\nHost: {host}\r\n"
+                                    "X-Proxy-Note: a\tb\r\n\r\n").encode())
+    assert response.startswith(b"HTTP/1.1 200")

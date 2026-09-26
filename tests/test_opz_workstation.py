@@ -3,6 +3,7 @@
 from types import SimpleNamespace as NS
 
 import pygame
+import pytest
 
 from src.core import config
 from src.core.game import Game
@@ -10,6 +11,7 @@ from src.core.station import Station
 from src.sonar.sonar import Contact
 from src.ui import layout, nato_symbols
 from src.ui import stations_view
+from src.core.i18n import localize
 
 
 def press(game, key, mod=0):
@@ -131,39 +133,49 @@ def test_range_keys_cycle_display_scale_without_changing_sensor_maximum():
     assert game.opz_range_nm == 40.0
     press(game, pygame.K_PAGEUP)
     assert game.opz_range_nm == 80.0
-    assert game.radar_effective_range("surface") == config.RADAR_SURFACE_RANGE_NM
+    before = game.radar_effective_range("surface")
+    press(game, pygame.K_PAGEUP)
+    assert game.radar_effective_range("surface") == before
 
 
-def test_radar_sweep_bearing_turns_clockwise():
+def test_radar_sweep_turns_clockwise_in_simulation_time():
     game = opz_game()
-    game._t = 0.0
+    game.radar_scan_phase = 0.0
     assert game.radar_sweep_bearing() == 0.0
-    game._t = 1.0
-    assert game.radar_sweep_bearing() == 90.0
-    game._t = 2.0
-    assert game.radar_sweep_bearing() == 180.0
+    game._t += 5.0  # wall time alone does not turn the antenna
+    assert game.radar_sweep_bearing() == 0.0
+    game.paused = False
+    for _ in range(10):
+        game._update_sim(0.1)
+    assert game.radar_sweep_bearing() == pytest.approx(90.0)
+    for _ in range(10):
+        game._update_sim(0.1)
+    assert game.radar_sweep_bearing() == pytest.approx(180.0)
 
 
 def test_blip_glow_follows_sweep_and_then_expires():
     game = opz_game()
-    game._t = 1.0  # Sweep steht auf Ost/90 Grad.
+    game.radar_scan_phase = 90.0  # Sweep steht auf Ost/90 Grad.
     assert stations_view._radar_glow(game, 90.0) == 1.0
     assert 0.0 < stations_view._radar_glow(game, 0.0) < 1.0
     assert stations_view._radar_glow(game, 100.0) == 0.0
 
 
-def test_weather_has_no_radar_effect_until_sea_state_five():
+def test_sea_clutter_shortens_radar_range_progressively():
+    """Radar equation with GIT-type sea clutter: small losses in moderate
+    seas, the 1.0.0 anchors (-12.5 % / -25 % surface) at sea state 5/6."""
     game = opz_game()
-    for sea_state in range(5):
+    game.radar_rain_severity = lambda: 0.0  # isolate the clutter term
+    ranges = []
+    for sea_state in range(7):
         game.world.sea_state = sea_state
-        assert game.radar_weather_severity() == 0.0
-        assert game.radar_effective_range("surface") == config.RADAR_SURFACE_RANGE_NM
-        assert game.radar_effective_range("air") == config.RADAR_AIR_RANGE_NM
-    game.world.sea_state = 5
-    assert game.radar_weather_severity() == .5
-    assert game.radar_effective_range("surface") < config.RADAR_RANGE_NM
-    game.world.sea_state = 6
-    assert game.radar_weather_severity() == 1.0
+        ranges.append(game.radar_effective_range("surface"))
+        assert game.radar_effective_range("air") <= config.RADAR_AIR_RANGE_NM
+    assert ranges == sorted(ranges, reverse=True)
+    assert ranges[0] == pytest.approx(config.RADAR_SURFACE_RANGE_NM, rel=.01)
+    assert ranges[4] >= .93 * config.RADAR_SURFACE_RANGE_NM
+    assert ranges[5] == pytest.approx(.875 * config.RADAR_SURFACE_RANGE_NM, rel=.02)
+    assert ranges[6] == pytest.approx(.75 * config.RADAR_SURFACE_RANGE_NM, rel=.01)
 
 
 def test_separate_radars_publish_only_their_domains(monkeypatch):
@@ -180,13 +192,13 @@ def test_separate_radars_publish_only_their_domains(monkeypatch):
     game.asms = []
 
     game.surface_radar_on, game.air_radar_on = True, False
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert {track.kind for track in game.opz_tracks()
             if track.source.startswith("RADAR")} == {"SURFACE"}
 
     game.air_picture._tracks.clear()
     game.surface_radar_on, game.air_radar_on = False, True
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert {track.kind for track in game.opz_tracks()
             if track.source.startswith("RADAR")} == {"FLG"}
 
@@ -278,7 +290,7 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     original = stations_view.layout.blit_line
 
     def record(screen, text, *args, **kwargs):
-        lines.append(text)
+        lines.append(localize(text, game.tr))
         return original(screen, text, *args, **kwargs)
 
     monkeypatch.setattr(stations_view.layout, "blit_line", record)
@@ -288,8 +300,8 @@ def test_selected_track_sidebar_is_an_evidence_ledger(monkeypatch):
     assert any("Bearing" in line and "available" in line for line in lines)
     assert any("Range" in line and "available" in line for line in lines)
     assert any("Course" in line and "available" in line for line in lines)
-    assert "opz.line.depth_unavailable" in lines
-    assert "opz.line.speed_unavailable" in lines
+    assert game.tr("opz.line.depth_unavailable") in lines
+    assert game.tr("opz.line.speed_unavailable") in lines
     assert any("Age/Q" in line for line in lines)
     assert any("Affiliation" in line and "Neutral" in line for line in lines)
 
@@ -311,7 +323,7 @@ def test_selected_track_sidebar_reports_sonar_depth_and_speed(monkeypatch):
     original = stations_view.layout.blit_line
 
     def record(screen, text, *args, **kwargs):
-        lines.append(text)
+        lines.append(localize(text, game.tr))
         return original(screen, text, *args, **kwargs)
 
     monkeypatch.setattr(stations_view.layout, "blit_line", record)

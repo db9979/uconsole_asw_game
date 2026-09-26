@@ -206,7 +206,7 @@ def draw_map(game, tr, snap, body, fit) -> None:
     s.blit(chart, plot.topleft)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, plot, 1)
 
-    pygame.draw.rect(s, (14, 24, 18), legend)
+    pygame.draw.rect(s, config.COLOR_PANEL_BG, legend)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, legend, 1)
     row_h = int(layout.font(15).get_linesize() * 1.2)
     y = legend.y + 8

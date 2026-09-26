@@ -17,8 +17,8 @@ Navigation requests stage a separate course/speed proposal, never remote steerin
 Only local accept_navigation changes helm setpoints after atomic validation.
 navigation_proposal is omitted from snapshots when absent; otherwise it contains
 course/speed_kn (nullable) and status. It is not persisted or carried across worlds.
-The Commander overlay is identified by ``game.commander_open``. Local proposal
-decisions may run there, but not in other administration or paused gameplay.
+The simulation never pauses: local menus and overlays own local input only, so
+the phase stays live behind them and local proposal decisions remain possible.
 
 Epoch changes invalidate requests across input-owner/grant/connection changes;
 revision tracks annotations, observation enums/eligibility, crew target and
@@ -43,7 +43,7 @@ crew_target/proposal null.
 Results retain {id, status, reasoncode}; no legacy reason alias is published.
 The redacted chart is {revision: session, size_nm: 500, landmasses: [],
 disclaimer: ""}. Its revision stays session; redaction and return both republish
-the chart. Pause/administration retain the read-only observed picture.
+the chart.
 Helicopter x/y/course are published only while airborne (AUF/ZURUECK), never
 hangar defaults or the last position of a lost asset.
 Mission alerts use known remaining seconds crossing 300/120/60 or a transition
@@ -76,9 +76,11 @@ from src.sonar.sonar import SonarSystem
 from src.core import config
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
-from src.commander.server import (HOST_ROLE, SIMLOG_ENTRIES_MAX,
-                                  SIMLOG_MAX_BYTES, _json_bytes)
-from src.commander.projections import (ROLE_NAMES, build_role_states, known_chart,
+from src.sensors import lookout_id
+from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, SIMLOG_ENTRIES_MAX,
+                                  SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
+from src.commander.projections import (ROLE_NAMES, build_opfor_states,
+                                       build_role_states, known_chart,
                                        redacted_chart, redacted_state)
 
 
@@ -163,6 +165,10 @@ def _opz_dissolve_fusion(game, params, bindings):
     if binding[1] != "FUSION":
         return "source_owned"
     return game.dissolve_opz_fusion(binding[0])
+
+
+def _opz_set_ciws(game, params, _bindings):
+    return game.set_ciws_authorized(params["enabled"])
 
 
 def _opz_set_radar(game, params, _bindings):
@@ -313,6 +319,87 @@ def _sonar_set_harmonic(game, params, _bindings):
     return game.set_sonar_harmonic(params["frequency_hz"])
 
 
+def _sonar_set_cursor(game, params, _bindings):
+    return game.set_sonar_cursor(params["page"], params["frequency_hz"])
+
+
+def _sonar_mark_line(game, params, _bindings):
+    return game.mark_sonar_cursor(params["page"])
+
+
+def _plot_add(game, params, _bindings):
+    fields = {key: value for key, value in params.items()
+              if key not in ("shape", "x", "y", "label")}
+    result = game.plot_add(params["shape"], params["x"], params["y"],
+                           params["label"], **fields)
+    return "active_limit" if result == "full" else (
+        True if type(result) is int else result)
+
+
+def _plot_remove(game, params, _bindings):
+    return game.plot_remove(params["id"])
+
+
+def _plot_relabel(game, params, _bindings):
+    return game.plot_relabel(params["id"], params["label"])
+
+
+def _plot_clear(game, _params, _bindings):
+    return game.plot_clear()
+
+
+def _sonar_set_integration(game, params, _bindings):
+    return game.set_sonar_integration(params["seconds"])
+
+
+def _sonar_set_vernier(game, params, _bindings):
+    return game.set_sonar_vernier(params["enabled"])
+
+
+def _sonar_set_band(game, params, _bindings):
+    return game.set_sonar_band(params["low_hz"], params["high_hz"])
+
+
+def _sonar_set_operator_notch(game, params, _bindings):
+    return game.set_sonar_operator_notch(params["frequency_hz"])
+
+
+def _sonar_tas_side(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None
+            else game.set_tas_side(contact, params["action"]))
+
+
+def _sonar_set_demon_band(game, params, _bindings):
+    return game.set_sonar_demon_band(float(params["low_hz"]), float(params["high_hz"]))
+
+
+def _sonar_set_heterodyne(game, params, _bindings):
+    return game.set_sonar_heterodyne(float(params["frequency_hz"]))
+
+
+def _sonar_assign_profile(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None else
+            game.assign_contact_profile(contact, params["profile_key"]))
+
+
+def _sonar_tma_set(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return ("unknown_ref" if contact is None else game.set_tma_hypothesis(
+        contact, params["course"], params["speed_kn"], params["range_nm"]))
+
+
+def _sonar_tma_accept(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return "unknown_ref" if contact is None else game.accept_tma(contact)
+
+
+def _sonar_tma_copy_proposal(game, params, bindings):
+    contact = _sonar_contact(bindings, params["ref"])
+    return "unknown_ref" if contact is None else game.copy_tma_proposal(contact)
+
+
 def _sonar_designate_target(game, params, bindings):
     contact = _sonar_contact(bindings, params["ref"])
     return "unknown_ref" if contact is None else game.designate_sonar_target(contact)
@@ -422,8 +509,87 @@ def _opz_launch_chaff(game, params, bindings):
     return game.launch_chaff_at(binding[4])
 
 
+# Crew shot results in the transport's existing rejection vocabulary.
+_UBOOT_REASONS = {"no_torpedoes": "empty", "no_decoys": "empty",
+                  "reloading": "no_tube", "out_of_arc": "invalid_target"}
+
+
+def _uboot_result(result):
+    return _UBOOT_REASONS.get(result, result) if type(result) is str else result
+
+
+def _uboot_set_course(game, boat, params, _bindings):
+    return boat.sub.set_orders(course=params["course"])
+
+
+def _uboot_set_speed(game, boat, params, _bindings):
+    return boat.sub.set_orders(speed=params["speed_kn"])
+
+
+def _uboot_set_depth(game, boat, params, _bindings):
+    return boat.sub.set_orders(depth=params["depth_m"])
+
+
+def _uboot_fire(game, boat, params, bindings):
+    """Shoot down a contact's measured bearing (with its fix/TMA solution when
+    one is current) or down a free crew bearing; never at a hidden target."""
+    sub = boat.sub
+    bearing, range_nm = params["bearing"], params["range_nm"]
+    course = speed = None
+    if params["ref"] is not None:
+        contact = _sonar_contact(bindings, params["ref"])
+        if contact is None or boat.station.sonar.contacts.get(
+                contact.target_id) is not contact:
+            return "unknown_ref"
+        if not 0 <= game.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S:
+            return "stale_ref"
+        bearing = (contact.passive_bearing if contact.passive_bearing is not None
+                   else contact.bearing)
+        positioned = (contact.observed_x is not None and contact.observed_y is not None
+                      and contact.range_source in ("ping", "tma")
+                      and 0 <= game.sim_t - contact.range_seen
+                      < config.SONAR_CONTACT_LOST_S)
+        if positioned:
+            dx, dy = contact.observed_x - sub.x, contact.observed_y - sub.y
+            bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+            range_nm = min(40.0, max(0.05, math.hypot(dx, dy)))
+            if (contact.range_source == "tma" and contact.tma_course is not None
+                    and contact.tma_speed is not None
+                    and contact.tma_quality >= config.TMA_RANGE_MIN_QUALITY):
+                course = contact.tma_course % 360.0
+                speed = min(60.0, max(0.0, contact.tma_speed))
+        if _number(bearing) is None:
+            return "stale_ref"
+        bearing %= 360.0
+    return _uboot_result(sub.command_fire(bearing, range_nm, course, speed,
+                                          now=game.sim_t))
+
+
+def _uboot_decoy(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_decoy())
+
+
+def _uboot_blow(game, boat, params, _bindings):
+    return boat.sub.command_blow()
+
+
+_UBOOT_ACTION_HANDLERS = {
+    "acknowledge": lambda game, boat, params, _bindings: params == {},
+    "uboot_set_course": _uboot_set_course,
+    "uboot_set_speed": _uboot_set_speed,
+    "uboot_set_depth": _uboot_set_depth,
+    "uboot_fire": _uboot_fire,
+    "uboot_decoy": _uboot_decoy,
+    "uboot_blow": _uboot_blow,
+}
+
+
 _V2_ACTION_HANDLERS = {
     "acknowledge": _acknowledge,
+    "plot_add": _plot_add,
+    "plot_remove": _plot_remove,
+    "plot_relabel": _plot_relabel,
+    "plot_clear": _plot_clear,
     "bridge_set_course": _bridge_set_course,
     "bridge_set_speed": _bridge_set_speed,
     "sonar_classify": _sonar_classify,
@@ -436,6 +602,7 @@ _V2_ACTION_HANDLERS = {
     "opz_create_fusion": _opz_create_fusion,
     "opz_dissolve_fusion": _opz_dissolve_fusion,
     "opz_set_radar": _opz_set_radar,
+    "opz_set_ciws": _opz_set_ciws,
     "opz_set_range": _opz_set_range,
     "opz_designate_target": _opz_designate_target,
     "engine_set_telegraph": _engine_set_telegraph,
@@ -465,6 +632,19 @@ _V2_ACTION_HANDLERS = {
     "sonar_set_notch": _sonar_set_notch,
     "sonar_set_peak_hold": _sonar_set_peak_hold,
     "sonar_set_harmonic": _sonar_set_harmonic,
+    "sonar_set_cursor": _sonar_set_cursor,
+    "sonar_tma_set": _sonar_tma_set,
+    "sonar_assign_profile": _sonar_assign_profile,
+    "sonar_set_demon_band": _sonar_set_demon_band,
+    "sonar_tas_side": _sonar_tas_side,
+    "sonar_set_heterodyne": _sonar_set_heterodyne,
+    "sonar_tma_accept": _sonar_tma_accept,
+    "sonar_tma_copy_proposal": _sonar_tma_copy_proposal,
+    "sonar_mark_line": _sonar_mark_line,
+    "sonar_set_integration": _sonar_set_integration,
+    "sonar_set_vernier": _sonar_set_vernier,
+    "sonar_set_band": _sonar_set_band,
+    "sonar_set_operator_notch": _sonar_set_operator_notch,
     "sonar_designate_target": _sonar_designate_target,
     "helicopter_launch": _helicopter_launch,
     "helicopter_return": _helicopter_return,
@@ -487,14 +667,6 @@ _V2_ACTION_HANDLERS = {
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,
 }
-
-
-def _host_pause(game, params):
-    return game.set_paused(True)
-
-
-def _host_resume(game, params):
-    return game.set_paused(False)
 
 
 def _host_save(game, params):
@@ -548,8 +720,6 @@ def _host_instructor_event(game, params):
 # Solo-only host surface: a closed table, never a dynamic method lookup. The
 # world-replacing actions are listed so the rest of the frame can fail closed.
 _HOST_ACTION_HANDLERS = {
-    "host_pause": _host_pause,
-    "host_resume": _host_resume,
     "host_save": _host_save,
     "host_load": _host_load,
     "host_new_game": _host_new_game,
@@ -569,6 +739,13 @@ def _number(value):
 def _age(now, timestamp):
     stamp = _number(timestamp)
     return now - stamp if stamp is not None and 0 <= stamp <= now else None
+
+
+def _visual(game, label):
+    """Lookout class/type of a visual report; None for every other source."""
+    _level, code, type_key = lookout_id.decode(label)
+    name = game.lookout_type_name(type_key) if code is not None else None
+    return dict(visual_class=code, visual_type=None if name is None else name[:80])
 
 
 def _fresh(now, timestamp, lifetime):
@@ -627,7 +804,12 @@ class CommanderBridge:
         self._simlog_fingerprint = None
         self._v2_simlog_seq = 0
         self._v2_simlog = {role: deque(maxlen=SIMLOG_ENTRIES_MAX)
-                           for role in ROLE_NAMES}
+                           for role in ROLES}
+        # The crewed submarine's own contact refs: target_id -> (contact, ref, label).
+        self._opfor_refs = {}
+        self._uboot_audio_context = None
+        self._uboot_audio_receiver_sequence = None
+        self._uboot_audio_filter = None
         self._last_v2_states = None
         self._language = None
         self._last_publish = None
@@ -691,23 +873,14 @@ class CommanderBridge:
             raise RuntimeError("CommanderBridge requires the main thread")
 
     @staticmethod
-    def _phase(game, local=False):
+    def _phase(game):
+        # The mission never pauses: local menus and overlays only own local
+        # input, so the crew stays live behind them.
         if not game.running or game.game_over:
             return "ended"
         if game.in_menu or getattr(game, "main_menu", False):
             return "menu"
-        crew_overlay = bool(game.crew_overlay_allows_simulation())
-        if ((game.editor is not None and (local or not crew_overlay))
-                or game.splash_active):
-            return "blocked"
-        if game.paused:
-            return "paused"
-        commander = bool(getattr(game, "commander_open", False))
-        other_admin = (game.help_open or game.nations_open or game.quit_confirm
-                       or game.save_ui is not None or game.options_open)
-        if ((other_admin and (local or not crew_overlay)) or game.input_mode is not None
-                or (not local and game.administration_open and not crew_overlay)
-                or (local and game.administration_open and not commander)):
+        if game.splash_active:
             return "blocked"
         return "live"
 
@@ -807,12 +980,21 @@ class CommanderBridge:
                 display_id = str(track.label)[:64]
             else:
                 display_id = label
+            hf_mode = getattr(track, "propagation", None) if source == "HFDF" else None
             row = dict(ref=ref, label=label, _display_id=display_id,
+                       # Measured HF carrier and propagation mode (radio room only).
+                       _frequency_hz=(_number(getattr(track, "frequency_hz", None))
+                                      if source == "HFDF" else None),
+                       _propagation=hf_mode if hf_mode in ("GROUND", "SKY") else None,
                        domain={"AIS": "SURFACE", "SURFACE": "SURFACE",
                                "SUB": "SUBSURFACE", "TORP": "SUBSURFACE",
                                "FLG": "AIR", "ASM": "AIR"}.get(track.kind, "UNKNOWN"),
                         source=str(source)[:64], affiliation=game.opz_affiliation(key),
                         classification=getattr(track, "classification", None),
+                        profile=(game.profile_name(associated.player_profile)[:128]
+                                 if associated is not None
+                                 and getattr(associated, "player_profile", None)
+                                 else None),
                         bearing=_number(track.bearing),
                        range_nm=None,
                        x=_number(track.x) if positioned else None,
@@ -827,7 +1009,9 @@ class CommanderBridge:
                         quality=_number(track.display_quality(game.sim_t, lifetime)),
                        age_s=_age(game.sim_t, track.last_seen), fix_age_s=fix_age,
                        bearing_uncertainty_deg=_number(track.bearing_uncertainty_deg),
-                         range_uncertainty_nm=None, fixes=[], can_classify=contact is not None,
+                         range_uncertainty_nm=None,
+                         **_visual(game, getattr(track, "visual", None)),
+                         fixes=[], can_classify=contact is not None,
                          can_propose=contact is not None, _opz=key in opz_ids)
             dip_report = source in ("SONAR-DIP-BRG", "SONAR-DIPPING")
             buoy_report = source.startswith("SONAR-BUOY-")
@@ -974,7 +1158,14 @@ class CommanderBridge:
                                disclaimer="commander.chart.omitted" if omitted
                                else "commander.chart.disclaimer")
             self._chart_world = id(game.world)
-            self._chart_geography = dict(labels=[], airbases=[], depths=[])
+            self._chart_geography = dict(labels=[], airbases=[], depths=[], hazards=[])
+            # Charted wrecks and underwater rocks are public chart content.
+            charted = getattr(game.world, "charted_hazards", None)
+            for hazard in islice(charted() if charted is not None else (), 64):
+                self._chart_geography["hazards"].append(dict(
+                    kind=hazard.kind, x=_number(hazard.x_nm), y=_number(hazard.y_nm),
+                    top_depth_m=_number(hazard.top_depth_m),
+                    length_m=_number(hazard.length_m)))
             for land in islice(game.world.coast.landmasses, 128):
                 if getattr(land, "name", None) and hasattr(land, "centroid"):
                     x, y = land.centroid
@@ -1038,6 +1229,117 @@ class CommanderBridge:
             return True
         return False
 
+    def _opfor_tracks(self, game, boat):
+        """Rows and bindings of the crewed boat's own sonar contacts only."""
+        rows, bindings, refs = [], {}, {}
+        if boat is None:
+            self._opfor_refs = refs
+            return rows, bindings
+        observer = boat.station.observer
+        now = game.sim_t
+        for target_id, contact in islice(sorted(boat.station.sonar.contacts.items()), 128):
+            if not _fresh(now, contact.last_seen, config.SONAR_CONTACT_LOST_S):
+                continue
+            previous = self._opfor_refs.get(target_id)
+            ref = (previous[1] if previous is not None and previous[0] is contact
+                   else secrets.token_urlsafe(18))
+            refs[target_id] = (contact, ref)
+            fixes = [fix for fix in contact.active_fixes(now)
+                     if fix["source"] in ("PING", "TMA")]
+            source = contact.passive_source or "SONAR-BRG"
+            bearing = (contact.passive_bearing if contact.passive_bearing is not None
+                       else contact.bearing)
+            x = y = range_nm = course = speed = depth = None
+            fix_lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
+                            if contact.range_source == "ping"
+                            else config.SONAR_CONTACT_LOST_S)
+            if (contact.range_source in ("ping", "tma") and fixes
+                    and _fresh(now, contact.range_seen, fix_lifetime)
+                    and contact.observed_x is not None and contact.observed_y is not None):
+                latest = max(fixes, key=lambda item: (item["measured_at"], item["source"]))
+                source = "SONAR-" + latest["source"]
+                x, y = contact.observed_x, contact.observed_y
+                dx, dy = x - observer.x, y - observer.y
+                bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+                range_nm = math.hypot(dx, dy)
+                if contact.range_source == "ping":
+                    depth = contact.depth_est
+            if (_fresh(now, contact.tma_seen, config.SONAR_CONTACT_LOST_S)
+                    and contact.tma_quality >= config.TMA_RANGE_MIN_QUALITY
+                    and x is not None):
+                course, speed = contact.tma_course, contact.tma_speed
+            row = dict(
+                ref=ref, label=f"K{contact.id:02d}", domain="UNKNOWN",
+                source=str(source)[:64], affiliation="UNKNOWN",
+                classification=(contact.player_class
+                                if contact.player_class in config.PLAYER_CLASSES
+                                else None),
+                profile=(game.profile_name(contact.player_profile)[:128]
+                         if getattr(contact, "player_profile", None) else None),
+                bearing=_number(bearing), range_nm=_number(range_nm),
+                x=_number(x), y=_number(y), depth_m=_number(depth),
+                course=_number(course), speed_kn=_number(speed), altitude_m=None,
+                quality=_number(max(contact.quality, contact.confidence)),
+                age_s=_age(now, contact.last_seen),
+                fix_age_s=(_age(now, contact.range_seen) if x is not None else None),
+                bearing_uncertainty_deg=_number(contact.bearing_uncertainty_deg),
+                range_uncertainty_nm=(_number(contact.range_sigma_nm)
+                                      if x is not None else None),
+                observer_x=_number(contact.ship_observer_x),
+                observer_y=_number(contact.ship_observer_y),
+                released_to_opz=False, visual_class=None, visual_type=None,
+                fixes=[dict(
+                    source=fix["source"], x=_number(fix["x"]), y=_number(fix["y"]),
+                    measured_at=_number(fix["measured_at"]),
+                    fixed_at=_number(fix["fixed_at"]),
+                    measurement_age_s=_age(now, fix["measured_at"]),
+                    fix_age_s=_age(now, fix["fixed_at"]),
+                    uncertainty_nm=_number(fix["uncertainty_nm"]),
+                    depth_m=_number(fix["depth_m"]),
+                    depth_uncertainty_m=_number(fix["depth_uncertainty_m"]),
+                    quality=_number(fix["quality"])) for fix in fixes],
+                can_classify=True, can_propose=False, _opz=False)
+            rows.append(row)
+            bindings[ref] = (f"U-{target_id}", row["source"], contact, False, contact)
+        self._opfor_refs = refs
+        return rows, bindings
+
+    def _sync_opfor(self, game, server, phase):
+        """Bind the crewed submarine while a crew holds one of its roles."""
+        local = getattr(game, "local_side", "frigate") == "uboot"
+        leased = False
+        if hasattr(server, "station_leased"):
+            leased = any(server.station_leased(role) for role in OPFOR_ROLES)
+            if local and leased and hasattr(server, "revoke_station"):
+                # The uConsole itself crews the boat: no browser holds its roles.
+                for role in OPFOR_ROLES:
+                    server.revoke_station(role)
+                leased = False
+        if phase == "live" and (leased or local):
+            game.claim_opfor_sub()
+        elif game.opfor is not None and not local:
+            game.release_opfor_sub()
+            self._opfor_refs = {}
+
+    def _apply_opfor_action(self, game, action, params, role):
+        spec = V2_ACTION_REGISTRY.get(action)
+        if spec is None or role not in spec.stations:
+            # Defense in depth: the transport already admits only allowlisted
+            # actions per role; a submarine role never reaches frigate actions.
+            return False
+        boat = game.opfor
+        if boat is None:
+            return "not_ready"
+        _rows, bindings = self._opfor_tracks(game, boat)
+        if role == "uboot":
+            handler = _UBOOT_ACTION_HANDLERS.get(action)
+            return False if handler is None else handler(game, boat, params, bindings)
+        handler = _V2_ACTION_HANDLERS.get(action)
+        if handler is None or action == "sonar_set_release":
+            return False
+        with game.sonar_perspective(boat.station):
+            return handler(game, params, bindings)
+
     def _commands_v2(self, game, server, now, phase, *, realtime=False):
         if not hasattr(server, "drain_commands_v2"):
             return False
@@ -1061,6 +1363,13 @@ class CommanderBridge:
                     world_epoch=self._epoch, resource_revision=self._revision,
                     apply=lambda action, params: False)
                 continue
+            if envelope.role in OPFOR_ROLES:
+                server.apply_command_v2(
+                    envelope, now=apply_now, phase=phase, world_session=self._session,
+                    world_epoch=self._epoch, resource_revision=self._revision,
+                    apply=lambda action, params, role=envelope.role: (
+                        self._apply_opfor_action(game, action, params, role)))
+                continue
             if envelope.role == HOST_ROLE:
                 server.apply_command_v2(
                     envelope, now=apply_now, phase=phase, world_session=self._session,
@@ -1068,7 +1377,7 @@ class CommanderBridge:
                     apply=lambda action, params: (
                         _HOST_ACTION_HANDLERS[action](game, params)
                         if action in _HOST_ACTION_HANDLERS else False))
-                phase = self._phase(game)  # pause/resume changes what may follow
+                phase = self._phase(game)  # load/new game changes what may follow
                 self._slots_at = None  # a save may have changed the slot list
                 self._dirty = True  # publish the new host view immediately
                 continue
@@ -1107,11 +1416,9 @@ class CommanderBridge:
 
     def _settle_gate(self, game, server, phase):
         """Advance the epoch and drop queued input when the input owner changed."""
-        gate = (phase, bool(game.help_open),
-                bool(game.nations_open), bool(game.quit_confirm), game.save_ui,
-                bool(game.options_open), bool(getattr(game, "commander_open", False)),
-                game.input_mode, id(game.editor), bool(game.splash_active),
-                bool(game.paused), bool(game.in_menu), bool(game.main_menu),
+        # Only world lifecycle changes invalidate queued input; local overlays
+        # never stop the simulation, so they do not either.
+        gate = (phase, bool(game.splash_active), bool(game.in_menu), bool(game.main_menu),
                 bool(game.running), bool(game.game_over), id(server))
         if gate != self._gate:
             if self._gate is not None:
@@ -1183,14 +1490,13 @@ class CommanderBridge:
         phase = self._phase(game)
         connected = bool(server.connected)
         self._settle_gate(game, server, phase)
+        self._sync_opfor(game, server, phase)
         self._publish_sonar_audio(game, server, phase)
         self._publish_helicopter_audio(game, server, phase)
+        self._publish_uboot_audio(game, server, phase)
         self._status.update(phase=phase, connected=connected,
                             commands_allowed=self.allowed is True and connected and phase == "live")
-        redacted = (game.in_menu or game.main_menu
-                    or (game.editor is not None
-                        and not game.crew_overlay_allows_simulation())
-                    or game.splash_active)
+        redacted = game.in_menu or game.main_menu or game.splash_active
         self._publish_role_simlog(server, game, redacted)
         if redacted:
             self._refs.clear()
@@ -1230,7 +1536,7 @@ class CommanderBridge:
             self._dirty = True
             return
         if drained:
-            # A host command may have paused or resumed: settle that context change
+            # A host command may have loaded or started a world: settle that change
             # in this very frame, so the browser never sees the new state while the
             # bridge still owes an epoch bump (which would eat its next command).
             phase = self._phase(game)
@@ -1288,8 +1594,8 @@ class CommanderBridge:
         if redacted or world_replaced:
             unassigned = redacted_state(self._status)
             redacted_v2_chart = redacted_chart(self._status)
-            states = {role: deepcopy(unassigned) for role in (None, *ROLE_NAMES)}
-            charts = {role: deepcopy(redacted_v2_chart) for role in (None, *ROLE_NAMES)}
+            states = {role: deepcopy(unassigned) for role in (None, *ROLES)}
+            charts = {role: deepcopy(redacted_v2_chart) for role in (None, *ROLES)}
         else:
             current_esm = {}
             for track in game.eloka_tracks():
@@ -1300,7 +1606,7 @@ class CommanderBridge:
             self._esm_refs = current_esm
             current_candidates = {}
             for track in game.eloka_tracks():
-                for candidate in game.eloka_candidates(track)[:5]:
+                for candidate in game.eloka_display_candidates(track)[:32]:
                     key = (track.track_key, candidate.emitter_key)
                     previous = self._esm_candidate_refs.get(key)
                     ref = (previous[1] if previous is not None
@@ -1318,6 +1624,11 @@ class CommanderBridge:
                                 key=lambda item: item.seq)[:64]),
                 ("nixie", sorted(game.nixies,
                                  key=lambda item: item.seq)[:8]),
+                # The crewed boat's own torpedoes (its commanded weapons).
+                ("uboot_torpedo", [] if game.opfor is None else sorted(
+                    (item for item in game.enemy_torpedoes
+                     if item.launch_platform_id == game.opfor.sub.id
+                     and item.state == "RUN"), key=lambda item: item.id)[:16]),
             )
             for namespace, assets in bounded_assets:
                 for asset in assets:
@@ -1349,6 +1660,23 @@ class CommanderBridge:
                 {key: value[1] for key, value in current_buoy_labels.items()},
                 {key: value[1] for key, value in current_candidates.items()},
                 sonar_refs, direct_fire_refs))
+            boat = game.opfor
+            opfor_rows, opfor_bindings = self._opfor_tracks(game, boat)
+            opfor_sonar_refs = {row["ref"]: opfor_bindings[row["ref"]][2]
+                                for row in opfor_rows}
+            opfor_target = opfor_focus = None
+            if boat is not None:
+                opfor_target = next((row["ref"] for row in opfor_rows
+                                     if opfor_sonar_refs[row["ref"]] is boat.station.target),
+                                    None)
+                opfor_focus = next((row["ref"] for row in opfor_rows
+                                    if opfor_sonar_refs[row["ref"]]
+                                    is boat.station.selected_contact), None)
+            opfor_states = build_opfor_states(
+                game, self._status, boat, opfor_rows, opfor_target, opfor_focus,
+                opfor_sonar_refs, {key: value[1] for key, value in current_assets.items()})
+            for role in OPFOR_ROLES:
+                states[role] = opfor_states.get(role, deepcopy(states[None]))
             # The known chart is identical for every role and constant for a
             # world/session/language, so build it once and share one object.
             chart_key = (self._chart_world, self._session, self._language)
@@ -1360,6 +1688,9 @@ class CommanderBridge:
             known_v2_chart = self._chart_publication[1]
             charts = {None: redacted_chart(self._status)}
             charts.update({role: known_v2_chart for role in ROLE_NAMES})
+            # Without a crewed boat its roles stay redacted (state and chart).
+            charts.update({role: (known_v2_chart if game.opfor is not None
+                                  else deepcopy(charts[None])) for role in OPFOR_ROLES})
         server.publish_v2(states, charts)
         if ((getattr(server, "solo_mode", False) is True
              or getattr(server, "web_auth", None) is not None)
@@ -1372,7 +1703,7 @@ class CommanderBridge:
             navigation=self.navigation_proposal)
         self._publish_events_v2(server, game)
         self._last_v2_states = (None if redacted or world_replaced else
-                                {role: deepcopy(states[role]) for role in ROLE_NAMES})
+                                {role: deepcopy(states[role]) for role in ROLES})
         self._last_publish = now
         self._dirty = False
 
@@ -1398,9 +1729,6 @@ class CommanderBridge:
             self._slots_at = now
         return dict(
             protocol=2, session=self._session, epoch=self._epoch, phase=phase,
-            paused=bool(game.paused),
-            time_scale=dict(index=config.TIME_SCALE_DEFAULT,
-                            steps=list(config.TIME_SCALE_STEPS)),
             world_mode=game.world_mode, scenario=game.scenario_key,
             difficulty=dict(game.menu_difficulty),
             scenarios=[dict(key=key, fixed=config.SCENARIOS[key]["difficulty"] is not None)
@@ -1453,6 +1781,46 @@ class CommanderBridge:
                 pcm, world_session=self._session, world_epoch=self._epoch,
                 station_generation=generation)
             self._audio_receiver_sequence = sequence
+
+    def _publish_uboot_audio(self, game, server, phase):
+        """The crewed boat's own hull-array receiver, for its sonar room only."""
+        boat = game.opfor
+        eligible = (phase == "live" and boat is not None and not boat.sonar_down()
+                    and hasattr(server, "prepare_uboot_audio")
+                    and hasattr(server, "publish_uboot_audio"))
+        if not eligible:
+            if hasattr(server, "clear_uboot_audio"):
+                server.clear_uboot_audio()
+            self._uboot_audio_context = None
+            self._uboot_audio_receiver_sequence = None
+            self._uboot_audio_filter = None
+            return
+        sonar = boat.station.sonar
+        receiver = sonar.receiver
+        generation = server.prepare_uboot_audio(
+            world_session=self._session, world_epoch=self._epoch)
+        context = (id(receiver), self._session, self._epoch, generation)
+        if generation is None or context != self._uboot_audio_context:
+            self._uboot_audio_context = context if generation is not None else None
+            self._uboot_audio_receiver_sequence = receiver.sequence
+            self._uboot_audio_filter = (SonarSystem(seed=0, acoustic_profiles=())
+                                        if generation is not None else None)
+            return
+        for sequence, samples in receiver.blocks_since(self._uboot_audio_receiver_sequence):
+            audition = self._uboot_audio_filter
+            if sequence != self._uboot_audio_receiver_sequence + 1:
+                audition.reset_audition_audio()
+            audition.audition_mode = sonar.audition_mode
+            audition.band_low_hz = sonar.band_low_hz
+            audition.band_high_hz = sonar.band_high_hz
+            audition.notch_enabled = sonar.notch_enabled
+            audition._own_line_hz = sonar._own_line_hz
+            audition.gain_db = sonar.gain_db
+            server.publish_uboot_audio(
+                sonar_pcm_s16le(audition.listening_samples(samples, block_id=sequence)),
+                world_session=self._session, world_epoch=self._epoch,
+                station_generation=generation)
+            self._uboot_audio_receiver_sequence = sequence
 
     def _publish_helicopter_audio(self, game, server, phase):
         receiver = game.helo_receiver
@@ -1516,7 +1884,10 @@ class CommanderBridge:
                 if row["seq"] <= self._v2_simlog_seq:
                     continue
                 truth = deepcopy(row.get("data") or game._simlog_state_data())
-                for role in ROLE_NAMES:
+                for role in ROLES:
+                    if self._last_v2_states[role].get("role") != role:
+                        # A redacted role (no crewed submarine) has no history.
+                        continue
                     self._v2_simlog[role].append(dict(
                         seq=row["seq"], t=row["t"], stamp=row["stamp"],
                         state=deepcopy(self._last_v2_states[role]),
@@ -1539,7 +1910,7 @@ class CommanderBridge:
             self._simlog_fingerprint = fingerprint
 
     def _publish_events_v2(self, server, game):
-        public = {role: [] for role in ROLE_NAMES}
+        public = {role: [] for role in ROLES}
         private = []
         for stored in self._events:
             row = {key: stored[key] for key in ("seq", "kind", "severity")}
@@ -1558,7 +1929,7 @@ class CommanderBridge:
     def _decide(self, game, accepted):
         self._main_thread()
         if (self._identity != (id(game.world), id(game.sonar))
-                or self._phase(game, local=True) != "live"
+                or self._phase(game) != "live"
                 or self.allowed is not True or self._server is None
                 or not self._server.connected
                 or self._proposal is None or self._proposal["status"] != "pending"):
@@ -1588,7 +1959,7 @@ class CommanderBridge:
         self.navigation_error = "commander.local.error.proposal"
         proposal = self._navigation_proposal
         if (self._identity != (id(game.world), id(game.sonar))
-                or self._phase(game, local=True) != "live"
+                or self._phase(game) != "live"
                 or not self.allowed or self._server is None or not self._server.connected
                 or proposal is None or proposal["status"] != "pending"):
             return False

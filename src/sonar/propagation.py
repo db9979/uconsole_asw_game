@@ -20,7 +20,11 @@ MAX_PATHS = 4
 MAX_SEGMENTS_PER_PATH = 3
 PROFILE_SAMPLES = 21
 PROFILE_MAX_DEPTH_M = 400.0
+DEEP_PROFILE_STEP_M = 100.0
 REPRESENTATIVE_PASSIVE_BAND_HZ = 100.0
+# Historical per-band absorption folded into path loss; the sonar equation
+# replaces it with Francois-Garrison (src/sonar/equation.py).
+ABSORPTION_DB_PER_NM = {100.0: .012, 400.0: .025, 1600.0: .055, 6400.0: .12}
 CANONICAL_FREQUENCY_BANDS_HZ = (100.0, 400.0, 1600.0, 6400.0)
 
 
@@ -201,8 +205,7 @@ def propagate(source_x_nm: float, source_y_nm: float, source_depth_m: float,
         PathKind.SURFACE: 5.0 + .6 * sea_state,
         PathKind.BOTTOM: 7.0,
     }
-    absorption_db_nm = {100.0: .012, 400.0: .025,
-                        1600.0: .055, 6400.0: .12}[frequency]
+    absorption_db_nm = ABSORPTION_DB_PER_NM[frequency]
     paths = []
     for order, (kind, points) in enumerate(candidates):
         segments = tuple(_segment(first, second, profile, terrain_blocked)
@@ -258,3 +261,100 @@ def passive_range_factor(result: PropagationResult, direct_range_nm: float) -> f
     baseline_loss = 20.0 * math.log10(1.0 + distance)
     excess_loss = max(0.0, result.best_path.loss_db - baseline_loss)
     return 10.0 ** (-excess_loss / 20.0)
+
+
+# --- ray-traced transmission loss (physics upgrade, phase 4) -----------------
+
+RAY_REFERENCE_KEY = (5.0, 60.0, 13.0, 1000.0, "sand", 10.0)
+RAY_REFERENCE_RECEIVER_M = 50.0
+RAY_REFERENCE_RANGE_NM = 20.0
+_ray_anchor_db: float | None = None
+
+
+def _profile_from_key(key: tuple):
+    from src.world.ocean import (
+        SALINITY_PSU, mackenzie_sound_speed, temperature_profile_c)
+
+    _sensor, mld, sst, depth, _sediment, _wind = key
+    maximum = min(depth, PROFILE_MAX_DEPTH_M)
+    depths = [maximum * index / (PROFILE_SAMPLES - 1)
+              for index in range(PROFILE_SAMPLES)]
+    # Below the upper column the full temperature profile continues to the
+    # seabed (coarse steps), so a deep sound-channel minimum can form.
+    below = PROFILE_MAX_DEPTH_M + DEEP_PROFILE_STEP_M
+    while below < depth:
+        depths.append(below)
+        below += DEEP_PROFILE_STEP_M
+    if depth > PROFILE_MAX_DEPTH_M:
+        depths.append(float(depth))
+    speeds = [mackenzie_sound_speed(temperature_profile_c(z, mld, sst),
+                                    SALINITY_PSU, z) for z in depths]
+    return depths, speeds
+
+
+def _spherical_db(distance_nm: float) -> float:
+    return 20.0 * math.log10(max(1.0, distance_nm * 1852.0))
+
+
+def ray_anchor_db() -> float:
+    """Excess of the reference environment at the reference range; the
+    passive figure of merit is anchored there so 1.0.0 ranges hold."""
+    global _ray_anchor_db
+    if _ray_anchor_db is None:
+        from src.sonar import raytrace
+
+        table = raytrace.cached_table(RAY_REFERENCE_KEY, _profile_from_key)
+        _ray_anchor_db = raytrace.lookup_tl_db(
+            table, REPRESENTATIVE_PASSIVE_BAND_HZ, RAY_REFERENCE_RANGE_NM,
+            RAY_REFERENCE_RECEIVER_M, RAY_REFERENCE_KEY[3]) - _spherical_db(
+                RAY_REFERENCE_RANGE_NM)
+    return _ray_anchor_db
+
+
+def ray_environment_key(world, sensor_depth_m: float, mid_x: float,
+                        mid_y: float) -> tuple | None:
+    """Quantized environment at the path midpoint (None without an ocean)."""
+    from src.sonar.raytrace import quantize
+
+    ocean = getattr(world, "ocean", None)
+    if ocean is None:
+        return None
+    depth = max(10.0, float(world.depth_m(mid_x, mid_y)))
+    return (quantize(sensor_depth_m, 10.0 if sensor_depth_m > 30.0 else 5.0) or 5.0,
+            max(10.0, quantize(world.thermocline_depth_m(mid_x, mid_y), 10.0)),
+            quantize(ocean.sea_surface_temperature_c(getattr(world, "hour", 12.0)), 1.0),
+            quantize(depth, 25.0 if depth < 1000.0 else 100.0) or 25.0,
+            world.seabed_at(mid_x, mid_y),
+            quantize(float(getattr(world, "wind_speed_kn", 10.0)), 5.0))
+
+
+def ray_excess_db(world, sensor_x: float, sensor_y: float, sensor_depth_m: float,
+                  target_x: float, target_y: float, target_depth_m: float,
+                  frequency_hz: float) -> float | None:
+    """Ray-traced loss beyond spherical spreading, relative to the anchor.
+
+    Reciprocity: the own sensor is the ray source, the target the receiver,
+    so one cached table serves every target seen by that sensor."""
+    from src.sonar import raytrace
+
+    mid_x, mid_y = (sensor_x + target_x) * .5, (sensor_y + target_y) * .5
+    key = ray_environment_key(world, sensor_depth_m, mid_x, mid_y)
+    if key is None:
+        return None
+    table = raytrace.cached_table(key, _profile_from_key)
+    distance = math.hypot(target_x - sensor_x, target_y - sensor_y)
+    tl = raytrace.lookup_tl_db(table, frequency_hz, distance,
+                               min(target_depth_m, key[3]), key[3])
+    return tl - _spherical_db(distance) - ray_anchor_db()
+
+
+def ray_reference_excess_db(range_nm: float, frequency_hz: float) -> float:
+    """Ray excess of the reference environment at ``range_nm`` (relative to
+    the 20 NM anchor). Subtract it to re-anchor a short-range figure of
+    merit at its own calibration range."""
+    from src.sonar import raytrace
+
+    table = raytrace.cached_table(RAY_REFERENCE_KEY, _profile_from_key)
+    return (raytrace.lookup_tl_db(table, frequency_hz, range_nm,
+                                  RAY_REFERENCE_RECEIVER_M, RAY_REFERENCE_KEY[3])
+            - _spherical_db(range_nm) - ray_anchor_db())

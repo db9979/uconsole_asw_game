@@ -17,15 +17,10 @@ def test_every_emitted_feed_category_has_a_visible_tag():
     assert all(tag != "?" for _color, tag in config.FEED_CATEGORIES.values())
 
 
-def test_pause_and_mission_result_are_retained_in_event_feed():
+def test_mission_result_is_retained_in_event_feed():
     game = Game(seed=9191, start_menu=False)
     game.feed.clear()
 
-    assert game.set_paused(True)
-    assert localize(game.feed.entries[-1].text, game.tr) == game.tr("status.paused")
-    assert game.feed.entries[-1].category == "welt"
-
-    game.set_paused(False)
     game._end_mission(False, message("end.reason.time_limit"))
     assert localize(game.feed.entries[-1].text, game.tr) == game.tr(
         "runtime.mission.lost")
@@ -65,3 +60,18 @@ def test_context_help_covers_new_station_commands():
     eloka = _help_keys(Station.ELOKA)
     for key in ("F / Shift+F / B", "J", "Shift+J", "A", "M"):
         assert key in eloka
+
+
+def test_flash_banner_follows_game_language(monkeypatch):
+    from src.core.game import Game
+    from src.core.i18n import localize, message
+    from src.ui import layout
+
+    game = Game(seed=5, start_menu=False, audio_enabled=False, language="de")
+    shown = []
+    original = layout.blit_block
+    monkeypatch.setattr(layout, "blit_block", lambda surface, text, *args, **kwargs: (
+        shown.append(localize(text)), original(surface, text, *args, **kwargs))[1])
+    game.flash(message("runtime.contacts.none"), 5.0)
+    game.draw()
+    assert "Keine Kontakte" in shown and "No contacts" not in shown

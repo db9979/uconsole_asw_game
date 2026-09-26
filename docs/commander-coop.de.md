@@ -58,7 +58,7 @@ Fehlerberichten.
   Anfrage; eine genehmigte Station wird automatisch geöffnet. Danach kann jede
   behaltene Lease über die stabile Stationsauswahl geöffnet werden.
 - Eine Station mit aktiver Lease ist auf der uConsole schreibgeschützt, bis der
-  Host ihre Lease widerruft. F9-Verwaltung, Pause und das Umschalten der lokalen
+  Host ihre Lease widerruft. F9-Verwaltung und das Umschalten der lokalen
   Anzeige auf eine andere Station bleiben verfügbar; behaltene inaktive
   Browser-Leases bleiben exklusiv.
 - Kontaktauswahl, Kartenverschiebung/-zoom/-verfolgung, Arbeitsplatzseiten,
@@ -96,11 +96,11 @@ Fehlerberichten.
 - Die Sprachkoordination erfolgt über eine vorhandene externe Sprachverbindung
   oder im direkten Gespräch. Es gibt weder integrierten Chat noch Mikrofonaufnahme
   oder allgemeine Befehlsausführung.
-- Manuelle Pause, Fokusverlust, Speichern/Laden, Beenden, Nationen, echte Editoren,
-  Menüs und der Splash-Sperrbildschirm sperren Remote-Änderungen. Bei einer aktiven
-  Besatzungsstation lassen F1-Hilfe, der spielinterne F8-Analyzer, die
-  F9-Besatzungsverwaltung und die F10-Optionen Simulation und Remote-Stationen
-  weiterlaufen; ohne aktive Besatzung behalten sie ihr normales Pausenverhalten.
+- Die Mission läuft immer in Echtzeit und lässt sich nicht pausieren. Lokale Menüs
+  und Overlays (F1-Hilfe, Optionen, Speichern/Laden, Beenden-Abfrage, Nationen, der
+  spielinterne F8-Analyzer, F9-Verwaltung) und ein Fokusverlust lassen Simulation
+  und Remote-Stationen weiterlaufen. Nur Hauptmenü und Splash sperren
+  Remote-Änderungen.
   Unbekannte oder veraltete Beobachtungen liefern nicht allein deshalb zusätzliche
   Informationen, weil Commander sie auswählt. Menü-, Editor- und Splash-Seiten
   geben keine vorgenerierte taktische Welt preis.
@@ -127,8 +127,7 @@ bezeichnet ihre projizierten Sonarbojen kurz als `SB01`, `SB02` und so weiter.
 
 Das Wetterinstrument der Brücke zeigt den maßgeblichen Tag-/Nachtzustand,
 effektiven Seegang, Wetterart, Wind, Regen und Sicht. Seine zurückhaltende Wellen-
-und Regenanimation folgt der projizierten Simulationszeit und friert bei Pause
-ein. Die Helikopterbereitschaft zeigt Wetterfreigaben für Start und Tauchsonar
+und Regenanimation folgt der projizierten Simulationszeit. Die Helikopterbereitschaft zeigt Wetterfreigaben für Start und Tauchsonar
 sowie Querwind getrennt an. Der Autocrew-Status ist in jeder Browserrolle nur
 lesbar; gesteuert wird Autocrew lokal durch den Host.
 
@@ -168,14 +167,30 @@ meldet abgelaufene Aktionen in der Warteschlange als Ablehnungen.
 
 ## Web-Konsole und Solo-Modus
 
-Die Browser-Konsole ist für einen Desktop-PC gedacht, nicht für die uConsole: ein
-Viewport ohne Seitenscroll, eine Stations-Tab-Leiste (1-9 wählen eine Station,
-`[`/`]` schalten durch die gehaltenen), Kontakte links neben einem Instrument in
-voller Höhe, rechts Steuerung und Kontaktdetail. Ab etwa 1800 px Breite bekommt das
-Detail eine vierte Spalte und die Sonar-Übersicht zeigt alle sechs Plots. Die Rückkehr
-zu einer bereits besuchten Station zeichnet aus einem Cache (Kartenzoom, Auswahl und
-Eingaben bleiben); der erste Besuch einer Station braucht einen Round-Trip. Schmale
-Fenster fallen auf eine einzelne, nicht optimierte Spalte zurück.
+Die Browser-Konsole ist für einen Desktop-PC mit großem Monitor gedacht, nicht
+für die uConsole. Sie ist ein dunkles OPZ-Layout in einem Viewport ohne
+Seitenscroll:
+
+- eine schmale Statusleiste mit den Stations-Tabs (1-9 wählen eine Station,
+  `[`/`]` schalten durch die gehaltenen), Missionsname und Phase, Missions- und
+  Weltuhr, UTC, Verbindungsstatus sowie Einstellungs- und Hilfemenü;
+- ein Alarmband, das unter der Statusleiste pulsiert, solange eine neue Warnung
+  aus dem Einsatzprotokoll frisch ist;
+- das Instrument (Karte, Sonar-Plots, Schadensbild, ...) groß in der Mitte, mit
+  Docks ringsum: Kontakte links, der Stationsbereich rechts, das Kontaktdetail
+  darunter und das Einsatzprotokoll als Schublade unter dem Instrument. `,` und
+  `.` klappen Kontakt- und Stationsdock ein oder aus, `L` das Protokoll; jedes
+  Dock hat dafür auch einen eigenen Knopf.
+
+Ab 1600 px Breite sind alle drei Spalten offen; ab 2400 px (2560-px- und
+4K-Monitore) bekommt das Kontaktdetail eine vierte Spalte, die Stationskarten
+laufen zweispaltig und der Hubschrauber zeigt die Akustik-Konsole neben der
+Karte. Die Schrift wächst mit dem Bildschirm. Die Sonar-Übersicht zeigt ab
+1800 px alle sechs Plots. Leitfaden, Ausguck und Kontaktbibliothek öffnen als
+Overlay über der laufenden Station (`Esc` schließt sie). Die Rückkehr zu einer
+bereits besuchten Station zeichnet aus einem Cache (Kartenzoom, Auswahl und
+Eingaben bleiben); der erste Besuch einer Station braucht einen Round-Trip.
+Schmale Fenster fallen auf eine einzelne scrollende Spalte zurück.
 
 Der **Solo-Modus** lässt eine Person das ganze Spiel aus einem Browser bedienen,
 während die uConsole der Simulations-Server bleibt. Start mit
@@ -186,7 +201,7 @@ Direktfeuer, Sonar-Audio und SimLog, es kann nur ein Browser koppeln (ein zweite
 erhält `session_limit`, bis der erste im Roster entfernt wird), und Leases verfallen
 nicht. Ein Moduswechsel widerruft alle Sitzungen und rotiert den Code.
 
-Der Solo-Browser erhält zusätzlich eine **Spielsteuerungsleiste**: Pause/Fortsetzen,
+Der Solo-Browser erhält zusätzlich eine **Spielsteuerungsleiste**:
 Speichern und Laden (Slots 1-5) sowie Neues Spiel (Szenario,
 Welt, Schwierigkeit, optionaler Seed). Laden oder ein neues Spiel ersetzt die Welt,
 der Browser bleibt aber gekoppelt; alles, was er für die alte Welt vorbereitet hatte,

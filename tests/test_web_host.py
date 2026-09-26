@@ -49,6 +49,40 @@ def test_web_bind_is_explicit_and_limited_to_private_ipv4(tmp_path, monkeypatch)
     assert calls == [("https://game.test", 9000, "192.168.178.36")]
 
 
+def test_local_game_accepts_a_proxy_origin_for_remote_crew(monkeypatch):
+    import main as entry
+
+    consoles = []
+
+    class FakeConsole:
+        public_origin = None
+        solo = False
+
+        def autostart_solo(self):
+            self.solo = True
+
+    class FakeGame:
+        def __init__(self, **kwargs):
+            assert kwargs["web_mode"] is False
+            self.commander = FakeConsole()
+            consoles.append(self.commander)
+
+        def run(self):
+            pass
+
+    monkeypatch.setattr(entry, "Game", FakeGame)
+    monkeypatch.setattr(entry, "load_preferences", lambda: type(
+        "Prefs", (), {"fullscreen": False, "audio": False})())
+    assert entry.main(["--public-origin", "https://crew.example.lan",
+                       "--solo-crew", "5"]) == 0
+    assert consoles[-1].public_origin == "https://crew.example.lan"
+    assert consoles[-1].solo
+    for origin in ("http://crew.example.lan", "https://crew.example.lan/",
+                   "https://crew.example.lan/path"):
+        with pytest.raises(SystemExit):
+            entry.main(["--public-origin", origin, "5"])
+
+
 def test_web_server_rejects_public_and_wildcard_binds(tmp_path):
     auth = WebHostAuth(tmp_path / "web-host.json")
     server = CommanderServer(web_auth=auth, public_origin="https://game.test")
@@ -162,7 +196,10 @@ def test_host_setup_login_and_station_transfer(tmp_path):
         assert request(server, "/api/v2/session", cookie=crew_cookie)[2]["station"] is None
         rebased = request(server, "/api/v2/session", cookie=replacement_cookie)[2]
         assert rebased["host"] is not None
-        assert all(row["status"] == "mine" for row in rebased["stations"].values())
+        # The host holds every frigate station; the submarine roles are
+        # never part of the web-host room.
+        assert set(station for station, detail in rebased["stations"].items()
+                   if detail["status"] == "mine") == set(STATIONS)
     finally:
         server.stop()
 
@@ -247,8 +284,10 @@ def test_web_host_publishes_game_without_local_display_work(tmp_path, monkeypatc
                 game.commander.server._web_host_digest]["presence"] = time.monotonic() - 20
         game.draw = lambda: (_ for _ in ()).throw(AssertionError("headless drew a frame"))
         game.auto_quit = 2
+        before = game.sim_t
         game.run()
-        assert game.paused is True
+        # No auto-pause without a browser host: the mission keeps real time.
+        assert not hasattr(game, "paused") and game.sim_t > before
     finally:
         game.commander.stop()
         game.audio.shutdown()

@@ -1,0 +1,96 @@
+/* Screens outside a workstation: pairing, lobby, host menu and the SimLog page. */
+
+.pairing {
+  display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: clamp(2rem, 6vw, 8rem);
+  width: 100%; max-width: 80rem; min-height: 0; margin: 0 auto; padding: clamp(2rem, 8vh, 7rem) 2rem; overflow-y: auto;
+}
+.pair-intro h1 { max-width: 12ch; margin-bottom: 1.2rem; font-size: clamp(2.2rem, 3.6vw, 4.2rem); line-height: 1.06; }
+.pair-intro > p:not(.eyebrow) { max-width: 42ch; color: var(--text-dim); font-size: 1.05rem; }
+.scope-note { display: flex; gap: 1rem; max-width: 44ch; margin-top: 1.6rem; color: var(--live); font-size: var(--font-md); }
+.scope-line { flex-shrink: 0; width: .2rem; background: var(--live); }
+.pair-card { display: grid; gap: .8rem; padding: 1.6rem; background: var(--bg-2); border: 1px solid var(--line); border-top: 2px solid var(--live); border-radius: var(--radius); }
+.pair-card > p { color: var(--text-dim); }
+.pair-card label { color: var(--text-dim); font-size: var(--font-sm); }
+.pair-card input { width: 100%; min-height: 2.75rem; }
+.pair-card #code { font: 1.7rem var(--font-mono); letter-spacing: .14em; text-transform: uppercase; }
+.pair-card button { min-height: 2.75rem; }
+
+.lobby { width: min(100%, 100rem); margin: 0 auto; padding: clamp(1rem, 4vh, 3rem) 1.5rem; overflow-y: auto; }
+.lobby-heading { max-width: 60rem; padding-bottom: .9rem; border-bottom: 1px solid var(--line); }
+.lobby-heading > p:last-child { margin-top: .5rem; color: var(--text-dim); }
+.lobby-status { min-height: 2.5rem; padding: .6rem 0; color: var(--caution); }
+.station-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: .55rem; padding: 4px; }
+.station-card { display: grid; grid-template-rows: auto 1fr auto; gap: .55rem; min-width: 0; padding: .9rem; background: var(--bg-2); border: 1px solid var(--line); border-top: 2px solid var(--live); border-radius: var(--radius); }
+.station-card h2 { color: var(--text); font-size: var(--font-md); }
+.station-card button { min-height: 44px; }
+.station-occupancy { color: var(--text-dim); font-size: var(--font-sm); }
+.station-occupied { border-top-color: var(--alarm); }
+.station-mine { border-top-color: var(--info); }
+
+/* Role rail (lobby with a lease, outside the workstation) and its narrow twin. */
+.role-rail { display: flex; flex-direction: column; gap: .6rem; width: 13rem; padding: .9rem; background: var(--bg-1); border-right: 1px solid var(--line); overflow-y: auto; }
+.role-rail h2 { color: var(--live); font-size: 1rem; letter-spacing: 0; text-transform: none; }
+.role-rail button { margin-top: auto; }
+.role-rail #role-status { color: var(--alarm); font-size: var(--font-xs); }
+body[data-remote-role="assigned"]:not(.workstation-mode) #shell { grid-template-columns: 13rem minmax(0, 1fr); }
+body[data-remote-role="assigned"]:not(.workstation-mode) .statusbar,
+body[data-remote-role="assigned"]:not(.workstation-mode) .alert-band { grid-column: 1 / -1; }
+body[data-remote-role="assigned"]:not(.workstation-mode) #operations,
+body[data-remote-role="assigned"]:not(.workstation-mode) #simlog-view { grid-column: 2; }
+body.workstation-mode .role-rail, body.workstation-mode .mobile-role { display: none; }
+.mobile-role { display: none; }
+
+.host-screen { display: grid; place-items: center; padding: 2rem 1rem; overflow: auto; }
+.host-screen-card { display: grid; gap: .8rem; width: min(100%, 40rem); padding: 1.5rem; background: var(--bg-2); border: 1px solid var(--line); border-top: 2px solid var(--live); border-radius: var(--radius); }
+.host-screen-card > p { color: var(--text-dim); }
+.host-screen-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.host-screen-actions button { min-height: 2.75rem; }
+
+/* SimLog page (#simlog). */
+#simlog-view { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; overflow: hidden; padding: .6rem; }
+.simlog-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.simlog-current-section { min-height: 0; margin: .5rem 0 0; }
+.simlog-current-section h3 { margin: 0 0 .2rem; color: var(--live); font-size: var(--font-md); }
+.simlog-section-heading { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.simlog-current { max-height: 46vh; min-height: 0; margin: .35rem 0; padding: .6rem; overflow: auto; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--radius); }
+.simlog-current-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .7rem; }
+.simlog-metrics-wrap h4, .simlog-table-wrap h4 { margin: 0 0 .3rem; color: var(--live); font-size: var(--font-sm); text-transform: uppercase; letter-spacing: .06em; }
+.simlog-metrics-wrap .metrics { flex-direction: column; gap: 0; }
+.simlog-metrics-wrap .metrics div { flex-direction: row; gap: .5rem; padding: .1rem 0; font-size: var(--font-md); }
+.simlog-metrics-wrap .metrics dt { flex: 0 0 auto; min-width: 9ch; }
+.simlog-note-danger { margin: .35rem 0 0; color: var(--alarm); font-size: var(--font-sm); }
+.simlog-table-wrap { grid-column: 1 / -1; min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.simlog-table { width: 100%; border-collapse: collapse; font: var(--font-xs)/1.5 var(--font-mono); }
+.simlog-table th { padding: .15rem .5rem; color: var(--text-dim); text-align: left; font-weight: 600; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.simlog-table td { padding: .15rem .5rem; border-bottom: 1px solid var(--line-faint); white-space: nowrap; }
+.simlog-table tr.simlog-flag-row td { color: var(--alarm); }
+.simlog-snapshot { min-width: 0; border-bottom: 1px solid var(--line); }
+.simlog-snapshot summary { display: flex; align-items: baseline; gap: .75rem; padding: .3rem 0; cursor: pointer; font-size: var(--font-sm); }
+.simlog-snapshot .simlog-current-body { grid-template-columns: 1fr; margin-top: .4rem; }
+.simlog-list { flex: 1; min-width: 0; min-height: 0; margin: .5rem 0; padding: 4px; overflow: auto; list-style: none; }
+.simlog-entry { display: grid; grid-template-columns: 11ch 5ch minmax(0, 1fr); align-items: baseline; gap: .75rem; min-width: 0; padding: .3rem 0; border-bottom: 1px solid var(--line); font-size: var(--font-sm); }
+.simlog-stamp { min-width: 11ch; color: var(--live); font: var(--font-xs) var(--font-mono); }
+.simlog-cat { min-width: 5ch; color: var(--text-dim); font: var(--font-xs) var(--font-mono); text-transform: uppercase; }
+.simlog-text { min-width: 0; }
+
+@media (max-width: 899px) {
+  .pairing { grid-template-columns: 1fr; gap: 2rem; padding: 2rem 1rem; }
+  .pair-card { padding: 1.1rem; }
+  .lobby { padding: 1rem .6rem; }
+  .role-rail { display: none; }
+  .mobile-role:not([hidden]) { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .4rem; padding: .4rem .6rem; background: var(--bg-1); border-bottom: 1px solid var(--line); }
+  .mobile-role label { color: var(--text-dim); font-size: var(--font-xs); }
+  body[data-remote-role="assigned"]:not(.workstation-mode) #shell { grid-template-columns: minmax(0, 1fr); }
+  body[data-remote-role="assigned"]:not(.workstation-mode) #operations,
+  body[data-remote-role="assigned"]:not(.workstation-mode) #simlog-view { grid-column: 1; }
+  .station-cards { grid-template-columns: minmax(0, 1fr); }
+  .station-card { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; }
+  .station-card .station-occupancy { grid-column: 1; }
+  .station-card button { grid-column: 2; grid-row: 1 / 3; min-width: 7rem; }
+}
+@media (max-width: 24rem) {
+  .station-card { grid-template-columns: minmax(0, 1fr); }
+  .station-card button { grid-column: 1; grid-row: auto; width: 100%; }
+  .mobile-role:not([hidden]) { grid-template-columns: minmax(0, 1fr) auto; }
+  .mobile-role label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+}

@@ -8,10 +8,13 @@ import time
 
 import pytest
 
-from src.commander.server import (CommanderServer, STATIONS, V2CommandEnvelope)
+from src.commander.server import (CommanderServer, OPFOR_ROLES, ROLES, STATIONS,
+                                  V2_ACTION_REGISTRY,
+                                  V2CommandEnvelope)
 from src.core import config
 from src.core.game import Game
 from src.ui import layout
+from commander_fixtures import PLOT, WEATHER_STATION
 
 
 @pytest.fixture
@@ -90,15 +93,19 @@ def test_solo_pairing_leases_every_station_with_full_grants(server):
     assert session["host"] == {"generation": 1}
     assert session["active_station"] == session["station"] == "bridge"
     assert session["simlog"] is True and session["grants"]["simlog"] is True
-    assert list(session["stations"]) == list(STATIONS)
-    for station, row in session["stations"].items():
+    assert list(session["stations"]) == list(ROLES)
+    # Solo is the frigate console: the submarine roles are never part of it.
+    assert all(session["stations"][role]["status"] == "available" for role in OPFOR_ROLES)
+    for station in STATIONS:
+        row = session["stations"][station]
         assert row["status"] == "mine" and row["station_generation"] >= 1
         assert row["grants"] == {
             "command": True,
             "direct_fire": station in ("weapons", "helicopter", "opz"),
             "sonar_audio": station in ("sonar", "helicopter")}
     # Generations are independent per-station counters.
-    assert {row["station_generation"] for row in session["stations"].values()} == {1}
+    assert {session["stations"][station]["station_generation"]
+            for station in STATIONS} == {1}
 
 
 def test_solo_allows_exactly_one_session_until_the_host_removes_it(server):
@@ -191,7 +198,7 @@ def test_world_replacement_keeps_a_solo_browser_but_revokes_a_crew_browser(
     assert server.pairing_code == code
     after = request(server, "/api/v2/session", cookie=cookie)
     assert after[0] == 200 and after[2]["client_id"] == session["client_id"]
-    assert all(row["status"] == "mine" for row in after[2]["stations"].values())
+    assert all(after[2]["stations"][station]["status"] == "mine" for station in STATIONS)
     assert after[2]["host"]["generation"] == 2
 
     # The same replacement in crew mode is a hard security boundary.
@@ -247,15 +254,15 @@ def test_one_solo_session_can_hold_target_and_navigation_proposals_at_once(serve
 def _publication():
     common = dict(protocol=2, version="t", session="s", epoch=0, revision=0, seq=1,
                   phase="live", chart_revision="s", clock={}, environment={},
-                  mission={}, autocrew={"enabled": False, "status": "off"},
-                  audio={"events": []})
+                  mission={}, autocrew={"enabled": False, "status": "off"}, autocrew_overview=[],
+                  audio={"events": []}, weather_station=WEATHER_STATION, plot=PLOT)
     chart = dict(protocol=2, revision="s", size_nm=500, landmasses=[], disclaimer="")
     redacted = {key: common[key] for key in (
         "protocol", "version", "session", "epoch", "revision", "seq", "phase",
         "chart_revision")} | {"role": None}
     states = {None: redacted, **{role: dict(common, role=role, **{role: {}})
-                                 for role in STATIONS}}
-    return states, {None: chart, **{role: chart for role in STATIONS}}
+                                 for role in ROLES}}
+    return states, {None: chart, **{role: chart for role in ROLES}}
 
 
 def test_publication_serialises_a_shared_chart_once_and_serves_every_role(server):
@@ -352,7 +359,7 @@ def send(s, body):
 def host(s, action, params, cid):
     """Post one host command, run the frame, and return its terminal result.
 
-    A frame first settles any gate change (pause, overlay) so the body carries
+    A frame first settles any gate change (load, new game) so the body carries
     the epoch the browser would have read from the published state.
     """
     s.bridge.pump(s.game, s.server, now=time.monotonic())
@@ -371,8 +378,9 @@ def host_view(s):
 
 def test_host_view_is_published_only_to_a_solo_session(solo):
     view = host_view(solo)
-    assert view["protocol"] == 2 and view["phase"] == "live" and view["paused"] is False
-    assert view["time_scale"] == {"index": 0, "steps": [1]}
+    assert view["protocol"] == 2 and view["phase"] == "live"
+    # Real time only: the host view carries no pause or time-scale state.
+    assert "paused" not in view and "time_scale" not in view
     assert [row["key"] for row in view["scenarios"]] == [
         "s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall"]
     assert [row["name"] for row in view["difficulty_fields"]] == list(
@@ -391,22 +399,21 @@ def test_crew_sessions_have_no_host_surface(server, game):
     assert request(server, "/api/v2/host", cookie=cookie)[0] == 403
     body = {"protocol": 2, "id": "h", "seq": 0, "station": "host",
             "station_generation": 0, "active_generation": 0, "world_session": "w",
-            "world_epoch": 0, "resource_revision": 0, "action": "host_pause",
-            "params": {}}
+            "world_epoch": 0, "resource_revision": 0, "action": "host_save",
+            "params": {"slot": 1}}
     assert request(server, "/api/v2/commands", "POST", body, cookie,
                    session["csrf"])[0] == 403
 
 
-def test_host_pause_resume_use_the_local_paths(solo):
-    assert host(solo, "host_pause", {}, "p1")["reasoncode"] == "ok"
-    assert solo.game.paused is True and host_view(solo)["paused"] is True
-    # A paused game still accepts host controls, and the epoch moved on.
-    assert host_view(solo)["time_scale"] == {"index": 0, "steps": [1]}
-    assert host(solo, "host_resume", {}, "r1")["reasoncode"] == "ok"
-    assert solo.game.paused is False
-    # Idempotent by construction.
-    assert host(solo, "host_resume", {}, "r2")["reasoncode"] == "ok"
-    assert solo.game.time_scale_idx == 0
+@pytest.mark.parametrize(("action", "params"), [
+    ("host_pause", {}), ("host_resume", {}), ("host_time_scale", {"index": 0}),
+])
+def test_there_is_no_pause_or_time_scale_host_command(solo, action, params):
+    assert action not in V2_ACTION_REGISTRY
+    assert send(solo, host_body(solo, action, params, "gone"))[0] == 400
+    before = solo.game.sim_t
+    solo.game.update(.1)
+    assert solo.game.sim_t > before
 
 
 @pytest.mark.parametrize(("action", "params"), [
@@ -431,7 +438,6 @@ def test_host_pause_resume_use_the_local_paths(solo):
 ])
 def test_host_action_schemas_are_closed_and_strict(solo, action, params):
     assert send(solo, host_body(solo, action, params, "bad"))[0] == 400
-    assert not solo.game.paused
 
 
 @pytest.mark.parametrize("changes", [
@@ -439,10 +445,10 @@ def test_host_action_schemas_are_closed_and_strict(solo, action, params):
     {"station": "bridge"}, {"active_generation": True},
 ])
 def test_host_commands_bind_to_the_host_generation_not_a_station(solo, changes):
-    status = send(solo, host_body(solo, "host_pause", {}, "x", **changes))[0]
+    status = send(solo, host_body(solo, "host_save", {"slot": 1}, "x", **changes))[0]
     assert status in (400, 403, 409)
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
-    assert solo.game.paused is False
+    assert not (solo.tmp / "slot1.json").exists()
 
 
 def test_host_save_and_load_round_trip_through_a_temporary_slot(solo):
@@ -461,7 +467,7 @@ def test_host_save_and_load_round_trip_through_a_temporary_slot(solo):
     # The browser is still paired, under fresh generations, with the result readable.
     after = session_of(solo)
     assert after["stations"]["sonar"]["station_generation"] > generation
-    assert all(row["status"] == "mine" for row in after["stations"].values())
+    assert all(after["stations"][station]["status"] == "mine" for station in STATIONS)
 
 
 def test_a_corrupt_slot_fails_the_load_and_leaves_the_live_game_unchanged(solo):
@@ -502,14 +508,14 @@ def test_commands_after_a_world_replacing_command_fail_closed_in_the_same_frame(
     replace = host_body(solo, "host_new_game", {
         "scenario": "s1_patrouille", "world_mode": "procedural", "seed": 7}, "n1")
     assert send(solo, replace)[0] == 202
-    course = host_body(solo, "host_pause", {}, "late")
-    course["seq"] = replace["seq"] + 1
-    assert send(solo, course)[0] == 202
+    late = host_body(solo, "host_save", {"slot": 1}, "late")
+    late["seq"] = replace["seq"] + 1
+    assert send(solo, late)[0] == 202
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
     rows = request(solo.server, "/api/v2/results", cookie=solo.cookie)[2]["results"]
     assert [(row["id"], row["reasoncode"]) for row in rows] == [
         ("n1", "ok"), ("late", "phase_blocked")]
-    assert solo.game.paused is False
+    assert not (solo.tmp / "slot1.json").exists()
 
 
 def test_host_commands_run_before_station_commands_in_a_frame(solo):
@@ -523,32 +529,33 @@ def test_host_commands_run_before_station_commands_in_a_frame(solo):
               "resource_revision": solo.bridge.status["revision"],
               "action": "bridge_set_course", "params": {"course": 45.0}}
     assert send(solo, course)[0] == 202
-    pause = host_body(solo, "host_pause", {}, "p")
-    assert send(solo, pause)[0] == 202
+    save = host_body(solo, "host_save", {"slot": 1}, "p")
+    assert send(solo, save)[0] == 202
     order = [(envelope.role, envelope.command_id)
              for envelope in solo.server.drain_commands_v2()]
     assert order == [("host", "p"), ("bridge", "c")]
 
 
-def test_menu_allows_starting_a_game_but_not_pausing_and_overlays_block_everything(solo):
+def test_menu_allows_starting_a_game_and_host_overlays_block_nothing(solo):
     solo.game.main_menu = True
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic() + 1)
     assert host_view(solo)["phase"] == "menu"
-    assert host(solo, "host_pause", {}, "p")["reasoncode"] == "phase_blocked"
+    assert host(solo, "host_save", {"slot": 1}, "p")["reasoncode"] == "phase_blocked"
     assert host(solo, "host_new_game", {
         "scenario": "s1_patrouille", "world_mode": "procedural", "seed": 9},
         "n")["reasoncode"] == "ok"
     assert solo.game.main_menu is False and solo.game.in_menu is False
 
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic() + 2)
-    solo.game.help_open = True  # a host-side overlay owns the input
-    for action, params in (("host_pause", {}), ("host_load", {"slot": 1})):
-        assert host(solo, action, params, "blk-" + action)[
-            "reasoncode"] == "phase_blocked"
+    solo.game.help_open = True  # a host-side overlay owns local input only
+    solo.bridge.pump(solo.game, solo.server, now=time.monotonic() + 3)
+    assert host_view(solo)["phase"] == "live"
+    assert host(solo, "host_save", {"slot": 1}, "save")["reasoncode"] == "ok"
+    assert host(solo, "host_load", {"slot": 1}, "load")["reasoncode"] == "ok"
 
 
 def test_revoking_the_solo_session_removes_the_host_surface_and_queued_commands(solo):
-    queued = host_body(solo, "host_pause", {}, "q")
+    queued = host_body(solo, "host_save", {"slot": 1}, "q")
     assert send(solo, queued)[0] == 202
     solo.server.revoke_all()
     rows = request(solo.server, "/api/v2/results", cookie=solo.cookie)[2]["results"]
@@ -559,13 +566,14 @@ def test_revoking_the_solo_session_removes_the_host_surface_and_queued_commands(
 
 
 def test_a_replayed_host_command_id_is_applied_once(solo):
-    body = host_body(solo, "host_pause", {}, "dup")
+    body = host_body(solo, "host_instructor_environment",
+                     {"sea_state": 5, "event": None}, "dup")
     assert send(solo, body)[0] == 202
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
-    assert solo.game.paused is True
-    solo.game.set_paused(False)
+    assert solo.game.world.sea_state == 5
+    solo.game.world.sea_state = 2
     status, _, replay = send(solo, body)
     assert (status, replay["status"]) == (200, "applied")
     solo.bridge.pump(solo.game, solo.server, now=time.monotonic())
-    assert solo.game.paused is False
-    assert send(solo, dict(body, action="host_resume"))[0] == 409
+    assert solo.game.world.sea_state == 2
+    assert send(solo, dict(body, action="host_save", params={"slot": 1}))[0] == 409

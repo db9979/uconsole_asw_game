@@ -10,11 +10,13 @@ import subprocess
 import time
 
 import pytest
+from commander_web import copy_assets, index_html, inject_probe
 
 from src.commander import server as commander_transport
 from src.core import config
 from src.core.game import Game
 from src.sonar.sonar import Contact
+from src.core import manual
 from test_commander_assets import ASSETS, PREFIX, Document, catalogs
 
 
@@ -103,12 +105,8 @@ async function run() {
   assert(blanked === 0, "the console was blanked by hotkey switching to a visited station");
 
   // Solo host controls.
-  await until(() => !$("host-pause").disabled, "host pause never enabled");
-  $("host-pause").click();
-  await until(() => $("host-pause").getAttribute("aria-pressed") === "true", "pause not reflected");
-  await until(() => !$("host-pause").disabled, "host controls stayed locked after pause");
-  $("host-pause").click();
-  await until(() => $("host-pause").getAttribute("aria-pressed") === "false", "resume not reflected");
+  // Real time only: no pause and no time compression control.
+  assert(!document.getElementById("host-pause"), "pause control remains visible");
   assert(!document.getElementById("host-time-scale"), "time compression control remains visible");
 
   await until(() => !$("host-save").disabled, "save locked");
@@ -170,16 +168,11 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
         "de": {key: value for key, value in de.items() if key.startswith(PREFIX)},
     }
     console._contact_analysis_assets = {}
-    html = ASSETS.joinpath("index.html").read_text().replace(
-        '<script src="./app.js" defer>',
-        '<script src="./console-test.js" defer></script><script src="./app.js" defer>')
-    for name, payload in (("index.html", html),
-                          ("app.js", ASSETS.joinpath("app.js").read_text()),
-                          ("style.css", ASSETS.joinpath("style.css").read_text()),
-                          ("sonar-audio-worklet.js", ASSETS.joinpath("sonar-audio-worklet.js").read_text()),
-                          ("voice.js", ASSETS.joinpath("voice.js").read_text()),
-                          ("voice-worklet.js", ASSETS.joinpath("voice-worklet.js").read_text())):
-        (tmp_path / name).write_text(payload, encoding="utf-8")
+    # Pre-rendered like the assets: resources.files is redirected below.
+    console._manual_pages = {}
+    console._manual_pages = {lang: manual.html_page(lang) for lang in manual.LANGUAGES}
+    html = inject_probe(index_html(), "console-test.js")
+    copy_assets(tmp_path, html)
     monkeypatch.setattr(commander_transport.resources, "files", lambda _package: tmp_path)
 
     console.activate(game)
@@ -201,8 +194,7 @@ def test_solo_console_tabs_keep_state_and_host_controls_drive_the_game(
     try:
         while process.poll() is None and time.monotonic() - started < 80:
             console.pump(game)
-            if not game.paused:
-                game.update(.02)
+            game.update(.02)
             time.sleep(.02)
         stdout, stderr = process.communicate(timeout=5)
     finally:

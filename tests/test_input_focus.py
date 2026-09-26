@@ -22,7 +22,7 @@ def game():
 
 
 @pytest.mark.parametrize("dialog", ["help", "nations", "save", "load", "quit"])
-def test_administration_blocks_time_and_all_background_devices(game, dialog):
+def test_administration_owns_input_while_real_time_keeps_running(game, dialog):
     press(game, pygame.K_UP)
     game._joy_turn = 1
     game._map_drag = (100, 100)
@@ -38,7 +38,9 @@ def test_administration_blocks_time_and_all_background_devices(game, dialog):
     ):
         game.handle_event(event)
     game.update(1.0)
-    assert (game.sim_t, game.ship.target_speed, game.ship.target_course, game.station) == before
+    # The overlay owns input, but the simulation never pauses behind it.
+    assert game.sim_t == pytest.approx(before[0] + 1.0)
+    assert (game.ship.target_speed, game.ship.target_course, game.station) == before[1:]
     assert game.held == set()
     assert game._joy_turn == 0
     assert game._map_drag is None
@@ -47,9 +49,11 @@ def test_administration_blocks_time_and_all_background_devices(game, dialog):
     assert not game.administration_open
 
 
-@pytest.mark.parametrize("overlay", ["help", "options", "commander", "analyzer"])
-def test_selected_overlays_keep_active_remote_crew_simulation_live(game, overlay):
-    game.commander.active_crew = True
+@pytest.mark.parametrize("active_crew", [False, True])
+@pytest.mark.parametrize("overlay", ["help", "options", "commander", "analyzer",
+                                     "nations", "save", "load", "quit"])
+def test_every_overlay_keeps_simulation_and_crew_orders_live(game, overlay, active_crew):
+    game.commander.active_crew = active_crew
     if overlay == "analyzer":
         game._open_analyzer_in_game()
     else:
@@ -60,34 +64,28 @@ def test_selected_overlays_keep_active_remote_crew_simulation_live(game, overlay
     assert game.order_course(123) == "ok"
 
 
-@pytest.mark.parametrize("overlay", ["nations", "save", "load", "quit"])
-def test_sensitive_overlays_block_even_with_active_remote_crew(game, overlay):
-    game.commander.active_crew = True
-    game._open_administration(overlay)
+def test_p_key_does_not_pause(game):
     before = game.sim_t
-    game.update(.25)
-    assert game.sim_t == before
-
-
-def test_help_preserves_manual_pause_and_does_not_open_quit(game):
     press(game, pygame.K_p)
+    assert not hasattr(game, "paused")
+    game.update(.5)
+    assert game.sim_t == pytest.approx(before + .5)
+
+
+def test_help_escape_does_not_open_quit(game):
     press(game, pygame.K_F1)
     press(game, pygame.K_ESCAPE)
-    assert game.paused and not game.quit_confirm
-    press(game, pygame.K_v)
-    press(game, pygame.K_PLUS)
-    assert game.input_mode is None
-    assert game.ship.target_speed == config.SHIP_SPEED_START_KN
+    assert not game.administration_open and not game.quit_confirm
 
 
-def test_focus_loss_clears_controls_and_does_not_auto_resume(game):
+def test_focus_loss_clears_controls_without_pausing(game):
     press(game, pygame.K_UP)
     game.handle_event(pygame.event.Event(pygame.WINDOWFOCUSLOST))
-    game.handle_event(pygame.event.Event(pygame.WINDOWFOCUSGAINED))
-    assert game.paused and not game.held
-    press(game, pygame.K_p)
-    assert not game.paused
+    assert not game.held
     assert game.steering_input() == (0, 0)
+    before = game.sim_t
+    game.update(.5)
+    assert game.sim_t == pytest.approx(before + .5)
 
 
 @pytest.mark.parametrize("in_menu", [True, False])
@@ -394,3 +392,90 @@ def test_stale_held_depth_controls_never_steer_outside_bridge(game):
     assert game.steering_input() == (0, 0)
     game.update(0.1)
     assert game.ship.target_course == before
+
+
+def test_quit_dialog_returns_to_main_menu_without_saving(game):
+    game.update(1.0)
+    press(game, pygame.K_ESCAPE)
+    press(game, pygame.K_DOWN)
+    press(game, pygame.K_DOWN)
+    press(game, pygame.K_RETURN)
+    assert game.running and game.in_menu and game.main_menu
+    assert not game.administration_open
+    assert not list(Path(config.SAVE_DIR).glob("*.json"))
+    sim_t = game.sim_t
+    game.update(1.0)
+    assert game.sim_t == sim_t
+    # "New game" -> scenario list -> briefing starts a fresh mission.
+    press(game, pygame.K_RETURN)
+    press(game, pygame.K_2)
+    press(game, pygame.K_RETURN)
+    press(game, pygame.K_RETURN)
+    assert not game.in_menu and game.scenario_key == config.SCENARIO_ORDER[1]
+    assert game.sim_t == 0.0 and not game.game_over
+
+
+def test_quit_dialog_last_entry_still_exits_without_saving(game):
+    press(game, pygame.K_ESCAPE)
+    for _ in range(3):
+        press(game, pygame.K_DOWN)
+    press(game, pygame.K_RETURN)
+    assert not game.running
+    assert not list(Path(config.SAVE_DIR).glob("*.json"))
+
+
+def test_scenario_list_escape_goes_back_to_main_menu(game):
+    game.in_menu = True
+    game.main_menu = False
+    game.menu_screen = "scenario"
+    press(game, pygame.K_ESCAPE)
+    assert game.main_menu and not game.quit_confirm
+
+
+def test_mission_end_offers_main_menu(game):
+    game._end_mission(False, "Test")
+    press(game, pygame.K_m)
+    assert game.in_menu and game.main_menu and game.running
+
+
+def test_restart_after_custom_mission_restarts_that_mission(game):
+    from src.core.mission_definition import default_mission
+
+    definition = default_mission("user.restart")
+    definition["name"] = "Restart probe"
+    definition["units"]["exact"] = [dict(
+        id="target", profile="diesel_alt", side="hostile",
+        placement=dict(kind="fixed", x=100, y=100),
+        course_deg=10, speed_kn=4, depth_m=60)]
+    definition["objective"]["target_ids"] = ["target"]
+    assert game.start_custom_mission(definition)
+    game._end_mission(False, "Test")
+    press(game, pygame.K_r)
+    assert not game.game_over
+    assert game.custom_mission_definition["name"] == "Restart probe"
+    assert game.mission.name == "Restart probe" and len(game.subs) == 1
+
+
+def test_defeat_with_time_left_reports_remaining_time(game, monkeypatch):
+    shown = []
+    monkeypatch.setattr("src.core.game.layout.blit_line",
+                        lambda surface, text, *args, **kwargs: shown.append(text))
+    game.mission_time = 60.0
+    game._end_mission(False, "Test")
+    game.draw_end_panel()
+    assert "end.expired" not in shown
+    shown.clear()
+    game.mission_time = game.mission.time_limit_s
+    game.draw_end_panel()
+    assert "end.expired" in shown
+
+
+def test_survive_mission_announces_time_as_progress(game):
+    game.mission.win_mode = "survive"
+    game.mission_time = game.mission.time_limit_s - 290.0
+    game._mission_time_warning()
+    assert game.msg["__u_jagd_i18n__"] == "runtime.survive.warning_minutes"
+    game.mission.win_mode = "sink"
+    game._mission_warnings.clear()
+    game._mission_time_warning()
+    assert game.msg["__u_jagd_i18n__"] == "runtime.deadline.warning_minutes"

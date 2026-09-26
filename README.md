@@ -10,7 +10,29 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.0.0**
+Current release: **1.2.0**
+
+Release 1.2.0 tightens the game flow and the hand-over between stations: the
+`Esc` dialog and the mission-end screen return to the main menu (`M`), `R`
+restarts an editor mission as itself, convoy missions announce the remaining
+time as progress, and an Operations fusion built from one sonar contact can be
+designated to Weapons, with its classification and affiliation applying to fire
+control (FRIEND/NEUTRAL on a fusion blocks every torpedo shot). Saves stay v14.
+
+Release 1.1.0 replaces the remaining kinematic shortcuts with physical models
+while keeping the 1.0.0 gameplay balance (checked by a calibration harness):
+force-based own-ship hydrodynamics and seakeeping; a time-varying ocean with
+tides, mixed layer, sediments and wrecks; passive/active sonar equations with
+ray-traced propagation; towed-array left/right ambiguity, Doppler and a
+covariance TMA; submarine and torpedo physics (energy, fins, wire, proximity
+fuze); decoy discrimination; compartment flooding, stability, fire and repair
+logistics; the radar equation with a rotating antenna, ESM amplitude, HF
+propagation and a moonlit lookout; and missile flight physics with chaff
+clouds, CIWS ballistics, pop-up raiders, helicopter hover/deck limits and
+drifting buoys. Hostile submarines now need their own TMA before they know
+your range. **Saves are now format v14 (catalog assignment, shared chart plot); older saves are rejected.** The
+Remote Crew v2 protocol is unchanged apart from new ELOKA intercept fields.
+See [docs/simulation-gaps.md](docs/simulation-gaps.md) for the full record.
 
 Release 1.0.0 splits every workstation into two tabbed sub-pages, adds manual
 CIWS and FLAK release authorization alongside the existing automatic gates,
@@ -57,7 +79,7 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 
 - Nine stations: Bridge, Sonar, Weapons, Damage Control, OPZ/CIC, Radio,
   Engineering, Helicopter Deck, and Electronic Warfare/ESM.
-- Four built-in scenarios, fully configurable custom difficulty, pause, and real-time simulation.
+- Four built-in scenarios, fully configurable custom difficulty, and continuous real-time simulation (no pause, no time acceleration).
 - Passive HMS and towed-array sonar, active sonar, broadband and LOFAR
   displays, DEMON analysis, bathythermograph readings, and bearing-only TMA.
 - Surface and air radar, AIS, ESM, HFDF, manual classification and affiliation,
@@ -80,9 +102,10 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
 - Optional trusted-LAN Remote Crew: multiple authenticated browser clients can
   hold exclusive station roles, switch among their retained roles, operate the
   same observation-led controls, and use separately granted direct fire.
-  The browser console is a one-viewport desktop layout with a station tab bar.
+  The browser console is a one-viewport combat-information-centre layout for
+  large desktop monitors: status bar, central instrument and collapsible docks.
   `python main.py --solo-crew` (or the F9 "Crew mode" row) lets one browser run
-  all nine stations plus pause, save/load and new game while the
+  all nine stations plus save/load and new game while the
   uConsole stays the simulation server; see [Remote Crew setup](docs/commander-coop.md).
 - Conservative station Autocrew with local `F2` control and an `F3` overview.
   Remote Crew temporarily suspends Autocrew only for the leased station.
@@ -166,7 +189,15 @@ picture with onboard sensors.
 
 ## Controls
 
-Press `F1` in the game for context-sensitive help. A printable complete local
+Press `F1` (or `?`) in the game for context-sensitive help; its fourth category
+is the full player manual (quickstart, one chapter per station with displays,
+keys, standard procedure and tips, plus reference data). The same manual is
+exported to [`docs/manual/manual.en.md`](docs/manual/manual.en.md) /
+[`manual.de.md`](docs/manual/manual.de.md) and served by Remote Crew at
+`/manual-en` and `/manual-de`. Printable PDFs are
+[`docs/manual/manual.en.pdf`](docs/manual/manual.en.pdf) /
+[`handbuch.de.pdf`](docs/manual/handbuch.de.pdf) (`python tools/build_manual_pdf.py`,
+needs a local Chromium). A printable complete local
 keyboard reference is available as
 [`docs/station-shortcuts.de.pdf`](docs/station-shortcuts.de.pdf), with its text
 source at [`docs/station-shortcuts.de.md`](docs/station-shortcuts.de.md). The
@@ -177,12 +208,15 @@ most important global controls are:
 | `1` to `9` | Bridge, Sonar, Weapons, Damage, OPZ/CIC, Radio, Engineering, Helicopter, Electronic Warfare/ESM; press the active station number again to advance its page when available |
 | `F` / `Shift+F` / `B` at ESM | Cycle signal-status, minimum-threat, and frequency-band filters |
 | `Tab` / `Shift+Tab` | Next / previous station |
-| `P` | Pause / resume |
-| `F1` | Context-sensitive help |
+| `F1` / `?` | Context-sensitive help; category 4 is the full player manual |
+| `0` | Weather and sonar analysis panel over any station |
+| `F11` | Full event log and telemetry over the station (keeps running) |
+| `N` | Nations and units (at Sonar: notch filter) |
+| `P` | Plot mode on the Bridge/Weapons/Helicopter map and OPZ chart: marks, rulers, bearing lines, circles, DR lines (`M R B C D`, `Enter`/click, `Backspace`) |
 | `F2` / `F3` | Toggle Autocrew for the current station / open the Autocrew overview |
 | `F4` | Open SimLog when enabled |
 | `F8` | Open the tactical unit analyzer; cycles a visible Commander proposal when applicable |
-| `F10` | Options; while paused, `O` also opens options |
+| `F10` | Options |
 | `F9` | Local Commander LAN administration |
 | `S` / `L` | Save / load using slots 1 to 5; at OPZ/CIC, `L` is the contextual fusion command |
 | `+` / `-` | Engine telegraph |
@@ -191,7 +225,8 @@ most important global controls are:
 | `Q` / `E` or mouse wheel | Zoom maps on Bridge, Weapons, and Helicopter; the OPZ chart uses the mouse wheel |
 | Mouse drag | Pan a visible map, including the OPZ chart, and disable its independent camera follow |
 | `K` | Toggle camera follow on the current map or OPZ chart |
-| `Esc` | Clear a pinned tooltip, cancel the current view/input, or open quit confirmation |
+| `Esc` | Clear a pinned tooltip, cancel the current view/input, or open quit confirmation (back to game, save and exit, main menu, exit without saving) |
+| `R` / `M` after the mission ends | Restart with the same seed / return to the main menu |
 
 Station keys are deliberately contextual. For example, `Shift+A` sends an active
 ping at Sonar, plain `A` selects Broadband listening there, and `A` changes
@@ -204,7 +239,7 @@ torpedo-depth adjustments use real time, not the selected simulation multiplier.
 
 The bottom event feed is shared by all stations. It retains operational reports,
 completed orders, and alerts—including mission outcome, weapon and defensive
-events, damage, radio traffic, navigation, and pause/time state. Short-lived
+events, damage, radio traffic, and navigation. Short-lived
 input prompts, invalid-entry hints, selections, and display settings remain in
 the transient status banner instead of displacing operational history.
 
@@ -282,7 +317,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v11 game saves for deterministic restoration of existing sessions.
+in v14 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -290,6 +325,12 @@ Use **F10 > Commander LAN**, or **F9**, on the uConsole. Select an explicit
 private IPv4 while the service is off, then enable it. Open the displayed URL on
 each crew device. The default `127.0.0.1:8765` is local-only, not reachable from
 another device. No router forwarding is needed or supported.
+
+To reach the same crew or solo session through your own HTTPS reverse proxy as
+well, start the game with `--public-origin https://asw.example.net` (optionally
+with `--solo-crew`) and point the proxy at the LAN URL shown in F9. The LAN URL
+keeps working; F9 then shows both addresses. Details and security notes:
+[`docs/web-host.de.md`](docs/web-host.de.md).
 
 Alternatively, the uConsole can create a temporary WPA2 Remote Crew hotspot.
 Install its narrowly scoped privileged helper once with
@@ -326,14 +367,15 @@ full-truth snapshots, including hidden units; reconnecting establishes a silent
 event baseline rather than replaying old alarms.
 
 While a browser owns a station lease, matching station input on the uConsole is
-read-only. Host administration, pause, and switching to another station remain
+read-only. Host administration and switching to another station remain
 available; revoking the lease restores local operation immediately.
 
 The service starts **off on every launch**. Access and grants are not saved.
-World replacement revokes active authority on the next main-thread frame. Manual
-pause, focus loss, save/load, quit, nations, real editors, menus and splash lock
-browser changes. With an active crew station, F1 help, the in-game F8 analyzer,
-F9 crew administration and F10 options keep simulation and browser stations live.
+World replacement revokes active authority on the next main-thread frame. The
+mission always runs in real time: local menus and overlays (help, options, save/load,
+quit confirmation, F8 analyzer, F9 administration) and focus loss never pause it,
+so browser stations stay live behind them. Only the main menu and splash lock
+browser changes.
 Browser sonar sound requires an explicit host grant and a local user gesture;
 reconnecting does not replay old audio. Its Broadband, Filtered, and Heterodyne
 listening modes use the selected band, notch, and gain controls. Clicking or
@@ -385,10 +427,11 @@ Validated does not mean runtime-effective. In release 1.0.0:
 
 ## Saves and User Data
 
-Release 1.0.0 writes and loads save format **v11** only. V11 requires the exact
-`u-jagd-save-v11` schema, including the current runtime catalog snapshot and all
-deterministic continuation state. Older, newer, malformed, or incomplete saves
-are rejected without replacing the running game.
+This build writes and loads save format **v14** only. V14 requires the exact
+`u-jagd-save-v14` schema, including the current runtime catalog snapshot and all
+deterministic continuation state. Older (including every 1.0.0 v11 save),
+newer, malformed, or incomplete saves are rejected without replacing the
+running game; there is no migration.
 
 The five slots are `~/.u-jagd/slot1.json` through `slot5.json`. Saves include a
 snapshot of coastline geometry and synthetic bathymetry so an existing game is

@@ -43,7 +43,7 @@ def test_air_picture_skips_terrain_queries_for_ineligible_sources(monkeypatch):
         ship.emitter = False
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *a:
                         pytest.fail("ineligible sensors must reject before terrain work"))
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
 
 def test_lost_sonar_fix_is_not_retained_by_common_picture():

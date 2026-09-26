@@ -2,12 +2,22 @@
 const $ = (id) => document.getElementById(id);
 let strings = {}, csrf = "", lastRoom = null;
 const t = (key) => strings[`commander.web.${key}`] || key;
+// crypto.randomUUID exists only in secure contexts (HTTPS or localhost); the
+// LAN host is plain HTTP, so fall back to a v4 UUID from getRandomValues.
+function requestId() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 async function api(path, body) {
   const options = {credentials:"same-origin", cache:"no-store"};
   if (body !== undefined) {
     options.method="POST";
     options.headers={"Content-Type":"application/json",
-      "X-U-Jagd-Request-ID":crypto.randomUUID()};
+      "X-U-Jagd-Request-ID":requestId()};
     if (csrf) options.headers["X-U-Jagd-CSRF"]=csrf;
     options.body=JSON.stringify(body);
   }
@@ -55,8 +65,8 @@ function render(room) {
       if (detail.leased) {
         row.append(button("admin_revoke",()=>action("revoke",client.client_id,station)));
         for (const capability of ["command","direct_fire","sonar_audio"]) {
-          if (capability==="direct_fire" && !["weapons","opz","helicopter"].includes(station)) continue;
-          if (capability==="sonar_audio" && station!=="sonar") continue;
+          if (capability==="direct_fire" && !["weapons","opz","helicopter","uboot"].includes(station)) continue;
+          if (capability==="sonar_audio" && !["sonar","uboot_sonar"].includes(station)) continue;
           const current=detail.grants[capability];
           const control=button(current?"admin_disable":"admin_enable",
             ()=>action(capability,client.client_id,station,!current));

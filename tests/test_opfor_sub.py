@@ -1,0 +1,401 @@
+"""The crewed hostile submarine: orders, weapons, sonar, boundary and sides."""
+
+import json
+import sys
+from pathlib import Path
+
+import pygame
+import pytest
+
+from src.commander.bridge import CommanderBridge
+from src.commander.server import CommanderServer, OPFOR_ROLES, STATIONS
+from src.core import config
+from src.core.game import Game
+from src.core.station import Station
+from src.ui import layout
+
+sys.path.insert(0, str(Path(__file__).parent))
+from test_commander_bridge import Server  # noqa: E402
+
+
+class CrewedServer(Server):
+    def __init__(self):
+        super().__init__()
+        self.crewed = True
+
+    def station_leased(self, role):
+        return self.crewed and role in OPFOR_ROLES
+
+
+def _game(seed=83):
+    return Game(seed=seed, start_menu=False, audio_enabled=False, language="en")
+
+
+def _crewed(seed=83):
+    game = _game(seed)
+    server, bridge = CrewedServer(), CommanderBridge()
+    bridge.pump(game, server, now=1.0)
+    assert game.opfor is not None
+    return game, server, bridge
+
+
+def test_crewed_boat_follows_orders_within_its_limits():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    assert sub.manual
+    assert sub.set_orders(course=90.0, speed=5.0, depth=120.0) is True
+    assert sub.set_orders(depth=-1.0) == "invalid_value"
+    assert sub.set_orders(speed=float("nan")) == "invalid_value"
+    for _ in range(20 * 240):
+        game._update_sim(0.05)
+    assert abs(sub.course - 90.0) < 1.0
+    assert abs(sub.speed - 5.0) < 0.2
+    assert sub.depth <= sub.safe_depth_m(game.world) + 1e-6
+    assert abs(sub.depth - min(120.0, sub.safe_depth_m(game.world))) < 5.0
+
+
+def test_fire_is_checked_and_becomes_an_enemy_torpedo():
+    game, _server, _bridge = _crewed()
+    sub = game.opfor.sub
+    assert sub.command_fire(float("inf")) == "invalid_value"
+    assert sub.command_fire(10.0, 100.0) == "invalid_value"
+    launcher = game.runtime_catalog.launchers[sub.weapon_battery.launcher_key]
+    outside = (sub.course + launcher.arc_center_deg + launcher.arc_width_deg) % 360.0
+    if launcher.arc_width_deg < 360.0:
+        assert sub.command_fire(outside) == "out_of_arc"
+    bearing = (sub.course + launcher.arc_center_deg) % 360.0
+    before = sub.torpedoes_left
+    assert sub.command_fire(bearing, 5.0, now=game.sim_t) is True
+    assert sub.torpedoes_left == before - 1
+    for _ in range(4):
+        game._update_sim(0.05)
+    assert any(torpedo.launch_platform_id == sub.id for torpedo in game.enemy_torpedoes)
+    sub.release_manual()
+    assert sub.command_fire(bearing) == "not_ready"
+
+
+def test_released_boat_returns_to_the_ai():
+    game, server, bridge = _crewed()
+    sub = game.opfor.sub
+    server.crewed = False
+    bridge.pump(game, server, now=2.0)
+    assert game.opfor is None and not sub.manual
+
+
+def _scripted_run(seed):
+    game, server, bridge = _crewed(seed)
+    sub = game.opfor.sub
+    sub.set_orders(course=200.0, speed=6.0, depth=90.0)
+    for step in range(600):
+        game._update_sim(0.1)
+        if step == 100:
+            with game.sonar_perspective(game.opfor.station):
+                game.send_active_ping()
+        if step == 300:
+            sub.set_orders(course=20.0)
+    return game.save_state()
+
+
+def _first_difference(left, right, path=""):
+    if type(left) is not type(right):
+        return path
+    if isinstance(left, dict):
+        for key in sorted(set(left) | set(right), key=str):
+            found = _first_difference(left.get(key), right.get(key), f"{path}.{key}")
+            if found is not None:
+                return found
+        return None
+    if isinstance(left, list):
+        if len(left) != len(right):
+            return f"{path} (length)"
+        for index, (a, b) in enumerate(zip(left, right)):
+            found = _first_difference(a, b, f"{path}[{index}]")
+            if found is not None:
+                return found
+        return None
+    return None if left == right else path
+
+
+def test_same_seed_and_orders_give_the_same_state(monkeypatch):
+    from src.core.game import Animal, Decoy
+    from src.enemies.sub import Sub
+    from src.enemies.surface import SurfaceShip
+    from src.weapons.torpedo import EnemyTorpedo
+    # Entity IDs come from process-wide counters; both runs start equal.
+    start = {cls: cls._next_id for cls in (Sub, Animal, SurfaceShip, Decoy, EnemyTorpedo)}
+    runs = []
+    for _ in range(2):
+        for cls, value in start.items():
+            monkeypatch.setattr(cls, "_next_id", value)
+        runs.append(_scripted_run(91))
+    # A plain comparison: pytest's text diff of two whole saves takes minutes.
+    assert _first_difference(*runs) is None, _first_difference(*runs)
+
+
+def test_crew_binding_is_never_saved(tmp_path):
+    game, _server, _bridge = _crewed()
+    for _ in range(50):
+        game._update_sim(0.1)
+    data = game.save_state()
+    assert "opfor" not in json.dumps(sorted(data))
+    path = tmp_path / "slot.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    restored = _game()
+    assert restored.load_game(str(path))
+    assert restored.opfor is None
+    # Loading over a crewed game drops the binding as well.
+    assert game.load_game(str(path)) and game.opfor is None
+    # load_game already requires a byte-exact re-serialisation of the save.
+    assert not any(sub.manual for sub in restored.subs)
+
+
+def test_submarine_views_never_carry_frigate_truth():
+    game, server, bridge = _crewed()
+    game.ship.target_speed = 20.0
+    now = 1.0
+    for step in range(20 * 60):
+        game._update_sim(0.05)
+        if step % 20 == 0:
+            now += 0.5
+            bridge.pump(game, server, now=now)
+    game._emit_sound("sonar_ping")
+    bridge.pump(game, server, now=now + 1.0)
+    for role in OPFOR_ROLES:
+        state = server.v2_states[role]
+        assert state["role"] == role
+        blob = json.dumps(state)
+        for value in (game.ship.x, game.ship.y):
+            assert json.dumps(value) not in blob
+        assert state["plot"]["objects"] == []
+        assert state["audio"]["events"] == []
+    assert all(not rows for role, rows in server.events["events_by_role"].items()
+               if role in OPFOR_ROLES)
+
+
+def test_submarine_sonar_commands_never_touch_the_frigate_sonar():
+    game, _server, bridge = _crewed()
+    frigate_gain = game.sonar.gain_db
+    assert bridge._apply_opfor_action(game, "sonar_set_gain", {"gain_db": 9},
+                                      "uboot_sonar") is True
+    assert game.opfor.station.sonar.gain_db == 9 and game.sonar.gain_db == frigate_gain
+    # Frigate-only actions never run for the submarine roles.
+    assert bridge._apply_opfor_action(game, "sonar_set_tas", {"deployed": True},
+                                      "uboot_sonar") is False
+    assert bridge._apply_opfor_action(game, "bridge_set_course", {"course": 10.0},
+                                      "uboot") is False
+
+
+def test_solo_never_holds_and_one_session_never_mixes_sides():
+    server = CommanderServer()
+    with server._lock:
+        _token, crew = server._new_session_locked("crew", web_host=False)
+    assert server.grant_station(crew["client_id"], "sonar")
+    assert server.grant_station(crew["client_id"], "uboot") is False
+    server.revoke_station("sonar")
+    assert server.grant_station(crew["client_id"], "uboot")
+    assert server.grant_station(crew["client_id"], "bridge") is False
+    server.set_solo_mode(True)
+    with server._lock:
+        _token, solo = server._new_session_locked("solo", web_host=False)
+    assert set(solo["leases"]) == set(STATIONS)
+
+
+def test_local_submarine_side_keeps_frigate_controls_and_banners_away():
+    game = _game()
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+    assert boat is not None and boat.sub.manual and not game.audio.local_effects
+
+    def key(value, mod=0):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=mod,
+                                             unicode=""))
+
+    target_speed = game.ship.target_speed
+    key(pygame.K_PLUS)
+    key(pygame.K_3)
+    assert game.ship.target_speed == target_speed and game.station is Station.BRIDGE
+    key(pygame.K_d)
+    for value in (pygame.K_1, pygame.K_5, pygame.K_0, pygame.K_RETURN):
+        key(value)
+    assert boat.sub.order_depth == 150.0
+    game.msg = ""
+    game.flash("frigate banner")
+    assert game.msg == ""
+    key(pygame.K_2)
+    assert game.station is Station.SONAR
+    key(pygame.K_y)
+    assert boat.station.sonar.tow_state == game.sonar.tow_state
+    key(pygame.K_o)
+    assert boat.station.sonar.gain_db > game.sonar.gain_db
+    game.draw()
+    key(pygame.K_1)
+    game.draw()
+
+
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_local_submarine_screen_renders_in_both_languages(language):
+    game = Game(seed=5, start_menu=False, audio_enabled=False, language=language)
+    game.local_side = "uboot"
+    game._update(0.05)
+    for station in (Station.BRIDGE, Station.SONAR):
+        game.station = station
+        game.draw()
+
+
+def test_simlog_publication_accepts_uncrewed_and_crewed_submarine_roles():
+    from dataclasses import replace
+    game = _game()
+    game.preferences = replace(game.preferences, simlog=True)
+    server, bridge = CommanderServer(), CommanderBridge()
+    now = 1.0
+    for index in range(120):
+        game._update(0.05)
+        now += 0.1
+        bridge.pump(game, server, now=now)   # uncrewed: roles stay redacted
+        if index == 60:
+            with server._lock:
+                _token, session = server._new_session_locked("sub")
+            assert server.grant_station(session["client_id"], "uboot_sonar")
+    assert game.opfor is not None
+    assert all(entry["state"]["role"] == "uboot_sonar"
+               for entry in bridge._v2_simlog["uboot_sonar"])
+
+
+def test_options_page_two_chooses_the_local_side_outside_a_mission_only():
+    game = _game()
+
+    def key(value):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=0,
+                                             unicode=""))
+
+    assert game.local_side == "frigate"
+    # During a mission the row is shown but locked.
+    game._open_administration("options")
+    key(pygame.K_PAGEDOWN)
+    assert game.options_page == 1 and game._option_rows() == ("local_side",)
+    key(pygame.K_RETURN)
+    assert game.local_side == "frigate"
+    game.draw()
+    key(pygame.K_ESCAPE)
+
+    game._return_to_main_menu()
+    game._open_administration("options")
+    assert game.options_page == 1
+    key(pygame.K_TAB)
+    assert game.options_page == 0 and game.options_sel == 0
+    key(pygame.K_TAB)
+    key(pygame.K_RIGHT)
+    assert game.local_side == "uboot"
+    assert not hasattr(game.preferences, "local_side")
+    game.draw()
+    # Page tabs and the row are clickable (canvas coordinates for this check).
+    game._window_to_canvas = lambda pos: pos
+    tab = game._options_page_rects()[0]
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
+                                         pos=(tab.center)))
+    assert game.options_page == 0
+    tab = game._options_page_rects()[1]
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
+                                         pos=(tab.center)))
+    row = game._options_row_rects()[0]
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1,
+                                         pos=(row.center)))
+    assert game.options_page == 1 and game.local_side == "frigate"
+    # Rows beyond the setup page's one row never act.
+    game.handle_event(pygame.event.Event(
+        pygame.MOUSEBUTTONDOWN, button=1,
+        pos=(game._options_row_rects()[5].center)))
+    assert game.options_sel == 0 and game.local_side == "frigate"
+
+
+class _NoTruth:
+    """Stands in for frigate truth: any attribute read fails the test."""
+
+    def __getattr__(self, name):
+        raise AssertionError(f"submarine screen read frigate truth: {name}")
+
+
+@pytest.mark.parametrize("mode", ["docked", "ticker"])
+@pytest.mark.parametrize("language", ["en", "de"])
+def test_local_submarine_command_station_is_drawn_without_frigate_truth(mode, language):
+    import dataclasses
+    from src.ui import uboot_view
+    game = Game(seed=5, start_menu=False, audio_enabled=False, language=language)
+    game.preferences = dataclasses.replace(game.preferences, bottom_panel=mode)
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+    boat.sub.set_orders(course=200.0, speed=6.0, depth=120.0)
+    for _ in range(50):
+        game._update(0.1)
+    ship, sonar_targets = game.ship, game._sonar_targets
+    game.ship = _NoTruth()
+    game._sonar_targets = _NoTruth()
+    try:
+        for station, page in ((Station.BRIDGE, 0), (Station.BRIDGE, 1), (Station.SONAR, 0)):
+            game.station, boat.command_page = station, page
+            game.draw()
+    finally:
+        game.ship, game._sonar_targets = ship, sonar_targets
+    # The chart shows land/sea in the map rect and the boat's own symbol.
+    game.station, boat.command_page = Station.BRIDGE, 0
+    game.draw()
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        view = uboot_view.chart_view(game, boat)
+        point = tuple(int(value) for value in view.world_to_screen(boat.sub.x, boat.sub.y))
+    friend = uboot_view.nato_symbols.AFFILIATION_COLORS["FRIEND"]
+    near = [game.screen.get_at((point[0] + dx, point[1] + dy))[:3]
+            for dx in range(-12, 13) for dy in range(-12, 13)]
+    assert friend in near
+
+
+def test_submarine_chart_and_pages_are_the_boats_own_controls():
+    game = _game()
+    game.local_side = "uboot"
+    game._update(0.05)
+    boat = game.opfor
+    frigate_view = (game.map_view.scale, game.map_view.cx, game.map_view.cy)
+
+    def key(value):
+        game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=0, unicode=""))
+
+    game.draw()
+    scale = boat.chart_view.scale
+    key(pygame.K_q)
+    assert boat.chart_view.scale < scale
+    key(pygame.K_e)
+    key(pygame.K_e)
+    assert boat.chart_view.scale > scale
+    key(pygame.K_k)
+    assert boat.chart_follow is False
+    key(pygame.K_PAGEDOWN)
+    assert boat.command_page == 1
+    key(pygame.K_PAGEUP)
+    assert boat.command_page == 0
+    # Mouse: the wheel zooms only over the boat's chart; tabs switch pages.
+    game._window_to_canvas = lambda pos: pos
+    scale = boat.chart_view.scale
+    game.handle_event(pygame.event.Event(pygame.MOUSEWHEEL, x=0, y=1, pos=(900, 300)))
+    assert boat.chart_view.scale == scale
+    game.handle_event(pygame.event.Event(pygame.MOUSEWHEEL, x=0, y=1, pos=(300, 300)))
+    assert boat.chart_view.scale > scale
+    from src.ui import stations_view
+    with layout.bottom_panel_regions(game.bottom_panel_mode()):
+        tab = stations_view._station_page_tab_rects(
+            pygame.Rect(config.STATION_PANEL_RECT), 2)[1]
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=tab.center))
+    assert boat.command_page == 1
+    center = boat.chart_view.cx
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=(300, 300)))
+    game.handle_event(pygame.event.Event(pygame.MOUSEMOTION, pos=(340, 300), rel=(40, 0),
+                                         buttons=(1, 0, 0)))
+    game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONUP, button=1, pos=(340, 300)))
+    assert boat.chart_view.cx != center
+    assert (game.map_view.scale, game.map_view.cx, game.map_view.cy) == frigate_view
+    # Orders land in the boat log with the world time.
+    key(pygame.K_d)
+    for value in (pygame.K_8, pygame.K_0, pygame.K_RETURN):
+        key(value)
+    row = list(boat.feed)[-1]
+    assert row["category"] == "navigation" and row["stamp"] == game.world.format_time()

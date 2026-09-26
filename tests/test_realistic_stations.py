@@ -1,3 +1,4 @@
+import math
 """Regression tests for observation boundaries and workstation realism."""
 
 from types import SimpleNamespace
@@ -12,6 +13,21 @@ from src.sonar.sonar import Contact, SonarSystem
 from src.weapons.torpedo import Torpedo
 
 
+def scan_until_asm_track(game, revolutions=6):
+    """Swerling-1 fluctuation: a single look may miss; the track forms
+    within a few antenna revolutions."""
+    for _ in range(revolutions):
+        game.sim_t += 4.0
+        # Missiles fly on: the ASM cue rests on measured speed and altitude.
+        for asm in game.asms:
+            step = config.kn_to_nm_per_s(asm.speed_kn) * 4.0
+            asm.x += step * math.sin(math.radians(asm.course))
+            asm.y -= step * math.cos(math.radians(asm.course))
+        game._update_air_picture(full_scan=True)
+        if game.asm_tracks():
+            return
+
+
 def press(game, key):
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key))
 
@@ -21,11 +37,11 @@ def test_radar_off_does_not_publish_ground_truth_asm():
     game.asms = [ASM(game.ship.x + 10.0, game.ship.y, 0.0, 7, game.rng_asm)]
     game.air_picture._tracks.clear()
     game.radar_on = False
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert game.asm_tracks() == []
 
     game.radar_on = True
-    game._update_air_picture()
+    scan_until_asm_track(game)
     tracks = game.radar_tracks()
     assert len([track for track in tracks if track["kind"] == "ASM"]) == 1
     assert "obj" not in tracks[0]
@@ -39,7 +55,7 @@ def test_essm_requires_sensor_track_not_live_asm_object():
     game.launch_essm()
     assert game.vls_cells == before and not game.essms
 
-    game._update_air_picture()
+    scan_until_asm_track(game)
     game.launch_essm()
     assert game.vls_cells == before - 1 and len(game.essms) == 1
 
@@ -48,7 +64,7 @@ def test_essm_rejects_track_outside_engagement_envelope():
     game = Game(seed=457, start_menu=False)
     game.asms = [ASM(game.ship.x + game._air_defense_loadout["sam"]["range_nm"] + 5.0,
                      game.ship.y, 0.0, 9, game.rng_asm)]
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     before = game.vls_cells
     game.launch_essm()
     assert game.vls_cells == before

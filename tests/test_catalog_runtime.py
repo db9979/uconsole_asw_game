@@ -92,7 +92,8 @@ def test_r10_submarine_components_preserve_draw_order_and_add_finite_decoys():
         assert rng.getstate() == expected_rng.getstate()
         assert submarine.motion.cruise_speed_kn == min(profile.speed_kn[1], 8.0)
         assert submarine.motion.maximum_speed_kn == profile.speed_kn[1]
-        assert submarine.legacy_observation_model
+        # Phase 7: every boat senses through its own suite.
+        assert not submarine.legacy_observation_model
         assert machine_acoustics(CATALOG, key, submarine.speed) is None
         assert set(submarine.sensor_suite.controllers) == {
             f"sensor.{key}.sonar", f"sensor.{key}.esm"}

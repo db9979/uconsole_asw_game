@@ -39,6 +39,33 @@ mit mindestens zwölf Zeichen. Das Passwort wird als gesalzener scrypt-Hash in
 `--reset-web-host-password` zusätzlich zu den Webmodus-Argumenten; der alte
 Hash wird entfernt und ein neuer Einrichtungscode angezeigt.
 
+## Lokales Spiel (F9, Crew oder Solo) hinter einem Proxy
+
+Auch das normale Spiel auf der uConsole kann Remote Crew zusätzlich über einen
+HTTPS-Reverse-Proxy anbieten. Die direkte LAN-Adresse bleibt dabei nutzbar:
+
+```sh
+.venv/bin/python main.py --public-origin https://asw.example.net
+.venv/bin/python main.py --public-origin https://asw.example.net --solo-crew
+```
+
+Der Proxy zeigt auf die im F9-Fenster angezeigte Adresse, z. B.
+`http://192.168.178.36:8765`. Er darf den öffentlichen `Host`-Header
+durchreichen oder durch die Upstream-Adresse ersetzen; ein explizites `:443`
+ist ebenfalls erlaubt. Das F9-Fenster und die Solo-Anzeige nennen beide
+Adressen. Über den Proxy gilt nur die exakte Origin `https://asw.example.net`,
+über das LAN nur `http://<IP>:<Port>`; Kopplungscode, CSRF-Token und
+HttpOnly-Cookies bleiben unverändert, das Cookie ist auf dem HTTPS-Weg
+zusätzlich `Secure`. Ohne `--public-origin` antwortet der Server wie bisher
+nur auf seiner LAN-Adresse; ein Proxy mit eigenem Hostnamen erhält dann
+`403 Forbidden`.
+
+Ist die Adresse aus dem Internet erreichbar, schützt allein der sechsstellige
+Kopplungscode den Zugang (nach fünf Fehlversuchen je Minute wird er neu
+erzeugt). Im Solo-Modus darf der gekoppelte Browser zusätzlich speichern,
+laden und ein neues Spiel starten. Beschränke den Zugriff deshalb möglichst am
+Proxy (z. B. Zugriffsliste, VPN oder Proxy-Anmeldung).
+
 ## Raum und Spiel
 
 Die Spielleitung meldet sich unter `/admin` an. Dort stehen Raumcode,
@@ -50,9 +77,9 @@ ihnen wechseln. Freie Stationen fallen an die Spielleitung zurück.
 
 Crew-Mitglieder öffnen die Basisadresse, geben Name und Raumcode ein und fordern
 Stationen an. Der Host kann auch eine bereits gehaltene Station übernehmen.
-Direktfeuer und Sonar-Audio werden je Station separat freigegeben. Wenn die
-Spielleitung länger als 15 Sekunden nicht anwesend ist, pausiert das Spiel;
-nach erneuter Anmeldung kann sie fortsetzen. Laden oder ein neues Spiel wirft
+Direktfeuer und Sonar-Audio werden je Station separat freigegeben. Das Spiel
+läuft immer in Echtzeit weiter, auch wenn die Spielleitung nicht angemeldet ist;
+es gibt keine Pause. Laden oder ein neues Spiel wirft
 vorbereitete Befehle weg und setzt Crew-Zuteilungen zurück.
 
 Die Weboptionen verwalten Serversprache, SimLog, Besatzungsfunk und Live-AIS/ADS-B samt
@@ -93,4 +120,4 @@ im Internet. Die Proxy-Einrichtung und sein Zertifikat werden außerhalb des
 Spiels verwaltet.
 
 Die Webverwaltung liegt unter `/api/v2/web/*` und nutzt die vorhandene v2-Sitzung.
-Alle `/api/v1/*`-Routen bleiben abgeschaltet. Spielstände bleiben exakt v10.
+Alle `/api/v1/*`-Routen bleiben abgeschaltet. Spielstände bleiben exakt v14.

@@ -568,32 +568,64 @@ class ASROC:
         return result
 
 
+NIXIE_LEVEL_DB = 12.0          # designed emission above a quiet hull
+NIXIE_MAX_TOW_KN = 25.0        # the tow cable parts above this speed
+NIXIE_DESIGN_TOW_KN = 15.0     # speed at which it streams at its design depth
+NIXIE_HEADING_TAU_S = 60.0     # cable lag in turns
+
+
 class TowedAcousticDecoy:
-    """A bounded, ownship-tethered terminal seeker candidate."""
+    """Towed acoustic decoy on a cable.
+
+    Quasi-static cable equilibrium: hydrodynamic drag (~v^2) against the
+    body's wet weight sets the cable angle, so the decoy streams deeper and
+    closer astern when the ship slows and shallower/farther when it speeds up
+    (depth ~ design depth * (v_design / v)^2, bounded).  The tow bearing lags
+    the ship's course in turns; above NIXIE_MAX_TOW_KN the cable parts.  The
+    emitted level is designed louder than a quiet hull and it moves with the
+    ship, so a Doppler-gated seeker cannot reject it."""
+
+    acoustic_level_db = NIXIE_LEVEL_DB
 
     def __init__(self, seq: int, ship, *, life_s: float, tether_nm: float,
-                 depth_m: float):
+                 depth_m: float, tow_heading: float | None = None):
         self.seq = seq
         self.life = life_s
         self.tether_nm = tether_nm
+        self.design_depth = depth_m
         self.depth = depth_m
         self.dead = False
         self.state = "RUN"
         self.sunk = False
+        self.speed_kn = float(getattr(ship, "speed", NIXIE_DESIGN_TOW_KN))
+        self.tow_heading = (ship.course % 360.0 if tow_heading is None
+                            else tow_heading % 360.0)
         self.x, self.y = ship.x, ship.y
-        self.update(0.0, ship, None)
+        self._place(ship)
+
+    def _place(self, ship) -> None:
+        speed = max(3.0, self.speed_kn)
+        factor = min(6.0, max(0.5, (NIXIE_DESIGN_TOW_KN / speed) ** 2))
+        cable_m = self.tether_nm * 1852.0
+        self.depth = min(self.design_depth * factor, 0.9 * cable_m)
+        layback_nm = math.sqrt(max(0.0, cable_m ** 2 - self.depth ** 2)) / 1852.0
+        angle = math.radians((self.tow_heading + 180.0) % 360.0)
+        self.x = ship.x + layback_nm * math.sin(angle)
+        self.y = ship.y - layback_nm * math.cos(angle)
 
     def update(self, dt: float, ship, world) -> None:
         if self.dead:
             return
         self.life = max(0.0, self.life - max(0.0, dt))
-        if self.life <= 0.0:
+        self.speed_kn = float(getattr(ship, "speed", self.speed_kn))
+        if self.life <= 0.0 or self.speed_kn > NIXIE_MAX_TOW_KN:
             self.dead = True
             self.state = "SASE"
             return
-        angle = math.radians((ship.course + 180.0) % 360.0)
-        self.x = ship.x + self.tether_nm * math.sin(angle)
-        self.y = ship.y - self.tether_nm * math.cos(angle)
+        self.tow_heading = (self.tow_heading + config.angle_diff_deg(
+            ship.course, self.tow_heading) * (1.0 - math.exp(
+                -max(0.0, dt) / NIXIE_HEADING_TAU_S))) % 360.0
+        self._place(ship)
         if world is not None and (world.on_land(self.x, self.y)
                                   or world.depth_m(self.x, self.y) <= self.depth):
             self.dead = True
@@ -601,14 +633,15 @@ class TowedAcousticDecoy:
 
     def serialize(self) -> dict:
         return {"seq": self.seq, "x": self.x, "y": self.y,
-                "depth": self.depth, "life": self.life,
+                "depth": self.design_depth, "life": self.life,
                 "tether_nm": self.tether_nm, "dead": self.dead,
-                "state": self.state}
+                "state": self.state, "tow_heading": self.tow_heading}
 
     @classmethod
     def restore(cls, value: dict, ship) -> TowedAcousticDecoy:
         result = cls(value["seq"], ship, life_s=value["life"],
-                     tether_nm=value["tether_nm"], depth_m=value["depth"])
+                     tether_nm=value["tether_nm"], depth_m=value["depth"],
+                     tow_heading=value["tow_heading"])
         result.x, result.y = value["x"], value["y"]
         result.dead, result.state = value["dead"], value["state"]
         return result
@@ -668,8 +701,11 @@ def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
         nixie_ids = set()
         for row in nixies:
             _object(row, {"seq", "x", "y", "depth", "life", "tether_nm",
-                          "dead", "state"},
+                          "dead", "state", "tow_heading"},
                     "asw.nixie")
+            heading = _number(row["tow_heading"], 0, 360, "asw.nixie.tow_heading")
+            if heading >= 360:
+                return False
             seq = _integer(row["seq"], 1, nixie_seq, "asw.nixie.seq")
             if seq in nixie_ids:
                 return False

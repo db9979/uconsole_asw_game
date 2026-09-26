@@ -35,6 +35,8 @@ class OPZObservation:
     observer_y: float | None = None
     released_to_opz: bool = False
     altitude_m: float | None = None
+    # Bridge lookout report (lookout_id label), never an operator annotation.
+    visual: str | None = None
 
     @property
     def track_id(self) -> str:

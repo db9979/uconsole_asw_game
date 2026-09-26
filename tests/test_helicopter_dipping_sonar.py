@@ -13,6 +13,7 @@ from src.core.game import Game
 from src.core.station import Station
 from src.sonar.sonar import Contact, SonarSystem
 from src.ui import stations_view
+from src.core.i18n import localize
 
 
 class Ocean:
@@ -278,7 +279,7 @@ def test_ship_and_helicopter_release_create_two_independent_opz_bearings():
     assert [track.observation_id for track in game.opz_tracks()] == [dip.observation_id]
 
 
-def test_same_v10_upgrader_recognizes_only_prior_exact_release_shape():
+def test_prior_release_shape_is_rejected_without_upgrader():
     game = Game(seed=902, start_menu=False, audio_enabled=False)
     contact = Contact(1, game.subs[0].id, "passiv", "sub")
     contact.update_passive(45.0, .8, .8, "hidden", game.sim_t)
@@ -298,14 +299,9 @@ def test_same_v10_upgrader_recognizes_only_prior_exact_release_shape():
             del row[key]
 
     restored = Game(seed=903, start_menu=False, audio_enabled=False)
-    assert restored._load_save_data(old, allow_pre_r9=True)
-    upgraded = restored.sonar.contacts[contact.target_id]
-    assert upgraded.released_to_opz and upgraded.player_class == "U_BOOT"
-    assert restored.helo.dip_state == "STOWED"
-
-    malformed = copy.deepcopy(old)
-    malformed["helo"]["dip_state"] = "STOWED"
-    assert not restored._load_save_data(malformed, allow_pre_r9=True)
+    before = restored.save_state()
+    assert not restored._load_save_data(old)
+    assert restored.save_state() == before
 
 
 def test_v10_roundtrip_preserves_dip_release_and_pending_echo(monkeypatch):
@@ -420,7 +416,7 @@ def test_helicopter_view_shows_only_the_helicopters_own_dip_plot():
     game.selected_contact = dip_found
 
     assert stations_view.helo_dip_contacts(game) == [dip_found]
-    line = stations_view._helo_dip_contact_line(game)
+    line = localize(stations_view._helo_dip_contact_line(game), game.tr)
     assert "K01" in line and "123" in line
 
     pygame.init()
@@ -458,7 +454,7 @@ def test_helicopter_can_select_active_only_dip_echo():
     assert stations_view.helo_dip_contacts(game) == [contact]
     game._cycle_helo_contact(1)
     assert game.selected_contact is contact
-    assert "090.0" in stations_view._helo_dip_contact_line(game)
+    assert "090.0" in localize(stations_view._helo_dip_contact_line(game), game.tr)
     assert game.qualify_helicopter_contact(contact, True) is True
     assert game.release_sonar_contact(contact, True, source="helicopter") is True
     reports = game.opz_tracks()

@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from src.commander.bridge import CommanderBridge, sonar_pcm_s16le
+from src.commander.projections import ROLE_NAMES
 from src.core import config
 from src.core.game import Game
 from src.sonar.sonar import Contact
@@ -257,8 +258,7 @@ def test_polling_is_deterministic_detached_and_does_not_mutate_game(game):
     contact(game)
     before, rng = game.save_state(), random.getstate()
     bridge, server = publish(game)
-    first = {role: deepcopy(server.v2_states[role][role])
-             for role in server.v2_states if role is not None}
+    first = {role: deepcopy(server.v2_states[role][role]) for role in ROLE_NAMES}
     for index in range(30):
         bridge.pump(game, server, now=100.5 + index / 2)
     assert {role: server.v2_states[role][role] for role in first} == first

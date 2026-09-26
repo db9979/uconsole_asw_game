@@ -21,7 +21,8 @@ Seite 1 listet die Erfassungen; Seite 2 zeigt die Belege für die gewählte Erfa
 ```
 
 - Die Peilgenauigkeit beträgt etwa +/-3 Grad. Erfassungen sind Peilungen, keine Positionen.
-- Kandidaten werden nur aus beobachteter Frequenz, PRF und Modulation gerankt. Ein Gleichstand ist keine Identifizierung.
+- Ein drehendes Suchradar trifft die ESM-Antenne einmal je Umlauf mit der Hauptkeule; seine Nebenkeulen sind nur aus der Nähe hörbar. Die Belegseite zeigt den Spitzenpegel, eine Entfernungsschätzung unter Annahme der Leistungsklasse des besten Kandidaten (ein falscher Kandidat ergibt eine falsche Entfernung) und die gemessene Antennenumlaufzeit.
+- Standardmäßig (Bedienerassistenz aus, `F10`) zeigt die Belegseite nur die gemessenen Parameter und eine Bibliotheksabfrage: jeder Sender, dessen veröffentlichter Frequenz- (und PRF-)Bereich die Messung enthält, nach Namen sortiert, ohne Bewertung. Radartyp, Bedrohung und Entfernungsschätzung beurteilen Sie dann selbst; `C` schaltet die Bibliothek in Namensreihenfolge durch. Mit Assistenz Training werden Kandidaten nach Frequenz, PRF und Modulation mit Bewertung gerankt und Radartyp, Bedrohung und Entfernungsschätzung ausgefüllt. Ein Gleichstand ist keine Identifizierung.
 - Die Korrelation mit Radar- oder Sonartracks nutzt vereinbare Zeit, Peilung und beobachtete Position, nie verborgene Identität.
 - ESM läuft aus der OPZ-Abteilung: eine zerstörte OPZ legt es lahm.
 
@@ -50,6 +51,7 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 - Wechselt eine Erfassung bei stehender Peilung von Suche auf einen Puls-Doppler-Sucher mit hoher PRF, steht ein Flugkörperangriff bevor: sofort die OPZ warnen.
 - Das Zuordnen eines Radartyps (`C`) gibt die Peilung an die OPZ frei; das Löschen der Zuordnung zieht sie zurück.
 - Stören ist eine Aussendung. Gezielt einsetzen, nicht dauerhaft.
+- Das eigene Radar wird ebenfalls gehört: ein U-Boot auf Sehrohrtiefe (Mast oben, etwa 18 m) fängt es mit seinem ESM auf und kann die Peilung über seinen Datalink an andere Gegner weitergeben. Tief getauchte Boote hören weder Radar noch empfangen sie den Datalink.
 
 ## Nicht modelliert {#eloka-limits}
 

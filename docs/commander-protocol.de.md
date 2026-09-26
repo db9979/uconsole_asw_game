@@ -2,7 +2,7 @@
 
 [English](commander-protocol.md)
 
-Anwendung 1.0.0, API-Protokoll 2, ausschließlich Spielstandsformat v11. Diese
+Anwendung 1.0.0, API-Protokoll 2, ausschließlich Spielstandsformat v12. Diese
 Versionen sind voneinander unabhängig. Zugangsdaten, Netzwerksitzungen, Leases,
 Befehlswarteschlangen oder Vorschläge werden nicht gespeichert. Gemeinsame
 Anmerkungen und von der Besatzung angenommene Ziel-/Navigations-Sollwerte verwenden
@@ -11,7 +11,7 @@ die normale Spielpersistenz.
 ## Zuständigkeit
 
 CommanderConsole steuert den Listener lokal. CommanderBridge.pump wird einmal pro
-Wall-Frame der Hauptschleife vor Game.update ausgeführt, auch in pausierten Frames.
+Wall-Frame der Hauptschleife vor Game.update ausgeführt, auch in Menü-Frames.
 Es liest öffentliche Beobachtungen und eigene Einheiten, validiert Befehle und
 veröffentlicht abgelöstes JSON. HTTP-Handler importieren niemals Game/Pygame,
 greifen nicht auf Simulationsobjekte zu und lösen keine Sensor-/TMA-Arbeit aus.
@@ -21,7 +21,7 @@ Methoden zum Laden eines Kandidaten haben keine Netzwerknebenwirkungen.
 
 | Methode / Route | Vertrag |
 |---|---|
-| GET /, /app.js, /style.css | Feste paketierte Ressourcen, beim Serverstart zwischengespeichert |
+| GET /, /js/**, /css/**, /fonts/** | Feste paketierte Ressourcen (exakte Routentabelle aus `src/commander/assets.py`), beim Serverstart zwischengespeichert |
 | GET /api/v2/ui?lang=en or de | Nur `commander.web.*`-Zeichenketten aus den Root-Katalogen |
 | GET /api/v2/contacts | Öffentlicher paketierter Kontaktreferenzkatalog |
 | POST /api/v2/pair | JSON-Kopplungscode; Erfolg erzeugt Cookie-Sitzung und CSRF-Zustand |
@@ -62,7 +62,7 @@ der Lease sofort; `direct_fire`- und `sonar_audio`-Freigaben bleiben separat. Ge
 eine behaltene Lease ist aktiv und wird durch eine separate monotone
 `active_generation` identifiziert.
 Stationsanfragen sind additiv; die Aktivierung gibt keine andere Lease frei.
-Release, Widerruf, Übernahme, Ablauf, Pause, Fokusverlust und Weltersatz machen
+Release, Widerruf, Übernahme, Ablauf und Weltersatz machen
 die Berechtigung in ihrem jeweils definierten Geltungsbereich ungültig.
 
 Die Aktivierung validiert die Ziel-Lease und ihre Stationsgeneration, vergleicht
@@ -83,9 +83,27 @@ sind undurchsichtige Referenzen für die Lebensdauer einer Beobachtung.
 Jede zugewiesene v2-Rolle erhält dieselbe abgelöste Umgebungszusammenfassung:
 vorgegebenen ganzzahligen `sea_state`, überblendeten `effective_sea_state`, den
 maßgeblichen Wert `is_night`, Wetterart, nautische Wind-Herkunftsrichtung,
-Windgeschwindigkeit in Knoten, Regenstärke und Sicht in NM. Die Helikopterrolle
-erhält zusätzlich nur abgeleitete Freigaben für Start und Tauchsonar sowie den
-Querwind; verborgener Luftfahrzeug- oder Wetterzustand wird nicht übertragen.
+Windgeschwindigkeit in Knoten, Regenstärke und Sicht in NM. Jede Rolle erhält
+außerdem den gemeinsamen Block `weather_station` für den Analysedialog (Taste 0):
+eigene `atmosphere` (Barometer und 3-Stunden-Tendenz, Luft-/Wassertemperatur,
+Böen, Beaufort, Wolkenuntergrenze, Vereisung, Tageslicht, Mondphase),
+qualitative `effects`, die abgeleitete Helikopter-Entscheidung `flight`
+(CLEAR/LIMITED/NO-GO mit Werten und konfigurierten Grenzwerten) und `profile`.
+`profile` ist null, bis das Sonar einen Bathythermographen genommen hat; danach
+enthält es ausschließlich diese Messung (Alter, Versatz, Veraltet-Kennzeichen,
+Schicht, Tiefen und Geschwindigkeiten, SOFAR-Achse oder null, KZ-Bänder) mit
+höchstens neun Strahlen zu 64 Punkten und einem begrenzten, daraus berechneten
+Schattenraster. Die Helikopterrolle erhält zusätzlich abgeleitete Freigaben für
+Start und Tauchsonar sowie den Querwind; verborgener Luftfahrzeug- oder
+Wetterzustand und das wahre Meeresprofil werden nicht übertragen.
+Taktische Beobachtungszeilen tragen `visual_class` und `visual_type`: null
+außer bei Meldungen des Brückenausgucks, dort die erkannte Klasse (feste
+Codeliste) und nach der Identifizierung der Katalog-Typname eines Kriegsschiffs
+oder Militärflugzeugs. Das sind Beobachtungen, nie die Klassifizierung oder
+Zugehörigkeit des Bedieners. Die Brückenrolle erhält zusätzlich `sightings`, die
+neuesten 24 Ausguck-Meldungen (Zeit, gesichtete Art oder Klassencode, Typ,
+Peilung, Entfernung); Handelsschiffnamen und Identitäten des Live-Verkehrs sind
+nie enthalten.
 Die Autocrew-Projektion jeder Rolle enthält ausschließlich deren Aktivierung und
 Status. Zugangsdaten, Leases und Autocrew-Befehle gehören nicht zur Projektion.
 
@@ -95,7 +113,12 @@ Befehle verwenden strikte Umschläge mit `protocol`, kryptografischer Anfrage-ID
 und exakt begrenzten Parametern (`params`).
 HTTP-Threads reihen nur abgelöste Umschläge ein. Der Hauptthread validiert erneut
 und wendet angenommene Befehle genau einmal in deterministischer Stationsreihenfolge
-und je Client in FIFO-Reihenfolge an. Direktfeueraktionen benötigen zusätzlich die
+und je Client in FIFO-Reihenfolge an. Nur Bediener-Annotationen des gemeinsamen
+Lagebilds (Klassifizierung, Zugehörigkeit, Track-ID, Freigabe, Fusion,
+Qualifizierung, ESM-Annotation, Zielvorschlag) müssen noch zur vom Browser
+gesehenen `resource_revision` passen (`revision_conflict`); alle übrigen Befehle
+lösen ihre opaken Referenzen erst bei der Anwendung auf und werden nicht
+abgelehnt, nur weil sich ein anderer Kontakt geändert hat. Direktfeueraktionen benötigen zusätzlich die
 Direktfeuer-Freigabe der Station sowie die üblichen Prüfungen von Beobachtung,
 Bereitschaft, Bestand, ROE und Einsatzbereich. Eine eingereihte Antwort wird vor
 ihrem endgültigen Ergebnis niemals als erfolgreich gemeldet.
@@ -108,11 +131,15 @@ wird im Hauptthread anhand des projizierten Sonar-Abhörmodus sowie der Einstell
 für Band, Notch und Gain gefiltert. Der Server hält die letzten 40 Blöcke (zehn
 Sekunden), damit ein kurz stockender Client der Reihe nach aufholt; ältere Blöcke
 werden verworfen und als Diskontinuität gemeldet. Der Browser startet die Wiedergabe
-etwa eine Sekunde hinter dem neuesten Block. Das AudioWorklet wiederholt den
-letzten Block höchstens zwei Sekunden nach dem Ende frischer Daten; danach spielt
-es leises neutrales Rauschen und kennzeichnet den Strom als veraltet. Der
-uConsole-Mixer-Worker nutzt ebenfalls eine Sekunde Vorlauf und zwei Sekunden
-Ersatzwiedergabe. Ein vorübergehender Fehler der
+etwa eine Sekunde hinter dem neuesten Block. Das AudioWorklet regelt diesen
+Vorlauf, indem es den Strom um höchstens 2 % schneller oder langsamer liest;
+Uhrendrift und Jitter leeren oder überfüllen ihn so nicht. Bei einem Unterlauf
+spielt es einen nicht periodischen, granular aus der letzten halben Sekunde
+erzeugten Ersatz und puffert eine halbe Sekunde nach, bevor frische Daten
+weiterlaufen; nach zwei Sekunden ohne Daten spielt es leises neutrales Rauschen
+und kennzeichnet den Strom als veraltet. Überblendet wird nur an echten
+Brüchen. Der uConsole-Mixer-Worker nutzt denselben elastischen Vorlauf, dieselbe
+Verdeckung und dieselbe Zwei-Sekunden-Grenze. Ein vorübergehender Fehler der
 Zustandsabfrage oder HTTP 503 verwirft gepuffertes Audio nicht; der Audio-Endpunkt
 prüft Sitzung und Stationsrecht weiterhin bei jeder Anfrage.
 Ein neu gestarteter Stream setzt eine gegenüber seiner Blocknummer vorauseilende
@@ -130,11 +157,13 @@ Die HTTP-Abfrage bleibt der Fallback. Beide Transporte nehmen weder Browseraudio
 noch Simulationsbefehle an.
 
 Für die Diagnose auf dem Gerät schreibt `U_JAGD_AUDIO_DEBUG=1` begrenzte,
-kontaktfreie Werte zu Receiver-Blockrate, Mixer-Unterläufen, Pufferstand und
-Verlusten nach `~/.u-jagd/audio_debug.log`. Im Browser zeigen die
+kontaktfreie Werte zu Receiver-Blockrate, Mixer-Unterläufen, verdeckten
+Blöcken, Ratenkorrektur, Pufferstand und Verlusten nach
+`~/.u-jagd/audio_debug.log`; `U_JAGD_PERF_DEBUG=1` ergänzt in `perf_debug.log`
+Frame-Spitzen und das Nachholen der Simulationszeit. Im Browser zeigen die
 Entwicklerwerkzeuge `window.uJagdAudioDiagnostics` mit Puffersekunden,
-Sequenzlücken, verworfenen und wiederholten Blöcken, Veraltet-Zustand und
-Transport. Beides bleibt außerhalb der Spielstände.
+Sequenzlücken, verworfenen und verdeckten Blöcken, Wiedergaberate,
+Veraltet-Zustand und Transport. Beides bleibt außerhalb der Spielstände.
 
 Die Sonarrollenprojektion erhält nur die
 begrenzte Eigenschifffahrt und die TAS-Handhabungsgrenzen, die zur Erklärung eines
@@ -208,7 +237,6 @@ SimLog-Historie verwenden getrennte authentifizierte Endpunkte, damit jeder sein
 eigene Sitzungs-, Rollen-, Autoritäts- und Freigabegrenze erzwingt.
 Menü/Editor/Splash verwenden dasselbe Schema mit eigener Geometrie und Umgebung
 als `null` sowie leerer Mission, leeren Tracks, Ereignissen und leerer Karte.
-Pausierte laufende Missionen behalten ein eingefrorenes schreibgeschütztes Bild.
 
 Track-Referenzen und neutrale Bezeichnungen sind Identitäten für die Lebensdauer
 einer Beobachtung, keine rohen Entity-IDs. Ersetzung/Wiedererfassung macht sie
@@ -221,8 +249,12 @@ Die ELOKA-Auffassungszeile von v2 enthält zusätzlich die abgeleiteten Felder
 `signal_state` (`LIVE`, `RECENT`, `MEMORY` oder `UNCONFIRMED`) und `operational`.
 Die Browserfilter für Status, Mindestbedrohung und Frequenzband bleiben
 clientlokal und verwenden für Auffassungsliste, Kontakte, Scope und barrierefreie
-Textalternative dieselbe Teilmenge. Aktive ECM-Ziele bleiben sichtbar. Entfernung
-und verborgene Senderidentität werden weder projiziert noch filterbar gemacht.
+Textalternative dieselbe Teilmenge. Aktive ECM-Ziele bleiben sichtbar. Die Zeilen
+tragen außerdem den gemessenen Spitzenpegel `signal_db`, die gemessene
+Antennenumlaufzeit `scan_period_s` (oder null) und eine `range_estimate_nm`, die
+nur aus diesem Pegel und der Leistungsklasse der besten Katalog-Hypothese
+abgeleitet ist (oder null); wahre Entfernung und verborgene Senderidentität werden
+weder projiziert noch filterbar gemacht.
 
 Befehle enthalten `protocol`, kryptografische Anfrage-ID, Clientsequenz, Station,
 Stations- und Aktivgeneration, Weltsitzung/-epoche, Ressourcenrevision, Aktion und
@@ -271,12 +303,12 @@ Kopplung und erzeugt beim nächsten Pump eine neue Sitzung. Der Browser benötig
 einen passenden Sitzungs-/Kartenkontext, bevor er das neue Bild offenlegt. Der alte
 Ereignisrückstand löst Audio nach dem Neuverbinden nicht erneut aus.
 
-Eine aktive Besatzungsstation hält die Protokollphase hinter der lokalen F1-Hilfe,
-dem spielinternen F8-Kontakt-Analyzer, der F9-Besatzungsverwaltung und den
-F10-Optionen auf `live`. Das Öffnen oder Schließen eines dieser Eingabebesitzer
-macht über den Übergang hinweg eingereihte Befehle dennoch ungültig. Manuelle
-Pause, Fokusverlust, Speichern/Laden, Beenden, Nationen, echte Editoren, Menüs und
-Splash bleiben gesperrt.
+Die Mission läuft immer in Echtzeit und kennt keine Pause. Die Protokollphase
+bleibt hinter jedem lokalen Menü und Overlay (Hilfe, Optionen, Speichern/Laden,
+Beenden-Abfrage, Nationen, F8-Analyzer, F9-Verwaltung) und über einen Fokusverlust
+hinweg `live`; Öffnen oder Schließen macht eingereihte Befehle nicht ungültig.
+Phasen sind `live`, `menu`, `blocked` (nur Splash) und `ended`; nur Änderungen am
+Weltlebenszyklus verschieben die Epoche.
 
 Der Lookout nutzt ausschließlich den aktuellen Zustands-Snapshot, niemals
 Kartengeografie oder Simulationsobjekte. Er ist nordorientiert und schiffszentriert:
@@ -291,7 +323,7 @@ oder Größenänderung und verwendet gerätepixelgerechte Backing-Dimensionen.
 
 Der Session-Body enthält `host`: normal `null`, für eine Solo-Sitzung
 `{"generation": n}`. `GET /api/v2/host` liefert die losgelöste Host-Sicht (`phase`,
-`paused`, `time_scale`, `world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`)
+`world_mode`, `scenario`, `level`, `scenarios`, `levels`, `slots`)
 nur an eine Sitzung mit `host`; andere erhalten 403. Slot-Zeilen enthalten `saved` und
 `modified` ausschließlich aus Dateimetadaten, nie Spielstandinhalte.
 
@@ -299,9 +331,9 @@ Host-Steuerungen nutzen das normale `POST /api/v2/commands` mit der Pseudo-Rolle
 `"host"` (nie ein Station-Lease; `STATIONS` und jede Projektion bleiben bei neun).
 `station_generation` ist `host.generation` der Sitzung, `active_generation` muss 0
 sein und `world_session` muss passen; Epoche und Ressourcenrevision werden nicht
-geprüft, weil diese Aktionen keine Ressource referenzieren und Pause/Fortsetzen die
-Epoche selbst verschieben. Aktionen: `host_pause`, `host_resume`, `host_time_scale
-{index}`, `host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
+geprüft, weil diese Aktionen keine Ressource referenzieren und Laden/Neues Spiel die
+Epoche selbst verschieben. Es gibt keine Pause- oder Zeitfaktor-Aktion. Aktionen:
+`host_save {slot}`, `host_load {slot}`, `host_new_game {scenario, world_mode,
 level?, seed?}` und `host_instructor_environment {sea_state, event}`. Die Ausbilderaktion
 aendert das spielstandkompatible autoritative Weltfeld (0–6) und baut die daraus
 abgeleiteten Wetterendpunkte neu auf. Ihre optionale geschlossene Ereignisauswahl

@@ -23,6 +23,14 @@ from src.sensors.esm import (
 )
 
 
+def esm_revolution(game, steps=12):
+    """Rotating search radars reach the ESM mast with their main beam only
+    once per revolution (up to 5 s); sample the picture over one."""
+    for _ in range(steps):
+        game.sim_t += .5
+        game._update_esm_picture()
+
+
 def measurement(*, bearing=90.0, frequency=9.2e9, prf=800.0,
                 modulation="pulse", quality=.8, now=1.0):
     return ESMMeasurement(
@@ -208,7 +216,7 @@ def test_future_correlation_evidence_is_rejected():
 def test_radar_off_esm_on_and_parallel_evidence(monkeypatch):
     game, actor = emitting_game(monkeypatch, radar=False)
     game.sim_t = .5
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     game._update_esm_picture()
 
     assert game.eloka_tracks()
@@ -216,9 +224,9 @@ def test_radar_off_esm_on_and_parallel_evidence(monkeypatch):
 
     game.surface_radar_on = True
     game.sim_t = 1.0
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     game._update_esm_picture()
-    assert f"W-{actor.id}" in game.air_picture._tracks
+    assert f"S-{actor.id}" in game.air_picture._tracks
     assert game.eloka_tracks()
 
 
@@ -266,7 +274,7 @@ def test_military_patrol_and_transit_emit_without_own_radar_and_continue_after_s
     game.flights._seq = 103
     game.radar_on = False
     game.sim_t = 1.0
-    game._update_esm_picture()
+    esm_revolution(game)
 
     assert len(game.eloka_tracks()) == 2
     state = game.save_state()
@@ -276,7 +284,7 @@ def test_military_patrol_and_transit_emit_without_own_radar_and_continue_after_s
     assert [flight.radar_emitting for flight in restored.flights.flights] == [
         True, True, False]
 
-    game.sim_t = restored.sim_t = 1.5
+    game.sim_t = restored.sim_t = restored.sim_t + .5
     game._update_esm_picture()
     restored._update_esm_picture()
     assert restored.esm_picture.serialize() == game.esm_picture.serialize()
@@ -391,7 +399,7 @@ def test_malformed_esm_source_state_is_rejected_transactionally(
 
 def test_malformed_or_oversized_correlation_sources_are_rejected(monkeypatch):
     game, _ = emitting_game(monkeypatch, radar=True)
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     before = game.save_state()
 
     malformed = copy.deepcopy(before)

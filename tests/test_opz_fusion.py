@@ -66,7 +66,7 @@ def test_current_modeled_fix_is_the_only_source_of_sonar_geometry():
     assert report.x == game.ship.x + 4 and report.kind == "UNKNOWN"
 
 
-def test_manual_fusion_has_no_automatic_link_and_cannot_designate():
+def test_manual_fusion_has_no_automatic_link_and_ambiguous_fusion_cannot_designate():
     game = game_with_contacts()
     for contact in game.sonar.contacts.values():
         contact.player_class = "U_BOOT"
@@ -81,7 +81,73 @@ def test_manual_fusion_has_no_automatic_link_and_cannot_designate():
     target = game.target
     game.designate_opz_track()
     assert game.target is target
-    assert game.msg["__u_jagd_i18n__"] == "runtime.cic.fusion_display_only"
+    # Two different sonar contacts: no unique weapon target.
+    assert game.designate_opz_observation(fusion.observation_id) == "no_solution"
+    assert game.msg["__u_jagd_i18n__"] == "runtime.cic.fusion_ambiguous"
+
+
+def single_contact_fusion():
+    """Fuse the ship's and the helicopter's report of the same contact."""
+    game = game_with_contacts()
+    del game.sonar.contacts[70002]
+    contact = game.sonar.contacts[70001]
+    contact.released_to_opz = True
+    contact.dip_bearing = 31.0
+    contact.dip_last_seen = game.sim_t
+    contact.dip_observer_x, contact.dip_observer_y = game.ship.x, game.ship.y
+    contact.dip_bearing_uncertainty_deg = 3.0
+    contact.helo_qualified = True
+    contact.dip_released_to_opz = True
+    reports = game.opz_tracks()
+    assert len(reports) == 2
+    game.opz_fusion.marked.update(item.observation_id for item in reports)
+    game._create_opz_fusion()
+    fusion = game.selected_opz_track()
+    assert fusion.source == "FUSION"
+    return game, contact, fusion
+
+
+def test_single_contact_fusion_designates_its_sonar_contact():
+    game, contact, fusion = single_contact_fusion()
+    game.target = None
+    game.designate_opz_track()
+    assert game.target is contact and game.selected_contact is contact
+    assert game.msg["__u_jagd_i18n__"] == "runtime.cic.designated"
+
+
+def test_fusion_affiliation_blocks_and_classification_arms_fire_control():
+    game, contact, fusion = single_contact_fusion()
+    game.roe = "FREE"
+    assert contact.player_class is None
+    assert game.weapon_classification(contact) is None
+    assert game.classify_opz_observation(fusion.observation_id, "U_BOOT") is True
+    assert contact.player_class is None
+    assert game.weapon_classification(contact) == "U_BOOT"
+    # The sonar station's own class keeps precedence.
+    contact.player_class = "BIOLOGISCH"
+    assert game.weapon_classification(contact) == "BIOLOGISCH"
+    contact.player_class = None
+
+    assert game.affiliate_opz_observation(fusion.observation_id, "HOSTILE") is True
+    assert game.contact_affiliation(contact) == "HOSTILE"
+    assert game.affiliate_opz_observation(fusion.observation_id, "NEUTRAL") is True
+    game.target = contact
+    assert game.torpedo_readiness()[0] == "BLOCKIERT: ZUGEHOERIGKEIT NEUTRAL"
+    count = game.torpedo_count
+    assert game.launch_torpedo_at(contact, 50.0) == "roe_blocked"
+    assert game.torpedo_count == count and not game.torpedoes
+
+
+def test_fusion_lookup_for_fire_control_never_prunes_the_register():
+    game, contact, fusion = single_contact_fusion()
+    game.affiliate_opz_observation(fusion.observation_id, "FRIEND")
+    contact.dip_released_to_opz = False   # one member report disappears
+    before = (dict(game.opz_fusion.fusions),
+              dict(game.opz_fusion.fusion_affiliations))
+    assert game._contact_fusions(contact) == []
+    assert game.contact_affiliation(contact) == "UNKNOWN"
+    assert (dict(game.opz_fusion.fusions),
+            dict(game.opz_fusion.fusion_affiliations)) == before
 
 
 def test_shared_opz_geometry_and_mouse_select_use_opaque_report_id():
@@ -191,3 +257,32 @@ def test_result_helpers_enforce_freshness_damage_and_source_ownership():
     game.damage.compartments["opz"].state = "ZERSTOERT"
     assert game.set_opz_radar("surface", False) == "opz_down"
     assert game.set_opz_range(config.RADAR_RANGE_SCALES_NM[0]) == "opz_down"
+
+
+def test_subsurface_filter_uses_operator_classification_of_sonar_reports():
+    game = game_with_contacts()
+    first, second = game.sonar.contacts[70001], game.sonar.contacts[70002]
+    first.released_to_opz = second.released_to_opz = True
+    first.player_class = "U_BOOT"
+    game.opz_contact_filter = "SUBSURFACE"
+    shown = game.filtered_opz_tracks()
+    assert [item.classification for item in shown] == ["U_BOOT"]
+    assert shown[0].kind == "UNKNOWN"
+    game.opz_contact_filter = "SURFACE"
+    assert not game.filtered_opz_tracks()
+
+
+def test_native_opz_chart_draws_own_launched_torpedo(monkeypatch):
+    from src.ui import stations_view
+    from src.weapons.torpedo import Torpedo
+
+    game = game_with_contacts()
+    game.torpedoes = [Torpedo(game.ship.x + .5, game.ship.y, 90, 40, None, 7)]
+    drawn = []
+    original = stations_view.nato_symbols.draw_symbol
+    monkeypatch.setattr(stations_view.nato_symbols, "draw_symbol",
+                        lambda surface, center, affiliation, domain, *args, **kw:
+                        drawn.append((affiliation, domain)) or original(
+                            surface, center, affiliation, domain, *args, **kw))
+    game.draw()
+    assert ("FRIEND", "UNDERWATER_WEAPON") in drawn

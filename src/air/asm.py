@@ -6,12 +6,16 @@ Zeitbasis: Simulationssekunden; bei 1x identisch zu Echtzeit.
 import math
 
 from src.core import config
+from src.air import chaff
+from src.physics import missile
 from src.weapons.air_defense import air_defense_loadout
 from src.weapons.torpedo import Torpedo
 
 
 class ASM:
-    """Feindliche Schiffs-Rakete: skimmt auf ~20 m, optionaler ESM-Jammer.
+    """Feindliche Schiffs-Rakete: 3-DOF-Punktmasse (Boost, Seeziel-Flughoehe,
+    INS-Mittelkurs zum Startdatum, aktiver Suchkopf mit Sichtfeld und
+    Aufschaltzeit, Proportionalnavigation mit g-Limit), optionaler ESM-Jammer.
 
     Zustand: LAUF | CHAFF | ABGEFANGEN | TREFFER | VERLOREN
     """
@@ -19,20 +23,32 @@ class ASM:
     # Bounded gameplay endurance, not a real missile specification.
     _DEFAULT_PROFILE = air_defense_loadout()["asm"]
     RANGE_NM = _DEFAULT_PROFILE["range_nm"]
-    LIFE_S = RANGE_NM / config.kn_to_nm_per_s(_DEFAULT_PROFILE["speed_kn"])
+    LIFE_S = missile.flight_time_bound_s(RANGE_NM, _DEFAULT_PROFILE["speed_kn"])
     side = "hostile"
     sensor_domain = "air"
 
     def __init__(self, x_nm: float, y_nm: float, course_deg: float, seq: int,
-                 rng, profile=None):
+                 rng, profile=None, *, launch_speed_kn: float | None = None,
+                 altitude_m: float | None = None, datum=None):
         self.profile = profile or self._DEFAULT_PROFILE
         self.profile_key = self.profile["key"]
-        self.speed_kn = self.profile["speed_kn"]
+        self.cruise_kn = self.profile["speed_kn"]
+        # A round created in flight (legacy callers, tests) is already at
+        # cruise; a launched round boosts from its launcher's speed.
+        self.speed_kn = (self.cruise_kn if launch_speed_kn is None
+                         else max(0.0, float(launch_speed_kn)))
+        self.boosting = self.speed_kn < self.cruise_kn
         self.range_nm = self.profile["range_nm"]
-        self.life_s = self.range_nm / config.kn_to_nm_per_s(self.speed_kn)
+        self.life_s = missile.flight_time_bound_s(self.range_nm, self.cruise_kn)
         self.x = x_nm
         self.y = y_nm
         self.course = course_deg % 360.0
+        self.altitude_m = (missile.CRUISE_ALTITUDE_M if altitude_m is None
+                           else max(0.0, float(altitude_m)))
+        if datum is None:
+            datum = (x_nm + self.range_nm * math.sin(math.radians(self.course)),
+                     y_nm - self.range_nm * math.cos(math.radians(self.course)))
+        self.datum_x, self.datum_y = float(datum[0]), float(datum[1])
         self.seq = seq
         self.sensor_seed = int(seq)
         self.rng = rng
@@ -40,8 +56,12 @@ class ASM:
         self.jammer = rng.random() < self.profile["jam_probability"]
         self.chaff_left = 0.0
         self.broken = False
+        self.chaff_cloud = None       # seq of the cloud that seduced the seeker
         self.travel = 0.0
         self.age_s = 0.0
+        self.lock_s = 0.0
+        self.locked = False
+        self.los_prev = None
 
     # --- Abfragen ---
 
@@ -66,64 +86,130 @@ class ASM:
 
     # --- Wirkung ---
 
-    def launch_chaff(self, rng, softkill_profile=None) -> bool:
-        """Apply the profiled softkill result and temporary seeker blindness."""
+    def launch_chaff(self, rng, softkill_profile=None, cloud_seq=None,
+                     arrival_s=None) -> bool:
+        """A chaff cloud blooms in the seeker's resolution cell.  The seeker
+        transfers to it when its echo exceeds the fluctuating (Swerling-1)
+        ship echo: P = 1 - exp(-sigma_chaff / sigma_ship), which the profiled
+        defeat probability expresses.  Otherwise the cloud only confuses the
+        range gate for the effect duration."""
         if self.state != "LAUF":
             return False
         softkill_profile = softkill_profile or air_defense_loadout()["softkill"]
         self.state = "CHAFF"
         self.chaff_left = rng.uniform(*softkill_profile["effect_duration_s"])
-        self.broken = rng.random() < softkill_profile["defeat_probability"]
+        probability = softkill_profile["defeat_probability"]
+        if arrival_s is not None:
+            probability = chaff.seduction_probability(probability, arrival_s)
+        self.broken = rng.random() < probability
+        self.chaff_cloud = cloud_seq if self.broken else None
         return self.broken
 
     # --- Physik ---
 
-    def update(self, dt: float, frigate, world=None, ecm_effect=None) -> None:
+    def _ecm_decision(self, ecm_effect):
+        effectiveness = (max(0.0, min(.7, float(ecm_effect)))
+                         if isinstance(ecm_effect, (int, float))
+                         else max(0.0, min(.7, float(getattr(
+                             ecm_effect, "effectiveness", 0.0)))))
+        technique = getattr(ecm_effect, "technique", None)
+        home_on_jam = bool(getattr(ecm_effect, "hoj_exposure", False))
+        deceived = (effectiveness > 0.0 and not home_on_jam
+                    and self.rng.random() < effectiveness)
+        return deceived, technique
+
+    def _turn_towards(self, bearing: float, rate_deg_s: float, dt: float) -> None:
+        diff = config.angle_diff_deg(bearing, self.course)
+        self.course = (self.course + config.clamp(
+            diff, -rate_deg_s * dt, rate_deg_s * dt)) % 360.0
+
+    def _guide(self, h: float, frigate, world, deceived: bool, technique) -> None:
+        distance = self.distance_nm(frigate)
+        bearing = math.degrees(math.atan2(frigate.x - self.x,
+                                          -(frigate.y - self.y))) % 360.0
+        visible = (distance <= self.profile["seeker_active_range_nm"]
+                   and missile.in_field_of_view(self.course, bearing)
+                   and not (world is not None and getattr(
+                       world, "land_blocks_line", lambda *args: False)(
+                           self.x, self.y, frigate.x, frigate.y)))
+        if not visible:
+            self.lock_s, self.locked, self.los_prev = 0.0, False, None
+        elif not self.locked:
+            self.lock_s += h
+            if self.lock_s >= missile.SEEKER_LOCK_S:
+                self.locked, self.los_prev = True, bearing
+        if not self.locked:
+            # Inertial mid-course towards the launch datum.
+            if math.hypot(self.datum_x - self.x, self.datum_y - self.y) > .05:
+                self._turn_towards(math.degrees(math.atan2(
+                    self.datum_x - self.x, -(self.datum_y - self.y))) % 360.0,
+                    self.profile["turn_rate_deg_s"], h)
+            return
+        if deceived and technique != "false_targets":
+            # RGPO/VGPO break the seeker's gate for this update.
+            return
+        if deceived:
+            # A coherent phantom is a bounded angular gate displacement.
+            self._turn_towards((bearing + (25.0 if self.seq % 2 else -25.0)) % 360.0,
+                               missile.max_turn_rate_deg_s(self.speed_kn), h)
+            self.los_prev = None
+            return
+        if self.los_prev is None:
+            self.los_prev = bearing
+        rate = missile.pn_turn_rate_deg_s(bearing, self.los_prev, h, self.speed_kn)
+        # Close the initial heading error inside the seeker cone as well.
+        pursuit = config.angle_diff_deg(bearing, self.course)
+        limit = missile.max_turn_rate_deg_s(self.speed_kn)
+        rate = config.clamp(rate + 0.5 * pursuit, -limit, limit)
+        self.course = (self.course + rate * h) % 360.0
+        self.los_prev = bearing
+
+    def update(self, dt: float, frigate, world=None, ecm_effect=None,
+               chaff_target=None) -> None:
         if self.state in ("ABGEFANGEN", "TREFFER", "VERLOREN"):
             return
-        run_dt = min(dt, max(0.0, self.life_s - self.age_s))
-        if self.state == "CHAFF":
-            # Störblindheit: gerader Kurs weiter, ohne Korrekturen
-            if self.broken:
-                run_dt = min(run_dt, max(0.0, self.chaff_left))
-            self.chaff_left -= dt
-        elif not self.jamming(frigate):
-            effectiveness = (max(0.0, min(.7, float(ecm_effect)))
-                             if isinstance(ecm_effect, (int, float))
-                             else max(0.0, min(.7, float(getattr(
-                                 ecm_effect, "effectiveness", 0.0)))))
-            technique = getattr(ecm_effect, "technique", None)
-            home_on_jam = bool(getattr(ecm_effect, "hoj_exposure", False))
-            deceived = (effectiveness > 0.0 and not home_on_jam
-                        and self.rng.random() < effectiveness)
-            desired = math.degrees(math.atan2(frigate.x - self.x,
-                                              -(frigate.y - self.y))) % 360.0
-            if deceived and technique == "false_targets":
-                # A coherent phantom is represented as a bounded angular gate
-                # displacement; no hidden target object is introduced.
-                desired = (desired + (25.0 if self.seq % 2 else -25.0)) % 360.0
-            if not deceived or technique == "false_targets":
-                # Noise exposes the transmitting ship to HOJ. RGPO/VGPO break
-                # the seeker's gate for this substep; false targets pull it.
-                diff = config.angle_diff_deg(desired, self.course)
-                self.course = (self.course + config.clamp(
-                    diff, -self.profile["turn_rate_deg_s"] * dt,
-                    self.profile["turn_rate_deg_s"] * dt)) % 360.0
-        ox, oy = self.x, self.y
-        self.age_s = min(self.life_s, self.age_s + dt)
-        step = min(config.kn_to_nm_per_s(self.speed_kn) * run_dt,
-                   max(0.0, self.range_nm - self.travel))
-        self.x += step * math.sin(math.radians(self.course))
-        self.y -= step * math.cos(math.radians(self.course))
-        self.travel += step
-        if Torpedo._swept_dist(self, frigate, ox, oy) <= self.profile["hit_distance_nm"]:
-            self.state = "TREFFER"
-        elif (self.travel >= self.range_nm or self.age_s >= self.life_s
-              or (world is not None and not (0 <= self.x <= world.size_nm
-                                              and 0 <= self.y <= world.size_nm))):
-            self.state = "VERLOREN"
-        elif self.state == "CHAFF" and self.chaff_left <= 0.0:
-            self.state = "VERLOREN" if self.broken else "LAUF"
+        deceived, technique = (self._ecm_decision(ecm_effect)
+                               if self.state == "LAUF" and self.locked
+                               and ecm_effect is not None else (False, None))
+        steps = min(1000, max(1, math.ceil(dt / missile.GUIDANCE_SUBSTEP_S - 1e-9)))
+        h = dt / steps
+        for _ in range(steps):
+            run = min(h, max(0.0, self.life_s - self.age_s))
+            if self.state == "CHAFF":
+                if self.broken:
+                    run = min(run, max(0.0, self.chaff_left))
+                    if chaff_target is not None and run > 0.0:
+                        # Seduced: the seeker homes on the chaff centroid.
+                        self._turn_towards(math.degrees(math.atan2(
+                            chaff_target.x - self.x, -(chaff_target.y - self.y)))
+                            % 360.0, missile.max_turn_rate_deg_s(self.speed_kn), run)
+                self.chaff_left -= h
+            elif run > 0.0:
+                self._guide(run, frigate, world, deceived, technique)
+            if self.boosting:
+                self.speed_kn = missile.speed_step(self.speed_kn, self.cruise_kn, h)
+                self.boosting = self.speed_kn < self.cruise_kn
+            self.altitude_m = missile.altitude_step(
+                self.altitude_m, missile.commanded_altitude_m(
+                    self.distance_nm(frigate)), h)
+            ox, oy = self.x, self.y
+            self.age_s = min(self.life_s, self.age_s + h)
+            step = min(config.kn_to_nm_per_s(self.speed_kn) * run,
+                       max(0.0, self.range_nm - self.travel))
+            self.x += step * math.sin(math.radians(self.course))
+            self.y -= step * math.cos(math.radians(self.course))
+            self.travel += step
+            if Torpedo._swept_dist(self, frigate, ox, oy) <= self.profile["hit_distance_nm"]:
+                self.state = "TREFFER"
+            elif (self.travel >= self.range_nm or self.age_s >= self.life_s
+                  or (world is not None and not (0 <= self.x <= world.size_nm
+                                                  and 0 <= self.y <= world.size_nm))):
+                self.state = "VERLOREN"
+            elif self.state == "CHAFF" and self.chaff_left <= 0.0:
+                self.state = "VERLOREN" if self.broken else "LAUF"
+                self.chaff_cloud = None
+            if self.state != "LAUF" and self.state != "CHAFF":
+                return
 
 
 class ESSM:
@@ -154,6 +240,7 @@ class ESSM:
                                   * math.cos(math.radians(self.course)))
                            if guidance_y is None else guidance_y)
         self.seeker_acquired = False
+        self.los_prev = None
 
     def update(self, dt: float, candidates=None, world=None) -> None:
         if self.state != "LAUF":
@@ -183,10 +270,19 @@ class ESSM:
                         else (self.guidance_x, self.guidance_y))
         desired = math.degrees(math.atan2(aim_x - self.x,
                                           -(aim_y - self.y))) % 360.0
-        diff = config.angle_diff_deg(desired, self.course)
-        self.course = (self.course + config.clamp(
-            diff, -self.profile["turn_rate_deg_s"] * dt,
-            self.profile["turn_rate_deg_s"] * dt)) % 360.0
+        limit = self.profile["turn_rate_deg_s"]   # airframe lateral-g limit
+        if self.seeker_acquired and self.los_prev is not None and dt > 0.0:
+            # Terminal proportional navigation on the seeker's LOS rate, plus
+            # a pursuit term that closes the initial heading error.
+            los_rate = config.angle_diff_deg(desired, self.los_prev) / dt
+            rate = config.clamp(missile.PN_GAIN * los_rate + 0.5 * config.angle_diff_deg(
+                desired, self.course), -limit, limit)
+            self.course = (self.course + rate * dt) % 360.0
+        else:
+            diff = config.angle_diff_deg(desired, self.course)
+            self.course = (self.course + config.clamp(
+                diff, -limit * dt, limit * dt)) % 360.0
+        self.los_prev = desired if self.seeker_acquired else None
         ox, oy = self.x, self.y
         step = min(config.kn_to_nm_per_s(self.profile["speed_kn"]) * dt,
                    max(0.0, self.profile["range_nm"] - self.travel))

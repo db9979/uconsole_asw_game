@@ -29,7 +29,7 @@ def _live(game, altitude_m=9000.0, dx=1.0):
 
 
 def _air_track(game, track_id):
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     return next(t for t in game.air_picture.tracks(game.sim_t, ("FLG",))
                 if t.track_id == track_id)
 
@@ -82,7 +82,7 @@ def test_altitude_is_smoothed_not_replaced_by_each_noisy_fix(game):
 
 
 def test_non_air_tracks_have_no_altitude(game):
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     assert all(t.altitude_m is None for t in game.air_picture.tracks(
         game.sim_t) if t.kind != "FLG")
 

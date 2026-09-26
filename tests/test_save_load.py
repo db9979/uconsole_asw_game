@@ -1,4 +1,4 @@
-"""Save/load roundtrips and strict save-v11 rejection behavior."""
+"""Save/load roundtrips and strict save-v12 rejection behavior."""
 
 import json
 from pathlib import Path
@@ -41,14 +41,19 @@ def test_default_save_paths_are_isolated(tmp_path):
     assert g.load_game()
 
 
-def test_accelerated_legacy_save_resumes_at_realtime_speed():
+def test_accelerated_or_paused_legacy_save_resumes_live_at_realtime_speed():
     source = Game(seed=2024, start_menu=False, audio_enabled=False)
     saved = json.loads(json.dumps(source.save_state()))
+    assert saved["time_scale_idx"] == 0 and saved["ui"]["paused"] is False
     saved["time_scale_idx"] = 3
+    saved["ui"]["paused"] = True
     restored = Game(seed=2025, start_menu=False, audio_enabled=False)
     assert restored._load_save_data(saved)
-    assert restored.time_scale == 1
     assert restored.save_state()["time_scale_idx"] == 0
+    assert restored.save_state()["ui"]["paused"] is False
+    before = restored.sim_t
+    restored.update(.5)
+    assert restored.sim_t == pytest.approx(before + .5)
     for invalid in (False, 6, -1, 1.5):
         malformed = dict(saved, time_scale_idx=invalid)
         assert not restored._load_save_data(malformed)
@@ -159,7 +164,7 @@ def test_obsolete_save_versions_are_rejected(tmp_saves, version):
     assert g.save_state() == before
 
 
-def test_v11_requires_exact_schema_and_every_root_field():
+def test_v12_requires_exact_schema_and_every_root_field():
     game = Game(seed=100, start_menu=False)
     state = game.save_state()
 
@@ -184,7 +189,7 @@ def test_v11_requires_exact_schema_and_every_root_field():
     lambda state: state["sonar"].update(unknown=None),
     lambda state: state["civilians"][0].pop("id"),
 ])
-def test_v11_rejects_noncanonical_nested_shapes(mutation):
+def test_v12_rejects_noncanonical_nested_shapes(mutation):
     game = Game(seed=101, start_menu=False)
     before = game.save_state()
     malformed = json.loads(json.dumps(before))
@@ -194,7 +199,7 @@ def test_v11_rejects_noncanonical_nested_shapes(mutation):
     assert game.save_state() == before
 
 
-def test_v11_sonar_contact_sequence_must_exceed_existing_contacts():
+def test_v12_sonar_contact_sequence_must_exceed_existing_contacts():
     game = Game(seed=102, start_menu=False)
     target = game.subs[0]
     game.sonar.contacts[target.id] = Contact(7, target.id, "passiv", "sub")
@@ -247,7 +252,7 @@ def test_fixed_real_sector_roundtrip_keeps_selected_coast_and_airbases(tmp_saves
     assert len(game.world.coast.airbases) >= 4
 
 
-def test_v11_preserves_tas_ping_echo_and_operator_state(tmp_saves):
+def test_v12_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     game = Game(seed=188, start_menu=False)
     game.sonar.toggle_tow(6.0)
     game.sonar.tow_payout = .42
@@ -271,7 +276,7 @@ def test_v11_preserves_tas_ping_echo_and_operator_state(tmp_saves):
     assert restored.tooltips_enabled is False
 
 
-def test_v11_split_run_preserves_scheduler_phase():
+def test_v12_split_run_preserves_scheduler_phase():
     uninterrupted = Game(seed=189, start_menu=False, audio_enabled=False)
     uninterrupted._sensor_acc = .13
     uninterrupted._radio_acc = .31
@@ -308,7 +313,7 @@ def test_v11_split_run_preserves_scheduler_phase():
                        uninterrupted._slow_acc))
 
 
-def test_v11_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
+def test_v12_split_run_preserves_filter_pictures_and_tma_gates(monkeypatch):
     uninterrupted = Game(seed=190, start_menu=False, audio_enabled=False)
     target = uninterrupted.subs[0]
     contact = Contact(41, target.id, "passiv", "sub")

@@ -53,6 +53,72 @@ def test_update_passes_unclamped_wall_dt_to_audio(monkeypatch):
     game.audio.shutdown()
 
 
+def test_frame_dt_catches_up_slow_frames_within_bounds():
+    game = Game(seed=86, audio_enabled=False)
+    game._frame_clock_reset = False
+    walls = [1 / 30] * 5 + [.35] + [1 / 30] * 10
+    dts = [game._frame_dt(wall) for wall in walls]
+    assert max(dts) <= config.SIM_FRAME_DT_MAX + 1e-12
+    # The spike is fully caught up within a few frames; nothing is lost.
+    assert sum(dts) == pytest.approx(sum(walls))
+    assert game._sim_debt_s == pytest.approx(0.0)
+    assert game._sim_dropped_s == 0.0
+    # A hang beyond the catch-up bound drops only the excess.
+    assert game._frame_dt(3.0) == pytest.approx(config.SIM_FRAME_DT_MAX)
+    assert game._sim_dropped_s == pytest.approx(3.0 - config.SIM_CATCHUP_MAX_S)
+    assert game._sim_debt_s == pytest.approx(
+        config.SIM_CATCHUP_MAX_S - config.SIM_FRAME_DT_MAX)
+    for bad in (float("nan"), float("inf"), -1.0, None):
+        assert game._frame_dt(bad) >= 0.0
+    game.audio.shutdown()
+
+
+def test_frame_dt_never_catches_up_across_menu_or_load(monkeypatch):
+    game = Game(seed=87, audio_enabled=False)
+    game._frame_clock_reset = False
+    game._frame_dt(.5)
+    assert game._sim_debt_s > 0
+    game.in_menu = True
+    game.update(game._frame_dt(1 / 30))
+    game.in_menu = False
+    # Menu wall time is not simulated afterwards.
+    assert game._frame_dt(2.0) == pytest.approx(config.SIM_FRAME_DT_MAX)
+    assert game._sim_debt_s == 0.0
+    game._frame_dt(.5)
+    game.reset(88)
+    assert game._frame_dt(.5) == pytest.approx(config.SIM_FRAME_DT_MAX)
+    assert game._sim_debt_s == 0.0
+    game.audio.shutdown()
+
+
+def test_frame_rate_option_cycles_and_persists(tmp_path):
+    game = Game(seed=89, audio_enabled=False)
+    assert game.frame_rate() == config.FPS_DEFAULT == 30
+    game._open_administration("options")
+    game.options_sel = game._OPTION_ROWS.index("frame_rate")
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT))
+    assert game.preferences.frame_rate == 60 and game.frame_rate() == 60
+    game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT))
+    assert game.frame_rate() == 30
+    game.draw_options_overlay()
+    game.audio.shutdown()
+
+
+def test_listen_bearing_change_keeps_sonar_audio_stream(monkeypatch):
+    game = Game(seed=90, audio_enabled=False)
+    game.station = Station.SONAR
+    game.sonar_audio_enabled = True
+    stops = Mock()
+    monkeypatch.setattr(game.audio, "stop_sonar", stops)
+    game._sonar_audio_sequence = 7
+    assert game.set_sonar_listen_bearing(123.0) is True
+    game._joy_horizontal_step(1)
+    assert game.clear_sonar_focus() is True
+    stops.assert_not_called()
+    assert game._sonar_audio_sequence == 7
+    game.audio.shutdown()
+
+
 def test_sonar_audio_continues_at_fixed_realtime_speed(monkeypatch):
     game = Game(seed=85, audio_enabled=False)
     game.station = Station.SONAR
@@ -72,7 +138,6 @@ def test_sonar_audio_continues_at_fixed_realtime_speed(monkeypatch):
     assert spy.call_count == 2
     assert game._sonar_audio_sequence == receiver.sequence
     stop.assert_called_once()
-    assert game.time_scale == 1
     game.audio.shutdown()
 
 
@@ -83,8 +148,7 @@ def test_legacy_time_keys_do_not_change_simulation_rate():
         game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=key, mod=0))
     before = game.sim_t
     game.update(.1)
-    assert game.time_scale == 1
-    assert game.time_scale_idx == 0
+    assert not hasattr(game, "time_scale") and not hasattr(game, "time_scale_idx")
     assert game.sim_t == pytest.approx(before + .1)
 
 
@@ -217,7 +281,10 @@ def test_runtime_language_switch_retranslates_feeds_and_keeps_legacy_strings(mon
 def test_initial_threat_intel_is_coarse_static_and_visible_to_radio():
     game = Game(seed=87, audio_enabled=False,
                 preferences=Preferences(language="en"))
-    report = game.messages[-1][1]
+    # Patrol adds the exact force report after the coarse position cue.
+    report = next(text for _, text in game.messages
+                  if text.get("__u_jagd_i18n__", "").startswith("runtime.hq.threat_"))
+    assert game.messages[-1][1]["__u_jagd_i18n__"] == "runtime.hq.intel_exact"
     params = report["params"]
     target = min(game.subs, key=lambda item: np.hypot(
         item.x - game.ship.x, item.y - game.ship.y))
@@ -228,8 +295,8 @@ def test_initial_threat_intel_is_coarse_static_and_visible_to_radio():
     assert params["range"] % 5 == 0
     assert abs(params["range"] - exact_range) <= 2.5
     assert set(params) == {"bearing", "range"}
-    assert game.feed.entries[-1].category == "funk"
-    assert game.feed.entries[-1].text is report
+    entry = next(item for item in game.feed.entries if item.text is report)
+    assert entry.category == "funk"
     initial = json.dumps(report, sort_keys=True)
     target.x += 100
     game.update(.1)
@@ -288,9 +355,9 @@ def test_sensor_picture_uses_generic_evidence_not_platform_truth(monkeypatch):
     game.civilians = []
     game.flights.flights = []
     game.asms = []
-    game._update_air_picture()
-    track = game.air_picture._tracks[f"W-{warship.id}"]
-    assert track.label == f"W-{warship.id}"
+    game._update_air_picture(full_scan=True)
+    track = game.air_picture._tracks[f"S-{warship.id}"]
+    assert track.label == f"S-{warship.id}"
     assert track.course is None and track.hostile is False
     assert warship.name not in track.label
 
@@ -330,15 +397,15 @@ def test_surface_radar_detection_is_capped_by_geometric_horizon(monkeypatch):
                                  random.Random(850), hostile=True)
     beyond_horizon.emitter = True
     game.warships = [beyond_horizon]
-    game._update_air_picture()
-    assert f"W-{beyond_horizon.id}" not in game.air_picture._tracks
+    game._update_air_picture(full_scan=True)
+    assert f"S-{beyond_horizon.id}" not in game.air_picture._tracks
 
     within_horizon = SurfaceShip(game.ship.x + horizon - 5.0, game.ship.y,
                                  random.Random(851), hostile=True)
     within_horizon.emitter = True
     game.warships = [within_horizon]
-    game._update_air_picture()
-    assert f"W-{within_horizon.id}" in game.air_picture._tracks
+    game._update_air_picture(full_scan=True)
+    assert f"S-{within_horizon.id}" in game.air_picture._tracks
 
 
 def test_weapon_datum_uses_canonical_observed_position(monkeypatch):

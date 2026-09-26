@@ -2,6 +2,11 @@
 
 Zustände: HANGAR | AUF (Einsatz) | ZURUECK (Rückkehr).
 Bewegung, Treibstoff und Zeitfenster verwenden dieselbe Simulationszeit.
+
+Flight physics: hovering (dipping) needs more power than cruise, so fuel
+burns faster; in the hover the wind pushes the aircraft off its hover point
+and the pilot holds it back (a small steady downwind offset).  Launch and
+recovery wait for a deck-motion window (roll/pitch limits).
 """
 
 import math
@@ -31,6 +36,17 @@ class ReleaseDatum:
     range_uncertainty_nm: float
 
 
+HOVER_FUEL_FACTOR = 1.3          # hover power / best-range cruise power
+HOVER_DRIFT_FRACTION = 0.1       # un-corrected share of the wind in the hover
+HOVER_HOLD_GAIN_PER_S = 0.2      # pilot position-hold gain
+DECK_ROLL_LIMIT_DEG = 8.0
+DECK_PITCH_LIMIT_DEG = 3.5
+
+
+def deck_within_limits(roll_deg: float, pitch_deg: float) -> bool:
+    return abs(roll_deg) <= DECK_ROLL_LIMIT_DEG and abs(pitch_deg) <= DECK_PITCH_LIMIT_DEG
+
+
 class Helicopter:
     SPEED_KN = config.HELO_SPEED_KN
 
@@ -51,6 +67,8 @@ class Helicopter:
         self.dip_depth_target_m = config.HELO_DIP_DEPTH_DEFAULT_M
         self.dip_water_depth_m = 0.0
         self.dip_ping_cooldown = 0.0
+        self.hover_x = None
+        self.hover_y = None
 
     @property
     def airborne(self) -> bool:
@@ -155,13 +173,16 @@ class Helicopter:
         if abs(self.dip_depth_m - self.dip_depth_target_m) <= 1e-9:
             self.dip_state = "DEPLOYED"
 
-    def update(self, dt: float, frigate, world, recovery_available: bool = True) -> None:
+    def update(self, dt: float, frigate, world, recovery_available: bool = True,
+               fuel_factor: float = 1.0) -> None:
         """dt in Simulationssekunden. Haelt Patrouillen-Offset vor der
         Fregatte (AUF) bzw. fliegt zurück (ZURUECK)."""
         self.dip_ping_cooldown = max(0.0, self.dip_ping_cooldown - dt)
         if not self.airborne:
             return
-        self.fuel_s = max(0.0, self.fuel_s - dt)
+        # fuel_factor: extra power for anti-/de-icing in icing conditions.
+        self.fuel_s = max(0.0, self.fuel_s - dt * max(1.0, fuel_factor) * (
+            HOVER_FUEL_FACTOR if self.hovering else 1.0))
         self._update_dipping(dt, world)
         home_dist = math.hypot(frigate.x - self.x, frigate.y - self.y)
         return_time = home_dist / config.kn_to_nm_per_s(self.SPEED_KN)
@@ -177,7 +198,9 @@ class Helicopter:
             self.dip_water_depth_m = 0.0
             return
         if self.hovering:
+            self._hold_hover(dt, world)
             return
+        self.hover_x = self.hover_y = None
         if self.state == "ZURUECK":
             dist = math.hypot(frigate.x - self.x, frigate.y - self.y)
             if dist <= config.HELO_RETURN_DIST_NM and recovery_available:
@@ -199,6 +222,19 @@ class Helicopter:
             step = config.kn_to_nm_per_s(self.SPEED_KN) * dt
             self.x += step * math.sin(math.radians(self.course))
             self.y -= step * math.cos(math.radians(self.course))
+
+    def _hold_hover(self, dt: float, world) -> None:
+        if self.hover_x is None or self.hover_y is None:
+            self.hover_x, self.hover_y = self.x, self.y
+        wind = getattr(world, "wind_speed_kn", 0.0) if world is not None else 0.0
+        towards = math.radians((getattr(world, "wind_from_deg", 0.0) + 180.0) % 360.0
+                               if world is not None else 0.0)
+        drift = config.kn_to_nm_per_s(wind) * HOVER_DRIFT_FRACTION * dt
+        self.x += drift * math.sin(towards)
+        self.y -= drift * math.cos(towards)
+        hold = min(1.0, HOVER_HOLD_GAIN_PER_S * dt)
+        self.x += (self.hover_x - self.x) * hold
+        self.y += (self.hover_y - self.y) * hold
 
     def water_entry_clear(self, world=None) -> bool:
         """Require in-world water deep enough for the modeled 5 m entry."""

@@ -1,3 +1,4 @@
+import math
 import queue
 import time
 from types import SimpleNamespace
@@ -36,6 +37,14 @@ def _fake_game(ship_x=250.0, ship_y=250.0):
     return SimpleNamespace(runtime_catalog=CATALOG, civilians=[],
                            flights=_FakeFlightManager(),
                            ship=SimpleNamespace(x=ship_x, y=ship_y))
+
+
+def esm_revolution(game, steps=12):
+    """Rotating search radars reach the ESM mast with their main beam only
+    once per revolution (up to 5 s); sample the picture over one."""
+    for _ in range(steps):
+        game.sim_t += .5
+        game._update_esm_picture()
 
 
 def test_category_for_ais_type_mapping():
@@ -596,7 +605,7 @@ def test_live_ship_is_not_published_without_simulated_sensor_detection(game):
     game.air_picture = TrackPicture(game.air_picture.stale_s)
     game.surface_radar_on = False
 
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     assert not [track for track in game.air_picture.tracks(game.sim_t)
                 if track.target_id == live_ship.id]
@@ -608,7 +617,7 @@ def test_live_ship_is_radar_observed_and_manually_classifiable(game, monkeypatch
     game.surface_radar_on = True
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
 
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
 
     track = next(track for track in game.air_picture.tracks(game.sim_t)
                  if track.target_id == live_ship.id)
@@ -635,7 +644,7 @@ def test_live_ship_participates_in_lookout_and_eloka(game, monkeypatch):
                for track in game.air_picture.tracks(game.sim_t))
 
     live_ship.emitter = True
-    game._update_esm_picture()
+    esm_revolution(game)
     assert game.eloka_tracks()
 
 
@@ -690,3 +699,35 @@ def test_ais_not_available_sentinels_are_ignored():
     manager._apply_ais_report(game, mmsi, {
         "mmsi": mmsi, "lat": 54.0, "lon": 8.0, "cog": 360.0, "sog": 102.3})
     assert (ship.target_course, ship.target_speed) == generated
+
+
+def test_live_ais_ship_is_heard_by_passive_sonar(game, monkeypatch):
+    """A live AIS ship is an ordinary acoustic source: it reaches the passive
+    sonar through the same pipeline as simulated merchant traffic."""
+    monkeypatch.setattr(game, "_check_mission_end", lambda: None)
+    game.splash_active = game.main_menu = game.in_menu = False
+    manager = game.live_traffic
+    manager.configure(game, game.world, Preferences())
+    assert manager._center is not None
+    game.civilians, game.warships = [], []
+    for sub in game.subs:
+        sub.x += 1000.0
+    x, y = next((game.ship.x + 4.0 * math.sin(math.radians(bearing)),
+                 game.ship.y - 4.0 * math.cos(math.radians(bearing)))
+                for bearing in range(0, 360, 15)
+                if not game.world.on_land(
+                    game.ship.x + 4.0 * math.sin(math.radians(bearing)),
+                    game.ship.y - 4.0 * math.cos(math.radians(bearing)))
+                and not game.world.land_blocks_line(
+                    game.ship.x, game.ship.y,
+                    game.ship.x + 4.0 * math.sin(math.radians(bearing)),
+                    game.ship.y - 4.0 * math.cos(math.radians(bearing))))
+    lon, lat = nm_to_lonlat(x, y, *manager._center, manager._size_nm)
+    manager._apply_ais_report(game, 211000001, {
+        "mmsi": 211000001, "lat": lat, "lon": lon, "cog": 0.0, "sog": 12.0,
+        "ship_type": 70})
+    ship = manager._ships[211000001]
+    assert ship in game._sonar_targets()
+    for _ in range(40):
+        game.update(.05)
+    assert ship.id in game.sonar.contacts

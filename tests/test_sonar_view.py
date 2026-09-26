@@ -1,3 +1,4 @@
+import re
 """Headless instrument tests using observations, never world targets."""
 
 from types import SimpleNamespace as NS
@@ -220,7 +221,7 @@ def test_contact_window_keeps_last_selection_visible(game, monkeypatch):
     game.sonar.active_contacts = lambda: contacts
     game.selected_contact = contacts[-1]
     texts = []
-    monkeypatch.setattr(view, "_text", lambda screen, text, *a, **kw: texts.append(text))
+    monkeypatch.setattr(view, "_text", lambda screen, text, *a, **kw: texts.append(view.localize(text)))
     view._draw_contacts(game, pygame.Rect(900, 340, 350, 150))
     assert any("K20" in text for text in texts)
     assert not any("K01" in text for text in texts)
@@ -233,7 +234,7 @@ def test_demon_requires_envelope_evidence_and_labels_hypotheses(game, monkeypatc
     game.sonar.signature_candidates = [(NS(label=f"Candidate {i}"), .9 - i * .1)
                                        for i in range(3)]
     texts = []
-    monkeypatch.setattr(view, "_text", lambda screen, text, *a, **kw: texts.append(text))
+    monkeypatch.setattr(view, "_text", lambda screen, text, *a, **kw: texts.append(view.localize(text)))
     rect = pygame.Rect(900, 100, 350, 254)
     view._draw_details(game, rect, 2)
     assert not any("Candidate" in text for text in texts)
@@ -272,14 +273,16 @@ def test_station_layout_has_large_plot_and_readable_contact_window(game, monkeyp
 def test_station_header_uses_divided_status_groups_without_microtext(game, monkeypatch):
     drawn = []
     monkeypatch.setattr(view, "_text", lambda screen, text, rect, color=view.TEXT,
-                        size=14, align="left": drawn.append((text, pygame.Rect(rect), size)))
+                        size=14, align="left": drawn.append((view.localize(text), pygame.Rect(rect), size)))
 
     view.draw_sonar_view(game)
 
+    # Four chips share the header row; when the full wording does not fit
+    # they switch to the catalog abbreviations together (never clipped).
     groups = [item for item in drawn if item[0].startswith(
-        ("ARRAY", "BEARING", "BROADBAND", "G "))]
-    assert [item[0].split()[0] for item in groups] == [
-        "ARRAY", "BEARING", "BROADBAND", "G"]
+        ("ARRAY", "HMS |", "BEARING", "BRG ", "BROADBAND |", "BB ", "G "))]
+    assert [item[0].split()[0] for item in groups] in (
+        ["ARRAY", "BEARING", "BROADBAND", "G"], ["HMS", "BRG", "BB", "G"])
     assert len({item[1].x for item in groups}) == 4
     assert min(size for _, _, size in drawn) >= 12
 
@@ -326,7 +329,7 @@ def test_environment_page_uses_measured_profile(game, monkeypatch):
     game.sonar.towed_depth_target_m = 110.0
     texts = []
     monkeypatch.setattr(view, "_text", lambda screen, text, *args, **kwargs:
-                        texts.append(text))
+                        texts.append(view.localize(text)))
     game.sonar_page = 4
     view.draw_sonar_view(game)
     assert any("Thermocline ~80" in text for text in texts)
@@ -365,7 +368,7 @@ def test_active_page_draws_range_uncertainty_and_readiness(game, monkeypatch):
     game.sonar.ping_cooldown_remaining = 17.
     texts, amber_lines = [], []
     monkeypatch.setattr(view, "_text", lambda screen, text, *args, **kwargs:
-                        texts.append(text))
+                        texts.append(view.localize(text)))
     original_line = pygame.draw.line
 
     def record_line(surface, color, start, end, width=1):
@@ -388,17 +391,18 @@ def test_every_sonar_page_shows_tas_payout_and_stability(game, page, monkeypatch
         handling_ok=False, performance=.25, depth_m=50., depth_target_m=70.)
     texts = []
     monkeypatch.setattr(view, "_text", lambda screen, text, *args, **kwargs:
-                        texts.append(text))
+                        texts.append(view.localize(text)))
     game.sonar_page = page
     view.draw_sonar_view(game)
-    assert any("TAS DEPLOYING 42% STABILITY 25% PAUSE" in text
+    assert any(re.search(r"TAS (DEPLOYING|DEPLOY) 42% (STABILITY|STAB) 25% PAUSE", text)
                for text in texts)
 
 
 def test_sonar_view_accepts_optional_translator(game, monkeypatch):
     texts = []
     monkeypatch.setattr(view, "_text", lambda screen, text, *args, **kwargs:
-                        texts.append(text))
+                        texts.append(view.localize(text) if isinstance(text, dict)
+                                     else text))
     game.sonar_page = 5
     view.draw_sonar_view(game, lambda text: f"TR:{text}")
     assert "TR:sonar.page_title" in texts
@@ -418,3 +422,43 @@ def test_tma_closing_rate_kn_matches_radial_velocity_component():
     assert view.tma_closing_rate_kn(moving, 0.0, 180.0, 5.0) == pytest.approx(10.0)
     # No TMA solution yet -> no rate to show.
     assert view.tma_closing_rate_kn(stationary, 0.0, None, None) is None
+
+
+def test_spectrum_peaks_label_prominent_lines_only():
+    frequencies = np.arange(0.0, 101.0)
+    values = np.full(101, .05)
+    values[[29, 30, 31]] = [.4, .9, .6]      # skewed: vertex right of 30 Hz
+    values[70] = .5
+    values[71] = .07                          # noise ripple, not a peak
+    peaks = view.spectrum_peaks(values, frequencies)
+    assert [round(hz) for hz, _ in peaks] == [30, 70]
+    assert 30.0 < peaks[0][0] < 30.5
+    assert peaks[0][1] == pytest.approx(.9)
+    assert view.spectrum_peaks(np.full(101, .05) + np.sin(frequencies) * .004,
+                               frequencies) == []
+    assert view.spectrum_peaks(values, frequencies, limit=1) == [peaks[0]]
+    # Too close for two labels: only the stronger line keeps its value.
+    values[34] = .8
+    assert [round(hz) for hz, _ in view.spectrum_peaks(
+        values, frequencies, min_separation_hz=8)] == [30, 70]
+
+
+def test_lofar_and_demon_strips_print_peak_frequencies(game, monkeypatch):
+    drawn = []
+    real_text = view._text
+    monkeypatch.setattr(view, "_text", lambda screen, text, rect, *args:
+                        (drawn.append((view.localize(text), pygame.Rect(rect))),
+                         real_text(screen, text, rect, *args)))
+    bins = [.05] * len(game.sonar.receiver.spectrum)
+    index = next(i for i in range(len(bins)) if config.lofar_bin_freq(i) == 61)
+    bins[index] = .9
+    game.sonar.receiver.spectrum = bins
+    view._draw_waterfall(game, pygame.Rect(0, 0, 890, 386), 1)
+    assert any(text == "61.0" for text, _ in drawn)
+
+    drawn.clear()
+    game.sonar.receiver.demon_spectrum = [0.0] * len(game.sonar.receiver.demon_spectrum)
+    game.sonar.receiver.demon_spectrum[11] = .8          # 12 Hz bin
+    game.sonar.receiver.demon_spectrum[24] = .6          # 25 Hz bin
+    view._draw_demon(game, pygame.Rect(0, 0, 890, 386))
+    assert {"12.0", "25.0"} <= {text for text, _ in drawn}

@@ -1,0 +1,75 @@
+:root {
+  color-scheme: dark;
+  /* NATO affiliation colours, shared by lists, badges and canvas symbols
+     (same values as the uConsole theme). */
+  --aff-unknown: #f3c577;
+  --aff-friend: #81c5ff;
+  --aff-neutral: #8fdfab;
+  --aff-hostile: #ff9090;
+
+  /* Surfaces: deep navy to slate, darkest behind the instruments. */
+  --scope: #03080d;
+  --bg-0: #060b11;
+  --bg-1: #09111a;
+  --bg-2: #0d1722;
+  --bg-3: #122030;
+  --bg-4: #19293b;
+  --line-faint: #111e2b;
+  --line: #1b2b3b;
+  --line-strong: #2a4054;
+
+  /* Text: bright for live values, dim for labels, faint for legends/history. */
+  --text: #d5e0e9;
+  --text-dim: #8497a8;
+  --text-faint: #56697a;
+
+  /* Signal colours. Live data is cyan/emerald, attention amber, alarms red. */
+  --live: #57d3e3;
+  --live-strong: #9ae9f2;
+  --live-2: #5fdea8;
+  --caution: #f0b64a;
+  --alarm: #ff5b55;
+  --alarm-2: #ff8a3d;
+  --info: #7fb6ff;
+  --plot-ink: #ffa0e6;
+  --live-bg: #0c2a31;
+  --caution-bg: #2c2112;
+  --alarm-bg: #33110f;
+  --on-live: #042026;
+  --on-alarm: #1a0605;
+  --shadow: #000000;
+
+  /* Names read by the canvas code (core/palette.js). */
+  --bg: var(--bg-0);
+  --panel: var(--bg-2);
+  --muted: var(--text-dim);
+  --accent: var(--live);
+  --amber: var(--caution);
+  --red: var(--alarm);
+  --blue: var(--info);
+  --green: var(--live-2);
+  --plot: var(--plot-ink);
+  --scope-bg: var(--scope);
+
+  /* Type: Inter for prose and controls, JetBrains Mono for numbers. */
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-xs: .72rem;
+  --font-sm: .8rem;
+  --font-md: .875rem;
+  --font-lg: 1rem;
+
+  /* Geometry. */
+  --gap: .5rem;
+  --gap-lg: .75rem;
+  --radius: 3px;
+  --bar-h: 2.75rem;
+  --control-h: 2.25rem;
+  --dock-left-w: clamp(15rem, 15vw, 22rem);
+  --dock-right-w: clamp(21rem, 23vw, 32rem);
+  --dock-detail-w: clamp(20rem, 18vw, 30rem);
+  --rail-w: 2.5rem;
+  --z-menu: 30;
+  --z-overlay: 40;
+  --z-toast: 60;
+}

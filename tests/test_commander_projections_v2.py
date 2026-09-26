@@ -1,3 +1,4 @@
+from dataclasses import replace
 """Protocol-v2 role projection boundaries and exact envelopes."""
 
 from copy import deepcopy
@@ -11,6 +12,7 @@ import pytest
 from src.commander import projections
 from src.enemies.surface import SurfaceShip
 from src.commander.projections import ROLE_NAMES, STATE_MAX_BYTES
+from src.commander.server import OPFOR_ROLES, ROLES
 from src.core import config
 from src.core.game import Game
 from src.sonar.sonar import Contact
@@ -37,8 +39,12 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
     game, bridge, server = published
     common = {"protocol", "version", "session", "epoch", "revision", "seq",
               "phase", "role", "chart_revision", "clock", "environment", "mission",
-              "autocrew", "audio"}
-    assert set(server.v2_states) == {None, *ROLE_NAMES}
+              "autocrew", "autocrew_overview", "audio", "weather_station", "plot"}
+    assert set(server.v2_states) == {None, *ROLES}
+    # Without a crewed submarine its roles are published redacted.
+    assert all(server.v2_states[role] == server.v2_states[None]
+               and server.v2_charts[role] == server.v2_charts[None]
+               for role in OPFOR_ROLES)
     assert server.v2_states[None] == dict(
         protocol=2, version=server.state["version"], session=bridge.status["session"],
         epoch=bridge.status["epoch"], revision=bridge.status["revision"],
@@ -61,6 +67,10 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
         assert server.v2_states[role]["autocrew"] == {
             "enabled": False, "status": "off"}
         assert server.v2_states[role]["audio"] == {"events": []}
+        station = server.v2_states[role]["weather_station"]
+        assert set(station) == {"atmosphere", "effects", "flight", "profile"}
+        # No bathythermograph measurement yet: no ocean profile at all.
+        assert station["profile"] is None
     assert set(server.v2_charts[None]) == {
         "protocol", "revision", "size_nm", "landmasses", "disclaimer"}
     assert server.v2_charts[None]["landmasses"] == []
@@ -99,7 +109,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
     game, _, server = published
     expected = {
         "bridge": {"navigation", "orders", "threat", "systems",
-                   "tactical_summary"},
+                   "tactical_summary", "sightings"},
         "sonar": {"observations", "settings", "visualization"},
         "weapons": {"inventory", "readiness", "designated_target", "navigation",
                     "tactical", "target_choices", "depth_m", "tubes",
@@ -143,6 +153,12 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
     assert sonar["tow"]["speed_max_kn"] == config.SONAR_TOWED_HANDLING_MAX_KN
     assert set(sonar["bt"]) == {"ready", "cooldown_s", "thermocline_m"}
     assert set(sonar["ping"]) == {"ready", "cooldown_s"}
+    # Detected peaks are a training aid: off by default, sent only in training.
+    assert sonar["harmonic_candidates_hz"] == []
+    assert sonar["tools"]["assist"] is False
+    game.preferences = replace(game.preferences, operator_assist="training")
+    bridge.pump(game, server, now=11.0)
+    sonar = server.v2_states["sonar"]["sonar"]["settings"]
     assert sonar["harmonic_candidates_hz"] == [12.5, 25.0]
     assert server.v2_states["engine"]["engine"]["controls"] == {
         "orders": ["ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"],
@@ -160,6 +176,11 @@ def test_autocrew_projection_is_role_local_and_reports_damage_block(published):
     assert server.v2_states["bridge"]["autocrew"] == {
         "enabled": False, "status": "off"}
     assert "stations" not in server.v2_states["engine"]["autocrew"]
+    # The crew overview (uConsole F3) lists every station's automation.
+    overview = {row["station"]: row for row in server.v2_states["bridge"]["autocrew_overview"]}
+    assert overview["engine"] == {"station": "engine", "enabled": True,
+                                  "status": "blocked_damage"}
+    assert overview["bridge"]["enabled"] is False
 
 
 def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
@@ -193,7 +214,7 @@ def test_sonar_visualization_exact_schema_bounds_finite_and_detached(published):
     assert set(visual["broadband"]) == {
         "bearing_start_deg", "bearing_step_deg", "history"}
     assert set(visual["lofar"]) == {"frequency_min_hz", "frequency_max_hz",
-        "bin_frequencies_hz", "history", "spectrum", "held"}
+        "bin_frequencies_hz", "history", "spectrum", "held", "vernier"}
     assert set(visual["demon"]) == {"frequency_min_hz", "frequency_max_hz",
         "bin_step_hz", "spectrum", "history", "analysis"}
     assert set(visual["receiver"]) == {"array", "listen_bearing",
@@ -314,9 +335,14 @@ def test_opz_track_id_change_is_shared_by_every_station_projection(published):
 def test_known_chart_geography_is_bounded_detached_and_host_authored(published):
     game, _, server = published
     geography = server.v2_charts["bridge"]["geography"]
-    assert set(geography) == {"labels", "airbases", "depths"}
+    assert set(geography) == {"labels", "airbases", "depths", "hazards"}
     assert len(geography["labels"]) <= 128 and len(geography["airbases"]) <= 128
     assert len(geography["depths"]) <= 64
+    # Charted wrecks and rocks are published as chart content.
+    assert len(geography["hazards"]) == min(64, len(game.world.charted_hazards()))
+    for row, hazard in zip(geography["hazards"], game.world.charted_hazards()):
+        assert row == dict(kind=hazard.kind, x=hazard.x_nm, y=hazard.y_nm,
+                           top_depth_m=hazard.top_depth_m, length_m=hazard.length_m)
     for row in geography["airbases"]:
         assert any((row["name"], row["x"], row["y"]) ==
                    (base["name"], base["x"], base["y"])
@@ -497,8 +523,7 @@ def test_remote_eloka_correlations_use_radar_evidence_only(published, monkeypatc
 
 
 @pytest.mark.parametrize("field,value", [
-    ("in_menu", True), ("main_menu", True), ("editor", object()),
-    ("splash_active", True),
+    ("in_menu", True), ("main_menu", True), ("splash_active", True),
 ])
 def test_redacted_phases_clear_every_role_and_chart(published, field, value):
     game, bridge, server = published
@@ -508,6 +533,14 @@ def test_redacted_phases_clear_every_role_and_chart(published, field, value):
     assert all(chart == server.v2_charts[None] for chart in server.v2_charts.values())
     assert set(server.v2_states[None]) == {"protocol", "version", "session", "epoch",
         "revision", "seq", "phase", "role", "chart_revision"}
+
+
+def test_in_game_analyzer_keeps_every_role_live(published):
+    game, bridge, server = published
+    game.editor = object()
+    bridge.pump(game, server, now=10.1)
+    assert all(state["phase"] == "live" and state["role"] == role
+               for role, state in server.v2_states.items() if role in ROLE_NAMES)
 
 
 def test_world_replacement_publishes_one_immediate_redacted_generation(published):
@@ -594,8 +627,46 @@ def test_own_asset_refs_rotate_after_world_change(published):
 
 
 def test_browser_exact_validator_accepts_unified_own_weapon_shape():
-    script = files("data.commander").joinpath("app.js").read_text(encoding="utf-8")
+    from commander_web import client_js
+    script = client_js()
     schema = ('!exactKeys(row, ["ref", "x", "y", "depth_m", '
               '"course", "state"])')
     assert schema in script
     assert "own_weapons.some((row)" in script
+
+
+def test_opz_sees_own_launched_torpedo_as_commanded_asset():
+    game = Game(seed=84, start_menu=False, audio_enabled=False, language="en")
+    game.torpedoes = [Torpedo(game.ship.x + 1.0, game.ship.y, 20, 40, None, 5)]
+    server, bridge = Server(), CommanderBridge()
+    bridge.pump(game, server, now=10.0)
+    weapons = server.v2_states["opz"]["opz"]["own_assets"]["weapons"]
+    assert len(weapons) == 1
+    row = weapons[0]
+    assert set(row) == {"ref", "x", "y", "depth_m", "course", "state"}
+    assert row["x"] == pytest.approx(game.ship.x + 1.0)
+    # Same opaque reference as the Weapons station's asset list.
+    assert row["ref"] in {item["ref"] for item in
+                          server.v2_states["weapons"]["weapons"]["active_assets"]}
+
+
+def test_radio_room_publishes_measured_hf_carrier_and_mode():
+    """The web receiver shows what the HFDF set measured (as the uConsole tooltip)."""
+    game = Game(seed=419, start_menu=False, audio_enabled=False, language="en")
+    server, bridge = Server(), CommanderBridge()
+    game.radio_picture.observe(
+        track_id="H-7001", kind="HF", target_id=7001, source="HFDF", bearing=40.0,
+        range_nm=None, observer_x=game.ship.x, observer_y=game.ship.y, course=None,
+        quality=.7, now=game.sim_t, label="hidden-a", bearing_uncertainty_deg=4.0,
+        frequency_hz=8_412_300.0, propagation="SKY")
+    game.radio_picture.observe(
+        track_id="H-7002", kind="HF", target_id=7002, source="HFDF", bearing=210.0,
+        range_nm=None, observer_x=game.ship.x, observer_y=game.ship.y, course=None,
+        quality=.4, now=game.sim_t, label="hidden-b", bearing_uncertainty_deg=6.0)
+    bridge.pump(game, server, now=10.0)
+    rows = sorted(server.v2_states["radio"]["radio"]["observations"], key=lambda row: row["bearing"])
+    assert [(row["frequency_khz"], row["propagation"]) for row in rows] == [(8412.3, "SKY"), (None, None)]
+    assert "7001" not in json.dumps(rows) and "hidden-a" not in json.dumps(rows)
+    # Other roles never see the radio-only fields.
+    assert "frequency_khz" not in json.dumps(server.v2_states["opz"]["opz"])
+    game.audio.shutdown()

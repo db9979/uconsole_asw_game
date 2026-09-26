@@ -30,6 +30,18 @@ FPS = 60
 # Keep tactical circles and bearings geometrically correct on arbitrary windows.
 # Unused space is letterboxed instead of stretching the virtual canvas.
 FILL_SCREEN = False
+# Selectable frame-rate cap (settings.json "frame_rate"). 30 FPS halves render
+# work on the uConsole and leaves CPU/GIL headroom for the audio pump and the
+# Remote Crew server threads; FPS stays the canvas/test reference maximum.
+FPS_CHOICES = (30, 60)
+FPS_DEFAULT = 30
+# Main loop: no single frame advances the simulation by more than
+# SIM_FRAME_DT_MAX, but wall time lost to a slow frame is carried as a bounded
+# debt and caught up over the following frames. Sonar audio is produced in
+# simulation time and played in wall time, so dropping that time would drain
+# every playback buffer. Debt beyond SIM_CATCHUP_MAX_S (a real hang) is dropped.
+SIM_FRAME_DT_MAX = 0.1
+SIM_CATCHUP_MAX_S = 1.0
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 AUDIO_UPDATE_S = 0.25
@@ -69,16 +81,14 @@ FULL_STATION_RECT = (0, MAIN_TOP, SCREEN_W, MAIN_BOTTOM - MAIN_TOP)
 OPZ_STATION_RECT = (0, MAIN_TOP, SCREEN_W, SCREEN_H - MAIN_TOP)
 FEED_RECT = (0, MAIN_BOTTOM, 960, BOTTOM_H)                    # (0,540,960,180)
 TELEMETRY_RECT = (960, MAIN_BOTTOM, 320, BOTTOM_H)             # (960,540,320,180)
+BOTTOM_PANEL_MODES = ("ticker", "docked")  # see layout.bottom_panel_regions
+TICKER_SCROLL_PX_S = 40.0           # marquee speed for a long ticker line (wall time)
 
 # --- Zeitsteuerung: eine gemeinsame physikalische Simulationszeit ---
-# Bei 1x gilt strikt: 1 reale Sekunde = 1 Simulationssekunde. Der Faktor bleibt
-# als Kompatibilitaetsname bestehen, darf aber keine versteckte Kompression sein.
-TACTICAL_TIME_SCALE = 1.0
+# Das Spiel laeuft immer in Echtzeit, ohne Pause und ohne Zeitraffer:
+# 1 reale Sekunde = 1 Simulationssekunde.
 # Spielminuten pro Simulationssekunde: ergibt eine reale 24-h-Uhr.
 GAME_TIME_PER_SEC = 1.0 / 60.0
-# Legacy save/protocol field: simulation always runs at real-time speed.
-TIME_SCALE_STEPS = (1,)
-TIME_SCALE_DEFAULT = 0
 PHYS_SUBSTEP_S = 0.05             # max. sim-Sekunden pro Physik-Substep (Anti-Tunneling:
                                   # 45 kn legen in 0.05 s ca. 0.000625 NM zurueck)
 PHYS_SUBSTEP_MAX = 240
@@ -170,6 +180,7 @@ RADAR_AIR_RANGE_NM = 100.0
 # KAMPFSCHIFF (Kontakt-DB): feindliche Kriegsschiffe loiteren um ihre Basis
 # und feuern ASM-Salven, wenn die Fregatte in Reichweite ist.
 WARSHIP_ASM_RANGE_NM = 35.0    # Abstand, ab dem Salven möglich sind
+WARSHIP_TORPEDO_DECOYS = 2       # acoustic decoys a combatant can stream
 WARSHIP_TORPEDO_EVADE_S = 90.0  # W2: Torpedoalarm -> harte Wende, dann weiter
 
 # M5: Schadensmodell (Raten in sim-Sekunden)
@@ -202,15 +213,22 @@ LOOKOUT_SEA_STATE_LOSS = 0.08
 LOOKOUT_BEARING_ERR_DEG = 0.6
 LOOKOUT_RANGE_ERR_FRAC = 0.06
 LOOKOUT_EPOCH_S = 0.5
+# Land in sight: day/clear range of a coast with 50 m hills, checked on a
+# slow cadence; a landmass is reported again only after it dropped out of
+# sight.
+LOOKOUT_LAND_RANGE_NM = 20.0
+LOOKOUT_LAND_CHECK_S = 10.0
+LOOKOUT_REPORTS_MAX = 24
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
 PLAYER_CLASSES = ("U_BOOT", "KAMPFSCHIFF", "BIOLOGISCH", "FAHRZEUG",
-                  "FLUGZEUG")
+                  "FLUGZEUG", "TORPEDO")
 PLAYER_CLASS_LABELS = {
     "U_BOOT": "U-Boot",
     "KAMPFSCHIFF": "Kampfschiff",
     "BIOLOGISCH": "Biologisch",
     "FAHRZEUG": "Fahrzeug",
     "FLUGZEUG": "Flugzeug",
+    "TORPEDO": "Torpedo",
 }
 
 # OPZ/CIC: manuell gesetzte NATO-Zugehoerigkeit. Die Domaene (See, Luft,
@@ -255,6 +273,7 @@ SHIP_YAW_DAMPING = 2.0
 SHIP_LIST_DEG_PER_FLOOD_PCT = 0.15
 SHIP_MAX_LIST_DEG = 15.0
 SHIP_LIST_YAW_GAIN = 0.05        # deg/s of persistent yaw pull per degree of list
+TAS_AMBIGUITY_RESOLVE_DEG = 20.0   # own turn that resolves TAS left/right
 CAVITATION_KN = 15.0            # Schraubenkavitation ab dieser Fahrt
 CAVITATION_PASSIVE_FACTOR = 0.35   # passives Sonar bei Kavitation: Sensor "bricht"
 SEA_STATE_SONAR_FACTOR = 0.06     # passiver Reichweiten-Abzug pro Seegang-Grad
@@ -283,6 +302,9 @@ SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
 SONAR_FUSION_CONFIRM_DEG = 5.0
 SONAR_FUSION_DIVERGENT_DEG = 9.0
 SONAR_BT_COOLDOWN_S = 60.0
+# Deep expendable bathythermograph: to the seabed, at most this deep, so a
+# deep sound channel (SOFAR axis) can be measured.
+SONAR_BT_MAX_DEPTH_M = 1500.0
 SONAR_PAGE_COUNT = 6
 CZ_BANDS = ((40.0, 70.0), (90.0, 130.0))  # Konvergenzzonen (NM, vom Schallfenster)
 CZ_BONUS_NM = 25.0              # zusätzliche passive Reichweite in der Zone
@@ -383,6 +405,9 @@ def measure_altitude_m(rng, altitude_m: float, error_scale: float = 1.0) -> floa
 HELO_LAUNCH_WIND_MAX_KN = 32.0
 HELO_LAUNCH_CROSSWIND_MAX_KN = 22.0
 HELO_LAUNCH_VISIBILITY_MIN_NM = 2.0
+HELO_LAUNCH_GUST_MAX_KN = 40.0
+HELO_CEILING_MIN_FT = 300.0
+HELO_ICING_FUEL_FACTOR = 1.2   # anti-/de-icing power in light icing
 HELO_LAUNCH_SEA_STATE_MAX = 5.0
 HELO_DIP_WIND_MAX_KN = 30.0
 HELO_DIP_VISIBILITY_MIN_NM = 1.0
@@ -406,6 +431,17 @@ TORP_MIDCOURSE_UPDATE_S = 0.5   # Draht-Mittelkurs-Update (Serpentin)
 TORP_SPOOLUP_S = 2.0            # Anlaufzeit bis Marschgeschwindigkeit
 TORP_SPOOLUP_MIN_FRAC = 0.25    # Anfangsgeschwindigkeit als Bruchteil (Rohrabschuss)
 TORP_RUNNING_NOISE_RANGE_NM = 6.0  # passive Eigenlaerm-Reichweite eines laufenden Torpedos
+# Measured torpedo cues (src/sensors/threat_cue.py): intercepts, never the
+# entity type. The launch transient carries as far as the frigate's own
+# launch is heard by submarines; HF seeker pulses are heard beyond homing range.
+TORP_TRANSIENT_HEAR_NM = SUB_TORPEDO_ALERT_NM
+TORP_SEEKER_INTERCEPT_NM = 6.0
+TORP_CUE_BEARING_SIGMA_DEG = 3.0
+TORP_CUE_HOLD_S = 60.0          # a cue stays on the alarm board this long
+# Radar threat evaluation: an inbound air track this fast and this low (or a
+# jamming strobe) raises the ASM cue. Low attack aircraft can trigger it too.
+ASM_CUE_SPEED_KN = 300.0
+ASM_CUE_ALTITUDE_M = 150.0
 HELO_FUEL_S = 7200.0
 HELO_FUEL_RESERVE_S = 1200.0
 HELO_RETURN_DIST_NM = 0.3
@@ -438,7 +474,6 @@ RAID_WAVE_SIZE = (1, 2)
 RAID_SPAWN_DIST_NM = (110.0, 140.0)
 RAID_MAX_CONCURRENT = 3
 RAIDER_ATTACK_WINDOW_S = 90.0
-RAIDER_TURN_DEG_S = 4.0
 
 # M15: HSP-5 (Sea Lynx)
 HELO_SPEED_KN = 120.0
@@ -568,6 +603,11 @@ MISSION_TYPES = {
 }
 
 # W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
+# hq_intel: "coarse" = HQ meldet nur grob Peilung/Entfernung einer Bedrohung,
+# "exact" = HQ benennt zusätzlich die eingesetzten feindlichen Einheiten
+# (Typ und Anzahl); None = im Menü wählbar. Nur die Startmeldung hängt davon
+# ab, deshalb gehört die Einstellung nicht in den gespeicherten Schwierigkeitssatz.
+HQ_INTEL_MODES = ("coarse", "exact")
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall")
 SCENARIOS = {
     "s1_patrouille": dict(
@@ -577,6 +617,7 @@ SCENARIOS = {
                        enemy_attack_mult=0.7, enemy_cooldown_s=1200.0,
                        second_sub_prob=0.0),
         mission_type="patrouille",
+        hq_intel="exact",
         ship_start=(300.0, 380.0), ship_course=300.0,
         # Kein Seename hier: Welt/Seed sind im Menü frei wählbar (W/R), die
         # tatsächliche Karte kann von jeder Namensnennung abweichen.
@@ -593,6 +634,7 @@ SCENARIOS = {
                        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
                        second_sub_prob=0.0),
         mission_type="doppeljagd",
+        hq_intel="coarse",
         ship_start=(250.0, 300.0), ship_course=0.0,
         briefing=("Auftrag: Zwei U-Boote operieren im Einsatzsektor (eines davon "
                   "möglicherweise AIP – nahezu stumm). Belegungen: ESM-Wellen "
@@ -608,6 +650,7 @@ SCENARIOS = {
                        enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
                        second_sub_prob=0.85),
         mission_type="nuklearer_abfang",
+        hq_intel="coarse",
         ship_start=(320.0, 250.0), ship_course=270.0,
         briefing=("Auftrag: Hochwertiges nukleares U-Boot (SSN) dringt in den "
                   "Sektor ein – extrem leise, taucht tief unter die Thermokline, "
@@ -620,6 +663,7 @@ SCENARIOS = {
         title="Freie Jagd (Zufall)",
         difficulty=None,     # Custom-Schwierigkeit-Bildschirm danach
         mission_type=None,   # aus difficulty zusammengesetzt
+        hq_intel=None,       # im Schwierigkeits-Bildschirm wählbar
         ship_start=None, ship_course=None,
         briefing="Zufällige Mission – Typ und Schwierigkeit nach Auswahl.",
         win_text="",
@@ -652,9 +696,17 @@ COLOR_DEEP = (4, 24, 48)
 COLOR_ESM = (140, 150, 220)
 COLOR_HFDF = (200, 140, 220)
 COLOR_FLIGHT = (220, 180, 90)
+# Operator plot layer (grease pencil): distinct from every contact colour.
+COLOR_PLOT = (255, 160, 230)
 # W2: OPZ-Domänenfarbe für Flugkörper/Torpedo - eigene Farbe, da COLOR_DANGER
 # und COLOR_CONTACT_UBOOT (Unterwasser-Domäne) sonst fast ununterscheidbar sind.
 COLOR_CONTACT_MISSILE = (235, 70, 180)
+COLOR_FEED_BG = (10, 18, 14)       # event feed / telemetry / ticker ground
+COLOR_PANEL_BG = (14, 24, 18)      # top bar and panel boxes
+COLOR_OVERLAY_BG = (7, 18, 13)     # dialogs over a running mission
+COLOR_SELECT_BG = (30, 44, 30)     # selected list row
+COLOR_ALARM_BG = (18, 28, 22)      # bridge alarm bar
+COLOR_TAB_ACTIVE = (21, 55, 68)    # active page tab / selected sonar row
 
 # W3: Feed-Kategorien (Farbe, Kürzel)
 FEED_CATEGORIES = {
@@ -666,6 +718,7 @@ FEED_CATEGORIES = {
     "schaden": (COLOR_DANGER, "SCH"),
     "mission": (COLOR_CONTACT, "MIS"),
     "welt": (COLOR_TEXT_DIM, "WET"),
+    "ausguck": (COLOR_CONTACT, "AUSG"),
 }
 FEED_MAX_ENTRIES = 200
 

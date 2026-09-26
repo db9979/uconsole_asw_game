@@ -12,7 +12,7 @@ import pygame
 
 from src.audio.receiver import smooth_limit
 from src.audio.synthesis import (active_sonar_ping, combat_effect,
-                                 stereo_bearing, tone)
+                                 sonar_echo, stereo_bearing, tone)
 from src.core import config
 from src.core.debuglog import append_bounded_log
 
@@ -28,6 +28,18 @@ class AudioEngine:
     SONAR_HOLD_MAX = 2
     SONAR_BUFFER_S = 1.0
     SONAR_BUFFER_MAX_S = 2.0
+    # Elastic buffered playback: the queued (not yet mixer-held) duration is
+    # steered towards SONAR_TARGET_S by resampling at most SONAR_RATE_MAX
+    # faster or slower, in SONAR_RATE_STEP increments. After an underrun the
+    # queue refills to SONAR_REFILL_S under concealment instead of stuttering.
+    SONAR_TARGET_S = 0.5
+    SONAR_RATE_MAX = 0.02
+    SONAR_RATE_STEP = 0.0025
+    SONAR_RATE_GAIN = 0.05
+    SONAR_LEVEL_SMOOTHING = 0.05
+    SONAR_REFILL_S = 0.5
+    SONAR_STALE_S = 2.0
+    SONAR_CONCEAL_GRAIN_S = 0.128
 
     # Post-limiter per-channel PCM ceilings, NOT input volume caps. The gains
     # keep all three reserved buses below full scale even at coincident peaks.
@@ -41,6 +53,9 @@ class AudioEngine:
         self.channels = channels
         self.configured_enabled = bool(enabled)
         self.enabled = self.configured_enabled
+        # Local one-shot effects (pings, echoes, combat, alerts). Off while the
+        # uConsole plays the submarine: it must never hear the frigate's cues.
+        self.local_effects = True
         self.available = False
         self.fatal_error = False
         self._cache_size = max(0, cache_size)
@@ -50,12 +65,20 @@ class AudioEngine:
         self._alert_channel = None
         self._sonar_fading = False
         self._sonar_rate = None
+        self._sonar_out_rate = None
         self._sonar_input_count = 0
         self._sonar_output_count = 0
         self._sonar_previous = None
         self._sonar_last_sound = None
-        self._sonar_repeat_signal = None
-        self._sonar_repeat_sound = None
+        self._sonar_history = deque(maxlen=2)
+        self._sonar_last_value = None
+        self._sonar_tail_value = None
+        self._sonar_concealing = False
+        self._sonar_refilling = False
+        self._sonar_conceal_seed = 0x5A17
+        self._sonar_level_ema = None
+        self.sonar_rate_adjust = 0.0
+        self.sonar_concealed_blocks = 0
         self._sonar_neutral_sound = None
         self._sonar_last_fresh_at = None
         self.sonar_stale = False
@@ -155,7 +178,8 @@ class AudioEngine:
         return sound
 
     def play_ping(self, frequency_hz: float = 900.0, volume: float = 0.35) -> bool:
-        if (not self.enabled or not self.available or self._ping_channel is None):
+        if (not self.enabled or not self.available or self._ping_channel is None
+                or not self.local_effects):
             return False
         try:
             if self._ping_channel.get_busy():
@@ -175,12 +199,45 @@ class AudioEngine:
             return False
         return True
 
+    def play_echo(self, pulse: str, level: float, frequency_hz: float = 900.0,
+                  volume: float = 0.35) -> bool:
+        """Play one returned echo on the ping bus; a busy bus queues it once.
+
+        ``level`` (0..1) is quantized so repeated echoes reuse cached sounds.
+        """
+        if (not self.enabled or not self.available or self._ping_channel is None
+                or not self.local_effects):
+            return False
+        try:
+            level = round(float(np.clip(level, 0.0, 1.0)) * 10) / 10
+            volume = float(np.clip(volume, 0.0, self.SOURCE_LIMITS["ping"]))
+            sound = self._sound(
+                lambda: sonar_echo(frequency_hz, pulse, level, self.sample_rate,
+                                   volume),
+                ("ping", "echo", str(pulse), level, round(frequency_hz),
+                 round(volume, 2)))
+            if sound is None:
+                return False
+            if not self._ping_channel.get_busy():
+                self._ping_channel.play(sound)
+            elif self._ping_channel.get_queue() is None:
+                self._ping_channel.queue(sound)
+            else:
+                return False
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
+            return False
+        return True
+
     def play_effect(self, kind: str) -> bool:
         """Play one bounded local combat/handling effect on the alert bus."""
         if kind not in {"torpedo_launch", "missile_launch", "gunfire",
                         "explosion", "water_entry"}:
             return False
-        if (not self.enabled or not self.available or self._alert_channel is None):
+        if (not self.enabled or not self.available or self._alert_channel is None
+                or not self.local_effects):
             return False
         try:
             if (self._alert_channel.get_busy()
@@ -214,7 +271,8 @@ class AudioEngine:
             "damage": (110.0, 0.35, 0.32),
         }
         frequency, duration, volume = tones.get(kind, tones["danger"])
-        if (not self.enabled or not self.available or self._alert_channel is None):
+        if (not self.enabled or not self.available or self._alert_channel is None
+                or not self.local_effects):
             return False
         try:
             if (self._alert_channel.get_busy()
@@ -278,9 +336,12 @@ class AudioEngine:
                     if self._sonar_buffer_duration + samples.size / sample_rate > self.SONAR_BUFFER_MAX_S + 1e-6:
                         self.sonar_dropped_blocks += 1
                         return False
-                elif self._sonar_channel.get_queue() is not None:
-                    self.sonar_dropped_blocks += 1
-                    return False
+                    out_rate = self._elastic_output_rate()
+                else:
+                    if self._sonar_channel.get_queue() is not None:
+                        self.sonar_dropped_blocks += 1
+                        return False
+                    out_rate = self.sample_rate
             source_rate = int(sample_rate)
             if self._sonar_rate != source_rate or self.sonar_stale:
                 input_start = output_start = 0
@@ -289,31 +350,58 @@ class AudioEngine:
                 input_start = self._sonar_input_count
                 output_start = self._sonar_output_count
                 previous = self._sonar_previous
+                if self._sonar_out_rate != out_rate:
+                    # Rebase the exact counters onto the new output rate: the
+                    # next output instant moves by less than one output sample.
+                    offset = output_start * source_rate - input_start * self._sonar_out_rate
+                    input_start = 0
+                    output_start = -((-offset * out_rate)
+                                     // (self._sonar_out_rate * source_rate))
             # Ceil chooses exactly the output instants before the input end;
             # unlike round, it never needs a second prior sample at a join.
-            output_end = ((input_start + samples.size) * self.sample_rate
+            # An elastic out_rate above the mixer rate yields more samples per
+            # input block, i.e. slightly slower playback, and vice versa.
+            output_end = ((input_start + samples.size) * out_rate
                           + source_rate - 1) // source_rate
             count = output_end - output_start
             if count < 2:
                 return False
             positions = (np.arange(output_start, output_end, dtype=np.float64)
-                         * source_rate / self.sample_rate - input_start - 1)
+                         * source_rate / out_rate - input_start - 1)
             values = np.concatenate(([0.0 if previous is None else previous], samples))
             signal = np.interp(positions, np.arange(-1, samples.size), values)
             # Headphone volume precedes the soft limiter so turning it down
             # also reduces limiter compression, not only final loudness.
             signal *= np.clip(volume, 0.0, 1.0)
-            if previous is None:
+            with self._sonar_lock:
+                tail = self._sonar_tail_value if buffered else None
+            if previous is None and tail is None:
                 fade_count = min(count, max(2, round(self.sample_rate * 0.005)))
                 signal[:fade_count] *= np.linspace(0.0, 1.0, fade_count)
             if self.channels == 2 and bearing_deg is not None:
                 signal = stereo_bearing(signal, bearing_deg, listener_bearing_deg)
+            if previous is None and tail is not None:
+                # A retune or lost block continues the queued stream: join
+                # the new beam to its last sample instead of dipping to zero.
+                if np.shape(tail) == signal.shape[1:]:
+                    fade_count = min(count, max(2, round(self.sample_rate * .01)))
+                    weight = np.linspace(0.0, 1.0, fade_count)
+                    if signal.ndim == 2:
+                        weight = weight[:, None]
+                    signal[:fade_count] = (tail * (1 - weight)
+                                           + signal[:fade_count] * weight)
+                else:
+                    fade_count = min(count, max(2, round(self.sample_rate * 0.005)))
+                    weight = np.linspace(0.0, 1.0, fade_count)
+                    signal[:fade_count] *= (weight[:, None] if signal.ndim == 2
+                                            else weight)
             sound = self._make_sound(signal, "sonar")
             if buffered:
                 with self._sonar_lock:
                     self._sonar_buffered = True
                     self._sonar_buffer.append((sound, count / self.sample_rate,
                                                signal.copy()))
+                    self._sonar_tail_value = np.array(signal[-1], copy=True)
                     self._sonar_buffer_duration += count / self.sample_rate
                     if self._sonar_worker is None:
                         self._sonar_worker = threading.Thread(
@@ -338,6 +426,7 @@ class AudioEngine:
                 self._sonar_hold_streak = 0
             self._sonar_last_sound = sound
             self._sonar_rate = source_rate
+            self._sonar_out_rate = out_rate
             self._sonar_input_count = input_start + samples.size
             self._sonar_output_count = output_end
             self._sonar_previous = float(samples[-1])
@@ -371,6 +460,77 @@ class AudioEngine:
             engine._pump_sonar_once()
             del engine
 
+    def _elastic_output_rate(self) -> int:
+        """Resampling output rate that steers the queue towards its target.
+
+        Called under the sonar lock for each buffered block. Before the
+        startup cushion exists, and after any reset, the rate is exact.
+        A queue below target plays slightly slower (more output samples per
+        block), above target slightly faster, by at most SONAR_RATE_MAX.
+        """
+        if not self._sonar_primed or self._sonar_refilling:
+            self._sonar_level_ema = None
+            self.sonar_rate_adjust = 0.0
+            return self.sample_rate
+        level = self._sonar_buffer_duration
+        if self._sonar_level_ema is None:
+            self._sonar_level_ema = level
+        else:
+            self._sonar_level_ema += self.SONAR_LEVEL_SMOOTHING * (
+                level - self._sonar_level_ema)
+        error = self._sonar_level_ema - self.SONAR_TARGET_S
+        adjust = float(np.clip(-self.SONAR_RATE_GAIN * error,
+                               -self.SONAR_RATE_MAX, self.SONAR_RATE_MAX))
+        # Quantized and slew-limited to one step per block, so the tiny pitch
+        # correction never wobbles audibly.
+        adjust = round(adjust / self.SONAR_RATE_STEP) * self.SONAR_RATE_STEP
+        adjust = float(np.clip(adjust, self.sonar_rate_adjust - self.SONAR_RATE_STEP,
+                               self.sonar_rate_adjust + self.SONAR_RATE_STEP))
+        self.sonar_rate_adjust = adjust
+        return round(self.sample_rate * (1.0 + adjust))
+
+    def _conceal_signal(self) -> np.ndarray | None:
+        """A non-periodic 0.25 s stand-in built from recently played audio.
+
+        Overlap-added grains with random offsets keep level and spectrum of
+        the last half second without the looping stutter of a repeated block.
+        The power-complementary sine window keeps uncorrelated grains at a
+        constant level. The start is joined to the last played sample.
+        """
+        if not self._sonar_history:
+            return None
+        source = np.concatenate(tuple(self._sonar_history))
+        count = max(2, round(self.sample_rate * .25))
+        grain = min(round(self.sample_rate * self.SONAR_CONCEAL_GRAIN_S),
+                    source.shape[0])
+        if grain < 16:
+            return None
+        grain -= grain % 2
+        hop = grain // 2
+        window = np.sin(np.pi * (np.arange(grain) + .5) / grain)
+        if source.ndim == 2:
+            window = window[:, None]
+        output = np.zeros((count + 2 * grain,) + source.shape[1:])
+        for start in range(0, count + grain + 1, hop):
+            self._sonar_conceal_seed = (self._sonar_conceal_seed * 1664525
+                                        + 1013904223) % 2**32
+            offset = self._sonar_conceal_seed % (source.shape[0] - grain + 1)
+            output[start:start + grain] += source[offset:offset + grain] * window
+        signal = output[grain:grain + count]
+        self._join_to_last_value(signal)
+        return signal
+
+    def _join_to_last_value(self, signal: np.ndarray) -> None:
+        """Crossfade the first 10 ms from the last played sample in place."""
+        if self._sonar_last_value is None:
+            return
+        fade = min(len(signal), max(2, round(self.sample_rate * .01)))
+        weight = np.linspace(0.0, 1.0, fade)
+        if signal.ndim == 2:
+            weight = weight[:, None]
+        signal[:fade] = (self._sonar_last_value * (1 - weight)
+                         + signal[:fade] * weight)
+
     def _pump_sonar_once(self) -> None:
         with self._sonar_lock:
             if (not self._sonar_buffered or not self.available
@@ -383,30 +543,43 @@ class AudioEngine:
                     self._sonar_primed = True
                 if self._sonar_channel.get_queue() is not None:
                     return
-                if self._sonar_buffer:
+                if (self._sonar_refilling and self._sonar_buffer_duration
+                        >= self.SONAR_REFILL_S - 1e-6):
+                    self._sonar_refilling = False
+                if self._sonar_buffer and not self._sonar_refilling:
                     sound, duration, signal = self._sonar_buffer.popleft()
                     self._sonar_buffer_duration = max(0.0, self._sonar_buffer_duration - duration)
-                    self._sonar_repeat_signal = signal
-                    self._sonar_repeat_sound = None
+                    if self._sonar_concealing or self.sonar_stale:
+                        # Resume without a step from the stand-in audio.
+                        signal = signal.copy()
+                        self._join_to_last_value(signal)
+                        sound = self._make_sound(signal, "sonar")
+                    self._sonar_concealing = False
+                    self._sonar_history.append(signal)
+                    self._sonar_last_value = signal[-1].copy()
                     self._sonar_last_fresh_at = time.monotonic()
                     self.sonar_stale = False
                 elif self._sonar_last_fresh_at is None:
                     return
-                elif time.monotonic() - self._sonar_last_fresh_at < 2.0:
-                    if self._sonar_repeat_sound is None:
-                        signal = self._sonar_repeat_signal.copy()
-                        fade = min(len(signal), max(2, round(self.sample_rate * .01)))
-                        weight = np.linspace(0.0, 1.0, fade)
-                        if signal.ndim == 2:
-                            weight = weight[:, None]
-                        signal[:fade] = signal[-1] * (1 - weight) + signal[:fade] * weight
-                        self._sonar_repeat_sound = self._make_sound(signal, "sonar")
-                    sound = self._sonar_repeat_sound
+                elif (time.monotonic() - self._sonar_last_fresh_at
+                        < self.SONAR_STALE_S
+                        and (signal := self._conceal_signal()) is not None):
+                    if not self._sonar_concealing:
+                        self.sonar_local_underruns += 1
+                    self._sonar_concealing = True
+                    self._sonar_refilling = True
+                    self._sonar_last_value = signal[-1].copy()
+                    sound = self._make_sound(signal, "sonar")
                     self.sonar_holds += 1
-                    self.sonar_local_underruns += 1
+                    self.sonar_concealed_blocks += 1
                 else:
                     self.sonar_stale = True
+                    self._sonar_concealing = False
+                    self._sonar_refilling = True
                     self._sonar_previous = None
+                    self._sonar_history.clear()
+                    self._sonar_last_value = None
+                    self._sonar_tail_value = None
                     if self._sonar_neutral_sound is None:
                         count = max(2, round(self.sample_rate * .25))
                         noise = np.random.default_rng(1701).uniform(-.006, .006, count)
@@ -483,8 +656,14 @@ class AudioEngine:
         self._sonar_output_count = 0
         self._sonar_previous = None
         self._sonar_last_sound = None
-        self._sonar_repeat_signal = None
-        self._sonar_repeat_sound = None
+        self._sonar_out_rate = None
+        self._sonar_history.clear()
+        self._sonar_last_value = None
+        self._sonar_tail_value = None
+        self._sonar_concealing = False
+        self._sonar_refilling = False
+        self._sonar_level_ema = None
+        self.sonar_rate_adjust = 0.0
         self._sonar_last_fresh_at = None
         self.sonar_stale = False
         self._sonar_hold_streak = 0
@@ -578,8 +757,10 @@ class AudioEngine:
         self._audio_debug_receiver_last = receiver_blocks
         line = ("t={t:.1f} receiver_blocks_per_s={rb} sonar_drops={sd} "
                 "sonar_holds={sh} alert_drops={ad} "
-                "sonar_underruns={su} sonar_neutral={sn} sonar_stale={ss} "
-                "buffer_s={bs:.2f} evictions={ev} rate={r} ch={c}\n").format(
+                "sonar_underruns={su} sonar_concealed={sc} sonar_neutral={sn} "
+                "sonar_stale={ss} buffer_s={bs:.2f} rate_adj={ra:+.4f} "
+                "evictions={ev} rate={r} ch={c}\n").format(
+            sc=self.sonar_concealed_blocks, ra=self.sonar_rate_adjust,
             t=time.monotonic(), sd=self.sonar_dropped_blocks,
             sh=self.sonar_holds, ad=self.alert_dropped_events, ev=evictions,
             rb=produced,

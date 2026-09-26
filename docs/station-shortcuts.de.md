@@ -1,4 +1,4 @@
-# U-Jagd 1.0.0 - Stations- und Tastenkürzel
+# U-Jagd 1.2.0 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -9,198 +9,240 @@ Berechtigungsprüfungen bleiben wirksam.
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `1 bis 9` | Station direkt wählen; aktive Stationsnummer erneut drücken, um verfügbare Seiten weiterzuschalten. |
-| `Tab / Shift+Tab` | Nächste / vorherige Station. |
-| `P` | Pause oder Fortsetzen. |
-| `[ / Z` | Zeitraffer verringern. |
-| `] / X` | Zeitraffer erhöhen. |
-| `+ / -` | Maschinentelegraf vor / zurück; auch Num+ / Num-. |
-| `F1` | Kontextsensitive Hilfe öffnen. |
-| `F2` | Autocrew der aktuellen Station ein- oder ausschalten. |
-| `F3` | Autocrew-Übersicht öffnen. |
-| `F4` | SimLog öffnen, sofern die Option aktiviert ist. |
-| `F8` | Taktischen Einheitenanalysator öffnen; bei Commander-Vorschlägen Vorschlagsart wechseln. |
-| `F9` | Lokale Commander-/Remote-Crew-Verwaltung öffnen. |
-| `F10` | Optionen öffnen; während Pause funktioniert zusätzlich O. |
-| `N` | Nationen-/Einheitenansicht öffnen; nicht am Sonar. |
-| `S / L` | Speichern / Laden; L ist in der OPZ stattdessen der Fusionsbefehl. |
-| `Alt+Enter` | Vollbild umschalten. |
-| `Esc` | Fixierten Tooltip lösen, Eingabe/Ansicht abbrechen oder Beenden-Dialog öffnen. |
+| `Tab / Shift+Tab` | Nächste / vorherige Station |
+| `1 / 2 / 3 / 4` | Brücke / Sonar / Waffen / Schaden |
+| `5 / 6 / 7 / 8` | OPZ / Funk / Maschine / Helikopter |
+| `9` | Elektronische Kampfführung / ESM |
+| `Nummer der aktiven Station` | Erneut drücken, um die Seite dieser Station weiterzuschalten |
+| `Pfeiltasten` | Stationsbezogene Auswahl oder Einstellung |
+| `+ / -` | Telegraph (an jeder Station verfügbar) |
+| `F1 / ?` | Hilfe (diese Anzeige) |
+| `F2` | Autocrew der aktuellen Station umschalten |
+| `F3` | Autocrew-Übersicht öffnen |
+| `0` | Wetter- & Sonar-Analyse |
+| `F8` | Taktischer Einheitenanalysator (Katalog, nur lesend) |
+| `F4` | Simulationsprotokoll-Ansicht (live; benötigt simlog-Option; M: Karte aller Kontakte) |
+| `F9` | Lokale Commander-LAN-Verwaltung öffnen |
+| `F10` | Optionen: Sprache, Vollbild, Audio, großer Text, Tooltips, Bildrate |
+| `F11` | Ereignislog und volle Telemetrie einblenden (Station bleibt bedienbar) |
+| `N` | Nationen & Einheiten; im Sonar: Notchfilter |
+| `S / L` | Speichern / Laden (Slots 1-5) |
+| `Alt+Enter` | Vollbild (alle Stationen) |
+| `Q / E oder Mausrad` | Kartenzoom nur auf Brücke, Waffen und Helikopter |
+| `Drag` | Karte verschieben (Brücke, Waffen und Helikopter) |
+| `K` | Kamera-Follow nur auf sichtbaren Karten (Drag schaltet es aus) |
+| `P` | Plotmodus auf Brücken-/Waffen-/Helo-Karte und OPZ-Karte: Marken, Lineal, Peillinien, Kreise, Koppellinien (für alle Stationen, wird gespeichert) |
+| `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
+| `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
+| `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
 
-## 1  Brücke
-
-| Taste / Eingabe | Funktion |
-|---|---|
-| `← / → halten` | Sollkurs kontinuierlich nach Backbord / Steuerbord ändern. |
-| `↑ / ↓` | Maschinentelegraf vor / zurück. |
-| `U` | Sollkurs numerisch eingeben. |
-| `V` | Sollfahrt numerisch eingeben. |
-| `Q / E` | Karte heraus- / hineinzoomen. |
-| `K` | Kartenverfolgung ein- oder ausschalten. |
-| `Mausrad / Ziehen` | Karte um Mausposition zoomen / verschieben. |
-| `Klick auf Objekt` | Tooltip fixieren; beobachtbaren Sonarkontakt gegebenenfalls wählen. |
-
-## 2  Sonar
+## 1 Brücke
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `Bild↑ / Bild↓` | Vorherige / nächste Sonarseite: Broadband, LOFAR, DEMON, TMA, Environment, ACTIVE. |
-| `2` | Bei bereits aktivem Sonar zur nächsten Sonarseite. |
-| `Shift+A` | Aktiven Schiffssonar-Ping senden. |
-| `Shift+B` | Empfangsarray zwischen HMS/Bug und TAS/Schlepparray wechseln. |
-| `Y` | TAS ausbringen oder einholen. |
-| `E` | Bathythermografische Messung durchführen. |
-| `U / V` | TAS-/VDS-Solltiefe um 10 m heben / senken. |
-| `R` | Horchpeilung numerisch eingeben. |
-| `← / →` | Horchpeilung um 0,5° ändern; Shift: 5°, Strg: 0,1°. |
-| `↑ / ↓` | Vorherigen / nächsten Kontakt wählen. |
-| `Enter` | Gewähltem Kontakt folgen; bei Fokus zur manuellen Peilung zurückkehren. |
-| `J` | Sonar-Hörton ein- oder ausschalten. |
-| `, / .` | Hörlautstärke um 10 % verringern / erhöhen. |
-| `A / B / H` | Breitband-, gefilterten oder Heterodyn-Hörmodus wählen. |
-| `D` | Zwischen Breitband und gefiltertem Hören wechseln. |
-| `I / O` | Empfangsverstärkung um 3 dB verringern / erhöhen. |
-| `Umschalt+I / Umschalt+O` | Anzeigekontrast verringern / erhöhen. |
-| `Strg+I / Strg+O` | Schwarzpunkt verringern / erhöhen. |
-| `Umschalt+C` | Phosphorpalette Grün / Amber / Cyan wechseln. |
-| `Umschalt+H` | Angezeigte Historientiefe 25 / 50 / 100 % wechseln. |
-| `F` | Frequenzband weit / tief / mittel wechseln. |
-| `N` | Eigenantriebs-Notchfilter ein- oder ausschalten. |
-| `K` | Erkannte Harmonik-Hypothese wählen oder löschen. |
-| `Leertaste` | LOFAR-Peak-Hold ein- oder ausschalten. |
-| `T / C / G / M` | TMA umschalten / klassifizieren / gewählten Sonarkontakt an OPZ freigeben oder zurückziehen / als Waffenziel setzen. Die Klassifizierung allein meldet nichts. |
-| `Maus` | Seitentab oder Kontakt wählen; im Broadband-Wasserfall Horchpeilung setzen. |
+| `<- / ->` | Ruder: Zielkurs ändern |
+| `Auf / Ab` | Telegraph hoch / runter |
+| `U` | Direkten Zielkurs eingeben (000-359) |
+| `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
+| `+ / -` | Telegraph: Motorenbefehl (ASTERN-STOP-SLOW-HALF-FULL-FLANK) |
+| `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
+| `Q / E` | Karte heraus-/hineinzoomen |
+| `K` | Kamera-Follow an/aus |
 
-## 3  Waffen
+## 2 Sonar
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `↑ / ↓ halten` | Torpedo-Solltiefe zwischen 10 und 300 m ändern. |
-| `← / →` | Vorherigen / nächsten Sonarkontakt wählen. |
-| `M` | Gewählten Sonarkontakt als Ziel setzen. |
-| `T / Strg+Enter` | Schiffstorpedo starten; Bereitschafts- und ROE-Prüfungen gelten. |
-| `H` | Helikopter starten oder zurückrufen. |
-| `B / D` | Sonarboje absetzen / Helikoptertorpedo abwerfen. |
-| `V` | Nixie-Schleppköder ausbringen. |
-| `F` | Flak-Feuerfreigabe erteilen oder entziehen. |
-| `Q / E / K` | Kartenzoom heraus / hinein / Verfolgung umschalten. |
-| `Mausrad / Ziehen` | Karte zoomen / verschieben. |
+| `Shift+A` | Aktiv-Ping abfeuern (Kühlzeit, verrät Position!) |
+| `Shift+B` | Empfangsarray zwischen HMS und TAS wechseln |
+| `Y` | TAS ausbringen / einholen (nur bei 3-12 kn) |
+| `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
+| `2` | 2 erneut drücken, um die Sonarseite weiterzuschalten |
+| `E` | Bathythermograph: lokales Schallprofil messen |
+| `W` | Aktivpuls CW / LFM |
+| `U / V` | TAS/VDS-Solltiefe um 10 m heben / senken |
+| `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
+| `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
+| `Auf / Ab` | Kontakt für TMA und Klassifikation wählen |
+| `Enter` | Gemessener Kontaktpeilung folgen / manuell halten |
+| `J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
+| `A / B / H` | Direkt Breitband / gefiltert / Heterodyn abhören |
+| `D` | Breitband/gefiltertes Abhören umschalten |
+| `I / O` | Gain senken / erhöhen (3 dB) |
+| `Shift+I / Shift+O` | Sonar-Anzeigekontrast senken / erhöhen |
+| `Ctrl+I / Ctrl+O` | Sonar-Schwarzpunkt senken / erhöhen |
+| `Shift+C` | Phosphorpalette Grün / Amber / Cyan wechseln |
+| `Shift+H` | Angezeigte Historientiefe 25 / 50 / 100 Prozent wechseln |
+| `F` | Frequenzband wählen: breit / tief / mittel |
+| `N` | Notchfilter gegen Eigenantrieb |
+| `K` | Linie am Cursor markieren (LOFAR-Grundton, DEMON Welle/Blatt) |
+| `Z / X` | LOFAR/DEMON-Frequenzcursor (Umschalt: 10 Hz) |
+| `Ctrl+Z / Ctrl+X` | Bandpass untere / obere Kante am Cursor |
+| `Q` | Integrationszeit 2 (FFT)/8/16/64 s |
+| `Shift+Q` | LOFAR-Nonius: 20 Hz in nativen 0,5 Hz |
+| `Shift+N` | Notch auf der Cursorfrequenz |
+| `Shift+F` | DEMON-Trägerband 200-800 / 400-1400 / 1000-2000 Hz |
+| `Ctrl+F` | Überlagerungsversatz 400/700/1000/1200 Hz |
+| `X / Shift+X (BB)` | Breitband/Fusion: TAS-Seite des gewählten Kontakts wechseln / Umschalt: bestätigen |
+| `Z / X (TMA)` | TMA-Seite: Hypothesenkurs -/+ 5 Grad (Umschalt 1 Grad) |
+| `Ctrl+Z / Ctrl+X (TMA)` | TMA-Seite: Hypothesenfahrt -/+ 1 kn |
+| `Q / Shift+Q (TMA)` | TMA-Seite: Hypothesenentfernung -/+ 1 sm (Strg 0,2 sm) |
+| `K / Shift+K (TMA)` | TMA-Seite: Hypothese als Fix übernehmen / Umschalt: Solver-Vorschlag kopieren (Training) |
+| `SPACE` | LOFAR Peak-Hold ein/aus |
+| `T` | TMA für ausgewählten Kontakt ein/aus |
+| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
+| `G` | Gewählt Kontakt unabhängig von der Klassifikation an OPZ freigeben / zurückziehen |
+| `M` | Ausgewählten Kontakt als Ziel setzen |
 
-## 4  Schadensabwehr
-
-| Taste / Eingabe | Funktion |
-|---|---|
-| `← / →` | Vorherige / nächste Abteilung wählen. |
-| `↑ / ↓` | Reparaturteam 1 bis 3 wählen. |
-| `Enter` | Gewähltes Team der gewählten Abteilung zuweisen. |
-| `Backspace` | Gewähltes Team zurückziehen. |
-| `Klick auf Abteilung` | Abteilung wählen und Zuweisung des aktuell gewählten Teams versuchen. |
-| `1 bis 9` | Wechselt immer die Station; wählt kein Reparaturteam. |
-
-## 5  OPZ / CIC
-
-| Taste / Eingabe | Funktion |
-|---|---|
-| `↑ / ↓` | Vorherigen / nächsten CIC-Track wählen. |
-| `C / F` | Klassifikation / NATO-Zugehörigkeit des gewählten Tracks ändern. |
-| `Umschalt+F` | Kontaktdomainfilter wechseln. |
-| `J` | Gemeinsame bedienersichtbare Track-ID eingeben. |
-| `Leertaste` | Gewählten Rohbericht markieren oder Markierung entfernen. |
-| `L / Shift+L` | Aus markierten Meldungen Fusion bilden / gewählte Fusion auflösen. |
-| `Backspace` | Alle Markierungen leeren. |
-| `Delete / H` | Bericht unterdrücken / Anzeige unterdrückter Meldungen umschalten. |
-| `M` | CIC-Track an Sonar/Waffen übergeben. |
-| `Bild↑ / Bild↓` | Schiffszentrierten Radarbereich vergrößern / verkleinern; die Kartenkamera bleibt unverändert. |
-| `Mausrad / Ziehen` | Unabhängige OPZ-Karte am Zeiger zoomen (bis 5 NM Radius) / verschieben. |
-| `K` | Kartenverfolgung des eigenen Schiffs ein- oder ausschalten. |
-| `← / →` | Vorheriges / nächstes ASM-Ziel wählen. |
-| `E / Strg+Enter` | ESSM starten; Bereitschafts- und ROE-Prüfungen gelten. |
-| `G` | Chaff ausbringen. |
-| `R / Shift+R` | Seezielradar / Luftraumradar ein- oder ausschalten. |
-| `I` | CIWS-Feuerfreigabe erteilen oder entziehen. |
-| `Enter` | Angriff auf einen als feindlich eingestuften Live-Kontakt ausdrücklich bestätigen. |
-| `Klick` | Dargestellten Bericht wählen; freie Kartenfläche beginnt das Verschieben. |
-
-## 6  Funk
+## 3 Waffenzentrale
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `↑ / ↓` | Vorheriges / nächstes HFDF-Signal wählen. |
-| `Enter` | HFDF-Peilung zusammen mit der eigenen Position protokollieren. |
+| `M` | Ziel setzen (aus Sonarkontakten) |
+| `Auf / Ab halten` | Torpedotiefe (10-300 m) |
+| `<- / ->` | Sonarkontakt für Zielwahl wählen |
+| `T / Ctrl+Enter` | Torpedo abfeuern (ROE-Prüfung) |
+| `H` | HSP-5 starten / zurückrufen |
+| `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
+| `D` | Leichttorpedo vom HSP-5 |
+| `V` | Einen begrenzten geschleppten Akustik-Täuschkörper ausbringen |
+| `Q / E` | Karte heraus-/hineinzoomen |
+| `K` | Kamera-Follow an/aus |
+| `F` | Flak-Feuerfreigabe umschalten (gesperrt = feuert nie auf Angreifer) |
 
-## 7  Maschinenraum
-
-| Taste / Eingabe | Funktion |
-|---|---|
-| `↑ / ↓` | Maschinentelegraf vor / zurück. |
-| `A` | Schleichfahrt / Normalbetrieb umschalten. |
-| `U` | Sollkurs numerisch eingeben. |
-| `V` | Sollfahrt numerisch eingeben. |
-| `+ / -` | Globaler Maschinentelegraf vor / zurück. |
-
-## 8  Helikopter
-
-| Taste / Eingabe | Funktion |
-|---|---|
-| `H` | Helikopter starten oder zurückrufen; Wettergrenzen gelten für den Start. |
-| `← / →` | Wegpunktpeilung um 15° ändern. |
-| `↑ / ↓` | Wegpunktentfernung um 1 NM erhöhen / verringern. |
-| `M` | Sonarkontakt als Lufttorpedoziel setzen. |
-| `B` | Sonarboje an aktueller Position absetzen. |
-| `C` | Gewählten Tauchsonarkontakt klassifizieren. |
-| `G / Umschalt+G` | Nächsten Tauchsonarkontakt wählen / dessen Tauchsonarmeldung an OPZ freigeben oder zurückziehen; unabhängig von der Schiffssonarmeldung. |
-| `Y` | Tauchsonar ausbringen oder einholen. |
-| `U / V` | Tauchsonar-Solltiefe um 10 m heben / senken. |
-| `A` | Aktiven Tauchsonar-Ping senden. |
-| `D / Strg+Enter` | Leichttorpedo abwerfen. |
-| `Q / E / K` | Kartenzoom heraus / hinein / Verfolgung umschalten. |
-| `Klick in freie Karte` | Wegpunkt direkt setzen; Objektklick wählt stattdessen Objekt/Tooltip. |
-
-Auf der vierten Helikopterseite füllen Breitband, LOFAR und DEMON die Sonarkonsole:
+## 4 Schadensabwehr
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `Bild↑ / Bild↓` oder Klick auf die Reiter | Breitband, LOFAR oder DEMON als großes Analysefeld wählen. |
-| `T` | Zwischen Tauchsonar und verfügbaren passiven Sonarbojen als Hörquelle wechseln. |
-| `← / →`, `R` | Hörpeilung um 5° ändern oder automatische Peilung wiederherstellen. |
-| `Umschalt+D`, `Umschalt+F` | Hörmodus beziehungsweise Frequenzband wechseln. |
-| `I / O`, `N` | Verstärkung senken / erhöhen beziehungsweise Kerbfilter umschalten. |
-| `, / .`, `J` | Kopfhörerlautstärke senken / erhöhen beziehungsweise Live-Sonar ein- oder ausschalten. |
+| `<- / ->` | Kompartiment wählen |
+| `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
+| `Enter` | Gewähltes Team dem gewählten Kompartiment zuweisen |
+| `Backspace` | Gewähltes Team zurückziehen |
+| `1-9` | Immer Station wechseln, keine Teamzuweisung |
+| `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
-## 9  EloKa / ESM
+## 5 OPZ / CIC
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `↑ / ↓` | Vorherige / nächste passive ESM-Auffassung wählen. |
-| `F` | Statusfilter (OPERATIV, LIVE, SPEICHER, ALLE) wechseln. |
-| `Umschalt+F` | Mindestbedrohung wechseln. |
-| `B` | Frequenzbandfilter wechseln. |
-| `C` | Manuelle Radarart-Zuordnung wechseln. Eine gültige Zuordnung gibt aktuelle ELOKA-Peilungen an OPZ frei; Löschen zieht die Freigabe zurück. |
-| `J` | Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben. |
-| `Umschalt+J` | ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln. |
-| `A` | Automatische ECM-Priorisierung und Softkill-Kopplung umschalten. |
-| `M` | EloKa-Audio umschalten. |
-| `Klick auf Track` | Auffassung wählen und gegebenenfalls Tooltip fixieren. |
+| `Auf / Ab` | CIC-Track wählen |
+| `C` | OPZ-eigene Radar-/HOJ-Meldungen oder manuelle Fusion klassifizieren |
+| `F` | NATO-Zugehörigkeit setzen |
+| `Shift+F` | OPZ-Kontaktdomainfilter wechseln |
+| `J` | Gemeinsame bedienersichtbare Track-ID eingeben |
+| `Space / L / Shift+L` | Rohmeldungen markieren und manuelle Fusion bilden/auflösen (Shift+L) |
+| `Delete / H` | Lokal unterdrücken/wiederherstellen; H verwaltet Unterdrückte |
+| `M` | CIC-Track an Sonar/Waffen übergeben |
+| `Bild Auf / Ab` | Radarbereich 10/20/40/80/120 NM |
+| `<- / ->` | ASM-Track wählen |
+| `E / Ctrl+Enter` | ESSM abfeuern (VLS-Cell) |
+| `G` | Chaff abwerfen (8 NM-Kegel, Kühlzeit) |
+| `R` | Seeraumradar an/aus (EMCON) |
+| `Shift+R` | Luftraumradar an/aus (EMCON) |
+| `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
+| `Backspace` | Alle markierten Meldungen abwählen |
+| `Enter` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
+| `K` | Kamera-Follow an/aus |
+
+## 6 Funk
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `Auf / Ab` | HFDF-Signal auswählen |
+| `Enter` | Peilung mit eigener Position protokollieren |
+
+## 7 Maschinenraum
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `+ / -` | Motorenbefehl (Telegraph) |
+| `Auf / Ab` | Telegraph hoch / runter |
+| `A` | Akustikmodus LEISE/NORMAL |
+| `U` | Direkten Zielkurs eingeben (000-359) |
+| `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
+
+## 8 Helikopterdeck
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `H` | HSP-5 starten / zurückrufen |
+| `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
+| `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
+| `B` | Eine Sonarboje an aktueller Position aussetzen |
+| `Shift+B` | Modus der nächsten Boje PASSIV / AKTIV |
+| `T` | Sensorquelle: Tauchsonar / Sonarbojen |
+| `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
+| `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
+| `G / Shift+G` | Tauchsonarkontakt wählen / an OPZ freigeben oder zurückziehen |
+| `Y` | Hubschrauber-Tauchsonar absenken / einholen |
+| `U / V` | Solltiefe des Tauchsonars heben / senken |
+| `A` | Aktiven Ping vom abgesenkten Tauchsonar senden |
+| `D / Ctrl+Enter` | Leichttorpedo abwerfen |
+| `Q / E` | Karte heraus-/hineinzoomen |
+| `K` | Kamera-Follow an/aus |
+| `Akustik: Bild Auf / Ab` | Akustikseite: Breitband / LOFAR / DEMON |
+| `Akustik: <- / ->` | Hubschrauber-Horchpeilung -/+ 5 Grad |
+| `Akustik: R` | Horchpeilung auf automatisch zurücksetzen |
+| `Akustik: T` | Horchquelle: Tauchsonar / passive Bojen |
+| `Akustik: J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
+| `Akustik: I / O` | Gain senken / erhöhen (3 dB) |
+| `Akustik: N` | Notchfilter gegen Eigenantrieb |
+| `Akustik: Shift+D` | Abhörmodus Breitband / gefiltert / Überlagerung |
+| `Akustik: Shift+F` | Abhör-Frequenzband wechseln |
+
+## 9 EloKa
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `Auf / Ab` | Sichtbare passive ESM-Auffassung wählen |
+| `F / Shift+F / B` | Status-, Mindestbedrohungs- und Frequenzbandfilter wechseln |
+| `C` | Radarart zuordnen und aktuelle Peilungen an OPZ freigeben; Zuordnung löschen zieht die Freigabe zurück |
+| `J` | Gerichteten ECM-Kanal für die gewählte Auffassung aktivieren / freigeben |
+| `Shift+J` | ECM-Verfahren Noise, RGPO, VGPO oder Falschziele wechseln |
+| `A` | Automatische ECM-Priorisierung und Softkill-Kopplung umschalten |
+| `M` | Lokalen ELOKA-Auffassungston umschalten |
+
+## Tasten im Remote-Crew-Browser:
+
+| Taste / Eingabe | Funktion |
+|---|---|
+| `1-9` | Eine eigene Station öffnen |
+| `[ / ]` | Vorherige / nächste eigene Station |
+| `?` | Leitfaden und Stationshilfe öffnen |
+| `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
+| `Home / End` | Erster / letzter Eintrag der fokussierten Liste |
+| `+ / -` | Fokussierte Karte zoomen; Pos1 passt die Ansicht ein |
+| `Pfeiltasten (Karte)` | Fokussierte Karte verschieben |
+| `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
+| `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
+| `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
 
 ## Eingabe und Dialoge
 
 | Taste / Eingabe | Funktion |
 |---|---|
 | `Numerische Eingabe` | Ziffern, Punkt oder Komma; Backspace; Enter bestätigt; Esc bricht ab. |
-| `Hilfe` | ←/→/Tab Kategorie; ↑/↓ zeilenweise; Bild↑/Bild↓ seitenweise; F1/Esc schließen. |
+| `Hilfe` | ←/→/Tab Kategorie; ↑/↓ zeilenweise; Bild↑/Bild↓ seitenweise; im Handbuch [ ] oder , . bzw. 0-9 Kapitel; F1/Esc schließen. |
 | `Speichern/Laden` | 1 bis 5 wählt Slot; Enter bestätigt; Esc zurück. |
+| `Beenden-Dialog` | ↑/↓ wählen, Enter bestätigen: zurück zum Spiel, speichern und beenden, zum Hauptmenü (ohne Speichern), ohne Speichern beenden; Esc/N schließt. |
+| `Missionsende` | R Neustart mit gleichem Seed (Editor-Mission startet sich selbst neu); M zum Hauptmenü; Esc Beenden-Dialog. |
+| `Hauptmenü` | ↑/↓ und Enter; W Weltmodus, R neuer Seed, Bild↑/Bild↓ Sektor (feste reale Welt), F Vollbild; Esc in der Szenarioauswahl zurück zum Hauptmenü. |
 | `Commander-Vorschlag` | F6 annehmen; F7 ablehnen; F8 Vorschlagsart; Esc ausblenden. |
-| `SimLog` | ↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; F4/Esc schließen. |
+| `SimLog` | ↑/↓, Bild↑/Bild↓, Home/End oder Mausrad; M Karte, F Karte einpassen; F4/Esc schließen. |
+| `Wetter/Analyse` | 0 oder Esc schließt das Analysefeld. |
+| `Autocrew-Übersicht` | F3 oder Esc schließt. |
 
 ## Hinweise
 
 - `Num-Enter` entspricht in Spiel- und Eingabedialogen grundsätzlich `Enter`.
 - Wiederholte Keydown-Ereignisse werden ignoriert; nur ausdrücklich als
   gehalten beschriebene Steuerungen arbeiten kontinuierlich.
-- Remote Crew verwendet Browser-Bedienelemente. Dieses Blatt beschreibt die
-  lokale Tastatur- und Mausbedienung auf der uConsole.
+- Remote Crew verwendet Browser-Bedienelemente; der Abschnitt zum Browser
+  nennt nur dessen Tastaturhilfen.
 - In der nativen OPZ sind Ereignis-Feed und Telemetrie ausgeblendet; ihre
-  Daten laufen weiter und erscheinen auf anderen Stationen wieder.
+  Daten laufen weiter, `F11` blendet sie auch dort als Overlay ein.
+- Tasten und Beschreibungen der Stationen stammen aus `src/core/help.py`
+  (dieselbe Quelle wie die F1-Hilfe und das Handbuch).
 - U-Jagd ist ein Spiel und kein Ausbildungs- oder Navigationsprodukt.
 
 Erzeugt mit `python tools/build_station_shortcuts_pdf.py`.

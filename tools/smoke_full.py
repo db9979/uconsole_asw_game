@@ -43,7 +43,6 @@ def _run_smoke() -> None:
     assert g.in_menu is False
 
     # --- W0: Echtzeit + Sub-Stepping ---
-    assert g.time_scale == 1
     before = g.sim_t
     g.update(.05)
     assert abs(g.sim_t - before - .05) < 1e-9
@@ -115,6 +114,15 @@ def _run_smoke() -> None:
                  if contact.target_id == tma_sub.id), None)
         c = g.sonar.contacts.get(tma_sub.id)
         assert c is not None, "TMA-Test: Kontakt verloren"
+        assert tma_sub.id in g.sonar.tma_proposals, \
+            "TMA: kein Solver-Vorschlag trotz 90°-Manöver"
+        # Operator-TMA: Hypothese (hier die bekannte Testgeometrie) uebernehmen.
+        import math
+        ref = g.sonar._tracks[tma_sub.id].pts[-1]
+        assert g.set_tma_hypothesis(c, 90.0, 0.0, math.hypot(
+            tma_sub.x - ref.fx, tma_sub.y - ref.fy)) is True
+        result = g.accept_tma(c)
+        assert result is True, f"TMA: Hypothese nicht uebernommen ({result})"
         assert c.tma_pos is not None, "TMA: keine Loesung trotz 90°-Manöver"
         print(f"TMA: OK (Kontakte: {len(g.sonar.contacts)}, "
               f"quality={c.tma_quality:.2f})")

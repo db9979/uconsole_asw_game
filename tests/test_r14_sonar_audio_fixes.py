@@ -89,8 +89,7 @@ def test_audio_status_separates_device_and_local_controls():
     assert status["device_available"] is False
     assert status["local_enabled"] is True
     assert status["mode"] == "HETERODYNE" and not status["audible"]
-    assert game.time_scale == 1
-    assert game.sonar_audio_status()["muted_above_1x"] is False
+    assert "muted_above_1x" not in game.sonar_audio_status()
 
 
 def test_independent_fixes_coexist_have_separate_ages_and_expire_without_draw():
@@ -160,14 +159,13 @@ def test_fix_and_audition_mode_save_roundtrip_and_malformed_rejection():
     assert restored.save_state() == before
 
 
-def test_exact_r13_sonar_shape_has_narrow_v10_upgrade():
+def test_exact_r13_sonar_shape_is_rejected():
     game = Game(seed=1404, start_menu=False, audio_enabled=False)
     prior = game.save_state()
     del prior["sonar_controls"]["audition_mode"]
     for contact in prior["sonar"]["contacts"].values():
         del contact["fixes"]
     candidate = Game(seed=1, start_menu=False, audio_enabled=False)
-    assert candidate._load_save_data(prior, allow_pre_r9=True)
-    malformed = copy.deepcopy(prior)
-    malformed["sonar_controls"]["unknown_r13_field"] = True
-    assert not candidate._load_save_data(malformed, allow_pre_r9=True)
+    before = candidate.save_state()
+    assert not candidate._load_save_data(prior)
+    assert candidate.save_state() == before

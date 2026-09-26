@@ -46,7 +46,7 @@ def surface(game, distance):
 
 
 def lookout(game):
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     return [track for track in game.opz_tracks() if track.source == "LOOKOUT"]
 
 
@@ -165,7 +165,9 @@ def test_lookout_submarine_depth_gate_and_aircraft_domains(monkeypatch):
               config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M, 0.0, "diesel_alt",
               random.Random(52), runtime_catalog=game.runtime_catalog)
     game.subs = [sub]
-    assert [track.kind for track in lookout(game)] == ["SUB"]
+    # A bare sighting is only "something on the surface"; the submarine
+    # domain needs the lookout's recognition step.
+    assert [track.kind for track in lookout(game)] == ["SURFACE"]
     game.air_picture._tracks.clear()
     sub.depth = config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M + .01
     assert not lookout(game)
@@ -186,9 +188,9 @@ def test_lookout_is_neutral_noisy_separate_and_does_not_mutate_global_rng(monkey
     actor = surface(game, 5.0)
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
     global_state = random.getstate()
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     visual = next(track for track in game.opz_tracks() if track.source == "LOOKOUT")
-    radar_key = f"W-{actor.id}"
+    radar_key = f"S-{actor.id}"
     assert not hasattr(visual, "target_id")
     assert visual.label != "VISUAL" and visual.course is None
     assert visual.track_id != radar_key and str(actor.id) not in visual.track_id
@@ -197,7 +199,7 @@ def test_lookout_is_neutral_noisy_separate_and_does_not_mutate_global_rng(monkey
 
     first = copy.deepcopy(visual)
     game.air_picture._tracks.clear()
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     second = next(track for track in game.opz_tracks() if track.source == "LOOKOUT")
     assert second == first
 
@@ -207,7 +209,7 @@ def test_visual_track_never_overwrites_radar_track(monkeypatch):
     actor = surface(game, 5.0)
     game.surface_radar_on = True
     monkeypatch.setattr(game.world, "land_blocks_line", lambda *args: False)
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     tracks = game.opz_tracks()
     assert {track.source for track in tracks} == {"RADAR-S", "LOOKOUT"}
     assert len({track.track_id for track in tracks}) == 2
@@ -234,7 +236,7 @@ def test_v2_roles_receive_only_authorized_new_picture_sources(monkeypatch):
     intercept = game.eloka_tracks()[0]
     game.eloka_annotations[intercept.track_key] = "emitter.warship_01.radar"
     game._publish_released_esm()
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     bridge, server = CommanderBridge(), Server()
     bridge.pump(game, server, now=10.0)
 
@@ -266,7 +268,7 @@ def test_new_picture_sources_save_round_trip_validate_and_continue(monkeypatch):
     intercept = game.eloka_tracks()[0]
     game.eloka_annotations[intercept.track_key] = "emitter.warship_01.radar"
     game._publish_released_esm()
-    game._update_air_picture()
+    game._update_air_picture(full_scan=True)
     state = game.save_state()
     assert Game._valid_save_document(state, game.runtime_catalog)
     restored = Game(seed=1, start_menu=False, audio_enabled=False)

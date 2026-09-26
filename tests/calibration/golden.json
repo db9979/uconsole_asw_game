@@ -1,0 +1,314 @@
+{
+ "metrics": {
+  "air.asm.time_to_impact_s.30nm": {
+   "kind": "transient",
+   "value": 214.9
+  },
+  "air.chaff.leak_fraction": {
+   "kind": "statistic",
+   "value": 0.65
+  },
+  "air.ciws.leak_fraction": {
+   "kind": "statistic",
+   "value": 0.175
+  },
+  "damage.flood_total_1800s_two_hits.mean": {
+   "kind": "statistic",
+   "value": 203.0
+  },
+  "damage.flood_total_600s_no_repair.mean": {
+   "kind": "statistic",
+   "value": 115.5
+  },
+  "damage.sink_total": {
+   "kind": "equilibrium",
+   "value": 540.0
+  },
+  "lookout.range_nm.flight.day.sea1": {
+   "kind": "range",
+   "value": 18.4
+  },
+  "lookout.range_nm.sub.day.sea1": {
+   "kind": "range",
+   "value": 4.6
+  },
+  "lookout.range_nm.surface.day.sea1": {
+   "kind": "range",
+   "value": 11.04
+  },
+  "radar.horizon_nm.surface_target": {
+   "kind": "equilibrium",
+   "value": 16.991151
+  },
+  "radar.range_nm.air.sea1.rain0": {
+   "kind": "range",
+   "value": 100.0
+  },
+  "radar.range_nm.air.sea1.rain1": {
+   "kind": "range",
+   "value": 80.0
+  },
+  "radar.range_nm.air.sea5.rain0": {
+   "kind": "range",
+   "value": 95.0
+  },
+  "radar.range_nm.air.sea6.rain0": {
+   "kind": "range",
+   "value": 90.0
+  },
+  "radar.range_nm.surface.sea1.rain0": {
+   "kind": "range",
+   "value": 30.0
+  },
+  "radar.range_nm.surface.sea1.rain1": {
+   "kind": "range",
+   "value": 27.0
+  },
+  "radar.range_nm.surface.sea5.rain0": {
+   "kind": "range",
+   "value": 26.25
+  },
+  "radar.range_nm.surface.sea6.rain0": {
+   "kind": "range",
+   "value": 22.5
+  },
+  "ship.cavitation_onset_kn": {
+   "kind": "equilibrium",
+   "value": 15.0
+  },
+  "ship.fuel_kg_h.FLANK": {
+   "kind": "equilibrium",
+   "value": 7800.0
+  },
+  "ship.fuel_kg_h.FULL": {
+   "kind": "equilibrium",
+   "value": 2339.8656
+  },
+  "ship.fuel_kg_h.HALF": {
+   "kind": "equilibrium",
+   "value": 873.6
+  },
+  "ship.fuel_kg_h.SLOW": {
+   "kind": "equilibrium",
+   "value": 502.2976
+  },
+  "ship.fuel_kg_h.STOP": {
+   "kind": "equilibrium",
+   "value": 400.0
+  },
+  "ship.rpm_eq.FLANK": {
+   "kind": "equilibrium",
+   "value": 80.0
+  },
+  "ship.rpm_eq.FULL": {
+   "kind": "equilibrium",
+   "value": 58.4
+  },
+  "ship.rpm_eq.HALF": {
+   "kind": "equilibrium",
+   "value": 44.0
+  },
+  "ship.rpm_eq.SLOW": {
+   "kind": "equilibrium",
+   "value": 34.4
+  },
+  "ship.rpm_eq.STOP": {
+   "kind": "equilibrium",
+   "value": 20.0
+  },
+  "ship.speed_eq.FLANK": {
+   "kind": "equilibrium",
+   "value": 25.0
+  },
+  "ship.speed_eq.FULL": {
+   "kind": "equilibrium",
+   "value": 16.0
+  },
+  "ship.speed_eq.HALF": {
+   "kind": "equilibrium",
+   "value": 10.0
+  },
+  "ship.speed_eq.SLOW": {
+   "kind": "equilibrium",
+   "value": 6.0
+  },
+  "ship.speed_eq.STOP": {
+   "kind": "equilibrium",
+   "value": 0.0
+  },
+  "ship.t10_stop_from_full_s": {
+   "kind": "transient",
+   "value": 92.15
+  },
+  "ship.t90_full_s": {
+   "kind": "transient",
+   "value": 92.15
+  },
+  "ship.tactical_diameter_nm.FULL": {
+   "kind": "transient",
+   "value": 0.424801
+  },
+  "ship.tactical_diameter_nm.HALF": {
+   "kind": "transient",
+   "value": 0.398049
+  },
+  "ship.yaw_steady_deg_s.FULL": {
+   "kind": "equilibrium",
+   "value": 1.2
+  },
+  "ship.yaw_steady_deg_s.HALF": {
+   "kind": "equilibrium",
+   "value": 0.8
+  },
+  "sonar.active_nm.BOW.d250": {
+   "kind": "range",
+   "value": 6.111
+  },
+  "sonar.active_nm.BOW.d30": {
+   "kind": "range",
+   "value": 17.46
+  },
+  "sonar.bearing_err_deg.BOW.own12.q05": {
+   "kind": "equilibrium",
+   "value": 13.908
+  },
+  "sonar.bearing_err_deg.BOW.own6.q05": {
+   "kind": "equilibrium",
+   "value": 9.804
+  },
+  "sonar.bearing_err_deg.TOWED.own12.q05": {
+   "kind": "equilibrium",
+   "value": 4.636
+  },
+  "sonar.bearing_err_deg.TOWED.own6.q05": {
+   "kind": "equilibrium",
+   "value": 3.268
+  },
+  "sonar.passive_nm.BOW.sea1.own12.d150": {
+   "kind": "range",
+   "value": 12.331414
+  },
+  "sonar.passive_nm.BOW.sea1.own12.d30": {
+   "kind": "range",
+   "value": 23.14859
+  },
+  "sonar.passive_nm.BOW.sea1.own18.d150": {
+   "kind": "range",
+   "value": 4.055514
+  },
+  "sonar.passive_nm.BOW.sea1.own18.d30": {
+   "kind": "range",
+   "value": 7.69076
+  },
+  "sonar.passive_nm.BOW.sea1.own25.d150": {
+   "kind": "range",
+   "value": 3.18232
+  },
+  "sonar.passive_nm.BOW.sea1.own25.d30": {
+   "kind": "range",
+   "value": 6.04234
+  },
+  "sonar.passive_nm.BOW.sea1.own6.d150": {
+   "kind": "range",
+   "value": 12.794754
+  },
+  "sonar.passive_nm.BOW.sea1.own6.d30": {
+   "kind": "range",
+   "value": 24.006045
+  },
+  "sonar.passive_nm.BOW.sea4.own12.d150": {
+   "kind": "range",
+   "value": 9.156709
+  },
+  "sonar.passive_nm.BOW.sea4.own12.d30": {
+   "kind": "range",
+   "value": 19.08886
+  },
+  "sonar.passive_nm.BOW.sea4.own18.d150": {
+   "kind": "range",
+   "value": 3.002833
+  },
+  "sonar.passive_nm.BOW.sea4.own18.d30": {
+   "kind": "range",
+   "value": 6.318585
+  },
+  "sonar.passive_nm.BOW.sea4.own25.d150": {
+   "kind": "range",
+   "value": 2.35566
+  },
+  "sonar.passive_nm.BOW.sea4.own25.d30": {
+   "kind": "range",
+   "value": 4.962285
+  },
+  "sonar.passive_nm.BOW.sea4.own6.d150": {
+   "kind": "range",
+   "value": 9.502208
+  },
+  "sonar.passive_nm.BOW.sea4.own6.d30": {
+   "kind": "range",
+   "value": 19.799699
+  },
+  "sonar.passive_nm.TOWED.sea1.own12.d150": {
+   "kind": "range",
+   "value": 31.242358
+  },
+  "sonar.passive_nm.TOWED.sea1.own12.d30": {
+   "kind": "range",
+   "value": 13.44305
+  },
+  "sonar.passive_nm.TOWED.sea1.own6.d150": {
+   "kind": "range",
+   "value": 36.418335
+  },
+  "sonar.passive_nm.TOWED.sea1.own6.d30": {
+   "kind": "range",
+   "value": 15.732937
+  },
+  "sonar.passive_nm.TOWED.sea4.own12.d150": {
+   "kind": "range",
+   "value": 25.811668
+  },
+  "sonar.passive_nm.TOWED.sea4.own12.d30": {
+   "kind": "range",
+   "value": 9.986033
+  },
+  "sonar.passive_nm.TOWED.sea4.own6.d150": {
+   "kind": "range",
+   "value": 30.12386
+  },
+  "sonar.passive_nm.TOWED.sea4.own6.d30": {
+   "kind": "range",
+   "value": 11.696364
+  },
+  "sub.max_speed_kn.aip_modern": {
+   "kind": "equilibrium",
+   "value": 13.0
+  },
+  "sub.quiet.aip_modern.patrol": {
+   "kind": "equilibrium",
+   "value": 0.68
+  },
+  "torpedo.depth_after_5s_m": {
+   "kind": "transient",
+   "value": 55.0
+  },
+  "torpedo.depth_after_run_m": {
+   "kind": "equilibrium",
+   "value": 67.76187
+  },
+  "torpedo.run_time_s.frigate_torp": {
+   "kind": "equilibrium",
+   "value": 960.75
+  },
+  "torpedo.travel_nm.frigate_torp": {
+   "kind": "equilibrium",
+   "value": 12.0
+  },
+  "torpedo.wire_turn_deg_s": {
+   "kind": "transient",
+   "value": 8.0
+  }
+ },
+ "note": "Kinematic U-Jagd 1.0.0 reference behaviour. air.* metrics measured on the 1.0.0 tree (3b3753c) with the phase-11 air probe.",
+ "recorded_from_commit": "3b3753cf4e79927103cb03e44d0fc4b50dd8c6cb"
+}

@@ -9,6 +9,8 @@ import threading
 
 import pytest
 
+from commander_web import WEB_ROUTES
+
 from src.core.i18n import load_catalog
 
 
@@ -28,6 +30,8 @@ def test_admin_setup_shell_in_chromium():
             if self.path in files:
                 name, content_type = files[self.path]
                 payload = resources.files("data.commander").joinpath(name).read_bytes()
+            elif self.path.startswith(("/css/", "/fonts/")) and self.path in WEB_ROUTES:
+                content_type, payload = WEB_ROUTES[self.path]
             elif self.path in ("/api/v2/ui?lang=en", "/api/v2/ui?lang=de"):
                 content_type = "application/json"
                 payload = json.dumps({key: value for key, value in load_catalog(self.path[-2:]).items()

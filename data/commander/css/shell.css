@@ -129,7 +129,8 @@
 .tablist [role="tab"] { min-height: 2.2rem; border-radius: var(--radius) var(--radius) 0 0; border-color: transparent; background: transparent; color: var(--text-dim); }
 .tablist [role="tab"][aria-selected="true"] { color: var(--live-strong); background: var(--bg-2); border-color: var(--line); border-bottom-color: var(--bg-2); }
 body.workstation-mode .tablist { display: none; }
-.tab-deck { position: relative; min-width: 0; min-height: 0; overflow: clip; }
+.tab-deck { position: relative; grid-row: 2; min-width: 0; min-height: 0; overflow: clip; }
+#operations > .tablist { grid-row: 1; }
 .tab-panel { width: 100%; height: 100%; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 #panel-operations:not([hidden]) { display: block; overflow: hidden; }
 
@@ -150,6 +151,11 @@ body.workstation-mode .tablist { display: none; }
 .cic-grid[data-tracks="false"] { grid-template-columns: minmax(0, 1fr) var(--right); grid-template-areas: "stage right" "stage right" "drawer right"; }
 .cic-grid[data-tracks="false"] > .dock-left, .cic-grid[data-tracks="false"] > .dock-detail { display: none; }
 
+/* Radio room: no contact dock; the contact detail sits under the station dock. */
+.cic-grid[data-layout="radio"] { grid-template-columns: minmax(0, 1fr) var(--right); grid-template-areas: "stage right" "stage detail" "drawer detail"; }
+.cic-grid[data-layout="radio"] > .dock-left { display: none; }
+.cic-grid[data-layout="radio"] > .dock-detail { display: flex; }
+.cic-grid[data-layout="radio"][data-right="closed"] { grid-template-areas: "stage right" "stage right" "drawer right"; }
 .dock-left { grid-area: left; }
 .stage { grid-area: stage; }
 .dock-right { grid-area: right; }
@@ -209,6 +215,7 @@ body.workstation-mode .tablist { display: none; }
     grid-template-areas: "left stage right detail" "left drawer right detail";
   }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] { --detail: var(--rail-w); }
+  .cic-grid[data-layout="radio"] { grid-template-columns: minmax(0, 1fr) var(--right) var(--detail); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "stage right detail" "drawer right detail"; }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] .dock-detail .dock-bar { flex-direction: column; height: 100%; padding: .4rem 0; }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] .dock-detail .dock-title { writing-mode: vertical-rl; transform: rotate(180deg); }
   .cic-grid:not([data-tracks="false"])[data-detail="closed"] .dock-detail .dock-toggle { order: -1; }

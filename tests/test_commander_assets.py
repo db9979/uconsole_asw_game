@@ -222,7 +222,7 @@ def test_v2_roles_have_dedicated_payload_renderers():
     assert "v2State[active]" in station_dispatch
     assert 'section.querySelectorAll("dl, .station-list")' in station_dispatch
     assert 'dataset.tracks = String(!active || trackRoles.has(active))' in station_dispatch
-    assert ('const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", '
+    assert ('const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", '
             '"helicopter", "eloka", "uboot", "uboot_sonar"])') in js
     assert "innerHTML" not in station_dispatch
 

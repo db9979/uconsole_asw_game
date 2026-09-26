@@ -11,9 +11,9 @@ export function visualContext(id) {
   if (!width || !height) return null;
   const context = element.getContext("2d");
   resizeCanvas(element, context, width, height);
-  context.fillStyle = "#07151c";
+  context.fillStyle = palette().scopeBg;
   context.fillRect(0, 0, width, height);
-  context.font = `${Math.max(11, parseFloat(getComputedStyle(document.documentElement).fontSize) * .68)}px ui-monospace, monospace`;
+  context.font = `${Math.max(11, parseFloat(getComputedStyle(document.documentElement).fontSize) * .68)}px "JetBrains Mono", ui-monospace, monospace`;
   context.lineWidth = 1.5;
   return {element, context, width, height};
 }

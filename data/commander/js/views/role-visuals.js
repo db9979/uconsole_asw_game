@@ -11,6 +11,7 @@ import { clearVisuals, node } from "./dom.js";
 import { drawRoleMap, syncOpzSweepAnimation } from "./role-map.js";
 import { drawEmpty, visualContext } from "./visual-common.js";
 import { schedule } from "../core/scheduler.js";
+import { drawRadioVisual } from "../stations/radio.js";
 
 function gauge(context, x, y, radius, value, maximum, label) {
   context.strokeStyle = palette().line; context.lineWidth = 6; context.beginPath(); context.arc(x, y, radius, Math.PI, Math.PI * 2); context.stroke();
@@ -143,6 +144,7 @@ function drawRoleVisuals() {
   if (role === "engine") drawEngineVisual();
   if (role === "eloka") drawElokaVisual();
   if (role === "weapons") drawWeaponsVisual();
+  if (role === "radio") drawRadioVisual();
 }
 export function queueVisualDraw() {
   schedule("role-visuals", () => { drawRoleVisuals(); syncPlotAnimation(); });
@@ -164,7 +166,7 @@ export function renderRoleVisuals(role) {
   }
   for (const [id, active] of [["map-visual", mapRoles.has(role) && (role !== "helicopter" || split || S.helicopterVisualPage === "map")], ["sonar-visual", isSonar(role)],
     ["damage-visual", role === "damage"], ["engine-visual", role === "engine"],
-    ["eloka-visual", role === "eloka"], ["weapons-visual", role === "weapons"]]) $(id).hidden = !active;
+    ["eloka-visual", role === "eloka"], ["weapons-visual", role === "weapons"], ["radio-visual", role === "radio"]]) $(id).hidden = !active;
   // The grease-pencil plot is the frigate crew's; the submarine never sees or edits it.
   $("plot-tools").hidden = opforRoles.has(role);
   if (!role) { clearVisuals(); return; }

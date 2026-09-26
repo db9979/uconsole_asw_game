@@ -980,7 +980,12 @@ class CommanderBridge:
                 display_id = str(track.label)[:64]
             else:
                 display_id = label
+            hf_mode = getattr(track, "propagation", None) if source == "HFDF" else None
             row = dict(ref=ref, label=label, _display_id=display_id,
+                       # Measured HF carrier and propagation mode (radio room only).
+                       _frequency_hz=(_number(getattr(track, "frequency_hz", None))
+                                      if source == "HFDF" else None),
+                       _propagation=hf_mode if hf_mode in ("GROUND", "SKY") else None,
                        domain={"AIS": "SURFACE", "SURFACE": "SURFACE",
                                "SUB": "SUBSURFACE", "TORP": "SUBSURFACE",
                                "FLG": "AIR", "ASM": "AIR"}.get(track.kind, "UNKNOWN"),

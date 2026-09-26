@@ -254,6 +254,8 @@ def test_html_manual_is_static_escaped_and_linkable(lang):
         assert href in ids
     assert "<kbd>" in page and '<table class="keys">' in page and 'class="sop"' in page
     assert '<link rel="stylesheet" href="/manual.css">' in page
+    # The page shares the crew client's design tokens and fonts.
+    assert page.index('href="/css/tokens.css"') < page.index('href="/css/fonts.css"') < page.index('href="/manual.css"')
 
 
 def test_commander_serves_manual_pages_with_security_headers():

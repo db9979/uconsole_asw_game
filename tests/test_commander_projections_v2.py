@@ -648,3 +648,25 @@ def test_opz_sees_own_launched_torpedo_as_commanded_asset():
     # Same opaque reference as the Weapons station's asset list.
     assert row["ref"] in {item["ref"] for item in
                           server.v2_states["weapons"]["weapons"]["active_assets"]}
+
+
+def test_radio_room_publishes_measured_hf_carrier_and_mode():
+    """The web receiver shows what the HFDF set measured (as the uConsole tooltip)."""
+    game = Game(seed=419, start_menu=False, audio_enabled=False, language="en")
+    server, bridge = Server(), CommanderBridge()
+    game.radio_picture.observe(
+        track_id="H-7001", kind="HF", target_id=7001, source="HFDF", bearing=40.0,
+        range_nm=None, observer_x=game.ship.x, observer_y=game.ship.y, course=None,
+        quality=.7, now=game.sim_t, label="hidden-a", bearing_uncertainty_deg=4.0,
+        frequency_hz=8_412_300.0, propagation="SKY")
+    game.radio_picture.observe(
+        track_id="H-7002", kind="HF", target_id=7002, source="HFDF", bearing=210.0,
+        range_nm=None, observer_x=game.ship.x, observer_y=game.ship.y, course=None,
+        quality=.4, now=game.sim_t, label="hidden-b", bearing_uncertainty_deg=6.0)
+    bridge.pump(game, server, now=10.0)
+    rows = sorted(server.v2_states["radio"]["radio"]["observations"], key=lambda row: row["bearing"])
+    assert [(row["frequency_khz"], row["propagation"]) for row in rows] == [(8412.3, "SKY"), (None, None)]
+    assert "7001" not in json.dumps(rows) and "hidden-a" not in json.dumps(rows)
+    # Other roles never see the radio-only fields.
+    assert "frequency_khz" not in json.dumps(server.v2_states["opz"]["opz"])
+    game.audio.shutdown()

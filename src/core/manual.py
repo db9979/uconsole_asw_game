@@ -421,6 +421,9 @@ def html_page(lang: str) -> str:
         f'<html lang="{lang}">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{title}</title>\n"
+        # The Remote Crew design tokens and fonts, then the page layout.
+        '<link rel="stylesheet" href="/css/tokens.css">\n'
+        '<link rel="stylesheet" href="/css/fonts.css">\n'
         '<link rel="stylesheet" href="/manual.css">\n</head>\n<body>\n'
         f'<header class="manual-head"><h1>{title}</h1>'
         f'<a class="lang-switch" href="/manual-{other}" hreflang="{other}" lang="{other}">'

@@ -256,7 +256,9 @@ export function validateV2State(state) {
         !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
         !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");
   } else if (state.role === "radio") {
-    rowsExact(payload.observations, 256, ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg", "can_capture"]);
+    rowsExact(payload.observations, 256, ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg", "frequency_khz", "propagation", "can_capture"]);
+    if (payload.observations.some((row) => (row.frequency_khz !== null && (!finite(row.frequency_khz) || row.frequency_khz <= 0)) ||
+        ![null, "GROUND", "SKY"].includes(row.propagation))) throw new Error("protocol");
     if (!boundedArray(payload.logged_fixes, 256) || payload.logged_fixes.some((row) => !exactKeys(row, ["ref", "x", "y", "uncertainty_nm", "age_s", "covariance_nm2"]) || row.covariance_nm2 !== null && (!boundedArray(row.covariance_nm2, 3) || row.covariance_nm2.length !== 3)) ||
         !boundedArray(payload.logged_bearings, 256) || payload.logged_bearings.some((row) => !exactKeys(row, ["ref", "bearing", "observer_x", "observer_y", "age_s"])) ||
         !boundedArray(payload.messages, 40) || payload.messages.some((row) => !exactKeys(row, ["stamp", "text"])) ||

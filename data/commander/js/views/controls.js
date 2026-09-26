@@ -288,7 +288,7 @@ function disabledReason(control) {
   }
   if (control.closest('[data-station-role="engine"]') && S.v2State?.engine?.machinery.station_state === "ZERSTOERT") return unavailable("reason_engine_down");
   if (control.closest('[data-station-role="opz"]') && S.v2State?.opz?.radar.live === false) return unavailable("reason_opz_down");
-  if (control.closest('[data-station-role="radio"]') && S.v2State?.radio?.station_down) return unavailable("reason_radio_down");
+  if (control.closest('[data-station-role="radio"], #radio-visual') && S.v2State?.radio?.station_down) return unavailable("reason_radio_down");
   if (control.closest('[data-station-role="bridge"]') && S.v2State?.bridge?.orders.station_down) return unavailable("reason_bridge_down");
   const helicopter = S.v2State?.helicopter;
   if (control.closest('[data-station-role="helicopter"]') && helicopter) {

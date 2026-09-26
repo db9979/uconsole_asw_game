@@ -67,6 +67,8 @@ li { margin: 0.6mm 0; }
 
 def print_html(lang: str, date: str) -> str:
     page = manual.html_page(lang)
+    # The print stylesheet is self-contained: drop the web design-system links.
+    page = re.sub(r'<link rel="stylesheet" href="/css/[a-z]+\.css">\n', "", page)
     page = page.replace('<link rel="stylesheet" href="/manual.css">',
                         f"<style>{PRINT_CSS}</style>")
     # No web navigation in print; add the release line under the title.

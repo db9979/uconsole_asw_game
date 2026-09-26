@@ -90,14 +90,15 @@ async function run() {
     section.hidden = false;
     $("role-visuals").hidden = false;
     const visualFor = {bridge: "map-visual", sonar: "sonar-visual", weapons: "weapons-visual",
-      damage: "damage-visual", opz: "map-visual", radio: "map-visual", engine: "engine-visual",
+      damage: "damage-visual", opz: "map-visual", radio: "radio-visual", engine: "engine-visual",
       helicopter: "map-visual", eloka: "eloka-visual", uboot: "map-visual"};
     for (const panel of document.querySelectorAll("#role-visuals > .visual-panel")) {
       panel.hidden = panel.id !== visualFor[role];
     }
-    const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka", "uboot"]);
+    const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "helicopter", "eloka", "uboot"]);
     const tracks = trackRoles.has(role);
     $("cic-grid").dataset.tracks = String(tracks);
+    $("cic-grid").dataset.layout = role === "radio" ? "radio" : "";
     $("bridge-orders").hidden = role !== "bridge";
     $("opz-controls").hidden = role !== "opz";
     $("helicopter-dipping-controls").hidden = role !== "helicopter";
@@ -118,7 +119,8 @@ async function run() {
     const overlaps = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
       Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1;
     // The CIC areas (stage, docks, log drawer) never overlap each other.
-    const areaIds = ["stage", "dock-right", "log-drawer", ...(tracks ? ["dock-left", "dock-detail"] : [])];
+    const areaIds = ["stage", "dock-right", "log-drawer", ...(tracks ? ["dock-left", "dock-detail"] : []),
+      ...(role === "radio" ? ["dock-detail"] : [])];
     const areas = areaIds.map((id) => [id, box($(id))]).filter(([, bounds]) => bounds.width > 0 && bounds.height > 0);
     let intersects = false;
     areas.forEach(([, first], index) => areas.slice(index + 1).forEach(([, second]) => {
@@ -418,6 +420,8 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
         # On a desktop the instrument is the centrepiece: no dock is larger.
         if css_width >= 900:
             assert dashboard["stageLargest"], (role, dashboard)
+            # The CIC grid fills the viewport height even for sparse stations.
+            assert dashboard["outer"][3] >= css_height - 2, (role, dashboard)
 
 
 LAYOUT_SCENARIO = r"""

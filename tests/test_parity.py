@@ -52,7 +52,8 @@ def test_web_styles_use_tokens_and_the_pygame_theme_covers_chrome():
         assert token + ":" in root
     # Every colour literal lives in the token file; the rest uses var(--...).
     assert tokens.count("}") == 1
-    for path in files[1:]:
+    commander = files[0].parents[1]
+    for path in files[1:] + [commander / "admin.css", commander / "manual.css"]:
         assert not re.findall(r"#[0-9a-fA-F]{3,8}\b", path.read_text(encoding="utf-8")), path.name
     for name in ("COLOR_PANEL_BG", "COLOR_FEED_BG", "COLOR_OVERLAY_BG",
                  "COLOR_SELECT_BG", "COLOR_ALARM_BG", "COLOR_TAB_ACTIVE"):

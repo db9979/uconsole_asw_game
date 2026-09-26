@@ -118,7 +118,8 @@ AUTOMATION = r"""
   }
 
   function instrumentFor(role) {
-    if (["bridge", "weapons", "opz", "radio", "helicopter"].includes(role)) return $("role-map");
+    if (["bridge", "weapons", "opz", "helicopter"].includes(role)) return $("role-map");
+    if (role === "radio") return $("radio-df-scope");
     return $({sonar: "sonar-broadband", damage: "damage-schematic",
       engine: "engine-instruments", eloka: "eloka-scope"}[role]);
   }

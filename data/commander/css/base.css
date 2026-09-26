@@ -27,11 +27,11 @@ output, time, .counter, .badge { font-family: var(--font-mono); font-variant-num
 
 /* Controls */
 button, input, select, textarea { font: inherit; color: inherit; max-width: 100%; min-width: 0; }
-button, select, input[type="text"], input[type="number"], input[type="search"] {
+button, select, input[type="text"], input[type="number"], input[type="search"], input[type="password"], input:not([type]) {
   min-height: var(--control-h); padding: .3rem .65rem; border: 1px solid var(--line-strong);
   border-radius: var(--radius); background: var(--bg-3); font-size: var(--font-sm);
 }
-input[type="text"], input[type="number"], input[type="search"] { font-family: var(--font-mono); font-variant-numeric: tabular-nums; background: var(--bg-1); }
+input[type="text"], input[type="number"], input[type="search"], input[type="password"], input:not([type]) { font-family: var(--font-mono); font-variant-numeric: tabular-nums; background: var(--bg-1); }
 button { cursor: pointer; font-weight: 600; letter-spacing: .01em; }
 button:hover:not(:disabled), select:hover:not(:disabled) { background: var(--bg-4); border-color: var(--live); }
 button:disabled, select:disabled, input:disabled { opacity: .42; cursor: not-allowed; }

@@ -289,10 +289,10 @@ async function run() {
   let previousRole = null;
   const visualFor = {bridge: "role-map", sonar: "sonar-broadband", opz: "role-map",
     eloka: "eloka-scope", engine: "engine-instruments", damage: "damage-schematic",
-    radio: "role-map", helicopter: "helicopter-lofar-canvas", weapons: "weapons-system"};
+    radio: "radio-df-scope", helicopter: "helicopter-lofar-canvas", weapons: "weapons-system"};
   const equivalentFor = {bridge: "role-map-text", sonar: "sonar-broadband-text", opz: "role-map-text",
     eloka: "eloka-scope-text", engine: "engine-instruments-text", damage: "damage-schematic-text",
-    radio: "role-map-text", helicopter: "helicopter-acoustic-text", weapons: "weapons-system-text"};
+    radio: "radio-df-scope-text", helicopter: "helicopter-acoustic-text", weapons: "weapons-system-text"};
   let commandSent = false;
   let fusionSent = false;
   let opzDiagnostic = "";
@@ -306,7 +306,7 @@ async function run() {
       const station = document.getElementById(`station-${latestRole}`);
       const visualBounds = document.getElementById("role-visuals").getBoundingClientRect();
       const controlBounds = station.querySelector(".station-grid").getBoundingClientRect();
-      const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "radio", "helicopter", "eloka"]);
+      const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", "helicopter", "eloka"]);
       const grid = document.getElementById("cic-grid");
       if (innerWidth >= 1000) {
         assert(visualBounds.width >= innerWidth * .45, `instrument too narrow: ${latestRole}`);

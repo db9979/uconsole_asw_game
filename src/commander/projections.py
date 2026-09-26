@@ -589,6 +589,10 @@ def _radio(game, rows, ref_by_track):
         if row["source"] != "HFDF":
             continue
         observation = _observation(row, _RADIO_FIELDS)
+        frequency = row.get("_frequency_hz")
+        observation["frequency_khz"] = (round(frequency / 1e3, 1)
+                                        if frequency is not None and frequency > 0 else None)
+        observation["propagation"] = row.get("_propagation")
         observation["can_capture"] = (not station_down
                                       and row["age_s"] is not None
                                       and row["age_s"] <= config.RADAR_TRACK_STALE_S)

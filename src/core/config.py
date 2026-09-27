@@ -319,7 +319,6 @@ UBOOT_REGULATING_STEP_KG = 500.0    # one crew order to the regulating tank
 UBOOT_TRIM_STEP_KG = 250.0          # one crew order to the trim tanks
 UBOOT_TORPEDO_KG = 1500.0           # a torpedo out of a bow tube
 UBOOT_LOAD_MAX_KG = 60000.0
-UBOOT_FLOOD_MAX_KG = 30000.0        # water in the boat at 100 % damage
 UBOOT_BUOYANCY_MPS_PER_T = 0.03     # sink/rise rate per tonne out of trim
 UBOOT_BUOYANCY_MAX_MPS = 2.0
 UBOOT_TRIM_DEG_PER_T = 1.0          # trim angle per tonne of moment
@@ -329,6 +328,35 @@ UBOOT_HEAVY_WARN_KG = 2000.0        # boat heavy/light beyond this: log it
 UBOOT_PUMP_NOISE_DB = 3.0           # trim pumps running
 UBOOT_PUMP_QUIET_LOSS = 0.05
 UBOOT_PUMP_LINE = (120.0, 0.35, 3.0)   # (Hz, amp, width)
+# Damage control of the crewed boat (stage D, fictional): six compartments
+# bow to stern (bow, control, quarters, battery, engine, stern).
+UBOOT_DC_CAPACITY_KG = (40000.0, 40000.0, 30000.0, 30000.0, 40000.0, 30000.0)
+UBOOT_DC_ARM = (1.0, 0.5, 0.15, -0.15, -0.6, -1.0)   # moment arm, + forward
+UBOOT_DC_LEAK_KG_S = 40.0           # full reference hole at 100 m
+UBOOT_DC_LEAK_PER_PCT = 0.015       # hole size per % of hit damage
+UBOOT_DC_SECOND_HIT_PCT = 50.0      # a hit this heavy holes a neighbour too
+UBOOT_DC_FIRE_CHANCE_PCT = 150.0    # fire chance = damage / this
+UBOOT_DC_FIRE_START = 0.2
+UBOOT_DC_FATIGUE_LEAK = 0.3         # hull fatigue crack beyond test depth
+UBOOT_DC_SPILL_FRACTION = 0.5       # water above this spills (and smothers fire)
+UBOOT_DC_SPILL_KG_S = 20.0
+UBOOT_DC_FIRE_GROW_S = 120.0
+UBOOT_DC_FIRE_SPREAD_S = 90.0
+UBOOT_DC_FIRE_STARVE_S = 180.0      # a fire behind closed bulkheads dies
+UBOOT_DC_CHLORINE_WATER_KG = 2000.0
+UBOOT_DC_CHLORINE_RISE_S = 120.0
+UBOOT_DC_CHLORINE_DECAY_S = 600.0
+UBOOT_DC_POWER_WATER_KG = 5000.0    # battery room water that cuts the power
+UBOOT_DC_DOWN_WATER = 0.5           # fraction of a compartment: station out
+UBOOT_DC_DOWN_FIRE = 0.5
+UBOOT_DC_DOWN_GAS = 0.5
+UBOOT_DC_TRANSIT_S = 8.0            # per compartment walked
+UBOOT_DC_SEAL_S = 60.0              # one team seals a full hole
+UBOOT_DC_FIRE_FIGHT_S = 60.0        # one team puts out a full fire
+UBOOT_DC_PUMP_KG_S = 30.0
+UBOOT_DC_HAND_PUMP = 0.25           # pump rate without power
+UBOOT_DC_GAS_FACTOR = 0.5           # work rate in gas masks
+UBOOT_DC_STERN_SPEED_FACTOR = 0.5   # shaft and motor room flooded
 # Periscope of the crewed boat (plan 1.3, phase 9).
 UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
 UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics

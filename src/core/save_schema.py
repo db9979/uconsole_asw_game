@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v19`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v20`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -64,7 +64,7 @@ CREW_STATION_FIELDS = frozenset({
 SUB_AI_FIELDS = frozenset({"solution_threshold"})
 SUB_CREW_FIELDS = frozenset({
     "manual", "order_course", "order_speed", "order_depth", "last_bottom_m",
-    "manual_ping_pending", "ballast",
+    "manual_ping_pending", "ballast", "damage_control",
 })
 
 RNG_STREAMS = frozenset({

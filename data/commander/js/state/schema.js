@@ -130,12 +130,12 @@ export function validateV2State(state) {
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
     sonar: ["observations", "settings", "visualization"],
-    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
-    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
-    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
-    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
+    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
     uboot_sonar: ["observations", "settings", "visualization"],
-    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
     weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
   };
   const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
@@ -152,6 +152,11 @@ export function validateV2State(state) {
     air: ["o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles", "candle_left_s", "level", "efficiency"],
     ballast: ["blowing", "venting", "auto", "pumping", "compressor", "hp_air_bar", "hp_air_max_bar", "blows_left", "mbt_pct", "regulating_kg", "regulating_order_kg", "regulating_capacity_kg", "trim_kg", "trim_order_kg", "trim_capacity_kg", "load_kg", "flooding_kg", "residual_kg", "trim_deg", "drift_mps"],
     ballastFlags: ["blowing", "venting", "auto", "pumping", "compressor"],
+    damage: ["power", "pumping", "compartments", "teams"],
+    compartment: ["name", "water_kg", "capacity_kg", "leak_pct", "fire_pct", "chlorine_pct", "closed", "down"],
+    dcTeam: ["team", "compartment", "task", "transit_s"],
+    compartments: ["bow", "control", "quarters", "battery", "engine", "stern"],
+    dcTasks: ["idle", "seal", "pump", "fire"],
     esm: ["mast_up", "mast_s", "mast_time_s", "mast_threat", "mast_radar_nm", "wash", "emitters"],
     esmEmitter: ["number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band", "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live", "quality", "classification", "candidates", "range_estimate_nm", "mast_threat", "history", "fix"],
     esmHistory: ["age_s", "x", "y", "bearing"],
@@ -295,6 +300,19 @@ export function validateV2State(state) {
         boatFields.ballastFlags.some((key) => typeof ballast[key] !== "boolean") ||
         boatFields.ballast.filter((key) => !boatFields.ballastFlags.includes(key)).some((key) => !finite(ballast[key])) ||
         !Number.isInteger(ballast.blows_left) || ballast.blows_left < 0) throw new Error("protocol");
+    // Compartments and damage-control teams: own-ship state, closed vocabulary.
+    const damage = payload.damage_control;
+    if (!exactKeys(damage, boatFields.damage) ||
+        typeof damage.power !== "boolean" || typeof damage.pumping !== "boolean" ||
+        !Array.isArray(damage.compartments) || damage.compartments.length !== boatFields.compartments.length ||
+        damage.compartments.some((row, index) => !exactKeys(row, boatFields.compartment) ||
+          row.name !== boatFields.compartments[index] ||
+          typeof row.closed !== "boolean" || typeof row.down !== "boolean" ||
+          ["water_kg", "capacity_kg", "leak_pct", "fire_pct", "chlorine_pct"].some((key) => !finite(row[key]))) ||
+        !Array.isArray(damage.teams) || damage.teams.length !== 2 ||
+        damage.teams.some((row, index) => !exactKeys(row, boatFields.dcTeam) || row.team !== index ||
+          !boatFields.compartments.includes(row.compartment) || !boatFields.dcTasks.includes(row.task) ||
+          !finite(row.transit_s))) throw new Error("protocol");
     // The boat's own ESM picture: measured parameters, own-position history,
     // crew cross-fix and library classification (never identity or position).
     const esm = payload.esm;

@@ -10,8 +10,10 @@ against the moment of the same loads.  With the automatic trim on, the
 engineer pumps both toward a neutral boat; a crew may also order the set
 points itself.  Pumping is audible.  Whatever the tanks do not take up is a
 residual weight and a trim angle that push the boat off its ordered depth
-unless the hydroplanes (with speed) hold it.  The compressor refills the air
-bottles while the boat snorkels with the diesels running.
+unless the hydroplanes (with speed) hold it.  Floodwater in the
+compartments (``damage_control.py``) counts as weight and moment the same
+way.  The compressor refills the air bottles while the boat snorkels with
+the diesels running; without power neither pumps nor compressor run.
 
 The AI's boats keep their tanks trimmed without this model; only a crewed
 boat carries its effects.
@@ -27,11 +29,6 @@ STATE_FIELDS = frozenset({
     "load_kg", "load_trim_kg",
 })
 TANKS = ("regulating", "trim")
-
-
-def flooding_kg(damage: float) -> float:
-    """Water taken in through a holed pressure hull (damage above 30 %)."""
-    return max(0.0, min(damage, 100.0) - 30.0) / 70.0 * config.UBOOT_FLOOD_MAX_KG
 
 
 class BoatBallast:
@@ -53,21 +50,23 @@ class BoatBallast:
 
     # --- derived -----------------------------------------------------------
 
-    def residual_kg(self, damage: float) -> float:
-        """Weight the tanks do not take up (+ heavy, - light)."""
-        return self.regulating_kg + self.load_kg + flooding_kg(damage)
+    def residual_kg(self, flooding_kg: float = 0.0) -> float:
+        """Weight the tanks do not take up (+ heavy, - light); ``flooding_kg``
+        is the water in the compartments (``damage_control.py``)."""
+        return self.regulating_kg + self.load_kg + flooding_kg
 
-    def trim_deg(self) -> float:
+    def trim_deg(self, flood_moment_kg: float = 0.0) -> float:
         """Trim angle from the uncompensated moment (+ bow down)."""
-        moment_t = (self.trim_kg + self.load_trim_kg) / 1000.0
+        moment_t = (self.trim_kg + self.load_trim_kg + flood_moment_kg) / 1000.0
         return config.clamp(moment_t * config.UBOOT_TRIM_DEG_PER_T,
                             -config.UBOOT_TRIM_MAX_DEG, config.UBOOT_TRIM_MAX_DEG)
 
-    def vertical_drift_mps(self, damage: float, speed_kn: float) -> float:
+    def vertical_drift_mps(self, flooding_kg: float, speed_kn: float,
+                           flood_moment_kg: float = 0.0) -> float:
         """Depth change the tanks cause (+ down) before the planes act."""
-        heavy = self.residual_kg(damage) / 1000.0 * config.UBOOT_BUOYANCY_MPS_PER_T
+        heavy = self.residual_kg(flooding_kg) / 1000.0 * config.UBOOT_BUOYANCY_MPS_PER_T
         angle = (config.kn_to_nm_per_s(max(speed_kn, 0.0)) * 1852.0
-                 * math.sin(math.radians(self.trim_deg())))
+                 * math.sin(math.radians(self.trim_deg(flood_moment_kg))))
         return config.clamp(heavy + angle, -config.UBOOT_BUOYANCY_MAX_MPS,
                             config.UBOOT_BUOYANCY_MAX_MPS)
 
@@ -80,26 +79,28 @@ class BoatBallast:
     def dived(self) -> bool:
         return self.mbt >= 1.0
 
-    def neutral_targets(self, damage: float) -> tuple:
+    def neutral_targets(self, flooding_kg: float = 0.0, flood_moment_kg: float = 0.0) -> tuple:
         """Set points that make the boat neutral, within tank capacity."""
-        regulating = config.clamp(-(self.load_kg + flooding_kg(damage)),
+        regulating = config.clamp(-(self.load_kg + flooding_kg),
                                   -config.UBOOT_REGULATING_KG, config.UBOOT_REGULATING_KG)
-        trim = config.clamp(-self.load_trim_kg, -config.UBOOT_TRIM_TANK_KG,
+        trim = config.clamp(-(self.load_trim_kg + flood_moment_kg), -config.UBOOT_TRIM_TANK_KG,
                             config.UBOOT_TRIM_TANK_KG)
         return regulating, trim
 
     # --- model -------------------------------------------------------------
 
-    def update(self, dt: float, *, damage: float, compressor: bool,
-               vent_ordered: bool) -> list:
-        """Advance pumps, tanks and air by ``dt`` seconds; return notice keys."""
+    def update(self, dt: float, *, flooding_kg: float = 0.0, flood_moment_kg: float = 0.0,
+               compressor: bool, vent_ordered: bool, power: bool = True) -> list:
+        """Advance pumps, tanks and air by ``dt`` seconds; return notice keys.
+        Without power the trim pumps and the compressor stand still."""
         if not math.isfinite(dt) or dt < 0.0:
             raise ValueError("ballast dt must be finite and non-negative")
         notices = []
         if self.auto:
-            self.regulating_order_kg, self.trim_order_kg = self.neutral_targets(damage)
+            self.regulating_order_kg, self.trim_order_kg = self.neutral_targets(
+                flooding_kg, flood_moment_kg)
         moved = 0.0
-        for field, order, rate in (
+        for field, order, rate in () if not power else (
                 ("regulating_kg", self.regulating_order_kg, config.UBOOT_REGULATING_PUMP_KG_S),
                 ("trim_kg", self.trim_order_kg, config.UBOOT_TRIM_PUMP_KG_S)):
             value = getattr(self, field)
@@ -124,7 +125,7 @@ class BoatBallast:
             if self.mbt >= 1.0:
                 self.venting = False
                 notices.append("tanks_flooded")
-        if compressor and self.hp_air_bar < config.UBOOT_HP_AIR_MAX_BAR:
+        if compressor and power and self.hp_air_bar < config.UBOOT_HP_AIR_MAX_BAR:
             self.hp_air_bar = min(config.UBOOT_HP_AIR_MAX_BAR,
                                   self.hp_air_bar + config.UBOOT_HP_COMPRESSOR_BAR_S * dt)
         return notices

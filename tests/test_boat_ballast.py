@@ -9,7 +9,7 @@ import pygame
 import pytest
 
 from src.core import config, uboot_local
-from src.enemies.ballast import BoatBallast, flooding_kg
+from src.enemies.ballast import BoatBallast
 from src.ui import layout
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -17,16 +17,16 @@ from test_opfor_sub import _crewed, _feed_texts, _run  # noqa: E402
 from test_uboot_scope import _key, _local_boat  # noqa: E402
 
 
-def _pump(ballast, seconds, damage=0.0, dt=0.5):
+def _pump(ballast, seconds, flooding=0.0, dt=0.5):
     for _ in range(int(seconds / dt)):
-        ballast.update(dt, damage=damage, compressor=False, vent_ordered=False)
+        ballast.update(dt, flooding_kg=flooding, compressor=False, vent_ordered=False)
 
 
 def test_automatic_trim_takes_up_a_torpedo_and_stops_the_pumps():
     ballast = BoatBallast()
     ballast.torpedo_away()
     assert ballast.residual_kg(0.0) == -config.UBOOT_TORPEDO_KG and ballast.trim_deg() < 0.0
-    ballast.update(0.5, damage=0.0, compressor=False, vent_ordered=False)
+    ballast.update(0.5, compressor=False, vent_ordered=False)
     assert ballast.pumping
     _pump(ballast, 200.0)
     assert not ballast.pumping
@@ -35,13 +35,18 @@ def test_automatic_trim_takes_up_a_torpedo_and_stops_the_pumps():
 
 
 def test_flooding_beyond_the_regulating_tank_leaves_the_boat_heavy():
-    damage = 80.0
+    flooding = 20000.0
     ballast = BoatBallast()
-    _pump(ballast, 1000.0, damage=damage)
+    _pump(ballast, 1000.0, flooding=flooding)
     assert ballast.regulating_kg == pytest.approx(-config.UBOOT_REGULATING_KG)
-    assert ballast.residual_kg(damage) == pytest.approx(
-        flooding_kg(damage) - config.UBOOT_REGULATING_KG)
-    assert ballast.vertical_drift_mps(damage, 0.0) > 0.0
+    assert ballast.residual_kg(flooding) == pytest.approx(
+        flooding - config.UBOOT_REGULATING_KG)
+    assert ballast.vertical_drift_mps(flooding, 0.0) > 0.0
+    # Without power the pumps stand still.
+    idle = BoatBallast()
+    idle.update(10.0, flooding_kg=flooding, compressor=True, vent_ordered=False, power=False)
+    assert idle.regulating_kg == 0.0 and not idle.pumping
+    assert idle.hp_air_bar == config.UBOOT_HP_AIR_START_BAR
 
 
 def test_manual_orders_switch_the_automatic_off_and_stay_in_capacity():
@@ -82,7 +87,7 @@ def test_blows_use_air_the_boat_floods_again_and_the_compressor_refills():
     sub.depth = sub.target_depth = 120.0
     assert sub.command_blow() == "uboot_no_hp_air" and not sub.emergency_ascent
     before = ballast.hp_air_bar
-    ballast.update(10.0, damage=0.0, compressor=True, vent_ordered=False)
+    ballast.update(10.0, compressor=True, vent_ordered=False)
     assert ballast.hp_air_bar == pytest.approx(before + 10.0 * config.UBOOT_HP_COMPRESSOR_BAR_S)
 
 

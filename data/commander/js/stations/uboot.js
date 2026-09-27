@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { duration, number, stateText, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
-import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
+import { drawBoatBallast, drawBoatDamage, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
 
 // Alarm age with the boat's own measured bearing (never the source's truth).
 const alarmText = (age, bearing) => age === null ? t("station_none")
@@ -167,6 +167,45 @@ function renderBallast(ballast) {
     const capacity = regulating ? ballast.regulating_capacity_kg : ballast.trim_capacity_kg;
     button.dataset.ready = String(up ? order < capacity : order > -capacity);
   }
+}
+
+// Damage control: one row per compartment (water, leak, fire, gas, the
+// bulkhead switch), the two teams and the power.
+function renderDamage(dc) {
+  const pct = (value) => number(value, 0);
+  $("uboot-dc-rows").replaceChildren(...dc.compartments.map((row) => {
+    const line = document.createElement("tr");
+    line.dataset.down = String(row.down);
+    line.dataset.alert = String(row.fire_pct > 0 || row.leak_pct > 0 || row.chlorine_pct > 0);
+    const bulkhead = node("button", t(row.closed ? "uboot_dc_bulkhead_open" : "uboot_dc_bulkhead_close"));
+    bulkhead.type = "button";
+    bulkhead.dataset.ubootBulkhead = row.name;
+    bulkhead.dataset.closed = String(!row.closed);
+    bulkhead.setAttribute("aria-pressed", String(row.closed));
+    bulkhead.setAttribute("aria-label", t(row.closed ? "uboot_dc_bulkhead_open_label" : "uboot_dc_bulkhead_close_label",
+      {compartment: t(`uboot_compartment_${row.name}`)}));
+    const switchCell = document.createElement("td");
+    switchCell.append(bulkhead);
+    const teams = dc.teams.filter((team) => team.compartment === row.name).map((team) => String(team.team + 1));
+    const name = node("th", t(`uboot_compartment_${row.name}`));
+    name.scope = "row";
+    line.append(name, ...[number(row.water_kg / 1000, 1), pct(row.leak_pct), pct(row.fire_pct), pct(row.chlorine_pct),
+      teams.length ? teams.join(", ") : "\u2013"].map((text) => node("td", text)), switchCell);
+    return line;
+  }));
+  metrics($("uboot-dc-teams"), [["uboot_dc_power", t(dc.power ? "uboot_dc_power_on" : "uboot_dc_power_off")],
+    ...dc.teams.map((team) => [`uboot_dc_team_${team.team + 1}`, team.transit_s > 0
+      ? t("uboot_dc_team_transit", {compartment: t(`uboot_compartment_${team.compartment}`), seconds: number(team.transit_s, 0)})
+      : t("uboot_dc_team_at", {compartment: t(`uboot_compartment_${team.compartment}`), task: t(`uboot_dc_task_${team.task}`)})])]);
+  const warnings = [];
+  if (!dc.power) warnings.push(t("uboot_dc_warning_power"));
+  const burning = dc.compartments.filter((row) => row.fire_pct > 0).map((row) => t(`uboot_compartment_${row.name}`));
+  if (burning.length) warnings.push(t("uboot_dc_warning_fire", {compartments: burning.join(", ")}));
+  const leaking = dc.compartments.filter((row) => row.leak_pct > 0).map((row) => t(`uboot_compartment_${row.name}`));
+  if (leaking.length) warnings.push(t("uboot_dc_warning_leak", {compartments: leaking.join(", ")}));
+  if (dc.compartments.some((row) => row.chlorine_pct > 0)) warnings.push(t("uboot_dc_warning_gas"));
+  $("uboot-dc-warning").hidden = warnings.length === 0;
+  $("uboot-dc-warning").textContent = warnings.join(" ");
 }
 
 function renderSupply(plant) {
@@ -359,6 +398,8 @@ export function renderUbootStation(payload) {
   renderSupply(payload.plant);
   renderBallast(payload.ballast);
   drawBoatBallast("uboot-ballast-canvas", payload);
+  renderDamage(payload.damage_control);
+  drawBoatDamage("uboot-dc-canvas", payload);
 }
 
 // Redraw the boat instruments only, when a canvas changes size: one that was
@@ -368,4 +409,6 @@ export function drawUbootGraphics(payload) {
   drawBoatDepth("uboot-depth-canvas", payload);
   drawBoatEsm("uboot-esm-canvas", payload);
   drawBoatScope("uboot-scope-canvas", payload);
+  drawBoatBallast("uboot-ballast-canvas", payload);
+  drawBoatDamage("uboot-dc-canvas", payload);
 }

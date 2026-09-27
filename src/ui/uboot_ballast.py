@@ -12,7 +12,6 @@ import pygame
 
 from src.core import config
 from src.core.i18n import message
-from src.enemies.ballast import flooding_kg
 from src.ui import layout, lines
 
 
@@ -39,6 +38,7 @@ def _tank(s, rect, fraction, color) -> None:
 def draw_cross_section(s, sub, rect) -> None:
     """Hull with the tanks (bow to the right) and the trim angle above it."""
     ballast = sub.ballast
+    trim = ballast.trim_deg(sub.flood_moment_kg())
     rect = pygame.Rect(rect)
     cx, cy = rect.centerx, rect.y + int(rect.h * 0.64)
     half_w, half_h = rect.w // 2 - 8, max(14, int(rect.h * 0.3))
@@ -68,9 +68,9 @@ def draw_cross_section(s, sub, rect) -> None:
     reach = half_w - 10
     y0 = rect.y + max(10, (cy - half_h - rect.y) // 2)
     limit = math.degrees(math.asin(min(1.0, max(2.0, y0 - rect.y - 2) / reach)))
-    angle = math.radians(max(-limit, min(limit, ballast.trim_deg() * 4.0)))
+    angle = math.radians(max(-limit, min(limit, trim * 4.0)))
     lines.line(s, config.COLOR_TEXT_DIM, (cx - reach, y0), (cx + reach, y0), 1)
-    color = (config.COLOR_WARN if abs(ballast.trim_deg()) > config.UBOOT_TRIM_WARN_DEG
+    color = (config.COLOR_WARN if abs(trim) > config.UBOOT_TRIM_WARN_DEG
              else config.COLOR_OK)
     lines.line(s, color, (cx - reach * math.cos(angle), y0 - reach * math.sin(angle)),
                (cx + reach * math.cos(angle), y0 + reach * math.sin(angle)), 2)
@@ -88,10 +88,10 @@ def draw_ballast_page(s, game, boat, x, y, w, h) -> None:
     """Main ballast and air, then the trim: tanks, set points and residual."""
     sub = boat.sub
     ballast = sub.ballast
-    damage = sub.damage
-    residual = ballast.residual_kg(damage)
-    drift = ballast.vertical_drift_mps(damage, sub.speed)
-    trim = ballast.trim_deg()
+    flooding, moment = sub.flooding_kg(), sub.flood_moment_kg()
+    residual = ballast.residual_kg(flooding)
+    drift = ballast.vertical_drift_mps(flooding, sub.speed, moment)
+    trim = ballast.trim_deg(moment)
     out_of_trim = (abs(residual) > config.UBOOT_HEAVY_WARN_KG
                    or abs(trim) > config.UBOOT_TRIM_WARN_DEG)
     section = layout.box(s, (x, y, w, 130), "uboot.panel.tanks",
@@ -107,7 +107,7 @@ def draw_ballast_page(s, game, boat, x, y, w, h) -> None:
                        color=config.COLOR_WARN if not ballast.dived() else None,
                        size=15, label_w=150)
     compressor = (sub.snorkeling and sub.snorkel_rate != "vent"
-                  and ballast.hp_air_bar < config.UBOOT_HP_AIR_MAX_BAR)
+                  and sub.damage_control.power() and ballast.hp_air_bar < config.UBOOT_HP_AIR_MAX_BAR)
     layout.status_line(s, bx, by + 22, bw, "uboot.ballast.label.air",
                        message("uboot.ballast.air_compressor" if compressor
                                else "uboot.ballast.air", bar=_fmt(ballast.hp_air_bar),
@@ -145,8 +145,8 @@ def draw_ballast_page(s, game, boat, x, y, w, h) -> None:
         ("uboot.ballast.label.drift", message("uboot.ballast.drift", rate=f"{drift:+.2f}"),
          None),
         ("uboot.ballast.label.flooding", message(
-            "uboot.ballast.weight", weight=f"{flooding_kg(damage) / 1000.0:.1f}"),
-         config.COLOR_DANGER if damage > 30.0 else None),
+            "uboot.ballast.weight", weight=f"{flooding / 1000.0:.1f}"),
+         config.COLOR_DANGER if flooding > config.UBOOT_HEAVY_WARN_KG else None),
         ("uboot.ballast.label.pumps", message("uboot.ballast.pumps_on" if ballast.pumping
                                               else "uboot.ballast.pumps_off"),
          config.COLOR_WARN if ballast.pumping else None),

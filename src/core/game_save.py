@@ -30,6 +30,7 @@ from src.enemies.animal import Animal
 from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
 from src.enemies.ballast import BoatBallast
+from src.enemies.damage_control import BoatDamageControl
 from src.enemies.endurance import SubmarineEndurance
 from src.enemies.surface import SurfaceShip
 from src.sensors.tracks import TrackPicture
@@ -671,6 +672,7 @@ class SaveMixin:
                             last_bottom_m=s.last_bottom_m,
                             manual_ping_pending=s._manual_ping_pending,
                             ballast=s.ballast.serialize(),
+                            damage_control=s.damage_control.serialize(),
                             decision_reason=s.decision_reason,
                             endurance=(s.endurance.serialize()
                                        if s.endurance is not None else None),
@@ -1260,6 +1262,7 @@ class SaveMixin:
             s.last_bottom_m = sd["last_bottom_m"]
             s._manual_ping_pending = sd["manual_ping_pending"]
             s.ballast = BoatBallast.restore(sd["ballast"])
+            s.damage_control = BoatDamageControl.restore(sd["damage_control"])
             endurance_profile = self.runtime_catalog.endurances.get(
                 f"endurance.{sd['stype']}")
             s.endurance = (None if endurance_profile is None else

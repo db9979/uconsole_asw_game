@@ -132,13 +132,32 @@ UBOOT_REASONS = frozenset((
     "uboot_too_deep", "uboot_no_snorkel", "uboot_no_wire", "uboot_mast_depth",
     "uboot_mast_down", "uboot_no_sighting", "uboot_no_stadimeter",
     "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
-    "uboot_no_air_stores", "uboot_no_hp_air"))
+    "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down"))
 
 
 def _uboot_ballast_params(params):
     return (type(params) is dict and set(params) == {"tank", "direction"}
             and type(params["tank"]) is str and params["tank"] in ("regulating", "trim")
             and type(params["direction"]) is int and params["direction"] in (-1, 1))
+
+
+_UBOOT_COMPARTMENTS = ("bow", "control", "quarters", "battery", "engine", "stern")
+
+
+def _uboot_dc_team_params(params):
+    return (type(params) is dict and set(params) == {"team", "compartment", "task"}
+            and type(params["team"]) is int and params["team"] in (0, 1)
+            and type(params["compartment"]) is str
+            and params["compartment"] in _UBOOT_COMPARTMENTS
+            and type(params["task"]) is str
+            and params["task"] in ("idle", "seal", "pump", "fire"))
+
+
+def _uboot_bulkhead_params(params):
+    return (type(params) is dict and set(params) == {"compartment", "closed"}
+            and type(params["compartment"]) is str
+            and params["compartment"] in _UBOOT_COMPARTMENTS
+            and type(params["closed"]) is bool)
 
 
 def _bool_params(name):
@@ -582,6 +601,9 @@ V2_ACTION_REGISTRY = {
     # ... and trims the boat (the engineer's automatic trim, or by hand).
     "uboot_trim_auto": V2Action(frozenset({"uboot", "uboot_engine"}), _bool_params("enabled")),
     "uboot_ballast": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_ballast_params),
+    # ... and runs damage control: two teams, the bulkheads.
+    "uboot_dc_team": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_dc_team_params),
+    "uboot_bulkhead": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_bulkhead_params),
     "uboot_mast": V2Action(frozenset({"uboot", "uboot_esm"}), _bool_params("enabled")),
     "uboot_wire_steer": V2Action(frozenset({"uboot_weapons"}), _uboot_wire_params),
     "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),

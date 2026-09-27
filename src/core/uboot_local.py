@@ -23,6 +23,7 @@ from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
 from src.core import boat_esm, config, opfor
 from src.core.i18n import display_value, message
 from src.core.station import Station
+from src.enemies import damage_control
 
 LOCAL_SIDES = ("frigate", "uboot")
 # Sonar-room keys the boat's operator may use.  Everything that would reach
@@ -41,7 +42,7 @@ UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearin
 # Rejections of boat-mode orders that have their own local text.
 UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth",
                        "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
-                       "uboot_no_air_stores", "uboot_no_hp_air")
+                       "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down")
 
 
 def playing(game) -> bool:
@@ -186,7 +187,8 @@ def _fire_notice(game, result) -> None:
                            reason=message(f"uboot.reason.{result}")
                            if result in ("not_ready", "no_torpedoes", "reloading",
                                          "out_of_arc", "stale_ref", "unknown_ref",
-                                         "uboot_no_wire", "invalid_value")
+                                         "uboot_no_wire", "invalid_value",
+                                         "uboot_compartment_down")
                            else message("uboot.reason.not_ready")), 2.5)
 
 
@@ -490,6 +492,13 @@ def _ballast_notice(game, sub, tank, result) -> None:
                                           order=f"{order / 1000.0:+.1f}"), 1.5)
 
 
+def _dc_notice(game, key, result, **values) -> None:
+    if result is not True:
+        game.flash(message("uboot.local.dc_unavailable"), 2.0)
+        return
+    _announce(game, "schaden", message(key, **values), 1.5)
+
+
 def _key_action(key, mods):
     if key == pygame.K_g:
         return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_silent"
@@ -537,6 +546,32 @@ def _command_key(game, current, key, mods) -> None:
             tank = "regulating" if key in (pygame.K_UP, pygame.K_DOWN) else "trim"
             direction = 1 if key in (pygame.K_DOWN, pygame.K_RIGHT) else -1
             _ballast_notice(game, sub, tank, sub.command_ballast(tank, direction))
+    elif page == "UBOOT_DAMAGE" and key in (pygame.K_UP, pygame.K_DOWN):
+        current.dc_selected = (current.dc_selected + (1 if key == pygame.K_DOWN else -1)) \
+            % len(damage_control.COMPARTMENTS)
+    elif page == "UBOOT_DAMAGE" and key in (pygame.K_LEFT, pygame.K_RIGHT):
+        tasks = damage_control.TASKS
+        index = tasks.index(current.dc_task) if current.dc_task in tasks else 0
+        current.dc_task = tasks[(index + (1 if key == pygame.K_RIGHT else -1)) % len(tasks)]
+    elif page == "UBOOT_DAMAGE" and key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+            and not mods & pygame.KMOD_CTRL:
+        if order_allowed(game, "uboot_dc_team"):
+            team = 1 if mods & pygame.KMOD_SHIFT else 0
+            compartment = damage_control.COMPARTMENTS[current.dc_selected
+                                                      % len(damage_control.COMPARTMENTS)]
+            _dc_notice(game, "uboot.local.dc_team", sub.command_dc_team(
+                team, compartment, current.dc_task), team=team + 1,
+                compartment=message(f"uboot.compartment.{compartment}"),
+                task=message(f"uboot.dc.task.{current.dc_task}"))
+    elif page == "UBOOT_DAMAGE" and key == pygame.K_i:
+        if order_allowed(game, "uboot_bulkhead"):
+            compartment = damage_control.COMPARTMENTS[current.dc_selected
+                                                      % len(damage_control.COMPARTMENTS)]
+            index = damage_control.COMPARTMENTS.index(compartment)
+            closed = not sub.damage_control.compartments[index].closed
+            _dc_notice(game, "uboot.local.dc_bulkhead_" + ("closed" if closed else "open"),
+                       sub.command_bulkhead(compartment, closed),
+                       compartment=message(f"uboot.compartment.{compartment}"))
     elif key in (pygame.K_q, pygame.K_e):
         _chart_zoom(game, current, (1.0 / config.MAP_ZOOM_WHEEL_FACTOR
                                     if key == pygame.K_q else config.MAP_ZOOM_WHEEL_FACTOR))

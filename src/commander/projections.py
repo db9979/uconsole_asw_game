@@ -12,7 +12,7 @@ import weakref
 from src.core import boat_esm, config, opfor, plot
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
-from src.enemies.ballast import flooding_kg
+from src.enemies.damage_control import COMPARTMENTS, capacity_kg
 from src.sonar import analysis_tools
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
@@ -1296,10 +1296,12 @@ def _uboot_plant(sub):
 def _uboot_ballast(sub):
     """The boat's own tanks, trim and air bottles (own-ship truth)."""
     ballast = sub.ballast
+    flooding, moment = sub.flooding_kg(), sub.flood_moment_kg()
     return dict(
         blowing=bool(ballast.blowing), venting=bool(ballast.venting),
         auto=bool(ballast.auto), pumping=bool(ballast.pumping),
         compressor=bool(sub.snorkeling and sub.snorkel_rate != "vent"
+                        and sub.damage_control.power()
                         and ballast.hp_air_bar < config.UBOOT_HP_AIR_MAX_BAR),
         hp_air_bar=_number(ballast.hp_air_bar),
         hp_air_max_bar=_number(config.UBOOT_HP_AIR_MAX_BAR),
@@ -1309,10 +1311,26 @@ def _uboot_ballast(sub):
         regulating_capacity_kg=_number(config.UBOOT_REGULATING_KG),
         trim_kg=_number(ballast.trim_kg), trim_order_kg=_number(ballast.trim_order_kg),
         trim_capacity_kg=_number(config.UBOOT_TRIM_TANK_KG),
-        load_kg=_number(ballast.load_kg), flooding_kg=_number(flooding_kg(sub.damage)),
-        residual_kg=_number(ballast.residual_kg(sub.damage)),
-        trim_deg=_number(ballast.trim_deg()),
-        drift_mps=_number(ballast.vertical_drift_mps(sub.damage, sub.speed)))
+        load_kg=_number(ballast.load_kg), flooding_kg=_number(flooding),
+        residual_kg=_number(ballast.residual_kg(flooding)),
+        trim_deg=_number(ballast.trim_deg(moment)),
+        drift_mps=_number(ballast.vertical_drift_mps(flooding, sub.speed, moment)))
+
+
+def _uboot_damage(sub):
+    """The boat's own compartments and damage-control teams (own-ship truth)."""
+    control = sub.damage_control
+    return dict(
+        power=bool(control.power()), pumping=bool(control.pumping),
+        compartments=[dict(
+            name=name, water_kg=_number(c.water_kg), capacity_kg=_number(capacity_kg(index)),
+            leak_pct=_number(c.leak * 100.0), fire_pct=_number(c.fire * 100.0),
+            chlorine_pct=_number(c.chlorine * 100.0), closed=bool(c.closed),
+            down=bool(control.down(name)))
+            for index, (name, c) in enumerate(zip(COMPARTMENTS, control.compartments))],
+        teams=[dict(team=index, compartment=str(team["compartment"]), task=str(team["task"]),
+                    transit_s=_number(team["transit_s"]))
+               for index, team in enumerate(control.teams)])
 
 
 # Library suggestions per emitter in the browser (the crew picks by index).
@@ -1446,6 +1464,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         plant=_uboot_plant(sub),
         esm=_uboot_esm(game, boat),
         ballast=_uboot_ballast(sub),
+        damage_control=_uboot_damage(sub),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

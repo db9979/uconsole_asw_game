@@ -236,6 +236,17 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .uboot-ballast-columns section { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
 .uboot-ballast-columns h4 { margin: 0; }
 #uboot-ballast-canvas { height: clamp(13rem, 30vh, 20rem); }
+.uboot-dc-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr); gap: .6rem; align-items: start; }
+@media (max-width: 60rem) { .uboot-dc-columns { grid-template-columns: minmax(0, 1fr); } }
+.uboot-dc-columns section { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.uboot-dc-columns h4 { margin: 0; }
+#uboot-dc-canvas { height: clamp(9rem, 20vh, 13rem); }
+.uboot-dc-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.uboot-dc-table th, .uboot-dc-table td { padding: .2rem .35rem; text-align: left; border-bottom: 1px solid var(--line); }
+.uboot-dc-table tr[data-alert="true"] { color: var(--amber); }
+.uboot-dc-table tr[data-down="true"] { color: var(--red); }
+#station-uboot .uboot-dc-form { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .3rem .5rem; align-items: center; }
+#station-uboot .uboot-dc-form button { grid-column: 1 / -1; }
 .uboot-ballast-orders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem; }
 .uboot-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .45rem; }
 .uboot-bar { position: relative; display: grid; gap: .05rem; padding: .35rem .5rem .55rem; overflow: hidden; background: var(--bg-2); border: 1px solid var(--line); border-left: 3px solid var(--live); border-radius: var(--radius); }

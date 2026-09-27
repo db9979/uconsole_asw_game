@@ -635,6 +635,15 @@ def _uboot_ballast(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_ballast(params["tank"], params["direction"]))
 
 
+def _uboot_dc_team(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_dc_team(params["team"], params["compartment"],
+                                                  params["task"]))
+
+
+def _uboot_bulkhead(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_bulkhead(params["compartment"], params["closed"]))
+
+
 def _uboot_mast(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_mast(params["enabled"]))
 
@@ -685,6 +694,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_absorber": _uboot_absorber,
     "uboot_trim_auto": _uboot_trim_auto,
     "uboot_ballast": _uboot_ballast,
+    "uboot_dc_team": _uboot_dc_team,
+    "uboot_bulkhead": _uboot_bulkhead,
     "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
     "uboot_silent": _uboot_silent,

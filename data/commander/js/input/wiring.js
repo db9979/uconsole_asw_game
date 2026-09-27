@@ -541,6 +541,16 @@ export function init() {
   for (const button of document.querySelectorAll("[data-uboot-ballast]"))
     button.addEventListener("click", () => sendStationAction("uboot_ballast",
       {tank: button.dataset.ubootBallast, direction: Number(button.dataset.direction)}));
+  // Engine room damage control: send a team, shut or open a compartment.
+  $("uboot-dc-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    sendStationAction("uboot_dc_team", {team: Number($("uboot-dc-team").value),
+      compartment: $("uboot-dc-compartment").value, task: $("uboot-dc-task").value});
+  });
+  $("uboot-dc-rows").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-uboot-bulkhead]");
+    if (button) sendStationAction("uboot_bulkhead", {compartment: button.dataset.ubootBulkhead, closed: button.dataset.closed === "true"});
+  });
   // Mast station ESM: pick an emitter, classify it, transfer it to the plot.
   $("uboot-esm-emitters").addEventListener("click", (event) => {
     const button = event.target.closest("[data-uboot-esm-emitter]");
@@ -990,7 +1000,8 @@ export function init() {
     if (boatFrame) return;
     boatFrame = requestAnimationFrame(() => { boatFrame = 0; drawUbootGraphics(S.v2State?.[S.v2State?.role]); });
   };
-  for (const id of ["uboot-depth-canvas", "uboot-esm-canvas", "uboot-scope-canvas", "uboot-ballast-canvas"])
+  for (const id of ["uboot-depth-canvas", "uboot-esm-canvas", "uboot-scope-canvas", "uboot-ballast-canvas",
+    "uboot-dc-canvas"])
     new ResizeObserver(boatRedraw).observe($(id));
   window.addEventListener("resize", () => { queueDraw(); queueLookoutDraw(); queueVisualDraw(); });
   window.addEventListener("hashchange", () => { applySimlogView(); loadSimlog(); });

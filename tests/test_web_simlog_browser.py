@@ -99,7 +99,7 @@ def test_web_simlog_shows_all_projected_values_and_a_map_in_chromium(tmp_path):
     stations = {station: _station_record() for station in STATIONS}
     stations["opz"] = _station_record("mine", station_generation=1, command=True)
     session = dict(protocol=2, client_id="log-client", name="Log Watch",
-                   csrf="log-csrf", ordinal=0, presence=1.0, next_command_seq=0, host=None,
+                   csrf="log-csrf", ordinal=0, presence=1.0, next_command_seq=0, host=None, observer=False,
                    station="opz", requested_station=None, station_generation=1,
                    active_station="opz", active_generation=1, simlog=True,
                    stations=stations,

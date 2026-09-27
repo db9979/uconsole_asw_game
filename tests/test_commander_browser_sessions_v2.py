@@ -1018,7 +1018,7 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
             direct_fire=station in {"opz", "helicopter"})
     session = dict(protocol=2, client_id="fire-client", name="Fire Watch",
                    csrf="fire-csrf", ordinal=0, presence=1.0, host=None,
-                   next_command_seq=0, station="weapons", requested_station=None,
+                   next_command_seq=0, observer=False, station="weapons", requested_station=None,
                    station_generation=1, active_station="weapons",
                    active_generation=1, simlog=False, stations=stations,
                    grants=dict(command=True, direct_fire=False, simlog=False,
@@ -1323,7 +1323,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             if self.path == "/api/v2/pair" and body == {"code": "123ABC", "name": "Lobby Watch"}:
                 cls.session = {"protocol": 2, "client_id": "client-1", "name": "Lobby Watch",
                                 "csrf": "csrf-1", "ordinal": 0, "presence": 1.0,
-                                "next_command_seq": 0, "active_station": None,
+                                "next_command_seq": 0, "observer": False, "active_station": None,
                                 "active_generation": 0, "simlog": False, "host": None,
                                 "station": None, "requested_station": None,
                                 "station_generation": 0,

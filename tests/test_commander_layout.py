@@ -315,7 +315,7 @@ def test_v2_lobby_layout_is_bounded(tmp_path, width, height, zoom, language):
     empty_grants = {"command": False, "direct_fire": False, "sonar_audio": False}
     session = {"protocol": 2, "client_id": "layout-client", "name": "Layout Lobby",
                "csrf": "layout-csrf", "ordinal": 0, "presence": 1.0,
-                "next_command_seq": 0, "active_station": None,
+                "next_command_seq": 0, "observer": False, "active_station": None,
                 "active_generation": 0, "simlog": False, "host": None,
                 "station": None, "requested_station": None, "station_generation": 0,
                 "stations": {

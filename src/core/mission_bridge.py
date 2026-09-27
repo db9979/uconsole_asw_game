@@ -130,6 +130,8 @@ class MissionBridgeMixin:
         self.custom_mission_definition = json.loads(json.dumps(definition))
         # An authored mission brings its own events: no radio tasking.
         self.tasking = TaskBoard(None)
+        # The patrol aircraft flies from the airfield nearest the placed ship.
+        self._reset_mpa()
         self.feed.entries[-1].text = self._mission_started_notice()
         self.hq_msg(self._initial_threat_notice())
         self.in_menu = False

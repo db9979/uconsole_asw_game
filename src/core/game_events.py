@@ -35,6 +35,7 @@ from src.ui.sonar_view import sonar_click_target, sonar_hit_target
 from src.ui.stations_view import station_hit_target
 from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
                                     helicopter_acoustic_hit, opz_action_at, opz_ppi_rect,
+                                    opz_world_at,
                                     station_page_tab_at)
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
@@ -595,7 +596,13 @@ class EventMixin:
                 return
             if self._map_drag is not None and not self._map_drag_moved:
                 if self.station is Station.OPZ:
-                    self._pin_tooltip_at(getattr(e, "pos", None))
+                    canvas = self._window_to_canvas(getattr(e, "pos", None))
+                    point = (opz_world_at(self, canvas, config.OPZ_STATION_RECT)
+                             if self.station_page == 2 and self.mpa.airborne else None)
+                    if point is not None:
+                        self._mpa_order_feedback(self.set_mpa_waypoint(*point))
+                    else:
+                        self._pin_tooltip_at(getattr(e, "pos", None))
                     self._map_drag = None
                     self._map_drag_moved = False
                     return
@@ -993,6 +1000,22 @@ class EventMixin:
                     self._task_accept_selected()
                 else:
                     self._task_decline_selected()
+                return
+            if self.station is Station.OPZ and self.station_page == 2 and e.key in (
+                    pygame.K_a, pygame.K_w, pygame.K_z, pygame.K_x, pygame.K_y,
+                    pygame.K_t, pygame.K_d):
+                shift = bool(getattr(e, "mod", 0) & pygame.KMOD_SHIFT)
+                order = {
+                    pygame.K_a: self.toggle_mpa,
+                    pygame.K_w: self.mpa_waypoint_to_selection,
+                    pygame.K_z: ((lambda: self.set_mpa_pattern("single")) if shift
+                                 else self.cycle_mpa_pattern),
+                    pygame.K_x: self.mpa_drop_buoy,
+                    pygame.K_y: self.toggle_mpa_buoy_mode,
+                    pygame.K_t: self.toggle_mpa_radar,
+                    pygame.K_d: self.mpa_attack,
+                }[e.key]
+                self._mpa_order_feedback(order())
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.RADIO:

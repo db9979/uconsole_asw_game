@@ -36,6 +36,8 @@ from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
 from src.core.crew import CrewState
+from src.air.mpa import PatrolAircraft
+from src.air.sonobuoy import OWNERS as BUOY_OWNERS
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
@@ -1355,14 +1357,20 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         if profile is None or profile.used_by != "helo":
             return False
     buoys = data.get("buoys", [])
-    if not isinstance(buoys, list) or len(buoys) > config.BUOY_COUNT:
+    max_mpa_buoys = config.MPA_BUOYS * config.MPA_SORTIES
+    if (not isinstance(buoys, list)
+            or len(buoys) > config.BUOY_COUNT + max_mpa_buoys):
+        return False
+    # Save v21: the patrol aircraft (its stores bound its buoys and torpedoes).
+    mpa = data.get("mpa")
+    if not PatrolAircraft.valid_state(mpa, world_size):
         return False
     buoy_ids = set()
     for buoy in buoys:
         if (not isinstance(buoy, dict)
-                or set(buoy) not in ({"x", "y", "seq", "battery_s"},
-                                     {"x", "y", "seq", "battery_s",
-                                      "mode", "last_ping_epoch"})
+                or set(buoy) != {"x", "y", "seq", "battery_s", "mode",
+                                 "last_ping_epoch", "owner"}
+                or buoy["owner"] not in BUOY_OWNERS
                 or not bounded(buoy.get("x"), -1_000_000, 1_000_000)
                 or not bounded(buoy.get("y"), -1_000_000, 1_000_000)
                 or not identity(buoy.get("seq"))
@@ -1375,8 +1383,11 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                 <= int(save_sim_t // config.BUOY_PING_COOLDOWN_S)):
             return False
         buoy_ids.add(buoy["seq"])
+    helo_buoys = sum(1 for buoy in buoys if buoy["owner"] == "HELO")
     if (isinstance(helo, dict)
-            and len(buoys) > config.BUOY_COUNT - helo["buoys_left"]):
+            and helo_buoys > config.BUOY_COUNT - helo["buoys_left"]):
+        return False
+    if len(buoys) - helo_buoys > max_mpa_buoys:
         return False
     asms = data.get("asms", [])
     torpedoes = data.get("torpedoes_in_flight", [])
@@ -1465,7 +1476,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                 not bounded(gx, -1_000_000, 1_000_000)
                 or not bounded(gy, -1_000_000, 1_000_000))):
             return False
-    active_origins = {"frigate": 0, "helo": 0, "asroc": 0}
+    active_origins = {"frigate": 0, "helo": 0, "asroc": 0, "mpa": 0}
     for torpedo in torpedoes:
         if torpedo.get("guidance_x") is None:
             return False
@@ -1518,7 +1529,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         loadout_weapons = data["asw"]["loadout"]["weapons"]
         own_weapon = next((item for item in loadout_weapons
                            if item["runtime_profile_key"] == profile_key), None)
-        if origin in ("frigate", "helo") and (
+        if origin in ("frigate", "helo", "mpa") and (
                 origin != "frigate" or own_weapon is not None):
             # Fregatte und Helo teilen sich denselben Custom-Difficulty-
             # Treffwert (keine getrennten Level-Tabellen mehr).
@@ -1533,7 +1544,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                 or distance != profile.range_nm
                 or torpedo.get("kill_dist_nm") != expected_hit_distance
                 or torpedo.get("kill_depth_m") != expected_hit_depth
-                or (origin in ("helo", "asroc")
+                or (origin in ("helo", "asroc", "mpa")
                     and profile.used_by != "helo")
                 or (torpedo.get("seeker_acquired", False)
                     and not torpedo.get("terminal_active", False))):
@@ -1548,6 +1559,8 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         return False
     if (not isinstance(helo, dict)
             or active_origins["helo"] > config.HELO_TORPS - helo["torps"]):
+        return False
+    if active_origins["mpa"] > config.MPA_TORPS * config.MPA_SORTIES:
         return False
     if any(count > spent_asrocs.get(key, 0)
            for key, count in used_asrocs.items()):

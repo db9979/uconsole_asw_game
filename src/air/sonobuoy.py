@@ -5,15 +5,21 @@ import math
 from src.core import config
 
 BUOY_LEEWAY = 0.02   # windage of the float and antenna, fraction of wind
+OWNERS = ("HELO", "MPA")
 
 
 class Sonobuoy:
     """Wird vom HSP-5 ausgesetzt; hört Ziele im Umkreis (Sonar-Update)."""
 
     def __init__(self, x_nm: float, y_nm: float, seq: int,
-                 mode: str = "PASSIVE"):
+                 mode: str = "PASSIVE", owner: str = "HELO"):
         if mode not in ("PASSIVE", "ACTIVE"):
             raise ValueError("invalid sonobuoy mode")
+        if owner not in OWNERS:
+            raise ValueError("invalid sonobuoy owner")
+        # Who laid it: the helicopter or the patrol aircraft (which must
+        # relay its buoys to the ship).
+        self.owner = owner
         self.x = x_nm
         self.y = y_nm
         self.seq = seq

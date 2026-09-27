@@ -595,6 +595,18 @@ V2_ACTION_REGISTRY = {
         frozenset({"opz"}), _single_ref_params, direct_fire=True),
     "opz_launch_chaff": V2Action(
         frozenset({"opz"}), _single_ref_params, direct_fire=True),
+    # The patrol aircraft (OPZ page 3): its torpedo goes on the designated
+    # sonar contact and counts as direct fire.
+    "mpa_request": V2Action(frozenset({"opz"}), _no_params),
+    "mpa_return": V2Action(frozenset({"opz"}), _no_params),
+    "mpa_set_waypoint": V2Action(frozenset({"opz"}), _waypoint_params),
+    "mpa_set_pattern": V2Action(frozenset({"opz"}), _enum_params(
+        "kind", ("single", "field", "barrier", "circle"))),
+    "mpa_drop_buoy": V2Action(frozenset({"opz"}), _no_params),
+    "mpa_set_buoy_mode": V2Action(frozenset({"opz"}),
+                                  _enum_params("mode", ("PASSIVE", "ACTIVE"))),
+    "mpa_set_radar": V2Action(frozenset({"opz"}), _bool_params("enabled")),
+    "mpa_attack": V2Action(frozenset({"opz"}), _no_params, direct_fire=True),
     # The crewed submarine's commander.
     # Each boat order belongs to the station that does it aboard; the commander
     # keeps course, speed and depth.

@@ -27,10 +27,10 @@ role, a debrief timeline with JSON export and voice on by default; and a
 mission runtime that takes the editor's scope (reference sectors, protect
 and reach objectives, random groups, timed events, authored weather, placed
 aircraft, animals and decoys). The core is split into mixins and the test
-suite runs in parallel. **Saves are format v20 (the crewed boat's compartments and damage control, its tanks, trim and high-pressure air, its ESM picture,
+suite runs in parallel. **Saves are format v21 (HQ radio tasks, the crew's watch bill, fatigue and morale, the on-call patrol aircraft, the crewed boat's compartments and damage control, its tanks, trim and high-pressure air, its ESM picture,
 submarine diesel, charge rate and air stores, crewed-boat crew state, periscope
 sightings, weapon settings, mission events, foreign pings still travelling to
-the frigate); v18 and older saves are rejected.**
+the frigate); v20 and older saves are rejected.**
 
 Release 1.2.0 tightens the game flow and the hand-over between stations: the
 `Esc` dialog and the mission-end screen return to the main menu (`M`), `R`
@@ -337,7 +337,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v20 game saves for deterministic restoration of existing sessions.
+in v21 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -447,8 +447,9 @@ Validated does not mean runtime-effective. In release 1.0.0:
 
 ## Saves and User Data
 
-This build writes and loads save format **v20** only. V20 requires the exact
-`u-jagd-save-v20` schema, including the current runtime catalog snapshot, all
+This build writes and loads save format **v21** only. V21 requires the exact
+`u-jagd-save-v21` schema, including the HQ task board, both crews' watch bills,
+the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM
 picture) when a crew holds the boat, every submarine's ballast, trim and high-pressure air and its compartments and damage-control teams, every conventional submarine's diesel, charge rate and air stores,

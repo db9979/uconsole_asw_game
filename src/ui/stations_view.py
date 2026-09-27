@@ -61,6 +61,7 @@ from src.ui.stations.opz import (  # noqa: F401
     _opz_bearing_ray,
     _opz_track_point,
     opz_action_at,
+    opz_world_at,
     _opz_radar_range_nm,
     _radar_sweep_age,
     _radar_glow,

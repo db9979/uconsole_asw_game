@@ -33,6 +33,7 @@ from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
 from src.core.crew import CrewState
+from src.air.mpa import PatrolAircraft
 from src.enemies.endurance import SubmarineEndurance
 from src.enemies.surface import SurfaceShip
 from src.sensors.tracks import TrackPicture
@@ -462,6 +463,7 @@ class SaveMixin:
             "mission_events": list(self.mission_events_pending),
             "tasking": self.tasking.serialize(),
             "watch": self.crew_watch.serialize(),
+            "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
             "score": self.score,
             "incident": self.incident,
@@ -804,7 +806,8 @@ class SaveMixin:
                             los_prev=e.los_prev)
                       for e in self.essms],
             "buoys": [dict(x=b.x, y=b.y, seq=b.seq, battery_s=b.battery_s,
-                           mode=b.mode, last_ping_epoch=b.last_ping_epoch)
+                           mode=b.mode, last_ping_epoch=b.last_ping_epoch,
+                           owner=b.owner)
                       for b in self.buoys],
             "flights": {
                 "seq": self.flights._seq,
@@ -1002,6 +1005,7 @@ class SaveMixin:
         self.tasking = TaskBoard.restore(data["tasking"])
         self.task_sel = 0
         self.crew_watch = CrewState.restore(data["watch"])
+        self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)
         self._ping_intercepts = [tuple(row) for row in data["ping_intercepts"]]
         self.score = data["score"]
         self.incident = data["incident"]
@@ -1483,7 +1487,7 @@ class SaveMixin:
             self.essms.append(essm)
         self.asm_seq = data["asm_seq"]
         for bd in data["buoys"]:
-            b = Sonobuoy(bd["x"], bd["y"], bd["seq"], bd.get("mode", "PASSIVE"))
+            b = Sonobuoy(bd["x"], bd["y"], bd["seq"], bd["mode"], owner=bd["owner"])
             b.battery_s = bd["battery_s"]
             b.last_ping_epoch = bd.get("last_ping_epoch", -1)
             self.buoys.append(b)

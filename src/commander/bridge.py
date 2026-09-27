@@ -531,6 +531,38 @@ def _helicopter_launch_torpedo(game, params, bindings):
     return game.launch_helicopter_torpedo_at(contact, params["depth_m"])
 
 
+def _mpa_request(game, _params, _bindings):
+    return game.request_mpa()
+
+
+def _mpa_return(game, _params, _bindings):
+    return game.mpa_return()
+
+
+def _mpa_set_waypoint(game, params, _bindings):
+    return game.set_mpa_waypoint(params["x"], params["y"])
+
+
+def _mpa_set_pattern(game, params, _bindings):
+    return game.set_mpa_pattern(params["kind"])
+
+
+def _mpa_drop_buoy(game, _params, _bindings):
+    return game.mpa_drop_buoy()
+
+
+def _mpa_set_buoy_mode(game, params, _bindings):
+    return game.set_mpa_buoy_mode(params["mode"])
+
+
+def _mpa_set_radar(game, params, _bindings):
+    return game.set_mpa_radar(params["enabled"])
+
+
+def _mpa_attack(game, _params, _bindings):
+    return game.mpa_attack()
+
+
 def _weapons_set_torpedo_settings(game, params, _bindings):
     """Type, pattern, enable point and salvo in one settings command; the
     first refused value stops the sequence and names the reason."""
@@ -825,6 +857,14 @@ _V2_ACTION_HANDLERS = {
     "weapons_set_torpedo_settings": _weapons_set_torpedo_settings,
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,
+    "mpa_request": _mpa_request,
+    "mpa_return": _mpa_return,
+    "mpa_set_waypoint": _mpa_set_waypoint,
+    "mpa_set_pattern": _mpa_set_pattern,
+    "mpa_drop_buoy": _mpa_drop_buoy,
+    "mpa_set_buoy_mode": _mpa_set_buoy_mode,
+    "mpa_set_radar": _mpa_set_radar,
+    "mpa_attack": _mpa_attack,
 }
 
 

@@ -291,6 +291,97 @@ def opz_action_at(game, pos, station_rect=None):
     return None
 
 
+def opz_world_at(game, pos, station_rect=None):
+    """World position (nm) under a chart point, or ``None`` off the chart."""
+    if pos is None:
+        return None
+    chart = opz_regions(station_rect)["chart"]
+    if not chart.collidepoint(pos):
+        return None
+    x, y = _opz_view(game, chart).screen_to_world(*pos)
+    size = float(getattr(getattr(game, "world", None), "size_nm", config.WORLD_SIZE_NM))
+    return config.clamp(float(x), 0.0, size), config.clamp(float(y), 0.0, size)
+
+
+def _draw_mpa(game, s, chart, view, px_per_nm, page) -> None:
+    """The patrol aircraft is own-force datalink truth, like the helicopter;
+    its waypoint and planned buoy points are shown on the MPA page."""
+    mpa = getattr(game, "mpa", None)
+    if mpa is None or not mpa.airborne:
+        return
+    color = config.COLOR_FLIGHT
+    if page == 2:
+        wx, wy = view.world_to_screen(mpa.waypoint_x, mpa.waypoint_y)
+        if chart.collidepoint(wx, wy):
+            pygame.draw.line(s, color, (wx - 7, wy), (wx + 7, wy), 1)
+            pygame.draw.line(s, color, (wx, wy - 7), (wx, wy + 7), 1)
+            radius = int(config.MPA_ORBIT_NM * px_per_nm)
+            if radius >= 4:
+                pygame.draw.circle(s, config.COLOR_TEXT_DIM, (int(wx), int(wy)), radius, 1)
+        for px, py in mpa.pattern_queue:
+            bx, by = view.world_to_screen(px, py)
+            if chart.collidepoint(bx, by):
+                pygame.draw.circle(s, color, (int(bx), int(by)), 4, 1)
+    mx, my = view.world_to_screen(mpa.x, mpa.y)
+    if not chart.collidepoint(mx, my):
+        return
+    col = nato_symbols.draw_symbol(s, (mx, my), "FRIEND", "AIR", 17)
+    nato_symbols.draw_motion_vector(s, (mx, my), mpa.course, mpa.speed_kn,
+                                    px_per_nm, col, max_px=min(chart.size) * .3)
+    layout.blit_line(s, "MPA DL", (int(mx) + 13, int(my) - 10, 94, 19), col, size=12)
+
+
+def _draw_mpa_sidebar(game, s, x, py, w, bottom) -> int:
+    """OPZ page 3: the patrol aircraft's state, stores and order keys."""
+    view = game.mpa_view()
+    state = display_value("mpa_state", view["state"])
+    lines = [(message("opz.mpa.state", state=state), config.COLOR_TEXT)]
+    if view["airborne"]:
+        lines.append((message("opz.mpa.position", bearing=f"{view['bearing']:03.0f}",
+                              range=f"{view['range_nm']:.0f}"), config.COLOR_TEXT_DIM))
+        reserve = view["fuel_s"] - view["bingo_s"]
+        lines.append((message("opz.mpa.fuel", minutes=f"{max(0.0, reserve) / 60.0:.0f}"),
+                      config.COLOR_WARN if reserve < 1800.0 else config.COLOR_TEXT_DIM))
+        lines.append((localize("opz.mpa.datalink_on" if view["datalink"]
+                               else "opz.mpa.datalink_off"),
+                      config.COLOR_OK if view["datalink"] else config.COLOR_WARN))
+    elif view["ready_in_s"] is None:
+        lines.append((localize("opz.mpa.no_sorties"), config.COLOR_WARN))
+    elif view["ready_in_s"] > 0.0:
+        lines.append((message("opz.mpa.ready_in", minutes=f"{view['ready_in_s'] / 60.0:.0f}"),
+                      config.COLOR_TEXT_DIM))
+    else:
+        lines.append((localize("opz.mpa.ready"), config.COLOR_OK))
+    lines.append((message("opz.mpa.stores", buoys=view["buoys"], torpedoes=view["torpedoes"]),
+                  config.COLOR_TEXT_DIM))
+    lines.append((message("opz.mpa.sorties", sorties=view["sorties_left"]),
+                  config.COLOR_TEXT_DIM))
+    lines.append((message("opz.mpa.sensors",
+                          radar=localize("common.on" if view["radar"] else "common.off"),
+                          mode=display_value("buoy_mode", view["buoy_mode"])),
+                  config.COLOR_TEXT_DIM))
+    lines.append((message("opz.mpa.relayed", relayed=view["relayed"]), config.COLOR_TEXT_DIM))
+    if view["pattern"] != "single":
+        lines.append((message("opz.mpa.pattern",
+                              pattern=display_value("buoy_pattern", view["pattern"]),
+                              count=len(view["pattern_points"])), config.COLOR_TEXT_DIM))
+    for text, color in lines:
+        if py + 24 > bottom:
+            return py
+        layout.blit_line(s, text, (x, py, w, 24), color, size=15)
+        py += 26
+    py += 4
+    pygame.draw.line(s, config.COLOR_GRID, (x, py), (x + w, py))
+    py += 6
+    for key in ("opz.mpa.keys_orders", "opz.mpa.keys_area", "opz.mpa.keys_buoys",
+                "opz.mpa.keys_weapons"):
+        if py + 22 > bottom:
+            break
+        layout.blit_line(s, key, (x, py, w, 22), config.COLOR_TEXT_DIM, size=14)
+        py += 24
+    return py
+
+
 def _opz_radar_range_nm(game) -> float:
     value = getattr(game, "radar_range_nm", None)
     if value is None:
@@ -587,6 +678,7 @@ def draw_opz_view(game, tr=None) -> None:
                                             px_per_nm, hcol, max_px=min(chart.size) * .3)
             layout.blit_line(s, "HSP-5 DL",
                              (int(hx) + 13, int(hy) - 10, 94, 19), hcol, size=12)
+    _draw_mpa(game, s, chart, view, px_per_nm, page)
     # Own weapons are commanded own assets (wire/datalink), not sensor tracks:
     # torpedoes from ship, helicopter or ASROC payload, ASROC and ESSM flights.
     own_weapons = (
@@ -777,6 +869,8 @@ def draw_opz_view(game, tr=None) -> None:
                             bearing=observations.format_bearing(track, game.ship), distance=distance)
             layout.blit_line(s, text, (x + 6, py, w - 6, 24), color, size=15)
             py += 28
+    elif page == 2:
+        _draw_mpa_sidebar(game, s, x, py, w, regions["classify"].top - 7)
     else:
         selected = game.selected_opz_track()
         if selected is None:

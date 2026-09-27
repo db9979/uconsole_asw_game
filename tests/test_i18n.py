@@ -172,7 +172,7 @@ def test_static_text_sent_to_ui_helpers_is_cataloged_or_technical():
     catalog_text = set(english) | set(english.values()) | set(load_catalog("de").values())
     proper_names = {"U-JAGD – FREGATTE F-217"}
     technical = {"N", "PING", "U-JAGD / ASW", "RADAR", "VLS:", "ESM:",
-                 "HSP-5 DL", "ROE", "HSP-5", "CIWS:"}
+                 "HSP-5 DL", "MPA DL", "ROE", "HSP-5", "CIWS:"}
     text_arguments = {
         "tr": (0,), "translate": (0,), "center": (0,),
         "blit_line": (1,), "blit_block": (1,), "draw_text": (1,), "_text": (1,),

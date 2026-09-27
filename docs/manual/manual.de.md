@@ -588,7 +588,7 @@ Die Operationszentrale (OPZ / CIC) bildet das Lagebild über Wasser: Überwasser
 
 ### Anzeigen und Instrumente
 
-Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
+Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten Tracks; Seite 2 ist die Zielseite für den gewählten Track; Seite 3 führt den Seefernaufklärer. Das schiffszentrierte Radarbild hat eine eigene Bereichsskala (10/20/40/80/120 sm, `Bild Auf`/`Bild Ab`), unabhängig vom Kartenzoom (Mausrad bis 5 sm Radius; Ziehen verschiebt; `K` folgt). Eigene Einheiten stammen aus dem Datenlink, nicht aus Sensoren: das Schiff, der fliegende Helikopter ("HSP-5 DL") und jede laufende eigene Waffe, also Torpedos von Schiff, Helikopter oder ASROC (`T<n>`), ASROC im Flug und ESSM, jeweils mit Freund-Symbol und Kursstrich.
 
 ```text
  NATO-Rahmenfarben (Bedienervermerk, keine Wahrheit)
@@ -605,6 +605,18 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 - **AIS:** zivile Schiffe senden Kurs und Fahrt alle 2-10 s (vor Anker alle 3 min) und ihren Namen etwa alle 6 min. Der UKW-Empfänger hört sie nur in Sichtlinie (etwa 20 NM). Ein Radartrack eines Zivilschiffs zeigt Name und Kurs erst, wenn die passende AIS-Meldung empfangen wurde; Radar allein liefert nur die Position. Optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
 - **Fusion:** 2-8 Rohmeldungen markieren (`Leertaste`) und zu einem Bedienertrack fusionieren (`L`); `Shift+L` löst ihn auf. Eine Fusion, deren Meldungen von genau einem Sonarkontakt stammen, lässt sich der Waffenzentrale zuweisen; ihre Klassifizierung zählt für die Feuerleitung, solange das Sonar den Kontakt nicht selbst klassifiziert hat, und ihre Zugehörigkeit gilt für diesen Kontakt. Eine Fusion besteht nur, solange alle ihre Meldungen aktuell sind.
 - **Unterdrückung:** `Entf` blendet eine Meldung lokal aus; `H` zeigt unterdrückte Meldungen wieder.
+
+### Seefernaufklärer
+
+Seite 3 führt einen Seefernaufklärer (MPA) auf Abruf vom nächsten eigenen Flugplatz (ohne Flugplatz kommt er vom nächsten Kartenrand). Er fliegt im Transit 300 kn und kreist mit 200 kn auf einem 3-sm-Kreis um sein Suchgebiet. Ein Einsatz dauert bis zu 5 h einschließlich 15 min Reserve; am Mindestkraftstoff fliegt er selbst zurück. Nach der Landung braucht er 30 min am Boden und fliegt dann noch einmal: 2 Einsätze je Mission mit je 16 Sonarbojen und 2 leichten Torpedos.
+
+- `A` fordert das Flugzeug an (es fliegt zuerst zur Schiffsposition) oder schickt es heim.
+- `W` legt das Suchgebiet auf die geplottete Position des gewählten Tracks (ohne Auswahl auf das Schiff); ein Klick in die Karte legt es auf diesen Punkt. Ein reiner Peilungstrack hat keine Position zum Anfliegen.
+- `Z` plant ein Bojenmuster (Feld, Sperre, Kreis) um das Suchgebiet; das Flugzeug fliegt die Punkte ab und wirft an jedem eine Boje. `Shift+Z` bricht das Muster ab. `X` wirft eine Boje dort, wo das Flugzeug ist, `Y` schaltet seine Bojen zwischen PASSIV und AKTIV.
+- `T` schaltet das Seeraumradar des Flugzeugs. Aus 300 m sieht es Schiffe und aufgetauchte oder mit Mast fahrende U-Boote bis 60 sm (begrenzt durch den Radarhorizont); seine Kontakte erscheinen als `RADAR-MPA`-Tracks mit dem Flugzeug als Beobachter.
+- `D` wirft einen Torpedo auf den zugewiesenen Sonarkontakt. Es gelten dieselben Prüfungen wie beim Helikopter (aktueller, als U-Boot klassifizierter Kontakt, Einsatzregeln, unter Standard-ROE eine frische Ortung), und das Flugzeug muss höchstens 2 sm vom Datum entfernt sein.
+
+Alles, was das Flugzeug erfährt, erreicht das Schiff nur per Datenlink bis 250 sm. Seine Bojen melden nur, solange das Flugzeug höchstens 50 sm von ihnen entfernt ist; fliegt es weg oder landet es, verstummen sie für das Schiff. Die Seitenleiste zeigt Zustand, Peilung und Entfernung, Restzeit auf Station, Vorräte, verbleibende Einsätze und wie viele seiner Bojen übertragen werden.
 
 ### Tasten
 
@@ -629,6 +641,13 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 | `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Kamera-Follow an/aus |
+| `A` | OPZ Seite 3: Seefernaufklärer anfordern / heimschicken |
+| `W` | Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
+| `Z / Shift+Z` | Bojenmuster um das Suchgebiet wechseln / Shift bricht ab |
+| `X` | Eine Boje am Flugzeug werfen |
+| `Y` | Bojenmodus des Flugzeugs PASSIV / AKTIV |
+| `T` | Seeraumradar des Flugzeugs ein/aus |
+| `D` | Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
 
 ### Standardablauf
 
@@ -664,7 +683,8 @@ Ablauf Luftverteidigung (Flugkörper im Anflug):
 
 ### Nicht modelliert
 
-- Keine Sonarbojenverwaltung hier: Bojen gehören zur Helikopterstation.
+- Die Bojen des Helikopters gehören zur Helikopterstation; die OPZ führt nur die Bojen des Seefernaufklärers.
+- Der Seefernaufklärer hat kein Tauchsonar, kein MAD und kein eigenes ESM; er kann nicht abgeschossen werden.
 - Keine automatische sensorübergreifende Korrelation; Fusion ist manuell.
 - Keine Link-gestützte Luftraumführung befreundeter Flugzeuge.
 

@@ -855,6 +855,30 @@ CREW_EFFECT_MIN = 0.5
 CREW_EFFECT_MAX = 1.15
 CREW_SONAR_DB = 10.0               # dB of recognition differential per unit lost
 
+# Maritime patrol aircraft on call (src/air/mpa.py; game assumptions for a
+# P-8-like aircraft: fast transit, slow low search on station).
+MPA_TRANSIT_KN = 300.0
+MPA_STATION_KN = 200.0
+MPA_TURN_DEG_S = 3.0
+MPA_ENDURANCE_S = 5.0 * 3600.0      # fuel from take-off
+MPA_RESERVE_S = 900.0               # landing reserve on top of the way home
+MPA_TURNAROUND_S = 1800.0           # on the ground between sorties
+MPA_SORTIES = 2                     # per mission
+MPA_ARRIVE_NM = 2.0                 # beyond the 1 NM turn radius at 200 kn
+MPA_DROP_POINT_NM = 1.2             # buoy run: released to land on the planned point
+MPA_ORBIT_NM = 3.0
+MPA_BUOYS = 16
+MPA_TORPS = 2
+MPA_ALTITUDE_M = 300.0              # search altitude (radar horizon)
+MPA_RADAR_RANGE_NM = 60.0           # nominal surface-search range, large ship
+MPA_RADAR_LOOK_S = 2.0              # one look per target per scan
+MPA_RADAR_BEARING_ERR_DEG = 1.0
+MPA_RADAR_RANGE_ERR_FRAC = 0.02
+MPA_RELAY_NM = 50.0                 # buoys heard only this close to the aircraft
+MPA_DATALINK_NM = 250.0             # aircraft to ship link (line of sight at altitude)
+MPA_DROP_NM = 2.0                   # torpedo release this close to the datum
+MPA_NO_BASE_OFFSET_NM = 150.0       # no friendly airfield: arrives from the map edge
+
 # Missionstypen: Zeitfenster in Echtzeit-Simulationssekunden.
 # Lange Einsatzfenster lassen Zeit für Aufmerksamkeits- und Suchphasen.
 # win = "sink" (Ziel versenken) oder "survive" (Zeitlimit überstehen)

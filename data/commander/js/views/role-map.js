@@ -24,7 +24,14 @@ export function mapPayload(role) {
       arc: finite(weapons.arc_center_deg) && finite(weapons.arc_width_deg) && weapons.arc_width_deg < 360
         ? {center: weapons.arc_center_deg, width: weapons.arc_width_deg} : null},
       observations: payload.contacts.map((row) => ({...row, domain: "UNKNOWN", affiliation: "UNKNOWN"})),
-      assets: payload.own_weapons, bearingLogs: [], fixes: []};
+      assets: payload.own_weapons,
+      // ESM mapping: the last bearings of each emitter from where the boat
+      // took them, and the crew's cross-fixes with their error ellipse.
+      bearingLogs: payload.esm.emitters.flatMap((row) => row.history.slice(-4).map((item) =>
+        ({observer_x: item.x, observer_y: item.y, bearing: item.bearing, age_s: item.age_s}))).slice(0, 64),
+      fixes: payload.esm.emitters.filter((row) => row.fix).map((row) => ({ref: row.label, display: row.label,
+        x: row.fix.x, y: row.fix.y, uncertainty_nm: row.fix.major_nm,
+        ellipse: {major: row.fix.major_nm, minor: row.fix.minor_nm, axis: row.fix.axis_deg}}))};
   }
   return {own: payload.navigation, observations: payload.tactical,
     assets: [payload.asset, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),
@@ -371,7 +378,13 @@ export function drawRoleMap(role) {
     addRoleMapHit(null, x, y);
     addMapInfo(S.roleMapInfo, x, y, "asset", item);
     plot.context.strokeStyle = item.waypoint ? palette().amber : palette().blue;
-    if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
+    if (item.ellipse) {
+      // Error ellipse: axis is a nautical bearing (0 north, clockwise).
+      plot.context.beginPath();
+      plot.context.ellipse(x, y, Math.max(1, item.ellipse.major * scale), Math.max(1, item.ellipse.minor * scale),
+        (item.ellipse.axis - 90) * Math.PI / 180, 0, Math.PI * 2);
+      plot.context.stroke();
+    } else if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
     plot.context.strokeRect(x - 4, y - 4, 8, 8);
     plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
   }

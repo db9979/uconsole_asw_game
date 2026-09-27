@@ -130,12 +130,12 @@ export function validateV2State(state) {
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
     sonar: ["observations", "settings", "visualization"],
-    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
-    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
-    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
-    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
+    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
     uboot_sonar: ["observations", "settings", "visualization"],
-    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
     weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
   };
   const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
@@ -150,6 +150,11 @@ export function validateV2State(state) {
   const boatFields = {
     plant: ["propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh", "aip_capacity_kwh", "aip_kw", "load_kw", "supply_kw", "net_kw", "empty_s", "full_s", "generator_kw", "fuel_l", "fuel_capacity_l", "charge_rate", "snorkel_rate", "endurance", "air"],
     air: ["o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles", "candle_left_s", "level", "efficiency"],
+    esm: ["mast_up", "mast_s", "mast_time_s", "mast_threat", "mast_radar_nm", "wash", "emitters"],
+    esmEmitter: ["number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band", "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live", "quality", "classification", "candidates", "range_estimate_nm", "mast_threat", "history", "fix"],
+    esmHistory: ["age_s", "x", "y", "bearing"],
+    esmFix: ["x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent"],
+    esmCandidate: ["name", "role"],
   };
   // END GENERATED
   if (!validWeatherStation(state.weather_station, opforRoles.has(state.role), weatherFields)) throw new Error("protocol");
@@ -282,6 +287,29 @@ export function validateV2State(state) {
           [air.absorber_sets, air.candles].some((value) => !Number.isInteger(value) || value < 0) ||
           !["ok", "caution", "danger"].includes(air.level))) ||
         (plant.propulsion === "nuclear") !== (air === null)) throw new Error("protocol");
+    // The boat's own ESM picture: measured parameters, own-position history,
+    // crew cross-fix and library classification (never identity or position).
+    const esm = payload.esm;
+    const nullableNumber = (value) => value === null || finite(value);
+    const candidateOk = (row) => exactKeys(row, boatFields.esmCandidate) && typeof row.name === "string" && row.name.length <= 64 &&
+      typeof row.role === "string" && row.role.length <= 32;
+    if (!exactKeys(esm, boatFields.esm) || typeof esm.mast_up !== "boolean" || typeof esm.mast_threat !== "boolean" ||
+        !nullableNumber(esm.mast_s) || !finite(esm.mast_time_s) || !finite(esm.mast_radar_nm) || !finite(esm.wash) ||
+        !boundedArray(esm.emitters, 16) || esm.emitters.some((row) => !exactKeys(row, boatFields.esmEmitter) ||
+          !Number.isSafeInteger(row.number) || row.number < 1 || typeof row.label !== "string" || row.label.length > 24 ||
+          ["bearing", "bearing_uncertainty_deg", "frequency_hz", "signal_db", "quality"].some((key) => !finite(row[key])) ||
+          [row.prf_hz, row.trend_db_min, row.age_s, row.range_estimate_nm].some((value) => !nullableNumber(value)) ||
+          !["a_c", "d", "e_f", "g_h", "i_j", "k"].includes(row.band) ||
+          !["continuous_wave", "frequency_agile", "pulse", "pulse_doppler", "unknown"].includes(row.modulation) ||
+          ![null, "rising", "steady", "falling"].includes(row.trend) ||
+          typeof row.live !== "boolean" || typeof row.mast_threat !== "boolean" ||
+          (row.classification !== null && !candidateOk(row.classification)) ||
+          !boundedArray(row.candidates, 8) || !row.candidates.every(candidateOk) ||
+          !boundedArray(row.history, 16) || row.history.some((item) => !exactKeys(item, boatFields.esmHistory) ||
+            ["x", "y", "bearing"].some((key) => !finite(item[key])) || !nullableNumber(item.age_s)) ||
+          (row.fix !== null && (!exactKeys(row.fix, boatFields.esmFix) ||
+            ["x", "y", "major_nm", "minor_nm", "axis_deg"].some((key) => !finite(row.fix[key])) ||
+            !Number.isInteger(row.fix.lines) || typeof row.fix.consistent !== "boolean")))) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
         !boundedArray(payload.settings.choices, 8) ||

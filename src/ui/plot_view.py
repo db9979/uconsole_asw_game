@@ -57,8 +57,9 @@ def _dashed(surface, color, start, end, dash=8) -> None:
                          (start[0] + (end[0] - start[0]) * b, start[1] + (end[1] - start[1]) * b))
 
 
-def object_text(game, item):
-    """The chart annotation for one plot object (also used by tests)."""
+def object_text(game, item, own=None):
+    """The chart annotation for one plot object (also used by tests); a DR
+    line's CPA is to ``own`` (default the frigate)."""
     label = raw_text(item["label"])
     kind = item["kind"]
     if kind == "ruler":
@@ -72,16 +73,18 @@ def object_text(game, item):
         return message("plot.label.circle", label=item["label"],
                        range=f"{item['radius_nm']:.1f}")
     if kind == "dr":
-        dist, seconds = plot.cpa(item, game.sim_t, game.ship.x, game.ship.y,
-                                 game.ship.course, game.ship.speed)
+        own = game.ship if own is None else own
+        dist, seconds = plot.cpa(item, game.sim_t, own.x, own.y, own.course, own.speed)
         return message("plot.label.dr", label=item["label"],
                        range=f"{dist:.1f}", minutes=f"{seconds / 60.0:.0f}")
     return label
 
 
-def draw_plot(surface, game, view, chart) -> None:
-    """Draw every plot object plus the plot-mode cursor inside ``chart``."""
-    layer = getattr(game, "plot", None)
+def draw_plot(surface, game, view, chart, layer=None, own=None) -> None:
+    """Draw every plot object plus the plot-mode cursor inside ``chart``;
+    ``layer``/``own`` draw another crew's plot (the crewed boat's)."""
+    boat_layer = layer is not None
+    layer = getattr(game, "plot", None) if layer is None else layer
     if layer is None:
         return
     chart = pygame.Rect(chart)
@@ -121,8 +124,8 @@ def draw_plot(surface, game, view, chart) -> None:
                 pygame.draw.rect(surface, color, (int(cur[0]) - 4, int(cur[1]) - 4, 8, 8), 1)
                 pygame.draw.circle(surface, color, (int(px), int(py)), 3, 1)
                 anchor = cur
-            _label(surface, game, object_text(game, item), anchor, chart)
-        if getattr(game, "plot_mode", False):
+            _label(surface, game, object_text(game, item, own), anchor, chart)
+        if getattr(game, "plot_mode", False) and not boat_layer:
             _draw_cursor(surface, game, view, chart)
 
 

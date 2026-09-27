@@ -47,6 +47,8 @@ export const S = {
   opzSuppressed: new Set(),
   opzManage: false,
   stationDrafts: new Set(),
+  // Emitter the mast station has selected in the boat's ESM list (by number).
+  ubootEsmSelected: null,
   requestQueue: Promise.resolve(),
   activeRequest: null,
   languageRequest: 0,

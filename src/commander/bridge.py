@@ -652,6 +652,18 @@ def _uboot_scope_mark(game, boat, params, _bindings):
     return _uboot_result(opfor.stadimeter(game, boat))
 
 
+def _uboot_esm_classify(game, boat, params, _bindings):
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    return boat.esm.classify(game, params["emitter"], params["candidate"])
+
+
+def _uboot_esm_plot(game, boat, params, _bindings):
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    return boat.esm.to_plot(game, boat, params["emitter"])
+
+
 _UBOOT_ACTION_HANDLERS = {
     "acknowledge": lambda game, boat, params, _bindings: params == {},
     "uboot_set_course": _uboot_set_course,
@@ -669,6 +681,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_bottom": _uboot_bottom,
     "uboot_scope_bearing": _uboot_scope_bearing,
     "uboot_scope_mark": _uboot_scope_mark,
+    "uboot_esm_classify": _uboot_esm_classify,
+    "uboot_esm_plot": _uboot_esm_plot,
 }
 
 

@@ -9,7 +9,7 @@ from copy import deepcopy
 import math
 import weakref
 
-from src.core import config, opfor, plot
+from src.core import boat_esm, config, opfor, plot
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.sonar import analysis_tools
@@ -1292,6 +1292,62 @@ def _uboot_plant(sub):
                  efficiency=_number(air.efficiency())))
 
 
+# Library suggestions per emitter in the browser (the crew picks by index).
+UBOOT_ESM_CANDIDATES = 8
+
+
+def _uboot_esm_candidate(game, key):
+    profile = game.runtime_catalog.emitters.get(key)
+    name = game.eloka_emitter_name(key) or key.rsplit(".", 1)[-1]
+    return dict(name=str(name)[:64], role=str(getattr(profile, "radar_role", "unknown"))[:32])
+
+
+def _uboot_esm(game, boat):
+    """The boat's own ESM picture: mast time and the crew's emitter list
+    (measured parameters, own-position bearing history, crew cross-fix and
+    library classification; never an emitter's identity or position)."""
+    esm, sub, now = boat.esm, boat.sub, game.sim_t
+    sea = float(getattr(game.world, "effective_sea_state", game.world.sea_state))
+    rain = config.clamp(float(getattr(game.world, "rain_intensity", 0.0)), 0.0, 1.0)
+    mast_range = boat_esm.mast_radar_nm(sea, rain)
+    emitters = []
+    threat = False
+    for emitter in esm.ordered()[:config.UBOOT_ESM_EMITTERS_MAX]:
+        track = emitter.track
+        live = esm.live(emitter, now)
+        danger = esm.mast_threat(game, emitter, now, mast_range)
+        threat = threat or danger
+        slope, trend = boat_esm.level_trend(emitter.history, now)
+        fix = emitter.fix(now)
+        emitters.append(dict(
+            number=boat_esm.emitter_number(track.track_key),
+            label=boat_esm.emitter_label(track.track_key),
+            bearing=_number(track.bearing % 360.0),
+            bearing_uncertainty_deg=_number(track.bearing_uncertainty_deg),
+            frequency_hz=_number(track.frequency_hz), band=boat_esm.band(track.frequency_hz),
+            prf_hz=_number(track.prf_hz), modulation=track.modulation_code,
+            signal_db=_number(track.signal_db), trend=trend, trend_db_min=_number(slope),
+            age_s=_age(now, track.last_seen), live=live,
+            quality=_number(track.display_quality(now, config.UBOOT_ESM_MEMORY_S)),
+            classification=(None if esm.classified(game, emitter) is None
+                            else _uboot_esm_candidate(game, emitter.label)),
+            candidates=[_uboot_esm_candidate(game, key)
+                        for key in esm.library(game, emitter)[:UBOOT_ESM_CANDIDATES]],
+            range_estimate_nm=_number(esm.range_estimate_nm(game, emitter)),
+            mast_threat=danger,
+            history=[dict(age_s=_age(now, row[0]), x=_number(row[1]), y=_number(row[2]),
+                          bearing=_number(row[3])) for row in emitter.history[-16:]],
+            fix=None if fix is None else dict(
+                x=_number(fix["x"]), y=_number(fix["y"]), major_nm=_number(fix["major_nm"]),
+                minor_nm=_number(fix["minor_nm"]), axis_deg=_number(fix["axis_deg"]),
+                lines=int(fix["lines"]), consistent=bool(fix["consistent"]))))
+    mast_s = esm.mast_time_s(now)
+    return dict(mast_up=esm.mast_since is not None, mast_s=_number(mast_s),
+                mast_time_s=_number(boat_esm.recommended_mast_time_s(sea, rain, threat)),
+                mast_threat=threat, mast_radar_nm=_number(mast_range),
+                wash=_number(boat_esm.wash_fraction(sea)), emitters=emitters)
+
+
 def _uboot(game, boat, rows, target_ref, asset_refs):
     """The crewed submarine's commander: own boat (legitimate truth), its
     orders, weapons and the boat's own sonar contacts."""
@@ -1365,6 +1421,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         designated_target_ref=target_ref,
         scope=_uboot_scope(game, boat),
         plant=_uboot_plant(sub),
+        esm=_uboot_esm(game, boat),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

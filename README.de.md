@@ -30,10 +30,10 @@ Sprachfunk ab Start; und eine Missionslaufzeit im Umfang des Editors
 (Referenzsektoren, Schützen- und Erreichen-Ziele, Zufallsgruppen,
 zeitgesteuerte Ereignisse, eingestelltes Wetter, platzierte Luftfahrzeuge,
 Tiere und Täuschkörper). Der Kern ist in Mixins zerlegt, die Testsuite läuft
-parallel. **Spielstände haben das Format v17 (Diesel, Laderate und Luftvorräte der
-U-Boote, Crew-Zustand des Bootes, Sehrohr-Sichtungen, Waffeneinstellungen,
-Missionsereignisse, fremde Pings auf dem Weg zur Fregatte); v16-Stände werden
-abgewiesen.**
+parallel. **Spielstände haben das Format v18 (ESM-Bild des besetzten Boots,
+Diesel, Laderate und Luftvorräte der U-Boote, Crew-Zustand des Bootes,
+Sehrohr-Sichtungen, Waffeneinstellungen, Missionsereignisse, fremde Pings auf
+dem Weg zur Fregatte); v17 und ältere Stände werden abgewiesen.**
 
 Version 1.2.0 verbessert den Spielfluss und die Übergabe zwischen den
 Stationen: Der `Esc`-Dialog und das Missionsende führen zurück ins Hauptmenü
@@ -357,7 +357,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v17 gespeichert.
+v18 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -491,10 +491,11 @@ Validiert bedeutet nicht, dass ein Wert zur Laufzeit wirksam ist. In Version
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v17**. V17
-verlangt das exakte Schema `u-jagd-save-v17` einschließlich des aktuellen
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v18**. V18
+verlangt das exakte Schema `u-jagd-save-v18` einschließlich des aktuellen
 Schnappschusses des Laufzeitkatalogs, des gesamten Zustands für die
-deterministische Fortsetzung, des Crew-Zustands des besetzten Boots, von
+deterministische Fortsetzung, des Crew-Zustands des besetzten Boots mit seinem
+ESM-Bild, von
 Diesel, Laderate und Luftvorräten jedes konventionellen U-Boots und der fremden
 Aktivpings, deren Schall noch zur Fregatte unterwegs ist. Ältere (auch alle v11-Spielstände von 1.0.0),
 neuere, fehlerhafte oder unvollständige Spielstände werden ohne Migration

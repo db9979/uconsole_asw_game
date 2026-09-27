@@ -38,7 +38,8 @@ WEATHER_BOAT_FIELDS = (
     "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz")
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
-                        "own_weapons", "designated_target_ref", "feed", "scope", "plant")
+                        "own_weapons", "designated_target_ref", "feed", "scope", "plant",
+                        "esm")
 # The boat's plant and stores (``plant``): numbers, then the air block.
 UBOOT_PLANT_FIELDS = (
     "propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh",
@@ -47,6 +48,18 @@ UBOOT_PLANT_FIELDS = (
     "snorkel_rate", "endurance", "air")
 UBOOT_AIR_FIELDS = ("o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles",
                     "candle_left_s", "level", "efficiency")
+# The boat's own ESM picture (``esm``): mast state, then one row per emitter
+# with its bearing history (own positions) and the crew's cross-fix.
+UBOOT_ESM_FIELDS = ("mast_up", "mast_s", "mast_time_s", "mast_threat", "mast_radar_nm",
+                    "wash", "emitters")
+UBOOT_ESM_EMITTER_FIELDS = (
+    "number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band",
+    "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live",
+    "quality", "classification", "candidates", "range_estimate_nm", "mast_threat",
+    "history", "fix")
+UBOOT_ESM_HISTORY_FIELDS = ("age_s", "x", "y", "bearing")
+UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role")
+UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")
 # Top-level keys of every role payload (exact sets on both sides).
 ROLE_SHAPES = {
     "bridge": ("navigation", "orders", "threat", "systems", "tactical_summary", "sightings"),

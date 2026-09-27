@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
-import { duration, number, t, unit } from "../core/format.js";
+import { duration, number, stateText, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
 
@@ -191,6 +191,76 @@ function renderSupply(plant) {
   $("uboot-air-warning").textContent = warning;
 }
 
+// The mast station's ESM picture: mast time, the crew's emitter list and
+// the selected emitter's evaluation (classification, cross-fix, plot).
+const bandText = (band) => String(band || "").toUpperCase().replace("_", "/");
+const bearingText = (value) => `${number(value, 0).padStart(3, "0")}\u00b0`;
+const esmSelected = (esm) => esm.emitters.find((row) => row.number === S.ubootEsmSelected) || null;
+const trendText = (row) => row.trend === null ? "\u2013"
+  : `${t(`uboot_esm_trend_${row.trend}`)} ${number(row.trend_db_min, 1)}`;
+const fixText = (fix) => fix === null ? "\u2013" : t("uboot_esm_fix_value",
+  {x: number(fix.x, 1), y: number(fix.y, 1), major: number(fix.major_nm, 1), minor: number(fix.minor_nm, 1)});
+function renderEsm(esm, status) {
+  const over = esm.mast_up && esm.mast_s > esm.mast_time_s;
+  const mast = $("uboot-esm-mast");
+  mast.dataset.level = esm.mast_threat ? "alarm" : over ? "caution" : "ok";
+  metrics(mast, [["uboot_mast", yesNo(status.mast)],
+    ["uboot_esm_mast_time", esm.mast_up ? t("uboot_esm_mast_time_value", {elapsed: number(esm.mast_s, 0), limit: number(esm.mast_time_s, 0)})
+      : t("uboot_esm_mast_time_limit", {limit: number(esm.mast_time_s, 0)})],
+    ["uboot_esm_mast_radar", unit(esm.mast_radar_nm, "NM")],
+    ["uboot_esm_wash", unit(esm.wash * 100, "%", 0)]]);
+  const warning = esm.mast_threat ? t("uboot_esm_threat_warning") : over ? t("uboot_esm_overtime_warning") : "";
+  $("uboot-esm-warning").hidden = !warning;
+  $("uboot-esm-warning").textContent = warning;
+  if (!esmSelected(esm)) S.ubootEsmSelected = esm.emitters[0]?.number ?? null;
+  $("uboot-esm-emitters").replaceChildren(...esm.emitters.map((row) => {
+    const line = document.createElement("tr");
+    line.dataset.live = String(row.live);
+    line.dataset.threat = String(row.mast_threat);
+    line.setAttribute("aria-selected", String(row.number === S.ubootEsmSelected));
+    const pick = node("button", row.label);
+    pick.type = "button";
+    pick.dataset.ubootEsmEmitter = String(row.number);
+    pick.setAttribute("aria-label", t("uboot_esm_select", {label: row.label}));
+    const first = document.createElement("td");
+    first.append(pick);
+    line.append(first, ...[bearingText(row.bearing), bandText(row.band),
+      number(row.signal_db, 0), trendText(row), row.classification ? row.classification.name : "\u2013",
+      row.fix ? unit(row.fix.major_nm, "NM") : "\u2013"].map((text) => node("td", text)));
+    return line;
+  }));
+  $("uboot-esm-empty").hidden = esm.emitters.length > 0;
+  $("uboot-esm-empty").textContent = status.mast ? t("uboot_esm_none") : t("uboot_esm_mast_down");
+  const row = esmSelected(esm);
+  $("uboot-esm-detail").hidden = row === null;
+  if (row === null) return;
+  $("uboot-esm-detail-title").textContent = t("uboot_esm_detail_title", {label: row.label});
+  metrics($("uboot-esm-detail-metrics"), [
+    ["bearing", `${bearingText(row.bearing)} \u00b1${number(row.bearing_uncertainty_deg, 1)}`],
+    ["frequency", unit(row.frequency_hz / 1e9, "GHz", 2)], ["uboot_esm_col_band", bandText(row.band)],
+    ["prf", row.prf_hz === null ? t("unavailable") : unit(row.prf_hz, "Hz", 0)],
+    ["modulation", stateText("uboot_esm_mod", row.modulation)],
+    ["uboot_esm_col_level", unit(row.signal_db, "dB", 0)], ["uboot_esm_col_trend", trendText(row)],
+    ["age", unit(row.age_s, "s", 0)],
+    ["uboot_esm_range", t("uboot_esm_range_value", {range: number(row.range_estimate_nm, 1)})],
+    ["uboot_esm_col_fix", row.fix ? fixText(row.fix) : t("uboot_esm_no_fix")],
+    ["uboot_esm_fix_state", row.fix === null ? t("unavailable") : t(row.fix.consistent ? "uboot_esm_fix_consistent" : "uboot_esm_fix_inconsistent", {lines: row.fix.lines})],
+    ["uboot_esm_col_class", row.classification ? `${row.classification.name} (${stateText("uboot_esm_role", row.classification.role)})` : t("uboot_esm_unclassified")]]);
+  const select = $("uboot-esm-class");
+  if (!S.stationDrafts.has("uboot-esm-class") || select.dataset.emitter !== String(row.number)) {
+    S.stationDrafts.delete("uboot-esm-class");
+    select.dataset.emitter = String(row.number);
+    const options = [Object.assign(document.createElement("option"), {value: "-1", textContent: t("uboot_esm_unclassified")}),
+      ...row.candidates.map((candidate, index) => Object.assign(document.createElement("option"),
+        {value: String(index), textContent: `${candidate.name} (${stateText("uboot_esm_role", candidate.role)})`}))];
+    select.replaceChildren(...options);
+    const current = row.classification ? row.candidates.findIndex((candidate) =>
+      candidate.name === row.classification.name && candidate.role === row.classification.role) : -1;
+    select.value = String(current);
+  }
+  $("uboot-esm-plot").textContent = t(row.fix ? "uboot_esm_to_plot_fix" : "uboot_esm_to_plot_bearing");
+}
+
 export function renderUbootStation(payload) {
   showStationCards(S.v2State?.role || "uboot");
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
@@ -226,12 +296,10 @@ export function renderUbootStation(payload) {
     ["uboot_tubes_ready", number(weapons.tubes_ready, 0)], ["reload", unit(weapons.reload_s, "s", 0)],
     ["uboot_decoys", number(weapons.decoys, 0)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
-  metrics($("uboot-alarms"), [["uboot_mast", yesNo(status.mast)],
+  metrics($("uboot-alarms"), [
     ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
-  stationRows($("uboot-esm"), alarms.esm.map((row, index) => ({...row, key: index})),
-    (row) => [["bearing", unit(row.bearing, "°", 0)], ["quality", unit(row.quality * 100, "%", 0)], ["age", unit(row.age_s, "s", 0)]],
-    status.mast ? "uboot_esm_none" : "uboot_esm_mast_down");
+  renderEsm(payload.esm, status);
   document.body.classList.toggle("uboot-torpedo-alarm", alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 60);
   if (!S.stationDrafts.has("uboot-depth")) $("uboot-depth").max = String(nav.max_depth_m);
   if (!S.stationDrafts.has("uboot-speed")) $("uboot-speed").max = String(nav.max_speed_kn);
@@ -255,4 +323,13 @@ export function renderUbootStation(payload) {
   drawBoatEsm("uboot-esm-canvas", payload);
   renderScope(payload);
   renderSupply(payload.plant);
+}
+
+// Redraw the boat instruments only, when a canvas changes size: one that was
+// 0x0 at the last state push (layout still settling) would otherwise stay blank.
+export function drawUbootGraphics(payload) {
+  if (!payload?.esm) return;
+  drawBoatDepth("uboot-depth-canvas", payload);
+  drawBoatEsm("uboot-esm-canvas", payload);
+  drawBoatScope("uboot-scope-canvas", payload);
 }

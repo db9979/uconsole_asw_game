@@ -89,18 +89,28 @@ export function drawBoatEsm(id, payload) {
   g.strokeStyle = colors.blue; g.lineWidth = 2;
   const [hx, hy] = at(nav.course, radius * .35);
   g.beginPath(); g.moveTo(cx, cy); g.lineTo(hx, hy); g.stroke();
-  // ESM strobes (only with the mast up).
-  for (const row of alarms.esm) {
-    const fresh = Math.max(.25, 1 - row.age_s / 60);
-    g.globalAlpha = .18 * fresh; g.fillStyle = colors.amber;
-    g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, radius, rad(row.bearing - 4), rad(row.bearing + 4)); g.closePath(); g.fill();
-    g.globalAlpha = fresh; g.strokeStyle = colors.amber; g.lineWidth = 2;
+  // ESM strobes per emitter: live ones bright with their number, remembered
+  // ones faint (the crew's list survives the mast going down).
+  // Emitters on nearly the same bearing get their labels stepped inwards.
+  const steps = new Map();
+  let previous = null, step = 0;
+  for (const row of [...payload.esm.emitters].sort((a, b) => a.bearing - b.bearing)) {
+    step = previous !== null && row.bearing - previous < 8 ? step + 1 : 0;
+    steps.set(row, step); previous = row.bearing;
+  }
+  for (const row of payload.esm.emitters) {
+    const fresh = row.live ? 1 : .3;
+    const color = row.mast_threat ? colors.red : colors.amber;
+    const spread = Math.max(2, row.bearing_uncertainty_deg * 1.7);
+    g.globalAlpha = .16 * fresh; g.fillStyle = color;
+    g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, radius, rad(row.bearing - spread), rad(row.bearing + spread)); g.closePath(); g.fill();
+    g.globalAlpha = fresh; g.strokeStyle = color; g.lineWidth = row.live ? 2 : 1;
     const [x, y] = at(row.bearing, radius);
     g.beginPath(); g.moveTo(cx, cy); g.lineTo(x, y); g.stroke();
-    const [lx, ly] = at(row.bearing, radius * .8);
+    const [lx, ly] = at(row.bearing, Math.max(radius * .3, radius * .82 - steps.get(row) * 16));
     const across = rad(row.bearing) + Math.PI / 2;
-    label(g, `${number(row.bearing, 0).padStart(3, "0")}\u00b0`, lx + Math.cos(across) * 12,
-      ly + Math.sin(across) * 12, colors.amber, "center");
+    label(g, `${row.label} ${number(row.bearing, 0).padStart(3, "0")}\u00b0`, lx + Math.cos(across) * 14,
+      ly + Math.sin(across) * 14, color, "center");
     g.globalAlpha = 1;
   }
   const alarm = (age, bearing, color, key) => {
@@ -118,7 +128,7 @@ export function drawBoatEsm(id, payload) {
   alarm(alarms.ping_age_s, alarms.ping_bearing, colors.amber, "uboot_rose_ping");
   alarm(alarms.torpedo_age_s, alarms.torpedo_bearing, colors.red, "uboot_rose_torpedo");
   if (!status.mast) label(g, t("uboot_esm_mast_down"), cx, cy + radius * .6, colors.muted, "center");
-  else if (!alarms.esm.length) label(g, t("uboot_esm_none"), cx, cy + radius * .6, colors.muted, "center");
+  else if (!payload.esm.emitters.length) label(g, t("uboot_esm_none"), cx, cy + radius * .6, colors.muted, "center");
   if (!finite(nav.course)) drawEmpty(plot);
 }
 

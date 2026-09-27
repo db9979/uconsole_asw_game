@@ -13,6 +13,7 @@ import math
 from src.core import config
 from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController
+from src.core.boat_esm import BoatESM
 from src.core import opfor
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
@@ -81,7 +82,7 @@ def _valid_difficulty_dict(value) -> bool:
 
 
 def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
-                      bounded, identity, finite_number, sim_t) -> bool:
+                      bounded, identity, finite_number, sim_t, emitter_keys) -> bool:
     """Exact save v15 ``crew`` block: None, or the crewed boat's binding.
 
     Every reference (boat, torpedoes, contacts) must point at an entity of
@@ -134,12 +135,6 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
                    or not bounded(row[0], 0.0, 360.0) or row[0] >= 360.0
                    or not bounded(row[1], 0.0, 1e6) or not bounded(row[2], 0.0, 1e12)
                    for row in esm)):
-        return False
-    seen = orders["esm_seen"]
-    if (not isinstance(seen, list) or len(seen) > 256
-            or any(not ((isinstance(item, str) and len(item) <= 64)
-                        or identity(item)) for item in seen)
-            or len(set(map(str, seen))) != len(seen)):
         return False
     own_torpedo_ids = {OWN_TORPEDO_TARGET_BASE + row.get("idx")
                        for row in data.get("torpedoes_in_flight", ())
@@ -211,6 +206,7 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
     if (type(crew["command_page"]) is not int or not 0 <= crew["command_page"] < 8
             or type(crew["chart_follow"]) is not bool
             or not PlotLayer.valid_save(crew["plot"])
+            or not BoatESM.valid_save(crew["esm"], sim_t, emitter_keys)
             or not bounded(crew["hold_s"], 0.0, config.UBOOT_RESTORE_HOLD_S)
             or type(crew["feed_seq"]) is not int
             or not 0 <= crew["feed_seq"] <= 10**9):
@@ -1977,6 +1973,8 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             data, valid_sonar=valid_sonar,
             valid_sonar_controls=valid_sonar_controls,
             entity_ids=entity_ids, bounded=bounded, identity=identity,
-            finite_number=finite_number, sim_t=save_sim_t):
+            finite_number=finite_number, sim_t=save_sim_t,
+            emitter_keys=frozenset(key for key, emitter in runtime_catalog.emitters.items()
+                                   if emitter.domain == "radar")):
         return False
     return True

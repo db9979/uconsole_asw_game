@@ -281,6 +281,19 @@ def _uboot_scope_params(params):
             and 0 <= params["relative_deg"] < 360)
 
 
+def _uboot_esm_emitter_params(params):
+    """One emitter of the boat's ESM list, by the crew's running number."""
+    return (type(params) is dict and set(params) == {"emitter"}
+            and type(params["emitter"]) is int and 1 <= params["emitter"] <= 2**53)
+
+
+def _uboot_esm_classify_params(params):
+    """Classify an emitter from its library suggestions (-1 clears it)."""
+    return (type(params) is dict and set(params) == {"emitter", "candidate"}
+            and type(params["emitter"]) is int and 1 <= params["emitter"] <= 2**53
+            and type(params["candidate"]) is int and -1 <= params["candidate"] < 16)
+
+
 def _uboot_wire_params(params):
     """Steer a wired crew torpedo: its ref and the new datum from the boat."""
     return (type(params) is dict and set(params) == {"ref", "bearing", "range_nm"}
@@ -568,6 +581,10 @@ V2_ACTION_REGISTRY = {
     # The periscope: Command and the mast station train it and read the stadimeter.
     "uboot_scope_bearing": V2Action(frozenset({"uboot", "uboot_esm"}), _uboot_scope_params),
     "uboot_scope_mark": V2Action(frozenset({"uboot", "uboot_esm"}), _no_params),
+    # The mast station evaluates its ESM picture: classify, transfer to the plot.
+    "uboot_esm_classify": V2Action(frozenset({"uboot", "uboot_esm"}),
+                                   _uboot_esm_classify_params),
+    "uboot_esm_plot": V2Action(frozenset({"uboot", "uboot_esm"}), _uboot_esm_emitter_params),
 }
 
 

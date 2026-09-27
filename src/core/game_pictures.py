@@ -1305,21 +1305,12 @@ class PicturesMixin:
           no rain) per sonar band; it masks the boat from passive sonar and
           dampens the boat's own listening alike.
         * Snorkel: speed ceiling, radiated penalty and diesel lines."""
+        from src.core.boat_esm import mast_radar_nm
         from src.core.game_sim import LOOKOUT_MODEL
-        from src.sensors import radar as radar_physics
         from src.sonar import equation as sonar_equation
         world = self.world
         sea = float(getattr(world, "effective_sea_state", world.sea_state))
         rain = config.clamp(float(getattr(world, "rain_intensity", 0.0)), 0.0, 1.0)
-        horizon = config.radar_horizon_nm(config.RADAR_ANTENNA_HEIGHT_M,
-                                          config.SUB_MAST_HEIGHT_M)
-        nominal = config.RADAR_SURFACE_RANGE_NM
-
-        def mast_radar(sea_state, rain_intensity):
-            return min(horizon, nominal * radar_physics.detection_fraction(
-                "surface", sea_state, rain_intensity, nominal,
-                rcs_factor=config.SUB_MAST_RCS_FACTOR))
-
         light = self._lookout_environment()
         bands = tuple(float(band) for band in sonar_equation.BANDS_HZ)
         excess = [sonar_equation.ambient_noise_db(band, sea, rain)
@@ -1327,8 +1318,8 @@ class PicturesMixin:
                       band, sonar_equation.REFERENCE_SEA_STATE, 0.0)
                   for band in bands]
         return dict(
-            mast_radar_nm=mast_radar(sea, rain),
-            mast_radar_calm_nm=mast_radar(0.0, 0.0),
+            mast_radar_nm=mast_radar_nm(sea, rain),
+            mast_radar_calm_nm=mast_radar_nm(0.0, 0.0),
             sighting_nm=LOOKOUT_MODEL.sighting_range_nm("SUB", **light),
             sighting_ref_nm=float(config.LOOKOUT_SUB_RANGE_NM),
             ambient_bands_hz=list(bands), ambient_excess_db=excess,

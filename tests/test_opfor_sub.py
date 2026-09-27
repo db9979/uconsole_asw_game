@@ -702,7 +702,6 @@ def test_alarm_bearings_are_measured_noisy_and_deterministic():
 
 
 def test_mast_only_at_periscope_depth_lowers_itself_and_reports_esm():
-    from types import SimpleNamespace
     from src.sensors.platform import MAST_DEPTH_M
     game, _server, _bridge = _crewed()
     boat = game.opfor
@@ -711,18 +710,19 @@ def test_mast_only_at_periscope_depth_lowers_itself_and_reports_esm():
     assert sub.command_mast(True) == "uboot_mast_depth"
     sub.depth = sub.target_depth = sub.order_depth = MAST_DEPTH_M - 3.0
     assert sub.command_mast(True) is True and boat.orders.mast
-    # A radar intercept from the boat's own ESM picture reaches the crew.
-    fake = SimpleNamespace(track_id="esm-1", bearing=47.0, quality=0.8, last_seen=game.sim_t)
-    picture = sub.sensor_suite.local_picture
-    original = picture.tracks
-    picture.tracks = lambda now, domains=None: [fake] if domains == ("esm",) else original(now, domains)
-    _run(game, 0.5)
-    assert [row[0] for row in boat.orders.esm] == [47.0]
-    assert any("radar searching, bearing 047" in text for text in _feed_texts(game))
-    # Diving lowers the mast by itself; the ESM picture clears.
+    # The boat's own ESM hears the frigate's radar inside the radar horizon.
+    sub.x, sub.y = game.ship.x + 8.0, game.ship.y
+    game.surface_radar_on = True
+    _run(game, 5.0)
+    assert boat.orders.esm
+    assert any(abs(config.angle_diff_deg(row[0], 270.0)) < 6.0 for row in boat.orders.esm)
+    assert any("new emitter E1" in text for text in _feed_texts(game))
+    # Diving lowers the mast by itself; the live intercepts clear but the
+    # crew's emitter list is kept for the next mast period.
     sub.set_orders(depth=80.0)
     _run(game, 60)
     assert not boat.orders.mast and boat.orders.esm == []
+    assert boat.esm.emitters and boat.esm.mast_since is None
     assert any("mast lowered" in text for text in _feed_texts(game))
 
 

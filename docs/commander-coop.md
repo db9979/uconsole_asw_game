@@ -191,8 +191,18 @@ unchanged. A new connection never inherits the previous connection's grant.
 
 Clients, workers, histories, projections, and command queues are hard-bounded.
 Snapshots normally publish twice per real second, with immediate important
-transitions. This is not an Internet-facing service, VPN product, or remote
-desktop. See commander-protocol.md for the exact boundary.
+transitions. A browser with an active station also opens the state push
+(`/ws/v2/state`, subprotocol `u-jagd-state-v2`, same cookie and Origin rules
+as the sonar stream): the host sends that station's projection, byte-identical
+to `GET /api/v2/state`, whenever it changes, at most four times per second,
+with a heartbeat every 2 s while nothing changes, and only the latest state is
+ever queued for a slow client. The browser keeps polling session metadata,
+chart and feeds on a slower cadence while the push is healthy; after two missed
+heartbeats it is back on its normal polling and retries the push every 10 s.
+The push closes on role loss, world replacement and the host's push switch
+(`CommanderServer.set_state_push`, never persisted). This is not an
+Internet-facing service, VPN product, or remote desktop. See
+commander-protocol.md for the exact boundary.
 
 ## Abnahme / Pause
 

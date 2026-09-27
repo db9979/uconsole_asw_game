@@ -1403,6 +1403,39 @@ Notizen Phase 10:
 - Handbuch: 00-quickstart (Option), 01-bridge (Toenung, Wetterband,
   Horizontstreifen) EN/DE.
 
+| 11 Web-Client | teilweise (OffscreenCanvas zurueckgestellt) | siehe `git log` | `tests/test_commander_state_push.py` 3, Chromium-Push-Test, Assets/Projektionen gruen | A11.3 OffscreenCanvas nicht gebaut; Host-CPU Push gegen Poll auf Hardware |
+
+Notizen Phase 11:
+
+- A11.1 abweichend: `schema.js` bleibt handgeschrieben (Validierungslogik),
+  nur der Block zwischen `BEGIN/END GENERATED` (Rollenformen und
+  Zeilenfelder) wird von `tools/gen_web_schema.py` aus
+  `src/commander/v2/schema.py` gerendert; `projections.py` importiert die
+  Feldtupel von dort. `--check` in AGENTS-Befehlsliste; deterministisch
+  (sortierte Rollen, LF).
+- A11.2 `/ws/v2/state` (`u-jagd-state-v2`): `routes._state_websocket`
+  (gleiche Origin/Cookie/Subprotokoll-Pruefung wie der Sonarstrom), Bytes
+  identisch zu `GET /api/v2/state` (Kompaktform fuer Sonar mit laufendem
+  Strom), 4 Hz, Heartbeat 2 s, nur der letzte Zustand wird gehalten (statt
+  Queue 8 mit Verwerfen der aeltesten: dieselbe Wirkung, kein Puffer).
+  `CommanderServer._state_push_sequence` (Publish, Aktivierung, Revoke),
+  `set_state_push(enabled)` als Host-Schalter (Test/F9-Kandidat),
+  `_websocket_frame` mit 64-Bit-Laenge bis `STATE_MAX_BYTES`. Client
+  `net/push.js`: `poll()` nimmt `takePushedState()` statt `/state`, Takt
+  2,5 s bei gesundem Push (Praesenz/Chart/Feeds), sonst 500 ms; zwei
+  verpasste Heartbeats = ungesund, Wiederverbindung alle 10 s;
+  `document.body.dataset.push` fuer Tests.
+- A11.3 abweichend: kein OffscreenCanvas (ohne Worker kein Gewinn,
+  Worker-Umbau des Wasserfalls zu gross fuer diese Nacht). Stattdessen
+  Bounds-Culling der Tracks in Weltkoordinaten vor der Punkttransformation
+  (`chart.js`) und Frame-Zeit-Sonde `window.uJagdChartTiming`; der
+  Chromium-Push-Test misst bei 2560x1440 und protokolliert den Mittelwert
+  (Headless-Softwarerendering: 42 Frames, Mittel 0,02 ms, Maximum 0,9 ms am
+  2026-09-27; die Hardware-Zahl bleibt Pruefpunkt).
+- `tests/test_opfor_sub.py::test_options_page_two_...` erwartet seit Phase 10
+  die zwei Zeilen der Optionsseite 2 (in diesem Commit nachgezogen).
+- Keine neuen Texte im Client (A11.4 leer).
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

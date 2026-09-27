@@ -209,6 +209,11 @@ class CommanderServer:
         self._uboot_stream_payload = None
         self._sonar_stream_condition = threading.Condition(self._lock)
         self._sonar_stream_clients = {}
+        # State push: bumps on every publish and authority change; one
+        # socket per session (digest -> client token).
+        self._state_push_sequence = 0
+        self._state_push_clients = {}
+        self._state_push_enabled = True
         self._voice_enabled = False
         self._voice_peers = {}
         self._voice_talker = None
@@ -371,8 +376,10 @@ class CommanderServer:
         self._sonar_stream_payload = None
         self._uboot_stream_context = None
         self._uboot_stream_payload = None
+        self._state_push_sequence += 1
         self._sonar_stream_condition.notify_all()
         self._sonar_stream_clients.clear()
+        self._state_push_clients.clear()
         for session in self._sessions_v2.values():
             self._clear_session_authority_locked(session, "session_revoked")
         self._sessions_v2.clear()
@@ -508,6 +515,7 @@ class CommanderServer:
         session["active_station"] = station
         session["active_generation"] += 1
         session["held_commands"].clear()
+        self._state_push_sequence += 1
         self._sonar_stream_condition.notify_all()
         return True
 
@@ -937,6 +945,20 @@ class CommanderServer:
                     self._release_station_locked(session, station, "session_revoked")
                 self._solo_grant_all_locked(session, active)
 
+    def set_state_push(self, enabled: bool) -> None:
+        """Host switch of the state push route; off closes every push socket
+        and the browsers fall back to polling (never persisted)."""
+        with self._sonar_stream_condition:
+            self._state_push_enabled = bool(enabled)
+            self._state_push_sequence += 1
+            if not enabled:
+                self._state_push_clients.clear()
+            self._sonar_stream_condition.notify_all()
+
+    def state_push_clients(self) -> int:
+        with self._lock:
+            return len(self._state_push_clients)
+
     def client_statuses(self) -> list[dict]:
         """Return a detached, deterministic local-host roster."""
         with self._lock:
@@ -1331,6 +1353,7 @@ class CommanderServer:
             self._v2_charts = encoded_charts
             self._v2_sonar_compact_state = compact_sonar or encoded_states["sonar"]
             self._sonar_stream_sequence += 1
+            self._state_push_sequence += 1
             packed = (_sonar_stream_payload(states["sonar"],
                                              self._sonar_stream_sequence)
                       if states["sonar"].get("role") == "sonar" else None)

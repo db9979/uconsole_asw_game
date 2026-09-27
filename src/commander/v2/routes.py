@@ -36,6 +36,11 @@ from src.commander.v2.wire import (
     SONAR_ROLES,
     SONAR_SCOPE_ROUTES,
     SONAR_STREAM_ROUTE,
+    STATE_PUSH_HEARTBEAT,
+    STATE_PUSH_HEARTBEAT_S,
+    STATE_PUSH_MAX_HZ,
+    STATE_PUSH_PROTOCOL,
+    STATE_PUSH_ROUTE,
     STATIONS,
     VOICE_STREAM_ROUTE,
     _AUDIO_POLL_ROUTES,
@@ -534,6 +539,116 @@ class _Handler(BaseHTTPRequestHandler):
                 pass
         self.close_connection = True
 
+    def _state_websocket(self):
+        """Push the active role's projection to one client as it changes.
+
+        Same bytes as ``GET /api/v2/state`` (the compact sonar view while the
+        client streams sonar), at most ``STATE_PUSH_MAX_HZ``, a heartbeat every
+        ``STATE_PUSH_HEARTBEAT_S`` while nothing changes; only the latest state
+        is ever queued (a slow client skips intermediate states).  Closes on
+        role loss, world replacement or the host's push switch.
+        """
+        owner = self.server.owner
+        allowed_origins = self.server.allowed_origins(self.headers.get("Host"))
+        if (self.headers.get("Origin") not in allowed_origins
+                or self.headers.get("Upgrade", "").lower() != "websocket"
+                or "upgrade" not in {item.strip().lower() for item in
+                                      self.headers.get("Connection", "").split(",")}
+                or self.headers.get("Sec-WebSocket-Version") != "13"
+                or self.headers.get("Sec-WebSocket-Protocol") != STATE_PUSH_PROTOCOL):
+            self.send_error(400)
+            return
+        key = self.headers.get("Sec-WebSocket-Key")
+        try:
+            decoded_key = base64.b64decode(key or "", validate=True)
+        except (ValueError, TypeError):
+            decoded_key = b""
+        if len(decoded_key) != 16:
+            self.send_error(400)
+            return
+        client_token = object()
+        with owner._lock:
+            owner._expire_locked()
+            try:
+                session, digest, presented = self._authenticated_v2_locked(renew=True)
+            except (UnicodeEncodeError, ValueError):
+                self.send_error(400)
+                return
+            if session is None:
+                self._v2_unauthorized(presented)
+                return
+            role = session["active_station"]
+            lease = session["leases"].get(role)
+            if not owner._state_push_enabled or role not in ROLES or lease is None:
+                self.send_error(403)
+                return
+            if digest in owner._state_push_clients:
+                self._reply(409, {"error": "push_exists"})
+                return
+            station_generation = lease["generation"]
+            active_generation = session["active_generation"]
+            owner._state_push_clients[digest] = client_token
+        accept = base64.b64encode(hashlib.sha1(
+            key.encode("ascii") + _WEBSOCKET_GUID).digest()).decode("ascii")
+        self.send_response_only(101)
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", accept)
+        self.send_header("Sec-WebSocket-Protocol", STATE_PUSH_PROTOCOL)
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if not self.server.mark_upgraded():
+            return
+        last_sequence = -1
+        last_sent = 0.0
+        min_interval = 1.0 / STATE_PUSH_MAX_HZ
+        try:
+            while True:
+                with owner._sonar_stream_condition:
+                    owner._expire_locked()
+                    current = owner._sessions_v2.get(digest)
+                    lease = None if current is None else current["leases"].get(role)
+                    valid = (owner._running and owner._state_push_enabled
+                             and current is session
+                             and owner._state_push_clients.get(digest) is client_token
+                             and current["active_station"] == role
+                             and lease is not None
+                             and lease["generation"] == station_generation
+                             and current["active_generation"] == active_generation)
+                    if not valid:
+                        break
+                    now = time.monotonic()
+                    if owner._state_push_sequence == last_sequence:
+                        if now - last_sent >= STATE_PUSH_HEARTBEAT_S:
+                            payload = STATE_PUSH_HEARTBEAT
+                        else:
+                            owner._sonar_stream_condition.wait(
+                                timeout=max(0.05, STATE_PUSH_HEARTBEAT_S - (now - last_sent)))
+                            continue
+                    elif now - last_sent < min_interval:
+                        owner._sonar_stream_condition.wait(timeout=min_interval - (now - last_sent))
+                        continue
+                    else:
+                        last_sequence = owner._state_push_sequence
+                        payload = (owner._v2_sonar_compact_state
+                                   if role == "sonar" and digest in owner._sonar_stream_clients
+                                   else owner._v2_states[role])
+                    current["last_get"] = now
+                    last_sent = now
+                self.connection.sendall(_websocket_frame(payload, opcode=1))
+        except (OSError, TimeoutError, ValueError):
+            pass
+        finally:
+            with owner._lock:
+                if owner._state_push_clients.get(digest) is client_token:
+                    del owner._state_push_clients[digest]
+            try:
+                self.connection.sendall(_websocket_frame(
+                    struct.pack("!H", 1008), opcode=8))
+            except OSError:
+                pass
+        self.close_connection = True
+
     def _audio_websocket(self, role, after=None):
         """Send detached PCM to the current audio lease; never read game state.
 
@@ -818,6 +933,8 @@ class _Handler(BaseHTTPRequestHandler):
             self._reply(200, body)
         elif self.path == SONAR_STREAM_ROUTE:
             self._sonar_websocket()
+        elif self.path == STATE_PUSH_ROUTE:
+            self._state_websocket()
         elif self.path.partition("?")[0] in SONAR_AUDIO_STREAM_ROUTES:
             route, _, query = self.path.partition("?")
             after = _audio_resume_cursor(query)

@@ -9,6 +9,7 @@ import { useV2State } from "./sonar-stream.js";
 import { buildDisplayModel, contextKey, useEvents, validateChart, validateEvents, validateProposals, validateState } from "../state/display-model.js";
 import { PROTOCOL_ERROR_MESSAGES, lookoutView, sonarStream, view } from "../state/shared.js";
 import { pollHost } from "./host.js";
+import { pushHealthy, syncStatePush, takePushedState } from "./push.js";
 
 async function pollRoleFeeds(state, context) {
   const nextProposals = await request("/proposals", {guard: () => context === S.generation});
@@ -44,7 +45,8 @@ export async function poll() {
     if (S.session.host !== null) await pollHost(context);
     if (context !== S.generation) return;
     const stateRoute = sonarStream.connected && isSonar(S.session.station) ? "/state?sonar=stream" : "/state";
-    let next = await request(stateRoute);
+    // A pushed state stands in for the /state request while the push is healthy.
+    let next = takePushedState() ?? await request(stateRoute);
     if (context !== S.generation) return;
     if (next?.role !== null && next?.role !== S.session.station) {
       const metadata = await request("/session");
@@ -132,6 +134,7 @@ export async function poll() {
     S.snapshot = next;
     S.roleStale = false;
     emit("role:fresh");
+    syncStatePush();
     await pollRoleFeeds(S.v2State, context);
     emit("audio:revalidate");
     if (S.pending) await pollV2Result(context);
@@ -160,7 +163,9 @@ export async function poll() {
   } finally {
     S.polling = false;
     if (authenticated()) {
-      const cadence = S.session?.station === null ? 1000 : delay;
+      // With a healthy push the timer only refreshes session presence, chart
+      // and feeds; pushed states wake the loop themselves.
+      const cadence = S.session?.station === null ? 1000 : pushHealthy() ? 2500 : delay;
       S.pollTimer = setTimeout(poll, context !== S.generation ? 0 : S.failures ? delay : Math.max(0, cadence - (performance.now() - started)));
     }
   }

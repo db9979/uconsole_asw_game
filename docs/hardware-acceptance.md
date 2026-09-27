@@ -70,6 +70,8 @@ Vorgehen für jeden Lauf:
 |---|---|---|---|
 | Push gegen Poll | maximale Clientzahl, Host-CPU beobachten | Push nicht teurer als Poll (`commander_max_ms`) | |
 | Wasserfall im Browser | 2560x1440, Sonarrolle | flüssig, keine Aussetzer im Audio | |
+| Push-Ausfall | Browser mit Brückenrolle, dann WLAN kurz trennen oder Push am Host abschalten | Anzeige bleibt "Verbunden" über das Polling, Push kommt nach höchstens 10 s zurück | |
+| Kartenbild-Frame | Browser Brücke 2560x1440, `window.uJagdChartTiming` in der Konsole | Mittelwert unter 4 ms; Headless-Referenz aus `tests/test_commander_state_push_web.py` | |
 
 ## Phase 12: Rollen und Nachbesprechung
 

@@ -72,6 +72,14 @@ _AUDIO_POLL_ROUTES = {"/api/v2/sonar/audio": "sonar",
                       "/api/v2/helicopter/audio": "helicopter",
                       "/api/v2/uboot/audio": "uboot_sonar"}
 VOICE_STREAM_ROUTE = "/ws/v2/voice"
+# State push (plan 1.3, phase 11): the role projection of the poll route,
+# sent when it changes, at most STATE_PUSH_MAX_HZ, with a heartbeat while
+# idle; a session holds one push socket, the browser polls as fallback.
+STATE_PUSH_ROUTE = "/ws/v2/state"
+STATE_PUSH_PROTOCOL = "u-jagd-state-v2"
+STATE_PUSH_MAX_HZ = 4.0
+STATE_PUSH_HEARTBEAT_S = 2.0
+STATE_PUSH_HEARTBEAT = b'{"protocol": 2, "heartbeat": true}'
 _AUDIO_RESUME_QUERY = re.compile(r"after=(0|[1-9][0-9]{0,15})").fullmatch
 
 
@@ -169,6 +177,8 @@ def _websocket_frame(payload, opcode=2):
         return bytes((0x80 | opcode, length)) + payload
     if length <= 65535:
         return bytes((0x80 | opcode, 126)) + struct.pack("!H", length) + payload
+    if length <= STATE_MAX_BYTES:
+        return bytes((0x80 | opcode, 127)) + struct.pack("!Q", length) + payload
     raise ValueError("websocket frame too large")
 
 

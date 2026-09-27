@@ -89,7 +89,18 @@ export function drawWeatherBand(ctx, width, height, environment) {
   ctx.restore();
 }
 
+// Frame-time probe of the chart (display only; read by the browser tests).
+const chartTiming = {frames: 0, totalMs: 0, lastMs: 0, maxMs: 0};
+window.uJagdChartTiming = chartTiming;
 function drawChart() {
+  const started = performance.now();
+  try { drawChartFrame(); } finally {
+    const elapsed = performance.now() - started;
+    chartTiming.frames += 1; chartTiming.totalMs += elapsed; chartTiming.lastMs = elapsed;
+    if (elapsed > chartTiming.maxMs) chartTiming.maxMs = elapsed;
+  }
+}
+function drawChartFrame() {
   if (!S.snapshot || !chartMatches(S.snapshot) || $("panel-operations").hidden) return;
   const own = S.snapshot.ownship;
   const ownPosition = hasPosition(own);
@@ -173,7 +184,15 @@ function drawChart() {
     ctx.globalAlpha = 1;
   }
   // No integration, dead reckoning or animation of tracks: only published fixes.
+  // Positioned tracks outside the view (plus their uncertainty ring) are
+  // culled in world coordinates before any point transform.
+  const cullMargin = 60 / scale;
   for (const track of S.snapshot.tracks) {
+    if (finite(track.x) && finite(track.y)) {
+      const ring = finite(track.range_uncertainty_nm) ? Math.max(0, track.range_uncertainty_nm) : 0;
+      if (track.x + ring < left - cullMargin || track.x - ring > right + cullMargin ||
+          track.y + ring < top - cullMargin || track.y - ring > bottom + cullMargin) continue;
+    }
     const color = colors[track.affiliation] || colors.UNKNOWN;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;

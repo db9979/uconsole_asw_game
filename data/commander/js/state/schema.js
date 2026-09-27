@@ -109,27 +109,34 @@ export function validateV2State(state) {
         index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
   if (!validWeatherStation(state.weather_station) || !validPlot(state.plot)) throw new Error("protocol");
   const payload = state[state.role];
+  // BEGIN GENERATED (tools/gen_web_schema.py; do not edit by hand)
   const shapes = {
-    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"], sonar: ["observations", "settings", "visualization"],
-    weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
+    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"],
     damage: ["compartments", "teams", "total", "sunk", "stability"],
+    eloka: ["intercepts", "station_down", "status", "hardware"],
+    engine: ["propulsion", "machinery", "controls", "environment_effects"],
+    helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
-    engine: ["propulsion", "machinery", "controls", "environment_effects"],
-    helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"], eloka: ["intercepts", "station_down", "status", "hardware"],
+    sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
-    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
     uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
     uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
     uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
     uboot_sonar: ["observations", "settings", "visualization"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
   };
+  const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
+  const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
+  const radioFields = ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg"];
+  const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
+  // END GENERATED
   if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
   const rowsExact = (rows, maximum, fields) => {
     if (!boundedArray(rows, maximum)) throw new Error("protocol");
     rows.forEach((row) => v2Observation(row, fields));
   };
-  const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
   const tacticalRows = (rows, maximum, extraFields = []) => {
     if (!boundedArray(rows, maximum)) throw new Error("protocol");
     rows.forEach((row) => {
@@ -139,7 +146,6 @@ export function validateV2State(state) {
       if (row.altitude_m !== null && (!finite(row.altitude_m) || row.altitude_m < 0 || row.altitude_m > 30000)) throw new Error("protocol");
     });
   };
-  const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
   if (state.role === "bridge") {
     if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
@@ -288,7 +294,7 @@ export function validateV2State(state) {
         !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
         !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");
   } else if (state.role === "radio") {
-    rowsExact(payload.observations, 256, ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg", "frequency_khz", "propagation", "can_capture"]);
+    rowsExact(payload.observations, 256, [...radioFields, "frequency_khz", "propagation", "can_capture"]);
     if (payload.observations.some((row) => (row.frequency_khz !== null && (!finite(row.frequency_khz) || row.frequency_khz <= 0)) ||
         ![null, "GROUND", "SKY"].includes(row.propagation))) throw new Error("protocol");
     if (!boundedArray(payload.logged_fixes, 256) || payload.logged_fixes.some((row) => !exactKeys(row, ["ref", "x", "y", "uncertainty_nm", "age_s", "covariance_nm2"]) || row.covariance_nm2 !== null && (!boundedArray(row.covariance_nm2, 3) || row.covariance_nm2.length !== 3)) ||
@@ -315,7 +321,7 @@ export function validateV2State(state) {
         !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_pattern", "can_mad", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
         [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping, payload.readiness.weather_launch_safe, payload.readiness.weather_dipping_safe].some((value) => typeof value !== "boolean") ||
         !finite(payload.readiness.crosswind_kn) || payload.readiness.crosswind_kn < 0 || payload.readiness.crosswind_kn > 80) throw new Error("protocol");
-    tacticalRows(payload.tactical, 128, ["classification", "released_to_opz"]);
+    tacticalRows(payload.tactical, 128, helicopterTacticalFields.slice(tacticalFields.length));
     rowsExact(payload.dip_observations, 128, ["ref", "label", "bearing", "bearing_uncertainty_deg", "age_s", "range_nm", "active_bearing", "range_uncertainty_nm", "depth_m", "depth_uncertainty_m", "fix_age_s", "classification", "qualified", "released_to_opz"]);
     rowsExact(payload.buoy_observations, 128, ["ref", "label", "buoy_label", "mode", "bearing", "bearing_uncertainty_deg", "range_nm", "x", "y", "observer_x", "observer_y", "age_s", "quality", "qualified", "released_to_opz"]);
     if (!exactKeys(payload.acoustic, ["source", "sources", "spectrum", "history", "ready",

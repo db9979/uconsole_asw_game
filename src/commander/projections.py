@@ -10,6 +10,7 @@ import math
 import weakref
 
 from src.core import config, opfor, plot
+from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.sonar import analysis_tools
 from src.core.i18n import localize
@@ -77,19 +78,11 @@ def _observation(row, fields):
     return observation
 
 
-_TACTICAL_FIELDS = ("ref", "label", "domain", "source", "affiliation",
-                    "bearing", "range_nm", "x", "y", "course", "speed_kn",
-                    "altitude_m", "observer_x", "observer_y", "quality",
-                    "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
-                    "visual_class", "visual_type")
-_SONAR_FIELDS = ("ref", "label", "source", "classification", "profile", "bearing",
-                 "range_nm", "x", "y", "depth_m", "course", "speed_kn",
-                 "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg",
-                 "range_uncertainty_nm", "observer_x", "observer_y",
-                 "released_to_opz", "fixes")
-_RADIO_FIELDS = ("ref", "label", "bearing", "quality", "age_s",
-                  "bearing_uncertainty_deg")
-_HELICOPTER_TACTICAL_FIELDS = _TACTICAL_FIELDS + ("classification", "released_to_opz")
+# Row field allowlists: one source for Python and the generated browser schema.
+_TACTICAL_FIELDS = web_schema.TACTICAL_FIELDS
+_SONAR_FIELDS = web_schema.SONAR_FIELDS
+_RADIO_FIELDS = web_schema.RADIO_FIELDS
+_HELICOPTER_TACTICAL_FIELDS = web_schema.HELICOPTER_TACTICAL_FIELDS
 
 _HISTORY_ROWS_MAX = config.LOFAR_HISTORY_COLS
 _BROADBAND_BINS_MAX = 180

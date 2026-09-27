@@ -292,7 +292,7 @@ def test_options_page_two_chooses_the_local_side_outside_a_mission_only():
     # During a mission the row is shown but locked.
     game._open_administration("options")
     key(pygame.K_PAGEDOWN)
-    assert game.options_page == 1 and game._option_rows() == ("local_side",)
+    assert game.options_page == 1 and game._option_rows() == Game._OPTION_ROWS_SETUP
     key(pygame.K_RETURN)
     assert game.local_side == "frigate"
     game.draw()

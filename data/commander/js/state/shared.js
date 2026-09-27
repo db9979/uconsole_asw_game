@@ -34,6 +34,10 @@ export function filteredEloka(intercepts) {
 export const roleCache = new Map();
 export const gameEffectKinds = new Set(["sonar_ping", "esm_contact", "torpedo_launch", "missile_launch", "gunfire", "explosion", "water_entry",
   "sonar_echo_cw", "sonar_echo_cw_faint", "sonar_echo_lfm", "sonar_echo_lfm_faint"]);
+// Spoken crew reports (src/core/callouts.py KEYS); the text is the browser's own.
+export const calloutKinds = new Set(["torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
+  "action_stations", "mpa_on_station"]);
+export const calloutsWithBearing = new Set(["torpedo", "contact", "breakup"]);
 export const view = { x: 0, y: 0, zoom: 1, follow: false, initialized: false };
 export const lookoutRanges = [5, 10, 25, 50, 100, 200];
 export const lookoutView = { rangeNm: 100 };

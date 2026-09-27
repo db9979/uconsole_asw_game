@@ -140,7 +140,7 @@ def test_options_setup_page_carries_the_anti_aliasing_switch(monkeypatch):
     from src.core import game_draw
     monkeypatch.setattr(game_draw, "save_preferences", lambda *_a, **_k: None)
     game = _game(start_menu=True)
-    assert Game._OPTION_ROWS_SETUP == ("local_side", "aa_lines")
+    assert Game._OPTION_ROWS_SETUP == ("local_side", "aa_lines", "speech")
     assert len(Game._OPTION_ROWS) == 13          # page 1 stays within its footer
     game._open_administration("options")
     game._set_options_page(1)
@@ -154,7 +154,7 @@ def test_options_setup_page_carries_the_anti_aliasing_switch(monkeypatch):
     game.draw()
     # The mouse hits the drawn row, not the side's help text under row 0.
     rects = Game._option_row_hit_rects(Game._OPTION_ROWS_SETUP)
-    assert rects[1] == Game._options_row_rects()[7]
+    assert rects[1] == Game._options_row_rects()[6]
     game._window_to_canvas = lambda pos: pos
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=rects[1].center))
     assert game.options_sel == 1

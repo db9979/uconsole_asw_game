@@ -11,7 +11,7 @@ from dataclasses import replace
 
 import pygame
 
-from src.core import config
+from src.core import callouts, config
 from src.core import plot as plot_geometry
 from src.core.i18n import display_value, message, raw_text
 from src.core.station import Station
@@ -1396,7 +1396,9 @@ class PicturesMixin:
 
         Speichert das Rohtext (message-/RawText-Objekt); die Lokalisierung
         erfolgt erst beim Commander-Publish (Sprache kann wechseln).
+        Every event is also offered to the spoken crew reports.
         """
+        self.callouts.add(text)
         if not self.preferences.simlog:
             return
         self._simlog_seq += 1
@@ -1407,6 +1409,24 @@ class PicturesMixin:
             "cat": category,
             "text": text,
         })
+
+    def _pump_speech(self) -> None:
+        """Say new crew reports aloud (frigate side, option on, espeak found).
+
+        Wall clock only: the speaker polls its process and never blocks.
+        """
+        rows = self.callouts.rows
+        if not rows or rows[-1]["seq"] <= self._speech_seq:
+            self.speaker.pump()
+            return
+        fresh = [row for row in rows if row["seq"] > self._speech_seq]
+        self._speech_seq = rows[-1]["seq"]
+        if (self.preferences.speech and self.speaker.available
+                and getattr(self, "local_side", "frigate") == "frigate"):
+            for row in fresh:
+                self.speaker.say(callouts.spoken_text(row, self.tr),
+                                 self.preferences.language)
+        self.speaker.pump()
 
     def _record_simlog_state(self, dt: float) -> None:
         """Periodischer Zustandssnapshot des kompletten Simulationshintergrunds.

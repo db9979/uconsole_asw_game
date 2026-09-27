@@ -12,10 +12,12 @@ import pygame
 
 from src.audio.engine import AudioEngine
 from src.audio.receiver import AcousticReceiver
+from src.audio.speech import Speaker, find_engine
 from src.commander.local import CommanderConsole
 from src.core import config
 from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController
+from src.core.callouts import CalloutLog
 from src.core.i18n import Translator, message
 from src.core.preferences import Preferences
 from src.network.connectivity import ConnectivityMonitor
@@ -98,7 +100,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                     "bottom_panel", "operator_assist", "live_traffic", "commander")
     # Second options page: game setup.  The local side is per launch and never
     # persisted (the frigate is always the default).
-    _OPTION_ROWS_SETUP = ("local_side", "aa_lines")
+    _OPTION_ROWS_SETUP = ("local_side", "aa_lines", "speech")
     _OPTION_PAGES = (_OPTION_ROWS, _OPTION_ROWS_SETUP)
 
     def __init__(self, seed: int = 42, difficulty: dict = None,
@@ -174,6 +176,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._frame_clock_reset = True
         self._sound_event_seq = 0
         self._sound_events = deque(maxlen=16)
+        # Spoken crew reports (transient; see src/core/callouts.py).
+        self.callouts = CalloutLog()
+        self.speaker = Speaker(find_engine())
+        self._speech_seq = 0
         # Pulse type per transmission time, for the echo sound only (audio,
         # never saved; after a load the current pulse is used).
         self._ping_pulses = {}
@@ -347,6 +353,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.audio.stop()
         self._frame_clock_reset = True
         self._sound_events.clear()
+        self.callouts.clear()
+        self._speech_seq = self.callouts.seq
+        self.speaker.stop()
         self._ping_pulses.clear()
         self._ping_intercepts.clear()
         self._sonar_audio_sequence = -1

@@ -121,7 +121,7 @@ def test_main_menu_analyzer_owns_input_and_blocks_simulation():
     from src.core.game import Game
 
     game = Game(seed=811, start_menu=True, audio_enabled=False)
-    game.main_menu_sel = 4
+    game.main_menu_sel = 6  # new, training, campaign, load, mission, unit, analyzer
     game.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
     assert isinstance(game.editor, ContactAnalyzer)
@@ -279,7 +279,7 @@ def test_game_wires_the_analyzer_audio_sample(monkeypatch):
     from src.core.game import Game
 
     game = Game(seed=811, start_menu=True, audio_enabled=False)
-    game.main_menu_sel = 4
+    game.main_menu_sel = 6
     game.handle_event(pygame.event.Event(
         pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
     analyzer = game.editor

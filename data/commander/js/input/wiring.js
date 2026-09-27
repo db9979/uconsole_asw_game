@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { renderSound } from "../audio/alerts.js";
-import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAudioAuthorized, sonarFilterValues, sonarGainValue, stopSonarAudio, syncGameAudio } from "../audio/audio.js";
+import { openSonarAudioSocket, renderSonarAudio, scheduleSonarAudioPoll, sonarAudioAuthorized, sonarFilterValues, sonarGainValue, stopSonarAudio, stopSpeech, syncGameAudio } from "../audio/audio.js";
 import { $, audioRoles, isSonar } from "../core/base.js";
 import { authenticated, finite, hasPosition, number, selectedTrack, t } from "../core/format.js";
 import { loadLanguage } from "../core/i18n.js";
@@ -734,6 +734,11 @@ export function init() {
       renderSound();
       syncGameAudio();
     } catch (_) { S.soundEnabled = false; renderSound(); $("sound").textContent = t("sound_unavailable"); }
+  });
+  $("speech").disabled = !("speechSynthesis" in window);
+  $("speech").addEventListener("change", () => {
+    S.speechEnabled = $("speech").checked && "speechSynthesis" in window;
+    if (!S.speechEnabled) stopSpeech();
   });
   $("sonar-live-toggle").addEventListener("click", async () => {
     if (S.sonarAudioEnabled) { stopSonarAudio(); return; }

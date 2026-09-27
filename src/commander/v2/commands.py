@@ -379,6 +379,11 @@ def _ref_enabled_params(params):
             and type(params.get("enabled")) is bool)
 
 
+def _task_params(params):
+    return (type(params) is dict and set(params) == {"task"}
+            and type(params["task"]) is int and 1 <= params["task"] <= 10_000)
+
+
 def _slot_params(params):
     return (type(params) is dict and set(params) == {"slot"}
             and type(params["slot"]) is int and 1 <= params["slot"] <= SAVE_SLOTS)
@@ -486,6 +491,9 @@ V2_ACTION_REGISTRY = {
     "damage_unassign_team": V2Action(frozenset({"damage"}),
                                      _team_compartment_params),
     "radio_capture_hfdf": V2Action(frozenset({"radio"}), _single_ref_params),
+    # HQ tasks: the radio room answers an offer (the task's own number).
+    "radio_task_accept": V2Action(frozenset({"radio"}), _task_params),
+    "radio_task_decline": V2Action(frozenset({"radio"}), _task_params),
     "eloka_annotate": V2Action(frozenset({"eloka"}), _annotation_params,
         revision_bound=True),
     "eloka_clear_annotation": V2Action(frozenset({"eloka"}), _single_ref_params,

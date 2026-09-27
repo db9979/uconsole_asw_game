@@ -84,6 +84,7 @@ _TACTICAL_FIELDS = web_schema.TACTICAL_FIELDS
 _SONAR_FIELDS = web_schema.SONAR_FIELDS
 _RADIO_FIELDS = web_schema.RADIO_FIELDS
 _HELICOPTER_TACTICAL_FIELDS = web_schema.HELICOPTER_TACTICAL_FIELDS
+RADIO_TASK_FIELDS = web_schema.RADIO_TASK_FIELDS
 
 _HISTORY_ROWS_MAX = config.LOFAR_HISTORY_COLS
 _BROADBAND_BINS_MAX = 180
@@ -712,7 +713,22 @@ def _radio(game, rows, ref_by_track):
                  logged_bearings=logged, messages=messages,
                  station_down=station_down, navigation=_own_navigation(game),
                   tactical=[_observation(row, _TACTICAL_FIELDS) for row in rows
-                            if row["source"] == "HFDF"][:_MAP_ROWS_MAX])
+                            if row["source"] == "HFDF"][:_MAP_ROWS_MAX],
+                 tasks=_radio_tasks(game, station_down))
+
+
+def _radio_tasks(game, station_down):
+    """HQ tasks as the radio room knows them (reported positions only)."""
+    tasks = []
+    for row in game.task_view():
+        item = {key: row[key] for key in RADIO_TASK_FIELDS if key != "can_answer"}
+        for key in ("x", "y", "radius_nm", "bearing", "range_nm", "progress",
+                    "course", "speed_kn", "respond_s", "remaining_s"):
+            item[key] = _number(item[key])
+        item["name"] = None if row["name"] is None else str(row["name"])[:24]
+        item["can_answer"] = row["state"] == "offered" and not station_down
+        tasks.append(item)
+    return tasks
 
 
 def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,

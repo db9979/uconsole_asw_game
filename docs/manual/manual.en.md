@@ -662,7 +662,7 @@ The radio room handles communications with HQ and HF direction finding (HFDF). H
 
 ### Displays and instruments
 
-Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype with HQ traffic.
+Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
 
 ```text
  HFDF SIGNALS               BEARING LOG
@@ -683,12 +683,27 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
 - At mission start HQ reports the threat. With **coarse** intelligence it gives only a rough bearing and range of one threat. With **exact** intelligence it also names every hostile unit type committed to the mission with its number (for example "1x Altmetall (Diesel, älter), 2x air raid wave with anti-ship missiles"), using the names in the unit analyser (`F8`); positions stay unconfirmed. Patrol always gets exact intelligence, Double hunt and Nuclear intercept coarse, and the free hunt lets you choose on its difficulty screen (last row, "HQ intelligence").
 
+### HQ tasks
+
+Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time. Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` (accept) or `D` (decline); no answer counts as declined. A destroyed radio room cannot answer.
+
+- **Distress call (SAR):** a life raft with 2 to 6 people, reported by EPIRB with about 0.5 NM error and drifting with current and wind. The survivors last according to the sea temperature, from 40 minutes in water below 8 °C to 100 minutes above 20 °C. The raft is sighted within 2 NM by day (3 NM at night by its strobe); then the circle on the chart shrinks onto it. Take them aboard by lying within 0.25 NM at 3 kn or less for 4 minutes, or let the helicopter hover overhead (one minute per person, only when the weather allows dipping). +600 points, -400 if they are lost.
+- **Identify merchant:** HQ names a merchant within 60 NM and gives its position with about 2 NM error. It counts as identified once the lookout has published its identification or the helicopter passes within 1 NM with at least 1 NM visibility. About a third are flagged as suspect: HQ then passes a submarine datum near the ship. 40 minutes.
+- **Submarine datum:** a circle of 5 NM radius from a maritime patrol report; not every datum has a boat behind it. Search 10 minutes inside the circle with the ship or the helicopter. 50 minutes.
+- **Replenishment at sea:** offered when fuel is below 70 % or torpedoes have been fired. A friendly supply ship appears 18 to 28 NM away at 12 kn; its course and a dead-reckoning line are plotted. Keep within 0.3 NM and within 3 kn of its speed for 15 minutes to fill fuel and torpedoes. Worth +100, no penalty.
+- **Radar silence (EMCON):** both radars off within 90 s and silent for 20 to 30 minutes. +200, -250 if a radar radiates.
+
+Accepted positions are plotted on every chart (also in the Remote Crew browser). Scores are listed at mission end. The radio operator in the browser answers with the same buttons.
+
 ### Keys
 
 | Key | Action |
 |---|---|
 | `Up / Down` | Select HFDF signal |
 | `Enter` | Log bearing with own position |
+| `Up / Down` | Select HQ task (Tasks page) |
+| `A` | Accept the selected task |
+| `D` | Decline the selected task |
 
 ### Standard procedure
 
@@ -706,7 +721,7 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 
 ### Not modelled
 
-- No own radio transmissions or reports to HQ; no communication plan or crypto.
+- No free-text radio transmissions or reports to HQ beyond answering tasks; no communication plan or crypto.
 - No frequency tuning: HFDF monitors the whole HF band and lists the detected signals with their frequency.
 
 ## 7 Engine room

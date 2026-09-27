@@ -1137,6 +1137,7 @@ class SimMixin:
         self.flights.update(dt, world=self.world,
                             near=(self.ship.x, self.ship.y))
         self._run_mission_events()
+        self._update_tasking(dt)
         self._check_mission_end()
 
     def _update_sim(self, dt: float) -> None:

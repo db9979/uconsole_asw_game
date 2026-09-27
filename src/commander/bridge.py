@@ -223,6 +223,14 @@ def _radio_capture_hfdf(game, params, bindings):
     return game.capture_hfdf_report(binding[4])
 
 
+def _radio_task_accept(game, params, _bindings):
+    return game.accept_task(params["task"])
+
+
+def _radio_task_decline(game, params, _bindings):
+    return game.decline_task(params["task"])
+
+
 def _eloka_annotate(game, params, bindings):
     intercept = _bound(bindings, params["ref"])
     candidate = _bound(bindings, params["candidate_ref"])
@@ -738,6 +746,8 @@ _V2_ACTION_HANDLERS = {
     "engine_set_plant": _engine_set_plant,
     "damage_unassign_team": _damage_unassign_team,
     "radio_capture_hfdf": _radio_capture_hfdf,
+    "radio_task_accept": _radio_task_accept,
+    "radio_task_decline": _radio_task_decline,
     "eloka_annotate": _eloka_annotate,
     "eloka_clear_annotation": _eloka_clear_annotation,
     "eloka_set_jamming": _eloka_set_jamming,

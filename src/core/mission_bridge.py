@@ -15,6 +15,7 @@ from src.core.mission_definition import (_stable_seed, reference_sector_index,
                                          static_preview, validate_mission)
 from src.air.flights import Flight
 from src.enemies.animal import Animal
+from src.core.tasking import TaskBoard
 from src.enemies.civilian import CivilianShip
 from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
@@ -127,6 +128,8 @@ class MissionBridgeMixin:
         self.mission.animal_count = self.mission.civilian_count = 0
         self.mission.asm_count = self.mission.warship_count = 0
         self.custom_mission_definition = json.loads(json.dumps(definition))
+        # An authored mission brings its own events: no radio tasking.
+        self.tasking = TaskBoard(None)
         self.feed.entries[-1].text = self._mission_started_notice()
         self.hq_msg(self._initial_threat_notice())
         self.in_menu = False

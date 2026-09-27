@@ -34,6 +34,7 @@ from src.core.save_schema import (
 from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
+from src.core.tasking import TaskBoard
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
@@ -435,6 +436,17 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or any(not isinstance(item, str) or item not in known_events
                    for item in pending_events)
             or len(set(pending_events)) != len(pending_events)):
+        return False
+    # Save v21: the radio tasking board; a task's ship must be in this save.
+    board = data.get("tasking")
+    if not TaskBoard.valid_state(board):
+        return False
+    surface_ids = {row.get("id") for row in data.get("civilians", ())
+                   if isinstance(row, dict)}
+    if any(task["kind"] in ("identify", "ras") and task["state"] in ("offered", "active")
+           and task["target_id"] not in surface_ids for task in board["tasks"]):
+        return False
+    if any(task["offered_t"] > save_sim_t for task in board["tasks"]):
         return False
     intercepts = data.get("ping_intercepts")
     if (not isinstance(intercepts, list) or len(intercepts) > PING_INTERCEPTS_MAX

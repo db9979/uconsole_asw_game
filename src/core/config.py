@@ -786,6 +786,54 @@ SCORE_AMMO_BONUS = 200             # pro ungenutztem Torpedo (Sieg)
 SCORE_CIVIL_BONUS = 500            # keine zivilen Verluste (Sieg)
 SCORE_TIME_BONUS_MAX = 500         # Zeitbonus, anteilig nach verbleibender Zeit
 
+# Radio tasking (``src/core/tasking.py``): HQ orders and incidents in the
+# built-in scenarios.  The first offer comes after 15-25 minutes, the next
+# every 25-45 minutes, never more than two tasks open at once.
+TASK_FIRST_OFFER_S = (900.0, 1500.0)
+TASK_INTERVAL_S = (1500.0, 2700.0)
+TASK_MAX_OFFERS = 6
+TASK_MAX_OPEN = 2
+TASK_RESPONSE_S = 300.0            # accept or decline inside this window
+TASK_DURATION_S = {"identify": 2400.0, "datum": 3000.0, "ras": 3600.0}
+TASK_EMCON_S = (1200.0, 1800.0)    # ordered radar silence
+TASK_EMCON_GRACE_S = 90.0          # time to switch the radars off
+TASK_SAR_RANGE_NM = (10.0, 25.0)   # distress position from own ship
+TASK_SAR_REPORT_SIGMA_NM = 0.5     # EPIRB position error
+TASK_SAR_RADIUS_NM = 1.5           # search circle on the chart
+TASK_SAR_LEEWAY = 0.03             # raft windage, fraction of the wind
+TASK_SAR_SHIP_NM = 0.25            # alongside: this close ...
+TASK_SAR_SHIP_KN = 3.0             # ... at or below this speed
+TASK_SAR_SHIP_S = 240.0            # to take the survivors aboard
+TASK_SAR_HELO_NM = 0.3             # helicopter overhead the raft
+TASK_SAR_HELO_S_PER_PERSON = 60.0  # one hoist cycle per survivor
+TASK_SAR_SIGHT_DAY_NM = 2.0        # raft in sight (daylight)
+TASK_SAR_SIGHT_NIGHT_NM = 3.0      # strobe light at night
+TASK_IDENTIFY_REPORT_SIGMA_NM = 2.0
+TASK_IDENTIFY_RADIUS_NM = 3.0
+TASK_IDENTIFY_RANGE_NM = 60.0      # only merchants this close are named
+TASK_IDENTIFY_HELO_NM = 1.0        # helicopter crew identifies close aboard
+TASK_IDENTIFY_SUSPECT = 0.35       # share of merchants HQ then flags
+TASK_SUSPECT_SIGMA_NM = 6.0        # datum error HQ passes on a suspect
+TASK_DATUM_REAL = 0.75             # share of datums with a boat behind them
+TASK_DATUM_SIGMA_NM = 3.0
+TASK_DATUM_RADIUS_NM = 5.0
+TASK_DATUM_FALSE_RANGE_NM = (15.0, 40.0)
+TASK_DATUM_SEARCH_S = 600.0        # search time inside the circle
+TASK_RAS_RANGE_NM = (18.0, 28.0)   # supply ship's start from own ship
+TASK_RAS_SPEED_KN = 12.0
+TASK_RAS_NM = 0.3                  # station alongside
+TASK_RAS_SPEED_TOL_KN = 3.0
+TASK_RAS_S = 900.0                 # time alongside for the transfer
+TASK_RAS_FUEL_FRACTION = 0.7       # offered below this fuel ...
+TASK_RAS_PROFILE = "tanker_04"     # friendly supply ship (catalog key)
+SCORE_TASK = {                     # (done, failed, declined)
+    "sar": (600, -400, -200),
+    "identify": (250, -100, -100),
+    "datum": (250, -150, -200),
+    "ras": (100, 0, 0),
+    "emcon": (200, -250, -200),
+}
+
 # Missionstypen: Zeitfenster in Echtzeit-Simulationssekunden.
 # Lange Einsatzfenster lassen Zeit für Aufmerksamkeits- und Suchphasen.
 # win = "sink" (Ziel versenken) oder "survive" (Zeitlimit überstehen)

@@ -128,7 +128,7 @@ export function validateV2State(state) {
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
-    radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
+    radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks"],
     sonar: ["observations", "settings", "visualization"],
     uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
     uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
@@ -141,6 +141,11 @@ export function validateV2State(state) {
   const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
   const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
   const radioFields = ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg"];
+  const radioTaskFields = {
+    row: ["id", "kind", "state", "name", "persons", "x", "y", "radius_nm", "course", "speed_kn", "bearing", "range_nm", "respond_s", "remaining_s", "progress", "sighted", "verdict", "points", "can_answer"],
+    kinds: ["sar", "identify", "datum", "ras", "emcon"],
+    states: ["offered", "active", "done", "failed", "declined"],
+  };
   const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
   const weatherFields = {
     atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
@@ -392,6 +397,14 @@ export function validateV2State(state) {
         typeof payload.station_down !== "boolean" || payload.observations.some((row) => typeof row.can_capture !== "boolean") ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     tacticalRows(payload.tactical, 128);
+    const nullableFinite = (value) => value === null || finite(value);
+    if (!boundedArray(payload.tasks, 8) || payload.tasks.some((row) => !exactKeys(row, radioTaskFields.row) ||
+        !Number.isSafeInteger(row.id) || row.id < 1 || !radioTaskFields.kinds.includes(row.kind) ||
+        !radioTaskFields.states.includes(row.state) || (row.name !== null && (typeof row.name !== "string" || row.name.length > 24)) ||
+        !Number.isInteger(row.persons) || row.persons < 0 || [row.x, row.y, row.radius_nm, row.bearing, row.range_nm, row.progress].some((value) => !finite(value)) ||
+        [row.course, row.speed_kn, row.respond_s, row.remaining_s].some((value) => !nullableFinite(value)) ||
+        typeof row.sighted !== "boolean" || typeof row.can_answer !== "boolean" || ![null, "clear", "suspect"].includes(row.verdict) ||
+        !Number.isInteger(row.points))) throw new Error("protocol");
   } else if (state.role === "engine") {
     if (!exactKeys(payload.propulsion, ["course", "target_course", "speed", "target_speed", "telegraph", "rpm", "quiet_mode", "plant_mode", "cavitating", "fuel_kg", "fuel_capacity_kg", "fuel_burn_kg_h", "fuel_endurance_h", "fuel_range_nm"]) ||
         !["AUTO", "DIESEL", "TURBINE"].includes(payload.propulsion.plant_mode) ||

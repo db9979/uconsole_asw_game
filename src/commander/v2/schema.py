@@ -20,6 +20,14 @@ SONAR_FIELDS = ("ref", "label", "source", "classification", "profile", "bearing"
 RADIO_FIELDS = ("ref", "label", "bearing", "quality", "age_s",
                 "bearing_uncertainty_deg")
 HELICOPTER_TACTICAL_FIELDS = TACTICAL_FIELDS + ("classification", "released_to_opz")
+# HQ tasks in the radio room (``src/core/tasking.py``): the reported
+# position and the task's clock, never the raft's or a ship's true position.
+RADIO_TASK_FIELDS = ("id", "kind", "state", "name", "persons", "x", "y", "radius_nm",
+                     "course", "speed_kn", "bearing", "range_nm", "respond_s",
+                     "remaining_s", "progress", "sighted", "verdict", "points",
+                     "can_answer")
+RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon")
+RADIO_TASK_STATES = ("offered", "active", "done", "failed", "declined")
 
 # The common ``weather_station`` block: own-ship atmosphere (every role) and
 # the crewed boat's weather block (submarine roles instead of flight weather,
@@ -85,7 +93,7 @@ ROLE_SHAPES = {
     "opz": ("observations", "fusions", "radar", "defense", "asm_observations",
             "source_classifications", "radar_blips", "designated_target_ref", "own_assets"),
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",
-              "navigation", "tactical"),
+              "navigation", "tactical", "tasks"),
     "engine": ("propulsion", "machinery", "controls", "environment_effects"),
     "helicopter": ("asset", "waypoint", "buoys", "buoy_observations", "acoustic",
                    "navigation", "tactical", "target_choices", "readiness",

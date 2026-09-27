@@ -81,9 +81,11 @@ from src.core.mission_bridge import (MissionBridgeMixin)
 from src.core.game_draw import (DrawMixin)
 from src.core.game_operator import (OperatorMixin)
 from src.core.game_pictures import (PicturesMixin)
+from src.core.game_tasking import TaskingMixin
 
 
-class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin, SaveMixin):
+class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
+           SaveMixin, TaskingMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -390,6 +392,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.mission_events_pending = []
         self.mission_time = 0.0
         self.score = 0
+        # HQ orders and incidents (save ``tasking``); none in custom missions.
+        self._reset_tasking()
         self.mission_result = None   # None | "SIEG" | "VERLOREN"
         self.result_reason = ""
 

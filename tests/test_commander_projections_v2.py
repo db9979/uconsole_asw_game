@@ -119,7 +119,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                  "radar_blips", "designated_target_ref", "own_assets", "defense",
                  "asm_observations"},
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
-                   "station_down", "navigation", "tactical"},
+                   "station_down", "navigation", "tactical", "tasks"},
         "engine": {"propulsion", "machinery", "controls", "environment_effects"},
         "helicopter": {"asset", "waypoint", "buoys", "buoy_observations", "acoustic", "readiness", "navigation",
                        "tactical", "target_choices", "dip_observations",

@@ -131,8 +131,10 @@ STATION_HELP = {
         "help.note.air_defense"),
     Station.RADIO: _station(
         "help.radio.intro",
-        [("help.key.up_down", "help.control.hfdf"), ("Enter", "help.control.log_bearing")],
-        ["help.note.hfdf", "help.note.teletype", "help.note.hfdf_map"],
+        [("help.key.up_down", "help.control.hfdf"), ("Enter", "help.control.log_bearing"),
+         ("help.key.up_down", "help.control.task_select"),
+         ("A", "help.control.task_accept"), ("D", "help.control.task_decline")],
+        ["help.note.hfdf", "help.note.teletype", "help.note.hfdf_map", "help.note.tasking"],
         "help.note.hfdf_tactic"),
     Station.ENGINE: _station(
         "help.engine.intro",

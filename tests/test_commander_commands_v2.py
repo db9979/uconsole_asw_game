@@ -618,6 +618,8 @@ def test_fusion_schema_rejects_duplicate_refs_and_action_role_mismatch(server):
     ("damage", "damage_assign_team", {"team": 1, "compartment": "engine"}),
     ("damage", "damage_unassign_team", {"team": 3, "compartment": "engine"}),
     ("radio", "radio_capture_hfdf", {"ref": "opaque"}),
+    ("radio", "radio_task_accept", {"task": 1}),
+    ("radio", "radio_task_decline", {"task": 10_000}),
     ("eloka", "eloka_annotate", {"ref": "opaque", "candidate_ref": "choice"}),
     ("eloka", "eloka_clear_annotation", {"ref": "opaque"}),
     ("eloka", "eloka_set_technique", {"ref": "opaque", "technique": "rgpo"}),
@@ -659,6 +661,9 @@ def test_remaining_nonlethal_action_schemas_are_exact(server, station, action, p
     ("engine_set_quiet_mode", {"enabled": 1}),
     ("damage_assign_team", {"team": True, "compartment": "engine"}),
     ("damage_assign_team", {"team": 1, "compartment": "unknown"}),
+    ("radio_task_accept", {"task": 0}),
+    ("radio_task_accept", {"task": True}),
+    ("radio_task_decline", {"task": "1"}),
     ("sonar_set_listen_bearing", {"bearing": 360}),
     ("sonar_set_tow_depth", {"depth_m": float("inf")}),
     ("sonar_set_tow_depth", {"depth_m": 10**1000}),
@@ -1128,6 +1133,31 @@ def test_radio_capture_uses_current_opaque_hfdf_ref(server):
                       "radio_capture_hfdf", {"ref": "not-current"},
                       1)["reasoncode"] == "unknown_ref"
         assert game.hfdf_log == before
+    finally:
+        game.audio.shutdown()
+
+
+def test_radio_answers_hq_tasks_by_their_public_number(server):
+    game = Game(seed=4104, start_menu=False, audio_enabled=False, language="en")
+    game.tasking.next_offer_t = 1e9
+    bridge = CommanderBridge()
+    try:
+        first, second = game._offer_task("datum"), game._offer_task("emcon")
+        bridge.pump(game, server, now=time.monotonic())
+        cookie, session = pair(server, "Radio", "radio")
+        bridge.pump(game, server, now=time.monotonic())
+        state = request(server, "/api/v2/state", cookie=cookie)[2]["radio"]
+        assert sorted(row["id"] for row in state["tasks"]) == [first["id"], second["id"]]
+        assert submit(game, bridge, server, cookie, session, "radio_task_accept",
+                      {"task": first["id"]}, 0)["reasoncode"] == "ok"
+        assert first["state"] == "active"
+        assert submit(game, bridge, server, cookie, session, "radio_task_decline",
+                      {"task": second["id"]}, 1)["reasoncode"] == "ok"
+        assert second["state"] == "declined"
+        assert submit(game, bridge, server, cookie, session, "radio_task_accept",
+                      {"task": second["id"]}, 2)["reasoncode"] == "not_ready"
+        assert submit(game, bridge, server, cookie, session, "radio_task_accept",
+                      {"task": 77}, 3)["reasoncode"] == "stale_ref"
     finally:
         game.audio.shutdown()
 

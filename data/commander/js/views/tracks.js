@@ -9,6 +9,14 @@ import { actionButton, metrics, node } from "./dom.js";
 import { queueVisualDraw } from "./role-visuals.js";
 import { stationActionAvailable } from "../state/availability.js";
 
+// The listening focus the host will hold once this client's own focus command
+// lands: the published focus lags a sent command, so comparing against it alone
+// drops a quick reselection of the previous track (A, B, A leaves B).
+function expectedSonarFocus() {
+  const shown = S.v2State.sonar.settings.focus_ref;
+  if (S.requestedSonarFocus === shown) S.requestedSonarFocus = null;
+  return S.requestedSonarFocus ?? shown;
+}
 export function flushSonarFocus() {
   if (!S.queuedSonarFocus) return;
   if (!(S.connected && isSonar(S.session?.station) &&
@@ -17,7 +25,7 @@ export function flushSonarFocus() {
     S.queuedSonarFocus = null;
     return;
   }
-  if (S.v2State.sonar.settings.focus_ref === S.queuedSonarFocus) {
+  if (expectedSonarFocus() === S.queuedSonarFocus) {
     S.queuedSonarFocus = null;
     return;
   }
@@ -38,7 +46,7 @@ export function selectTrack(ref) {
   renderDetail(true);
   queueDraw();
   queueVisualDraw();
-  if (changed && isSonar(role) && track && S.v2State.sonar.settings.focus_ref !== ref &&
+  if (changed && isSonar(role) && track && expectedSonarFocus() !== ref &&
       S.connected && S.session?.grants.command === true && S.v2State.phase === "live" && chartMatches(S.snapshot))
     S.queuedSonarFocus = ref;
   flushSonarFocus();

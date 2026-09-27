@@ -127,6 +127,7 @@ function switchRole(from, to) {
   S.pending = null;
   S.commandMessage = null;
   S.queuedSonarFocus = null;
+  S.requestedSonarFocus = null;
   clearFireDrafts();
   S.stationRenderSignature = null;
   S.proposals = null;

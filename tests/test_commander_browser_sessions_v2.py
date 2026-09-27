@@ -9,7 +9,7 @@ from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
-from commander_web import copy_assets, index_html, inject_probe, WEB_ROUTES
+from commander_web import copy_assets, index_html, inject_probe, page_dataset, WEB_ROUTES
 import pygame
 
 from src.commander import server as commander_transport
@@ -232,7 +232,7 @@ const stationActions = [];
 const visualDraws = new Set();
 const visualCanvasIds = new Set(["role-map", "sonar-broadband", "sonar-lofar", "sonar-demon",
   "sonar-tma-plot", "sonar-environment", "sonar-active", "damage-schematic",
-  "engine-instruments", "eloka-scope", "weapons-system", "helicopter-lofar-canvas",
+  "engine-instruments", "eloka-scope", "radio-df-scope", "weapons-system", "helicopter-lofar-canvas",
   "helicopter-broadband-canvas", "helicopter-demon-canvas"]);
 for (const method of ["fillRect", "stroke", "arc"]) {
   const native = CanvasRenderingContext2D.prototype[method];
@@ -267,6 +267,17 @@ window.fetch = async (url, options = {}) => {
   }
   return response;
 };
+// A pushed state stands in for a /state request: log it the same way.
+const NativeSocket = window.WebSocket;
+window.WebSocket = function(url, protocol) {
+  const socket = new NativeSocket(url, protocol);
+  if (String(url).endsWith("/ws/v2/state")) socket.addEventListener("message", ({data}) => {
+    try { const value = JSON.parse(data); latestRole = value.role; events.push(`state:${value.role}`); } catch (_) {}
+  });
+  return socket;
+};
+window.WebSocket.prototype = NativeSocket.prototype;
+Object.assign(window.WebSocket, {CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3});
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const assert = (value, message) => { if (!value) throw new NativeError(message); };
 async function until(check, message) {
@@ -274,7 +285,7 @@ async function until(check, message) {
     if (check()) return;
     await sleep(20);
   }
-  throw new NativeError(message);
+  throw new NativeError(typeof message === "function" ? message() : message);
 }
 async function run() {
   await until(() => !document.getElementById("shell").hidden, "translations loaded");
@@ -420,7 +431,9 @@ async function run() {
         overview.click();
         await sleep(25);
         const shown = [...document.querySelectorAll("[data-sonar-plot]")].filter((panel) => !panel.hidden);
-        if (shown.length < 4) throw new NativeError(`sonar overview shows ${shown.length} plots`);
+        // The host may move the role on during the wait; judge sonar only.
+        if (latestRole === "sonar" && !document.getElementById("sonar-visual").hidden && shown.length < 4)
+          throw new NativeError(`sonar overview shows ${shown.length} plots`);
         const tabs = [...document.querySelectorAll("[data-sonar-visual]")]
           .filter((button) => button.dataset.sonarVisual !== "overview");
         for (const next of tabs.filter((button) => !sonarPages.has(button.dataset.sonarVisual))) {
@@ -485,7 +498,7 @@ async function run() {
       const contacts = document.getElementById("track-list").querySelectorAll("button");
       contacts[sonarReleases]?.click();
       await until(() => stationActions.filter((action) => action === "sonar_set_focus").length >= 3 + sonarReleases,
-        "Sonar focus did not follow release-contact selection");
+        () => `Sonar focus did not follow release-contact selection: ${stationActions.join(",")}`);
       await until(() => !release.disabled, "Sonar release stayed disabled after focus");
       release.click();
     }
@@ -1427,15 +1440,18 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
     console.server._http.assets["/real-role-test.js"] = (
         "text/javascript; charset=utf-8", script.encode("utf-8"))
 
+    # The page's result is read over DevTools while it runs, so the host loop
+    # stops as soon as the probe settles instead of at a fixed deadline.
+    profile = tmp_path / "real-browser"
+    log = (tmp_path / "chromium.log").open("wb")
     process = subprocess.Popen(
         [chromium, "--headless", "--no-sandbox", "--disable-gpu",
          "--disable-background-networking", "--no-first-run",
          "--no-default-browser-check", "--disable-dev-shm-usage",
-             f"--user-data-dir={tmp_path / 'real-browser'}", "--virtual-time-budget=300000",
-             f"--window-size={width},{height}",
-             f"--screenshot={tmp_path / f'workstation-{width}x{height}.png'}",
-         "--dump-dom", f"http://{console.address[0]}:{console.address[1]}/"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+         f"--user-data-dir={profile}", "--virtual-time-budget=300000",
+         f"--window-size={width},{height}", "--remote-debugging-port=0",
+         f"http://{console.address[0]}:{console.address[1]}/"],
+        stdout=subprocess.DEVNULL, stderr=log,
     )
     roles = ("bridge", "sonar", "opz", "eloka", "engine", "damage",
              "radio", "helicopter", "weapons")
@@ -1443,6 +1459,8 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
     presence_marks = []
     bridge_live = False
     started = time.monotonic()
+    read_at = started
+    root = {}
 
     def grant_and_activate(client_id, station):
         assert console.server.grant_station(client_id, station)
@@ -1452,7 +1470,15 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
         assert console.server.activate_station(client_id, station, generation)
 
     try:
-        while process.poll() is None and time.monotonic() - started < 50:
+        while process.poll() is None and time.monotonic() - started < 90:
+            if time.monotonic() - read_at > .5:
+                read_at = time.monotonic()
+                root = page_dataset(profile) or root
+                # Once the probe passed, stay until the last role's presence
+                # has cycled too (asserted below).
+                if (root.get("realRoleTest") == "failed" or (
+                        root.get("realRoleTest") and len(presence_marks) >= 3)):
+                    break
             roster = console.server.client_statuses()
             if roster and role_index < 0:
                 grant_and_activate(roster[0]["client_id"], roles[0])
@@ -1495,25 +1521,25 @@ def test_real_v2_role_states_survive_unpublished_admin_grants_and_presence(
                 grant_and_activate(roster[0]["client_id"], roles[role_index])
                 presence_marks.clear()
             elif (3 <= role_index < len(roles) - 1
-                  and len(presence_marks) >= 3):
+                  # The first mark can be the previous role's poll: one more
+                  # lets the browser poll this role's state on both sides of
+                  # its chart fetch before the host moves it on.
+                  and len(presence_marks) >= 4):
                 role_index += 1
                 grant_and_activate(roster[0]["client_id"], roles[role_index])
                 assert console.server.set_client_grant(
                     roster[0]["client_id"], "command", True)
                 presence_marks.clear()
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        process.kill()
+        process.wait(timeout=5)
+        log.close()
         console.stop()
         game.audio.shutdown()
 
-    assert process.returncode == 0, stderr
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-real-role-test") == "passed", root.get(
-        "data-failure", stdout[-6000:] + stderr[-3000:])
+    assert root.get("realRoleTest") == "passed", root.get(
+        "failure", (tmp_path / "chromium.log").read_text(errors="replace")[-3000:])
     assert role_index == len(roles) - 1
     assert all(contact.player_class == "U_BOOT"
                for contact in game.sonar.contacts.values())

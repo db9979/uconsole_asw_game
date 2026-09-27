@@ -113,6 +113,7 @@ export async function poll() {
       if (S.sonarAudioEnabled && !listeningContinues) emit("audio:stop", "sonar_live_unavailable");
       if (S.pending) S.commandMessage = { key: "command_context_changed", status: "rejected" };
       S.pending = null;
+      S.requestedSonarFocus = null;
       const worldChanged = epochChanged || sessionChanged;
       if (worldChanged) {
         S.opzMarked.clear();

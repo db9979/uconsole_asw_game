@@ -188,6 +188,34 @@ def run_module_probe(tmp_path, probe: str, *, routes: dict | None = None,
     return root
 
 
+def page_dataset(profile: Path) -> dict | None:
+    """``<html>`` data attributes of a live headless Chromium page, or None.
+
+    For probes that must run in real time next to the simulation: Chromium's
+    virtual time races ahead of the host and starves live WebSocket streams.
+    Launch with ``--remote-debugging-port=0`` and ``--user-data-dir=profile``.
+    """
+    import json
+    import urllib.request
+
+    from websockets.sync.client import connect
+
+    try:
+        port = int((profile / "DevToolsActivePort").read_text().split()[0])
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=2) as reply:
+            page = next(target for target in json.load(reply) if target["type"] == "page")
+        with connect(page["webSocketDebuggerUrl"], open_timeout=2, max_size=None) as devtools:
+            devtools.send(json.dumps({"id": 1, "method": "Runtime.evaluate", "params": {
+                "expression": "JSON.stringify({...document.documentElement.dataset})",
+                "returnByValue": True}}))
+            while True:
+                message = json.loads(devtools.recv(timeout=2))
+                if message.get("id") == 1:
+                    return json.loads(message["result"]["result"]["value"])
+    except (OSError, ValueError, KeyError, StopIteration, TimeoutError):
+        return None
+
+
 def module_source(relative: str, start: str | None = None, end: str | None = None) -> str:
     """Source of ``js/<relative>`` as plain script text for isolated algorithm tests.
 

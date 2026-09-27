@@ -12,7 +12,7 @@ export function renderBridgeStation(payload) {
     ["ordered_speed", unit(navigation.target_speed, "kn")], ["rudder_angle", unit(navigation.rudder_angle, "\u00b0")],
     ["yaw_rate", unit(navigation.yaw_rate, "\u00b0/s")], ["turn_radius", unit(navigation.turn_radius_nm, "NM", 2)]]);
   metrics($("bridge-orders-summary"), [["station_down", yesNo(payload.orders.station_down)],
-    ["speed_max", unit(payload.orders.speed_max_kn, "kn")], ["telegraph", payload.orders.telegraph],
+    ["speed_max", unit(payload.orders.speed_max_kn, "kn")], ["telegraph", t(`telegraph_${payload.orders.telegraph.toLowerCase()}`)],
     ["noise", number(payload.orders.noise, 2)], ["cavitating", yesNo(payload.orders.cavitating)],
     ["threat_count", number(payload.threat.count, 0)], ["flood", unit(payload.threat.average_flood, "%")],
     ["systems_down", payload.systems.filter((item) => item.down).map((item) => item.key).join(", ") || t("station_none")],

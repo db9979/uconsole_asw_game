@@ -14,6 +14,12 @@ export const duration = (seconds) => {
 export const timeOfDay = (hours) => finite(hours)
   ? `${String(Math.floor(hours) % 24).padStart(2, "0")}:${String(Math.floor(hours * 60) % 60).padStart(2, "0")}` : t("unavailable");
 export const unit = (value, symbol, digits = 1) => finite(value) ? `${number(value, digits)} ${symbol}` : t("unavailable");
+// An internal state name as catalog text ("<family>_<value>"), else as sent.
+export const stateText = (family, value) => {
+  if (value === null || value === undefined || value === "") return t("unavailable");
+  const key = `${family}_${String(value).toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
+  return S.catalog[prefix + key] ? t(key) : String(value);
+};
 export const enumText = (map, value) => t(map[value] || "unknown");
 export const classificationText = (value) => Object.hasOwn(classes, value) ? enumText(classes, value) :
   typeof value === "string" && value ? value : t("unknown");

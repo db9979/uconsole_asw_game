@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
-import { enumText, finite, number, t, unit } from "../core/format.js";
+import { enumText, finite, number, stateText, t, unit } from "../core/format.js";
 import { metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 
 export function renderSonarStation(payload) {
@@ -11,10 +11,10 @@ export function renderSonarStation(payload) {
     $(id).hidden = submarine;
   $("station-sonar-title").textContent = t(submarine ? "station_uboot_sonar" : "station_sonar");
   const auditionMode = payload.visualization.receiver.listen_mode;
-  metrics($("sonar-settings"), [["sonar_mode", settings.mode], ["sonar_page", number(settings.page, 0)],
+  metrics($("sonar-settings"), [["sonar_mode", stateText("sonar_array", settings.mode)], ["sonar_page", number(settings.page, 0)],
     ["sonar_listen_bearing", unit(settings.listen_bearing, "\u00b0", 0)], ["sonar_focus", settings.focus_ref || t("station_none")],
     ["sonar_target", settings.target_ref || t("station_none")], ["station_down", yesNo(settings.station_down)],
-    ["sonar_tow_state", settings.tow.state], ["sonar_tow_payout", unit(settings.tow.payout * 100, "%", 0)],
+    ["sonar_tow_state", stateText("tow_state", settings.tow.state)], ["sonar_tow_payout", unit(settings.tow.payout * 100, "%", 0)],
     ["sonar_tow_speed_window", `${unit(settings.tow.speed_min_kn, "kn", 0)} - ${unit(settings.tow.speed_max_kn, "kn", 0)}`],
     ["sonar_tow_depth", unit(settings.tow.depth_m, "m", 0)],
     ["sonar_bt_ready", yesNo(settings.bt.ready)], ["sonar_ping_ready", yesNo(settings.ping.ready)],

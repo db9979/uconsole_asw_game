@@ -16,7 +16,7 @@ import pygame
 
 from src.commander.server import OPFOR_ROLES
 from src.core import config, opfor, uboot_local
-from src.core.i18n import display_value, localize, message, raw_text
+from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
 from src.ui import layout, lines, nato_symbols
 from src.ui.feedback import FeedEntry
@@ -507,7 +507,8 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     phase = sub.endurance.phase if sub.endurance is not None else None
     layout.blit_line(s, message("uboot.line.battery",
                                 value=_fmt(None if battery is None else battery * 100),
-                                phase=raw_text(str(phase or "--"))),
+                                phase=(display_message("endurance_phase", phase)
+                                       if phase else raw_text("--"))),
                      (dx, dy + 88, dw, 20), config.COLOR_TEXT_DIM, size=16)
     _bar(s, (dx, dy + 110, dw, 10), battery,
          config.COLOR_DANGER if battery is not None and battery < .15 else
@@ -681,7 +682,8 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
     phase = sub.endurance.phase if sub.endurance is not None else None
     layout.blit_line(s, message("uboot.line.battery",
                                 value=_fmt(None if battery is None else battery * 100),
-                                phase=raw_text(str(phase or "--"))),
+                                phase=(display_message("endurance_phase", phase)
+                                       if phase else raw_text("--"))),
                      (px + half + 10, py, half, 22), config.COLOR_TEXT, size=17)
     _bar(s, (px + half + 10, py + 26, half, 12), battery,
          config.COLOR_DANGER if battery is not None and battery < .15 else

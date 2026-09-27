@@ -6,7 +6,8 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize, message as structured_message
+from src.core.i18n import (display_message, display_value, localized, localize,
+                            message as structured_message)
 from src.core.station import Station
 from src.ui import horizon, layout
 from src.ui import observations
@@ -184,7 +185,7 @@ def draw_bridge_view(game, tr=None) -> None:
         dx, dy, dw, _ = drive
         layout.blit_line(s, message("bridge.line.speed", speed=f"{game.ship.speed:04.1f}"),
                          (dx, dy, dw, 38), config.COLOR_TEXT, size=32)
-        layout.status_line(s, dx, dy + 42, dw, "ui.order", game.ship.telegraph,
+        layout.status_line(s, dx, dy + 42, dw, "ui.order", display_message("telegraph", game.ship.telegraph),
                            size=20, label_w=90)
         layout.status_line(s, dx, dy + 72, dw, "ui.target_value_short",
                            message("bridge.line.speed", speed=f"{game.ship.target_speed:.1f}"), size=20, label_w=90)

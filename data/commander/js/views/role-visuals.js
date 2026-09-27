@@ -49,8 +49,8 @@ function drawEngineVisual() {
   gauge(plot.context, plot.width * .18, plot.height * .55, radius, p.rpm, 300, `${number(p.rpm, 0)} RPM`);
   gauge(plot.context, plot.width * .5, plot.height * .55, radius, p.speed, payload.controls.speed_max_kn, `${number(p.speed, 1)} kn`);
   gauge(plot.context, plot.width * .82, plot.height * .55, radius, m.noise, 1, t("noise"));
-  plot.context.fillStyle = p.cavitating ? palette().red : palette().accent; plot.context.textAlign = "center"; plot.context.fillText(`${p.telegraph} / ${t(p.cavitating ? "cavitating" : "not_cavitating")}`, plot.width / 2, 22);
-  $("engine-instruments-text").textContent = t("engine_equivalent", {telegraph: p.telegraph, rpm: number(p.rpm, 0), speed: number(p.speed, 1), target: number(p.target_speed, 1), cap: number(m.effective_speed_cap, 1), noise: number(m.noise, 2), roll: number(e.roll, 1), pitch: number(e.pitch, 1)});
+  plot.context.fillStyle = p.cavitating ? palette().red : palette().accent; plot.context.textAlign = "center"; plot.context.fillText(`${t(`telegraph_${p.telegraph.toLowerCase()}`)} / ${t(p.cavitating ? "cavitating" : "not_cavitating")}`, plot.width / 2, 22);
+  $("engine-instruments-text").textContent = t("engine_equivalent", {telegraph: t(`telegraph_${p.telegraph.toLowerCase()}`), rpm: number(p.rpm, 0), speed: number(p.speed, 1), target: number(p.target_speed, 1), cap: number(m.effective_speed_cap, 1), noise: number(m.noise, 2), roll: number(e.roll, 1), pitch: number(e.pitch, 1)});
 }
 function drawElokaVisual() {
   const plot = visualContext("eloka-scope"), payload = S.v2State.eloka;

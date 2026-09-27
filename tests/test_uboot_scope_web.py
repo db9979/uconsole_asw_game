@@ -202,3 +202,15 @@ def test_periscope_view_trains_and_reads_the_stadimeter_in_the_browser(tmp_path,
     assert {row[0] for row in applied} == {"uboot_mast", "uboot_scope_bearing", "uboot_scope_mark"}
     assert all(row[2] == "uboot_esm" and row[3] is True for row in applied)
     assert "\u00b0\u00b0" not in root.get("data-status", "")
+
+
+def test_periscope_card_offers_the_mast_to_its_owner_and_names_it_for_command():
+    html = index_html()
+    card = html[html.index('class="station-card-view station-wide uboot-scope-card"'):]
+    card = card[:card.index("</article>")]
+    # The Mast & ESM station raises the mast from the periscope card itself.
+    assert 'data-uboot-stations="uboot_esm"><button type="button" data-uboot-mode="uboot_mast" data-enabled="true"' in card
+    assert 'data-uboot-mode="uboot_mast" data-enabled="false"' in card
+    # Command sees the periscope but does not own the mast: the hint names the station.
+    for catalog in catalogs():
+        assert "ESM" in catalog["commander.web.uboot_scope_mast_down"]

@@ -1823,6 +1823,7 @@
   "editor.user_mission": "User mission",
   "editor.runtime_banner": "Not yet runtime-effective: profiles created here have no effect on the running simulation.",
   "editor.runtime_no": "Runtime effective: no",
+  "editor.runtime_scope": "Runtime: built-in units, groups, events, objectives; not user profiles, torpedoes, other sizes",
   "editor.supported_no": "SUPPORTED / NOT RUNTIME-EFFECTIVE",
   "editor.static_only": "STATIC ONLY",
   "editor.saved": "Saved",

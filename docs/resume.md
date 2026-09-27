@@ -1465,6 +1465,37 @@ Notizen Phase 12:
 - `tests/test_commander_local.py` baut Roster-Zeilen ohne `observer`; der
   Roster liest das Feld deshalb mit `.get`.
 
+| 13 Missionslaufzeit | fertig (4 Schritte, je ein Commit) | siehe `git log` | `tests/test_mission_runtime.py` 12, Editor/Save/Integration gruen | Torpedos und Benutzerprofile bleiben abgelehnt (Entscheidung) |
+
+Notizen Phase 13:
+
+- Schritt 1: `world.reference` muss `sector:<0..127>` sein
+  (`mission_definition.reference_sector_index`, Validator-Code `reference`);
+  `real_coast.sector_for_index`, `Coastline.generate(sector_index=...)`,
+  `Game.reset(reference_sector=...)` setzen `world_mode = "real_fixed"`.
+  Feste Welten behalten den bisherigen Weltmodus des Spiels (kein Wechsel
+  auf die stilisierte Karte). Editor: Textfeld statt Sektorauswahl
+  (Abweichung; die Vorlage `mission.json` nennt `sector:17`).
+- Schritt 2: `protect` (Ziele = platzierte freundliche/neutrale Einheiten,
+  verloren mit der ersten versenkten, gewonnen am Zeitlimit) und `reach`
+  (`objective.reach` x/y/radius_nm, Default 2 sm, in `default_mission`).
+  `Game.mission_units` (Missions-ID -> Entitaets-ID, Flugzeuge nach `seq`)
+  im Save als `mission_runtime.units`; `mission_entity()` sucht danach.
+- Schritt 3: Zufallsgruppen aus `static_preview` (Kurs aus dem Seed, 4 kn,
+  60 m); Ereignisse laufen in `_update_damage_and_mission` vor der
+  Zielpruefung (`_run_mission_events`), Save-Wurzelfeld `mission_events`
+  (ausstehende IDs, gegen die Definition validiert). Wetter:
+  `World.weather_override` (rain/storm/fog als feste Atmosphaerenwerte,
+  Seegang bleibt), im Weltblock gespeichert.
+- Schritt 4: Flugzeuge als `Flight` der naechsten kartierten Basis
+  (Laufzeit-Speed = Profil, da der Save keine Fluggeschwindigkeit haelt),
+  Tiere als `Animal`, Taeuschkoerper als ruhende `Decoy` (Validator laesst
+  `source_id` None mit Speed 0 nur bei einer eigenen Mission zu).
+- Editor: `static_preview["runtime_effective"]` ist jetzt True,
+  `MISSION_FIELD_METADATA` nennt den Laufzeitumfang, Text
+  `editor.runtime_scope`. `docs/commander-coop.md` erwaehnt eigene
+  Missionen nicht; nur AGENTS und Handbuch aktualisiert.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

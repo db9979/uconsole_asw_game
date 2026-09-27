@@ -34,16 +34,20 @@ class FieldMetadata:
 # only means consumed by the current game runtime, not that a field is useful.
 MISSION_FIELD_METADATA = {
     "key": FieldMetadata(True, False, "User content identity; integration pending."),
-    "name": FieldMetadata(True, False),
-    "description": FieldMetadata(True, False),
-    "seed": FieldMetadata(True, False),
-    "world": FieldMetadata(True, False, "Fixed coordinates and sector references are previewed."),
-    "player": FieldMetadata(True, False),
-    "environment": FieldMetadata(True, False),
-    "units.exact": FieldMetadata(True, False),
-    "units.random_groups": FieldMetadata(True, False, "Resolved only in static preview."),
-    "objective": FieldMetadata(True, False),
-    "events": FieldMetadata(True, False),
+    "name": FieldMetadata(True, True),
+    "description": FieldMetadata(True, True),
+    "seed": FieldMetadata(True, True),
+    "world": FieldMetadata(True, True, "500 NM only; fixed coordinates, authored sectors "
+                                       "and packaged reference sectors (sector:<n>)."),
+    "player": FieldMetadata(True, True),
+    "environment": FieldMetadata(True, True),
+    "units.exact": FieldMetadata(True, True, "Built-in submarine, surface, aircraft, animal "
+                                             "and decoy profiles; torpedoes and user profiles "
+                                             "are rejected at start."),
+    "units.random_groups": FieldMetadata(True, True, "Seeded from the preview; a spawn "
+                                                     "event defers its group."),
+    "objective": FieldMetadata(True, True),
+    "events": FieldMetadata(True, True),
 }
 
 
@@ -326,7 +330,7 @@ def static_preview(data: Mapping[str, Any], seed: int | None = None) -> dict[str
             "markers": markers, "sectors": copy.deepcopy(list(sectors.values())),
             "events": copy.deepcopy(sorted(data["events"], key=lambda event: event["at_s"])),
             "objective": copy.deepcopy(data["objective"]),
-            "runtime_effective": False}
+            "runtime_effective": True}
 
 
 class MissionDefinition:

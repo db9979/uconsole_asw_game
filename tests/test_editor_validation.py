@@ -118,7 +118,7 @@ def test_seeded_preview_is_stable_and_resolves_groups():
     first = static_preview(mission)
     assert first == static_preview(mission)
     assert len(first["markers"]) == 3
-    assert not first["runtime_effective"]
+    assert first["runtime_effective"]
 
 
 def test_editor_value_parser_preserves_types_and_rejects_code_or_nonfinite_json():

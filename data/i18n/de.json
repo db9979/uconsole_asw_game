@@ -1823,6 +1823,7 @@
   "editor.user_mission": "Benutzermission",
   "editor.runtime_banner": "Noch nicht laufzeitwirksam: hier erstellte Profile haben keine Auswirkung auf die laufende Simulation.",
   "editor.runtime_no": "Zur Laufzeit wirksam: nein",
+  "editor.runtime_scope": "Laufzeit: eingebaute Einheiten, Gruppen, Ereignisse, Ziele; nicht Benutzerprofile, Torpedos, andere Größen",
   "editor.supported_no": "UNTERSTÜTZT / NICHT LAUFZEITWIRKSAM",
   "editor.static_only": "NUR STATISCH",
   "editor.saved": "Gespeichert",

@@ -1100,7 +1100,7 @@ Die obere Leiste zeigt die sechs Stationen des Boots als Reiter: `1` Führung, `
 
 ### Mission und Wertung
 
-- Szenarien: 1 Patrouille, 2 Doppeljagd, 3 Nuklear-Abfang, 4 Zufall (eigene Schwierigkeit). Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser).
+- Szenarien: 1 Patrouille, 2 Doppeljagd, 3 Nuklear-Abfang, 4 Zufall (eigene Schwierigkeit). Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser). Die Laufzeit übernimmt den Umfang des Editors: eine 500-sm-Welt fest oder als paketierter Referenzsektor (`sector:0` bis `sector:127`), das eingestellte Wetter, platzierte U-Boote, Überwasserschiffe, Luftfahrzeuge (Patrouille in einem 10-sm-Kasten mit Profilgeschwindigkeit), Tiere und ruhende Täuschkörper, gesäte Zufallsgruppen, zeitgesteuerte Ereignisse (Meldung, Erscheinen, Wetter, Ziel) und die Ziele Versenken, Überstehen, Schützen (die benannten Einheiten bis zum Zeitlimit erhalten) und Erreichen (den Radius des Zielpunkts betreten). Benutzerprofile, Torpedos und andere Weltgrößen werden beim Start abgewiesen.
 - Sieg: alle Ziele versenkt oder Zeitlimit überlebt. Niederlage: eigenes Schiff versenkt, ziviler Treffer, Ziel 150 sm vom Start entfernt oder Zeit abgelaufen.
 - Punkte: 1000 je versenktem U-Boot, 200 je unverbrauchtem Torpedo, 500 ohne zivile Verluste, bis zu 500 Zeitbonus.
 

@@ -1099,7 +1099,7 @@ The top bar shows the boat's six stations as tabs: `1` Command, `2` Sonar, `3` W
 
 ### Mission and scoring
 
-- Scenarios: 1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Random (custom difficulty). User missions start from the Mission Editor (`F5` in its browser).
+- Scenarios: 1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Random (custom difficulty). User missions start from the Mission Editor (`F5` in its browser). The runtime takes the editor's scope: a 500 NM fixed world or a packaged reference sector (`sector:0` to `sector:127`), the authored weather, placed submarines, surface ships, aircraft (patrolling a 10 NM box at profile speed), animals and static decoys, seeded random groups, timed events (message, spawn, weather, objective) and the objectives sink, survive, protect (keep the named units alive until the time limit) and reach (enter the objective point's radius). User unit profiles, torpedoes and other world sizes are refused at start.
 - Win: all targets sunk, or survive the time limit. Lose: own ship sunk, civilian hit, target 150 NM from its start, or time out.
 - Score: 1000 per sunk submarine, 200 per unused torpedo, 500 without civilian losses, up to 500 time bonus.
 

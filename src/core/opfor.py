@@ -65,7 +65,10 @@ class CrewOrders:
               "obstacle_ahead": "navigation",
               "sighting_warship": "sonar", "sighting_merchant": "sonar",
               "sighting_aircraft": "sonar", "sighting_torpedo": "sonar",
-              "sighting_unknown": "sonar"}
+              "sighting_unknown": "sonar",
+              "air_caution": "navigation", "air_danger": "navigation",
+              "absorber_spent": "navigation", "fuel_low": "navigation",
+              "fuel_empty": "navigation"}
 
     def __init__(self):
         self.silent = False

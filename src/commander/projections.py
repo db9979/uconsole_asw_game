@@ -1250,6 +1250,48 @@ def _uboot_scope(game, boat):
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
 
 
+def _uboot_plant(sub):
+    """The boat's own plant and stores (legitimate own-ship truth): energy
+    balance, endurance dived by speed, diesel and the boat's air."""
+    endurance = sub.endurance
+    if endurance is None:
+        return dict(propulsion="nuclear", phase=None, battery_kwh=None, battery_capacity_kwh=None,
+                    aip_kwh=None, aip_capacity_kwh=None, aip_kw=None, load_kw=None,
+                    supply_kw=None, net_kw=None, empty_s=None, full_s=None,
+                    generator_kw=None, fuel_l=None, fuel_capacity_l=None,
+                    charge_rate=None, snorkel_rate=None, endurance=[], air=None)
+    profile = endurance.profile
+    maximum = sub.motion.maximum_speed_kn
+    balance = endurance.forecast(sub.speed, maximum)
+    litres = config.UBOOT_DIESEL_L_PER_KWH
+    speeds = sorted({*(step for step in config.UBOOT_SPEED_STEPS_KN if 0.0 < step < maximum),
+                     maximum})
+    air = endurance.air
+    return dict(
+        propulsion="aip" if profile.aip_power_kw is not None else "diesel",
+        phase=str(endurance.phase)[:16], battery_kwh=_number(endurance.battery_kwh),
+        battery_capacity_kwh=_number(profile.battery_capacity_kwh),
+        aip_kwh=(_number(endurance.aip_energy_kwh)
+                 if profile.aip_power_kw is not None else None),
+        aip_capacity_kwh=_number(profile.aip_energy_kwh),
+        aip_kw=_number(profile.aip_power_kw),
+        load_kw=_number(balance["load_kw"]), supply_kw=_number(balance["supply_kw"]),
+        net_kw=_number(balance["net_kw"]), empty_s=_number(balance["empty_s"]),
+        full_s=_number(balance["full_s"]),
+        generator_kw=_number(profile.generator_power_kw),
+        fuel_l=_number(endurance.fuel_kwh * litres),
+        fuel_capacity_l=_number(endurance.fuel_capacity_kwh * litres),
+        charge_rate=endurance.charge_rate, snorkel_rate=sub.snorkel_rate,
+        endurance=[dict(speed_kn=_number(speed),
+                        hours=_number(min(9999.0, endurance.submerged_hours(speed, maximum))))
+                   for speed in speeds][:8],
+        air=dict(o2_pct=_number(air.o2_pct), co2_pct=_number(air.co2_pct),
+                 absorber_pct=_number(air.absorber_left * 100.0),
+                 absorber_sets=int(air.absorber_sets), candles=int(air.candles),
+                 candle_left_s=_number(air.candle_left_s), level=air.level(),
+                 efficiency=_number(air.efficiency())))
+
+
 def _uboot(game, boat, rows, target_ref, asset_refs):
     """The crewed submarine's commander: own boat (legitimate truth), its
     orders, weapons and the boat's own sonar contacts."""
@@ -1322,6 +1364,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         own_weapons=_uboot_weapons(game, boat, asset_refs),
         designated_target_ref=target_ref,
         scope=_uboot_scope(game, boat),
+        plant=_uboot_plant(sub),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

@@ -38,7 +38,15 @@ WEATHER_BOAT_FIELDS = (
     "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz")
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
-                        "own_weapons", "designated_target_ref", "feed", "scope")
+                        "own_weapons", "designated_target_ref", "feed", "scope", "plant")
+# The boat's plant and stores (``plant``): numbers, then the air block.
+UBOOT_PLANT_FIELDS = (
+    "propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh",
+    "aip_capacity_kwh", "aip_kw", "load_kw", "supply_kw", "net_kw", "empty_s",
+    "full_s", "generator_kw", "fuel_l", "fuel_capacity_l", "charge_rate",
+    "snorkel_rate", "endurance", "air")
+UBOOT_AIR_FIELDS = ("o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles",
+                    "candle_left_s", "level", "efficiency")
 # Top-level keys of every role payload (exact sets on both sides).
 ROLE_SHAPES = {
     "bridge": ("navigation", "orders", "threat", "systems", "tactical_summary", "sightings"),

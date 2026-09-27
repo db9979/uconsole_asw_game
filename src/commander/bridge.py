@@ -615,6 +615,18 @@ def _uboot_snorkel(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_snorkel(params["enabled"]))
 
 
+def _uboot_charge_rate(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_charge_rate(params["rate"]))
+
+
+def _uboot_absorber(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_absorber())
+
+
+def _uboot_o2_candle(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_o2_candle())
+
+
 def _uboot_mast(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_mast(params["enabled"]))
 
@@ -649,6 +661,9 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_decoy": _uboot_decoy,
     "uboot_blow": _uboot_blow,
     "uboot_snorkel": _uboot_snorkel,
+    "uboot_charge_rate": _uboot_charge_rate,
+    "uboot_absorber": _uboot_absorber,
+    "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
     "uboot_silent": _uboot_silent,
     "uboot_bottom": _uboot_bottom,

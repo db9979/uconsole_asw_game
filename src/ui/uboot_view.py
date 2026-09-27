@@ -31,7 +31,7 @@ from src.ui.weather_station import draw_weather_station
 UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE")
 # Panel pages of each boat station beside the chart (the sonar room is full screen).
 STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
-                 "uboot_engine": ("UBOOT_ENGINE",),
+                 "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY"),
                  "uboot_esm": ("UBOOT_ESM", "UBOOT_SCOPE"),
                  "uboot_nav": ("UBOOT_NAV",)}
 
@@ -623,6 +623,10 @@ _FOOTERS = {
                                        ("N", "uboot.footer.snorkel"),
                                        ("help.key.uboot_blow", "uboot.footer.blow")),
     ("uboot_esm", "UBOOT_ESM"): (("P", "uboot.footer.mast"), ("Q/E", "uboot.footer.chart")),
+    ("uboot_engine", "UBOOT_SUPPLY"): (("R", "uboot.footer.charge_rate"),
+                                       ("A", "uboot.footer.absorber"),
+                                       ("O", "uboot.footer.o2_candle"),
+                                       ("N", "uboot.footer.snorkel")),
 }
 
 
@@ -651,7 +655,8 @@ def draw_command_panel(game, boat) -> None:
         content_h -= 54
     name = pages[page]
     drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_WEAPONS": _draw_weapons_page,
-              "UBOOT_ENGINE": _draw_engine_page, "UBOOT_ESM": _draw_esm_page,
+              "UBOOT_ENGINE": _draw_engine_page, "UBOOT_SUPPLY": _draw_supply_page,
+              "UBOOT_ESM": _draw_esm_page,
               "UBOOT_SCOPE": draw_scope_page}[name]
     drawer(s, game, boat, x, content_y, w, content_h)
     specs = tuple(
@@ -717,6 +722,106 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
                                     speed=_fmt(speed, "{:.0f}")), rect,
                          config.COLOR_TEXT if current else config.COLOR_TEXT_DIM,
                          size=16, align="center")
+
+
+def _hours_text(seconds):
+    """A forecast time as h:mm (``--`` when none)."""
+    if seconds is None or not math.isfinite(seconds):
+        return "--"
+    minutes = int(round(seconds / 60.0))
+    return f"{minutes // 60}:{minutes % 60:02d}"
+
+
+def _supply_bar(s, x, y, w, label, text, fraction, low, empty) -> None:
+    layout.status_line(s, x, y, w, label, text, size=15, label_w=110)
+    color = (config.COLOR_DANGER if fraction is not None and fraction <= empty else
+             config.COLOR_WARN if fraction is not None and fraction <= low else config.COLOR_OK)
+    _bar(s, (x, y + 20, w, 8), fraction, color)
+
+
+def _draw_supply_page(s, game, boat, x, y, w, h) -> None:
+    """Engine room stores: energy balance, endurance dived by speed, diesel and air."""
+    sub = boat.sub
+    endurance = sub.endurance
+    if endurance is None:
+        inner = layout.box(s, (x, y, w, 80), "uboot.panel.energy")
+        layout.blit_block(s, "uboot.line.nuclear_plant", inner[0], inner[1], inner[2], inner[3],
+                          config.COLOR_TEXT_DIM, size=16)
+        return
+    profile = endurance.profile
+    maximum = sub.motion.maximum_speed_kn
+    balance = endurance.forecast(sub.speed, maximum)
+    litres = config.UBOOT_DIESEL_L_PER_KWH
+    energy_h = min(206, h // 2)
+    ex, ey, ew, _ = layout.box(s, (x, y, w, energy_h), "uboot.panel.energy")
+    battery = endurance.battery_kwh / profile.battery_capacity_kwh
+    _supply_bar(s, ex, ey, ew, "uboot.label.battery",
+                message("uboot.value.kwh", value=_fmt(endurance.battery_kwh),
+                        capacity=_fmt(profile.battery_capacity_kwh)), battery, .2, .03)
+    row = ey + 32
+    if profile.aip_power_kw is not None:
+        _supply_bar(s, ex, row, ew, "uboot.label.aip",
+                    message("uboot.value.kwh", value=_fmt(endurance.aip_energy_kwh),
+                            capacity=_fmt(profile.aip_energy_kwh)),
+                    endurance.aip_energy_kwh / max(1e-9, profile.aip_energy_kwh), .1, 0.0)
+        row += 32
+    fuel = endurance.fuel_kwh / max(1e-9, endurance.fuel_capacity_kwh)
+    _supply_bar(s, ex, row, ew, "uboot.label.fuel",
+                message("uboot.value.fuel", value=_fmt(endurance.fuel_kwh * litres / 1000.0, "{:.1f}"),
+                        pct=_fmt(fuel * 100)), fuel, config.UBOOT_FUEL_LOW_FRACTION, 0.0)
+    row += 34
+    net = balance["net_kw"]
+    layout.status_line(s, ex, row, ew, "uboot.label.balance", message(
+        "uboot.value.balance", load=_fmt(balance["load_kw"]), supply=_fmt(balance["supply_kw"]),
+        net=f"{net:+.0f}"), color=config.COLOR_OK if net >= 0 else config.COLOR_TEXT,
+        size=15, label_w=110)
+    row += 20
+    full = balance["full_s"] is not None
+    layout.status_line(s, ex, row, ew, "uboot.label.full_in" if full else "uboot.label.empty_in",
+                       _hours_text(balance["full_s"] if full else balance["empty_s"]),
+                       size=15, label_w=110)
+    row += 20
+    layout.status_line(s, ex, row, ew, "uboot.label.charge_rate", message(
+        "uboot.value.charge", rate=message(f"uboot.charge.{endurance.charge_rate}"),
+        kw=_fmt(profile.generator_power_kw * config.UBOOT_CHARGE_POWER[endurance.charge_rate])),
+        size=15, label_w=110)
+    air = endurance.air
+    air_y = y + energy_h + 8
+    half = (w - 8) // 2
+    table_h = y + h - air_y
+    tx, ty, tw, th = layout.box(s, (x, air_y, half, table_h), "uboot.panel.endurance")
+    speeds = sorted({*(step for step in config.UBOOT_SPEED_STEPS_KN if 0.0 < step < maximum),
+                     maximum})
+    for index, speed in enumerate(speeds):
+        if (index + 1) * 20 > th:
+            break
+        hours = endurance.submerged_hours(speed, maximum)
+        layout.blit_line(s, message("uboot.line.endurance_row", speed=_fmt(speed),
+                                    hours=_fmt(min(hours, 9999.0), "{:.1f}"),
+                                    range=_fmt(min(hours * speed, 99999.0))),
+                         (tx, ty + index * 20, tw, 18),
+                         config.COLOR_WARN if abs(speed - sub.order_speed) < .05 else config.COLOR_TEXT,
+                         size=15)
+    level = air.level()
+    ax, ay, aw, ah = layout.box(s, (x + half + 8, air_y, w - half - 8, table_h), "uboot.panel.air",
+                                border={"ok": None, "caution": config.COLOR_WARN,
+                                        "danger": config.COLOR_DANGER}[level])
+    color = {"ok": config.COLOR_TEXT, "caution": config.COLOR_WARN,
+             "danger": config.COLOR_DANGER}[level]
+    rows = (("uboot.label.o2", _fmt(air.o2_pct, "{:.1f} %")),
+            ("uboot.label.co2", _fmt(air.co2_pct, "{:.2f} %")),
+            ("uboot.label.air_level", message(f"uboot.air.{level}")),
+            ("uboot.label.crew_efficiency", _fmt(air.efficiency() * 100, "{:.0f} %")),
+            ("uboot.label.absorber", message("uboot.value.absorber", pct=_fmt(air.absorber_left * 100),
+                                             sets=str(air.absorber_sets))),
+            ("uboot.label.candles", message("uboot.value.candles", count=str(air.candles),
+                                            burning=_hours_text(air.candle_left_s)
+                                            if air.candle_left_s > 0 else "--")))
+    for index, (label, value) in enumerate(rows):
+        if (index + 1) * 20 > ah:
+            break
+        layout.status_line(s, ax, ay + index * 20, aw, label, value,
+                           color=color if index < 3 else None, size=15, label_w=100)
 
 
 def _alarm_value(age, bearing):

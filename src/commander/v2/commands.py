@@ -130,7 +130,9 @@ def _range_params(params):
 UBOOT_REASONS = frozenset((
     "uboot_no_torpedoes", "uboot_reloading", "uboot_out_of_arc", "uboot_no_decoys",
     "uboot_too_deep", "uboot_no_snorkel", "uboot_no_wire", "uboot_mast_depth",
-    "uboot_mast_down", "uboot_no_sighting", "uboot_no_stadimeter"))
+    "uboot_mast_down", "uboot_no_sighting", "uboot_no_stadimeter",
+    "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
+    "uboot_no_air_stores"))
 
 
 def _bool_params(name):
@@ -553,6 +555,11 @@ V2_ACTION_REGISTRY = {
     "uboot_decoy": V2Action(frozenset({"uboot_weapons"}), _no_params),
     "uboot_blow": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_snorkel": V2Action(frozenset({"uboot_engine"}), _bool_params("enabled")),
+    # The engine room also keeps the boat's air and sets the charge rate.
+    "uboot_charge_rate": V2Action(frozenset({"uboot_engine"}),
+                                  _enum_params("rate", ("full", "half", "vent"))),
+    "uboot_absorber": V2Action(frozenset({"uboot_engine"}), _no_params),
+    "uboot_o2_candle": V2Action(frozenset({"uboot_engine"}), _no_params),
     "uboot_mast": V2Action(frozenset({"uboot", "uboot_esm"}), _bool_params("enabled")),
     "uboot_wire_steer": V2Action(frozenset({"uboot_weapons"}), _uboot_wire_params),
     "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),

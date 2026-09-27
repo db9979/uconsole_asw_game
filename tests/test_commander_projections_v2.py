@@ -112,11 +112,11 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                    "tactical_summary", "sightings"},
         "sonar": {"observations", "settings", "visualization"},
         "weapons": {"inventory", "readiness", "designated_target", "navigation",
-                    "tactical", "target_choices", "depth_m", "tubes",
+                    "tactical", "target_choices", "depth_m", "tubes", "settings",
                     "own_weapons", "active_assets"},
-        "damage": {"compartments", "teams", "total", "sunk"},
+        "damage": {"compartments", "teams", "total", "sunk", "stability"},
         "opz": {"observations", "fusions", "radar", "source_classifications",
-                 "designated_target_ref", "own_assets", "defense",
+                 "radar_blips", "designated_target_ref", "own_assets", "defense",
                  "asm_observations"},
         "radio": {"observations", "logged_fixes", "logged_bearings", "messages",
                    "station_down", "navigation", "tactical"},
@@ -162,6 +162,7 @@ def test_control_projection_fields_are_bounded_and_do_not_expose_audio_actions(p
     assert sonar["harmonic_candidates_hz"] == [12.5, 25.0]
     assert server.v2_states["engine"]["engine"]["controls"] == {
         "orders": ["ASTERN", "STOP", "SLOW", "HALF", "FULL", "FLANK"],
+        "plants": ["AUTO", "DIESEL", "TURBINE"],
         "speed_max_kn": config.SHIP_SPEED_MAX_KN}
     assert "audition_mode" not in sonar
 

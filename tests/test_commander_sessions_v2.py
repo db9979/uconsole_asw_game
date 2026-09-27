@@ -14,6 +14,7 @@ from commander_web import top_level_files
 
 from src.commander import CommanderServer
 from src.commander import server as transport
+from src.commander.v2 import routes
 from commander_fixtures import PLOT, WEATHER_STATION
 
 
@@ -95,7 +96,7 @@ def projection_states(revision="chart"):
 
 def assert_session(body, name):
     assert set(body) == {
-        "protocol", "client_id", "name", "csrf", "station",
+        "protocol", "client_id", "name", "csrf", "station", "observer",
         "requested_station", "grants", "ordinal", "station_generation",
         "active_station", "active_generation", "simlog",
         "next_command_seq", "presence", "stations", "host",
@@ -164,6 +165,7 @@ def test_multiple_pairings_reload_and_read_only_snapshots(server):
 def test_cookie_get_renews_eight_hour_idle_session(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(routes, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     _, cookie, _, body = pair_v2(server, "Helm")
     clock[0] += 8 * 60 * 60 - 1
     resumed = request(server, "/api/v2/session", cookie=cookie)[2]
@@ -201,6 +203,7 @@ def test_logout_requires_csrf_and_isolates_other_sessions(server):
 def test_twelve_session_limit_and_expiry_reopens_slot(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(routes, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     cookies = [pair_v2(server, f"Client {index}")[1] for index in range(12)]
     code = server.pairing_code
     status, _, body = request(
@@ -323,20 +326,21 @@ def test_station_request_requires_cookie_csrf_and_exact_schema(server):
                  {"station": 1}, [], None):
         assert request(server, route, "POST", body, cookie, session["csrf"])[0] == 400
 
-    status, _, requested = request(
+    # A free station is leased at once, with all of its rights.
+    status, _, taken = request(
         server, route, "POST", {"station": "sonar"}, cookie, session["csrf"])
     assert status == 200
-    assert requested["requested_station"] == "sonar"
-    assert requested["station"] is None
-    assert requested["stations"]["sonar"]["status"] == "available"
-    assert requested["stations"]["sonar"]["requested"] is True
-    status = server.client_statuses()[0]
-    assert status["stations"]["sonar"]["requested"] and status["active_station"] is None
+    assert taken["requested_station"] is None and taken["station"] == "sonar"
+    assert taken["stations"]["sonar"]["status"] == "mine"
+    assert taken["grants"]["sonar_audio"] is True
 
+    # A station a crewmate holds becomes a request for the host to decide.
+    _, _, _, holder = pair_v2(server, "Holder")
+    assert server.grant_station(holder["client_id"], "bridge")
     second = request(server, route, "POST", {"station": "bridge"}, cookie,
                      session["csrf"])[2]
-    assert second["stations"]["sonar"]["requested"]
     assert second["stations"]["bridge"]["requested"]
+    assert second["stations"]["bridge"]["status"] == "occupied"
     assert second["requested_station"] == "bridge"  # Canonical compatibility alias.
 
 
@@ -406,7 +410,7 @@ def test_host_revoke_and_grants_are_station_scoped(server):
     assert simlog["role"] == "bridge" and simlog["entries"] == []
     roster = server.client_statuses()[0]
     assert set(roster) == {"client_id", "name", "ordinal", "active_station",
-                           "active_generation", "simlog", "stations", "presence"}
+                           "active_generation", "simlog", "observer", "stations", "presence"}
     assert roster["stations"]["bridge"]["leased"]
     assert not roster["stations"]["weapons"]["leased"]
 
@@ -443,9 +447,7 @@ def test_host_station_lease_query_tracks_exclusive_ownership(server):
     assert not server.station_leased("bridge")
     assert request(server, "/api/v2/stations/request", "POST",
                    {"station": "bridge"}, alpha_cookie, alpha["csrf"])[0] == 200
-    assert not server.station_leased("bridge")
-    assert server.grant_station(alpha["client_id"], "bridge")
-    assert server.station_leased("bridge")
+    assert server.station_leased("bridge")  # Taken at once while free.
     assert server.set_client_grant(alpha["client_id"], "command", False)
     assert server.station_leased("bridge")
     assert server.grant_station(bravo["client_id"], "bridge")
@@ -536,6 +538,7 @@ def test_capability_invariants_and_release(server):
 def test_presence_expiry_releases_role_but_session_reconnects(server, monkeypatch):
     clock = [float(int(time.monotonic()))]
     monkeypatch.setattr(transport, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(routes, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     _, cookie, _, session = pair_v2(server, "Quiet")
     assert server.grant_station(session["client_id"], "radio")
     assert server.set_client_grant(session["client_id"], "command", True)
@@ -567,7 +570,8 @@ def test_independent_revoke_reject_revoke_all_and_roster_order(server):
         "Bridge", "Engine", "Unassigned first", "Unassigned last"]
 
     requester = clients["Unassigned first"][1]
-    assert request(server, "/api/v2/stations/request", "POST", {"station": "opz"},
+    # The bridge is held, so this stays a request the host can reject.
+    assert request(server, "/api/v2/stations/request", "POST", {"station": "bridge"},
                    clients["Unassigned first"][0], requester["csrf"])[0] == 200
     assert server.reject_station_request(requester["client_id"])
     assert server.revoke_station("engine")
@@ -677,9 +681,78 @@ def test_sonar_audio_endpoint_is_bounded_context_bound_and_does_not_renew_presen
     status, headers, payload = request(
         server, "/api/v2/sonar/audio", "POST", body, cookie, session["csrf"])
     assert status == 200 and payload == blocks[0]
-    assert headers["X-U-Jagd-Audio-Sequence"] == "1"
+    # Numbering never restarts within a server run: the cleared stream skips
+    # one number (the restart is a gap), then continues above the old cursor.
+    assert headers["X-U-Jagd-Audio-Sequence"] == str(len(blocks) + 2)
+    assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
+    # A cursor ahead of everything ever published (a host restart) is rebased.
+    body["after"] = len(blocks) + 10
+    status, headers, payload = request(
+        server, "/api/v2/sonar/audio", "POST", body, cookie, session["csrf"])
+    assert status == 200 and payload == blocks[0]
+    assert headers["X-U-Jagd-Audio-Sequence"] == str(len(blocks) + 2)
     assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
     assert lock_checks and all(lock_checks), "audio socket writes must not block the main-thread lock"
+
+
+@pytest.mark.parametrize("role", ("sonar", "uboot_sonar", "helicopter"))
+def test_audio_sequence_is_monotonic_across_clears_and_context_changes(server, role):
+    """An epoch step clears the ring but never renumbers from 1.
+
+    The browser worklet de-duplicates by sequence; a restart at 1 made it drop
+    every new block until the count passed the old one (minutes of silence
+    after any host key press). Clears and retunes now appear as gaps.
+    """
+    _, cookie, _, paired = pair_v2(server, "Audio")
+    client_id = paired["client_id"]
+    assert server.grant_station(client_id, role)
+    assert server.set_client_grant(client_id, role, "sonar_audio", True)
+    prepare = {"sonar": server.prepare_sonar_audio, "uboot_sonar": server.prepare_uboot_audio,
+               "helicopter": server.prepare_helicopter_audio}[role]
+    publish = {"sonar": server.publish_sonar_audio, "uboot_sonar": server.publish_uboot_audio,
+               "helicopter": server.publish_helicopter_audio}[role]
+    ring = lambda: server._audio_ring(role)[0]
+    pcm = bytes(transport.SONAR_AUDIO_BYTES)
+    generation = prepare(world_session="world-a", world_epoch=7)
+    assert generation is not None
+    for _ in range(3):
+        assert publish(pcm, world_session="world-a", world_epoch=7, station_generation=generation)
+    assert [entry[0] for entry in ring()] == [1, 2, 3]
+    # Idle clears of an already empty stream do not burn numbers.
+    server.clear_sonar_audio(); server.clear_uboot_audio(); server.clear_helicopter_audio()
+    assert prepare(world_session="world-a", world_epoch=7) == generation
+    server.clear_sonar_audio(); server.clear_uboot_audio(); server.clear_helicopter_audio()
+    # The host's local input advanced the epoch: new context, ring cleared,
+    # numbering continues above the old cursor with one skipped number.
+    assert prepare(world_session="world-a", world_epoch=8) == generation
+    assert publish(pcm, world_session="world-a", world_epoch=8, station_generation=generation)
+    assert [entry[0] for entry in ring()] == [5]
+    # A retuned receiver marks a discontinuity: one number is skipped.
+    assert server.mark_audio_discontinuity(role) is True
+    assert publish(pcm, world_session="world-a", world_epoch=8, station_generation=generation)
+    assert [entry[0] for entry in ring()] == [5, 7]
+    assert server.audio_stream_stats()[role]["discontinuities"] == 1
+    # Other roles are independent and unbound streams are never marked.
+    other = next(name for name in transport.SONAR_AUDIO_ROLES if name != role)
+    assert server.mark_audio_discontinuity(other) is False
+    with pytest.raises(ValueError):
+        server.mark_audio_discontinuity("weapons")
+    route = {"sonar": "/api/v2/sonar/audio", "uboot_sonar": "/api/v2/uboot/audio",
+             "helicopter": "/api/v2/helicopter/audio"}[role]
+    session = request(server, "/api/v2/session", cookie=cookie)[2]
+    body = {"protocol": 2, "after": 3, "world_session": "world-a", "world_epoch": 8,
+            "station_generation": session["station_generation"],
+            "active_generation": session["active_generation"]}
+    # A cursor older than the cleared ring is an overrun: newest block, gap.
+    status, headers, _ = request(server, route, "POST", body, cookie, session["csrf"])
+    assert status == 200 and headers["X-U-Jagd-Audio-Sequence"] == "7"
+    assert headers["X-U-Jagd-Audio-Discontinuity"] == "1"
+    body["after"] = 5
+    status, headers, _ = request(server, route, "POST", body, cookie, session["csrf"])
+    assert status == 200 and headers["X-U-Jagd-Audio-Sequence"] == "7"
+    assert headers["X-U-Jagd-Audio-Discontinuity"] == "0"  # the browser sees 5 -> 7 itself
+    body["after"] = 7
+    assert request(server, route, "POST", body, cookie, session["csrf"])[0] == 204
 
 
 def test_sonar_audio_fails_closed_for_auth_schema_role_grant_and_context(server):
@@ -695,6 +768,8 @@ def test_sonar_audio_fails_closed_for_auth_schema_role_grant_and_context(server)
     assert request(server, route, "POST", body, cookie, paired["csrf"],
                    {"Origin": f"http://localhost:{port}"})[0] == 403
     assert server.grant_station(paired["client_id"], "sonar")
+    # Granted with all rights; the host may still take audio away.
+    assert server.set_client_grant(paired["client_id"], "sonar_audio", False)
     assigned = request(server, "/api/v2/session", cookie=cookie)[2]
     body["station_generation"] = assigned["station_generation"]
     body["active_generation"] = assigned["active_generation"]

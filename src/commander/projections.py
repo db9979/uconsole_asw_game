@@ -7,8 +7,10 @@ simulation object.
 
 from copy import deepcopy
 import math
+import weakref
 
-from src.core import config, plot
+from src.core import config, opfor, plot
+from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.sonar import analysis_tools
 from src.core.i18n import localize
@@ -61,26 +63,26 @@ def _own_navigation(game):
         "rudder_angle", "yaw_rate", "turn_radius_nm")}
 
 
+_ATOMIC = (type(None), bool, int, float, str)
+
+
+def _detach(value):
+    """Detached copy of a projection value; scalars need no deepcopy call."""
+    return value if type(value) in _ATOMIC else deepcopy(value)
+
+
 def _observation(row, fields):
-    observation = {key: deepcopy(row[key]) for key in fields}
+    observation = {key: _detach(row[key]) for key in fields}
     if "label" in observation and "_display_id" in row:
         observation["label"] = row["_display_id"]
     return observation
 
 
-_TACTICAL_FIELDS = ("ref", "label", "domain", "source", "affiliation",
-                    "bearing", "range_nm", "x", "y", "course", "speed_kn",
-                    "altitude_m", "observer_x", "observer_y", "quality",
-                    "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm",
-                    "visual_class", "visual_type")
-_SONAR_FIELDS = ("ref", "label", "source", "classification", "profile", "bearing",
-                 "range_nm", "x", "y", "depth_m", "course", "speed_kn",
-                 "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg",
-                 "range_uncertainty_nm", "observer_x", "observer_y",
-                 "released_to_opz", "fixes")
-_RADIO_FIELDS = ("ref", "label", "bearing", "quality", "age_s",
-                  "bearing_uncertainty_deg")
-_HELICOPTER_TACTICAL_FIELDS = _TACTICAL_FIELDS + ("classification", "released_to_opz")
+# Row field allowlists: one source for Python and the generated browser schema.
+_TACTICAL_FIELDS = web_schema.TACTICAL_FIELDS
+_SONAR_FIELDS = web_schema.SONAR_FIELDS
+_RADIO_FIELDS = web_schema.RADIO_FIELDS
+_HELICOPTER_TACTICAL_FIELDS = web_schema.HELICOPTER_TACTICAL_FIELDS
 
 _HISTORY_ROWS_MAX = config.LOFAR_HISTORY_COLS
 _BROADBAND_BINS_MAX = 180
@@ -183,10 +185,13 @@ def _weather_station(game):
                 flight=flight, profile=profile)
 
 
-def _plot(game):
-    """The shared crew plot: detached copies plus the DR line's CPA to own ship."""
+def _plot(game, layer=None, own=None):
+    """The shared crew plot: detached copies plus the DR line's CPA to own ship.
+
+    ``layer``/``own`` give another crew's plot and platform (the crewed boat)."""
     objects = []
-    for item in game.plot.objects:
+    own = game.ship if own is None else own
+    for item in (game.plot if layer is None else layer).objects:
         # "shape", not "kind": the browser rejects any "kind" key as a
         # possible entity-type leak.
         row = {("shape" if key == "kind" else key):
@@ -194,8 +199,8 @@ def _plot(game):
                for key, value in item.items()}
         if item["kind"] == "dr":
             now_x, now_y = plot.dr_position(item, game.sim_t)
-            distance, seconds = plot.cpa(item, game.sim_t, game.ship.x, game.ship.y,
-                                         game.ship.course, game.ship.speed)
+            distance, seconds = plot.cpa(item, game.sim_t, own.x, own.y,
+                                         own.course, own.speed)
             row.update(now_x=_number(now_x), now_y=_number(now_y),
                        cpa_nm=_number(distance), cpa_s=_number(seconds))
         objects.append(row)
@@ -267,6 +272,37 @@ def _sonar_station_down(game):
     return bool(down()) if down is not None else game.damage.station_down("sonar")
 
 
+# Quantized history rows per sonar workstation. A history row is appended once
+# and never changes, so its projected bins depend only on the row and the
+# operator settings; recomputing 600 s of rows on every 2 Hz publication was
+# the largest main-thread cost of Remote Crew. Keyed weakly by the workstation
+# (no aliasing after a world reset); rows are keyed by identity and stamp and
+# pruned to the rows still shown, so the cache is bounded by the histories.
+_ROW_CACHE = weakref.WeakKeyDictionary()
+
+
+def _cached_rows(sonar, name, settings, stamps, rows, compute):
+    """Return ``[(stamp, bins)]`` for the rows, computing only unseen ones."""
+    caches = _ROW_CACHE.get(sonar)
+    if caches is None:
+        caches = _ROW_CACHE[sonar] = {}
+    cache = caches.get(name)
+    if cache is None or cache[0] != settings:
+        cache = caches[name] = (settings, {})
+    previous = cache[1]
+    current = {}
+    result = []
+    for stamp, values in zip(stamps, rows):
+        key = (id(values), stamp)
+        bins = previous.get(key)
+        if bins is None:
+            bins = compute(values)
+        current[key] = bins
+        result.append((stamp, bins))
+    caches[name] = (settings, current)
+    return result
+
+
 def _sonar_visualization(game, rows, sonar_refs):
     sonar = game.sonar
     receiver = sonar.receiver
@@ -281,11 +317,15 @@ def _sonar_visualization(game, rows, sonar_refs):
     bb_bins = _BROADBAND_LONG_BINS_MAX if long_available else _BROADBAND_BINS_MAX
     bb_rows = list(bb_source)[-bb_limit:]
     bb_times = list(bb_time_source)[-len(bb_rows):]
-    for stamp, values in zip(bb_times, bb_rows):
+    bb_gain = 10 ** (sonar.gain_db / 20)
+
+    def broadband_bins(values):
         source_bins = (_mean_binned_series(values, bb_bins) if long_available
                        else _series(values, bb_bins))
-        bins = [round(min(1.0, max(0.0, value * 10 ** (sonar.gain_db / 20))), 5)
-                for value in source_bins]
+        return [round(min(1.0, max(0.0, value * bb_gain)), 5) for value in source_bins]
+
+    for stamp, bins in _cached_rows(sonar, "broadband", (long_available, sonar.gain_db),
+                                    bb_times, bb_rows, broadband_bins):
         age = _age(game.sim_t, stamp)
         if age is not None and bins:
             broadband.append(dict(age_s=age, bins=bins))
@@ -294,9 +334,25 @@ def _sonar_visualization(game, rows, sonar_refs):
     lf_rows = list(sonar.lofar_history)[-_HISTORY_ROWS_MAX:]
     lf_times = list(sonar.lofar_times)[-len(lf_rows):]
     lf_bearings = list(sonar.lofar_bearings)[-len(lf_rows):]
-    for stamp, bearing, values in zip(lf_times, lf_bearings, lf_rows):
-        bins = [round(value, 5) for value in sonar.process_lofar_column(
+    # Everything process_lofar_column reads besides the column itself. The
+    # own-shaft notch follows the observer's speed continuously, so the key
+    # holds the set of notched bins, which only changes when a bin enters or
+    # leaves the window: exact results, no recompute while accelerating.
+    shaft = 10.0 + 1.9 * observer.speed
+    notched = (tuple(index for index in range(config.LOFAR_BINS)
+                     if abs(config.lofar_bin_freq(index) - shaft) < 5.0)
+               if sonar.notch_enabled else ())
+    lofar_settings = (sonar.gain_db, sonar.band_low_hz, sonar.band_high_hz,
+                      bool(sonar.notch_enabled), getattr(sonar, "operator_notch_hz", None),
+                      notched)
+
+    def lofar_bins(values):
+        return [round(value, 5) for value in sonar.process_lofar_column(
             _series(values, config.LOFAR_BINS), observer)]
+
+    for (stamp, bins), bearing in zip(
+            _cached_rows(sonar, "lofar", lofar_settings, lf_times, lf_rows, lofar_bins),
+            lf_bearings):
         age = _age(game.sim_t, stamp)
         if age is not None and _number(bearing) is not None and bins:
             lofar.append(dict(age_s=age, bearing=_number(bearing), bins=bins))
@@ -341,8 +397,9 @@ def _sonar_visualization(game, rows, sonar_refs):
     demon_history = []
     dm_rows = list(getattr(sonar, "demon_history", ()))[-_DEMON_HISTORY_ROWS_MAX:]
     dm_times = list(getattr(sonar, "demon_times", ()))[-len(dm_rows):]
-    for stamp, values in zip(dm_times, dm_rows):
-        bins = [round(value, 5) for value in _series(values, 80)]
+    for stamp, bins in _cached_rows(
+            sonar, "demon", (), dm_times, dm_rows,
+            lambda values: [round(value, 5) for value in _series(values, 80)]):
         age = _age(game.sim_t, stamp)
         if age is not None and bins:
             demon_history.append(dict(age_s=age, bins=bins))
@@ -563,6 +620,15 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                  navigation=_own_navigation(game), tactical=_map_rows(tactical),
                   target_choices=_direct_fire_observations(rows, direct_refs),
                  depth_m=_number(game.torpedo_depth), tubes=tubes,
+                 settings=dict(
+                     torpedo_type=str(game.torpedo_type)[:64],
+                     choices=[dict(key=str(key)[:64], name=str(name)[:80],
+                                   stock=int(stock),
+                                   loaded=int(battery.loaded_count(key)) if battery else 0)
+                              for key, name, stock in game.torpedo_type_choices()[:8]],
+                     pattern=str(game.torpedo_pattern),
+                     enable_nm=_number(game.torpedo_enable_nm),
+                     salvo=int(game.torpedo_salvo)),
                  own_weapons=torpedoes + asrocs,
                  active_assets=torpedoes + asrocs + nixies)
 
@@ -579,7 +645,13 @@ def _damage(game):
     teams = [dict(team=team, compartment=game.damage.teams[team])
              for team in sorted(game.damage.teams)]
     return dict(compartments=compartments, teams=teams,
-                total=_number(game.damage.total), sunk=bool(game.damage.ship_sunk))
+                total=_number(game.damage.total), sunk=bool(game.damage.ship_sunk),
+                stability=dict(list_deg=_number(game.damage.list_deg()),
+                               trim_deg=_number(game.damage.trim_deg()),
+                               counterflood_room=game.damage.counterflood_room,
+                               can_counterflood=(
+                                   abs(game.damage.list_deg()) >= 5.0
+                                   and not game.damage.ship_sunk)))
 
 
 def _radio(game, rows, ref_by_track):
@@ -637,9 +709,12 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  dip_water_depth_m=_number(helo.dip_water_depth_m),
                  dip_ping_ready=bool(helo.dip_ping_ready),
                  dip_ping_cooldown_s=_number(helo.dip_ping_cooldown),
-                 buoy_mode=game.helo_buoy_mode)
+                 buoy_mode=game.helo_buoy_mode,
+                 pattern=str(helo.pattern), pattern_remaining=len(helo.pattern_queue),
+                 mad_mode=bool(helo.mad_mode))
     if asset_only:
-        asset.pop("buoy_mode")
+        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode"):
+            asset.pop(key)
         return {"asset": asset}
     water_available = airborne and helo.water_entry_clear(game.world)
     water_depth = (float(game.world.depth_m(helo.x, helo.y))
@@ -805,6 +880,8 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                      can_set_waypoint=helo.state != "VERLOREN",
                      can_deploy_buoy=airborne and helo.buoys_left > 0
                       and helo.water_entry_clear(game.world),
+                     can_pattern=helo.state == "AUF" and helo.buoys_left > 0,
+                     can_mad=helo.state == "AUF" and helo.dip_state == "STOWED",
                       can_set_dipping=helo.state == "AUF"
                        and (helo.dip_state != "STOWED"
                             or flight_weather["dipping_safe"])
@@ -1000,6 +1077,11 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                            for row in rows if row.get("_opz")
                            and row["ref"] in direct_fire_refs["opz"]],
                       source_classifications=source_classifications,
+                      # Bare mast/snorkel echoes: measured position and age only.
+                      radar_blips=[dict(ref=f"blip-{blip['seq']}", x=_number(blip["x"]),
+                                        y=_number(blip["y"]),
+                                        age_s=_age(game.sim_t, blip["t"]))
+                                   for blip in game.radar_blip_view()][-16:],
                       designated_target_ref=(target_ref if any(
                           row.get("_opz") and row["ref"] == target_ref
                           for row in rows) else None),
@@ -1015,6 +1097,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                     speed=_number(game.ship.speed),
                     target_speed=_number(game.ship.target_speed), telegraph=game.ship.telegraph,
                     rpm=_number(game.ship.rpm()), quiet_mode=bool(game.ship.quiet_mode),
+                    plant_mode=str(game.ship.plant_mode),
                     cavitating=bool(game.ship.cavitating),
                     fuel_kg=_number(game.ship.fuel_kg),
                     fuel_capacity_kg=_number(game.ship.fuel_capacity_kg),
@@ -1038,6 +1121,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                     grounded=bool(game.ship.grounded)),
                     controls=dict(orders=["ASTERN", "STOP", "SLOW", "HALF",
                                           "FULL", "FLANK"],
+                                  plants=list(game.ship.PLANT_MODES),
                                   speed_max_kn=_number(config.SHIP_SPEED_MAX_KN)),
                       environment_effects=dict(sea_state=_number(
                           game.world.effective_sea_state),
@@ -1053,17 +1137,20 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
         "eloka": _eloka(game, rows, esm_refs, candidate_refs),
     }
     result = {}
+    overview = [dict(station=key, enabled=bool(game.autocrew.enabled[key]),
+                     status=game.autocrew.status(game, key))
+                for key in AUTOCREW_STATIONS]
     for role in ROLE_NAMES:
-        state = deepcopy(common)
+        # Shallow per-role copies: the common blocks are fresh for this
+        # publication, shared read-only between roles, encoded at once and
+        # never mutated afterwards (a deep copy per role cost more than the
+        # projection itself on the uConsole).
+        state = dict(common)
         state["role"] = role
-        overview = [dict(station=key, enabled=bool(game.autocrew.enabled[key]),
-                         status=game.autocrew.status(game, key))
-                    for key in AUTOCREW_STATIONS]
-        if role != "eloka":
-            state["audio"]["events"] = [
-                event for event in state["audio"]["events"]
-                if event["cue"] != "esm_contact"
-            ]
+        state["audio"] = dict(common["audio"], events=[
+            dict(event) for event in common["audio"]["events"]
+            if role == "eloka" or event["cue"] != "esm_contact"
+        ])
         state["autocrew"] = dict(enabled=bool(game.autocrew.enabled[role]),
                                  status=game.autocrew.status(game, role))
         # The whole crew's automation state (as the uConsole F3 overview):
@@ -1082,8 +1169,10 @@ def _opfor_common(game, status, role, boat):
     """
     with game.sonar_perspective(boat.station):
         common = _common(game, status, role)
-    common["plot"] = dict(objects=[], max_objects=plot.MAX_OBJECTS,
-                          max_label=plot.MAX_LABEL)
+    # The commander sees the boat's own plot; the sonar room has none.
+    common["plot"] = (_plot(game, boat.plot, boat.sub) if role in ("uboot", "uboot_nav") else
+                      dict(objects=[], max_objects=plot.MAX_OBJECTS,
+                           max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(
         "uboot.objective" if not boat.sub.sunk else "uboot.objective_lost", game.tr)
     common["audio"] = dict(events=[])
@@ -1092,13 +1181,52 @@ def _opfor_common(game, status, role, boat):
     return common
 
 
+def _uboot_datum(boat, item):
+    """Bearing/range from the boat to a torpedo's commanded datum (crew data)."""
+    if item.guidance_x is None or item.guidance_y is None:
+        return None, None
+    dx, dy = item.guidance_x - boat.sub.x, item.guidance_y - boat.sub.y
+    return (_number(math.degrees(math.atan2(dx, -dy)) % 360.0),
+            _number(math.hypot(dx, dy)))
+
+
 def _uboot_weapons(game, boat, asset_refs):
-    """The boat's own torpedoes in the water (same rows as the frigate's)."""
+    """The boat's own torpedoes in the water, with their wire and datum."""
     return [dict(ref=asset_refs[("uboot_torpedo", id(item))], x=_number(item.x),
                  y=_number(item.y), depth_m=_number(item.depth),
-                 course=_number(item.course), state=str(item.state)[:32])
+                 course=_number(item.course), state=str(item.state)[:32],
+                 wire=opfor.wire_state(boat, item),
+                 datum_bearing=_uboot_datum(boat, item)[0],
+                 datum_range_nm=_uboot_datum(boat, item)[1])
             for item in sorted(game.enemy_torpedoes, key=lambda weapon: weapon.id)
             if ("uboot_torpedo", id(item)) in asset_refs][:16]
+
+
+def _uboot_scope(game, boat):
+    """The periscope: its line of sight, the light its optics see and the
+    crew's own sightings (bearing, class, apparent length, stadimeter range);
+    never a target's position or identity."""
+    offset, tilt = opfor.horizon_motion(game, boat)
+    now = game.sim_t
+    return dict(
+        available=bool(opfor.scope_available(boat)),
+        relative_deg=_number(boat.orders.scope_rel_deg),
+        bearing=_number(opfor.scope_bearing(boat)),
+        fov_deg=_number(config.UBOOT_SCOPE_FOV_DEG),
+        window_deg=_number(config.UBOOT_STADIMETER_WINDOW_DEG),
+        night=bool(game.world.is_night()),
+        visibility_nm=_number(getattr(game.world, "visibility_nm",
+                                      config.WEATHER_VISIBILITY_MAX_NM)),
+        sea_state=_number(getattr(game.world, "effective_sea_state", game.world.sea_state)),
+        horizon_offset=_number(offset), horizon_tilt=_number(tilt),
+        sightings=[dict(ref=str(row["ref"])[:16], category=str(row["kind"]),
+                        cls=str(row["cls"]), bearing=_number(row["bearing"]),
+                        span_deg=_number(row["span_deg"]), quality=_number(row["quality"]),
+                        age_s=_age(now, row["t"]), range_nm=_number(row["range_nm"]),
+                        range_sigma_nm=_number(row["range_sigma_nm"]),
+                        range_age_s=(_age(now, row["range_t"])
+                                     if row["range_t"] is not None else None))
+                   for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
 
 
 def _uboot(game, boat, rows, target_ref, asset_refs):
@@ -1129,13 +1257,23 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             max_depth_m=_number(float(sub.stype.max_depth_m)),
             max_speed_kn=_number(sub.motion.maximum_speed_kn),
             water_depth_m=_number(game.world.depth_m(sub.x, sub.y)),
+            under_keel_m=_number(game.world.depth_m(sub.x, sub.y) - sub.depth),
+            depth_presets={key: _number(value) for key, value
+                           in opfor.depth_presets(game, boat).items()},
+            obstacle_ahead_nm=_number(boat.orders.obstacle_ahead_nm),
             cavitating=bool(sub.cavitating), noise=_number(sub.noise_level())),
         status=dict(
             state=state, damage=_number(sub.damage),
             emergency_ascent=bool(sub.emergency_ascent),
             blow_available=bool(sub.blow_available),
             battery=_number(battery), endurance_phase=phase,
-            transmitting=bool(sub.transmitting)),
+            transmitting=bool(sub.transmitting),
+            snorkel_available=sub.endurance is not None,
+            snorkeling=bool(sub.snorkeling),
+            silent=bool(sub.crew is not None and sub.crew.silent),
+            quiet=bool(sub.crew is not None and sub.crew.quiet_active(sub)),
+            bottomed=bool(sub.crew is not None and sub.crew.bottomed),
+            mast=bool(sub.crew is not None and sub.crew.mast)),
         weapons=dict(
             torpedoes=int(sub.torpedoes_left),
             tubes_ready=(int(sub.weapon_battery.ready_count)
@@ -1154,10 +1292,15 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             ping_age_s=(_number(alarms["last_ping_age"])
                         if math.isfinite(alarms["last_ping_age"]) else None),
             torpedo_age_s=(_number(alarms["last_torpedo_age"])
-                           if math.isfinite(alarms["last_torpedo_age"]) else None)),
+                           if math.isfinite(alarms["last_torpedo_age"]) else None),
+            ping_bearing=_number(getattr(sub.crew, "ping_bearing", None)),
+            torpedo_bearing=_number(getattr(sub.crew, "torpedo_bearing", None)),
+            esm=[dict(bearing=_number(bearing), quality=_number(quality), age_s=_number(age))
+                 for bearing, quality, age in (sub.crew.esm if sub.crew is not None else [])]),
         contacts=[_observation(row, _SONAR_FIELDS) for row in rows],
         own_weapons=_uboot_weapons(game, boat, asset_refs),
         designated_target_ref=target_ref,
+        scope=_uboot_scope(game, boat),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])
@@ -1169,10 +1312,15 @@ def build_opfor_states(game, status, boat, rows, target_ref, focus_ref, sonar_re
     if boat is None:
         return {}
     result = {}
+    command = None
     for role in OPFOR_ROLES:
         state = _opfor_common(game, status, role, boat)
-        if role == "uboot":
-            state[role] = _uboot(game, boat, rows, target_ref, asset_refs or {})
+        if role != "uboot_sonar":
+            # The boat's command stations share one picture of their own boat;
+            # each browser station shows the part its watch operates.
+            if command is None:
+                command = _uboot(game, boat, rows, target_ref, asset_refs or {})
+            state[role] = deepcopy(command)
         else:
             with game.sonar_perspective(boat.station):
                 state[role] = _sonar(game, rows, focus_ref, target_ref, sonar_refs)

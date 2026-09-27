@@ -48,7 +48,59 @@ export function resizeCanvas(element, context, width, height) {
   context.setTransform(dpr, 0, 0, dpr, 0, 0);
   return dpr;
 }
+// Chart water in the light of the game clock: three stages, as on the
+// uConsole (src/world/atmosphere.daylight_stage, src/ui/theme.WATER_TINT).
+const DAYLIGHT_START_H = 5.5, DAYLIGHT_END_H = 19.5, DUSK_HALF_WIDTH_H = 1;
+const WATER_TINT = {day: 1, dusk: .8, night: .6};
+const SEA_BASE = [12, 28, 38];
+export function daylightStage(hour) {
+  if (!finite(hour)) return "day";
+  const h = ((hour % 24) + 24) % 24;
+  if (h < DAYLIGHT_START_H || h >= DAYLIGHT_END_H) return "night";
+  if (h < DAYLIGHT_START_H + DUSK_HALF_WIDTH_H || h >= DAYLIGHT_END_H - DUSK_HALF_WIDTH_H) return "dusk";
+  return "day";
+}
+export function seaColor(stage) {
+  const factor = WATER_TINT[stage] ?? 1;
+  return `rgb(${SEA_BASE.map((channel) => Math.round(channel * factor)).join(", ")})`;
+}
+// Rain and storm as a dashed diagonal hatch over the chart (display only,
+// from the published environment block).
+const WEATHER_BAND_MIN_RAIN = .25;
+export function drawWeatherBand(ctx, width, height, environment) {
+  if (!environment) return;
+  const rain = Math.max(0, Math.min(1, environment.rain_intensity ?? 0));
+  const storm = environment.weather === "storm";
+  if (rain < WEATHER_BAND_MIN_RAIN && !storm) return;
+  const strength = Math.max(0, Math.min(1, (rain - WEATHER_BAND_MIN_RAIN) / (1 - WEATHER_BAND_MIN_RAIN)));
+  const spacing = Math.max(6, Math.round(46 + (18 - 46) * strength));
+  ctx.save();
+  ctx.globalAlpha = (28 + (70 - 28) * strength) / 255;
+  ctx.strokeStyle = storm ? "#f0b64a" : "#aabec8";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([9, 7]);
+  ctx.beginPath();
+  for (let start = -height; start < width; start += spacing) {
+    ctx.moveTo(start, height); ctx.lineTo(start + height, 0);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (storm) { ctx.globalAlpha = 1; ctx.strokeStyle = "#f0b64a"; ctx.lineWidth = 2; ctx.strokeRect(1, 1, width - 2, height - 2); }
+  ctx.restore();
+}
+
+// Frame-time probe of the chart (display only; read by the browser tests).
+const chartTiming = {frames: 0, totalMs: 0, lastMs: 0, maxMs: 0};
+window.uJagdChartTiming = chartTiming;
 function drawChart() {
+  const started = performance.now();
+  try { drawChartFrame(); } finally {
+    const elapsed = performance.now() - started;
+    chartTiming.frames += 1; chartTiming.totalMs += elapsed; chartTiming.lastMs = elapsed;
+    if (elapsed > chartTiming.maxMs) chartTiming.maxMs = elapsed;
+  }
+}
+function drawChartFrame() {
   if (!S.snapshot || !chartMatches(S.snapshot) || $("panel-operations").hidden) return;
   const own = S.snapshot.ownship;
   const ownPosition = hasPosition(own);
@@ -56,7 +108,7 @@ function drawChart() {
   const { width, height, scale, point } = chartGeometry();
   if (!width || !height) return;
   resizeCanvas(canvas, ctx, width, height);
-  ctx.fillStyle = "#0c1c26";
+  ctx.fillStyle = seaColor(daylightStage(S.v2State?.clock?.world));
   ctx.fillRect(0, 0, width, height);
   const fontSize = Math.max(12, parseFloat(getComputedStyle(document.documentElement).fontSize) * .74);
   ctx.font = `${fontSize}px ui-monospace, monospace`;
@@ -98,6 +150,7 @@ function drawChart() {
   ctx.setLineDash([5, 5]);
   ctx.strokeRect(zeroX, zeroY, S.chart.size_nm * scale, S.chart.size_nm * scale);
   ctx.setLineDash([]);
+  drawWeatherBand(ctx, width, height, S.v2State?.environment);
   S.chartHits = [];
   S.chartInfo = [];
   drawChartHazards(ctx, S.chart.geography?.hazards || [], point, width, height, scale, S.chartInfo);
@@ -131,7 +184,15 @@ function drawChart() {
     ctx.globalAlpha = 1;
   }
   // No integration, dead reckoning or animation of tracks: only published fixes.
+  // Positioned tracks outside the view (plus their uncertainty ring) are
+  // culled in world coordinates before any point transform.
+  const cullMargin = 60 / scale;
   for (const track of S.snapshot.tracks) {
+    if (finite(track.x) && finite(track.y)) {
+      const ring = finite(track.range_uncertainty_nm) ? Math.max(0, track.range_uncertainty_nm) : 0;
+      if (track.x + ring < left - cullMargin || track.x - ring > right + cullMargin ||
+          track.y + ring < top - cullMargin || track.y - ring > bottom + cullMargin) continue;
+    }
     const color = colors[track.affiliation] || colors.UNKNOWN;
     ctx.strokeStyle = color;
     ctx.fillStyle = color;

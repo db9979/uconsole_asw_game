@@ -7,6 +7,7 @@ import pygame
 import pytest
 
 import src.core.game as game_module
+from src.core import game_draw
 from src.core import config
 from src.core.game import Game
 from src.core.station import Station
@@ -62,6 +63,13 @@ def test_frame_dt_catches_up_slow_frames_within_bounds():
     # The spike is fully caught up within a few frames; nothing is lost.
     assert sum(dts) == pytest.approx(sum(walls))
     assert game._sim_debt_s == pytest.approx(0.0)
+    assert game._sim_dropped_s == 0.0
+    # A stall as long as the catch-up bound is fully recovered: nothing lost.
+    assert config.SIM_CATCHUP_MAX_S == pytest.approx(2.5)
+    recovered = [game._frame_dt(config.SIM_CATCHUP_MAX_S)]
+    while game._sim_debt_s > 0:
+        recovered.append(game._frame_dt(0.0))
+    assert sum(recovered) == pytest.approx(config.SIM_CATCHUP_MAX_S)
     assert game._sim_dropped_s == 0.0
     # A hang beyond the catch-up bound drops only the excess.
     assert game._frame_dt(3.0) == pytest.approx(config.SIM_FRAME_DT_MAX)
@@ -180,6 +188,8 @@ def test_perf_debug_log_is_opt_in_throttled_and_does_not_affect_sim(
     assert "fps=2" in lines[0]
     assert "sim_ms=" in lines[0] and "audio_ms=" in lines[0]
     assert "commander_ms=" in lines[0] and "draw_ms=" in lines[0]
+    assert "commander_max_ms=" in lines[0] and "events_ms=" in lines[0]
+    assert "traffic_ms=" in lines[0]
     debug._perf_debug_log(0.8)
     assert len((debug_root / "perf_debug.log").read_text().splitlines()) == 1
     debug._perf_debug_log(0.3)
@@ -192,8 +202,12 @@ def test_audio_replacement_and_run_shutdown_old_engines(monkeypatch):
     initial = game.audio
     monkeypatch.setattr(initial, "shutdown", Mock(wraps=initial.shutdown))
     replacement = Mock(available=False)
-    monkeypatch.setattr(game_module, "AudioEngine", Mock(return_value=replacement))
-    monkeypatch.setattr(game_module, "save_preferences", Mock())
+    # The engine is constructed by the display half (game_draw); the same
+    # factory mock is visible through both modules.
+    factory = Mock(return_value=replacement)
+    monkeypatch.setattr(game_module, "AudioEngine", factory)
+    monkeypatch.setattr(game_draw, "AudioEngine", factory)
+    monkeypatch.setattr(game_draw, "save_preferences", Mock())
     game._set_preference("audio", True)
     old = game_module.AudioEngine.return_value
     assert game.audio is old
@@ -217,7 +231,7 @@ def test_options_apply_global_tooltip_preference_and_language_state(monkeypatch)
     game = Game(seed=82, audio_enabled=False,
                 preferences=Preferences(language="en", tooltips=True))
     save = Mock()
-    monkeypatch.setattr(game_module, "save_preferences", save)
+    monkeypatch.setattr(game_draw, "save_preferences", save)
     game.pinned_tooltip = {"title": "old", "lines": []}
     game._set_preference("tooltips", False)
     assert not game.tooltips_enabled and not game.preferences.tooltips
@@ -264,7 +278,7 @@ def test_runtime_notices_are_structured_for_bt_listening_and_launches(monkeypatc
 def test_runtime_language_switch_retranslates_feeds_and_keeps_legacy_strings(monkeypatch):
     game = Game(seed=87, audio_enabled=False,
                 preferences=Preferences(language="en"))
-    monkeypatch.setattr(game_module, "save_preferences", Mock())
+    monkeypatch.setattr(game_draw, "save_preferences", Mock())
     structured = message("runtime.helo.return")
     game.feed.add("12:00", "mission", structured)
     game.feed.add("12:01", "mission", "Saved")

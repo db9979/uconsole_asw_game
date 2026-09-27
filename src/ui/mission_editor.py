@@ -519,7 +519,7 @@ class MissionEditor:
             return
         values = (record.key, record.data.get("name", ""), record.data.get("description", ""),
                   self.tr("editor.read_only" if record.builtin else "editor.user_mission"),
-                  self.tr("editor.runtime_no"))
+                  self.tr("editor.runtime_scope"))
         for row, value in enumerate(values):
             widgets.draw_text(surface, raw_text(value),
                               (inner.x, inner.y + row * 32, inner.width, 28),
@@ -603,7 +603,7 @@ class MissionEditor:
         lines = (self.tr("editor.preview_seed", seed=preview["seed"]),
                  self.tr("editor.preview_markers", count=len(preview["markers"])),
                  self.tr("editor.preview_events", count=len(preview["events"])),
-                 self.tr("editor.static_only"), self.tr("editor.runtime_no"))
+                 self.tr("editor.static_only"), self.tr("editor.runtime_scope"))
         for row, line in enumerate(lines):
             widgets.draw_text(surface, line,
                               (details.x, details.y + row * 30, details.width, 26),

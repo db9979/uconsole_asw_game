@@ -2,6 +2,9 @@ import re
 import zlib
 
 import numpy as np
+import pytest
+
+pytestmark = pytest.mark.slow  # generation/calibration runs above 20 s
 
 from tools.gen_unit_reference_pdf import (DEFAULT_LANG, P_DEMON,
                                           P_DEMON_TRACE, P_LEFT, P_LOFAR,

@@ -1073,3 +1073,472 @@ ist exakt; v11-Staende von 1.0.0 werden abgelehnt. Versioniert als 1.1.0.
   Verhalten der 4-s-Radarumlaeufe auf dem OPZ-Bild.
 - Merge: der Branch entstand parallel zu einer Handbuch-Session auf `main`
   (AGENTS.md, README, Handbuch); beim Zusammenfuehren diese Dateien pruefen.
+
+## Sonar-Audio ohne Aussetzer (2026-09-26)
+
+Die seit dem 22.09. offene Diagnose der Browser-Aussetzer ist abgeschlossen; die
+Analyse lief auf dem Zielgeraet (CM5, 16 GB) mit dem neuen Lasttest.
+
+- Ursache der Aussetzer "nach Tastendruck am uConsole": jede lokale
+  Eingabeaenderung (F1, F9, Optionen, Zahleneingabe) erhoehte die Welt-Epoche,
+  `prepare_*_audio` leerte den Ring und setzte die Blocknummer auf 0. Der
+  Browser verband den Socket neu, das Worklet behielt aber `lastSequence` und
+  verwarf jeden neuen Block (`sequence <= lastSequence`), bis die Zaehlung den
+  alten Stand ueberholte: Granular-Ersatz, dann Stale-Rauschen, so lange, wie
+  der Client vorher zugehoert hatte. Fix: Nummerierung je Rolle monoton ueber
+  die Server-Lebensdauer (Clear ueberspringt eine Nummer), Retune markiert eine
+  Diskontinuitaet (`mark_audio_discontinuity`), Reconnect mit `?after=` statt
+  Neusendung, Duplikate werden im Worklet gezaehlt statt stumm verworfen.
+- Messung: Empfaenger-Synthese 4-19 ms pro 0,25-s-Block (2-24 Quellen), Filter,
+  Resampling und PCM zusammen unter 0,6 ms; die Audioerzeugung war nie das
+  Problem. Der Remote-Crew-Publish kostete pro 2-Hz-Veroeffentlichung 60-120 ms
+  Hauptthread (5 Mio. `deepcopy`-Aufrufe, Requantisierung der kompletten
+  600-s-Sonar-Historien, `json.loads`/Re-Encode der Sonarprojektion, Roster pro
+  Frame). Nach Zeilen-Cache je Sonarstation (schwach referenziert, exakt gleiche
+  Ergebnisse), flachen Rollenkopien, Bytes-basierter Kompaktprojektion und 4-Hz-
+  Roster: rund ein Sechstel der Pump-Zeit.
+- Puffer fuer 16 GB: lokal Vorlauf/Ziel 1,5 s, Warteschlange 5 s, Refill 1 s,
+  Stale 3 s, SDL-Mixerpuffer 2048 Samples (93 ms); Browser Prime/Ziel 2 s, Max
+  6 s, Refill 4 Bloecke, Stale 3 s; `SIM_CATCHUP_MAX_S` 2,5 s (Invariante:
+  Warteschlange >= Ziel + Catch-up + Block, damit im Aufholen nie ein Block
+  abgelehnt und aus dem Zwei-Block-Empfaengerfenster verdraengt wird);
+  Audio-Socket 6 s Sendetoleranz, neueste acht Bloecke fuer cursorlose Sockets.
+- Neue Zaehler: `channel_idle` (Mixerkanal leer bei geprimtem Strom = hoerbarer
+  Dip), `pump_late`/`pump_late_max_ms`, `input_gaps`; `perf_debug.log` mit
+  `commander_max_ms`, `events_ms`, `traffic_ms`; Server `audio_stream_stats()`
+  (uebersprungene Bloecke, Sendetimeouts, Diskontinuitaeten, Verbindungen);
+  Browser `droppedBlocks`/`evictedBlocks`.
+- `tools/audio_soak.py host` (echter Mixer oder `--dummy-audio`, N Clients,
+  Epoch-Sprung/Retune-Takt, `--profile`) und `client` (PC im WLAN). Ergebnis
+  auf dem CM5 mit echtem Mixer, 9 Clients, 14 Epoch-Spruengen, 4 Retunes ueber
+  67 s: 0 Unterlaeufe, 0 leere Kanaele, 0 Stillen > 0,75 s in beiden Streams,
+  frame_max ausserhalb des Starts 168 ms (vor Phase D), sim_dropped 0.
+- Regressionstests: monotone Sequenzen je Rolle, Resume-Cursor, Duplikat-
+  Zaehlung im Worklet, Bridge-Diskontinuitaet bei Retune, Browsertest prueft
+  jetzt weiterlaufende, streng steigende Bloecke nach Epoch-Spruengen, Idle-/
+  Late-Zaehler, Puffer-Invariante, Soak-Werkzeug headless.
+- Offen: Hoerabnahme mit echtem Browser-PC ueber WLAN (`tools/audio_soak.py
+  client`, `window.uJagdAudioDiagnostics`), WLAN-Stromsparen am uConsole
+  abschalten (docs/install-uconsole). `test_real_v2_role_states_survive_...`
+  (Helikopter-LOFAR-Ansicht zu klein) schlug bereits vor dieser Arbeit fehl.
+
+## Durchlauf 1.3 (ab 2026-09-26, Branch `plan-1.3`)
+
+Arbeitsvorlage: `docs/plan-1.3.md`. Ein Commit je Phasenschritt, kein Push.
+Wiederaufnahme: `git log --oneline main..plan-1.3` zeigt die fertigen
+Schritte; diese Tabelle nennt Stand, Zahlen und offene Punkte je Phase.
+
+| Phase | Stand | Commit | Suite | Offen |
+|---|---|---|---|---|
+| 0 Audio-Soak | fertig (Auftraggeber) | `ef45a4f` | siehe Abschnitt "Sonar-Audio ohne Aussetzer" | Hoerabnahme auf Hardware |
+| 1 Crew-Zustand (Save v15) | fertig | siehe `git log` | 3404 bestanden, 26 uebersprungen, 47 min seriell unter Last | zwei vorbestehende Fehlschlaege (unten) |
+
+| 3 Tests/Checkliste | fertig | siehe `git log` | 3406 bestanden parallel in 16:34 (seriell unter Last 47 min) | Ziel 2 min verfehlt: kritischer Pfad ist `test_calibration` (556 s, jetzt `slow`) |
+
+Notizen Phase 3:
+
+- pytest-xdist 3.8 in `.venv` und im `dev`-Extra; `addopts = "-n auto --dist
+  loadgroup"`. `conftest.py` markiert jedes Modul, das Chromium startet, als
+  `browser` und verteilt diese Module auf zwei `xdist_group`-Gruppen, damit
+  hoechstens zwei Chromium-Instanzen gleichzeitig laufen (mehr davon liessen
+  DOM-Probe-Tests unter Last ausfallen).
+- `slow` markiert: `test_calibration.py`, `test_smoke_full.py`,
+  `test_contact_analysis_images.py`, `test_unit_reference_pdf.py`. Lokal
+  iterieren mit `-m "not browser and not slow"`.
+- `test_solo_console_tabs_keep_state_and_host_controls_drive_the_game` pumpt
+  das Spiel mit Wanduhr-Budget; unter Last brauchte Chromium ueber 80 s, das
+  Budget ist jetzt 150 s.
+- `docs/hardware-acceptance.md` angelegt; `docs/verification-log.md`
+  verweist darauf. `tests/test_project_config.py` haelt die pyproject-Vertraege.
+
+| 2 Kernzerlegung | fertig | e062bb2, 1a9ba36, a26a459, 22b5b16, 6998cf0, 6e898c2, facd86e | volle Suite und Kalibrierung am Ende der Phase (siehe unten) | keine Datei ueber 2500 Zeilen (`tests/test_module_size.py`) |
+
+Notizen Phase 2:
+
+- `Game` ist jetzt eine Komposition aus Mixins: `SaveMixin` (`game_save.py`,
+  Validator in `save_validate.py`, Grenzen in `limits.py`), `SimMixin`
+  (`game_sim.py`, `SIM_ORDER` + `tests/test_sim_order.py`), `EventMixin`
+  (`game_events.py`), `MissionBridgeMixin` (`mission_bridge.py`), dazu ueber
+  den Plan hinaus `DrawMixin` (`game_draw.py`), `OperatorMixin`
+  (`game_operator.py`) und `PicturesMixin` (`game_pictures.py`), damit die
+  2500-Zeilen-Grenze haelt; `game.py` (705 Zeilen) ist nur noch
+  Composition Root. Alle Verschiebungen wortgleich (Skript im Scratchpad:
+  Methoden per Namensliste, Importblock kopiert, pyflakes-geprueft, ungenutzte
+  Importe entfernt). `game.py` re-exportiert die Namen, die Tests importieren.
+- Tests, die Modulnamen patchen, zeigen jetzt auf das Modul, in dem der Name
+  nachgeschlagen wird (`game_draw.save_preferences`, `game_events.*_test_connection`,
+  `game_save.MAX_SAVE_DOCUMENT_BYTES`, `save_validate.CATALOG`, `routes.time`).
+- Stationsansichten: `src/ui/stations/{common,bridge,opz,eloka,radio,engine,
+  helicopter,damage}.py`; `stations_view.py` Facade mit `station_hit_target`.
+- Server: `src/commander/v2/{wire,commands,routes}.py` statt der im Plan
+  genannten `routes_v2/streams/sessions`: Leases und Sitzungen sind mit
+  `CommanderServer` verflochten und bleiben dort (1763 Zeilen); die Grant-Tabelle
+  `station_grants` liegt in `wire.py`, der Logger heisst weiter
+  `src.commander.server`.
+- Perf (headless, `_update_sim(0.1)`, drei Seeds, 1200 Schritte): vorher
+  4,49 ms, nachher 4,27 ms je Substep. Hardware-Frame-Zeit bleibt Pruefpunkt.
+- Abweichung vom Plan: zwischen den Schritten liefen fokussierte Tests plus
+  Smoke; die volle Suite und die Kalibrierung liefen nach Schritt 1 und nach
+  Schritt 6. Unter paralleler Last flackern
+  `test_solo_console_tabs_keep_state_and_host_controls_drive_the_game` (Budget
+  jetzt 300 s, eigene xdist-Gruppe), `test_default_off_has_no_network_or_server_resources`
+  (Thread-Zaehlung) und `test_audio_websocket_resumes_behind_the_browser_cursor`
+  (409 stream_exists); alle drei bestehen einzeln.
+
+| 4 Waffen Fregatte | fertig | siehe `git log` | fokussiert 900+ Tests gruen, Kalibrierung 77/77, volle Suite am Phasenende ausstehend | – |
+
+Notizen Phase 4:
+
+- Zweiter Typ `frigate_torp_mk2` (55 kn, 8 sm, 0,12 sm Trefferradius) in
+  `torpedoes.json` + `sources.json` (`game_assumption`); Ladeplan
+  `data/loadouts/ownship.json` Version 2 mit zwei Magazinen und `share` 2:1
+  (`split_stock`: Nebenmagazin floor(N/3)). `WeaponBattery.retask()` laedt ein
+  Rohr auf den gewaehlten Typ um; `_reserve_weapon` faellt auf den anderen Typ
+  zurueck, damit kein Rohr leer bleibt.
+- Suchmuster `snake|circle|helix` und Aktivierungspunkt 0,6-3,0 sm (0,2-Raster)
+  je Torpedo (`Torpedo.pattern/enable_nm/_turns_done`, pure Funktionen in
+  `torpedo_dyn`). Golden bleibt: Default = snake bei `TORP_HOME_RANGE_NM`.
+- Salve 2 startet beide Torpedos sofort mit +/-8 Grad und um das Schiff
+  gedrehten Datums (Abweichung von A4.5: kein 4-s-Versatz, keine Warteschlange
+  im Save; wie der Boot-Faecher). Braucht zwei geladene Rohre des Typs und
+  bleibt unter `TORP_MAX_IN_AIR`.
+- Save v15: Wurzelblock `weapon_settings` (`torpedo_type`, `pattern`,
+  `enable_nm`, `salvo`), Torpedozeile + `pattern`, `enable_nm`, `turns_done`.
+- Tasten Waffenstation `W`/`X`/`,` `.`/`Y`; Web: Karte "Torpedo-Einstellungen"
+  mit Befehl `weapons_set_torpedo_settings`; Projektion `weapons.settings`.
+- Kein Tiefenunterschied Mk1/Mk2 (A4.1 "+30 % Maximaltiefe" entfaellt: das
+  Torpedomodell kennt keine Maximaltiefe). Katalogzaehlungen in
+  `test_catalog_v2.py` angepasst (117 Maschinen, 475 Claims, 119 Profile).
+
+| 5 KI-Zielanalyse | fertig | siehe `git log` | fokussiert 609 gruen, Kalibrierung 77/77 | Trefferquote der KI sinkt bewusst (Realismus) |
+
+Notizen Phase 5:
+
+- Die KI loeste ihre TMA schon (`Sub._ingest_bearing` + `solve_tma`, Gate
+  `TMA_RANGE_MIN_QUALITY`) und teilte Lagebilder ueber den roten Datalink
+  (`exchange_friendly_datalink`, nur mit Mast/Schnorchel). Neu ist das
+  Feuerleit-Gate: `memory["contact_sigma_nm"]` (1-Sigma-Entfernungsfehler aus
+  der Ellipsen-Hauptachse, `solution_sigma_nm`), `memory["contact_t"]`, und
+  `solution_converged()`: Sigma/Entfernung <= `solution_threshold` und
+  Loesung juenger als `SUB_SOLUTION_MAX_AGE_S` (90 s). Gilt nur fuer
+  TMA-Beobachtungen (`fix_source == "TMA"`); Aktiv-/Datalink-Fixe wie bisher.
+- Schwierigkeitsfeld `enemy_solution_threshold` (0,05-0,40, Schritt 0,05,
+  Default 0,20; Szenarien 0,25/0,25/0,15) in `DIFFICULTY_FIELDS`, Menue,
+  Web-Neustart (generisch) und Save (`subs[].solution_threshold`).
+- Zielmanoever: weicht eine gemessene Peilung mehr als 3 Grad + 3 Sigma von
+  der koppelnd fortgeschriebenen Loesung ab (`solution_predicts_bearing`),
+  startet der Plot neu und `contact_reopen_left` = 3 neue Peilungen bis zum
+  naechsten Loesen. Bei radialer Zielbewegung ist ein Manoever peilungsseitig
+  kaum sichtbar (physikalisch korrekt); der Test prueft den Mechanismus mit
+  einem synthetischen Peilsprung.
+- Messung (Test-Geometrie, Ziel 12 kn, Boot mit zwei 90-Grad-Schlaegen):
+  Sigma/Entfernung 0,16-0,35 nach 6-8 Minuten; ohne eigene Schlaege bleibt
+  die Loesung bei >1 (bearing-only, unbeobachtbar) und das Boot schiesst nicht
+  auf TMA. Abweichung von A5.4: die 60-s-Verzoegerung der Loesungsteilung
+  entfaellt, der bestehende Datalink teilt sofort (nur mit Antenne).
+- Keine Golden-Metrik fuer die KI-Trefferquote; keine Deviation noetig.
+
+| 8 Schiff/Schaden | fertig | siehe `git log` | fokussiert 845+ gruen, Kalibrierung siehe Log | – |
+
+Notizen Phase 8:
+
+- Gegenfluten (`DamageModel.order_counterflood/stop_counterflood`, Ventilziel
+  je Rumpfseite in `counterflood`, 0,5 %/s, ab 5 Grad Kraengung, Stopp unter
+  1 Grad, Kappe 60 %), Taste `C` Schadensstation, Web-Knopf und Befehl
+  `damage_counterflood`, Projektion `damage.stability`.
+- Laengstrimm `DamageModel.trim_deg()` (GML 150 m, Bug unten positiv) ist
+  abgeleitet, nicht gespeichert; wirkt ueber `engine_speed_cap` (-0,5 kn/Grad)
+  und `Ship.trim_noise` (+0,03 Pegel/Grad Bug unten, je Tick aus
+  `_update_navigation`). Save: `compartments[].counterflood`, `ship.plant_mode`.
+- Anlagenwahl `Ship.plant_mode` AUTO/DIESEL/TURBINE (`PLANT_*` in `ship.py`,
+  Konstanten als Annahme 1.3, kein Katalogfeld): Taste `G`, Befehl
+  `engine_set_plant`, Projektion `propulsion.plant_mode` + `controls.plants`.
+  AUTO = bisheriges Verhalten (Golden unveraendert); der Pegel ist auf
+  `NOISE_LEVEL_MAX` (Flank kavitierend, 1,05) begrenzt, damit gespeicherte
+  Beobachtungen im Validator-Rahmen bleiben.
+
+| 6 Hubschrauber | fertig | siehe `git log` | fokussiert 795+ gruen, Kalibrierung siehe Log | Muster auf 4 Bojen begrenzt (Vorrat 5) |
+
+Notizen Phase 6:
+
+- Bojenmuster als Warteschlange von Abwurfpunkten (`Helicopter.pattern`,
+  `pattern_queue`; `plan_buoy_pattern` pur): 2x2-Feld 1,5 sm, Sperre 3 sm quer
+  zur Wegpunktpeilung, Kreis 1,5 sm, je hoechstens 4 Bojen (Abweichung von
+  A6.1: 3x3/5/6 sind mit 5 Bojen je Einsatz nicht moeglich). `_fly_buoy_pattern`
+  in `_update_aviation` setzt den Wegpunkt auf den naechsten Punkt und wirft
+  innerhalb 0,3 sm die gewoehnliche Einzelboje; Rueckflug/Verlust verwerfen.
+- MAD: `src/sensors/mad.py` (30 m, 90 kn, 400 m Schraegdistanz, sicher unter
+  250 m, `detrand`-Tag `mad` je Ziel und Sensortakt). Fix als
+  `Contact.fixes["MAD"]` (`update_mad`, Quelle "MAD" in `active_fixes`,
+  Validator erlaubt 5 Fixe), `range_source == "mad"`; OPZ zeigt ihn als
+  `HELO-MAD` ueber die freigegebene Helikoptermeldung. Wahrheit nur an der
+  Sensorgrenze (`_update_mad` in `_update_sensors`).
+- Tasten Helikopter `X` (Muster) und `Umschalt+M` (MAD); Befehle
+  `helicopter_set_pattern`, `helicopter_set_mad`; Projektion `asset.pattern`,
+  `pattern_remaining`, `mad_mode`, Bereitschaft `can_pattern`, `can_mad`.
+  Save: `helo.pattern`, `helo.pattern_queue`, `helo.mad_mode` (im `helo`-Block
+  statt eines eigenen Wurzelblocks `helo_pattern`).
+
+| 7 Akustik | teilweise (VDS zurueckgestellt) | siehe `git log` | fokussiert 711+ gruen, Kalibrierung siehe Log | VDS (A7.4) nicht gebaut |
+
+Notizen Phase 7:
+
+- A7.1 Bodentypen waren schon modelliert: `src/world/ocean.py` traegt fuenf
+  Sedimentklassen (rock/gravel/sand/silt/mud, Hamilton-Geoakustik) je
+  12-sm-Zelle und `rayleigh_bottom_loss_db`, das `raytrace.trace_table` je
+  Bodenreflexion nutzt; Golden unveraendert. Nur dokumentiert und getestet
+  (`tests/test_convergence_zones.py`).
+- A7.2 Konvergenzzonen kommen jetzt aus dem gemessenen BT-Profil:
+  `raytrace.convergence_zones_nm` (Strahltabelle des Profils ueber dem
+  kartierten Boden, Wind der Seegangsstufe, Arraytiefe; Bereiche ab 15 sm, in
+  denen der Verlust 6 dB unter dem Median des Ueberschusses ueber sphaerische
+  Ausbreitung liegt, mind. 1,5 sm breit, hoechstens 4; reiner LRU-Cache).
+  `measure_environment` speichert sie in `bt_profile.cz_bands_nm`; der
+  Validator verlangt statt der Konstanten `CZ_BANDS` sortierte, begrenzte
+  Baender. Anzeige (Sonarseite, Wetterstation) unveraendert.
+- A7.3 TMA-Methoden: `SonarStation.tma_method` (hypothesis/ekelund/dotstack,
+  `Umschalt+T` auf der TMA-Seite, in `sonar_controls` gespeichert);
+  `tma_operator.ekelund_range_nm` (zwei Schlaege um >= 30 Grad, je >= 4
+  Peilungen ueber 90 s, Unsicherheit +/-20 %, `Umschalt+K` uebernimmt die
+  Entfernung in die Hypothese) und `dot_stack` (Residuenzeilen bei 0,6/1,0/1,6
+  x Entfernung). Nur uConsole; die Web-Projektion kennt die Methode nicht.
+- A7.4 VDS nicht umgesetzt: ein dritter Arraymodus beruehrt rund zwanzig
+  `mode == "TOWED"`-Pfade in `sonar.py`, Equation, Empfaengersalz, Validator
+  und Web-Schema; das Risiko fuer das Sonar-Golden war in dieser Nacht zu
+  hoch. Bleibt unter "Not modelled" und ist Kandidat fuer 1.4.
+
+| 9 Boot-Seite | fertig | siehe `git log` | fokussiert 357 + 14 gruen, Chromium-Test der Sehrohransicht gruen, Kalibrierung siehe Notiz | Funkverkehr des Bootes bleibt "Not modelled" (A9.6) |
+
+Notizen Phase 9:
+
+- A9.1 Dieselgeraeusch abweichend vom Plan nicht in `acoustics.json` (die
+  Datei ist ueber ihren Hash im Katalogtest verriegelt und bleibt 1.0.0),
+  sondern als `config.UBOOT_SNORKEL_NOISE_DB` (+12 dB in
+  `Sub.source_level_offset_db`), `UBOOT_SNORKEL_QUIET_LOSS` (0,25 im
+  `quiet_factor` und im Breitbandpegel) und `UBOOT_SNORKEL_LINES` (50/100 Hz
+  in `lofar_lines`) fuer jedes schnorchelnde Boot, auch KI-Boote.
+- A9.2 Seite `UBOOT_SCOPE` als dritte Fuehrungsseite und zweite Seite von
+  Mast & ESM (`src/ui/uboot_scope.py`; `uboot_view.station_pages`/`page_name`;
+  Seitenwechsel jetzt `% len(pages)`, die eigene Stationstaste blaettert an
+  jeder Station mit mehreren Seiten). `←/→` 2 Grad, `Umschalt` 10 Grad,
+  Sichtlinie relativ zum Bug (`CrewOrders.scope_rel_deg`). Horizontbewegung
+  aus `ship_dynamics.wave_slope_rad` (`opfor.horizon_motion`), Tag/Nacht aus
+  `world.is_night`, Dunst aus der Sicht.
+- A9.3 Sichtungen liegen nicht als `SensorTrack` im Sensorbild des Bootes
+  (dessen Validator kennt nur radar/esm/sonar/ais), sondern wie das ESM-Bild
+  im Crew-Block: `CrewOrders.sightings` (Felder `CREW_SIGHTING_FIELDS`),
+  0,25-s-Takt in `opfor.update_sightings` mit dem Kontrastmodell des
+  Ausgucks bei 2,5 m Augenhoehe (`LookoutModel.margin(eye_m=...)`),
+  Johnson-Erkennung fuer die Klasse (warship/merchant/unknown, dazu
+  aircraft/torpedo), Peilfehler Bias+Jitter ueber `detrand`, scheinbare
+  Laenge aus Rumpflaenge x Aspekt. Kandidaten: Fregatte, Kriegsschiffe,
+  Zivilverkehr, fliegender Helikopter (`SCOPE_AIR_TARGET_ID`), laufende
+  Fregattentorpedos. Log-Ereignisse `sighting_<klasse>`.
+- A9.4 Stadimeter (`opfor.stadimeter`, `Enter` auf der Sehrohrseite):
+  Entfernung = angenommene Klassenlaenge (130 m Kriegsschiff/unbekannt,
+  150 m Handelsschiff) / scheinbare Laenge, +/-25 %, 120 s; wird ueber
+  `Contact.update_visual` zum Fix `VISUAL` (`FIX_SOURCES` in `sonar.py`,
+  Validator, Kartenfarbe) mit `range_source="visual"`, das die Schussprüfung
+  des Bootes wie einen Ping-Fix nutzt. Bugwaerts stehende oder nicht erkannte
+  Ziele messen sich zu weit (gewollt, dokumentiert).
+- A9.5 Web: Projektion `scope` in jeder Boot-Kommandorolle (exakte Schluessel
+  in `schema.js`), Karte "Sehrohr" mit Canvas (`drawBoatScope`), Schwenk-
+  knoepfen, Formular und Sichtungsliste; Befehle heissen `uboot_scope_bearing`
+  (`relative_deg`) und `uboot_scope_mark` (Praefix wie alle Bootsbefehle,
+  Rollen uboot/uboot_esm). Neue Gruende `uboot_mast_down`,
+  `uboot_no_sighting`, `uboot_no_stadimeter`. Der JS-Helfer heisst
+  `drawOutline`, weil `test_commander_assets` das Wort "silhouette" im
+  Client-JS verbietet (Analyzer-Vertrag).
+- Save v15: `crew.orders` um `scope_rel_deg`, `sightings`, `sightings_seen`
+  erweitert (exakte Felder, Ziel-IDs aus dem Dokument, Referenzen eindeutig).
+- Handbuch 10-reference EN/DE: Sehrohr, Stadimeter, Dieselgeraeusch; die
+  beiden "Not modelled"-Punkte ersetzt. `help.py` Boot-Tabelle um `←/→` und
+  `Enter`.
+- Tests: `tests/test_uboot_scope.py` (14) und `tests/test_uboot_scope_web.py`
+  (Chromium). `tests/test_opfor_sub.py` erwartet drei Fuehrungsseiten.
+- Lehren aus dem Chromium-Test (fuer weitere Browser-Tests): (1) der generische
+  Zustandsinspektor in `schema.js` verbietet Schluessel wie `kind`,
+  `target_id`, `track_id`, `seed`; die Sichtungszeile heisst deshalb
+  `category`. (2) Station-Praesenz lebt vom Session-Poll des Clients; mit
+  `--virtual-time-budget=60000` friert Chromium nach kurzer Zeit alle Timer
+  ein, das Lease faellt nach 15 s an die KI zurueck: Budget 300000 wie im
+  Rollen-Test. (3) Jeder Host-Befehl (`set_orders`) erhoeht die Weltepoche;
+  Befehle aus dem Browser gehen nur bei aktuellem Kontext raus, ein Probe
+  muss wie ein Bediener erneut druecken, bis der Zustand es bestaetigt.
+  (4) Der Client sendet Bootsbefehle nur mit `set_client_grant(client,
+  station, "command", True)`.
+
+| 10 Grafik | fertig | siehe `git log` | fokussiert gruen (`tests/test_graphics_1_3.py` 9), Kalibrierung 77/77 | uConsole: Frame-Zeit mit `aa_lines` an/aus, Lesbarkeit bei Nacht (Checkliste) |
+
+Notizen Phase 10:
+
+- A10.1 `Preferences.aa_lines` (Default aus) auf Optionsseite 2 (Seite 1 hat
+  bei 13 Zeilen keinen Platz mehr ueber der Fusszeile); Zeile 8 der Seite,
+  `Game._option_row_hit_rects` bildet Klicks auf die gezeichneten Zeilen ab.
+  `src/ui/lines.py` (`line`/`lines`/`polygon`) schaltet ein-Pixel-Linien und
+  Polygonkanten auf `pygame.gfxdraw`; `layout.configure_for` setzt
+  `lines.ENABLED`. Durchgeleitet in `map_view.py`, `plot_view.py`,
+  `uboot_view.py` (Sed-Ersetzung aller `pygame.draw.line/lines/polygon`).
+  Kein Perf-Debug-Messwert in dieser Nacht: Hardware-Pruefpunkt.
+- A10.2 `atmosphere.daylight_stage(hour)` (Tag/Daemmerung/Nacht ueber
+  `config.DAYLIGHT_START_H/END_H`, `DUSK_HALF_WIDTH_H` = 1 h; `world.is_night`
+  nutzt dieselben Konstanten), `theme.WATER_TINT` + `theme.water_color` toenen
+  `COLOR_GEO_BG`, `COLOR_SHALLOW`, `COLOR_DEEP` auf beiden Karten (Fregatte
+  und Boot); der Bathymetrie-Cache traegt die getoenten Farben im Schluessel.
+  Web `views/chart.js`: `daylightStage`/`seaColor` mit denselben Zahlen aus
+  `clock.world`.
+- A10.3 `map_view.draw_weather_band`: ab Regen 0,25 gestrichelte Diagonalen
+  (Abstand 46 bis 18 px, Alpha 28 bis 70), Sturm zusaetzlich gelber Rand;
+  nur Anzeige aus `world.weather_values`/`weather_kind`. Web
+  `drawWeatherBand` aus dem `environment`-Block; kein Schemawechsel.
+- A10.4 `src/ui/horizon.py` ist der gemeinsame Horizont-Renderer
+  (`draw_horizon`, `draw_outline`, `horizon_motion`, `relative_offset`);
+  `uboot_scope.draw_eyepiece` ruft ihn, die Brueckenseite 3 zeigt oben im
+  Meldungsfeld einen 72-px-Streifen voraus (90 Grad Sichtfeld) mit den
+  Umrissen der Ausguck-Tracks (`bridge.lookout_outlines`: Klasse aus dem
+  Ausguck-Label, Groesse aus gemessener Entfernung).
+- Chromium-Bilder 1920x1080/2560x1440 nicht neu erzeugt: der erzeugende Test
+  (`test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`)
+  ist der vorbestehende Fehlschlag; Hardware-/Browser-Abnahme.
+- Handbuch: 00-quickstart (Option), 01-bridge (Toenung, Wetterband,
+  Horizontstreifen) EN/DE.
+
+| 11 Web-Client | teilweise (OffscreenCanvas zurueckgestellt) | siehe `git log` | `tests/test_commander_state_push.py` 3, Chromium-Push-Test, Assets/Projektionen gruen | A11.3 OffscreenCanvas nicht gebaut; Host-CPU Push gegen Poll auf Hardware |
+
+Notizen Phase 11:
+
+- A11.1 abweichend: `schema.js` bleibt handgeschrieben (Validierungslogik),
+  nur der Block zwischen `BEGIN/END GENERATED` (Rollenformen und
+  Zeilenfelder) wird von `tools/gen_web_schema.py` aus
+  `src/commander/v2/schema.py` gerendert; `projections.py` importiert die
+  Feldtupel von dort. `--check` in AGENTS-Befehlsliste; deterministisch
+  (sortierte Rollen, LF).
+- A11.2 `/ws/v2/state` (`u-jagd-state-v2`): `routes._state_websocket`
+  (gleiche Origin/Cookie/Subprotokoll-Pruefung wie der Sonarstrom), Bytes
+  identisch zu `GET /api/v2/state` (Kompaktform fuer Sonar mit laufendem
+  Strom), 4 Hz, Heartbeat 2 s, nur der letzte Zustand wird gehalten (statt
+  Queue 8 mit Verwerfen der aeltesten: dieselbe Wirkung, kein Puffer).
+  `CommanderServer._state_push_sequence` (Publish, Aktivierung, Revoke),
+  `set_state_push(enabled)` als Host-Schalter (Test/F9-Kandidat),
+  `_websocket_frame` mit 64-Bit-Laenge bis `STATE_MAX_BYTES`. Client
+  `net/push.js`: `poll()` nimmt `takePushedState()` statt `/state`, Takt
+  2,5 s bei gesundem Push (Praesenz/Chart/Feeds), sonst 500 ms; zwei
+  verpasste Heartbeats = ungesund, Wiederverbindung alle 10 s;
+  `document.body.dataset.push` fuer Tests.
+- A11.3 abweichend: kein OffscreenCanvas (ohne Worker kein Gewinn,
+  Worker-Umbau des Wasserfalls zu gross fuer diese Nacht). Stattdessen
+  Bounds-Culling der Tracks in Weltkoordinaten vor der Punkttransformation
+  (`chart.js`) und Frame-Zeit-Sonde `window.uJagdChartTiming`; der
+  Chromium-Push-Test misst bei 2560x1440 und protokolliert den Mittelwert
+  (Headless-Softwarerendering: 42 Frames, Mittel 0,02 ms, Maximum 0,9 ms am
+  2026-09-27; die Hardware-Zahl bleibt Pruefpunkt).
+- `tests/test_opfor_sub.py::test_options_page_two_...` erwartet seit Phase 10
+  die zwei Zeilen der Optionsseite 2 (in diesem Commit nachgezogen).
+- Keine neuen Texte im Client (A11.4 leer).
+
+| 12 Rollen/Nachbesprechung/Sprachfunk | fertig | siehe `git log` | `tests/test_commander_observer.py` 3, Chromium-Beobachtertest, Commander-Suiten gruen | Host-CPU mit zwei Beobachtern auf Hardware |
+
+Notizen Phase 12:
+
+- A12.1 Beobachter als Sitzungsflag (`session["observer"]`, `OBSERVER_MAX`
+  = 2 in `wire.py`), vergeben ueber `set_client_grant(client, "observer",
+  bool)` (F9-Roster Taste `O`, elfte Aktionszeile; Web-Admin-Schalter).
+  Kein Lease: `stations/activate` mit Generation 0 setzt die Ansicht, der
+  Sitzungskoerper meldet die Ansicht als `mine` mit Generation 0 und
+  Rechten `False`, `stations/request` antwortet 403 `observer`, Befehle
+  scheitern am Lease-Check (`role_revoked`), `grant_station` verweigert
+  Beobachtern ein Lease, `station_leased()`/Belegung ignorieren sie. Der
+  Push (`/ws/v2/state`) bedient Beobachter ohne Lease. Client:
+  `validateSession` kennt `observer`, die Lobby bietet beide Seiten mit
+  "Ansehen", `role_observer`-Text, Steuerung bleibt ueber `grants.command`
+  gesperrt.
+- A12.2 `views/simlog.js`: Zeitstrahl (`simlogMarks`: neue eigene/feindliche
+  Torpedo-IDs, Schadensanstieg, mehr Kontakte, gesunkene/tote Einheiten aus
+  aufeinanderfolgenden Wahrheitsschnappschuessen), Scrubbing per Klick,
+  Export als JSON-Blob (`exportable` entfernt rng/seed/csrf/cookie/token/
+  settings/credential-Schluessel); nur fuer Beobachter und den Solo-Host
+  (`debriefAllowed`).
+- A12.3 `_voice_enabled` startet `True` (Konstruktor und `start()`);
+  `set_voice_enabled(False)` trennt den Sprecher wie bisher. Die
+  Sprachfunkoption existiert nur im `--web-host`-Raum (Admin-Seite), der
+  F9-Listener hat keinen Sprachfunk; `docs/commander-coop.md` sagt das jetzt.
+- `tests/test_commander_local.py` baut Roster-Zeilen ohne `observer`; der
+  Roster liest das Feld deshalb mit `.get`.
+
+| 13 Missionslaufzeit | fertig (4 Schritte, je ein Commit) | siehe `git log` | `tests/test_mission_runtime.py` 12, Editor/Save/Integration gruen | Torpedos und Benutzerprofile bleiben abgelehnt (Entscheidung) |
+
+Notizen Phase 13:
+
+- Schritt 1: `world.reference` muss `sector:<0..127>` sein
+  (`mission_definition.reference_sector_index`, Validator-Code `reference`);
+  `real_coast.sector_for_index`, `Coastline.generate(sector_index=...)`,
+  `Game.reset(reference_sector=...)` setzen `world_mode = "real_fixed"`.
+  Feste Welten behalten den bisherigen Weltmodus des Spiels (kein Wechsel
+  auf die stilisierte Karte). Editor: Textfeld statt Sektorauswahl
+  (Abweichung; die Vorlage `mission.json` nennt `sector:17`).
+- Schritt 2: `protect` (Ziele = platzierte freundliche/neutrale Einheiten,
+  verloren mit der ersten versenkten, gewonnen am Zeitlimit) und `reach`
+  (`objective.reach` x/y/radius_nm, Default 2 sm, in `default_mission`).
+  `Game.mission_units` (Missions-ID -> Entitaets-ID, Flugzeuge nach `seq`)
+  im Save als `mission_runtime.units`; `mission_entity()` sucht danach.
+- Schritt 3: Zufallsgruppen aus `static_preview` (Kurs aus dem Seed, 4 kn,
+  60 m); Ereignisse laufen in `_update_damage_and_mission` vor der
+  Zielpruefung (`_run_mission_events`), Save-Wurzelfeld `mission_events`
+  (ausstehende IDs, gegen die Definition validiert). Wetter:
+  `World.weather_override` (rain/storm/fog als feste Atmosphaerenwerte,
+  Seegang bleibt), im Weltblock gespeichert.
+- Schritt 4: Flugzeuge als `Flight` der naechsten kartierten Basis
+  (Laufzeit-Speed = Profil, da der Save keine Fluggeschwindigkeit haelt),
+  Tiere als `Animal`, Taeuschkoerper als ruhende `Decoy` (Validator laesst
+  `source_id` None mit Speed 0 nur bei einer eigenen Mission zu).
+- Editor: `static_preview["runtime_effective"]` ist jetzt True,
+  `MISSION_FIELD_METADATA` nennt den Laufzeitumfang, Text
+  `editor.runtime_scope`. `docs/commander-coop.md` erwaehnt eigene
+  Missionen nicht; nur AGENTS und Handbuch aktualisiert.
+
+Abschluss des Durchlaufs (2026-09-27):
+
+- Version `1.3.0` (`src/core/version.py`, README EN/DE Release-Absatz,
+  `tests/test_startup.py`, `tests/test_packaging.py`, AGENTS-Autoritaetszeile,
+  `docs/station-shortcuts.de.{md,pdf}` neu erzeugt). Kein `python -m build`,
+  kein Push (Entscheidung).
+- Abschlusspruefung (Eintrag 2026-09-27 in `docs/verification-log.md`):
+  volle Suite 3484 bestanden, 26 uebersprungen, 9 veraltete Erwartungen
+  dieses Durchlaufs korrigiert und einzeln gruen; Kalibrierung 77/77;
+  Katalog 111 Profile; Handbuch und Web-Schema aktuell; `SMOKE-OK`.
+- Offen fuer den Auftraggeber: `docs/hardware-acceptance.md` (alle Phasen
+  auf der uConsole), die zwei vorbestehenden Browser-Fehlschlaege (unten),
+  VDS (Phase 7), OffscreenCanvas (Phase 11), Editor-Sektorauswahl
+  (Phase 13), Kampagne (1.4).
+- Naechster Schritt: Hardware-Abnahme, dann Merge von `plan-1.3` nach
+  `main` und `python -m build` fuer das Release.
+
+Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
+Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
+(beide Aufloesungen, Helikopter-LOFAR-Ansicht) und
+`test_opfor_web.py::test_submarine_sonar_filters_and_audio_survive_host_input`
+(Stufe "audio after host input"). Beide sind Browser-Tests; sie werden je
+Phase mit `--deselect` ausgenommen und am Ende des Durchlaufs gemeldet.
+
+Notizen Phase 1:
+
+- `crew` ist ein Objekt oder `null` (ein besetztes Boot, `Game._opfor`), nicht
+  eine Liste: das Spiel kennt genau eine Crew-Bindung.
+- Sub-Zeile zusaetzlich: `manual`, `order_course`, `order_speed`,
+  `order_depth`, `last_bottom_m`, `manual_ping_pending`
+  (`SUB_CREW_FIELDS`); `endurance.manual` folgt `manual` beim Laden.
+- Der Sonar-Save/-Restore/-Validator der Fregatte ist in
+  `Game._sonar_controls_state`, `_sonar_system_state`,
+  `_restore_sonar_controls`, `_restore_sonar_system` und die Closures
+  `valid_sonar_controls`/`valid_sonar` gezogen und dient dem Boot unter
+  `sonar_perspective`. Fuer das Boot gelten zusaetzlich die Quell-IDs
+  `OWNSHIP_TARGET_ID` und `OWN_TORPEDO_TARGET_BASE + idx` als Kontaktziele.
+- Halte-Regel: nach einem Load bleibt die Crew-Bindung fuer
+  `UBOOT_RESTORE_HOLD_S` (600 s Sim) bestehen, auch ohne gehaltene Station;
+  `_sync_opfor` gibt das Boot erst danach an die KI. `crew.hold_s` haelt den
+  Restwert (exakter Round-Trip), ein Load setzt ihn auf das Maximum.
+- `ui.local_side` wird gespeichert und geladen (uConsole-Seite).
+- Anzeigehistorien des Sonars (Breitband/LOFAR/Echo) sind nach einem Load
+  nicht bitgleich (transienter Overlap-Add-Zustand des Audioempfaengers, wie
+  bei der Fregatte); der Continuation-Test vergleicht sie deshalb nicht,
+  alle Simulationsfelder sind ueber 300 s identisch.

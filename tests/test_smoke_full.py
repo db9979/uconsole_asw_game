@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.slow  # generation/calibration runs above 20 s
+
 from src.core import config
 from src.core.game import Game
 from tools import smoke_full

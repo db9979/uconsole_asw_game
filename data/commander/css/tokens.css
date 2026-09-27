@@ -68,6 +68,7 @@
   --dock-left-w: clamp(15rem, 15vw, 22rem);
   --dock-right-w: clamp(21rem, 23vw, 32rem);
   --dock-detail-w: clamp(20rem, 18vw, 30rem);
+  --dock-boat-w: clamp(30rem, 46vw, 70rem);
   --rail-w: 2.5rem;
   --z-menu: 30;
   --z-overlay: 40;

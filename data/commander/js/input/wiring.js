@@ -20,12 +20,12 @@ import { analysisProfile, renderContactAnalysis } from "../views/analyzer.js";
 import { chartGeometry, fitChart, plotClick, plotTrackBearing, queueDraw, releaseCanvas } from "../views/chart.js";
 import { activateDirectFire, confirmFireDialog, renderActionState, renderDirectFireControls, renderSonarControlPage } from "../views/controls.js";
 import { clearFireConfirmation } from "../views/dom.js";
-import { acceptSession, activateTab, chooseStation, mutateStation, renderLobby } from "../views/lobby.js";
+import { acceptSession, activateTab, chooseSide, chooseStation, mutateStation, renderLobby } from "../views/lobby.js";
 import { changeLookoutRange, queueLookoutDraw, renderLookoutStatus, zoom } from "../views/lookout.js";
 import { renderSnapshot } from "../views/render.js";
 import { hideMapTooltip, mapTooltipLines, nearestMapInfo, roleMapGeometry, showMapTooltip, stopOpzSweepAnimation, syncOpzSweepAnimation } from "../views/role-map.js";
 import { queueVisualDraw, renderRoleVisuals } from "../views/role-visuals.js";
-import { applySimlogView, closeSimlogMap, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
+import { applySimlogView, closeSimlogMap, exportSimlog, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
 import { renderTracks, selectTrack } from "../views/tracks.js";
 import { drawWeatherProfile, profileSpeedAt, toggleWeatherStation } from "../views/weather.js";
 import { schedule } from "../core/scheduler.js";
@@ -296,6 +296,8 @@ export function init() {
   for (const id of ["add-station", "mobile-add-station", "workstation-add-station"]) {
     $(id).addEventListener("click", openStationPicker);
   }
+  for (const button of $("side-choice").querySelectorAll("button"))
+    button.addEventListener("click", () => chooseSide(button.dataset.side));
   $("lobby-back").addEventListener("click", () => {
     S.stationPickerOpen = false;
     renderLobby();
@@ -365,9 +367,11 @@ export function init() {
   });
   for (const id of ["sonar-array-mode", "sonar-audition-mode", "sonar-band", "sonar-listen-band", "sonar-bearing", "sonar-depth", "sonar-gain",
     "sonar-harmonic-input", "engine-telegraph", "engine-course", "engine-speed", "helicopter-x", "helicopter-y",
-    "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth",
+    "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth", "uboot-scope-relative",
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
-    "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range"]) {
+    "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range", "uboot-fire-depth",
+    "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range",
+    "weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo", "engine-plant", "helicopter-pattern"]) {
     $(id).addEventListener("input", () => S.stationDrafts.add(id));
     $(id).addEventListener("change", () => S.stationDrafts.add(id));
     if (id.includes("fire")) for (const eventName of ["input", "change"]) $(id).addEventListener(eventName, () => {
@@ -409,6 +413,12 @@ export function init() {
   });
   $("sonar-clear-focus").addEventListener("click", () => sendStationAction("sonar_clear_focus", {}));
   $("sonar-array-apply").addEventListener("click", () => sendStationAction("sonar_set_array_mode", {mode: $("sonar-array-mode").value}));
+  $("weapons-settings-apply").addEventListener("click", () => {
+    for (const id of ["weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo"]) S.stationDrafts.delete(id);
+    sendStationAction("weapons_set_torpedo_settings", {torpedo_type: $("weapons-torpedo-type").value,
+      pattern: $("weapons-pattern").value, enable_nm: $("weapons-enable").valueAsNumber,
+      salvo: Number($("weapons-salvo").value)});
+  });
   $("sonar-tas").addEventListener("click", () => sendStationAction("sonar_set_tas", {deployed: $("sonar-tas").dataset.deployed !== "true"}));
   $("sonar-depth-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("sonar-depth-form", "sonar-depth", "sonar_set_tow_depth", "depth_m", 20, 260);
@@ -469,6 +479,12 @@ export function init() {
     event.preventDefault(); numberAction("engine-speed-form", "engine-speed", "engine_set_speed", "speed_kn", 0, 25);
   });
   $("engine-quiet").addEventListener("click", () => sendStationAction("engine_set_quiet_mode", {enabled: !S.v2State.engine.propulsion.quiet_mode}));
+  $("engine-plant-apply").addEventListener("click", () => {
+    S.stationDrafts.delete("engine-plant");
+    sendStationAction("engine_set_plant", {mode: $("engine-plant").value});
+  });
+  $("damage-counterflood").addEventListener("click", () => sendStationAction("damage_counterflood",
+    {enabled: !S.v2State?.damage?.stability.counterflood_room}));
   $("uboot-course-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("uboot-course-form", "uboot-course", "uboot_set_course", "course", 0, 359.99999999999994);
   });
@@ -480,6 +496,46 @@ export function init() {
   });
   $("uboot-decoy").addEventListener("click", () => sendStationAction("uboot_decoy", {}));
   $("uboot-blow").addEventListener("click", () => sendStationAction("uboot_blow", {}));
+  // Wire guidance of a running crew torpedo: new datum from the boat, or cut.
+  $("uboot-wire-steer").addEventListener("click", () => {
+    const ref = $("uboot-wire-weapon").value, bearing = $("uboot-wire-bearing").valueAsNumber, range = $("uboot-wire-range").valueAsNumber;
+    if (!ref || !finite(bearing) || bearing < 0 || bearing >= 360 || !finite(range) || range < .05 || range > 40) return;
+    sendStationAction("uboot_wire_steer", {ref, bearing, range_nm: range});
+  });
+  $("uboot-wire-cut").addEventListener("click", () => {
+    if ($("uboot-wire-weapon").value) sendStationAction("uboot_wire_cut", {ref: $("uboot-wire-weapon").value});
+  });
+  // Boat modes: explicit on/off buttons (mast up / down, snorkel up / down, ...).
+  for (const button of document.querySelectorAll("[data-uboot-mode]"))
+    button.addEventListener("click", () => sendStationAction(button.dataset.ubootMode,
+      {enabled: button.dataset.enabled === "true"}));
+  // One-step depth orders (periscope, snorkel, above / below the measured layer, deep).
+  for (const button of document.querySelectorAll("[data-uboot-depth-preset]"))
+    button.addEventListener("click", () => {
+      const depth = Number(button.dataset.depth);
+      if (button.dataset.depth && finite(depth) && depth >= 0 && depth <= 1000)
+        sendStationAction("uboot_set_depth", {depth_m: depth});
+    });
+  for (const button of document.querySelectorAll("[data-uboot-speed-step]"))
+    button.addEventListener("click", () => {
+      const speed = Number(button.dataset.speed);
+      if (finite(speed) && speed >= 0 && speed <= 40) sendStationAction("uboot_set_speed", {speed_kn: speed});
+    });
+  // The periscope: train it in steps or to an entered relative bearing, read the stadimeter.
+  for (const button of document.querySelectorAll("[data-uboot-scope-turn]"))
+    button.addEventListener("click", () => {
+      const scope = S.v2State?.[S.v2State?.role]?.scope;
+      if (!scope || !finite(scope.relative_deg)) return;
+      const relative = ((scope.relative_deg + Number(button.dataset.ubootScopeTurn)) % 360 + 360) % 360;
+      sendStationAction("uboot_scope_bearing", {relative_deg: relative});
+    });
+  $("uboot-scope-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("uboot-scope-form", "uboot-scope-relative", "uboot_scope_bearing", "relative_deg", 0, 359.99999999999994);
+  });
+  $("uboot-scope-mark").addEventListener("click", () => sendStationAction("uboot_scope_mark", {}));
+  $("simlog-export").addEventListener("click", () => exportSimlog());
+  $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
+  $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));
   $("helicopter-return").addEventListener("click", () => sendStationAction("helicopter_return", {}));
   $("helicopter-waypoint-form").addEventListener("submit", (event) => {
@@ -489,6 +545,12 @@ export function init() {
     if (finite(x) && finite(y) && x >= 0 && x <= 1000 && y >= 0 && y <= 1000) sendStationAction("helicopter_set_waypoint", {x, y});
   });
   $("helicopter-buoy").addEventListener("click", () => sendStationAction("helicopter_deploy_buoy", {}));
+  $("helicopter-pattern-apply").addEventListener("click", () => {
+    S.stationDrafts.delete("helicopter-pattern");
+    sendStationAction("helicopter_set_pattern", {kind: $("helicopter-pattern").value});
+  });
+  $("helicopter-mad").addEventListener("click", () => sendStationAction("helicopter_set_mad",
+    {enabled: !S.v2State?.helicopter?.asset.mad_mode}));
   for (const mode of ["acoustic", "map"]) $(
     `helicopter-visual-${mode}`).addEventListener("click", () => {
       S.helicopterVisualPage = mode;
@@ -656,8 +718,8 @@ export function init() {
             if (data?.type === "metrics") {
               S.sonarAudioMetrics = data;
               window.uJagdAudioDiagnostics = Object.freeze({
-                bufferedSeconds: Math.max(0, Math.min(6, data.buffered * .25)),
-                sequenceGaps: data.gaps, droppedBlocks: data.evictions,
+                bufferedSeconds: Math.max(0, Math.min(8, data.buffered * .25)),
+                sequenceGaps: data.gaps, droppedBlocks: data.dropped, evictedBlocks: data.evictions,
                 concealedBlocks: data.concealed, playbackRate: data.rate,
                 stale: data.stale, transport: S.sonarAudioSocket ? "websocket" : "http"});
             }
@@ -736,6 +798,8 @@ export function init() {
         const geometry = roleMapGeometry(gesture.role), state = roleMapViews[gesture.role];
         if (geometry) plotClick(gesture.role, state.x + (x - rect.width / 2) / geometry.scale,
           state.y + (y - rect.height / 2) / geometry.scale);
+      } else if (contact && contact.ref.startsWith("blip-")) {
+        sendStationAction("opz_mark_blip", {ref: contact.ref});
       } else if (contact) {
         selectTrack(contact.ref);
       } else if (!hits.length && gesture.role === "helicopter" && stationActionAvailable() &&

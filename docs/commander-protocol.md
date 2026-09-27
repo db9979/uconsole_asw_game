@@ -115,32 +115,45 @@ are hard-bounded. Sonar audio is live-only, separately granted, bound to the
 active sonar generation, and filtered on the main thread using the projected
 Sonar audition mode, band, notch, and gain. The server keeps the last 40 blocks
 (ten seconds) so a briefly stalled client catches up in order; older blocks are dropped
-and reported as a discontinuity. The browser starts playback about one second behind the newest
-block. Its AudioWorklet steers that lead by reading the stream up to 2 % faster or slower,
-so clock drift and jitter neither drain nor overflow it. On an underrun it plays a
-non-periodic granular stand-in built from the last half second and refills half a second
-before fresh audio resumes; after two seconds without data it plays quiet neutral noise and
-marks the stream stale. Crossfades are applied only at real discontinuities. The uConsole
-mixer worker uses the same elastic lead, concealment and two-second limit. A transient
-state-poll failure or HTTP 503 does not discard queued audio; the audio endpoint
-still checks session and station authority on each request. A restarted stream
-rebases a browser cursor that is ahead of its new sequence. There is no continuous
-own-ship ambience sound, locally or in the browser; sound opt-in only enables
-synthesized alert/combat-effect cues and this live sonar/helicopter stream.
+and reported as a discontinuity. The browser starts playback about two seconds (eight
+blocks) behind the newest block. Its AudioWorklet steers that lead by reading the stream
+up to 2 % faster or slower, so clock drift and jitter neither drain nor overflow it; it
+holds at most six seconds. On an underrun it plays a non-periodic granular stand-in built
+from the last half second and refills one second (four blocks) before fresh audio resumes;
+after three seconds without data it plays quiet neutral noise and marks the stream stale.
+Crossfades are applied only at real discontinuities. The uConsole mixer worker uses the
+same elastic scheme with a 1.5 s lead, a five-second queue limit and the same
+three-second stale rule; the main loop catches up to 2.5 s of a stalled frame, so audio
+of that length is concealed, never cut. A transient state-poll failure or HTTP 503 does
+not discard queued audio; the audio endpoint still checks session and station authority
+on each request. Block numbering is monotonic for the life of the host process: a
+cleared stream (a world-epoch step after the host's local input, a fresh grant) continues
+above every number sent before and skips one, so the restart is a gap; a retuned
+receiver skips one number as well, so browsers crossfade instead of joining unrelated
+audio. Only a cursor ahead of everything ever published (a host restart) is rebased
+with a discontinuity. There is no continuous own-ship ambience sound, locally or in the
+browser; sound opt-in only enables synthesized alert/combat-effect cues and this live
+sonar/helicopter stream.
 The optional audio WebSocket uses subprotocol `u-jagd-audio-v2`, the HttpOnly session
 cookie, exact Origin, active station and audio grant. Each 2060-byte binary message is
 `UJA2`, a little-endian unsigned 64-bit sequence, and 1024 mono signed 16-bit
-samples at 4096 Hz. Sequence gaps signal dropped blocks; the server sends at most
-the newest four pending blocks after a slow client. HTTP audio polling remains the
-fallback. Neither transport accepts browser audio or simulation commands.
+samples at 4096 Hz. Sequence gaps signal skipped blocks, an epoch step or a retune. A
+socket opened without a cursor receives at most the newest eight pending blocks; a
+reconnect passes `?after=<sequence>` (strictly validated) so nothing the worklet already
+holds is re-sent, and a duplicate number is counted and discarded by the worklet. The
+audio socket tolerates a six-second send stall before it closes. HTTP audio polling
+remains the fallback. Neither transport accepts browser audio or simulation commands.
 For on-device diagnosis, `U_JAGD_AUDIO_DEBUG=1` writes bounded, contact-free
 receiver block rate, mixer underruns, concealed blocks, rate correction, queue
-fill and loss counters to `~/.u-jagd/audio_debug.log`; `U_JAGD_PERF_DEBUG=1`
-adds frame-time peaks and simulation catch-up to `perf_debug.log`. Browser
+fill, mixer channel idle events, late worker iterations, input gaps and loss
+counters to `~/.u-jagd/audio_debug.log`; `U_JAGD_PERF_DEBUG=1` adds frame-time
+peaks, per-phase main-thread times (simulation, audio, Remote Crew publish, events,
+live traffic, draw) and simulation catch-up to `perf_debug.log`. Browser
 developer tools can read the bounded `window.uJagdAudioDiagnostics` snapshot
-(buffer seconds, sequence gaps, dropped blocks, concealed blocks, playback
-rate, stale state and transport). Neither is persisted in
-game saves.
+(buffer seconds, sequence gaps, dropped duplicate blocks, evicted blocks, concealed
+blocks, playback rate, stale state and transport). `tools/audio_soak.py` runs the
+whole chain headless with simulated browsers (or as a client on another machine)
+and reports continuity. Neither log is persisted in game saves.
 The Sonar role receives only bounded own-ship speed and TAS handling limits needed
 to explain a disabled array control; hover reasons never inspect hidden entities.
 

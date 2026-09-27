@@ -13,6 +13,7 @@ from enum import Enum
 import numpy as np
 
 from src.core import config
+from src.sonar import raytrace
 from src.sonar import equation, propagation
 from src.sonar.tma import BearingTrack, solve_tma
 from src.audio.database import rank_signatures
@@ -95,6 +96,8 @@ def _lambert_mu_db(world, x_nm: float, y_nm: float) -> float:
     return SEDIMENTS[seabed(x_nm, y_nm)][3]
 
 
+# Independent fix sources a contact retains (one dated fix each).
+FIX_SOURCES = ("PING", "DIPPING", "TMA", "SONOBUOY", "MAD", "VISUAL")
 SOUND_SPEED_KN = config.SOUND_SPEED_M_S * 3600.0 / 1852.0
 DOPPLER_SIGMA_HZ = 0.02
 DOPPLER_MIN_QUALITY = 0.3
@@ -387,10 +390,10 @@ class Contact:
     def active_fixes(self, now: float) -> tuple:
         """Return stable detached fix copies whose measurements remain current."""
         result = []
-        for source in ("PING", "DIPPING", "TMA", "SONOBUOY"):
+        for source in FIX_SOURCES:
             fix = self.fixes.get(source)
             lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
-                        if source in ("PING", "DIPPING")
+                        if source in ("PING", "DIPPING", "MAD", "VISUAL")
                         else config.SONAR_CONTACT_LOST_S)
             if (fix is not None and 0.0 <= now - fix["measured_at"] <= lifetime):
                 result.append(dict(fix))
@@ -434,7 +437,7 @@ class Contact:
         """
         for source in tuple(self.fixes):
             lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
-                        if source in ("PING", "DIPPING")
+                        if source in ("PING", "DIPPING", "MAD", "VISUAL")
                         else config.SONAR_CONTACT_LOST_S)
             measured_at = self.fixes[source].get("measured_at")
             if measured_at is None or t - measured_at > lifetime:
@@ -507,6 +510,54 @@ class Contact:
         self.range_source = "buoy"
         self.range_seen = t
         self.origin = "bojenkreuzpeilung"
+
+    def update_mad(self, x: float, y: float, t: float, uncertainty_nm: float,
+                   quality: float):
+        """A MAD pass over the hull: a dated position fix without depth,
+        course or speed. A fresh ping keeps precedence over it."""
+        self.expire_ping_fix(t)
+        self._publish_fix("MAD", t, t, x, y, uncertainty_nm, quality)
+        self.confidence = min(1.0, max(self.confidence, quality))
+        self.quality = max(self.quality, quality)
+        self.last_seen = t
+        if self.range_source == "ping":
+            return
+        self.observed_x, self.observed_y = x, y
+        self.bearing = math.degrees(math.atan2(x - self._fx, -(y - self._fy))) % 360
+        self.range_est = math.hypot(x - self._fx, y - self._fy)
+        self.range_sigma_nm = uncertainty_nm
+        self.bearing_uncertainty_deg = None
+        self.depth_est = self.depth_sigma_m = None
+        self.range_source = "mad"
+        self.range_seen = t
+        self.origin = "mad"
+
+    def update_visual(self, bearing: float, range_nm: float, t: float,
+                      uncertainty_nm: float, quality: float,
+                      observer_x: float, observer_y: float):
+        """A stadimeter reading through a periscope: a dated position fix
+        on the surface from the measured bearing and the estimated range.
+        A fresh ping keeps precedence over it."""
+        self.expire_ping_fix(t)
+        rad = math.radians(bearing % 360.0)
+        x = observer_x + range_nm * math.sin(rad)
+        y = observer_y - range_nm * math.cos(rad)
+        self._publish_fix("VISUAL", t, t, x, y, uncertainty_nm, quality, 0.0, 1.0)
+        self.confidence = min(1.0, max(self.confidence, quality))
+        self.quality = max(self.quality, quality)
+        self.last_seen = t
+        if self.range_source == "ping":
+            return
+        self.observed_x, self.observed_y = x, y
+        self.bearing = bearing % 360.0
+        self.raw_bearing = self.bearing
+        self.range_est = range_nm
+        self.range_sigma_nm = uncertainty_nm
+        self.bearing_uncertainty_deg = config.UBOOT_SCOPE_BEARING_ERR_DEG
+        self.depth_est, self.depth_sigma_m = 0.0, 1.0
+        self.range_source = "visual"
+        self.range_seen = t
+        self.origin = "visual"
 
     def tma_range_sigma_nm(self, quality: float) -> float:
         """1-sigma position uncertainty: the covariance semi-major axis, never
@@ -783,12 +834,22 @@ class SonarSystem:
                      if true_speed is not None else
                      propagation.synthetic_sound_speed_m_s(depth, measured_thermo))
             speeds.append(speed + self.rng.uniform(-.15, .15))
+        # Convergence zones follow from the measured profile itself (plan
+        # 1.3, phase 7): the ray table of this profile, the charted seabed
+        # type and the wind of the sea state, at the hull array's depth.
+        seabed = getattr(world, "seabed_at", None)
+        sediment = seabed(frigate.x, frigate.y) if callable(seabed) else "sand"
+        wind_kn = float(getattr(world, "wind_speed_kn", 0.0))
+        array_depth = hull_array_depth_m(frigate)
+        cz_bands = raytrace.convergence_zones_nm(
+            depths.tolist(), speeds, water_depth, array_depth, sediment,
+            wind_kn, array_depth)
         self.bt_profile = dict(t=t, x=frigate.x, y=frigate.y,
                                thermocline_m=measured_thermo,
                                water_depth_m=water_depth,
                                sea_state=world.sea_state,
                                depths_m=depths.tolist(), speeds_m_s=speeds,
-                               cz_bands_nm=[list(band) for band in config.CZ_BANDS])
+                               cz_bands_nm=[list(band) for band in cz_bands])
         self.bt_cooldown = config.SONAR_BT_COOLDOWN_S
         return True
 
@@ -979,7 +1040,7 @@ class SonarSystem:
                 if distance < active_range else None)
             if distance <= config.SONAR_PING_HEAR_RANGE_NM \
                     and hasattr(target, "hear_ping"):
-                target.hear_ping()
+                target.hear_ping(source=(frigate.x, frigate.y))
             if snapshot is None or len(self._pending_pings) >= self.MAX_PENDING_PINGS:
                 continue
             self._pending_pings.append({
@@ -1947,7 +2008,7 @@ class SonarSystem:
 
             # Hört das U-Boot den Ping?
             if can_hear:
-                tgt.hear_ping()
+                tgt.hear_ping(source=(frigate.x, frigate.y))
 
             # Echo erhalten?  A stopped boat lying beside a wreck returns an
             # echo that merges with the wreck's own clutter echo.

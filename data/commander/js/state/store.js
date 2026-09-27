@@ -37,6 +37,8 @@ export const S = {
   queuedSonarFocus: null,
   stationPickerOpen: false,
   lobbyMessage: null,
+  // Unit chosen in the lobby ("frigate" | "opfor"); held stations decide otherwise.
+  lobbySide: "frigate",
   commandMessage: null,
   lastToastedMessage: null,
   opzMarked: new Set(),

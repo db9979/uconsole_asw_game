@@ -40,8 +40,10 @@ FPS_DEFAULT = 30
 # debt and caught up over the following frames. Sonar audio is produced in
 # simulation time and played in wall time, so dropping that time would drain
 # every playback buffer. Debt beyond SIM_CATCHUP_MAX_S (a real hang) is dropped.
+# 2.5 s matches the sonar listening leads (1.5 s local, 2 s browser) so a
+# stall that long is concealed and then fully caught up instead of cut.
 SIM_FRAME_DT_MAX = 0.1
-SIM_CATCHUP_MAX_S = 1.0
+SIM_CATCHUP_MAX_S = 2.5
 AUDIO_ENABLED = True
 AUDIO_SAMPLE_RATE = 22050
 AUDIO_UPDATE_S = 0.25
@@ -50,12 +52,15 @@ AUDIO_UPDATE_S = 0.25
 ECO_REDRAW_S = 0.25
 ECO_PRESENCE_POLL_S = 0.5
 ECO_PRESENCE_MAX_AGE_S = 5.0
-# Pygame specifies its mixer buffer in samples. 512 samples are about 23 ms at
-# 22050 Hz. Longer scheduling gaps are handled in software: locally by the
-# AudioEngine's two-second buffered-sonar queue (SONAR_BUFFER_MAX_S), and for
-# Remote Crew by the server's 40-block ring buffer of 0.25 s blocks, ~10 s
-# (SONAR_AUDIO_RING_BLOCKS in src/commander/server.py).
-AUDIO_MIXER_BUFFER_SAMPLES = 512
+# Pygame specifies its mixer buffer in samples. 2048 samples are about 93 ms
+# at 22050 Hz: the SDL audio thread then survives PipeWire/CPU scheduling
+# hiccups of that length on the uConsole without an xrun crackle (one-shot
+# cues start up to 93 ms later, which is not noticeable). Longer gaps are
+# handled in software: locally by the AudioEngine's buffered-sonar queue
+# (SONAR_BUFFER_MAX_S), and for Remote Crew by the server's 40-block ring
+# buffer of 0.25 s blocks, ~10 s (SONAR_AUDIO_RING_BLOCKS in
+# src/commander/server.py).
+AUDIO_MIXER_BUFFER_SAMPLES = 2048
 # Mono output: halves per-block synthesis, resampling and mixer workload on
 # the low-power uConsole; stereo bearing panning is skipped in mono.
 AUDIO_CHANNELS = 1
@@ -209,14 +214,69 @@ LOOKOUT_SUB_RANGE_NM = 5.0
 LOOKOUT_AIR_RANGE_NM = 20.0
 LOOKOUT_SUB_SURFACED_MAX_DEPTH_M = 2.0
 LOOKOUT_NIGHT_FACTOR = 0.35
+# The 24-hour clock's daylight window (lookout, chart tint, bridge sky).
+DAYLIGHT_START_H = 5.5
+DAYLIGHT_END_H = 19.5
+DUSK_HALF_WIDTH_H = 1.0            # chart tint: "dusk" this close to either edge
 LOOKOUT_SEA_STATE_LOSS = 0.08
 LOOKOUT_BEARING_ERR_DEG = 0.6
 LOOKOUT_RANGE_ERR_FRAC = 0.06
 LOOKOUT_EPOCH_S = 0.5
+# Crewed hostile submarine (manual crew controls; the AI never uses these).
+UBOOT_SILENT_MAX_KN = 5.0          # silent running: speed ceiling
+UBOOT_SNORKEL_MAX_KN = 6.0         # snorkelling: speed ceiling (mast drag)
+UBOOT_BOTTOM_CLEARANCE_M = 3.0     # lying on the bottom: keel clearance
+UBOOT_BATTERY_WARN_FRACTION = 0.20 # battery warning / nearly empty
+UBOOT_BATTERY_EMPTY_FRACTION = 0.03
+UBOOT_SPEED_STEPS_KN = (0.0, 3.0, 6.0, 10.0, 15.0)   # telegraph steps (+ maximum)
+UBOOT_SALVO_SPREAD_DEG = 4.0       # two-torpedo spread: +/- this
+# Save v15: a loaded crewed boat keeps its crew binding this long (sim
+# seconds) while no station is held, so a returning crew resumes its orders;
+# afterwards the AI takes the boat back as after a crew's departure.
+UBOOT_RESTORE_HOLD_S = 600.0
+UBOOT_TORPEDO_MIN_DEPTH_M = 5.0
+UBOOT_TORPEDO_MAX_DEPTH_M = 300.0
+UBOOT_WIRE_TURN_DEG_S = 8.0       # wire-steered torpedo turn rate
+UBOOT_WIRE_MAX_KN = 10.0           # own speed that strains the wire
+UBOOT_WIRE_MAX_YAW_DEG_S = 1.5
+UBOOT_OBSTACLE_LOOKAHEAD_NM = 5.0  # chart check ahead of the ordered course
+UBOOT_UNDER_KEEL_WARN_M = 15.0
+UBOOT_LAYER_MARGIN_M = 15.0   # depth presets: this far above / twice below the layer
+UBOOT_PRESET_MIN_M = 20.0
+# Diesel boats at snorkel depth: the running diesels raise the radiated
+# level and add firing-rate lines to the boat's LOFAR signature (plan 1.3,
+# phase 9; the catalog keeps its 1.0.0 acoustic profiles unchanged).
+# Seeded random groups of a user mission: members start at this course-free
+# speed and depth (course from the mission seed).
+MISSION_GROUP_SPEED_KN = 4.0
+# A placed aircraft patrols a box of this half-width around its position.
+MISSION_AIRCRAFT_LOITER_NM = 10.0
+MISSION_GROUP_DEPTH_M = 60.0
+UBOOT_SNORKEL_NOISE_DB = 12.0
+UBOOT_SNORKEL_LINES = ((50.0, 0.85, 2.0), (100.0, 0.55, 1.5))  # (Hz, amp, width)
+UBOOT_SNORKEL_QUIET_LOSS = 0.25
+# Periscope of the crewed boat (plan 1.3, phase 9).
+UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
+UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics
+UBOOT_SCOPE_STEP_DEG = 2.0          # arrow keys turn the scope by this
+UBOOT_SCOPE_STEP_FAST_DEG = 10.0    # ... and with Shift by this
+UBOOT_SCOPE_BEARING_ERR_DEG = 1.0   # sigma of a periscope bearing
+UBOOT_SIGHTINGS_MAX = 16
+UBOOT_SIGHTING_LOST_S = 10.0        # a sighting vanishes this long after it was last seen
+UBOOT_STADIMETER_ERR_FRAC = 0.25    # range uncertainty of a stadimeter reading
+UBOOT_STADIMETER_WINDOW_DEG = 3.0   # the crosshair must be this close to the sighting
+# Assumed hull lengths of the stadimeter by recognized class (m); an
+# unrecognized surface contact is measured as a generic frigate.
+UBOOT_STADIMETER_LENGTHS_M = {"warship": 130.0, "merchant": 150.0, "unknown": 130.0}
+
+# Display scales of the bridge lookout page (NM, radius of the scope).
+LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
 # Land in sight: day/clear range of a coast with 50 m hills, checked on a
 # slow cadence; a landmass is reported again only after it dropped out of
 # sight.
 LOOKOUT_LAND_RANGE_NM = 20.0
+# Day/clear range at which a running torpedo's wake is seen (lookout, periscope).
+TORPEDO_WAKE_VISIBLE_NM = 1.5
 LOOKOUT_LAND_CHECK_S = 10.0
 LOOKOUT_REPORTS_MAX = 24
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist
@@ -332,6 +392,14 @@ RADAR_SURFACE_WEATHER_LOSS = 0.25
 RADAR_AIR_WEATHER_LOSS = 0.10
 RADAR_WEATHER_ERROR_GAIN = 1.5
 RADAR_TRACK_STALE_S = 30.0
+# A raised submarine mast or snorkel head: a tiny, low echo (relative to the
+# broadside reference ship) that sea clutter soon hides.  It shows as a bare
+# blip on the PPI only; the OPZ must mark it to start a radar track.
+SUB_MAST_HEIGHT_M = 1.5
+SUB_MAST_RCS_FACTOR = 0.01
+RADAR_BLIP_LIFE_S = 6.0
+RADAR_BLIP_MAX = 24
+RADAR_BLIP_GATE_NM = 1.0
 RADAR_BEARING_ERR_DEG = 0.8
 RADAR_RANGE_ERR_FRAC = 0.015
 # Air-search radar height estimate: a game model of a 3D radar's altitude
@@ -550,6 +618,9 @@ DIFFICULTY_FIELDS = {
     "kill_depth_m":       (float, 5.0,    30.0,   1.0,   15.0),
     "enemy_attack_mult":  (float, 0.3,    2.0,    0.1,   1.0),
     "enemy_cooldown_s":   (float, 300.0,  1800.0, 30.0,  900.0),
+    # Plan 1.3 phase 5: the AI boat fires on its own TMA only once the
+    # solution's range sigma over range is at or below this fraction.
+    "enemy_solution_threshold": (float, 0.05, 0.40, 0.05, 0.20),
     "second_sub_prob":    (float, 0.0,    1.0,    0.05,  0.0),
     "sea_state_start":    (int,   0,      6,      1,     3),
     "sub_count":          (int,   1,      3,      1,     1),
@@ -615,6 +686,7 @@ SCENARIOS = {
         difficulty=dict(quiet_mult=0.8, repair_mult=1.5, torpedo_count=6,
                        kill_dist_nm=0.20, kill_depth_m=20.0,
                        enemy_attack_mult=0.7, enemy_cooldown_s=1200.0,
+                       enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="patrouille",
         hq_intel="exact",
@@ -632,6 +704,7 @@ SCENARIOS = {
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
                        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="doppeljagd",
         hq_intel="coarse",
@@ -648,6 +721,7 @@ SCENARIOS = {
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=4,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
                        enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
+                       enemy_solution_threshold=0.15,
                        second_sub_prob=0.85),
         mission_type="nuklearer_abfang",
         hq_intel="coarse",

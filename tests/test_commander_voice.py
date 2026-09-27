@@ -40,7 +40,9 @@ def test_voice_relay_requires_host_option_and_active_station(tmp_path):
                                subprotocols=["u-jagd-voice-v2", f"ujagd-csrf.{csrf}"],
                                extra_headers={"Cookie": f"ujagd_remote_v2={token}"})
 
-            # Disabled is the initial state. No upgrade or microphone path.
+            # Voice starts enabled; the host switched it off: no upgrade or
+            # microphone path.
+            server.set_voice_enabled(False)
             try:
                 async with join(first_token):
                     assert False, "disabled voice accepted a connection"

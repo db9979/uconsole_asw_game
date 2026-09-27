@@ -2,6 +2,7 @@
 
 import pygame
 
+from src.commander.server import DIRECT_FIRE_ROLES, SONAR_AUDIO_ROLES
 from src.core import config
 from src.core.i18n import message, raw_text, translation_scope
 from src.ui import layout
@@ -12,8 +13,7 @@ class StationAdmission:
         self.request = None
         self.deferred = set()
         self.identity = None
-        self.selection = 4
-        self.grants = {}
+        self.selection = 2
         self.error = False
 
     @staticmethod
@@ -54,39 +54,37 @@ class StationAdmission:
         if not pending:
             return
         self.request = pending[0]
-        self.grants = dict(command=True, direct_fire=False, sonar_audio=False)
-        self.selection = 4  # Enter never silently grants an arriving request.
+        self.selection = 2  # Enter never silently hands over a crewmate's station.
         self.error = False
         game._open_administration("commander")
 
     @staticmethod
     def rects():
-        return [pygame.Rect(244, 232 + index * 57, 792, 48) for index in range(5)]
+        return [pygame.Rect(244, 232 + index * 57, 792, 48) for index in range(3)]
 
     def activate(self, game, console, index):
-        if index < 2:
-            capability = ("direct_fire", "sonar_audio")[index]
-            station = self.request["requested_station"]
-            if capability == "direct_fire" and station not in ("weapons", "opz", "helicopter"):
-                return
-            if capability == "sonar_audio" and station not in ("sonar", "helicopter"):
-                return
-            self.grants[capability] = not self.grants[capability]
-        elif index == 4:
+        """0 hands the station over with all its rights, 1 rejects, 2 later.
+
+        A request only waits here when a crewmate holds the station; a free
+        station is leased to the requester at once by the server."""
+        if index == 2:
             self.close(game, defer=True)
+            return
+        row = self.request
+        station = row["requested_station"]
+        grants = dict(command=True, direct_fire=station in DIRECT_FIRE_ROLES,
+                      sonar_audio=station in SONAR_AUDIO_ROLES)
+        if console.server.resolve_station_request(
+                *self.key(row), grants=grants if index == 0 else None, takeover=index == 0):
+            self.close(game)
         else:
-            row = self.request
-            if console.server.resolve_station_request(*self.key(row),
-                    grants=dict(self.grants) if index == 2 else None):
-                self.close(game)
-            else:
-                self.error = True
+            self.error = True
 
     def handle_key(self, game, console, key):
         if key == pygame.K_ESCAPE:
             self.close(game, defer=True)
         elif key in (pygame.K_UP, pygame.K_DOWN, pygame.K_TAB):
-            self.selection = (self.selection + (-1 if key == pygame.K_UP else 1)) % 5
+            self.selection = (self.selection + (-1 if key == pygame.K_UP else 1)) % 3
         elif key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
             self.activate(game, console, self.selection)
 
@@ -107,11 +105,7 @@ class StationAdmission:
             layout.blit_block(game.screen, message("commander.admission.player",
                 name=raw_text(self.request["name"]), station=message(key)),
                 244, 159, 792, 64, config.COLOR_TEXT, size=22)
-            labels = [message("commander.admission." + capability,
-                               state=message("common.on" if self.grants[capability]
-                                             else "common.off"))
-                      for capability in ("direct_fire", "sonar_audio")]
-            labels += [message("commander.admission.approve"),
+            labels = [message("commander.admission.approve"),
                        message("commander.admission.reject"), message("commander.admission.later")]
             for index, (rect, text) in enumerate(zip(self.rects(), labels)):
                 layout.blit_line(game.screen, message("menu.choice",

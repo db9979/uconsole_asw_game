@@ -5,6 +5,7 @@ import math
 import random
 
 from src.core import config
+from src.world import atmosphere
 from src.world.coastline import Coastline
 from src.world.ocean import OceanEnvironment
 from src.world.grounding import (DEFAULT_HULL_SPEC, grounding_contact,
@@ -39,6 +40,7 @@ class World:
         self.sea_state = self.rng.randint(2, 4)     # 0-6
         self.hour = float(self.rng.randint(6, 18))  # Uhrzeit 0-24
         self.weather_shift_timer = 0.0
+        self.weather_override = None
         self.refresh_weather()
         # W2: Meeresstroemung - eigener, von self.rng abgekoppelter Strom
         # (Digest aus dem Seed), damit das Hinzufuegen dieses Feldes keine
@@ -108,10 +110,33 @@ class World:
             0.0, 1.0)
         return fraction * fraction * (3.0 - 2.0 * fraction)
 
+    # Authored weather of a mission: fixed atmosphere values per kind (the
+    # sea state stays the mission's).  Saved in the world block.
+    WEATHER_OVERRIDES = {
+        "rain": dict(wind_speed_kn=18.0, rain_intensity=0.5, visibility_nm=6.0),
+        "storm": dict(wind_speed_kn=38.0, rain_intensity=0.8, visibility_nm=4.0),
+        "fog": dict(wind_speed_kn=4.0, rain_intensity=0.1, visibility_nm=1.0),
+    }
+
+    def set_weather_override(self, kind) -> None:
+        """Hold the authored weather ``kind`` (None or "clear" releases it)."""
+        if kind in (None, "clear"):
+            self.weather_override = None
+        elif kind in self.WEATHER_OVERRIDES:
+            self.weather_override = kind
+        else:
+            raise ValueError("unknown weather kind")
+
     def weather_values(self) -> dict:
         """Return current finite atmospheric values for simulation and display."""
         if self._weather_source_sea != self.sea_state:
             self.refresh_weather()
+        override = getattr(self, "weather_override", None)
+        if override is not None:
+            values = dict(self.WEATHER_OVERRIDES[override])
+            values["wind_from_deg"] = self._weather_start["wind_from_deg"]
+            values["sea_state"] = float(self.sea_state)
+            return values
         blend = self._weather_blend()
         direction_delta = ((self._weather_target["wind_from_deg"]
                             - self._weather_start["wind_from_deg"]
@@ -340,7 +365,11 @@ class World:
             self.refresh_weather()
 
     def is_night(self) -> bool:
-        return self.hour < 5.5 or self.hour >= 19.5
+        return self.hour < config.DAYLIGHT_START_H or self.hour >= config.DAYLIGHT_END_H
+
+    def daylight_stage(self) -> str:
+        """``day``, ``dusk`` or ``night`` for the chart tint (display only)."""
+        return atmosphere.daylight_stage(self.hour)
 
     def format_time(self) -> str:
         h = int(self.hour)

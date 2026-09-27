@@ -1,10 +1,14 @@
 """The uConsole playing the hostile submarine (``--play-sub`` / menu ``U``).
 
 The frigate then belongs to the Remote Crew browsers (or to its autocrew);
-the local screen, keys and sound serve only the crewed boat.  Two local
-views exist: the submarine command (``Station.BRIDGE`` slot) and the
-submarine sonar (``Station.SONAR`` slot, the ordinary sonar workstation
-drawn and operated inside ``Game.sonar_perspective``).
+the local screen, keys and sound serve only the crewed boat.  The boat has the
+six stations of its Remote Crew roles (keys 1-6 or Tab): command, sonar,
+weapons, engine room, mast & ESM and navigation.  The sonar room uses the
+``Station.SONAR`` slot (the ordinary sonar workstation drawn and operated
+inside ``Game.sonar_perspective``), every other station the ``Station.BRIDGE``
+slot.  Each order key works only at the station that owns the order, exactly
+as the browser's action allowlist; a station a browser holds is not operated
+from the uConsole.
 
 Nothing here reads frigate truth for display: the boat, the known chart and
 the boat's own sonar contacts only.  Frigate flashes, its event feed and its
@@ -15,8 +19,9 @@ import math
 
 import pygame
 
-from src.core import config
-from src.core.i18n import message
+from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
+from src.core import config, opfor
+from src.core.i18n import display_value, message
 from src.core.station import Station
 
 LOCAL_SIDES = ("frigate", "uboot")
@@ -30,11 +35,50 @@ _SONAR_BLOCKED = frozenset({
     pygame.K_F2, pygame.K_F3, pygame.K_F4, pygame.K_F8, pygame.K_F11,
     pygame.K_0, pygame.K_KP0,
 })
-UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearing")
+UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearing",
+                     "uboot_range", "uboot_torpedo_depth", "uboot_wire_bearing",
+                     "uboot_wire_range")
+# Rejections of boat-mode orders that have their own local text.
+UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth")
 
 
 def playing(game) -> bool:
     return getattr(game, "local_side", "frigate") == "uboot"
+
+
+def local_station(game) -> str:
+    """The boat station the uConsole shows (a Remote Crew boat role)."""
+    if game.station is Station.SONAR:
+        return "uboot_sonar"
+    station = getattr(game, "uboot_station", "uboot")
+    # The sonar slot decides the sonar room (a reset returns to Station.BRIDGE).
+    return station if station in OPFOR_ROLES and station != "uboot_sonar" else "uboot"
+
+
+def set_local_station(game, station) -> None:
+    if station not in OPFOR_ROLES:
+        return
+    game._clear_controls()
+    game.uboot_station = station
+    game.station = Station.SONAR if station == "uboot_sonar" else Station.BRIDGE
+
+
+def station_remote(game) -> bool:
+    """A browser holds the station the uConsole shows: it is not operated here."""
+    query = getattr(getattr(game.commander, "server", None), "station_leased", None)
+    return bool(query and query(local_station(game)))
+
+
+def order_allowed(game, action) -> bool:
+    """Order keys follow the Remote Crew allowlist of the shown station."""
+    spec = V2_ACTION_REGISTRY.get(action)
+    if spec is not None and local_station(game) in spec.stations:
+        return True
+    owner = next((role for role in OPFOR_ROLES if spec is not None and role in spec.stations),
+                 None)
+    game.flash(message("uboot.local.wrong_station", station=message(
+        f"station.{owner}" if owner else "station.uboot")), 2.0)
+    return False
 
 
 def toggle_side(game) -> str:
@@ -82,7 +126,7 @@ def fire_at_contact(game, current, contact):
                else contact.bearing)
     range_nm = course = speed = None
     if (contact.observed_x is not None and contact.observed_y is not None
-            and contact.range_source in ("ping", "tma")
+            and contact.range_source in ("ping", "tma", "visual")
             and 0 <= game.sim_t - contact.range_seen < config.SONAR_CONTACT_LOST_S):
         dx, dy = contact.observed_x - sub.x, contact.observed_y - sub.y
         bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
@@ -94,7 +138,8 @@ def fire_at_contact(game, current, contact):
             speed = min(60.0, max(0.0, contact.tma_speed))
     if bearing is None or not math.isfinite(bearing):
         return "stale_ref"
-    return sub.command_fire(bearing % 360.0, range_nm, course, speed, now=game.sim_t)
+    return sub.command_fire(bearing % 360.0, range_nm, course, speed, now=game.sim_t,
+                            depth_m=current.orders.torpedo_depth, salvo=current.orders.salvo)
 
 
 def _announce(game, category: str, text, seconds: float = 2.0) -> None:
@@ -105,6 +150,32 @@ def _announce(game, category: str, text, seconds: float = 2.0) -> None:
         current.notice(game.sim_t, category, text, stamp=game.world.format_time())
 
 
+def _mode_notice(game, mode: str, on: bool, result) -> None:
+    """Banner and boat log for a boat-mode toggle (silent/snorkel/bottom)."""
+    if result is True:
+        _announce(game, "navigation", message(f"uboot.local.{mode}_{'on' if on else 'off'}"))
+    else:
+        game.flash(message("uboot.local.mode_rejected", reason=message(
+            f"uboot.reason.{result}" if result in UBOOT_LOCAL_REASONS
+            else "uboot.reason.not_ready")), 2.5)
+
+
+def _fire_bearing(game, current, range_nm):
+    orders = current.orders
+    bearing, orders.pending_bearing = orders.pending_bearing, None
+    if bearing is None:
+        return "not_ready"
+    return current.sub.command_fire(bearing, range_nm, now=game.sim_t,
+                                    depth_m=orders.torpedo_depth, salvo=orders.salvo)
+
+
+def _latest_wire(game, current):
+    running = {item.id: item for item in game.enemy_torpedoes if item.state == "RUN"}
+    active = [key for key, wire in current.orders.wires.items()
+              if wire.active and key in running]
+    return running[max(active)] if active else None
+
+
 def _fire_notice(game, result) -> None:
     if result is True:
         _announce(game, "waffen", message("uboot.local.fired"))
@@ -112,7 +183,8 @@ def _fire_notice(game, result) -> None:
         game.flash(message("uboot.local.fire_rejected",
                            reason=message(f"uboot.reason.{result}")
                            if result in ("not_ready", "no_torpedoes", "reloading",
-                                         "out_of_arc", "stale_ref", "unknown_ref")
+                                         "out_of_arc", "stale_ref", "unknown_ref",
+                                         "uboot_no_wire", "invalid_value")
                            else message("uboot.reason.not_ready")), 2.5)
 
 
@@ -128,6 +200,12 @@ def begin_input(game, mode: str) -> None:
         "uboot_speed": f"{sub.order_speed:.1f}" if sub else "---",
         "uboot_depth": f"{sub.order_depth:.0f}" if sub else "---",
         "uboot_bearing": "---",
+        "uboot_range": "---",
+        "uboot_torpedo_depth": (f"{current.orders.torpedo_depth:.0f}"
+                                if current is not None and current.orders.torpedo_depth
+                                else "---"),
+        "uboot_wire_bearing": "---",
+        "uboot_wire_range": "---",
     }[mode]
     prompt = message(f"uboot.input.{mode}", current=current_value)
     game.flash(message("runtime.input.pending", prompt=prompt, value=""), 60.0)
@@ -137,6 +215,11 @@ def finish_input(game) -> bool:
     """Apply a pending boat entry; ``False`` keeps the entry open (invalid)."""
     current = boat(game)
     mode = game.input_mode
+    if mode == "uboot_range" and not game.input_buffer.strip() and current is not None:
+        # No range: the datum goes 10 NM down the bearing (as the web).
+        game.input_mode, game.input_buffer = None, ""
+        _fire_notice(game, _fire_bearing(game, current, None))
+        return True
     try:
         number = float(game.input_buffer.replace(",", "."))
     except ValueError:
@@ -146,12 +229,39 @@ def finish_input(game) -> bool:
         game.input_mode, game.input_buffer = None, ""
         return True
     sub = current.sub
-    if mode == "uboot_bearing":
+    orders = current.orders
+    if mode in ("uboot_bearing", "uboot_wire_bearing"):
         if not 0.0 <= number < 360.0:
             game.flash(message("runtime.numeric.angle"), 2.0)
             return False
+        orders.pending_bearing = number
+        begin_input(game, "uboot_range" if mode == "uboot_bearing" else "uboot_wire_range")
+        return True
+    if mode in ("uboot_range", "uboot_wire_range"):
+        if not 0.05 <= number <= 40.0:
+            game.flash(message("event.invalid_input"), 2.0)
+            return False
         game.input_mode, game.input_buffer = None, ""
-        _fire_notice(game, sub.command_fire(number, None, now=game.sim_t))
+        if mode == "uboot_range":
+            _fire_notice(game, _fire_bearing(game, current, number))
+        else:
+            torpedo = next((item for item in game.enemy_torpedoes
+                            if item.id == orders.steer_torpedo and item.state == "RUN"), None)
+            result = ("uboot_no_wire" if torpedo is None or orders.pending_bearing is None
+                      else opfor.wire_steer(current, torpedo, orders.pending_bearing, number))
+            if result is True:
+                _announce(game, "waffen", message("uboot.local.wire_steered",
+                          bearing=f"{orders.pending_bearing:03.0f}", range=f"{number:.1f}"))
+            else:
+                _fire_notice(game, result)
+        return True
+    if mode == "uboot_torpedo_depth":
+        if not config.UBOOT_TORPEDO_MIN_DEPTH_M <= number <= config.UBOOT_TORPEDO_MAX_DEPTH_M:
+            game.flash(message("event.invalid_input"), 2.0)
+            return False
+        orders.torpedo_depth = number
+        game.input_mode, game.input_buffer = None, ""
+        _announce(game, "waffen", message("uboot.local.torpedo_depth", depth=f"{number:.0f}"))
         return True
     field = {"uboot_course": "course", "uboot_speed": "speed",
              "uboot_depth": "depth"}[mode]
@@ -227,16 +337,25 @@ def handle_key(game, event) -> None:
         if key in (pygame.K_s, pygame.K_l) and game.station is not Station.SONAR:
             game._open_administration("save" if key == pygame.K_s else "load")
             return
-        if key in (pygame.K_1, pygame.K_2, pygame.K_TAB):
-            destination = (Station.BRIDGE if key == pygame.K_1 else Station.SONAR
-                           if key == pygame.K_2 else
-                           Station.SONAR if game.station is not Station.SONAR
-                           else Station.BRIDGE)
-            game._clear_controls()
-            if destination is game.station and destination is Station.SONAR and current:
+        if pygame.K_1 <= key <= pygame.K_6 or key == pygame.K_TAB:
+            shown = local_station(game)
+            if key == pygame.K_TAB:
+                step = -1 if mods & pygame.KMOD_SHIFT else 1
+                destination = OPFOR_ROLES[(OPFOR_ROLES.index(shown) + step) % len(OPFOR_ROLES)]
+            else:
+                destination = OPFOR_ROLES[key - pygame.K_1]
+            if destination == shown == "uboot_sonar" and current:
+                # Its own key again pages the sonar room, as on the frigate.
                 _dispatch_sonar(game, current, pygame.event.Event(
                     pygame.KEYDOWN, key=pygame.K_2, mod=0))
-            game.station = destination
+                return
+            from src.ui import uboot_view
+            pages = uboot_view.station_pages(shown)
+            if destination == shown and current and len(pages) > 1:
+                # A station's own key again pages its panel.
+                current.command_page = (current.command_page + 1) % len(pages)
+                return
+            set_local_station(game, destination)
             return
         if game.game_over:
             if key in (pygame.K_r, pygame.K_m):
@@ -246,7 +365,11 @@ def handle_key(game, event) -> None:
                 finally:
                     game._uboot_dispatch = False
             return
-        if current is None or pygame.K_3 <= key <= pygame.K_9:
+        if current is None or pygame.K_7 <= key <= pygame.K_9:
+            return
+        if station_remote(game):
+            game.flash(message("uboot.local.station_remote",
+                               station=message(f"station.{local_station(game)}")), 2.0)
             return
         if game.station is Station.SONAR:
             if key in _SONAR_BLOCKED or (key == pygame.K_b and mods & pygame.KMOD_SHIFT) \
@@ -277,6 +400,10 @@ def handle_pointer(game, event) -> None:
         if pointer is not None:
             _chart_zoom(game, current, config.MAP_ZOOM_WHEEL_FACTOR ** event.y, pointer)
     elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        station = uboot_view.station_tab_at(game, pos)
+        if station is not None:
+            set_local_station(game, station)
+            return
         page = uboot_view.page_tab_at(game, pos)
         if page is not None:
             current.command_page = page
@@ -297,11 +424,59 @@ def handle_pointer(game, event) -> None:
         game._uboot_chart_drag = None
 
 
+# Order keys -> the Remote Crew action they are (its allowlist names the stations).
+_KEY_ACTIONS = {
+    pygame.K_c: "uboot_set_course", pygame.K_v: "uboot_set_speed",
+    pygame.K_d: "uboot_set_depth", pygame.K_f: "uboot_fire", pygame.K_x: "uboot_decoy",
+    pygame.K_t: "uboot_fire", pygame.K_y: "uboot_fire", pygame.K_w: "uboot_wire_steer",
+    pygame.K_p: "uboot_mast", pygame.K_n: "uboot_snorkel",
+    pygame.K_u: "uboot_set_depth", pygame.K_j: "uboot_set_depth", pygame.K_h: "uboot_set_depth",
+    pygame.K_PLUS: "uboot_set_speed", pygame.K_EQUALS: "uboot_set_speed",
+    pygame.K_KP_PLUS: "uboot_set_speed", pygame.K_MINUS: "uboot_set_speed",
+    pygame.K_KP_MINUS: "uboot_set_speed",
+}
+
+
+def _stadimeter_notice(game, current, result) -> None:
+    if result is not True:
+        game.flash(message(f"uboot.local.{result}"), 2.0)
+        return
+    row = opfor.sighting_in_crosshair(current, game.sim_t)
+    _announce(game, "sonar", message(
+        "uboot.local.stadimeter", cls=display_value("sighting_class", row["cls"]),
+        bearing=f"{row['bearing']:03.0f}", range=f"{row['range_nm']:.1f}"), 2.5)
+
+
+def _key_action(key, mods):
+    if key == pygame.K_g:
+        return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_silent"
+    if key == pygame.K_b and mods & pygame.KMOD_SHIFT:
+        return "uboot_blow"
+    if key in (pygame.K_RETURN, pygame.K_KP_ENTER) and mods & pygame.KMOD_CTRL:
+        return "uboot_fire"
+    return _KEY_ACTIONS.get(key)
+
+
 def _command_key(game, current, key, mods) -> None:
     sub = current.sub
+    action = _key_action(key, mods)
+    if action is not None and not order_allowed(game, action):
+        return
+    from src.ui import uboot_view
+    page = uboot_view.page_name(game, current)
     if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+        pages = uboot_view.station_pages(local_station(game))
         current.command_page = (current.command_page
-                                + (-1 if key == pygame.K_PAGEUP else 1)) % 2
+                                + (-1 if key == pygame.K_PAGEUP else 1)) % len(pages)
+    elif page == "UBOOT_SCOPE" and key in (pygame.K_LEFT, pygame.K_RIGHT):
+        if order_allowed(game, "uboot_scope_bearing"):
+            step = (config.UBOOT_SCOPE_STEP_FAST_DEG if mods & pygame.KMOD_SHIFT
+                    else config.UBOOT_SCOPE_STEP_DEG)
+            opfor.turn_scope(current, -step if key == pygame.K_LEFT else step)
+    elif page == "UBOOT_SCOPE" and key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+            and not mods & pygame.KMOD_CTRL:
+        if order_allowed(game, "uboot_scope_mark"):
+            _stadimeter_notice(game, current, opfor.stadimeter(game, current))
     elif key in (pygame.K_q, pygame.K_e):
         _chart_zoom(game, current, (1.0 / config.MAP_ZOOM_WHEEL_FACTOR
                                     if key == pygame.K_q else config.MAP_ZOOM_WHEEL_FACTOR))
@@ -315,6 +490,21 @@ def _command_key(game, current, key, mods) -> None:
         begin_input(game, "uboot_speed")
     elif key == pygame.K_d:
         begin_input(game, "uboot_depth")
+    elif key in (pygame.K_u, pygame.K_j, pygame.K_h):
+        # One-step depth orders: U periscope (Shift: snorkel depth), J below the
+        # measured layer (Shift: above it), H deep (safe depth).
+        shift = bool(mods & pygame.KMOD_SHIFT)
+        name = {pygame.K_u: "snorkel" if shift else "periscope",
+                pygame.K_j: "above_layer" if shift else "below_layer",
+                pygame.K_h: "deep"}[key]
+        depth = opfor.depth_presets(game, current).get(name)
+        if depth is None:
+            game.flash(message("uboot.local.preset_unavailable",
+                               preset=message(f"uboot.preset.{name}")), 2.0)
+        elif sub.set_orders(depth=round(depth)) is True:
+            _announce(game, "navigation", message(
+                "uboot.local.depth_preset", preset=message(f"uboot.preset.{name}"),
+                depth=f"{round(depth):.0f}"), 1.5)
     elif key == pygame.K_f:
         begin_input(game, "uboot_bearing")
     elif key in (pygame.K_UP, pygame.K_DOWN):
@@ -329,6 +519,39 @@ def _command_key(game, current, key, mods) -> None:
             _announce(game, "waffen", message("uboot.local.decoy"))
         else:
             game.flash(message("uboot.local.decoy_unavailable"), 2.0)
+    elif key == pygame.K_t:
+        begin_input(game, "uboot_torpedo_depth")
+    elif key == pygame.K_y:
+        current.orders.salvo = 2 if current.orders.salvo == 1 else 1
+        game.flash(message("uboot.local.salvo", count=current.orders.salvo), 1.5)
+    elif key == pygame.K_w:
+        torpedo = _latest_wire(game, current)
+        if torpedo is None:
+            _fire_notice(game, "uboot_no_wire")
+        elif mods & pygame.KMOD_SHIFT:
+            if opfor.wire_cut(current, torpedo) is True:
+                _announce(game, "waffen", message("uboot.local.wire_cut"))
+        else:
+            current.orders.steer_torpedo = torpedo.id
+            begin_input(game, "uboot_wire_bearing")
+    elif key == pygame.K_g:
+        bottom = bool(mods & pygame.KMOD_SHIFT)
+        orders = current.orders
+        on = not (orders.bottomed if bottom else orders.silent)
+        result = sub.command_bottom(on) if bottom else sub.command_silent(on)
+        _mode_notice(game, ("bottom" if bottom else "silent"), on, result)
+    elif key == pygame.K_p:
+        on = not current.orders.mast
+        _mode_notice(game, "mast", on, sub.command_mast(on))
+    elif key == pygame.K_n:
+        on = not sub.snorkeling
+        _mode_notice(game, "snorkel", on, sub.command_snorkel(on))
+    elif key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS,
+                 pygame.K_MINUS, pygame.K_KP_MINUS):
+        up = key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS)
+        if opfor.step_speed(sub, 1 if up else -1) is True:
+            _announce(game, "navigation", message(
+                "uboot.local.speed_ordered", speed=f"{sub.order_speed:.1f}"), 1.5)
     elif key == pygame.K_b and mods & pygame.KMOD_SHIFT:
         result = sub.command_blow()
         if result is True:

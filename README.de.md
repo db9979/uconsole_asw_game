@@ -12,7 +12,27 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.2.0**
+Aktuelle Version: **1.3.0**
+
+Version 1.3.0 erweitert Simulation und Werkzeuge der Besatzung, ohne die
+Balance von 1.0.0 zu verschieben (77 Kalibrierungsmetriken unverändert): ein
+zweiter Leichtgewichtstorpedo mit Suchmustern, Einschaltpunkt und
+Salvenstreuung; feindliche U-Boote, die erst nach konvergierter eigener
+Zielanalyse schießen; Gegenfluten, Längstrimm und Anlagenwahl an Bord;
+Sonobojen-Muster und MAD-Lauf des Hubschraubers; Konvergenzzonen aus dem
+gemessenen Schallprofil mit Ekelund- und Punktstapel-TMA; ein Sehrohr mit
+Sichtungen, Stadimeter und Dieselgeräusch beim Schnorcheln für das besetzte
+U-Boot; geglättete Kartenlinien, das Licht der Stunde auf der Karte, ein
+Wetterband und ein gemeinsamer Horizont-Renderer; ein WebSocket-Zustandspush
+für die Remote Crew mit generierter Schema-Allowlist; eine reine
+Beobachterrolle, ein Zeitstrahl zur Nachbesprechung mit JSON-Export und
+Sprachfunk ab Start; und eine Missionslaufzeit im Umfang des Editors
+(Referenzsektoren, Schützen- und Erreichen-Ziele, Zufallsgruppen,
+zeitgesteuerte Ereignisse, eingestelltes Wetter, platzierte Luftfahrzeuge,
+Tiere und Täuschkörper). Der Kern ist in Mixins zerlegt, die Testsuite läuft
+parallel. **Spielstände haben das Format v15 (Crew-Zustand des Bootes,
+Sehrohr-Sichtungen, Waffeneinstellungen, Missionsereignisse); v14-Stände
+werden abgewiesen.**
 
 Version 1.2.0 verbessert den Spielfluss und die Übergabe zwischen den
 Stationen: Der `Esc`-Dialog und das Missionsende führen zurück ins Hauptmenü
@@ -336,7 +356,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v14 gespeichert.
+v15 gespeichert.
 
 ## Commander-LAN-Koop
 

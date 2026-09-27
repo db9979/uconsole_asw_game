@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { $, phases } from "../core/base.js";
-import { enumText, finite, number, t, unit } from "../core/format.js";
+import { duration, enumText, number, t, timeOfDay } from "../core/format.js";
 import { renderBridgeOrders } from "./bridge-orders.js";
 import { queueDraw } from "./chart.js";
 import { metrics } from "./dom.js";
@@ -22,11 +22,13 @@ export function renderSnapshot(resetDraft = false) {
     ? t("autocrew_overview", {stations: S.v2State.autocrew_overview.filter((row) => row.enabled)
       .map((row) => `${t(`station_${row.station}`)}: ${t(`autocrew_${row.status}`)}`).join(", ")})
     : t("autocrew_overview_none");
+  // Compact status-bar clocks; the full names are the tooltips.
   metrics($("mission-metrics"), [
-    ["remaining", unit(S.snapshot.mission.remaining_s, "s", 0)],
-    ["mission_clock", unit(S.snapshot.clock.mission, "s", 0)],
-    ["world_clock", finite(S.snapshot.clock.world) ? `${String(Math.floor(S.snapshot.clock.world) % 24).padStart(2, "0")}:${String(Math.floor(S.snapshot.clock.world * 60) % 60).padStart(2, "0")}` : t("unavailable")],
+    ["status_remaining", duration(S.snapshot.mission.remaining_s)],
+    ["status_elapsed", duration(S.snapshot.clock.mission)],
+    ["status_world", timeOfDay(S.snapshot.clock.world)],
   ]);
+  for (const [row, key] of [...$("mission-metrics").children].map((row, index) => [row, ["remaining", "mission_clock", "world_clock"][index]])) row.title = t(key);
   renderStationView();
   renderBridgeOrders();
   $("chart-disclaimer").textContent = S.chart.disclaimer;

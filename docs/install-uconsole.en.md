@@ -111,6 +111,21 @@ Continue to launch the game itself without `sudo`. The helper can only create
 and remove the transient U-Jagd hotspot. Remove the system integration with
 `sudo ./packaging/uconsole/install-hotspot-helper.sh --uninstall`.
 
+**Wi-Fi power saving:** the Compute Module's Wi-Fi driver (brcmfmac) switches the
+radio off between packets in power-save mode, which causes latency spikes of a
+few hundred milliseconds that browsers may hear as sonar dropouts. Turn power
+saving off on the uConsole for Remote Crew (`iw dev wlan0 get power_save` shows
+the state):
+
+```sh
+sudo iw dev wlan0 set power_save off
+```
+
+Permanently through NetworkManager: create
+`/etc/NetworkManager/conf.d/wifi-powersave.conf` containing `[connection]` and
+`wifi.powersave = 2`, then restart the service. The same applies to browser PCs
+on that Wi-Fi.
+
 **Security:** HTTP is unencrypted. Use only a trusted LAN. No Internet hosting,
 wildcard binding, CDN, remote ROE/time/save controls, or hidden entity data are
 exposed. See [Remote Crew setup](commander-coop.md) and

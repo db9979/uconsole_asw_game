@@ -41,11 +41,13 @@ def ocean(**overrides):
 def test_ownship_loadout_has_no_level_keyed_tables():
     definition = ownship_loadout()
     assert definition["launcher"]["weapon_keys"] == [
-        definition["magazine"]["weapon_key"]]
+        magazine["weapon_key"] for magazine in definition["magazines"]]
     assert definition["weapons"][0]["runtime_profile_key"] == "frigate_torp"
+    assert definition["weapons"][1]["runtime_profile_key"] == "frigate_torp_mk2"
     assert "kill_dist_nm_by_level" not in definition["weapons"][0]
     assert "kill_depth_m_by_level" not in definition["weapons"][0]
-    assert "mission_count_by_level" not in definition["magazine"]
+    assert all("mission_count_by_level" not in magazine
+               for magazine in definition["magazines"])
 
 
 def test_ownship_loadout_rejects_a_document_with_legacy_level_tables():

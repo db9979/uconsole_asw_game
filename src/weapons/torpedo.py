@@ -132,7 +132,8 @@ class Torpedo:
                     profile=None, launch_origin: str | None = None,
                     launch_platform_id: int | None = None,
                     launch_weapon_key: str | None = None,
-                    time_since_launch: float | None = None):
+                    time_since_launch: float | None = None,
+                    pattern: str = "snake", enable_nm: float | None = None):
         self.x = x_nm
         self.y = y_nm
         self.course = course_deg % 360.0
@@ -169,6 +170,12 @@ class Torpedo:
         self.depth_rate = 0.0
         self.wire_ship_out_nm = 0.0
         self.wire_stress_s = 0.0
+        # Terminal search pattern and seeker enable point (operator settings
+        # at launch; the 1.0.0 behaviour is snake at TORP_HOME_RANGE_NM).
+        self.pattern = pattern if pattern in torpedo_dyn.SEARCH_PATTERNS else "snake"
+        self.enable_nm = (config.TORP_HOME_RANGE_NM if enable_nm is None
+                          else float(enable_nm))
+        self._turns_done = 0.0       # helix progress, in full circles
         self.last_miss_m = None
         self.rejected_ids: list[int] = []
         self._search_phase = 0.0     # M15: Serpentin-Phase
@@ -307,9 +314,9 @@ class Torpedo:
             # while descending to the search depth.
             self.terminal_active = True
         # Normal activation is based on the commanded datum, never hidden truth.
-        seeker_active = self.guidance_distance_nm() <= config.TORP_HOME_RANGE_NM
+        seeker_active = self.guidance_distance_nm() <= self.enable_nm
         if self.guidance_x is None or self.guidance_y is None:
-            seeker_active = self.distance_to_target_nm() <= config.TORP_HOME_RANGE_NM
+            seeker_active = self.distance_to_target_nm() <= self.enable_nm
         self.terminal_active = self.terminal_active or self.seeker_acquired or seeker_active
         if self.terminal_active and seeker_candidates is not None:
             candidate = self.evaluate_seeker_candidates(seeker_candidates, world)
@@ -334,6 +341,16 @@ class Torpedo:
             turn = self.HOMING_TURN_DEG_PER_S
         elif self.launch_origin == "asroc" and self.guidance_distance_nm() < 0.5:
             desired = (self.course + ASROC_HELIX_DEG_PER_S) % 360.0
+        elif self.terminal_active and self.pattern in ("circle", "helix"):
+            # Enabled without acquisition: a constant turn about the enable
+            # point (circle) or an opening spiral (helix) instead of the snake.
+            fraction_now = self.speed_fraction()
+            rate = torpedo_dyn.pattern_turn_deg_s(
+                self.pattern, self.speed_nm_per_s * max(0.0, fraction_now),
+                self._turns_done)
+            rate = min(rate, torpedo_dyn.turn_rate_deg_s(turn, fraction_now))
+            desired = (self.course + rate * dt) % 360.0
+            self._turns_done += rate * dt / 360.0
         else:
             # Vor der Eigenortung folgt der Torpedo nur Drahtdaten und sucht
             # um deren Kurs. Die wahre Zielposition korrigiert ihn hier nicht.

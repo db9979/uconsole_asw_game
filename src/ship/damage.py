@@ -88,6 +88,16 @@ GM_M = 1.2
 RESERVE_BUOYANCY_KG = 0.6 * sum(g["volume"] for g in GEOMETRY.values()) * RHO
 CAPSIZE_HEEL_DEG = 35.0
 CAPSIZE_GM_M = 0.05
+# Plan 1.3 phase 8: deliberate counter-flooding of a hull side against a
+# list, and the longitudinal trim of fore/aft floodwater (fictional GML).
+COUNTERFLOOD_ROOMS = ("hull_left", "hull_right")
+COUNTERFLOOD_RATE_PCT_S = 0.5      # flooding valve, percent of the room per second
+COUNTERFLOOD_MIN_LIST_DEG = 5.0    # order accepted only against this much list
+COUNTERFLOOD_STOP_LIST_DEG = 1.0   # valve closes automatically below this
+COUNTERFLOOD_MAX_PCT = 60.0        # never flood a hull side past this
+GML_M = 150.0                      # longitudinal metacentric height
+TRIM_SPEED_LOSS_KN_PER_DEG = 0.5   # top speed lost per degree of trim
+TRIM_NOISE_PER_DEG = 0.03          # own-noise level per degree bow-down
 # Torpedo hole area calibrated so a fresh hit floods a mid compartment at
 # the 1.0.0 rate (DMG_FLOOD_RATE); a patch leaves 25 %.
 PATCH_LEAK_FRACTION = config.DMG_LEAK_RATE / config.DMG_FLOOD_RATE
@@ -162,6 +172,7 @@ class Compartment:
 
 
 class DamageModel:
+    COUNTERFLOOD_ROOMS = COUNTERFLOOD_ROOMS
     """Fregatten-Schäden + Reparaturteams (1–3)."""
 
     TEAM_COUNT = 3
@@ -181,6 +192,8 @@ class DamageModel:
         self.total = 0.0
         self.ship_sunk = False
         self.draft_m = DESIGN_DRAFT_M
+        # Counter-flooding valve targets (percent) per hull side; 0 = closed.
+        self.counterflood = {key: 0.0 for key in COUNTERFLOOD_ROOMS}
 
     # --- Ereignisse ---
 
@@ -279,6 +292,68 @@ class DamageModel:
 
     def flood_mass_kg(self) -> float:
         return sum(c.water_m3() for c in self.compartments.values()) * RHO
+
+    def trim_deg(self) -> float:
+        """Longitudinal trim from fore/aft floodwater (positive = bow down)."""
+        displacement = DISPLACEMENT_KG + self.flood_mass_kg()
+        moment = sum(c.water_m3() * RHO * c.geometry["x"]
+                     for c in self.compartments.values())
+        return config.clamp(math.degrees(math.atan(moment / (displacement * GML_M))),
+                            -15.0, 15.0)
+
+    def trim_noise_boost(self) -> float:
+        """Own-noise level added by a bow-down trim (the bow sonar's hull flow)."""
+        return max(0.0, self.trim_deg()) * TRIM_NOISE_PER_DEG
+
+    # --- counter-flooding ----------------------------------------------------
+
+    @property
+    def counterflood_room(self) -> str | None:
+        """The hull side with an open counter-flooding valve, or None."""
+        return next((key for key in COUNTERFLOOD_ROOMS
+                     if self.counterflood.get(key, 0.0) > self.compartments[key].flood + 1e-9),
+                    None)
+
+    def order_counterflood(self) -> str | bool:
+        """Open the flooding valve of the hull side opposite the list.
+
+        Returns True, or a reason: ``not_needed`` (list under 5 degrees),
+        ``destroyed`` (that side is lost), ``full`` (already at the cap)."""
+        if self.ship_sunk:
+            return "not_ready"
+        listing = self.list_deg()
+        if abs(listing) < COUNTERFLOOD_MIN_LIST_DEG:
+            return "not_needed"
+        # Water goes to the high side: list to starboard (positive) -> port.
+        key = "hull_left" if listing > 0.0 else "hull_right"
+        room = self.compartments[key]
+        if room.state == "ZERSTOERT":
+            return "destroyed"
+        moment = sum(c.water_m3() * RHO * c.geometry["y"]
+                     for c in self.compartments.values())
+        needed_m3 = abs(moment) / (RHO * abs(room.geometry["y"]))
+        target = min(COUNTERFLOOD_MAX_PCT,
+                     room.flood + needed_m3 / room.geometry["volume"] * 100.0)
+        if target <= room.flood + 1e-9:
+            return "full"
+        for other in COUNTERFLOOD_ROOMS:
+            self.counterflood[other] = 0.0
+        self.counterflood[key] = target
+        return True
+
+    def stop_counterflood(self) -> None:
+        for key in COUNTERFLOOD_ROOMS:
+            self.counterflood[key] = 0.0
+
+    def _update_counterflood(self, dt: float) -> None:
+        key = self.counterflood_room
+        if key is None:
+            return
+        room = self.compartments[key]
+        if room.state == "ZERSTOERT" or abs(self.list_deg()) < COUNTERFLOOD_STOP_LIST_DEG:
+            self.stop_counterflood()
+            return
+        room.flood = min(self.counterflood[key], room.flood + COUNTERFLOOD_RATE_PCT_S * dt)
 
     def gm_effective_m(self) -> float:
         """GM with the free-surface correction of partly flooded rooms."""
@@ -425,14 +500,15 @@ class DamageModel:
                             -CAPSIZE_HEEL_DEG, CAPSIZE_HEEL_DEG)
 
     def engine_speed_cap(self) -> float:
+        trim_loss = abs(self.trim_deg()) * TRIM_SPEED_LOSS_KN_PER_DEG
         if self.station_down("engine"):
             return 8.0
         if self.station_degraded("engine"):
             # Continuous loss of plant power with flooding and fire.
             return max(8.0, 8.0 + (config.SHIP_SPEED_MAX_KN - 8.0)
                        * min(15.0 / config.SHIP_SPEED_MAX_KN,
-                             self.capability("engine") + 0.2))
-        return config.SHIP_SPEED_MAX_KN
+                             self.capability("engine") + 0.2) - trim_loss)
+        return max(8.0, config.SHIP_SPEED_MAX_KN - trim_loss)
 
     # --- Update ---
 
@@ -521,6 +597,7 @@ class DamageModel:
                     self.team_position[team] = self.teams[team]
         for c in self.compartments.values():
             self._update_compartment(c, dt)
+        self._update_counterflood(dt)
         self._spread_fire()
         self._cook_off()
         for team, key in self.teams.items():

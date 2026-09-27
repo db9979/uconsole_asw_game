@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 import src.core.game as game_module
+from src.core import game_events
 from src.core.game import Game
 from src.core.preferences import Preferences
 from src.data.catalog import CATALOG
@@ -535,9 +536,9 @@ def game():
 def test_live_traffic_api_test_reports_ok_and_error(game, monkeypatch):
     """The options-menu 'API test' row runs both probes in a background
     thread and stores per-side (status, reason) tuples the overlay reads."""
-    monkeypatch.setattr(game_module, "ais_test_connection",
+    monkeypatch.setattr(game_events, "ais_test_connection",
                         lambda api_key, bbox: (True, None))
-    monkeypatch.setattr(game_module, "adsb_test_connection",
+    monkeypatch.setattr(game_events, "adsb_test_connection",
                         lambda credentials, bbox: (False, "boom"))
     game._set_preference("aisstream_api_key", "some-key")
 
@@ -554,9 +555,9 @@ def test_live_traffic_api_test_reports_ok_and_error(game, monkeypatch):
 def test_live_traffic_api_test_skips_ais_without_key(game, monkeypatch):
     called = []
     monkeypatch.setattr(
-        game_module, "ais_test_connection",
+        game_events, "ais_test_connection",
         lambda api_key, bbox: called.append(api_key) or (True, None))
-    monkeypatch.setattr(game_module, "adsb_test_connection",
+    monkeypatch.setattr(game_events, "adsb_test_connection",
                         lambda credentials, bbox: (True, None))
     assert game.preferences.aisstream_api_key == ""
 
@@ -569,9 +570,9 @@ def test_live_traffic_api_test_skips_ais_without_key(game, monkeypatch):
 
 
 def test_live_traffic_test_row_is_reachable_via_navigation(game, monkeypatch):
-    monkeypatch.setattr(game_module, "ais_test_connection",
+    monkeypatch.setattr(game_events, "ais_test_connection",
                         lambda api_key, bbox: (True, None))
-    monkeypatch.setattr(game_module, "adsb_test_connection",
+    monkeypatch.setattr(game_events, "adsb_test_connection",
                         lambda credentials, bbox: (True, None))
     game._open_administration("live_traffic")
     assert game.live_traffic_open

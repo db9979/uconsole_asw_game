@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v14`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v15`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -23,6 +23,43 @@ SAVE_ROOT_FIELDS = frozenset({
     "ciws_cooldown_s", "ciws_mount_deg", "chaff_clouds", "chaff_seq",
     "schedulers", "rngs", "ui",
     "autocrew", "ais", "plot",
+    "crew", "weapon_settings", "mission_events",
+})
+
+# Save v15: the operator's torpedo settings (plan 1.3, phase 4).
+WEAPON_SETTINGS_FIELDS = frozenset({"torpedo_type", "pattern", "enable_nm", "salvo"})
+
+# Save v15: the crewed submarine binding (``Game._opfor``), or None.
+CREW_FIELDS = frozenset({
+    "sub_id", "orders", "command_page", "chart_follow", "plot", "feed",
+    "feed_seq", "hold_s", "station",
+})
+CREW_ORDERS_FIELDS = frozenset({
+    "silent", "bottomed", "mast", "alarm_seq", "ping_bearing",
+    "torpedo_bearing", "esm", "esm_seen", "wires", "known_torpedoes",
+    "last_course", "torpedo_depth", "salvo", "pending_bearing",
+    "steer_torpedo", "events", "battery_state", "keel_warned",
+    "obstacle_warned", "obstacle_ahead_nm",
+    "scope_rel_deg", "sightings", "sightings_seen",
+})
+# One periscope sighting of the crewed boat (plan 1.3, phase 9).
+CREW_SIGHTING_FIELDS = frozenset({
+    "ref", "target_id", "kind", "cls", "bearing", "span_deg", "aspect",
+    "quality", "first_t", "t", "range_nm", "range_sigma_nm", "range_t",
+})
+CREW_WIRE_FIELDS = frozenset({"state", "ship_out_nm", "stress_s"})
+CREW_WIRE_STATES = ("ACTIVE", "BROKEN", "CUT")
+CREW_BATTERY_STATES = ("ok", "low", "empty")
+CREW_FEED_FIELDS = frozenset({"seq", "t", "stamp", "category", "text"})
+CREW_STATION_FIELDS = frozenset({
+    "mode", "controls", "sonar", "selected_contact_id", "target_id", "rng",
+})
+# Sub rows carry the crew-facing orders beside the AI state.
+# Sub rows also carry the difficulty's fire-control convergence threshold.
+SUB_AI_FIELDS = frozenset({"solution_threshold"})
+SUB_CREW_FIELDS = frozenset({
+    "manual", "order_course", "order_speed", "order_depth", "last_bottom_m",
+    "manual_ping_pending",
 })
 
 RNG_STREAMS = frozenset({
@@ -33,18 +70,18 @@ RNG_STREAMS = frozenset({
 SHIP_FIELDS = frozenset({
     "x", "y", "course", "target_course", "speed", "target_speed",
     "order_idx", "astern", "hull", "grounding", "turn_rate_scale",
-    "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "clock",
+    "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "plant_mode", "clock",
     "fuel_capacity_kg", "fuel_kg", "roll_rate", "pitch_rate", "wake",
 })
 
 WORLD_FIELDS = frozenset({
     "hour", "sea_state", "weather_shift_timer", "mode", "generator", "coast",
-    "ocean",
+    "ocean", "weather_override",
 })
 
 DAMAGE_FIELDS = frozenset({"repair_mult", "compartments", "teams",
                            "team_position", "team_eta", "patch_kits",
                            "cooked_off", "capsized", "draft_m"})
 COMPARTMENT_FIELDS = frozenset({"state", "flood", "fire", "hole_m2", "heat_s",
-                                "shorted"})
+                                "shorted", "counterflood"})
 COMPARTMENT_STATES = ("OK", "FLUTEND", "BESCHAEDIGT", "ZERSTOERT")

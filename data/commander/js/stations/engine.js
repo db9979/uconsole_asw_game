@@ -8,6 +8,7 @@ export function renderEngineStation(payload) {
   metrics($("engine-propulsion"), [["course", unit(propulsion.course, "\u00b0", 0)], ["ordered_course", unit(propulsion.target_course, "\u00b0", 0)],
     ["speed", unit(propulsion.speed, "kn")], ["ordered_speed", unit(propulsion.target_speed, "kn")],
     ["telegraph", propulsion.telegraph], ["rpm", unit(propulsion.rpm, "RPM", 0)], ["quiet_mode", yesNo(propulsion.quiet_mode)],
+    ["plant_mode", t(`plant_${propulsion.plant_mode.toLowerCase()}`)],
     ["cavitating", yesNo(propulsion.cavitating)], ["engine_fuel", unit(propulsion.fuel_kg / 1000, "t")],
     ["engine_fuel_capacity", unit(propulsion.fuel_capacity_kg / 1000, "t")], ["engine_fuel_burn", unit(propulsion.fuel_burn_kg_h, "kg/h", 0)],
     ["engine_endurance", unit(propulsion.fuel_endurance_h, "h", 0)], ["engine_range", unit(propulsion.fuel_range_nm, "NM", 0)]]);
@@ -31,4 +32,5 @@ export function renderEngineStation(payload) {
   $("engine-speed").max = String(Math.min(controls.speed_max_kn, machinery.speed_cap));
   $("engine-quiet").textContent = t(propulsion.quiet_mode ? "engine_quiet_disable" : "engine_quiet_enable");
   $("engine-quiet").setAttribute("aria-pressed", String(propulsion.quiet_mode));
+  if (!S.stationDrafts.has("engine-plant")) $("engine-plant").value = propulsion.plant_mode;
 }

@@ -73,11 +73,11 @@ import numpy as np
 
 from src.audio.receiver import smooth_limit
 from src.sonar.sonar import SonarSystem
-from src.core import config
+from src.core import config, opfor
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
 from src.sensors import lookout_id
-from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, SIMLOG_ENTRIES_MAX,
+from src.commander.server import (HOST_ROLE, OPFOR_ROLES, ROLES, UBOOT_COMMAND_ROLES, SIMLOG_ENTRIES_MAX,
                                   SIMLOG_MAX_BYTES, V2_ACTION_REGISTRY, _json_bytes)
 from src.commander.projections import (ROLE_NAMES, build_opfor_states,
                                        build_role_states, known_chart,
@@ -200,6 +200,14 @@ def _engine_set_quiet_mode(game, params, _bindings):
     return game.set_quiet_mode(params["enabled"])
 
 
+def _engine_set_plant(game, params, _bindings):
+    return game.set_plant_mode(params["mode"])
+
+
+def _damage_counterflood(game, params, _bindings):
+    return game.set_counterflood(params["enabled"])
+
+
 def _damage_assign_team(game, params, _bindings):
     return game.assign_damage_team(params["team"], params["compartment"])
 
@@ -283,6 +291,14 @@ def _sonar_set_tow_depth(game, params, _bindings):
     return game.set_sonar_tow_depth(params["depth_m"])
 
 
+def _opz_mark_blip(game, params, _bindings):
+    # Blip refs are "blip-<sequence>": a display counter, never a target identity.
+    ref = params["ref"]
+    if not ref.startswith("blip-") or not ref[5:].isdigit() or len(ref) > 24:
+        return "unknown_ref"
+    return game.mark_radar_blip(int(ref[5:]))
+
+
 def _sonar_measure_bt(game, params, _bindings):
     return game.measure_sonar_bt()
 
@@ -327,25 +343,25 @@ def _sonar_mark_line(game, params, _bindings):
     return game.mark_sonar_cursor(params["page"])
 
 
-def _plot_add(game, params, _bindings):
+def _plot_add(game, params, _bindings, layer=None):
     fields = {key: value for key, value in params.items()
               if key not in ("shape", "x", "y", "label")}
     result = game.plot_add(params["shape"], params["x"], params["y"],
-                           params["label"], **fields)
+                           params["label"], layer=layer, **fields)
     return "active_limit" if result == "full" else (
         True if type(result) is int else result)
 
 
-def _plot_remove(game, params, _bindings):
-    return game.plot_remove(params["id"])
+def _plot_remove(game, params, _bindings, layer=None):
+    return game.plot_remove(params["id"], layer=layer)
 
 
-def _plot_relabel(game, params, _bindings):
-    return game.plot_relabel(params["id"], params["label"])
+def _plot_relabel(game, params, _bindings, layer=None):
+    return game.plot_relabel(params["id"], params["label"], layer=layer)
 
 
-def _plot_clear(game, _params, _bindings):
-    return game.plot_clear()
+def _plot_clear(game, _params, _bindings, layer=None):
+    return game.plot_clear(layer=layer)
 
 
 def _sonar_set_integration(game, params, _bindings):
@@ -421,6 +437,14 @@ def _helicopter_deploy_buoy(game, params, _bindings):
     return game.deploy_helicopter_buoy()
 
 
+def _helicopter_set_pattern(game, params, _bindings):
+    return game.set_helicopter_pattern(params["kind"])
+
+
+def _helicopter_set_mad(game, params, _bindings):
+    return game.set_helicopter_mad(params["enabled"])
+
+
 def _helicopter_set_buoy_mode(game, params, _bindings):
     return game.set_helicopter_buoy_mode(params["mode"])
 
@@ -491,6 +515,19 @@ def _helicopter_launch_torpedo(game, params, bindings):
     return game.launch_helicopter_torpedo_at(contact, params["depth_m"])
 
 
+def _weapons_set_torpedo_settings(game, params, _bindings):
+    """Type, pattern, enable point and salvo in one settings command; the
+    first refused value stops the sequence and names the reason."""
+    for setter, value in ((game.set_torpedo_type, params["torpedo_type"]),
+                          (game.set_torpedo_pattern, params["pattern"]),
+                          (game.set_torpedo_enable, float(params["enable_nm"])),
+                          (game.set_torpedo_salvo, params["salvo"])):
+        result = setter(value)
+        if result is not True:
+            return result
+    return True
+
+
 def _weapons_deploy_nixie(game, params, _bindings):
     return game.deploy_nixie_result()
 
@@ -509,9 +546,9 @@ def _opz_launch_chaff(game, params, bindings):
     return game.launch_chaff_at(binding[4])
 
 
-# Crew shot results in the transport's existing rejection vocabulary.
-_UBOOT_REASONS = {"no_torpedoes": "empty", "no_decoys": "empty",
-                  "reloading": "no_tube", "out_of_arc": "invalid_target"}
+# Crew results in the boat's own rejection vocabulary.
+_UBOOT_REASONS = {"no_torpedoes": "uboot_no_torpedoes", "no_decoys": "uboot_no_decoys",
+                  "reloading": "uboot_reloading", "out_of_arc": "uboot_out_of_arc"}
 
 
 def _uboot_result(result):
@@ -546,7 +583,7 @@ def _uboot_fire(game, boat, params, bindings):
         bearing = (contact.passive_bearing if contact.passive_bearing is not None
                    else contact.bearing)
         positioned = (contact.observed_x is not None and contact.observed_y is not None
-                      and contact.range_source in ("ping", "tma")
+                      and contact.range_source in ("ping", "tma", "visual")
                       and 0 <= game.sim_t - contact.range_seen
                       < config.SONAR_CONTACT_LOST_S)
         if positioned:
@@ -562,7 +599,8 @@ def _uboot_fire(game, boat, params, bindings):
             return "stale_ref"
         bearing %= 360.0
     return _uboot_result(sub.command_fire(bearing, range_nm, course, speed,
-                                          now=game.sim_t))
+                                          now=game.sim_t, depth_m=params["depth_m"],
+                                          salvo=params["salvo"]))
 
 
 def _uboot_decoy(game, boat, params, _bindings):
@@ -573,6 +611,35 @@ def _uboot_blow(game, boat, params, _bindings):
     return boat.sub.command_blow()
 
 
+def _uboot_snorkel(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_snorkel(params["enabled"]))
+
+
+def _uboot_mast(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_mast(params["enabled"]))
+
+
+def _uboot_silent(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_silent(params["enabled"]))
+
+
+def _uboot_bottom(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_bottom(params["enabled"]))
+
+
+def _uboot_scope_bearing(game, boat, params, _bindings):
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    opfor.set_scope_relative(boat, params["relative_deg"])
+    return True
+
+
+def _uboot_scope_mark(game, boat, params, _bindings):
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    return _uboot_result(opfor.stadimeter(game, boat))
+
+
 _UBOOT_ACTION_HANDLERS = {
     "acknowledge": lambda game, boat, params, _bindings: params == {},
     "uboot_set_course": _uboot_set_course,
@@ -581,6 +648,12 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_fire": _uboot_fire,
     "uboot_decoy": _uboot_decoy,
     "uboot_blow": _uboot_blow,
+    "uboot_snorkel": _uboot_snorkel,
+    "uboot_mast": _uboot_mast,
+    "uboot_silent": _uboot_silent,
+    "uboot_bottom": _uboot_bottom,
+    "uboot_scope_bearing": _uboot_scope_bearing,
+    "uboot_scope_mark": _uboot_scope_mark,
 }
 
 
@@ -601,6 +674,7 @@ _V2_ACTION_HANDLERS = {
     "opz_set_track_id": _opz_set_track_id,
     "opz_create_fusion": _opz_create_fusion,
     "opz_dissolve_fusion": _opz_dissolve_fusion,
+    "opz_mark_blip": _opz_mark_blip,
     "opz_set_radar": _opz_set_radar,
     "opz_set_ciws": _opz_set_ciws,
     "opz_set_range": _opz_set_range,
@@ -610,6 +684,8 @@ _V2_ACTION_HANDLERS = {
     "engine_set_speed": _engine_set_speed,
     "engine_set_quiet_mode": _engine_set_quiet_mode,
     "damage_assign_team": _damage_assign_team,
+    "damage_counterflood": _damage_counterflood,
+    "engine_set_plant": _engine_set_plant,
     "damage_unassign_team": _damage_unassign_team,
     "radio_capture_hfdf": _radio_capture_hfdf,
     "eloka_annotate": _eloka_annotate,
@@ -650,6 +726,8 @@ _V2_ACTION_HANDLERS = {
     "helicopter_return": _helicopter_return,
     "helicopter_set_waypoint": _helicopter_set_waypoint,
     "helicopter_deploy_buoy": _helicopter_deploy_buoy,
+    "helicopter_set_pattern": _helicopter_set_pattern,
+    "helicopter_set_mad": _helicopter_set_mad,
     "helicopter_set_buoy_mode": _helicopter_set_buoy_mode,
     "helicopter_set_listen_source": _helicopter_set_listen_source,
     "helicopter_set_listen_bearing": _helicopter_set_listen_bearing,
@@ -664,6 +742,7 @@ _V2_ACTION_HANDLERS = {
     "weapons_launch_torpedo": _weapons_launch_torpedo,
     "helicopter_launch_torpedo": _helicopter_launch_torpedo,
     "weapons_deploy_nixie": _weapons_deploy_nixie,
+    "weapons_set_torpedo_settings": _weapons_set_torpedo_settings,
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,
 }
@@ -1309,15 +1388,15 @@ class CommanderBridge:
         local = getattr(game, "local_side", "frigate") == "uboot"
         leased = False
         if hasattr(server, "station_leased"):
+            # Browsers may crew the boat's stations beside the uConsole; the
+            # uConsole then leaves a browser-held station alone.
             leased = any(server.station_leased(role) for role in OPFOR_ROLES)
-            if local and leased and hasattr(server, "revoke_station"):
-                # The uConsole itself crews the boat: no browser holds its roles.
-                for role in OPFOR_ROLES:
-                    server.revoke_station(role)
-                leased = False
         if phase == "live" and (leased or local):
             game.claim_opfor_sub()
-        elif game.opfor is not None and not local:
+        elif (game.opfor is not None and not local
+              and getattr(game, "_opfor_hold_s", 0.0) <= 0.0):
+            # A boat restored by a load keeps its crew binding for the hold
+            # so a returning crew resumes its orders; then the AI takes over.
             game.release_opfor_sub()
             self._opfor_refs = {}
 
@@ -1331,7 +1410,22 @@ class CommanderBridge:
         if boat is None:
             return "not_ready"
         _rows, bindings = self._opfor_tracks(game, boat)
-        if role == "uboot":
+        if role != "uboot_sonar" and action in ("uboot_wire_steer", "uboot_wire_cut"):
+            torpedo = next((asset for (namespace, _key), (asset, ref)
+                            in self._asset_refs.items()
+                            if namespace == "uboot_torpedo" and ref == params["ref"]), None)
+            if torpedo is None or torpedo.state != "RUN":
+                return "unknown_ref"
+            if action == "uboot_wire_cut":
+                return opfor.wire_cut(boat, torpedo)
+            return opfor.wire_steer(boat, torpedo, params["bearing"], params["range_nm"])
+        if role != "uboot_sonar" and action.startswith("plot_"):
+            # The boat's crew draws on the boat's own plot, never the frigate's.
+            return _V2_ACTION_HANDLERS[action](game, params, bindings, layer=boat.plot)
+        if role == "uboot" and action in ("sonar_active_ping", "sonar_measure_bt"):
+            with game.sonar_perspective(boat.station):
+                return _V2_ACTION_HANDLERS[action](game, params, bindings)
+        if role in UBOOT_COMMAND_ROLES:
             handler = _UBOOT_ACTION_HANDLERS.get(action)
             return False if handler is None else handler(game, boat, params, bindings)
         handler = _V2_ACTION_HANDLERS.get(action)
@@ -1702,8 +1796,10 @@ class CommanderBridge:
             navigation_authority=self._navigation_lease,
             navigation=self.navigation_proposal)
         self._publish_events_v2(server, game)
+        # Fresh objects per publication, encoded above and never mutated
+        # afterwards; _publish_role_simlog copies the ones it appends.
         self._last_v2_states = (None if redacted or world_replaced else
-                                {role: deepcopy(states[role]) for role in ROLES})
+                                {role: states[role] for role in ROLES})
         self._last_publish = now
         self._dirty = False
 
@@ -1768,7 +1864,10 @@ class CommanderBridge:
             return
         for sequence, samples in receiver.blocks_since(self._audio_receiver_sequence):
             if sequence != self._audio_receiver_sequence + 1:
+                # The receiver restarted (retune): the browser must crossfade.
                 self._audio_filter.reset_audition_audio()
+                if hasattr(server, "mark_audio_discontinuity"):
+                    server.mark_audio_discontinuity("sonar")
             self._audio_filter.audition_mode = game.sonar.audition_mode
             self._audio_filter.band_low_hz = game.sonar.band_low_hz
             self._audio_filter.band_high_hz = game.sonar.band_high_hz
@@ -1810,6 +1909,8 @@ class CommanderBridge:
             audition = self._uboot_audio_filter
             if sequence != self._uboot_audio_receiver_sequence + 1:
                 audition.reset_audition_audio()
+                if hasattr(server, "mark_audio_discontinuity"):
+                    server.mark_audio_discontinuity("uboot_sonar")
             audition.audition_mode = sonar.audition_mode
             audition.band_low_hz = sonar.band_low_hz
             audition.band_high_hz = sonar.band_high_hz
@@ -1856,6 +1957,8 @@ class CommanderBridge:
             audition = self._helicopter_audio_filter
             if sequence != self._helicopter_audio_receiver_sequence + 1:
                 audition.reset_audition_audio()
+                if hasattr(server, "mark_audio_discontinuity"):
+                    server.mark_audio_discontinuity("helicopter")
             controls = game.helo_audition
             audition.audition_mode = controls.audition_mode
             audition.band_low_hz = controls.band_low_hz

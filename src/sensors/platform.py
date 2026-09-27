@@ -222,6 +222,10 @@ class PlatformSensorSuite:
             if (profile.domain != "esm"
                     or getattr(owner, "depth", 0.0) > MAST_DEPTH_M):
                 return
+            # A crewed boat's ESM hears only with its mast raised by the crew.
+            crew = getattr(owner, "crew", None)
+            if getattr(owner, "manual", False) and crew is not None and not crew.mast:
+                return
         if ((profile.domain in ("radar", "esm", "ais")
              and target_domain == "subsurface")
                 or (profile.domain == "ais" and target_domain != "surface")

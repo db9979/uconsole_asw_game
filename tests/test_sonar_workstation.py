@@ -267,7 +267,10 @@ def test_bathythermograph_and_towed_depth_are_operator_controls(game):
     profile = game.sonar.bt_profile
     assert profile is not None
     assert len(profile["depths_m"]) == len(profile["speeds_m_s"]) == 21
-    assert profile["cz_bands_nm"]
+    # Convergence zones follow the measured profile: bounded sorted bands, possibly none.
+    bands = profile["cz_bands_nm"]
+    assert isinstance(bands, list) and len(bands) <= 4
+    assert all(0.0 < near < far for near, far in bands)
     assert game.sonar.bt_cooldown == config.SONAR_BT_COOLDOWN_S
 
     game.sonar.tow_state = game.sonar.STREAMED

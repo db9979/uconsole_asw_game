@@ -13,7 +13,8 @@ from src.core import config
 from src.core.i18n import (display_value, localized, localize, raw_text,
                             message as structured_message)
 from src.ui.plot_view import draw_plot
-from src.ui import chart_symbols, layout
+from src.ui import chart_symbols, layout, lines, theme
+from src.world import atmosphere
 from src.ui import nato_symbols
 from src.ui import observations
 
@@ -248,6 +249,9 @@ def draw_chart_geography(game, view, r) -> None:
     s = game.screen
     w = game.world
     coast = w.coast
+    stage = daylight_stage(w)
+    shallow_color = theme.water_color(config.COLOR_SHALLOW, stage)
+    deep_color = theme.water_color(config.COLOR_DEEP, stage)
     # Seedbasierte Bathymetrie: dezente taktische Tiefenfaerbung.
     if coast.has_bathymetry:
         # UI-only, one world/snapshot and at most 4096 chart cells. Compare
@@ -259,7 +263,7 @@ def draw_chart_geography(game, view, r) -> None:
                    bathymetry["size"],
                    tuple(tuple(row) for row in bathymetry["values"]),
                    tuple(coast.landmasses),
-                   config.COLOR_SHALLOW, config.COLOR_DEEP)
+                   shallow_color, deep_color)
             cached = getattr(draw_map_view, "_bathymetry_cache", None)
             if (cached is None or cached[0] is not w
                     or cached[1] is not coast or cached[2] != key):
@@ -285,9 +289,8 @@ def draw_chart_geography(game, view, r) -> None:
                     if depth > 0.0:
                         deep = max(0.0, min(1.0, depth / 900.0))
                         color = tuple(
-                            int(shallow + (deep_color - shallow) * deep)
-                            for shallow, deep_color in zip(
-                                config.COLOR_SHALLOW, config.COLOR_DEEP))
+                            int(near + (far - near) * deep)
+                            for near, far in zip(shallow_color, deep_color))
                     if len(colors) >= 4096:
                         colors.clear()
                     colors[cell] = color
@@ -313,13 +316,13 @@ def draw_chart_geography(game, view, r) -> None:
     for g in range(gx0, gx1 + 1, step):
         x, _ = view.world_to_screen(g, 0)
         if r[0] <= x <= r[0] + r[2]:
-            pygame.draw.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
+            lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
             s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
                    (int(x) + 3, r[1] + r[3] - 18))
     for g in range(gy0, gy1 + 1, step):
         _, y = view.world_to_screen(0, g)
         if r[1] <= y <= r[1] + r[3]:
-            pygame.draw.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
+            lines.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
             s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
                    (r[0] + 3, int(y) + 3))
 
@@ -331,8 +334,8 @@ def draw_chart_geography(game, view, r) -> None:
                  for land in visible_land]
                 if visible_land is not None else coast.land_points_px(view))
     for poly in polygons:
-        pygame.draw.polygon(s, config.COLOR_LAND, poly)
-        pygame.draw.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
+        lines.polygon(s, config.COLOR_LAND, poly)
+        lines.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
     shown_countries = set()
     for land in visible_land or ():
         if land.name in shown_countries:
@@ -358,6 +361,7 @@ def draw_chart_geography(game, view, r) -> None:
     hazards = getattr(w, "charted_hazards", None)
     if hazards is not None:
         chart_symbols.draw_hazards(s, hazards(), view.world_to_screen, r, view.scale)
+    draw_weather_band(game, r)
 
 
 @localized
@@ -371,7 +375,7 @@ def draw_map_view(game, tr=None) -> None:
     coast = w.coast
 
     # See-Hintergrund; bleibt auch ausserhalb der Weltgrenzen sichtbar.
-    pygame.draw.rect(s, config.COLOR_GEO_BG, r)
+    pygame.draw.rect(s, chart_background(game), r)
     with layout.clip_to(s, r):
         draw_chart_geography(game, view, r)
 
@@ -408,7 +412,7 @@ def draw_map_view(game, tr=None) -> None:
         for t in game.torpedoes:
             px, py = view.world_to_screen(t.x, t.y)
             ang = math.radians(t.course - 90.0)
-            pygame.draw.line(s, config.COLOR_WARN, (int(px), int(py)),
+            lines.line(s, config.COLOR_WARN, (int(px), int(py)),
                              (int(px + 10 * math.cos(ang)), int(py + 10 * math.sin(ang))), 2)
             pygame.draw.circle(s, config.COLOR_WARN, (int(px), int(py)), 3)
             _map_label(s, game, raw_text(f"T{t.idx}"), (int(px) + 10, int(py) - 24),
@@ -435,7 +439,7 @@ def draw_map_view(game, tr=None) -> None:
                       and observed_position(t)[0] is None):
             rad = math.radians(observed_bearing(track))
             ex, ey = fx + 300 * math.sin(rad), fy - 300 * math.cos(rad)
-            pygame.draw.line(s, config.COLOR_DANGER, (int(fx), int(fy)),
+            lines.line(s, config.COLOR_DANGER, (int(fx), int(fy)),
                              (int(ex), int(ey)), 1)
             _map_label(s, game, raw_text(track["source"] + " " + track["label"]),
                        (int(fx) + 12, int(fy) + 24), config.COLOR_DANGER, r)
@@ -446,12 +450,13 @@ def draw_map_view(game, tr=None) -> None:
         # Peilstrich + Ziel-Kreuz (ausgewählter Kontakt / Ziel)
         for contact, fix, (px, py) in active_fix_markers(game, view):
             color = {"PING": (90, 220, 220), "DIPPING": (120, 220, 190),
-                     "TMA": config.COLOR_WARN,
+                     "TMA": config.COLOR_WARN, "MAD": (200, 160, 240),
+                     "VISUAL": (230, 230, 200),
                      "SONOBUOY": config.COLOR_CONTACT_ZIVIL}[fix["source"]]
             radius = _fix_marker_radius(fix, view)
             pygame.draw.circle(s, color, (px, py), radius, 1)
-            pygame.draw.line(s, color, (px - 6, py), (px + 6, py), 1)
-            pygame.draw.line(s, color, (px, py - 6), (px, py + 6), 1)
+            lines.line(s, color, (px - 6, py), (px + 6, py), 1)
+            lines.line(s, color, (px, py - 6), (px, py + 6), 1)
             layout.blit_line(
                 s, message("map.line.sonar_fix",
                            contact=observations.contact_display_id(game, contact),
@@ -469,12 +474,12 @@ def draw_map_view(game, tr=None) -> None:
                 tx, ty = view.world_to_screen(ex_w, ey_w)
                 line_col = config.COLOR_DANGER if contact is game.target \
                     else config.COLOR_WARN
-                pygame.draw.line(s, line_col, (int(fx), int(fy)), (int(tx), int(ty)), 1)
+                lines.line(s, line_col, (int(fx), int(fy)), (int(tx), int(ty)), 1)
                 if contact.range_sigma_nm:
                     sigma_px = max(3, int(contact.range_sigma_nm * view.scale))
                     pygame.draw.circle(s, line_col, (int(tx), int(ty)), sigma_px, 1)
-                pygame.draw.line(s, line_col, (int(tx) - 8, int(ty)), (int(tx) + 8, int(ty)), 2)
-                pygame.draw.line(s, line_col, (int(tx), int(ty) - 8), (int(tx), int(ty) + 8), 2)
+                lines.line(s, line_col, (int(tx) - 8, int(ty)), (int(tx) + 8, int(ty)), 2)
+                lines.line(s, line_col, (int(tx), int(ty) - 8), (int(tx), int(ty) + 8), 2)
                 src = ({"tma": "TMA", "ping": "PING",
                         "buoy": localize("map.source.buoy")}
                        .get(contact.range_source, "FIX"))
@@ -490,7 +495,7 @@ def draw_map_view(game, tr=None) -> None:
             else:
                 ex = fx + 300 * math.sin(brg)
                 ey = fy - 300 * math.cos(brg)
-                pygame.draw.line(s, config.COLOR_WARN, (int(fx), int(fy)),
+                lines.line(s, config.COLOR_WARN, (int(fx), int(fy)),
                                  (int(ex), int(ey)), 1)
                 _map_label(s, game, structured_message(
                     "map.line.bearing_only",
@@ -504,7 +509,7 @@ def draw_map_view(game, tr=None) -> None:
             ox, oy = view.world_to_screen(report["observer_x"], report["observer_y"])
             brg = math.radians(report["bearing"])
             ex, ey = ox + 260 * math.sin(brg), oy - 260 * math.cos(brg)
-            pygame.draw.line(s, config.COLOR_ESM, (int(ox), int(oy)),
+            lines.line(s, config.COLOR_ESM, (int(ox), int(oy)),
                              (int(ex), int(ey)), 1)
         for fix in game.hfdf_fixes.values():
             age = max(0.0, game.sim_t - fix["t"])
@@ -524,7 +529,7 @@ def draw_map_view(game, tr=None) -> None:
                     phase = index * math.tau / 32
                     a, b = major * math.cos(phase), minor * math.sin(phase)
                     points.append((px + a * ca - b * sa, py + a * sa + b * ca))
-                pygame.draw.lines(s, config.COLOR_ESM, True, points, 1)
+                lines.lines(s, config.COLOR_ESM, True, points, 1)
             else:
                 radius = max(4, int(fix["sigma_nm"] * view.scale))
                 pygame.draw.circle(s, config.COLOR_ESM, (int(px), int(py)), radius, 1)
@@ -538,14 +543,14 @@ def draw_map_view(game, tr=None) -> None:
         target_ang = math.radians(game.ship.target_course - 90.0)
         target_ex = int(px + 42 * math.cos(target_ang))
         target_ey = int(py + 42 * math.sin(target_ang))
-        pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(px), int(py)),
+        lines.line(s, config.COLOR_TEXT_DIM, (int(px), int(py)),
                          (target_ex, target_ey), 1)
         layout.blit_line(s, structured_message("map.target_course",
                                                course=f"{game.ship.target_course:03.0f}"),
                          (int(px) + 8, int(py) + 10, 124, 18),
                          config.COLOR_TEXT_DIM, size=12)
         L = 14
-        pygame.draw.line(s, config.COLOR_TEXT, (int(px), int(py)),
+        lines.line(s, config.COLOR_TEXT, (int(px), int(py)),
                          (int(px + L * math.cos(ang)), int(py + L * math.sin(ang))), 3)
         pygame.draw.circle(s, config.COLOR_TEXT, (int(px), int(py)), 4)
         nato_symbols.draw_motion_vector(s, (px, py), game.ship.course, game.ship.speed,
@@ -564,6 +569,62 @@ def draw_map_view(game, tr=None) -> None:
         draw_plot(s, game, view, r)
 
     draw_chart_frame(game, view, r, getattr(game, "map_follow", True))
+
+
+def daylight_stage(world) -> str:
+    """The chart's light stage; fake/legacy worlds without a clock draw by day."""
+    stage = getattr(world, "daylight_stage", None)
+    if callable(stage):
+        return stage()
+    hour = getattr(world, "hour", None)
+    return atmosphere.daylight_stage(hour) if isinstance(hour, (int, float)) else "day"
+
+
+def chart_background(game):
+    """The sea background in the light of the hour (display only)."""
+    return theme.water_color(config.COLOR_GEO_BG, daylight_stage(game.world))
+
+
+# Rain hatch: line spacing (px) at light and at heavy rain, and its alpha.
+WEATHER_HATCH_SPACING_PX = (46, 18)
+WEATHER_HATCH_ALPHA = (28, 70)
+WEATHER_BAND_MIN_RAIN = 0.25
+
+
+def draw_weather_band(game, r) -> None:
+    """Rain and storm over the chart as a dashed diagonal hatch (display
+    only, from the world's public weather values; a storm adds a warning
+    border).  Nothing here depends on entities."""
+    values = getattr(game.world, "weather_values", None)
+    kind = getattr(game.world, "weather_kind", None)
+    if not callable(values) or not callable(kind):
+        return                       # fake/legacy worlds without weather
+    weather = values()
+    rain = config.clamp(weather["rain_intensity"], 0.0, 1.0)
+    storm = kind() == "storm"
+    if rain < WEATHER_BAND_MIN_RAIN and not storm:
+        return
+    rect = pygame.Rect(r)
+    layer = pygame.Surface(rect.size, pygame.SRCALPHA)
+    strength = config.clamp((rain - WEATHER_BAND_MIN_RAIN) / (1.0 - WEATHER_BAND_MIN_RAIN),
+                            0.0, 1.0)
+    spacing = int(WEATHER_HATCH_SPACING_PX[0]
+                  + (WEATHER_HATCH_SPACING_PX[1] - WEATHER_HATCH_SPACING_PX[0]) * strength)
+    alpha = int(WEATHER_HATCH_ALPHA[0] + (WEATHER_HATCH_ALPHA[1] - WEATHER_HATCH_ALPHA[0]) * strength)
+    color = (*config.COLOR_WARN, alpha) if storm else (170, 190, 200, alpha)
+    dash, gap = 9, 7
+    for start in range(-rect.h, rect.w, max(6, spacing)):
+        # Diagonal from the bottom-left, dashed.
+        length = int(math.hypot(rect.h, rect.h))
+        for offset in range(0, length, dash + gap):
+            x0 = start + offset * 0.7071
+            y0 = rect.h - offset * 0.7071
+            x1 = start + (offset + dash) * 0.7071
+            y1 = rect.h - (offset + dash) * 0.7071
+            pygame.draw.line(layer, color, (x0, y0), (x1, y1), 1)
+    game.screen.blit(layer, rect.topleft)
+    if storm:
+        pygame.draw.rect(game.screen, config.COLOR_WARN, rect, 2)
 
 
 def draw_chart_frame(game, view, r, following: bool) -> None:

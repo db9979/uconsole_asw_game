@@ -13,7 +13,7 @@ def test_delayed_ping_notifies_once_and_records_measurement_only_history():
     ship = Ship(250, 250, speed_kn=4)
     sub = Sub(255, 250, 60, 0, "diesel_alt", random.Random(8))
     calls = []
-    sub.hear_ping = lambda: calls.append(True)
+    sub.hear_ping = lambda **_: calls.append(True)
     sonar = SonarSystem(8)
     sonar.queue_ping(ship, [sub], world, 0)
     sonar.update(30, 30, ship, [], world)
@@ -68,7 +68,7 @@ def test_stowed_towed_array_cannot_ping_or_notify_target():
     ship = Ship(250, 250, speed_kn=4)
     sub = Sub(252, 250, 60, 0, "diesel_alt", random.Random(10))
     calls = []
-    sub.hear_ping = lambda: calls.append(True)
+    sub.hear_ping = lambda **_: calls.append(True)
     sonar = SonarSystem(10)
     sonar.queue_ping(ship, [sub], world, 0, mode="TOWED")
     assert not sonar._pending_pings and not calls

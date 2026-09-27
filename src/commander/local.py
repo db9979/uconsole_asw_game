@@ -46,6 +46,7 @@ class CommanderConsole:
         self.selection = 0
         self.connected = False
         self.active_crew = False
+        self._statuses_cache = None
         self.pairing_code = None
         self._prepared = False
         self._translations = None
@@ -210,7 +211,8 @@ class CommanderConsole:
             detail = self._station_row(selected, station)
             ok = self.server.resolve_station_request(
                 client_id, station, detail["request_generation"],
-                dict(command=True, direct_fire=False, sonar_audio=False))
+                dict(command=True, direct_fire=station in DIRECT_FIRE_ROLES,
+                     sonar_audio=station in SONAR_AUDIO_ROLES), takeover=True)
             if ok:
                 self.roster_station = ROLES.index(station)
             success = message("commander.roster.status.assigned", client=name,
@@ -231,12 +233,12 @@ class CommanderConsole:
             ok = self.server.grant_station(client_id, station)
             success = message("commander.roster.status.assigned", client=name,
                               station=message(self._station_key(station)))
-        elif action in ("command", "direct_fire", "simlog", "sonar_audio"):
+        elif action in ("command", "direct_fire", "simlog", "sonar_audio", "observer"):
             station = ROLES[self.roster_station]
-            enabled = (not selected["simlog"] if action == "simlog" else
+            enabled = (not selected.get(action, False) if action in ("simlog", "observer") else
                        not self._station_row(selected, station)["grants"][action])
             ok = (self.server.set_client_grant(client_id, action, enabled)
-                  if action == "simlog" else
+                  if action in ("simlog", "observer") else
                   self.server.set_client_grant(client_id, station, action, enabled))
             success = message("commander.roster.status.grant", client=name,
                               capability=message(f"commander.roster.capability.{action}"),
@@ -352,13 +354,18 @@ class CommanderConsole:
         self.connected = self.server.connected
         self.active_crew = False
         if hasattr(self.server, "client_statuses"):
-            statuses = self.server.client_statuses()
+            # Building the roster copies every session; 4 Hz is plenty for
+            # the two flags read here and saves main-thread time per frame.
+            if (self._statuses_cache is None or self._statuses_cache[0] != id(self.server)
+                    or now - self._statuses_cache[1] >= .25):
+                self._statuses_cache = (id(self.server), now, self.server.client_statuses())
+            statuses = self._statuses_cache[2]
             self.connected = self.connected or bool(statuses)
             self.active_crew = self.active_crew or any(
-                status["active_station"] in STATIONS for status in statuses)
+                status["active_station"] in ROLES for status in statuses)
         else:
             self.active_crew = self.connected
-        if self.station_leased(game.station):
+        if getattr(game, "local_side", "frigate") != "uboot" and self.station_leased(game.station):
             game._clear_station_input()
             game.input_mode = None
             game.input_buffer = ""
@@ -460,12 +467,8 @@ class CommanderConsole:
             station = body["station"]
             value = body["value"]
             if action == "assign":
+                # A granted station always carries all of its rights.
                 ok = server.grant_station(client_id, station)
-                if ok and client_id == host_id:
-                    server.set_client_grant(client_id, station, "direct_fire",
-                                            station in DIRECT_FIRE_ROLES)
-                    server.set_client_grant(client_id, station, "sonar_audio",
-                                            station in SONAR_AUDIO_ROLES)
             elif action == "revoke":
                 ok = server.revoke_station(station)
             elif action == "revoke_client":
@@ -474,6 +477,8 @@ class CommanderConsole:
                 ok = server.set_client_grant(client_id, station, action, value)
             elif action == "simlog":
                 ok = server.set_client_grant(client_id, "simlog", value)
+            elif action == "observer":
+                ok = server.set_client_grant(client_id, "observer", value)
             elif action == "rotate_code":
                 with server._lock:
                     server._rotate_code_locked()
@@ -770,6 +775,8 @@ class CommanderConsole:
             self._roster_action("simlog")
         elif key == pygame.K_u:
             self._roster_action("sonar_audio")
+        elif key == pygame.K_o:
+            self._roster_action("observer")
         elif key == pygame.K_x:
             self._roster_action("revoke_station")
         elif key == pygame.K_DELETE:
@@ -788,7 +795,7 @@ class CommanderConsole:
 
     @staticmethod
     def roster_action_rects():
-        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(10))
+        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(11))
 
     @classmethod
     def roster_station_cycle_rects(cls):
@@ -830,7 +837,7 @@ class CommanderConsole:
                 self._roster_mouse_confirm = None
                 return
         actions = ("approve", "reject", "assign", "command", "direct_fire", "simlog",
-                   "sonar_audio",
+                   "sonar_audio", "observer",
                    "revoke_station", "revoke_client", "revoke_all")
         for action, rect in zip(actions, self.roster_action_rects()):
             if rect.collidepoint(canvas):
@@ -1015,6 +1022,9 @@ class CommanderConsole:
             message("commander.roster.toggle", capability=message(
                 "commander.roster.capability.sonar_audio"), state=message(
                     "common.on" if station_grants.get("sonar_audio") else "common.off")),
+            message("commander.roster.toggle", capability=message(
+                "commander.roster.capability.observer"), state=message(
+                    "common.on" if selected and selected.get("observer") else "common.off")),
             "commander.roster.revoke_station", "commander.roster.revoke_client",
             "commander.roster.revoke_all",
         )

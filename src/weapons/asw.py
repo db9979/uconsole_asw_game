@@ -56,9 +56,9 @@ def ownship_loadout() -> dict:
 
 def validate_ownship_loadout(value) -> dict:
     """Validate a detached F-217 loadout snapshot without filesystem access."""
-    _object(value, {"version", "weapons", "launcher", "magazine",
+    _object(value, {"version", "weapons", "launcher", "magazines",
                     "countermeasure"}, "ownship")
-    if value["version"] != 1:
+    if value["version"] != 2:
         raise ValueError("ownship.version: unsupported version")
     weapons = value["weapons"]
     if not isinstance(weapons, list) or not 1 <= len(weapons) <= 8:
@@ -86,11 +86,22 @@ def validate_ownship_loadout(value) -> dict:
             or len(set(launcher["weapon_keys"])) != len(launcher["weapon_keys"])
             or not set(launcher["weapon_keys"]) <= weapon_keys):
         raise ValueError("ownship.launcher.weapon_keys: invalid compatibility")
-    magazine = _object(value["magazine"], {
-        "key", "weapon_key"}, "ownship.magazine")
-    _key(magazine["key"], "magazine.", "ownship.magazine.key")
-    if magazine["weapon_key"] not in weapon_keys:
-        raise ValueError("ownship.magazine.weapon_key: unknown weapon")
+    magazines = value["magazines"]
+    if (not isinstance(magazines, list)
+            or not 1 <= len(magazines) <= MAX_MAGAZINES):
+        raise ValueError("ownship.magazines: bounded non-empty list expected")
+    magazine_keys, magazine_weapons = set(), set()
+    for index, magazine in enumerate(magazines):
+        _object(magazine, {"key", "weapon_key", "share"},
+                f"ownship.magazines[{index}]")
+        key = _key(magazine["key"], "magazine.", "ownship.magazine.key")
+        if magazine["weapon_key"] not in weapon_keys:
+            raise ValueError("ownship.magazine.weapon_key: unknown weapon")
+        if key in magazine_keys or magazine["weapon_key"] in magazine_weapons:
+            raise ValueError("ownship.magazines: duplicate magazine or weapon")
+        magazine_keys.add(key)
+        magazine_weapons.add(magazine["weapon_key"])
+        _integer(magazine["share"], 1, 100, f"ownship.magazines[{index}].share")
     countermeasure = _object(value["countermeasure"], {
         "key", "effect_type", "payload_key", "mission_count", "ready_count",
         "reload_s", "active_life_s", "tether_nm", "depth_m"},
@@ -109,6 +120,17 @@ def validate_ownship_loadout(value) -> dict:
     _number(countermeasure["tether_nm"], .01, 5, "countermeasure.tether_nm")
     _number(countermeasure["depth_m"], 0, 1000, "countermeasure.depth_m")
     return value
+
+
+def split_stock(total: int, magazines) -> list[int]:
+    """Mission stock per magazine from the loadout shares: every magazine but
+    the first gets ``floor(total * share / sum)``, the first the remainder,
+    so the total never changes and the primary type keeps the odd weapon."""
+    total = max(0, int(total))
+    shares = [int(magazine["share"]) for magazine in magazines]
+    weight = max(1, sum(shares))
+    secondary = [total * share // weight for share in shares[1:]]
+    return [total - sum(secondary)] + secondary
 
 
 @dataclass(slots=True)
@@ -142,6 +164,9 @@ class WeaponBattery:
             for item in magazines
         }
         self.tubes = [TubeState(index) for index in range(self.mount_count)]
+        # The type the tubes load next (the operator's selection; not saved
+        # by the battery, the game restores it from its weapon settings).
+        self.preferred_weapon_key = None
         for tube in self.tubes[:min(int(ready_count), self.mount_count)]:
             weapon_key = self._reserve_weapon()
             if weapon_key is not None:
@@ -177,21 +202,66 @@ class WeaponBattery:
     @classmethod
     def ownship(cls, torpedo_count: int, definition=None) -> WeaponBattery:
         definition = definition or ownship_loadout()
-        launcher, magazine = definition["launcher"], definition["magazine"]
-        total = int(torpedo_count)
+        launcher = definition["launcher"]
+        capacities = split_stock(int(torpedo_count), definition["magazines"])
         return cls(launcher["key"], launcher["mount_count"],
                    launcher["ready_count"], launcher["reload_s"],
                    launcher["weapon_keys"], [MagazineState(
-                       magazine["key"], magazine["weapon_key"], total, total)])
+                       magazine["key"], magazine["weapon_key"], capacity, capacity)
+                       for magazine, capacity in zip(definition["magazines"], capacities)])
 
     def _reserve_weapon(self, preferred: str | None = None) -> str | None:
+        """Take one stowed weapon: the preferred type first, else any type the
+        launcher accepts (a tube never stays empty because one type ran out)."""
         choices = sorted(self.magazines.values(), key=lambda item: item.key)
-        for magazine in choices:
-            if (magazine.stowed > 0 and magazine.weapon_key in self.weapon_keys
-                    and (preferred is None or magazine.weapon_key == preferred)):
-                magazine.stowed -= 1
-                return magazine.weapon_key
+        for wanted in ((preferred,) if preferred is not None else ()) + (None,):
+            for magazine in choices:
+                if (magazine.stowed > 0 and magazine.weapon_key in self.weapon_keys
+                        and (wanted is None or magazine.weapon_key == wanted)):
+                    magazine.stowed -= 1
+                    return magazine.weapon_key
         return None
+
+    def stowed_of(self, weapon_key: str) -> int:
+        return sum(item.stowed for item in self.magazines.values()
+                   if item.weapon_key == weapon_key)
+
+    def remaining_of(self, weapon_key: str) -> int:
+        """Stowed plus loaded plus loading weapons of one type."""
+        return (self.stowed_of(weapon_key)
+                + sum(tube.loaded_weapon_key == weapon_key for tube in self.tubes)
+                + sum(tube.loading_weapon_key == weapon_key for tube in self.tubes))
+
+    def loaded_count(self, weapon_key: str) -> int:
+        return sum(tube.loaded_weapon_key == weapon_key for tube in self.tubes)
+
+    def retask(self, weapon_key: str) -> bool:
+        """Make ``weapon_key`` the type the tubes load next and, if no tube holds
+        it yet, swap one tube over: its weapon returns to the magazine and the
+        tube reloads with the wanted type. True when the type is or will be
+        available in a tube."""
+        if weapon_key not in self.weapon_keys:
+            return False
+        self.preferred_weapon_key = weapon_key
+        if any(tube.loaded_weapon_key == weapon_key
+               or tube.loading_weapon_key == weapon_key for tube in self.tubes):
+            return True
+        if self.stowed_of(weapon_key) <= 0:
+            return False
+        tube = next((item for item in self.tubes if item.loading_weapon_key is not None),
+                    None) or next((item for item in self.tubes
+                                   if item.loaded_weapon_key is not None), None)
+        if tube is None:
+            return False
+        returned = tube.loading_weapon_key or tube.loaded_weapon_key
+        for magazine in self.magazines.values():
+            if magazine.weapon_key == returned and magazine.stowed < magazine.capacity:
+                magazine.stowed += 1
+                break
+        tube.loaded_weapon_key = tube.loading_weapon_key = None
+        tube.reload_remaining_s = 0.0
+        self._start_reload(tube, weapon_key)
+        return True
 
     @property
     def ready_count(self) -> int:
@@ -243,7 +313,7 @@ class WeaponBattery:
         for tube in self.tubes:
             if tube.loading_weapon_key is None:
                 if tube.loaded_weapon_key is None:
-                    self._start_reload(tube)
+                    self._start_reload(tube, self.preferred_weapon_key)
                 continue
             tube.reload_remaining_s = max(0.0, tube.reload_remaining_s - step)
             if tube.reload_remaining_s <= 1e-9:
@@ -667,17 +737,21 @@ def valid_asw_state(value, torpedo_total: int, torpedo_count: int,
                 weapon["runtime_profile_key"])) is None
                or profile.used_by != "frigate" for weapon in definition["weapons"]):
             return False
-        launcher, magazine = definition["launcher"], definition["magazine"]
+        launcher = definition["launcher"]
         battery_state = value["player_battery"]
-        magazines = battery_state["magazines"]
+        magazines = sorted(battery_state["magazines"], key=lambda row: row["key"])
+        expected = sorted(zip(definition["magazines"],
+                              split_stock(torpedo_total, definition["magazines"])),
+                          key=lambda pair: pair[0]["key"])
         if (battery_state["launcher_key"] != launcher["key"]
                 or battery_state["mount_count"] != launcher["mount_count"]
                 or battery_state["reload_s"] != launcher["reload_s"]
                 or battery_state["weapon_keys"] != launcher["weapon_keys"]
-                or len(magazines) != 1
-                or magazines[0]["key"] != magazine["key"]
-                or magazines[0]["weapon_key"] != magazine["weapon_key"]
-                or magazines[0]["capacity"] != torpedo_total):
+                or len(magazines) != len(expected)
+                or any(row["key"] != magazine["key"]
+                       or row["weapon_key"] != magazine["weapon_key"]
+                       or row["capacity"] != capacity
+                       for row, (magazine, capacity) in zip(magazines, expected))):
             return False
         if not valid_consumable_state(value["countermeasure"]):
             return False

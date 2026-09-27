@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { emit } from "../core/events.js";
 import { stopSonarAudio } from "../audio/audio.js";
-import { $, isSonar, opforRoles, panelRole } from "../core/base.js";
+import { $, isBoatCommand, isSonar, opforRoles, panelRole } from "../core/base.js";
 import { t } from "../core/format.js";
 import { stopSonarStream } from "../net/sonar-stream.js";
 import { defaultSonarPage, lookoutView, roleCache, roleMapViews, sonarHistory, tabNames, trackRoles, view } from "../state/shared.js";
@@ -59,7 +59,8 @@ export function renderStationView() {
   }
   $("cic-grid").dataset.tracks = String(!active || trackRoles.has(active));
   // The radio room keeps the contact detail (opened from a receiver channel).
-  $("cic-grid").dataset.layout = active === "radio" ? "radio" : "";
+  // The boat's stations: the chart plus a wide station dock, no contact docks.
+  $("cic-grid").dataset.layout = active === "radio" ? "radio" : isBoatCommand(active) ? "boat" : "";
   emit("layout:station", active);
   $("station-view").hidden = !active;
   for (const section of document.querySelectorAll("[data-station-role]")) {
@@ -75,7 +76,7 @@ export function renderStationView() {
     damage: renderDamageStation, opz: renderOpzStation, radio: renderRadioStation, engine: renderEngineStation,
     helicopter: renderHelicopterStation, eloka: renderElokaStation,
     uboot: renderUbootStation, uboot_sonar: renderSonarStation};
-  renderers[active](S.v2State[active]);
+  (isBoatCommand(active) ? renderUbootStation : renderers[active])(S.v2State[active]);
   queueVisualDraw();
 }
 export function clearRoleState() {

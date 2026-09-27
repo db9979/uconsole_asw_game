@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { emit } from "../core/events.js";
-import { audioRoles, stationNames } from "../core/base.js";
+import { audioRoles, directFireRoles, stationNames } from "../core/base.js";
 import { finite } from "../core/format.js";
 import { request } from "./request.js";
 import { exactKeys } from "../state/schema.js";
@@ -48,7 +48,7 @@ export function forgetSession(message = "connection_unpaired") {
   setConnection("unpaired", message);
 }
 export function validateSession(value) {
-  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "next_command_seq", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
+  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "next_command_seq", "observer", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
   if (!value || typeof value !== "object" || Array.isArray(value) ||
       Object.keys(value).sort().join(",") !== fields.sort().join(",") || value.protocol !== 2 ||
       typeof value.client_id !== "string" || !value.client_id || value.client_id.length > 128 ||
@@ -65,9 +65,10 @@ export function validateSession(value) {
       Object.keys(value.grants).sort().join(",") !== "command,direct_fire,simlog,sonar_audio" ||
       Object.values(value.grants).some((grant) => typeof grant !== "boolean") ||
       (value.grants.command && value.station === null) ||
-      (value.grants.direct_fire && (!value.grants.command || !["weapons", "helicopter", "opz"].includes(value.station))) ||
+      (value.grants.direct_fire && (!value.grants.command || !directFireRoles.has(value.station))) ||
       (value.grants.sonar_audio && !audioRoles.has(value.station)) ||
       typeof value.simlog !== "boolean" || value.grants.simlog !== value.simlog ||
+      typeof value.observer !== "boolean" || (value.observer && (value.grants.command || value.host !== null || !value.simlog)) ||
       (value.host !== null && (!exactKeys(value.host, ["generation"]) ||
         !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
       value.active_station !== value.station ||
@@ -83,7 +84,7 @@ export function validateSession(value) {
         !exactKeys(record.grants, ["command", "direct_fire", "sonar_audio"]) ||
         Object.values(record.grants).some((grant) => typeof grant !== "boolean") ||
         (record.status === "mine") !== (record.station_generation !== null) ||
-        record.grants.direct_fire && (!record.grants.command || !["weapons", "helicopter", "opz"].includes(station)) ||
+        record.grants.direct_fire && (!record.grants.command || !directFireRoles.has(station)) ||
         record.grants.sonar_audio && !audioRoles.has(station)) throw new Error("session");
   }
   const mine = stationNames.filter((station) => value.stations[station].status === "mine");

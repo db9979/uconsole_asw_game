@@ -77,8 +77,10 @@ in screenshots, logs, or issue reports.
   target or navigation setpoint until the host accepts them locally.
 - The local panel supports independent per-station request decisions, additional
   grants, revocation, takeover, and host control. Clicking never bypasses readiness.
-- Voice coordination uses your existing external voice connection or conversation.
-  There is no built-in chat, microphone capture or general command execution.
+- Voice in the `--web-host` room starts enabled; the host's option row switches it
+  off, which also drops the current talker. The LAN listener (`F9`) has no voice;
+  use your existing external voice connection there. There is no general chat or
+  command execution over voice.
 - The mission always runs in real time and cannot be paused. Local menus and
   overlays (F1 help, options, save/load, quit confirmation, nations, the in-game F8
   analyzer, F9 administration) and focus loss leave simulation and remote stations
@@ -130,6 +132,18 @@ lifecycle events are visible only to their originating session and role. With a
 local SimLog grant, a browser receives at most 64 detached diagnostic snapshots.
 This explicit read-only capability includes full simulation truth and hidden
 entity identifiers; ordinary station state remains observation-bounded.
+
+**Observers.** The host may make at most two paired browsers observers (`F9`
+roster key `O`, or the web-host admin page). An observer holds no station
+lease and never blocks a crew: it views any station of either unit read-only
+(the lobby offers every station with "View"; every control stays disabled and
+every command is rejected), receives the SimLog, and reads the ordinary
+observation-bounded projection of the station it watches. The grant is
+transient (never saved), drops any lease the session held, and the SimLog page
+shows observers and the solo host a debrief timeline (recorded snapshots with
+marks for own and hostile torpedo launches, own damage, new contacts and
+losses; a click scrubs the shown snapshot) plus a JSON export of the recorded
+entries that strips RNG, credential, token and settings keys.
 
 A queued response is not an accepted action. If delivery is uncertain, the browser
 keeps the action pending. Its explicit reconciliation control retries the same
@@ -191,8 +205,18 @@ unchanged. A new connection never inherits the previous connection's grant.
 
 Clients, workers, histories, projections, and command queues are hard-bounded.
 Snapshots normally publish twice per real second, with immediate important
-transitions. This is not an Internet-facing service, VPN product, or remote
-desktop. See commander-protocol.md for the exact boundary.
+transitions. A browser with an active station also opens the state push
+(`/ws/v2/state`, subprotocol `u-jagd-state-v2`, same cookie and Origin rules
+as the sonar stream): the host sends that station's projection, byte-identical
+to `GET /api/v2/state`, whenever it changes, at most four times per second,
+with a heartbeat every 2 s while nothing changes, and only the latest state is
+ever queued for a slow client. The browser keeps polling session metadata,
+chart and feeds on a slower cadence while the push is healthy; after two missed
+heartbeats it is back on its normal polling and retries the push every 10 s.
+The push closes on role loss, world replacement and the host's push switch
+(`CommanderServer.set_state_push`, never persisted). This is not an
+Internet-facing service, VPN product, or remote desktop. See
+commander-protocol.md for the exact boundary.
 
 ## Abnahme / Pause
 

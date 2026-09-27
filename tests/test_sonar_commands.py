@@ -105,7 +105,7 @@ def test_unavailable_towed_ping_has_no_side_effects(monkeypatch):
     flashes, sounds = [], []
     monkeypatch.setattr(game, "flash", lambda *args: flashes.append(args))
     monkeypatch.setattr(game.audio, "play_ping", lambda: sounds.append(True))
-    target = NS(hear_ping=lambda: (_ for _ in ()).throw(
+    target = NS(hear_ping=lambda **_: (_ for _ in ()).throw(
         AssertionError("unavailable TOWED ping notified a target")))
     monkeypatch.setattr(game, "_sonar_targets", lambda: [target])
 

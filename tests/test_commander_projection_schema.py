@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+from src.commander.server import OPFOR_ROLES
+
 from src.air.asm import ASM
 from src.commander.bridge import CommanderBridge
 from src.core.game import Game
@@ -34,7 +36,7 @@ class _CrewedSubmarineServer(Server):
     """Publication target whose submarine roles are held by a crew."""
 
     def station_leased(self, role):
-        return role in ("uboot", "uboot_sonar")
+        return role in OPFOR_ROLES
 
 
 def _collect_states():
@@ -146,6 +148,8 @@ def _validator_page(states) -> str:
              and state is not None]
     script = "\n".join([
         statement("core/base.js", "const stationNames = "),
+        statement("core/base.js", "const opforRoles = "),
+        statement("core/base.js", "const isBoatCommand = "),
         statement("core/base.js", "const sonarRoles = "),
         statement("core/base.js", "const isSonar = "), statement("core/format.js", "const finite = "),
         statement("state/shared.js", "const gameEffectKinds = "),
@@ -171,7 +175,8 @@ def test_published_role_states_pass_the_browser_validator(tmp_path):
     states = _collect_states()
     roles = {role for sample in states for role in sample if role not in ("None", "null")}
     assert roles == {"bridge", "sonar", "weapons", "damage", "opz", "radio",
-                     "engine", "helicopter", "eloka", "uboot", "uboot_sonar"}
+                     "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
+                     "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav"}
     page = tmp_path / "validate.html"
     page.write_text(_validator_page(states), encoding="utf-8")
     result = subprocess.run(

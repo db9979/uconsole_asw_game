@@ -126,8 +126,8 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates). Page 2 (`PgDn`/`Tab`): which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved.
-- `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations.
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates). Page 2 (`PgDn`/`Tab`): which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved. A new game asks for it first anyway. Page 2 also holds **anti-aliased chart lines** (off by default; smooths bearing lines, coast and plot at some CPU cost on the uConsole).
+- `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations. A free station is taken at once with all of its rights (including direct fire and live sonar audio where the station has them); a station a crewmate holds is requested, and the host can hand it over. The host can revoke a station or single rights at any time, and can make up to two browsers read-only observers (roster key `O`): they watch any station of either unit without holding it, cannot command, and get the SimLog with a debrief timeline and JSON export.
 
 ## 1 Bridge
 
@@ -137,7 +137,7 @@ The Bridge conns the frigate: course, speed and position relative to coast, cont
 
 ### Displays and instruments
 
-Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing.
+Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope. The chart water darkens with the clock in three steps (day, dusk within an hour of 05:30 and 19:30, night), and rain or a storm hatches the chart with dashed diagonals (a storm adds an amber border); both are display only, as on the browser chart. Options page 2 can anti-alias the chart and plot lines.
 
 ```text
 +---------------------------+----------------------+
@@ -163,7 +163,7 @@ Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) sh
 
 ### Bridge lookout reports
 
-The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". A contact is reported in up to three steps as it closes, each step once:
+The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". Bridge page 3 (the lookout scope) shows the sightings north up around the own ship at the range and bearing the lookout measured, coloured by kind (surface, submarine, aircraft, torpedo) and labelled with what he made out, next to visibility, sea state, day/night and the latest reports; `,` and `.` change the scope radius (2 to 30 NM). Above the reports a horizon strip shows the binoculars toward the bow (90° field, true-bearing scale, the horizon moving with the sea, the light of the hour) with the outlines of the lookout's sightings at their measured bearing and range; it is the same renderer as the submarine's periscope. A contact is reported in up to three steps as it closes, each step once:
 
 - **Sighted:** only the kind of object is clear (vessel, aircraft, small object on the surface).
 - **Class:** the silhouette shows the class, for example merchant ship, warship, aircraft carrier, fishing vessel, speedboat, surfaced submarine, airliner or military aircraft.
@@ -183,6 +183,7 @@ Class and type need a finer resolved silhouette than the sighting (Johnson crite
 | `Chart` | Mouse wheel: zoom, mouse drag: pan |
 | `Q / E` | Zoom chart out/in |
 | `K` | Camera follow on/off |
+| `, / .` | Lookout page: scope radius smaller / larger |
 
 The trackball steers the rudder while the Bridge is selected. `U` and `V` open direct numeric entry; the simulation keeps running while you type. `Enter` confirms, `Esc` cancels.
 
@@ -283,7 +284,7 @@ The display shows measured modulation, not identity. After changing the bearing 
 
 #### TMA, environment and active
 
-- **TMA** is yours. The page plots the bearings of the selected contact over time. Build a hypothesis: `Z`/`X` course (`Shift`: 1 degree), `Ctrl+Z`/`Ctrl+X` speed, `Q`/`Shift+Q` range on the newest bearing (`Ctrl`: 0.2 NM). The amber curve shows the bearings that hypothesis predicts, the dots at the foot the residuals (measured minus predicted). Good hypotheses leave residuals scattered around zero; a wrong course, speed or range leaves a trend. The rail shows the residual RMS, the systematic trend after averaging, the fit and the observability. Range is only observable after an own course change (at least 6 degrees, better 30-60): without one, `K` refuses. `K` accepts the hypothesis as the contact's TMA fix; it is dead-reckoned on its course and speed and ages out after 120 s, so refine and re-accept as bearings come in. Noisy bearings give a large range uncertainty even when the fit is good. TMA does not estimate depth. With operator assistance set to training (`F10`) an automatic solver proposal (it needs at least 4 bearings over 180 s) is drawn as a thin line and `Shift+K` copies it into the hypothesis. Sonobuoy bearings enter the track with the buoy as observer.
+- **TMA** is yours. The page plots the bearings of the selected contact over time. Build a hypothesis: `Z`/`X` course (`Shift`: 1 degree), `Ctrl+Z`/`Ctrl+X` speed, `Q`/`Shift+Q` range on the newest bearing (`Ctrl`: 0.2 NM). The amber curve shows the bearings that hypothesis predicts, the dots at the foot the residuals (measured minus predicted). Good hypotheses leave residuals scattered around zero; a wrong course, speed or range leaves a trend. The rail shows the residual RMS, the systematic trend after averaging, the fit and the observability. Range is only observable after an own course change (at least 6 degrees, better 30-60): without one, `K` refuses. `K` accepts the hypothesis as the contact's TMA fix; it is dead-reckoned on its course and speed and ages out after 120 s, so refine and re-accept as bearings come in. Noisy bearings give a large range uncertainty even when the fit is good. TMA does not estimate depth. With operator assistance set to training (`F10`) an automatic solver proposal (it needs at least 4 bearings over 180 s) is drawn as a thin line and `Shift+K` copies it into the hypothesis. Sonobuoy bearings enter the track with the buoy as observer. `Shift+T` switches the TMA method: HYPOTHESIS (above), EKELUND (the range from the bearing rates of two own legs about one course change of 30 degrees or more, 90 s each; `Shift+K` copies it into the hypothesis, `K` then accepts as usual) or DOT STACK (residual rows at 0.6, 1.0 and 1.6 times the hypothesis range: the flat row is the range the bearings support).
 - **UMWELT / FUSION** shows the bathythermograph (`E`, 60 s cooldown): measured layer depth, sound-speed profile and convergence-zone bands, plus the HMS/TAS comparison. Bearings within 5 degrees confirm each other; 9 degrees or more apart are flagged as a possible ghost contact. The layer is not fixed: afternoon sun makes it shallower (about 8 m), strong wind mixes it deeper over hours, and internal waves move it a few metres. Repeat the BT after a few hours or a weather change. The measured profile is the real temperature-driven sound speed (Mackenzie equation), so it drops below the layer. Point the mouse at the profile to read the exact depth, the sound speed there and whether that depth lies above or below the layer (uConsole and web). In the web client the plot also labels the layer, the seabed and the sound-speed minimum.
 - **ACTIVE** lists echoes of the last 120 s: bearing, range and depth (+/-12 m). A ping fix ages out after 120 s. `W` selects the pulse: **CW** (1 s tone) gives coarse range (about 0.1-0.3 NM) but its Doppler separates a moving target from seabed reverberation; **LFM** (100 Hz sweep) measures range to a few metres and gains 20 dB against noise, but a slow or stationary target stays inside the reverberation. The echo strength depends on the target's aspect (broadside about 15 dB stronger than bow-on) and size. Rocky ground reverberates far more than mud; charted wrecks return real echoes that no contact owns ("unassociated echo").
 - **Hearing the echo:** every return is audible when it arrives, after its real two-way travel time (about 2.5 s per nautical mile of range), for the ship's sonar and the helicopter's dipping sonar alike. A CW echo is a soft tone on the carrier, an LFM echo a short sweep; the pulse is the one the ping was sent with. A strong echo stands out clearly, a faint one barely rises out of the reverberation hiss. In the Remote Crew browser the echo plays with the general sound (loud or faint).
@@ -351,6 +352,7 @@ The display shows measured modulation, not identity. After changing the bearing 
 | `Ctrl+Z / Ctrl+X (TMA)` | TMA page: hypothesis speed -/+ 1 kn |
 | `Q / Shift+Q (TMA)` | TMA page: hypothesis range -/+ 1 NM (Ctrl 0.2 NM) |
 | `K / Shift+K (TMA)` | TMA page: accept hypothesis as fix / Shift: copy solver proposal (training) |
+| `Shift+T (TMA)` | TMA method: hypothesis/residuals, Ekelund range, dot stack (Shift+K in Ekelund: copy its range) |
 | `SPACE` | LOFAR peak hold on/off |
 | `T` | TMA for selected contact on/off |
 | `C` | Classify contact (submarine / warship / biological / vessel / aircraft / torpedo) |
@@ -375,7 +377,7 @@ Combat situation:
 
 - Gain (`I`/`O`) changes display and audio only, not detection. Black level (`Ctrl+I`/`Ctrl+O`) and contrast (`Shift+I`/`Shift+O`) help faint traces stand out; `Shift+C` changes the phosphor colour.
 - `D` or `A`/`B`/`H` choose broadband, filtered or heterodyne audition. Heterodyne shifts the low band up to about 700 Hz so low tonals become audible.
-- The listening audio runs about one second behind the display so a busy moment never interrupts it. After steering the listening bearing the old beam fades into the new one after about a second; the stream is not cut.
+- The listening audio runs about one and a half seconds behind the display (Remote Crew browsers about two seconds) so a busy moment never interrupts it. After steering the listening bearing the old beam fades into the new one after that delay; the stream is not cut.
 - Put the TAS below the measured layer to hear deep targets; keep the HMS for shallow ones. Both arrays run in parallel.
 - The TMA page shows the closing rate derived from the accepted solution: positive means the target is closing.
 - If the TAS and HMS disagree by 9 degrees or more, treat the contact as a possible ghost (the display flags it) and turn to resolve it.
@@ -389,7 +391,7 @@ Combat situation:
 
 ### Not modelled
 
-- No dot stack or Ekelund range; TMA is the hypothesis/residual method above. `T` switches the solver behind the training aid.
+- `T` switches the solver behind the training aid; the automatic solver never writes a fix by itself.
 - No selectable split-window normalisation (TPSW); use gain, black level and contrast instead.
 - No hard blind baffle sector; own noise is a soft lobe.
 - No variable-depth sonar separate from the TAS.
@@ -402,7 +404,7 @@ Weapons control turns a sonar contact into a firing solution. It launches the fr
 
 ### Displays and instruments
 
-Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state and helicopter stores.
+Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
 
 The readiness line is checked top to bottom; the first failed check is shown:
 
@@ -426,7 +428,10 @@ Torpedo run, seen from above:
                      every 0.5 s)                     candidate
 ```
 
-- Frigate torpedo: 45 kn, 12 NM, two tubes, 60 s reload. Stock per mission is set by the scenario (default 6).
+- Two torpedo types share the two tubes (60 s reload). Mk1: 45 kn, 12 NM, wire-guided. Mk2: 55 kn but only 8 NM. The scenario stock (default 6) is split 2:1 between Mk1 and Mk2; `W` selects the type, and if no tube holds it a tube unloads and reloads with it (60 s).
+- Search pattern (`X`): the snake (+/-15 deg about the datum course, default), a circle of 0.4 NM about the enable point, or a helix that opens from 0.15 NM by 0.15 NM per turn to 1 NM. The pattern runs only once the seeker is enabled and has not acquired.
+- Seeker enable point (`,` / `.`): 0.6 to 3.0 NM from the datum in 0.2 NM steps (default 1.2 NM). Earlier enable finds a target that has moved off the datum; later enable keeps the weapon quiet longer.
+- Salvo (`Y`): one torpedo, or two in a +/-8 deg spread with their own datums turned about the ship; a spread needs two loaded tubes of the selected type and counts against the doctrine limit.
 - Preset depth 10-300 m (default 60 m). A wrong depth is a miss: take depth from a ping, not from TMA.
 - The wire updates the datum from the contact's observed position. Without updates it becomes STALE after 3 s and BROKEN after 12 s; the torpedo then continues to the last datum.
 - The seeker homes on the nearest candidate: that can be a decoy, a whale or a merchant ship. A civilian hit ends the mission.
@@ -440,6 +445,10 @@ Torpedo run, seen from above:
 | `Hold Up / Down` | Torpedo depth (10-300 m) |
 | `<- / ->` | Select sonar contact for targeting |
 | `T / Ctrl+Enter` | Launch torpedo (ROE check) |
+| `W` | Torpedo type (tubes swap over; W cycles Mk1/Mk2) |
+| `X` | Terminal search pattern: snake, circle, helix |
+| `, / .` | Seeker enable point -/+ (0.6 to 3.0 NM, 0.2 NM steps) |
+| `Y` | Salvo: one torpedo or two in a +/-8 deg spread |
 | `H` | Launch / recall HSP-5 |
 | `B` | Deploy sonobuoys (HSP-5 airborne) |
 | `D` | Lightweight torpedo from HSP-5 |
@@ -486,8 +495,8 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 ### Not modelled
 
 - No depth charges, ASW rockets or ship-launched ASROC (ASROC is used only by friendly AI warships).
-- No selectable torpedo search pattern and no manual enable point: the snake search and the 1.2 NM seeker switch-on are fixed (friendly ASROC payloads use a helix search at their splash point).
-- One torpedo type for the ship and one for the helicopter; no selectable salvo doctrine.
+- One torpedo type for the helicopter; the doctrine limit of two own torpedoes running is fixed.
+- No depth ceiling difference between Mk1 and Mk2; both run at the set depth.
 
 ## 4 Damage control
 
@@ -516,6 +525,8 @@ Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fi
 - **Fire:** grows with the room's fuel load (engine, flight deck and magazine burn fiercest) and is smothered by rising water. A room that stays hot for about 30 s ignites its neighbours. A flooded switchboard (sonar, operations, radio, engine) shorts and starts an electrical fire. A fire above 90 % in the weapons room cooks off the magazine: the room is destroyed and the neighbouring rooms are holed.
 - **Stability:** floodwater adds weight, and loose water surfaces reduce the metacentric height (GM). The ship sinks when the floodwater exceeds its reserve buoyancy, and capsizes when GM is lost or the heel passes 35 degrees.
 - **Heel:** off-centre floodwater lists the ship to that side and pulls it off course.
+- **Counter-flooding:** with `C` and a list of 5 degrees or more, damage control opens the flooding valve of the high hull side; water enters at 0.5 % of the room per second until the list is cancelled, never past 60 % of that side, and the valve closes by itself below 1 degree (or with `C` again). The water is real floodwater: it adds weight and draught and a team has to pump it out later.
+- **Trim:** floodwater forward or aft trims the ship (bow down counts positive). Every degree costs 0.5 kn of top speed and, bow down, adds own noise at the bow sonar. The stability line on page 2 shows list, trim and the open valve.
 - **Steering gear and stabilizers:** the steering gear sits aft under the flight deck. If that compartment is destroyed, the rudder jams at its last angle until the room is repaired. A destroyed hull compartment on either side knocks out the fin stabilizers, so the ship rolls more in a seaway. Floodwater adds weight: the ship sits deeper and accelerates more slowly.
 
 Station effects: a station loses capability continuously with flooding and fire in its room (sonar and radar range shrink gradually); a destroyed room disables it. A damaged engine room caps speed at 15 kn, a destroyed one at 8 kn; a damaged or destroyed weapons room blocks torpedo launches; a destroyed flight deck prevents helicopter launch and recovery; a destroyed operations room also disables ESM.
@@ -528,6 +539,7 @@ Station effects: a station loses capability continuously with flooding and fire 
 | `Up / Down` | Select team 1-3 (unassigned) |
 | `Enter` | Assign selected team to selected compartment |
 | `Backspace` | Withdraw selected team |
+| `C` | Counter-flood the high hull side against a list (again: close the valve) |
 | `1-9` | Always switch station; never assign a team |
 | `Click` | Select compartment or its label; Enter assigns the selected team |
 
@@ -550,8 +562,8 @@ On the uConsole the joystick buttons 1-3 assign team 1-3 directly to the selecte
 
 ### Not modelled
 
-- No individual crew members or casualties; no longitudinal trim from flooding.
-- No counter-flooding order; correct heel with repairs and rudder.
+- No individual crew members or casualties.
+- Counter-flooding only between the two hull sides; no selective flooding of other rooms.
 
 ## 5 Operations / CIC
 
@@ -572,6 +584,7 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 ```
 
 - **Surface radar:** 30 NM, limited by the radar horizon (20 m mast) and target height; submerged submarines are invisible.
+- **Mast and snorkel echoes:** a submarine at periscope depth with a raised mast or snorkel head (a crew's mast, a snorkelling boat or one at radio depth) returns a tiny echo: in calm sea about half the sweeps find it at 7 NM, at sea state 3 at about 2.5 NM, at sea state 5 under 1 NM. It shows only as a bare dot that glows for about 6 s, with no symbol, no label and no track. Click the dot on the PPI or press `B` (newest dot) to mark it: a radar track `R-…` starts from that measurement and further echoes of the same mast update it; without new echoes it fades after 30 s. Blips and the mark are not saved.
 - **Air radar:** 100 NM for aircraft and anti-ship missiles (ASM).
 - The antenna turns once every 4 s: a contact is updated only when the beam sweeps past it, and each sweep detects it with a probability that falls with range (50 % at the nominal range for a broadside ship; bow-on targets are seen later, fluctuating echoes can miss a sweep). Sea clutter grows with sea state (about -5 % at sea state 4, -25 % at 6) and rain attenuates the echo (-10 % surface, -20 % air); from sea state 5 measurement errors increase. Inside 3 NM the CIWS search/track radar holds an inbound missile continuously while CIWS is released.
 - **AIS:** civilian ships broadcast course and speed every 2-10 s (3 min at anchor) and their name about every 6 min. The VHF receiver hears them only within line of sight (about 20 NM). A radar track of a civilian shows name and course only after the matching AIS report has been received; radar alone gives position only. Optional live AIS/ADS-B traffic is indistinguishable from simulated traffic.
@@ -598,6 +611,7 @@ Page 1 is a full-height free chart with all published tracks; page 2 is the targ
 | `Shift+R` | Air-search radar on/off (EMCON) |
 | `I` | Toggle CIWS fire release (withheld = never fires on inbound ASMs) |
 | `Backspace` | Clear all marked reports |
+| `B` | Mark the newest bare radar blip as a track (or click the blip) |
 | `Enter` | Confirm attack after classifying a real contact hostile |
 | `K` | Camera follow on/off |
 
@@ -724,6 +738,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 
 - Own noise rises linearly from 4 kn to 25 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
 - QUIET mode reduces own noise to 65 % and limits speed to 12 kn.
+- Plant selection (`G`): AUTO runs the plant as before. DIESEL is the quiet plant (own noise about -4 dB, fuel -10 %) but caps speed at 18 kn; TURBINE gives full speed at about +3 dB and +25 % fuel. The choice is shown on page 2 and in the browser's engine room.
 - Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.
 - Machinery damage caps speed at 15 kn (damaged) or 8 kn (destroyed).
 - Fuel burn follows the power the propellers deliver: at steady speed it grows with the cube of speed, accelerating and braking cost extra. A lighter ship (burnt fuel) accelerates slightly faster; floodwater makes it slower and deeper. Heavy seas add resistance and cost up to about 1 kn at FULL. With empty tanks the shaft stops and no engine order is accepted.
@@ -735,6 +750,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 | `+ / -` | Engine order (telegraph) |
 | `Up / Down` | Telegraph up / down |
 | `A` | Quiet mode QUIET/NORMAL |
+| `G` | Propulsion plant: AUTO, DIESEL (18 kn, -4 dB) or TURBINE (+3 dB, +25 % fuel) |
 | `U` | Enter target course directly (000-359) |
 | `V` | Enter target speed directly (0-25 kn) |
 
@@ -754,7 +770,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 
 ### Not modelled
 
-- No separate gas turbine / diesel plant selection and no individual shaft control.
+- No individual shaft control; the plant choice applies to both shafts.
 - No refuelling at sea.
 
 ## 8 Helicopter deck
@@ -788,6 +804,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 - **Launch limits:** wind up to 32 kn, crosswind up to 22 kn, visibility at least 2 NM, sea state 5 or less, working flight deck, gusts up to 40 kn, cloud ceiling at least 300 ft, no severe icing, and a deck-motion window (roll within 8 degrees, pitch within 3.5 degrees). Light icing costs 20 % more fuel; the weather & sonar analysis (`0`) shows CLEAR, LIMITED or NO-GO. Landing also waits for such a window; turning into the sea reduces pitching.
 - **Dipping sonar:** depth 15-300 m (default 75 m, at least 10 m above the seabed), passive 18 NM with +/-2 degrees, active ping 14 NM with 30 s cooldown. Dipping needs wind up to 30 kn, visibility of 1 NM and no icing.
 - **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery; they drift with the current and a little with the wind. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
+- **Buoy patterns:** with `X` a pattern is planned: a queue of drop points about the waypoint: a 2x2 field (1.5 NM spacing), a barrier across the bearing from the ship to the waypoint (3 NM spacing) or a circle of 1.5 NM radius, each with up to 4 buoys of the remaining stock. The helicopter flies the points one after the other and drops the ordinary single buoy (in the selected mode) at each; SINGLE clears the queue, returning home drops it.
+- **MAD run:** with `Shift+M` and the dipping sonar stowed the helicopter descends to 30 m and slows to 90 kn. A submerged hull within about 400 m slant range is detected on a stateless draw per sensor tick (sure inside 250 m) and reported as a MAD position fix without depth or course; it feeds the weapons' range check and, once the helicopter releases its contact, Operations.
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
 ### Keys
@@ -799,6 +817,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 | `M` | Set sonar contact as air-torpedo target |
 | `B` | Deploy one sonobuoy at current position |
 | `Shift+B` | Next sonobuoy mode PASSIVE / ACTIVE |
+| `X` | Buoy pattern: single, 2x2 field, barrier across the waypoint bearing, circle (X again: next; single clears) |
+| `Shift+M` | MAD run on/off: low and slow, dipping sonar stowed |
 | `T` | Sensor source: dipping sonar / sonobuoys |
 | `F` | Confirm / unconfirm selected helicopter contact |
 | `C` | Classify contact (submarine / warship / biological / vessel / aircraft / torpedo) |
@@ -845,8 +865,8 @@ Attack sequence:
 
 ### Not modelled
 
-- No buoy patterns (field, barrier) and no frequency channel management; buoys are dropped one at a time.
-- No MAD (magnetic anomaly detector) and no radar on the helicopter.
+- No frequency channel management for buoys.
+- No radar on the helicopter.
 - Only one helicopter.
 
 ## 9 Electronic warfare
@@ -1019,13 +1039,18 @@ The crew keeps one shared grease-pencil plot. Every station and every Remote Cre
 
 Submarines evade for 240 s after hearing a ping or a torpedo, may launch a decoy, lie in wait, snorkel (detectable by HFDF and ESM) and sometimes ping from 15 NM or less. Near the frigate a boat may instead creep to a charted wreck within 8 NM and lie still on the bottom beside it for 15-30 minutes.
 
-Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded boat blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking boat holds its position against the current. Submarines sense like you do: passive bearings from their own sonar, a range only after their own TMA legs (a few minutes), ESM only with the mast up, the datalink only at mast depth or snorkelling, and a torpedo alarm takes the crew a few seconds (2-15 s) before the boat evades. Surface ships lose top speed in heavy seas (small ships more).
+Submarine physics: the hull accelerates toward an ordered speed (no instant sprints); hydroplanes need speed (below about 4 kn depth changes are slow); radiated noise rises about 12 dB per doubling of speed and jumps when the screw cavitates, and the cavitation speed rises with depth; a torpedo launch makes an 8 s transient; a badly flooded boat blows ballast once and rises fast and loud; operating below test depth fatigues the hull, and 1.5 x test depth crushes it; a lurking boat holds its position against the current. Submarines sense like you do: passive bearings from their own sonar, a range only after their own TMA legs (a few minutes), and a shot on that TMA only once its range error has converged (the difficulty field "enemy fire-control convergence": sigma over range at or below 0.25 in the patrol scenarios, 0.15 for the SSN; a solution older than 90 s or re-opened by your course change is not fired on), ESM only with the mast up, the datalink only at mast depth or snorkelling, and a torpedo alarm takes the crew a few seconds (2-15 s) before the boat evades. Surface ships lose top speed in heavy seas (small ships more).
 
 ### Crewed opposing submarine (Remote Crew)
 
-A second crew can play the enemy: in the Remote Crew roster (`F9`) the host grants the roles "Submarine command" and "Submarine sonar". As long as one of them is held, the living hostile submarine with the lowest number follows only that crew's orders; when the roles are released, the host revokes them or a game is loaded, the AI takes the boat back from where it is. A browser holds roles of one side only (frigate or submarine), never both, and solo mode never includes the submarine roles.
+A second crew can play the enemy. The boat has six stations: Command, Sonar, Weapons, Engine room, Mast & ESM and Navigation; a browser takes them like the frigate's (`F9`). As long as one of them is held, the living hostile submarine with the lowest number follows only that crew's orders; when the roles are released or the host revokes them, the AI takes the boat back from where it is. A save keeps the crew's orders, modes, mast, wires, plot and alarm bearings; after a load the boat runs its last orders and waits up to ten minutes for its crew to take the stations again (every boat station is re-leased) before the AI takes it back. A browser holds roles of one side only (frigate or submarine), never both; the lobby first asks which unit it plays. In solo mode the one browser holds all nine frigate stations, or with **Play the submarine** in the host bar all six boat stations (and back with **Play the frigate**).
 
-- **Submarine command:** orders course, speed and depth (the boat follows within its turn, depth and acceleration limits; the battery and snorkel cycle runs by itself). Fires a torpedo down a sonar contact's measured bearing, with its ping fix or TMA solution while current, or down a free bearing with an optional range; firing needs the host's direct-fire grant, a ready tube and the target inside the tube arc. Launches a decoy and makes the one emergency blow.
+- **Stations:** *Command* orders course, speed and depth, lies on the bottom, pings and takes a BT, and sees the whole boat. *Navigation* orders course and depth, keeps the boat's plot and watches keel and obstacles. *Engine room* runs the telegraph, snorkel, silent running and the emergency blow and watches battery and noise. *Mast & ESM* raises the mast and watches ESM and alarms. *Weapons* fires, guides the wires and launches decoys. *Sonar* is the boat's sonar room. Each order is accepted only from the station that owns it.
+- **Depth steps and displays:** Command and Navigation order depth in one step: periscope depth (15 m, keeps the mast usable), snorkel depth (boats with a snorkel), above or below the layer (15 m above / 30 m below; only after the boat's own BT measurement, since the crew knows the layer only from it) and deep (the safe depth over the charted bottom). On the uConsole these are `U`, `Shift+U`, `J`, `Shift+J` and `H`. The browser shows the water column (surface, periscope depth, measured layer, ordered and safe depth, seabed, the boat and its dive direction), large readouts for course, speed, depth and battery with coloured mode and alarm chips, and an ESM rose with the radar strobes and the ping and torpedo alarm bearings; the uConsole's Mast & ESM page has the same rose. Mast, snorkel, silent running and lying on the bottom have separate on and off buttons.
+- **Orders and weapons:** the boat follows course, speed and depth orders within its turn, depth and acceleration limits; telegraph steps (stop, 3, 6, 10, 15 kn, maximum) set the speed quickly. Fires a torpedo down a sonar contact's measured bearing, with its ping fix or TMA solution while current, or down a free bearing with an optional range; firing needs a ready tube and the target inside the tube arc. The crew sets the run depth (5-300 m, otherwise a shallow default) and fires one torpedo or two in a ±4° spread, each with its own datum. Every crew torpedo runs on a wire: the crew can move its datum (bearing and distance from the boat) and the wire turns it onto the new datum until its seeker acquires; faster than 10 kn or turning harder than 1.5°/s for 5 s breaks the wire, as does running out of either spool, and the crew can cut it. Launches a decoy and makes the one emergency blow.
+- **Plant and boat modes:** a crewed boat never goes up, snorkels or calls home by itself. The battery drains with speed and hotel load; below 20 % the log warns, and an empty battery limits the speed to what the plant can serve (an AIP plant still takes over the load by itself). **Snorkel** runs the diesels at snorkel depth and charges the battery, at most 6 kn; diving deeper shuts the head valve. The running diesels are loud: +12 dB radiated level, a lower quiet factor and two firing lines at 50 and 100 Hz in the boat's LOFAR signature (AI boats too). **Silent running** limits the boat to 5 kn and makes it as quiet as a lurking AI boat. **Lie on bottom** stops the boat 3 m above the seabed where the water is no deeper than test depth: silent and no drift; any speed or depth order lifts off. The boat stops short of land or a seamount instead of turning away, and the log warns in shallow water.
+- **Situation picture:** an intercepted active ping or torpedo is logged with the bearing the boat's own ears measured (a few degrees off) and shown with its age in the alarms. At periscope depth the **mast** can be raised; its ESM then reports the radars sweeping the boat with bearing (log and ESM list), and the mast lowers by itself when the boat goes deeper. With the mast up the **periscope** page (Command page 3, Mast & ESM page 2) shows the eyepiece: sky and sea in the light of the hour, the horizon moving with the sea, a true-bearing scale and a crosshair; the scope trains in 2° steps (`←`/`→`, `Shift`: 10°). Everything the optics make out within the frigate lookout's contrast model at 2.5 m eye height (day/night, moon, visibility, sea state, land in the way) appears as a silhouette and as a bearing-only **sighting** with a coarse class (warship, merchant ship, vessel, aircraft, torpedo wake) and its apparent length; the log reports each new sighting. `Enter` reads the **stadimeter** on the sighting under the crosshair: the range follows from its apparent length and the assumed hull length of the class (130 m for a warship or an unrecognized vessel, 150 m for a merchant), so an unrecognized or bow-on target reads long; the reading is ±25 % and becomes a VISUAL fix on the boat's sonar contact of that target for 120 s, usable for a shot like a ping fix. Aircraft and wakes cannot be ranged. Command can also ping and take a BT without a sonar operator. The chart shows the tube firing arc where the tubes cannot fire all round, and the sonar room's assigned target is preselected for the shot.
+- **Navigation and plot:** the engine room has telegraph buttons, and Command and Navigation share the boat's own grease-pencil plot (marks, rulers, bearing lines, circles, DR lines); the frigate never sees it, and the boat's plot is not saved. The navigation display shows the water under the keel and checks the chart along the ordered course up to 5 NM: land or a seabed shallower than the boat is reported as an obstacle ahead, in the log and as a warning. Only charted geography counts; other vessels are not in the check.
 - **Submarine sonar:** the same sonar workstation as on the frigate (broadband, LOFAR, DEMON, TMA, active echoes, classification, listening audio), but the hull array listens at the boat's own depth, so the layer works for and against the crew. There is no towed array and no release to an OPZ. An active ping gives echoes and is heard by the frigate.
 - **What the submarine crew sees:** its own boat, the known chart, its own sonar measurements and its own torpedoes in the water. It never sees the frigate's position, its plot, its events or its mission messages; the frigate crew cannot tell a crewed boat from the AI.
 - **Mission:** unchanged. If the frigate sinks, the submarine has won; if the boat sinks, its crew sees "Boat lost".
@@ -1033,29 +1058,48 @@ A second crew can play the enemy: in the Remote Crew roster (`F9`) the host gran
 
 #### Playing the submarine on the uConsole
 
-In the main menu, open Options (`F10`), switch to page 2 (`PgDn` or `Tab`) and set **uConsole plays** to *Hostile submarine* (or start with `--play-sub`): the uConsole then commands the hostile submarine instead of the frigate. The frigate is then crewed from the browsers through Remote Crew (`F9`) or runs on autocrew. The uConsole shows only the boat's own picture; the frigate's banners, event log, sound cues, plot and tooltips never appear, and its trackball and telegraph controls are disabled. The side can only be changed outside a mission; it lasts for this launch and is never saved, so every launch starts with the frigate.
+Every new game first asks **Which unit do you play?**: *Frigate F-217* or *Hostile submarine* (`Up`/`Down` or `1`/`2`, `Enter`; the last choice is preselected, `--play-sub` preselects the submarine). Outside a mission, Options (`F10`) page 2 **uConsole plays** changes it as well, for example before loading a game. With the submarine the uConsole commands the hostile boat instead of the frigate. The frigate is then crewed from the browsers through Remote Crew (`F9`) or runs on autocrew. The uConsole shows only the boat's own picture; the frigate's banners, event log, sound cues, plot and tooltips never appear, and its trackball and telegraph controls are disabled. The side can only be changed outside a mission; it lasts for this launch and is never saved, so every launch starts with the frigate.
 
-The **submarine command** station is laid out like the Bridge: the chart on the left (known geography, the boat with its ordered course and motion vector, the bearing lines of its own sonar contacts or their symbol while a ping or TMA fix is current, its own torpedoes `T1`…), the station on the right with a threat bar (torpedo alarm, active sonar heard, hull damage, cavitation, low battery) and two pages. **Navigation** shows course and depth, speed, own noise and battery, and the water column under the boat: boat depth, ordered depth, safe depth and seabed; the layer appears there only after the boat's own BT measurement (`E` at the submarine sonar). **Weapons & contacts** shows fire readiness, torpedoes, tubes ready, reload, decoys, emergency blow and the boat's own sonar contacts. Below are the boat log and the boat's telemetry, as a band or a status ticker as set in the options; orders, shots and decoys are logged there.
+The top bar shows the boat's six stations as tabs: `1` Command, `2` Sonar, `3` Weapons, `4` Engine room, `5` Mast & ESM, `6` Navigation (`Tab` or a click on a tab switches). Each order key works only at the station that owns it, as in the browser; elsewhere a banner names the right station. Browsers can crew the boat's other stations at the same time; a station a browser holds is marked in the top bar and is not operated from the uConsole. Every station but the sonar room is laid out like the Bridge: the chart on the left (known geography, the boat with its ordered course and motion vector, the bearing lines of its own sonar contacts or their symbol while a ping or TMA fix is current, its own torpedoes `T1`…, a limited tube firing arc), the station on the right with a threat bar (torpedo alarm and active sonar heard with measured bearing, hull damage, cavitation, low battery, ESM radar intercept) and the station's page. **Command** has three pages, **Mast & ESM** two (the station's key again or `PgUp`/`PgDn`). **Navigation** (page and station) shows course and depth, water under the keel and any charted obstacle ahead, speed, own noise, battery and the active modes, and the water column under the boat: boat depth, ordered depth, safe depth and seabed; the layer appears there only after the boat's own BT measurement (`E` at the submarine sonar). **Weapons & contacts** (page and Weapons station) shows fire readiness, torpedoes, tubes ready, reload, decoys, emergency blow and the boat's own sonar contacts. The **Engine room** shows speed, own noise, battery, the modes and the telegraph steps; **Mast & ESM** shows the mast, the alarm bearings and the ESM intercepts; its second page and Command's third are the **Periscope** (eyepiece, line of sight, light and the sightings list; `←`/`→` train, `Enter` stadimeter). Below are the boat log and the boat's telemetry, as a band or a status ticker as set in the options; orders, shots and decoys are logged there.
 
 | Key | Action |
 |---|---|
-| `1 / 2 / Tab` | Submarine command / submarine sonar / switch |
-| `C / V / D` | Order course / speed / depth (number, Enter) |
-| `Page Up/Down` | Command pages: Navigation / Weapons & contacts |
+| `1 … 6 / Tab` | Stations: 1 Command, 2 Sonar, 3 Weapons, 4 Engine room, 5 Mast & ESM, 6 Navigation; Tab next (click a tab too) |
+| `C / V / D` | Order course / speed / depth (Command; course and depth also Navigation, speed also Engine room) |
+| `U / J / H` | Depth steps: periscope / snorkel depth (Shift), below / above the measured layer (Shift), deep (Command, Navigation) |
+| `Page Up/Down` | Command pages: Navigation / Weapons & contacts / Periscope (or 1 again); Mast & ESM pages: ESM / Periscope (or 5 again) |
 | `Q / E` | Chart zoom out / in |
 | `K` | Chart follows the boat on/off |
 | `Wheel / drag` | Zoom / pan the chart (mouse on the chart) |
 | `Arrow keys` | Select an own sonar contact |
-| `Ctrl+Enter` | Fire a torpedo at the selected contact |
-| `F` | Fire a torpedo down an entered bearing |
-| `X` | Launch a decoy |
-| `Shift+B` | Emergency blow (once) |
+| `Ctrl+Enter` | Fire a torpedo at the selected contact (Weapons) |
+| `F` | Fire down an entered bearing, then the distance to the datum (Enter: none) (Weapons) |
+| `X` | Launch a decoy (Weapons) |
+| `Shift+B` | Emergency blow, once (Command, Engine room) |
+| `T` | Torpedo run depth 5-300 m (Weapons) |
+| `Y` | One torpedo or a two-torpedo spread (Weapons) |
+| `W` | Steer the newest wired torpedo: bearing, then distance (Weapons) |
+| `Shift+W` | Cut the newest torpedo's wire (Weapons) |
+| `G` | Silent running on/off, at most 5 kn (Command, Engine room) |
+| `Shift+G` | Lie on the bottom / lift off (Command, Navigation) |
+| `N` | Snorkel up/down, diesels charge at snorkel depth (Engine room) |
+| `P` | Raise/lower mast at periscope depth: ESM hears radars, the periscope sees (Mast & ESM) |
+| `← / →` | Periscope page: train the scope 2° (Shift: 10°) (Command, Mast & ESM) |
+| `Enter` | Periscope page: stadimeter range of the sighting under the crosshair (Command, Mast & ESM) |
+| `+ / -` | Telegraph step faster / slower (Command, Engine room) |
 | `Sonar keys` | As on the frigate sonar, without towed array, OPZ release, plot and telegraph |
 | `S / L / F9` | Save / load / Remote Crew (the frigate's crew) |
 
+#### Not modelled
+
+- The crewed boat sends no radio traffic and receives none; there is no contact report from home.
+- No damage-control teams aboard the boat; damage only accumulates.
+- A raised mast or snorkel head is seen by the frigate's radar only as a bare blip (see the OPZ chapter).
+- The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.
+
 ### Mission and scoring
 
-- Scenarios: 1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Random (custom difficulty). User missions start from the Mission Editor (`F5` in its browser).
+- Scenarios: 1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Random (custom difficulty). User missions start from the Mission Editor (`F5` in its browser). The runtime takes the editor's scope: a 500 NM fixed world or a packaged reference sector (`sector:0` to `sector:127`), the authored weather, placed submarines, surface ships, aircraft (patrolling a 10 NM box at profile speed), animals and static decoys, seeded random groups, timed events (message, spawn, weather, objective) and the objectives sink, survive, protect (keep the named units alive until the time limit) and reach (enter the objective point's radius). User unit profiles, torpedoes and other world sizes are refused at start.
 - Win: all targets sunk, or survive the time limit. Lose: own ship sunk, civilian hit, target 150 NM from its start, or time out.
 - Score: 1000 per sunk submarine, 200 per unused torpedo, 500 without civilian losses, up to 500 time bonus.
 

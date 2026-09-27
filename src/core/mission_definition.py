@@ -14,6 +14,9 @@ from src.data.validation import (ValidationIssue, enum, finite_number, integer,
 
 
 MISSION_VERSION = 1
+# Reference worlds name one of the packaged real coastal sectors.
+REFERENCE_SECTOR_COUNT = 128
+REFERENCE_PREFIX = "sector:"
 SIDES = ("friendly", "neutral", "hostile")
 OBJECTIVE_TYPES = ("sink", "survive", "protect", "reach")
 EVENT_TYPES = ("message", "spawn", "weather", "objective")
@@ -31,16 +34,20 @@ class FieldMetadata:
 # only means consumed by the current game runtime, not that a field is useful.
 MISSION_FIELD_METADATA = {
     "key": FieldMetadata(True, False, "User content identity; integration pending."),
-    "name": FieldMetadata(True, False),
-    "description": FieldMetadata(True, False),
-    "seed": FieldMetadata(True, False),
-    "world": FieldMetadata(True, False, "Fixed coordinates and sector references are previewed."),
-    "player": FieldMetadata(True, False),
-    "environment": FieldMetadata(True, False),
-    "units.exact": FieldMetadata(True, False),
-    "units.random_groups": FieldMetadata(True, False, "Resolved only in static preview."),
-    "objective": FieldMetadata(True, False),
-    "events": FieldMetadata(True, False),
+    "name": FieldMetadata(True, True),
+    "description": FieldMetadata(True, True),
+    "seed": FieldMetadata(True, True),
+    "world": FieldMetadata(True, True, "500 NM only; fixed coordinates, authored sectors "
+                                       "and packaged reference sectors (sector:<n>)."),
+    "player": FieldMetadata(True, True),
+    "environment": FieldMetadata(True, True),
+    "units.exact": FieldMetadata(True, True, "Built-in submarine, surface, aircraft, animal "
+                                             "and decoy profiles; torpedoes and user profiles "
+                                             "are rejected at start."),
+    "units.random_groups": FieldMetadata(True, True, "Seeded from the preview; a spawn "
+                                                     "event defers its group."),
+    "objective": FieldMetadata(True, True),
+    "events": FieldMetadata(True, True),
 }
 
 
@@ -57,9 +64,21 @@ def default_mission(key: str = "user.new_mission") -> dict[str, Any]:
         "environment": {"sea_state": 3, "time_hour": 12.0,
                         "thermocline_depth_m": 80.0, "weather": "clear"},
         "units": {"exact": [], "random_groups": []},
-        "objective": {"type": "sink", "target_ids": [], "time_limit_s": 3600.0},
+        "objective": {"type": "sink", "target_ids": [], "time_limit_s": 3600.0,
+                      "reach": {"x": 250.0, "y": 250.0, "radius_nm": 2.0}},
         "events": [],
     }
+
+
+def reference_sector_index(reference: Any) -> int | None:
+    """The sector index a reference world names (``sector:<n>``), else None."""
+    if not isinstance(reference, str) or not reference.startswith(REFERENCE_PREFIX):
+        return None
+    digits = reference[len(REFERENCE_PREFIX):]
+    if not digits.isdigit() or len(digits) > 3 or (len(digits) > 1 and digits[0] == "0"):
+        return None
+    index = int(digits)
+    return index if 0 <= index < REFERENCE_SECTOR_COUNT else None
 
 
 def _obj(value: Any, path: str, problems: list[ValidationIssue]) -> Mapping[str, Any] | None:
@@ -113,6 +132,10 @@ def validate_mission(data: Mapping[str, Any],
             if isinstance(ref, str) and (ref.startswith(("/", "~")) or "\\" in ref
                                          or ".." in ref.split("/")):
                 problems.append(issue("world.reference", "path", "must be a logical reference, not a path"))
+            elif isinstance(ref, str) and reference_sector_index(ref) is None:
+                problems.append(issue("world.reference", "reference",
+                                      f"must name a packaged sector: {REFERENCE_PREFIX}0 .. "
+                                      f"{REFERENCE_PREFIX}{REFERENCE_SECTOR_COUNT - 1}"))
         raw_sectors = world.get("sectors", [])
         if not isinstance(raw_sectors, list):
             problems.append(issue("world.sectors", "array", "must be an array"))
@@ -218,6 +241,21 @@ def validate_mission(data: Mapping[str, Any],
                 problems += text(target, f"objective.target_ids[{index}]", maximum=64)
                 if target not in known:
                     problems.append(issue(f"objective.target_ids[{index}]", "reference", "unknown unit/group id"))
+            if objective.get("type") == "protect" and not targets:
+                problems.append(issue("objective.target_ids", "required",
+                                      "protect needs at least one unit to protect"))
+        reach = objective.get("reach")
+        if objective.get("type") == "reach" and reach is None:
+            problems.append(issue("objective.reach", "required", "reach needs its point"))
+        elif reach is not None:
+            reach = _obj(reach, "objective.reach", problems)
+            if reach is not None:
+                if set(reach) != {"x", "y", "radius_nm"}:
+                    problems.append(issue("objective.reach", "schema", "must have x, y and radius_nm"))
+                problems += finite_number(reach.get("x"), "objective.reach.x", minimum=0, maximum=size)
+                problems += finite_number(reach.get("y"), "objective.reach.y", minimum=0, maximum=size)
+                problems += finite_number(reach.get("radius_nm"), "objective.reach.radius_nm",
+                                          minimum=0.1, maximum=50)
 
     events = data.get("events")
     if not isinstance(events, list):
@@ -292,7 +330,7 @@ def static_preview(data: Mapping[str, Any], seed: int | None = None) -> dict[str
             "markers": markers, "sectors": copy.deepcopy(list(sectors.values())),
             "events": copy.deepcopy(sorted(data["events"], key=lambda event: event["at_s"])),
             "objective": copy.deepcopy(data["objective"]),
-            "runtime_effective": False}
+            "runtime_effective": True}
 
 
 class MissionDefinition:

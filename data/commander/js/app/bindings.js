@@ -1,4 +1,5 @@
 import { S } from "../state/store.js";
+import { stopStatePush } from "../net/push.js";
 import { playAlert } from "../audio/alerts.js";
 import { openSonarAudioSocket, scheduleSonarAudioPoll, sonarAudioAuthorized, stopSonarAudio, syncGameAudio } from "../audio/audio.js";
 import { $ } from "../core/base.js";
@@ -84,10 +85,12 @@ function followState(state) {
 export function init() {
   on("session:metadata", acceptSession);
   on("session:forgetting", () => stopSonarAudio());
+  on("session:forgetting", () => stopStatePush("session forgotten"));
+  on("push", (value) => { document.body.dataset.push = value; });
   on("session:forgotten", forgetPage);
   on("connection", (message) => {
     renderConnection();
-    if (message) $("connection").textContent = t(message);
+    if (message) $("connection").textContent = $("connection").title = t(message);
     renderActionState();
     renderHost();
     if (S.v2State?.role) renderRoleVisuals(S.v2State.role);

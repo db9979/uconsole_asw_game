@@ -11,7 +11,7 @@ MAP_STATIONS = frozenset((
 ))
 
 STATION_PAGES = {
-    Station.BRIDGE: ("BRIDGE_NAV", "BRIDGE_MISSION"),
+    Station.BRIDGE: ("BRIDGE_NAV", "BRIDGE_MISSION", "BRIDGE_LOOKOUT"),
     Station.SONAR: (
         "BROADBAND",
         "LOFAR",

@@ -29,11 +29,16 @@ PROBE = r'''
   // Count delivered submarine audio blocks on either transport, and the
   // world epochs the browser sees in its state polls.
   let blocks = 0;
+  const sequences = [];
   const epochs = new Set();
   const NativeSocket = window.WebSocket, nativeFetch = window.fetch;
   window.WebSocket = function (url, protocol) {
     const socket = new NativeSocket(url, protocol);
-    if (String(url).endsWith('/ws/v2/uboot/audio')) socket.addEventListener('message', () => { blocks++; });
+    if (String(url).includes('/ws/v2/uboot/audio')) socket.addEventListener('message', ({data}) => {
+      blocks++;
+      if (data instanceof ArrayBuffer && data.byteLength === 2060)
+        sequences.push(Number(new DataView(data).getBigUint64(4, true)));
+    });
     return socket;
   };
   window.WebSocket.prototype = NativeSocket.prototype;
@@ -41,7 +46,10 @@ PROBE = r'''
   window.fetch = async (...args) => {
     const response = await nativeFetch(...args);
     const url = String(args[0]);
-    if (url.endsWith('/api/v2/uboot/audio') && response.status === 200) blocks++;
+    if (url.endsWith('/api/v2/uboot/audio') && response.status === 200) {
+      blocks++;
+      sequences.push(Number(response.headers.get('x-u-jagd-audio-sequence')));
+    }
     if (url.includes('/api/v2/state') && response.status === 200)
       response.clone().json().then((state) => { if (state.role) epochs.add(state.epoch); }, () => {});
     return response;
@@ -75,6 +83,18 @@ PROBE = r'''
     await until(() => epochs.size >= seen + 2, () => `no epoch steps: ${[...epochs]}`);
     if ($('sonar-live-toggle').getAttribute('aria-pressed') !== 'true')
       throw new Error(`live sonar switched off by host input: ${$('sonar-live-status').textContent}`);
+    // Audio keeps flowing after the host's input: at least two seconds of new
+    // blocks arrive, every sequence is higher than the one before (a restart
+    // at 1 would make the worklet drop them all), and nothing went stale.
+    root.dataset.stage = 'audio after host input';
+    const before = blocks;
+    await until(() => blocks >= before + 8, () => `audio stalled after host input: ${blocks - before} blocks`);
+    for (let i = 1; i < sequences.length; i++)
+      if (!(sequences[i] > sequences[i - 1])) throw new Error(`sequence went backwards: ${sequences[i - 1]} -> ${sequences[i]}`);
+    const diagnostics = window.uJagdAudioDiagnostics || {};
+    if (diagnostics.stale === true || diagnostics.droppedBlocks > 0)
+      throw new Error(`worklet dropped audio: ${JSON.stringify(diagnostics)}`);
+    root.dataset.sequences = String(sequences.length);
   }
   run().then(() => { root.dataset.opforTest = 'passed'; }, (error) => {
     root.dataset.opforTest = 'failed';

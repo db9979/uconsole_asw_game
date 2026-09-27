@@ -1,5 +1,5 @@
 import { S } from "../state/store.js";
-import { $, affiliations } from "../core/base.js";
+import { $, affiliations, isBoatCommand } from "../core/base.js";
 import { classificationText, enumText, finite, hasPosition, number, t, unit } from "../core/format.js";
 import { colors, palette } from "../core/palette.js";
 import { drawNatoSymbol } from "../plot/symbols.js";
@@ -16,10 +16,13 @@ export function mapPayload(role) {
   if (role === "weapons") return {own: payload.navigation, observations: payload.tactical, assets: payload.active_assets, bearingLogs: [], fixes: []};
   if (role === "opz") return {own: payload.own_assets.ship, observations: [...payload.observations, ...payload.fusions], assets: [...(payload.own_assets.helicopter.airborne ? [payload.own_assets.helicopter] : []), ...payload.own_assets.weapons], bearingLogs: [], fixes: []};
   if (role === "radio") return {own: payload.navigation, observations: payload.tactical, assets: [], bearingLogs: payload.logged_bearings, fixes: payload.logged_fixes};
-  if (role === "uboot") {
+  if (isBoatCommand(role)) {
     // The boat's own position (legitimate truth) and its own sonar contacts only.
     const nav = payload.navigation;
-    return {own: {x: nav.x, y: nav.y, course: nav.course, speed: nav.speed},
+    const weapons = payload.weapons;
+    return {own: {x: nav.x, y: nav.y, course: nav.course, speed: nav.speed,
+      arc: finite(weapons.arc_center_deg) && finite(weapons.arc_width_deg) && weapons.arc_width_deg < 360
+        ? {center: weapons.arc_center_deg, width: weapons.arc_width_deg} : null},
       observations: payload.contacts.map((row) => ({...row, domain: "UNKNOWN", affiliation: "UNKNOWN"})),
       assets: payload.own_weapons, bearingLogs: [], fixes: []};
   }
@@ -311,7 +314,15 @@ export function drawRoleMap(role) {
     plot.context.save(); plot.context.translate(ox, oy); plot.context.rotate(data.own.course * Math.PI / 180);
     plot.context.strokeStyle = palette().accent; plot.context.fillStyle = palette().accent; plot.context.beginPath();
     plot.context.moveTo(0, -9); plot.context.lineTo(-5, 6); plot.context.lineTo(5, 6); plot.context.closePath(); plot.context.fill();
-    plot.context.beginPath(); plot.context.moveTo(0, -9); plot.context.lineTo(0, -35); plot.context.stroke(); plot.context.restore();
+    plot.context.beginPath(); plot.context.moveTo(0, -9); plot.context.lineTo(0, -35); plot.context.stroke();
+    if (data.own.arc) {
+      // Submarine tube firing arc, relative to the bow (own-ship truth).
+      const half = data.own.arc.width / 2, center = data.own.arc.center, toRad = Math.PI / 180;
+      plot.context.globalAlpha = .18; plot.context.beginPath(); plot.context.moveTo(0, 0);
+      plot.context.arc(0, 0, 80, (center - half - 90) * toRad, (center + half - 90) * toRad); plot.context.closePath();
+      plot.context.fill(); plot.context.globalAlpha = 1; plot.context.stroke();
+    }
+    plot.context.restore();
   }
   for (const row of data.observations) {
     const isSelected = row.ref === S.selected;
@@ -363,6 +374,17 @@ export function drawRoleMap(role) {
     if (finite(item.uncertainty_nm)) { plot.context.beginPath(); plot.context.arc(x, y, item.uncertainty_nm * scale, 0, Math.PI * 2); plot.context.stroke(); }
     plot.context.strokeRect(x - 4, y - 4, 8, 8);
     plot.context.fillStyle = plot.context.strokeStyle; plot.context.fillText(item.waypoint ? t("station_waypoint") : item.display || item.ref || t("helicopter"), x + 6, y + 12);
+  }
+  if (role === "opz") {
+    // Bare mast/snorkel echoes: an afterglow dot, no symbol; a click marks it.
+    for (const blip of payload.radar_blips) {
+      const [x, y] = point(blip.x, blip.y);
+      addRoleMapHit(blip.ref, x, y);
+      plot.context.globalAlpha = Math.max(.25, 1 - blip.age_s / 6);
+      plot.context.fillStyle = palette().accent;
+      plot.context.beginPath(); plot.context.arc(x, y, 3, 0, Math.PI * 2); plot.context.fill();
+      plot.context.globalAlpha = 1;
+    }
   }
   if (role === "opz" && hasPosition(data.own)) {
     if (payload.radar.live && (payload.radar.surface || payload.radar.air)) {

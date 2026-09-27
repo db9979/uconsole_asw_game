@@ -86,3 +86,71 @@ def submarine_damage(slant_m: float) -> float:
 def surface_damage(slant_m: float) -> float:
     return min(SURFACE_DAMAGE_CAP, 100.0 * shock_factor(WARHEAD_KG, slant_m)
                / SF_LETHAL_SURFACE)
+
+# --- appended to src/physics/torpedo_dyn.py (plan 1.3, phase 4) ---------
+
+# Terminal search patterns a lightweight torpedo runs once its seeker is
+# enabled and has not acquired: the classic serpentine about the datum
+# course, a circle about the enable point, or an expanding helix.  Gameplay
+# tuning values, not real weapon doctrine.
+SEARCH_PATTERNS = ("snake", "circle", "helix")
+SNAKE_AMPLITUDE_DEG = 15.0
+SNAKE_DEPTH_WOBBLE_M = 8.0
+CIRCLE_RADIUS_NM = 0.4
+HELIX_START_RADIUS_NM = 0.15
+HELIX_STEP_NM = 0.15            # radius growth per full turn
+HELIX_MAX_RADIUS_NM = 1.0
+ENABLE_RANGE_MIN_NM = 0.6
+ENABLE_RANGE_MAX_NM = 3.0
+ENABLE_RANGE_STEP_NM = 0.2
+SALVO_SPREAD_DEG = 8.0
+SALVO_SIZES = (1, 2)
+
+
+def snake_offset(phase: float) -> tuple[float, float]:
+    """(course offset deg, depth wobble m) of the serpentine at ``phase``."""
+    return (SNAKE_AMPLITUDE_DEG * math.sin(phase),
+            SNAKE_DEPTH_WOBBLE_M * math.sin(phase * 0.7))
+
+
+def turn_rate_for_radius(speed_nm_per_s: float, radius_nm: float) -> float:
+    """Yaw rate (deg/s) that holds a circle of ``radius_nm`` at that speed."""
+    return math.degrees(max(0.0, speed_nm_per_s) / max(0.01, radius_nm))
+
+
+def helix_radius_nm(turns: float) -> float:
+    """Radius after ``turns`` full circles: grows by a fixed step per turn."""
+    return min(HELIX_MAX_RADIUS_NM, HELIX_START_RADIUS_NM + HELIX_STEP_NM * max(0.0, turns))
+
+
+def pattern_turn_deg_s(pattern: str, speed_nm_per_s: float, turns_done: float) -> float:
+    """Constant-turn command for the circle and helix patterns (deg/s)."""
+    if pattern == "circle":
+        return turn_rate_for_radius(speed_nm_per_s, CIRCLE_RADIUS_NM)
+    if pattern == "helix":
+        return turn_rate_for_radius(speed_nm_per_s, helix_radius_nm(turns_done))
+    return 0.0
+
+
+def spread_courses(course_deg: float, count: int,
+                   spread_deg: float = SALVO_SPREAD_DEG) -> tuple[float, ...]:
+    """Launch courses of a salvo: one on the line, two at +/- the spread."""
+    if count <= 1:
+        return (course_deg % 360.0,)
+    return ((course_deg - spread_deg) % 360.0, (course_deg + spread_deg) % 360.0)
+
+
+def rotate_datum(origin_x: float, origin_y: float, datum_x: float, datum_y: float,
+                 angle_deg: float) -> tuple[float, float]:
+    """Turn a datum about the launching ship by ``angle_deg`` (nautical sense)."""
+    angle = math.radians(angle_deg)
+    dx, dy = datum_x - origin_x, datum_y - origin_y
+    return (origin_x + dx * math.cos(angle) - dy * math.sin(angle),
+            origin_y + dx * math.sin(angle) + dy * math.cos(angle))
+
+
+def quantized_enable_nm(value: float) -> float:
+    """Snap an enable point to the 0.2 NM grid inside its bounds."""
+    steps = round((float(value) - ENABLE_RANGE_MIN_NM) / ENABLE_RANGE_STEP_NM)
+    snapped = ENABLE_RANGE_MIN_NM + steps * ENABLE_RANGE_STEP_NM
+    return round(min(ENABLE_RANGE_MAX_NM, max(ENABLE_RANGE_MIN_NM, snapped)), 3)

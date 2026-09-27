@@ -16,4 +16,5 @@ export function renderConnection() {
     text += " " + t("connection_escalated_hint", { minutes: Math.max(1, Math.floor(age / 60)) });
   }
   $("connection").textContent = text;
+  $("connection").title = text;
 }

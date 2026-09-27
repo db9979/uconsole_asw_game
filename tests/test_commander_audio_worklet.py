@@ -39,19 +39,20 @@ try {
     }
   };
 
-  // Startup waits for five blocks, then plays the joined tone without steps.
+  // Startup waits for eight blocks (two seconds), then plays the joined tone without steps.
+  const PRIME = 8;
   sampleRate = 48000;
   let stream = new Processor();
-  for (let i = 1; i <= 4; i++) feed(stream, i);
+  for (let i = 1; i < PRIME; i++) feed(stream, i);
   run(stream, 1280);
   if (stream.primed || output[0][0].some(x => x !== 0)) throw Error('early start');
-  let sequence = 5;
+  let sequence = PRIME;
   feed(stream, sequence);
   const played = [];
   // Producer 1 % slow against the audio clock: steered, never concealed.
-  let produced = 5 * 12000;
+  let produced = PRIME * 12000;
   for (let frame = 0; frame < 48000 * 60; frame += 128) {
-    if (frame * .99 >= produced - 5 * 12000) { feed(stream, ++sequence); produced += 12000; }
+    if (frame * .99 >= produced - PRIME * 12000) { feed(stream, ++sequence); produced += 12000; }
     run(stream, 128, frame > 48000 * 50 ? played : null);
   }
   if (!stream.primed || stream.concealed !== 0 || stream.stale) throw Error('drift underrun ' + stream.concealed);
@@ -61,30 +62,34 @@ try {
   // A 97 Hz tone at 48 kHz moves at most ~0.0031 per sample at 0.244 peak.
   if (maxStep > .004) throw Error('block join step ' + maxStep);
 
-  // Stall: non-periodic concealment, then stale neutral noise.
+  // Stall: non-periodic concealment, then stale neutral noise (after 3 s).
   sampleRate = 4096;
   stream = new Processor();
-  for (let i = 1; i <= 5; i++) feed(stream, i);
-  run(stream, 5 * 1024 + 256);
+  for (let i = 1; i <= PRIME; i++) feed(stream, i);
+  run(stream, PRIME * 1024 + 256);
   if (stream.concealed < 1 || stream.stale) throw Error('conceal');
   const first = Array.from(stream.current);
   run(stream, 1024);
   if (first.every((x, i) => x === stream.current[i])) throw Error('concealment repeats');
-  run(stream, 3 * 4096);
+  run(stream, 4 * 4096);
   if (!stream.stale || !stream.port.messages.some(x => x.type === 'stale' && x.value)) throw Error('stale');
   if (!output[0][0].some(x => x !== 0)) throw Error('neutral noise');
-  // One block is not enough to resume; two are.
-  feed(stream, 7);
-  run(stream, 512);
+  // Three blocks are not enough to resume (REFILL_BLOCKS = 4); the fourth is.
+  let next = PRIME + 2;
+  for (let i = 0; i < 3; i++) { feed(stream, next++); run(stream, 512); }
   if (!stream.stale || stream.gaps < 1) throw Error('refill');
-  feed(stream, 8);
+  feed(stream, next++);
   run(stream, 256);
   if (stream.stale || !stream.port.messages.some(x => x.type === 'stale' && !x.value)) throw Error('recovery');
-  for (let i = 9; i <= 40; i++) feed(stream, i);
-  if (stream.blocks.length > 12 || stream.evictions < 1) throw Error('backpressure');
+  for (; next <= 80; next++) feed(stream, next);
+  if (stream.blocks.length > 24 || stream.evictions < 1) throw Error('backpressure');
+  // A re-sent (old or repeated) sequence is a duplicate: counted, never queued.
+  const queued = stream.blocks.length;
+  feed(stream, 80); feed(stream, 12);
+  if (stream.dropped !== 2 || stream.blocks.length !== queued) throw Error('duplicate ' + stream.dropped);
   run(stream, 4096);
   const metrics = stream.port.messages.filter(x => x.type === 'metrics').at(-1);
-  if (!metrics || !('concealed' in metrics) || !('rate' in metrics)) throw Error('metrics');
+  if (!metrics || !('concealed' in metrics) || !('rate' in metrics) || metrics.dropped !== 2) throw Error('metrics');
   stream.port.onmessage({data:{type:'reset'}});
   if (stream.blocks.length || stream.primed || stream.lastSequence !== null) throw Error('reset');
   document.documentElement.dataset.result = 'passed';

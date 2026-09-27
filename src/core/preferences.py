@@ -24,6 +24,9 @@ class Preferences:
     simlog: bool = False
     night_mode: bool = False
     high_contrast: bool = False
+    # Anti-aliased chart and plot lines (pygame.gfxdraw); off by default
+    # until the uConsole frame-time cost is measured (plan 1.3, phase 10).
+    aa_lines: bool = False
     # Frame-rate cap from FPS_CHOICES; the default 30 saves uConsole CPU.
     frame_rate: int = FPS_DEFAULT
     # Event feed + telemetry: "ticker" (one status strip, full feed on F11)
@@ -64,7 +67,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
         language = defaults.language
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
-                 "night_mode", "high_contrast", "live_ais_enabled",
+                 "night_mode", "high_contrast", "aa_lines", "live_ais_enabled",
                  "live_adsb_enabled"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)

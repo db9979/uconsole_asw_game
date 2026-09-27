@@ -22,7 +22,8 @@ from commander_fixtures import PLOT, WEATHER_STATION
 
 
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
-            "engine", "helicopter", "eloka", "uboot", "uboot_sonar")
+            "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
+            "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav")
 
 
 def _station_record(status="available", *, requested=False, request_generation=0,
@@ -96,7 +97,7 @@ async function run() {
     await until(() => $test("pairing").hidden && !$test("simlog-view").hidden,
       "pair preserves the initial unassigned SimLog route");
     const cards = [...$test("station-cards").children];
-    assert(cards.length === 11, "lobby has nine frigate and two submarine station cards");
+    assert(cards.length === 15, "lobby has nine frigate and six submarine station cards");
     assert(cards.map((card) => card.dataset.station).join(",") === __STATIONS__, "canonical station order");
     assert(cards[1].classList.contains("station-occupied") && cards[0].classList.contains("station-available"), "occupancy is rendered");
     assert(operational().length === 0, "unassigned client fetches no operational state");
@@ -939,7 +940,9 @@ def _direct_fire_browser_states():
                        reload_s=0.0), designated_target=None,
         navigation=navigation, tactical=[], target_choices=[weapon_row], depth_m=90.0,
         tubes=[dict(tube=1, state="ready", reload_s=0.0)], own_weapons=[],
-        active_assets=[]))
+        active_assets=[],
+        settings=dict(torpedo_type="frigate_torp", pattern="snake", enable_nm=1.0, salvo=1,
+                      choices=[dict(key="frigate_torp", name="Mk1", stock=4, loaded=2)])))
     asm_row = dict(tactical_row, ref="asm-ref", label="Current ASM observation",
                     domain="AIR", source="RADAR_AIR", bearing=45.0,
                     range_nm=12.0, x=258.0, y=242.0, speed_kn=480.0)
@@ -956,12 +959,13 @@ def _direct_fire_browser_states():
         defense=dict(vls=8, ciws=200, aa=40, chaff_ready=True,
                      ciws_ready=True, aa_ready=True, ciws_released=True),
         asm_observations=[asm_row],
-        source_classifications=[], designated_target_ref=None,
+        source_classifications=[], radar_blips=[], designated_target_ref=None,
         own_assets=dict(ship=navigation, helicopter=helicopter_asset, weapons=[
             dict(ref="opaque-torpedo-reference-one", x=251.0, y=249.0, depth_m=60.0,
                  course=90.0, state="RUN")])))
     helicopter = dict(common, role="helicopter", helicopter=dict(
-        asset=dict(helicopter_asset, buoy_mode="PASSIVE"), waypoint=None,
+        asset=dict(helicopter_asset, buoy_mode="PASSIVE", pattern="single",
+                   pattern_remaining=0, mad_mode=False), waypoint=None,
         buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,
                     battery_s=500.0, active=True, mode="PASSIVE"),
                dict(ref="opaque-buoy-reference-two", label="SB02", x=253.0, y=247.0,
@@ -981,6 +985,7 @@ def _direct_fire_browser_states():
                              winch_rate_m_s=2.5, below_thermocline=None),
         readiness=dict(flightdeck_down=False, deck_state="OK", can_launch=False,
                         can_return=True, can_set_waypoint=True, can_deploy_buoy=True,
+                         can_pattern=True, can_mad=True,
                          can_set_dipping=True, can_set_dip_depth=False,
                          can_dipping_ping=False,
                          weather_launch_safe=True,
@@ -991,7 +996,9 @@ def _direct_fire_browser_states():
                            flood=20.0, fire=10.0, repairable=True,
                            trend=dict(flood_rate=.1, fire_rate=-.2, repairable=True))],
         teams=[dict(team=1, compartment=None), dict(team=2, compartment="engine")],
-        total=15.0, sunk=False))
+        total=15.0, sunk=False,
+        stability=dict(list_deg=0.5, trim_deg=-0.2, counterflood_room=None,
+                       can_counterflood=True)))
     bridge = dict(common, role="bridge", bridge=dict(
         navigation=navigation, tactical_summary=[], sightings=[],
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
@@ -1017,7 +1024,7 @@ def test_direct_fire_grants_confirmation_exact_bodies_and_role_switch_in_chromiu
             direct_fire=station in {"opz", "helicopter"})
     session = dict(protocol=2, client_id="fire-client", name="Fire Watch",
                    csrf="fire-csrf", ordinal=0, presence=1.0, host=None,
-                   next_command_seq=0, station="weapons", requested_station=None,
+                   next_command_seq=0, observer=False, station="weapons", requested_station=None,
                    station_generation=1, active_station="weapons",
                    active_generation=1, simlog=False, stations=stations,
                    grants=dict(command=True, direct_fire=False, simlog=False,
@@ -1322,7 +1329,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             if self.path == "/api/v2/pair" and body == {"code": "123ABC", "name": "Lobby Watch"}:
                 cls.session = {"protocol": 2, "client_id": "client-1", "name": "Lobby Watch",
                                 "csrf": "csrf-1", "ordinal": 0, "presence": 1.0,
-                                "next_command_seq": 0, "active_station": None,
+                                "next_command_seq": 0, "observer": False, "active_station": None,
                                 "active_generation": 0, "simlog": False, "host": None,
                                 "station": None, "requested_station": None,
                                 "station_generation": 0,

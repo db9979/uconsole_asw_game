@@ -13,6 +13,7 @@ import math
 from dataclasses import dataclass
 
 from src.core import config
+from src.sensors.mad import MAD_SPEED_KN
 from src.air.sonobuoy import Sonobuoy
 from src.data.catalog import CATALOG
 from src.weapons.torpedo import Torpedo
@@ -47,6 +48,41 @@ def deck_within_limits(roll_deg: float, pitch_deg: float) -> bool:
     return abs(roll_deg) <= DECK_ROLL_LIMIT_DEG and abs(pitch_deg) <= DECK_PITCH_LIMIT_DEG
 
 
+# Plan 1.3 phase 6: sonobuoy patterns (a queue of drop points the helicopter
+# flies one after the other with the ordinary single drop) and the MAD run.
+BUOY_PATTERNS = ("single", "field", "barrier", "circle")
+PATTERN_FIELD_SPACING_NM = 1.5     # 2x2 field
+PATTERN_BARRIER_SPACING_NM = config.BUOY_SPACING_NM
+PATTERN_CIRCLE_RADIUS_NM = 1.5
+PATTERN_MAX_BUOYS = 4
+PATTERN_DROP_RADIUS_NM = 0.3
+
+
+def plan_buoy_pattern(kind: str, x_nm: float, y_nm: float, bearing_deg: float,
+                      count: int) -> list[tuple[float, float]]:
+    """Drop points of a pattern about (x, y): a 2x2 field, a barrier across
+    ``bearing_deg`` or a circle. ``count`` buoys at most (the pattern's own
+    size caps it); ``single`` plans nothing."""
+    count = max(0, min(int(count), PATTERN_MAX_BUOYS))
+    if kind == "field":
+        half = PATTERN_FIELD_SPACING_NM / 2.0
+        points = [(x_nm - half, y_nm - half), (x_nm + half, y_nm - half),
+                  (x_nm + half, y_nm + half), (x_nm - half, y_nm + half)]
+    elif kind == "barrier":
+        across = math.radians((bearing_deg + 90.0) % 360.0)
+        offsets = [(index - (count - 1) / 2.0) * PATTERN_BARRIER_SPACING_NM
+                   for index in range(count)]
+        points = [(x_nm + offset * math.sin(across), y_nm - offset * math.cos(across))
+                  for offset in offsets]
+    elif kind == "circle":
+        points = [(x_nm + PATTERN_CIRCLE_RADIUS_NM * math.sin(math.radians(angle)),
+                   y_nm - PATTERN_CIRCLE_RADIUS_NM * math.cos(math.radians(angle)))
+                  for angle in (0.0, 90.0, 180.0, 270.0)]
+    else:
+        points = []
+    return [(round(px, 4), round(py, 4)) for px, py in points[:count]]
+
+
 class Helicopter:
     SPEED_KN = config.HELO_SPEED_KN
 
@@ -69,6 +105,15 @@ class Helicopter:
         self.dip_ping_cooldown = 0.0
         self.hover_x = None
         self.hover_y = None
+        # Buoy pattern in progress (kind and the drop points still to fly).
+        self.pattern = "single"
+        self.pattern_queue = []
+        # MAD run: low and slow, dipping sonar stowed.
+        self.mad_mode = False
+
+    @property
+    def speed_kn(self) -> float:
+        return MAD_SPEED_KN if self.mad_mode else self.SPEED_KN
 
     @property
     def airborne(self) -> bool:
@@ -194,6 +239,9 @@ class Helicopter:
         if self.fuel_s <= 0.0:
             self.state = "VERLOREN"
             self.dip_state = "STOWED"
+            self.mad_mode = False
+            self.pattern_queue = []
+            self.pattern = "single"
             self.dip_depth_m = 0.0
             self.dip_water_depth_m = 0.0
             return
@@ -202,6 +250,9 @@ class Helicopter:
             return
         self.hover_x = self.hover_y = None
         if self.state == "ZURUECK":
+            self.mad_mode = False
+            self.pattern_queue = []
+            self.pattern = "single"
             dist = math.hypot(frigate.x - self.x, frigate.y - self.y)
             if dist <= config.HELO_RETURN_DIST_NM and recovery_available:
                 self.state = "HANGAR"
@@ -219,7 +270,7 @@ class Helicopter:
             diff = config.angle_diff_deg(desired, self.course)
             self.course = (self.course + config.clamp(
                 diff, -6.0 * dt, 6.0 * dt)) % 360.0
-            step = config.kn_to_nm_per_s(self.SPEED_KN) * dt
+            step = config.kn_to_nm_per_s(self.speed_kn) * dt
             self.x += step * math.sin(math.radians(self.course))
             self.y -= step * math.cos(math.radians(self.course))
 

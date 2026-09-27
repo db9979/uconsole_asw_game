@@ -163,6 +163,21 @@ def sun_elevation_deg(latitude_deg: float, day_of_year: int, hour: float) -> flo
                                                  * math.cos(ha)))))
 
 
+DAYLIGHT_STAGES = ("day", "dusk", "night")
+
+
+def daylight_stage(hour: float) -> str:
+    """Three-stage light of the game clock: night outside the daylight
+    window, dusk within ``DUSK_HALF_WIDTH_H`` of either edge, else day."""
+    hour = hour % 24.0
+    if hour < config.DAYLIGHT_START_H or hour >= config.DAYLIGHT_END_H:
+        return "night"
+    if (hour < config.DAYLIGHT_START_H + config.DUSK_HALF_WIDTH_H
+            or hour >= config.DAYLIGHT_END_H - config.DUSK_HALF_WIDTH_H):
+        return "dusk"
+    return "day"
+
+
 def daylight(sun_elevation: float) -> str:
     if sun_elevation > -0.833:
         return "day"

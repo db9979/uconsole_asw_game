@@ -126,8 +126,8 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 - Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
-- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste, Bedienerassistenz aus (Standard: Rohdaten und manuelle Analyse) oder Training (automatische Linienbeschriftung, Blattfrequenz- und Katalog-/Senderkandidaten). Seite 2 (`Bild ab`/`Tab`): welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert.
-- `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen.
+- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste, Bedienerassistenz aus (Standard: Rohdaten und manuelle Analyse) oder Training (automatische Linienbeschriftung, Blattfrequenz- und Katalog-/Senderkandidaten). Seite 2 (`Bild ab`/`Tab`): welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert. Ein neues Spiel fragt ohnehin zuerst danach. Auf Seite 2 liegen auch die **geglätteten Kartenlinien** (standardmäßig aus; glättet Peilstriche, Küste und Plot, kostet auf der uConsole etwas Rechenzeit).
+- `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen. Eine freie Station wird sofort mit allen ihren Rechten übernommen (auch Direktfeuer und Sonar-Liveaudio, wo die Station sie hat); eine Station, die ein Crewmitglied hält, wird angefragt, und der Host kann sie übergeben. Der Host kann jederzeit eine Station oder einzelne Rechte entziehen und bis zu zwei Browser zu reinen Beobachtern machen (Roster-Taste `O`): sie sehen jede Station beider Einheiten, ohne sie zu halten, können nichts befehlen und erhalten das SimLog mit Zeitstrahl zur Nachbesprechung und JSON-Export.
 
 ## 1 Brücke
 
@@ -137,7 +137,7 @@ Die Brücke führt die Fregatte: Kurs, Fahrt und Position zu Küste, Kontakten u
 
 ### Anzeigen und Instrumente
 
-Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt das Missionsbriefing.
+Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt das Missionsbriefing; Seite 3 ist das Ausguck-Sichtfeld. Das Kartenwasser dunkelt mit der Uhr in drei Stufen ab (Tag, Dämmerung innerhalb einer Stunde um 05:30 und 19:30, Nacht), und Regen oder Sturm schraffiert die Karte mit gestrichelten Diagonalen (ein Sturm zusätzlich mit gelbem Rand); beides ist nur Anzeige, ebenso auf der Browserkarte. Optionen Seite 2 kann Karten- und Plotlinien glätten.
 
 ```text
 +---------------------------+----------------------+
@@ -163,7 +163,7 @@ Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt d
 
 ### Ausguck-Meldungen
 
-Der Brückenausguck (Augenhöhe 18 m, Fernglas 7x50) meldet seine Sichtungen im Ereignis-Feed als `AUSG`-Zeilen, zum Beispiel `Brücke/Ausguck: Fregatte (Admiral-Gorshkov-Fregatte) in 040°, 3.8 sm`. Die Remote-Crew-Brücke zeigt dieselben Meldungen unter „Ausguck-Meldungen“. Ein Kontakt wird beim Näherkommen in bis zu drei Stufen gemeldet, jede Stufe einmal:
+Der Brückenausguck (Augenhöhe 18 m, Fernglas 7x50) meldet seine Sichtungen im Ereignis-Feed als `AUSG`-Zeilen, zum Beispiel `Brücke/Ausguck: Fregatte (Admiral-Gorshkov-Fregatte) in 040°, 3.8 sm`. Die Remote-Crew-Brücke zeigt dieselben Meldungen unter „Ausguck-Meldungen“. Brückenseite 3 (Ausguck-Sichtfeld) zeigt die Sichtungen nordorientiert um das eigene Schiff mit der vom Ausguck gemessenen Peilung und Entfernung, nach Art eingefärbt (Oberwasser, U-Boot, Luftfahrzeug, Torpedo) und mit dem Erkannten beschriftet, daneben Sicht, Seegang, Tag/Nacht und die letzten Meldungen; `,` und `.` ändern den Radius (2 bis 30 sm). Über den Meldungen zeigt ein Horizontstreifen das Fernglas voraus (90° Sichtfeld, Skala rechtweisender Peilungen, mit der See bewegter Horizont, Licht der Stunde) mit den Umrissen der Ausguck-Sichtungen in gemessener Peilung und Entfernung; es ist derselbe Renderer wie das Sehrohr des U-Boots. Ein Kontakt wird beim Näherkommen in bis zu drei Stufen gemeldet, jede Stufe einmal:
 
 - **Gesichtet:** nur die Art des Objekts ist klar (Fahrzeug, Luftfahrzeug, kleines Objekt an der Wasseroberfläche).
 - **Klasse:** die Silhouette zeigt die Klasse, zum Beispiel Handelsschiff, Kriegsschiff, Flugzeugträger, Fischereifahrzeug, Speedboot, aufgetauchtes U-Boot, Verkehrsflugzeug oder Militärflugzeug.
@@ -183,6 +183,7 @@ Klasse und Typ brauchen eine feiner aufgelöste Silhouette als die Sichtung (Joh
 | `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
 | `Q / E` | Karte heraus-/hineinzoomen |
 | `K` | Kamera-Follow an/aus |
+| `, / .` | Ausguck-Seite: Radius kleiner / größer |
 
 Auf der Brücke steuert der Trackball das Ruder. `U` und `V` öffnen die direkte Zahleneingabe; die Simulation läuft währenddessen weiter. `Enter` bestätigt, `Esc` bricht ab.
 
@@ -284,8 +285,8 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 
 #### TMA, Umwelt und Aktiv
 
-- **TMA** machen Sie selbst. Die Seite zeichnet die Peilungen des gewählten Kontakts über der Zeit. Stellen Sie eine Hypothese auf: `Z`/`X` Kurs (`Umschalt`: 1 Grad), `Strg+Z`/`Strg+X` Fahrt, `Q`/`Umschalt+Q` Entfernung auf der neuesten Peilung (`Strg`: 0,2 sm). Die bernsteinfarbene Kurve zeigt die Peilungen, die diese Hypothese vorhersagt, die Punkte am Fuß die Residuen (gemessen minus vorhergesagt). Gute Hypothesen lassen die Residuen um null streuen; ein falscher Kurs, eine falsche Fahrt oder Entfernung hinterlässt einen Trend. Die Spalte zeigt RMS der Residuen, den systematischen Trend nach Mittelung, die Passung und die Beobachtbarkeit. Die Entfernung ist erst nach einer eigenen Kursänderung beobachtbar (mindestens 6 Grad, besser 30-60); ohne sie verweigert `K`. `K` übernimmt die Hypothese als TMA-Fix des Kontakts; er wird auf Kurs und Fahrt mitgekoppelt und veraltet nach 120 s, also verfeinern und erneut übernehmen, wenn Peilungen hinzukommen. Verrauschte Peilungen ergeben auch bei guter Passung eine große Entfernungsunsicherheit. Tiefe schätzt TMA nicht. Mit Bedienerassistenz Training (`F10`) wird ein automatischer Solver-Vorschlag (er braucht mindestens 4 Peilungen über 180 s) als dünne Linie gezeichnet, und `Umschalt+K` kopiert ihn in die Hypothese. Sonobojen-Peilungen gehen mit der Boje als Beobachter in den Track ein.
-- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert. Die Schicht ist nicht fest: Nachmittagssonne macht sie flacher (etwa 8 m), starker Wind mischt sie über Stunden tiefer, und interne Wellen verschieben sie um einige Meter. Den BT nach einigen Stunden oder einem Wetterwechsel wiederholen. Das gemessene Profil ist die echte temperaturabhängige Schallgeschwindigkeit (Mackenzie-Gleichung) und fällt deshalb unterhalb der Schicht ab. Mit der Maus über dem Profil lesen Sie die genaue Tiefe, die dortige Schallgeschwindigkeit und ob die Tiefe über oder unter der Schicht liegt (uConsole und Web). Im Web-Client beschriftet die Grafik zusätzlich Schicht, Meeresgrund und das Schallgeschwindigkeitsminimum.
+- **TMA** machen Sie selbst. Die Seite zeichnet die Peilungen des gewählten Kontakts über der Zeit. Stellen Sie eine Hypothese auf: `Z`/`X` Kurs (`Umschalt`: 1 Grad), `Strg+Z`/`Strg+X` Fahrt, `Q`/`Umschalt+Q` Entfernung auf der neuesten Peilung (`Strg`: 0,2 sm). Die bernsteinfarbene Kurve zeigt die Peilungen, die diese Hypothese vorhersagt, die Punkte am Fuß die Residuen (gemessen minus vorhergesagt). Gute Hypothesen lassen die Residuen um null streuen; ein falscher Kurs, eine falsche Fahrt oder Entfernung hinterlässt einen Trend. Die Spalte zeigt RMS der Residuen, den systematischen Trend nach Mittelung, die Passung und die Beobachtbarkeit. Die Entfernung ist erst nach einer eigenen Kursänderung beobachtbar (mindestens 6 Grad, besser 30-60); ohne sie verweigert `K`. `K` übernimmt die Hypothese als TMA-Fix des Kontakts; er wird auf Kurs und Fahrt mitgekoppelt und veraltet nach 120 s, also verfeinern und erneut übernehmen, wenn Peilungen hinzukommen. Verrauschte Peilungen ergeben auch bei guter Passung eine große Entfernungsunsicherheit. Tiefe schätzt TMA nicht. Mit Bedienerassistenz Training (`F10`) wird ein automatischer Solver-Vorschlag (er braucht mindestens 4 Peilungen über 180 s) als dünne Linie gezeichnet, und `Umschalt+K` kopiert ihn in die Hypothese. Sonobojen-Peilungen gehen mit der Boje als Beobachter in den Track ein. `Umschalt+T` wechselt die TMA-Methode: HYPOTHESE (oben), EKELUND (die Entfernung aus den Peilraten zweier eigener Schläge um eine Kursänderung von mindestens 30°, je 90 s; `Umschalt+K` übernimmt sie in die Hypothese, `K` nimmt dann wie üblich an) oder DOT-STACK (Residuenzeilen bei 0,6-, 1,0- und 1,6-facher Hypothesenentfernung: die flache Zeile ist die Entfernung, die die Peilungen stützen).
+- **UMWELT / FUSION** zeigt den Bathythermographen (`E`, 60 s Abklingzeit): gemessene Schichttiefe, Schallgeschwindigkeitsprofil und Konvergenzzonen, dazu den Vergleich HMS/TAS. Peilungen innerhalb 5 Grad bestätigen sich; ab 9 Grad Abweichung wird ein möglicher Geisterkontakt markiert. Die Schicht ist nicht fest: Nachmittagssonne macht sie flacher (etwa 8 m), starker Wind mischt sie über Stunden tiefer, und interne Wellen verschieben sie um einige Meter. Den BT nach einigen Stunden oder einem Wetterwechsel wiederholen. Das gemessene Profil ist die echte temperaturabhängige Schallgeschwindigkeit (Mackenzie-Gleichung) und fällt deshalb unterhalb der Schicht ab. Mit der Maus über dem Profil lesen Sie die genaue Tiefe, die dortige Schallgeschwindigkeit und ob die Tiefe über oder unter der Schicht liegt (uConsole und Web). Im Web-Client beschriftet die Grafik zusätzlich Schicht, Meeresgrund und das Schallgeschwindigkeitsminimum. Die Konvergenzzonen darin stammen aus dem gemessenen Profil selbst: aus der Strahlverfolgung dieses Profils über dem kartierten Bodentyp in der Tiefe des Arrays, sie ändern sich also mit Schicht, Tiefe und Boden (keine im Flachwasser).
 - **ACTIVE** listet die Echos der letzten 120 s: Peilung, Entfernung und Tiefe (+/-12 m). Ein Ping-Fix veraltet nach 120 s. `W` wählt den Puls: **CW** (1-s-Ton) misst die Entfernung grob (etwa 0,1-0,3 sm), trennt aber über den Doppler ein bewegtes Ziel vom Nachhall des Meeresbodens; **LFM** (100-Hz-Sweep) misst die Entfernung auf wenige Meter und gewinnt 20 dB gegen Rauschen, ein langsames oder stehendes Ziel bleibt aber im Nachhall. Die Echostärke hängt vom Aspekt (breitseits etwa 15 dB stärker als von vorn) und der Größe des Ziels ab. Felsgrund hallt viel stärker nach als Schlick; kartierte Wracks liefern echte Echos ohne zugehörigen Kontakt ("nicht zugeordnetes Echo").
 - **Das Echo hören:** Jede Rückkehr ist hörbar, sobald sie eintrifft, nach ihrer echten Laufzeit hin und zurück (etwa 2,5 s je Seemeile Entfernung), für das Schiffssonar ebenso wie für das Tauchsonar des Helikopters. Ein CW-Echo ist ein weicher Ton auf der Trägerfrequenz, ein LFM-Echo ein kurzer Sweep; maßgeblich ist der Puls, mit dem gepingt wurde. Ein starkes Echo hebt sich deutlich ab, ein schwaches steigt kaum aus dem Nachhallrauschen. Im Remote-Crew-Browser klingt das Echo über den allgemeinen Ton (laut oder leise).
 
@@ -328,7 +329,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 | `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
 | `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
 | `Auf / Ab` | Kontakt für TMA und Klassifikation wählen |
-| `Enter` | Gemessener Kontaktpeilung folgen / manuell halten |
+| `Eingabe` | Gemessener Kontaktpeilung folgen / manuell halten |
 | `J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
 | `A / B / H` | Direkt Breitband / gefiltert / Heterodyn abhören |
 | `D` | Breitband/gefiltertes Abhören umschalten |
@@ -352,6 +353,7 @@ Die Anzeige zeigt gemessene Modulation, keine Identität. Nach einer Peilungsän
 | `Ctrl+Z / Ctrl+X (TMA)` | TMA-Seite: Hypothesenfahrt -/+ 1 kn |
 | `Q / Shift+Q (TMA)` | TMA-Seite: Hypothesenentfernung -/+ 1 sm (Strg 0,2 sm) |
 | `K / Shift+K (TMA)` | TMA-Seite: Hypothese als Fix übernehmen / Umschalt: Solver-Vorschlag kopieren (Training) |
+| `Shift+T (TMA)` | TMA-Methode: Hypothese/Residuen, Ekelund-Entfernung, Dot-Stack (Umschalt+K bei Ekelund: Entfernung übernehmen) |
 | `SPACE` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA für ausgewählten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -376,7 +378,7 @@ Gefechtslage:
 
 - Verstärkung (`I`/`O`) ändert nur Anzeige und Audio, nicht die Ortung. Schwarzwert (`Ctrl+I`/`Ctrl+O`) und Kontrast (`Shift+I`/`Shift+O`) heben schwache Spuren hervor; `Shift+C` wechselt die Phosphorfarbe.
 - `D` oder `A`/`B`/`H` wählen Breitband-, gefiltertes oder Überlagerungs-Abhören. Überlagerung verschiebt das tiefe Band auf etwa 700 Hz, damit tiefe Töne hörbar werden.
-- Das Abhör-Audio läuft etwa eine Sekunde hinter der Anzeige, damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach etwa einer Sekunde in den neuen über; der Ton bricht nicht ab.
+- Das Abhör-Audio läuft etwa anderthalb Sekunden hinter der Anzeige (Remote-Crew-Browser etwa zwei Sekunden), damit es auch unter Last nicht aussetzt. Nach dem Schwenken der Abhörpeilung geht der alte Strahl nach dieser Verzögerung in den neuen über; der Ton bricht nicht ab.
 - TAS unter die gemessene Schicht legen, um tiefe Ziele zu hören; das HMS für flache Ziele nutzen. Beide Arrays arbeiten parallel.
 - Die TMA-Seite zeigt die aus der übernommenen Lösung abgeleitete Annäherungsrate: positiv heißt, das Ziel kommt näher.
 - Weichen TAS und HMS um 9 Grad oder mehr ab, den Kontakt als möglichen Geist behandeln (die Anzeige markiert ihn) und durch eine Wende klären.
@@ -390,7 +392,7 @@ Gefechtslage:
 
 ### Nicht modelliert
 
-- Kein Punktstapel und keine Ekelund-Entfernung; TMA ist das obige Hypothesen-/Residuenverfahren. `T` schaltet den Solver hinter der Trainingshilfe.
+- `T` schaltet den Löser hinter der Trainingshilfe um; der automatische Löser schreibt nie selbst einen Fix.
 - Keine wählbare Split-Window-Normalisierung (TPSW); stattdessen Verstärkung, Schwarzwert und Kontrast nutzen.
 - Kein harter blinder Baffle-Sektor; Eigenlärm ist eine weiche Keule.
 - Kein vom TAS getrenntes Tiefensonar (VDS).
@@ -403,7 +405,7 @@ Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet d
 
 ### Anzeigen und Instrumente
 
-Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand und Helikopter-Zuladung.
+Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
 
 Die Bereitschaftszeile wird von oben nach unten geprüft; die erste fehlgeschlagene Prüfung wird angezeigt:
 
@@ -427,7 +429,10 @@ Torpedolauf von oben:
                     alle 0,5 s)                   Kandidaten an
 ```
 
-- Fregattentorpedo: 45 kn, 12 sm, zwei Rohre, 60 s Nachladen. Der Vorrat je Mission kommt aus dem Szenario (Standard 6).
+- Zwei Torpedotypen teilen sich die zwei Rohre (60 s Nachladen). Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 55 kn, aber nur 8 sm. Der Szenariovorrat (Standard 6) ist 2:1 auf Mk1 und Mk2 verteilt; `W` wählt den Typ, und hält kein Rohr ihn, entlädt ein Rohr und lädt ihn nach (60 s).
+- Suchmuster (`X`): die Schlange (+/-15° um den Datumskurs, Standard), ein Kreis von 0,4 sm um den Aktivierungspunkt oder eine Helix, die sich von 0,15 sm um 0,15 sm je Umlauf bis 1 sm öffnet. Das Muster läuft erst, wenn der Sucher aktiv ist und noch nicht erfasst hat.
+- Sucheraktivierungspunkt (`,` / `.`): 0,6 bis 3,0 sm vor dem Datum in Schritten von 0,2 sm (Standard 1,2 sm). Frühe Aktivierung findet ein Ziel, das sich vom Datum entfernt hat; späte Aktivierung hält die Waffe länger still.
+- Salve (`Y`): ein Torpedo oder zwei im Fächer von +/-8° mit eigenen, um das Schiff gedrehten Datums; ein Fächer braucht zwei geladene Rohre des gewählten Typs und zählt gegen die Doktringrenze.
 - Voreingestellte Tiefe 10-300 m (Standard 60 m). Falsche Tiefe bedeutet Fehlschuss: Tiefe aus dem Ping nehmen, nicht aus der TMA.
 - Der Draht aktualisiert das Datum aus der beobachteten Kontaktposition. Ohne Updates wird er nach 3 s STALE und nach 12 s BROKEN; der Torpedo läuft dann zum letzten Datum weiter.
 - Der Sucher steuert den nächsten Kandidaten an: das kann ein Täuschkörper, ein Wal oder ein Handelsschiff sein. Ein ziviler Treffer beendet die Mission.
@@ -441,6 +446,10 @@ Torpedolauf von oben:
 | `Auf / Ab halten` | Torpedotiefe (10-300 m) |
 | `<- / ->` | Sonarkontakt für Zielwahl wählen |
 | `T / Ctrl+Enter` | Torpedo abfeuern (ROE-Prüfung) |
+| `W` | Torpedotyp (Rohre laden um; W wechselt Mk1/Mk2) |
+| `X` | Suchmuster im Endanlauf: Schlange, Kreis, Helix |
+| `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm) |
+| `Y` | Salve: ein Torpedo oder zwei im Fächer +/-8° |
 | `H` | HSP-5 starten / zurückrufen |
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
@@ -487,8 +496,8 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 ### Nicht modelliert
 
 - Keine Wasserbomben, U-Jagd-Raketen oder vom Schiff gestartetes ASROC (ASROC nutzen nur befreundete KI-Kriegsschiffe).
-- Kein wählbares Torpedo-Suchmuster und kein manueller Aktivierungspunkt: Schlangensuche und Sucheraktivierung bei 1,2 sm sind fest (befreundete ASROC-Nutzlasten suchen in einer Helix um ihren Eintauchpunkt).
-- Ein Torpedotyp für das Schiff und einer für den Helikopter; keine wählbare Salvendoktrin.
+- Ein Torpedotyp für den Helikopter; die Doktringrenze von zwei laufenden eigenen Torpedos ist fest.
+- Kein Tiefenunterschied zwischen Mk1 und Mk2; beide laufen auf der eingestellten Tiefe.
 
 ## 4 Schadensabwehr
 
@@ -517,6 +526,8 @@ Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand,
 - **Brand:** wächst mit der Brandlast des Raums (Maschine, Flugdeck und Magazin brennen am stärksten) und wird von steigendem Wasser erstickt. Ein Raum, der etwa 30 s heiß bleibt, entzündet seine Nachbarn. Eine geflutete Schalttafel (Sonar, OPZ, Funk, Maschine) schließt kurz und löst einen Elektrobrand aus. Ein Brand über 90 % in der Waffenzentrale bringt das Magazin zur Explosion: der Raum ist zerstört, die Nachbarräume sind leckgeschlagen.
 - **Stabilität:** Flutwasser macht das Schiff schwerer, und freie Wasseroberflächen verringern die metazentrische Höhe (GM). Das Schiff sinkt, wenn das Flutwasser die Reserveverdrängung übersteigt, und kentert, wenn GM verloren geht oder die Krängung 35 Grad überschreitet.
 - **Krängung:** außermittiges Flutwasser lässt das Schiff zu dieser Seite krängen und zieht es vom Kurs.
+- **Gegenfluten:** mit `C` und ab 5° Krängung öffnet die Leckwehr das Flutventil der hohen Rumpfseite; Wasser strömt mit 0,5 % des Raums je Sekunde ein, bis die Krängung ausgeglichen ist, nie über 60 % dieser Seite, und das Ventil schließt unter 1° von selbst (oder mit `C` erneut). Das Wasser ist echtes Flutwasser: es bringt Gewicht und Tiefgang, und ein Trupp muss es später lenzen.
+- **Trimm:** Flutwasser vorn oder achtern trimmt das Schiff (Bug unten zählt positiv). Jedes Grad kostet 0,5 kn Höchstfahrt und erhöht bei Bug unten das Eigengeräusch am Bugsonar. Die Stabilitätszeile auf Seite 2 zeigt Krängung, Trimm und das offene Ventil.
 - **Rudermaschine und Stabilisatoren:** die Rudermaschine liegt achtern unter dem Flugdeck. Ist dieser Raum zerstört, klemmt das Ruder in der letzten Lage, bis der Raum repariert ist. Ein zerstörter Rumpfraum auf einer Seite legt die Flossenstabilisatoren lahm, das Schiff rollt dann im Seegang stärker. Flutwasser macht das Schiff schwerer: es liegt tiefer und beschleunigt langsamer.
 
 Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem Raum stufenlos an Leistung (Sonar- und Radarreichweite sinken allmählich); ein zerstörter Raum legt sie lahm. Eine beschädigte Maschine begrenzt die Fahrt auf 15 kn, eine zerstörte auf 8 kn; eine beschädigte oder zerstörte Waffenzentrale sperrt Torpedostarts; ein zerstörtes Flugdeck verhindert Start und Landung des Helikopters; eine zerstörte OPZ legt auch ESM lahm.
@@ -527,8 +538,9 @@ Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem
 |---|---|
 | `<- / ->` | Kompartiment wählen |
 | `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
-| `Enter` | Gewähltes Team dem gewählten Kompartiment zuweisen |
+| `Eingabe` | Gewähltes Team dem gewählten Kompartiment zuweisen |
 | `Backspace` | Gewähltes Team zurückziehen |
+| `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
 | `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
@@ -551,8 +563,8 @@ Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten 
 
 ### Nicht modelliert
 
-- Keine einzelnen Besatzungsmitglieder oder Verwundeten; keine Längstrimmung durch Flutung.
-- Kein Gegenfluten; Krängung mit Reparatur und Ruder ausgleichen.
+- Keine einzelnen Besatzungsmitglieder oder Verwundeten.
+- Gegenfluten nur zwischen den beiden Rumpfseiten; kein gezieltes Fluten anderer Räume.
 
 ## 5 OPZ / CIC
 
@@ -573,6 +585,7 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 ```
 
 - **Überwasserradar:** 30 sm, begrenzt durch Radarhorizont (20-m-Mast) und Zielhöhe; getauchte U-Boote sind unsichtbar.
+- **Mast- und Schnorchelechos:** ein U-Boot auf Sehrohrtiefe mit ausgefahrenem Mast oder Schnorchelkopf (Mast einer Crew, ein schnorchelndes Boot oder eines auf Funktiefe) gibt ein winziges Echo: bei ruhiger See findet es etwa jeder zweite Umlauf auf 7 sm, bei Seegang 3 auf etwa 2,5 sm, bei Seegang 5 unter 1 sm. Es erscheint nur als bloßer Punkt, der etwa 6 s nachleuchtet, ohne Symbol, Beschriftung und Track. Den Punkt im PPI anklicken oder `B` drücken (neuester Punkt) markiert ihn: aus dieser Messung beginnt ein Radartrack `R-…`, und weitere Echos desselben Masts führen ihn fort; ohne neue Echos verblasst er nach 30 s. Echos und Markierung werden nicht gespeichert.
 - **Luftradar:** 100 sm für Flugzeuge und Seezielflugkörper (ASM).
 - Die Antenne dreht sich alle 4 s einmal: ein Kontakt wird nur aktualisiert, wenn der Strahl über ihn streicht, und jeder Umlauf erfasst ihn mit einer Wahrscheinlichkeit, die mit der Entfernung sinkt (50 % bei Nennreichweite für ein Schiff in Breitseite; Ziele mit spitzem Aspekt werden später gesehen, schwankende Echos können einen Umlauf verfehlen). Seegangsclutter wächst mit dem Seegang (etwa -5 % bei Seegang 4, -25 % bei 6), Regen dämpft das Echo (-10 % Überwasser, -20 % Luft); ab Seegang 5 nehmen Messfehler zu. Innerhalb 3 sm hält das Such-/Folgeradar des CIWS einen anfliegenden Flugkörper ununterbrochen, solange das CIWS freigegeben ist.
 - **AIS:** zivile Schiffe senden Kurs und Fahrt alle 2-10 s (vor Anker alle 3 min) und ihren Namen etwa alle 6 min. Der UKW-Empfänger hört sie nur in Sichtlinie (etwa 20 NM). Ein Radartrack eines Zivilschiffs zeigt Name und Kurs erst, wenn die passende AIS-Meldung empfangen wurde; Radar allein liefert nur die Position. Optionaler Live-AIS/ADS-B-Verkehr ist von simuliertem Verkehr nicht unterscheidbar.
@@ -599,7 +612,8 @@ Seite 1 ist eine freie Karte über die volle Höhe mit allen veröffentlichten T
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
 | `Backspace` | Alle markierten Meldungen abwählen |
-| `Enter` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
+| `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
+| `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Kamera-Follow an/aus |
 
 ### Standardablauf
@@ -674,7 +688,7 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
 | Taste | Funktion |
 |---|---|
 | `Auf / Ab` | HFDF-Signal auswählen |
-| `Enter` | Peilung mit eigener Position protokollieren |
+| `Eingabe` | Peilung mit eigener Position protokollieren |
 
 ### Standardablauf
 
@@ -725,6 +739,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 
 - Der Eigenlärm steigt linear von 4 kn bis 25 kn. Die Schrauben kavitieren, wenn die Flügelspitzengeschwindigkeit für den Wasserdruck an den Schrauben zu hoch ist: bei ruhiger See ab 15 kn, bei schwerer See früher, wenn das Stampfen das Heck anhebt. Kavitation hebt den Lärm auf mindestens 0,85 und senkt die passive Sonarreichweite auf 35 %.
 - Modus LEISE senkt den Eigenlärm auf 65 % und begrenzt die Fahrt auf 12 kn.
+- Anlagenwahl (`G`): AUTO fährt die Anlage wie bisher. DIESEL ist die leise Anlage (Eigenlärm etwa -4 dB, Brennstoff -10 %), begrenzt aber auf 18 kn; TURBINE gibt volle Fahrt bei etwa +3 dB und +25 % Brennstoff. Die Wahl steht auf Seite 2 und im Maschinenraum des Browsers.
 - Die Wellendrehzahl folgt dem Festpropeller: bei konstanter Fahrt etwa 5,8 U/min je Knoten (146 U/min bei 25 kn). Beim Beschleunigen hält das Fahrprogramm die Welle höchstens etwa 11 U/min vor der aktuellen Fahrt; beim Abbremsen wird die Steigung umgesteuert und die Welle läuft mit 20 U/min im Leerlauf. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
 - Maschinenschaden begrenzt die Fahrt auf 15 kn (beschädigt) oder 8 kn (zerstört).
 - Der Kraftstoffverbrauch folgt der abgegebenen Propellerleistung: bei konstanter Fahrt wächst er mit der dritten Potenz der Fahrt, Beschleunigen und Bremsen kosten zusätzlich. Ein leichteres Schiff (verbrauchter Kraftstoff) beschleunigt etwas schneller; Flutwasser macht es langsamer und tiefer. Schwere See erhöht den Widerstand und kostet bei FULL bis etwa 1 kn. Mit leeren Tanks steht die Welle, und kein Maschinenbefehl wird angenommen.
@@ -736,6 +751,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 | `+ / -` | Motorenbefehl (Telegraph) |
 | `Auf / Ab` | Telegraph hoch / runter |
 | `A` | Akustikmodus LEISE/NORMAL |
+| `G` | Antriebsanlage: AUTO, DIESEL (18 kn, -4 dB) oder TURBINE (+3 dB, +25 % Brennstoff) |
 | `U` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
 
@@ -755,7 +771,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 
 ### Nicht modelliert
 
-- Keine Auswahl zwischen Gasturbine und Diesel und keine Einzelwellensteuerung.
+- Keine Einzelwellensteuerung; die Anlagenwahl gilt für beide Wellen.
 - Keine Versorgung auf See.
 
 ## 8 Helikopterdeck
@@ -789,6 +805,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 - **Startgrenzen:** Wind bis 32 kn, Seitenwind bis 22 kn, Sicht mindestens 2 sm, Seegang höchstens 5, einsatzbereites Flugdeck, Böen bis 40 kn, Wolkenuntergrenze mindestens 300 ft, keine starke Vereisung und ein ruhiges Deckfenster (Rollen höchstens 8 Grad, Stampfen höchstens 3,5 Grad). Leichte Vereisung kostet 20 % mehr Treibstoff; die Wetter- & Sonar-Analyse (`0`) zeigt CLEAR, LIMITED oder NO-GO. Auch die Landung wartet auf ein solches Fenster; gegen die See gedreht stampft das Schiff weniger.
 - **Tauchsonar:** Tiefe 15-300 m (Standard 75 m, mindestens 10 m über Grund), passiv 18 sm mit +/-2 Grad, aktiver Ping 14 sm mit 30 s Abklingzeit. Tauchen braucht Wind bis 30 kn, 1 sm Sicht und keine Vereisung.
 - **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie; sie treiben mit der Strömung und etwas mit dem Wind. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
+- **Bojenmuster:** mit `X` wird ein Muster geplant: eine Folge von Abwurfpunkten um den Wegpunkt: ein 2x2-Feld (Abstand 1,5 sm), eine Sperre quer zur Peilung vom Schiff zum Wegpunkt (Abstand 3 sm) oder ein Kreis von 1,5 sm Radius, jeweils mit bis zu 4 Bojen des Restvorrats. Der Helikopter fliegt die Punkte nacheinander an und wirft an jedem die gewöhnliche Einzelboje (in der gewählten Betriebsart); EINZELN löscht die Folge, der Rückflug verwirft sie.
+- **MAD-Anflug:** mit `Umschalt+M` und eingeholtem Tauchsonar geht der Helikopter auf 30 m und 90 kn. Ein getauchter Rumpf innerhalb von etwa 400 m Schrägdistanz wird je Sensortakt mit einem zustandslosen Zufallszug erfasst (sicher innerhalb 250 m) und als MAD-Positionsfix ohne Tiefe oder Kurs gemeldet; er zählt für die Entfernungsprüfung der Waffen und, sobald der Helikopter seinen Kontakt freigibt, für die OPZ.
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
 ### Tasten
@@ -800,6 +818,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
 | `B` | Eine Sonarboje an aktueller Position aussetzen |
 | `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
+| `X` | Bojenmuster: einzeln, 2x2-Feld, Sperre quer zur Wegpunktpeilung, Kreis (X erneut: nächstes; einzeln löscht) |
+| `Shift+M` | MAD-Anflug ein/aus: tief und langsam, Tauchsonar eingeholt |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -846,8 +866,8 @@ Angriffsablauf:
 
 ### Nicht modelliert
 
-- Keine Bojenmuster (Feld, Sperre) und keine Kanalverwaltung; Bojen werden einzeln geworfen.
-- Kein MAD (Magnetanomaliedetektor) und kein Radar am Helikopter.
+- Keine Kanalverwaltung für Bojen.
+- Kein Radar am Helikopter.
 - Nur ein Helikopter.
 
 ## 9 EloKa
@@ -1020,13 +1040,18 @@ Die Besatzung führt einen gemeinsamen Fettstift-Plot. Alle Stationen und alle R
 
 U-Boote weichen nach einem gehörten Ping oder Torpedo 240 s aus, können einen Täuschkörper ausstoßen, lauern, schnorcheln (durch HFDF und ESM erfassbar) und pingen gelegentlich aus 15 sm oder weniger. In der Nähe der Fregatte kann ein Boot stattdessen zu einem kartierten Wrack innerhalb von 8 sm schleichen und sich 15-30 Minuten still daneben auf Grund legen.
 
-U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes Boot hält seine Position gegen die Strömung. U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung erst nach eigenen TMA-Schlägen (einige Minuten), ESM nur mit ausgefahrenem Mast, den Datalink nur auf Masttiefe oder beim Schnorcheln, und ein Torpedoalarm braucht einige Sekunden Reaktionszeit der Besatzung (2-15 s), bevor das Boot ausweicht. Überwasserschiffe verlieren bei schwerer See Höchstfahrt (kleine Schiffe mehr).
+U-Boot-Physik: der Rumpf beschleunigt auf die befohlene Fahrt (kein Sofortsprint); Tiefenruder brauchen Fahrt (unter etwa 4 kn ändert sich die Tiefe nur langsam); das abgestrahlte Geräusch steigt je Verdopplung der Fahrt um etwa 12 dB und springt, wenn die Schraube kavitiert, wobei die Kavitationsfahrt mit der Tiefe steigt; ein Torpedoausstoß erzeugt 8 s lang ein Transientengeräusch; ein stark geflutetes Boot bläst einmal an und steigt schnell und laut auf; unter der Testtiefe ermüdet der Druckkörper, bei 1,5-facher Testtiefe wird er zerdrückt; ein lauerndes Boot hält seine Position gegen die Strömung. U-Boote orten wie Sie: passive Peilungen aus dem eigenen Sonar, eine Entfernung erst nach eigenen TMA-Schlägen (einige Minuten), und ein Schuss auf diese TMA erst, wenn ihr Entfernungsfehler konvergiert ist (Schwierigkeitsfeld "Gegnerische Feuerleitkonvergenz": Sigma zu Entfernung höchstens 0,25 in den Patrouillenszenarien, 0,15 beim SSN; eine Lösung, die älter als 90 s ist oder durch Ihre Kursänderung wieder aufgeht, wird nicht beschossen), ESM nur mit ausgefahrenem Mast, den Datalink nur auf Masttiefe oder beim Schnorcheln, und ein Torpedoalarm braucht einige Sekunden Reaktionszeit der Besatzung (2-15 s), bevor das Boot ausweicht. Überwasserschiffe verlieren bei schwerer See Höchstfahrt (kleine Schiffe mehr).
 
 ### Besetztes Gegner-U-Boot (Remote Crew)
 
-Eine zweite Crew kann den Gegner spielen: Im Remote-Crew-Roster (`F9`) vergibt der Host die Rollen „U-Boot-Führung“ und „U-Boot-Sonar“. Solange eine davon besetzt ist, folgt das lebende feindliche U-Boot mit der kleinsten Nummer nur den Befehlen dieser Crew; werden die Rollen abgegeben, vom Host entzogen oder ein Spielstand geladen, übernimmt die KI das Boot wieder dort, wo es gerade ist. Ein Browser hält nur Rollen einer Seite (Fregatte oder U-Boot), nie beide, und der Solo-Modus enthält die U-Boot-Rollen nie.
+Eine zweite Crew kann den Gegner spielen. Das Boot hat sechs Stationen: Führung, Sonar, Waffen, Maschine, Mast & ESM und Navigation; ein Browser übernimmt sie wie die der Fregatte (`F9`). Solange eine davon besetzt ist, folgt das lebende feindliche U-Boot mit der kleinsten Nummer nur den Befehlen dieser Crew; werden die Rollen abgegeben oder vom Host entzogen, übernimmt die KI das Boot wieder dort, wo es gerade ist. Ein Spielstand bewahrt Befehle, Betriebsarten, Mast, Drähte, Plot und Alarmpeilungen der Crew; nach dem Laden fährt das Boot seine letzten Befehle weiter und wartet bis zu zehn Minuten darauf, dass seine Crew die Stationen erneut übernimmt (jede Bootsstation wird neu vergeben), bevor die KI es zurücknimmt. Ein Browser hält nur Rollen einer Seite (Fregatte oder U-Boot), nie beide; die Lobby fragt zuerst, welche Einheit er spielt. Im Solo-Modus hält der eine Browser alle neun Stationen der Fregatte oder mit **U-Boot spielen** in der Host-Leiste alle sechs Stationen des Boots (zurück mit **Fregatte spielen**).
 
-- **U-Boot-Führung:** befiehlt Kurs, Fahrt und Tiefe (das Boot folgt im Rahmen seiner Wende-, Tiefen- und Beschleunigungsgrenzen; der Batterie- und Schnorchelzyklus läuft selbst). Schießt einen Torpedo auf die gemessene Peilung eines Sonarkontakts, mit Ping-Fix oder TMA-Lösung, solange aktuell, oder auf eine freie Peilung mit optionaler Entfernung; der Schuss braucht die Direktfeuer-Freigabe des Hosts, ein klares Rohr und das Ziel im Schussfeld der Rohre. Stößt einen Täuschkörper aus und bläst einmal notfallmäßig an.
+- **Stationen:** Die *Führung* befiehlt Kurs, Fahrt und Tiefe, legt das Boot auf Grund, pingt, nimmt eine BT-Messung und sieht das ganze Boot. Die *Navigation* befiehlt Kurs und Tiefe, führt den Plot des Boots und überwacht Kiel und Hindernisse. Die *Maschine* bedient Telegraf, Schnorchel, Schleichfahrt und Notanblasen und überwacht Batterie und Lärm. *Mast & ESM* fährt den Mast aus und überwacht ESM und Alarme. Die *Waffen* schießen, lenken die Drähte und stoßen Täuschkörper aus. Das *Sonar* ist der Sonarraum des Boots. Jeder Befehl wird nur von der Station angenommen, zu der er gehört.
+- **Tiefenstufen und Anzeigen:** Führung und Navigation befehlen die Tiefe in einem Schritt: Sehrohrtiefe (15 m, der Mast bleibt nutzbar), Schnorcheltiefe (Boote mit Schnorchel), über oder unter dem Layer (15 m darüber / 30 m darunter; erst nach der eigenen BT-Messung, denn nur daraus kennt die Crew den Layer) und tief (die sichere Tiefe über dem kartierten Grund). Am uConsole sind das `U`, `Umschalt+U`, `J`, `Umschalt+J` und `H`. Der Browser zeigt die Wassersäule (Oberfläche, Sehrohrtiefe, gemessener Layer, Soll- und sichere Tiefe, Grund, das Boot und seine Tauchrichtung), große Anzeigen für Kurs, Fahrt, Tiefe und Batterie mit farbigen Betriebs- und Alarmchips sowie eine ESM-Rose mit den Radarpeilungen und den Peilungen von Ping- und Torpedoalarm; die Seite Mast & ESM am uConsole hat dieselbe Rose. Mast, Schnorchel, Schleichfahrt und Auf-Grund-Legen haben getrennte Knöpfe zum Ein- und Ausschalten.
+- **Befehle und Waffen:** das Boot folgt Kurs-, Fahrt- und Tiefenbefehlen im Rahmen seiner Wende-, Tiefen- und Beschleunigungsgrenzen; Fahrtstufen (Stopp, 3, 6, 10, 15 kn, Maximum) setzen die Fahrt schnell. Schießt einen Torpedo auf die gemessene Peilung eines Sonarkontakts, mit Ping-Fix oder TMA-Lösung, solange aktuell, oder auf eine freie Peilung mit optionaler Entfernung; der Schuss braucht ein klares Rohr und das Ziel im Schussfeld der Rohre. Die Crew stellt die Lauftiefe ein (5-300 m, sonst eine flache Voreinstellung) und schießt einen Torpedo oder zwei im Fächer von ±4°, jeder mit eigenem Datum. Jeder Crew-Torpedo läuft am Draht: die Crew kann sein Datum versetzen (Peilung und Entfernung vom Boot), und der Draht dreht ihn darauf ein, bis sein Suchkopf erfasst; schneller als 10 kn oder stärker als 1,5°/s drehen für 5 s lässt den Draht reißen, ebenso eine abgelaufene Spule, und die Crew kann ihn kappen. Stößt einen Täuschkörper aus und bläst einmal notfallmäßig an.
+- **Anlage und Bootsbetrieb:** ein besetztes Boot taucht nie von selbst auf, schnorchelt nicht und funkt nicht von selbst. Die Batterie entlädt sich mit Fahrt und Bordnetz; unter 20 % warnt das Bootslog, eine leere Batterie begrenzt die Fahrt auf das, was die Anlage noch liefert (eine AIP-Anlage übernimmt die Last weiterhin selbst). **Schnorcheln** betreibt die Diesel auf Schnorcheltiefe und lädt die Batterie, höchstens 6 kn; tieferes Tauchen schließt das Kopfventil. Die laufenden Diesel sind laut: +12 dB abgestrahlter Pegel, ein niedrigerer Stillefaktor und zwei Zündlinien bei 50 und 100 Hz in der LOFAR-Signatur des Boots (auch bei KI-Booten). **Schleichfahrt** begrenzt das Boot auf 5 kn und macht es so leise wie ein lauerndes KI-Boot. **Auf Grund legen** stoppt das Boot 3 m über dem Grund, wo das Wasser nicht tiefer als die Tauchtiefe ist: leise und ohne Drift; jeder Fahrt- oder Tiefenbefehl hebt ab. Vor Land oder einer Untiefe stoppt das Boot, statt auszuweichen, und das Log warnt bei wenig Wasser unter dem Kiel.
+- **Lagebild:** ein gehörter Aktivping oder Torpedo wird mit der Peilung protokolliert, die das Boot selbst gemessen hat (einige Grad ungenau), und mit seinem Alter in den Alarmen angezeigt. Auf Sehrohrtiefe lässt sich der **Mast** ausfahren; sein ESM meldet dann die Radare, die das Boot überstreichen, mit Peilung (Log und ESM-Liste), und beim Tieferkommen fährt der Mast selbst ein. Mit ausgefahrenem Mast zeigt die Seite **Sehrohr** (Führung Seite 3, Mast & ESM Seite 2) das Okular: Himmel und See im Licht der Stunde, den mit der See bewegten Horizont, eine Skala rechtweisender Peilungen und ein Fadenkreuz; das Rohr schwenkt in 2°-Schritten (`←`/`→`, `Umschalt`: 10°). Alles, was die Optik im Kontrastmodell des Fregattenausgucks bei 2,5 m Augenhöhe ausmacht (Tag/Nacht, Mond, Sicht, Seegang, Land im Weg), erscheint als Silhouette und als reine Peilungs-**Sichtung** mit grober Klasse (Kriegsschiff, Handelsschiff, Fahrzeug, Luftfahrzeug, Torpedolaufbahn) und scheinbarer Länge; das Log meldet jede neue Sichtung. `Enter` liest das **Stadimeter** an der Sichtung unter dem Fadenkreuz ab: die Entfernung folgt aus der scheinbaren Länge und der angenommenen Rumpflänge der Klasse (130 m für ein Kriegsschiff oder ein nicht erkanntes Fahrzeug, 150 m für ein Handelsschiff), ein nicht erkanntes oder bugwärts stehendes Ziel misst sich also zu weit; die Ablesung ist ±25 % und wird für 120 s zu einem VISUAL-Fix am Sonarkontakt des Boots auf dieses Ziel, für einen Schuss nutzbar wie ein Ping-Fix. Luftfahrzeuge und Laufbahnen lassen sich nicht messen. Die Führung kann auch ohne Sonarbediener pingen und eine BT-Messung nehmen. Die Karte zeigt das Schussfeld der Rohre, wo sie nicht rundum schießen, und das vom Sonar zugewiesene Ziel ist für den Schuss vorausgewählt.
+- **Navigation und Plot:** die Maschine hat Maschinentelegrafen-Knöpfe, und Führung und Navigation teilen den eigenen Fettstift-Plot des Boots (Markierungen, Lineale, Peillinien, Kreise, Koppellinien); die Fregatte sieht ihn nie, und der Plot des Boots wird nicht gespeichert. Die Navigation zeigt das Wasser unter dem Kiel und prüft die Seekarte entlang des Sollkurses bis 5 sm: Land oder ein Grund flacher als das Boot wird als Hindernis voraus gemeldet, im Log und als Warnung. Es zählt nur die kartierte Geografie; andere Fahrzeuge sind nicht Teil der Prüfung.
 - **U-Boot-Sonar:** derselbe Sonararbeitsplatz wie auf der Fregatte (Breitband, LOFAR, DEMON, TMA, Aktivechos, Klassifizierung, Horch-Audio), aber das Rumpfsonar horcht in der eigenen Tauchtiefe, die Sprungschicht wirkt also für und gegen die Crew. Es gibt keine Schleppantenne und keine Freigabe an eine OPZ. Ein Aktivping liefert Echos und wird von der Fregatte gehört.
 - **Was die U-Boot-Crew sieht:** das eigene Boot, die bekannte Seekarte, die eigenen Sonarmessungen und die eigenen Torpedos im Wasser. Position, Plot, Ereignisse und Missionsmeldungen der Fregatte sieht sie nie; die Fregatten-Crew kann ein besetztes Boot nicht von der KI unterscheiden.
 - **Mission:** unverändert. Sinkt die Fregatte, hat das U-Boot gewonnen; sinkt das Boot, sieht seine Crew „Boot verloren“.
@@ -1034,29 +1059,48 @@ Eine zweite Crew kann den Gegner spielen: Im Remote-Crew-Roster (`F9`) vergibt d
 
 #### U-Boot am uConsole spielen
 
-Im Hauptmenü unter Optionen (`F10`) auf Seite 2 (`Bild ab` oder `Tab`) **uConsole spielt** auf *Feindliches U-Boot* stellen (oder mit `--play-sub` starten): Dann führt der uConsole das feindliche U-Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt oder fährt mit Autocrew. Der uConsole zeigt nur das Lagebild des Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie, und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
+Jedes neue Spiel fragt zuerst **Welche Einheit spielst du?**: *Fregatte F-217* oder *Feindliches U-Boot* (`Auf`/`Ab` oder `1`/`2`, `Enter`; die letzte Wahl ist vorausgewählt, `--play-sub` wählt das U-Boot vor). Außerhalb einer Mission ändert auch Optionen (`F10`) Seite 2 **uConsole spielt** die Wahl, etwa vor dem Laden eines Spielstands. Mit dem U-Boot führt der uConsole das feindliche Boot statt der Fregatte. Die Fregatte wird dann über Remote Crew (`F9`) aus den Browsern besetzt oder fährt mit Autocrew. Der uConsole zeigt nur das Lagebild des Boots; Banner, Ereignislog, Soundeffekte, Plot und Tooltips der Fregatte erscheinen nie, und Trackball- und Telegraphenbedienung der Fregatte sind gesperrt. Die Seite lässt sich nur außerhalb einer Mission wechseln; die Wahl gilt nur für diesen Programmstart und wird nie gespeichert, jeder Start beginnt also mit der Fregatte.
 
-Die **U-Boot-Führung** ist aufgebaut wie die Brücke: links die Seekarte (bekannte Geografie, das eigene Boot mit Sollkurs und Fahrtvektor, die Peilstriche der eigenen Sonarkontakte bzw. ihr Symbol bei aktuellem Ping- oder TMA-Fix, die eigenen Torpedos `T1`…), rechts die Station mit Bedrohungsleiste (Torpedoalarm, gehörtes Aktivsonar, Rumpfschaden, Kavitation, schwache Batterie) und zwei Seiten. **Navigation** zeigt Kurs und Tiefe, Fahrt, Eigenlärm und Batterie sowie die Wassersäule unter dem Boot: Bootstiefe, befohlene Tiefe, sichere Tiefe und Grund; die Sprungschicht erscheint dort erst nach einer eigenen BT-Messung (`E` am U-Boot-Sonar). **Waffen & Kontakte** zeigt Feuerbereitschaft, Torpedos, klare Rohre, Nachladen, Täuschkörper, Notanblasen und die eigenen Sonarkontakte. Unten stehen Bootslog und Telemetrie des Boots, als Leiste oder Statuszeile wie in den Optionen eingestellt; Befehle, Schüsse und Täuschkörper werden dort protokolliert.
+Die obere Leiste zeigt die sechs Stationen des Boots als Reiter: `1` Führung, `2` Sonar, `3` Waffen, `4` Maschine, `5` Mast & ESM, `6` Navigation (`Tab` oder ein Klick auf den Reiter wechselt). Jede Befehlstaste wirkt nur an der Station, zu der der Befehl gehört, wie im Browser; sonst nennt ein Banner die richtige Station. Browser können gleichzeitig die übrigen Stationen des Boots besetzen; eine Station, die ein Browser hält, ist in der oberen Leiste markiert und wird nicht vom uConsole bedient. Jede Station außer dem Sonarraum ist aufgebaut wie die Brücke: links die Seekarte (bekannte Geografie, das eigene Boot mit Sollkurs und Fahrtvektor, die Peilstriche der eigenen Sonarkontakte bzw. ihr Symbol bei aktuellem Ping- oder TMA-Fix, die eigenen Torpedos `T1`…, ein begrenztes Schussfeld der Rohre), rechts die Station mit Bedrohungsleiste (Torpedoalarm und gehörtes Aktivsonar mit gemessener Peilung, Rumpfschaden, Kavitation, schwache Batterie, ESM-Radarerfassung) und die Seite der Station. Die **Führung** hat drei Seiten, **Mast & ESM** zwei (die Taste der Station erneut oder `Bild auf`/`Bild ab`). **Navigation** (Seite und Station) zeigt Kurs und Tiefe, das Wasser unter dem Kiel und ein kartiertes Hindernis voraus, Fahrt, Eigenlärm, Batterie und die aktiven Betriebsarten sowie die Wassersäule unter dem Boot: Bootstiefe, befohlene Tiefe, sichere Tiefe und Grund; die Sprungschicht erscheint dort erst nach einer eigenen BT-Messung (`E` am U-Boot-Sonar). **Waffen & Kontakte** (Seite und Station Waffen) zeigt Feuerbereitschaft, Torpedos, klare Rohre, Nachladen, Täuschkörper, Notanblasen und die eigenen Sonarkontakte. Die **Maschine** zeigt Fahrt, Eigenlärm, Batterie, die Betriebsarten und die Telegrafenstufen; **Mast & ESM** zeigt den Mast, die Alarmpeilungen und die ESM-Erfassungen; ihre zweite Seite und die dritte der Führung ist das **Sehrohr** (Okular, Sichtlinie, Licht und die Sichtungsliste; `←`/`→` schwenken, `Enter` Stadimeter). Unten stehen Bootslog und Telemetrie des Boots, als Leiste oder Statuszeile wie in den Optionen eingestellt; Befehle, Schüsse und Täuschkörper werden dort protokolliert.
 
 | Taste | Funktion |
 |---|---|
-| `1 / 2 / Tab` | U-Boot-Führung / U-Boot-Sonar / wechseln |
-| `C / V / D` | Kurs / Fahrt / Tiefe befehlen (Zahl, Enter) |
-| `Bild auf/ab` | Führungsseiten: Navigation / Waffen & Kontakte |
+| `1 … 6 / Tab` | Stationen: 1 Führung, 2 Sonar, 3 Waffen, 4 Maschine, 5 Mast & ESM, 6 Navigation; Tab weiter (oder Reiter anklicken) |
+| `C / V / D` | Kurs / Fahrt / Tiefe befehlen (Führung; Kurs und Tiefe auch Navigation, Fahrt auch Maschine) |
+| `U / J / H` | Tiefenstufen: Sehrohr- / Schnorcheltiefe (Umschalt), unter / über dem gemessenen Layer (Umschalt), tief (Führung, Navigation) |
+| `Bild auf/ab` | Führungsseiten: Navigation / Waffen & Kontakte / Sehrohr (oder erneut 1); Seiten Mast & ESM: ESM / Sehrohr (oder erneut 5) |
 | `Q / E` | Karte heraus- / hineinzoomen |
 | `K` | Karte folgt dem Boot an/aus |
 | `Mausrad / Ziehen` | Karte zoomen / verschieben (Maus auf der Karte) |
 | `Pfeiltasten` | Eigenen Sonarkontakt wählen |
-| `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen |
-| `F` | Torpedo auf eine eingegebene Peilung schießen |
-| `X` | Täuschkörper ausstoßen |
-| `Umschalt+B` | Notanblasen (einmal) |
+| `Strg+Enter` | Torpedo auf den gewählten Kontakt schießen (Waffen) |
+| `F` | Auf eine eingegebene Peilung schießen, danach Entfernung zum Datum (Enter: keine) (Waffen) |
+| `X` | Täuschkörper ausstoßen (Waffen) |
+| `Umschalt+B` | Notanblasen, einmal (Führung, Maschine) |
+| `T` | Torpedo-Lauftiefe 5-300 m (Waffen) |
+| `Y` | Ein Torpedo oder Zweierfächer (Waffen) |
+| `W` | Neuesten Drahttorpedo lenken: Peilung, dann Entfernung (Waffen) |
+| `Shift+W` | Draht des neuesten Torpedos kappen (Waffen) |
+| `G` | Schleichfahrt ein/aus, höchstens 5 kn (Führung, Maschine) |
+| `Shift+G` | Auf Grund legen / abheben (Führung, Navigation) |
+| `N` | Schnorchel aus-/einfahren, Diesel laden auf Schnorcheltiefe (Maschine) |
+| `P` | Mast aus-/einfahren auf Sehrohrtiefe: ESM hört Radare, das Sehrohr sieht (Mast & ESM) |
+| `← / →` | Sehrohrseite: Rohr 2° schwenken (Umschalt: 10°) (Führung, Mast & ESM) |
+| `Eingabe` | Sehrohrseite: Stadimeter-Entfernung der Sichtung unter dem Fadenkreuz (Führung, Mast & ESM) |
+| `+ / -` | Fahrtstufe schneller / langsamer (Führung, Maschine) |
 | `Sonartasten` | Wie am Fregattensonar, ohne Schleppantenne, OPZ-Freigabe, Plot und Telegraph |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 
+#### Nicht modelliert
+
+- Das besetzte Boot funkt nicht und empfängt nichts; es gibt keine Kontaktmeldung von der Führung an Land.
+- Keine Leckwehr- oder Schadensteams an Bord; Schäden summieren sich nur.
+- Ein ausgefahrener Mast oder Schnorchelkopf erscheint auf dem Fregattenradar nur als bloßer Punkt (siehe Kapitel OPZ).
+- Das Sehrohr hat eine Vergrößerung und keine Kamera; Sichtungen tragen keine Identifikation über die grobe Klasse hinaus, und das Stadimeter nimmt eine Klassenlänge statt einer Masthöhe an.
+
 ### Mission und Wertung
 
-- Szenarien: 1 Patrouille, 2 Doppeljagd, 3 Nuklear-Abfang, 4 Zufall (eigene Schwierigkeit). Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser).
+- Szenarien: 1 Patrouille, 2 Doppeljagd, 3 Nuklear-Abfang, 4 Zufall (eigene Schwierigkeit). Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser). Die Laufzeit übernimmt den Umfang des Editors: eine 500-sm-Welt fest oder als paketierter Referenzsektor (`sector:0` bis `sector:127`), das eingestellte Wetter, platzierte U-Boote, Überwasserschiffe, Luftfahrzeuge (Patrouille in einem 10-sm-Kasten mit Profilgeschwindigkeit), Tiere und ruhende Täuschkörper, gesäte Zufallsgruppen, zeitgesteuerte Ereignisse (Meldung, Erscheinen, Wetter, Ziel) und die Ziele Versenken, Überstehen, Schützen (die benannten Einheiten bis zum Zeitlimit erhalten) und Erreichen (den Radius des Zielpunkts betreten). Benutzerprofile, Torpedos und andere Weltgrößen werden beim Start abgewiesen.
 - Sieg: alle Ziele versenkt oder Zeitlimit überlebt. Niederlage: eigenes Schiff versenkt, ziviler Treffer, Ziel 150 sm vom Start entfernt oder Zeit abgelaufen.
 - Punkte: 1000 je versenktem U-Boot, 200 je unverbrauchtem Torpedo, 500 ohne zivile Verluste, bis zu 500 Zeitbonus.
 

@@ -42,7 +42,7 @@ ALL_CIVILIAN_KEYS = (
 CIVILIANS_FILE_KEYS = ALL_CIVILIAN_KEYS + MOVED_WARSHIP_KEYS
 ALL_AIRCRAFT_KEYS = ("mil_patrol", "civil_transit", "su_25")
 ALL_ANIMAL_KEYS = ("whale", "fish_school", "jellyfish")
-ALL_TORPEDO_KEYS = ("frigate_torp", "helo_torp", "enemy_torp")
+ALL_TORPEDO_KEYS = ("frigate_torp", "helo_torp", "enemy_torp", "frigate_torp_mk2")
 ALL_DECOY_KEYS = ("decoy",)
 
 
@@ -193,7 +193,7 @@ def test_packaged_migration_versions_counts_and_provenance():
         ALL_SUBMARINE_KEYS) | set(ALL_WARSHIP_KEYS) | set(ALL_CIVILIAN_KEYS) \
         | set(ALL_AIRCRAFT_KEYS) | set(ALL_ANIMAL_KEYS) \
         | set(ALL_TORPEDO_KEYS) | set(ALL_DECOY_KEYS)
-    assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 116
+    assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 117
     assert len(catalog.CATALOG.sensors) == 217
     assert len(catalog.CATALOG.emitters) == 194
     # Weapon/launcher/magazine/countermeasure counts are unchanged: demoted
@@ -205,10 +205,10 @@ def test_packaged_migration_versions_counts_and_provenance():
     assert len(catalog.CATALOG.magazines) == 51
     assert len(catalog.CATALOG.countermeasures) == 51
     assert len(catalog.CATALOG.sources) == 14
-    assert len(catalog.CATALOG.provenance_claims) == 473
+    assert len(catalog.CATALOG.provenance_claims) == 475
     assert len(catalog.CATALOG.subs) + len(catalog.CATALOG.surfaces) \
         + len(catalog.CATALOG.aircraft) + len(catalog.CATALOG.animals) \
-        + len(catalog.CATALOG.torpedoes) + len(catalog.CATALOG.decoys) == 115 + 3
+        + len(catalog.CATALOG.torpedoes) + len(catalog.CATALOG.decoys) == 115 + 4
     assert len(catalog.CATALOG.acoustic_profiles) == 111
     source = resources.files("data.contacts")
     reconstructed = catalog.CATALOG.reconstruct_documents()
@@ -424,7 +424,7 @@ def test_r10_batch5_migrates_only_applicable_components_in_legacy_order():
 def test_r10_batch5_keeps_entries_and_animal_selection_stable():
     expected_hashes = {
         "animals.json": "cadf35eb577b40c7c8423d34efe1508649af243dace298db692b745fb6b2f013",
-        "torpedoes.json": "5cc7e61090a804829a847eaae19e04710ec4faac4275c6b0cac6f46b33b29874",
+        "torpedoes.json": "787aa90b43215d7d58a78438b096a5ce6ebec61843706b07da25201d733dcfd3",
         "decoys.json": "ff0670aca47965e350a64a3b41a9912316e20bb73888888a58b4fe59e8b04c9a",
         "acoustics.json": "7ce16f23502f8ddf140e96d6b105117a1ac83eccd2a5e2a2f5c33fc3f947eb01",
     }

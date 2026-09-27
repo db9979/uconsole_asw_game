@@ -31,6 +31,8 @@ OWNSHIP_SIGNATURE_KEY = "warship_30"
 # (1000...), surface ships (5000...), decoys (1000000...) and enemy
 # torpedoes (2000000...).
 OWNSHIP_TARGET_ID = 900_000
+# The frigate's helicopter as a periscope sighting (it has no sonar contact).
+SCOPE_AIR_TARGET_ID = 900_001
 OWN_TORPEDO_TARGET_BASE = 3_000_000
 # Radiated-level steps of the own cavitation and quiet state (gameplay tuning).
 OWNSHIP_CAVITATION_DB = 6.0

@@ -1,5 +1,5 @@
 import { S } from "./store.js";
-import { isSonar, stationNames } from "../core/base.js";
+import { isBoatCommand, isSonar, stationNames } from "../core/base.js";
 import { finite, t } from "../core/format.js";
 import { gameEffectKinds } from "./shared.js";
 
@@ -109,23 +109,34 @@ export function validateV2State(state) {
         index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
   if (!validWeatherStation(state.weather_station) || !validPlot(state.plot)) throw new Error("protocol");
   const payload = state[state.role];
+  // BEGIN GENERATED (tools/gen_web_schema.py; do not edit by hand)
   const shapes = {
-    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"], sonar: ["observations", "settings", "visualization"],
-    weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "own_weapons", "active_assets"],
-    damage: ["compartments", "teams", "total", "sunk"],
-    opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "designated_target_ref", "own_assets"],
-    radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
+    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"],
+    damage: ["compartments", "teams", "total", "sunk", "stability"],
+    eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
-    helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"], eloka: ["intercepts", "station_down", "status", "hardware"],
-    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
+    helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
+    opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
+    radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
+    sonar: ["observations", "settings", "visualization"],
+    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
     uboot_sonar: ["observations", "settings", "visualization"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
   };
+  const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
+  const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
+  const radioFields = ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg"];
+  const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
+  // END GENERATED
   if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
   const rowsExact = (rows, maximum, fields) => {
     if (!boundedArray(rows, maximum)) throw new Error("protocol");
     rows.forEach((row) => v2Observation(row, fields));
   };
-  const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
   const tacticalRows = (rows, maximum, extraFields = []) => {
     if (!boundedArray(rows, maximum)) throw new Error("protocol");
     rows.forEach((row) => {
@@ -135,7 +146,6 @@ export function validateV2State(state) {
       if (row.altitude_m !== null && (!finite(row.altitude_m) || row.altitude_m < 0 || row.altitude_m > 30000)) throw new Error("protocol");
     });
   };
-  const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
   if (state.role === "bridge") {
     if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
@@ -194,12 +204,15 @@ export function validateV2State(state) {
         (visual.bt !== null && (!exactKeys(visual.bt, ["age_s", "thermocline_m", "water_depth_m", "sea_state", "depths_m", "speeds_m_s", "cz_bands_nm"]) || !boundedArray(visual.bt.depths_m, 64) || !boundedArray(visual.bt.speeds_m_s, 64) || visual.bt.depths_m.length !== visual.bt.speeds_m_s.length || !boundedArray(visual.bt.cz_bands_nm, 8) || visual.bt.cz_bands_nm.some((band) => !boundedArray(band, 2) || band.length !== 2))) ||
         !boundedArray(visual.active_echoes, 40) || visual.active_echoes.some((row) => !exactKeys(row, ["age_s", "bearing", "range_nm", "depth_m", "range_uncertainty_nm", "depth_uncertainty_m", "snr_db", "array"])) ||
         !exactKeys(visual.receiver, ["array", "listen_bearing", "beam_width_deg", "listen_mode", "focus_locked", "audio_enabled"]) || !["BROADBAND", "FILTERED", "HETERODYNE"].includes(visual.receiver.listen_mode) || typeof visual.receiver.focus_locked !== "boolean" || typeof visual.receiver.audio_enabled !== "boolean") throw new Error("protocol");
-  } else if (state.role === "uboot") {
+  } else if (isBoatCommand(state.role)) {
     const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
     const navNumbers = ["x", "y", "course", "target_course", "speed", "target_speed", "depth_m", "target_depth_m", "safe_depth_m", "max_depth_m", "max_speed_kn", "noise"];
-    if (!exactKeys(nav, [...navNumbers, "water_depth_m", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
-        (nav.water_depth_m !== null && !finite(nav.water_depth_m)) || typeof nav.cavitating !== "boolean" ||
-        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting"]) ||
+    if (!exactKeys(nav, [...navNumbers, "water_depth_m", "under_keel_m", "obstacle_ahead_nm", "depth_presets", "cavitating"]) || navNumbers.some((key) => !finite(nav[key])) ||
+        !exactKeys(nav.depth_presets, ["periscope", "snorkel", "above_layer", "below_layer", "deep", "layer"]) ||
+        Object.values(nav.depth_presets).some((value) => value !== null && (!finite(value) || value < 0 || value > 1000)) ||
+        [nav.water_depth_m, nav.under_keel_m, nav.obstacle_ahead_nm].some((value) => value !== null && !finite(value)) || typeof nav.cavitating !== "boolean" ||
+        !exactKeys(status, ["state", "damage", "emergency_ascent", "blow_available", "battery", "endurance_phase", "transmitting", "snorkel_available", "snorkeling", "silent", "quiet", "bottomed", "mast"]) ||
+        [status.snorkel_available, status.snorkeling, status.silent, status.quiet, status.bottomed, status.mast].some((value) => typeof value !== "boolean") ||
         !["manual", "ai", "sinking", "sunk"].includes(status.state) || !finite(status.damage) ||
         [status.emergency_ascent, status.blow_available, status.transmitting].some((value) => typeof value !== "boolean") ||
         (status.battery !== null && !finite(status.battery)) ||
@@ -209,16 +222,37 @@ export function validateV2State(state) {
         typeof weapons.ready !== "boolean" || typeof weapons.decoy_ready !== "boolean" ||
         (weapons.reason !== null && !["not_ready", "no_torpedoes", "reloading", "out_of_arc"].includes(weapons.reason)) ||
         [weapons.reload_s, weapons.arc_center_deg, weapons.arc_width_deg].some((value) => value !== null && !finite(value)) ||
-        !exactKeys(alarms, ["ping_age_s", "torpedo_age_s"]) || [alarms.ping_age_s, alarms.torpedo_age_s].some((value) => value !== null && !finite(value)) ||
+        !exactKeys(alarms, ["ping_age_s", "torpedo_age_s", "ping_bearing", "torpedo_bearing", "esm"]) ||
+        [alarms.ping_age_s, alarms.torpedo_age_s, alarms.ping_bearing, alarms.torpedo_bearing].some((value) => value !== null && !finite(value)) ||
+        !boundedArray(alarms.esm, 16) || alarms.esm.some((row) => !exactKeys(row, ["bearing", "quality", "age_s"]) ||
+          [row.bearing, row.quality, row.age_s].some((value) => !finite(value))) ||
         (payload.designated_target_ref !== null && typeof payload.designated_target_ref !== "string") ||
         !boundedArray(payload.feed, 16) || payload.feed.some((row) => !exactKeys(row, ["seq", "age_s", "message"]) ||
           !Number.isSafeInteger(row.seq) || typeof row.message !== "string" || row.message.length > 256 ||
           (row.age_s !== null && !finite(row.age_s)))) throw new Error("protocol");
     rowsExact(payload.contacts, 128, sonarFields);
     if (!boundedArray(payload.own_weapons, 16) || payload.own_weapons.some((row) =>
-      !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"]))) throw new Error("protocol");
+      !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state", "wire", "datum_bearing", "datum_range_nm"]) ||
+      ![null, "ACTIVE", "BROKEN", "CUT"].includes(row.wire) ||
+      [row.datum_bearing, row.datum_range_nm].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
+    // The periscope: line of sight, light and the crew's own sightings (no target truth).
+    const scope = payload.scope;
+    const scopeNumbers = ["relative_deg", "bearing", "fov_deg", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"];
+    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sightings"]) ||
+        typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
+        scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
+        !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>
+          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s"]) ||
+          typeof row.ref !== "string" || row.ref.length > 16 || !["SURFACE", "FLG", "TORP"].includes(row.category) ||
+          !["warship", "merchant", "aircraft", "torpedo", "unknown"].includes(row.cls) ||
+          [row.bearing, row.span_deg, row.quality].some((value) => !finite(value)) || (row.age_s !== null && !finite(row.age_s)) ||
+          [row.range_nm, row.range_sigma_nm, row.range_age_s].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
   } else if (state.role === "weapons") {
-    if (!exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
+    if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
+        !boundedArray(payload.settings.choices, 8) ||
+        !payload.settings.choices.every((row) => exactKeys(row, ["key", "name", "stock", "loaded"])) ||
+        !["snake", "circle", "helix"].includes(payload.settings.pattern) || ![1, 2].includes(payload.settings.salvo) ||
+        !exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
         !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "aa_ready", "state", "interlock", "reload_s"]) ||
         (payload.designated_target !== null && !exactKeys(payload.designated_target, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"])) ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
@@ -229,7 +263,9 @@ export function validateV2State(state) {
     rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
   } else if (state.role === "damage") {
     if (!boundedArray(payload.compartments, 16) || payload.compartments.some((row) => !exactKeys(row, ["key", "name", "state", "flood", "fire", "repairable", "trend"]) || typeof row.repairable !== "boolean" || !exactKeys(row.trend, ["flood_rate", "fire_rate", "repairable"])) ||
-        !boundedArray(payload.teams, 16) || payload.teams.some((row) => !exactKeys(row, ["team", "compartment"]))) throw new Error("protocol");
+        !boundedArray(payload.teams, 16) || payload.teams.some((row) => !exactKeys(row, ["team", "compartment"])) ||
+        !exactKeys(payload.stability, ["list_deg", "trim_deg", "counterflood_room", "can_counterflood"]) ||
+        typeof payload.stability.can_counterflood !== "boolean") throw new Error("protocol");
   } else if (state.role === "opz") {
     tacticalRows(payload.observations, 256);
     tacticalRows(payload.fusions, 32, ["members"]);
@@ -248,7 +284,9 @@ export function validateV2State(state) {
           !pictureRefs.has(row.ref) || typeof row.source !== "string" ||
           typeof row.classification !== "string" || !row.classification || row.classification.length > 128) ||
          new Set(payload.source_classifications.map((row) => row.ref)).size !== payload.source_classifications.length ||
-         !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready", "ciws_released"]) || typeof payload.defense.ciws_released !== "boolean") throw new Error("protocol");
+         !exactKeys(payload.defense, ["vls", "ciws", "aa", "chaff_ready", "ciws_ready", "aa_ready", "ciws_released"]) || typeof payload.defense.ciws_released !== "boolean" ||
+         !boundedArray(payload.radar_blips, 16) || payload.radar_blips.some((row) => !exactKeys(row, ["ref", "x", "y", "age_s"]) ||
+           typeof row.ref !== "string" || !/^blip-[0-9]{1,18}$/.test(row.ref) || [row.x, row.y, row.age_s].some((value) => !finite(value)))) throw new Error("protocol");
     tacticalRows(payload.asm_observations, 128);
     if (payload.designated_target_ref !== null && (typeof payload.designated_target_ref !== "string" || !pictureRefs.has(payload.designated_target_ref))) throw new Error("protocol");
     if (!exactKeys(payload.own_assets, ["ship", "helicopter", "weapons"]) ||
@@ -256,7 +294,7 @@ export function validateV2State(state) {
         !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
         !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");
   } else if (state.role === "radio") {
-    rowsExact(payload.observations, 256, ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg", "frequency_khz", "propagation", "can_capture"]);
+    rowsExact(payload.observations, 256, [...radioFields, "frequency_khz", "propagation", "can_capture"]);
     if (payload.observations.some((row) => (row.frequency_khz !== null && (!finite(row.frequency_khz) || row.frequency_khz <= 0)) ||
         ![null, "GROUND", "SKY"].includes(row.propagation))) throw new Error("protocol");
     if (!boundedArray(payload.logged_fixes, 256) || payload.logged_fixes.some((row) => !exactKeys(row, ["ref", "x", "y", "uncertainty_nm", "age_s", "covariance_nm2"]) || row.covariance_nm2 !== null && (!boundedArray(row.covariance_nm2, 3) || row.covariance_nm2.length !== 3)) ||
@@ -266,21 +304,24 @@ export function validateV2State(state) {
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     tacticalRows(payload.tactical, 128);
   } else if (state.role === "engine") {
-    if (!exactKeys(payload.propulsion, ["course", "target_course", "speed", "target_speed", "telegraph", "rpm", "quiet_mode", "cavitating", "fuel_kg", "fuel_capacity_kg", "fuel_burn_kg_h", "fuel_endurance_h", "fuel_range_nm"]) ||
+    if (!exactKeys(payload.propulsion, ["course", "target_course", "speed", "target_speed", "telegraph", "rpm", "quiet_mode", "plant_mode", "cavitating", "fuel_kg", "fuel_capacity_kg", "fuel_burn_kg_h", "fuel_endurance_h", "fuel_range_nm"]) ||
+        !["AUTO", "DIESEL", "TURBINE"].includes(payload.propulsion.plant_mode) ||
         !exactKeys(payload.machinery, ["station_state", "speed_cap", "effective_speed_cap", "flood", "fire", "repair_teams", "repair_trend", "noise", "grounded"]) ||
         !boundedArray(payload.machinery.repair_teams, 16) || !exactKeys(payload.machinery.repair_trend, ["flood_rate", "fire_rate", "repairable"]) ||
-        !exactKeys(payload.controls, ["orders", "speed_max_kn"]) || !boundedArray(payload.controls.orders, 6) ||
+        !exactKeys(payload.controls, ["orders", "plants", "speed_max_kn"]) || !boundedArray(payload.controls.orders, 6) ||
+        !boundedArray(payload.controls.plants, 3) || payload.controls.plants.join(",") !== "AUTO,DIESEL,TURBINE" ||
         payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
         !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");
   } else if (state.role === "helicopter") {
-    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode"]) ||
+    if (!exactKeys(payload.asset, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s", "buoy_mode", "pattern", "pattern_remaining", "mad_mode"]) ||
+        !["single", "field", "barrier", "circle"].includes(payload.asset.pattern) || typeof payload.asset.mad_mode !== "boolean" ||
         (payload.waypoint !== null && !exactKeys(payload.waypoint, ["x", "y"])) ||
         !boundedArray(payload.buoys, 64) || payload.buoys.some((row) => !exactKeys(row, ["ref", "label", "x", "y", "battery_s", "active", "mode"]) || typeof row.label !== "string" || !/^SB[0-9]{2,}$/.test(row.label) || !["ACTIVE", "PASSIVE"].includes(row.mode)) ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
-        !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
+        !exactKeys(payload.readiness, ["flightdeck_down", "deck_state", "can_launch", "can_return", "can_set_waypoint", "can_deploy_buoy", "can_pattern", "can_mad", "can_set_dipping", "can_set_dip_depth", "can_dipping_ping", "weather_launch_safe", "weather_dipping_safe", "crosswind_kn", "rtb_margin_s"]) ||
         [payload.readiness.flightdeck_down, payload.readiness.can_launch, payload.readiness.can_return, payload.readiness.can_set_waypoint, payload.readiness.can_deploy_buoy, payload.readiness.can_set_dipping, payload.readiness.can_set_dip_depth, payload.readiness.can_dipping_ping, payload.readiness.weather_launch_safe, payload.readiness.weather_dipping_safe].some((value) => typeof value !== "boolean") ||
         !finite(payload.readiness.crosswind_kn) || payload.readiness.crosswind_kn < 0 || payload.readiness.crosswind_kn > 80) throw new Error("protocol");
-    tacticalRows(payload.tactical, 128, ["classification", "released_to_opz"]);
+    tacticalRows(payload.tactical, 128, helicopterTacticalFields.slice(tacticalFields.length));
     rowsExact(payload.dip_observations, 128, ["ref", "label", "bearing", "bearing_uncertainty_deg", "age_s", "range_nm", "active_bearing", "range_uncertainty_nm", "depth_m", "depth_uncertainty_m", "fix_age_s", "classification", "qualified", "released_to_opz"]);
     rowsExact(payload.buoy_observations, 128, ["ref", "label", "buoy_label", "mode", "bearing", "bearing_uncertainty_deg", "range_nm", "x", "y", "observer_x", "observer_y", "age_s", "quality", "qualified", "released_to_opz"]);
     if (!exactKeys(payload.acoustic, ["source", "sources", "spectrum", "history", "ready",

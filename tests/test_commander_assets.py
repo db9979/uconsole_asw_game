@@ -223,7 +223,7 @@ def test_v2_roles_have_dedicated_payload_renderers():
     assert 'section.querySelectorAll("dl, .station-list")' in station_dispatch
     assert 'dataset.tracks = String(!active || trackRoles.has(active))' in station_dispatch
     assert ('const trackRoles = new Set(["bridge", "sonar", "weapons", "opz", '
-            '"helicopter", "eloka", "uboot", "uboot_sonar"])') in js
+            '"helicopter", "eloka", "uboot", "uboot_sonar",\n  "uboot_weapons", "uboot_nav"])') in js
     assert "innerHTML" not in station_dispatch
 
 

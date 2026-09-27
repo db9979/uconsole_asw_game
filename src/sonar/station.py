@@ -16,7 +16,7 @@ from src.sonar import analysis_tools
 # Game attribute names that live on the active station.
 STATION_FIELDS = (
     "sonar", "sonar_mode", "sonar_page", "sonar_harmonic_hz", "sonar_tools",
-    "tma_hypotheses", "selected_contact", "target",
+    "tma_hypotheses", "tma_method", "selected_contact", "target",
     "sonar_display_palette", "sonar_display_black", "sonar_display_contrast",
     "sonar_display_history", "sonar_audio_enabled", "sonar_volume",
     "_sonar_audio_sequence", "_sonar_audio_suspended",
@@ -42,6 +42,8 @@ class SonarStation:
         self.sonar_tools = analysis_tools.AcousticToolState()
         # Operator TMA hypotheses per sonar target (transient UI state).
         self.tma_hypotheses = {}
+        # TMA page method: hypothesis/residuals, Ekelund range or dot stack.
+        self.tma_method = "hypothesis"
         self.selected_contact = None
         self.target = None
         # Display-only CRT controls: no observation, simulation or save effect.

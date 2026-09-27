@@ -57,6 +57,10 @@ function render(room) {
       ()=>action("simlog",client.client_id,"",!client.simlog));
     simlog.textContent=`${t("admin_simlog_grant")}: ${t(client.simlog?"admin_disable":"admin_enable")}`;
     article.append(simlog);
+    const observer=button(client.observer?"admin_disable":"admin_enable",
+      ()=>action("observer",client.client_id,"",!client.observer));
+    observer.textContent=`${t("admin_observer_grant")}: ${t(client.observer?"admin_disable":"admin_enable")}`;
+    article.append(observer);
     for (const [station, detail] of Object.entries(client.stations)) {
       if (!detail.requested && !detail.leased) continue;
       const row=document.createElement("div"); row.className="station";
@@ -66,7 +70,7 @@ function render(room) {
         row.append(button("admin_revoke",()=>action("revoke",client.client_id,station)));
         for (const capability of ["command","direct_fire","sonar_audio"]) {
           if (capability==="direct_fire" && !["weapons","opz","helicopter","uboot"].includes(station)) continue;
-          if (capability==="sonar_audio" && !["sonar","uboot_sonar"].includes(station)) continue;
+          if (capability==="sonar_audio" && !["sonar","helicopter","uboot_sonar"].includes(station)) continue;
           const current=detail.grants[capability];
           const control=button(current?"admin_disable":"admin_enable",
             ()=>action(capability,client.client_id,station,!current));

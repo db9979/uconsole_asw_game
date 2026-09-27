@@ -15,9 +15,10 @@ const audioPollRoutes = {helicopter: "/api/v2/helicopter/audio", uboot_sonar: "/
 // Blocks arrive at real-time rate, so the standing buffer is the start lead. It
 // must outlast a browser main-thread stall or a Wi-Fi hiccup, otherwise every
 // such hiccup is an audible gap; live listening tolerates the extra latency.
-const sonarAudioStartLead = 1.0;
-const sonarAudioTargetAhead = 1.5;
-const sonarAudioMaxSources = 12;
+// (HTTP fallback without AudioWorklet; the worklet keeps the same two-second lead.)
+const sonarAudioStartLead = 2.0;
+const sonarAudioTargetAhead = 2.5;
+const sonarAudioMaxSources = 24;
 export const sonarGainValue = () => {
   const value = Number($("volume").value) / 200;
   const helicopterLevel = S.session?.station === "helicopter"
@@ -89,9 +90,9 @@ export function renderSonarAudio(key) {
 export function stopSonarAudio(key = "sonar_live_off") {
   S.sonarAudioGeneration += 1;
   S.sonarAudioEnabled = false;
-  S.sonarAudioMetrics = {buffered: 0, gaps: 0, concealed: 0, rate: 1, stale: false};
+  S.sonarAudioMetrics = {buffered: 0, gaps: 0, evictions: 0, dropped: 0, concealed: 0, rate: 1, stale: false};
   window.uJagdAudioDiagnostics = Object.freeze({bufferedSeconds: 0,
-    sequenceGaps: 0, droppedBlocks: 0, concealedBlocks: 0, playbackRate: 1,
+    sequenceGaps: 0, droppedBlocks: 0, evictedBlocks: 0, concealedBlocks: 0, playbackRate: 1,
     stale: false, transport: "off"});
   clearTimeout(S.sonarAudioTimer);
   S.sonarAudioTimer = null;
@@ -144,7 +145,11 @@ export function openSonarAudioSocket() {
   let socket;
   try {
     const scheme = location.protocol === "https:" ? "wss:" : "ws:";
-    socket = new WebSocket(`${scheme}//${location.host}/ws/v2/${audioRoute(role)}/audio`, "u-jagd-audio-v2");
+    // Resume behind the last accepted block: the host never re-sends audio
+    // the worklet already holds, and numbering never restarts within a run.
+    const resume = Number.isSafeInteger(S.sonarAudioSequence) && S.sonarAudioSequence >= 0
+      ? `?after=${S.sonarAudioSequence}` : "";
+    socket = new WebSocket(`${scheme}//${location.host}/ws/v2/${audioRoute(role)}/audio${resume}`, "u-jagd-audio-v2");
   } catch (_) { scheduleSonarAudioPoll(0); return; }
   socket.binaryType = "arraybuffer";
   S.sonarAudioSocket = socket;
@@ -165,7 +170,7 @@ export function openSonarAudioSocket() {
     if (S.sonarAudioSocket === socket) S.sonarAudioSocket = null;
     if (current()) {
       scheduleSonarAudioPoll(0);
-      S.sonarAudioReconnect = setTimeout(openSonarAudioSocket, 2000);
+      S.sonarAudioReconnect = setTimeout(openSonarAudioSocket, 500);
     } else if (resumable()) {
       // The host's local input advanced the epoch: reconnect at once.
       clearTimeout(S.sonarAudioReconnect);

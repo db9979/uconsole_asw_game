@@ -7,6 +7,7 @@ import random
 import pytest
 
 import src.core.game as game_module
+from src.core import game_events, game_save, save_validate
 from src.air.flights import Flight
 from src.core.game import Game
 from src.data import catalog
@@ -121,6 +122,8 @@ def test_snapshot_remains_authoritative_after_packaged_defaults_change(monkeypat
     original = copy.deepcopy(state["catalog_snapshot"])
     changed_package = _changed_catalog(original)
     monkeypatch.setattr(game_module, "CATALOG", changed_package)
+    monkeypatch.setattr(save_validate, "CATALOG", changed_package)
+    monkeypatch.setattr(game_events, "CATALOG", changed_package)
 
     game.load_state(state)
 
@@ -161,7 +164,7 @@ def test_save_reader_rejects_oversize_before_json_parse(tmp_path, monkeypatch):
     game = Game(seed=2411, start_menu=False)
     path = tmp_path / "oversize.json"
     path.write_bytes(b" " * 129)
-    monkeypatch.setattr(game_module, "MAX_SAVE_DOCUMENT_BYTES", 128)
+    monkeypatch.setattr(game_save, "MAX_SAVE_DOCUMENT_BYTES", 128)
 
     assert not game.load_game(str(path))
 
@@ -270,6 +273,8 @@ def test_changed_package_split_run_keeps_snapshot_continuation(monkeypatch):
     control.load_state(copy.deepcopy(state))
     changed_package = _changed_catalog(state["catalog_snapshot"])
     monkeypatch.setattr(game_module, "CATALOG", changed_package)
+    monkeypatch.setattr(save_validate, "CATALOG", changed_package)
+    monkeypatch.setattr(game_events, "CATALOG", changed_package)
     restored = Game(seed=1, start_menu=False)
     restored.load_state(copy.deepcopy(state))
 

@@ -219,7 +219,8 @@ class RosterTransport:
             selected["active_station"] = station
         return True
 
-    def resolve_station_request(self, client_id, station, generation, grants=None):
+    def resolve_station_request(self, client_id, station, generation, grants=None,
+                                takeover=False):
         self.calls.append(("resolve_station_request", client_id, station, generation, grants))
         selected = self._client(client_id)
         detail = selected["stations"][station] if selected is not None else None
@@ -769,8 +770,9 @@ def test_roster_keyboard_actions_grant_requests_assign_and_revoke(game):
     console.handle_key(game, pygame.K_RETURN)
     assert server._client("alpha")["stations"]["bridge"]["leased"]
     assert server._client("bravo")["active_station"] == "sonar"
+    # Approval always carries every right of the station.
     assert server._client("bravo")["stations"]["sonar"]["grants"] == {
-        "command": True, "direct_fire": False, "sonar_audio": False}
+        "command": True, "direct_fire": False, "sonar_audio": True}
     console.handle_key(game, pygame.K_c)
     assert not server._client("bravo")["stations"]["sonar"]["grants"]["command"]
     before = server.client_statuses()
@@ -868,8 +870,9 @@ def test_roster_approves_selected_additive_request_and_keeps_other_request(game)
     assert selected["stations"]["bridge"]["requested"]
 
 
-@pytest.mark.parametrize("action_index", [8, 9])
+@pytest.mark.parametrize("action_index", [9, 10])
 def test_roster_mouse_destructive_actions_require_same_target_double_click(game, action_index):
+    # Action rows: ... 7 observer, 8 revoke station, 9 revoke client, 10 revoke all.
     server = RosterTransport((roster_client("alpha", "Alpha", 0, station="bridge"),
                               roster_client("bravo", "Bravo", 1, station="sonar")))
     console = game.commander
@@ -879,7 +882,7 @@ def test_roster_mouse_destructive_actions_require_same_target_double_click(game,
     point = console.roster_action_rects()[action_index].center
     console.handle_click(game, point)
     assert len(server.statuses) == 2 and not server.calls
-    if action_index == 8:
+    if action_index == 9:
         console.handle_click(game, console.roster_client_rects()[1].center)
         console.handle_click(game, point)
         assert len(server.statuses) == 2
@@ -888,7 +891,7 @@ def test_roster_mouse_destructive_actions_require_same_target_double_click(game,
         console.handle_click(game, point)
         assert len(server.statuses) == 3
     console.handle_click(game, point)
-    assert (len(server.statuses) == 1 if action_index == 8 else
+    assert (len(server.statuses) == 1 if action_index == 9 else
             all(status["active_station"] is None for status in server.statuses))
 
 

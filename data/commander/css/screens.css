@@ -19,6 +19,8 @@
 .lobby-heading { max-width: 60rem; padding-bottom: .9rem; border-bottom: 1px solid var(--line); }
 .lobby-heading > p:last-child { margin-top: .5rem; color: var(--text-dim); }
 .lobby-status { min-height: 2.5rem; padding: .6rem 0; color: var(--caution); }
+.side-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 12rem)); gap: .55rem; padding: 4px; }
+.side-choice button { min-height: 44px; }
 .station-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: .55rem; padding: 4px; }
 .station-card { display: grid; grid-template-rows: auto 1fr auto; gap: .55rem; min-width: 0; padding: .9rem; background: var(--bg-2); border: 1px solid var(--line); border-top: 2px solid var(--live); border-radius: var(--radius); }
 .station-card h2 { color: var(--text); font-size: var(--font-md); }
@@ -54,6 +56,18 @@ body.workstation-mode .role-rail, body.workstation-mode .mobile-role { display: 
 .simlog-section-heading { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
 .simlog-current { max-height: 46vh; min-height: 0; margin: .35rem 0; padding: .6rem; overflow: auto; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--radius); }
 .simlog-current-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .7rem; }
+.simlog-timeline-section { margin: .35rem 0; }
+.simlog-timeline-section h4 { margin: 0; color: var(--live); font-size: var(--font-sm); text-transform: uppercase; letter-spacing: .06em; }
+.simlog-timeline { position: relative; height: 2.6rem; margin: .3rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-1); overflow: hidden; }
+.simlog-timeline::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid var(--line-strong); }
+.simlog-tick, .simlog-mark { position: absolute; top: 50%; width: .9rem; height: .9rem; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--bg-3); transform: translate(-50%, -50%); cursor: pointer; }
+.simlog-tick[aria-pressed="true"] { border-color: var(--live); background: var(--live-bg); }
+.simlog-mark { top: 22%; width: .75rem; height: .75rem; border-radius: 2px; }
+.simlog-mark-shot { background: var(--info); border-color: var(--info); }
+.simlog-mark-enemy_shot { background: var(--alarm); border-color: var(--alarm); }
+.simlog-mark-hit { background: var(--alarm-2); border-color: var(--alarm-2); top: 78%; }
+.simlog-mark-contact { background: var(--live-2); border-color: var(--live-2); top: 78%; }
+.simlog-mark-loss { background: var(--caution); border-color: var(--caution); }
 .simlog-metrics-wrap h4, .simlog-table-wrap h4 { margin: 0 0 .3rem; color: var(--live); font-size: var(--font-sm); text-transform: uppercase; letter-spacing: .06em; }
 .simlog-metrics-wrap .metrics { flex-direction: column; gap: 0; }
 .simlog-metrics-wrap .metrics div { flex-direction: row; gap: .5rem; padding: .1rem 0; font-size: var(--font-md); }

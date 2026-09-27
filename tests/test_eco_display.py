@@ -69,7 +69,7 @@ def test_eco_display_replaces_the_station_views_while_the_browser_is_live(
         raise AssertionError("full station view drawn in eco mode")
 
     for name in ("draw_map_view", "draw_bridge_view", "draw_sonar_view"):
-        monkeypatch.setattr("src.core.game." + name, forbidden)
+        monkeypatch.setattr("src.core.game_draw." + name, forbidden)
     calls = []
     monkeypatch.setattr(Game, "draw_eco_display",
                         lambda self: calls.append(self.station))

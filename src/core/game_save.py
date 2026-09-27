@@ -455,6 +455,7 @@ class SaveMixin:
             "seed": self.seed,
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
+            "mission_events": list(self.mission_events_pending),
             "score": self.score,
             "incident": self.incident,
             "mission_result": self.mission_result,
@@ -547,6 +548,7 @@ class SaveMixin:
             "world": dict(hour=self.world.hour,
                            sea_state=self.world.sea_state,
                            weather_shift_timer=self.world.weather_shift_timer,
+                           weather_override=self.world.weather_override,
                            ocean=self.world.ocean.serialize(),
                            mode=self.world_mode,
                            generator=("natural-earth-v1"
@@ -917,6 +919,7 @@ class SaveMixin:
         self.world.hour = w["hour"]
         self.world.sea_state = w["sea_state"]
         self.world.weather_shift_timer = w["weather_shift_timer"]
+        self.world.weather_override = w["weather_override"]
         self.world.ocean.restore(w["ocean"])
         self.seed = seed
         self.sonar = SonarSystem(
@@ -986,6 +989,7 @@ class SaveMixin:
                 self.world._thermo = [[float(thermo) for _ in row]
                                       for row in self.world._thermo]
         self.mission_time = data["mission_time"]
+        self.mission_events_pending = [str(item) for item in data["mission_events"]]
         self.score = data["score"]
         self.incident = data["incident"]
         self.sim_t = data["sim_t"]

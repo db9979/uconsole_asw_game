@@ -11,8 +11,8 @@ import math
 
 from src.core import config
 from src.core.i18n import message, raw_text
-from src.core.mission_definition import (reference_sector_index, static_preview,
-                                         validate_mission)
+from src.core.mission_definition import (_stable_seed, reference_sector_index,
+                                         static_preview, validate_mission)
 from src.enemies.civilian import CivilianShip
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
@@ -39,16 +39,18 @@ class MissionBridgeMixin:
         reference_sector = (reference_sector_index(world.get("reference"))
                             if world["kind"] == "reference" else None)
         objective = definition["objective"]
-        if (definition["events"] or definition["units"]["random_groups"]
-                or float(world["size_nm"]) != config.WORLD_SIZE_NM
+        if (float(world["size_nm"]) != config.WORLD_SIZE_NM
                 or world["kind"] not in ("fixed", "reference")
-                or (world["kind"] == "reference" and reference_sector is None)
-                or definition["environment"]["weather"] != "clear"):
+                or (world["kind"] == "reference" and reference_sector is None)):
             return False
-        markers = {item["id"]: item for item in static_preview(definition)["markers"]}
+        preview = static_preview(definition)
+        markers = {item["id"]: item for item in preview["markers"]}
         exact = definition["units"]["exact"]
-        if any(unit["profile"] not in self.runtime_catalog.subs | self.runtime_catalog.surfaces
-               for unit in exact):
+        placeable = self.runtime_catalog.subs | self.runtime_catalog.surfaces
+        group_profiles = [profile for group in definition["units"]["random_groups"]
+                          for profile in group["profiles"]]
+        if any(profile not in placeable for profile in
+               [unit["profile"] for unit in exact] + group_profiles):
             return False
         for unit in exact:
             profile_key = unit["profile"]
@@ -95,6 +97,7 @@ class MissionBridgeMixin:
         self.world.hour = float(env["time_hour"])
         self.world.sea_state = int(env["sea_state"])
         self.world.refresh_weather()
+        self.world.set_weather_override(env["weather"])
         thermo = float(env["thermocline_depth_m"])
         self.world._thermo = [[thermo for _ in row] for row in self.world._thermo]
         lv = self.difficulty
@@ -142,6 +145,13 @@ class MissionBridgeMixin:
                 entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
                 self.civilians.append(entity)
                 self.mission_units[unit["id"]] = int(entity.id)
+        # Random groups: placed now unless a spawn event brings them later.
+        spawned_later = {event["target_id"] for event in definition["events"]
+                         if event["type"] == "spawn"}
+        for marker in preview["markers"]:
+            if marker["source"] == "seeded_random" and marker["group_id"] not in spawned_later:
+                self._place_group_member(definition, marker)
+        self.mission_events_pending = [event["id"] for event in preview["events"]]
         self.mission.name = definition["name"]
         self.mission.win_mode = definition["objective"]["type"]
         self.mission.time_limit_s = float(definition["objective"]["time_limit_s"])
@@ -158,6 +168,102 @@ class MissionBridgeMixin:
 
     FLASH_TEXT_SIZE = 18
     FLASH_MAX_LINES = 2
+
+    def _place_group_member(self, definition: dict, marker: dict) -> None:
+        """Instantiate one seeded random-group member at its preview marker
+        (course and speed from the mission seed, the group's side)."""
+        group = next(group for group in definition["units"]["random_groups"]
+                     if group["id"] == marker["group_id"])
+        salt = _stable_seed(int(definition["seed"]), f"member:{marker['id']}")
+        spec = dict(id=marker["id"], profile=marker["profile"], side=group["side"],
+                    course_deg=float(salt % 360), speed_kn=config.MISSION_GROUP_SPEED_KN,
+                    depth_m=config.MISSION_GROUP_DEPTH_M)
+        entity = self._place_mission_entity(spec, marker)
+        if entity is not None:
+            self.mission_units[marker["id"]] = int(entity.id)
+
+    def _place_mission_entity(self, unit: dict, marker: dict):
+        """Create the placed entity of a mission unit spec (profile, side,
+        course/speed/depth) at its marker; None for a profile the runtime
+        cannot place."""
+        x, y = self.world.nearest_water(marker["x"], marker["y"])
+        profile = unit["profile"]
+        lv = self.difficulty
+        if profile in self.runtime_catalog.subs:
+            entity = Sub(x, y, float(unit.get("depth_m", 60.0)),
+                         float(unit.get("course_deg", 0.0)), profile,
+                         self.rng_world, quiet_mult=lv["quiet_mult"],
+                         attack_mult=lv["enemy_attack_mult"],
+                         attack_cooldown_s=lv["enemy_cooldown_s"],
+                         solution_threshold=lv["enemy_solution_threshold"],
+                         profile=self.runtime_catalog.subs[profile],
+                         decoy_profile=self.runtime_catalog.decoys[
+                             self.runtime_catalog.runtime_bindings["submarine_decoy"]],
+                         enemy_torpedo_profile=self.runtime_catalog.torpedoes[
+                             self.runtime_catalog.runtime_bindings["enemy_torpedo"]],
+                         side=unit["side"], runtime_catalog=self.runtime_catalog,
+                         asw_rng=self.rng_asw)
+            entity.speed = float(unit.get("speed_kn", 0.0))
+            self.subs.append(entity)
+            return entity
+        if profile in self.runtime_catalog.surfaces:
+            if self.runtime_catalog.surfaces[profile].category == "KAMPFSCHIFF":
+                entity = SurfaceShip(
+                    x, y, rng=self.rng_world, side=unit["side"],
+                    doctrine="surface_combatant",
+                    profile=self.runtime_catalog.surfaces[profile],
+                    runtime_catalog=self.runtime_catalog)
+                self.warships.append(entity)
+            else:
+                entity = CivilianShip(
+                    x, y, rng=self.rng_world, side=unit["side"], doctrine="surface_transit",
+                    profile=self.runtime_catalog.surfaces[profile],
+                    runtime_catalog=self.runtime_catalog)
+                self.civilians.append(entity)
+            entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
+            entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
+            return entity
+        return None
+
+    def _run_mission_events(self) -> None:
+        """Authored events whose time has come, in order: a feed message
+        (verbatim), a group spawn, a weather change or an objective decision."""
+        definition = self.custom_mission_definition
+        if definition is None or not self.mission_events_pending:
+            return
+        events = {event["id"]: event for event in definition["events"]}
+        while self.mission_events_pending:
+            event = events.get(self.mission_events_pending[0])
+            if event is None:
+                self.mission_events_pending.pop(0)
+                continue
+            if self.mission_time < float(event["at_s"]):
+                return
+            self.mission_events_pending.pop(0)
+            kind = event["type"]
+            if kind == "message":
+                self.feed.add(self.world.format_time(), "mission", raw_text(event["message"]))
+            elif kind == "spawn":
+                for marker in static_preview(definition)["markers"]:
+                    if (marker["source"] == "seeded_random"
+                            and marker["group_id"] == event["target_id"]
+                            and marker["id"] not in self.mission_units):
+                        self._place_group_member(definition, marker)
+                self.feed.add(self.world.format_time(), "mission",
+                              message("runtime.mission.group_spawned"))
+            elif kind == "weather":
+                self.world.set_weather_override(event["weather"])
+                weather_key = {"clear": "weather.kind.clear", "rain": "weather.kind.rain",
+                               "storm": "weather.kind.storm", "fog": "weather.kind.fog"}
+                self.feed.add(self.world.format_time(), "mission",
+                              message("runtime.mission.weather_changed",
+                                      weather=message(weather_key[event["weather"]])))
+            elif kind == "objective" and self.mission_result is None:
+                self._end_mission(event["action"] == "complete",
+                                  raw_text(event["message"]) if event.get("message")
+                                  else message("end.reason.event_complete"
+                                               if event["action"] == "complete"
+                                               else "end.reason.event_fail"))
 
     def start_new_game(self, scenario_key: str, world_mode: str,
                        difficulty: dict = None, seed: int = None) -> bool:

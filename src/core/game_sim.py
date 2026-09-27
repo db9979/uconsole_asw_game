@@ -1110,6 +1110,7 @@ class SimMixin:
         self.damage.update(dt, draft_m=self.ship.dynamic_draft_m())
         self.flights.update(dt, world=self.world,
                             near=(self.ship.x, self.ship.y))
+        self._run_mission_events()
         self._check_mission_end()
 
     def _update_sim(self, dt: float) -> None:

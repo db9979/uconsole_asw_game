@@ -23,7 +23,7 @@ SAVE_ROOT_FIELDS = frozenset({
     "ciws_cooldown_s", "ciws_mount_deg", "chaff_clouds", "chaff_seq",
     "schedulers", "rngs", "ui",
     "autocrew", "ais", "plot",
-    "crew", "weapon_settings",
+    "crew", "weapon_settings", "mission_events",
 })
 
 # Save v15: the operator's torpedo settings (plan 1.3, phase 4).
@@ -76,7 +76,7 @@ SHIP_FIELDS = frozenset({
 
 WORLD_FIELDS = frozenset({
     "hour", "sea_state", "weather_shift_timer", "mode", "generator", "coast",
-    "ocean",
+    "ocean", "weather_override",
 })
 
 DAMAGE_FIELDS = frozenset({"repair_mult", "compartments", "teams",

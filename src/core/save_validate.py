@@ -429,6 +429,15 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     if (not isinstance(difficulty, dict)
             or set(difficulty) != set(config.DIFFICULTY_FIELDS)):
         return False
+    pending_events = data.get("mission_events")
+    definition = runtime_mission.get("custom_definition")
+    known_events = {event.get("id") for event in definition.get("events", ())
+                    if isinstance(event, dict)} if isinstance(definition, dict) else set()
+    if (not isinstance(pending_events, list) or len(pending_events) > 64
+            or any(not isinstance(item, str) or item not in known_events
+                   for item in pending_events)
+            or len(set(pending_events)) != len(pending_events)):
+        return False
     units = runtime_mission.get("units")
     if (not isinstance(units, dict) or len(units) > 512
             or any(not isinstance(key, str) or not 1 <= len(key) <= 64
@@ -1559,6 +1568,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or not 0 <= world["sea_state"] <= 6
             or not bounded(world["weather_shift_timer"], 0.0,
                            config.WEATHER_SHIFT_PERIOD_S)
+            or world["weather_override"] not in (None, "rain", "storm", "fog")
             or not OceanEnvironment.valid_state(world["ocean"])
             or not Coastline.valid_snapshot(world["coast"])):
         return False

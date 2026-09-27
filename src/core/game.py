@@ -382,6 +382,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.custom_mission_definition = None
         # Mission unit id -> entity id of the placed unit (custom missions).
         self.mission_units = {}
+        # Authored events not yet run, in order of their time (custom missions).
+        self.mission_events_pending = []
         self.mission_time = 0.0
         self.score = 0
         self.mission_result = None   # None | "SIEG" | "VERLOREN"

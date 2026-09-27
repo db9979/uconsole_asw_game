@@ -8,6 +8,7 @@ Verbatim moves from ``game.py`` (plan 1.3, phase 2, step 4b)."""
 import math
 
 
+from src.core import boat_threat
 from src.core import config
 from src.core.commands import STATION_PAGES, station_page_step
 from src.core.i18n import display_value, message, raw_text
@@ -996,6 +997,7 @@ class OperatorMixin:
             return "not_ready"
         self.buoy_seq = next_sequence
         self.buoys.append(buoy)
+        boat_threat.record_splash(self, buoy.x, buoy.y, buoy.seq)
         if buoy.mode == "PASSIVE" and not self.helicopter_audio_ready():
             self.set_helicopter_listen_source(f"SB{buoy.seq}")
         return True

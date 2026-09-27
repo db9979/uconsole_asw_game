@@ -136,12 +136,12 @@ export function validateV2State(state) {
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical", "tasks"],
     sonar: ["observations", "settings", "visualization"],
-    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
-    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
-    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
-    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
+    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat"],
     uboot_sonar: ["observations", "settings", "visualization"],
-    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast", "damage_control", "threat"],
     weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
   };
   const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
@@ -181,6 +181,11 @@ export function validateV2State(state) {
     esmHistory: ["age_s", "x", "y", "bearing"],
     esmFix: ["x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent"],
     esmCandidate: ["name", "role"],
+    threat: ["intercepts", "counts", "loudest_db", "echo_likely", "trend", "layer", "layer_m", "depth_m", "noise", "mast", "esm_count", "advice", "plan"],
+    intercept: ["kind", "bearing", "level_db", "age_s"],
+    interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
+    advice: ["uboot.advice.torpedo", "uboot.advice.mast_down", "uboot.advice.slow_down", "uboot.advice.measure_layer", "uboot.advice.go_below", "uboot.advice.evade"],
+    evadePlan: ["kind", "bearing", "course", "speed_kn", "depth_m", "silent", "decoy"],
   };
   // END GENERATED
   if (!validWeatherStation(state.weather_station, opforRoles.has(state.role), weatherFields)) throw new Error("protocol");
@@ -375,6 +380,24 @@ export function validateV2State(state) {
           (row.fix !== null && (!exactKeys(row.fix, boatFields.esmFix) ||
             ["x", "y", "major_nm", "minor_nm", "axis_deg"].some((key) => !finite(row.fix[key])) ||
             !Number.isInteger(row.fix.lines) || typeof row.fix.consistent !== "boolean")))) throw new Error("protocol");
+    // Counter-detection picture: the boat's own intercepts and own state only.
+    const threat = payload.threat;
+    const plan = threat && threat.plan;
+    if (!exactKeys(threat, boatFields.threat) || !exactKeys(threat.counts, boatFields.interceptKinds) ||
+        boatFields.interceptKinds.some((kind) => !Number.isInteger(threat.counts[kind]) || threat.counts[kind] < 0) ||
+        !boundedArray(threat.intercepts, 12) || threat.intercepts.some((row) => !exactKeys(row, boatFields.intercept) ||
+          !boatFields.interceptKinds.includes(row.kind) || !finite(row.bearing) || !finite(row.age_s) ||
+          !nullableNumber(row.level_db)) ||
+        ![threat.loudest_db, threat.layer_m].every(nullableNumber) || !finite(threat.depth_m) ||
+        typeof threat.echo_likely !== "boolean" || typeof threat.mast !== "boolean" ||
+        ![null, "rising", "steady", "falling"].includes(threat.trend) ||
+        !["unknown", "in", "above", "below"].includes(threat.layer) ||
+        !["cavitating", "snorkel", "quiet", "loud", "moderate"].includes(threat.noise) ||
+        !Number.isInteger(threat.esm_count) || threat.esm_count < 0 ||
+        !boundedArray(threat.advice, 4) || !threat.advice.every((key) => boatFields.advice.includes(key)) ||
+        (plan !== null && (!exactKeys(plan, boatFields.evadePlan) || !["torpedo", "ping"].includes(plan.kind) ||
+          ["bearing", "course", "speed_kn", "depth_m"].some((key) => !finite(plan[key])) ||
+          typeof plan.silent !== "boolean" || typeof plan.decoy !== "boolean"))) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
         !boundedArray(payload.settings.choices, 8) ||

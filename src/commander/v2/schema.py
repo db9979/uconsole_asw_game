@@ -59,7 +59,7 @@ WEATHER_BOAT_FIELDS = (
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
                         "own_weapons", "designated_target_ref", "feed", "scope", "plant",
-                        "esm", "ballast", "damage_control")
+                        "esm", "ballast", "damage_control", "threat")
 # The boat's plant and stores (``plant``): numbers, then the air block.
 UBOOT_PLANT_FIELDS = (
     "propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh",
@@ -93,6 +93,18 @@ UBOOT_ESM_EMITTER_FIELDS = (
     "history", "fix")
 UBOOT_ESM_HISTORY_FIELDS = ("age_s", "x", "y", "bearing")
 UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role")
+# The boat's counter-detection picture (``threat``, src/core/boat_threat.py):
+# its own intercepts, layer, noise and mast, and the evasion order (``plan``).
+UBOOT_THREAT_FIELDS = ("intercepts", "counts", "loudest_db", "echo_likely", "trend",
+                       "layer", "layer_m", "depth_m", "noise", "mast", "esm_count",
+                       "advice", "plan")
+UBOOT_INTERCEPT_FIELDS = ("kind", "bearing", "level_db", "age_s")
+UBOOT_INTERCEPT_KINDS = ("hull", "dipping", "buoy", "splash", "torpedo")
+UBOOT_THREAT_ADVICE = ("uboot.advice.torpedo", "uboot.advice.mast_down",
+                       "uboot.advice.slow_down", "uboot.advice.measure_layer",
+                       "uboot.advice.go_below", "uboot.advice.evade")
+UBOOT_EVADE_PLAN_FIELDS = ("kind", "bearing", "course", "speed_kn", "depth_m", "silent",
+                           "decoy")
 UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")
 # Top-level keys of every role payload (exact sets on both sides).
 ROLE_SHAPES = {

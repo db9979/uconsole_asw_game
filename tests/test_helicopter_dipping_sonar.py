@@ -63,8 +63,9 @@ class Target:
         return math.degrees(math.atan2(
             self.x - observer.x, -(self.y - observer.y))) % 360.0
 
-    def hear_ping(self, source=None):
+    def hear_ping(self, source=None, kind="hull"):
         self.heard += 1
+        self.kind = kind
 
 
 def test_dip_deploy_holds_hover_and_respects_water_depth():

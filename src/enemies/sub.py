@@ -272,16 +272,31 @@ class Sub:
         setattr(crew, f"{tag}_bearing", bearing)
         if previous_age >= 20.0:
             crew.event(f"{tag}_heard", bearing=f"{bearing:03.0f}")
+        return bearing
 
-    def hear_ping(self, source=None) -> None:
-        """U-Boot hört einen aktiven Ping -> Ausweichen."""
+    def ping_level_db(self, source, kind: str) -> float:
+        """Received level of an intercepted ping (spreading and absorption)."""
+        range_m = max(50.0, math.hypot(source[0] - self.x, source[1] - self.y) * 1852.0)
+        return (config.UBOOT_PING_SOURCE_DB[kind] - 20.0 * math.log10(range_m)
+                - 0.0002 * range_m)
+
+    def hear_ping(self, source=None, kind: str = "hull") -> None:
+        """U-Boot hört einen aktiven Ping -> Ausweichen.
+
+        ``kind`` is the pinging sensor (hull or towed array, dipping sonar,
+        active buoy); only a crewed boat's intercept picture uses it."""
         if self.manual:
             # A crewed boat only notes the intercept; the crew decides.
             if not self.sunk and self.state != "SINKING":
                 self.heard_ping = True
                 previous = self.memory["last_ping_age"]
                 self.memory["last_ping_age"] = 0.0
-                self._crew_alarm(source, "ping", config.PING_INTERCEPT_SIGMA_DEG, previous)
+                bearing = self._crew_alarm(source, "ping", config.PING_INTERCEPT_SIGMA_DEG,
+                                           previous if kind == "hull" else 0.0)
+                if bearing is not None:
+                    self.crew.intercept(kind, bearing, self.ping_level_db(source, kind))
+                    if kind != "hull" and previous >= 20.0:
+                        self.crew.event(f"ping_{kind}_heard", bearing=f"{bearing:03.0f}")
             return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"
@@ -304,7 +319,9 @@ class Sub:
         if self.manual:
             previous = self.memory["last_torpedo_age"]
             self.memory["last_torpedo_age"] = 0.0
-            self._crew_alarm(source, "torpedo", 5.0, previous)
+            bearing = self._crew_alarm(source, "torpedo", 5.0, previous)
+            if bearing is not None:
+                self.crew.intercept("torpedo", bearing, None)
             return
         if self.state == "EVADE" or self.torpedo_alarm_left == 0.0:
             # Already evading, or the recognition time has elapsed.

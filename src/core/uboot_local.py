@@ -614,6 +614,14 @@ def _command_key(game, current, key, mods) -> None:
         contact = selected_contact(game)
         _fire_notice(game, fire_at_contact(game, current, contact)
                      if contact is not None else "unknown_ref")
+    elif key == pygame.K_i and page != "UBOOT_DAMAGE":
+        if order_allowed(game, "uboot_evade"):
+            from src.core import boat_threat
+            result = boat_threat.evade(game, current)
+            game.flash(message("uboot.local.evade" if result is True
+                               else "uboot.local.evade_" + ("no_threat" if result
+                                                            == "uboot_no_threat"
+                                                            else "unavailable")), 2.0)
     elif key == pygame.K_x:
         result = sub.command_decoy()
         if result is True:

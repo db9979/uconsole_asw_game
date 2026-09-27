@@ -253,13 +253,17 @@ def test_local_scope_page_keys_and_pages():
     game, boat = _local_boat()
     sub = boat.sub
     _clear(game)
-    assert uboot_view.UBOOT_PAGES == ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE")
+    assert uboot_view.UBOOT_PAGES == ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE", "UBOOT_THREAT")
     assert uboot_view.station_pages("uboot_esm") == ("UBOOT_ESM", "UBOOT_SCOPE")
     _key(game, pygame.K_1)
     _key(game, pygame.K_1)
     assert boat.command_page == 2 and uboot_view.page_name(game, boat) == "UBOOT_SCOPE"
     _key(game, pygame.K_1)
+    assert boat.command_page == 3 and uboot_view.page_name(game, boat) == "UBOOT_THREAT"
+    _key(game, pygame.K_1)
     assert boat.command_page == 0
+    _key(game, pygame.K_PAGEUP)
+    assert boat.command_page == 3          # the threat page
     _key(game, pygame.K_PAGEUP)
     assert boat.command_page == 2
     # Arrows train the scope on that page only; Shift turns fast.
@@ -269,7 +273,7 @@ def test_local_scope_page_keys_and_pages():
     assert boat.orders.scope_rel_deg == pytest.approx(
         (config.UBOOT_SCOPE_STEP_DEG - config.UBOOT_SCOPE_STEP_FAST_DEG) % 360.0)
     _key(game, pygame.K_PAGEDOWN)
-    assert boat.command_page == 0
+    assert boat.command_page == 3
     _key(game, pygame.K_RIGHT)
     assert boat.orders.scope_rel_deg == pytest.approx(
         (config.UBOOT_SCOPE_STEP_DEG - config.UBOOT_SCOPE_STEP_FAST_DEG) % 360.0)

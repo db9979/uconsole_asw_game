@@ -655,6 +655,11 @@ def _uboot_decoy(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_decoy())
 
 
+def _uboot_evade(game, boat, params, _bindings):
+    from src.core import boat_threat
+    return _uboot_result(boat_threat.evade(game, boat))
+
+
 def _uboot_blow(game, boat, params, _bindings):
     return boat.sub.command_blow()
 
@@ -757,6 +762,7 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
     "uboot_silent": _uboot_silent,
+    "uboot_evade": _uboot_evade,
     "uboot_bottom": _uboot_bottom,
     "uboot_scope_bearing": _uboot_scope_bearing,
     "uboot_scope_mark": _uboot_scope_mark,

@@ -23,7 +23,8 @@ MAX_CALLOUTS = 16
 # One catalog serves both ends: the browser receives the commander.web keys.
 PREFIX = "commander.web.callout_"
 KEYS = ("torpedo", "contact", "breakup", "torpedo_away", "hit", "won", "lost",
-        "action_stations", "mpa_on_station")
+        "action_stations", "mpa_on_station", "ping", "dipping", "buoy_ping", "splash",
+        "evade", "mast_threat", "leak", "fire")
 
 # Feed message key -> callout key; the torpedo cues match by prefix.
 _EXACT = {
@@ -39,19 +40,41 @@ _EXACT = {
     "mpa.on_station": "mpa_on_station",
 }
 _PREFIX = (("runtime.torpedo_cue.", "torpedo"),)
-_WITH_BEARING = frozenset({"torpedo", "contact", "breakup"})
+# The crewed boat's own feed (CrewedBoat.notice): its sonar room and crew.
+_BOAT = {
+    "uboot.event.torpedo_heard": "torpedo",
+    "uboot.event.ping_heard": "ping",
+    "uboot.event.ping_dipping_heard": "dipping",
+    "uboot.event.ping_buoy_heard": "buoy_ping",
+    "uboot.event.buoy_splash": "splash",
+    "runtime.contact.new_range": "contact",
+    "runtime.contact.new_bearing": "contact",
+    "uboot.event.evade": "evade",
+    "uboot.event.evade_decoy": "evade",
+    "uboot.event.esm_mast_threat": "mast_threat",
+    "uboot.event.dc_leak": "leak",
+    "uboot.event.dc_fire": "fire",
+    "crew.action_stations_on": "action_stations",
+}
+_WITH_BEARING = frozenset({"torpedo", "contact", "breakup", "ping", "dipping", "buoy_ping",
+                           "splash"})
+SIDES = ("frigate", "boat")
 
 
-def callout_of(text) -> tuple[str, int | None] | None:
+def callout_of(text, side: str = "frigate") -> tuple[str, int | None] | None:
     """``(callout key, bearing)`` for a feed message worth saying, else None."""
     if not isinstance(text, dict):
         return None
     key = text.get(_MESSAGE_KEY)
     if type(key) is not str:
         return None
-    callout = _EXACT.get(key)
-    if callout is None:
-        callout = next((name for prefix, name in _PREFIX if key.startswith(prefix)), None)
+    if side == "boat":
+        callout = _BOAT.get(key)
+    else:
+        callout = _EXACT.get(key)
+        if callout is None:
+            callout = next((name for prefix, name in _PREFIX if key.startswith(prefix)),
+                           None)
     if callout is None:
         return None
     bearing = None
@@ -67,12 +90,14 @@ def callout_of(text) -> tuple[str, int | None] | None:
 class CalloutLog:
     """The last few callouts, numbered; read by the speaker and the browser."""
 
-    def __init__(self):
+    def __init__(self, side: str = "frigate"):
+        self.side = side
         self.seq = 0
+        self.spoken = 0            # the uConsole speaker's high-water mark
         self.rows: deque = deque(maxlen=MAX_CALLOUTS)
 
     def add(self, text) -> dict | None:
-        found = callout_of(text)
+        found = callout_of(text, self.side)
         if found is None:
             return None
         self.seq += 1

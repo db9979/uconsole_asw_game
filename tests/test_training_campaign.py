@@ -31,7 +31,10 @@ def test_every_lesson_is_a_valid_mission_and_starts(lesson):
     assert game.start_training(lesson)
     assert game.training.lesson == lesson and game.training.step == 0
     boat = game.subs[0]
-    assert boat.side == ("hostile" if lesson == "attack" else "neutral")
+    hostile = lesson == "attack" or lesson in training.BOAT_LESSONS
+    assert boat.side == ("hostile" if hostile else "neutral")
+    assert game.local_side == training.side_of(lesson)
+    assert (game.opfor is not None) is (lesson in training.BOAT_LESSONS)
     game.draw()
 
 

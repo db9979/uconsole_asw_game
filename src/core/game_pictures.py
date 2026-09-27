@@ -1411,18 +1411,22 @@ class PicturesMixin:
         })
 
     def _pump_speech(self) -> None:
-        """Say new crew reports aloud (frigate side, option on, espeak found).
+        """Say the local side's new crew reports aloud (option on, espeak found).
 
         Wall clock only: the speaker polls its process and never blocks.
         """
-        rows = self.callouts.rows
-        if not rows or rows[-1]["seq"] <= self._speech_seq:
+        boat = getattr(self, "_opfor", None)
+        log = (boat.callouts if getattr(self, "local_side", "frigate") == "uboot"
+               and boat is not None else self.callouts)
+        rows = log.rows
+        if not rows or rows[-1]["seq"] <= log.spoken:
             self.speaker.pump()
             return
-        fresh = [row for row in rows if row["seq"] > self._speech_seq]
-        self._speech_seq = rows[-1]["seq"]
+        fresh = [row for row in rows if row["seq"] > log.spoken]
+        log.spoken = rows[-1]["seq"]
         if (self.preferences.speech and self.speaker.available
-                and getattr(self, "local_side", "frigate") == "frigate"):
+                and (log is self.callouts) == (getattr(self, "local_side", "frigate")
+                                               == "frigate")):
             for row in fresh:
                 self.speaker.say(callouts.spoken_text(row, self.tr),
                                  self.preferences.language)

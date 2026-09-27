@@ -48,7 +48,7 @@ export function forgetSession(message = "connection_unpaired") {
   setConnection("unpaired", message);
 }
 export function validateSession(value) {
-  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "next_command_seq", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
+  const fields = ["active_generation", "active_station", "client_id", "csrf", "grants", "name", "host", "next_command_seq", "observer", "ordinal", "presence", "protocol", "requested_station", "simlog", "station", "station_generation", "stations"];
   if (!value || typeof value !== "object" || Array.isArray(value) ||
       Object.keys(value).sort().join(",") !== fields.sort().join(",") || value.protocol !== 2 ||
       typeof value.client_id !== "string" || !value.client_id || value.client_id.length > 128 ||
@@ -68,6 +68,7 @@ export function validateSession(value) {
       (value.grants.direct_fire && (!value.grants.command || !directFireRoles.has(value.station))) ||
       (value.grants.sonar_audio && !audioRoles.has(value.station)) ||
       typeof value.simlog !== "boolean" || value.grants.simlog !== value.simlog ||
+      typeof value.observer !== "boolean" || (value.observer && (value.grants.command || value.host !== null || !value.simlog)) ||
       (value.host !== null && (!exactKeys(value.host, ["generation"]) ||
         !Number.isSafeInteger(value.host.generation) || value.host.generation < 0)) ||
       value.active_station !== value.station ||

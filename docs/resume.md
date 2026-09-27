@@ -1436,6 +1436,35 @@ Notizen Phase 11:
   die zwei Zeilen der Optionsseite 2 (in diesem Commit nachgezogen).
 - Keine neuen Texte im Client (A11.4 leer).
 
+| 12 Rollen/Nachbesprechung/Sprachfunk | fertig | siehe `git log` | `tests/test_commander_observer.py` 3, Chromium-Beobachtertest, Commander-Suiten gruen | Host-CPU mit zwei Beobachtern auf Hardware |
+
+Notizen Phase 12:
+
+- A12.1 Beobachter als Sitzungsflag (`session["observer"]`, `OBSERVER_MAX`
+  = 2 in `wire.py`), vergeben ueber `set_client_grant(client, "observer",
+  bool)` (F9-Roster Taste `O`, elfte Aktionszeile; Web-Admin-Schalter).
+  Kein Lease: `stations/activate` mit Generation 0 setzt die Ansicht, der
+  Sitzungskoerper meldet die Ansicht als `mine` mit Generation 0 und
+  Rechten `False`, `stations/request` antwortet 403 `observer`, Befehle
+  scheitern am Lease-Check (`role_revoked`), `grant_station` verweigert
+  Beobachtern ein Lease, `station_leased()`/Belegung ignorieren sie. Der
+  Push (`/ws/v2/state`) bedient Beobachter ohne Lease. Client:
+  `validateSession` kennt `observer`, die Lobby bietet beide Seiten mit
+  "Ansehen", `role_observer`-Text, Steuerung bleibt ueber `grants.command`
+  gesperrt.
+- A12.2 `views/simlog.js`: Zeitstrahl (`simlogMarks`: neue eigene/feindliche
+  Torpedo-IDs, Schadensanstieg, mehr Kontakte, gesunkene/tote Einheiten aus
+  aufeinanderfolgenden Wahrheitsschnappschuessen), Scrubbing per Klick,
+  Export als JSON-Blob (`exportable` entfernt rng/seed/csrf/cookie/token/
+  settings/credential-Schluessel); nur fuer Beobachter und den Solo-Host
+  (`debriefAllowed`).
+- A12.3 `_voice_enabled` startet `True` (Konstruktor und `start()`);
+  `set_voice_enabled(False)` trennt den Sprecher wie bisher. Die
+  Sprachfunkoption existiert nur im `--web-host`-Raum (Admin-Seite), der
+  F9-Listener hat keinen Sprachfunk; `docs/commander-coop.md` sagt das jetzt.
+- `tests/test_commander_local.py` baut Roster-Zeilen ohne `observer`; der
+  Roster liest das Feld deshalb mit `.get`.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

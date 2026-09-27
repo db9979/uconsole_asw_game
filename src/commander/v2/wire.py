@@ -42,6 +42,9 @@ SONAR_AUDIO_ROLES = ("sonar", "helicopter", "uboot_sonar")
 # Pseudo-role of the solo host command surface. It is never a station lease:
 # only a solo session carries it, and STATIONS (and every projection) stays nine.
 HOST_ROLE = "host"
+# Observers (plan 1.3, phase 12): read-only pseudo-role the host grants; a
+# session then views any station without a lease and gets the SimLog.
+OBSERVER_MAX = 2
 
 
 def role_side(role):

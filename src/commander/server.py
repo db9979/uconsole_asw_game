@@ -45,6 +45,7 @@ from src.commander.v2.wire import (
     DIRECT_FIRE_ROLES,
     SONAR_AUDIO_ROLES,
     HOST_ROLE,
+    OBSERVER_MAX,
     role_side,
     HOST_MAX_BYTES,
     STATE_MAX_BYTES,
@@ -214,7 +215,9 @@ class CommanderServer:
         self._state_push_sequence = 0
         self._state_push_clients = {}
         self._state_push_enabled = True
-        self._voice_enabled = False
+        # Voice starts enabled in the web-host room; the host's option row
+        # switches it off (plan 1.3, phase 12).
+        self._voice_enabled = True
         self._voice_peers = {}
         self._voice_talker = None
         self._v2_proposals = {}
@@ -304,6 +307,7 @@ class CommanderServer:
                 self._http = http
                 self._thread = thread
                 self._running = True
+                self._voice_enabled = True
             try:
                 thread.start()
             except BaseException:
@@ -498,7 +502,8 @@ class CommanderServer:
                 self._auto_grant_locked(session, station)
 
     def _set_active_station_locked(self, session, station, reason="active_station_changed"):
-        if station is not None and station not in session["leases"]:
+        if (station is not None and station not in session["leases"]
+                and not session["observer"]):
             return False
         if session["active_station"] == station:
             return True
@@ -560,6 +565,9 @@ class CommanderServer:
                 self._release_station_locked(session, station, reason)
         session["requests"].clear()
         session["simlog"] = False
+        if session["observer"]:
+            session["observer"] = False
+            self._set_active_station_locked(session, None, reason)
         if session["solo_host"]:
             self._reject_station_commands_locked(session, HOST_ROLE, reason)
             session["solo_host"] = False
@@ -671,6 +679,7 @@ class CommanderServer:
             "active_station": None,
             "active_generation": 0,
             "simlog": False,
+            "observer": False,
             "solo_host": False,
             "web_host": web_host,
             "host_generation": 0,
@@ -945,6 +954,36 @@ class CommanderServer:
                     self._release_station_locked(session, station, "session_revoked")
                 self._solo_grant_all_locked(session, active)
 
+    def _set_observer_locked(self, session, enabled: bool) -> bool:
+        """Make a session a read-only observer (at most OBSERVER_MAX), or a
+        plain client again.  An observer holds no lease, views any station,
+        gets the SimLog and never commands; nothing of it is persisted."""
+        if enabled:
+            if session["observer"]:
+                return True
+            if session["solo_host"] or session["web_host"]:
+                return False
+            others = sum(1 for candidate in self._sessions_v2.values()
+                         if candidate["observer"] and candidate is not session)
+            if others >= OBSERVER_MAX:
+                return False
+            self._clear_session_authority_locked(session, "observer")
+            session["observer"] = True
+            session["simlog"] = True
+        else:
+            if not session["observer"]:
+                return True
+            session["observer"] = False
+            session["simlog"] = False
+            self._set_active_station_locked(session, None, "observer_revoked")
+        self._state_push_sequence += 1
+        self._sonar_stream_condition.notify_all()
+        return True
+
+    def observer_count(self) -> int:
+        with self._lock:
+            return sum(1 for session in self._sessions_v2.values() if session["observer"])
+
     def set_state_push(self, enabled: bool) -> None:
         """Host switch of the state push route; off closes every push socket
         and the browsers fall back to polling (never persisted)."""
@@ -978,6 +1017,7 @@ class CommanderServer:
                 "active_station": session["active_station"],
                 "active_generation": session["active_generation"],
                 "simlog": session["simlog"],
+                "observer": session["observer"],
                 "stations": {
                     station: {
                         "leased": station in session["leases"],
@@ -1008,7 +1048,8 @@ class CommanderServer:
         with self._lock:
             self._expire_locked()
             session = self._session_by_client_locked(client_id)
-            if session is None or self._side_conflict(session, station):
+            if (session is None or session["observer"]
+                    or self._side_conflict(session, station)):
                 return False
             holder = next((candidate for candidate in self._sessions_v2.values()
                            if station in candidate["leases"]), None)
@@ -1128,7 +1169,7 @@ class CommanderServer:
         else:
             raise ValueError("invalid client grant")
         if (not isinstance(client_id, str)
-                or capability not in (*_V2_STATION_CAPABILITIES, "simlog")
+                or capability not in (*_V2_STATION_CAPABILITIES, "simlog", "observer")
                 or type(enabled) is not bool):
             raise ValueError("invalid client grant")
         with self._lock:
@@ -1136,6 +1177,8 @@ class CommanderServer:
             session = self._session_by_client_locked(client_id)
             if session is None:
                 return False
+            if capability == "observer":
+                return self._set_observer_locked(session, enabled)
             if capability == "simlog":
                 session["simlog"] = enabled
                 return True

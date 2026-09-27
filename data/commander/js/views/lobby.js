@@ -41,9 +41,11 @@ export function renderLobby() {
   $("simlog-view").hidden = !simlog;
   if (simlog) loadSimlog();
   document.body.dataset.remoteRole = assigned ? "assigned" : "lobby";
+  const observer = S.session.observer === true;
+  document.body.dataset.observer = String(observer);
   const requested = S.session.requested_station;
   $("lobby-status").textContent = S.lobbyMessage ? t(S.lobbyMessage) : requested ?
-    t("lobby_pending", { station: t(`station_${requested}`) }) : t("lobby_waiting");
+    t("lobby_pending", { station: t(`station_${requested}`) }) : observer ? t("lobby_observer") : t("lobby_waiting");
   if ($("station-cards").children.length !== stationNames.length ||
       stationNames.some((station, index) => $("station-cards").children[index]?.dataset.station !== station)) {
     $("station-cards").replaceChildren(...stationNames.map((station) => {
@@ -58,10 +60,11 @@ export function renderLobby() {
     }));
   }
   // One unit at a time: the side of the held stations, else the lobby choice.
-  const side = S.session.station !== null ? (opforRoles.has(S.session.station) ? "opfor" : "frigate") : S.lobbySide;
+  const side = S.session.station !== null && S.session.observer !== true ? (opforRoles.has(S.session.station) ? "opfor" : "frigate") : S.lobbySide;
   for (const button of $("side-choice").querySelectorAll("button")) {
     button.setAttribute("aria-pressed", String(button.dataset.side === side));
-    button.disabled = S.session.station !== null && button.dataset.side !== side;
+    // An observer looks at both units; a crew member stays with one.
+    button.disabled = !observer && S.session.station !== null && button.dataset.side !== side;
   }
   stationNames.forEach((station, index) => {
     const record = S.session.stations[station];
@@ -74,14 +77,14 @@ export function renderLobby() {
     occupancy.textContent = t(`occupancy_${state}`);
     // A free station is taken at once with all its rights; one a crewmate
     // holds is requested from the host, who may hand it over.
-    button.textContent = record.requested ? t("station_requested")
+    button.textContent = observer ? t("station_view") : record.requested ? t("station_requested")
       : t(state === "available" ? "station_take" : "station_request");
     button.disabled = S.stationMutation || requested !== null || state === "mine";
   });
   if (!assigned) { renderDisabledReasons(); return; }
   const role = t(`station_${S.session.station}`);
   $("role-rail-title").textContent = role;
-  $("role-grants").textContent = t(S.session.grants.command ? "role_commands" : "role_read_only");
+  $("role-grants").textContent = t(observer ? "role_observer" : S.session.grants.command ? "role_commands" : "role_read_only");
   $("role-status").textContent = S.lobbyMessage ? t(S.lobbyMessage) : requested ?
     t("lobby_pending", { station: t(`station_${requested}`) }) : "";
   $("release-station").disabled = S.stationMutation;
@@ -215,6 +218,13 @@ export function switchSoloSide() {
 function requestStation(station) {
   if (!stationNames.includes(station) || S.session?.stations[station]?.status === "mine" ||
       S.session.requested_station !== null) return;
+  if (S.session.observer) {
+    // Observers hold no lease: the view switches straight away (generation 0).
+    S.activatingStation = station;
+    mutateStation("/stations/activate", {station, station_generation: 0,
+      active_generation: S.session.active_generation});
+    return;
+  }
   mutateStation("/stations/request", { station });
 }
 export function chooseStation(station) {

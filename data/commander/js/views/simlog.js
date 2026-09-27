@@ -207,6 +207,98 @@ function openSimlogMap(data, stamp, seq, latest = false) {
   if (!dialog.open) { dialog.hidden = false; dialog.showModal(); }
   queueSimlogMapDraw();
 }
+// ---- Debrief timeline and export (observer and solo host) -----------------
+// Marks come from the recorded entries themselves: a new own or hostile
+// torpedo (shot), a sunk or dead unit (loss), more contacts than before
+// (contact), own damage rising (hit).  Clicking a mark scrubs the current
+// snapshot to that entry.
+const SIMLOG_MARK_KINDS = ["shot", "enemy_shot", "hit", "contact", "loss"];
+function simlogIds(rows) { return new Set((rows || []).map((row) => row.id ?? row.seq ?? null).filter((id) => id !== null)); }
+function simlogLosses(rows) { return (rows || []).filter((row) => row.sunk === true || row.dead === true).length; }
+export function simlogMarks(entries) {
+  const marks = [];
+  let previous = null;
+  for (const entry of entries) {
+    const truth = entry.truth || {};
+    const kinds = new Set();
+    if (previous) {
+      const before = previous.truth || {};
+      if ([...simlogIds(truth.torpedoes)].some((id) => !simlogIds(before.torpedoes).has(id))) kinds.add("shot");
+      if ([...simlogIds(truth.enemy_torpedoes)].some((id) => !simlogIds(before.enemy_torpedoes).has(id))) kinds.add("enemy_shot");
+      if (finite(truth.ship?.damage) && finite(before.ship?.damage) && truth.ship.damage > before.ship.damage + .5) kinds.add("hit");
+      const lossesNow = ["subs", "surfaces", "torpedoes", "enemy_torpedoes"].reduce((sum, key) => sum + simlogLosses(truth[key]), 0);
+      const lossesBefore = ["subs", "surfaces", "torpedoes", "enemy_torpedoes"].reduce((sum, key) => sum + simlogLosses(before[key]), 0);
+      if (lossesNow > lossesBefore) kinds.add("loss");
+      const contactsNow = buildDisplayModel(entry.state).tracks.length;
+      const contactsBefore = buildDisplayModel(previous.state).tracks.length;
+      if (contactsNow > contactsBefore) kinds.add("contact");
+    }
+    for (const kind of SIMLOG_MARK_KINDS) if (kinds.has(kind)) marks.push({seq: entry.seq, t: entry.t, kind, entry});
+    previous = entry;
+  }
+  return marks;
+}
+export function debriefAllowed() { return S.session?.observer === true || S.session?.host !== null; }
+function renderTimeline(entries) {
+  const bar = $("simlog-timeline");
+  $("simlog-export").hidden = !debriefAllowed();
+  $("simlog-timeline-section").hidden = !debriefAllowed() || entries.length < 2;
+  if (!debriefAllowed() || entries.length < 2) { bar.replaceChildren(); return; }
+  const first = entries[0].t, last = entries.at(-1).t;
+  const span = Math.max(1, last - first);
+  const marks = simlogMarks(entries);
+  bar.replaceChildren(...entries.map((entry) => {
+    const tick = node("button", undefined, "simlog-tick");
+    tick.type = "button";
+    tick.style.left = `${((entry.t - first) / span) * 100}%`;
+    tick.title = `${entry.stamp} T+${Math.floor(entry.t)}s`;
+    tick.setAttribute("aria-label", tick.title);
+    tick.dataset.seq = String(entry.seq);
+    tick.addEventListener("click", () => scrubTo(entry));
+    return tick;
+  }), ...marks.map((mark) => {
+    const item = node("button", undefined, `simlog-mark simlog-mark-${mark.kind}`);
+    item.type = "button";
+    item.style.left = `${((mark.t - first) / span) * 100}%`;
+    item.title = `${t(`simlog_mark_${mark.kind}`)} T+${Math.floor(mark.t)}s`;
+    item.setAttribute("aria-label", item.title);
+    item.dataset.kind = mark.kind;
+    item.addEventListener("click", () => scrubTo(mark.entry));
+    return item;
+  }));
+  $("simlog-timeline-range").textContent = t("simlog_timeline_range", {from: number(first, 0), to: number(last, 0), marks: number(marks.length, 0)});
+}
+function scrubTo(entry) {
+  S.simlogScrubSeq = entry.seq;
+  $("simlog-current").replaceChildren(roleHistorySummary(entry, true));
+  for (const tick of $("simlog-timeline").querySelectorAll(".simlog-tick"))
+    tick.setAttribute("aria-pressed", String(Number(tick.dataset.seq) === entry.seq));
+}
+const SIMLOG_EXPORT_FORBIDDEN = new Set(["rng", "rngs", "seed", "seeds", "credential", "credentials", "csrf", "cookie", "token", "settings", "password", "api_key"]);
+export function exportable(value) {
+  if (Array.isArray(value)) return value.map(exportable);
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [key, item] of Object.entries(value)) if (!SIMLOG_EXPORT_FORBIDDEN.has(key)) out[key] = exportable(item);
+    return out;
+  }
+  return value;
+}
+export function exportSimlog() {
+  if (!debriefAllowed() || !S.simlogEntries?.length) return;
+  const state = S.v2State;
+  const payload = exportable({protocol: 2, kind: "u-jagd-debrief", role: state?.role ?? null,
+    session: state?.session ?? null, epoch: state?.epoch ?? null, entries: S.simlogEntries});
+  const blob = new Blob([JSON.stringify(payload)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const link = node("a");
+  link.href = url;
+  link.download = `u-jagd-debrief-${String(state?.session ?? "world").slice(0, 16)}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 export async function loadSimlog() {
   if (!simlogActive()) return;
   const status = $("simlog-status");
@@ -371,6 +463,8 @@ function renderRoleSimlog(entries) {
   $("simlog-count").textContent = number(entries.length, 0);
   if (!entries.length) {
     S.latestSimlogState = null;
+    S.simlogEntries = [];
+    renderTimeline([]);
     status.hidden = false;
     status.textContent = t("simlog_empty");
     $("simlog-current").replaceChildren(node("p", t("simlog_state_unavailable"), "empty"));
@@ -379,7 +473,10 @@ function renderRoleSimlog(entries) {
   }
   status.hidden = true;
   S.latestSimlogState = entries.at(-1);
-  $("simlog-current").replaceChildren(roleHistorySummary(S.latestSimlogState, true));
+  S.simlogEntries = entries;
+  renderTimeline(entries);
+  const scrubbed = entries.find((entry) => entry.seq === S.simlogScrubSeq);
+  $("simlog-current").replaceChildren(roleHistorySummary(scrubbed ?? S.latestSimlogState, true));
   $("simlog-list").replaceChildren(...[...entries].reverse().map((entry) => {
     const item = node("li", undefined, "simlog-entry");
     item.append(node("span", `${entry.stamp}  T+${Math.floor(entry.t)}s`, "simlog-stamp"),

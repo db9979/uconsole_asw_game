@@ -25,7 +25,7 @@ import { changeLookoutRange, queueLookoutDraw, renderLookoutStatus, zoom } from 
 import { renderSnapshot } from "../views/render.js";
 import { hideMapTooltip, mapTooltipLines, nearestMapInfo, roleMapGeometry, showMapTooltip, stopOpzSweepAnimation, syncOpzSweepAnimation } from "../views/role-map.js";
 import { queueVisualDraw, renderRoleVisuals } from "../views/role-visuals.js";
-import { applySimlogView, closeSimlogMap, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
+import { applySimlogView, closeSimlogMap, exportSimlog, loadSimlog, queueSimlogMapDraw } from "../views/simlog.js";
 import { renderTracks, selectTrack } from "../views/tracks.js";
 import { drawWeatherProfile, profileSpeedAt, toggleWeatherStation } from "../views/weather.js";
 import { schedule } from "../core/scheduler.js";
@@ -533,6 +533,7 @@ export function init() {
     event.preventDefault(); numberAction("uboot-scope-form", "uboot-scope-relative", "uboot_scope_bearing", "relative_deg", 0, 359.99999999999994);
   });
   $("uboot-scope-mark").addEventListener("click", () => sendStationAction("uboot_scope_mark", {}));
+  $("simlog-export").addEventListener("click", () => exportSimlog());
   $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));

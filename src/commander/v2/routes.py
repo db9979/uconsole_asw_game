@@ -354,6 +354,13 @@ class _Handler(BaseHTTPRequestHandler):
                           if station in session["requests"]), None)
         active_grants = (station_grants() if active_lease is None
                          else dict(active_lease["grants"]))
+        observer = session["observer"]
+
+        def status(station):
+            if observer and station == active:
+                return "mine"                     # the observer's read-only view
+            return ("available" if station not in occupied else
+                    "mine" if occupied[station] is session else "occupied")
         return {
             "protocol": 2,
             "client_id": session["client_id"],
@@ -370,6 +377,7 @@ class _Handler(BaseHTTPRequestHandler):
                                    else active_lease["generation"]),
             "next_command_seq": session["last_command_seq"] + 1,
             "simlog": session["simlog"],
+            "observer": observer,
             "grants": dict(active_grants, simlog=session["simlog"]),
             "presence": session["presence"],
             # Host command surface: only a solo session carries one.
@@ -377,12 +385,12 @@ class _Handler(BaseHTTPRequestHandler):
                      if session["solo_host"] else None),
             "stations": {
                 station: {
-                    "status": ("available" if station not in occupied else
-                               "mine" if occupied[station] is session else "occupied"),
+                    "status": status(station),
                     "requested": station in session["requests"],
                     "request_generation": session["requests"].get(station, 0),
                     "station_generation": (session["leases"][station]["generation"]
-                                           if station in session["leases"] else None),
+                                           if station in session["leases"] else
+                                           0 if observer and station == active else None),
                     "grants": (dict(session["leases"][station]["grants"])
                                if station in session["leases"] else
                                station_grants()),
@@ -579,13 +587,15 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             role = session["active_station"]
             lease = session["leases"].get(role)
-            if not owner._state_push_enabled or role not in ROLES or lease is None:
+            observer = session["observer"]
+            if (not owner._state_push_enabled or role not in ROLES
+                    or (lease is None and not observer)):
                 self.send_error(403)
                 return
             if digest in owner._state_push_clients:
                 self._reply(409, {"error": "push_exists"})
                 return
-            station_generation = lease["generation"]
+            station_generation = 0 if observer else lease["generation"]
             active_generation = session["active_generation"]
             owner._state_push_clients[digest] = client_token
         accept = base64.b64encode(hashlib.sha1(
@@ -612,8 +622,9 @@ class _Handler(BaseHTTPRequestHandler):
                              and current is session
                              and owner._state_push_clients.get(digest) is client_token
                              and current["active_station"] == role
-                             and lease is not None
-                             and lease["generation"] == station_generation
+                             and (current["observer"] if observer else
+                                  lease is not None
+                                  and lease["generation"] == station_generation)
                              and current["active_generation"] == active_generation)
                     if not valid:
                         break
@@ -1172,6 +1183,8 @@ class _Handler(BaseHTTPRequestHandler):
                         if (not isinstance(body, dict) or body.keys() != {"station"}
                                 or body["station"] not in ROLES):
                             status, response = 400, {"error": "invalid_request"}
+                        elif session["observer"]:
+                            status, response = 403, {"error": "observer"}
                         else:
                             station = body["station"]
                             if session["solo_host"] and owner._solo and owner._side_conflict(
@@ -1197,6 +1210,16 @@ class _Handler(BaseHTTPRequestHandler):
                           or type(body["active_generation"]) is not int
                           or not 0 <= body["active_generation"] <= _SAFE_INTEGER_MAX):
                         status, response = 400, {"error": "invalid_request"}
+                    elif session["observer"]:
+                        # An observer views any station without a lease.
+                        if body["station_generation"] != 0:
+                            status, response = 409, {"error": "stale_generation"}
+                        else:
+                            owner._set_active_station_locked(
+                                session, body["station"] if self.path.endswith("/activate")
+                                else None)
+                            status = 200
+                            response = self._session_v2_body(session, owner._sessions_v2)
                     elif (body["station"] not in session["leases"]
                           or session["leases"][body["station"]]["generation"]
                           != body["station_generation"]):

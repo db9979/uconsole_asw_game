@@ -233,12 +233,12 @@ class CommanderConsole:
             ok = self.server.grant_station(client_id, station)
             success = message("commander.roster.status.assigned", client=name,
                               station=message(self._station_key(station)))
-        elif action in ("command", "direct_fire", "simlog", "sonar_audio"):
+        elif action in ("command", "direct_fire", "simlog", "sonar_audio", "observer"):
             station = ROLES[self.roster_station]
-            enabled = (not selected["simlog"] if action == "simlog" else
+            enabled = (not selected.get(action, False) if action in ("simlog", "observer") else
                        not self._station_row(selected, station)["grants"][action])
             ok = (self.server.set_client_grant(client_id, action, enabled)
-                  if action == "simlog" else
+                  if action in ("simlog", "observer") else
                   self.server.set_client_grant(client_id, station, action, enabled))
             success = message("commander.roster.status.grant", client=name,
                               capability=message(f"commander.roster.capability.{action}"),
@@ -477,6 +477,8 @@ class CommanderConsole:
                 ok = server.set_client_grant(client_id, station, action, value)
             elif action == "simlog":
                 ok = server.set_client_grant(client_id, "simlog", value)
+            elif action == "observer":
+                ok = server.set_client_grant(client_id, "observer", value)
             elif action == "rotate_code":
                 with server._lock:
                     server._rotate_code_locked()
@@ -773,6 +775,8 @@ class CommanderConsole:
             self._roster_action("simlog")
         elif key == pygame.K_u:
             self._roster_action("sonar_audio")
+        elif key == pygame.K_o:
+            self._roster_action("observer")
         elif key == pygame.K_x:
             self._roster_action("revoke_station")
         elif key == pygame.K_DELETE:
@@ -791,7 +795,7 @@ class CommanderConsole:
 
     @staticmethod
     def roster_action_rects():
-        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(10))
+        return tuple(pygame.Rect(704, 116 + index * 39, 452, 34) for index in range(11))
 
     @classmethod
     def roster_station_cycle_rects(cls):
@@ -833,7 +837,7 @@ class CommanderConsole:
                 self._roster_mouse_confirm = None
                 return
         actions = ("approve", "reject", "assign", "command", "direct_fire", "simlog",
-                   "sonar_audio",
+                   "sonar_audio", "observer",
                    "revoke_station", "revoke_client", "revoke_all")
         for action, rect in zip(actions, self.roster_action_rects()):
             if rect.collidepoint(canvas):
@@ -1018,6 +1022,9 @@ class CommanderConsole:
             message("commander.roster.toggle", capability=message(
                 "commander.roster.capability.sonar_audio"), state=message(
                     "common.on" if station_grants.get("sonar_audio") else "common.off")),
+            message("commander.roster.toggle", capability=message(
+                "commander.roster.capability.observer"), state=message(
+                    "common.on" if selected and selected.get("observer") else "common.off")),
             "commander.roster.revoke_station", "commander.roster.revoke_client",
             "commander.roster.revoke_all",
         )

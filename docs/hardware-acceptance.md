@@ -79,3 +79,4 @@ Vorgehen für jeden Lauf:
 |---|---|---|---|
 | Sprachfunk Standard | Client pairt, spricht ohne F9-Eingriff | hörbar; F9-Zeile schaltet ab und trennt Sprecher | |
 | Beobachterrolle | zwei Beobachter plus volle Crew | Host-CPU im Rahmen, Beobachter kann nichts befehlen | |
+| Nachbesprechung | Beobachter öffnet `#simlog` nach 10 min Spiel | Zeitstrahl mit Marken lesbar, Klick springt, Export lädt JSON ohne Geheimnisse | |

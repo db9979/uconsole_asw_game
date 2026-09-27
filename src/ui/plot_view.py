@@ -13,7 +13,7 @@ import pygame
 
 from src.core import config, plot
 from src.core.i18n import localize, message, raw_text
-from src.ui import layout
+from src.ui import layout, lines
 
 MARK_PX = 6
 DR_MINUTES = 30.0          # DR line drawn this far ahead of its current point
@@ -52,7 +52,7 @@ def _dashed(surface, color, start, end, dash=8) -> None:
     steps = min(400, int(length // dash))
     for index in range(0, steps, 2):
         a, b = index / max(steps, 1), min(1.0, (index + 1) / max(steps, 1))
-        pygame.draw.line(surface, color,
+        lines.line(surface, color,
                          (start[0] + (end[0] - start[0]) * a, start[1] + (end[1] - start[1]) * a),
                          (start[0] + (end[0] - start[0]) * b, start[1] + (end[1] - start[1]) * b))
 
@@ -92,13 +92,13 @@ def draw_plot(surface, game, view, chart) -> None:
             kind = item["kind"]
             anchor = (px, py)
             if kind == "mark":
-                pygame.draw.line(surface, color, (px - MARK_PX, py - MARK_PX),
+                lines.line(surface, color, (px - MARK_PX, py - MARK_PX),
                                  (px + MARK_PX, py + MARK_PX), 2)
-                pygame.draw.line(surface, color, (px - MARK_PX, py + MARK_PX),
+                lines.line(surface, color, (px - MARK_PX, py + MARK_PX),
                                  (px + MARK_PX, py - MARK_PX), 2)
             elif kind == "ruler":
                 end = view.world_to_screen(item["x2"], item["y2"])
-                pygame.draw.line(surface, color, (px, py), end, 2)
+                lines.line(surface, color, (px, py), end, 2)
                 for point in ((px, py), end):
                     pygame.draw.circle(surface, color, (int(point[0]), int(point[1])), 3)
                 anchor = ((px + end[0]) / 2.0, (py + end[1]) / 2.0)
@@ -116,7 +116,7 @@ def draw_plot(surface, game, view, chart) -> None:
                 now = plot.dr_position(item, game.sim_t)
                 ahead = plot.dr_position(item, game.sim_t + DR_MINUTES * 60.0)
                 cur = view.world_to_screen(*now)
-                pygame.draw.line(surface, color, (px, py), cur, 1)
+                lines.line(surface, color, (px, py), cur, 1)
                 _dashed(surface, color, cur, view.world_to_screen(*ahead))
                 pygame.draw.rect(surface, color, (int(cur[0]) - 4, int(cur[1]) - 4, 8, 8), 1)
                 pygame.draw.circle(surface, color, (int(px), int(py)), 3, 1)
@@ -130,10 +130,10 @@ def _draw_cursor(surface, game, view, chart) -> None:
     color = config.COLOR_PLOT
     cx, cy = game.plot_cursor
     px, py = view.world_to_screen(cx, cy)
-    pygame.draw.line(surface, color, (px - 12, py), (px - 4, py))
-    pygame.draw.line(surface, color, (px + 4, py), (px + 12, py))
-    pygame.draw.line(surface, color, (px, py - 12), (px, py - 4))
-    pygame.draw.line(surface, color, (px, py + 4), (px, py + 12))
+    lines.line(surface, color, (px - 12, py), (px - 4, py))
+    lines.line(surface, color, (px + 4, py), (px + 12, py))
+    lines.line(surface, color, (px, py - 12), (px, py - 4))
+    lines.line(surface, color, (px, py + 4), (px, py + 12))
     anchor = game.plot_anchor
     if anchor is not None:
         ax, ay = view.world_to_screen(*anchor)

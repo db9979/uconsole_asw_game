@@ -59,6 +59,10 @@ Vorgehen für jeden Lauf:
 |---|---|---|---|
 | Anti-Aliasing | Option `aa_lines` an/aus, Brücke mit Karte | Mehrkosten unter 1 ms je Frame, sonst Voreinstellung aus lassen | |
 | Tag/Nacht-Karte | Startzeiten 06:00, 12:00, 22:00 | Wasserfläche in drei Stufen getönt, Kontraste lesbar | |
+| Anti-Aliasing (Boot) | Option an, uConsole spielt das Boot, Führungsseite mit Karte | Peilstriche und Rohr-Schussfeld geglättet, Frame-Zeit wie bei der Fregatte | |
+| Wetterband | Szenario mit Regen (Wetterstation zeigt Regen), dann Sturm | Schraffur über der Karte sichtbar, aber Symbole und Text lesbar; Sturm mit gelbem Rand | |
+| Horizontstreifen | Brückenseite 3 mit Ausguck-Sichtung bei Tag und Nacht | Umriss auf der gemessenen Peilung, Horizont bewegt sich mit dem Seegang, 30 FPS gehalten | |
+| Browserkarte | Browserrolle Brücke bei 12:00 und 22:00, bei Regen | Wasser getönt wie am uConsole, Schraffur wie am uConsole | |
 
 ## Phase 11: Web-Client
 

@@ -1462,6 +1462,8 @@
   "option.simlog": "Simulationsprotokoll",
   "option.night_mode": "Rotlicht-Nachtmodus",
   "option.high_contrast": "Kontrastreiche/farbenblindfreundliche Palette",
+  "option.aa_lines": "Geglättete Kartenlinien",
+  "option.aa_lines.help": "Glättet Karten- und Plotlinien (Peilstriche, Küste, Plot). Standardmäßig aus: die Kosten auf der uConsole sind noch nicht gemessen; wieder ausschalten, wenn die Bildzeit leidet.",
   "option.frame_rate": "Bildrate: {fps} FPS",
   "option.bottom_panel": "Ereignislog / Telemetrie",
   "option.bottom_panel.ticker": "Statuszeile (F11 öffnet das Log)",

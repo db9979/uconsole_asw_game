@@ -8,7 +8,7 @@ import pygame
 from src.core import config
 from src.core.i18n import display_value, localized, localize, message as structured_message
 from src.core.station import Station
-from src.ui import layout
+from src.ui import horizon, layout
 from src.ui import observations
 
 
@@ -268,6 +268,36 @@ def _lookout_scope_rect(area: pygame.Rect) -> pygame.Rect:
     return pygame.Rect(area.x, area.y, max(40, int(area.w * .58)), max(40, area.h))
 
 
+LOOKOUT_HORIZON_H = 72
+LOOKOUT_HORIZON_FOV_DEG = 90.0
+# Assumed lengths (m) of the lookout kinds for the apparent size on the horizon.
+_LOOKOUT_KIND_LENGTH_M = {"SURFACE": 120.0, "SUB": 70.0, "FLG": 15.0, "TORP": 40.0}
+_LOOKOUT_KIND_CLASS = {"SURFACE": "unknown", "SUB": "unknown", "FLG": "aircraft",
+                       "TORP": "torpedo"}
+
+
+def lookout_outlines(game, sightings) -> list:
+    """Detached ``(bearing, span_deg, cls, stale)`` rows of the lookout's own
+    tracks: the class from his report, the size from the measured range."""
+    from src.sensors import lookout_id
+    rows = []
+    for track in sightings:
+        if track.bearing is None or track.range_nm is None or track.range_nm <= 0.0:
+            continue
+        cls = _LOOKOUT_KIND_CLASS.get(track.kind, "unknown")
+        level, recognized, _identified = lookout_id.decode(track.label)
+        if recognized in ("WARSHIP", "CARRIER", "CRUISER", "DESTROYER", "FRIGATE",
+                          "CORVETTE", "NAVAL_AUXILIARY", "MINE_WARFARE"):
+            cls = "warship"
+        elif recognized in ("MERCHANT", "TANKER", "CARGO", "PASSENGER"):
+            cls = "merchant"
+        span = math.degrees(_LOOKOUT_KIND_LENGTH_M.get(track.kind, 100.0)
+                            / max(track.range_nm * 1852.0, 1.0))
+        rows.append((track.bearing % 360.0, max(1e-3, min(180.0, span)), cls,
+                     game.sim_t - track.last_seen > config.LOOKOUT_EPOCH_S * 2))
+    return rows
+
+
 def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
     """Bridge lookout page: north-up scope of the visual sightings.
 
@@ -322,6 +352,19 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
                       "panel.lookout_reports")
     ix, iy, iw, ih = info
     weather = game.world.weather_values()
+    # The binoculars toward the bow: the same horizon as the boat's periscope,
+    # with the outlines of the lookout's own sightings (measured bearing and
+    # range; the class from what he made out).
+    strip_h = LOOKOUT_HORIZON_H if ih >= 260 else 0
+    if strip_h:
+        horizon.draw_horizon(
+            s, (ix, iy, iw, strip_h), line_of_sight=game.ship.course % 360.0,
+            fov_deg=LOOKOUT_HORIZON_FOV_DEG, night=night,
+            visibility_nm=weather["visibility_nm"],
+            motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
+            outlines=lookout_outlines(game, sightings))
+        iy += strip_h + 6
+        ih -= strip_h + 6
     layout.blit_line(s, message("bridge.line.lookout_visibility",
                                 visibility=f"{weather['visibility_nm']:.1f}"),
                      (ix, iy, iw, 20), config.COLOR_TEXT, size=15)

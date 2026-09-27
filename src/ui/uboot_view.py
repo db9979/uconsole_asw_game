@@ -18,9 +18,9 @@ from src.commander.server import OPFOR_ROLES
 from src.core import config, opfor, uboot_local
 from src.core.i18n import display_value, localize, message, raw_text
 from src.core.station import Station
-from src.ui import layout, nato_symbols
+from src.ui import layout, lines, nato_symbols
 from src.ui.feedback import FeedEntry
-from src.ui.map_view import draw_chart_frame, draw_chart_geography
+from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
@@ -120,7 +120,7 @@ def draw_top_bar(game, boat) -> None:
     s = game.screen
     layout.configure_for(game)
     pygame.draw.rect(s, config.COLOR_PANEL_BG, (0, 0, config.SCREEN_W, config.TOP_BAR_H))
-    pygame.draw.line(s, config.COLOR_SONAR_RING, (0, config.TOP_BAR_H - 1),
+    lines.line(s, config.COLOR_SONAR_RING, (0, config.TOP_BAR_H - 1),
                      (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
     sub = boat.sub if boat is not None else None
     # The boat's six stations as tabs (key number and short name); a station a
@@ -133,7 +133,7 @@ def draw_top_bar(game, boat) -> None:
         remote = bool(leased and leased(role))
         if active:
             pygame.draw.rect(s, config.COLOR_TAB_ACTIVE, rect)
-            pygame.draw.line(s, config.COLOR_SONAR_RING, rect.bottomleft,
+            lines.line(s, config.COLOR_SONAR_RING, rect.bottomleft,
                              (rect.right - 1, rect.bottom), 2)
         label = message("uboot.tab", number=index + 1, name=message(f"uboot.tab.{role}"))
         layout.blit_line(s, label, rect, config.COLOR_WARN if remote else
@@ -241,7 +241,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         position = _contact_position(boat, contact, game.sim_t)
         if position is not None:
             px, py = view.world_to_screen(*position)
-            pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
+            lines.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
                              (int(px), int(py)), 1)
             domain = _CLASS_DOMAIN.get(contact.player_class, "UNKNOWN")
             nato_symbols.draw_symbol(s, (px, py), "UNKNOWN", domain, 16,
@@ -258,7 +258,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         rad = math.radians(bearing)
         length = 320 if is_selected else 260
         ex, ey = bx + length * math.sin(rad), by - length * math.cos(rad)
-        pygame.draw.line(s, color, (int(bx), int(by)), (int(ex), int(ey)),
+        lines.line(s, color, (int(bx), int(by)), (int(ex), int(ey)),
                          2 if is_selected else 1)
         lx, ly = bx + 90 * math.sin(rad), by - 90 * math.cos(rad)
         _label(s, game, label, (int(lx) + 6, int(ly) - 8), color, r)
@@ -266,7 +266,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
     for index, torpedo in enumerate(_own_torpedoes(game, sub), start=1):
         px, py = view.world_to_screen(torpedo.x, torpedo.y)
         ang = math.radians(torpedo.course - 90.0)
-        pygame.draw.line(s, config.COLOR_WARN, (int(px), int(py)),
+        lines.line(s, config.COLOR_WARN, (int(px), int(py)),
                          (int(px + 10 * math.cos(ang)), int(py + 10 * math.sin(ang))), 2)
         pygame.draw.circle(s, config.COLOR_WARN, (int(px), int(py)), 3)
         _label(s, game, raw_text(f"T{index}"), (int(px) + 10, int(py) - 22),
@@ -278,18 +278,18 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         for edge in (-0.5, 0.5):
             ang = math.radians(sub.course + launcher.arc_center_deg
                                + edge * launcher.arc_width_deg - 90.0)
-            pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
+            lines.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
                              (int(bx + 70 * math.cos(ang)), int(by + 70 * math.sin(ang))), 1)
     # The boat: ordered course, heading, NATO subsurface symbol, motion vector.
     target = math.radians(sub.order_course - 90.0)
-    pygame.draw.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
+    lines.line(s, config.COLOR_TEXT_DIM, (int(bx), int(by)),
                      (int(bx + 42 * math.cos(target)), int(by + 42 * math.sin(target))), 1)
     layout.blit_line(s, message("map.target_course",
                                            course=f"{sub.order_course:03.0f}"),
                      (int(bx) + 12, int(by) + 12, 124, 18), config.COLOR_TEXT_DIM, size=12)
     color = nato_symbols.draw_symbol(s, (bx, by), "FRIEND", "SUBSURFACE", 20)
     heading = math.radians(sub.course - 90.0)
-    pygame.draw.line(s, color, (int(bx), int(by)),
+    lines.line(s, color, (int(bx), int(by)),
                      (int(bx + 16 * math.cos(heading)), int(by + 16 * math.sin(heading))), 2)
     nato_symbols.draw_motion_vector(s, (bx, by), sub.course, sub.speed, view.scale,
                                     config.COLOR_OK, max_px=120)
@@ -298,7 +298,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
 def draw_chart(game, boat) -> None:
     s = game.screen
     r = config.MAP_RECT
-    pygame.draw.rect(s, config.COLOR_GEO_BG, r)
+    pygame.draw.rect(s, chart_background(game), r)
     if boat is None:
         layout.blit_block(s, "uboot.local.no_boat", r[0] + 40, r[1] + 40, r[2] - 80, 60,
                           config.COLOR_WARN, size=20)
@@ -388,7 +388,7 @@ def _bar(s, rect, fraction, color) -> None:
 
 def _dashed_hline(s, color, x0, x1, y, dash=6) -> None:
     for x in range(int(x0), int(x1), dash * 2):
-        pygame.draw.line(s, color, (x, y), (min(x + dash, int(x1)), y), 1)
+        lines.line(s, color, (x, y), (min(x + dash, int(x1)), y), 1)
 
 
 def draw_depth_ladder(s, game, boat, rect) -> None:
@@ -412,19 +412,19 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
         shade = index / max(1, column.h - 1)
         color = tuple(int(a + (b - a) * shade)
                       for a, b in zip(config.COLOR_SHALLOW, config.COLOR_DEEP))
-        pygame.draw.line(s, color, (column.x, column.y + index),
+        lines.line(s, color, (column.x, column.y + index),
                          (column.right - 1, column.y + index))
     if math.isfinite(bottom) and bottom < scale_max:
         floor = depth_y(bottom)
         pygame.draw.rect(s, config.COLOR_LAND, (column.x, floor, column.w,
                                                 column.bottom - floor))
-        pygame.draw.line(s, config.COLOR_LAND_EDGE, (column.x, floor),
+        lines.line(s, config.COLOR_LAND_EDGE, (column.x, floor),
                          (column.right - 1, floor), 2)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, column, 1)
     step = 100 if scale_max <= 600 else 200 if scale_max <= 1200 else 500
     for value in range(0, int(scale_max) + 1, step):
         ty = depth_y(value)
-        pygame.draw.line(s, config.COLOR_TEXT_DIM, (column.x - 5, ty), (column.x, ty), 1)
+        lines.line(s, config.COLOR_TEXT_DIM, (column.x - 5, ty), (column.x, ty), 1)
         layout.blit_line(s, raw_text(f"{value}"), (x, ty - 8, 52, 16),
                          config.COLOR_TEXT_DIM, size=12, align="right")
     legend_x = column.right + 12
@@ -459,7 +459,7 @@ def draw_depth_ladder(s, game, boat, rect) -> None:
             label_y = placed[-1] + 17
         label_y = min(label_y, y + h - 16)
         placed.append(label_y)
-        pygame.draw.line(s, color, (column.right, mark_y), (legend_x - 2, label_y + 8), 1)
+        lines.line(s, color, (column.right, mark_y), (legend_x - 2, label_y + 8), 1)
         layout.blit_line(s, text, (legend_x, label_y, x + w - legend_x, 16), color, size=13)
 
 
@@ -737,14 +737,14 @@ def _draw_esm_rose(s, game, boat, rect) -> None:
     pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), radius, 1)
     pygame.draw.circle(s, config.COLOR_SONAR_RING, (cx, cy), radius // 2, 1)
     for bearing in range(0, 360, 30):
-        pygame.draw.line(s, config.COLOR_TEXT_DIM, at(bearing, radius), at(bearing, radius - 7), 1)
+        lines.line(s, config.COLOR_TEXT_DIM, at(bearing, radius), at(bearing, radius - 7), 1)
         tx, ty = at(bearing, radius + 10)
         layout.blit_line(s, raw_text("N" if bearing == 0 else f"{bearing:03d}"),
                          (tx - 16, ty - 7, 32, 14), config.COLOR_TEXT_DIM, size=11, align="center")
-    pygame.draw.line(s, nato_symbols.AFFILIATION_COLORS["FRIEND"], (cx, cy),
+    lines.line(s, nato_symbols.AFFILIATION_COLORS["FRIEND"], (cx, cy),
                      at(sub.course, radius * .35), 2)
     for bearing, _quality, _age in orders.esm:
-        pygame.draw.line(s, config.COLOR_WARN, (cx, cy), at(bearing, radius), 2)
+        lines.line(s, config.COLOR_WARN, (cx, cy), at(bearing, radius), 2)
     memory = sub.memory
     for age, bearing, color in ((memory["last_ping_age"], orders.ping_bearing, config.COLOR_WARN),
                                 (memory["last_torpedo_age"], orders.torpedo_bearing,
@@ -755,7 +755,7 @@ def _draw_esm_rose(s, game, boat, rect) -> None:
         for step in range(0, 10, 2):
             a = (cx + (end[0] - cx) * step / 10, cy + (end[1] - cy) * step / 10)
             b = (cx + (end[0] - cx) * (step + 1) / 10, cy + (end[1] - cy) * (step + 1) / 10)
-            pygame.draw.line(s, color, a, b, 3)
+            lines.line(s, color, a, b, 3)
 
 
 def _draw_esm_page(s, game, boat, x, y, w, h) -> None:

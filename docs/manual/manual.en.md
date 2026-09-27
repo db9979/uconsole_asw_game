@@ -126,7 +126,7 @@ The bottom status ticker shows the newest event and key telemetry; `F11` opens t
 
 - Menu: `1`-`4` scenario (4 = random with custom difficulty), `W` world mode, `R` new seed, `F` fullscreen, `Enter` start.
 - `S` / `L`: save / load (slots 1-5). Saves are exact and deterministic: a loaded game continues identically.
-- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates). Page 2 (`PgDn`/`Tab`): which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved. A new game asks for it first anyway.
+- `F10`: options - language, fullscreen, audio, large text, tooltips, frame rate (30 or 60 FPS; 30 saves CPU on the uConsole and is the default), event log / telemetry as status ticker (default, more room for the station) or docked band, operator assistance off (default: raw data and manual analysis) or training (automatic line labels, blade-rate and catalogue/emitter candidates). Page 2 (`PgDn`/`Tab`): which side the uConsole plays, frigate (default) or hostile submarine; only in the main menu, never saved. A new game asks for it first anyway. Page 2 also holds **anti-aliased chart lines** (off by default; smooths bearing lines, coast and plot at some CPU cost on the uConsole).
 - `F9`: Commander / Remote Crew - lets browser clients on the LAN take stations. A free station is taken at once with all of its rights (including direct fire and live sonar audio where the station has them); a station a crewmate holds is requested, and the host can hand it over. The host can revoke a station or single rights at any time.
 
 ## 1 Bridge
@@ -137,7 +137,7 @@ The Bridge conns the frigate: course, speed and position relative to coast, cont
 
 ### Displays and instruments
 
-Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope.
+Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope. The chart water darkens with the clock in three steps (day, dusk within an hour of 05:30 and 19:30, night), and rain or a storm hatches the chart with dashed diagonals (a storm adds an amber border); both are display only, as on the browser chart. Options page 2 can anti-alias the chart and plot lines.
 
 ```text
 +---------------------------+----------------------+
@@ -163,7 +163,7 @@ Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) sh
 
 ### Bridge lookout reports
 
-The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". Bridge page 3 (the lookout scope) shows the sightings north up around the own ship at the range and bearing the lookout measured, coloured by kind (surface, submarine, aircraft, torpedo) and labelled with what he made out, next to visibility, sea state, day/night and the latest reports; `,` and `.` change the scope radius (2 to 30 NM). A contact is reported in up to three steps as it closes, each step once:
+The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". Bridge page 3 (the lookout scope) shows the sightings north up around the own ship at the range and bearing the lookout measured, coloured by kind (surface, submarine, aircraft, torpedo) and labelled with what he made out, next to visibility, sea state, day/night and the latest reports; `,` and `.` change the scope radius (2 to 30 NM). Above the reports a horizon strip shows the binoculars toward the bow (90° field, true-bearing scale, the horizon moving with the sea, the light of the hour) with the outlines of the lookout's sightings at their measured bearing and range; it is the same renderer as the submarine's periscope. A contact is reported in up to three steps as it closes, each step once:
 
 - **Sighted:** only the kind of object is clear (vessel, aircraft, small object on the surface).
 - **Class:** the silhouette shows the class, for example merchant ship, warship, aircraft carrier, fishing vessel, speedboat, surfaced submarine, airliner or military aircraft.

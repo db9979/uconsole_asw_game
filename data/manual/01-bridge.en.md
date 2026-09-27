@@ -6,7 +6,7 @@ The Bridge conns the frigate: course, speed and position relative to coast, cont
 
 ## Displays and instruments {#bridge-displays}
 
-Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope.
+Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope. The chart water darkens with the clock in three steps (day, dusk within an hour of 05:30 and 19:30, night), and rain or a storm hatches the chart with dashed diagonals (a storm adds an amber border); both are display only, as on the browser chart. Options page 2 can anti-alias the chart and plot lines.
 
 ```text
 +---------------------------+----------------------+
@@ -32,7 +32,7 @@ Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) sh
 
 ## Bridge lookout reports {#bridge-lookout}
 
-The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". Bridge page 3 (the lookout scope) shows the sightings north up around the own ship at the range and bearing the lookout measured, coloured by kind (surface, submarine, aircraft, torpedo) and labelled with what he made out, next to visibility, sea state, day/night and the latest reports; `,` and `.` change the scope radius (2 to 30 NM). A contact is reported in up to three steps as it closes, each step once:
+The bridge lookout (eye height 18 m, 7x50 binoculars) reports sightings in the event feed as `AUSG` lines, for example `Bridge lookout: frigate (Admiral-Gorshkov-Fregatte) bearing 040°, 3.8 NM`. The Remote Crew bridge lists the same reports under "Lookout reports". Bridge page 3 (the lookout scope) shows the sightings north up around the own ship at the range and bearing the lookout measured, coloured by kind (surface, submarine, aircraft, torpedo) and labelled with what he made out, next to visibility, sea state, day/night and the latest reports; `,` and `.` change the scope radius (2 to 30 NM). Above the reports a horizon strip shows the binoculars toward the bow (90° field, true-bearing scale, the horizon moving with the sea, the light of the hour) with the outlines of the lookout's sightings at their measured bearing and range; it is the same renderer as the submarine's periscope. A contact is reported in up to three steps as it closes, each step once:
 
 - **Sighted:** only the kind of object is clear (vessel, aircraft, small object on the surface).
 - **Class:** the silhouette shows the class, for example merchant ship, warship, aircraft carrier, fishing vessel, speedboat, surfaced submarine, airliner or military aircraft.

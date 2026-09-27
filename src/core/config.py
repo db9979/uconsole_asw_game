@@ -214,6 +214,10 @@ LOOKOUT_SUB_RANGE_NM = 5.0
 LOOKOUT_AIR_RANGE_NM = 20.0
 LOOKOUT_SUB_SURFACED_MAX_DEPTH_M = 2.0
 LOOKOUT_NIGHT_FACTOR = 0.35
+# The 24-hour clock's daylight window (lookout, chart tint, bridge sky).
+DAYLIGHT_START_H = 5.5
+DAYLIGHT_END_H = 19.5
+DUSK_HALF_WIDTH_H = 1.0            # chart tint: "dusk" this close to either edge
 LOOKOUT_SEA_STATE_LOSS = 0.08
 LOOKOUT_BEARING_ERR_DEG = 0.6
 LOOKOUT_RANGE_ERR_FRAC = 0.06

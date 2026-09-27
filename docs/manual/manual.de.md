@@ -126,7 +126,7 @@ Die Statuszeile unten zeigt das neueste Ereignis und die wichtigste Telemetrie; 
 
 - Menü: `1`-`4` Szenario (4 = Zufall mit eigener Schwierigkeit), `W` Weltmodus, `R` neuer Seed, `F` Vollbild, `Enter` Start.
 - `S` / `L`: Speichern / Laden (Plätze 1-5). Spielstände sind exakt und deterministisch: ein geladenes Spiel läuft identisch weiter.
-- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste, Bedienerassistenz aus (Standard: Rohdaten und manuelle Analyse) oder Training (automatische Linienbeschriftung, Blattfrequenz- und Katalog-/Senderkandidaten). Seite 2 (`Bild ab`/`Tab`): welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert. Ein neues Spiel fragt ohnehin zuerst danach.
+- `F10`: Optionen - Sprache, Vollbild, Audio, große Schrift, Tooltips, Bildrate (30 oder 60 FPS; 30 spart Rechenleistung auf der uConsole und ist voreingestellt), Ereignislog/Telemetrie als Statuszeile (Standard, mehr Platz für die Station) oder feste Leiste, Bedienerassistenz aus (Standard: Rohdaten und manuelle Analyse) oder Training (automatische Linienbeschriftung, Blattfrequenz- und Katalog-/Senderkandidaten). Seite 2 (`Bild ab`/`Tab`): welche Seite der uConsole spielt, Fregatte (Standard) oder feindliches U-Boot; nur im Hauptmenü, nie gespeichert. Ein neues Spiel fragt ohnehin zuerst danach. Auf Seite 2 liegen auch die **geglätteten Kartenlinien** (standardmäßig aus; glättet Peilstriche, Küste und Plot, kostet auf der uConsole etwas Rechenzeit).
 - `F9`: Commander / Remote Crew - Browser im LAN können Stationen übernehmen. Eine freie Station wird sofort mit allen ihren Rechten übernommen (auch Direktfeuer und Sonar-Liveaudio, wo die Station sie hat); eine Station, die ein Crewmitglied hält, wird angefragt, und der Host kann sie übergeben. Der Host kann jederzeit eine Station oder einzelne Rechte entziehen.
 
 ## 1 Brücke
@@ -137,7 +137,7 @@ Die Brücke führt die Fregatte: Kurs, Fahrt und Position zu Küste, Kontakten u
 
 ### Anzeigen und Instrumente
 
-Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt das Missionsbriefing; Seite 3 ist das Ausguck-Sichtfeld.
+Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt das Missionsbriefing; Seite 3 ist das Ausguck-Sichtfeld. Das Kartenwasser dunkelt mit der Uhr in drei Stufen ab (Tag, Dämmerung innerhalb einer Stunde um 05:30 und 19:30, Nacht), und Regen oder Sturm schraffiert die Karte mit gestrichelten Diagonalen (ein Sturm zusätzlich mit gelbem Rand); beides ist nur Anzeige, ebenso auf der Browserkarte. Optionen Seite 2 kann Karten- und Plotlinien glätten.
 
 ```text
 +---------------------------+----------------------+
@@ -163,7 +163,7 @@ Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt d
 
 ### Ausguck-Meldungen
 
-Der Brückenausguck (Augenhöhe 18 m, Fernglas 7x50) meldet seine Sichtungen im Ereignis-Feed als `AUSG`-Zeilen, zum Beispiel `Brücke/Ausguck: Fregatte (Admiral-Gorshkov-Fregatte) in 040°, 3.8 sm`. Die Remote-Crew-Brücke zeigt dieselben Meldungen unter „Ausguck-Meldungen“. Brückenseite 3 (Ausguck-Sichtfeld) zeigt die Sichtungen nordorientiert um das eigene Schiff mit der vom Ausguck gemessenen Peilung und Entfernung, nach Art eingefärbt (Oberwasser, U-Boot, Luftfahrzeug, Torpedo) und mit dem Erkannten beschriftet, daneben Sicht, Seegang, Tag/Nacht und die letzten Meldungen; `,` und `.` ändern den Radius (2 bis 30 sm). Ein Kontakt wird beim Näherkommen in bis zu drei Stufen gemeldet, jede Stufe einmal:
+Der Brückenausguck (Augenhöhe 18 m, Fernglas 7x50) meldet seine Sichtungen im Ereignis-Feed als `AUSG`-Zeilen, zum Beispiel `Brücke/Ausguck: Fregatte (Admiral-Gorshkov-Fregatte) in 040°, 3.8 sm`. Die Remote-Crew-Brücke zeigt dieselben Meldungen unter „Ausguck-Meldungen“. Brückenseite 3 (Ausguck-Sichtfeld) zeigt die Sichtungen nordorientiert um das eigene Schiff mit der vom Ausguck gemessenen Peilung und Entfernung, nach Art eingefärbt (Oberwasser, U-Boot, Luftfahrzeug, Torpedo) und mit dem Erkannten beschriftet, daneben Sicht, Seegang, Tag/Nacht und die letzten Meldungen; `,` und `.` ändern den Radius (2 bis 30 sm). Über den Meldungen zeigt ein Horizontstreifen das Fernglas voraus (90° Sichtfeld, Skala rechtweisender Peilungen, mit der See bewegter Horizont, Licht der Stunde) mit den Umrissen der Ausguck-Sichtungen in gemessener Peilung und Entfernung; es ist derselbe Renderer wie das Sehrohr des U-Boots. Ein Kontakt wird beim Näherkommen in bis zu drei Stufen gemeldet, jede Stufe einmal:
 
 - **Gesichtet:** nur die Art des Objekts ist klar (Fahrzeug, Luftfahrzeug, kleines Objekt an der Wasseroberfläche).
 - **Klasse:** die Silhouette zeigt die Klasse, zum Beispiel Handelsschiff, Kriegsschiff, Flugzeugträger, Fischereifahrzeug, Speedboot, aufgetauchtes U-Boot, Verkehrsflugzeug oder Militärflugzeug.

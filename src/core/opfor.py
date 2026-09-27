@@ -16,7 +16,7 @@ import math
 from src.core import config, detrand
 from src.core.i18n import message
 from src.core.plot import PlotLayer
-from src.physics import ship_dynamics, torpedo_dyn
+from src.physics import torpedo_dyn
 from src.sensors import lookout_id
 from src.sensors import visual as visual_physics
 from src.sensors.platform import MAST_DEPTH_M
@@ -524,19 +524,13 @@ def set_scope_relative(boat, relative_deg: float) -> float:
     return boat.orders.scope_rel_deg
 
 
-# Horizon motion in the eyepiece: px per rad of wave slope, bounded.
-SCOPE_MOTION_PX_PER_RAD = 260.0
-
-
 def horizon_motion(game, boat) -> tuple:
     """(vertical offset px, tilt rad) of the horizon seen through the scope,
     from the wave slope at the boat's own seed and the sea state its optics
     see (display only, deterministic in sim time)."""
+    from src.ui.horizon import horizon_motion as motion
     sea_state = getattr(game.world, "effective_sea_state", game.world.sea_state)
-    slope = ship_dynamics.wave_slope_rad(int(boat.sub.id), game.sim_t, sea_state)
-    offset = config.clamp(slope * SCOPE_MOTION_PX_PER_RAD, -40.0, 40.0)
-    tilt = config.clamp(slope * 0.6, -0.25, 0.25)
-    return offset, tilt
+    return motion(int(boat.sub.id), game.sim_t, sea_state)
 
 
 def _frigate_length_m(game) -> float:

@@ -649,7 +649,7 @@ class EventMixin:
                             if rect.collidepoint(canvas):
                                 self._set_options_page(page)
                                 break
-                        for index, rect in enumerate(self._options_row_rects()[:len(rows)]):
+                        for index, rect in enumerate(self._option_row_hit_rects(rows)):
                             if rect.collidepoint(canvas):
                                 self.options_sel = index
                                 name = rows[index]

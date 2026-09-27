@@ -816,6 +816,17 @@ class DrawMixin:
         return tuple(pygame.Rect(292, 118 + index * 40, 696, 36)
                      for index in range(max(len(page) for page in cls._OPTION_PAGES)))
 
+    # Row rect index of each setup-page row (the side's help text sits between).
+    _SETUP_ROW_INDICES = (0, 7)
+
+    @classmethod
+    def _option_row_hit_rects(cls, rows) -> tuple:
+        """Clickable rects of the shown options rows, in row order."""
+        rects = cls._options_row_rects()
+        if rows is cls._OPTION_ROWS_SETUP:
+            return tuple(rects[index] for index in cls._SETUP_ROW_INDICES[:len(rows)])
+        return rects[:len(rows)]
+
     @classmethod
     def _options_page_rects(cls):
         """Clickable page tabs left and right of the options title."""
@@ -906,6 +917,16 @@ class DrawMixin:
             layout.blit_block(self.screen, "option.local_side.locked",
                               row.x + 24, row.bottom + 170, row.w - 24, 50,
                               config.COLOR_WARN, size=18)
+        # Display: anti-aliased chart lines (row 8 leaves the side's help room).
+        row = self._options_row_rects()[self._SETUP_ROW_INDICES[1]]
+        selected = self.options_sel == 1
+        value = (self.tr("option.aa_lines") + ": "
+                 + self.tr("common.on" if self.preferences.aa_lines else "common.off"))
+        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
+                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
+        layout.blit_block(self.screen, "option.aa_lines.help",
+                          row.x + 24, row.bottom + 10, row.w - 24, 80,
+                          config.COLOR_TEXT_DIM, size=18)
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
                           292, 650, 696, 46, config.COLOR_TEXT_DIM, size=18,
@@ -1215,7 +1236,7 @@ class DrawMixin:
                                      enabled=bool(value))
             self._audio_timer = 0.0
             self._sonar_audio_sequence = -1
-        elif name in ("large_text", "high_contrast"):
+        elif name in ("large_text", "high_contrast", "aa_lines"):
             self._apply_text_size()
         elif name == "tooltips":
             self.tooltips_enabled = bool(value)

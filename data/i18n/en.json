@@ -1462,6 +1462,8 @@
   "option.simlog": "Simulation log",
   "option.night_mode": "Red-light night mode",
   "option.high_contrast": "High contrast / colorblind palette",
+  "option.aa_lines": "Anti-aliased chart lines",
+  "option.aa_lines.help": "Smooths chart and plot lines (bearing lines, coast, plot). Off by default: the cost on the uConsole is not measured yet; switch it off again if the frame time suffers.",
   "option.frame_rate": "Frame rate: {fps} FPS",
   "option.bottom_panel": "Event log / telemetry",
   "option.bottom_panel.ticker": "status ticker (F11 opens the log)",

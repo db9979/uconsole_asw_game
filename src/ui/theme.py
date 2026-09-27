@@ -115,6 +115,17 @@ EDITOR_PALETTE_HIGH_CONTRAST = dict(
 )
 
 
+# Chart water tint by the clock's light (multiplies the water tokens; the
+# grid, land and symbols keep their colours so the picture stays readable).
+WATER_TINT = {"day": 1.0, "dusk": 0.8, "night": 0.6}
+
+
+def water_color(color, stage: str):
+    """A water token darkened for a daylight stage."""
+    factor = WATER_TINT.get(stage, 1.0)
+    return tuple(int(channel * factor) for channel in color)
+
+
 def _high_contrast_enabled(game) -> bool:
     preferences = getattr(game, "preferences", None)
     return bool(getattr(preferences, "high_contrast", False))

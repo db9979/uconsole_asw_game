@@ -5,6 +5,7 @@ import math
 import random
 
 from src.core import config
+from src.world import atmosphere
 from src.world.coastline import Coastline
 from src.world.ocean import OceanEnvironment
 from src.world.grounding import (DEFAULT_HULL_SPEC, grounding_contact,
@@ -340,7 +341,11 @@ class World:
             self.refresh_weather()
 
     def is_night(self) -> bool:
-        return self.hour < 5.5 or self.hour >= 19.5
+        return self.hour < config.DAYLIGHT_START_H or self.hour >= config.DAYLIGHT_END_H
+
+    def daylight_stage(self) -> str:
+        """``day``, ``dusk`` or ``night`` for the chart tint (display only)."""
+        return atmosphere.daylight_stage(self.hour)
 
     def format_time(self) -> str:
         h = int(self.hour)

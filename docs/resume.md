@@ -1368,6 +1368,41 @@ Notizen Phase 9:
   (4) Der Client sendet Bootsbefehle nur mit `set_client_grant(client,
   station, "command", True)`.
 
+| 10 Grafik | fertig | siehe `git log` | fokussiert gruen (`tests/test_graphics_1_3.py` 9), Kalibrierung 77/77 | uConsole: Frame-Zeit mit `aa_lines` an/aus, Lesbarkeit bei Nacht (Checkliste) |
+
+Notizen Phase 10:
+
+- A10.1 `Preferences.aa_lines` (Default aus) auf Optionsseite 2 (Seite 1 hat
+  bei 13 Zeilen keinen Platz mehr ueber der Fusszeile); Zeile 8 der Seite,
+  `Game._option_row_hit_rects` bildet Klicks auf die gezeichneten Zeilen ab.
+  `src/ui/lines.py` (`line`/`lines`/`polygon`) schaltet ein-Pixel-Linien und
+  Polygonkanten auf `pygame.gfxdraw`; `layout.configure_for` setzt
+  `lines.ENABLED`. Durchgeleitet in `map_view.py`, `plot_view.py`,
+  `uboot_view.py` (Sed-Ersetzung aller `pygame.draw.line/lines/polygon`).
+  Kein Perf-Debug-Messwert in dieser Nacht: Hardware-Pruefpunkt.
+- A10.2 `atmosphere.daylight_stage(hour)` (Tag/Daemmerung/Nacht ueber
+  `config.DAYLIGHT_START_H/END_H`, `DUSK_HALF_WIDTH_H` = 1 h; `world.is_night`
+  nutzt dieselben Konstanten), `theme.WATER_TINT` + `theme.water_color` toenen
+  `COLOR_GEO_BG`, `COLOR_SHALLOW`, `COLOR_DEEP` auf beiden Karten (Fregatte
+  und Boot); der Bathymetrie-Cache traegt die getoenten Farben im Schluessel.
+  Web `views/chart.js`: `daylightStage`/`seaColor` mit denselben Zahlen aus
+  `clock.world`.
+- A10.3 `map_view.draw_weather_band`: ab Regen 0,25 gestrichelte Diagonalen
+  (Abstand 46 bis 18 px, Alpha 28 bis 70), Sturm zusaetzlich gelber Rand;
+  nur Anzeige aus `world.weather_values`/`weather_kind`. Web
+  `drawWeatherBand` aus dem `environment`-Block; kein Schemawechsel.
+- A10.4 `src/ui/horizon.py` ist der gemeinsame Horizont-Renderer
+  (`draw_horizon`, `draw_outline`, `horizon_motion`, `relative_offset`);
+  `uboot_scope.draw_eyepiece` ruft ihn, die Brueckenseite 3 zeigt oben im
+  Meldungsfeld einen 72-px-Streifen voraus (90 Grad Sichtfeld) mit den
+  Umrissen der Ausguck-Tracks (`bridge.lookout_outlines`: Klasse aus dem
+  Ausguck-Label, Groesse aus gemessener Entfernung).
+- Chromium-Bilder 1920x1080/2560x1440 nicht neu erzeugt: der erzeugende Test
+  (`test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`)
+  ist der vorbestehende Fehlschlag; Hardware-/Browser-Abnahme.
+- Handbuch: 00-quickstart (Option), 01-bridge (Toenung, Wetterband,
+  Horizontstreifen) EN/DE.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

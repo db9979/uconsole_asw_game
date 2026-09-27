@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { duration, number, stateText, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
-import { drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
+import { drawBoatBallast, drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
 
 // Alarm age with the boat's own measured bearing (never the source's truth).
 const alarmText = (age, bearing) => age === null ? t("station_none")
@@ -85,9 +85,9 @@ function renderChips(nav, status, alarms, scope) {
 }
 
 // Paired on/off orders: the button of the current state is pressed and not offered again.
-function renderModePairs(nav, status) {
+function renderModePairs(nav, status, ballast) {
   const state = {uboot_silent: status.silent, uboot_snorkel: status.snorkeling, uboot_mast: status.mast,
-    uboot_bottom: status.bottomed};
+    uboot_bottom: status.bottomed, uboot_trim_auto: ballast.auto};
   const possible = {uboot_snorkel: status.snorkel_available,
     uboot_mast: status.mast || nav.depth_m <= (nav.depth_presets.periscope ?? 0) + 3.5};
   for (const button of document.querySelectorAll("#station-uboot [data-uboot-mode]")) {
@@ -131,10 +131,44 @@ function renderScope(payload) {
       : `${unit(row.range_nm, "NM")} \u00b1${unit(row.range_sigma_nm, "NM")} (${unit(row.range_age_s, "s", 0)})`]],
   scope.available ? "uboot_no_sighting" : "uboot_scope_mast_down");
   drawBoatScope("uboot-scope-canvas", payload);
+  drawBoatBallast("uboot-ballast-canvas", payload);
 }
 
 // Energy and stores: bars, energy balance, endurance dived by speed and the boat's air.
 const percent = (value, capacity) => value === null || !capacity ? null : Math.max(0, Math.min(100, value / capacity * 100));
+// Tanks, trim and air bottles: the engineer's numbers and the crew's orders.
+const tonnes = (kg) => `${kg > 0 ? "+" : ""}${number(kg / 1000, 1)}`;
+function renderBallast(ballast) {
+  const mbt = ballast.blowing ? "uboot_mbt_blowing" : ballast.venting ? "uboot_mbt_venting"
+    : ballast.mbt_pct >= 100 ? "uboot_mbt_dived" : "uboot_mbt_blown";
+  const residual = ballast.residual_kg, weight = number(Math.abs(residual) / 1000, 1);
+  const heavy = residual > 20 ? t("uboot_heavy", {weight}) : residual < -20 ? t("uboot_light", {weight}) : t("uboot_neutral");
+  metrics($("uboot-ballast"), [
+    ["uboot_mbt", t(mbt, {pct: number(ballast.mbt_pct, 0)})],
+    ["uboot_hp_air", t(ballast.compressor ? "uboot_hp_air_compressor" : "uboot_hp_air_value",
+      {bar: number(ballast.hp_air_bar, 0), max: number(ballast.hp_air_max_bar, 0), blows: ballast.blows_left})],
+    ["uboot_trim_auto", t(ballast.auto ? "uboot_trim_auto_on" : "uboot_trim_auto_off")],
+    ["uboot_regulating", t("uboot_tank_value", {value: tonnes(ballast.regulating_kg), order: tonnes(ballast.regulating_order_kg)})],
+    ["uboot_trim_tanks", t("uboot_tank_value", {value: tonnes(ballast.trim_kg), order: tonnes(ballast.trim_order_kg)})],
+    ["uboot_weight", heavy], ["uboot_trim_angle", t("uboot_trim_angle_value", {angle: `${ballast.trim_deg > 0 ? "+" : ""}${number(ballast.trim_deg, 1)}`})],
+    ["uboot_drift", t("uboot_drift_value", {rate: `${ballast.drift_mps > 0 ? "+" : ""}${number(ballast.drift_mps, 2)}`})],
+    ["uboot_flooding", unit(ballast.flooding_kg / 1000, "t", 1)],
+    ["uboot_pumps", t(ballast.pumping ? "uboot_pumps_on" : "uboot_pumps_off")]]);
+  const warnings = [];
+  if (Math.abs(residual) > 2000) warnings.push(t(residual > 0 ? "uboot_ballast_warning_heavy" : "uboot_ballast_warning_light", {weight}));
+  if (Math.abs(ballast.trim_deg) > 3) warnings.push(t("uboot_ballast_warning_angle", {angle: number(ballast.trim_deg, 1)}));
+  if (ballast.blows_left === 0) warnings.push(t("uboot_ballast_warning_air"));
+  $("uboot-ballast-warning").hidden = warnings.length === 0;
+  $("uboot-ballast-warning").textContent = warnings.join(" ");
+  $("uboot-ballast").dataset.level = warnings.length ? "caution" : "ok";
+  for (const button of document.querySelectorAll("[data-uboot-ballast]")) {
+    const regulating = button.dataset.ubootBallast === "regulating", up = button.dataset.direction === "1";
+    const order = regulating ? ballast.regulating_order_kg : ballast.trim_order_kg;
+    const capacity = regulating ? ballast.regulating_capacity_kg : ballast.trim_capacity_kg;
+    button.dataset.ready = String(up ? order < capacity : order > -capacity);
+  }
+}
+
 function renderSupply(plant) {
   const air = plant.air;
   const bars = [["uboot_battery", percent(plant.battery_kwh, plant.battery_capacity_kwh), 20, 3,
@@ -266,7 +300,7 @@ export function renderUbootStation(payload) {
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
   renderReadouts(nav, status);
   renderChips(nav, status, alarms, payload.scope);
-  renderModePairs(nav, status);
+  renderModePairs(nav, status, payload.ballast);
   renderPresets(nav);
   metrics($("uboot-navigation"), [
     ["uboot_under_keel", unit(nav.under_keel_m, "m", 0)],
@@ -291,7 +325,7 @@ export function renderUbootStation(payload) {
   }
   metrics($("uboot-status"), [["state", t(`uboot_state_${status.state}`)], ["uboot_damage", unit(status.damage, "%", 0)],
     ["uboot_noise", number(nav.noise, 2)], ["uboot_quiet", yesNo(status.quiet)],
-    ["uboot_blow_available", yesNo(status.blow_available)], ["uboot_emergency_ascent", yesNo(status.emergency_ascent)]]);
+    ["uboot_blow_available", `${yesNo(status.blow_available)} (${t("uboot_hp_air_value", {bar: number(payload.ballast.hp_air_bar, 0), max: number(payload.ballast.hp_air_max_bar, 0), blows: payload.ballast.blows_left})})`], ["uboot_emergency_ascent", yesNo(status.emergency_ascent)]]);
   metrics($("uboot-weapon-status"), [["torpedoes", number(weapons.torpedoes, 0)],
     ["uboot_tubes_ready", number(weapons.tubes_ready, 0)], ["reload", unit(weapons.reload_s, "s", 0)],
     ["uboot_decoys", number(weapons.decoys, 0)],
@@ -323,6 +357,8 @@ export function renderUbootStation(payload) {
   drawBoatEsm("uboot-esm-canvas", payload);
   renderScope(payload);
   renderSupply(payload.plant);
+  renderBallast(payload.ballast);
+  drawBoatBallast("uboot-ballast-canvas", payload);
 }
 
 // Redraw the boat instruments only, when a canvas changes size: one that was

@@ -130,12 +130,12 @@ export function validateV2State(state) {
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
     sonar: ["observations", "settings", "visualization"],
-    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
-    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
-    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
-    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
+    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
     uboot_sonar: ["observations", "settings", "visualization"],
-    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant", "esm", "ballast"],
     weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
   };
   const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
@@ -150,6 +150,8 @@ export function validateV2State(state) {
   const boatFields = {
     plant: ["propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh", "aip_capacity_kwh", "aip_kw", "load_kw", "supply_kw", "net_kw", "empty_s", "full_s", "generator_kw", "fuel_l", "fuel_capacity_l", "charge_rate", "snorkel_rate", "endurance", "air"],
     air: ["o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles", "candle_left_s", "level", "efficiency"],
+    ballast: ["blowing", "venting", "auto", "pumping", "compressor", "hp_air_bar", "hp_air_max_bar", "blows_left", "mbt_pct", "regulating_kg", "regulating_order_kg", "regulating_capacity_kg", "trim_kg", "trim_order_kg", "trim_capacity_kg", "load_kg", "flooding_kg", "residual_kg", "trim_deg", "drift_mps"],
+    ballastFlags: ["blowing", "venting", "auto", "pumping", "compressor"],
     esm: ["mast_up", "mast_s", "mast_time_s", "mast_threat", "mast_radar_nm", "wash", "emitters"],
     esmEmitter: ["number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band", "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live", "quality", "classification", "candidates", "range_estimate_nm", "mast_threat", "history", "fix"],
     esmHistory: ["age_s", "x", "y", "bearing"],
@@ -287,6 +289,12 @@ export function validateV2State(state) {
           [air.absorber_sets, air.candles].some((value) => !Number.isInteger(value) || value < 0) ||
           !["ok", "caution", "danger"].includes(air.level))) ||
         (plant.propulsion === "nuclear") !== (air === null)) throw new Error("protocol");
+    // Tanks, trim and air bottles: own-ship flags and numbers.
+    const ballast = payload.ballast;
+    if (!exactKeys(ballast, boatFields.ballast) ||
+        boatFields.ballastFlags.some((key) => typeof ballast[key] !== "boolean") ||
+        boatFields.ballast.filter((key) => !boatFields.ballastFlags.includes(key)).some((key) => !finite(ballast[key])) ||
+        !Number.isInteger(ballast.blows_left) || ballast.blows_left < 0) throw new Error("protocol");
     // The boat's own ESM picture: measured parameters, own-position history,
     // crew cross-fix and library classification (never identity or position).
     const esm = payload.esm;

@@ -231,6 +231,12 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .uboot-log-age { color: var(--text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 /* Engine room: energy and stores (bars, balance, endurance, air). */
 .uboot-grid[data-role="uboot_engine"] .uboot-supply-card { grid-column: 1 / -1; }
+.uboot-ballast-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(16rem, 2fr); gap: .6rem; align-items: start; }
+@media (max-width: 60rem) { .uboot-ballast-columns { grid-template-columns: minmax(0, 1fr); } }
+.uboot-ballast-columns section { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.uboot-ballast-columns h4 { margin: 0; }
+#uboot-ballast-canvas { height: clamp(13rem, 30vh, 20rem); }
+.uboot-ballast-orders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem; }
 .uboot-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .45rem; }
 .uboot-bar { position: relative; display: grid; gap: .05rem; padding: .35rem .5rem .55rem; overflow: hidden; background: var(--bg-2); border: 1px solid var(--line); border-left: 3px solid var(--live); border-radius: var(--radius); }
 .uboot-bar::after { content: ""; position: absolute; left: 0; bottom: 0; height: 5px; width: var(--fill, 0%); background: var(--live); }

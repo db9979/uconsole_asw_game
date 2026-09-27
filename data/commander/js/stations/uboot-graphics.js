@@ -132,6 +132,55 @@ export function drawBoatEsm(id, payload) {
   if (!finite(nav.course)) drawEmpty(plot);
 }
 
+// Cross-section of the boat (bow to the right): main ballast fore and aft,
+// trim tanks at the ends of the pressure hull, the regulating tank amidships
+// and the air bottles, the whole boat tilted by its trim angle (drawn three
+// times steeper so a degree shows).
+export function drawBoatBallast(id, payload) {
+  const plot = visualContext(id);
+  if (!plot) return;
+  const {context: g, width, height} = plot, colors = palette(), b = payload.ballast;
+  const cx = width / 2, cy = height * .46, hw = Math.min(width * .44, 420), hh = Math.min(height * .2, hw * .22);
+  const water = colors.blue, fill = (x, y, w, h, fraction, color) => {
+    const part = Math.max(0, Math.min(1, fraction));
+    g.globalAlpha = .75; g.fillStyle = color; g.fillRect(x, y + h * (1 - part), w, h * part); g.globalAlpha = 1;
+    g.strokeStyle = colors.line; g.lineWidth = 1; g.strokeRect(x, y, w, h);
+  };
+  g.save();
+  g.translate(cx, cy);
+  g.rotate(Math.max(-12, Math.min(12, b.trim_deg * 3)) * Math.PI / 180);
+  // Outer hull and the pressure hull inside it.
+  g.strokeStyle = colors.muted; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(-hw, 0); g.quadraticCurveTo(-hw, -hh, -hw * .8, -hh); g.lineTo(hw * .75, -hh);
+  g.quadraticCurveTo(hw, -hh * .6, hw, 0); g.quadraticCurveTo(hw, hh * .6, hw * .75, hh); g.lineTo(-hw * .8, hh);
+  g.quadraticCurveTo(-hw, hh, -hw, 0); g.stroke();
+  g.fillStyle = colors.muted; g.fillRect(-hw * .12, -hh * 1.9, hw * .2, hh * .9);
+  const mbtW = hw * .18, inner = hh * .7;
+  fill(-hw * .84, -inner, mbtW, inner * 2, b.mbt_pct / 100, water);
+  fill(hw * .78 - mbtW, -inner, mbtW, inner * 2, b.mbt_pct / 100, water);
+  const tankW = hw * .14, tankH = inner;
+  const fore = .5 + .5 * b.trim_kg / b.trim_capacity_kg;
+  fill(hw * .55 - tankW, -tankH / 2, tankW, tankH, fore, colors.amber);
+  fill(-hw * .55, -tankH / 2, tankW, tankH, 1 - fore, colors.amber);
+  fill(-tankW, -tankH / 2, tankW * 2, tankH, .5 + .5 * b.regulating_kg / b.regulating_capacity_kg, colors.accent);
+  g.restore();
+  // Tank names under the hull, the air bottles below them.
+  const below = cy + hh + 26;
+  label(g, t("uboot_canvas_mbt"), cx - hw * .75, below, colors.muted, "center");
+  label(g, t("uboot_canvas_trim"), cx - hw * .48, below, colors.muted, "center");
+  label(g, t("uboot_canvas_regulating"), cx, below, colors.muted, "center");
+  label(g, t("uboot_canvas_trim"), cx + hw * .48, below, colors.muted, "center");
+  label(g, t("uboot_canvas_mbt"), cx + hw * .69, below, colors.muted, "center");
+  label(g, t("uboot_canvas_bow"), cx + hw, cy - hh - 14, colors.muted, "right");
+  const barY = height - 34, barW = hw * 2, air = b.hp_air_bar / b.hp_air_max_bar;
+  g.fillStyle = b.blows_left === 0 ? colors.red : colors.accent;
+  g.fillRect(cx - hw, barY, barW * Math.max(0, Math.min(1, air)), 10);
+  g.strokeStyle = colors.line; g.strokeRect(cx - hw, barY, barW, 10);
+  label(g, t("uboot_canvas_air", {bar: number(b.hp_air_bar, 0), blows: b.blows_left}), cx - hw, barY - 10, colors.muted);
+  label(g, t("uboot_trim_angle_value", {angle: `${b.trim_deg > 0 ? "+" : ""}${number(b.trim_deg, 1)}`}), cx + hw, barY - 10,
+    Math.abs(b.trim_deg) > 3 ? colors.amber : colors.muted, "right");
+}
+
 // Procedural outline by the coarse class the eye made out; `width` is the
 // apparent length in pixels, sitting on the horizon (aircraft above it).
 const HEIGHT_RATIO = {warship: .24, merchant: .17, unknown: .15, aircraft: .45, torpedo: .04};

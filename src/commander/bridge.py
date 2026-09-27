@@ -627,6 +627,14 @@ def _uboot_o2_candle(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_o2_candle())
 
 
+def _uboot_trim_auto(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_trim_auto(params["enabled"]))
+
+
+def _uboot_ballast(game, boat, params, _bindings):
+    return _uboot_result(boat.sub.command_ballast(params["tank"], params["direction"]))
+
+
 def _uboot_mast(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_mast(params["enabled"]))
 
@@ -675,6 +683,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_snorkel": _uboot_snorkel,
     "uboot_charge_rate": _uboot_charge_rate,
     "uboot_absorber": _uboot_absorber,
+    "uboot_trim_auto": _uboot_trim_auto,
+    "uboot_ballast": _uboot_ballast,
     "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
     "uboot_silent": _uboot_silent,

@@ -48,6 +48,8 @@ def render_block() -> str:
     lines.append("  const boatFields = {\n")
     lines.append(f"    plant: {_array(schema.UBOOT_PLANT_FIELDS)},\n")
     lines.append(f"    air: {_array(schema.UBOOT_AIR_FIELDS)},\n")
+    lines.append(f"    ballast: {_array(schema.UBOOT_BALLAST_FIELDS)},\n")
+    lines.append(f"    ballastFlags: {_array(schema.UBOOT_BALLAST_FLAGS)},\n")
     lines.append(f"    esm: {_array(schema.UBOOT_ESM_FIELDS)},\n")
     lines.append(f"    esmEmitter: {_array(schema.UBOOT_ESM_EMITTER_FIELDS)},\n")
     lines.append(f"    esmHistory: {_array(schema.UBOOT_ESM_HISTORY_FIELDS)},\n")

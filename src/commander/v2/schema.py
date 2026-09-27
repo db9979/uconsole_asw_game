@@ -39,7 +39,7 @@ WEATHER_BOAT_FIELDS = (
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
                         "own_weapons", "designated_target_ref", "feed", "scope", "plant",
-                        "esm")
+                        "esm", "ballast")
 # The boat's plant and stores (``plant``): numbers, then the air block.
 UBOOT_PLANT_FIELDS = (
     "propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh",
@@ -48,6 +48,13 @@ UBOOT_PLANT_FIELDS = (
     "snorkel_rate", "endurance", "air")
 UBOOT_AIR_FIELDS = ("o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles",
                     "candle_left_s", "level", "efficiency")
+# The boat's tanks, trim and high-pressure air (``ballast``): flags first,
+# then numbers (kilograms, bar, degrees, m/s; + heavy / bow down / sinking).
+UBOOT_BALLAST_FLAGS = ("blowing", "venting", "auto", "pumping", "compressor")
+UBOOT_BALLAST_FIELDS = UBOOT_BALLAST_FLAGS + (
+    "hp_air_bar", "hp_air_max_bar", "blows_left", "mbt_pct", "regulating_kg",
+    "regulating_order_kg", "regulating_capacity_kg", "trim_kg", "trim_order_kg",
+    "trim_capacity_kg", "load_kg", "flooding_kg", "residual_kg", "trim_deg", "drift_mps")
 # The boat's own ESM picture (``esm``): mast state, then one row per emitter
 # with its bearing history (own positions) and the crew's cross-fix.
 UBOOT_ESM_FIELDS = ("mast_up", "mast_s", "mast_time_s", "mast_threat", "mast_radar_nm",

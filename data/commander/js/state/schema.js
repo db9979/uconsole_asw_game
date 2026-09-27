@@ -150,6 +150,10 @@ export function validateV2State(state) {
     row: ["on_watch", "watches", "watch_left_s", "turnover", "action_stations", "morale", "effectiveness"],
     watch: ["index", "fatigue", "on_duty"],
   };
+  const mpaFields = {
+    row: ["state", "airborne", "x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s", "sorties_left", "buoys", "torpedoes", "radar", "buoy_mode", "pattern", "pattern_points", "datalink", "relayed"],
+    states: ["BASE", "TRANSIT", "STATION", "RTB"],
+  };
   const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
   const weatherFields = {
     atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
@@ -188,6 +192,15 @@ export function validateV2State(state) {
       if (row.altitude_m !== null && (!finite(row.altitude_m) || row.altitude_m < 0 || row.altitude_m > 30000)) throw new Error("protocol");
     });
   };
+  // The patrol aircraft: position and waypoint only while airborne.
+  const nullableFinite = (value) => value === null || finite(value);
+  const mpaOk = (mpa) => exactKeys(mpa, mpaFields.row) && mpaFields.states.includes(mpa.state) &&
+    typeof mpa.airborne === "boolean" && typeof mpa.radar === "boolean" && typeof mpa.datalink === "boolean" &&
+    ["x", "y", "course", "bearing", "range_nm", "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s"]
+      .every((key) => nullableFinite(mpa[key]) && (mpa.airborne || key === "ready_in_s" || mpa[key] === null)) &&
+    ["sorties_left", "buoys", "torpedoes", "relayed"].every((key) => Number.isInteger(mpa[key]) && mpa[key] >= 0 && mpa[key] <= 64) &&
+    ["PASSIVE", "ACTIVE"].includes(mpa.buoy_mode) && ["single", "field", "barrier", "circle"].includes(mpa.pattern) &&
+    boundedArray(mpa.pattern_points, 4) && mpa.pattern_points.every((row) => exactKeys(row, ["x", "y"]) && finite(row.x) && finite(row.y));
   // A crew's watch bill: three watches, fatigue and morale 0..1.
   const crewOk = (crew) => exactKeys(crew, crewFields.row) &&
     Number.isInteger(crew.on_watch) && crew.on_watch >= 1 && crew.on_watch <= 3 &&
@@ -398,7 +411,7 @@ export function validateV2State(state) {
            typeof row.ref !== "string" || !/^blip-[0-9]{1,18}$/.test(row.ref) || [row.x, row.y, row.age_s].some((value) => !finite(value)))) throw new Error("protocol");
     tacticalRows(payload.asm_observations, 128);
     if (payload.designated_target_ref !== null && (typeof payload.designated_target_ref !== "string" || !pictureRefs.has(payload.designated_target_ref))) throw new Error("protocol");
-    if (!exactKeys(payload.own_assets, ["ship", "helicopter", "weapons"]) ||
+    if (!exactKeys(payload.own_assets, ["ship", "helicopter", "mpa", "weapons"]) || !mpaOk(payload.own_assets.mpa) ||
         !boundedArray(payload.own_assets.weapons, 104) || payload.own_assets.weapons.some((row) => !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state"])) ||
         !exactKeys(payload.own_assets.ship, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||
         !exactKeys(payload.own_assets.helicopter, ["state", "airborne", "x", "y", "course", "fuel_s", "torpedoes", "buoys", "hovering", "dip_state", "dip_depth_m", "dip_depth_target_m", "dip_water_depth_m", "dip_ping_ready", "dip_ping_cooldown_s"])) throw new Error("protocol");

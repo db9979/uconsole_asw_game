@@ -656,6 +656,30 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                  active_assets=torpedoes + asrocs + nixies)
 
 
+def _mpa(game):
+    """The patrol aircraft: commanded own-force datalink state only."""
+    view = game.mpa_view()
+    airborne = bool(view["airborne"])
+    return dict(
+        state=view["state"], airborne=airborne,
+        x=_number(view["x"]) if airborne else None,
+        y=_number(view["y"]) if airborne else None,
+        course=_number(view["course"]) if airborne else None,
+        bearing=_number(view["bearing"]) if airborne else None,
+        range_nm=_number(view["range_nm"]) if airborne else None,
+        waypoint_x=_number(view["waypoint_x"]) if airborne else None,
+        waypoint_y=_number(view["waypoint_y"]) if airborne else None,
+        station_left_s=(_number(max(0.0, view["fuel_s"] - view["bingo_s"]))
+                        if airborne else None),
+        ready_in_s=(None if view["ready_in_s"] is None else _number(view["ready_in_s"])),
+        sorties_left=int(view["sorties_left"]), buoys=int(view["buoys"]),
+        torpedoes=int(view["torpedoes"]), radar=bool(view["radar"]),
+        buoy_mode=view["buoy_mode"], pattern=view["pattern"],
+        pattern_points=[dict(x=_number(x), y=_number(y))
+                        for x, y in view["pattern_points"]],
+        datalink=bool(view["datalink"]), relayed=int(view["relayed"]))
+
+
 def _crew(game, watch=None):
     """A crew's watch bill, fatigue and morale (own-ship truth)."""
     view = game.crew_view(watch)
@@ -1141,6 +1165,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                        helicopter=_helicopter(
                                            game, rows, asset_refs, buoy_labels,
                                            asset_only=True)["asset"],
+                                       mpa=_mpa(game),
                                        weapons=[row for group in _own_weapon_assets(
                                            game, asset_refs) for row in group])),
         "radio": _radio(game, rows, ref_by_track),

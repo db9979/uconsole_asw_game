@@ -32,6 +32,13 @@ RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon")
 CREW_FIELDS = ("on_watch", "watches", "watch_left_s", "turnover", "action_stations",
                "morale", "effectiveness")
 CREW_WATCH_FIELDS = ("index", "fatigue", "on_duty")
+# The patrol aircraft in the OPZ's own assets (``src/air/mpa.py``):
+# commanded own-force datalink state, never what it has not reported.
+MPA_FIELDS = ("state", "airborne", "x", "y", "course", "bearing", "range_nm",
+              "waypoint_x", "waypoint_y", "station_left_s", "ready_in_s",
+              "sorties_left", "buoys", "torpedoes", "radar", "buoy_mode", "pattern",
+              "pattern_points", "datalink", "relayed")
+MPA_STATES = ("BASE", "TRANSIT", "STATION", "RTB")
 RADIO_TASK_STATES = ("offered", "active", "done", "failed", "declined")
 
 # The common ``weather_station`` block: own-ship atmosphere (every role) and

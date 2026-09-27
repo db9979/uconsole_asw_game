@@ -86,12 +86,16 @@ def test_save_is_v21_and_older_documents_are_rejected():
     for row in v19["subs"]:
         del row["damage_control"]
     assert not game._load_save_data(v19)
-    # v20 differs by HQ tasking and the crew's watch bill.
+    # v20 differs by HQ tasking, the crew's watch bill, the patrol aircraft
+    # and the buoy owner.
     v20 = copy.deepcopy(state)
     v20["version"] = 20
     v20["save_schema"] = "u-jagd-save-v20"
     del v20["tasking"]
     del v20["watch"]
+    del v20["mpa"]
+    for buoy in v20["buoys"]:
+        del buoy["owner"]
     assert not game._load_save_data(v20)
     assert game.save_state() == before
 

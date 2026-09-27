@@ -521,6 +521,7 @@ class SimMixin:
                          fuel_factor=(config.HELO_ICING_FUEL_FACTOR
                                       if icing != "none" else 1.0))
         self._fly_buoy_pattern()
+        self._update_mpa(dt)
         for buoy in self.buoys:
             buoy.update(dt, self.world)
         self.buoys = [buoy for buoy in self.buoys if buoy.active]
@@ -1006,7 +1007,7 @@ class SimMixin:
         self.sonar.shipping_contacts = self._shipping_noise_contacts()
         self.sonar.update(dt, self.sim_t, self.ship, targets, self.world,
                           range_factor=self._sonar_range_factor(),
-                          mode=self.sonar_mode, buoys=self.buoys,
+                          mode=self.sonar_mode, buoys=self.heard_buoys(),
                            focus_tgt=focus,
                            own_cavitation=1.0 if self.ship.cavitating else 0.0,
                            advance_mechanics=False)

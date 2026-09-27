@@ -83,10 +83,11 @@ from src.core.game_operator import (OperatorMixin)
 from src.core.game_pictures import (PicturesMixin)
 from src.core.game_tasking import TaskingMixin
 from src.core.game_crew import CrewMixin
+from src.core.game_mpa import MpaMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
-           SaveMixin, TaskingMixin, CrewMixin):
+           SaveMixin, TaskingMixin, CrewMixin, MpaMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -586,6 +587,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                 self.runtime_catalog.runtime_bindings["helicopter_torpedo"]])
         self.buoys = []
         self.buoy_seq = 0
+        # The maritime patrol aircraft on call (save ``mpa``).
+        self._reset_mpa()
         self.helo_buoy_mode = "PASSIVE"
         self.helo_sensor_source = "DIP"
         self.helo_listen_source = "DIP"

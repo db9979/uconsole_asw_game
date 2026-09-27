@@ -24,7 +24,7 @@ SAVE_ROOT_FIELDS = frozenset({
     "schedulers", "rngs", "ui",
     "autocrew", "ais", "plot",
     "crew", "weapon_settings", "mission_events",
-    "ping_intercepts", "tasking", "watch",
+    "ping_intercepts", "tasking", "watch", "mpa",
 })
 
 # Save v16: foreign active pings still travelling to the frigate, as

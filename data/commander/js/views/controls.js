@@ -106,6 +106,13 @@ function directFireSpec(action) {
       payload.defense.vls > 0 && payload.defense.aa_ready : payload.defense.chaff_ready),
     readiness: [payload?.radar.live, payload?.defense, payload?.asm_observations.map((row) => row.ref)]};
   }
+  if (role === "opz" && action === "mpa_attack") {
+    // The aircraft's torpedo goes on the ship's designated sonar contact.
+    const mpa = payload?.own_assets.mpa;
+    const ref = payload?.designated_target_ref || "";
+    return {ref, params: {}, ready: Boolean(ref) && Boolean(mpa?.airborne) && mpa.datalink &&
+      mpa.torpedoes > 0, readiness: [ref, mpa?.state, mpa?.datalink, mpa?.torpedoes]};
+  }
   return {ref: "", params: {}, ready: false, readiness: null};
 }
 function directFireAvailable() {

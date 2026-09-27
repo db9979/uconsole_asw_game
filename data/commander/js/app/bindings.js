@@ -86,6 +86,7 @@ export function init() {
   on("session:metadata", acceptSession);
   on("session:forgetting", () => stopSonarAudio());
   on("session:forgetting", () => stopStatePush("session forgotten"));
+  on("push", (value) => { document.body.dataset.push = value; });
   on("session:forgotten", forgetPage);
   on("connection", (message) => {
     renderConnection();

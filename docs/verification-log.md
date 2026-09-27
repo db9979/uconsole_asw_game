@@ -6,6 +6,24 @@ green entry here is never evidence that a later dirty tree is green.
 Hardware checkpoints that CI cannot answer live in `docs/hardware-acceptance.md`;
 an entry below states which of them were run on the uConsole for its revision.
 
+## 2026-09-27 Plan 1.3 Durchlauf (Version 1.3.0, Branch `plan-1.3`)
+
+- Revision: working tree committed as the closeout commit on `plan-1.3` (27
+  commits after `main` ef45a4f), version 1.3.0, save format v15.
+- Automated suite: full parallel run 3484 passed, 26 skipped, 9 failed in
+  1207 s; the 9 failures were stale expectations of this run (session and
+  roster key sets with `observer`, voice default, transport DOM rule, browser
+  mocks without the new role fields, a convergence-zone assertion) and were
+  fixed and re-run green: 93 non-browser tests, 58 browser/layout tests
+  (one Chromium at a time). Two pre-existing browser failures deselected as on
+  `main`: `test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
+  and `test_submarine_sonar_filters_and_audio_survive_host_input`.
+- Calibration: 77/77 metrics within tolerance (golden of 1.0.0, no re-record).
+- Catalog: 111 acoustic profiles valid. Manual export and web schema up to date.
+- Smoke: `SMOKE-OK` with SDL dummy drivers.
+- Not covered: `python -m build` (deliberately not run), every uConsole
+  checkpoint in `docs/hardware-acceptance.md`, physical LAN and thermal load.
+
 ## 2026-09-07 Commander Baseline
 
 - Revision: working tree later committed as `1a8e278`.

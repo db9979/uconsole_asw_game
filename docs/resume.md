@@ -1496,6 +1496,23 @@ Notizen Phase 13:
   `editor.runtime_scope`. `docs/commander-coop.md` erwaehnt eigene
   Missionen nicht; nur AGENTS und Handbuch aktualisiert.
 
+Abschluss des Durchlaufs (2026-09-27):
+
+- Version `1.3.0` (`src/core/version.py`, README EN/DE Release-Absatz,
+  `tests/test_startup.py`, `tests/test_packaging.py`, AGENTS-Autoritaetszeile,
+  `docs/station-shortcuts.de.{md,pdf}` neu erzeugt). Kein `python -m build`,
+  kein Push (Entscheidung).
+- Abschlusspruefung (Eintrag 2026-09-27 in `docs/verification-log.md`):
+  volle Suite 3484 bestanden, 26 uebersprungen, 9 veraltete Erwartungen
+  dieses Durchlaufs korrigiert und einzeln gruen; Kalibrierung 77/77;
+  Katalog 111 Profile; Handbuch und Web-Schema aktuell; `SMOKE-OK`.
+- Offen fuer den Auftraggeber: `docs/hardware-acceptance.md` (alle Phasen
+  auf der uConsole), die zwei vorbestehenden Browser-Fehlschlaege (unten),
+  VDS (Phase 7), OffscreenCanvas (Phase 11), Editor-Sektorauswahl
+  (Phase 13), Kampagne (1.4).
+- Naechster Schritt: Hardware-Abnahme, dann Merge von `plan-1.3` nach
+  `main` und `python -m build` fuer das Release.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

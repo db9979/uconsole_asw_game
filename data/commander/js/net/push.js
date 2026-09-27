@@ -17,10 +17,11 @@ export function pushHealthy() {
   return push.connected && push.socket !== null && performance.now() - push.lastMessage <= 2 * PUSH_HEARTBEAT_MS + 500;
 }
 
+// The transport only announces its state; a view marks the page.
+let announced = null;
 function markPush(state) {
   const value = pushHealthy() ? "on" : "off";
-  if (document.body.dataset.push !== value) { document.body.dataset.push = value; emit("push", value); }
-  if (state) emit("push", value);
+  if (announced !== value || state) { announced = value; emit("push", value); }
 }
 
 export function stopStatePush(reason = "station context changed") {

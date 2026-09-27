@@ -96,7 +96,7 @@ def projection_states(revision="chart"):
 
 def assert_session(body, name):
     assert set(body) == {
-        "protocol", "client_id", "name", "csrf", "station",
+        "protocol", "client_id", "name", "csrf", "station", "observer",
         "requested_station", "grants", "ordinal", "station_generation",
         "active_station", "active_generation", "simlog",
         "next_command_seq", "presence", "stations", "host",
@@ -410,7 +410,7 @@ def test_host_revoke_and_grants_are_station_scoped(server):
     assert simlog["role"] == "bridge" and simlog["entries"] == []
     roster = server.client_statuses()[0]
     assert set(roster) == {"client_id", "name", "ordinal", "active_station",
-                           "active_generation", "simlog", "stations", "presence"}
+                           "active_generation", "simlog", "observer", "stations", "presence"}
     assert roster["stations"]["bridge"]["leased"]
     assert not roster["stations"]["weapons"]["leased"]
 

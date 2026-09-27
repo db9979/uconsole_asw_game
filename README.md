@@ -10,7 +10,26 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.2.0**
+Current release: **1.3.0**
+
+Release 1.3.0 widens the simulation and the crew's tools without moving the
+1.0.0 balance (77 calibration metrics still match): a second lightweight
+torpedo type with search patterns, enable point and salvo spread; hostile
+submarines that fire only once their own target-motion analysis has
+converged; counter-flooding, longitudinal trim and plant selection aboard;
+helicopter sonobuoy patterns and a MAD run; convergence zones from the
+measured sound-speed profile with Ekelund and dot-stack TMA; a periscope
+with visual sightings, a stadimeter and diesel noise while snorkelling for
+the crewed submarine; anti-aliased chart lines, the chart's light of the
+hour, a weather hatch and a shared horizon renderer; a WebSocket state push
+for Remote Crew with a generated schema allowlist; a read-only observer
+role, a debrief timeline with JSON export and voice on by default; and a
+mission runtime that takes the editor's scope (reference sectors, protect
+and reach objectives, random groups, timed events, authored weather, placed
+aircraft, animals and decoys). The core is split into mixins and the test
+suite runs in parallel. **Saves are format v15 (crewed-boat crew state,
+periscope sightings, weapon settings, mission events); v14 saves are
+rejected.**
 
 Release 1.2.0 tightens the game flow and the hand-over between stations: the
 `Esc` dialog and the mission-end screen return to the main menu (`M`), `R`
@@ -30,8 +49,8 @@ logistics; the radar equation with a rotating antenna, ESM amplitude, HF
 propagation and a moonlit lookout; and missile flight physics with chaff
 clouds, CIWS ballistics, pop-up raiders, helicopter hover/deck limits and
 drifting buoys. Hostile submarines now need their own TMA before they know
-your range. **Saves are now format v15 (crewed-boat crew state, local side); older saves are rejected.** The
-Remote Crew v2 protocol is unchanged apart from new ELOKA intercept fields.
+your range. The Remote Crew v2 protocol is unchanged apart from new ELOKA
+intercept fields.
 See [docs/simulation-gaps.md](docs/simulation-gaps.md) for the full record.
 
 Release 1.0.0 splits every workstation into two tabbed sub-pages, adds manual

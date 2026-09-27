@@ -940,7 +940,9 @@ def _direct_fire_browser_states():
                        reload_s=0.0), designated_target=None,
         navigation=navigation, tactical=[], target_choices=[weapon_row], depth_m=90.0,
         tubes=[dict(tube=1, state="ready", reload_s=0.0)], own_weapons=[],
-        active_assets=[]))
+        active_assets=[],
+        settings=dict(torpedo_type="frigate_torp", pattern="snake", enable_nm=1.0, salvo=1,
+                      choices=[dict(key="frigate_torp", name="Mk1", stock=4, loaded=2)])))
     asm_row = dict(tactical_row, ref="asm-ref", label="Current ASM observation",
                     domain="AIR", source="RADAR_AIR", bearing=45.0,
                     range_nm=12.0, x=258.0, y=242.0, speed_kn=480.0)
@@ -962,7 +964,8 @@ def _direct_fire_browser_states():
             dict(ref="opaque-torpedo-reference-one", x=251.0, y=249.0, depth_m=60.0,
                  course=90.0, state="RUN")])))
     helicopter = dict(common, role="helicopter", helicopter=dict(
-        asset=dict(helicopter_asset, buoy_mode="PASSIVE"), waypoint=None,
+        asset=dict(helicopter_asset, buoy_mode="PASSIVE", pattern="single",
+                   pattern_remaining=0, mad_mode=False), waypoint=None,
         buoys=[dict(ref="opaque-buoy-reference-one", label="SB01", x=252.0, y=248.0,
                     battery_s=500.0, active=True, mode="PASSIVE"),
                dict(ref="opaque-buoy-reference-two", label="SB02", x=253.0, y=247.0,
@@ -982,6 +985,7 @@ def _direct_fire_browser_states():
                              winch_rate_m_s=2.5, below_thermocline=None),
         readiness=dict(flightdeck_down=False, deck_state="OK", can_launch=False,
                         can_return=True, can_set_waypoint=True, can_deploy_buoy=True,
+                         can_pattern=True, can_mad=True,
                          can_set_dipping=True, can_set_dip_depth=False,
                          can_dipping_ping=False,
                          weather_launch_safe=True,
@@ -992,7 +996,9 @@ def _direct_fire_browser_states():
                            flood=20.0, fire=10.0, repairable=True,
                            trend=dict(flood_rate=.1, fire_rate=-.2, repairable=True))],
         teams=[dict(team=1, compartment=None), dict(team=2, compartment="engine")],
-        total=15.0, sunk=False))
+        total=15.0, sunk=False,
+        stability=dict(list_deg=0.5, trim_deg=-0.2, counterflood_room=None,
+                       can_counterflood=True)))
     bridge = dict(common, role="bridge", bridge=dict(
         navigation=navigation, tactical_summary=[], sightings=[],
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",

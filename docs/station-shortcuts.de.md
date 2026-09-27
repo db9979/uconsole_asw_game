@@ -1,4 +1,4 @@
-# U-Jagd 1.2.0 - Stations- und Tastenkürzel
+# U-Jagd 1.3.0 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -48,13 +48,14 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Karte` | Mausrad: Zoom, Maus-Drag: Pan |
 | `Q / E` | Karte heraus-/hineinzoomen |
 | `K` | Kamera-Follow an/aus |
+| `, / .` | Ausguck-Seite: Radius kleiner / größer |
 
 ## 2 Sonar
 
 | Taste / Eingabe | Funktion |
 |---|---|
 | `Shift+A` | Aktiv-Ping abfeuern (Kühlzeit, verrät Position!) |
-| `Shift+B` | Empfangsarray zwischen HMS und TAS wechseln |
+| `Umschalt+B` | Empfangsarray zwischen HMS und TAS wechseln |
 | `Y` | TAS ausbringen / einholen (nur bei 3-12 kn) |
 | `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
 | `2` | 2 erneut drücken, um die Sonarseite weiterzuschalten |
@@ -64,7 +65,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
 | `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
 | `Auf / Ab` | Kontakt für TMA und Klassifikation wählen |
-| `Enter` | Gemessener Kontaktpeilung folgen / manuell halten |
+| `Eingabe` | Gemessener Kontaktpeilung folgen / manuell halten |
 | `J \| , / .` | Empfangston an/aus \| Lautstärke senken/erhöhen |
 | `A / B / H` | Direkt Breitband / gefiltert / Heterodyn abhören |
 | `D` | Breitband/gefiltertes Abhören umschalten |
@@ -88,6 +89,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Ctrl+Z / Ctrl+X (TMA)` | TMA-Seite: Hypothesenfahrt -/+ 1 kn |
 | `Q / Shift+Q (TMA)` | TMA-Seite: Hypothesenentfernung -/+ 1 sm (Strg 0,2 sm) |
 | `K / Shift+K (TMA)` | TMA-Seite: Hypothese als Fix übernehmen / Umschalt: Solver-Vorschlag kopieren (Training) |
+| `Shift+T (TMA)` | TMA-Methode: Hypothese/Residuen, Ekelund-Entfernung, Dot-Stack (Umschalt+K bei Ekelund: Entfernung übernehmen) |
 | `SPACE` | LOFAR Peak-Hold ein/aus |
 | `T` | TMA für ausgewählten Kontakt ein/aus |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -102,6 +104,10 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Auf / Ab halten` | Torpedotiefe (10-300 m) |
 | `<- / ->` | Sonarkontakt für Zielwahl wählen |
 | `T / Ctrl+Enter` | Torpedo abfeuern (ROE-Prüfung) |
+| `W` | Torpedotyp (Rohre laden um; W wechselt Mk1/Mk2) |
+| `X` | Suchmuster im Endanlauf: Schlange, Kreis, Helix |
+| `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm) |
+| `Y` | Salve: ein Torpedo oder zwei im Fächer +/-8° |
 | `H` | HSP-5 starten / zurückrufen |
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
@@ -116,8 +122,9 @@ Berechtigungsprüfungen bleiben wirksam.
 |---|---|
 | `<- / ->` | Kompartiment wählen |
 | `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
-| `Enter` | Gewähltes Team dem gewählten Kompartiment zuweisen |
+| `Eingabe` | Gewähltes Team dem gewählten Kompartiment zuweisen |
 | `Backspace` | Gewähltes Team zurückziehen |
+| `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
 | `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
@@ -141,7 +148,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Shift+R` | Luftraumradar an/aus (EMCON) |
 | `I` | CIWS-Feuerfreigabe umschalten (gesperrt = feuert nie auf anfliegende ASM) |
 | `Backspace` | Alle markierten Meldungen abwählen |
-| `Enter` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
+| `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
+| `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Kamera-Follow an/aus |
 
 ## 6 Funk
@@ -149,7 +157,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | Taste / Eingabe | Funktion |
 |---|---|
 | `Auf / Ab` | HFDF-Signal auswählen |
-| `Enter` | Peilung mit eigener Position protokollieren |
+| `Eingabe` | Peilung mit eigener Position protokollieren |
 
 ## 7 Maschinenraum
 
@@ -158,6 +166,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `+ / -` | Motorenbefehl (Telegraph) |
 | `Auf / Ab` | Telegraph hoch / runter |
 | `A` | Akustikmodus LEISE/NORMAL |
+| `G` | Antriebsanlage: AUTO, DIESEL (18 kn, -4 dB) oder TURBINE (+3 dB, +25 % Brennstoff) |
 | `U` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
 
@@ -169,7 +178,9 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Pfeiltasten` | Wegpunktpeilung und -entfernung einstellen |
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
 | `B` | Eine Sonarboje an aktueller Position aussetzen |
-| `Shift+B` | Modus der nächsten Boje PASSIV / AKTIV |
+| `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
+| `X` | Bojenmuster: einzeln, 2x2-Feld, Sperre quer zur Wegpunktpeilung, Kreis (X erneut: nächstes; einzeln löscht) |
+| `Shift+M` | MAD-Anflug ein/aus: tief und langsam, Tauchsonar eingeholt |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -206,7 +217,7 @@ Berechtigungsprüfungen bleiben wirksam.
 
 | Taste / Eingabe | Funktion |
 |---|---|
-| `1-9` | Eine eigene Station öffnen |
+| `1-9` | Eine eigene Station öffnen (U-Boot-Crew: 1-2) |
 | `[ / ]` | Vorherige / nächste eigene Station |
 | `?` | Leitfaden und Stationshilfe öffnen |
 | `Pfeiltasten` | In fokussierter Registerleiste, Trackliste oder Karte bewegen |
@@ -216,6 +227,9 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Maus über Karte` | Details zu Track, eigenem Schiff, Asset, Wrack oder Kartenposition unter dem Mauszeiger |
 | `0` | Wetter- & Sonar-Analyse öffnen oder schließen |
 | `Plotwerkzeug + Klick` | Auf den gemeinsamen Plot zeichnen: Werkzeug über der Karte wählen, einmal (Marke, Peillinie) oder zweimal (Lineal, Kreis, Koppellinie) klicken |
+| `, / .` | Kontaktliste (,) oder Stationsbereich (.) ein- oder ausklappen |
+| `L` | Einsatzprotokoll öffnen oder schließen |
+| `Esc` | Leitfaden, Ausguck oder Kontaktbibliothek schließen und zur Station zurück |
 
 ## Eingabe und Dialoge
 

@@ -58,6 +58,8 @@ from src.core.game_shared import (  # noqa: F401
 # Entity classes tests import from ``src.core.game`` (kept as re-exports).
 from src.enemies.decoy import Decoy  # noqa: F401
 from src.weapons.torpedo import EnemyTorpedo  # noqa: F401
+# ``src.core.game.layout`` is a monkeypatch target of the input tests.
+from src.ui import layout  # noqa: F401
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.save_schema import SAVE_ROOT_FIELDS  # noqa: F401
 from src.core.game_save import (

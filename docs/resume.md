@@ -1151,6 +1151,40 @@ Notizen Phase 3:
 - `docs/hardware-acceptance.md` angelegt; `docs/verification-log.md`
   verweist darauf. `tests/test_project_config.py` haelt die pyproject-Vertraege.
 
+| 2 Kernzerlegung | fertig | e062bb2, 1a9ba36, a26a459, 22b5b16, 6998cf0, 6e898c2, facd86e | volle Suite und Kalibrierung am Ende der Phase (siehe unten) | keine Datei ueber 2500 Zeilen (`tests/test_module_size.py`) |
+
+Notizen Phase 2:
+
+- `Game` ist jetzt eine Komposition aus Mixins: `SaveMixin` (`game_save.py`,
+  Validator in `save_validate.py`, Grenzen in `limits.py`), `SimMixin`
+  (`game_sim.py`, `SIM_ORDER` + `tests/test_sim_order.py`), `EventMixin`
+  (`game_events.py`), `MissionBridgeMixin` (`mission_bridge.py`), dazu ueber
+  den Plan hinaus `DrawMixin` (`game_draw.py`), `OperatorMixin`
+  (`game_operator.py`) und `PicturesMixin` (`game_pictures.py`), damit die
+  2500-Zeilen-Grenze haelt; `game.py` (705 Zeilen) ist nur noch
+  Composition Root. Alle Verschiebungen wortgleich (Skript im Scratchpad:
+  Methoden per Namensliste, Importblock kopiert, pyflakes-geprueft, ungenutzte
+  Importe entfernt). `game.py` re-exportiert die Namen, die Tests importieren.
+- Tests, die Modulnamen patchen, zeigen jetzt auf das Modul, in dem der Name
+  nachgeschlagen wird (`game_draw.save_preferences`, `game_events.*_test_connection`,
+  `game_save.MAX_SAVE_DOCUMENT_BYTES`, `save_validate.CATALOG`, `routes.time`).
+- Stationsansichten: `src/ui/stations/{common,bridge,opz,eloka,radio,engine,
+  helicopter,damage}.py`; `stations_view.py` Facade mit `station_hit_target`.
+- Server: `src/commander/v2/{wire,commands,routes}.py` statt der im Plan
+  genannten `routes_v2/streams/sessions`: Leases und Sitzungen sind mit
+  `CommanderServer` verflochten und bleiben dort (1763 Zeilen); die Grant-Tabelle
+  `station_grants` liegt in `wire.py`, der Logger heisst weiter
+  `src.commander.server`.
+- Perf (headless, `_update_sim(0.1)`, drei Seeds, 1200 Schritte): vorher
+  4,49 ms, nachher 4,27 ms je Substep. Hardware-Frame-Zeit bleibt Pruefpunkt.
+- Abweichung vom Plan: zwischen den Schritten liefen fokussierte Tests plus
+  Smoke; die volle Suite und die Kalibrierung liefen nach Schritt 1 und nach
+  Schritt 6. Unter paralleler Last flackern
+  `test_solo_console_tabs_keep_state_and_host_controls_drive_the_game` (Budget
+  jetzt 300 s, eigene xdist-Gruppe), `test_default_off_has_no_network_or_server_resources`
+  (Thread-Zaehlung) und `test_audio_websocket_resumes_behind_the_browser_cursor`
+  (409 stream_exists); alle drei bestehen einzeln.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

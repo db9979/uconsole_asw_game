@@ -140,12 +140,18 @@ def test_help_and_open_editor_literals_follow_the_current_draw_scope():
         assert localize("Mission library") == "Mission library"
 
 
+# The Game class is composed from mixin modules (plan 1.3, phase 2); every
+# scan of "the game's prose" covers all of them, and the station views live
+# in the src/ui/stations package beside the flat src/ui modules.
+CORE_GAME_FILES = sorted(Path("src/core").glob("game*.py")) + [Path("src/core/mission_bridge.py")]
+UI_FILES = sorted(Path("src/ui").rglob("*.py"))
+
+
 def test_ui_direct_font_literals_are_explicitly_technical_allowlist():
     """New prose must use bounded/localized helpers, not Font.render directly."""
     allowed = {"[ ]", "ASM", "ESM", "HOJ", "HSP-5"}
-    roots = [Path("src/ui"), Path("src/core/game.py")]
     violations = []
-    paths = [roots[1]] + sorted(roots[0].glob("*.py"))
+    paths = CORE_GAME_FILES + UI_FILES
     for path in paths:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
@@ -174,8 +180,7 @@ def test_static_text_sent_to_ui_helpers_is_cataloged_or_technical():
         "tooltip_payload": tuple(range(8)),
     }
     violations = []
-    paths = [Path("src/core/game.py"), Path("src/core/help.py"),
-             *sorted(Path("src/ui").glob("*.py"))]
+    paths = [*CORE_GAME_FILES, Path("src/core/help.py"), *UI_FILES]
     for path in paths:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
@@ -234,38 +239,38 @@ def test_every_station_and_sonar_page_excludes_opposite_language_operational_wor
 
 def test_runtime_message_sinks_do_not_receive_composed_prose():
     """Runtime notices must remain structured so a language switch can redraw them."""
-    path = Path("src/core/game.py")
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     violations = []
     composed = (ast.Constant, ast.JoinedStr, ast.BinOp, ast.IfExp)
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not node.args:
-            continue
-        name = node.func.attr if isinstance(node.func, ast.Attribute) else ""
-        if name in ("flash", "hq_msg"):
-            value = node.args[0]
-        elif (name == "add" and isinstance(node.func.value, ast.Attribute)
-              and node.func.value.attr == "feed" and len(node.args) >= 3):
-            value = node.args[2]
-        else:
-            continue
-        if isinstance(value, composed):
-            violations.append(f"{path}:{node.lineno}: {ast.unparse(value)}")
+    for path in CORE_GAME_FILES:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            name = node.func.attr if isinstance(node.func, ast.Attribute) else ""
+            if name in ("flash", "hq_msg"):
+                value = node.args[0]
+            elif (name == "add" and isinstance(node.func.value, ast.Attribute)
+                  and node.func.value.attr == "feed" and len(node.args) >= 3):
+                value = node.args[2]
+            else:
+                continue
+            if isinstance(value, composed):
+                violations.append(f"{path}:{node.lineno}: {ast.unparse(value)}")
     assert not violations, "composed runtime UI prose:\n" + "\n".join(violations)
 
 
 def test_game_does_not_send_composed_text_to_exact_localization():
-    path = Path("src/core/game.py")
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     violations = []
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not node.args:
-            continue
-        name = (node.func.attr if isinstance(node.func, ast.Attribute) else
-                node.func.id if isinstance(node.func, ast.Name) else "")
-        if name in ("localize", "display") and isinstance(
-                node.args[0], (ast.JoinedStr, ast.BinOp)):
-            violations.append(f"{path}:{node.lineno}: {ast.unparse(node.args[0])}")
+    for path in CORE_GAME_FILES:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not node.args:
+                continue
+            name = (node.func.attr if isinstance(node.func, ast.Attribute) else
+                    node.func.id if isinstance(node.func, ast.Name) else "")
+            if name in ("localize", "display") and isinstance(
+                    node.args[0], (ast.JoinedStr, ast.BinOp)):
+                violations.append(f"{path}:{node.lineno}: {ast.unparse(node.args[0])}")
     assert not violations, "composed exact-localization input:\n" + "\n".join(violations)
 
 

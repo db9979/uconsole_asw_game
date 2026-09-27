@@ -193,7 +193,8 @@ def _refs(test, prefix):
 
 
 def _station_bindings():
-    source = (ROOT / "src" / "core" / "game.py").read_text(encoding="utf-8")
+    # The event owner lives in the EventMixin module since plan 1.3, phase 2.
+    source = (ROOT / "src" / "core" / "game_events.py").read_text(encoding="utf-8")
     tree = ast.parse(source)
     handler = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
                    and node.name == "_handle_owned_event")

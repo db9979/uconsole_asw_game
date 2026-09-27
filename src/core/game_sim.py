@@ -1141,6 +1141,7 @@ class SimMixin:
         self._run_mission_events()
         self._update_tasking(dt)
         self._check_mission_end()
+        self._update_training()
 
     def _update_sim(self, dt: float) -> None:
         self.sim_t += dt
@@ -1300,6 +1301,7 @@ class SimMixin:
         self.mission_result = "SIEG" if win else "VERLOREN"
         self.result_reason = reason
         self.game_over = True
+        self._finish_debrief()
         self.input_mode = None
         self.input_buffer = ""
         self._clear_controls()
@@ -1311,6 +1313,7 @@ class SimMixin:
                 self.score += config.SCORE_CIVIL_BONUS
         self.announce(message("runtime.mission.won" if win
                               else "runtime.mission.lost"), "mission", 10.0)
+        self._campaign_mission_ended()
 
     # --- M6: Speichern / Laden ---
 

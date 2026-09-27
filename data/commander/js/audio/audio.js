@@ -1,7 +1,7 @@
 import { S } from "../state/store.js";
 import { $, audioRoles } from "../core/base.js";
 import { finite, t } from "../core/format.js";
-import { gameEffectKinds } from "../state/shared.js";
+import { calloutKinds, gameEffectKinds } from "../state/shared.js";
 
 // State polling and browser network hints can fail while the dedicated audio
 // request still works. The audio endpoint rechecks the session on every block.
@@ -61,6 +61,36 @@ function playGameEffect(kind) {
   oscillator.stop(now + duration + .02);
   oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
 }
+// Spoken crew reports: SpeechSynthesis in this browser's language, at most
+// three sentences queued; the host sends only the report kind and bearing.
+const speechQueueMax = 3;
+function speakCallout(row) {
+  if (!S.speechEnabled || document.hidden || !calloutKinds.has(row.key) ||
+      !("speechSynthesis" in window) || S.speechQueued >= speechQueueMax) return;
+  const bearing = row.bearing === null ? "" :
+    String(row.bearing).padStart(3, "0").split("").map((digit) => t(`callout_digit_${digit}`)).join(" ");
+  const utterance = new SpeechSynthesisUtterance(t(`callout_${row.key}`, {bearing}));
+  utterance.lang = S.language === "de" ? "de-DE" : "en-GB";
+  utterance.rate = 1.1;
+  S.speechQueued += 1;
+  utterance.onend = utterance.onerror = () => { S.speechQueued = Math.max(0, S.speechQueued - 1); };
+  window.speechSynthesis.speak(utterance);
+}
+export function stopSpeech() {
+  S.speechQueued = 0;
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+function syncCallouts(context) {
+  const rows = Array.isArray(S.v2State?.audio?.callouts) ? S.v2State.audio.callouts : [];
+  const latest = rows.length ? rows.at(-1).seq : 0;
+  if (context !== S.calloutContext) {
+    S.calloutContext = context;
+    S.calloutHighWater = latest;
+    return;
+  }
+  for (const row of rows) if (row.seq > S.calloutHighWater) speakCallout(row);
+  S.calloutHighWater = Math.max(S.calloutHighWater, latest);
+}
 export function syncGameAudio() {
   // The general sound control plays bounded one-shot events only. Live sonar
   // remains an explicit, separately authorized station function.
@@ -68,6 +98,7 @@ export function syncGameAudio() {
   const context = S.v2State ? `${S.v2State.session}:${S.v2State.epoch}` : null;
   const events = Array.isArray(stateAudio?.events) ? stateAudio.events : [];
   const latest = events.length ? events.at(-1).seq : 0;
+  syncCallouts(context);
   if (context !== S.gameSoundContext) {
     S.gameSoundContext = context;
     S.gameSoundHighWater = latest;

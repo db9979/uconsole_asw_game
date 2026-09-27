@@ -32,7 +32,7 @@ _GLOBAL_HELP = (
         ("P", "help.global.plot"),
         ("help.key.plot_keys", "help.global.plot_keys"),
         ("Esc", "help.cancel"),
-        ("R / M", "help.global.mission_end"),
+        ("R / M", "help.global.mission_end"), ("D", "help.global.debrief"),
     ],
 )
 

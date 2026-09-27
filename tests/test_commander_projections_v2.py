@@ -66,7 +66,7 @@ def test_exact_role_envelopes_and_status_only_unassigned(published):
         }
         assert server.v2_states[role]["autocrew"] == {
             "enabled": False, "status": "off"}
-        assert server.v2_states[role]["audio"] == {"events": []}
+        assert server.v2_states[role]["audio"] == {"events": [], "callouts": []}
         station = server.v2_states[role]["weather_station"]
         assert set(station) == {"atmosphere", "effects", "flight", "profile"}
         # No bathythermograph measurement yet: no ocean profile at all.
@@ -89,7 +89,7 @@ def test_browser_audio_projection_is_bounded_detached_and_role_safe(published):
          "explosion", "water_entry"), 1)]
     for role in ROLE_NAMES:
         projected = server.v2_states[role]["audio"]
-        assert projected == {"events": expected}
+        assert projected == {"events": expected, "callouts": []}
     server.v2_states["bridge"]["audio"]["events"][0]["cue"] = "changed"
     assert server.v2_states["sonar"]["audio"]["events"][0]["cue"] == "sonar_ping"
 

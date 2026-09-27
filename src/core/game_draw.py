@@ -124,14 +124,18 @@ class DrawMixin:
         center("U-JAGD – FREGATTE F-217", 100, self.menu_font_big)
 
         if self.main_menu:
-            labels = ("menu.new_game", "menu.load", "menu.mission_editor",
-                      "menu.unit_editor", "menu.contact_analyzer", "option.title",
-                      "menu.quit")
+            labels = ("menu.new_game", "menu.training", "menu.campaign", "menu.load",
+                      "menu.mission_editor", "menu.unit_editor", "menu.contact_analyzer",
+                      "option.title", "menu.quit")
             for i, key in enumerate(labels):
                 marker = "> " if i == self.main_menu_sel else "  "
                 color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
                 center(message("menu.choice", marker=marker,
-                               label=self.tr(key).upper()), 185 + i * 47, color=color)
+                               label=self.tr(key).upper()), 175 + i * 42, color=color)
+        elif self.menu_screen == "training":
+            self._draw_training_menu(center)
+        elif self.menu_screen == "campaign":
+            self._draw_campaign_menu(center)
         elif self.menu_screen == "side":
             center(self.tr("menu.choose_side"), 170, color=config.COLOR_TEXT_DIM)
             for i, side in enumerate(("frigate", "uboot")):
@@ -362,7 +366,11 @@ class DrawMixin:
                 if self.feed_overlay_open:
                     self.draw_feed_overlay()
                 self.draw_navigation_input()
-                if self.game_over:
+                self.draw_training_hint()
+                if self.game_over and self.debrief_open:
+                    from src.ui.debrief_view import draw_debrief
+                    draw_debrief(self)
+                elif self.game_over:
                     self.draw_end_panel()
             finally:
                 config.STATION_RECT = previous_rect
@@ -801,6 +809,9 @@ class DrawMixin:
              else "end.expired",
              config.COLOR_TEXT_DIM, False),
         ]
+        campaign_line = self.campaign_end_line()
+        if campaign_line is not None:
+            lines.append((campaign_line, config.COLOR_WARN, False))
         board = getattr(self, "tasking", None)
         if board is not None and board.tasks:
             counts = board.counts()
@@ -828,7 +839,7 @@ class DrawMixin:
                      for index in range(max(len(page) for page in cls._OPTION_PAGES)))
 
     # Row rect index of each setup-page row (the side's help text sits between).
-    _SETUP_ROW_INDICES = (0, 7)
+    _SETUP_ROW_INDICES = (0, 6, 10)
 
     @classmethod
     def _option_row_hit_rects(cls, rows) -> tuple:
@@ -928,7 +939,7 @@ class DrawMixin:
             layout.blit_block(self.screen, "option.local_side.locked",
                               row.x + 24, row.bottom + 170, row.w - 24, 50,
                               config.COLOR_WARN, size=18)
-        # Display: anti-aliased chart lines (row 8 leaves the side's help room).
+        # Display: anti-aliased chart lines (row 7 leaves the side's help room).
         row = self._options_row_rects()[self._SETUP_ROW_INDICES[1]]
         selected = self.options_sel == 1
         value = (self.tr("option.aa_lines") + ": "
@@ -937,6 +948,17 @@ class DrawMixin:
                          config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
         layout.blit_block(self.screen, "option.aa_lines.help",
                           row.x + 24, row.bottom + 10, row.w - 24, 80,
+                          config.COLOR_TEXT_DIM, size=18)
+        # Spoken crew reports; the help says whether espeak-ng was found.
+        row = self._options_row_rects()[self._SETUP_ROW_INDICES[2]]
+        selected = self.options_sel == 2
+        value = (self.tr("option.speech") + ": "
+                 + self.tr("common.on" if self.preferences.speech else "common.off"))
+        layout.blit_line(self.screen, raw_text(("> " if selected else "  ") + value), row,
+                         config.COLOR_TEXT if selected else config.COLOR_TEXT_DIM, size=20)
+        layout.blit_block(self.screen, "option.speech.help" if self.speaker.available
+                          else "option.speech.missing",
+                          row.x + 24, row.bottom + 6, row.w - 24, 64,
                           config.COLOR_TEXT_DIM, size=18)
         layout.blit_block(self.screen,
                           "commander.local.options_hint",
@@ -1179,6 +1201,7 @@ class DrawMixin:
                 self._perf_debug_log(wall_dt)
                 if self.web_mode:
                     continue
+                self._pump_speech()
                 if self._skip_eco_frame():
                     continue
                 draw_started = time.perf_counter() if self._perf_debug_enabled else None
@@ -1194,6 +1217,7 @@ class DrawMixin:
                     self.connectivity.stop()
                     self.live_traffic.stop()
                 finally:
+                    self.speaker.stop()
                     self.audio.shutdown()
                     pygame.quit()
 

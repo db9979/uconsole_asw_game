@@ -21,7 +21,7 @@ from src.core import manual
 from src.core.station import Station
 from src.core.game_shared import (HELP_MANUAL_PAGE, HELP_PAGE_COUNT, SONAR_BAND_PRESETS,
                                   letterbox_layout)
-from src.core import uboot_local
+from src.core import training, uboot_local
 from src.core.limits import MAX_TRACK_DISPLAY_ID_LEN
 from src.sonar import analysis_tools
 from src.sonar import tma_operator
@@ -677,6 +677,13 @@ class EventMixin:
             # Layout-independent help key (US Shift+/, DE Shift+ß).
             self._open_administration("help")
             return
+        if self.game_over and self.debrief_open:
+            # The debrief page owns input until it is closed (Esc or D).
+            if e.type == pygame.KEYDOWN:
+                self._handle_debrief_key(e.key, getattr(e, "mod", 0))
+            elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                self._handle_debrief_click(self._window_to_canvas(getattr(e, "pos", None)))
+            return
         if e.type != pygame.KEYDOWN:
             if self.input_mode is not None or self.in_menu or self.game_over:
                 return
@@ -791,9 +798,14 @@ class EventMixin:
                                      else 0)
                 return
             if self.game_over:
-                if e.key == pygame.K_r:
+                if e.key == pygame.K_d:
+                    self.open_debrief()
+                elif e.key == pygame.K_r:
                     definition = self.custom_mission_definition
-                    if definition is None or not self.start_custom_mission(
+                    lesson = training.lesson_of(definition)
+                    if lesson is not None:
+                        self.start_training(lesson)
+                    elif definition is None or not self.start_custom_mission(
                             json.loads(json.dumps(definition))):
                         self.reset(self.seed)
                 elif e.key == pygame.K_m:
@@ -1630,8 +1642,8 @@ class EventMixin:
             self._reroll_menu_seed()
             return
         if self.main_menu:
-            entries = ("new", "load", "mission_editor", "unit_editor",
-                       "contact_analyzer", "options", "quit")
+            entries = ("new", "training", "campaign", "load", "mission_editor",
+                       "unit_editor", "contact_analyzer", "options", "quit")
             if key == pygame.K_UP:
                 self.main_menu_sel = (self.main_menu_sel - 1) % len(entries)
             elif key == pygame.K_DOWN:
@@ -1643,6 +1655,14 @@ class EventMixin:
                     self.main_menu = False
                     self.menu_screen = "side"
                     self.menu_sel = 1 if self.local_side == "uboot" else 0
+                elif action == "training":
+                    self.main_menu = False
+                    self.menu_screen = "training"
+                    self.menu_sel = 0
+                elif action == "campaign":
+                    self.main_menu = False
+                    self.menu_screen = "campaign"
+                    self.menu_sel = 0
                 elif action == "load":
                     self._open_administration("load")
                 elif action == "mission_editor":
@@ -1658,6 +1678,25 @@ class EventMixin:
                     self._open_administration("quit")
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self._open_administration("quit")
+            return
+        if self.menu_screen == "training":
+            count = len(training.LESSONS)
+            if key == pygame.K_UP:
+                self.menu_sel = (self.menu_sel - 1) % count
+            elif key == pygame.K_DOWN:
+                self.menu_sel = (self.menu_sel + 1) % count
+            elif pygame.K_1 <= key < pygame.K_1 + count:
+                self.menu_sel = key - pygame.K_1
+            elif key in (pygame.K_RETURN, pygame.K_SPACE):
+                self.local_side = "frigate"
+                if not self.start_training(training.LESSONS[self.menu_sel]):
+                    self.flash(message("training.start_failed"), 3.0)
+            elif key in (pygame.K_ESCAPE, pygame.K_q):
+                self.main_menu = True
+                self.main_menu_sel = 1
+            return
+        if self.menu_screen == "campaign":
+            self._handle_campaign_menu_key(key)
             return
         if self.menu_screen == "side":
             if key in (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_TAB):

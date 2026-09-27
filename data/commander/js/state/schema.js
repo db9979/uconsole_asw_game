@@ -1,7 +1,7 @@
 import { S } from "./store.js";
 import { isBoatCommand, isSonar, opforRoles, stationNames } from "../core/base.js";
 import { finite, t } from "../core/format.js";
-import { gameEffectKinds } from "./shared.js";
+import { calloutKinds, calloutsWithBearing, gameEffectKinds } from "./shared.js";
 
 export const exactKeys = (value, keys) => value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).sort().join(",") === [...keys].sort().join(",");
 export const boundedArray = (value, maximum) => Array.isArray(value) && value.length <= maximum;
@@ -113,7 +113,13 @@ export function validateV2State(state) {
         !stationNames.includes(row.station) || typeof row.enabled !== "boolean" ||
         !["off", "active", "suspended_remote", "blocked_damage"].includes(row.status)) ||
       !exactKeys(state.mission, ["name", "objective", "remaining_s"]) ||
-      !exactKeys(state.audio, ["events"]) ||
+      !exactKeys(state.audio, ["events", "callouts"]) ||
+      !boundedArray(state.audio.callouts, 16) ||
+      state.audio.callouts.some((row, index, rows) => !exactKeys(row, ["seq", "key", "bearing"]) ||
+        !Number.isSafeInteger(row.seq) || row.seq < 1 || !calloutKinds.has(row.key) ||
+        (calloutsWithBearing.has(row.key) ? !Number.isInteger(row.bearing) || row.bearing < 0 || row.bearing > 359
+          : row.bearing !== null) ||
+        index > 0 && row.seq <= rows[index - 1].seq) ||
       !boundedArray(state.audio.events, 16) ||
       state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue"]) ||
         !Number.isSafeInteger(event.seq) || event.seq < 1 || !gameEffectKinds.has(event.cue) ||

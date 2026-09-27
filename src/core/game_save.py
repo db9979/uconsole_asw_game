@@ -1697,6 +1697,8 @@ class SaveMixin:
         self.in_menu = False
         self.main_menu = False
         self.feed.clear()
+        self._reset_debrief()
+        self._restore_training()
         # The load itself took wall time; it is not simulation time to catch up.
         self._frame_clock_reset = True
         return True

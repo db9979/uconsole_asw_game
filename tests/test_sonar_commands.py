@@ -124,7 +124,7 @@ def test_main_menu_mission_editor_has_no_legacy_builtins_and_enter_is_safe():
     from src.ui.mission_editor import MissionEditor
 
     game = Game(seed=57, start_menu=True, audio_enabled=False)
-    game.main_menu_sel = 2
+    game.main_menu_sel = 4  # after new, training, campaign, load
     game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
     assert isinstance(game.editor, MissionEditor)
     assert game.editor.builtins == {}

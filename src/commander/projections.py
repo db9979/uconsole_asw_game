@@ -254,7 +254,10 @@ def _common(game, status, role):
                              remaining_s=_number(game.mission.remaining_s(game.mission_time))),
                 audio=dict(
                     events=[dict(seq=int(row["seq"]), cue=str(row["kind"]))
-                            for row in list(game._sound_events)[-16:]]))
+                            for row in list(game._sound_events)[-16:]],
+                    # Spoken crew reports: the feed lines' key and bearing
+                    # only; each browser words them in its own language.
+                    callouts=game.callouts.detached()))
 
 
 def redacted_state(status):
@@ -1252,7 +1255,7 @@ def _opfor_common(game, status, role, boat):
                            max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(
         "uboot.objective" if not boat.sub.sunk else "uboot.objective_lost", game.tr)
-    common["audio"] = dict(events=[])
+    common["audio"] = dict(events=[], callouts=[])
     common["autocrew"] = dict(enabled=False, status="off")
     common["autocrew_overview"] = []
     return common

@@ -153,6 +153,8 @@ def _validator_page(states) -> str:
         statement("core/base.js", "const sonarRoles = "),
         statement("core/base.js", "const isSonar = "), statement("core/format.js", "const finite = "),
         statement("state/shared.js", "const gameEffectKinds = "),
+        statement("state/shared.js", "const calloutKinds = "),
+        statement("state/shared.js", "const calloutsWithBearing = "),
         "const S = {session: null}; let lastMismatch = null;", validator,
         f"const cases = {json.dumps(cases)};",
         "const failures = [];",

@@ -274,6 +274,11 @@ UBOOT_STADIMETER_LENGTHS_M = {"warship": 130.0, "merchant": 150.0, "unknown": 13
 
 # Display scales of the bridge lookout page (NM, radius of the scope).
 LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
+# Bridge lookout binoculars over the chart (display only): field of view and
+# training steps (',' / '.', Shift for the fast step).
+LOOKOUT_GLASSES_FOV_DEG = 16.0
+LOOKOUT_GLASSES_STEP_DEG = 5.0
+LOOKOUT_GLASSES_STEP_FAST_DEG = 20.0
 # Land in sight: day/clear range of a coast with 50 m hills, checked on a
 # slow cadence; a landmass is reported again only after it dropped out of
 # sight.

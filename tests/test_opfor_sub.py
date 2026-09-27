@@ -839,7 +839,7 @@ def test_each_boat_station_owns_its_own_orders():
     owners = {action: spec.stations for action, spec in V2_ACTION_REGISTRY.items()
               if action.startswith("uboot_")}
     assert owners["uboot_fire"] == {"uboot_weapons"} and "uboot_weapons" in DIRECT_FIRE_ROLES
-    assert owners["uboot_mast"] == {"uboot_esm"}
+    assert owners["uboot_mast"] == {"uboot", "uboot_esm"}
     assert owners["uboot_snorkel"] == {"uboot_engine"}
     assert "uboot_nav" in owners["uboot_set_course"]
     # The commander no longer fires; the weapons station does.

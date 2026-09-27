@@ -31,6 +31,7 @@ from src.ui import uboot_view
 from src.ui.stations_view import (
     draw_autocrew_overview,
     draw_bridge_view,
+    draw_lookout_glasses,
     draw_damage_view,
     draw_eloka_view,
     draw_engine_view,
@@ -331,6 +332,8 @@ class DrawMixin:
                         draw_weather_station(self)
                 elif map_station:
                     draw_map_view(self)
+                    if self.lookout_glasses_shown():
+                        draw_lookout_glasses(self)
                     if self.station is Station.WEAPONS:
                         draw_weapons_overlay(self)
                 if not self._station_overlay_open:

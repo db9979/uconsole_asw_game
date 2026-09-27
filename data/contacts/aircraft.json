@@ -382,6 +382,26 @@
       "power_class": "high",
       "operating_period_s": 4.0,
       "on_duration_s": 3.0
+    },
+    {
+      "key": "emitter.air_defense.asm.seeker",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000.0,
+        9500000000.0
+      ],
+      "prf_band_hz": [
+        1800.0,
+        3200.0
+      ],
+      "modulation_codes": [
+        "pulse_doppler"
+      ],
+      "radar_role": "missile_seeker",
+      "operating_mode": "terminal_search",
+      "power_class": "medium",
+      "operating_period_s": 0.5,
+      "on_duration_s": 0.5
     }
   ],
   "weapons": [],

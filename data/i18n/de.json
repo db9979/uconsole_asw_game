@@ -3382,6 +3382,7 @@
   "eloka.value.quality_age": "{quality} / {age}s",
   "eloka.heading.candidates": "RADARART-KANDIDATEN / KEINE IDENTIFIKATION",
   "eloka.heading.library": "SENDERBIBLIOTHEK / BEREICHSTREFFER, UNGERANKT",
+  "eloka.emitter.asm_seeker": "Seezielflugkörper-Suchkopf",
   "eloka.library_hint": "{count} im Bereich | C ordnet zu (Namensfolge)",
   "eloka.heading.correlations": "PASSENDE RADAR- / SONAR-EVIDENZ",
   "eloka.line.candidate": "{emitter}  Wertung {score}",

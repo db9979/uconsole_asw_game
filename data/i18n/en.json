@@ -3382,6 +3382,7 @@
   "eloka.value.quality_age": "{quality} / {age}s",
   "eloka.heading.candidates": "RADAR-TYPE CANDIDATES / NOT IDENTIFICATION",
   "eloka.heading.library": "EMITTER LIBRARY / RANGE MATCH, UNRANKED",
+  "eloka.emitter.asm_seeker": "Anti-ship missile seeker",
   "eloka.library_hint": "{count} in range | C assigns (name order)",
   "eloka.heading.correlations": "COMPATIBLE RADAR / SONAR EVIDENCE",
   "eloka.line.candidate": "{emitter}  score {score}",

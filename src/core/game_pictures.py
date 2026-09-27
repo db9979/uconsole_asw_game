@@ -977,7 +977,14 @@ class PicturesMixin:
         """Display name of the platform owning an ESM emitter, or None."""
         if not isinstance(emitter_key, str):
             return None
-        return self.runtime_catalog.emitter_name(emitter_key)
+        name = self.runtime_catalog.emitter_name(emitter_key)
+        if name is None:
+            # Library emitters have no owning platform: a missile seeker is
+            # named by what it is.
+            emitter = self.runtime_catalog.emitters.get(emitter_key)
+            if getattr(emitter, "radar_role", None) == "missile_seeker":
+                name = self.tr("eloka.emitter.asm_seeker")
+        return name
 
     def eloka_annotation_name(self, track_key: str) -> str | None:
         """Operator annotation resolved to the owning platform's name."""

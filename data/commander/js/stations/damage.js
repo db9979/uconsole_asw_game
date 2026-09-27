@@ -1,9 +1,20 @@
 import { $, damageStates } from "../core/base.js";
-import { enumText, number, unit } from "../core/format.js";
+import { enumText, number, t, unit } from "../core/format.js";
 import { actionButton, metrics, node, stationRows, yesNo } from "../views/dom.js";
+
+function compartmentName(payload, key) {
+  return payload.compartments.find((room) => room.key === key)?.name || key;
+}
 
 export function renderDamageStation(payload) {
   metrics($("damage-summary"), [["damage_total", unit(payload.total, "%")], ["sunk", yesNo(payload.sunk)]]);
+  const stability = payload.stability;
+  metrics($("damage-stability"), [["damage_list", unit(stability.list_deg, "\u00b0")],
+    ["damage_trim", unit(stability.trim_deg, "\u00b0")],
+    ["damage_counterflood", stability.counterflood_room ? compartmentName(payload, stability.counterflood_room) : t("station_none")]]);
+  const valve = $("damage-counterflood");
+  valve.textContent = t(stability.counterflood_room ? "damage_counterflood_stop" : "damage_counterflood_start");
+  valve.disabled = !stability.counterflood_room && !stability.can_counterflood;
   const selector = $("damage-team");
   const selectedTeam = selector.value;
   selector.replaceChildren(...payload.teams.map((team) => {

@@ -64,7 +64,7 @@ RNG_STREAMS = frozenset({
 SHIP_FIELDS = frozenset({
     "x", "y", "course", "target_course", "speed", "target_speed",
     "order_idx", "astern", "hull", "grounding", "turn_rate_scale",
-    "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "clock",
+    "rudder_angle", "yaw_rate", "roll", "pitch", "quiet_mode", "plant_mode", "clock",
     "fuel_capacity_kg", "fuel_kg", "roll_rate", "pitch_rate", "wake",
 })
 
@@ -77,5 +77,5 @@ DAMAGE_FIELDS = frozenset({"repair_mult", "compartments", "teams",
                            "team_position", "team_eta", "patch_kits",
                            "cooked_off", "capsized", "draft_m"})
 COMPARTMENT_FIELDS = frozenset({"state", "flood", "fire", "hole_m2", "heat_s",
-                                "shorted"})
+                                "shorted", "counterflood"})
 COMPARTMENT_STATES = ("OK", "FLUTEND", "BESCHAEDIGT", "ZERSTOERT")

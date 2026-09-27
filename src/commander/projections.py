@@ -652,7 +652,13 @@ def _damage(game):
     teams = [dict(team=team, compartment=game.damage.teams[team])
              for team in sorted(game.damage.teams)]
     return dict(compartments=compartments, teams=teams,
-                total=_number(game.damage.total), sunk=bool(game.damage.ship_sunk))
+                total=_number(game.damage.total), sunk=bool(game.damage.ship_sunk),
+                stability=dict(list_deg=_number(game.damage.list_deg()),
+                               trim_deg=_number(game.damage.trim_deg()),
+                               counterflood_room=game.damage.counterflood_room,
+                               can_counterflood=(
+                                   abs(game.damage.list_deg()) >= 5.0
+                                   and not game.damage.ship_sunk)))
 
 
 def _radio(game, rows, ref_by_track):
@@ -1093,6 +1099,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                     speed=_number(game.ship.speed),
                     target_speed=_number(game.ship.target_speed), telegraph=game.ship.telegraph,
                     rpm=_number(game.ship.rpm()), quiet_mode=bool(game.ship.quiet_mode),
+                    plant_mode=str(game.ship.plant_mode),
                     cavitating=bool(game.ship.cavitating),
                     fuel_kg=_number(game.ship.fuel_kg),
                     fuel_capacity_kg=_number(game.ship.fuel_capacity_kg),
@@ -1116,6 +1123,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                     grounded=bool(game.ship.grounded)),
                     controls=dict(orders=["ASTERN", "STOP", "SLOW", "HALF",
                                           "FULL", "FLANK"],
+                                  plants=list(game.ship.PLANT_MODES),
                                   speed_max_kn=_number(config.SHIP_SPEED_MAX_KN)),
                       environment_effects=dict(sea_state=_number(
                           game.world.effective_sea_state),

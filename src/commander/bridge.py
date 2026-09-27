@@ -200,6 +200,14 @@ def _engine_set_quiet_mode(game, params, _bindings):
     return game.set_quiet_mode(params["enabled"])
 
 
+def _engine_set_plant(game, params, _bindings):
+    return game.set_plant_mode(params["mode"])
+
+
+def _damage_counterflood(game, params, _bindings):
+    return game.set_counterflood(params["enabled"])
+
+
 def _damage_assign_team(game, params, _bindings):
     return game.assign_damage_team(params["team"], params["compartment"])
 
@@ -653,6 +661,8 @@ _V2_ACTION_HANDLERS = {
     "engine_set_speed": _engine_set_speed,
     "engine_set_quiet_mode": _engine_set_quiet_mode,
     "damage_assign_team": _damage_assign_team,
+    "damage_counterflood": _damage_counterflood,
+    "engine_set_plant": _engine_set_plant,
     "damage_unassign_team": _damage_unassign_team,
     "radio_capture_hfdf": _radio_capture_hfdf,
     "eloka_annotate": _eloka_annotate,

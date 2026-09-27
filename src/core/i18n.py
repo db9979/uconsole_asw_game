@@ -75,6 +75,11 @@ DISPLAY_KEYS = {
         "TAS L/R? WENDE": "enum.fusion.ambiguous_turned",
     },
     "weapon_mode": {"DRAHT": "enum.weapon.wire", "SUCHER": "enum.weapon.seeker"},
+    "compartment": {key: "compartment." + key for key in (
+        "bridge", "sonar", "weapons", "opz", "radio", "engine", "flightdeck",
+        "hull_left", "hull_right")},
+    "plant": {"AUTO": "enum.plant.AUTO", "DIESEL": "enum.plant.DIESEL",
+              "TURBINE": "enum.plant.TURBINE"},
     "torpedo_pattern": {"snake": "enum.torpedo_pattern.snake",
                         "circle": "enum.torpedo_pattern.circle",
                         "helix": "enum.torpedo_pattern.helix"},

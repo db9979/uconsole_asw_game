@@ -371,7 +371,7 @@ export function init() {
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
     "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range", "uboot-fire-depth",
     "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range",
-    "weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo"]) {
+    "weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo", "engine-plant"]) {
     $(id).addEventListener("input", () => S.stationDrafts.add(id));
     $(id).addEventListener("change", () => S.stationDrafts.add(id));
     if (id.includes("fire")) for (const eventName of ["input", "change"]) $(id).addEventListener(eventName, () => {
@@ -479,6 +479,12 @@ export function init() {
     event.preventDefault(); numberAction("engine-speed-form", "engine-speed", "engine_set_speed", "speed_kn", 0, 25);
   });
   $("engine-quiet").addEventListener("click", () => sendStationAction("engine_set_quiet_mode", {enabled: !S.v2State.engine.propulsion.quiet_mode}));
+  $("engine-plant-apply").addEventListener("click", () => {
+    S.stationDrafts.delete("engine-plant");
+    sendStationAction("engine_set_plant", {mode: $("engine-plant").value});
+  });
+  $("damage-counterflood").addEventListener("click", () => sendStationAction("damage_counterflood",
+    {enabled: !S.v2State?.damage?.stability.counterflood_room}));
   $("uboot-course-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("uboot-course-form", "uboot-course", "uboot_set_course", "course", 0, 359.99999999999994);
   });

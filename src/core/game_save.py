@@ -485,6 +485,7 @@ class SaveMixin:
                           pitch_rate=self.ship.pitch_rate,
                           wake=[list(point) for point in self.ship.wake],
                           quiet_mode=self.ship.quiet_mode,
+                          plant_mode=self.ship.plant_mode,
                           fuel_capacity_kg=self.ship.fuel_capacity_kg,
                           fuel_kg=self.ship.fuel_kg,
                           clock=self.ship._clock),
@@ -530,7 +531,8 @@ class SaveMixin:
                 repair_mult=self.damage.repair_mult,
                 compartments={k: dict(state=c.state, flood=c.flood, fire=c.fire,
                                       hole_m2=c.hole_m2, heat_s=c.heat_s,
-                                      shorted=c.shorted)
+                                      shorted=c.shorted,
+                                      counterflood=self.damage.counterflood.get(k, 0.0))
                               for k, c in self.damage.compartments.items()},
                 teams={str(k): v for k, v in self.damage.teams.items()},
                 team_position={str(k): v for k, v
@@ -951,6 +953,7 @@ class SaveMixin:
         self.ship.pitch_rate = ship["pitch_rate"]
         self.ship.wake = [list(point) for point in ship["wake"]]
         self.ship.quiet_mode = ship["quiet_mode"]
+        self.ship.plant_mode = ship["plant_mode"]
         self.ship.fuel_capacity_kg = ship["fuel_capacity_kg"]
         self.ship.fuel_kg = ship["fuel_kg"]
         self.ship._clock = ship["clock"]
@@ -1035,6 +1038,8 @@ class SaveMixin:
             self.damage.compartments[k].hole_m2 = c["hole_m2"]
             self.damage.compartments[k].heat_s = c["heat_s"]
             self.damage.compartments[k].shorted = c["shorted"]
+            if k in self.damage.counterflood:
+                self.damage.counterflood[k] = c["counterflood"]
         self.damage.teams.update({int(k): v for k, v in dmg["teams"].items()})
         self.damage.team_position.update(
             {int(k): v for k, v in dmg["team_position"].items()})

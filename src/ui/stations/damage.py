@@ -240,6 +240,15 @@ def draw_damage_view(game, tr=None) -> None:
                          if assigned else "damage.line.no_team", (dx + 124, dy, dw - 124, 26),
                          config.COLOR_OK if assigned else config.COLOR_WARN, size=18)
         dy += 30
+        room = game.damage.counterflood_room
+        layout.blit_line(s, message(
+            "damage.line.stability", list=f"{game.damage.list_deg():+.1f}",
+            trim=f"{game.damage.trim_deg():+.1f}",
+            room=(localize("damage.counterflood.none") if room is None
+                  else _compartment_name(room, game.damage.compartments[room].name))),
+            (dx, dy, dw, 26), config.COLOR_WARN if room is not None else config.COLOR_TEXT_DIM,
+            size=16)
+        dy += 30
         layout.blit_block(s, "control.damage_team",
                           dx, dy, dw, max(1, regions["detail"].bottom - dy - 8), config.COLOR_TEXT, size=18)
 

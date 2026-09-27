@@ -10,7 +10,21 @@ from src.world.grounding import DEFAULT_HULL_SPEC, HullSpec
 KN = dyn.KN
 
 
+# Plan 1.3 phase 8: propulsion plant selection (fictional CODOG frigate).
+PLANT_MODES = ("AUTO", "DIESEL", "TURBINE")
+PLANT_DIESEL_MAX_KN = 18.0
+PLANT_DIESEL_NOISE = 0.63      # about -4 dB
+PLANT_DIESEL_FUEL = 0.90
+PLANT_TURBINE_NOISE = 1.41     # about +3 dB
+PLANT_TURBINE_FUEL = 1.25
+# The loudest the frigate gets (cavitating at flank on the AUTO plant); the
+# turbine plant and a bow-down trim never push the level past it.
+NOISE_LEVEL_MAX = 0.85 + 0.02 * (config.SHIP_SPEED_MAX_KN - config.CAVITATION_KN)
+
+
 class Ship:
+    PLANT_MODES = PLANT_MODES
+
     def __init__(self, x_nm: float, y_nm: float, course_deg: float = 0.0,
                  speed_kn: float = config.SHIP_SPEED_START_KN):
         self.x = x_nm
@@ -27,6 +41,8 @@ class Ship:
         self.astern = False
         self.speed_cap = config.SHIP_SPEED_MAX_KN
         self.quiet_mode = False
+        self.plant_mode = "AUTO"
+        self.trim_noise = 0.0        # from DamageModel.trim_noise_boost(), per tick
         self.fuel_capacity_kg = config.SHIP_FUEL_CAPACITY_KG
         self.fuel_kg = self.fuel_capacity_kg
         self.grounding_latched = False
@@ -91,7 +107,8 @@ class Ship:
 
     def effective_target_kn(self) -> float:
         target = min(self.target_speed, self.speed_cap,
-                     12.0 if self.quiet_mode else self.speed_cap)
+                     12.0 if self.quiet_mode else self.speed_cap,
+                     PLANT_DIESEL_MAX_KN if self.plant_mode == "DIESEL" else self.speed_cap)
         if self.fuel_kg <= 0.0 or (self.grounding_latched and not self.astern):
             return 0.0
         return max(0.0, target)
@@ -159,6 +176,10 @@ class Ship:
         propulsion = hull.sfc_kg_per_j * power * 3600.0
         if self.astern:
             propulsion *= config.SHIP_FUEL_ASTERN_FACTOR
+        if self.plant_mode == "TURBINE":
+            propulsion *= PLANT_TURBINE_FUEL
+        elif self.plant_mode == "DIESEL":
+            propulsion *= PLANT_DIESEL_FUEL
         return config.SHIP_FUEL_HOTEL_KG_H + propulsion
 
     def fuel_endurance_h(self) -> float | None:
@@ -342,7 +363,11 @@ class Ship:
             n = max(n, 0.85 + 0.02 * (self.speed - config.CAVITATION_KN))
         if self.quiet_mode:
             n *= 0.65
-        return n
+        if self.plant_mode == "DIESEL":
+            n *= PLANT_DIESEL_NOISE
+        elif self.plant_mode == "TURBINE":
+            n *= PLANT_TURBINE_NOISE
+        return config.clamp(n + self.trim_noise, 0.0, NOISE_LEVEL_MAX)
 
     def passive_sonar_range_nm(self, target_quiet: float = 0.5,
                                sea_state: int = 0) -> float:

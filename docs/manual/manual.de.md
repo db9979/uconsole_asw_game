@@ -525,6 +525,8 @@ Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand,
 - **Brand:** wächst mit der Brandlast des Raums (Maschine, Flugdeck und Magazin brennen am stärksten) und wird von steigendem Wasser erstickt. Ein Raum, der etwa 30 s heiß bleibt, entzündet seine Nachbarn. Eine geflutete Schalttafel (Sonar, OPZ, Funk, Maschine) schließt kurz und löst einen Elektrobrand aus. Ein Brand über 90 % in der Waffenzentrale bringt das Magazin zur Explosion: der Raum ist zerstört, die Nachbarräume sind leckgeschlagen.
 - **Stabilität:** Flutwasser macht das Schiff schwerer, und freie Wasseroberflächen verringern die metazentrische Höhe (GM). Das Schiff sinkt, wenn das Flutwasser die Reserveverdrängung übersteigt, und kentert, wenn GM verloren geht oder die Krängung 35 Grad überschreitet.
 - **Krängung:** außermittiges Flutwasser lässt das Schiff zu dieser Seite krängen und zieht es vom Kurs.
+- **Gegenfluten:** mit `C` und ab 5° Krängung öffnet die Leckwehr das Flutventil der hohen Rumpfseite; Wasser strömt mit 0,5 % des Raums je Sekunde ein, bis die Krängung ausgeglichen ist, nie über 60 % dieser Seite, und das Ventil schließt unter 1° von selbst (oder mit `C` erneut). Das Wasser ist echtes Flutwasser: es bringt Gewicht und Tiefgang, und ein Trupp muss es später lenzen.
+- **Trimm:** Flutwasser vorn oder achtern trimmt das Schiff (Bug unten zählt positiv). Jedes Grad kostet 0,5 kn Höchstfahrt und erhöht bei Bug unten das Eigengeräusch am Bugsonar. Die Stabilitätszeile auf Seite 2 zeigt Krängung, Trimm und das offene Ventil.
 - **Rudermaschine und Stabilisatoren:** die Rudermaschine liegt achtern unter dem Flugdeck. Ist dieser Raum zerstört, klemmt das Ruder in der letzten Lage, bis der Raum repariert ist. Ein zerstörter Rumpfraum auf einer Seite legt die Flossenstabilisatoren lahm, das Schiff rollt dann im Seegang stärker. Flutwasser macht das Schiff schwerer: es liegt tiefer und beschleunigt langsamer.
 
 Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem Raum stufenlos an Leistung (Sonar- und Radarreichweite sinken allmählich); ein zerstörter Raum legt sie lahm. Eine beschädigte Maschine begrenzt die Fahrt auf 15 kn, eine zerstörte auf 8 kn; eine beschädigte oder zerstörte Waffenzentrale sperrt Torpedostarts; ein zerstörtes Flugdeck verhindert Start und Landung des Helikopters; eine zerstörte OPZ legt auch ESM lahm.
@@ -537,6 +539,7 @@ Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem
 | `Auf / Ab` | Team 1-3 auswählen (ohne Zuweisung) |
 | `Enter` | Gewähltes Team dem gewählten Kompartiment zuweisen |
 | `Backspace` | Gewähltes Team zurückziehen |
+| `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
 | `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
@@ -559,8 +562,8 @@ Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten 
 
 ### Nicht modelliert
 
-- Keine einzelnen Besatzungsmitglieder oder Verwundeten; keine Längstrimmung durch Flutung.
-- Kein Gegenfluten; Krängung mit Reparatur und Ruder ausgleichen.
+- Keine einzelnen Besatzungsmitglieder oder Verwundeten.
+- Gegenfluten nur zwischen den beiden Rumpfseiten; kein gezieltes Fluten anderer Räume.
 
 ## 5 OPZ / CIC
 
@@ -735,6 +738,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 
 - Der Eigenlärm steigt linear von 4 kn bis 25 kn. Die Schrauben kavitieren, wenn die Flügelspitzengeschwindigkeit für den Wasserdruck an den Schrauben zu hoch ist: bei ruhiger See ab 15 kn, bei schwerer See früher, wenn das Stampfen das Heck anhebt. Kavitation hebt den Lärm auf mindestens 0,85 und senkt die passive Sonarreichweite auf 35 %.
 - Modus LEISE senkt den Eigenlärm auf 65 % und begrenzt die Fahrt auf 12 kn.
+- Anlagenwahl (`G`): AUTO fährt die Anlage wie bisher. DIESEL ist die leise Anlage (Eigenlärm etwa -4 dB, Brennstoff -10 %), begrenzt aber auf 18 kn; TURBINE gibt volle Fahrt bei etwa +3 dB und +25 % Brennstoff. Die Wahl steht auf Seite 2 und im Maschinenraum des Browsers.
 - Die Wellendrehzahl folgt dem Festpropeller: bei konstanter Fahrt etwa 5,8 U/min je Knoten (146 U/min bei 25 kn). Beim Beschleunigen hält das Fahrprogramm die Welle höchstens etwa 11 U/min vor der aktuellen Fahrt; beim Abbremsen wird die Steigung umgesteuert und die Welle läuft mit 20 U/min im Leerlauf. Die eigene Wellenlinie im LOFAR wandert mit der Fahrt.
 - Maschinenschaden begrenzt die Fahrt auf 15 kn (beschädigt) oder 8 kn (zerstört).
 - Der Kraftstoffverbrauch folgt der abgegebenen Propellerleistung: bei konstanter Fahrt wächst er mit der dritten Potenz der Fahrt, Beschleunigen und Bremsen kosten zusätzlich. Ein leichteres Schiff (verbrauchter Kraftstoff) beschleunigt etwas schneller; Flutwasser macht es langsamer und tiefer. Schwere See erhöht den Widerstand und kostet bei FULL bis etwa 1 kn. Mit leeren Tanks steht die Welle, und kein Maschinenbefehl wird angenommen.
@@ -746,6 +750,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 | `+ / -` | Motorenbefehl (Telegraph) |
 | `Auf / Ab` | Telegraph hoch / runter |
 | `A` | Akustikmodus LEISE/NORMAL |
+| `G` | Antriebsanlage: AUTO, DIESEL (18 kn, -4 dB) oder TURBINE (+3 dB, +25 % Brennstoff) |
 | `U` | Direkten Zielkurs eingeben (000-359) |
 | `V` | Direkte Zielgeschwindigkeit eingeben (0-25 kn) |
 
@@ -765,7 +770,7 @@ Seite 1 ist der Maschinentelegraph mit Stufe, Fahrt, Wellendrehzahl und Eigenlä
 
 ### Nicht modelliert
 
-- Keine Auswahl zwischen Gasturbine und Diesel und keine Einzelwellensteuerung.
+- Keine Einzelwellensteuerung; die Anlagenwahl gilt für beide Wellen.
 - Keine Versorgung auf See.
 
 ## 8 Helikopterdeck

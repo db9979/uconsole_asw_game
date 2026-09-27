@@ -584,6 +584,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or (ship["astern"] and order != 0)
             or (ship["astern"] and ship.get("target_speed") != config.ASTERN_SPEED_KN)
             or type(ship.get("quiet_mode")) is not bool
+            or ship.get("plant_mode") not in Ship.PLANT_MODES
             or ship.get("fuel_capacity_kg") != config.SHIP_FUEL_CAPACITY_KG
             or not bounded(ship.get("fuel_kg"), 0, config.SHIP_FUEL_CAPACITY_KG)
             or any(not bounded(ship.get(key), 0, config.SHIP_SPEED_MAX_KN)
@@ -654,7 +655,11 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or not bounded(room["hole_m2"], 0.0, 10.0)
             or not bounded(room["heat_s"], 0.0, 1e6)
             or type(room["shorted"]) is not bool
+            or not bounded(room["counterflood"], 0.0, config.DMG_DESTROY_FLOOD)
             for room in compartments.values()):
+        return False
+    if any(compartments[key]["counterflood"] > 0.0
+           for key in compartments if key not in DamageModel.COUNTERFLOOD_ROOMS):
         return False
 
     groups = {"sub": ("subs",), "animal": ("animals",),

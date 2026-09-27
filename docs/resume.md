@@ -1238,6 +1238,25 @@ Notizen Phase 5:
   entfaellt, der bestehende Datalink teilt sofort (nur mit Antenne).
 - Keine Golden-Metrik fuer die KI-Trefferquote; keine Deviation noetig.
 
+| 8 Schiff/Schaden | fertig | siehe `git log` | fokussiert 845+ gruen, Kalibrierung siehe Log | – |
+
+Notizen Phase 8:
+
+- Gegenfluten (`DamageModel.order_counterflood/stop_counterflood`, Ventilziel
+  je Rumpfseite in `counterflood`, 0,5 %/s, ab 5 Grad Kraengung, Stopp unter
+  1 Grad, Kappe 60 %), Taste `C` Schadensstation, Web-Knopf und Befehl
+  `damage_counterflood`, Projektion `damage.stability`.
+- Laengstrimm `DamageModel.trim_deg()` (GML 150 m, Bug unten positiv) ist
+  abgeleitet, nicht gespeichert; wirkt ueber `engine_speed_cap` (-0,5 kn/Grad)
+  und `Ship.trim_noise` (+0,03 Pegel/Grad Bug unten, je Tick aus
+  `_update_navigation`). Save: `compartments[].counterflood`, `ship.plant_mode`.
+- Anlagenwahl `Ship.plant_mode` AUTO/DIESEL/TURBINE (`PLANT_*` in `ship.py`,
+  Konstanten als Annahme 1.3, kein Katalogfeld): Taste `G`, Befehl
+  `engine_set_plant`, Projektion `propulsion.plant_mode` + `controls.plants`.
+  AUTO = bisheriges Verhalten (Golden unveraendert); der Pegel ist auf
+  `NOISE_LEVEL_MAX` (Flank kavitierend, 1,05) begrenzt, damit gespeicherte
+  Beobachtungen im Validator-Rahmen bleiben.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

@@ -524,6 +524,8 @@ Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fi
 - **Fire:** grows with the room's fuel load (engine, flight deck and magazine burn fiercest) and is smothered by rising water. A room that stays hot for about 30 s ignites its neighbours. A flooded switchboard (sonar, operations, radio, engine) shorts and starts an electrical fire. A fire above 90 % in the weapons room cooks off the magazine: the room is destroyed and the neighbouring rooms are holed.
 - **Stability:** floodwater adds weight, and loose water surfaces reduce the metacentric height (GM). The ship sinks when the floodwater exceeds its reserve buoyancy, and capsizes when GM is lost or the heel passes 35 degrees.
 - **Heel:** off-centre floodwater lists the ship to that side and pulls it off course.
+- **Counter-flooding:** with `C` and a list of 5 degrees or more, damage control opens the flooding valve of the high hull side; water enters at 0.5 % of the room per second until the list is cancelled, never past 60 % of that side, and the valve closes by itself below 1 degree (or with `C` again). The water is real floodwater: it adds weight and draught and a team has to pump it out later.
+- **Trim:** floodwater forward or aft trims the ship (bow down counts positive). Every degree costs 0.5 kn of top speed and, bow down, adds own noise at the bow sonar. The stability line on page 2 shows list, trim and the open valve.
 - **Steering gear and stabilizers:** the steering gear sits aft under the flight deck. If that compartment is destroyed, the rudder jams at its last angle until the room is repaired. A destroyed hull compartment on either side knocks out the fin stabilizers, so the ship rolls more in a seaway. Floodwater adds weight: the ship sits deeper and accelerates more slowly.
 
 Station effects: a station loses capability continuously with flooding and fire in its room (sonar and radar range shrink gradually); a destroyed room disables it. A damaged engine room caps speed at 15 kn, a destroyed one at 8 kn; a damaged or destroyed weapons room blocks torpedo launches; a destroyed flight deck prevents helicopter launch and recovery; a destroyed operations room also disables ESM.
@@ -536,6 +538,7 @@ Station effects: a station loses capability continuously with flooding and fire 
 | `Up / Down` | Select team 1-3 (unassigned) |
 | `Enter` | Assign selected team to selected compartment |
 | `Backspace` | Withdraw selected team |
+| `C` | Counter-flood the high hull side against a list (again: close the valve) |
 | `1-9` | Always switch station; never assign a team |
 | `Click` | Select compartment or its label; Enter assigns the selected team |
 
@@ -558,8 +561,8 @@ On the uConsole the joystick buttons 1-3 assign team 1-3 directly to the selecte
 
 ### Not modelled
 
-- No individual crew members or casualties; no longitudinal trim from flooding.
-- No counter-flooding order; correct heel with repairs and rudder.
+- No individual crew members or casualties.
+- Counter-flooding only between the two hull sides; no selective flooding of other rooms.
 
 ## 5 Operations / CIC
 
@@ -734,6 +737,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 
 - Own noise rises linearly from 4 kn to 25 kn. The propellers cavitate when the blade-tip speed is too high for the water pressure at the screws: in calm water from 15 kn, in heavy seas earlier when pitching lifts the stern. Cavitation raises noise to at least 0.85 and cuts passive sonar range to 35 %.
 - QUIET mode reduces own noise to 65 % and limits speed to 12 kn.
+- Plant selection (`G`): AUTO runs the plant as before. DIESEL is the quiet plant (own noise about -4 dB, fuel -10 %) but caps speed at 18 kn; TURBINE gives full speed at about +3 dB and +25 % fuel. The choice is shown on page 2 and in the browser's engine room.
 - Shaft RPM follows the fixed-pitch propeller: about 5.8 rpm per knot at steady speed (146 rpm at 25 kn). While accelerating the control programme keeps the shaft at most about 11 rpm ahead of the present speed; when slowing down the pitch reverses and the shaft idles at 20 rpm. The own shaft line on LOFAR moves with speed.
 - Machinery damage caps speed at 15 kn (damaged) or 8 kn (destroyed).
 - Fuel burn follows the power the propellers deliver: at steady speed it grows with the cube of speed, accelerating and braking cost extra. A lighter ship (burnt fuel) accelerates slightly faster; floodwater makes it slower and deeper. Heavy seas add resistance and cost up to about 1 kn at FULL. With empty tanks the shaft stops and no engine order is accepted.
@@ -745,6 +749,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 | `+ / -` | Engine order (telegraph) |
 | `Up / Down` | Telegraph up / down |
 | `A` | Quiet mode QUIET/NORMAL |
+| `G` | Propulsion plant: AUTO, DIESEL (18 kn, -4 dB) or TURBINE (+3 dB, +25 % fuel) |
 | `U` | Enter target course directly (000-359) |
 | `V` | Enter target speed directly (0-25 kn) |
 
@@ -764,7 +769,7 @@ Page 1 is the engine telegraph with order, speed, shaft RPM and own noise; page 
 
 ### Not modelled
 
-- No separate gas turbine / diesel plant selection and no individual shaft control.
+- No individual shaft control; the plant choice applies to both shafts.
 - No refuelling at sea.
 
 ## 8 Helicopter deck

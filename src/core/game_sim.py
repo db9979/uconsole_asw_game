@@ -294,6 +294,7 @@ class SimMixin:
         self.ship.turn_rate_scale = (
             0.5 if self.damage.station_degraded("bridge") else 1.0)
         self.ship.speed_cap = self.damage.engine_speed_cap()
+        self.ship.trim_noise = self.damage.trim_noise_boost()
         # Steering gear sits aft under the flight deck; a destroyed room
         # jams the rudder where it is. Stabilizer fins are lost with either
         # hull side destroyed. Floodwater adds displacement.

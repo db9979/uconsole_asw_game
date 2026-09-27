@@ -6,7 +6,7 @@ import pygame
 from src.core import config
 from src.core.i18n import display_value, localized, localize
 from src.core.station import Station
-from src.ship.ship import Ship
+from src.ship.ship import PLANT_DIESEL_MAX_KN, Ship
 from src.ui import layout
 
 
@@ -162,6 +162,15 @@ def draw_engine_view(game, tr=None) -> None:
                             "engine.quiet_limit" if ship.quiet_mode else "station.normal",
                            color=config.COLOR_OK if ship.quiet_mode else config.COLOR_TEXT,
                            label_w=160, size=18)
+        py += 34
+        plant = getattr(ship, "plant_mode", "AUTO")
+        plant_cap = min(cap, PLANT_DIESEL_MAX_KN) if plant == "DIESEL" else cap
+        layout.status_line(s, px, py, pw, "ui.plant_mode", message(
+            "engine.plant_line", plant=display_value("plant", plant),
+            cap=f"{plant_cap:.0f}"),
+            color=config.COLOR_OK if plant == "DIESEL" else (
+                config.COLOR_WARN if plant == "TURBINE" else config.COLOR_TEXT),
+            label_w=160, size=18)
         py += 34
         sonar_range = game.ship.passive_sonar_range_nm(
             0.5, getattr(game.world, "effective_sea_state", game.world.sea_state))

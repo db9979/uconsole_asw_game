@@ -112,7 +112,7 @@ export function validateV2State(state) {
   const shapes = {
     bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"], sonar: ["observations", "settings", "visualization"],
     weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
-    damage: ["compartments", "teams", "total", "sunk"],
+    damage: ["compartments", "teams", "total", "sunk", "stability"],
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
@@ -245,7 +245,9 @@ export function validateV2State(state) {
     rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
   } else if (state.role === "damage") {
     if (!boundedArray(payload.compartments, 16) || payload.compartments.some((row) => !exactKeys(row, ["key", "name", "state", "flood", "fire", "repairable", "trend"]) || typeof row.repairable !== "boolean" || !exactKeys(row.trend, ["flood_rate", "fire_rate", "repairable"])) ||
-        !boundedArray(payload.teams, 16) || payload.teams.some((row) => !exactKeys(row, ["team", "compartment"]))) throw new Error("protocol");
+        !boundedArray(payload.teams, 16) || payload.teams.some((row) => !exactKeys(row, ["team", "compartment"])) ||
+        !exactKeys(payload.stability, ["list_deg", "trim_deg", "counterflood_room", "can_counterflood"]) ||
+        typeof payload.stability.can_counterflood !== "boolean") throw new Error("protocol");
   } else if (state.role === "opz") {
     tacticalRows(payload.observations, 256);
     tacticalRows(payload.fusions, 32, ["members"]);
@@ -284,10 +286,12 @@ export function validateV2State(state) {
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     tacticalRows(payload.tactical, 128);
   } else if (state.role === "engine") {
-    if (!exactKeys(payload.propulsion, ["course", "target_course", "speed", "target_speed", "telegraph", "rpm", "quiet_mode", "cavitating", "fuel_kg", "fuel_capacity_kg", "fuel_burn_kg_h", "fuel_endurance_h", "fuel_range_nm"]) ||
+    if (!exactKeys(payload.propulsion, ["course", "target_course", "speed", "target_speed", "telegraph", "rpm", "quiet_mode", "plant_mode", "cavitating", "fuel_kg", "fuel_capacity_kg", "fuel_burn_kg_h", "fuel_endurance_h", "fuel_range_nm"]) ||
+        !["AUTO", "DIESEL", "TURBINE"].includes(payload.propulsion.plant_mode) ||
         !exactKeys(payload.machinery, ["station_state", "speed_cap", "effective_speed_cap", "flood", "fire", "repair_teams", "repair_trend", "noise", "grounded"]) ||
         !boundedArray(payload.machinery.repair_teams, 16) || !exactKeys(payload.machinery.repair_trend, ["flood_rate", "fire_rate", "repairable"]) ||
-        !exactKeys(payload.controls, ["orders", "speed_max_kn"]) || !boundedArray(payload.controls.orders, 6) ||
+        !exactKeys(payload.controls, ["orders", "plants", "speed_max_kn"]) || !boundedArray(payload.controls.orders, 6) ||
+        !boundedArray(payload.controls.plants, 3) || payload.controls.plants.join(",") !== "AUTO,DIESEL,TURBINE" ||
         payload.controls.orders.join(",") !== "ASTERN,STOP,SLOW,HALF,FULL,FLANK" ||
         !exactKeys(payload.environment_effects, ["sea_state", "roll", "pitch", "tas_available", "tas_performance"])) throw new Error("protocol");
   } else if (state.role === "helicopter") {

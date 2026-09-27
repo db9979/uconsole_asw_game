@@ -1131,6 +1131,8 @@ class EventMixin:
             elif e.key == pygame.K_c:
                 if self.station in (Station.SONAR, Station.HELICOPTER):
                     self._cycle_classification()
+                elif self.station is Station.DAMAGE:
+                    self._toggle_counterflood()
                 elif self.station in (Station.OPZ, Station.RADAR):
                     self._cycle_opz_classification()
                 elif self.station is Station.ELOKA:
@@ -1174,6 +1176,8 @@ class EventMixin:
                     self._mark_newest_blip()
             elif e.key == pygame.K_y and self.station is Station.WEAPONS:
                 self._cycle_torpedo_salvo()
+            elif e.key == pygame.K_g and self.station is Station.ENGINE:
+                self._cycle_plant_mode()
             elif e.key == pygame.K_y:
                 if self.station is Station.SONAR:
                     if self.damage.station_down("sonar"):

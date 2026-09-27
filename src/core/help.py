@@ -104,9 +104,11 @@ STATION_HELP = {
         "help.damage.intro",
         [("<- / ->", "help.control.compartment"), ("help.key.up_down", "help.control.team"),
          ("Enter", "help.control.assign"), ("Backspace", "help.control.withdraw"),
+         ("C", "help.control.counterflood"),
          ("1-9", "help.control.station_only"), ("control.help.click", "control.help.compartment")],
         ["help.note.damage_states", "help.note.destroyed", "help.note.sinking",
-         "help.note.fire", "help.note.assignment"], "help.note.damage_tactic"),
+         "help.note.fire", "help.note.assignment", "help.note.counterflood"],
+        "help.note.damage_tactic"),
     Station.OPZ: _station(
         "help.opz.intro",
         [("help.key.up_down", "help.control.cic_track"), ("C", "help.control.opz_classify"),
@@ -134,10 +136,11 @@ STATION_HELP = {
     Station.ENGINE: _station(
         "help.engine.intro",
         [("+ / -", "help.control.engine"), ("help.key.up_down", "help.control.telegraph_up"),
-          ("A", "help.control.quiet"), ("U", "help.control.course_input"),
+          ("A", "help.control.quiet"), ("G", "help.control.plant"),
+          ("U", "help.control.course_input"),
           ("V", "help.control.speed_input")],
         ["help.note.cavitation", "help.note.engine_damage", "help.note.noise_range",
-         "help.note.quiet"], "help.note.engine_tactic"),
+         "help.note.quiet", "help.note.plant"], "help.note.engine_tactic"),
     Station.HELICOPTER: _station(
         "help.helo.intro",
         [("H", "help.control.helo_toggle"), ("help.key.arrows", "help.control.waypoint"),

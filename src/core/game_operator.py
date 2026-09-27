@@ -123,6 +123,43 @@ class OperatorMixin:
             return "engine_down"
         return self.order_speed(speed_kn)
 
+    def set_plant_mode(self, mode: str):
+        """Select the propulsion plant: AUTO (both as needed), DIESEL (quiet,
+        18 kn) or TURBINE (loud, full speed, more fuel)."""
+        if type(mode) is not str or mode not in self.ship.PLANT_MODES:
+            return "invalid_value"
+        if self.damage.station_down("engine"):
+            return "engine_down"
+        self.ship.plant_mode = mode
+        self.flash(message("runtime.plant." + mode.lower()), 2.0)
+        return True
+
+    def _cycle_plant_mode(self) -> None:
+        modes = self.ship.PLANT_MODES
+        self.set_plant_mode(modes[(modes.index(self.ship.plant_mode) + 1) % len(modes)])
+
+    def set_counterflood(self, enabled: bool):
+        """Open (True) or close (False) the counter-flooding valve of the hull
+        side opposite the list; the model closes it below one degree."""
+        if type(enabled) is not bool:
+            return "invalid_value"
+        if self.damage.station_down("opz"):
+            return "not_ready"
+        if not enabled:
+            self.damage.stop_counterflood()
+            self.flash(message("runtime.counterflood.off"), 2.0)
+            return True
+        result = self.damage.order_counterflood()
+        if result is not True:
+            self.flash(message("runtime.counterflood." + result), 2.0)
+            return result
+        self.flash(message("runtime.counterflood.on",
+                           room=display_value("compartment", self.damage.counterflood_room)), 2.0)
+        return True
+
+    def _toggle_counterflood(self) -> None:
+        self.set_counterflood(self.damage.counterflood_room is None)
+
     def set_quiet_mode(self, enabled: bool):
         if type(enabled) is not bool:
             return "invalid_value"

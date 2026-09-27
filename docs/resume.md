@@ -1210,6 +1210,34 @@ Notizen Phase 4:
   Torpedomodell kennt keine Maximaltiefe). Katalogzaehlungen in
   `test_catalog_v2.py` angepasst (117 Maschinen, 475 Claims, 119 Profile).
 
+| 5 KI-Zielanalyse | fertig | siehe `git log` | fokussiert 609 gruen, Kalibrierung 77/77 | Trefferquote der KI sinkt bewusst (Realismus) |
+
+Notizen Phase 5:
+
+- Die KI loeste ihre TMA schon (`Sub._ingest_bearing` + `solve_tma`, Gate
+  `TMA_RANGE_MIN_QUALITY`) und teilte Lagebilder ueber den roten Datalink
+  (`exchange_friendly_datalink`, nur mit Mast/Schnorchel). Neu ist das
+  Feuerleit-Gate: `memory["contact_sigma_nm"]` (1-Sigma-Entfernungsfehler aus
+  der Ellipsen-Hauptachse, `solution_sigma_nm`), `memory["contact_t"]`, und
+  `solution_converged()`: Sigma/Entfernung <= `solution_threshold` und
+  Loesung juenger als `SUB_SOLUTION_MAX_AGE_S` (90 s). Gilt nur fuer
+  TMA-Beobachtungen (`fix_source == "TMA"`); Aktiv-/Datalink-Fixe wie bisher.
+- Schwierigkeitsfeld `enemy_solution_threshold` (0,05-0,40, Schritt 0,05,
+  Default 0,20; Szenarien 0,25/0,25/0,15) in `DIFFICULTY_FIELDS`, Menue,
+  Web-Neustart (generisch) und Save (`subs[].solution_threshold`).
+- Zielmanoever: weicht eine gemessene Peilung mehr als 3 Grad + 3 Sigma von
+  der koppelnd fortgeschriebenen Loesung ab (`solution_predicts_bearing`),
+  startet der Plot neu und `contact_reopen_left` = 3 neue Peilungen bis zum
+  naechsten Loesen. Bei radialer Zielbewegung ist ein Manoever peilungsseitig
+  kaum sichtbar (physikalisch korrekt); der Test prueft den Mechanismus mit
+  einem synthetischen Peilsprung.
+- Messung (Test-Geometrie, Ziel 12 kn, Boot mit zwei 90-Grad-Schlaegen):
+  Sigma/Entfernung 0,16-0,35 nach 6-8 Minuten; ohne eigene Schlaege bleibt
+  die Loesung bei >1 (bearing-only, unbeobachtbar) und das Boot schiesst nicht
+  auf TMA. Abweichung von A5.4: die 60-s-Verzoegerung der Loesungsteilung
+  entfaellt, der bestehende Datalink teilt sofort (nur mit Antenne).
+- Keine Golden-Metrik fuer die KI-Trefferquote; keine Deviation noetig.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

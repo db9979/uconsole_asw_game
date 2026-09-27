@@ -4243,5 +4243,6 @@
   "weapons.line.torpedo_setup": "{name} ({stock}) · {pattern} · {enable} NM · x{salvo}",
   "weapons.setup_short": "Torpedo",
   "weapons.type.weapon.ownship.torpedo": "Mk1",
-  "weapons.type.weapon.ownship.torpedo_mk2": "Mk2"
+  "weapons.type.weapon.ownship.torpedo_mk2": "Mk2",
+  "difficulty.enemy_solution_threshold": "Enemy fire-control convergence (sigma/range)"
 }

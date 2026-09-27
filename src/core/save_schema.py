@@ -49,6 +49,8 @@ CREW_STATION_FIELDS = frozenset({
     "mode", "controls", "sonar", "selected_contact_id", "target_id", "rng",
 })
 # Sub rows carry the crew-facing orders beside the AI state.
+# Sub rows also carry the difficulty's fire-control convergence threshold.
+SUB_AI_FIELDS = frozenset({"solution_threshold"})
 SUB_CREW_FIELDS = frozenset({
     "manual", "order_course", "order_speed", "order_depth", "last_bottom_m",
     "manual_ping_pending",

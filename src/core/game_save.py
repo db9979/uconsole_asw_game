@@ -625,6 +625,7 @@ class SaveMixin:
                            quiet_mult=s.quiet_mult, attack_mult=s.attack_mult,
                            attack_cooldown=s.attack_cooldown,
                            attack_left=s.attack_left,
+                           solution_threshold=s.solution_threshold,
                            fingerprint=s.fingerprint.to_dict(),
                           torpedo_alerted=s.torpedo_alerted,
                            decoy_cd=s._decoy_cd,
@@ -1193,6 +1194,7 @@ class SaveMixin:
             s.attack_mult = sd["attack_mult"]
             s.attack_cooldown = sd["attack_cooldown"]
             s.attack_left = sd["attack_left"]
+            s.solution_threshold = sd["solution_threshold"]
             s.torpedo_alerted = sd["torpedo_alerted"]
             s._decoy_cd = sd["decoy_cd"]
             s._active_ping_cd = sd["active_ping_cd"]

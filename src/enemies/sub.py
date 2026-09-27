@@ -35,6 +35,44 @@ if DECOY_PROFILE is None:
 
 SUB_REACTION_MEDIAN_S = 5.0
 SUB_TMA_RESOLVE_S = 30.0
+# A TMA solution older than this (no bearing since) is not fired on.
+SUB_SOLUTION_MAX_AGE_S = 90.0
+# A measured bearing this far (deg, plus three sigma) off the dead-reckoned
+# solution means the target manoeuvred: the solution reopens and needs this
+# many new bearings before the next accepted solve.
+SUB_SOLUTION_REOPEN_DEG = 3.0
+SUB_SOLUTION_REOPEN_BEARINGS = 3
+
+
+def solution_predicts_bearing(remembered: dict, contact_t, observer_x: float,
+                              observer_y: float, now: float) -> float | None:
+    """Bearing the remembered solution predicts at ``now`` (dead reckoning)."""
+    if remembered is None or contact_t is None:
+        return None
+    elapsed = max(0.0, float(now) - float(contact_t))
+    run_nm = config.kn_to_nm_per_s(float(remembered["speed"])) * elapsed
+    x = remembered["x"] + run_nm * math.sin(math.radians(remembered["course"]))
+    y = remembered["y"] - run_nm * math.cos(math.radians(remembered["course"]))
+    return math.degrees(math.atan2(x - observer_x, -(y - observer_y))) % 360.0
+
+
+def solution_sigma_nm(solution, range_nm: float) -> float:
+    """1-sigma range error of a TMA solution: the error ellipse's semi-major
+    axis when the solver provides one, else the quality-scaled range."""
+    ellipse = getattr(solution, "ellipse", None)
+    if ellipse is not None and len(ellipse) >= 1 and ellipse[0] is not None:
+        return max(0.0, float(ellipse[0]))
+    return max(0.0, (1.0 - float(solution.quality)) * float(range_nm))
+
+
+def solution_converged(sigma_nm, range_nm: float, threshold: float,
+                       age_s: float) -> bool:
+    """Fire-control gate on an own TMA solution: sigma/range at or below the
+    difficulty threshold and a bearing newer than SUB_SOLUTION_MAX_AGE_S."""
+    if sigma_nm is None or range_nm is None or range_nm <= 0.0:
+        return False
+    return (float(sigma_nm) / max(0.1, float(range_nm)) <= float(threshold)
+            and float(age_s) <= SUB_SOLUTION_MAX_AGE_S)
 SUB_TMA_LEG_TURN_DEG = 35.0
 # Hiding beside a charted wreck: the boat lies still on the bottom next to
 # the wreck, so an active echo without Doppler merges with the wreck echo.
@@ -84,6 +122,7 @@ class Sub:
                  course_deg: float, stype_key: str, rng: random.Random,
                  quiet_mult: float = 1.0, attack_mult: float = 1.0,
                   attack_cooldown_s: float = None, profile=None,
+                  solution_threshold: float = 0.20,
                   decoy_profile=None, enemy_torpedo_profile=None, *,
                   side: str = "hostile", doctrine: str = "submarine",
                    runtime_catalog=None, asw_rng=None):
@@ -124,6 +163,9 @@ class Sub:
         self.legacy_observation_model = False
         self.quiet_mult = quiet_mult        # M7: Level-Faktor (leicht = lauter)
         self.attack_mult = attack_mult      # M7: Level-Faktor Gegenangriff
+        # Fire-control convergence: range sigma / range of the own TMA
+        # solution must be at or below this before a shot on it.
+        self.solution_threshold = float(solution_threshold)
         self.attack_cooldown = (config.SUB_ATTACK_COOLDOWN_S
                                 if attack_cooldown_s is None else attack_cooldown_s)
         self.x = x_nm
@@ -186,6 +228,13 @@ class Sub:
             "contact_bearing": None,
             "contact_age": config.SUB_EVADE_DURATION_S,
             "contact": None,
+            # Own fire-control solution: 1-sigma range error (NM) and the
+            # time of the last bearing it rests on (None without a solution).
+            "contact_sigma_nm": None,
+            "contact_t": None,
+            # Bearings still needed before a solution is trusted again after
+            # the target's manoeuvre broke the previous one (0 = none).
+            "contact_reopen_left": 0,
         }
         self.decision_reason = "Patrouille"
         # Crew control (transient, never saved): while ``manual`` the AI state
@@ -369,6 +418,13 @@ class Sub:
                     > launcher.arc_width_deg / 2.0:
                 return
         dist = observation.range_nm
+        if (observation.fix_source == "TMA" and dist is not None
+                and not solution_converged(observation.range_uncertainty_nm, dist,
+                                           self.solution_threshold,
+                                           self.memory["contact_age"])):
+            # Own TMA only: the solution has not converged (or a target
+            # manoeuvre re-opened it), so the boat keeps tracking instead.
+            return
         noise = observation.signal
         close_fix = dist is not None and dist < 20.0
         rate = 0.0
@@ -453,11 +509,28 @@ class Sub:
         if observation.track_id != self.tma_track_id:
             self.tma_track = BearingTrack()
             self.tma_track_id = observation.track_id
+        sigma_deg = max(0.5, observation.bearing_uncertainty_deg or 0.5)
         self.tma_track.add(observation.last_seen, observation.bearing, self.x,
-                           self.y, self.course,
-                           max(0.5, observation.bearing_uncertainty_deg or 0.5),
-                           None, self.speed)
-        if observation.last_seen < self.tma_next_t:
+                           self.y, self.course, sigma_deg, None, self.speed)
+        predicted = solution_predicts_bearing(
+            self.memory["contact"], self.memory["contact_t"], self.x, self.y,
+            observation.last_seen)
+        if (predicted is not None and self.memory["contact_reopen_left"] == 0
+                and abs(config.angle_diff_deg(observation.bearing, predicted))
+                > SUB_SOLUTION_REOPEN_DEG + 3.0 * sigma_deg):
+            # Target manoeuvre: the solution no longer explains the bearing.
+            # The plot restarts from here, as an operator would, so the next
+            # solution rests on post-manoeuvre bearings only.
+            self.memory["contact_reopen_left"] = SUB_SOLUTION_REOPEN_BEARINGS
+            self.memory["contact_sigma_nm"] = None
+            self.tma_track = BearingTrack()
+            self.tma_track.add(observation.last_seen, observation.bearing, self.x,
+                               self.y, self.course, sigma_deg, None, self.speed)
+        elif self.memory["contact_reopen_left"] > 0:
+            self.memory["contact_reopen_left"] -= 1
+            if self.memory["contact_reopen_left"] == 0:
+                self.tma_next_t = observation.last_seen   # solve on this bearing
+        if self.memory["contact_reopen_left"] > 0 or observation.last_seen < self.tma_next_t:
             return
         self.tma_next_t = observation.last_seen + SUB_TMA_RESOLVE_S
         solution = solve_tma(self.tma_track)
@@ -468,6 +541,9 @@ class Sub:
             course=solution.course, noise=observation.signal)
         self.memory["contact_age"] = 0.0
         self.memory["contact_bearing"] = observation.bearing
+        self.memory["contact_sigma_nm"] = solution_sigma_nm(
+            solution, math.hypot(solution.pos[0] - self.x, solution.pos[1] - self.y))
+        self.memory["contact_t"] = float(observation.last_seen)
 
     def _update_hull_stress(self, dt: float) -> None:
         """Pressure-hull fatigue below test depth; collapse beyond crush depth."""
@@ -656,11 +732,19 @@ class Sub:
                 if observation.x is not None and observation.y is not None else None)
             self.memory["contact_age"] = 0.0
             self.memory["contact_bearing"] = observation.bearing
+            self.memory["contact_sigma_nm"] = (
+                float(observation.range_uncertainty_nm or 0.0)
+                if self.memory["contact"] is not None else None)
+            self.memory["contact_t"] = (float(observation.last_seen)
+                                        if self.memory["contact"] is not None else None)
             self.sensor_suite.last_consumed_s = max(
                 self.sensor_suite.last_consumed_s, observation.last_seen)
         if self.memory["contact_age"] >= config.SUB_EVADE_DURATION_S:
             self.memory["contact"] = None
             self.memory["contact_bearing"] = None
+            self.memory["contact_sigma_nm"] = None
+            self.memory["contact_t"] = None
+            self.memory["contact_reopen_left"] = 0
         tactical_observation = observation
         if tactical_observation is None and self.memory["contact"] is not None:
             remembered = self.memory["contact"]
@@ -676,8 +760,9 @@ class Sub:
                     0.0, 1.0 - self.memory["contact_age"]
                     / config.SUB_EVADE_DURATION_S),
                 signal=remembered["noise"], last_seen=0.0,
-                bearing_uncertainty_deg=None, range_uncertainty_nm=None,
-                depth_uncertainty_m=None, label=None)
+                bearing_uncertainty_deg=None,
+                range_uncertainty_nm=self.memory["contact_sigma_nm"],
+                depth_uncertainty_m=None, label=None, fix_source="TMA")
         if self.manual:
             self._active_ping_cd = max(0.0, self._active_ping_cd - dt)
             self.pinged_this_tick = self._manual_ping_pending

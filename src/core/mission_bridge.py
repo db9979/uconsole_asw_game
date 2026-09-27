@@ -93,6 +93,7 @@ class MissionBridgeMixin:
                              self.rng_world, quiet_mult=lv["quiet_mult"],
                              attack_mult=lv["enemy_attack_mult"],
                              attack_cooldown_s=lv["enemy_cooldown_s"],
+                             solution_threshold=lv["enemy_solution_threshold"],
                              profile=self.runtime_catalog.subs[profile],
                              decoy_profile=self.runtime_catalog.decoys[
                                  self.runtime_catalog.runtime_bindings[

@@ -1022,6 +1022,19 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                     bearing = memory.get("contact_bearing")
                     if bearing is not None and (not bounded(bearing, 0, 360) or bearing == 360):
                         return False
+                    if not {"contact_sigma_nm", "contact_t", "contact_reopen_left"} <= set(memory):
+                        return False
+                    if (type(memory["contact_reopen_left"]) is not int
+                            or not 0 <= memory["contact_reopen_left"] <= 10):
+                        return False
+                    sigma = memory["contact_sigma_nm"]
+                    if sigma is not None and not bounded(sigma, 0, 10_000):
+                        return False
+                    contact_t = memory["contact_t"]
+                    if contact_t is not None and not bounded(contact_t, 0, 1e12):
+                        return False
+                    if not bounded(entry.get("solution_threshold"), 0.05, 0.40):
+                        return False
                     observed = memory.get("contact")
                     if observed is not None:
                         if (not isinstance(observed, dict)

@@ -587,6 +587,9 @@ DIFFICULTY_FIELDS = {
     "kill_depth_m":       (float, 5.0,    30.0,   1.0,   15.0),
     "enemy_attack_mult":  (float, 0.3,    2.0,    0.1,   1.0),
     "enemy_cooldown_s":   (float, 300.0,  1800.0, 30.0,  900.0),
+    # Plan 1.3 phase 5: the AI boat fires on its own TMA only once the
+    # solution's range sigma over range is at or below this fraction.
+    "enemy_solution_threshold": (float, 0.05, 0.40, 0.05, 0.20),
     "second_sub_prob":    (float, 0.0,    1.0,    0.05,  0.0),
     "sea_state_start":    (int,   0,      6,      1,     3),
     "sub_count":          (int,   1,      3,      1,     1),
@@ -652,6 +655,7 @@ SCENARIOS = {
         difficulty=dict(quiet_mult=0.8, repair_mult=1.5, torpedo_count=6,
                        kill_dist_nm=0.20, kill_depth_m=20.0,
                        enemy_attack_mult=0.7, enemy_cooldown_s=1200.0,
+                       enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="patrouille",
         hq_intel="exact",
@@ -669,6 +673,7 @@ SCENARIOS = {
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
                        enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
                        second_sub_prob=0.0),
         mission_type="doppeljagd",
         hq_intel="coarse",
@@ -685,6 +690,7 @@ SCENARIOS = {
         difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=4,
                        kill_dist_nm=0.135, kill_depth_m=15.0,
                        enemy_attack_mult=1.5, enemy_cooldown_s=600.0,
+                       enemy_solution_threshold=0.15,
                        second_sub_prob=0.85),
         mission_type="nuklearer_abfang",
         hq_intel="coarse",

@@ -21,6 +21,22 @@ RADIO_FIELDS = ("ref", "label", "bearing", "quality", "age_s",
                 "bearing_uncertainty_deg")
 HELICOPTER_TACTICAL_FIELDS = TACTICAL_FIELDS + ("classification", "released_to_opz")
 
+# The common ``weather_station`` block: own-ship atmosphere (every role) and
+# the crewed boat's weather block (submarine roles instead of flight weather,
+# whose atmosphere omits the flying-only cloud ceiling and icing).
+WEATHER_ATMOSPHERE_FIELDS = (
+    "weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state",
+    "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa",
+    "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c",
+    "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg",
+    "daylight", "moon_phase", "moon_illumination", "time")
+WEATHER_BOAT_ATMOSPHERE_FIELDS = tuple(
+    key for key in WEATHER_ATMOSPHERE_FIELDS if key not in ("ceiling_ft", "icing"))
+WEATHER_BOAT_FIELDS = (
+    "mast_radar_nm", "mast_radar_calm_nm", "sighting_nm", "sighting_ref_nm",
+    "ambient_bands_hz", "ambient_excess_db", "snorkel_available", "snorkeling",
+    "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz")
+
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
                         "own_weapons", "designated_target_ref", "feed", "scope")
 # Top-level keys of every role payload (exact sets on both sides).

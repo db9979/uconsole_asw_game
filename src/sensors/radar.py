@@ -126,21 +126,26 @@ def detection_range_nm(reference_range_nm: float, **kwargs) -> float:
 
 @lru_cache(maxsize=128)
 def _detection_fraction(domain: str, sea_state: float, rain: float,
-                        capability: float, reference_range_nm: float) -> float:
+                        capability: float, reference_range_nm: float,
+                        rcs_factor: float = 1.0) -> float:
     return detection_range_nm(reference_range_nm, domain=domain,
                               sea_state=sea_state, rain_intensity=rain,
-                              capability=capability) / reference_range_nm
+                              capability=capability,
+                              rcs_factor=rcs_factor) / reference_range_nm
 
 
 def detection_fraction(domain: str, sea_state: float, rain_intensity: float,
-                       reference_range_nm: float, capability: float = 1.0) -> float:
+                       reference_range_nm: float, capability: float = 1.0,
+                       rcs_factor: float = 1.0) -> float:
     """Pd = 0.5 range as a fraction of the calm-sea reference.  Conditions
     are quantized before the (pure, bounded) cache so the result depends
-    only on the arguments, never on call order."""
+    only on the arguments, never on call order.  ``rcs_factor`` scales the
+    target's cross-section (a raised submarine mast is 0.01)."""
     return _detection_fraction(domain, round(float(sea_state), 2),
                                round(float(rain_intensity), 3),
                                round(float(capability), 3),
-                               float(reference_range_nm))
+                               float(reference_range_nm),
+                               round(float(rcs_factor), 4))
 
 
 def swept(bearing_deg: float, scan_end_deg: float, swept_deg: float) -> bool:

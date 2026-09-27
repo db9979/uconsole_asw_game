@@ -1237,13 +1237,22 @@ class PicturesMixin:
         measurement, and is always that measurement (with its age), never
         the modelled truth."""
         atmosphere = self.atmosphere()
-        flight = self.helicopter_weather()
         effects = dict(
             solar_heating=(atmosphere["daylight"] == "day"
                            and atmosphere["sun_elevation_deg"] >= 20.0
                            and atmosphere["cloud_cover"] < 0.6),
             wind_mixing=atmosphere["wind_kn"] >= ocean_physics.MLD_WIND_THRESHOLD_KN,
             freshwater=atmosphere["precipitation"] != "none")
+        boat = self._opfor
+        if boat is not None and self._sonar_ctx is boat.station:
+            # The crewed boat has no flight deck: no flight weather, cloud
+            # ceiling or icing, but what the weather does to the boat itself.
+            return dict(
+                atmosphere={key: value for key, value in atmosphere.items()
+                            if key not in self.WEATHER_BOAT_OMITTED},
+                effects=effects, boat=self._weather_boat_block(boat.sub),
+                profile=self._weather_station_profile())
+        flight = self.helicopter_weather()
         return dict(
             atmosphere=atmosphere, effects=effects,
             flight=dict(
@@ -1269,6 +1278,58 @@ class PicturesMixin:
                     roll_deg=helicopter_physics.DECK_ROLL_LIMIT_DEG,
                     pitch_deg=helicopter_physics.DECK_PITCH_LIMIT_DEG)),
             profile=self._weather_station_profile())
+
+    # Atmosphere rows that only matter for flying (the boat side omits them).
+    WEATHER_BOAT_OMITTED = ("ceiling_ft", "icing")
+
+    def _weather_boat_block(self, sub) -> dict:
+        """What the weather does to the crewed boat (environment and own boat
+        only, never another platform's state).
+
+        * Mast radar: the range at which a reference surface-search radar
+          (the frigate class's nominal set, undamaged) sees a raised mast or
+          snorkel head with Pd = 0.5 per look in this sea and rain, capped by
+          the radar horizon - the same model the simulation uses for mast
+          echoes (``SUB_MAST_RCS_FACTOR``, sea clutter, rain loss).
+        * Optics: the range at which a ship's lookout sights the boat
+          surfaced, in this light, visibility and sea (the lookout contrast
+          model); a raised mast at periscope depth is never sighted.
+        * Ambient noise: wind and rain above the calm reference (sea state 1,
+          no rain) per sonar band; it masks the boat from passive sonar and
+          dampens the boat's own listening alike.
+        * Snorkel: speed ceiling, radiated penalty and diesel lines."""
+        from src.core.game_sim import LOOKOUT_MODEL
+        from src.sensors import radar as radar_physics
+        from src.sonar import equation as sonar_equation
+        world = self.world
+        sea = float(getattr(world, "effective_sea_state", world.sea_state))
+        rain = config.clamp(float(getattr(world, "rain_intensity", 0.0)), 0.0, 1.0)
+        horizon = config.radar_horizon_nm(config.RADAR_ANTENNA_HEIGHT_M,
+                                          config.SUB_MAST_HEIGHT_M)
+        nominal = config.RADAR_SURFACE_RANGE_NM
+
+        def mast_radar(sea_state, rain_intensity):
+            return min(horizon, nominal * radar_physics.detection_fraction(
+                "surface", sea_state, rain_intensity, nominal,
+                rcs_factor=config.SUB_MAST_RCS_FACTOR))
+
+        light = self._lookout_environment()
+        bands = tuple(float(band) for band in sonar_equation.BANDS_HZ)
+        excess = [sonar_equation.ambient_noise_db(band, sea, rain)
+                  - sonar_equation.ambient_noise_db(
+                      band, sonar_equation.REFERENCE_SEA_STATE, 0.0)
+                  for band in bands]
+        return dict(
+            mast_radar_nm=mast_radar(sea, rain),
+            mast_radar_calm_nm=mast_radar(0.0, 0.0),
+            sighting_nm=LOOKOUT_MODEL.sighting_range_nm("SUB", **light),
+            sighting_ref_nm=float(config.LOOKOUT_SUB_RANGE_NM),
+            ambient_bands_hz=list(bands), ambient_excess_db=excess,
+            snorkel_available=sub.endurance is not None,
+            snorkeling=bool(sub.snorkeling),
+            snorkel_max_kn=float(config.UBOOT_SNORKEL_MAX_KN),
+            snorkel_noise_db=float(config.UBOOT_SNORKEL_NOISE_DB),
+            snorkel_lines_hz=[float(line[0]) for line in config.UBOOT_SNORKEL_LINES])
 
     def _weather_station_profile(self) -> dict | None:
         bt = self.sonar.bt_profile

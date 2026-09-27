@@ -156,12 +156,17 @@ def _weather_station(game):
     Own-ship atmosphere and flight weather; the ocean profile only after a
     sonar bathythermograph measurement (``profile`` is null before)."""
     data = game.weather_station_data()
-    a, f, p = data["atmosphere"], data["flight"], data["profile"]
-    atmosphere = {key: (_number(value) if isinstance(value, float) else value)
-                  for key, value in a.items()}
-    flight = {key: (_number(value) if isinstance(value, float) else value)
-              for key, value in f.items() if key != "limits"}
-    flight["limits"] = {key: _number(float(value)) for key, value in f["limits"].items()}
+    a, p = data["atmosphere"], data["profile"]
+    boat = data.get("boat")
+    # Exact allowlists shared with the browser validator (v2/schema.py).
+    atmosphere = {key: (_number(a[key]) if isinstance(a[key], float) else a[key])
+                  for key in (web_schema.WEATHER_ATMOSPHERE_FIELDS if boat is None
+                              else web_schema.WEATHER_BOAT_ATMOSPHERE_FIELDS)}
+    if boat is None:
+        f = data["flight"]
+        flight = {key: (_number(value) if isinstance(value, float) else value)
+                  for key, value in f.items() if key != "limits"}
+        flight["limits"] = {key: _number(float(value)) for key, value in f["limits"].items()}
     profile = None
     if p is not None:
         profile = dict(
@@ -180,9 +185,25 @@ def _weather_station(game):
             depth_edges_m=[_number(float(value)) for value in p["depth_edges_m"]][:32],
             shadow=[[bool(cell) for cell in row][:32] for row in p["shadow"]][:32],
             dip_relative_to_layer=p["dip_relative_to_layer"])
-    return dict(atmosphere=atmosphere, effects={key: bool(value) for key, value
-                                                in data["effects"].items()},
-                flight=flight, profile=profile)
+    effects = {key: bool(value) for key, value in data["effects"].items()}
+    if boat is not None:
+        return dict(atmosphere=atmosphere, effects=effects,
+                    boat=_weather_boat(boat), profile=profile)
+    return dict(atmosphere=atmosphere, effects=effects, flight=flight, profile=profile)
+
+
+def _weather_boat(boat):
+    """The crewed boat's weather block: environment and own boat only."""
+    numbers = ("mast_radar_nm", "mast_radar_calm_nm", "sighting_nm", "sighting_ref_nm",
+               "snorkel_max_kn", "snorkel_noise_db")
+    row = {key: _number(float(boat[key])) for key in numbers}
+    row.update(
+        ambient_bands_hz=[_number(float(value)) for value in boat["ambient_bands_hz"]][:8],
+        ambient_excess_db=[_number(float(value)) for value in boat["ambient_excess_db"]][:8],
+        snorkel_available=bool(boat["snorkel_available"]),
+        snorkeling=bool(boat["snorkeling"]),
+        snorkel_lines_hz=[_number(float(value)) for value in boat["snorkel_lines_hz"]][:4])
+    return {key: row[key] for key in web_schema.WEATHER_BOAT_FIELDS}
 
 
 def _plot(game, layer=None, own=None):

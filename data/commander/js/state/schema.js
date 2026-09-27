@@ -1,5 +1,5 @@
 import { S } from "./store.js";
-import { isBoatCommand, isSonar, stationNames } from "../core/base.js";
+import { isBoatCommand, isSonar, opforRoles, stationNames } from "../core/base.js";
 import { finite, t } from "../core/format.js";
 import { gameEffectKinds } from "./shared.js";
 
@@ -43,24 +43,35 @@ function validPlot(plot) {
     return fields.filter((key) => !["id", "shape", "label"].includes(key)).every((key) => finite(item[key]));
   });
 }
-function validWeatherStation(ws) {
+// ``boat``: a submarine role gets the boat block instead of flight weather
+// and no cloud ceiling or icing; ``fields`` are the generated allowlists.
+function validBoatWeather(b, fields) {
+  const nonNegative = ["mast_radar_nm", "mast_radar_calm_nm", "sighting_nm", "sighting_ref_nm", "snorkel_max_kn", "snorkel_noise_db"];
+  return exactKeys(b, fields.boat) && nonNegative.every((key) => finite(b[key]) && b[key] >= 0) &&
+    typeof b.snorkel_available === "boolean" && typeof b.snorkeling === "boolean" &&
+    boundedArray(b.ambient_bands_hz, 8) && b.ambient_bands_hz.length >= 1 && b.ambient_bands_hz.every((value) => finite(value) && value > 0) &&
+    boundedArray(b.ambient_excess_db, 8) && b.ambient_excess_db.length === b.ambient_bands_hz.length && b.ambient_excess_db.every((value) => finite(value)) &&
+    boundedArray(b.snorkel_lines_hz, 4) && b.snorkel_lines_hz.every((value) => finite(value) && value > 0);
+}
+function validWeatherStation(ws, boat, fields) {
   const nullableFinite = (value) => value === null || finite(value);
-  const atmosphereKeys = ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"];
   const flightKeys = ["status", "launch_safe", "dipping_safe", "deck_safe", "wind_kn", "gust_kn", "crosswind_kn", "visibility_nm", "ceiling_ft", "icing", "sea_state", "roll_deg", "pitch_deg", "limits"];
   const limitKeys = ["wind_kn", "gust_kn", "crosswind_kn", "visibility_nm", "ceiling_ft", "sea_state", "roll_deg", "pitch_deg"];
   const profileKeys = ["age_s", "offset_nm", "stale", "thermocline_m", "water_depth_m", "depths_m", "speeds_m_s", "sofar_axis_m", "cz_bands_nm", "range_nm", "rays", "depth_edges_m", "shadow", "dip_relative_to_layer"];
-  if (!exactKeys(ws, ["atmosphere", "effects", "flight", "profile"])) return false;
+  if (!exactKeys(ws, ["atmosphere", "effects", boat ? "boat" : "flight", "profile"])) return false;
   const a = ws.atmosphere, f = ws.flight, p = ws.profile;
-  if (!exactKeys(a, atmosphereKeys) || !["clear", "rain", "storm", "fog", "snow"].includes(a.weather) ||
+  if (!exactKeys(a, boat ? fields.boatAtmosphere : fields.atmosphere) || !["clear", "rain", "storm", "fog", "snow"].includes(a.weather) ||
       !["none", "rain", "snow"].includes(a.precipitation) || !["rising", "steady", "falling", "falling_rapidly"].includes(a.pressure_trend) ||
-      !["none", "light", "severe"].includes(a.icing) || !["day", "civil_twilight", "nautical_twilight", "night"].includes(a.daylight) ||
+      (!boat && !["none", "light", "severe"].includes(a.icing)) || !["day", "civil_twilight", "nautical_twilight", "night"].includes(a.daylight) ||
       !["new", "waxing_crescent", "first_quarter", "waxing_gibbous", "full", "waning_gibbous", "last_quarter", "waning_crescent"].includes(a.moon_phase) ||
       typeof a.storm_warning !== "boolean" || typeof a.time !== "string" || !/^\d\d:\d\d$/.test(a.time) ||
       !Number.isInteger(a.beaufort) || a.beaufort < 0 || a.beaufort > 12 || !Number.isInteger(a.sea_state) || a.sea_state < 0 || a.sea_state > 6 ||
       !["rain_intensity", "visibility_nm", "wind_from_deg", "wind_kn", "gust_kn", "pressure_hpa", "pressure_tendency_hpa_3h", "air_temp_c", "sea_temp_c", "cloud_cover", "sun_elevation_deg", "moon_illumination"].every((key) => finite(a[key])) ||
-      !nullableFinite(a.ceiling_ft)) return false;
+      (!boat && !nullableFinite(a.ceiling_ft))) return false;
   if (!exactKeys(ws.effects, ["solar_heating", "wind_mixing", "freshwater"]) || Object.values(ws.effects).some((value) => typeof value !== "boolean")) return false;
-  if (!exactKeys(f, flightKeys) || !["clear", "limited", "no_go"].includes(f.status) || !["none", "light", "severe"].includes(f.icing) ||
+  if (boat) {
+    if (!validBoatWeather(ws.boat, fields)) return false;
+  } else if (!exactKeys(f, flightKeys) || !["clear", "limited", "no_go"].includes(f.status) || !["none", "light", "severe"].includes(f.icing) ||
       ["launch_safe", "dipping_safe", "deck_safe"].some((key) => typeof f[key] !== "boolean") ||
       !["wind_kn", "gust_kn", "crosswind_kn", "visibility_nm", "roll_deg", "pitch_deg"].every((key) => finite(f[key])) || !nullableFinite(f.ceiling_ft) ||
       !Number.isInteger(f.sea_state) || !exactKeys(f.limits, limitKeys) || !Object.values(f.limits).every((value) => finite(value))) return false;
@@ -107,7 +118,7 @@ export function validateV2State(state) {
       state.audio.events.some((event, index, events) => !exactKeys(event, ["seq", "cue"]) ||
         !Number.isSafeInteger(event.seq) || event.seq < 1 || !gameEffectKinds.has(event.cue) ||
         index > 0 && event.seq <= events[index - 1].seq)) throw new Error("protocol");
-  if (!validWeatherStation(state.weather_station) || !validPlot(state.plot)) throw new Error("protocol");
+  if (!validPlot(state.plot)) throw new Error("protocol");
   const payload = state[state.role];
   // BEGIN GENERATED (tools/gen_web_schema.py; do not edit by hand)
   const shapes = {
@@ -131,7 +142,13 @@ export function validateV2State(state) {
   const sonarFields = ["ref", "label", "source", "classification", "profile", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "observer_x", "observer_y", "released_to_opz", "fixes"];
   const radioFields = ["ref", "label", "bearing", "quality", "age_s", "bearing_uncertainty_deg"];
   const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
+  const weatherFields = {
+    atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
+    boatAtmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
+    boat: ["mast_radar_nm", "mast_radar_calm_nm", "sighting_nm", "sighting_ref_nm", "ambient_bands_hz", "ambient_excess_db", "snorkel_available", "snorkeling", "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz"],
+  };
   // END GENERATED
+  if (!validWeatherStation(state.weather_station, opforRoles.has(state.role), weatherFields)) throw new Error("protocol");
   if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
   const rowsExact = (rows, maximum, fields) => {
     if (!boundedArray(rows, maximum)) throw new Error("protocol");

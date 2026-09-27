@@ -16,8 +16,14 @@ export function renderWeatherStation() {
   const dialog = $("weather-dialog");
   const ws = S.v2State?.weather_station;
   if (!dialog.open || !ws) return;
-  const a = ws.atmosphere, f = ws.flight, p = ws.profile;
+  const a = ws.atmosphere, f = ws.flight, p = ws.profile, boat = ws.boat;
   const limit = (value, max, digits = 0) => t("weather_limit_value", {value: number(value, digits), limit: number(max, digits)});
+  // The crewed boat has no flight deck: no ceiling/icing rows and no flight
+  // weather, but its own concealment and noise block instead.
+  const flying = boat === undefined ? [
+    ["weather_ceiling", a.ceiling_ft === null ? t("weather_ceiling_none") : unit(a.ceiling_ft, "ft", 0)],
+    ["weather_icing", t(`weather_icing_${a.icing}`)],
+  ] : [];
   metrics($("weather-environment"), [
     ["weather_time", `${a.time} · ${t(`weather_daylight_${a.daylight}`)}`],
     ["weather_moon", `${t(`weather_moon_${a.moon_phase}`)} · ${number(a.moon_illumination * 100, 0)} %`],
@@ -27,8 +33,7 @@ export function renderWeatherStation() {
     ["weather_beaufort", `${a.beaufort} · ${t("weather_sea_state_value", {sea: a.sea_state})}`],
     ["weather_pressure", `${unit(a.pressure_hpa, "hPa", 0)} · ${number(a.pressure_tendency_hpa_3h, 0)} hPa/3h · ${t(`weather_trend_${a.pressure_trend}`)}`],
     ["weather_temperature", `${unit(a.air_temp_c, "°C", 1)} / ${unit(a.sea_temp_c, "°C", 1)}`],
-    ["weather_ceiling", a.ceiling_ft === null ? t("weather_ceiling_none") : unit(a.ceiling_ft, "ft", 0)],
-    ["weather_icing", t(`weather_icing_${a.icing}`)],
+    ...flying,
   ]);
   $("weather-storm").hidden = !a.storm_warning;
   $("weather-effects").replaceChildren(...[["solar_heating", "solar"], ["wind_mixing", "wind"], ["freshwater", "rain"]].map(([key, label]) => {
@@ -36,6 +41,30 @@ export function renderWeatherStation() {
     item.dataset.active = String(ws.effects[key]);
     return item;
   }));
+  $("weather-flight-box").hidden = boat !== undefined;
+  $("weather-boat-box").hidden = boat === undefined;
+  if (boat !== undefined) renderBoatWeather(boat);
+  else renderFlightWeather(f, limit);
+  renderWeatherProfileText(p);
+  drawWeatherProfile(p);
+}
+function renderBoatWeather(boat) {
+  const bands = boat.ambient_bands_hz.map((band, index) =>
+    t("weather_ambient_band", {band: number(band, 0), excess: `${boat.ambient_excess_db[index] >= 0 ? "+" : ""}${number(boat.ambient_excess_db[index], 0)}`})).join(" · ");
+  const snorkel = !boat.snorkel_available ? t("weather_snorkel_none") :
+    t(boat.snorkeling ? "weather_snorkel_active" : "weather_snorkel_value", {
+      speed: number(boat.snorkel_max_kn, 0), noise: number(boat.snorkel_noise_db, 0),
+      lines: boat.snorkel_lines_hz.map((line) => number(line, 0)).join("/")});
+  metrics($("weather-boat"), [
+    ["weather_mast_radar", t("weather_mast_radar_value", {range: number(boat.mast_radar_nm, 1), calm: number(boat.mast_radar_calm_nm, 1)})],
+    ["weather_sighting", boat.sighting_nm >= .05
+      ? t("weather_sighting_value", {range: number(boat.sighting_nm, 1), reference: number(boat.sighting_ref_nm, 1)})
+      : t("weather_sighting_none", {reference: number(boat.sighting_ref_nm, 1)})],
+    ["weather_ambient", bands],
+    ["weather_snorkel", snorkel],
+  ]);
+}
+function renderFlightWeather(f, limit) {
   const status = $("weather-flight-status");
   status.textContent = t(`weather_flight_${f.status}`);
   status.dataset.status = f.status;
@@ -51,6 +80,8 @@ export function renderWeatherStation() {
     ["weather_icing", t(`weather_icing_${f.icing}`)],
     ["weather_dipping", t(f.dipping_safe ? "weather_dip_ok" : "weather_dip_blocked")],
   ]);
+}
+function renderWeatherProfileText(p) {
   const text = $("weather-profile-text");
   if (p === null) {
     text.textContent = t("weather_profile_none");
@@ -64,7 +95,6 @@ export function renderWeatherStation() {
     }), p.stale ? t("weather_profile_stale") : "",
       p.dip_relative_to_layer ? t(`weather_dip_${p.dip_relative_to_layer}`) : t("weather_shadow_hint")].filter(Boolean).join(" ");
   }
-  drawWeatherProfile(p);
 }
 // Sound speed at a depth, linearly interpolated from a measured profile.
 export function profileSpeedAt(depths, speeds, depth) {

@@ -279,6 +279,12 @@ _LOOKOUT_KIND_CLASS = {"SURFACE": "unknown", "SUB": "unknown", "FLG": "aircraft"
                        "TORP": "torpedo"}
 
 
+def _lookout_land(game):
+    """The charted coast as the bridge lookout sees it (known geography)."""
+    from src.sensors.visual import LOOKOUT_EYE_HEIGHT_M
+    return horizon.land_view(game.world, game.ship.x, game.ship.y, LOOKOUT_EYE_HEIGHT_M)
+
+
 def lookout_outlines(game, sightings) -> list:
     """Detached ``(bearing, span_deg, cls, stale)`` rows of the lookout's own
     tracks: the class from his report, the size from the measured range."""
@@ -365,7 +371,7 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             fov_deg=LOOKOUT_HORIZON_FOV_DEG, night=night,
             visibility_nm=weather["visibility_nm"],
             motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
-            outlines=lookout_outlines(game, sightings))
+            outlines=lookout_outlines(game, sightings), land=_lookout_land(game))
         iy += strip_h + 6
         ih -= strip_h + 6
     layout.blit_line(s, message("bridge.line.lookout_visibility",
@@ -431,11 +437,12 @@ def draw_lookout_glasses(game) -> None:
     sightings = game.lookout_sightings()
     course = game.ship.course % 360.0
     line_of_sight = (course + game.lookout_glasses_rel) % 360.0
+    land = _lookout_land(game)
     horizon.draw_horizon(
         s, eyepiece, line_of_sight=line_of_sight, fov_deg=config.LOOKOUT_GLASSES_FOV_DEG,
         night=night, visibility_nm=weather["visibility_nm"],
         motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
-        outlines=lookout_outlines(game, sightings))
+        outlines=lookout_outlines(game, sightings), land=land)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
     layout.blit_line(s, structured_message(
         "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",
@@ -444,6 +451,14 @@ def draw_lookout_glasses(game) -> None:
     # All-round panorama: the bow in the middle; each sighting as a tick at
     # its measured bearing, the binoculars' field as a frame.
     pygame.draw.rect(s, config.COLOR_GEO_BG, panorama)
+    distance = land[0]
+    step = 360.0 / len(distance)
+    for index, value in enumerate(distance):
+        # The coast in sight, as a band along the foot of the panorama.
+        if value <= weather["visibility_nm"]:
+            px = _panorama_x(panorama, index * step, course)
+            pygame.draw.line(s, config.COLOR_LAND_EDGE, (px, panorama.bottom - 10),
+                             (px, panorama.bottom - 2), 2)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, panorama, 1)
     for relative in (-180, -90, 0, 90, 180):
         px = panorama.x + int((relative + 180.0) / 360.0 * panorama.w)

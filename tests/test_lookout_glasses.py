@@ -144,3 +144,44 @@ def test_p_raises_the_mast_at_the_commands_periscope_page():
     boat.command_page = 2
     _key(game, pygame.K_p)
     assert boat.orders.mast
+
+
+def _off_the_coast(game, distance_nm=4.0):
+    """Move the frigate ``distance_nm`` off a charted coast point; return the
+    true bearing of that point."""
+    best = None
+    for mass in game.world.coast.landmasses:
+        for px, py in mass.points:
+            d = math.hypot(px - game.ship.x, py - game.ship.y)
+            if best is None or d < best[0]:
+                best = (d, px, py)
+    _d, px, py = best
+    bearing = math.atan2(px - game.ship.x, -(py - game.ship.y))
+    game.ship.x = px - distance_nm * math.sin(bearing)
+    game.ship.y = py + distance_nm * math.cos(bearing)
+    return math.degrees(bearing) % 360.0
+
+
+def test_the_charted_coast_stands_on_the_horizon():
+    from src.sensors.visual import LOOKOUT_EYE_HEIGHT_M
+    from src.ui import horizon
+    game = _game(5)
+    toward = _off_the_coast(game)
+    distance, height = horizon.land_view(game.world, game.ship.x, game.ship.y,
+                                         LOOKOUT_EYE_HEIGHT_M)
+    step = 360.0 / len(distance)
+    ahead = distance[int(round(toward / step)) % len(distance)]
+    assert ahead <= 4.05 and all(h > 0.0 for h in height)   # 0.5° rays
+    # The same position is served from the bounded cache.
+    assert horizon.land_view(game.world, game.ship.x, game.ship.y,
+                             LOOKOUT_EYE_HEIGHT_M)[0] is distance
+    assert len(horizon._LAND_CACHE) <= horizon.LAND_CACHE_MAX
+    # Drawn: the band above the horizon toward the coast differs from open sea.
+    surface = pygame.Surface((400, 200))
+    kwargs = dict(fov_deg=16.0, night=False, visibility_nm=16.0, motion=(0.0, 0.0),
+                  outlines=[])
+    horizon.draw_horizon(surface, (0, 0, 400, 200), line_of_sight=toward,
+                         land=(distance, height), **kwargs)
+    with_land = surface.get_at((200, 97))
+    horizon.draw_horizon(surface, (0, 0, 400, 200), line_of_sight=toward, **kwargs)
+    assert surface.get_at((200, 97)) != with_land

@@ -15,7 +15,8 @@ from src.core import config, opfor
 from src.core.i18n import display_value, localize, message
 from src.ui import layout
 
-from src.ui.horizon import draw_horizon, draw_outline, relative_offset  # noqa: E402,F401
+from src.ui.horizon import (draw_horizon, draw_outline, land_view,  # noqa: E402,F401
+                            relative_offset)
 
 
 def _fmt(value, pattern="{:.0f}"):
@@ -42,7 +43,9 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                                        config.WEATHER_VISIBILITY_MAX_NM),
                  motion=opfor.horizon_motion(game, boat),
                  outlines=scope_outlines(game, boat) if opfor.scope_available(boat) else [],
-                 crosshair_deg=config.UBOOT_STADIMETER_WINDOW_DEG)
+                 crosshair_deg=config.UBOOT_STADIMETER_WINDOW_DEG,
+                 land=land_view(game.world, boat.sub.x, boat.sub.y,
+                                config.UBOOT_SCOPE_EYE_HEIGHT_M))
 
 
 def sighting_rows(game, boat) -> list:

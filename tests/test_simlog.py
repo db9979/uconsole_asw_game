@@ -437,6 +437,45 @@ def test_remote_simlog_publication_respects_byte_bound(
     assert len(transport._json_bytes(body)) <= limit
 
 
+def test_remote_simlog_trim_keeps_largest_suffix_without_reencoding_history(
+        game, server, monkeypatch):
+    limit = 12 * 1024
+    monkeypatch.setattr(transport, "SIMLOG_MAX_BYTES", limit)
+    monkeypatch.setattr(commander_bridge, "SIMLOG_MAX_BYTES", limit)
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="bridge", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    for index in range(40):
+        game.feed.add("00:00", "mission", f"bounded {index}")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    body = remote_simlog(server, cookie)
+    assert body["entries"]
+    assert len(transport._json_bytes(body)) <= limit
+    # Maximal: one more (older) entry would no longer fit.
+    history = list(bridge._v2_simlog["bridge"])
+    assert [row["seq"] for row in history] == [row["seq"] for row in body["entries"]]
+    older = dict(history[0], seq=history[0]["seq"] - 1)
+    assert len(transport._json_bytes(dict(body, entries=[older, *body["entries"]]))) > limit
+
+    # A frame without new SimLog rows encodes no history entry again (the
+    # uConsole used to re-encode the whole 2 MB history every frame).
+    encoded = []
+    original = commander_bridge._json_bytes
+
+    def counting(value):
+        encoded.append(value)
+        return original(value)
+
+    monkeypatch.setattr(commander_bridge, "_json_bytes", counting)
+    bridge.pump(game, server, now=time.monotonic() + 1.8)
+    assert not [value for value in encoded
+                if isinstance(value, dict) and value.get("entries")]
+    assert not [value for value in encoded
+                if isinstance(value, dict) and "truth" in value]
+
+
 def _spawn_live_traffic(game):
     """One live AIS ship and one live ADS-B aircraft in the running game."""
     from src.world.projection import nm_to_lonlat

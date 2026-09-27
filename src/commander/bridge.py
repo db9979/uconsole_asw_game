@@ -884,6 +884,9 @@ class CommanderBridge:
         self._v2_simlog_seq = 0
         self._v2_simlog = {role: deque(maxlen=SIMLOG_ENTRIES_MAX)
                            for role in ROLES}
+        # id(entry) -> (entry, compact JSON length); holding the entry keeps
+        # its id from being reused while the size is cached.
+        self._v2_simlog_bytes = {}
         # The crewed submarine's own contact refs: target_id -> (contact, ref, label).
         self._opfor_refs = {}
         self._uboot_audio_context = None
@@ -1997,12 +2000,30 @@ class CommanderBridge:
                         truth=deepcopy(truth)))
                 self._v2_simlog_seq = row["seq"]
         entries = {role: list(history) for role, history in self._v2_simlog.items()}
+        cache, kept = self._v2_simlog_bytes, {}
         for role, rows in entries.items():
-            while rows and len(_json_bytes({
-                    "protocol": 2, "session": self._session, "epoch": self._epoch,
-                    "role": role, "entries": rows})) > SIMLOG_MAX_BYTES:
-                del rows[0]
-            self._v2_simlog[role] = deque(rows, maxlen=SIMLOG_ENTRIES_MAX)
+            # Compact JSON of the published document is its empty envelope plus
+            # every entry plus one comma between entries, so each entry is
+            # encoded once and trimming never re-encodes the whole history.
+            sizes = []
+            for row in rows:
+                cached = cache.get(id(row))
+                if cached is None or cached[0] is not row:
+                    cached = (row, len(_json_bytes(row)))
+                sizes.append(cached)
+            total = len(_json_bytes({
+                "protocol": 2, "session": self._session, "epoch": self._epoch,
+                "role": role, "entries": []}))
+            total += sum(size for _, size in sizes) + max(len(rows) - 1, 0)
+            trimmed = 0
+            while trimmed < len(rows) and total > SIMLOG_MAX_BYTES:
+                total -= sizes[trimmed][1] + (1 if trimmed < len(rows) - 1 else 0)
+                trimmed += 1
+            if trimmed:
+                del rows[:trimmed]
+                self._v2_simlog[role] = deque(rows, maxlen=SIMLOG_ENTRIES_MAX)
+            kept.update((id(row), size) for row, size in zip(rows, sizes[trimmed:]))
+        self._v2_simlog_bytes = kept
         fingerprint = (self._session, self._epoch, enabled,
                        tuple((role, len(rows), rows[-1]["seq"] if rows else 0)
                              for role, rows in entries.items()))

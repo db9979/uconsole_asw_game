@@ -79,6 +79,7 @@ STATION_HELP = {
           ("Ctrl+Z / Ctrl+X (TMA)", "help.control.tma_speed"),
           ("Q / Shift+Q (TMA)", "help.control.tma_range"),
           ("K / Shift+K (TMA)", "help.control.tma_accept"),
+          ("Shift+T (TMA)", "help.control.tma_method"),
           ("SPACE", "help.control.peak"), ("T", "help.control.tma"),
           ("C", "help.control.classify"), ("G", "help.control.sonar_release"),
           ("M", "help.control.target")],

@@ -147,7 +147,7 @@ class SaveMixin:
             listen_filtered=self.sonar.listen_filtered,
             audition_mode=self.sonar.audition_mode,
             sonar_page=self.sonar_page, audio_enabled=self.sonar_audio_enabled,
-            volume=self.sonar_volume)
+            volume=self.sonar_volume, tma_method=self.tma_method)
 
     def _sonar_system_state(self, entity_ids) -> dict:
         """Contacts, histories and queues of the active sonar system."""
@@ -274,6 +274,7 @@ class SaveMixin:
         self.sonar.beam_width_deg = 6.0 if self.sonar_mode == "TOWED" else 12.0
         self.sonar._receiver_mode = self.sonar_mode
         self.sonar_page = sonar_controls["sonar_page"]
+        self.tma_method = sonar_controls["tma_method"]
         self.sonar_audio_enabled = sonar_controls["audio_enabled"]
         self.sonar_volume = sonar_controls["volume"]
         self._sonar_audio_sequence = -1

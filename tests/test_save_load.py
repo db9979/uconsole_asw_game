@@ -481,7 +481,8 @@ def test_unsupported_or_non_integer_versions_are_rejected(version, tmp_saves):
                      "sea_state": 2,
                      "depths_m": [float(index * 15) for index in range(21)],
                      "speeds_m_s": [1500.0] * 21,
-                     "cz_bands_nm": [[41.0, 70.0]]}},
+                     # measured bands are free, but never inverted
+                     "cz_bands_nm": [[70.0, 41.0]]}},
     {"bt_profile": {"t": 0.0, "x": 0.0, "y": 0.0,
                      "thermocline_m": 80.0, "water_depth_m": 300.0,
                      "sea_state": 2,

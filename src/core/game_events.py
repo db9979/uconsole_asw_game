@@ -868,6 +868,10 @@ class EventMixin:
                     self.flash(message("runtime.sonar_audio.on" if self.sonar_audio_enabled
                                        else "runtime.sonar_audio.off"))
                     return
+                if (e.key == pygame.K_t and self.sonar_page == 3
+                        and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                    self._cycle_tma_method()
+                    return
                 if e.key == pygame.K_k and self.sonar_page == 3:
                     self._tma_key(e)
                     return
@@ -1732,6 +1736,11 @@ class EventMixin:
         course, speed, rng = hypothesis.course, hypothesis.speed_kn, hypothesis.range_nm
         if e.key == pygame.K_k:
             if mods & pygame.KMOD_SHIFT:
+                if self.tma_method == "ekelund":
+                    result = self.copy_tma_ekelund(contact)
+                    self.flash(message("runtime.tma.ekelund_copied" if result is True
+                                       else "runtime.tma.ekelund_none"), 1.5)
+                    return
                 result = self.copy_tma_proposal(contact)
                 self.flash(message("runtime.tma.copied" if result is True
                                    else "runtime.tma.no_proposal"), 1.5)

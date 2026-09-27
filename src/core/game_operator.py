@@ -592,6 +592,36 @@ class OperatorMixin:
         else:
             self.flash(message("runtime.tma.not_ready"), 2.0)
 
+    def set_tma_method(self, method: str):
+        if type(method) is not str or method not in tma_operator.TMA_METHODS:
+            return "invalid_value"
+        self.tma_method = method
+        self.flash(message("runtime.tma.method",
+                           method=display_value("tma_method", method)), 1.5)
+        return True
+
+    def _cycle_tma_method(self) -> None:
+        methods = tma_operator.TMA_METHODS
+        current = self.tma_method if self.tma_method in methods else "hypothesis"
+        self.set_tma_method(methods[(methods.index(current) + 1) % len(methods)])
+
+    def tma_ekelund(self, contact):
+        """(range_nm, uncertainty_nm) of the Ekelund method, or None."""
+        if contact is None:
+            return None
+        return tma_operator.ekelund_range_nm(self._tma_points(contact))
+
+    def copy_tma_ekelund(self, contact):
+        """Put the Ekelund range into the hypothesis (course/speed unchanged)."""
+        if contact is None or contact.target_id not in self.sonar.contacts:
+            return "stale_ref"
+        estimate = self.tma_ekelund(contact)
+        if estimate is None:
+            return "not_ready"
+        hypothesis = self.tma_hypothesis(contact)
+        return self.set_tma_hypothesis(contact, hypothesis.course, hypothesis.speed_kn,
+                                       estimate[0])
+
     def operator_assist(self) -> bool:
         """Training aids (auto peaks, blade-rate/catalog ranking, ESM IDs) on?"""
         return getattr(self.preferences, "operator_assist", "off") == "training"

@@ -4304,5 +4304,15 @@
   "commander.web.helicopter_mad_start": "MAD-Anflug beginnen",
   "commander.web.helicopter_mad_stop": "MAD-Anflug beenden",
   "commander.web.helicopter_can_mad": "MAD möglich",
-  "commander.web.helicopter_can_pattern": "Muster möglich"
+  "commander.web.helicopter_can_pattern": "Muster möglich",
+  "help.control.tma_method": "TMA-Methode: Hypothese/Residuen, Ekelund-Entfernung, Dot-Stack (Umschalt+K bei Ekelund: Entfernung übernehmen)",
+  "enum.tma_method.hypothesis": "HYPOTHESE",
+  "enum.tma_method.ekelund": "EKELUND",
+  "enum.tma_method.dotstack": "DOT-STACK",
+  "sonar.tma_method_line": "Methode: {method} (Umschalt+T)",
+  "sonar.ekelund_line": "Ekelund-Entfernung {range} sm (+/-{error} sm) aus zwei Schlägen; Umschalt+K übernimmt sie",
+  "sonar.ekelund_pending": "Ekelund: braucht zwei Schläge von 90 s mit mindestens 30° Kursänderung",
+  "runtime.tma.method": "TMA-Methode: {method}",
+  "runtime.tma.ekelund_copied": "Ekelund-Entfernung in die Hypothese übernommen",
+  "runtime.tma.ekelund_none": "Noch keine Ekelund-Entfernung (zwei Schläge nötig)"
 }

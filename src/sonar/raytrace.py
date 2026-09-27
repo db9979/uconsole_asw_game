@@ -195,7 +195,69 @@ def lookup_tl_db(table: np.ndarray, band_hz: float, range_nm: float,
 def clear_cache() -> None:
     global build_count
     _cache.clear()
+    _cz_cache.clear()
     build_count = 0
+
+
+# Convergence zones (plan 1.3, phase 7): ranges beyond CZ_SCAN_MIN_NM where
+# the traced transmission loss at the receiver depth falls CZ_PROMINENCE_DB
+# below the loss of the surrounding water (excess over spherical spreading),
+# i.e. where refracted energy refocuses.  A pure, bounded-cache function.
+CZ_BAND_HZ = 400.0
+CZ_SCAN_MIN_NM = 15.0
+CZ_PROMINENCE_DB = 6.0
+CZ_MIN_WIDTH_NM = 1.5
+CZ_MAX_BANDS = 4
+_cz_cache: "OrderedDict[tuple, tuple]" = OrderedDict()
+
+
+def convergence_zones_nm(profile_depths_m, profile_m_s, water_depth_m: float,
+                         source_depth_m: float, sediment: str, wind_kn: float,
+                         receiver_depth_m: float) -> list:
+    """[[low_nm, high_nm], ...] of the convergence zones of one profile."""
+    key = (tuple(round(float(d), 1) for d in profile_depths_m),
+           tuple(round(float(s), 2) for s in profile_m_s),
+           round(float(water_depth_m), 1), round(float(source_depth_m), 1),
+           str(sediment), round(float(wind_kn), 1), round(float(receiver_depth_m), 1))
+    cached = _cz_cache.get(key)
+    if cached is not None:
+        _cz_cache.move_to_end(key)
+        return [list(band) for band in cached]
+    bands: list = []
+    bottom = max(float(water_depth_m), 5.0)
+    if bottom >= 20.0:
+        table = trace_table(source_depth_m, profile_depths_m, profile_m_s, bottom,
+                            sediment, wind_kn)
+        band_index = BANDS_HZ.index(CZ_BAND_HZ)
+        edges = depth_edges(bottom)
+        depth_index = int(min(len(edges) - 2, max(0, np.searchsorted(
+            edges, receiver_depth_m, side="right") - 1)))
+        n_range = table.shape[1]
+        ranges_m = (np.arange(n_range) + 1.0) * RANGE_STEP_M
+        excess = table[band_index, :, depth_index] - 20.0 * np.log10(ranges_m)
+        start = int(CZ_SCAN_MIN_NM * NM_M / RANGE_STEP_M)
+        scan = excess[start:]
+        finite = np.isfinite(scan)
+        if finite.sum() > 4:
+            level = float(np.median(scan[finite]))
+            focused = finite & (scan <= level - CZ_PROMINENCE_DB)
+            index = 0
+            while index < len(focused) and len(bands) < CZ_MAX_BANDS:
+                if not focused[index]:
+                    index += 1
+                    continue
+                end = index
+                while end + 1 < len(focused) and focused[end + 1]:
+                    end += 1
+                low = ranges_m[start + index] / NM_M
+                high = ranges_m[start + end] / NM_M
+                if high - low >= CZ_MIN_WIDTH_NM:
+                    bands.append([round(float(low), 1), round(float(high), 1)])
+                index = end + 1
+    _cz_cache[key] = tuple(tuple(band) for band in bands)
+    while len(_cz_cache) > CACHE_SIZE:
+        _cz_cache.popitem(last=False)
+    return bands
 
 
 # --- ray picture for the weather/sonar analysis panel ------------------------

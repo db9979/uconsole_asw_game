@@ -13,6 +13,7 @@ from enum import Enum
 import numpy as np
 
 from src.core import config
+from src.sonar import raytrace
 from src.sonar import equation, propagation
 from src.sonar.tma import BearingTrack, solve_tma
 from src.audio.database import rank_signatures
@@ -804,12 +805,22 @@ class SonarSystem:
                      if true_speed is not None else
                      propagation.synthetic_sound_speed_m_s(depth, measured_thermo))
             speeds.append(speed + self.rng.uniform(-.15, .15))
+        # Convergence zones follow from the measured profile itself (plan
+        # 1.3, phase 7): the ray table of this profile, the charted seabed
+        # type and the wind of the sea state, at the hull array's depth.
+        seabed = getattr(world, "seabed_at", None)
+        sediment = seabed(frigate.x, frigate.y) if callable(seabed) else "sand"
+        wind_kn = float(getattr(world, "wind_speed_kn", 0.0))
+        array_depth = hull_array_depth_m(frigate)
+        cz_bands = raytrace.convergence_zones_nm(
+            depths.tolist(), speeds, water_depth, array_depth, sediment,
+            wind_kn, array_depth)
         self.bt_profile = dict(t=t, x=frigate.x, y=frigate.y,
                                thermocline_m=measured_thermo,
                                water_depth_m=water_depth,
                                sea_state=world.sea_state,
                                depths_m=depths.tolist(), speeds_m_s=speeds,
-                               cz_bands_nm=[list(band) for band in config.CZ_BANDS])
+                               cz_bands_nm=[list(band) for band in cz_bands])
         self.bt_cooldown = config.SONAR_BT_COOLDOWN_S
         return True
 

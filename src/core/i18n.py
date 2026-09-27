@@ -78,6 +78,9 @@ DISPLAY_KEYS = {
     "compartment": {key: "compartment." + key for key in (
         "bridge", "sonar", "weapons", "opz", "radio", "engine", "flightdeck",
         "hull_left", "hull_right")},
+    "tma_method": {"hypothesis": "enum.tma_method.hypothesis",
+                   "ekelund": "enum.tma_method.ekelund",
+                   "dotstack": "enum.tma_method.dotstack"},
     "buoy_pattern": {"single": "enum.buoy_pattern.single", "field": "enum.buoy_pattern.field",
                      "barrier": "enum.buoy_pattern.barrier", "circle": "enum.buoy_pattern.circle"},
     "plant": {"AUTO": "enum.plant.AUTO", "DIESEL": "enum.plant.DIESEL",

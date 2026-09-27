@@ -306,8 +306,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         control_fields = {"gain_db", "band_low_hz", "band_high_hz",
                           "notch_enabled", "peak_hold", "focus_locked",
                           "tma_enabled", "listen_bearing", "listen_filtered",
-                          "audition_mode", "sonar_page", "audio_enabled", "volume"}
+                          "audition_mode", "sonar_page", "audio_enabled", "volume",
+                          "tma_method"}
         if (not isinstance(controls, dict) or set(controls) != control_fields
+                or controls["tma_method"] not in ("hypothesis", "ekelund", "dotstack")
                 or controls["audition_mode"] not in (
                     "BROADBAND", "FILTERED", "HETERODYNE")
                 or controls["listen_filtered"] != (
@@ -1581,9 +1583,13 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                     or not isinstance(speeds, list) or len(speeds) != 21
                     or any(not finite_number(depth) for depth in depths)
                     or any(not finite_number(speed) for speed in speeds)
-                    or not _same_save_value(
-                        bt_profile["cz_bands_nm"],
-                        [list(band) for band in config.CZ_BANDS])):
+                    or not isinstance(bt_profile["cz_bands_nm"], list)
+                    or len(bt_profile["cz_bands_nm"]) > 4
+                    or any(not isinstance(band, list) or len(band) != 2
+                           or not bounded(band[0], 0.0, 200.0)
+                           or not bounded(band[1], 0.0, 200.0)
+                           or not band[0] < band[1]
+                           for band in bt_profile["cz_bands_nm"])):
                 return False
             maximum = min(water_depth, config.SONAR_BT_MAX_DEPTH_M)
             expected_depths = [maximum * index / 20 for index in range(21)]

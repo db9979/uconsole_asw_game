@@ -1279,6 +1279,34 @@ Notizen Phase 6:
   Save: `helo.pattern`, `helo.pattern_queue`, `helo.mad_mode` (im `helo`-Block
   statt eines eigenen Wurzelblocks `helo_pattern`).
 
+| 7 Akustik | teilweise (VDS zurueckgestellt) | siehe `git log` | fokussiert 711+ gruen, Kalibrierung siehe Log | VDS (A7.4) nicht gebaut |
+
+Notizen Phase 7:
+
+- A7.1 Bodentypen waren schon modelliert: `src/world/ocean.py` traegt fuenf
+  Sedimentklassen (rock/gravel/sand/silt/mud, Hamilton-Geoakustik) je
+  12-sm-Zelle und `rayleigh_bottom_loss_db`, das `raytrace.trace_table` je
+  Bodenreflexion nutzt; Golden unveraendert. Nur dokumentiert und getestet
+  (`tests/test_convergence_zones.py`).
+- A7.2 Konvergenzzonen kommen jetzt aus dem gemessenen BT-Profil:
+  `raytrace.convergence_zones_nm` (Strahltabelle des Profils ueber dem
+  kartierten Boden, Wind der Seegangsstufe, Arraytiefe; Bereiche ab 15 sm, in
+  denen der Verlust 6 dB unter dem Median des Ueberschusses ueber sphaerische
+  Ausbreitung liegt, mind. 1,5 sm breit, hoechstens 4; reiner LRU-Cache).
+  `measure_environment` speichert sie in `bt_profile.cz_bands_nm`; der
+  Validator verlangt statt der Konstanten `CZ_BANDS` sortierte, begrenzte
+  Baender. Anzeige (Sonarseite, Wetterstation) unveraendert.
+- A7.3 TMA-Methoden: `SonarStation.tma_method` (hypothesis/ekelund/dotstack,
+  `Umschalt+T` auf der TMA-Seite, in `sonar_controls` gespeichert);
+  `tma_operator.ekelund_range_nm` (zwei Schlaege um >= 30 Grad, je >= 4
+  Peilungen ueber 90 s, Unsicherheit +/-20 %, `Umschalt+K` uebernimmt die
+  Entfernung in die Hypothese) und `dot_stack` (Residuenzeilen bei 0,6/1,0/1,6
+  x Entfernung). Nur uConsole; die Web-Projektion kennt die Methode nicht.
+- A7.4 VDS nicht umgesetzt: ein dritter Arraymodus beruehrt rund zwanzig
+  `mode == "TOWED"`-Pfade in `sonar.py`, Equation, Empfaengersalz, Validator
+  und Web-Schema; das Risiko fuer das Sonar-Golden war in dieser Nacht zu
+  hoch. Bleibt unter "Not modelled" und ist Kandidat fuer 1.4.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

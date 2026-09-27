@@ -4304,5 +4304,15 @@
   "commander.web.helicopter_mad_start": "Start MAD run",
   "commander.web.helicopter_mad_stop": "End MAD run",
   "commander.web.helicopter_can_mad": "MAD possible",
-  "commander.web.helicopter_can_pattern": "Pattern possible"
+  "commander.web.helicopter_can_pattern": "Pattern possible",
+  "help.control.tma_method": "TMA method: hypothesis/residuals, Ekelund range, dot stack (Shift+K in Ekelund: copy its range)",
+  "enum.tma_method.hypothesis": "HYPOTHESIS",
+  "enum.tma_method.ekelund": "EKELUND",
+  "enum.tma_method.dotstack": "DOT STACK",
+  "sonar.tma_method_line": "Method: {method} (Shift+T)",
+  "sonar.ekelund_line": "Ekelund range {range} NM (+/-{error} NM) from two legs; Shift+K copies it",
+  "sonar.ekelund_pending": "Ekelund: needs two legs of 90 s with a course change of 30 deg or more",
+  "runtime.tma.method": "TMA method: {method}",
+  "runtime.tma.ekelund_copied": "Ekelund range copied into the hypothesis",
+  "runtime.tma.ekelund_none": "No Ekelund range yet (two legs needed)"
 }

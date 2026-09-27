@@ -1280,14 +1280,27 @@ def _draw_tma(game, panel):
         _text(screen, f"{(lo + (hi - lo) * i / 4) % 360:05.1f}",
               (panel.x + 5, y - 8, 55, 18), DIM, 12, "right")
     _text(screen, "sonar.sim_time_axis", (plot.right - 140, plot.bottom + 24, 140, 18), DIM, 12, "right")
+    method = getattr(game, "tma_method", "hypothesis")
+    _text(screen, message("sonar.tma_method_line",
+                          method=display_message("tma_method", method)),
+          (panel.x + 16, panel.y + 37, panel.w - 32, 20), AMBER, 12, "right")
     if len(points):
         with layout.clip_to(screen, plot):
             if len(xy) > 1:
                 pygame.draw.lines(screen, CYAN, False, xy, 2)
             for point in xy:
                 pygame.draw.circle(screen, TEXT, point, 3)
-            _draw_tma_hypothesis(game, contact, points, plot, times, bearings, lo, hi,
-                                 start, end)
+            if method == "dotstack":
+                _draw_tma_dot_stack(game, contact, points, plot, times, start, end)
+            else:
+                _draw_tma_hypothesis(game, contact, points, plot, times, bearings, lo, hi,
+                                     start, end)
+        if method == "ekelund" and contact is not None and hasattr(game, "tma_ekelund"):
+            estimate = game.tma_ekelund(contact)
+            _text(screen, (message("sonar.ekelund_line", range=f"{estimate[0]:.1f}",
+                                   error=f"{estimate[1]:.1f}") if estimate is not None
+                           else "sonar.ekelund_pending"),
+                  (plot.x + 8, plot.y + 30, plot.w - 16, 20), AMBER, 13)
         _text(screen, message("sonar.line.observations", count=len(points),
                               duration=f"{times[-1] - times[0]:.1f}"),
                (plot.x, plot.bottom + 24, plot.w - 145, 18), DIM, 12)
@@ -1346,6 +1359,28 @@ def _draw_tma_hypothesis(game, contact, points, plot, times, bearings, lo, hi,
                            * (plot.w - 1))
         y = strip.centery - round(max(-10.0, min(10.0, residual)) / 10.0 * (strip.h / 2 - 2))
         pygame.draw.circle(screen, AMBER, (x, y), 2)
+
+
+def _draw_tma_dot_stack(game, contact, points, plot, times, start, end):
+    """Residual rows at three range multiples of the hypothesis: the flat
+    row shows the range the bearings support (classic dot stack)."""
+    if contact is None or not hasattr(game, "tma_hypothesis"):
+        return
+    screen = game.screen
+    rows = tma_operator.dot_stack(points, game.tma_hypothesis(contact))
+    row_h = max(24, (plot.h - 60) // max(1, len(rows)))
+    for index, (range_nm, residuals) in enumerate(rows):
+        strip = pygame.Rect(plot.x, plot.bottom - (len(rows) - index) * row_h - 4,
+                            plot.w, row_h - 4)
+        pygame.draw.line(screen, GRID, (strip.x, strip.centery),
+                         (strip.right - 1, strip.centery))
+        _text(screen, f"{range_nm:.1f} NM", (strip.x + 4, strip.y, 90, 16), DIM, 11)
+        for point_index, residual in enumerate(residuals):
+            x = plot.x + round((float(times[point_index]) - start) / max(1e-9, end - start)
+                               * (plot.w - 1))
+            y = strip.centery - round(max(-10.0, min(10.0, residual)) / 10.0
+                                      * (strip.h / 2 - 2))
+            pygame.draw.circle(screen, AMBER if index == 1 else TEXT, (x, y), 2)
 
 
 def _draw_environment(game, panel):

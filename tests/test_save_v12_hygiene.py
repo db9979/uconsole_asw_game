@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v16_and_older_documents_are_rejected():
+def test_save_is_v17_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (16, "u-jagd-save-v16")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (16, "u-jagd-save-v16")
+    assert (state["version"], state["save_schema"]) == (17, "u-jagd-save-v17")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (17, "u-jagd-save-v17")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -56,6 +56,16 @@ def test_save_is_v16_and_older_documents_are_rejected():
     v15["save_schema"] = "u-jagd-save-v15"
     del v15["ping_intercepts"]
     assert not game._load_save_data(v15)
+    # v16 differs by the boats' plant state (diesel fuel, charge rate, air).
+    v16 = copy.deepcopy(state)
+    v16["version"] = 16
+    v16["save_schema"] = "u-jagd-save-v16"
+    for row in v16["subs"]:
+        if row["endurance"] is not None:
+            row["endurance"]["version"] = 1
+            for key in ("fuel_kwh", "charge_rate", "air"):
+                del row["endurance"][key]
+    assert not game._load_save_data(v16)
     assert game.save_state() == before
 
 

@@ -533,6 +533,11 @@ export function init() {
     event.preventDefault(); numberAction("uboot-scope-form", "uboot-scope-relative", "uboot_scope_bearing", "relative_deg", 0, 359.99999999999994);
   });
   $("uboot-scope-mark").addEventListener("click", () => sendStationAction("uboot_scope_mark", {}));
+  // Engine room stores: snorkel charge rate, absorber change, oxygen candle.
+  for (const button of document.querySelectorAll("[data-uboot-charge-rate]"))
+    button.addEventListener("click", () => sendStationAction("uboot_charge_rate", {rate: button.dataset.ubootChargeRate}));
+  $("uboot-absorber").addEventListener("click", () => sendStationAction("uboot_absorber", {}));
+  $("uboot-o2-candle").addEventListener("click", () => sendStationAction("uboot_o2_candle", {}));
   $("simlog-export").addEventListener("click", () => exportSimlog());
   $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));

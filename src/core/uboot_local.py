@@ -39,7 +39,9 @@ UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearin
                      "uboot_range", "uboot_torpedo_depth", "uboot_wire_bearing",
                      "uboot_wire_range")
 # Rejections of boat-mode orders that have their own local text.
-UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth")
+UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth",
+                       "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
+                       "uboot_no_air_stores")
 
 
 def playing(game) -> bool:
@@ -437,6 +439,8 @@ _KEY_ACTIONS = {
     pygame.K_d: "uboot_set_depth", pygame.K_f: "uboot_fire", pygame.K_x: "uboot_decoy",
     pygame.K_t: "uboot_fire", pygame.K_y: "uboot_fire", pygame.K_w: "uboot_wire_steer",
     pygame.K_p: "uboot_mast", pygame.K_n: "uboot_snorkel",
+    pygame.K_r: "uboot_charge_rate", pygame.K_a: "uboot_absorber",
+    pygame.K_o: "uboot_o2_candle",
     pygame.K_u: "uboot_set_depth", pygame.K_j: "uboot_set_depth", pygame.K_h: "uboot_set_depth",
     pygame.K_PLUS: "uboot_set_speed", pygame.K_EQUALS: "uboot_set_speed",
     pygame.K_KP_PLUS: "uboot_set_speed", pygame.K_MINUS: "uboot_set_speed",
@@ -553,6 +557,28 @@ def _command_key(game, current, key, mods) -> None:
     elif key == pygame.K_n:
         on = not sub.snorkeling
         _mode_notice(game, "snorkel", on, sub.command_snorkel(on))
+    elif key == pygame.K_r:
+        rates = config.UBOOT_CHARGE_RATES
+        current_rate = sub.endurance.charge_rate if sub.endurance is not None else rates[0]
+        rate = rates[(rates.index(current_rate) + 1) % len(rates)]
+        result = sub.command_charge_rate(rate)
+        if result is True:
+            _announce(game, "navigation", message(
+                "uboot.local.charge_rate", rate=message(f"uboot.charge.{rate}")), 1.5)
+        else:
+            _mode_notice(game, "charge", True, result)
+    elif key == pygame.K_a:
+        result = sub.command_absorber()
+        if result is True:
+            _announce(game, "navigation", message("uboot.local.absorber"), 2.0)
+        else:
+            _mode_notice(game, "absorber", True, result)
+    elif key == pygame.K_o:
+        result = sub.command_o2_candle()
+        if result is True:
+            _announce(game, "navigation", message("uboot.local.o2_candle"), 2.0)
+        else:
+            _mode_notice(game, "o2_candle", True, result)
     elif key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS,
                  pygame.K_MINUS, pygame.K_KP_MINUS):
         up = key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS)

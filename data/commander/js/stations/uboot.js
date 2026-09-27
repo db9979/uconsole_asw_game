@@ -1,6 +1,6 @@
 import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
-import { number, t, unit } from "../core/format.js";
+import { duration, number, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
 import { drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
 
@@ -133,6 +133,64 @@ function renderScope(payload) {
   drawBoatScope("uboot-scope-canvas", payload);
 }
 
+// Energy and stores: bars, energy balance, endurance dived by speed and the boat's air.
+const percent = (value, capacity) => value === null || !capacity ? null : Math.max(0, Math.min(100, value / capacity * 100));
+function renderSupply(plant) {
+  const air = plant.air;
+  const bars = [["uboot_battery", percent(plant.battery_kwh, plant.battery_capacity_kwh), 20, 3,
+    plant.battery_kwh === null ? null : `${number(plant.battery_kwh, 0)} / ${unit(plant.battery_capacity_kwh, "kWh", 0)}`]];
+  if (plant.aip_kwh !== null) bars.push(["uboot_aip", percent(plant.aip_kwh, plant.aip_capacity_kwh), 10, 0,
+    `${number(plant.aip_kwh, 0)} / ${unit(plant.aip_capacity_kwh, "kWh", 0)}`]);
+  if (plant.fuel_l !== null) bars.push(["uboot_fuel", percent(plant.fuel_l, plant.fuel_capacity_l), 10, 0,
+    `${number(plant.fuel_l / 1000, 1)} / ${unit(plant.fuel_capacity_l / 1000, "m\u00b3", 1)}`]);
+  if (air) bars.push(["uboot_absorber", air.absorber_pct, 25, 0, t("uboot_absorber_value", {pct: number(air.absorber_pct, 0), sets: air.absorber_sets})]);
+  const box = $("uboot-supply-bars");
+  box.replaceChildren(...(plant.propulsion === "nuclear" ? [node("p", t("uboot_nuclear_plant"), "uboot-bar-note")] : bars.map(([key, fill, caution, alarm, text]) => {
+    const bar = node("div", undefined, "uboot-bar");
+    bar.dataset.level = fill === null ? "" : fill <= alarm ? "alarm" : fill <= caution ? "caution" : "";
+    bar.style.setProperty("--fill", `${fill ?? 0}%`);
+    bar.append(node("span", t(key), "uboot-bar-label"), node("strong", fill === null ? t("unavailable") : unit(fill, "%", 0)), node("span", text ?? "", "uboot-bar-sub"));
+    return bar;
+  })));
+  const nuclear = plant.propulsion === "nuclear";
+  // A nuclear boat has no battery forecast, diesel or air stores to order.
+  const role = S.v2State?.role || "uboot";
+  for (const id of ["uboot-charge-rates", "uboot-endurance-section", "uboot-air-orders"])
+    $(id).hidden = nuclear || (id !== "uboot-endurance-section" && role !== "uboot_engine");
+  metrics($("uboot-energy"), nuclear ? [["uboot_plant_kind", t("uboot_plant_nuclear")]] : [
+    ["uboot_plant_kind", t(`uboot_plant_${plant.propulsion}`)], ["uboot_endurance_phase", plant.phase ? t(`uboot_phase_${plant.phase.toLowerCase()}`) : t("unavailable")],
+    ["uboot_load", unit(plant.load_kw, "kW", 0)], ["uboot_supply", unit(plant.supply_kw, "kW", 0)],
+    ["uboot_net", `${plant.net_kw > 0 ? "+" : ""}${unit(plant.net_kw, "kW", 0)}`],
+    [plant.full_s !== null ? "uboot_battery_full_in" : "uboot_battery_empty_in", duration(plant.full_s ?? plant.empty_s)],
+    ["uboot_generator", unit(plant.generator_kw, "kW", 0)], ["uboot_charge_rate", t(`uboot_charge_${plant.charge_rate}`)],
+    ["uboot_snorkel_rate", t(`uboot_charge_${plant.snorkel_rate}`)],
+    ...(plant.aip_kw !== null ? [["uboot_aip_power", unit(plant.aip_kw, "kW", 0)]] : [])]);
+  for (const button of document.querySelectorAll("[data-uboot-charge-rate]")) {
+    button.setAttribute("aria-pressed", String(plant.charge_rate === button.dataset.ubootChargeRate));
+    button.dataset.ready = String(!nuclear && plant.charge_rate !== button.dataset.ubootChargeRate);
+  }
+  const body = $("uboot-endurance");
+  body.replaceChildren(...(nuclear ? [] : plant.endurance.map((row) => {
+    const line = document.createElement("tr");
+    line.append(node("th", unit(row.speed_kn, "kn", 0)), node("td", row.hours === null ? "\u221e" : row.hours >= 9999 ? "> 9999 h" : unit(row.hours, "h", 1)),
+      node("td", row.hours === null || row.hours >= 9999 ? "\u221e" : unit(row.speed_kn * row.hours, "NM", 0)));
+    line.firstChild.scope = "row";
+    return line;
+  })));
+  metrics($("uboot-air"), air ? [["uboot_o2", unit(air.o2_pct, "%", 1)], ["uboot_co2", unit(air.co2_pct, "%", 2)],
+    ["uboot_air_level", t(`uboot_air_${air.level}`)], ["uboot_crew_efficiency", unit(air.efficiency * 100, "%", 0)],
+    ["uboot_absorber_sets", number(air.absorber_sets, 0)], ["uboot_candles", number(air.candles, 0)],
+    ["uboot_candle_burning", air.candle_left_s > 0 ? duration(air.candle_left_s) : t("no")]]
+    : [["uboot_air_level", t("uboot_air_nuclear")]]);
+  $("uboot-air").dataset.level = air?.level ?? "ok";
+  $("uboot-absorber").dataset.ready = String(!!air && air.absorber_sets > 0);
+  $("uboot-o2-candle").dataset.ready = String(!!air && air.candles > 0 && air.candle_left_s <= 0);
+  const warning = air && air.level !== "ok" ? t(`uboot_air_warning_${air.level}`)
+    : plant.fuel_l !== null && plant.fuel_capacity_l && plant.fuel_l <= plant.fuel_capacity_l * .1 ? t("uboot_fuel_low") : "";
+  $("uboot-air-warning").hidden = !warning;
+  $("uboot-air-warning").textContent = warning;
+}
+
 export function renderUbootStation(payload) {
   showStationCards(S.v2State?.role || "uboot");
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
@@ -196,4 +254,5 @@ export function renderUbootStation(payload) {
   drawBoatDepth("uboot-depth-canvas", payload);
   drawBoatEsm("uboot-esm-canvas", payload);
   renderScope(payload);
+  renderSupply(payload.plant);
 }

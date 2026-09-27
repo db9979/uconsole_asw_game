@@ -130,12 +130,12 @@ export function validateV2State(state) {
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
     sonar: ["observations", "settings", "visualization"],
-    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
-    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
-    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
-    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
     uboot_sonar: ["observations", "settings", "visualization"],
-    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope", "plant"],
     weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
   };
   const tacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type"];
@@ -146,6 +146,10 @@ export function validateV2State(state) {
     atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
     boatAtmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
     boat: ["mast_radar_nm", "mast_radar_calm_nm", "sighting_nm", "sighting_ref_nm", "ambient_bands_hz", "ambient_excess_db", "snorkel_available", "snorkeling", "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz"],
+  };
+  const boatFields = {
+    plant: ["propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh", "aip_capacity_kwh", "aip_kw", "load_kw", "supply_kw", "net_kw", "empty_s", "full_s", "generator_kw", "fuel_l", "fuel_capacity_l", "charge_rate", "snorkel_rate", "endurance", "air"],
+    air: ["o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles", "candle_left_s", "level", "efficiency"],
   };
   // END GENERATED
   if (!validWeatherStation(state.weather_station, opforRoles.has(state.role), weatherFields)) throw new Error("protocol");
@@ -264,6 +268,20 @@ export function validateV2State(state) {
           !["warship", "merchant", "aircraft", "torpedo", "unknown"].includes(row.cls) ||
           [row.bearing, row.span_deg, row.quality].some((value) => !finite(value)) || (row.age_s !== null && !finite(row.age_s)) ||
           [row.range_nm, row.range_sigma_nm, row.range_age_s].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
+    // The boat's plant and stores: own-ship numbers (null where the boat has none).
+    const plant = payload.plant;
+    const plantNumbers = boatFields.plant.filter((key) => !["propulsion", "phase", "charge_rate", "snorkel_rate", "endurance", "air"].includes(key));
+    const air = plant && plant.air;
+    const airNumbers = ["o2_pct", "co2_pct", "absorber_pct", "candle_left_s", "efficiency"];
+    if (!exactKeys(plant, boatFields.plant) || !["nuclear", "diesel", "aip"].includes(plant.propulsion) ||
+        (plant.phase !== null && (typeof plant.phase !== "string" || plant.phase.length > 16)) ||
+        plantNumbers.some((key) => plant[key] !== null && !finite(plant[key])) ||
+        [plant.charge_rate, plant.snorkel_rate].some((value) => value !== null && !["full", "half", "vent"].includes(value)) ||
+        !boundedArray(plant.endurance, 8) || plant.endurance.some((row) => !exactKeys(row, ["speed_kn", "hours"]) || !finite(row.speed_kn) || (row.hours !== null && !finite(row.hours))) ||
+        (air !== null && (!exactKeys(air, boatFields.air) || airNumbers.some((key) => !finite(air[key])) ||
+          [air.absorber_sets, air.candles].some((value) => !Number.isInteger(value) || value < 0) ||
+          !["ok", "caution", "danger"].includes(air.level))) ||
+        (plant.propulsion === "nuclear") !== (air === null)) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
         !boundedArray(payload.settings.choices, 8) ||

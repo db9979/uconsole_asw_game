@@ -1,16 +1,19 @@
-"""Deterministic fictional battery, AIP, snorkel, and radio endurance model."""
+"""Deterministic fictional battery, AIP, snorkel, radio, diesel-fuel and
+boat-air endurance model."""
 
 from dataclasses import dataclass
 import math
 
+from src.core import config
 from src.data.catalog import EnduranceProfile
+from src.enemies.life_support import BoatAir
 
 
 PHASES = ("SUBMERGED", "AIP", "ASCENDING", "SNORKEL", "RADIO", "DESCENDING")
 SURFACE_PHASES = frozenset(("ASCENDING", "SNORKEL", "RADIO", "DESCENDING"))
 STATE_FIELDS = {
     "version", "phase", "battery_kwh", "aip_energy_kwh", "return_depth_m",
-    "radio_left_s",
+    "radio_left_s", "fuel_kwh", "charge_rate", "air",
 }
 
 
@@ -24,7 +27,7 @@ class EnergyFlow:
 
 
 class SubmarineEndurance:
-    VERSION = 1
+    VERSION = 2
     DEPTH_TOLERANCE_M = 0.05
     MAX_STEP_S = 1.0
     MAX_SUBSTEPS = 1024
@@ -37,10 +40,68 @@ class SubmarineEndurance:
         self.aip_energy_kwh = profile.aip_energy_kwh or 0.0
         self.return_depth_m = profile.snorkel_depth_m
         self.radio_left_s = 0.0
+        # Diesel in the bunkers, as generator output it can still make (kWh),
+        # and the crew's snorkel charge rate (the AI always charges in full).
+        self.fuel_kwh = self.fuel_capacity_kwh * config.UBOOT_DIESEL_START_FRACTION
+        self.charge_rate = "full"
+        self.air = BoatAir()
         self.last_flow = EnergyFlow(0.0, 0.0, 0.0, 0.0, 0.0)
         # A human crew runs the plant: no automatic ascent, snorkel or radio
         # call (transient, set by the boat each update; never saved).
         self.manual = False
+
+    @property
+    def fuel_capacity_kwh(self) -> float:
+        return self.profile.generator_power_kw * config.UBOOT_DIESEL_ENDURANCE_H
+
+    def generator_kw(self) -> float:
+        """Generator power at the ordered charge rate while fuel lasts."""
+        if self.fuel_kwh <= self.ENERGY_EPSILON_KWH:
+            return 0.0
+        rate = config.UBOOT_CHARGE_POWER[self.charge_rate] if self.manual else 1.0
+        return self.profile.generator_power_kw * rate
+
+    def set_charge_rate(self, rate):
+        if rate not in config.UBOOT_CHARGE_RATES:
+            return "invalid_value"
+        self.charge_rate = rate
+        return True
+
+    def forecast(self, speed_kn: float, maximum_speed_kn: float) -> dict:
+        """Energy balance at ``speed_kn`` in the current phase (kW) and the
+        time until the battery is empty or full at that balance (s)."""
+        load = self.load_kw(speed_kn, maximum_speed_kn)
+        supply = 0.0
+        if self.phase in ("SNORKEL", "RADIO"):
+            supply += self.generator_kw()
+        if (self.phase == "AIP" and self.profile.aip_power_kw is not None
+                and self.aip_energy_kwh > 0.0):
+            supply += self.profile.aip_power_kw
+        net = supply - load
+        empty = full = None
+        if net < -1e-9:
+            empty = self.battery_kwh / -net * 3600.0
+        elif net > 1e-9:
+            full = (self.profile.battery_capacity_kwh - self.battery_kwh) / net * 3600.0
+        return dict(load_kw=load, supply_kw=supply, net_kw=net,
+                    empty_s=empty, full_s=full)
+
+    def submerged_hours(self, speed_kn: float, maximum_speed_kn: float) -> float:
+        """Hours dived at ``speed_kn`` on the present battery (and the AIP
+        plant carrying what it can while its oxygen lasts)."""
+        load = self.load_kw(speed_kn, maximum_speed_kn)
+        if load <= 0.0:
+            return float("inf")
+        aip_kw = self.profile.aip_power_kw
+        if aip_kw is None or self.aip_energy_kwh <= 0.0:
+            return self.battery_kwh / load
+        aip_hours = self.aip_energy_kwh / aip_kw
+        drain = load - aip_kw
+        if drain <= 0.0:
+            return aip_hours + self.battery_kwh / load
+        if self.battery_kwh / drain <= aip_hours:
+            return self.battery_kwh / drain
+        return aip_hours + (self.battery_kwh - drain * aip_hours) / load
 
     @property
     def surface_operation(self) -> bool:
@@ -101,6 +162,11 @@ class SubmarineEndurance:
             self.phase = "ASCENDING"
 
     def _advance_instantaneous(self, depth_m: float) -> None:
+        if (not self.manual and self.phase == "SNORKEL"
+                and self.fuel_kwh <= self.ENERGY_EPSILON_KWH):
+            # Bunkers dry: the AI's snorkel run ends with its radio call.
+            self.phase = "RADIO"
+            self.radio_left_s = self.profile.radio_duration_s
         if self.manual:
             if self.phase in ("ASCENDING", "RADIO", "DESCENDING"):
                 self.phase = "SUBMERGED"
@@ -136,7 +202,7 @@ class SubmarineEndurance:
                 and depth_m <= self.profile.snorkel_depth_m + self.DEPTH_TOLERANCE_M):
             generator_s = (min(dt, self.radio_left_s)
                            if self.phase == "RADIO" else dt)
-            source_kwh += self.profile.generator_power_kw * generator_s / 3600.0
+            source_kwh += min(self.fuel_kwh, self.generator_kw() * generator_s / 3600.0)
         supported_load_kw = source_kwh / hours
         propulsion_kw = max(0.0, supported_load_kw - self.profile.hotel_load_kw)
         ratio = min(1.0, propulsion_kw / self.profile.propulsion_max_kw) ** (
@@ -165,6 +231,8 @@ class SubmarineEndurance:
         probe.aip_energy_kwh = self.aip_energy_kwh
         probe.return_depth_m = self.return_depth_m
         probe.radio_left_s = self.radio_left_s
+        probe.fuel_kwh = self.fuel_kwh
+        probe.charge_rate = self.charge_rate
         elapsed = 0.0
         for _ in range(self.MAX_SUBSTEPS):
             probe._advance_instantaneous(depth_m)
@@ -198,11 +266,17 @@ class SubmarineEndurance:
             return min(times)
         if self.phase == "SNORKEL" and depth_m <= (
                 self.profile.snorkel_depth_m + self.DEPTH_TOLERANCE_M):
-            charge_rate = self.profile.generator_power_kw / 3600.0 - load_rate
+            generator_rate = self.generator_kw() / 3600.0
+            times = []
+            if generator_rate > 0.0:
+                times.append(self.fuel_kwh / generator_rate)
+            charge_rate = generator_rate - load_rate
             if charge_rate > 0.0:
                 stop = (self.profile.battery_capacity_kwh
                         * (1.0 if self.manual else self.profile.reserve_stop_fraction))
-                return max(0.0, (stop - self.battery_kwh) / charge_rate)
+                times.append(max(0.0, (stop - self.battery_kwh) / charge_rate))
+            if times:
+                return min(times)
         if self.phase == "RADIO":
             return self.radio_left_s
         return None
@@ -256,13 +330,16 @@ class SubmarineEndurance:
         generator = 0.0
         if (self.phase in ("SNORKEL", "RADIO")
                 and depth_m <= self.profile.snorkel_depth_m + self.DEPTH_TOLERANCE_M):
-            generator = self.profile.generator_power_kw * hours
+            generator = min(self.fuel_kwh, self.generator_kw() * hours)
 
         available = self.battery_kwh + aip + generator
         served = min(load, available)
         after_load = available - served
         self.battery_kwh = min(self.profile.battery_capacity_kwh, after_load)
         curtailed = after_load - self.battery_kwh
+        # The diesels throttle back once the battery is full: only the output
+        # used burns fuel.
+        self.fuel_kwh = max(0.0, self.fuel_kwh - (generator - min(curtailed, generator)))
         self.aip_energy_kwh = max(0.0, self.aip_energy_kwh)
         flow = EnergyFlow(load, served, generator, aip, curtailed)
         if self.phase == "RADIO":
@@ -280,6 +357,9 @@ class SubmarineEndurance:
             "aip_energy_kwh": self.aip_energy_kwh,
             "return_depth_m": self.return_depth_m,
             "radio_left_s": self.radio_left_s,
+            "fuel_kwh": self.fuel_kwh,
+            "charge_rate": self.charge_rate,
+            "air": self.air.serialize(),
         }
 
     @classmethod
@@ -297,6 +377,7 @@ class SubmarineEndurance:
             "aip_energy_kwh": profile.aip_energy_kwh or 0.0,
             "return_depth_m": 2000.0,
             "radio_left_s": profile.radio_duration_s,
+            "fuel_kwh": profile.generator_power_kw * config.UBOOT_DIESEL_ENDURANCE_H,
         }
         for field, high in limits.items():
             value = state[field]
@@ -307,10 +388,16 @@ class SubmarineEndurance:
             raise ValueError("radio phase requires remaining duration")
         if state["phase"] != "RADIO" and state["radio_left_s"] != 0.0:
             raise ValueError("radio duration outside radio phase")
+        if state["charge_rate"] not in config.UBOOT_CHARGE_RATES:
+            raise ValueError("invalid endurance charge rate")
+        air = BoatAir.restore(state["air"])
         result = cls(profile)
         result.phase = state["phase"]
         result.battery_kwh = float(state["battery_kwh"])
         result.aip_energy_kwh = float(state["aip_energy_kwh"])
         result.return_depth_m = float(state["return_depth_m"])
         result.radio_left_s = float(state["radio_left_s"])
+        result.fuel_kwh = float(state["fuel_kwh"])
+        result.charge_rate = state["charge_rate"]
+        result.air = air
         return result

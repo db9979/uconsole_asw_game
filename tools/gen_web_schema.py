@@ -45,6 +45,10 @@ def render_block() -> str:
     lines.append(f"    boatAtmosphere: {_array(schema.WEATHER_BOAT_ATMOSPHERE_FIELDS)},\n")
     lines.append(f"    boat: {_array(schema.WEATHER_BOAT_FIELDS)},\n")
     lines.append("  };\n")
+    lines.append("  const boatFields = {\n")
+    lines.append(f"    plant: {_array(schema.UBOOT_PLANT_FIELDS)},\n")
+    lines.append(f"    air: {_array(schema.UBOOT_AIR_FIELDS)},\n")
+    lines.append("  };\n")
     lines.append(END)
     return "".join(lines)
 

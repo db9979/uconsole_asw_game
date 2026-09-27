@@ -258,6 +258,50 @@ MISSION_GROUP_DEPTH_M = 60.0
 UBOOT_SNORKEL_NOISE_DB = 12.0
 UBOOT_SNORKEL_LINES = ((50.0, 0.85, 2.0), (100.0, 0.55, 1.5))  # (Hz, amp, width)
 UBOOT_SNORKEL_QUIET_LOSS = 0.25
+# Snorkel charge rate of a crewed diesel boat (the AI always charges at full
+# rate): fraction of generator power, radiated-level and quietness penalty,
+# and diesel-line amplitude.  "vent" runs only the fans through the snorkel
+# to air the boat (no diesels, no charging).
+UBOOT_CHARGE_RATES = ("full", "half", "vent")
+UBOOT_CHARGE_POWER = {"full": 1.0, "half": 0.5, "vent": 0.0}
+UBOOT_CHARGE_NOISE_DB = {"full": 12.0, "half": 9.0, "vent": 4.0}
+UBOOT_CHARGE_QUIET_LOSS = {"full": 0.25, "half": 0.18, "vent": 0.06}
+UBOOT_CHARGE_LINE_SCALE = {"full": 1.0, "half": 0.7, "vent": 0.0}
+# Diesel fuel of conventional boats (fictional): the bunkers hold this many
+# hours of full generator power; a mission starts mid-patrol at this fill.
+# Displayed as litres of diesel per kWh of generator output.
+UBOOT_DIESEL_ENDURANCE_H = 300.0
+UBOOT_DIESEL_START_FRACTION = 0.65
+UBOOT_DIESEL_L_PER_KWH = 0.27
+UBOOT_FUEL_LOW_FRACTION = 0.10
+# Boat atmosphere of conventional boats (fictional rates for the whole crew;
+# nuclear boats make their own oxygen).  Percent by volume; a mission starts
+# some hours after the last snorkel.
+UBOOT_AIR_FRESH_O2_PCT = 20.9
+UBOOT_AIR_FRESH_CO2_PCT = 0.04
+UBOOT_AIR_START_O2_PCT = 19.9
+UBOOT_AIR_START_CO2_PCT = 0.9
+UBOOT_AIR_START_ABSORBER_LEFT = 0.45
+UBOOT_AIR_O2_USE_PCT_H = 0.45
+UBOOT_AIR_CO2_RISE_PCT_H = 0.45
+UBOOT_AIR_ABSORBER_K_H = 0.5          # CO2 taken out per hour, per % CO2
+UBOOT_AIR_ABSORBER_CAPACITY_PCT = 3.0 # CO2 one fresh set takes out in all
+UBOOT_AIR_ABSORBER_SETS = 8
+UBOOT_AIR_O2_CANDLES = 12
+UBOOT_AIR_CANDLE_O2_PCT = 1.0         # O2 one candle adds ...
+UBOOT_AIR_CANDLE_BURN_S = 900.0       # ... over this burn time
+UBOOT_AIR_VENT_TAU_S = 300.0          # snorkel airing: time constant to fresh air
+UBOOT_AIR_AUTO_CANDLE_O2_PCT = 19.0   # the AI's crew lights a candle below this
+UBOOT_AIR_CAUTION_CO2_PCT = 3.0
+UBOOT_AIR_DANGER_CO2_PCT = 5.0
+UBOOT_AIR_CAUTION_O2_PCT = 18.0
+UBOOT_AIR_DANGER_O2_PCT = 16.0
+# Crew performance in foul air (torpedo reload): full up to these values,
+# half as fast this many percent beyond each, never below the floor.
+UBOOT_AIR_EFFECT_CO2_PCT = 2.0
+UBOOT_AIR_EFFECT_O2_PCT = 18.0
+UBOOT_AIR_EFFECT_SPAN_PCT = 4.0
+UBOOT_AIR_EFFICIENCY_FLOOR = 0.3
 # Periscope of the crewed boat (plan 1.3, phase 9).
 UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
 UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics

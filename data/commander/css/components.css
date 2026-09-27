@@ -209,4 +209,26 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .uboot-scope-controls button { min-height: 2.5rem; }
 .uboot-log-line { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: .5rem; padding: .15rem 0; border-bottom: 1px solid var(--line); font-size: var(--font-sm); }
 .uboot-log-age { color: var(--text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* Engine room: energy and stores (bars, balance, endurance, air). */
+.uboot-grid[data-role="uboot_engine"] .uboot-supply-card { grid-column: 1 / -1; }
+.uboot-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .45rem; }
+.uboot-bar { position: relative; display: grid; gap: .05rem; padding: .35rem .5rem .55rem; overflow: hidden; background: var(--bg-2); border: 1px solid var(--line); border-left: 3px solid var(--live); border-radius: var(--radius); }
+.uboot-bar::after { content: ""; position: absolute; left: 0; bottom: 0; height: 5px; width: var(--fill, 0%); background: var(--live); }
+.uboot-bar strong { font-family: var(--font-mono); font-size: 1.3rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.uboot-bar-label { color: var(--text-dim); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .1em; }
+.uboot-bar-sub, .uboot-bar-note { color: var(--text-dim); font-family: var(--font-mono); font-size: var(--font-sm); }
+.uboot-bar[data-level="caution"] { border-left-color: var(--caution); }
+.uboot-bar[data-level="caution"]::after { background: var(--caution); }
+.uboot-bar[data-level="caution"] strong { color: var(--caution); }
+.uboot-bar[data-level="alarm"] { border-left-color: var(--alarm); }
+.uboot-bar[data-level="alarm"]::after { background: var(--alarm); }
+.uboot-bar[data-level="alarm"] strong { color: var(--alarm); }
+.uboot-supply-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: .6rem; align-items: start; }
+.uboot-supply-columns section { display: flex; flex-direction: column; gap: .35rem; }
+.uboot-supply-columns h4 { margin: 0; }
+.uboot-endurance { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--font-sm); }
+.uboot-endurance th, .uboot-endurance td { padding: .15rem .4rem; border-bottom: 1px solid var(--line); text-align: right; }
+.uboot-endurance thead th { color: var(--text-dim); font-family: var(--font-ui); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .08em; }
+#uboot-air[data-level="caution"] dd { color: var(--caution); }
+#uboot-air[data-level="danger"] dd { color: var(--alarm); }
 .uboot-modes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .35rem; }

@@ -578,7 +578,8 @@ class Sub:
         if self.transient_left > 0.0:
             level += sub_physics.LAUNCH_TRANSIENT_DB
         if self.snorkeling:
-            level += config.UBOOT_SNORKEL_NOISE_DB   # diesels running at snorkel depth
+            # Diesels (or only the fans) running at snorkel depth.
+            level += config.UBOOT_CHARGE_NOISE_DB[self.snorkel_rate]
         return level
 
     def _advance_depth(self, target_depth: float, max_rate: float, dt: float) -> None:
@@ -660,8 +661,11 @@ class Sub:
         thermo = world.thermocline_depth_m(self.x, self.y)
         world_size = world.size_nm
         self._decoy_cd = max(0.0, self._decoy_cd - dt)
+        if self.endurance is not None:
+            self._update_air(dt)
         if self.weapon_battery is not None:
-            self.weapon_battery.update(dt)
+            # Foul air slows the torpedo gang's reloading.
+            self.weapon_battery.update(dt * self.crew_efficiency())
             self.torpedoes_left = self.weapon_battery.remaining_total
         if self.countermeasure_store is not None:
             self.countermeasure_store.update(dt)
@@ -1007,7 +1011,7 @@ class Sub:
         if self.transmitting:
             q += config.SNOCKEL_TRANSMIT_NOISE  # M13: Senden macht lauter
         if self.snorkeling:
-            q -= config.UBOOT_SNORKEL_QUIET_LOSS    # diesels running at snorkel depth
+            q -= config.UBOOT_CHARGE_QUIET_LOSS[self.snorkel_rate]
         return config.clamp(q, 0.0, 1.0)
 
     def noise_level(self) -> float:
@@ -1322,6 +1326,80 @@ class Sub:
     def snorkeling(self) -> bool:
         return self.endurance is not None and self.endurance.phase == "SNORKEL"
 
+    @property
+    def snorkel_rate(self) -> str:
+        """How hard the snorkel run works: the AI always charges in full; a
+        crew charges at its ordered rate, and dry bunkers leave only the fans."""
+        endurance = self.endurance
+        if endurance is None or not self.manual:
+            return "full"
+        if endurance.generator_kw() <= 0.0:
+            return "vent"
+        return endurance.charge_rate
+
+    def _snorkel_lines(self) -> list:
+        scale = config.UBOOT_CHARGE_LINE_SCALE[self.snorkel_rate]
+        return [(hz, amp * scale, width) for hz, amp, width in config.UBOOT_SNORKEL_LINES
+                if scale > 0.0]
+
+    def crew_efficiency(self) -> float:
+        """Crew performance in the boat's air (1.0 without an air model)."""
+        return 1.0 if self.endurance is None else self.endurance.air.efficiency()
+
+    def _update_air(self, dt: float) -> None:
+        """Breathe, scrub and air the boat; the AI's crew also answers foul air."""
+        endurance = self.endurance
+        airing = (endurance.phase in ("SNORKEL", "RADIO")
+                  and self.depth <= endurance.profile.snorkel_depth_m
+                  + endurance.DEPTH_TOLERANCE_M)
+        notices = endurance.air.update(dt, ventilating=airing, automatic=not self.manual)
+        if not self.manual:
+            if (endurance.air.level() == "danger"
+                    and endurance.phase in ("SUBMERGED", "AIP")):
+                # Foul air: the boat must come up and air, whatever the battery.
+                endurance.return_depth_m = max(self.depth, endurance.profile.snorkel_depth_m)
+                endurance.phase = "ASCENDING"
+            return
+        if self.crew is None:
+            return
+        for key in notices:
+            self.crew.event(key)
+        # Bunker level at the previous step (display state only: a loaded boat
+        # starts from its current level and so announces nothing).
+        fuel = endurance.fuel_kwh / max(endurance.fuel_capacity_kwh, 1e-9)
+        fuel_before = getattr(self, "_fuel_seen", fuel)
+        self._fuel_seen = fuel
+        if fuel <= 0.0 < fuel_before:
+            self.crew.event("fuel_empty")
+        elif fuel <= config.UBOOT_FUEL_LOW_FRACTION < fuel_before:
+            self.crew.event("fuel_low")
+
+    def command_charge_rate(self, rate):
+        """Crew: snorkel charge rate (full, half, or only airing the boat)."""
+        if rate not in config.UBOOT_CHARGE_RATES:
+            return "invalid_value"
+        if not self._crew_ready():
+            return "not_ready"
+        if self.endurance is None:
+            return "uboot_no_snorkel"
+        return self.endurance.set_charge_rate(rate)
+
+    def command_absorber(self):
+        """Crew: fit a fresh CO2 absorber set."""
+        if not self._crew_ready():
+            return "not_ready"
+        if self.endurance is None:
+            return "uboot_no_air_stores"
+        return self.endurance.air.change_absorber()
+
+    def command_o2_candle(self):
+        """Crew: light an oxygen candle."""
+        if not self._crew_ready():
+            return "not_ready"
+        if self.endurance is None:
+            return "uboot_no_air_stores"
+        return self.endurance.air.burn_candle()
+
     def _crew_ready(self) -> bool:
         return (self.manual and self.crew is not None and not self.sunk
                 and self.state not in ("SINKING", "SUNK"))
@@ -1418,7 +1496,7 @@ class Sub:
             if self.transmitting:
                 result.extend(((20.0, 0.95, 2.0), (35.0, 0.70, 1.5)))
             if self.snorkeling:
-                result.extend(config.UBOOT_SNORKEL_LINES)   # diesel firing lines
+                result.extend(self._snorkel_lines())        # diesel firing lines
             if self.damage > 30.0:
                 result.append((55.0, 0.25 + 0.45 * self.damage / 100.0, 4.0))
             return result
@@ -1450,7 +1528,7 @@ class Sub:
             lines.append((20.0, 0.95, 2.0))
             lines.append((35.0, 0.70, 1.5))
         if self.snorkeling:
-            lines.extend(config.UBOOT_SNORKEL_LINES)     # diesel firing lines
+            lines.extend(self._snorkel_lines())          # diesel firing lines
         if self.damage > 30.0:
             lines.append((55.0, 0.25 + 0.45 * self.damage / 100.0, 4.0))
         return lines
@@ -1470,7 +1548,7 @@ class Sub:
             if self.state in QUIET_STATES:
                 level *= 0.5
             if self.snorkeling:
-                level += config.UBOOT_SNORKEL_QUIET_LOSS
+                level += config.UBOOT_CHARGE_QUIET_LOSS[self.snorkel_rate]
             return {"level": min(1.0, level + 0.10 * self.damage / 100.0),
                     "low_hz": broadband[1], "high_hz": broadband[2]}
         if self.sunk or sig.broadband is None:

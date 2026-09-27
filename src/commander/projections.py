@@ -9,7 +9,7 @@ from copy import deepcopy
 import math
 import weakref
 
-from src.core import boat_esm, config, opfor, plot
+from src.core import boat_esm, boat_threat, config, opfor, plot
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -1255,7 +1255,7 @@ def _opfor_common(game, status, role, boat):
                            max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(
         "uboot.objective" if not boat.sub.sunk else "uboot.objective_lost", game.tr)
-    common["audio"] = dict(events=[], callouts=[])
+    common["audio"] = dict(events=[], callouts=boat.callouts.detached())
     common["autocrew"] = dict(enabled=False, status="off")
     common["autocrew_overview"] = []
     return common
@@ -1449,6 +1449,23 @@ def _uboot_esm(game, boat):
                 wash=_number(boat_esm.wash_fraction(sea)), emitters=emitters)
 
 
+def _uboot_threat(game, boat):
+    """The boat's counter-detection picture and evasion order (own
+    intercepts and own state only; see src/core/boat_threat.py)."""
+    view = boat_threat.picture(game, boat)
+    plan = boat_threat.evasion_plan(game, boat)
+    view["intercepts"] = [dict(kind=row["kind"], bearing=_number(row["bearing"]),
+                               level_db=_number(row["level_db"]), age_s=_number(row["age_s"]))
+                          for row in view["intercepts"]]
+    view["counts"] = {kind: int(view["counts"][kind]) for kind in boat_threat.KINDS}
+    for key in ("loudest_db", "layer_m", "depth_m"):
+        view[key] = _number(view[key])
+    view["plan"] = None if plan is None else dict(
+        plan, bearing=_number(plan["bearing"]), course=_number(plan["course"]),
+        speed_kn=_number(plan["speed_kn"]), depth_m=_number(plan["depth_m"]))
+    return view
+
+
 def _uboot(game, boat, rows, target_ref, asset_refs):
     """The crewed submarine's commander: own boat (legitimate truth), its
     orders, weapons and the boat's own sonar contacts."""
@@ -1525,6 +1542,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         esm=_uboot_esm(game, boat),
         ballast=_uboot_ballast(sub),
         damage_control=_uboot_damage(game, boat),
+        threat=_uboot_threat(game, boat),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

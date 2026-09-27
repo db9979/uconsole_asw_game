@@ -179,7 +179,6 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Spoken crew reports (transient; see src/core/callouts.py).
         self.callouts = CalloutLog()
         self.speaker = Speaker(find_engine())
-        self._speech_seq = 0
         # Pulse type per transmission time, for the echo sound only (audio,
         # never saved; after a load the current pulse is used).
         self._ping_pulses = {}
@@ -354,7 +353,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._frame_clock_reset = True
         self._sound_events.clear()
         self.callouts.clear()
-        self._speech_seq = self.callouts.seq
+        self.callouts.spoken = self.callouts.seq
         self.speaker.stop()
         self._ping_pulses.clear()
         self._ping_intercepts.clear()

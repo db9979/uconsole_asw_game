@@ -14,6 +14,7 @@ import math
 
 from src.air import helicopter as helicopter_physics
 from src.air.mpa import PatrolAircraft
+from src.core import boat_threat
 from src.core import config, detrand
 from src.core.i18n import display_value, message
 from src.sensors import radar as radar_physics
@@ -209,6 +210,7 @@ class MpaMixin:
             return "not_ready"
         self.buoy_seq += 1
         self.buoys.append(buoy)
+        boat_threat.record_splash(self, buoy.x, buoy.y, buoy.seq)
         self._mpa_notice("mpa.buoy", 1.5, buoy=str(buoy.seq))
         return True
 

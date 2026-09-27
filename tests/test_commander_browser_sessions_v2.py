@@ -21,6 +21,21 @@ from test_commander_assets import (ASSETS, PREFIX, Document, browser_contact_ana
 from commander_fixtures import PLOT, WEATHER_STATION
 
 
+def _projected(name):
+    """A block exactly as the host projects it for a fresh game."""
+    from src.commander import projections
+    game = Game(seed=3, start_menu=False, audio_enabled=False, language="en")
+    return getattr(projections, name)(game)
+
+
+def _projected_mpa():
+    return _projected("_mpa")
+
+
+def _projected_crew():
+    return _projected("_crew")
+
+
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
             "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
             "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav")
@@ -931,7 +946,7 @@ def _direct_fire_browser_states():
                                     rain_intensity=.1, visibility_nm=24.0),
                    mission=dict(name="Fire test", objective="Observe", remaining_s=500.0),
                    autocrew=dict(enabled=False, status="off"), autocrew_overview=[],
-                   audio=dict(events=[]), weather_station=WEATHER_STATION, plot=PLOT)
+                   audio=dict(events=[], callouts=[]), weather_station=WEATHER_STATION, plot=PLOT)
     navigation = dict(x=250.0, y=250.0, course=0.0, speed=10.0,
                       target_course=0.0, target_speed=10.0, rudder_angle=0.0,
                       yaw_rate=0.0, turn_radius_nm=None)
@@ -973,7 +988,8 @@ def _direct_fire_browser_states():
                      ciws_ready=True, aa_ready=True, ciws_released=True),
         asm_observations=[asm_row],
         source_classifications=[], radar_blips=[], designated_target_ref=None,
-        own_assets=dict(ship=navigation, helicopter=helicopter_asset, weapons=[
+        own_assets=dict(ship=navigation, helicopter=helicopter_asset,
+                        mpa=_projected_mpa(), weapons=[
             dict(ref="opaque-torpedo-reference-one", x=251.0, y=249.0, depth_m=60.0,
                  course=90.0, state="RUN")])))
     helicopter = dict(common, role="helicopter", helicopter=dict(
@@ -1011,8 +1027,8 @@ def _direct_fire_browser_states():
         teams=[dict(team=1, compartment=None), dict(team=2, compartment="engine")],
         total=15.0, sunk=False,
         stability=dict(list_deg=0.5, trim_deg=-0.2, counterflood_room=None,
-                       can_counterflood=True)))
-    bridge = dict(common, role="bridge", bridge=dict(
+                       can_counterflood=True), crew=_projected_crew()))
+    bridge = dict(common, role="bridge", bridge=dict(crew=_projected_crew(),
         navigation=navigation, tactical_summary=[], sightings=[],
         orders=dict(station_down=False, speed_max_kn=25.0, telegraph="FULL",
                     noise=.8, cavitating=False),
@@ -1144,7 +1160,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
             rain_intensity=0.0, visibility_nm=30.0)
         common["autocrew"] = {"enabled": False, "status": "off"}
         common["autocrew_overview"] = []
-        common["audio"] = {"events": list(legacy["sound_events"])}
+        common["audio"] = {"events": list(legacy["sound_events"]), "callouts": []}
         common["weather_station"] = WEATHER_STATION
         common["plot"] = PLOT
         if role == "bridge":
@@ -1157,6 +1173,7 @@ def test_v2_lobby_requests_grants_release_reload_and_role_loss_in_real_chromium(
                                       "telegraph": "HALF", "noise": .2,
                                       "cavitating": False}
             common[role]["sightings"] = []
+            common[role]["crew"] = _projected_crew()
             common[role]["threat"] = {"observations": [], "count": 0,
                                        "average_flood": 0.0, "torpedoes": []}
             common[role]["systems"] = [{"key": "bridge", "state": "OK",

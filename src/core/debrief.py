@@ -21,11 +21,14 @@ from src.core import config
 
 # Event kinds in display order of importance (the timeline colours them).
 EVENT_KINDS = ("first_contact", "first_fix", "classified", "own_shot", "enemy_shot",
-               "sub_sunk", "own_damage", "ship_sunk", "missed", "mission_end")
+               "sub_sunk", "own_damage", "ship_sunk", "missed", "pinged", "mission_end")
 
 
 class DebriefRecorder:
-    """Frames and events of one mission, bounded."""
+    """Frames and events of one mission, bounded (the frigate's view)."""
+
+    # Catalog prefix of the page's perspective-specific texts.
+    prefix = "debrief."
 
     def __init__(self):
         self.frames: list[dict] = []
@@ -111,13 +114,22 @@ class DebriefRecorder:
         """Mission over: last frame, the result and the missed chances."""
         if self._ended:
             return
-        self.add_frame(capture(game, t))
-        for span in missed_chances(self.frames):
+        self.add_frame(self.capture(game, t))
+        for span in self.spans():
             self.add_event(span["t"], "missed", minutes=round(span["duration_s"] / 60.0),
                            range=round(span["min_range_nm"], 1), layer=span["layer"])
-        self.add_event(t, "mission_end", result=game.mission_result)
+        self.add_event(t, "mission_end", result=self.result(game))
         self.events.sort(key=lambda event: event["t"])
         self._ended = True
+
+    def capture(self, game, t: float) -> dict:
+        return capture(game, t)
+
+    def spans(self) -> list[dict]:
+        return missed_chances(self.frames)
+
+    def result(self, game):
+        return game.mission_result
 
     # --- reading -------------------------------------------------------------------
 

@@ -1043,7 +1043,8 @@ class SonarSystem:
                 if distance < active_range else None)
             if distance <= config.SONAR_PING_HEAR_RANGE_NM \
                     and hasattr(target, "hear_ping"):
-                target.hear_ping(source=(frigate.x, frigate.y))
+                target.hear_ping(source=(frigate.x, frigate.y),
+                                 kind="dipping" if mode == "DIPPING" else "hull")
             if snapshot is None or len(self._pending_pings) >= self.MAX_PENDING_PINGS:
                 continue
             self._pending_pings.append({
@@ -1572,6 +1573,18 @@ class SonarSystem:
         for b in active_buoys:
             if b.seq in ping_buoys:
                 b.last_ping_epoch = ping_epoch
+                # Only a crewed boat's intercept receiver takes note (the AI
+                # boats' reactions stay as calibrated).
+                for tgt in targets:
+                    if (not getattr(tgt, "manual", False) or tgt_gone(tgt)
+                            or math.hypot(tgt.x - b.x, tgt.y - b.y)
+                            > config.UBOOT_BUOY_PING_HEAR_NM):
+                        continue
+                    if (hasattr(world, "sonar_path_blocked")
+                            and world.sonar_path_blocked(b.x, b.y, 5.0, tgt.x, tgt.y,
+                                                         getattr(tgt, "depth", 0.0))):
+                        continue
+                    tgt.hear_ping(source=(b.x, b.y), kind="buoy")
 
         # M9: Kontakte ohne neue Detektion verfallen
         for cid in list(self.contacts):
@@ -2012,7 +2025,8 @@ class SonarSystem:
 
             # Hört das U-Boot den Ping?
             if can_hear:
-                tgt.hear_ping(source=(frigate.x, frigate.y))
+                tgt.hear_ping(source=(frigate.x, frigate.y),
+                              kind="dipping" if mode == "DIPPING" else "hull")
 
             # Echo erhalten?  A stopped boat lying beside a wreck returns an
             # echo that merges with the wreck's own clutter echo.

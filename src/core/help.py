@@ -263,6 +263,7 @@ _UBOOT_HELP = (
         ("help.key.arrows", "help.uboot.dc_select"),
         ("help.key.enter", "help.uboot.dc_team"),
         ("I", "help.uboot.dc_bulkhead"),
+        ("I", "help.uboot.evade"),
         ("M", "help.uboot.watch_change"),
         ("B", "help.uboot.action_stations"),
         ("0", "help.uboot.weather"),

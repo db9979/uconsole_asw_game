@@ -496,6 +496,7 @@ export function init() {
     event.preventDefault(); numberAction("uboot-depth-form", "uboot-depth", "uboot_set_depth", "depth_m", 0, 1000);
   });
   $("uboot-decoy").addEventListener("click", () => sendStationAction("uboot_decoy", {}));
+  $("uboot-evade").addEventListener("click", () => sendStationAction("uboot_evade", {}));
   $("uboot-blow").addEventListener("click", () => sendStationAction("uboot_blow", {}));
   // Wire guidance of a running crew torpedo: new datum from the boat, or cut.
   $("uboot-wire-steer").addEventListener("click", () => {

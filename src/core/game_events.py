@@ -1688,7 +1688,7 @@ class EventMixin:
             elif pygame.K_1 <= key < pygame.K_1 + count:
                 self.menu_sel = key - pygame.K_1
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
-                self.local_side = "frigate"
+                self.local_side = training.side_of(training.LESSONS[self.menu_sel])
                 if not self.start_training(training.LESSONS[self.menu_sel]):
                     self.flash(message("training.start_failed"), 3.0)
             elif key in (pygame.K_ESCAPE, pygame.K_q):

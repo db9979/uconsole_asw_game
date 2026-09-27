@@ -246,6 +246,16 @@ UBOOT_OBSTACLE_LOOKAHEAD_NM = 5.0  # chart check ahead of the ordered course
 UBOOT_UNDER_KEEL_WARN_M = 15.0
 UBOOT_LAYER_MARGIN_M = 15.0   # depth presets: this far above / twice below the layer
 UBOOT_PRESET_MIN_M = 20.0
+# Counter-detection picture of the crewed boat (display only, never saved):
+# intercepted pings by source (the intercept receiver tells them apart by
+# frequency), their received level and buoy splashes heard by the sonar room.
+UBOOT_PING_SOURCE_DB = {"hull": 225.0, "dipping": 217.0, "buoy": 205.0}
+UBOOT_PING_ECHO_LIKELY_DB = 150.0   # a ping this loud surely returned an echo
+UBOOT_INTERCEPTS_MAX = 24
+UBOOT_THREAT_WINDOW_S = 300.0       # the threat page summarises this long
+UBOOT_BUOY_PING_HEAR_NM = 12.0      # an active buoy's ping reaches the boat
+UBOOT_SPLASH_HEAR_NM = 4.0          # a buoy entering the water is heard
+UBOOT_SPLASH_SIGMA_DEG = 6.0
 # Diesel boats at snorkel depth: the running diesels raise the radiated
 # level and add firing-rate lines to the boat's LOFAR signature (plan 1.3,
 # phase 9; the catalog keeps its 1.0.0 acoustic profiles unchanged).

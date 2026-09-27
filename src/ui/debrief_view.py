@@ -27,7 +27,8 @@ EVENT_COLORS = {
     "classified": config.COLOR_WARN, "own_shot": config.COLOR_FLIGHT,
     "enemy_shot": config.COLOR_DANGER, "sub_sunk": config.COLOR_OK,
     "own_damage": config.COLOR_DANGER, "ship_sunk": config.COLOR_DANGER,
-    "missed": config.COLOR_CONTACT_MISSILE, "mission_end": config.COLOR_TEXT,
+    "missed": config.COLOR_CONTACT_MISSILE, "pinged": config.COLOR_WARN,
+    "mission_end": config.COLOR_TEXT,
 }
 OWN_COLOR = (90, 160, 255)
 
@@ -37,15 +38,21 @@ def _clock(seconds) -> str:
     return f"{seconds // 3600:d}:{seconds // 60 % 60:02d}:{seconds % 60:02d}"
 
 
-def event_text(event) -> str:
+def event_text(event, prefix: str = "debrief.") -> str:
+    """One event line; ``prefix`` is the recorder's perspective (frigate or boat)."""
     params = dict(event["params"])
     if event["kind"] == "missed":
-        params["layer"] = localize("debrief.missed_layer" if params.get("layer")
-                                   else "debrief.missed_open")
+        params["layer"] = localize(prefix + ("missed_layer" if params.get("layer")
+                                             else "missed_open"))
+    if event["kind"] == "pinged":
+        params["source"] = localize("uboot.threat_page.kind." + str(params.get("source")))
     if event["kind"] == "mission_end":
-        params["result"] = localize("end.victory" if params.get("result") == "SIEG"
-                                    else "end.defeat")
-    return localize(message("debrief.event." + event["kind"],
+        result = params.get("result")
+        params["result"] = localize(
+            "uboot.end." + result if prefix != "debrief." and result in (
+                "won", "escaped", "survived", "trained", "lost", "over")
+            else "end.victory" if result == "SIEG" else "end.defeat")
+    return localize(message(prefix + "event." + event["kind"],
                    **{key: str(value) for key, value in params.items()}))
 
 
@@ -159,7 +166,7 @@ def _draw_map(game, s, recorder, index) -> None:
             bx, by = to_screen(sub["x"], sub["y"])
             color = config.COLOR_TEXT_DIM if sub["sunk"] else config.COLOR_CONTACT_UBOOT
             pygame.draw.polygon(s, color, [(bx, by - 8), (bx + 8, by), (bx, by + 8), (bx - 8, by)], 2)
-            layout.blit_line(s, message("debrief.sub_label", sub=sub["id"], depth=sub["depth"]),
+            layout.blit_line(s, message(recorder.prefix + "sub_label", sub=sub["id"], depth=sub["depth"]),
                              (int(bx) + 10, int(by) - 9, 140, 18), color, size=13)
         for row in frame["known"]:
             color = config.COLOR_WARN
@@ -179,10 +186,12 @@ def _draw_map(game, s, recorder, index) -> None:
         for weapon in frame["enemy_weapons"]:
             pygame.draw.circle(s, config.COLOR_DANGER,
                                [int(v) for v in to_screen(weapon["x"], weapon["y"])], 3)
+        # Aircraft: the frigate's own on its debrief, the hunters on the boat's.
+        asset_color = OWN_COLOR if recorder.prefix == "debrief." else config.COLOR_DANGER
         for asset in frame["assets"]:
             ax, ay = to_screen(asset["x"], asset["y"])
-            pygame.draw.rect(s, OWN_COLOR, (int(ax) - 4, int(ay) - 4, 8, 8), 1)
-    layout.blit_line(s, message("debrief.legend", step=f"{step:g}"), (MAP.x, 42, MAP.w, 20),
+            pygame.draw.rect(s, asset_color, (int(ax) - 4, int(ay) - 4, 8, 8), 1)
+    layout.blit_line(s, message(recorder.prefix + "legend", step=f"{step:g}"), (MAP.x, 42, MAP.w, 20),
                      config.COLOR_TEXT_DIM, size=13, align="right")
 
 
@@ -195,20 +204,20 @@ def _draw_side(game, s, recorder, frame) -> None:
         return _clock(value) if value is not None else localize("debrief.never")
 
     lines = [
-        message("debrief.metric.first_contact", time=at(metrics["first_contact_t"])),
-        message("debrief.metric.first_fix", time=at(metrics["first_fix_t"])),
-        message("debrief.metric.classified", time=at(metrics["classified_t"])),
-        message("debrief.metric.shots", shots=metrics["shots"], sunk=metrics["sunk"]),
-        (message("debrief.metric.error", error=f"{metrics['mean_error_nm']:.1f}")
-         if metrics["mean_error_nm"] is not None else message("debrief.metric.no_error")),
-        message("debrief.metric.missed", count=metrics["missed"]),
+        message(recorder.prefix + "metric.first_contact", time=at(metrics["first_contact_t"])),
+        message(recorder.prefix + "metric.first_fix", time=at(metrics["first_fix_t"])),
+        message(recorder.prefix + "metric.classified", time=at(metrics["classified_t"])),
+        message(recorder.prefix + "metric.shots", shots=metrics["shots"], sunk=metrics["sunk"]),
+        (message(recorder.prefix + "metric.error", error=f"{metrics['mean_error_nm']:.1f}")
+         if metrics["mean_error_nm"] is not None else message(recorder.prefix + "metric.no_error")),
+        message(recorder.prefix + "metric.missed", count=metrics["missed"]),
     ]
     y = SIDE.y + 10
     for line in lines:
         layout.blit_line(s, line, (SIDE.x + 12, y, SIDE.w - 24, 24), config.COLOR_TEXT, size=16)
         y += 26
-    current = (message("debrief.error_now", error=f"{min(frame['errors']):.1f}")
-               if frame["errors"] else message("debrief.no_contact_now"))
+    current = (message(recorder.prefix + "error_now", error=f"{min(frame['errors']):.1f}")
+               if frame["errors"] else message(recorder.prefix + "no_contact_now"))
     layout.blit_line(s, current, (SIDE.x + 12, y, SIDE.w - 24, 24), config.COLOR_WARN, size=16)
     y += 32
     pygame.draw.line(s, config.COLOR_GRID, (SIDE.x + 8, y), (SIDE.right - 8, y))
@@ -226,7 +235,7 @@ def _draw_side(game, s, recorder, frame) -> None:
         if i > current_index:
             color = config.COLOR_TEXT_DIM
         prefix = ">" if i == current_index else " "
-        layout.blit_line(s, f"{prefix}{_clock(event['t'])} " + event_text(event),
+        layout.blit_line(s, f"{prefix}{_clock(event['t'])} " + event_text(event, recorder.prefix),
                          (SIDE.x + 8, y, SIDE.w - 16, 22), color, size=14)
         y += 24
 

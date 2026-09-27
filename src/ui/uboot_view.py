@@ -27,18 +27,19 @@ from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
 from src.ui.uboot_ballast import draw_ballast_page
 from src.ui.uboot_damage import draw_damage_page
+from src.ui.uboot_threat import draw_intercept_lines, draw_threat_page
 from src.enemies.damage_control import COMPARTMENTS
 from src.ui.uboot_scope import draw_scope_page
 from src.ui.viewport import Viewport
 from src.ui.weather_station import draw_weather_station
 
-UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE")
+UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE", "UBOOT_THREAT")
 # Panel pages of each boat station beside the chart (the sonar room is full screen).
 STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
                  "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY", "UBOOT_BALLAST",
                                   "UBOOT_DAMAGE"),
                  "uboot_esm": ("UBOOT_ESM", "UBOOT_SCOPE"),
-                 "uboot_nav": ("UBOOT_NAV",)}
+                 "uboot_nav": ("UBOOT_NAV", "UBOOT_THREAT")}
 
 
 def station_pages(station: str) -> tuple:
@@ -269,6 +270,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         lx, ly = bx + 90 * math.sin(rad), by - 90 * math.cos(rad)
         _label(s, game, label, (int(lx) + 6, int(ly) - 8), color, r)
     draw_esm_chart(game, boat, view, r)
+    draw_intercept_lines(game, boat, view, bx, by)
     # Own torpedoes in the water (commanded own weapons).
     for index, torpedo in enumerate(_own_torpedoes(game, sub), start=1):
         px, py = view.world_to_screen(torpedo.x, torpedo.y)
@@ -629,6 +631,11 @@ _FOOTERS = {
     ("uboot_esm", "UBOOT_SCOPE"): (("←/→", "uboot.footer.scope_turn"),
                                    ("help.key.enter", "uboot.footer.stadimeter"),
                                    ("P", "uboot.footer.mast")),
+    ("uboot", "UBOOT_THREAT"): (("I", "uboot.footer.evade"), ("J", "uboot.footer.below_layer"),
+                                ("G", "uboot.footer.silent"), ("P", "uboot.footer.mast")),
+    ("uboot_nav", "UBOOT_THREAT"): (("I", "uboot.footer.evade"),
+                                    ("J", "uboot.footer.below_layer"),
+                                    ("Shift+G", "uboot.footer.bottom")),
     ("uboot_nav", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
                                  ("U/J/H", "uboot.footer.presets"),
                                  ("Shift+G", "uboot.footer.bottom")),
@@ -685,7 +692,7 @@ def draw_command_panel(game, boat) -> None:
               "UBOOT_ENGINE": _draw_engine_page, "UBOOT_SUPPLY": _draw_supply_page,
               "UBOOT_ESM": _draw_esm_page, "UBOOT_BALLAST": draw_ballast_page,
               "UBOOT_DAMAGE": draw_damage_page,
-              "UBOOT_SCOPE": draw_scope_page}[name]
+              "UBOOT_SCOPE": draw_scope_page, "UBOOT_THREAT": draw_threat_page}[name]
     drawer(s, game, boat, x, content_y, w, content_h)
     specs = tuple(
         (key, "uboot.footer.mast_down" if text == "uboot.footer.mast" and boat.orders.mast
@@ -1096,11 +1103,12 @@ def _footer(s, rect, specs) -> None:
 # --- end of mission and the whole screen ---------------------------------------
 
 def end_text(game, boat) -> str:
-    if boat is not None and boat.sub.sunk:
-        return "uboot.end.lost"
-    if game.damage.ship_sunk:
-        return "uboot.end.won"
-    return "uboot.end.over"
+    from src.core import boat_debrief
+    return "uboot.end." + boat_debrief.outcome(game, boat)
+
+
+_END_WINS = ("uboot.end.won", "uboot.end.escaped", "uboot.end.survived",
+             "uboot.end.trained")
 
 
 def draw_end_panel(game, boat) -> None:
@@ -1110,7 +1118,7 @@ def draw_end_panel(game, boat) -> None:
     pygame.draw.rect(s, config.COLOR_WARN, rect, 2)
     key = end_text(game, boat)
     layout.blit_line(s, key, (rect.x + 16, rect.y + 20, rect.w - 32, 40),
-                     config.COLOR_OK if key == "uboot.end.won" else config.COLOR_WARN,
+                     config.COLOR_OK if key in _END_WINS else config.COLOR_WARN,
                      size=28, align="center")
     layout.blit_block(s, "uboot.end.hint", rect.x + 16, rect.y + 80, rect.w - 32, 56,
                       config.COLOR_TEXT_DIM, size=16, align="center")
@@ -1148,5 +1156,8 @@ def draw(game) -> None:
             draw_debrief(game)
         elif game.game_over:
             draw_end_panel(game, boat)
+        else:
+            # Over the chart's foot, clear of the station panel.
+            game.draw_training_hint((10, config.SCREEN_H - 118, 620, 46))
     finally:
         config.STATION_RECT = previous

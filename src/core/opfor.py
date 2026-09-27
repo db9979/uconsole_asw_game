@@ -13,6 +13,7 @@ frigate, its torpedoes and every other radiating target through the ordinary
 from collections import deque
 import math
 
+from src.core.callouts import CalloutLog
 from src.core import config, detrand
 from src.core.boat_esm import BoatESM
 from src.core.crew import CrewState
@@ -63,6 +64,9 @@ class CrewOrders:
               "battery_low": "navigation", "battery_empty": "navigation",
               "shallow_water": "navigation", "wire_broken": "waffen",
               "ping_heard": "sonar", "torpedo_heard": "sonar",
+              "ping_dipping_heard": "sonar", "ping_buoy_heard": "sonar",
+              "buoy_splash": "sonar", "evade": "navigation",
+              "evade_decoy": "navigation",
               "mast_lowered": "navigation", "esm_intercept": "sonar",
               "obstacle_ahead": "navigation",
               "sighting_warship": "sonar", "sighting_merchant": "sonar",
@@ -107,10 +111,19 @@ class CrewOrders:
         self._obstacle_warned = False
         # Chart check along the ordered course (0.25 s cadence), for the displays.
         self.obstacle_ahead_nm = None
+        # Intercepts not yet stamped by the crew update (never saved; see
+        # CrewedBoat.intercepts).
+        self._pending_intercepts = []
 
     def event(self, key: str, **values) -> None:
         if key in self.EVENTS and (values or all(k != key for k, _ in self._events)):
             self._events.append((key, values))
+
+    def intercept(self, kind: str, bearing: float, level_db) -> None:
+        """An acoustic intercept for the counter-detection picture."""
+        if len(self._pending_intercepts) < config.UBOOT_INTERCEPTS_MAX:
+            self._pending_intercepts.append((kind, float(bearing),
+                                             None if level_db is None else float(level_db)))
 
     def drain_events(self) -> list:
         events, self._events = self._events, []
@@ -233,6 +246,13 @@ class CrewedBoat:
         self.chart_view = None
         self.chart_follow = True
         self.command_page = 0
+        # Counter-detection picture: timestamped intercepts (pings by source,
+        # buoy splashes).  Display only and never saved; a loaded boat
+        # starts with an empty picture.
+        self.intercepts = deque(maxlen=config.UBOOT_INTERCEPTS_MAX)
+        # Spoken crew reports from this feed (transient, like the frigate's).
+        self.callouts = CalloutLog("boat")
+        self.evaded_t = None             # last evasion order (sim s, transient)
         # Cached radiating adapters (identity stays stable between updates).
         self._ownship_source = None
         self._torpedo_sources = {}
@@ -246,6 +266,7 @@ class CrewedBoat:
         self.feed_seq += 1
         self.feed.append(dict(seq=self.feed_seq, t=float(sim_t), stamp=str(stamp),
                               category=category, text=text))
+        self.callouts.add(text)
 
     def to_save(self) -> dict:
         """The boat-level part of the save v15 ``crew`` block (the game adds
@@ -504,6 +525,10 @@ def update_crew(game, boat: CrewedBoat) -> None:
     if ahead is not None and sub.order_speed > 0.0 and not orders._obstacle_warned:
         orders.event("obstacle_ahead", distance=f"{ahead:.1f}")
     orders._obstacle_warned = ahead is not None and sub.order_speed > 0.0
+    for kind, bearing, level in orders._pending_intercepts:
+        boat.intercepts.append(dict(t=float(game.sim_t), kind=kind, bearing=bearing,
+                                    level_db=level))
+    orders._pending_intercepts = []
     # ESM with the mast up: the boat's own intercepts of radar emitters.
     boat.esm.update(game, boat)
     orders.esm = boat.esm.bearings(game.sim_t) if orders.mast else []

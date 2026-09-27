@@ -337,6 +337,38 @@ function renderEsm(esm, status) {
   $("uboot-esm-plot").textContent = t(row.fix ? "uboot_esm_to_plot_fix" : "uboot_esm_to_plot_bearing");
 }
 
+// Counter-detection picture: the boat's own intercepts, layer and noise,
+// and the evasion order the button gives (own measurements only).
+function renderThreat(threat) {
+  const counts = threat.counts;
+  metrics($("uboot-threat"), [
+    ["uboot_threat_pings", t("uboot_threat_pings_value", {hull: counts.hull, dipping: counts.dipping, buoy: counts.buoy})],
+    ["uboot_threat_loudest", threat.loudest_db === null ? t("station_none")
+      : `${unit(threat.loudest_db, "dB", 0)} ${t(threat.echo_likely ? "uboot_threat_echo_likely" : "uboot_threat_echo_unlikely")}`],
+    ["uboot_threat_trend", t(`uboot_threat_trend_${threat.trend || "none"}`)],
+    ["uboot_threat_other", t("uboot_threat_other_value", {splash: counts.splash, torpedo: counts.torpedo, esm: threat.esm_count})],
+    ["uboot_threat_layer", t(`uboot_threat_layer_${threat.layer}`, {depth: number(threat.depth_m, 0), layer: threat.layer_m === null ? "-" : number(threat.layer_m, 0)})],
+    ["uboot_threat_noise", t(`uboot_threat_noise_${threat.noise}`)]]);
+  $("uboot-threat-warning").hidden = !threat.echo_likely && counts.torpedo === 0;
+  $("uboot-threat-warning").textContent = counts.torpedo ? t("uboot_threat_torpedo_warning") : t("uboot_threat_echo_warning");
+  const advice = threat.advice.map((key) => node("p", t(key.replaceAll(".", "_")), "uboot-log-line"));
+  $("uboot-threat-advice").replaceChildren(...(advice.length ? advice : [node("p", t("uboot_advice_none"), "uboot-log-line")]));
+  const plan = threat.plan;
+  $("uboot-evade").dataset.ready = String(plan !== null);
+  $("uboot-evade-plan").textContent = plan === null ? t("uboot_evade_no_plan")
+    : t("uboot_evade_plan", {course: number(plan.course, 0), speed: number(plan.speed_kn, 0), depth: number(plan.depth_m, 0),
+      source: t(`uboot_threat_kind_${plan.kind}`)});
+  $("uboot-threat-intercepts").replaceChildren(...(threat.intercepts.length ? threat.intercepts.map((row) => {
+    const line = node("p", undefined, "uboot-log-line");
+    line.append(node("span", t("uboot_log_age", {age: number(row.age_s, 0)}), "uboot-log-age"),
+      node("span", row.level_db === null
+        ? t("uboot_threat_row_bearing", {kind: t(`uboot_threat_kind_${row.kind}`), bearing: number(row.bearing, 0)})
+        : t("uboot_threat_row", {kind: t(`uboot_threat_kind_${row.kind}`), bearing: number(row.bearing, 0),
+          level: number(row.level_db, 0)})));
+    return line;
+  }) : [node("p", t("station_none"), "uboot-log-line")]));
+}
+
 export function renderUbootStation(payload) {
   showStationCards(S.v2State?.role || "uboot");
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
@@ -376,6 +408,7 @@ export function renderUbootStation(payload) {
     ["uboot_ping_heard", alarmText(alarms.ping_age_s, alarms.ping_bearing)],
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
   renderEsm(payload.esm, status);
+  renderThreat(payload.threat);
   document.body.classList.toggle("uboot-torpedo-alarm", alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 60);
   if (!S.stationDrafts.has("uboot-depth")) $("uboot-depth").max = String(nav.max_depth_m);
   if (!S.stationDrafts.has("uboot-speed")) $("uboot-speed").max = String(nav.max_speed_kn);

@@ -12,18 +12,22 @@ Vorgehen für jeden Lauf:
    `settings.json` unter `~/.u-jagd/` vorher sichern.
 2. `python main.py` im Vollbild starten, Sprache Deutsch und Englisch je
    einmal, Großschrift einmal.
-3. Perf-Debug einschalten (F9-Verwaltung, `perf_debug.log` unter
-   `~/.u-jagd/`) und die Zeile mit `frame_ms`, `sim_ms`, `commander_max_ms`
-   nach dem Lauf in die Tabelle übernehmen.
+3. Perf-Debug über Umgebungsvariablen einschalten (es gibt keinen Schalter
+   im F9-Menü): `U_JAGD_PERF_DEBUG=1 U_JAGD_AUDIO_DEBUG=1 python main.py`.
+   Das Spiel schreibt dann je Sekunde eine Zeile nach
+   `~/.u-jagd/perf_debug.log` (`fps`, `frame_max_ms`, `sim_ms`,
+   `commander_max_ms`, `sim_dropped_ms`) und nach
+   `~/.u-jagd/audio_debug.log` (`channel_idle`). Die mittlere Frame-Zeit ist
+   1000/`fps`. Mittel und Maxima nach dem Lauf in die Tabelle übernehmen.
 4. Ergebnis je Zeile: `ok`, `abweichung: <Beschreibung>` oder leer.
 
 ## Allgemein (jeder Release)
 
 | Prüfpunkt | Vorgehen | Erwartung | Ergebnis |
 |---|---|---|---|
-| Frame-Zeit 30 FPS | 10 Minuten Szenario 2, Sonarstation, Perf-Debug | `frame_ms` Mittel unter 33, Maximum außerhalb des Starts unter 100 | |
-| Frame-Zeit 60 FPS | wie oben mit Option 60 FPS | Mittel unter 17, kein Dauer-Catch-up (`sim_dropped` 0) | |
-| Mixer | 10 Minuten Sonarraum hören | keine Knackser, keine Stille über 0,75 s (`channel_idle` 0) | |
+| Frame-Zeit 30 FPS | 10 Minuten Szenario 2, Sonarstation, Perf-Debug | Frame-Zeit Mittel (1000/`fps`) unter 33, `frame_max_ms` außerhalb des Starts unter 100 | |
+| Frame-Zeit 60 FPS | wie oben mit Option 60 FPS | Mittel unter 17, kein Dauer-Catch-up (`sim_dropped_ms` 0) | |
+| Mixer | 10 Minuten Sonarraum hören | keine Knackser, keine Stille über 0,75 s (`channel_idle` in `audio_debug.log` 0) | |
 | Lesbarkeit | jede Station in DE mit Großschrift | kein abgeschnittener Text, kein Überlappen | |
 | Remote Crew Last | maximale Clientzahl, 10 Minuten | `commander_max_ms` unter 60, keine Reconnect-Schleifen | |
 | Thermik | 30 Minuten Dauerlauf | keine Drosselung (`vcgencmd get_throttled` = 0x0) | |
@@ -40,7 +44,7 @@ Vorgehen für jeden Lauf:
 
 | Prüfpunkt | Vorgehen | Erwartung | Ergebnis |
 |---|---|---|---|
-| Frame-Zeit unverändert | Allgemein-Lauf vor und nach dem Merge vergleichen | `frame_ms` Mittel innerhalb 10 % von 1.2.0 | |
+| Frame-Zeit unverändert | Allgemein-Lauf vor und nach dem Merge vergleichen | Frame-Zeit Mittel (1000/`fps`) innerhalb 10 % von 1.2.0 | |
 | Stationswechsel | alle neun Stationen und Seiten durchschalten | keine Hänger, keine Fehlermeldung im Log | |
 
 ## Phase 9: Boot-Seite (Sehrohr)

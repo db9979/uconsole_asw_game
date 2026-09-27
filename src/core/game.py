@@ -169,6 +169,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         # Pulse type per transmission time, for the echo sound only (audio,
         # never saved; after a load the current pulse is used).
         self._ping_pulses = {}
+        # Foreign active pings still travelling to the frigate:
+        # (arrival sim time, source x, source y). Transient, never saved.
+        self._ping_intercepts = []
         self._eco_drawn_at = float("-inf")
         self._sensor_acc = 0.0
         self._esm_acc = 0.0
@@ -331,6 +334,7 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._frame_clock_reset = True
         self._sound_events.clear()
         self._ping_pulses.clear()
+        self._ping_intercepts.clear()
         self._sonar_audio_sequence = -1
         scenario_key = scenario_key or self.scenario_key
         if scenario_key not in config.SCENARIOS:

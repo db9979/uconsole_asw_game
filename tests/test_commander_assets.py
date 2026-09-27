@@ -437,6 +437,8 @@ def test_v2_nonlethal_station_controls_are_native_and_exactly_wired():
         "engine_set_telegraph", "engine_set_course", "engine_set_speed",
         "engine_set_quiet_mode",
         "damage_assign_team", "damage_unassign_team", "radio_capture_hfdf",
+        "radio_task_accept", "radio_task_decline", "crew_action_stations",
+        "crew_watch_change",
         "eloka_annotate", "eloka_clear_annotation",
         "sonar_set_listen_bearing", "sonar_set_focus", "sonar_clear_focus",
         "sonar_set_array_mode", "sonar_set_tas", "sonar_set_tow_depth",

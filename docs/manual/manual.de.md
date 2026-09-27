@@ -185,6 +185,7 @@ Klasse und Typ brauchen eine feiner aufgelöste Silhouette als die Sichtung (Joh
 | `K` | Kamera-Follow an/aus |
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
 | `B` | Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken) |
+| `G` | Gefechtsstationen an/aus |
 
 Auf der Brücke steuert der Trackball das Ruder. `U` und `V` öffnen die direkte Zahleneingabe; die Simulation läuft währenddessen weiter. `Enter` bestätigt, `Esc` bricht ab.
 
@@ -508,7 +509,7 @@ Die Schadensabwehr hält das Schiff nach einem Treffer schwimmfähig und die Sta
 
 ### Anzeigen und Instrumente
 
-Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung).
+Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung); Seite 3 ist der Wachplan der Besatzung.
 
 ```text
   Bug                                                    Heck
@@ -533,6 +534,16 @@ Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand,
 
 Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem Raum stufenlos an Leistung (Sonar- und Radarreichweite sinken allmählich); ein zerstörter Raum legt sie lahm. Eine beschädigte Maschine begrenzt die Fahrt auf 15 kn, eine zerstörte auf 8 kn; eine beschädigte oder zerstörte Waffenzentrale sperrt Torpedostarts; ein zerstörtes Flugdeck verhindert Start und Landung des Helikopters; eine zerstörte OPZ legt auch ESM lahm.
 
+### Besatzung und Wachen
+
+Seite 3 (Besatzung) zeigt den Wachplan. Die Besatzung geht in drei Wachen: eine ist im Dienst und ermüdet, die beiden anderen ruhen und erholen sich. Die Wache im Dienst wird jede Spielstunde automatisch abgelöst (eine echte Wache dauert vier Stunden; das Spiel verkürzt sie, damit eine Partie den Wechsel erlebt) oder früher mit `W` auf dieser Seite. In der ersten Minute nach der Ablösung arbeitet sich die neue Wache ein und bringt 85 %.
+
+- **Ermüdung** (0 bis 100 % je Wache) steigt in einer normalen Stunde im Dienst um etwa 25 % und sinkt in der Ruhe wieder. Bis 25 % kostet sie nichts, normaler Wachwechsel hält die Besatzung also bei voller Leistung. Darüber kosten je 10 % Ermüdung 6 % Leistung.
+- **Gefechtsstationen** (`G` hier oder auf der Brücke) holen alle Wachen in den Dienst: die Besatzung ist 10 % aufmerksamer, aber niemand ruht, und alle sind in 90 Minuten von frisch bis erschöpft, schneller bei Brand- oder Leckbekämpfung. Auf Gefechtsstationen gibt es keine Ablösung; beim Aufheben übernimmt die frischeste Wache. Für einen Angriff auf Station gehen und danach aufheben: nach etwa einer halben Stunde auf Gefechtsstationen ist der Vorteil aufgebraucht.
+- **Moral** beginnt bei 70 %. Ein versenktes U-Boot (+15), eine Rettung (+12) oder ein anderer erfüllter Auftrag (+6) heben sie; eine beschädigte Abteilung (-6), ein gescheiterter (-8) oder abgelehnter Auftrag (-2) senken sie; eine reparierte Abteilung bringt +2. Niedrige Moral ermüdet schneller; je 10 % Moral ändern die Leistung um 2 %.
+- **Leistung** ist, was die Besatzung bringt: der Sonarbediener braucht ein stärkeres Signal (je 10 % Verlust hebt die Erkennungsschwelle um 1 dB, die Passivreichweiten sinken), der Ausguck braucht mehr Kontrast zum Sichten, Erkennen und Identifizieren, und die Reparaturtrupps dichten, lenzen und löschen in diesem Tempo. Seite 3 zeigt die aktuellen Werte; der Statusticker zeigt `BES` mit der Leistung oder `GEF` auf Gefechtsstationen.
+- Das besetzte Gegner-U-Boot hat einen eigenen Wachplan mit denselben Regeln (siehe Kapitel Referenz).
+
 ### Tasten
 
 | Taste | Funktion |
@@ -542,6 +553,8 @@ Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem
 | `Eingabe` | Gewähltes Team dem gewählten Kompartiment zuweisen |
 | `Backspace` | Gewähltes Team zurückziehen |
 | `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
+| `W` | Wache jetzt ablösen (Seite Besatzung) |
+| `G` | Gefechtsstationen an/aus |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
 | `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
@@ -564,7 +577,7 @@ Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten 
 
 ### Nicht modelliert
 
-- Keine einzelnen Besatzungsmitglieder oder Verwundeten.
+- Keine einzelnen Besatzungsmitglieder, Verwundeten oder Schlaf nach der Uhr; Wachen werden jede Spielstunde abgelöst.
 - Gegenfluten nur zwischen den beiden Rumpfseiten; kein gezieltes Fluten anderer Räume.
 
 ## 5 OPZ / CIC
@@ -663,7 +676,7 @@ Der Funkraum wickelt die Verbindung zum Hauptquartier und die Kurzwellenpeilung 
 
 ### Anzeigen und Instrumente
 
-Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr.
+Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fernschreiber mit dem HQ-Verkehr; Seite 3 listet die HQ-Aufträge.
 
 ```text
  HFDF-SIGNALE               PEILPROTOKOLL
@@ -684,12 +697,27 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
 - Der Fernschreiber bringt außerdem alle 30 Minuten den Wetterbericht und HQ-Meldungen (Bedrohungswarnungen, ROE FREI).
 - Zum Missionsbeginn meldet das HQ die Bedrohung. Bei **grober** Aufklärung nur eine ungefähre Peilung und Entfernung einer Bedrohung, bei **genauer** Aufklärung zusätzlich jeden eingesetzten feindlichen Einheitentyp mit Anzahl (zum Beispiel "1x Altmetall (Diesel, älter), 2x Luftangriffswelle mit Seezielflugkörpern"), mit den Namen aus dem Einheitenanalysator (`F8`); Positionen bleiben unbestätigt. Patrouille hat immer genaue Aufklärung, Doppeljagd und Nuklearer Abfang grobe, bei der Freien Jagd wählen Sie im Schwierigkeits-Bildschirm (letzte Zeile, "HQ-Aufklärung").
 
+### HQ-Aufträge
+
+Neben der Jagd funkt das HQ Aufträge an das Schiff: den ersten etwa 15 bis 25 Minuten nach Beginn einer eingebauten Mission, danach einen alle 25 bis 45 Minuten, höchstens sechs je Mission und zwei gleichzeitig offen. Eigene Missionen erhalten keine. Jedes Angebot kommt über den Fernschreiber und auf Seite 3 (Aufträge). Innerhalb von 5 Minuten mit `A` (annehmen) oder `D` (ablehnen) antworten; keine Antwort gilt als Ablehnung. Ein zerstörter Funkraum kann nicht antworten.
+
+- **Seenotruf (SAR):** eine Rettungsinsel mit 2 bis 6 Personen, per EPIRB mit etwa 0,5 sm Fehler gemeldet, treibt mit Strom und Wind. Die Überlebenden halten je nach Wassertemperatur durch, von 40 Minuten in Wasser unter 8 °C bis 100 Minuten über 20 °C. Die Insel wird tagsüber auf 2 sm gesichtet (nachts 3 sm an ihrem Blitzlicht); dann schrumpft der Kreis in der Karte auf sie. Aufnehmen, indem das Schiff 4 Minuten lang innerhalb 0,25 sm mit höchstens 3 kn liegt, oder der Helikopter darüber schwebt (eine Minute je Person, nur wenn das Wetter Tauchsonar erlaubt). +600 Punkte, -400 bei Verlust.
+- **Handelsschiff identifizieren:** Das HQ nennt ein Handelsschiff innerhalb 60 sm und gibt seine Position mit etwa 2 sm Fehler. Es gilt als identifiziert, sobald der Ausguck seine Identifizierung gemeldet hat oder der Helikopter bei mindestens 1 sm Sicht auf 1 sm heranfliegt. Etwa ein Drittel wird als verdächtig eingestuft: Das HQ gibt dann ein U-Boot-Datum nahe dem Schiff durch. 40 Minuten.
+- **U-Boot-Datum:** ein Kreis mit 5 sm Radius aus einer Seefernaufklärer-Meldung; nicht hinter jedem Datum steckt ein Boot. 10 Minuten im Kreis mit Schiff oder Helikopter suchen. 50 Minuten.
+- **Versorgung auf See:** angeboten bei weniger als 70 % Kraftstoff oder nach verschossenen Torpedos. Ein befreundeter Versorger erscheint 18 bis 28 sm entfernt mit 12 kn; sein Kurs und eine Koppellinie stehen in der Karte. 15 Minuten innerhalb 0,3 sm und höchstens 3 kn Fahrtunterschied halten füllt Kraftstoff und Torpedos auf. +100, keine Strafe.
+- **Radarstille (EMCON):** beide Radare innerhalb 90 s aus und 20 bis 30 Minuten still. +200, -250 wenn ein Radar strahlt.
+
+Angenommene Positionen stehen in jeder Karte (auch im Remote-Crew-Browser). Die Punkte stehen in der Missionsauswertung. Der Funker im Browser antwortet mit denselben Tasten.
+
 ### Tasten
 
 | Taste | Funktion |
 |---|---|
 | `Auf / Ab` | HFDF-Signal auswählen |
 | `Eingabe` | Peilung mit eigener Position protokollieren |
+| `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
+| `A` | Gewählten Auftrag annehmen |
+| `D` | Gewählten Auftrag ablehnen |
 
 ### Standardablauf
 
@@ -707,7 +735,7 @@ Seite 1 listet aktuelle HFDF-Signale und das Peilprotokoll; Seite 2 ist der Fern
 
 ### Nicht modelliert
 
-- Keine eigenen Funksprüche oder Meldungen an das HQ; kein Fernmeldeplan und keine Kryptierung.
+- Keine freien Funksprüche oder Meldungen an das HQ außer der Antwort auf Aufträge; kein Fernmeldeplan und keine Kryptierung.
 - Keine Frequenzabstimmung: HFDF überwacht das ganze KW-Band und listet die erfassten Signale mit ihrer Frequenz.
 
 ## 7 Maschinenraum
@@ -1056,6 +1084,7 @@ Eine zweite Crew kann den Gegner spielen. Das Boot hat sechs Stationen: Führung
 - **Energie und Vorräte:** die Maschine zeigt unter **Energie & Vorräte** (Karte im Browser, auf der uConsole Maschine Seite 2 **Vorräte**) die Energiebilanz bei der aktuellen Fahrt (Verbrauch, Erzeugung und Bilanz in kW, die Zeit bis die Batterie leer oder voll ist), Batterie und AIP-Sauerstoff, die Dieselbunker und eine Tabelle, wie lange die Batterie getaucht bei jeder Telegrafenstufe reicht und wie weit das Boot damit kommt. **Diesel:** die Bunker fassen 300 Stunden volle Generatorleistung, eine Fahrt beginnt mit 65 %; nur laufende Diesel verbrauchen (0,27 l je kWh), das Log warnt bei 10 %, und mit leeren Bunkern lädt Schnorcheln nicht mehr. Die **Laderate** bestimmt, was Schnorcheln tut: *voll* (die ganze Generatorleistung, +12 dB und beide Diesellinien), *halb* (die halbe Leistung, +9 dB, schwächere Linien) oder *nur lüften* (die Lüfter ohne Diesel, +4 dB, keine Linien). **Luft:** getaucht verbraucht die Crew Sauerstoff und atmet Kohlendioxid aus (je etwa 0,45 % pro Stunde); ein CO2-Absorbersatz nimmt CO2 auf, bis er verbraucht ist (8 Ersatzsätze), eine O2-Kerze setzt in 15 Minuten 1 % O2 zu (12 an Bord, eine zur Zeit), und Schnorcheln lüftet das Boot in wenigen Minuten Richtung Frischluft. Ab 3 % CO2 oder unter 18 % O2 ist die Luft verbraucht, ab 5 % CO2 oder unter 16 % O2 gefährlich; das Log warnt bei jeder Stufe. Schlechte Luft macht die Crew langsamer (bis 30 % Leistung), und die Torpedomannschaft lädt entsprechend langsamer nach. KI-Boote versorgen ihre Luft selbst und tauchen zum Lüften auf, wenn sie gefährlich wird. Ein Atom-U-Boot hat keine dieser Vorräte.
 - **Tauchzellen, Trimm und Pressluft:** die Maschine zeigt unter **Tauchzellen & Trimm** (Karte im Browser mit Schnittbild des Boots, auf der uConsole Maschine Seite 3 **Zellen**) die Hauptzellen, die Regelzelle, die Trimmzellen, die Pressluft und den Trimmzustand des Boots. Jede Gewichtsänderung bringt das Boot aus dem Gleichgewicht: ein Torpedo aus einem Bugrohr macht es 1,5 t leichter und achterlastig, Wasser in vollgelaufenen Abteilungen (siehe Leckwehr) macht es schwerer und trimmt es zum gefluteten Ende; die Trimmautomatik gleicht davon aus, was ihre Zellen fassen. Mit der **Trimmautomatik** pumpt der LI die Regelzelle (±8 t, 25 kg/s) und die Trimmzellen (±3 t vorn und achtern, 15 kg/s) zurück ins Gleichgewicht; von Hand verschiebt jeder Befehl die Regelzelle um 0,5 t oder das Trimmwasser um 0,25 t (und schaltet die Automatik aus). Laufende Trimmpumpen sind hörbar (+3 dB und eine Linie bei 120 Hz). Was die Zellen nicht aufnehmen, lässt das Boot mit 0,03 m/s je Tonne sinken oder steigen, und ein Trimmwinkel (1° je Tonne Moment, + vorlastig) drückt es mit Fahrt nach unten oder oben; die Tiefenruder halten das nur mit Fahrt, ein schweres Boot sinkt bei wenig Fahrt unter seine befohlene Tiefe; das Log warnt ab 2 t und ab 3°. Die **Pressluft** (200 bar) reicht für drei Notanblasungen zu je 60 bar; Anblasen leert die Hauptzellen in 20 s, das Boot steigt auf 10 m und bleibt dort, die befohlene Tiefe steht dann auf 10 m. Der nächste Befehl unter 12 m öffnet die Entlüftung: die Hauptzellen fluten in 40 s, erst dann kann das Boot tauchen. Schnorcheln auf Diesel betreibt den Kompressor (0,05 bar/s); mit nur lüften läuft er nicht. Ohne Strom laufen weder Trimmpumpen noch Kompressor. Die KI-Boote halten sich selbst im Trimm und behalten ihr eines Notanblasen.
 - **Leckwehr:** die Maschine zeigt unter **Leckwehr** (Karte im Browser mit den Abteilungen und einer Tabelle, auf der uConsole Maschine Seite 4 **Leckwehr**) den Druckkörper in sechs Abteilungen: Bugraum, Zentrale, Wohnraum, Batterieraum, Maschinenraum und Heckraum. Ein Treffer auf das besetzte Boot schlägt ein Leck in die getroffene Abteilung (1,5 % Leck je % Trefferschaden, höchstens ein volles Leck; ab 50 % Schaden auch in die Nachbarabteilung mit halbem Leck) und kann dort einen Brand auslösen (Wahrscheinlichkeit = Schaden / 150); ein Ermüdungsriss unter der Testtiefe öffnet ein kleines Leck. Durch ein volles Leck dringen in 100 m Tiefe 40 kg/s ein, mit der Wurzel der Tiefe mehr; über halbvoll läuft das Wasser in offene Nachbarabteilungen über (20 kg/s) und erstickt einen Brand. Ein Brand wächst in 2 min zum Vollbrand und greift dann durch offene Schotten über; Seewasser im Batterieraum (ab 2 t) setzt Chlorgas frei, das durch offene Schotten zieht und erst langsam abzieht, wenn die Batterie trocken ist. Wasser im Batterieraum (ab 5 t) oder ein Brand dort legen den **Strom** lahm: der Motor steht (keine Fahrt, also halten die Tiefenruder ein schweres Boot nicht), Trimmpumpen, Kompressor und elektrische Lenzpumpen stehen still. **Schotten schließen** hält Wasser, Brand und Gas in der Abteilung und erstickt einen Brand dort in 3 min. Zwei **Leckwehrtrupps** gehen durchs Boot (8 s je Abteilung) und **dichten ein Leck ab** (ein volles in 60 s), **lenzen** (30 kg/s, ohne Strom ein Viertel von Hand) oder **löschen einen Brand** (einen Vollbrand in 60 s); im Gas arbeiten sie halb so schnell, und in einer zu 90 % vollen Abteilung können sie nur lenzen. Eine Abteilung, die zur Hälfte voll Wasser ist, halb brennt oder halb vergast ist, legt ihre Station lahm: der Bugraum die Torpedorohre, die Zentrale Mast und Sehrohr, der Maschinenraum die Diesel, der Heckraum die halbe Höchstfahrt. Das Wasser ist Gewicht und Moment für den Trimm (siehe oben); ein Boot, das unter die 1,5-fache Testtiefe sinkt, wird zerdrückt. Das Log meldet Lecks, Brände, abgedichtete Lecks, gelöschte Brände, vollgelaufene Abteilungen, Chlorgas und den Strom.
+- **Besatzung:** das Boot hat einen eigenen Wachplan mit den Regeln der Fregatte (siehe Schadensabwehr, Besatzung und Wachen): drei Wachen, Ermüdung, Gefechtsstationen und Moral. Maschine und Führung befehlen Gefechtsstationen (`B` auf der uConsole, eine Taste in der Leckwehr-Karte im Browser) und lösen die Wache ab (`M` auf der Seite Leckwehr oder die Taste). Die Moral steigt, wenn ein Schiff sinkt, und sinkt mit je 10 % Rumpfschaden. Eine müde Besatzung hört am Sonar später, sichtet durch das Sehrohr später und ihre Leckwehrtrupps dichten und löschen langsamer (die Pumpen sind Maschinen und behalten ihre Leistung).
 - **Lagebild:** ein gehörter Aktivping oder Torpedo wird mit der Peilung protokolliert, die das Boot selbst gemessen hat (einige Grad ungenau), und mit seinem Alter in den Alarmen angezeigt. Auf Sehrohrtiefe lässt sich der **Mast** ausfahren; sein ESM meldet dann die Radare, die das Boot überstreichen, mit Peilung (Log und ESM-Liste), und beim Tieferkommen fährt der Mast selbst ein. Mit ausgefahrenem Mast zeigt die Seite **Sehrohr** (Führung Seite 3, Mast & ESM Seite 2; `P` fährt an beiden den Mast aus) das Okular: Himmel und See im Licht der Stunde, den mit der See bewegten Horizont, eine Skala rechtweisender Peilungen und ein Fadenkreuz; das Rohr schwenkt in 2°-Schritten (`←`/`→`, `Umschalt`: 10°). Alles, was die Optik im Kontrastmodell des Fregattenausgucks bei 2,5 m Augenhöhe ausmacht (Tag/Nacht, Mond, Sicht, Seegang, Land im Weg), erscheint als Silhouette und als reine Peilungs-**Sichtung** mit grober Klasse (Kriegsschiff, Handelsschiff, Fahrzeug, Luftfahrzeug, Torpedolaufbahn) und scheinbarer Länge; das Log meldet jede neue Sichtung. `Enter` liest das **Stadimeter** an der Sichtung unter dem Fadenkreuz ab: die Entfernung folgt aus der scheinbaren Länge und der angenommenen Rumpflänge der Klasse (130 m für ein Kriegsschiff oder ein nicht erkanntes Fahrzeug, 150 m für ein Handelsschiff), ein nicht erkanntes oder bugwärts stehendes Ziel misst sich also zu weit; die Ablesung ist ±25 % und wird für 120 s zu einem VISUAL-Fix am Sonarkontakt des Boots auf dieses Ziel, für einen Schuss nutzbar wie ein Ping-Fix. Luftfahrzeuge und Laufbahnen lassen sich nicht messen. Die kartierte Küste steht auf dem Horizont des Sehrohrs, so weit seine niedrige Optik Land sieht (Hügel mit 25 bis 70 m angenommen). Die Führung kann auch ohne Sonarbediener pingen und eine BT-Messung nehmen. Die Karte zeigt das Schussfeld der Rohre, wo sie nicht rundum schießen, und das vom Sonar zugewiesene Ziel ist für den Schuss vorausgewählt.
 - **Mast & ESM:** mit ausgefahrenem Mast auf Sehrohrtiefe hört die ESM-Antenne des Boots (3 m über Wasser) einmal pro Sekunde die Radare ringsum: das der Fregatte, anderer Schiffe und von Flugzeugen innerhalb des Radarhorizonts, über Land nur, wo die Küste die Linie nicht verdeckt. Jede Erfassung trägt die gemessene Peilung (±4°), Band, Trägerfrequenz, PRF, Modulation und Empfangspegel, nie die Identität oder Position des Senders. Die Crew führt eine **Emitterliste** (`E1`, `E2` …) über mehrere Mastperioden: eine Erfassung gehört zu einem Emitter, wenn Peilung, Band und Signalform passen (ein frequenzagiles Radar nur nach Peilung und Band), und die Liste vergisst einen Emitter 30 Minuten nach seiner letzten Erfassung. Die **Einstufung** ist die Annotation der Crew aus der Bibliothek: die Emitter, deren veröffentlichte Frequenz- und PRF-Bereiche die Messung enthalten, ungewichtet, wie an der ELOKA der Fregatte ohne Assistenz; die Wahl legt die Leistungsklasse für die **Entfernungsschätzung** aus dem Pegel fest (ohne Einstufung die kürzeste Entfernung, die die Bibliothek zulässt). Alle 30 s behält jeder Emitter eine **Peilung** von der eigenen Position des Boots (20 Minuten); die Karte zeigt die letzten Peillinien, und sobald die eigene Fahrt die Peilung um mindestens 8° gedreht hat, ist die **Kreuzpeilung** ihr bester Schnittpunkt mit einer 95-%-Fehlerellipse, die einen seit jeder Linie bis zu 8 kn versetzten Sender einrechnet (eine schnelle Fregatte ergibt meist keine; eine Kreuzpeilung, deren Linien nicht zusammenpassen, wird markiert). Der **Stärketrend** zeigt steigend, gleichbleibend oder fallend über fünf Minuten. Die **Mastwarnung** („Radar kann Mast sehen“) kommt, wenn die geschätzte Entfernung eines erfassten Suchradars innerhalb der Entfernung liegt, auf der ein Seeraumradar bei diesem Seegang und Regen einen ausgefahrenen Mast sieht (der Wert der Wetterseite); die **empfohlene Mastzeit** ist 60 s bei ruhiger See, bis zu 300 s, wenn die Seegangsechos den Mast verbergen, und 20 s unter dieser Warnung, und das Log meldet, wenn sie überschritten ist. Ab Seegang 3 überspülen Wellen die Antenne, und manche Durchläufe hören nichts. Die Karte Mast & ESM im Browser hat die Rose, die Emittertabelle und die Auswertung des gewählten Emitters; **In den Plot übernehmen** trägt die Kreuzpeilung (Markierung und Fehlerkreis) oder sonst die letzte Peillinie in den Plot des Boots ein. Auf der Seite Mast & ESM der uConsole wählen `↑`/`↓` einen Emitter, `←`/`→` schalten seine Einstufung aus der Bibliothek weiter und `Enter` übernimmt ihn in den Plot.
 - **Navigation und Plot:** die Maschine hat Maschinentelegrafen-Knöpfe, und Führung und Navigation teilen den eigenen Fettstift-Plot des Boots (Markierungen, Lineale, Peillinien, Kreise, Koppellinien); die Fregatte sieht ihn nie, und der Plot des Boots wird nicht gespeichert. Die Navigation zeigt das Wasser unter dem Kiel und prüft die Seekarte entlang des Sollkurses bis 5 sm: Land oder ein Grund flacher als das Boot wird als Hindernis voraus gemeldet, im Log und als Warnung. Es zählt nur die kartierte Geografie; andere Fahrzeuge sind nicht Teil der Prüfung.
@@ -1108,6 +1137,8 @@ Die obere Leiste zeigt die sechs Stationen des Boots als Reiter: `1` Führung, `
 | `Pfeiltasten` | Maschine, Seite Leckwehr: Abteilung wählen (auf/ab) und Aufgabe (links/rechts) |
 | `Eingabe` | Maschine, Seite Leckwehr: Trupp 1 (Umschalt: Trupp 2) mit der Aufgabe schicken |
 | `I` | Maschine, Seite Leckwehr: Schotten der Abteilung schließen oder öffnen |
+| `M` | Maschine, Seite Leckwehr: Wache jetzt ablösen |
+| `B` | Gefechtsstationen an/aus (alle Wachen im Dienst, aufmerksam, aber ermüdend) |
 | `0` | Wetterseite des Boots (0 oder Esc schließt) |
 | `S / L / F9` | Speichern / Laden / Remote Crew (die Fregatten-Crew) |
 

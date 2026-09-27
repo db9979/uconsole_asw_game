@@ -652,7 +652,8 @@ _FOOTERS = {
                                         ("Z", "uboot.footer.trim_auto")),
     ("uboot_engine", "UBOOT_DAMAGE"): (("↑/↓ ←/→", "uboot.footer.dc_pick"),
                                        ("help.key.enter", "uboot.footer.dc_team"),
-                                       ("I", "uboot.footer.dc_bulkhead")),
+                                       ("I", "uboot.footer.dc_bulkhead"),
+                                       ("M", "uboot.footer.watch")),
 }
 
 

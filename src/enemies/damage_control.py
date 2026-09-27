@@ -54,6 +54,8 @@ class BoatDamageControl:
                       for _ in range(TEAMS)]
         self.hits = 0                        # counter for the hit draws
         self.pumping = False                 # this step (display)
+        # Crew watch performance (derived from the crew state, not saved).
+        self.crew_factor = 1.0
 
     # --- derived -----------------------------------------------------------
 
@@ -235,6 +237,7 @@ class BoatDamageControl:
         index = COMPARTMENTS.index(team["compartment"])
         c = self.compartments[index]
         rate = config.UBOOT_DC_GAS_FACTOR if c.chlorine >= 0.5 else 1.0
+        rate *= self.crew_factor
         swamped = c.water_kg >= 0.9 * capacity_kg(index)
         task = team["task"]
         if task == "seal" and not swamped:
@@ -243,7 +246,8 @@ class BoatDamageControl:
             c.fire = max(0.0, c.fire - rate * dt / config.UBOOT_DC_FIRE_FIGHT_S)
         elif task == "pump" and c.water_kg > 0.0:
             pump = config.UBOOT_DC_PUMP_KG_S * (1.0 if power else config.UBOOT_DC_HAND_PUMP)
-            c.water_kg = max(0.0, c.water_kg - rate * pump * dt)
+            gas = config.UBOOT_DC_GAS_FACTOR if c.chlorine >= 0.5 else 1.0
+            c.water_kg = max(0.0, c.water_kg - gas * pump * dt)
             self.pumping = self.pumping or power
 
     # --- crew orders -------------------------------------------------------

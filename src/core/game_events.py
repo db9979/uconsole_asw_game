@@ -961,6 +961,8 @@ class EventMixin:
                 elif self.station is Station.HELICOPTER:
                     self._adjust_helo_waypoint(
                         range_delta=1.0 if e.key == pygame.K_UP else -1.0)
+                elif self.station is Station.RADIO and self.station_page == 2:
+                    self._cycle_task(1 if e.key == pygame.K_DOWN else -1)
                 elif self.station is Station.RADIO:
                     self._cycle_hfdf(1 if e.key == pygame.K_DOWN else -1)
                 elif self.station in (Station.OPZ, Station.RADAR):
@@ -976,6 +978,21 @@ class EventMixin:
                     self.flash(message("runtime.team.withdrawn", team=self.dmg_team))
                 else:
                     self._assign_selected_team()
+                return
+            crew_page = self.station is Station.DAMAGE and self.station_page == 2
+            if e.key == pygame.K_w and crew_page:
+                if self.change_watch() is not True:
+                    self.flash(message("crew.watch_blocked"), 2.0)
+                return
+            if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
+                self.toggle_action_stations()
+                return
+            if (e.key in (pygame.K_a, pygame.K_d) and self.station is Station.RADIO
+                    and self.station_page == 2):
+                if e.key == pygame.K_a:
+                    self._task_accept_selected()
+                else:
+                    self._task_decline_selected()
                 return
             if e.key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
                     and self.station is Station.RADIO:
@@ -1699,6 +1716,8 @@ class EventMixin:
             self._cycle_opz_track(delta)
         elif self.station is Station.ELOKA:
             self._cycle_eloka_track(delta)
+        elif self.station is Station.RADIO and self.station_page == 2:
+            self._cycle_task(delta)
         elif self.station is Station.RADIO:
             self._cycle_hfdf(delta)
         elif self.station is Station.HELICOPTER:

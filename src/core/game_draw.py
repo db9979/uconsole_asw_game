@@ -800,6 +800,14 @@ class DrawMixin:
                  or self.mission_time < self.mission.time_limit_s)
              else "end.expired",
              config.COLOR_TEXT_DIM, False),
+        ]
+        board = getattr(self, "tasking", None)
+        if board is not None and board.tasks:
+            counts = board.counts()
+            lines.append((message("end.tasks", done=counts["done"], failed=counts["failed"],
+                                  declined=counts["declined"]),
+                          config.COLOR_TEXT_DIM, False))
+        lines += [
             ("", config.COLOR_TEXT, False),
             ("end.restart", config.COLOR_TEXT_DIM, False),
         ]

@@ -185,6 +185,7 @@ Class and type need a finer resolved silhouette than the sighting (Johnson crite
 | `K` | Camera follow on/off |
 | `, / .` | Lookout page: scope radius smaller / larger |
 | `B` | Lookout page: binoculars over the chart on/off (, / . train them) |
+| `G` | Action stations on/off |
 
 The trackball steers the rudder while the Bridge is selected. `U` and `V` open direct numeric entry; the simulation keeps running while you type. `Enter` confirms, `Esc` cancels.
 
@@ -507,7 +508,7 @@ Damage control keeps the ship afloat and the stations working after a hit. Three
 
 ### Displays and instruments
 
-Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fire, trend, teams on scene, heel).
+Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fire, trend, teams on scene, heel); page 3 is the crew's watch bill.
 
 ```text
   bow                                                   stern
@@ -532,6 +533,16 @@ Page 1 is the ship schematic; page 2 lists details per compartment (flooding, fi
 
 Station effects: a station loses capability continuously with flooding and fire in its room (sonar and radar range shrink gradually); a destroyed room disables it. A damaged engine room caps speed at 15 kn, a destroyed one at 8 kn; a damaged or destroyed weapons room blocks torpedo launches; a destroyed flight deck prevents helicopter launch and recovery; a destroyed operations room also disables ESM.
 
+### Crew and watches
+
+Page 3 (Crew) shows the watch bill. The ship's company stands in three watches: one is on duty and tires, the other two rest and recover. The duty watch is relieved automatically every hour of game time (a real watch is four hours; the game compresses it so a session sees the rotation), or earlier with `W` on this page. For the first minute after a relief the new watch settles in and works at 85 %.
+
+- **Fatigue** (0 to 100 % per watch) rises by about 25 % in a normal hour on duty and falls again at rest. Up to 25 % it costs nothing, so normal rotation keeps the crew at full performance. Above it, every 10 % costs 6 % performance.
+- **Action stations** (`G` here or on the Bridge) put every watch on duty: the crew is 10 % more alert, but nobody rests and everybody tires in 90 minutes from fresh to exhausted, faster while fighting fire or flooding. There is no relief at action stations; standing down hands the watch to the freshest section. Stand to for an attack and stand down afterwards: after about half an hour at action stations the bonus is used up.
+- **Morale** starts at 70 %. A sunk submarine (+15), a rescue (+12) or another task done (+6) raise it; a compartment damaged (-6), a task failed (-8) or declined (-2) lower it; a repaired compartment gives +2. Low morale tires the crew faster; each 10 % of morale changes performance by 2 %.
+- **Performance** is what the crew delivers: the sonar operator needs a stronger signal (every 10 % lost raises the recognition threshold by 1 dB, so the passive ranges shrink), the lookout needs more contrast to sight, recognize and identify, and the repair teams patch, pump and fight fire at that pace. Page 3 lists the current values; the status ticker shows `CREW` with the performance, or `GQ` at action stations.
+- The crewed opposing submarine has its own watch bill with the same rules (see the reference chapter).
+
 ### Keys
 
 | Key | Action |
@@ -541,6 +552,8 @@ Station effects: a station loses capability continuously with flooding and fire 
 | `Enter` | Assign selected team to selected compartment |
 | `Backspace` | Withdraw selected team |
 | `C` | Counter-flood the high hull side against a list (again: close the valve) |
+| `W` | Relieve the duty watch now (Crew page) |
+| `G` | Action stations on/off |
 | `1-9` | Always switch station; never assign a team |
 | `Click` | Select compartment or its label; Enter assigns the selected team |
 
@@ -563,7 +576,7 @@ On the uConsole the joystick buttons 1-3 assign team 1-3 directly to the selecte
 
 ### Not modelled
 
-- No individual crew members or casualties.
+- No individual crew members, casualties or sleep by the clock; watches are relieved every hour of game time.
 - Counter-flooding only between the two hull sides; no selective flooding of other rooms.
 
 ## 5 Operations / CIC
@@ -662,7 +675,7 @@ The radio room handles communications with HQ and HF direction finding (HFDF). H
 
 ### Displays and instruments
 
-Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype with HQ traffic.
+Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype with HQ traffic; page 3 lists HQ tasks.
 
 ```text
  HFDF SIGNALS               BEARING LOG
@@ -683,12 +696,27 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 - The teletype also carries the weather bulletin every 30 minutes and HQ messages (threat warnings, ROE FREE).
 - At mission start HQ reports the threat. With **coarse** intelligence it gives only a rough bearing and range of one threat. With **exact** intelligence it also names every hostile unit type committed to the mission with its number (for example "1x Altmetall (Diesel, älter), 2x air raid wave with anti-ship missiles"), using the names in the unit analyser (`F8`); positions stay unconfirmed. Patrol always gets exact intelligence, Double hunt and Nuclear intercept coarse, and the free hunt lets you choose on its difficulty screen (last row, "HQ intelligence").
 
+### HQ tasks
+
+Besides the hunt, HQ radios tasks to the ship: the first about 15 to 25 minutes into a built-in mission, then one every 25 to 45 minutes, at most six per mission and two open at a time. Custom missions get none. Each offer arrives on the teletype and on page 3 (Tasks). Answer it within 5 minutes with `A` (accept) or `D` (decline); no answer counts as declined. A destroyed radio room cannot answer.
+
+- **Distress call (SAR):** a life raft with 2 to 6 people, reported by EPIRB with about 0.5 NM error and drifting with current and wind. The survivors last according to the sea temperature, from 40 minutes in water below 8 °C to 100 minutes above 20 °C. The raft is sighted within 2 NM by day (3 NM at night by its strobe); then the circle on the chart shrinks onto it. Take them aboard by lying within 0.25 NM at 3 kn or less for 4 minutes, or let the helicopter hover overhead (one minute per person, only when the weather allows dipping). +600 points, -400 if they are lost.
+- **Identify merchant:** HQ names a merchant within 60 NM and gives its position with about 2 NM error. It counts as identified once the lookout has published its identification or the helicopter passes within 1 NM with at least 1 NM visibility. About a third are flagged as suspect: HQ then passes a submarine datum near the ship. 40 minutes.
+- **Submarine datum:** a circle of 5 NM radius from a maritime patrol report; not every datum has a boat behind it. Search 10 minutes inside the circle with the ship or the helicopter. 50 minutes.
+- **Replenishment at sea:** offered when fuel is below 70 % or torpedoes have been fired. A friendly supply ship appears 18 to 28 NM away at 12 kn; its course and a dead-reckoning line are plotted. Keep within 0.3 NM and within 3 kn of its speed for 15 minutes to fill fuel and torpedoes. Worth +100, no penalty.
+- **Radar silence (EMCON):** both radars off within 90 s and silent for 20 to 30 minutes. +200, -250 if a radar radiates.
+
+Accepted positions are plotted on every chart (also in the Remote Crew browser). Scores are listed at mission end. The radio operator in the browser answers with the same buttons.
+
 ### Keys
 
 | Key | Action |
 |---|---|
 | `Up / Down` | Select HFDF signal |
 | `Enter` | Log bearing with own position |
+| `Up / Down` | Select HQ task (Tasks page) |
+| `A` | Accept the selected task |
+| `D` | Decline the selected task |
 
 ### Standard procedure
 
@@ -706,7 +734,7 @@ Page 1 lists current HFDF signals and the bearing log; page 2 is the teletype wi
 
 ### Not modelled
 
-- No own radio transmissions or reports to HQ; no communication plan or crypto.
+- No free-text radio transmissions or reports to HQ beyond answering tasks; no communication plan or crypto.
 - No frequency tuning: HFDF monitors the whole HF band and lists the detected signals with their frequency.
 
 ## 7 Engine room
@@ -1055,6 +1083,7 @@ A second crew can play the enemy. The boat has six stations: Command, Sonar, Wea
 - **Energy and stores:** the engine room's **Energy & stores** (browser card, uConsole Engine room page 2 **Stores**) shows the energy balance at the present speed (load, supply and net kW, the time until the battery is empty or full), the battery and AIP oxygen, the diesel bunkers and a table of how long the battery lasts dived at each telegraph step and how far that carries the boat. **Diesel:** the bunkers hold 300 hours of the generators' full output and a patrol starts with 65 %; only the running diesels burn it (0.27 l per kWh), the log warns at 10 %, and with dry bunkers snorkelling no longer charges. The **charge rate** sets what snorkelling does: *full* (the whole generator output, +12 dB and both diesel lines), *half* (half the output, +9 dB, weaker lines) or *air only* (the fans without diesels, +4 dB, no lines). **Air:** dived, the crew uses oxygen and breathes out carbon dioxide (about 0.45 % per hour each); a CO2 absorber set takes CO2 out until it is spent (8 spare sets), an oxygen candle adds 1 % O2 over 15 minutes (12 aboard, one at a time), and snorkelling flushes the boat toward fresh air within minutes. From 3 % CO2 or below 18 % O2 the air is stale, from 5 % CO2 or below 16 % O2 it is foul; the log warns at each step. Stale air slows the crew (down to 30 % performance), and the torpedo gang reloads accordingly slower. AI boats manage their air by themselves and come up to air the boat when it turns foul. A nuclear boat has none of these stores.
 - **Tanks, trim and air:** the engine room's **Tanks & trim** (browser card with a cross-section of the boat, uConsole Engine room page 3 **Tanks**) shows the main ballast, the regulating tank, the trim tanks, the high-pressure air and the trim the boat is in. Every weight change moves the boat off neutral: a torpedo leaving a bow tube makes it 1.5 t lighter and bow light, water in flooded compartments (see damage control) makes it heavier and trims it toward the flooded end; the automatic trim takes up what its tanks can of that weight and moment. With the **automatic trim** on, the engineer pumps the regulating tank (±8 t, 25 kg/s) and the trim tanks (±3 t fore and aft, 15 kg/s) back to neutral; by hand, each order moves the regulating tank 0.5 t or the trim water 0.25 t (and switches the automatic off). Running trim pumps are audible (+3 dB and a 120 Hz line). Whatever the tanks cannot take up sinks or lifts the boat by 0.03 m/s per tonne, and a trim angle (1° per tonne of moment, + bow down) drives it down or up with speed; the hydroplanes hold that only with way on, so a heavy boat hovering at low speed sinks below its ordered depth; the log warns from 2 t and from 3°. The **high-pressure air** (200 bar) holds three emergency blows of 60 bar each; a blow empties the main ballast in 20 s and the boat rises to 10 m and stays there, the ordered depth reset to 10 m. The next order below 12 m opens the vents: the main ballast floods in 40 s before the boat can dive. Snorkelling on the diesels runs the compressor (0.05 bar/s); with the air only on the fans it does not. Without power neither the trim pumps nor the compressor run. The AI's boats keep themselves trimmed and keep their one legacy blow.
 - **Damage control:** the engine room's **Damage control** (browser card with the compartments and a table, uConsole Engine room page 4 **Damage**) divides the pressure hull into six compartments: bow room, control room, quarters, battery room, engine room and stern room. A hit on the crewed boat holes the compartment it strikes (a leak of 1.5 % per % of hit damage, up to a full hole; from 50 % damage the neighbour too, with half the leak) and may start a fire there (chance = damage / 150); a fatigue crack below test depth opens a small leak. Water comes in at 40 kg/s through a full hole at 100 m, growing with the square root of depth; above half a compartment it spills into open neighbours (20 kg/s) and smothers a fire. A fire grows to full in 2 min and then spreads through open bulkheads; seawater in the battery room (from 2 t) gives off chlorine gas that drifts through open bulkheads and clears slowly once the battery is dry. Water in the battery room (from 5 t) or a fire there cuts the **power**: the motor stops (no way on, so the hydroplanes do not hold a heavy boat), and the trim pumps, compressor and electric bilge pumps stand still. **Shutting the bulkheads** of a compartment keeps water, fire and gas in it and starves a fire there in 3 min. Two **damage-control teams** walk the boat (8 s per compartment) and **seal a leak** (a full hole in 60 s), **pump out** (30 kg/s, a quarter by hand without power) or **fight a fire** (a full fire in 60 s); in gas they work at half rate, and in a compartment 90 % full they can only pump. A compartment half full of water, half on fire or half gassed takes its station out: the bow room the torpedo tubes, the control room the mast and periscope, the engine room the diesels, the stern room half the top speed. The floodwater is weight and moment for the trim (see above); a boat that sinks below 1.5 x test depth is crushed. The log reports leaks, fires, sealed leaks, fires out, flooded compartments, chlorine and power.
+- **Crew:** the boat has its own watch bill with the frigate's rules (see Damage control, Crew and watches): three watches, fatigue, action stations and morale. The Engine room and Command order action stations (`B` on the uConsole, a button in the browser's Damage control card) and relieve the watch (`M` on the Damage page, or the button). Morale rises when a ship sinks and falls with every 10 % of hull damage. A tired crew hears later on sonar, sights later through the periscope and its damage-control teams seal and fight fire more slowly (the pumps are machinery and keep their rate).
 - **Situation picture:** an intercepted active ping or torpedo is logged with the bearing the boat's own ears measured (a few degrees off) and shown with its age in the alarms. At periscope depth the **mast** can be raised; its ESM then reports the radars sweeping the boat with bearing (log and ESM list), and the mast lowers by itself when the boat goes deeper. With the mast up the **periscope** page (Command page 3, Mast & ESM page 2; `P` raises the mast at both) shows the eyepiece: sky and sea in the light of the hour, the horizon moving with the sea, a true-bearing scale and a crosshair; the scope trains in 2° steps (`←`/`→`, `Shift`: 10°). Everything the optics make out within the frigate lookout's contrast model at 2.5 m eye height (day/night, moon, visibility, sea state, land in the way) appears as a silhouette and as a bearing-only **sighting** with a coarse class (warship, merchant ship, vessel, aircraft, torpedo wake) and its apparent length; the log reports each new sighting. `Enter` reads the **stadimeter** on the sighting under the crosshair: the range follows from its apparent length and the assumed hull length of the class (130 m for a warship or an unrecognized vessel, 150 m for a merchant), so an unrecognized or bow-on target reads long; the reading is ±25 % and becomes a VISUAL fix on the boat's sonar contact of that target for 120 s, usable for a shot like a ping fix. Aircraft and wakes cannot be ranged. The charted coast stands on the periscope's horizon as far as its low optics see land (hills assumed 25 to 70 m). Command can also ping and take a BT without a sonar operator. The chart shows the tube firing arc where the tubes cannot fire all round, and the sonar room's assigned target is preselected for the shot.
 - **Mast & ESM:** with the mast up at periscope depth the boat's own ESM antenna (3 m above the water) hears the radars around it once a second: the frigate's, other ships' and aircraft radars inside the radar horizon, over land only where the coast does not block the line. Each intercept carries the measured bearing (±4°), band, carrier frequency, PRF, modulation and received level, never the emitter's identity or position. The crew keeps an **emitter list** (`E1`, `E2` …) across mast periods: an intercept joins an emitter when bearing, band and waveform agree (a frequency-agile radar by bearing and band only), and the list forgets an emitter 30 minutes after its last intercept. **Classification** is the crew's annotation from the library: the emitters whose published frequency and PRF ranges hold the measurement, unranked, as at the frigate's ELOKA without assistance; the choice sets the power class for the **range estimate** from the level (unclassified: the shortest range the library allows). Every 30 s each emitter keeps a **bearing** from the boat's own position (20 minutes); the chart shows the latest bearing lines, and once the boat's own motion has swung the bearing by at least 8°, the **cross-fix** is their best crossing with a 95 % error ellipse that allows for an emitter drifting up to 8 kn since each line (a fast frigate usually gives none; a fix whose lines disagree is marked). The **level trend** reads rising, steady or falling over five minutes. The **mast warning** ("radar can see the mast") comes when a live search radar's estimated range is inside the range at which a surface radar sees a raised mast in this sea and rain (the weather page's value); the **recommended mast time** is 60 s in a calm sea, up to 300 s when sea clutter hides the mast and 20 s under that warning, and the log reports when it is exceeded. From sea state 3 waves wash over the antenna and some scans hear nothing. The browser's Mast & ESM card has the rose, the emitter table and the selected emitter's evaluation; **Transfer to plot** puts the cross-fix (mark and error circle) or else the latest bearing line into the boat's plot. On the uConsole's Mast & ESM page `↑`/`↓` select an emitter, `←`/`→` step through its library classification and `Enter` transfers it to the plot.
 - **Navigation and plot:** the engine room has telegraph buttons, and Command and Navigation share the boat's own grease-pencil plot (marks, rulers, bearing lines, circles, DR lines); the frigate never sees it, and the boat's plot is not saved. The navigation display shows the water under the keel and checks the chart along the ordered course up to 5 NM: land or a seabed shallower than the boat is reported as an obstacle ahead, in the log and as a warning. Only charted geography counts; other vessels are not in the check.
@@ -1107,6 +1136,8 @@ The top bar shows the boat's six stations as tabs: `1` Command, `2` Sonar, `3` W
 | `Arrow keys` | Engine room, damage page: pick a compartment (up/down) and a task (left/right) |
 | `Enter` | Engine room, damage page: send team 1 (Shift: team 2) with the task |
 | `I` | Engine room, damage page: shut or open the compartment's bulkheads |
+| `M` | Engine room, damage page: relieve the duty watch now |
+| `B` | Action stations on/off (all watches on duty, alert but tiring) |
 | `0` | Weather panel of the boat (0 or Esc closes) |
 | `S / L / F9` | Save / load / Remote Crew (the frigate's crew) |
 

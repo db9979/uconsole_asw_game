@@ -4,9 +4,11 @@ import { number, t, unit } from "../core/format.js";
 import { sightingText } from "../state/schema.js";
 import { metrics, node, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
+import { renderCrew } from "../views/crew.js";
 
 export function renderBridgeStation(payload) {
   const navigation = payload.navigation;
+  renderCrew($("bridge-crew"), $("bridge-crew-actions"), payload.crew, {actionStations: "crew_action_stations"});
   metrics($("bridge-navigation"), [["position", position(navigation)], ["course", unit(navigation.course, "\u00b0", 0)],
     ["speed", unit(navigation.speed, "kn")], ["ordered_course", unit(navigation.target_course, "\u00b0", 0)],
     ["ordered_speed", unit(navigation.target_speed, "kn")], ["rudder_angle", unit(navigation.rudder_angle, "\u00b0")],

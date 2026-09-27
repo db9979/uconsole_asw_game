@@ -127,9 +127,9 @@ def position_age(observation, now: float):
 TELEMETRY_KEYS = ("telemetry.course_speed", "telemetry.noise",
                   "telemetry.sea_state", "telemetry.flooding",
                   "telemetry.torpedoes", "telemetry.vls_chaff",
-                  "telemetry.helo_roe")
+                  "telemetry.helo_roe", "telemetry.crew")
 TICKER_KEYS = ("telemetry.course_speed", "telemetry.noise",
-               "telemetry.flooding", "telemetry.torpedoes")
+               "telemetry.flooding", "telemetry.torpedoes", "telemetry.crew")
 
 
 def telemetry_rows(game) -> list:
@@ -155,6 +155,13 @@ def telemetry_rows(game) -> list:
                        helo=message("telemetry.helo.airborne" if game.helo.airborne
                                     else "telemetry.helo.hangar"),
                        roe=raw_roe(game.roe))
+    view = game.crew_view()
+    crew_short = message("telemetry.value.crew_action" if view["action_stations"]
+                         else "telemetry.value.percent",
+                         value=f"{view['effectiveness'] * 100:.0f}")
+    crew = message("telemetry.value.crew", value=crew_short,
+                   morale=f"{view['morale'] * 100:.0f}")
+    crew_level = "warn" if view["effectiveness"] < 0.9 else "ok"
     return [
         ("telemetry.course_speed", course_speed, "ok", course_speed),
         ("telemetry.noise", noise, "warn" if ship.cavitating else "ok", noise),
@@ -177,6 +184,7 @@ def telemetry_rows(game) -> list:
          message("telemetry.value.count", count=game.vls_cells,
                  total=game.vls_loadout_total)),
         ("telemetry.helo_roe", helo_roe, "ok", helo_roe),
+        ("telemetry.crew", crew, crew_level, crew_short),
     ]
 
 

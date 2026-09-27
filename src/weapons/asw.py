@@ -308,6 +308,20 @@ class WeaponBattery:
             tube.loading_weapon_key = weapon_key
             tube.reload_remaining_s = self.reload_s
 
+    def replenish(self) -> None:
+        """Replenishment at sea: every magazine back to its mission load
+        (weapons in the tubes count against their own type)."""
+        in_tubes = {}
+        for tube in self.tubes:
+            for key in (tube.loaded_weapon_key, tube.loading_weapon_key):
+                if key is not None:
+                    in_tubes[key] = in_tubes.get(key, 0) + 1
+        for magazine in sorted(self.magazines.values(), key=lambda item: item.key):
+            held = in_tubes.get(magazine.weapon_key, 0)
+            counted = min(held, magazine.capacity)
+            in_tubes[magazine.weapon_key] = held - counted
+            magazine.stowed = max(magazine.stowed, magazine.capacity - counted)
+
     def update(self, dt: float, readiness_scale: float = 1.0) -> None:
         step = max(0.0, float(dt) * max(0.0, readiness_scale))
         for tube in self.tubes:

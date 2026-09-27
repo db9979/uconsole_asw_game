@@ -1,6 +1,7 @@
 import { $, damageStates } from "../core/base.js";
 import { enumText, number, t, unit } from "../core/format.js";
 import { actionButton, metrics, node, stationRows, yesNo } from "../views/dom.js";
+import { renderCrew } from "../views/crew.js";
 
 function compartmentName(payload, key) {
   return payload.compartments.find((room) => room.key === key)?.name || key;
@@ -8,6 +9,8 @@ function compartmentName(payload, key) {
 
 export function renderDamageStation(payload) {
   metrics($("damage-summary"), [["damage_total", unit(payload.total, "%")], ["sunk", yesNo(payload.sunk)]]);
+  renderCrew($("damage-crew"), $("damage-crew-actions"), payload.crew,
+    {actionStations: "crew_action_stations", watchChange: "crew_watch_change"});
   const stability = payload.stability;
   metrics($("damage-stability"), [["damage_list", unit(stability.list_deg, "\u00b0")],
     ["damage_trim", unit(stability.trim_deg, "\u00b0")],

@@ -143,6 +143,8 @@ DISPLAY_KEYS = {
         "OPZ_TARGET": "station.page.opz_target",
         "RADIO_HFDF": "station.page.radio_hfdf",
         "RADIO_MESSAGES": "station.page.radio_messages",
+        "RADIO_TASKS": "station.page.radio_tasks",
+        "DAMAGE_CREW": "station.page.damage_crew",
         "ENGINE_TELEGRAPH": "station.page.engine_telegraph",
         "ENGINE_SYSTEMS": "station.page.engine_systems",
         "HELO_STATUS": "station.page.helo_status",

@@ -98,6 +98,8 @@ def draw_radio_view(game, tr=None) -> None:
         if game.hfdf_log:
             layout.blit_line(s, message("radio.line.log_fix", log=len(game.hfdf_log), fixes=len(game.hfdf_fixes)),
                              (lx, ly, lw, 24), config.COLOR_OK, size=16)
+    elif page == 2:
+        _draw_tasks(game, s, x, cy, w, box_h)
     else:
         right = layout.box(s, (x, cy, w, box_h), "panel.messages")
         rx, ry, rw, rh = right
@@ -113,6 +115,82 @@ def draw_radio_view(game, tr=None) -> None:
             ry += row_h
 
     _shortcut_footer(s, (x, station_rect.bottom - 26, w, 20), (
+        ("↑/↓", "radio.footer.task_select"),
+        ("A", "radio.footer.accept"),
+        ("D", "radio.footer.decline"),
+    ) if page == 2 else (
         ("↑/↓", "radio.footer.select"),
         ("Enter", "radio.footer.log"),
     ))
+
+
+def task_line(game, row) -> object:
+    """One task in the list: label, kind, state and its clock."""
+    if row["state"] == "offered":
+        clock = message("radio.task.clock.respond", seconds=f"{row['respond_s']:.0f}")
+    elif row["remaining_s"] is not None:
+        clock = message("radio.task.clock.remaining",
+                        minutes=f"{row['remaining_s'] / 60.0:.0f}")
+    else:
+        clock = message("radio.task.clock.points", points=f"{row['points']:+d}")
+    return message("radio.task.line", task=f"{row['kind'].upper()} {row['id']}",
+                   kind=message("radio.task.kind." + row["kind"]),
+                   state=message("radio.task.state." + row["state"]), clock=clock)
+
+
+def task_detail_lines(game, row) -> list:
+    """The selected task's order and its state, one line each."""
+    lines = [message("radio.task.brief." + row["kind"],
+                     name=raw_text(row["name"] or "-"), persons=row["persons"])]
+    lines.append(message("radio.task.position", x=f"{row['x']:.1f}", y=f"{row['y']:.1f}",
+                         bearing=f"{row['bearing']:03.0f}", range=f"{row['range_nm']:.1f}",
+                         radius=f"{row['radius_nm']:.1f}"))
+    if row["course"] is not None:
+        lines.append(message("radio.task.motion", course=f"{row['course']:03.0f}",
+                             speed=f"{row['speed_kn']:.0f}"))
+    if row["kind"] == "sar":
+        lines.append(message("radio.task.sighted" if row["sighted"]
+                             else "radio.task.not_sighted"))
+    if row["state"] in ("active", "done") and row["kind"] != "identify":
+        lines.append(message("radio.task.progress", progress=f"{row['progress']:.0%}"))
+    if row["verdict"] is not None:
+        lines.append(message("radio.task.verdict." + row["verdict"]))
+    if row["state"] == "offered":
+        lines.append(message("radio.task.answer_hint"))
+    return lines
+
+
+def _draw_tasks(game, s, x, cy, w, box_h) -> None:
+    split = int(w * .5)
+    left = layout.box(s, (x, cy, split - 6, box_h), "panel.tasks")
+    right = layout.box(s, (x + split + 6, cy, w - split - 6, box_h), "panel.task_detail")
+    rows = game.task_view()
+    lx, ly, lw, lh = left
+    if not rows:
+        layout.blit_line(s, "radio.task.none" if game.tasking.enabled
+                         else "radio.task.disabled",
+                         (lx, ly, lw, 26), config.COLOR_TEXT_DIM, size=18)
+        return
+    selected_idx = min(max(0, game.task_sel), len(rows) - 1)
+    row_h = 34
+    for index, row in enumerate(rows[:max(1, (lh - 8) // row_h)]):
+        selected = index == selected_idx
+        if selected:
+            pygame.draw.rect(s, config.COLOR_SELECT_BG, (lx - 5, ly - 2, lw + 10, row_h - 4))
+            pygame.draw.rect(s, config.COLOR_WARN, (lx - 5, ly - 2, 3, row_h - 4))
+        color = (config.COLOR_WARN if row["state"] == "offered"
+                 else config.COLOR_TEXT if row["state"] == "active"
+                 else config.COLOR_OK if row["state"] == "done"
+                 else config.COLOR_TEXT_DIM)
+        layout.blit_line(s, task_line(game, row), (lx, ly, lw, row_h - 8), color, size=17)
+        ly += row_h
+    rx, ry, rw, rh = right
+    lines = task_detail_lines(game, rows[selected_idx])
+    # The order itself wraps over three lines; the facts are one line each.
+    layout.blit_block(s, lines[0], rx, ry, rw, 72, color=config.COLOR_TEXT, size=16)
+    ry += 80
+    for text in lines[1:]:
+        if ry + 24 > right[1] + rh:
+            break
+        layout.blit_line(s, text, (rx, ry, rw, 24), config.COLOR_TEXT, size=16)
+        ry += 28

@@ -1133,10 +1133,12 @@ class SimMixin:
 
     def _update_damage_and_mission(self, dt: float) -> None:
         """Fortschritt von Schaden, Flugverkehr und Missionszielen."""
+        self._update_crew(dt)
         self.damage.update(dt, draft_m=self.ship.dynamic_draft_m())
         self.flights.update(dt, world=self.world,
                             near=(self.ship.x, self.ship.y))
         self._run_mission_events()
+        self._update_tasking(dt)
         self._check_mission_end()
 
     def _update_sim(self, dt: float) -> None:
@@ -1362,8 +1364,10 @@ class SimMixin:
         dx, dy = actor.x - self.ship.x, actor.y - self.ship.y
         distance = math.hypot(dx, dy)
         environment = self._lookout_environment()
-        margin = LOOKOUT_MODEL.margin(kind, distance, altitude_m=altitude_m,
-                                      **environment)
+        # A tired lookout needs more contrast (crew watch, 1.0 when fresh).
+        alert = self.crew_effect()
+        margin = alert * LOOKOUT_MODEL.margin(kind, distance, altitude_m=altitude_m,
+                                              **environment)
         if (margin < 1.0 or self.world.land_blocks_line(
                 self.ship.x, self.ship.y, actor.x, actor.y)):
             return
@@ -1389,12 +1393,12 @@ class SimMixin:
             if LOOKOUT_MODEL.margin(
                     kind, distance, altitude_m=altitude_m,
                     detail=lookout_id.RECOGNIZE_CYCLES / lookout_id.CLASS_SIZE[recognized],
-                    **environment) >= 1.0:
+                    **environment) * alert >= 1.0:
                 level = lookout_id.RECOGNIZED
                 if LOOKOUT_MODEL.margin(
                         kind, distance, altitude_m=altitude_m,
                         detail=lookout_id.IDENTIFY_CYCLES / lookout_id.CLASS_SIZE[identified],
-                        **environment) >= 1.0:
+                        **environment) * alert >= 1.0:
                     level = lookout_id.IDENTIFIED
         previous = self.air_picture.current(track_id, self.sim_t)
         previous_level = (lookout_id.decode(previous.label)[0]

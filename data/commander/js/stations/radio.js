@@ -13,6 +13,7 @@ const S_METER_SEGMENTS = 10;
 export function renderRadioStation(payload) {
   renderChannels(payload);
   renderTeletype(payload);
+  renderTasks(payload);
   $("radio-df-state").textContent = t(payload.station_down ? "radio_df_down" : "radio_df_live");
   $("radio-df-state").dataset.state = payload.station_down ? "down" : "live";
   stationRows($("radio-fixes"), payload.logged_fixes, (row) => [["reference", row.ref], ["position", position(row)],
@@ -70,6 +71,53 @@ function renderChannels(payload) {
   list.replaceChildren(...rows.map(channel));
   if (payload.station_down) list.prepend(node("p", t("station_down_state"), "station-alert"));
   if (!rows.length) list.append(node("p", t("radio_no_signal"), "empty radio-idle"));
+}
+
+// HQ tasks: the order as HQ gave it, its clock and, for an open offer, the
+// radio room's answer.  Positions are HQ's reports, never the truth.
+const CLOSED_TASK_STATES = "done failed declined".split(" ");
+
+function taskFacts(row) {
+  const facts = [t("radio_task_position", {bearing: number(row.bearing, 0), range: number(row.range_nm, 1),
+    radius: number(row.radius_nm, 1)})];
+  if (finite(row.course)) facts.push(t("radio_task_motion", {course: number(row.course, 0), speed: number(row.speed_kn, 0)}));
+  if (finite(row.respond_s)) facts.push(t("radio_task_respond", {seconds: number(row.respond_s, 0)}));
+  else if (finite(row.remaining_s)) facts.push(t("radio_task_remaining", {minutes: number(row.remaining_s / 60, 0)}));
+  if (row.kind === "sar" && !CLOSED_TASK_STATES.includes(row.state))
+    facts.push(t(row.sighted ? "radio_task_sighted" : "radio_task_not_sighted"));
+  if (row.state === "active" && row.kind !== "identify")
+    facts.push(t("radio_task_progress", {progress: number(row.progress * 100, 0)}));
+  if (row.verdict) facts.push(t(`radio_task_verdict_${row.verdict}`));
+  if (CLOSED_TASK_STATES.includes(row.state))
+    facts.push(t("radio_task_points", {points: `${row.points > 0 ? "+" : ""}${row.points}`}));
+  return facts.join(" · ");
+}
+
+function taskCard(row) {
+  const card = node("article", undefined, "radio-task");
+  card.setAttribute("role", "listitem");
+  card.dataset.state = row.state;
+  card.dataset.rowKey = String(row.id);
+  const head = node("div", undefined, "radio-task-head");
+  head.append(node("strong", `${row.kind.toUpperCase()} ${row.id} · ${t(`radio_task_kind_${row.kind}`)}`),
+    node("span", t(`radio_task_state_${row.state}`), "radio-task-state"));
+  card.append(head, node("p", t(`radio_task_brief_${row.kind}`, {name: row.name ?? "-", persons: row.persons}), "radio-task-brief"),
+    node("p", taskFacts(row), "radio-task-facts"));
+  if (row.state === "offered") {
+    const actions = node("div", undefined, "radio-task-actions");
+    actions.append(actionButton("radio_task_accept", "radio_task_accept", {task: row.id}, row.can_answer),
+      actionButton("radio_task_decline", "radio_task_decline", {task: row.id}, row.can_answer));
+    card.append(actions);
+  }
+  return card;
+}
+
+function renderTasks(payload) {
+  const list = $("radio-tasks");
+  const open = payload.tasks.filter((row) => !CLOSED_TASK_STATES.includes(row.state)).length;
+  $("radio-task-count").textContent = t("radio_task_count", {open});
+  list.replaceChildren(...payload.tasks.map(taskCard));
+  if (!payload.tasks.length) list.append(node("p", t("radio_task_none"), "empty radio-idle"));
 }
 
 function renderTeletype(payload) {

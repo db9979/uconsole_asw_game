@@ -15,6 +15,7 @@ import math
 
 from src.core import config, detrand
 from src.core.boat_esm import BoatESM
+from src.core.crew import CrewState
 from src.core.i18n import message
 from src.core.plot import PlotLayer
 from src.physics import torpedo_dyn
@@ -209,6 +210,9 @@ class CrewedBoat:
         self.sub_id = sub.id
         self.orders = CrewOrders()
         sub.crew = self.orders
+        # Watches, fatigue and morale of the boat's crew (saved; the game
+        # replaces it with one that knows the current sim time on claim).
+        self.watch = CrewState()
         platform = SubSonarPlatform(sub)
         sonar = SonarSystem(seed=(int(sub.sensor_seed) ^ _SONAR_SEED_SALT) & 0x7FFFFFFF,
                             acoustic_profiles=runtime_catalog.acoustic_profiles)
@@ -252,7 +256,8 @@ class CrewedBoat:
                     plot=self.plot.to_save(),
                     esm=self.esm.to_save(),
                     feed=[dict(row) for row in self.feed],
-                    feed_seq=int(self.feed_seq))
+                    feed_seq=int(self.feed_seq),
+                    watch=self.watch.serialize())
 
     def restore(self, data: dict) -> None:
         self.orders.restore(data["orders"])
@@ -262,6 +267,7 @@ class CrewedBoat:
         self.esm = BoatESM.from_save(data["esm"])
         self.feed = deque((dict(row) for row in data["feed"]), maxlen=OPFOR_FEED_MAX)
         self.feed_seq = data["feed_seq"]
+        self.watch = CrewState.restore(data["watch"])
 
     def sonar_targets(self, game) -> list:
         """Everything this boat's sonar can hear (never the boat itself)."""
@@ -598,12 +604,15 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     epoch = math.floor((now + 1e-9) / config.LOOKOUT_EPOCH_S)
     previous = {row["ref"]: row for row in orders.sightings}
     rows = []
+    # A tired watch on the periscope needs more contrast (1.0 when fresh).
+    alert = boat.watch.effectiveness(game.sim_t)
     for target_id, actor, cls, length_m, altitude_m in _scope_candidates(game, boat):
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
         kind = SIGHTING_KINDS[cls]
-        margin = _SCOPE_MODEL.margin(kind, distance, altitude_m=altitude_m,
-                                     eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, **environment)
+        margin = alert * _SCOPE_MODEL.margin(kind, distance, altitude_m=altitude_m,
+                                             eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
+                                             **environment)
         if margin < 1.0 or game.world.land_blocks_line(sub.x, sub.y, actor.x, actor.y):
             continue
         recognized = cls
@@ -612,7 +621,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
                 eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
                 detail=lookout_id.RECOGNIZE_CYCLES
                 / lookout_id.CLASS_SIZE[_RECOGNIZE_CLASS[cls]],
-                **environment) < 1.0:
+                **environment) * alert < 1.0:
             recognized = "unknown"
         true_bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
         error = (0.7 * detrand.normal(seed, "scope-bias", target_id)

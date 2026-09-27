@@ -78,7 +78,7 @@ from src.ui.stations.eloka import (  # noqa: F401
     eloka_track_at,
     draw_eloka_view)
 from src.ui.stations.radio import (  # noqa: F401
-    draw_radio_view)
+    draw_radio_view, task_detail_lines)
 from src.ui.stations.engine import (  # noqa: F401
     draw_engine_view)
 from src.ui.stations.helicopter import (  # noqa: F401
@@ -253,6 +253,19 @@ def station_hit_target(game, pos):
                 return layout.tooltip_payload("panel.hfdf", "tooltip.radio_none",
                                               "tooltip.log_select",
                                               target_id="radio:hfdf")
+        elif page == 2:
+            if pygame.Rect(x, cy, width, content_h).collidepoint(pos):
+                task = game.selected_task()
+                if task is None:
+                    return layout.tooltip_payload("panel.tasks", "radio.task.none",
+                                                  "radio.tooltip.task_keys",
+                                                  target_id="radio:tasks")
+                row = next(item for item in game.task_view() if item["id"] == task["id"])
+                return layout.tooltip_payload(
+                    message("radio.tooltip.task_title", task=f"{row['kind'].upper()} {row['id']}",
+                            kind=message("radio.task.kind." + row["kind"])),
+                    *task_detail_lines(game, row), "radio.tooltip.task_keys",
+                    target_id=f"radio:task:{row['id']}")
         elif pygame.Rect(x, cy, width, content_h).collidepoint(pos):
             latest = game.messages[-1] if game.messages else ("--:--", message("ui.no_traffic"))
             return layout.tooltip_payload("panel.messages",
@@ -316,7 +329,7 @@ def station_hit_target(game, pos):
                             max_total=str(len(game.damage.compartments) * 100)),
                     "tooltip.compartment_controls",
                     target_id="damage:schematic")
-        elif regions["detail"].collidepoint(pos):
+        elif page == 1 and regions["detail"].collidepoint(pos):
             selected = items[game.dmg_cursor][1]
             assignment = game.damage.teams[game.dmg_team]
             return layout.tooltip_payload(

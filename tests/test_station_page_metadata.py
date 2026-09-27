@@ -15,9 +15,7 @@ SONAR_PAGES = (
 
 TWO_PAGE_STATIONS = {
     Station.WEAPONS: ("WEAPONS_TARGET", "WEAPONS_AMMO"),
-    Station.DAMAGE: ("DAMAGE_PLAN", "DAMAGE_DETAIL"),
     Station.OPZ: ("OPZ_PICTURE", "OPZ_TARGET"),
-    Station.RADIO: ("RADIO_HFDF", "RADIO_MESSAGES"),
     Station.ENGINE: ("ENGINE_TELEGRAPH", "ENGINE_SYSTEMS"),
     Station.ELOKA: ("ELOKA_INTERCEPTS", "ELOKA_EVIDENCE"),
 }
@@ -28,6 +26,8 @@ def test_page_metadata_covers_every_canonical_station():
     assert STATION_PAGES[Station.SONAR] == SONAR_PAGES
     assert STATION_PAGES[Station.HELICOPTER] == ("HELO_STATUS", "HELO_MISSION", "HELO_SONAR", "HELO_ACOUSTIC")
     assert STATION_PAGES[Station.BRIDGE] == ("BRIDGE_NAV", "BRIDGE_MISSION", "BRIDGE_LOOKOUT")
+    assert STATION_PAGES[Station.RADIO] == ("RADIO_HFDF", "RADIO_MESSAGES", "RADIO_TASKS")
+    assert STATION_PAGES[Station.DAMAGE] == ("DAMAGE_PLAN", "DAMAGE_DETAIL", "DAMAGE_CREW")
     for station, pages in TWO_PAGE_STATIONS.items():
         assert STATION_PAGES[station] == pages
 
@@ -38,7 +38,7 @@ def test_page_metadata_covers_every_canonical_station():
         assert all(isinstance(page, str) and page for page in pages)
         assert len(pages) == (6 if station is Station.SONAR else
                               4 if station is Station.HELICOPTER else
-                              3 if station is Station.BRIDGE else 2)
+                              3 if station in (Station.BRIDGE, Station.RADIO, Station.DAMAGE) else 2)
 
 
 def test_helicopter_sonar_page_wraps():
@@ -69,6 +69,12 @@ def test_two_page_stations_wrap_within_two_pages(station):
     assert station_page_step(station, 5, 1) == 0
     assert station_page_step(station, 2, -1) == 1
     assert station_page_step(station, 0, -1) == 1
+
+
+@pytest.mark.parametrize("station", (Station.RADIO, Station.DAMAGE))
+def test_three_page_stations_wrap(station):
+    assert station_page_step(station, 1, 1) == 2
+    assert station_page_step(station, 2, 1) == 0
 
 
 def test_station_alias_uses_canonical_opz_metadata():

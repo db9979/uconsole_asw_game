@@ -370,6 +370,7 @@ def test_local_submarine_command_station_is_drawn_without_frigate_truth(mode, la
 
 
 def test_submarine_chart_and_pages_are_the_boats_own_controls():
+    from src.ui import uboot_view
     game = _game()
     game.local_side = "uboot"
     game._update(0.05)
@@ -402,7 +403,7 @@ def test_submarine_chart_and_pages_are_the_boats_own_controls():
     from src.ui import stations_view
     with layout.bottom_panel_regions(game.bottom_panel_mode()):
         tab = stations_view._station_page_tab_rects(
-            pygame.Rect(config.STATION_PANEL_RECT), 2)[1]
+            pygame.Rect(config.STATION_PANEL_RECT), len(uboot_view.UBOOT_PAGES))[1]
     game.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=tab.center))
     assert boat.command_page == 1
     center = boat.chart_view.cx

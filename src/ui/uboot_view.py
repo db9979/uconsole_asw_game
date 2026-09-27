@@ -24,13 +24,28 @@ from src.ui.map_view import draw_chart_frame, draw_chart_geography
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
+from src.ui.uboot_scope import draw_scope_page
 from src.ui.viewport import Viewport
 
-UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS")
+UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE")
 # Panel pages of each boat station beside the chart (the sonar room is full screen).
 STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
-                 "uboot_engine": ("UBOOT_ENGINE",), "uboot_esm": ("UBOOT_ESM",),
+                 "uboot_engine": ("UBOOT_ENGINE",),
+                 "uboot_esm": ("UBOOT_ESM", "UBOOT_SCOPE"),
                  "uboot_nav": ("UBOOT_NAV",)}
+
+
+def station_pages(station: str) -> tuple:
+    """Panel pages of a boat station (the sonar room has none here)."""
+    return STATION_PAGES.get(station, UBOOT_PAGES)
+
+
+def page_name(game, boat) -> str | None:
+    """The panel page shown at the boat station the uConsole operates."""
+    if boat is None or game.station is Station.SONAR:
+        return None
+    pages = station_pages(uboot_local.local_station(game))
+    return pages[boat.command_page % len(pages)]
 # Station tabs in the top bar: (x, width) of each, in station key order.
 STATION_TAB_W = 104
 CONTACT_ROWS = 10
@@ -77,11 +92,12 @@ def chart_pointer(game, pos):
 
 
 def page_tab_at(game, pos):
-    if game.station is Station.SONAR or uboot_local.local_station(game) != "uboot":
+    pages = station_pages(uboot_local.local_station(game))
+    if game.station is Station.SONAR or len(pages) < 2:
         return None
     canvas = game._window_to_canvas(pos)
     return station_page_tab_at(canvas, pygame.Rect(config.STATION_PANEL_RECT),
-                               len(UBOOT_PAGES))
+                               len(pages))
 
 
 def station_tab_rects() -> list:
@@ -194,7 +210,7 @@ def _contact_bearing(contact):
 
 def _contact_position(boat, contact, now):
     fresh = (contact.observed_x is not None and contact.observed_y is not None
-             and contact.range_source in ("ping", "tma")
+             and contact.range_source in ("ping", "tma", "visual")
              and 0 <= now - contact.range_seen < config.SONAR_CONTACT_LOST_S)
     return (contact.observed_x, contact.observed_y) if fresh else None
 
@@ -587,6 +603,12 @@ _FOOTERS = {
     ("uboot", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"), ("G", "uboot.footer.silent"),
                                  ("Shift+G", "uboot.footer.bottom"),
                                  ("Q/E", "uboot.footer.chart")),
+    ("uboot", "UBOOT_SCOPE"): (("←/→", "uboot.footer.scope_turn"),
+                               ("help.key.enter", "uboot.footer.stadimeter"),
+                               ("↑/↓", "uboot.footer.contact"), ("Q/E", "uboot.footer.chart")),
+    ("uboot_esm", "UBOOT_SCOPE"): (("←/→", "uboot.footer.scope_turn"),
+                                   ("help.key.enter", "uboot.footer.stadimeter"),
+                                   ("P", "uboot.footer.mast")),
     ("uboot_nav", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
                                  ("U/J/H", "uboot.footer.presets"),
                                  ("Shift+G", "uboot.footer.bottom")),
@@ -605,7 +627,7 @@ _FOOTERS = {
 def draw_command_panel(game, boat) -> None:
     s = game.screen
     station = uboot_local.local_station(game)
-    pages = STATION_PAGES.get(station, UBOOT_PAGES)
+    pages = station_pages(station)
     page = boat.command_page % len(pages) if boat is not None else 0
     r, _y = _panel(game, title=f"uboot.panel.station.{station}")
     station_rect = pygame.Rect(config.STATION_RECT)
@@ -627,7 +649,8 @@ def draw_command_panel(game, boat) -> None:
         content_h -= 54
     name = pages[page]
     drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_WEAPONS": _draw_weapons_page,
-              "UBOOT_ENGINE": _draw_engine_page, "UBOOT_ESM": _draw_esm_page}[name]
+              "UBOOT_ENGINE": _draw_engine_page, "UBOOT_ESM": _draw_esm_page,
+              "UBOOT_SCOPE": draw_scope_page}[name]
     drawer(s, game, boat, x, content_y, w, content_h)
     specs = tuple(
         (key, "uboot.footer.mast_down" if text == "uboot.footer.mast" and boat.orders.mast

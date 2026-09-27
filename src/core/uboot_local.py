@@ -21,7 +21,7 @@ import pygame
 
 from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
 from src.core import config, opfor
-from src.core.i18n import message
+from src.core.i18n import display_value, message
 from src.core.station import Station
 
 LOCAL_SIDES = ("frigate", "uboot")
@@ -126,7 +126,7 @@ def fire_at_contact(game, current, contact):
                else contact.bearing)
     range_nm = course = speed = None
     if (contact.observed_x is not None and contact.observed_y is not None
-            and contact.range_source in ("ping", "tma")
+            and contact.range_source in ("ping", "tma", "visual")
             and 0 <= game.sim_t - contact.range_seen < config.SONAR_CONTACT_LOST_S):
         dx, dy = contact.observed_x - sub.x, contact.observed_y - sub.y
         bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
@@ -349,8 +349,11 @@ def handle_key(game, event) -> None:
                 _dispatch_sonar(game, current, pygame.event.Event(
                     pygame.KEYDOWN, key=pygame.K_2, mod=0))
                 return
-            if destination == shown == "uboot" and current:
-                current.command_page = (current.command_page + 1) % 2
+            from src.ui import uboot_view
+            pages = uboot_view.station_pages(shown)
+            if destination == shown and current and len(pages) > 1:
+                # A station's own key again pages its panel.
+                current.command_page = (current.command_page + 1) % len(pages)
                 return
             set_local_station(game, destination)
             return
@@ -434,6 +437,16 @@ _KEY_ACTIONS = {
 }
 
 
+def _stadimeter_notice(game, current, result) -> None:
+    if result is not True:
+        game.flash(message(f"uboot.local.{result}"), 2.0)
+        return
+    row = opfor.sighting_in_crosshair(current, game.sim_t)
+    _announce(game, "sonar", message(
+        "uboot.local.stadimeter", cls=display_value("sighting_class", row["cls"]),
+        bearing=f"{row['bearing']:03.0f}", range=f"{row['range_nm']:.1f}"), 2.5)
+
+
 def _key_action(key, mods):
     if key == pygame.K_g:
         return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_silent"
@@ -449,9 +462,21 @@ def _command_key(game, current, key, mods) -> None:
     action = _key_action(key, mods)
     if action is not None and not order_allowed(game, action):
         return
+    from src.ui import uboot_view
+    page = uboot_view.page_name(game, current)
     if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+        pages = uboot_view.station_pages(local_station(game))
         current.command_page = (current.command_page
-                                + (-1 if key == pygame.K_PAGEUP else 1)) % 2
+                                + (-1 if key == pygame.K_PAGEUP else 1)) % len(pages)
+    elif page == "UBOOT_SCOPE" and key in (pygame.K_LEFT, pygame.K_RIGHT):
+        if order_allowed(game, "uboot_scope_bearing"):
+            step = (config.UBOOT_SCOPE_STEP_FAST_DEG if mods & pygame.KMOD_SHIFT
+                    else config.UBOOT_SCOPE_STEP_DEG)
+            opfor.turn_scope(current, -step if key == pygame.K_LEFT else step)
+    elif page == "UBOOT_SCOPE" and key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+            and not mods & pygame.KMOD_CTRL:
+        if order_allowed(game, "uboot_scope_mark"):
+            _stadimeter_notice(game, current, opfor.stadimeter(game, current))
     elif key in (pygame.K_q, pygame.K_e):
         _chart_zoom(game, current, (1.0 / config.MAP_ZOOM_WHEEL_FACTOR
                                     if key == pygame.K_q else config.MAP_ZOOM_WHEEL_FACTOR))

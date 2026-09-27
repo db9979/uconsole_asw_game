@@ -47,8 +47,11 @@ Vorgehen für jeden Lauf:
 
 | Prüfpunkt | Vorgehen | Erwartung | Ergebnis |
 |---|---|---|---|
-| Sehrohrseite | uConsole spielt das Boot, Mast oben, Seite 3 | Horizont, Peilring und Silhouetten lesbar, 30 FPS gehalten | |
-| Nachtsicht | Startzeit 02:00 | Bild dunkler, Silhouetten nur nahe | |
+| Sehrohrseite | uConsole spielt das Boot, Mast oben (Station 5, `P`), Führung Seite 3 oder Mast & ESM Seite 2 | Horizont, Peilskala und Silhouetten lesbar, 30 FPS gehalten; `←/→` schwenken fließend | |
+| Nachtsicht | Startzeit 02:00 | Bild dunkler, Silhouetten nur nahe; Fregatte bei 2 sm noch zu sehen | |
+| Stadimeter | Fregatte im Fadenkreuz, `Enter` | Bootslog meldet Entfernung; Sichtungsliste zeigt Entfernung mit ±; Waffenseite schießt auf den Kontakt mit VISUAL-Fix | |
+| Dieselgeräusch | Boot schnorchelt, Fregatte hört auf LOFAR | Linien bei 50/100 Hz sichtbar, Breitband lauter | |
+| Browser Sehrohr | Rolle Mast & ESM im Browser, Mast oben | Canvas zeichnet, Schwenkknöpfe und Formular wirken, Sichtungsliste und Stadimeter wie am uConsole | |
 
 ## Phase 10: Grafik
 

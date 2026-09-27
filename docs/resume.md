@@ -1307,6 +1307,67 @@ Notizen Phase 7:
   und Web-Schema; das Risiko fuer das Sonar-Golden war in dieser Nacht zu
   hoch. Bleibt unter "Not modelled" und ist Kandidat fuer 1.4.
 
+| 9 Boot-Seite | fertig | siehe `git log` | fokussiert 357 + 14 gruen, Chromium-Test der Sehrohransicht gruen, Kalibrierung siehe Notiz | Funkverkehr des Bootes bleibt "Not modelled" (A9.6) |
+
+Notizen Phase 9:
+
+- A9.1 Dieselgeraeusch abweichend vom Plan nicht in `acoustics.json` (die
+  Datei ist ueber ihren Hash im Katalogtest verriegelt und bleibt 1.0.0),
+  sondern als `config.UBOOT_SNORKEL_NOISE_DB` (+12 dB in
+  `Sub.source_level_offset_db`), `UBOOT_SNORKEL_QUIET_LOSS` (0,25 im
+  `quiet_factor` und im Breitbandpegel) und `UBOOT_SNORKEL_LINES` (50/100 Hz
+  in `lofar_lines`) fuer jedes schnorchelnde Boot, auch KI-Boote.
+- A9.2 Seite `UBOOT_SCOPE` als dritte Fuehrungsseite und zweite Seite von
+  Mast & ESM (`src/ui/uboot_scope.py`; `uboot_view.station_pages`/`page_name`;
+  Seitenwechsel jetzt `% len(pages)`, die eigene Stationstaste blaettert an
+  jeder Station mit mehreren Seiten). `←/→` 2 Grad, `Umschalt` 10 Grad,
+  Sichtlinie relativ zum Bug (`CrewOrders.scope_rel_deg`). Horizontbewegung
+  aus `ship_dynamics.wave_slope_rad` (`opfor.horizon_motion`), Tag/Nacht aus
+  `world.is_night`, Dunst aus der Sicht.
+- A9.3 Sichtungen liegen nicht als `SensorTrack` im Sensorbild des Bootes
+  (dessen Validator kennt nur radar/esm/sonar/ais), sondern wie das ESM-Bild
+  im Crew-Block: `CrewOrders.sightings` (Felder `CREW_SIGHTING_FIELDS`),
+  0,25-s-Takt in `opfor.update_sightings` mit dem Kontrastmodell des
+  Ausgucks bei 2,5 m Augenhoehe (`LookoutModel.margin(eye_m=...)`),
+  Johnson-Erkennung fuer die Klasse (warship/merchant/unknown, dazu
+  aircraft/torpedo), Peilfehler Bias+Jitter ueber `detrand`, scheinbare
+  Laenge aus Rumpflaenge x Aspekt. Kandidaten: Fregatte, Kriegsschiffe,
+  Zivilverkehr, fliegender Helikopter (`SCOPE_AIR_TARGET_ID`), laufende
+  Fregattentorpedos. Log-Ereignisse `sighting_<klasse>`.
+- A9.4 Stadimeter (`opfor.stadimeter`, `Enter` auf der Sehrohrseite):
+  Entfernung = angenommene Klassenlaenge (130 m Kriegsschiff/unbekannt,
+  150 m Handelsschiff) / scheinbare Laenge, +/-25 %, 120 s; wird ueber
+  `Contact.update_visual` zum Fix `VISUAL` (`FIX_SOURCES` in `sonar.py`,
+  Validator, Kartenfarbe) mit `range_source="visual"`, das die Schussprüfung
+  des Bootes wie einen Ping-Fix nutzt. Bugwaerts stehende oder nicht erkannte
+  Ziele messen sich zu weit (gewollt, dokumentiert).
+- A9.5 Web: Projektion `scope` in jeder Boot-Kommandorolle (exakte Schluessel
+  in `schema.js`), Karte "Sehrohr" mit Canvas (`drawBoatScope`), Schwenk-
+  knoepfen, Formular und Sichtungsliste; Befehle heissen `uboot_scope_bearing`
+  (`relative_deg`) und `uboot_scope_mark` (Praefix wie alle Bootsbefehle,
+  Rollen uboot/uboot_esm). Neue Gruende `uboot_mast_down`,
+  `uboot_no_sighting`, `uboot_no_stadimeter`. Der JS-Helfer heisst
+  `drawOutline`, weil `test_commander_assets` das Wort "silhouette" im
+  Client-JS verbietet (Analyzer-Vertrag).
+- Save v15: `crew.orders` um `scope_rel_deg`, `sightings`, `sightings_seen`
+  erweitert (exakte Felder, Ziel-IDs aus dem Dokument, Referenzen eindeutig).
+- Handbuch 10-reference EN/DE: Sehrohr, Stadimeter, Dieselgeraeusch; die
+  beiden "Not modelled"-Punkte ersetzt. `help.py` Boot-Tabelle um `←/→` und
+  `Enter`.
+- Tests: `tests/test_uboot_scope.py` (14) und `tests/test_uboot_scope_web.py`
+  (Chromium). `tests/test_opfor_sub.py` erwartet drei Fuehrungsseiten.
+- Lehren aus dem Chromium-Test (fuer weitere Browser-Tests): (1) der generische
+  Zustandsinspektor in `schema.js` verbietet Schluessel wie `kind`,
+  `target_id`, `track_id`, `seed`; die Sichtungszeile heisst deshalb
+  `category`. (2) Station-Praesenz lebt vom Session-Poll des Clients; mit
+  `--virtual-time-budget=60000` friert Chromium nach kurzer Zeit alle Timer
+  ein, das Lease faellt nach 15 s an die KI zurueck: Budget 300000 wie im
+  Rollen-Test. (3) Jeder Host-Befehl (`set_orders`) erhoeht die Weltepoche;
+  Befehle aus dem Browser gehen nur bei aktuellem Kontext raus, ein Probe
+  muss wie ein Bediener erneut druecken, bis der Zustand es bestaetigt.
+  (4) Der Client sendet Bootsbefehle nur mit `set_client_grant(client,
+  station, "command", True)`.
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

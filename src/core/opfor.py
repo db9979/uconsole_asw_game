@@ -13,15 +13,34 @@ frigate, its torpedoes and every other radiating target through the ordinary
 from collections import deque
 import math
 
-from src.core import config
+from src.core import config, detrand
 from src.core.i18n import message
 from src.core.plot import PlotLayer
-from src.physics import torpedo_dyn
-from src.sonar.platforms import (OwnShipAcousticSource, OwnTorpedoAcousticSource,
+from src.physics import ship_dynamics, torpedo_dyn
+from src.sensors import lookout_id
+from src.sensors import visual as visual_physics
+from src.sensors.platform import MAST_DEPTH_M
+from src.sonar.platforms import (OWNSHIP_SIGNATURE_KEY, OWNSHIP_TARGET_ID,
+                                 OWN_TORPEDO_TARGET_BASE, SCOPE_AIR_TARGET_ID,
+                                 OwnShipAcousticSource, OwnTorpedoAcousticSource,
                                  SubSonarPlatform)
-from src.sonar.sonar import SonarSystem
+from src.sonar.sonar import SonarSystem, hull_length_m
 from src.sonar.station import SonarStation
 
+# Periscope sightings: coarse classes the eye makes out, their lookout kind
+# (``src/sensors/visual.py``) and the Johnson class of the recognition step.
+SIGHTING_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
+SIGHTING_KINDS = {"warship": "SURFACE", "merchant": "SURFACE", "unknown": "SURFACE",
+                  "aircraft": "FLG", "torpedo": "TORP"}
+_RECOGNIZE_CLASS = {"warship": "WARSHIP", "merchant": "MERCHANT"}
+_SIGHTING_LENGTH_M = {"aircraft": 15.0, "torpedo": 40.0}
+_SCOPE_AIR_ALTITUDE_M = 60.0
+# The periscope shares the frigate lookout's contrast model (anchored ranges).
+_SCOPE_MODEL = visual_physics.LookoutModel(
+    {"SURFACE": config.LOOKOUT_SURFACE_RANGE_NM, "SUB": config.LOOKOUT_SUB_RANGE_NM,
+     "FLG": config.LOOKOUT_AIR_RANGE_NM, "TORP": config.TORPEDO_WAKE_VISIBLE_NM,
+     "LAND": config.LOOKOUT_LAND_RANGE_NM},
+    config.WEATHER_VISIBILITY_MAX_NM)
 # Bounded crew event feed (newest last) and the SonarSystem seed salt.
 OPFOR_FEED_MAX = 64
 _SONAR_SEED_SALT = 0x0B0A7
@@ -43,7 +62,10 @@ class CrewOrders:
               "shallow_water": "navigation", "wire_broken": "waffen",
               "ping_heard": "sonar", "torpedo_heard": "sonar",
               "mast_lowered": "navigation", "esm_intercept": "sonar",
-              "obstacle_ahead": "navigation"}
+              "obstacle_ahead": "navigation",
+              "sighting_warship": "sonar", "sighting_merchant": "sonar",
+              "sighting_aircraft": "sonar", "sighting_torpedo": "sonar",
+              "sighting_unknown": "sonar"}
 
     def __init__(self):
         self.silent = False
@@ -55,6 +77,10 @@ class CrewOrders:
         self.torpedo_bearing = None
         self.esm = []
         self._esm_seen = set()
+        # Periscope: line of sight relative to the bow, and what it sees.
+        self.scope_rel_deg = 0.0
+        self.sightings = []
+        self._sightings_seen = set()
         # Wire-guided crew torpedoes: EnemyTorpedo id -> CrewWire.
         self.wires = {}
         self._known_torpedoes = set()
@@ -95,6 +121,9 @@ class CrewOrders:
             torpedo_bearing=self.torpedo_bearing,
             esm=[[bearing, quality, age] for bearing, quality, age in self.esm],
             esm_seen=sorted(self._esm_seen, key=str),
+            scope_rel_deg=self.scope_rel_deg,
+            sightings=[dict(row) for row in self.sightings],
+            sightings_seen=sorted(self._sightings_seen),
             wires={str(torpedo_id): wire.to_save()
                    for torpedo_id, wire in sorted(self.wires.items())},
             known_torpedoes=sorted(self._known_torpedoes),
@@ -116,6 +145,9 @@ class CrewOrders:
         self.torpedo_bearing = data["torpedo_bearing"]
         self.esm = [tuple(row) for row in data["esm"]]
         self._esm_seen = set(data["esm_seen"])
+        self.scope_rel_deg = data["scope_rel_deg"]
+        self.sightings = [dict(row) for row in data["sightings"]]
+        self._sightings_seen = set(data["sightings_seen"])
         self.wires = {int(torpedo_id): CrewWire.from_save(int(torpedo_id), wire)
                       for torpedo_id, wire in data["wires"].items()}
         self._known_torpedoes = set(data["known_torpedoes"])
@@ -461,9 +493,196 @@ def update_crew(game, boat: CrewedBoat) -> None:
     else:
         orders._esm_seen.clear()
     orders.esm = sorted(esm)[:16]
+    update_sightings(game, boat)
     for key, values in orders.drain_events():
         boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(f"uboot.event.{key}", **values),
                     stamp=game.world.format_time())
+
+
+# --- periscope -------------------------------------------------------------------
+
+def scope_available(boat) -> bool:
+    """The optics are above the water: mast raised at periscope depth."""
+    sub, orders = boat.sub, boat.orders
+    return bool(orders.mast and not sub.sunk and sub.depth <= MAST_DEPTH_M + 1.0)
+
+
+def scope_bearing(boat) -> float:
+    """True bearing of the periscope's line of sight."""
+    return (boat.sub.course + boat.orders.scope_rel_deg) % 360.0
+
+
+def turn_scope(boat, delta_deg: float) -> float:
+    """Train the periscope by ``delta_deg`` (relative to the bow); returns the
+    new relative bearing."""
+    boat.orders.scope_rel_deg = (boat.orders.scope_rel_deg + delta_deg) % 360.0
+    return boat.orders.scope_rel_deg
+
+
+def set_scope_relative(boat, relative_deg: float) -> float:
+    boat.orders.scope_rel_deg = relative_deg % 360.0
+    return boat.orders.scope_rel_deg
+
+
+# Horizon motion in the eyepiece: px per rad of wave slope, bounded.
+SCOPE_MOTION_PX_PER_RAD = 260.0
+
+
+def horizon_motion(game, boat) -> tuple:
+    """(vertical offset px, tilt rad) of the horizon seen through the scope,
+    from the wave slope at the boat's own seed and the sea state its optics
+    see (display only, deterministic in sim time)."""
+    sea_state = getattr(game.world, "effective_sea_state", game.world.sea_state)
+    slope = ship_dynamics.wave_slope_rad(int(boat.sub.id), game.sim_t, sea_state)
+    offset = config.clamp(slope * SCOPE_MOTION_PX_PER_RAD, -40.0, 40.0)
+    tilt = config.clamp(slope * 0.6, -0.25, 0.25)
+    return offset, tilt
+
+
+def _frigate_length_m(game) -> float:
+    catalog = game.runtime_catalog
+    systems = catalog.profile_systems.get(OWNSHIP_SIGNATURE_KEY)
+    reference = (catalog.references.get(systems.reference_key)
+                 if systems is not None and systems.reference_key else None)
+    if reference is not None and reference.length_m:
+        return float(reference.length_m)
+    return config.UBOOT_STADIMETER_LENGTHS_M["warship"]
+
+
+def _scope_candidates(game, boat) -> list:
+    """``(target_id, actor, class, length_m, altitude_m)`` of everything the
+    periscope could make out (sensor generation: internal truth, never
+    published)."""
+    rows = []
+    if not game.damage.ship_sunk:
+        rows.append((OWNSHIP_TARGET_ID, game.ship, "warship", _frigate_length_m(game), None))
+    for other in game.warships:
+        if not other.sunk:
+            rows.append((int(other.id), other, "warship", hull_length_m(other), None))
+    for other in game.civilians:
+        if not other.sunk:
+            rows.append((int(other.id), other, "merchant", hull_length_m(other), None))
+    helo = game.helo
+    if helo is not None and helo.airborne:
+        rows.append((SCOPE_AIR_TARGET_ID, helo, "aircraft",
+                     _SIGHTING_LENGTH_M["aircraft"], _SCOPE_AIR_ALTITUDE_M))
+    for torpedo in game.torpedoes:
+        if torpedo.state == "RUN":
+            rows.append((OWN_TORPEDO_TARGET_BASE + int(torpedo.idx), torpedo, "torpedo",
+                         _SIGHTING_LENGTH_M["torpedo"], None))
+    return rows
+
+
+def update_sightings(game, boat: CrewedBoat) -> None:
+    """What the raised periscope sees (0.25 s cadence): bearing-only
+    sightings with a coarse class and the apparent length of the target.
+
+    Detection follows the frigate lookout's contrast model with the
+    periscope's eye height; the bearing carries a per-target bias plus a
+    small jitter, the class needs the finer Johnson resolution.  A sighting
+    is held ``UBOOT_SIGHTING_LOST_S`` after the optics last had it.
+    """
+    sub, orders = boat.sub, boat.orders
+    if not scope_available(boat):
+        orders.sightings = []
+        orders._sightings_seen.clear()
+        return
+    now = game.sim_t
+    seed = int(sub.sensor_seed)
+    environment = game._lookout_environment()
+    epoch = math.floor((now + 1e-9) / config.LOOKOUT_EPOCH_S)
+    previous = {row["ref"]: row for row in orders.sightings}
+    rows = []
+    for target_id, actor, cls, length_m, altitude_m in _scope_candidates(game, boat):
+        dx, dy = actor.x - sub.x, actor.y - sub.y
+        distance = math.hypot(dx, dy)
+        kind = SIGHTING_KINDS[cls]
+        margin = _SCOPE_MODEL.margin(kind, distance, altitude_m=altitude_m,
+                                     eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M, **environment)
+        if margin < 1.0 or game.world.land_blocks_line(sub.x, sub.y, actor.x, actor.y):
+            continue
+        recognized = cls
+        if cls in _RECOGNIZE_CLASS and _SCOPE_MODEL.margin(
+                kind, distance, altitude_m=altitude_m,
+                eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
+                detail=lookout_id.RECOGNIZE_CYCLES
+                / lookout_id.CLASS_SIZE[_RECOGNIZE_CLASS[cls]],
+                **environment) < 1.0:
+            recognized = "unknown"
+        true_bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+        error = (0.7 * detrand.normal(seed, "scope-bias", target_id)
+                 + 0.3 * detrand.normal(seed, "scope-jitter", target_id, epoch))
+        bearing = (true_bearing + error * config.UBOOT_SCOPE_BEARING_ERR_DEG) % 360.0
+        course = getattr(actor, "course", None)
+        aspect = (1.0 if course is None
+                  else max(0.2, abs(math.sin(math.radians(course - true_bearing)))))
+        span = math.degrees(length_m * aspect / max(distance * 1852.0, length_m))
+        span *= 1.0 + 0.05 * detrand.normal(seed, "scope-span", target_id, epoch)
+        quality = config.clamp(.5 + .45 * (1.0 - 1.0 / margin), .5, .95)
+        ref = "V-%08X" % (detrand.bits(seed, "scope-ref", target_id) & 0xFFFFFFFF)
+        old = previous.get(ref)
+        if old is not None and recognized == "unknown" and old["cls"] != "unknown":
+            recognized = old["cls"]      # a class once made out is held
+        rows.append(dict(
+            ref=ref, target_id=int(target_id), kind=kind, cls=recognized,
+            bearing=bearing, span_deg=max(1e-3, min(180.0, span)), aspect=aspect,
+            quality=quality, first_t=old["first_t"] if old is not None else now, t=now,
+            range_nm=old["range_nm"] if old is not None else None,
+            range_sigma_nm=old["range_sigma_nm"] if old is not None else None,
+            range_t=old["range_t"] if old is not None else None))
+    fresh = {row["ref"] for row in rows}
+    for ref, old in previous.items():
+        if ref not in fresh and 0.0 <= now - old["t"] < config.UBOOT_SIGHTING_LOST_S:
+            rows.append(dict(old))
+    for row in rows:
+        if row["range_t"] is not None and not (
+                0.0 <= now - row["range_t"] <= config.SONAR_PING_FIX_MAX_AGE_S):
+            row["range_nm"] = row["range_sigma_nm"] = row["range_t"] = None
+    rows.sort(key=lambda row: (row["bearing"], row["ref"]))
+    orders.sightings = rows[:config.UBOOT_SIGHTINGS_MAX]
+    for row in orders.sightings:
+        if row["ref"] not in orders._sightings_seen and row["t"] == now:
+            orders._sightings_seen.add(row["ref"])
+            orders.event("sighting_" + row["cls"], bearing=f"{row['bearing']:03.0f}")
+
+
+def sighting_in_crosshair(boat, now: float):
+    """The fresh sighting nearest the crosshair within the stadimeter window."""
+    bearing = scope_bearing(boat)
+    best = None
+    for row in boat.orders.sightings:
+        if not 0.0 <= now - row["t"] <= 1.0:
+            continue
+        off = abs((row["bearing"] - bearing + 180.0) % 360.0 - 180.0)
+        if off <= config.UBOOT_STADIMETER_WINDOW_DEG and (best is None or off < best[0]):
+            best = (off, row)
+    return None if best is None else best[1]
+
+
+def stadimeter(game, boat: CrewedBoat):
+    """Range the sighting under the crosshair from its apparent length and
+    the assumed length of its class (a generic frigate when unrecognized).
+
+    The reading becomes a VISUAL fix (±25 %) on the boat's sonar contact of
+    the same target, usable for a shot like a ping fix, for 120 s.
+    """
+    if not scope_available(boat):
+        return "uboot_mast_down"
+    row = sighting_in_crosshair(boat, game.sim_t)
+    if row is None:
+        return "uboot_no_sighting"
+    length = config.UBOOT_STADIMETER_LENGTHS_M.get(row["cls"])
+    if length is None:
+        return "uboot_no_stadimeter"
+    range_nm = length / math.radians(max(row["span_deg"], 1e-3)) / 1852.0
+    range_nm = max(0.05, min(40.0, range_nm))
+    sigma = range_nm * config.UBOOT_STADIMETER_ERR_FRAC
+    row["range_nm"], row["range_sigma_nm"], row["range_t"] = range_nm, sigma, game.sim_t
+    contact = boat.station.sonar.contacts.get(row["target_id"])
+    if contact is not None:
+        contact.update_visual(row["bearing"], range_nm, game.sim_t, sigma, row["quality"],
+                              boat.sub.x, boat.sub.y)
+    return True
 
 
 def advance_mechanics(game, boat: CrewedBoat, dt: float) -> None:

@@ -2,7 +2,7 @@ import { S } from "../state/store.js";
 import { $ } from "../core/base.js";
 import { number, t, unit } from "../core/format.js";
 import { fillFireTargets, metrics, node, sonarEntries, stationRows, yesNo } from "../views/dom.js";
-import { drawBoatDepth, drawBoatEsm } from "./uboot-graphics.js";
+import { drawBoatDepth, drawBoatEsm, drawBoatScope } from "./uboot-graphics.js";
 
 // Alarm age with the boat's own measured bearing (never the source's truth).
 const alarmText = (age, bearing) => age === null ? t("station_none")
@@ -61,11 +61,12 @@ function renderReadouts(nav, status) {
 }
 
 // Mode and alarm chips: lit when active, coloured by urgency.
-function renderChips(nav, status, alarms) {
+function renderChips(nav, status, alarms, scope) {
   const modes = [
     ["uboot_chip_silent", status.silent, status.quiet ? "on" : "caution"],
     ["uboot_chip_snorkel", status.snorkeling, "caution"],
     ["uboot_chip_mast", status.mast, "caution"],
+    ["uboot_chip_scope", scope.available, "caution"],
     ["uboot_chip_bottom", status.bottomed, "on"],
     ["uboot_chip_cavitating", nav.cavitating, "alarm"],
     ["uboot_chip_transmitting", status.transmitting, "caution"],
@@ -108,11 +109,35 @@ function renderPresets(nav) {
   }
 }
 
+// The periscope: line of sight and light, its controls, and the crew's sightings.
+function renderScope(payload) {
+  const scope = payload.scope;
+  const heading = (value) => `${number(value, 0).padStart(3, "0")}\u00b0`;
+  const digits = (value) => number(value, 0).padStart(3, "0");
+  $("uboot-scope-status").textContent = scope.available
+    ? `${t("uboot_scope_bearing", {bearing: digits(scope.bearing), relative: digits(scope.relative_deg)})} \u00b7 ${t("uboot_scope_conditions", {
+      light: t(scope.night ? "uboot_scope_night" : "uboot_scope_day"), visibility: number(scope.visibility_nm, 0), sea: number(scope.sea_state, 0)})}`
+    : t("uboot_scope_mast_down");
+  for (const button of document.querySelectorAll("[data-uboot-scope-turn]")) button.dataset.ready = String(scope.available);
+  const inWindow = scope.available && scope.sightings.some((row) => row.age_s !== null && row.age_s <= 1 &&
+    Math.abs(((row.bearing - scope.bearing + 540) % 360) - 180) <= scope.window_deg && row.cls !== "aircraft" && row.cls !== "torpedo");
+  $("uboot-scope-mark").dataset.ready = String(inWindow);
+  if (!S.stationDrafts.has("uboot-scope-relative")) $("uboot-scope-relative").value = String(Math.round(scope.relative_deg));
+  const rows = [...scope.sightings].sort((a, b) => Math.abs(((a.bearing - scope.bearing + 540) % 360) - 180) - Math.abs(((b.bearing - scope.bearing + 540) % 360) - 180));
+  stationRows($("uboot-sightings"), rows, (row) => [["reference", heading(row.bearing)],
+    ["uboot_sighting_class", t(`uboot_sighting_${row.cls}`)], ["uboot_sighting_span", unit(row.span_deg * 60, "\u2032", 0)],
+    ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
+    ["uboot_sighting_range", row.range_nm === null ? t("station_none")
+      : `${unit(row.range_nm, "NM")} \u00b1${unit(row.range_sigma_nm, "NM")} (${unit(row.range_age_s, "s", 0)})`]],
+  scope.available ? "uboot_no_sighting" : "uboot_scope_mast_down");
+  drawBoatScope("uboot-scope-canvas", payload);
+}
+
 export function renderUbootStation(payload) {
   showStationCards(S.v2State?.role || "uboot");
   const nav = payload.navigation, status = payload.status, weapons = payload.weapons, alarms = payload.alarms;
   renderReadouts(nav, status);
-  renderChips(nav, status, alarms);
+  renderChips(nav, status, alarms, payload.scope);
   renderModePairs(nav, status);
   renderPresets(nav);
   metrics($("uboot-navigation"), [
@@ -170,4 +195,5 @@ export function renderUbootStation(payload) {
   renderLog(payload.feed);
   drawBoatDepth("uboot-depth-canvas", payload);
   drawBoatEsm("uboot-esm-canvas", payload);
+  renderScope(payload);
 }

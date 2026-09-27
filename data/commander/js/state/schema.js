@@ -117,11 +117,11 @@ export function validateV2State(state) {
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"], eloka: ["intercepts", "station_down", "status", "hardware"],
-    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
-    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
-    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
-    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
-    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed"],
+    uboot: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_weapons: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_engine: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_esm: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
+    uboot_nav: ["navigation", "status", "weapons", "alarms", "contacts", "own_weapons", "designated_target_ref", "feed", "scope"],
     uboot_sonar: ["observations", "settings", "visualization"],
   };
   if (!exactKeys(payload, shapes[state.role])) throw new Error("protocol");
@@ -229,6 +229,18 @@ export function validateV2State(state) {
       !exactKeys(row, ["ref", "x", "y", "depth_m", "course", "state", "wire", "datum_bearing", "datum_range_nm"]) ||
       ![null, "ACTIVE", "BROKEN", "CUT"].includes(row.wire) ||
       [row.datum_bearing, row.datum_range_nm].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
+    // The periscope: line of sight, light and the crew's own sightings (no target truth).
+    const scope = payload.scope;
+    const scopeNumbers = ["relative_deg", "bearing", "fov_deg", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"];
+    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sightings"]) ||
+        typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
+        scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
+        !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>
+          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s"]) ||
+          typeof row.ref !== "string" || row.ref.length > 16 || !["SURFACE", "FLG", "TORP"].includes(row.category) ||
+          !["warship", "merchant", "aircraft", "torpedo", "unknown"].includes(row.cls) ||
+          [row.bearing, row.span_deg, row.quality].some((value) => !finite(value)) || (row.age_s !== null && !finite(row.age_s)) ||
+          [row.range_nm, row.range_sigma_nm, row.range_age_s].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
   } else if (state.role === "weapons") {
     if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
         !boundedArray(payload.settings.choices, 8) ||

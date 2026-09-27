@@ -16,6 +16,7 @@
 - `src/world/`: coastline/bathymetry, real-sector loading, projection, terrain queries, weather/time.
 - `src/sonar/` and `src/sensors/`: measurements, receiver/TMA, and persistent observation tracks.
 - `src/ship/`, `src/enemies/`, `src/air/`, `src/weapons/`: simulation entities and mechanics.
+- Crewed submarine: `src/core/opfor.py` (crew orders, sightings, periscope, stadimeter, wires), `src/core/uboot_local.py` (uConsole keys of the boat side), `src/ui/uboot_view.py` and `src/ui/uboot_scope.py` (boat stations and the periscope page).
 - `src/ui/`: rendering, hit testing, viewport, tooltips, and editors. Station views live in `src/ui/stations/` (one module per station, `common.py` shared); `src/ui/stations_view.py` is the facade with the station-wide hit test and re-exports. Views should consume game-facing observations, not discover hidden entity state.
 - `src/audio/`: bounded NumPy synthesis/analysis and non-blocking Pygame playback.
 - `src/data/`: packaged catalog loading, validation, fingerprints, and secure user-content persistence. `data/` contains package resources; `tests/` is the behavioral contract; `tools/` contains validators/reproducible generators.

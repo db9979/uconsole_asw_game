@@ -237,6 +237,8 @@ _UBOOT_HELP = (
         ("Shift+G", "help.uboot.bottom"),
         ("N", "help.uboot.snorkel"),
         ("P", "help.uboot.mast"),
+        ("help.key.left_right", "help.uboot.scope_turn"),
+        ("help.key.enter", "help.uboot.stadimeter"),
         ("+ / -", "help.uboot.telegraph"),
         ("help.key.uboot_sonar", "help.uboot.sonar"),
         ("S / L / F9", "help.uboot.admin"),

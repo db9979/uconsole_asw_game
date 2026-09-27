@@ -446,7 +446,8 @@ def draw_map_view(game, tr=None) -> None:
         # Peilstrich + Ziel-Kreuz (ausgewählter Kontakt / Ziel)
         for contact, fix, (px, py) in active_fix_markers(game, view):
             color = {"PING": (90, 220, 220), "DIPPING": (120, 220, 190),
-                     "TMA": config.COLOR_WARN,
+                     "TMA": config.COLOR_WARN, "MAD": (200, 160, 240),
+                     "VISUAL": (230, 230, 200),
                      "SONOBUOY": config.COLOR_CONTACT_ZIVIL}[fix["source"]]
             radius = _fix_marker_radius(fix, view)
             pygame.draw.circle(s, color, (px, py), radius, 1)

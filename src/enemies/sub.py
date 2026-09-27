@@ -577,6 +577,8 @@ class Sub:
             self.speed, sub_physics.SUBMARINE_REFERENCE_SPEED_KN, self.cavitating)
         if self.transient_left > 0.0:
             level += sub_physics.LAUNCH_TRANSIENT_DB
+        if self.snorkeling:
+            level += config.UBOOT_SNORKEL_NOISE_DB   # diesels running at snorkel depth
         return level
 
     def _advance_depth(self, target_depth: float, max_rate: float, dt: float) -> None:
@@ -1004,6 +1006,8 @@ class Sub:
             q = max(0.97, q + 0.08)
         if self.transmitting:
             q += config.SNOCKEL_TRANSMIT_NOISE  # M13: Senden macht lauter
+        if self.snorkeling:
+            q -= config.UBOOT_SNORKEL_QUIET_LOSS    # diesels running at snorkel depth
         return config.clamp(q, 0.0, 1.0)
 
     def noise_level(self) -> float:
@@ -1413,6 +1417,8 @@ class Sub:
             result = list(lines)
             if self.transmitting:
                 result.extend(((20.0, 0.95, 2.0), (35.0, 0.70, 1.5)))
+            if self.snorkeling:
+                result.extend(config.UBOOT_SNORKEL_LINES)   # diesel firing lines
             if self.damage > 30.0:
                 result.append((55.0, 0.25 + 0.45 * self.damage / 100.0, 4.0))
             return result
@@ -1443,6 +1449,8 @@ class Sub:
         if self.transmitting:
             lines.append((20.0, 0.95, 2.0))
             lines.append((35.0, 0.70, 1.5))
+        if self.snorkeling:
+            lines.extend(config.UBOOT_SNORKEL_LINES)     # diesel firing lines
         if self.damage > 30.0:
             lines.append((55.0, 0.25 + 0.45 * self.damage / 100.0, 4.0))
         return lines
@@ -1461,6 +1469,8 @@ class Sub:
                 level *= 1.6
             if self.state in QUIET_STATES:
                 level *= 0.5
+            if self.snorkeling:
+                level += config.UBOOT_SNORKEL_QUIET_LOSS
             return {"level": min(1.0, level + 0.10 * self.damage / 100.0),
                     "low_hz": broadband[1], "high_hz": broadband[2]}
         if self.sunk or sig.broadband is None:

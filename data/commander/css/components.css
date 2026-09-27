@@ -202,6 +202,11 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .uboot-presets button, .uboot-telegraph button, .uboot-pair button { min-height: 2.5rem; }
 .uboot-grid[data-role="uboot_esm"] .uboot-esm-card { grid-column: 1 / -1; }
 .uboot-grid[data-role="uboot_esm"] .uboot-esm-card .uboot-canvas { height: clamp(18rem, 48vh, 36rem); }
+.uboot-scope-canvas { height: clamp(16rem, 36vh, 28rem); background: var(--scope-bg); }
+.uboot-grid[data-role="uboot_esm"] .uboot-scope-card .uboot-canvas { height: clamp(20rem, 52vh, 40rem); }
+.uboot-scope-status { margin: .35rem 0; color: var(--text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.uboot-scope-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr)); gap: .3rem; margin-bottom: .5rem; }
+.uboot-scope-controls button { min-height: 2.5rem; }
 .uboot-log-line { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: .5rem; padding: .15rem 0; border-bottom: 1px solid var(--line); font-size: var(--font-sm); }
 .uboot-log-age { color: var(--text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .uboot-modes { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .35rem; }

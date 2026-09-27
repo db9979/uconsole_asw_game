@@ -1209,6 +1209,33 @@ def _uboot_weapons(game, boat, asset_refs):
             if ("uboot_torpedo", id(item)) in asset_refs][:16]
 
 
+def _uboot_scope(game, boat):
+    """The periscope: its line of sight, the light its optics see and the
+    crew's own sightings (bearing, class, apparent length, stadimeter range);
+    never a target's position or identity."""
+    offset, tilt = opfor.horizon_motion(game, boat)
+    now = game.sim_t
+    return dict(
+        available=bool(opfor.scope_available(boat)),
+        relative_deg=_number(boat.orders.scope_rel_deg),
+        bearing=_number(opfor.scope_bearing(boat)),
+        fov_deg=_number(config.UBOOT_SCOPE_FOV_DEG),
+        window_deg=_number(config.UBOOT_STADIMETER_WINDOW_DEG),
+        night=bool(game.world.is_night()),
+        visibility_nm=_number(getattr(game.world, "visibility_nm",
+                                      config.WEATHER_VISIBILITY_MAX_NM)),
+        sea_state=_number(getattr(game.world, "effective_sea_state", game.world.sea_state)),
+        horizon_offset=_number(offset), horizon_tilt=_number(tilt),
+        sightings=[dict(ref=str(row["ref"])[:16], category=str(row["kind"]),
+                        cls=str(row["cls"]), bearing=_number(row["bearing"]),
+                        span_deg=_number(row["span_deg"]), quality=_number(row["quality"]),
+                        age_s=_age(now, row["t"]), range_nm=_number(row["range_nm"]),
+                        range_sigma_nm=_number(row["range_sigma_nm"]),
+                        range_age_s=(_age(now, row["range_t"])
+                                     if row["range_t"] is not None else None))
+                   for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
+
+
 def _uboot(game, boat, rows, target_ref, asset_refs):
     """The crewed submarine's commander: own boat (legitimate truth), its
     orders, weapons and the boat's own sonar contacts."""
@@ -1280,6 +1307,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         contacts=[_observation(row, _SONAR_FIELDS) for row in rows],
         own_weapons=_uboot_weapons(game, boat, asset_refs),
         designated_target_ref=target_ref,
+        scope=_uboot_scope(game, boat),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

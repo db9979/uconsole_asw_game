@@ -583,7 +583,7 @@ def _uboot_fire(game, boat, params, bindings):
         bearing = (contact.passive_bearing if contact.passive_bearing is not None
                    else contact.bearing)
         positioned = (contact.observed_x is not None and contact.observed_y is not None
-                      and contact.range_source in ("ping", "tma")
+                      and contact.range_source in ("ping", "tma", "visual")
                       and 0 <= game.sim_t - contact.range_seen
                       < config.SONAR_CONTACT_LOST_S)
         if positioned:
@@ -627,6 +627,19 @@ def _uboot_bottom(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_bottom(params["enabled"]))
 
 
+def _uboot_scope_bearing(game, boat, params, _bindings):
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    opfor.set_scope_relative(boat, params["relative_deg"])
+    return True
+
+
+def _uboot_scope_mark(game, boat, params, _bindings):
+    if not boat.sub._crew_ready():
+        return "not_ready"
+    return _uboot_result(opfor.stadimeter(game, boat))
+
+
 _UBOOT_ACTION_HANDLERS = {
     "acknowledge": lambda game, boat, params, _bindings: params == {},
     "uboot_set_course": _uboot_set_course,
@@ -639,6 +652,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_mast": _uboot_mast,
     "uboot_silent": _uboot_silent,
     "uboot_bottom": _uboot_bottom,
+    "uboot_scope_bearing": _uboot_scope_bearing,
+    "uboot_scope_mark": _uboot_scope_mark,
 }
 
 

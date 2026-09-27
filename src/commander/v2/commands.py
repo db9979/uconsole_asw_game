@@ -129,7 +129,8 @@ def _range_params(params):
 # never the frigate's words).
 UBOOT_REASONS = frozenset((
     "uboot_no_torpedoes", "uboot_reloading", "uboot_out_of_arc", "uboot_no_decoys",
-    "uboot_too_deep", "uboot_no_snorkel", "uboot_no_wire", "uboot_mast_depth"))
+    "uboot_too_deep", "uboot_no_snorkel", "uboot_no_wire", "uboot_mast_depth",
+    "uboot_mast_down", "uboot_no_sighting", "uboot_no_stadimeter"))
 
 
 def _bool_params(name):
@@ -268,6 +269,14 @@ def _uboot_speed_params(params):
             and type(params["speed_kn"]) in (int, float)
             and math.isfinite(params["speed_kn"])
             and 0 <= params["speed_kn"] <= 40)
+
+
+def _uboot_scope_params(params):
+    """Train the periscope: its line of sight relative to the bow."""
+    return (type(params) is dict and set(params) == {"relative_deg"}
+            and type(params["relative_deg"]) in (int, float)
+            and math.isfinite(params["relative_deg"])
+            and 0 <= params["relative_deg"] < 360)
 
 
 def _uboot_wire_params(params):
@@ -549,6 +558,9 @@ V2_ACTION_REGISTRY = {
     "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),
     "uboot_silent": V2Action(frozenset({"uboot", "uboot_engine"}), _bool_params("enabled")),
     "uboot_bottom": V2Action(frozenset({"uboot", "uboot_nav"}), _bool_params("enabled")),
+    # The periscope: Command and the mast station train it and read the stadimeter.
+    "uboot_scope_bearing": V2Action(frozenset({"uboot", "uboot_esm"}), _uboot_scope_params),
+    "uboot_scope_mark": V2Action(frozenset({"uboot", "uboot_esm"}), _no_params),
 }
 
 

@@ -26,7 +26,8 @@ from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
     WEAPON_SETTINGS_FIELDS,
     COMPARTMENT_FIELDS, COMPARTMENT_STATES, CREW_BATTERY_STATES, CREW_FEED_FIELDS,
-    CREW_FIELDS, CREW_ORDERS_FIELDS, CREW_STATION_FIELDS, CREW_WIRE_FIELDS,
+    CREW_FIELDS, CREW_ORDERS_FIELDS, CREW_SIGHTING_FIELDS, CREW_STATION_FIELDS,
+    CREW_WIRE_FIELDS,
     CREW_WIRE_STATES, DAMAGE_FIELDS, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
     SUB_CREW_FIELDS, WORLD_FIELDS)
 from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
@@ -35,7 +36,7 @@ from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
 from src.ship.damage import DamageModel
 from src.ship.ship import Ship
-from src.sonar.sonar import SonarSystem
+from src.sonar.sonar import FIX_SOURCES, SonarSystem
 from src.ui.stations_view import opz_ppi_rect
 from src.air import chaff as chaff_physics
 from src.air.flights import FlightManager
@@ -87,7 +88,8 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
     the same document; the boat's sonar station is validated with the same
     rules as the frigate's.
     """
-    from src.sonar.platforms import OWNSHIP_TARGET_ID, OWN_TORPEDO_TARGET_BASE
+    from src.sonar.platforms import (OWNSHIP_TARGET_ID, OWN_TORPEDO_TARGET_BASE,
+                                     SCOPE_AIR_TARGET_ID)
 
     crew = data.get("crew")
     sub_rows = {row.get("id"): row for row in data.get("subs", ())
@@ -138,6 +140,42 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
             or any(not ((isinstance(item, str) and len(item) <= 64)
                         or identity(item)) for item in seen)
             or len(set(map(str, seen))) != len(seen)):
+        return False
+    own_torpedo_ids = {OWN_TORPEDO_TARGET_BASE + row.get("idx")
+                       for row in data.get("torpedoes_in_flight", ())
+                       if isinstance(row, dict) and type(row.get("idx")) is int}
+    if not (bounded(orders["scope_rel_deg"], 0.0, 360.0) and orders["scope_rel_deg"] < 360.0):
+        return False
+    sightings = orders["sightings"]
+    if not isinstance(sightings, list) or len(sightings) > config.UBOOT_SIGHTINGS_MAX:
+        return False
+    sighting_ids = set(entity_ids) | {OWNSHIP_TARGET_ID, SCOPE_AIR_TARGET_ID} | own_torpedo_ids
+    refs = set()
+    for row in sightings:
+        if (not isinstance(row, dict) or set(row) != CREW_SIGHTING_FIELDS
+                or not isinstance(row["ref"], str) or not 1 <= len(row["ref"]) <= 16
+                or row["ref"] in refs
+                or type(row["target_id"]) is not int or row["target_id"] not in sighting_ids
+                or row["cls"] not in opfor.SIGHTING_CLASSES
+                or row["kind"] != opfor.SIGHTING_KINDS[row["cls"]]
+                or not bounded(row["bearing"], 0.0, 360.0) or row["bearing"] >= 360.0
+                or not bounded(row["span_deg"], 1e-3, 180.0)
+                or not bounded(row["aspect"], 0.0, 1.0)
+                or not bounded(row["quality"], 0.0, 1.0)
+                or not bounded(row["first_t"], 0.0, sim_t)
+                or not bounded(row["t"], row["first_t"], sim_t)
+                or (row["range_nm"] is None) != (row["range_sigma_nm"] is None)
+                or (row["range_nm"] is None) != (row["range_t"] is None)
+                or (row["range_nm"] is not None and (
+                    not bounded(row["range_nm"], 0.05, 40.0)
+                    or not bounded(row["range_sigma_nm"], 0.0, 100.0)
+                    or not bounded(row["range_t"], row["first_t"], sim_t)))):
+            return False
+        refs.add(row["ref"])
+    seen = orders["sightings_seen"]
+    if (not isinstance(seen, list) or len(seen) > 64
+            or any(not isinstance(item, str) or not 1 <= len(item) <= 16 for item in seen)
+            or seen != sorted(set(seen))):
         return False
     wires = orders["wires"]
     if not isinstance(wires, dict) or len(wires) > 64:
@@ -200,9 +238,6 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
             or station["mode"] not in ("BOW", "TOWED")
             or not valid_sonar_controls(station["controls"])):
         return False
-    own_torpedo_ids = {OWN_TORPEDO_TARGET_BASE + row.get("idx")
-                       for row in data.get("torpedoes_in_flight", ())
-                       if isinstance(row, dict) and type(row.get("idx")) is int}
     allowed_ids = set(entity_ids) | {OWNSHIP_TARGET_ID} | own_torpedo_ids
     if not valid_sonar(station["sonar"], allowed_ids):
         return False
@@ -1678,8 +1713,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                           "uncertainty_nm", "depth_m", "depth_uncertainty_m",
                           "quality"}
                 if (not isinstance(fix, dict) or set(fix) != fields
-                        or fix["source"] not in (
-                            "PING", "DIPPING", "TMA", "SONOBUOY", "MAD")
+                        or fix["source"] not in FIX_SOURCES
                         or not bounded(fix["measured_at"], 0, save_sim_t)
                         or not bounded(fix["fixed_at"], fix["measured_at"], save_sim_t)
                         or not bounded(fix["x"], -1_000_000, 1_000_000)

@@ -127,6 +127,7 @@ DISPLAY_KEYS = {
         "UBOOT_WEAPONS": "station.page.uboot_weapons",
         "UBOOT_ENGINE": "station.page.uboot_engine",
         "UBOOT_ESM": "station.page.uboot_esm",
+        "UBOOT_SCOPE": "station.page.uboot_scope",
         "WEAPONS_TARGET": "station.page.weapons_target",
         "WEAPONS_AMMO": "station.page.weapons_ammo",
         "DAMAGE_PLAN": "station.page.damage_plan",
@@ -143,6 +144,13 @@ DISPLAY_KEYS = {
         "HELO_ACOUSTIC": "station.page.helo_acoustic",
         "ELOKA_INTERCEPTS": "station.page.eloka_intercepts",
         "ELOKA_EVIDENCE": "station.page.eloka_evidence",
+    },
+    "sighting_class": {
+        "warship": "uboot.sighting.warship",
+        "merchant": "uboot.sighting.merchant",
+        "aircraft": "uboot.sighting.aircraft",
+        "torpedo": "uboot.sighting.torpedo",
+        "unknown": "uboot.sighting.unknown",
     },
     "audition_mode": {
         "BROADBAND": "enum.audition_mode.broadband",

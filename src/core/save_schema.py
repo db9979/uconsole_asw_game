@@ -40,6 +40,12 @@ CREW_ORDERS_FIELDS = frozenset({
     "last_course", "torpedo_depth", "salvo", "pending_bearing",
     "steer_torpedo", "events", "battery_state", "keel_warned",
     "obstacle_warned", "obstacle_ahead_nm",
+    "scope_rel_deg", "sightings", "sightings_seen",
+})
+# One periscope sighting of the crewed boat (plan 1.3, phase 9).
+CREW_SIGHTING_FIELDS = frozenset({
+    "ref", "target_id", "kind", "cls", "bearing", "span_deg", "aspect",
+    "quality", "first_t", "t", "range_nm", "range_sigma_nm", "range_t",
 })
 CREW_WIRE_FIELDS = frozenset({"state", "ship_out_nm", "stress_s"})
 CREW_WIRE_STATES = ("ACTIVE", "BROKEN", "CUT")

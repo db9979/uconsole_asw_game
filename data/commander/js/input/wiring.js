@@ -367,7 +367,7 @@ export function init() {
   });
   for (const id of ["sonar-array-mode", "sonar-audition-mode", "sonar-band", "sonar-listen-band", "sonar-bearing", "sonar-depth", "sonar-gain",
     "sonar-harmonic-input", "engine-telegraph", "engine-course", "engine-speed", "helicopter-x", "helicopter-y",
-    "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth",
+    "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth", "uboot-scope-relative",
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
     "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range", "uboot-fire-depth",
     "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range",
@@ -521,6 +521,18 @@ export function init() {
       const speed = Number(button.dataset.speed);
       if (finite(speed) && speed >= 0 && speed <= 40) sendStationAction("uboot_set_speed", {speed_kn: speed});
     });
+  // The periscope: train it in steps or to an entered relative bearing, read the stadimeter.
+  for (const button of document.querySelectorAll("[data-uboot-scope-turn]"))
+    button.addEventListener("click", () => {
+      const scope = S.v2State?.[S.v2State?.role]?.scope;
+      if (!scope || !finite(scope.relative_deg)) return;
+      const relative = ((scope.relative_deg + Number(button.dataset.ubootScopeTurn)) % 360 + 360) % 360;
+      sendStationAction("uboot_scope_bearing", {relative_deg: relative});
+    });
+  $("uboot-scope-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("uboot-scope-form", "uboot-scope-relative", "uboot_scope_bearing", "relative_deg", 0, 359.99999999999994);
+  });
+  $("uboot-scope-mark").addEventListener("click", () => sendStationAction("uboot_scope_mark", {}));
   $("uboot-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));
   $("uboot-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("helicopter-launch").addEventListener("click", () => sendStationAction("helicopter_launch", {}));

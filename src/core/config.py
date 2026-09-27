@@ -239,6 +239,25 @@ UBOOT_OBSTACLE_LOOKAHEAD_NM = 5.0  # chart check ahead of the ordered course
 UBOOT_UNDER_KEEL_WARN_M = 15.0
 UBOOT_LAYER_MARGIN_M = 15.0   # depth presets: this far above / twice below the layer
 UBOOT_PRESET_MIN_M = 20.0
+# Diesel boats at snorkel depth: the running diesels raise the radiated
+# level and add firing-rate lines to the boat's LOFAR signature (plan 1.3,
+# phase 9; the catalog keeps its 1.0.0 acoustic profiles unchanged).
+UBOOT_SNORKEL_NOISE_DB = 12.0
+UBOOT_SNORKEL_LINES = ((50.0, 0.85, 2.0), (100.0, 0.55, 1.5))  # (Hz, amp, width)
+UBOOT_SNORKEL_QUIET_LOSS = 0.25
+# Periscope of the crewed boat (plan 1.3, phase 9).
+UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
+UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics
+UBOOT_SCOPE_STEP_DEG = 2.0          # arrow keys turn the scope by this
+UBOOT_SCOPE_STEP_FAST_DEG = 10.0    # ... and with Shift by this
+UBOOT_SCOPE_BEARING_ERR_DEG = 1.0   # sigma of a periscope bearing
+UBOOT_SIGHTINGS_MAX = 16
+UBOOT_SIGHTING_LOST_S = 10.0        # a sighting vanishes this long after it was last seen
+UBOOT_STADIMETER_ERR_FRAC = 0.25    # range uncertainty of a stadimeter reading
+UBOOT_STADIMETER_WINDOW_DEG = 3.0   # the crosshair must be this close to the sighting
+# Assumed hull lengths of the stadimeter by recognized class (m); an
+# unrecognized surface contact is measured as a generic frigate.
+UBOOT_STADIMETER_LENGTHS_M = {"warship": 130.0, "merchant": 150.0, "unknown": 130.0}
 
 # Display scales of the bridge lookout page (NM, radius of the scope).
 LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
@@ -246,6 +265,8 @@ LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
 # slow cadence; a landmass is reported again only after it dropped out of
 # sight.
 LOOKOUT_LAND_RANGE_NM = 20.0
+# Day/clear range at which a running torpedo's wake is seen (lookout, periscope).
+TORPEDO_WAKE_VISIBLE_NM = 1.5
 LOOKOUT_LAND_CHECK_S = 10.0
 LOOKOUT_REPORTS_MAX = 24
 CONTACT_SIG_CONF = 0.40         # Konfidenz, ab der die Geräusch-Signatur lesbar ist

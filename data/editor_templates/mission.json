@@ -6,7 +6,7 @@
   "seed": 1701,
   "world": {
     "kind": "reference",
-    "reference": "north_sea",
+    "reference": "sector:17",
     "size_nm": 500.0,
     "sectors": [
       {"id": "patrol-east", "x": 300.0, "y": 120.0, "width": 100.0, "height": 160.0}

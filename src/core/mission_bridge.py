@@ -11,7 +11,8 @@ import math
 
 from src.core import config
 from src.core.i18n import message, raw_text
-from src.core.mission_definition import static_preview, validate_mission
+from src.core.mission_definition import (reference_sector_index, static_preview,
+                                         validate_mission)
 from src.enemies.civilian import CivilianShip
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
@@ -34,10 +35,14 @@ class MissionBridgeMixin:
         """
         if validate_mission(definition, catalog_builtins(self.runtime_catalog).keys()):
             return False
+        world = definition["world"]
+        reference_sector = (reference_sector_index(world.get("reference"))
+                            if world["kind"] == "reference" else None)
         if (definition["events"] or definition["units"]["random_groups"]
                 or definition["objective"]["type"] not in ("sink", "survive")
-                or float(definition["world"]["size_nm"]) != config.WORLD_SIZE_NM
-                or definition["world"]["kind"] != "fixed"
+                or float(world["size_nm"]) != config.WORLD_SIZE_NM
+                or world["kind"] not in ("fixed", "reference")
+                or (world["kind"] == "reference" and reference_sector is None)
                 or definition["environment"]["weather"] != "clear"):
             return False
         markers = {item["id"]: item for item in static_preview(definition)["markers"]}
@@ -63,7 +68,10 @@ class MissionBridgeMixin:
         if (definition["objective"]["type"] == "sink"
                 and set(definition["objective"]["target_ids"]) != expected_targets):
             return False
-        self.reset(int(definition["seed"]), "s4_zufall", publish_intel=False)
+        # A fixed-coordinate world keeps the game's current world mode (as
+        # before); a reference world selects its packaged real sector.
+        self.reset(int(definition["seed"]), "s4_zufall", publish_intel=False,
+                   reference_sector=reference_sector)
         self.subs, self.civilians, self.warships = [], [], []
         self.animals, self.asms = [], []
         player = definition["player"]

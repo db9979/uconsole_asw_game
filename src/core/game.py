@@ -310,7 +310,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         if boat is not None and boat.sub in self.subs and not boat.sub.sunk:
             boat.sub.release_manual()
 
-    def reset(self, seed: int, scenario_key: str = None, *, publish_intel: bool = True) -> None:
+    def reset(self, seed: int, scenario_key: str = None, *, publish_intel: bool = True,
+              reference_sector: int | None = None) -> None:
         """Spielzustand neu aufbauen (Start/Neustart).
 
         W4: Szenario (config.SCENARIOS) legt Level, Missionstyp und
@@ -341,7 +342,12 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
                               else self.menu_difficulty)}
         self.level = "custom"
 
-        coast = Coastline.load() if self.world_mode == "fixed" else None
+        if reference_sector is not None:
+            # A mission's reference world: the named real sector, not seed % 128.
+            self.world_mode = "real_fixed"
+            coast = Coastline.generate(seed, sector_index=reference_sector)
+        else:
+            coast = Coastline.load() if self.world_mode == "fixed" else None
         self.world = World(seed=seed, coast=coast)
         if sc["difficulty"] is None:
             self.world.sea_state = int(self.difficulty["sea_state_start"])

@@ -14,6 +14,9 @@ from src.data.validation import (ValidationIssue, enum, finite_number, integer,
 
 
 MISSION_VERSION = 1
+# Reference worlds name one of the packaged real coastal sectors.
+REFERENCE_SECTOR_COUNT = 128
+REFERENCE_PREFIX = "sector:"
 SIDES = ("friendly", "neutral", "hostile")
 OBJECTIVE_TYPES = ("sink", "survive", "protect", "reach")
 EVENT_TYPES = ("message", "spawn", "weather", "objective")
@@ -60,6 +63,17 @@ def default_mission(key: str = "user.new_mission") -> dict[str, Any]:
         "objective": {"type": "sink", "target_ids": [], "time_limit_s": 3600.0},
         "events": [],
     }
+
+
+def reference_sector_index(reference: Any) -> int | None:
+    """The sector index a reference world names (``sector:<n>``), else None."""
+    if not isinstance(reference, str) or not reference.startswith(REFERENCE_PREFIX):
+        return None
+    digits = reference[len(REFERENCE_PREFIX):]
+    if not digits.isdigit() or len(digits) > 3 or (len(digits) > 1 and digits[0] == "0"):
+        return None
+    index = int(digits)
+    return index if 0 <= index < REFERENCE_SECTOR_COUNT else None
 
 
 def _obj(value: Any, path: str, problems: list[ValidationIssue]) -> Mapping[str, Any] | None:
@@ -113,6 +127,10 @@ def validate_mission(data: Mapping[str, Any],
             if isinstance(ref, str) and (ref.startswith(("/", "~")) or "\\" in ref
                                          or ".." in ref.split("/")):
                 problems.append(issue("world.reference", "path", "must be a logical reference, not a path"))
+            elif isinstance(ref, str) and reference_sector_index(ref) is None:
+                problems.append(issue("world.reference", "reference",
+                                      f"must name a packaged sector: {REFERENCE_PREFIX}0 .. "
+                                      f"{REFERENCE_PREFIX}{REFERENCE_SECTOR_COUNT - 1}"))
         raw_sectors = world.get("sectors", [])
         if not isinstance(raw_sectors, list):
             problems.append(issue("world.sectors", "array", "must be an array"))

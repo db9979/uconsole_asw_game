@@ -62,8 +62,16 @@ def load_catalog(path: str = CATALOG_PATH) -> dict:
 
 
 def sector_for_seed(seed: int) -> tuple[dict, dict]:
+    return sector_for_index(int(seed) % SECTOR_COUNT)
+
+
+def sector_for_index(index: int) -> tuple[dict, dict]:
+    """One validated sector by catalog index (0..SECTOR_COUNT-1); a mission's
+    reference world names the sector directly instead of ``seed % 128``."""
+    if type(index) is not int or not 0 <= index < SECTOR_COUNT:
+        raise ValueError("sector index out of range")
     catalog = load_catalog()
-    sector = catalog["sectors"][int(seed) % SECTOR_COUNT]
+    sector = catalog["sectors"][index]
     # The pinned generator's rectangular clip can turn a distant polygon into
     # an interior, coast-to-coast strip. Keep the source catalog intact while
     # excluding these unambiguous projection artifacts from playable geometry.

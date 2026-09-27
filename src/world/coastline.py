@@ -286,14 +286,17 @@ class Coastline:
         return True
 
     @classmethod
-    def generate(cls, seed: int, size_nm: float = 500.0) -> "Coastline":
-        """Select one of 128 prevalidated real 500-NM coastal sectors."""
+    def generate(cls, seed: int, size_nm: float = 500.0,
+                 sector_index: int | None = None) -> "Coastline":
+        """Select one of 128 prevalidated real 500-NM coastal sectors: by
+        ``seed % 128``, or the sector a mission's reference world names."""
         size = float(size_nm)
         if not math.isfinite(size) or size <= 0.0:
             raise ValueError("size_nm must be a positive finite number")
-        from src.world.real_coast import sector_for_seed
+        from src.world.real_coast import sector_for_index, sector_for_seed
 
-        sector, provenance = sector_for_seed(seed)
+        sector, provenance = (sector_for_seed(seed) if sector_index is None
+                              else sector_for_index(sector_index))
         scale = size / 500.0
         data = {
             "landmasses": [

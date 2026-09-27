@@ -71,6 +71,7 @@ export async function sendStationAction(action, params) {
     world_session: S.v2State.session, world_epoch: S.v2State.epoch,
     resource_revision: S.v2State.revision, action, params: Object.freeze(params)});
   S.pending = {id, body, uncertain: false, inFlight: true, retryAt: 0};
+  if (action === "sonar_set_focus") S.requestedSonarFocus = params.ref;
   S.commandMessage = null;
   emit("command", false);
   const context = S.generation;
@@ -83,7 +84,11 @@ export async function sendStationAction(action, params) {
     S.pending.uncertain = true;
     if (error.status === 401 || error.status === 403) forgetSession("connection_expired");
     else if (!error.status || error.status >= 500) setConnection("stale");
-    else { S.commandMessage = {key: "command_rejected", status: "rejected", reasoncode: "action_rejected"}; S.pending = null; }
+    else {
+      S.commandMessage = {key: "command_rejected", status: "rejected", reasoncode: "action_rejected"};
+      if (action === "sonar_set_focus") S.requestedSonarFocus = null;
+      S.pending = null;
+    }
   } finally {
     if (S.pending?.id === id) {
       S.pending.inFlight = false;
@@ -132,6 +137,7 @@ export async function pollV2Result(context) {
     (bridge ? "bridge_order_applied" : "command_applied") :
     (bridge ? "bridge_order_rejected" : "command_rejected"),
     status: result.status, reasoncode: result.reasoncode};
+  if (result.status === "rejected" && command.body.action === "sonar_set_focus") S.requestedSonarFocus = null;
   S.pending = null;
   S.stationDrafts.clear();
   emit("command:settled");

@@ -7,11 +7,11 @@ import time
 
 import pygame
 import pytest
-from commander_web import copy_assets, index_html, inject_probe
+from commander_web import copy_assets, index_html, inject_probe, page_dataset
 
 from src.commander import server
 from src.core.game import Game
-from test_commander_assets import ASSETS, Document, PREFIX, catalogs
+from test_commander_assets import ASSETS, PREFIX, catalogs
 
 
 PROBE = r'''
@@ -127,19 +127,26 @@ def test_submarine_sonar_filters_and_audio_survive_host_input(tmp_path, monkeypa
         "text/javascript; charset=utf-8",
         PROBE.replace("__CODE__", json.dumps(console.pairing_code)).encode("utf-8"))
     console.bridge.allowed = True
+    # Real time, not --virtual-time-budget: virtual time runs far ahead of the
+    # host simulation and starves the live audio socket. The result is read
+    # from the running page over DevTools.
+    profile = tmp_path / "browser"
+    log = (tmp_path / "chromium.log").open("wb")
     process = subprocess.Popen([
         chromium, "--headless", "--no-sandbox", "--disable-gpu",
         "--disable-background-networking", "--no-first-run",
         "--no-default-browser-check", "--disable-dev-shm-usage",
         "--autoplay-policy=no-user-gesture-required",
-        f"--user-data-dir={tmp_path / 'browser'}", "--window-size=1600,1000",
-        "--virtual-time-budget=60000", "--dump-dom",
+        f"--user-data-dir={profile}", "--window-size=1600,1000",
+        "--remote-debugging-port=0",
         f"http://{console.address[0]}:{console.address[1]}/",
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ], stdout=subprocess.DEVNULL, stderr=log)
     started = time.monotonic()
     granted = False
     epoch = boat = None
     bumped_at = None
+    root = {}
+    read_at = started
     try:
         while process.poll() is None and time.monotonic() - started < 120:
             if not granted:
@@ -160,19 +167,22 @@ def test_submarine_sonar_filters_and_audio_survive_host_input(tmp_path, monkeypa
                     game.handle_event(pygame.event.Event(
                         pygame.KEYDOWN, key=key, mod=0, unicode=""))
                 bumped_at = time.monotonic()
+            if time.monotonic() - read_at > .5:
+                read_at = time.monotonic()
+                root = page_dataset(profile) or root
+                if root.get("opforTest"):
+                    break
             console.pump(game)
             game.update(.02)
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        process.kill()
+        process.wait(timeout=5)
+        log.close()
         console.stop()
         game.audio.shutdown()
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-opfor-test") == "passed", (
-        root.get("data-stage"), root.get("data-failure", stderr[-2000:]))
+    assert root.get("opforTest") == "passed", (
+        root.get("stage"), root.get("failure", (tmp_path / "chromium.log").read_text(errors="replace")[-2000:]))
     assert boat is not None
     sonar = boat.station.sonar
     assert (sonar.band_low_hz, sonar.band_high_hz) == (4.0, 80.0)

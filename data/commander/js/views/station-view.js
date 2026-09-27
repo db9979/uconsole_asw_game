@@ -96,6 +96,7 @@ export function clearRoleState() {
   S.chartRole = null;
   S.selected = null;
   S.queuedSonarFocus = null;
+  S.requestedSonarFocus = null;
   S.pending = null;
   S.v2State = null;
   sonarHistory.context = null;

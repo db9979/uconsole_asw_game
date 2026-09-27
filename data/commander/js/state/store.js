@@ -35,6 +35,8 @@ export const S = {
   stationMutation: false,
   activatingStation: null,
   queuedSonarFocus: null,
+  // Focus this client last sent, until the state shows it or it is rejected.
+  requestedSonarFocus: null,
   stationPickerOpen: false,
   lobbyMessage: null,
   // Unit chosen in the lobby ("frigate" | "opfor"); held stations decide otherwise.

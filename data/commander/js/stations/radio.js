@@ -106,7 +106,7 @@ export function drawRadioVisual() {
   }
   if (!payload.observations.length && !payload.logged_bearings.length) {
     drawEmpty(plot, "radio_no_signal");
-    $("radio-df-scope-text").replaceChildren();
+    $("radio-df-scope-text").textContent = t("radio_no_signal");
     return;
   }
   g.setLineDash([4, 5]); g.strokeStyle = colors.muted; g.globalAlpha = .45;

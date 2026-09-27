@@ -6,6 +6,30 @@ green entry here is never evidence that a later dirty tree is green.
 Hardware checkpoints that CI cannot answer live in `docs/hardware-acceptance.md`;
 an entry below states which of them were run on the uConsole for its revision.
 
+## 2026-09-27 Browser Test Repair (Version 1.3.0)
+
+- Revision: working tree on `main` f0591b4 committed on
+  `claude/project-thread-th8nou`; save format v15 unchanged.
+- The two browser failures deselected in the 1.3.0 closeout pass again.
+  `test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`:
+  radio scope instrumented and its empty scope given a text equivalent, the
+  web sonar focus no longer drops a quick reselection (A, B, A), pushed states
+  are logged like polled ones, the host waits one more presence poll per role,
+  and the result is read over DevTools so the run ends when the probe does;
+  20 of 20 repeat runs green, about 10 s per run (was 100 s).
+  `test_submarine_sonar_filters_and_audio_survive_host_input`: virtual time
+  starved the live audio socket (the host published 104 blocks, the page got
+  4); the probe now runs in real time and is read over DevTools, 3 of 3 green
+  in about 9 s.
+- Automated suite (Chromium 141 headless): 3494 passed, 26 skipped, 2 failed
+  in 737 s; both failures pass alone 3 of 3 and are outside this change
+  (`test_audio_websocket_resumes_behind_the_browser_cursor` got 409 on its
+  second socket, `test_mad_run_needs_the_dome_stowed_and_reports_a_fix_without_hidden_truth`).
+  An earlier full run of this branch before the last test changes: 3496 passed.
+- Calibration 77/77; catalog 111 acoustic profiles; manual export and web
+  schema up to date; `SMOKE-OK`; sdist and wheel 1.3.0 built.
+- Not covered: every uConsole checkpoint in `docs/hardware-acceptance.md`.
+
 ## 2026-09-27 Plan 1.3 Durchlauf (Version 1.3.0, Branch `plan-1.3`)
 
 - Revision: working tree committed as the closeout commit on `plan-1.3` (27

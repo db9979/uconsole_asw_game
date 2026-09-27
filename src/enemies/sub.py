@@ -273,7 +273,7 @@ class Sub:
                 self.heard_ping = True
                 previous = self.memory["last_ping_age"]
                 self.memory["last_ping_age"] = 0.0
-                self._crew_alarm(source, "ping", 2.0, previous)
+                self._crew_alarm(source, "ping", config.PING_INTERCEPT_SIGMA_DEG, previous)
             return
         if not self.sunk and self.state != "SINKING":
             self.state = "EVADE"

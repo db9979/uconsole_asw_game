@@ -225,7 +225,7 @@ def test_hostile_sub_active_ping_is_heard_by_player(game):
     # not in the frame the boat sends.
     assert game.msg is None
     assert len(game.feed.entries) == feed_before
-    arrival = game._ping_intercepts[0][0]
+    arrival, sub_x, sub_y = game._ping_intercepts[0]
     assert 5.5 < arrival - game.sim_t < 7.0
 
     sub.stype.aggression = 0.0
@@ -237,6 +237,11 @@ def test_hostile_sub_active_ping_is_heard_by_player(game):
     assert game.msg["__u_jagd_i18n__"] == "runtime.enemy_ping.detected"
     assert game.feed.entries[-1].category == "sonar"
     assert game._ping_intercepts == []
+    # Only a measured bearing (whole degrees, a few degrees off truth) is shown.
+    shown = float(game.msg["params"]["bearing"])
+    true = math.degrees(math.atan2(sub_x - game.ship.x, -(sub_y - game.ship.y))) % 360.0
+    assert shown == round(shown)
+    assert abs(((shown - true) + 180.0) % 360.0 - 180.0) <= 8.5
 
 
 def test_travelling_foreign_ping_survives_save_and_load(game):

@@ -169,14 +169,65 @@ const rgb = (color) => `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 // The eyepiece: sky and sea in the light the optics see, the horizon in
 // motion, the bearing scale, the crosshair with the stadimeter window and
 // the outlines of the crew's own sightings inside the field of view.
+// The periscope picture: state arrives at most 4 Hz, so the view eases its
+// bearing and horizon toward the latest state every animation frame instead
+// of jumping once per state (time constant SCOPE_EASE_S, wall clock only;
+// display only, the orders and the stadimeter use the published state).
+const SCOPE_EASE_S = 0.25;
+const scopeView = {id: null, target: null, shown: null, frame: null, last: 0};
+const wrap180 = (deg) => ((deg + 540) % 360) - 180;
+
+function scopeSettled() {
+  const {target: a, shown: b} = scopeView;
+  return Math.abs(wrap180(a.bearing - b.bearing)) < .01 && Math.abs(a.horizon_offset - b.horizon_offset) < .01
+    && Math.abs(a.horizon_tilt - b.horizon_tilt) < 1e-4;
+}
+
+function scopeStep(now) {
+  scopeView.frame = null;
+  const {target, shown} = scopeView;
+  if (!target || !shown) return;
+  const dt = Math.min(.25, Math.max(0, (now - scopeView.last) / 1000));
+  scopeView.last = now;
+  const k = 1 - Math.exp(-dt / SCOPE_EASE_S);
+  shown.bearing = (shown.bearing + wrap180(target.bearing - shown.bearing) * k + 360) % 360;
+  shown.horizon_offset += (target.horizon_offset - shown.horizon_offset) * k;
+  shown.horizon_tilt += (target.horizon_tilt - shown.horizon_tilt) * k;
+  if (!drawScopeFrame(scopeView.id, {...target, bearing: shown.bearing,
+    horizon_offset: shown.horizon_offset, horizon_tilt: shown.horizon_tilt})) return;
+  if (!scopeSettled()) scopeView.frame = requestAnimationFrame(scopeStep);
+}
+
 export function drawBoatScope(id, payload) {
-  const plot = visualContext(id);
-  if (!plot) return;
-  const {context: g, width, height} = plot, colors = palette();
   const scope = payload.scope;
+  const smooth = scope.available && finite(scope.bearing) && finite(scope.horizon_offset) && finite(scope.horizon_tilt);
+  const continuing = smooth && scopeView.id === id && scopeView.shown !== null;
+  scopeView.id = id;
+  scopeView.target = smooth ? scope : null;
+  if (!smooth) {
+    scopeView.shown = null;
+    if (scopeView.frame !== null) cancelAnimationFrame(scopeView.frame);
+    scopeView.frame = null;
+    drawScopeFrame(id, scope);
+    return;
+  }
+  if (!continuing) {
+    scopeView.shown = {bearing: scope.bearing, horizon_offset: scope.horizon_offset, horizon_tilt: scope.horizon_tilt};
+  }
+  if (!drawScopeFrame(id, {...scope, ...scopeView.shown})) return;
+  if (scopeView.frame === null && !scopeSettled()) {
+    scopeView.last = performance.now();
+    scopeView.frame = requestAnimationFrame(scopeStep);
+  }
+}
+
+function drawScopeFrame(id, scope) {
+  const plot = visualContext(id);
+  if (!plot) return false;
+  const {context: g, width, height} = plot, colors = palette();
   if (!scope.available) {
     label(g, t("uboot_scope_mast_down"), width / 2, height / 2, colors.muted, "center");
-    return;
+    return true;
   }
   const haze = 1 - Math.max(0, Math.min(1, scope.visibility_nm / 30));
   const hazeColor = scope.night ? [40, 48, 54] : [150, 160, 165];
@@ -216,4 +267,5 @@ export function drawBoatScope(id, payload) {
   g.beginPath(); g.moveTo(width / 2, 26); g.lineTo(width / 2, height);
   g.moveTo(width / 2 - window, height / 2); g.lineTo(width / 2 + window, height / 2); g.stroke();
   if (!finite(scope.bearing)) drawEmpty(plot);
+  return true;
 }

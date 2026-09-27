@@ -130,6 +130,9 @@ SONAR_ACTIVE_BASE_NM = 18.0           # Basis-Grundreichweite aktiv (Ping)
 SONAR_PING_COOLDOWN_S = 30.0          # Sende-/Auswertezyklus
 SONAR_PING_FIX_MAX_AGE_S = 120.0      # Unsicherheit waechst danach stark
 SONAR_PING_HEAR_RANGE_NM = 60.0       # Intercept deutlich weiter als Echo
+# Bearing error (1 sigma) of a foreign active ping heard by ear, as the
+# crewed boat's alarm bearing.
+PING_INTERCEPT_SIGMA_DEG = 2.0
 SONAR_PING_RANGE_ERROR_NM = 0.18      # max. gleichverteilter Messfehler
 SONAR_PING_DEPTH_ERROR_M = 12.0       # max. gleichverteilter Messfehler
 SONAR_ECHO_HISTORY_MAX = 80           # persistente ACTIVE-Beobachtungen

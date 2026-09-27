@@ -445,15 +445,19 @@ class SimMixin:
             return
         self._ping_intercepts = [row for row in self._ping_intercepts
                                  if row[0] > self.sim_t]
-        for _, x, y in sorted(arrived):
-            bearing = math.degrees(math.atan2(
-                x - self.ship.x, -(y - self.ship.y))) % 360.0
+        for arrival, x, y in sorted(arrived):
+            # Measured by ear: the same deterministic error as the crewed
+            # boat's alarm bearing, keyed by the (saved) arrival time.
+            bearing = (math.degrees(math.atan2(x - self.ship.x, -(y - self.ship.y)))
+                       + config.PING_INTERCEPT_SIGMA_DEG * detrand.normal(
+                           self.seed, "ping_intercept", int(round(arrival * 1000.0)))
+                       ) % 360.0
             self.flash(message("runtime.enemy_ping.detected",
-                               bearing=f"{bearing:05.1f}"), 3.0)
+                               bearing=f"{bearing:03.0f}"), 3.0)
             self.audio.play_alert("danger")
             self.feed.add(self.world.format_time(), "sonar",
                           message("runtime.enemy_ping.feed",
-                                  bearing=f"{bearing:05.1f}"))
+                                  bearing=f"{bearing:03.0f}"))
 
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""

@@ -771,19 +771,26 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                     if decoy_profile is None:
                         return False
                     source_id = entry.get("source_id")
+                    # A decoy a mission placed has no launching unit and lies
+                    # still; a launched one runs at its profile speed.
+                    placed = source_id is None
                     if (
                             set(entry) != {"id", "x", "y", "depth", "course",
                                            "speed", "life", "sensor_seed",
                                            "profile_key", "source_id"}
-                            or not identity(source_id)
-                            or (source_id not in group_ids["sub"]
-                                and source_id not in group_ids["surface"])
+                            or (not placed and (
+                                not identity(source_id)
+                                or (source_id not in group_ids["sub"]
+                                    and source_id not in group_ids["surface"])))
+                            or (placed and data.get("mission_runtime", {}).get(
+                                "custom_definition") is None)
                             or not bounded(entry.get("depth"), 0, 10000)
                             or not bounded(entry.get("course"), 0, 360)
                             or entry.get("course") == 360
                             or decoy_profile is None
-                            or entry.get("speed") != config.kn_to_nm_per_s(
-                                decoy_profile.speed_kn)
+                            or entry.get("speed") != (
+                                0.0 if placed else config.kn_to_nm_per_s(
+                                    decoy_profile.speed_kn))
                             or not bounded(entry.get("life"), .000001,
                                            decoy_profile.life_s)
                             or type(entry.get("sensor_seed")) is not int

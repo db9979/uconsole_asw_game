@@ -13,7 +13,10 @@ from src.core import config
 from src.core.i18n import message, raw_text
 from src.core.mission_definition import (_stable_seed, reference_sector_index,
                                          static_preview, validate_mission)
+from src.air.flights import Flight
+from src.enemies.animal import Animal
 from src.enemies.civilian import CivilianShip
+from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
 from src.ui.unit_editor import catalog_builtins
@@ -46,7 +49,9 @@ class MissionBridgeMixin:
         preview = static_preview(definition)
         markers = {item["id"]: item for item in preview["markers"]}
         exact = definition["units"]["exact"]
-        placeable = self.runtime_catalog.subs | self.runtime_catalog.surfaces
+        catalog = self.runtime_catalog
+        placeable = (catalog.subs | catalog.surfaces | catalog.aircraft
+                     | catalog.animals | catalog.decoys)
         group_profiles = [profile for group in definition["units"]["random_groups"]
                           for profile in group["profiles"]]
         if any(profile not in placeable for profile in
@@ -55,7 +60,9 @@ class MissionBridgeMixin:
         for unit in exact:
             profile_key = unit["profile"]
             profile = (self.runtime_catalog.subs.get(profile_key)
-                       or self.runtime_catalog.surfaces[profile_key])
+                       or self.runtime_catalog.surfaces.get(profile_key))
+            if profile is None:
+                continue                      # aircraft, animals, decoys: profile speed
             systems = self.runtime_catalog.profile_systems.get(profile_key)
             maximum_speed = (
                 self.runtime_catalog.machines[systems.machine_key].maximum_speed_kn
@@ -100,51 +107,12 @@ class MissionBridgeMixin:
         self.world.set_weather_override(env["weather"])
         thermo = float(env["thermocline_depth_m"])
         self.world._thermo = [[thermo for _ in row] for row in self.world._thermo]
-        lv = self.difficulty
         self.mission_units = {}
         for unit in exact:
-            marker = markers[unit["id"]]
-            x, y = self.world.nearest_water(marker["x"], marker["y"])
-            profile = unit["profile"]
-            if profile in self.runtime_catalog.subs:
-                entity = Sub(x, y, float(unit.get("depth_m", 60.0)),
-                             float(unit.get("course_deg", 0.0)), profile,
-                             self.rng_world, quiet_mult=lv["quiet_mult"],
-                             attack_mult=lv["enemy_attack_mult"],
-                             attack_cooldown_s=lv["enemy_cooldown_s"],
-                             solution_threshold=lv["enemy_solution_threshold"],
-                             profile=self.runtime_catalog.subs[profile],
-                             decoy_profile=self.runtime_catalog.decoys[
-                                 self.runtime_catalog.runtime_bindings[
-                                     "submarine_decoy"]],
-                              enemy_torpedo_profile=self.runtime_catalog.torpedoes[
-                                  self.runtime_catalog.runtime_bindings[
-                                      "enemy_torpedo"]],
-                               side=unit["side"], runtime_catalog=self.runtime_catalog,
-                               asw_rng=self.rng_asw)
-                entity.speed = float(unit.get("speed_kn", 0.0))
-                self.subs.append(entity)
-                self.mission_units[unit["id"]] = int(entity.id)
-            elif self.runtime_catalog.surfaces[profile].category == "KAMPFSCHIFF":
-                entity = SurfaceShip(
-                    x, y, rng=self.rng_world, side=unit["side"],
-                    doctrine="surface_combatant",
-                    profile=self.runtime_catalog.surfaces[profile],
-                    runtime_catalog=self.runtime_catalog)
-                entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
-                entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
-                self.warships.append(entity)
-                self.mission_units[unit["id"]] = int(entity.id)
-            else:
-                entity = CivilianShip(
-                    x, y, rng=self.rng_world,
-                    side=unit["side"], doctrine="surface_transit",
-                    profile=self.runtime_catalog.surfaces[profile],
-                    runtime_catalog=self.runtime_catalog)
-                entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
-                entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
-                self.civilians.append(entity)
-                self.mission_units[unit["id"]] = int(entity.id)
+            entity = self._place_mission_entity(unit, markers[unit["id"]])
+            if entity is None:
+                return False
+            self.mission_units[unit["id"]] = self._mission_entity_id(entity)
         # Random groups: placed now unless a spawn event brings them later.
         spawned_later = {event["target_id"] for event in definition["events"]
                          if event["type"] == "spawn"}
@@ -180,7 +148,7 @@ class MissionBridgeMixin:
                     depth_m=config.MISSION_GROUP_DEPTH_M)
         entity = self._place_mission_entity(spec, marker)
         if entity is not None:
-            self.mission_units[marker["id"]] = int(entity.id)
+            self.mission_units[marker["id"]] = self._mission_entity_id(entity)
 
     def _place_mission_entity(self, unit: dict, marker: dict):
         """Create the placed entity of a mission unit spec (profile, side,
@@ -222,6 +190,48 @@ class MissionBridgeMixin:
                 self.civilians.append(entity)
             entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
             entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
+            return entity
+        if profile in self.runtime_catalog.aircraft:
+            # An aircraft belongs to the nearest charted airbase (the save
+            # restores it from that base) and patrols a box around its spot.
+            bases = self.world.coast.airbases
+            if not bases:
+                return None
+            ax, ay = float(marker["x"]), float(marker["y"])
+            base = min(bases, key=lambda item: (math.hypot(item["x"] - ax, item["y"] - ay),
+                                                str(item["id"])))
+            aircraft = self.runtime_catalog.aircraft[profile]
+            entity = Flight(aircraft.kind, base, dest=None,
+                            loiter_nm=config.MISSION_AIRCRAFT_LOITER_NM,
+                            rng=self.flights.rng, seq=self.flights.next_seq(),
+                            akey=profile, catalog=self.runtime_catalog, side=unit["side"])
+            entity.x, entity.y = ax, ay
+            entity.course = float(unit.get("course_deg", 0.0))
+            # Aircraft fly at their profile speed (the save keeps no other).
+            half = config.MISSION_AIRCRAFT_LOITER_NM
+            entity.waypoints = [(ax + half, ay - half), (ax + half, ay + half),
+                                (ax - half, ay + half), (ax - half, ay - half)]
+            entity.waypoint_idx = 0
+            entity.total_dist = None
+            entity.traveled = 0.0
+            self.flights.flights.append(entity)
+            return entity
+        if profile in self.runtime_catalog.animals:
+            entity = Animal(x, y, profile, self.rng_world,
+                            depth_m=(float(unit["depth_m"]) if "depth_m" in unit else None),
+                            profile=self.runtime_catalog.animals[profile])
+            entity.course = entity.target_course = float(unit.get("course_deg", entity.course))
+            if float(unit.get("speed_kn", 0.0)) > 0.0:
+                entity.speed = float(unit["speed_kn"])
+            self.animals.append(entity)
+            return entity
+        if profile in self.runtime_catalog.decoys:
+            # A placed decoy lies still at its spot (no launching unit).
+            entity = Decoy(x, y, float(unit.get("depth_m", 60.0)), self.rng_world,
+                           profile=self.runtime_catalog.decoys[profile])
+            entity.course = float(unit.get("course_deg", entity.course))
+            entity.speed = 0.0
+            self.decoys.append(entity)
             return entity
         return None
 
@@ -461,12 +471,18 @@ class MissionBridgeMixin:
         entity_id = self.mission_units.get(unit_id)
         if entity_id is None:
             return None
-        for group in (self.subs, self.civilians, self.warships, self.animals,
-                      self.decoys, self.flights.flights):
+        for group in (self.subs, self.civilians, self.warships, self.animals, self.decoys):
             for entity in group:
-                if getattr(entity, "id", getattr(entity, "seq", None)) == entity_id:
+                if entity.id == entity_id:
                     return entity
+        for flight in self.flights.flights:
+            if flight.seq == entity_id:       # flights are numbered by sequence
+                return flight
         return None
+
+    @staticmethod
+    def _mission_entity_id(entity) -> int:
+        return int(entity.seq if isinstance(entity, Flight) else entity.id)
 
     def mission_objective_display(self):
         if self.custom_mission_definition is not None:

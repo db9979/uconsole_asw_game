@@ -249,6 +249,8 @@ UBOOT_PRESET_MIN_M = 20.0
 # Seeded random groups of a user mission: members start at this course-free
 # speed and depth (course from the mission seed).
 MISSION_GROUP_SPEED_KN = 4.0
+# A placed aircraft patrols a box of this half-width around its position.
+MISSION_AIRCRAFT_LOITER_NM = 10.0
 MISSION_GROUP_DEPTH_M = 60.0
 UBOOT_SNORKEL_NOISE_DB = 12.0
 UBOOT_SNORKEL_LINES = ((50.0, 0.85, 2.0), (100.0, 0.55, 1.5))  # (Hz, amp, width)

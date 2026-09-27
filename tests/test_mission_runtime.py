@@ -259,3 +259,60 @@ def test_group_placement_is_seeded_and_bounded_to_its_sector():
     assert runs[0] == runs[1] and len(runs[0]) == 4
     for x, y, _course in runs[0][1:]:
         assert 290.0 <= x <= 370.0 and 190.0 <= y <= 270.0     # sector plus nearest water
+
+
+# --- step 4: aircraft, animals and decoys -------------------------------------
+
+def _placed(unit_id, profile, x, y, side="neutral", **extra):
+    return dict({"id": unit_id, "profile": profile, "side": side,
+                 "placement": {"kind": "fixed", "x": x, "y": y},
+                 "course_deg": 45.0, "speed_kn": 0.0}, **extra)
+
+
+def test_aircraft_animals_and_decoys_are_placed_and_saved():
+    game = _game()
+    catalog = game.runtime_catalog
+    aircraft = next(key for key, profile in catalog.aircraft.items() if profile.kind == "military")
+    animal = next(iter(catalog.animals))
+    decoy = next(iter(catalog.decoys))
+    definition = _definition(objective="survive")
+    definition["units"]["exact"] += [
+        _placed("patrol", aircraft, 200.0, 200.0, side="hostile", speed_kn=180.0),
+        _placed("whale", animal, 230.0, 260.0, depth_m=40.0, speed_kn=3.0),
+        _placed("lure", decoy, 240.0, 240.0, depth_m=50.0, speed_kn=2.0),
+    ]
+    assert not validate_mission(definition), validate_mission(definition)
+    assert game.start_custom_mission(definition)
+    assert set(game.mission_units) == {"target", "patrol", "whale", "lure"}
+    flight = game.mission_entity("patrol")
+    assert flight in game.flights.flights and flight.akey == aircraft and flight.side == "hostile"
+    assert (round(flight.x), round(flight.y)) == (200, 200)
+    assert flight.speed == catalog.aircraft[aircraft].speed_kn     # profile speed, not 180
+    assert flight.base_id in {base["id"] for base in game.world.coast.airbases}
+    whale = game.mission_entity("whale")
+    assert whale in game.animals and whale.depth == 40.0 and whale.speed == 3.0
+    lure = game.mission_entity("lure")
+    assert lure in game.decoys and lure.depth == 50.0 and lure.speed == 0.0 and lure.source_id is None
+    _run(game, 10.0)
+    assert flight.active and not whale.dead and not lure.dead
+    state = json.loads(json.dumps(game.save_state(), allow_nan=False))
+    other = _game(seed=7)
+    assert other._load_save_data(copy.deepcopy(state))
+    assert other.mission_units == game.mission_units
+    restored = other.mission_entity("patrol")
+    assert restored is not None and restored.akey == aircraft and restored.waypoints == flight.waypoints
+    assert other.mission_entity("whale") is not None and other.mission_entity("lure") is not None
+    _run(game, 10.0)
+    _run(other, 10.0)
+    assert (round(other.mission_entity("patrol").x, 6), round(other.mission_entity("patrol").y, 6)) == \
+        (round(flight.x, 6), round(flight.y, 6))
+
+
+def test_torpedo_and_user_profiles_stay_rejected():
+    game = _game()
+    torpedo = next(iter(game.runtime_catalog.torpedoes))
+    definition = _definition(objective="survive")
+    definition["units"]["exact"].append(_placed("fish", torpedo, 220.0, 220.0, depth_m=20.0))
+    assert not game.start_custom_mission(definition)
+    definition["units"]["exact"][-1]["profile"] = "user.stealth_boat"
+    assert validate_mission(definition, {"sub_03"}) and not game.start_custom_mission(definition)

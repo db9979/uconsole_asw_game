@@ -181,6 +181,43 @@ export function drawBoatBallast(id, payload) {
     Math.abs(b.trim_deg) > 3 ? colors.amber : colors.muted, "right");
 }
 
+// Damage control: the pressure hull cut into its compartments (bow to the
+// right) with the water in each, a flame bar for fire, a green frame for
+// chlorine gas (accent), a dot for an open leak, thick bulkheads where they are shut
+// and the two teams by number.
+export function drawBoatDamage(id, payload) {
+  const plot = visualContext(id);
+  if (!plot) return;
+  const {context: g, width, height} = plot, colors = palette(), dc = payload.damage_control;
+  const count = dc.compartments.length, left = 28, right = width - 28, top = 26, bottom = height - 30;
+  const cell = (right - left) / count;
+  g.strokeStyle = colors.muted; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(left, top); g.lineTo(8, (top + bottom) / 2); g.lineTo(left, bottom);
+  g.moveTo(right, top); g.lineTo(width - 8, (top + bottom) / 2); g.lineTo(right, bottom); g.stroke();
+  dc.compartments.forEach((row, index) => {
+    const x = left + (count - 1 - index) * cell, h = bottom - top;
+    const water = Math.max(0, Math.min(1, row.water_kg / row.capacity_kg));
+    g.globalAlpha = .75; g.fillStyle = colors.blue; g.fillRect(x, top + h * (1 - water), cell, h * water); g.globalAlpha = 1;
+    if (row.fire_pct > 0) { g.fillStyle = colors.red; g.fillRect(x + 4, top + 4, (cell - 8) * row.fire_pct / 100, 8); }
+    if (row.chlorine_pct > 0) {
+      g.strokeStyle = colors.accent; g.lineWidth = 1 + 3 * row.chlorine_pct / 100; g.strokeRect(x + 5, top + 16, cell - 10, h - 22);
+    }
+    if (row.leak_pct > 0) {
+      g.fillStyle = colors.amber; g.beginPath(); g.arc(x + cell / 2, bottom - 8, 2 + 5 * row.leak_pct / 100, 0, Math.PI * 2); g.fill();
+    }
+    g.strokeStyle = row.down ? colors.red : colors.line; g.lineWidth = row.down ? 2 : 1; g.strokeRect(x, top, cell, h);
+    if (row.closed) {
+      g.strokeStyle = colors.amber; g.lineWidth = 4;
+      g.beginPath(); g.moveTo(x, top - 6); g.lineTo(x, bottom + 6); g.moveTo(x + cell, top - 6); g.lineTo(x + cell, bottom + 6); g.stroke();
+    }
+    const teams = dc.teams.filter((team) => team.compartment === row.name).map((team) => String(team.team + 1));
+    if (teams.length) label(g, teams.join(" "), x + cell / 2, top + 28, colors.text, "center");
+    label(g, t(`uboot_compartment_${row.name}`), x + cell / 2, bottom + 14, row.down ? colors.red : colors.muted, "center");
+  });
+  label(g, t("uboot_canvas_bow"), right, top - 12, colors.muted, "right");
+  label(g, dc.power ? t("uboot_dc_power_on") : t("uboot_dc_power_off"), left, top - 12, dc.power ? colors.muted : colors.red);
+}
+
 // Procedural outline by the coarse class the eye made out; `width` is the
 // apparent length in pixels, sitting on the horizon (aircraft above it).
 const HEIGHT_RATIO = {warship: .24, merchant: .17, unknown: .15, aircraft: .45, torpedo: .04};

@@ -26,6 +26,8 @@ from src.ui.sonar_view import draw_sonar_view
 from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
 from src.ui.uboot_ballast import draw_ballast_page
+from src.ui.uboot_damage import draw_damage_page
+from src.enemies.damage_control import COMPARTMENTS
 from src.ui.uboot_scope import draw_scope_page
 from src.ui.viewport import Viewport
 from src.ui.weather_station import draw_weather_station
@@ -33,7 +35,8 @@ from src.ui.weather_station import draw_weather_station
 UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE")
 # Panel pages of each boat station beside the chart (the sonar room is full screen).
 STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
-                 "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY", "UBOOT_BALLAST"),
+                 "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY", "UBOOT_BALLAST",
+                                  "UBOOT_DAMAGE"),
                  "uboot_esm": ("UBOOT_ESM", "UBOOT_SCOPE"),
                  "uboot_nav": ("UBOOT_NAV",)}
 
@@ -340,6 +343,17 @@ def threats(game, boat) -> list:
             rows.append((message("uboot.threat.torpedo", age=_fmt(torpedo_age)), "danger"))
     if sub.damage >= 50:
         rows.append((message("uboot.threat.damage", value=_fmt(sub.damage)), "danger"))
+    control = sub.damage_control
+    if not control.power():
+        rows.append((message("uboot.threat.power"), "danger"))
+    burning = [name for name, c in zip(COMPARTMENTS, control.compartments) if c.fire > 0.0]
+    if burning:
+        rows.append((message("uboot.threat.fire",
+                             compartment=message(f"uboot.compartment.{burning[0]}")), "danger"))
+    leaking = [name for name, c in zip(COMPARTMENTS, control.compartments) if c.leak > 0.0]
+    if leaking:
+        rows.append((message("uboot.threat.leak",
+                             compartment=message(f"uboot.compartment.{leaking[0]}")), "warn"))
     ping_age = alarms["last_ping_age"]
     if math.isfinite(ping_age) and ping_age < ALARM_WINDOW_S:
         if crew is not None and crew.ping_bearing is not None:
@@ -636,6 +650,9 @@ _FOOTERS = {
     ("uboot_engine", "UBOOT_BALLAST"): (("↑/↓", "uboot.footer.regulating"),
                                         ("←/→", "uboot.footer.trim"),
                                         ("Z", "uboot.footer.trim_auto")),
+    ("uboot_engine", "UBOOT_DAMAGE"): (("↑/↓ ←/→", "uboot.footer.dc_pick"),
+                                       ("help.key.enter", "uboot.footer.dc_team"),
+                                       ("I", "uboot.footer.dc_bulkhead")),
 }
 
 
@@ -666,6 +683,7 @@ def draw_command_panel(game, boat) -> None:
     drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_WEAPONS": _draw_weapons_page,
               "UBOOT_ENGINE": _draw_engine_page, "UBOOT_SUPPLY": _draw_supply_page,
               "UBOOT_ESM": _draw_esm_page, "UBOOT_BALLAST": draw_ballast_page,
+              "UBOOT_DAMAGE": draw_damage_page,
               "UBOOT_SCOPE": draw_scope_page}[name]
     drawer(s, game, boat, x, content_y, w, content_h)
     specs = tuple(

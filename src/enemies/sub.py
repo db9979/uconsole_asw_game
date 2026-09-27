@@ -25,6 +25,7 @@ from src.sensors.platform import (
 from src.weapons.torpedo import underwater_path_blocked
 from src.weapons.asw import ConsumableStore, WeaponBattery
 from src.enemies.ballast import BoatBallast
+from src.enemies.damage_control import BoatDamageControl
 from src.enemies.endurance import SubmarineEndurance
 
 CATALOG = catalog.CATALOG
@@ -185,6 +186,9 @@ class Sub:
         # Tanks, trim and air bottles; only a crewed boat feels them (the
         # AI keeps itself trimmed and keeps its one legacy blow).
         self.ballast = BoatBallast()
+        # Compartments, leaks, fire, gas and the two damage-control teams;
+        # likewise only a crewed boat's (the AI keeps one damage value).
+        self.damage_control = BoatDamageControl()
         # Own passive TMA on one bearing-only contact and crew reaction.
         self.tma_track = BearingTrack()
         self.tma_track_id = None
@@ -361,6 +365,7 @@ class Sub:
         if amount is None:
             amount = self.rng.uniform(60.0, 100.0)
         self.damage = min(100.0, self.damage + amount)
+        self._compartment_hit(amount)
         if self.damage >= 100.0:
             self.state = "SINKING"
             self.sink_left = 20.0
@@ -558,6 +563,7 @@ class Sub:
         if self.hull_fatigue >= 1.0:
             self.hull_fatigue -= 1.0
             self.damage = min(100.0, self.damage + 20.0)
+            self._compartment_hit(config.UBOOT_DC_FATIGUE_LEAK / config.UBOOT_DC_LEAK_PER_PCT)
         if self.damage >= 100.0 and self.state != "SINKING":
             self.state = "SINKING"
             self.sink_left = 20.0
@@ -590,8 +596,8 @@ class Sub:
 
     @property
     def pumping(self) -> bool:
-        """A crewed boat's trim pumps are running."""
-        return bool(self.manual and self.ballast.pumping)
+        """A crewed boat's trim or bilge pumps are running."""
+        return bool(self.manual and (self.ballast.pumping or self.damage_control.pumping))
 
     def _advance_depth(self, target_depth: float, max_rate: float, dt: float) -> None:
         """Acceleration-limited depth approach (closed-form, no overshoot).
@@ -713,8 +719,9 @@ class Sub:
             return
 
         self.speed = config.clamp(self.speed, 0.0, self.motion.maximum_speed_kn)
-        if 30.0 < self.damage < 100.0 and not self.emergency_ascent:
-            # Holed pressure hull: progressive flooding until blown or lost.
+        if 30.0 < self.damage < 100.0 and not self.emergency_ascent and not self.manual:
+            # Holed pressure hull: progressive flooding until blown or lost
+            # (a crewed boat floods compartment by compartment instead).
             self.damage = min(100.0, self.damage + 0.01 * dt
                               * (self.damage - 30.0) / 70.0)
         self._update_hull_stress(dt)
@@ -1213,6 +1220,16 @@ class Sub:
                 ceiling = min(ceiling, config.UBOOT_SILENT_MAX_KN)
             if self.snorkeling:
                 ceiling = min(ceiling, config.UBOOT_SNORKEL_MAX_KN)
+        control = self.damage_control
+        if not control.power():
+            ceiling = 0.0                       # no power: the motor stops
+        elif control.down("stern"):
+            ceiling *= config.UBOOT_DC_STERN_SPEED_FACTOR
+        if self.snorkeling and control.down("engine"):
+            # Diesel room flooded, burning or gassed: the diesels stop.
+            self.endurance.stop_snorkel()
+            if crew is not None:
+                crew.event("snorkel_stopped")
         self.target_depth = config.clamp(order_depth, 0.0, safe_depth)
         if not self.ballast.dived():
             # Main ballast blown: the boat stays up until the vents flood it.
@@ -1220,7 +1237,8 @@ class Sub:
         self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
         self.speed = config.clamp(self.order_speed, 0.0, ceiling)
         self._update_ballast(dt)
-        if crew is not None and crew.mast and self.depth > MAST_DEPTH_M + 1.0:
+        if crew is not None and crew.mast and (self.depth > MAST_DEPTH_M + 1.0
+                                               or control.down("control")):
             crew.mast = False                   # masts come down when diving
             crew.event("mast_lowered")
         if self.snorkeling and self.depth > self.endurance.profile.snorkel_depth_m + 1.0:
@@ -1229,16 +1247,36 @@ class Sub:
             if crew is not None:
                 crew.event("snorkel_stopped")
 
+    def flooding_kg(self) -> float:
+        """Floodwater in the compartments (a crewed boat's only)."""
+        return self.damage_control.total_water_kg()
+
+    def flood_moment_kg(self) -> float:
+        return self.damage_control.water_moment_kg()
+
+    def _compartment_hit(self, amount: float) -> None:
+        """A crewed boat feels a hit compartment by compartment."""
+        if not self.manual or self.sunk or self.state == "SINKING":
+            return
+        notices = self.damage_control.apply_hit(amount, self.sensor_seed)
+        if self.crew is not None:
+            for key, values in notices:
+                self.crew.event(key, **values)
+
     def _update_ballast(self, dt: float) -> None:
-        """Pumps, vents and compressor; the residual weight and trim move
-        the boat off its ordered depth where the planes cannot hold it."""
+        """Compartments, pumps, vents and compressor; the residual weight
+        and trim move the boat off its ordered depth where the planes cannot
+        hold it."""
         ballast = self.ballast
+        dc_notices = self.damage_control.update(dt, depth_m=self.depth)
+        flooding, moment = self.flooding_kg(), self.flood_moment_kg()
+        power = self.damage_control.power()
         compressor = self.snorkeling and self.snorkel_rate != "vent"
         vent = self.order_depth > config.UBOOT_MBT_SURFACE_DEPTH_M + 2.0
-        notices = ballast.update(dt, damage=self.damage, compressor=compressor,
-                                 vent_ordered=vent)
+        notices = ballast.update(dt, flooding_kg=flooding, flood_moment_kg=moment,
+                                 compressor=compressor, vent_ordered=vent, power=power)
         if ballast.dived() and not self.emergency_ascent:
-            drift = ballast.vertical_drift_mps(self.damage, self.speed)
+            drift = ballast.vertical_drift_mps(flooding, self.speed, moment)
             bottom = self.last_bottom_m if self.last_bottom_m is not None else float("inf")
             self.depth = config.clamp(self.depth + drift * dt, 0.0, max(0.0, bottom))
         self.blow_available = ballast.can_blow() and not self.emergency_ascent
@@ -1247,17 +1285,20 @@ class Sub:
             return
         for key in notices:
             crew.event(key)
+        for key, values in dc_notices:
+            crew.event(key, **values)
         # Out-of-trim warnings on the edge (display state, not saved: a loaded
         # boat starts from its current trim and so announces nothing).
-        residual = ballast.residual_kg(self.damage)
+        residual = ballast.residual_kg(flooding)
         heavy = ("heavy" if residual > config.UBOOT_HEAVY_WARN_KG
                  else "light" if residual < -config.UBOOT_HEAVY_WARN_KG else None)
         if heavy is not None and heavy != getattr(self, "_trim_seen", heavy):
             crew.event(f"boat_{heavy}", weight=f"{abs(residual) / 1000.0:.1f}")
         self._trim_seen = heavy
-        angle = abs(ballast.trim_deg()) > config.UBOOT_TRIM_WARN_DEG
+        trim = ballast.trim_deg(moment)
+        angle = abs(trim) > config.UBOOT_TRIM_WARN_DEG
         if angle and not getattr(self, "_trim_angle_seen", True):
-            crew.event("trim_angle", angle=f"{ballast.trim_deg():+.1f}")
+            crew.event("trim_angle", angle=f"{trim:+.1f}")
         self._trim_angle_seen = angle
 
     def command_trim_auto(self, enabled):
@@ -1273,10 +1314,24 @@ class Sub:
             return "not_ready"
         return self.ballast.step(tank, direction)
 
+    def command_dc_team(self, team, compartment, task):
+        """Crew: send a damage-control team to a compartment with a task."""
+        if not self._crew_ready():
+            return "not_ready"
+        return self.damage_control.order_team(team, compartment, task)
+
+    def command_bulkhead(self, compartment, closed):
+        """Crew: shut (or open) a compartment's bulkheads."""
+        if not self._crew_ready():
+            return "not_ready"
+        return self.damage_control.set_bulkhead(compartment, closed)
+
     def fire_readiness(self, bearing=None, salvo: int = 1):
         """Why a crew torpedo shot is impossible now, or None when ready."""
         if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
             return "not_ready"
+        if self.damage_control.down("bow"):
+            return "uboot_compartment_down"     # torpedo room flooded or burning
         if self.torpedoes_left <= 0:
             return "no_torpedoes"
         if self.torpedoes_left < salvo:
@@ -1488,6 +1543,8 @@ class Sub:
         if not on:
             self.endurance.stop_snorkel()
             return True
+        if self.damage_control.down("engine"):
+            return "uboot_compartment_down"
         if self.depth > self.endurance.profile.snorkel_depth_m + 1.0:
             return "uboot_too_deep"
         self.crew.bottomed = False
@@ -1503,6 +1560,8 @@ class Sub:
             return "not_ready"
         if on and self.depth > MAST_DEPTH_M:
             return "uboot_mast_depth"
+        if on and self.damage_control.down("control"):
+            return "uboot_compartment_down"     # control room out: no masts
         self.crew.mast = on
         return True
 

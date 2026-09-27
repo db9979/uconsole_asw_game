@@ -73,7 +73,10 @@ class CrewOrders:
               "mast_overtime": "navigation", "tanks_venting": "navigation",
               "tanks_flooded": "navigation", "boat_heavy": "navigation",
               "boat_light": "navigation", "trim_angle": "navigation",
-              "hp_air_low": "navigation"}
+              "hp_air_low": "navigation", "dc_leak": "schaden", "dc_fire": "schaden",
+              "dc_fire_out": "schaden", "dc_leak_sealed": "schaden",
+              "dc_flooded": "schaden", "dc_chlorine": "schaden",
+              "dc_power_lost": "schaden", "dc_power_restored": "schaden"}
 
     def __init__(self):
         self.silent = False
@@ -219,6 +222,9 @@ class CrewedBoat:
         # operator has selected on the ESM page (display only).
         self.esm = BoatESM()
         self.esm_selected = None
+        # Damage-control page: the compartment and task picked (display only).
+        self.dc_selected = 0
+        self.dc_task = "seal"
         # Local command-station UI (display only): chart camera and page.
         self.chart_view = None
         self.chart_follow = True
@@ -497,6 +503,9 @@ def update_crew(game, boat: CrewedBoat) -> None:
     orders.esm = boat.esm.bearings(game.sim_t) if orders.mast else []
     update_sightings(game, boat)
     for key, values in orders.drain_events():
+        if "compartment" in values:
+            values = dict(values, compartment=message(
+                f"uboot.compartment.{values['compartment']}"))
         boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(f"uboot.event.{key}", **values),
                     stamp=game.world.format_time())
 

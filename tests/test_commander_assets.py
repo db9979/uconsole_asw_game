@@ -558,7 +558,7 @@ def test_commander_catalogs_cover_markup_and_script():
     metric_keys -= {"synthetic_range_nm", "sensitivity_db", "cadence_s", "depth_uncertainty_m",
                     "bearing_uncertainty_deg", "range_uncertainty_nm"}
     dynamic_keys = set(re.findall(r'"((?:aff_|class_|domain_|command_|proposal_|connection_|sound_|phase_|damage_|helo_|reason_)[a-z_]+)"', js))
-    dynamic_keys -= {"damage_assign_team", "damage_unassign_team"}
+    dynamic_keys -= {"damage_assign_team", "damage_unassign_team", "damage_control"}
     dynamic_keys |= {"connection_syncing", "connection_connected", "connection_stale", "connection_unpaired"}
     dynamic_keys |= {"connection_lobby", "lobby_pending", "lobby_waiting", "lobby_request_cleared",
                      "station_mutation_failed", "station_request", "station_requested",

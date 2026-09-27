@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v19_and_older_documents_are_rejected():
+def test_save_is_v20_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (19, "u-jagd-save-v19")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (19, "u-jagd-save-v19")
+    assert (state["version"], state["save_schema"]) == (20, "u-jagd-save-v20")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (20, "u-jagd-save-v20")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -77,7 +77,15 @@ def test_save_is_v19_and_older_documents_are_rejected():
     v18["save_schema"] = "u-jagd-save-v18"
     for row in v18["subs"]:
         del row["ballast"]
+        del row["damage_control"]
     assert not game._load_save_data(v18)
+    # v19 differs only by the submarines' compartments (damage_control).
+    v19 = copy.deepcopy(state)
+    v19["version"] = 19
+    v19["save_schema"] = "u-jagd-save-v19"
+    for row in v19["subs"]:
+        del row["damage_control"]
+    assert not game._load_save_data(v19)
     assert game.save_state() == before
 
 

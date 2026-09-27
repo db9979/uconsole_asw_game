@@ -132,6 +132,7 @@ DISPLAY_KEYS = {
         "UBOOT_ENGINE": "station.page.uboot_engine",
         "UBOOT_SUPPLY": "station.page.uboot_supply",
         "UBOOT_BALLAST": "station.page.uboot_ballast",
+        "UBOOT_DAMAGE": "station.page.uboot_damage",
         "UBOOT_ESM": "station.page.uboot_esm",
         "UBOOT_SCOPE": "station.page.uboot_scope",
         "WEAPONS_TARGET": "station.page.weapons_target",

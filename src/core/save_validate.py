@@ -33,6 +33,7 @@ from src.core.save_schema import (
     SUB_CREW_FIELDS, WORLD_FIELDS)
 from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
+from src.enemies.damage_control import BoatDamageControl
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
@@ -991,6 +992,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                         return False
                     try:
                         BoatBallast.restore(entry["ballast"])
+                        BoatDamageControl.restore(entry["damage_control"])
                     except (TypeError, ValueError):
                         return False
                     if not bounded(entry.get("active_ping_cd"), 0.0,

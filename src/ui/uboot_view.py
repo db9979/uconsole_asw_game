@@ -26,6 +26,7 @@ from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
 from src.ui.uboot_scope import draw_scope_page
 from src.ui.viewport import Viewport
+from src.ui.weather_station import draw_weather_station
 
 UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE")
 # Panel pages of each boat station beside the chart (the sonar room is full screen).
@@ -838,6 +839,15 @@ def draw(game) -> None:
     draw_top_bar(game, boat)
     previous = config.STATION_RECT
     try:
+        if game.weather_station_open and boat is not None:
+            # Key 0: the weather panel over the whole station area, read
+            # from the boat's own instruments and bathythermograph.
+            config.STATION_RECT = config.OPZ_STATION_RECT
+            with layout.clip_to(game.screen, config.STATION_RECT):
+                with game.sonar_perspective(boat.station):
+                    draw_weather_station(game)
+            game.draw_navigation_input()
+            return
         if game.station is Station.SONAR and boat is not None:
             config.STATION_RECT = config.FULL_STATION_RECT
             with layout.clip_to(game.screen, config.STATION_RECT):

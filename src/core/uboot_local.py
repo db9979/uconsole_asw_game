@@ -334,6 +334,13 @@ def handle_key(game, event) -> None:
         if key == pygame.K_F10:
             game._open_administration("options")
             return
+        if key in (pygame.K_0, pygame.K_KP0) and current is not None:
+            # The boat's weather panel (its own instruments and BT), as on the frigate.
+            game._clear_station_input()
+            game.pinned_tooltip = None
+            game._tooltip_anchor = None
+            game.weather_station_open = True
+            return
         if key in (pygame.K_s, pygame.K_l) and game.station is not Station.SONAR:
             game._open_administration("save" if key == pygame.K_s else "load")
             return

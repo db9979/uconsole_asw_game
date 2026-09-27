@@ -4424,5 +4424,16 @@
   "bridge.footer.glasses_train": "TRAIN",
   "help.bridge.lookout_glasses": "Lookout page: binoculars over the chart on/off (, / . train them)",
   "bridge.line.glasses_row": "{bearing}°  {what}  {range} NM",
-  "bridge.line.glasses_unknown": "unidentified"
+  "bridge.line.glasses_unknown": "unidentified",
+  "weather.line.temperature_boat": "Air {air} °C  Sea {sea} °C",
+  "weather.box.boat": "Boat · concealment and noise",
+  "weather.boat.mast_radar": "Mast on radar: seen at {range} NM (calm sea {calm} NM)",
+  "weather.boat.sighting": "Surfaced boat by eye: seen at {range} NM (day, clear, calm {reference} NM)",
+  "weather.boat.sighting_none": "Surfaced boat by eye: not sighted in this light and sea (day, clear, calm {reference} NM)",
+  "weather.boat.ambient": "Ambient noise vs. calm: {bands}",
+  "weather.boat.band": "{band} Hz {excess} dB",
+  "weather.boat.snorkel": "Snorkel: max {speed} kn · +{noise} dB · diesel lines {lines} Hz audible",
+  "weather.boat.snorkel_active": "SNORKELLING: max {speed} kn · +{noise} dB · diesel lines {lines} Hz audible",
+  "weather.boat.snorkel_none": "Snorkel: none (no diesel plant)",
+  "help.uboot.weather": "Weather panel of the boat (0 or Esc closes)"
 }

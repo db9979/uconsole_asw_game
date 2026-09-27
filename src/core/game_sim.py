@@ -1300,6 +1300,7 @@ class SimMixin:
         self.mission_result = "SIEG" if win else "VERLOREN"
         self.result_reason = reason
         self.game_over = True
+        self._finish_debrief()
         self.input_mode = None
         self.input_buffer = ""
         self._clear_controls()

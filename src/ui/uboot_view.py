@@ -1143,7 +1143,10 @@ def draw(game) -> None:
                 draw_command_panel(game, boat)
         draw_bottom(game, boat)
         game.draw_navigation_input()
-        if game.game_over:
+        if game.game_over and getattr(game, "debrief_open", False):
+            from src.ui.debrief_view import draw_debrief
+            draw_debrief(game)
+        elif game.game_over:
             draw_end_panel(game, boat)
     finally:
         config.STATION_RECT = previous

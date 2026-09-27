@@ -1412,8 +1412,10 @@ class PicturesMixin:
         """Periodischer Zustandssnapshot des kompletten Simulationshintergrunds.
 
         Rein lesend (kein RNG, keine Zustandsaenderung); Laeuft nur im
-        Simulationsfortschritt, nicht in Pause/Menue/Editor.
+        Simulationsfortschritt, nicht in Pause/Menue/Editor.  Feeds the
+        (equally read-only) mission debrief recorder first.
         """
+        self._record_debrief(dt)
         if not self.preferences.simlog:
             self._simlog_acc = 0.0
             return

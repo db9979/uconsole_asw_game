@@ -84,10 +84,11 @@ from src.core.game_pictures import (PicturesMixin)
 from src.core.game_tasking import TaskingMixin
 from src.core.game_crew import CrewMixin
 from src.core.game_mpa import MpaMixin
+from src.core.game_debrief import DebriefMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
-           SaveMixin, TaskingMixin, CrewMixin, MpaMixin):
+           SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -403,6 +404,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._reset_tasking()
         # Watches, fatigue and morale of the frigate crew (save ``watch``).
         self._reset_crew()
+        # Post-mission debrief recording (transient, never saved).
+        self._reset_debrief()
         self.mission_result = None   # None | "SIEG" | "VERLOREN"
         self.result_reason = ""
 

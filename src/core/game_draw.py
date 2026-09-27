@@ -362,7 +362,10 @@ class DrawMixin:
                 if self.feed_overlay_open:
                     self.draw_feed_overlay()
                 self.draw_navigation_input()
-                if self.game_over:
+                if self.game_over and self.debrief_open:
+                    from src.ui.debrief_view import draw_debrief
+                    draw_debrief(self)
+                elif self.game_over:
                     self.draw_end_panel()
             finally:
                 config.STATION_RECT = previous_rect

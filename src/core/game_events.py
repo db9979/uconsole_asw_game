@@ -677,6 +677,13 @@ class EventMixin:
             # Layout-independent help key (US Shift+/, DE Shift+ß).
             self._open_administration("help")
             return
+        if self.game_over and self.debrief_open:
+            # The debrief page owns input until it is closed (Esc or D).
+            if e.type == pygame.KEYDOWN:
+                self._handle_debrief_key(e.key, getattr(e, "mod", 0))
+            elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                self._handle_debrief_click(self._window_to_canvas(getattr(e, "pos", None)))
+            return
         if e.type != pygame.KEYDOWN:
             if self.input_mode is not None or self.in_menu or self.game_over:
                 return
@@ -791,7 +798,9 @@ class EventMixin:
                                      else 0)
                 return
             if self.game_over:
-                if e.key == pygame.K_r:
+                if e.key == pygame.K_d:
+                    self.open_debrief()
+                elif e.key == pygame.K_r:
                     definition = self.custom_mission_definition
                     if definition is None or not self.start_custom_mission(
                             json.loads(json.dumps(definition))):

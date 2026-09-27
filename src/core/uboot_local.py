@@ -369,7 +369,7 @@ def handle_key(game, event) -> None:
             set_local_station(game, destination)
             return
         if game.game_over:
-            if key in (pygame.K_r, pygame.K_m):
+            if key in (pygame.K_r, pygame.K_m, pygame.K_d):
                 game._uboot_dispatch = True
                 try:
                     game._handle_owned_event(event)

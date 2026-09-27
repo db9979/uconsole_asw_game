@@ -64,6 +64,7 @@ Global keys (all stations):
 | `M R B C D · Enter · Bksp` | In plot mode: choose tool, place point with Enter or click (arrows move the cursor, Shift faster), delete the nearest object (Shift: all) |
 | `Esc` | Cancel input or open exit dialog |
 | `R / M` | After the mission ends: restart with the same seed / main menu |
+| `D` | After the mission ends: debrief with the truth beside what the crew knew |
 
 In the Remote Crew browser (Commander, `F9`) stations are operated with buttons; the keyboard helps with navigation:
 
@@ -1175,6 +1176,7 @@ The top bar shows the boat's six stations as tabs: `1` Command, `2` Sonar, `3` W
 - Scenarios: 1 Patrol, 2 Double hunt, 3 Nuclear intercept, 4 Random (custom difficulty). User missions start from the Mission Editor (`F5` in its browser). The runtime takes the editor's scope: a 500 NM fixed world or a packaged reference sector (`sector:0` to `sector:127`), the authored weather, placed submarines, surface ships, aircraft (patrolling a 10 NM box at profile speed), animals and static decoys, seeded random groups, timed events (message, spawn, weather, objective) and the objectives sink, survive, protect (keep the named units alive until the time limit) and reach (enter the objective point's radius). User unit profiles, torpedoes and other world sizes are refused at start.
 - Win: all targets sunk, or survive the time limit. Lose: own ship sunk, civilian hit, target 150 NM from its start, or time out.
 - Score: 1000 per sunk submarine, 200 per unused torpedo, 500 without civilian losses, up to 500 time bonus.
+- Debrief: after the mission ends, `D` on the end panel opens the debrief. It replays the mission with the truth beside what the crew knew: the true tracks of the ship and the hostile boats, the crew's contacts where it had placed them (bearing-only contacts as bearing lines), weapons, buoys and aircraft. Beside the chart it lists the time of the first contact, first fix and classification, weapons fired and boats sunk, the mean error of the crew's fixes, and every event; a "missed chance" is a hostile boat within 4 NM for at least 5 min without any contact, marked above or below the layer. `Left`/`Right` step (Shift: 1 min), `Up`/`Down` or `PgUp`/`PgDn` jump between events, a click on the timeline jumps there, `D` or `Esc` returns. The debrief is recorded every 10 s (coarser on long missions), is never shown during a mission and is not saved: after a load it covers the mission from the load onwards.
 
 ### Glossary
 

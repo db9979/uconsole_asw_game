@@ -1034,6 +1034,17 @@ FEED_MAX_ENTRIES = 200
 SIMLOG_MAX_ENTRIES = 256
 SIMLOG_INTERVAL_S = 10.0
 
+# Mission debrief (``src/core/debrief.py``): always recorded, shown only after
+# the mission ends, never saved.  Frames thin out (and the interval doubles)
+# when the cap is reached, so memory stays bounded on the uConsole.
+DEBRIEF_INTERVAL_S = 10.0          # mission seconds between frames at start
+DEBRIEF_EVENT_S = 1.0              # event checks (first contact, shots, hits)
+DEBRIEF_MAX_FRAMES = 360
+DEBRIEF_MAX_EVENTS = 160
+DEBRIEF_DAMAGE_STEP = 10.0         # own damage points per damage event
+DEBRIEF_MISSED_NM = 4.0            # "missed chance": a hostile boat this close ...
+DEBRIEF_MISSED_S = 300.0           # ... unheard for at least this long
+
 
 def aspect_rcs_factor(course_target: float, bearing_from_frigate: float) -> float:
     """M12: Radar-RCS-Aspect: Breitseite zur Fregatte = stärkste Rückmeldung

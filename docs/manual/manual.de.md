@@ -64,6 +64,7 @@ Globale Tasten (alle Stationen):
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
+| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew |
 
 Im Remote-Crew-Browser (Commander, `F9`) werden Stationen mit Schaltflächen bedient; die Tastatur hilft bei der Navigation:
 
@@ -1176,6 +1177,7 @@ Die obere Leiste zeigt die sechs Stationen des Boots als Reiter: `1` Führung, `
 - Szenarien: 1 Patrouille, 2 Doppeljagd, 3 Nuklear-Abfang, 4 Zufall (eigene Schwierigkeit). Eigene Missionen starten aus dem Missionseditor (`F5` in dessen Browser). Die Laufzeit übernimmt den Umfang des Editors: eine 500-sm-Welt fest oder als paketierter Referenzsektor (`sector:0` bis `sector:127`), das eingestellte Wetter, platzierte U-Boote, Überwasserschiffe, Luftfahrzeuge (Patrouille in einem 10-sm-Kasten mit Profilgeschwindigkeit), Tiere und ruhende Täuschkörper, gesäte Zufallsgruppen, zeitgesteuerte Ereignisse (Meldung, Erscheinen, Wetter, Ziel) und die Ziele Versenken, Überstehen, Schützen (die benannten Einheiten bis zum Zeitlimit erhalten) und Erreichen (den Radius des Zielpunkts betreten). Benutzerprofile, Torpedos und andere Weltgrößen werden beim Start abgewiesen.
 - Sieg: alle Ziele versenkt oder Zeitlimit überlebt. Niederlage: eigenes Schiff versenkt, ziviler Treffer, Ziel 150 sm vom Start entfernt oder Zeit abgelaufen.
 - Punkte: 1000 je versenktem U-Boot, 200 je unverbrauchtem Torpedo, 500 ohne zivile Verluste, bis zu 500 Zeitbonus.
+- Nachbesprechung: Nach Missionsende öffnet `D` im Endfenster die Nachbesprechung. Sie spielt die Mission ab und zeigt die Wahrheit neben dem, was die Crew wusste: die echten Kurse von Schiff und feindlichen Booten, die Kontakte der Crew dort, wo sie sie verortet hatte (reine Peilungen als Peilstrahlen), Waffen, Bojen und Luftfahrzeuge. Daneben stehen die Zeit des ersten Kontakts, der ersten Ortung und der Klassifizierung, abgefeuerte Waffen und versenkte Boote, der mittlere Fehler der Ortungen und alle Ereignisse; eine "verpasste Chance" ist ein feindliches Boot, das mindestens 5 min lang höchstens 4 sm entfernt war, ohne dass es einen Kontakt gab, mit dem Hinweis über oder unter der Sprungschicht. `Links`/`Rechts` blättern (Shift: 1 min), `Auf`/`Ab` oder `Bild auf`/`Bild ab` springen zwischen Ereignissen, ein Klick in die Zeitleiste springt dorthin, `D` oder `Esc` kehrt zurück. Aufgezeichnet wird alle 10 s (bei langen Missionen gröber); die Nachbesprechung ist während der Mission nie sichtbar und wird nicht gespeichert: nach dem Laden deckt sie die Mission ab dem Laden ab.
 
 ### Glossar
 

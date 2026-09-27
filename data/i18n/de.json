@@ -902,7 +902,7 @@
   "commander.web.uboot_esm_none": "Kein Radar erfasst.",
   "commander.web.uboot_esm_mast_down": "Mast eingefahren: kein ESM.",
   "commander.web.uboot_scope_title": "Sehrohr",
-  "commander.web.uboot_scope_mast_down": "Mast eingefahren: kein Sehrohrbild.",
+  "commander.web.uboot_scope_mast_down": "Mast eingefahren: kein Sehrohrbild. Die Station Mast & ESM fährt den Mast aus.",
   "commander.web.uboot_scope_bearing": "Sichtlinie {bearing}° (relativ {relative}°)",
   "commander.web.uboot_scope_conditions": "{light} · Sicht {visibility} NM · Seegang {sea}",
   "commander.web.uboot_scope_day": "Tag",

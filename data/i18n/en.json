@@ -902,7 +902,7 @@
   "commander.web.uboot_esm_none": "No radar intercepted.",
   "commander.web.uboot_esm_mast_down": "Mast down: no ESM.",
   "commander.web.uboot_scope_title": "Periscope",
-  "commander.web.uboot_scope_mast_down": "Mast down: no periscope view.",
+  "commander.web.uboot_scope_mast_down": "Mast down: no periscope view. The Mast & ESM station raises the mast.",
   "commander.web.uboot_scope_bearing": "Line of sight {bearing}° (relative {relative}°)",
   "commander.web.uboot_scope_conditions": "{light} · visibility {visibility} NM · sea state {sea}",
   "commander.web.uboot_scope_day": "Day",

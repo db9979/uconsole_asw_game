@@ -27,6 +27,11 @@ RADIO_TASK_FIELDS = ("id", "kind", "state", "name", "persons", "x", "y", "radius
                      "remaining_s", "progress", "sighted", "verdict", "points",
                      "can_answer")
 RADIO_TASK_KINDS = ("sar", "identify", "datum", "ras", "emcon")
+# The crew's watch bill, fatigue and morale (``src/core/crew.py``): the
+# frigate's on the bridge and damage roles, the boat's in ``damage_control``.
+CREW_FIELDS = ("on_watch", "watches", "watch_left_s", "turnover", "action_stations",
+               "morale", "effectiveness")
+CREW_WATCH_FIELDS = ("index", "fatigue", "on_duty")
 RADIO_TASK_STATES = ("offered", "active", "done", "failed", "declined")
 
 # The common ``weather_station`` block: own-ship atmosphere (every role) and
@@ -64,7 +69,7 @@ UBOOT_BALLAST_FIELDS = UBOOT_BALLAST_FLAGS + (
     "regulating_order_kg", "regulating_capacity_kg", "trim_kg", "trim_order_kg",
     "trim_capacity_kg", "load_kg", "flooding_kg", "residual_kg", "trim_deg", "drift_mps")
 # The boat's compartments and damage-control teams (``damage_control``).
-UBOOT_DAMAGE_FIELDS = ("power", "pumping", "compartments", "teams")
+UBOOT_DAMAGE_FIELDS = ("power", "pumping", "compartments", "teams", "crew")
 UBOOT_COMPARTMENT_FIELDS = ("name", "water_kg", "capacity_kg", "leak_pct", "fire_pct",
                             "chlorine_pct", "closed", "down")
 UBOOT_DC_TEAM_FIELDS = ("team", "compartment", "task", "transit_s")
@@ -84,12 +89,13 @@ UBOOT_ESM_CANDIDATE_FIELDS = ("name", "role")
 UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")
 # Top-level keys of every role payload (exact sets on both sides).
 ROLE_SHAPES = {
-    "bridge": ("navigation", "orders", "threat", "systems", "tactical_summary", "sightings"),
+    "bridge": ("navigation", "orders", "threat", "systems", "tactical_summary", "sightings",
+               "crew"),
     "sonar": ("observations", "settings", "visualization"),
     "weapons": ("inventory", "readiness", "designated_target", "navigation", "tactical",
                 "target_choices", "depth_m", "tubes", "settings", "own_weapons",
                 "active_assets"),
-    "damage": ("compartments", "teams", "total", "sunk", "stability"),
+    "damage": ("compartments", "teams", "total", "sunk", "stability", "crew"),
     "opz": ("observations", "fusions", "radar", "defense", "asm_observations",
             "source_classifications", "radar_blips", "designated_target_ref", "own_assets"),
     "radio": ("observations", "logged_fixes", "logged_bearings", "messages", "station_down",

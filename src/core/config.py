@@ -834,6 +834,27 @@ SCORE_TASK = {                     # (done, failed, declined)
     "emcon": (200, -250, -200),
 }
 
+# Crew fatigue, watches and morale (src/core/crew.py; game assumptions).
+# A real watch is four hours; the game relieves the watch every hour so a
+# session sees the rotation.  Normal rotation keeps the duty watch fresh
+# (effectiveness 1.0); action stations tire everybody.
+CREW_WATCH_S = 3600.0              # duty watch relieved after this
+CREW_TURNOVER_S = 60.0             # new watch settling in
+CREW_TURNOVER_FACTOR = 0.85
+CREW_TIRE_WATCH_S = 4.0 * 3600.0   # duty watch: fatigue 0 -> 1
+CREW_TIRE_ACTION_S = 1.5 * 3600.0  # action stations: everybody
+CREW_RECOVER_S = 1.5 * 3600.0      # off watch: fatigue 1 -> 0
+CREW_FATIGUE_FREE = 0.25           # fatigue below this costs nothing
+CREW_FATIGUE_WEIGHT = 0.6          # effectiveness lost per unit above it
+CREW_ACTION_BONUS = 1.1            # alert crew at action stations
+CREW_MORALE_START = 0.7
+CREW_MORALE_WEIGHT = 0.2           # effectiveness per unit of morale
+CREW_MORALE_FATIGUE = 0.5          # low morale tires faster
+CREW_DAMAGE_STRESS = 1.5           # fatigue pace while fighting damage
+CREW_EFFECT_MIN = 0.5
+CREW_EFFECT_MAX = 1.15
+CREW_SONAR_DB = 10.0               # dB of recognition differential per unit lost
+
 # Missionstypen: Zeitfenster in Echtzeit-Simulationssekunden.
 # Lange Einsatzfenster lassen Zeit für Aufmerksamkeits- und Suchphasen.
 # win = "sink" (Ziel versenken) oder "survive" (Zeitlimit überstehen)

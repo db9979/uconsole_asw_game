@@ -122,8 +122,8 @@ export function validateV2State(state) {
   const payload = state[state.role];
   // BEGIN GENERATED (tools/gen_web_schema.py; do not edit by hand)
   const shapes = {
-    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"],
-    damage: ["compartments", "teams", "total", "sunk", "stability"],
+    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew"],
+    damage: ["compartments", "teams", "total", "sunk", "stability", "crew"],
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
     helicopter: ["asset", "waypoint", "buoys", "buoy_observations", "acoustic", "navigation", "tactical", "target_choices", "readiness", "dip_observations", "dip_environment"],
@@ -146,6 +146,10 @@ export function validateV2State(state) {
     kinds: ["sar", "identify", "datum", "ras", "emcon"],
     states: ["offered", "active", "done", "failed", "declined"],
   };
+  const crewFields = {
+    row: ["on_watch", "watches", "watch_left_s", "turnover", "action_stations", "morale", "effectiveness"],
+    watch: ["index", "fatigue", "on_duty"],
+  };
   const helicopterTacticalFields = ["ref", "label", "domain", "source", "affiliation", "bearing", "range_nm", "x", "y", "course", "speed_kn", "altitude_m", "observer_x", "observer_y", "quality", "age_s", "bearing_uncertainty_deg", "range_uncertainty_nm", "visual_class", "visual_type", "classification", "released_to_opz"];
   const weatherFields = {
     atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
@@ -157,7 +161,7 @@ export function validateV2State(state) {
     air: ["o2_pct", "co2_pct", "absorber_pct", "absorber_sets", "candles", "candle_left_s", "level", "efficiency"],
     ballast: ["blowing", "venting", "auto", "pumping", "compressor", "hp_air_bar", "hp_air_max_bar", "blows_left", "mbt_pct", "regulating_kg", "regulating_order_kg", "regulating_capacity_kg", "trim_kg", "trim_order_kg", "trim_capacity_kg", "load_kg", "flooding_kg", "residual_kg", "trim_deg", "drift_mps"],
     ballastFlags: ["blowing", "venting", "auto", "pumping", "compressor"],
-    damage: ["power", "pumping", "compartments", "teams"],
+    damage: ["power", "pumping", "compartments", "teams", "crew"],
     compartment: ["name", "water_kg", "capacity_kg", "leak_pct", "fire_pct", "chlorine_pct", "closed", "down"],
     dcTeam: ["team", "compartment", "task", "transit_s"],
     compartments: ["bow", "control", "quarters", "battery", "engine", "stern"],
@@ -184,7 +188,18 @@ export function validateV2State(state) {
       if (row.altitude_m !== null && (!finite(row.altitude_m) || row.altitude_m < 0 || row.altitude_m > 30000)) throw new Error("protocol");
     });
   };
+  // A crew's watch bill: three watches, fatigue and morale 0..1.
+  const crewOk = (crew) => exactKeys(crew, crewFields.row) &&
+    Number.isInteger(crew.on_watch) && crew.on_watch >= 1 && crew.on_watch <= 3 &&
+    Array.isArray(crew.watches) && crew.watches.length === 3 &&
+    crew.watches.every((row, index) => exactKeys(row, crewFields.watch) && row.index === index + 1 &&
+      finite(row.fatigue) && row.fatigue >= 0 && row.fatigue <= 1 && typeof row.on_duty === "boolean") &&
+    (crew.watch_left_s === null || (finite(crew.watch_left_s) && crew.watch_left_s >= 0)) &&
+    typeof crew.turnover === "boolean" && typeof crew.action_stations === "boolean" &&
+    finite(crew.morale) && crew.morale >= 0 && crew.morale <= 1 &&
+    finite(crew.effectiveness) && crew.effectiveness > 0 && crew.effectiveness <= 2;
   if (state.role === "bridge") {
+    if (!crewOk(payload.crew)) throw new Error("protocol");
     if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
         typeof payload.orders.station_down !== "boolean" || !finite(payload.orders.speed_max_kn) ||
@@ -307,7 +322,7 @@ export function validateV2State(state) {
         !Number.isInteger(ballast.blows_left) || ballast.blows_left < 0) throw new Error("protocol");
     // Compartments and damage-control teams: own-ship state, closed vocabulary.
     const damage = payload.damage_control;
-    if (!exactKeys(damage, boatFields.damage) ||
+    if (!exactKeys(damage, boatFields.damage) || !crewOk(damage.crew) ||
         typeof damage.power !== "boolean" || typeof damage.pumping !== "boolean" ||
         !Array.isArray(damage.compartments) || damage.compartments.length !== boatFields.compartments.length ||
         damage.compartments.some((row, index) => !exactKeys(row, boatFields.compartment) ||
@@ -356,7 +371,7 @@ export function validateV2State(state) {
     tacticalRows(payload.tactical, 128);
     rowsExact(payload.target_choices, 128, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"]);
   } else if (state.role === "damage") {
-    if (!boundedArray(payload.compartments, 16) || payload.compartments.some((row) => !exactKeys(row, ["key", "name", "state", "flood", "fire", "repairable", "trend"]) || typeof row.repairable !== "boolean" || !exactKeys(row.trend, ["flood_rate", "fire_rate", "repairable"])) ||
+    if (!crewOk(payload.crew) || !boundedArray(payload.compartments, 16) || payload.compartments.some((row) => !exactKeys(row, ["key", "name", "state", "flood", "fire", "repairable", "trend"]) || typeof row.repairable !== "boolean" || !exactKeys(row.trend, ["flood_rate", "fire_rate", "repairable"])) ||
         !boundedArray(payload.teams, 16) || payload.teams.some((row) => !exactKeys(row, ["team", "compartment"])) ||
         !exactKeys(payload.stability, ["list_deg", "trim_deg", "counterflood_room", "can_counterflood"]) ||
         typeof payload.stability.can_counterflood !== "boolean") throw new Error("protocol");

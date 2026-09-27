@@ -35,6 +35,7 @@ from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
+from src.core.crew import CrewState
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
@@ -107,6 +108,9 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
     sub_id = crew["sub_id"]
     if (not identity(sub_id) or sub_id not in sub_rows
             or manual_ids != {sub_id}):
+        return False
+    if (not CrewState.valid_state(crew["watch"])
+            or crew["watch"]["watch_t"] > data.get("sim_t", 0.0)):
         return False
     torpedo_ids = {row.get("id") for row in data.get("enemy_torpedoes", ())
                    if isinstance(row, dict)}
@@ -436,6 +440,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             or any(not isinstance(item, str) or item not in known_events
                    for item in pending_events)
             or len(set(pending_events)) != len(pending_events)):
+        return False
+    # Save v21: the frigate crew's watch bill, fatigue and morale.
+    watch = data.get("watch")
+    if not CrewState.valid_state(watch) or watch["watch_t"] > save_sim_t:
         return False
     # Save v21: the radio tasking board; a task's ship must be in this save.
     board = data.get("tasking")

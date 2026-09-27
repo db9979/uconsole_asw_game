@@ -128,6 +128,15 @@ def draw_damage_page(s, game, boat, x, y, w, h) -> None:
                      f"uboot.compartment.{team['compartment']}"),
                      task=message(f"uboot.dc.task.{team['task']}")))
         rows.append((message("uboot.dc.label.team", number=number + 1), state, None))
+    watch = boat.watch
+    rows.append(("uboot.dc.label.crew", message(
+        "uboot.dc.crew", state=message(
+            "uboot.dc.crew_action" if watch.action_stations else "uboot.dc.crew_watch",
+            watch=str(watch.on_watch + 1)),
+        effect=f"{watch.effectiveness(game.sim_t) * 100:.0f}",
+        fatigue=f"{watch.duty_fatigue() * 100:.0f}",
+        morale=f"{watch.morale * 100:.0f}"),
+        config.COLOR_WARN if watch.effectiveness(game.sim_t) < 0.9 else None))
     rows.append(("uboot.dc.label.order", message(
         "uboot.dc.order", compartment=message(f"uboot.compartment.{COMPARTMENTS[selected]}"),
         task=message(f"uboot.dc.task.{task}")), config.COLOR_WARN))

@@ -180,6 +180,8 @@ class DamageModel:
     def __init__(self, rng: random.Random, repair_mult: float = 1.0):
         self.rng = rng
         self.repair_mult = repair_mult   # M7: Level-Faktor Reparaturrate
+        # Crew watch performance (derived from the crew state, not saved).
+        self.crew_factor = 1.0
         self.compartments = {k: Compartment(k, n) for k, n in COMPARTMENTS}
         self.teams: dict[int, str | None] = {1: None, 2: None, 3: None}
         # Where each team stands and how long until it arrives (saved).
@@ -445,8 +447,9 @@ class DamageModel:
         """Flood/fire removal per second with the current team assignment."""
         count = len(self.teams_on(key))
         factor = 0.0 if not count else 1.0 + .6 * (count - 1)
-        return (config.DMG_REPAIR_RATE * self.repair_mult * factor,
-                config.DMG_FIRE_REPAIR_RATE * count)
+        crew = self.crew_factor
+        return (config.DMG_REPAIR_RATE * self.repair_mult * factor * crew,
+                config.DMG_FIRE_REPAIR_RATE * count * crew)
 
     def _inflow_pct_s(self, c: Compartment) -> float:
         geo = c.geometry

@@ -82,10 +82,11 @@ from src.core.game_draw import (DrawMixin)
 from src.core.game_operator import (OperatorMixin)
 from src.core.game_pictures import (PicturesMixin)
 from src.core.game_tasking import TaskingMixin
+from src.core.game_crew import CrewMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
-           SaveMixin, TaskingMixin):
+           SaveMixin, TaskingMixin, CrewMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -306,12 +307,17 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
             return None
         sub.claim_manual()
         self._opfor = opfor.CrewedBoat(sub, self.runtime_catalog)
+        self._opfor.watch = self._boat_watch(self._opfor)
+        self._apply_crew_effects()
         return self._opfor
 
     def release_opfor_sub(self) -> None:
         """Hand the crewed submarine back to the AI."""
         boat = self._opfor
         self._opfor = None
+        if boat is not None:
+            # The AI crew works at the calibrated pace again.
+            boat.sub.damage_control.crew_factor = 1.0
         if boat is not None and boat.sub in self.subs and not boat.sub.sunk:
             boat.sub.release_manual()
 
@@ -394,6 +400,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.score = 0
         # HQ orders and incidents (save ``tasking``); none in custom missions.
         self._reset_tasking()
+        # Watches, fatigue and morale of the frigate crew (save ``watch``).
+        self._reset_crew()
         self.mission_result = None   # None | "SIEG" | "VERLOREN"
         self.result_reason = ""
 

@@ -183,13 +183,16 @@ def passive_terms(*, frequency_hz: float, distance_nm: float,
                   own_range_factor: float, array_range_factor: float,
                   sea_state: float, rain: float, shipping_contacts: int,
                   sensitivity_db: float = 0.0,
-                  hull_self_noise: bool = True) -> PassiveTerms:
+                  hull_self_noise: bool = True,
+                  threshold_db: float = 0.0) -> PassiveTerms:
     """Assemble the passive sonar equation for one band.
 
     ``target_bonus`` is the 1.0.0 source-level multiplier (louder target),
     expressed here as +20 log10 dB of source level; the array factor becomes
     directivity; path excess (layer, surface/bottom/refraction) and the
     Francois-Garrison absorption replace the legacy fixed absorption.
+    ``threshold_db`` is the operator's recognition differential above the
+    calibrated 0 dB (a tired watch needs a stronger signal).
     """
     anchor = passive_figure_of_merit_offset(frequency_hz)
     source = anchor + 20.0 * math.log10(max(target_bonus, 1e-6))
@@ -208,7 +211,7 @@ def passive_terms(*, frequency_hz: float, distance_nm: float,
         directivity -= reference_noise_db(frequency_hz) - ambient_noise_db(
             frequency_hz, REFERENCE_SEA_STATE)
     return PassiveTerms(frequency_hz, source, transmission, noise, directivity,
-                        0.0)
+                        threshold_db)
 
 
 # --- active ---------------------------------------------------------------------

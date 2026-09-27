@@ -207,7 +207,7 @@ def test_damage_control_over_remote_crew_and_projection():
     assert sub.damage_control.compartments[_index("engine")].closed
     assert apply(game, "uboot_bulkhead", {"compartment": "engine", "closed": False},
                  "uboot_nav") is False
-    payload = _uboot_damage(sub)
+    payload = _uboot_damage(game, game.opfor)
     assert [row["name"] for row in payload["compartments"]] == list(COMPARTMENTS)
     assert payload["teams"][1]["task"] == "seal" and payload["power"] is True
     blob = json.dumps(payload)

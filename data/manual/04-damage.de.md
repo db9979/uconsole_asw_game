@@ -6,7 +6,7 @@ Die Schadensabwehr hält das Schiff nach einem Treffer schwimmfähig und die Sta
 
 ## Anzeigen und Instrumente {#damage-displays}
 
-Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung).
+Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand, Tendenz, Trupps vor Ort, Krängung); Seite 3 ist der Wachplan der Besatzung.
 
 ```text
   Bug                                                    Heck
@@ -31,6 +31,16 @@ Seite 1 ist der Schiffsplan; Seite 2 zeigt Details je Abteilung (Flutung, Brand,
 
 Auswirkungen auf Stationen: eine Station verliert mit Flutung und Brand in ihrem Raum stufenlos an Leistung (Sonar- und Radarreichweite sinken allmählich); ein zerstörter Raum legt sie lahm. Eine beschädigte Maschine begrenzt die Fahrt auf 15 kn, eine zerstörte auf 8 kn; eine beschädigte oder zerstörte Waffenzentrale sperrt Torpedostarts; ein zerstörtes Flugdeck verhindert Start und Landung des Helikopters; eine zerstörte OPZ legt auch ESM lahm.
 
+## Besatzung und Wachen {#damage-crew}
+
+Seite 3 (Besatzung) zeigt den Wachplan. Die Besatzung geht in drei Wachen: eine ist im Dienst und ermüdet, die beiden anderen ruhen und erholen sich. Die Wache im Dienst wird jede Spielstunde automatisch abgelöst (eine echte Wache dauert vier Stunden; das Spiel verkürzt sie, damit eine Partie den Wechsel erlebt) oder früher mit `W` auf dieser Seite. In der ersten Minute nach der Ablösung arbeitet sich die neue Wache ein und bringt 85 %.
+
+- **Ermüdung** (0 bis 100 % je Wache) steigt in einer normalen Stunde im Dienst um etwa 25 % und sinkt in der Ruhe wieder. Bis 25 % kostet sie nichts, normaler Wachwechsel hält die Besatzung also bei voller Leistung. Darüber kosten je 10 % Ermüdung 6 % Leistung.
+- **Gefechtsstationen** (`G` hier oder auf der Brücke) holen alle Wachen in den Dienst: die Besatzung ist 10 % aufmerksamer, aber niemand ruht, und alle sind in 90 Minuten von frisch bis erschöpft, schneller bei Brand- oder Leckbekämpfung. Auf Gefechtsstationen gibt es keine Ablösung; beim Aufheben übernimmt die frischeste Wache. Für einen Angriff auf Station gehen und danach aufheben: nach etwa einer halben Stunde auf Gefechtsstationen ist der Vorteil aufgebraucht.
+- **Moral** beginnt bei 70 %. Ein versenktes U-Boot (+15), eine Rettung (+12) oder ein anderer erfüllter Auftrag (+6) heben sie; eine beschädigte Abteilung (-6), ein gescheiterter (-8) oder abgelehnter Auftrag (-2) senken sie; eine reparierte Abteilung bringt +2. Niedrige Moral ermüdet schneller; je 10 % Moral ändern die Leistung um 2 %.
+- **Leistung** ist, was die Besatzung bringt: der Sonarbediener braucht ein stärkeres Signal (je 10 % Verlust hebt die Erkennungsschwelle um 1 dB, die Passivreichweiten sinken), der Ausguck braucht mehr Kontrast zum Sichten, Erkennen und Identifizieren, und die Reparaturtrupps dichten, lenzen und löschen in diesem Tempo. Seite 3 zeigt die aktuellen Werte; der Statusticker zeigt `BES` mit der Leistung oder `GEF` auf Gefechtsstationen.
+- Das besetzte Gegner-U-Boot hat einen eigenen Wachplan mit denselben Regeln (siehe Kapitel Referenz).
+
 ## Tasten {#damage-keys}
 
 <!-- keys:damage -->
@@ -50,5 +60,5 @@ Auf der uConsole weisen die Joystick-Tasten 1-3 Trupp 1-3 direkt der gewählten 
 
 ## Nicht modelliert {#damage-limits}
 
-- Keine einzelnen Besatzungsmitglieder oder Verwundeten.
+- Keine einzelnen Besatzungsmitglieder, Verwundeten oder Schlaf nach der Uhr; Wachen werden jede Spielstunde abgelöst.
 - Gegenfluten nur zwischen den beiden Rumpfseiten; kein gezieltes Fluten anderer Räume.

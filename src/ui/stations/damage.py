@@ -102,6 +102,8 @@ def damage_regions(game=None, station_rect=None, page=0) -> dict:
 
 def damage_compartment_at(game, pos, page=0):
     """Return compartment ID for polygon OR callout, otherwise None; no mutation."""
+    if page not in (0, 1):
+        return None
     regions = damage_regions(game, page=page)
     if pos is None or not regions["station"].collidepoint(pos):
         return None
@@ -131,6 +133,9 @@ def draw_damage_view(game, tr=None) -> None:
     items = list(game.damage.compartments.items())
     selected_key, selected = items[game.dmg_cursor]
 
+    if page == 2:
+        _draw_crew(game, s, rect)
+        return
     if page == 0:
         plan = regions["schematic"]
         layout.record_geometry("schematic", plan, "damage.schematic.title")
@@ -265,4 +270,83 @@ def draw_damage_view(game, tr=None) -> None:
         ("↑/↓", "damage.footer.team"),
         ("Enter", "damage.footer.assign"),
         ("Backspace", "damage.footer.withdraw"),
+    ))
+
+
+def crew_lines(view) -> dict:
+    """Localized crew facts for the crew page (and its tests)."""
+    left = view["watch_left_s"]
+    if view["action_stations"]:
+        relief = message("crew.relief.action_stations")
+    elif view["turnover"]:
+        relief = message("crew.relief.turnover")
+    else:
+        relief = message("crew.relief.in", minutes=f"{left // 60:.0f}",
+                         seconds=f"{left % 60:02.0f}")
+    effect = view["effectiveness"]
+    from src.core.crew import sonar_penalty_db
+    return dict(
+        state=message("crew.state.action_stations" if view["action_stations"]
+                      else "crew.state.watch", watch=str(view["on_watch"])),
+        relief=relief,
+        effectiveness=message("crew.effectiveness", value=f"{effect:.0%}"),
+        morale=message("crew.morale", value=f"{view['morale']:.0%}"),
+        sonar=message("crew.effect.sonar", db=f"{sonar_penalty_db(effect):+.1f}"),
+        repair=message("crew.effect.repair", value=f"{effect:.0%}"))
+
+
+def _bar(s, rect, value, color) -> None:
+    pygame.draw.rect(s, (18, 42, 39), rect)
+    fill = pygame.Rect(rect)
+    fill.w = max(0, min(rect.w, round(rect.w * value)))
+    pygame.draw.rect(s, color, fill)
+    pygame.draw.rect(s, config.COLOR_GRID, rect, 1)
+
+
+def _draw_crew(game, s, rect) -> None:
+    """Page 3: watch bill, fatigue, morale and what they do to the crew."""
+    view = game.crew_view()
+    lines = crew_lines(view)
+    top = _station_content_top(rect, 3)
+    bottom = rect.bottom - 58
+    x, w = rect.x + 16, rect.w - 32
+    split = int(w * .5)
+    left = layout.box(s, (x, top, split - 6, bottom - top), "panel.crew_watches")
+    right = layout.box(s, (x + split + 6, top, w - split - 6, bottom - top), "panel.crew_state")
+    lx, ly, lw, _ = left
+    for row in view["watches"]:
+        color = config.COLOR_OK if row["on_duty"] else config.COLOR_TEXT_DIM
+        layout.blit_line(s, message("crew.watch_row", watch=str(row["index"]),
+                                    duty=localize("crew.on_duty" if row["on_duty"]
+                                                  else "crew.off_duty"),
+                                    fatigue=f"{row['fatigue']:.0%}"),
+                         (lx, ly, lw, 26), color, size=18)
+        tired = row["fatigue"] > config.CREW_FATIGUE_FREE
+        _bar(s, pygame.Rect(lx, ly + 28, lw, 12), row["fatigue"],
+             config.COLOR_WARN if tired else config.COLOR_OK)
+        ly += 56
+    layout.blit_block(s, "crew.explain", lx, ly, lw, max(1, left[1] + left[3] - ly),
+                      config.COLOR_TEXT_DIM, size=16)
+    rx, ry, rw, _ = right
+    effect = view["effectiveness"]
+    state_color = config.COLOR_WARN if view["action_stations"] else config.COLOR_TEXT
+    for key, color in (("state", state_color), ("relief", config.COLOR_TEXT)):
+        layout.blit_line(s, lines[key], (rx, ry, rw, 26), color, size=18)
+        ry += 30
+    layout.blit_line(s, lines["effectiveness"], (rx, ry, rw, 26),
+                     config.COLOR_OK if effect >= .95 else config.COLOR_WARN, size=18)
+    _bar(s, pygame.Rect(rx, ry + 28, rw, 10), effect / config.CREW_EFFECT_MAX,
+         config.COLOR_OK if effect >= .95 else config.COLOR_WARN)
+    ry += 50
+    layout.blit_line(s, lines["morale"], (rx, ry, rw, 26), config.COLOR_TEXT, size=18)
+    _bar(s, pygame.Rect(rx, ry + 28, rw, 10), view["morale"],
+         config.COLOR_OK if view["morale"] >= .5 else config.COLOR_WARN)
+    ry += 50
+    for key in ("sonar", "repair"):
+        layout.blit_line(s, lines[key], (rx, ry, rw, 24), config.COLOR_TEXT_DIM, size=16)
+        ry += 28
+    footer_y = rect.bottom - 52
+    _shortcut_footer(s, (rect.x + 16, footer_y + 26, rect.w - 32, 19), (
+        ("W", "damage.footer.watch"),
+        ("G", "damage.footer.action_stations"),
     ))

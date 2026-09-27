@@ -329,7 +329,7 @@ def station_hit_target(game, pos):
                             max_total=str(len(game.damage.compartments) * 100)),
                     "tooltip.compartment_controls",
                     target_id="damage:schematic")
-        elif regions["detail"].collidepoint(pos):
+        elif page == 1 and regions["detail"].collidepoint(pos):
             selected = items[game.dmg_cursor][1]
             assignment = game.damage.teams[game.dmg_team]
             return layout.tooltip_payload(

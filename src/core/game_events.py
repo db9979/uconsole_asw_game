@@ -979,6 +979,14 @@ class EventMixin:
                 else:
                     self._assign_selected_team()
                 return
+            crew_page = self.station is Station.DAMAGE and self.station_page == 2
+            if e.key == pygame.K_w and crew_page:
+                if self.change_watch() is not True:
+                    self.flash(message("crew.watch_blocked"), 2.0)
+                return
+            if e.key == pygame.K_g and (self.station is Station.BRIDGE or crew_page):
+                self.toggle_action_stations()
+                return
             if (e.key in (pygame.K_a, pygame.K_d) and self.station is Station.RADIO
                     and self.station_page == 2):
                 if e.key == pygame.K_a:

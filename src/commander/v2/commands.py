@@ -486,6 +486,11 @@ V2_ACTION_REGISTRY = {
     "engine_set_plant": V2Action(frozenset({"engine"}),
                                  _enum_params("mode", ("AUTO", "DIESEL", "TURBINE"))),
     "damage_counterflood": V2Action(frozenset({"damage"}), _bool_params("enabled")),
+    # Crew watch bill: action stations from the bridge or damage control,
+    # the watch relieved by damage control (the ship's company is its job).
+    "crew_action_stations": V2Action(frozenset({"bridge", "damage"}),
+                                     _bool_params("enabled")),
+    "crew_watch_change": V2Action(frozenset({"damage"}), _no_params),
     "damage_assign_team": V2Action(frozenset({"damage"}),
                                    _team_compartment_params),
     "damage_unassign_team": V2Action(frozenset({"damage"}),
@@ -612,6 +617,10 @@ V2_ACTION_REGISTRY = {
     # ... and runs damage control: two teams, the bulkheads.
     "uboot_dc_team": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_dc_team_params),
     "uboot_bulkhead": V2Action(frozenset({"uboot", "uboot_engine"}), _uboot_bulkhead_params),
+    # ... and keeps the watch bill (Command orders action stations as well).
+    "uboot_action_stations": V2Action(frozenset({"uboot", "uboot_engine"}),
+                                      _bool_params("enabled")),
+    "uboot_watch_change": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_mast": V2Action(frozenset({"uboot", "uboot_esm"}), _bool_params("enabled")),
     "uboot_wire_steer": V2Action(frozenset({"uboot_weapons"}), _uboot_wire_params),
     "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),

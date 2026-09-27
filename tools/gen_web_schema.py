@@ -43,6 +43,10 @@ def render_block() -> str:
     lines.append(f"    kinds: {_array(schema.RADIO_TASK_KINDS)},\n")
     lines.append(f"    states: {_array(schema.RADIO_TASK_STATES)},\n")
     lines.append("  };\n")
+    lines.append("  const crewFields = {\n")
+    lines.append(f"    row: {_array(schema.CREW_FIELDS)},\n")
+    lines.append(f"    watch: {_array(schema.CREW_WATCH_FIELDS)},\n")
+    lines.append("  };\n")
     lines.append("  const helicopterTacticalFields = "
                  f"{_array(schema.HELICOPTER_TACTICAL_FIELDS)};\n")
     lines.append("  const weatherFields = {\n")

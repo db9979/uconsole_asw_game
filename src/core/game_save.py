@@ -32,6 +32,7 @@ from src.enemies.sub import Sub
 from src.enemies.ballast import BoatBallast
 from src.enemies.damage_control import BoatDamageControl
 from src.core.tasking import TaskBoard
+from src.core.crew import CrewState
 from src.enemies.endurance import SubmarineEndurance
 from src.enemies.surface import SurfaceShip
 from src.sensors.tracks import TrackPicture
@@ -460,6 +461,7 @@ class SaveMixin:
             "mission_time": self.mission_time,
             "mission_events": list(self.mission_events_pending),
             "tasking": self.tasking.serialize(),
+            "watch": self.crew_watch.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
             "score": self.score,
             "incident": self.incident,
@@ -999,6 +1001,7 @@ class SaveMixin:
         self.mission_events_pending = [str(item) for item in data["mission_events"]]
         self.tasking = TaskBoard.restore(data["tasking"])
         self.task_sel = 0
+        self.crew_watch = CrewState.restore(data["watch"])
         self._ping_intercepts = [tuple(row) for row in data["ping_intercepts"]]
         self.score = data["score"]
         self.incident = data["incident"]
@@ -1520,6 +1523,7 @@ class SaveMixin:
         self.flights._spawn_cd = flight_data["spawn_cd"]
         self._restore_sonar_system(data.get("sonar"), by_id)
         self._restore_crew(data["crew"], by_id)
+        self._apply_crew_effects()
         settings = data["weapon_settings"]
         self.torpedo_type = settings["torpedo_type"]
         self.torpedo_pattern = settings["pattern"]

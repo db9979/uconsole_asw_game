@@ -223,6 +223,14 @@ def _radio_capture_hfdf(game, params, bindings):
     return game.capture_hfdf_report(binding[4])
 
 
+def _crew_action_stations(game, params, _bindings):
+    return game.set_action_stations(params["enabled"])
+
+
+def _crew_watch_change(game, params, _bindings):
+    return game.change_watch()
+
+
 def _radio_task_accept(game, params, _bindings):
     return game.accept_task(params["task"])
 
@@ -652,6 +660,14 @@ def _uboot_bulkhead(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_bulkhead(params["compartment"], params["closed"]))
 
 
+def _uboot_action_stations(game, boat, params, _bindings):
+    return game.boat_set_action_stations(params["enabled"])
+
+
+def _uboot_watch_change(game, boat, params, _bindings):
+    return game.boat_change_watch()
+
+
 def _uboot_mast(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_mast(params["enabled"]))
 
@@ -704,6 +720,8 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_ballast": _uboot_ballast,
     "uboot_dc_team": _uboot_dc_team,
     "uboot_bulkhead": _uboot_bulkhead,
+    "uboot_action_stations": _uboot_action_stations,
+    "uboot_watch_change": _uboot_watch_change,
     "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
     "uboot_silent": _uboot_silent,
@@ -743,6 +761,8 @@ _V2_ACTION_HANDLERS = {
     "engine_set_quiet_mode": _engine_set_quiet_mode,
     "damage_assign_team": _damage_assign_team,
     "damage_counterflood": _damage_counterflood,
+    "crew_action_stations": _crew_action_stations,
+    "crew_watch_change": _crew_watch_change,
     "engine_set_plant": _engine_set_plant,
     "damage_unassign_team": _damage_unassign_team,
     "radio_capture_hfdf": _radio_capture_hfdf,

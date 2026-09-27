@@ -688,6 +688,9 @@ class SonarSystem:
     def __init__(self, seed: int = 42, acoustic_profiles=None):
         self.rng = random.Random(seed + 1000)
         self.acoustic_profiles = acoustic_profiles
+        # Crew watch: extra recognition differential of the operator (dB),
+        # set by the game from the crew state (derived, never saved).
+        self.operator_dt_db = 0.0
         self.contacts: dict[int, Contact] = {}
         self._tracks: dict[int, BearingTrack] = {}
         self._next_contact_id = 1
@@ -1165,7 +1168,8 @@ class SonarSystem:
             own_range_factor=own_factor, array_range_factor=array_factor,
             sea_state=sea_state,
             rain=float(getattr(world, "rain_intensity", 0.0)),
-            shipping_contacts=self.shipping_contacts)
+            shipping_contacts=self.shipping_contacts,
+            threshold_db=self.operator_dt_db)
 
     def update_dipping_passive(self, dt: float, t: float, helicopter,
                                targets, world, range_factor: float = 1.0) -> None:

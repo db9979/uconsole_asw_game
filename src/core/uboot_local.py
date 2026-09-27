@@ -563,6 +563,12 @@ def _command_key(game, current, key, mods) -> None:
                 team, compartment, current.dc_task), team=team + 1,
                 compartment=message(f"uboot.compartment.{compartment}"),
                 task=message(f"uboot.dc.task.{current.dc_task}"))
+    elif page == "UBOOT_DAMAGE" and key == pygame.K_m:
+        if order_allowed(game, "uboot_watch_change") and game.boat_change_watch() is not True:
+            game.flash(message("crew.watch_blocked"), 2.0)
+    elif key == pygame.K_b and not mods & pygame.KMOD_SHIFT:
+        if order_allowed(game, "uboot_action_stations"):
+            game.boat_set_action_stations(not current.watch.action_stations)
     elif page == "UBOOT_DAMAGE" and key == pygame.K_i:
         if order_allowed(game, "uboot_bulkhead"):
             compartment = damage_control.COMPARTMENTS[current.dc_selected

@@ -656,6 +656,20 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                  active_assets=torpedoes + asrocs + nixies)
 
 
+def _crew(game, watch=None):
+    """A crew's watch bill, fatigue and morale (own-ship truth)."""
+    view = game.crew_view(watch)
+    left = view["watch_left_s"]
+    return dict(on_watch=int(view["on_watch"]),
+                watches=[dict(index=int(row["index"]), fatigue=_number(row["fatigue"]),
+                              on_duty=bool(row["on_duty"])) for row in view["watches"]],
+                watch_left_s=None if left is None else _number(left),
+                turnover=bool(view["turnover"]),
+                action_stations=bool(view["action_stations"]),
+                morale=_number(view["morale"]),
+                effectiveness=_number(view["effectiveness"]))
+
+
 def _damage(game):
     compartments = [dict(key=room.key, name=game.tr("compartment." + room.key),
                           state=room.state, flood=_number(room.flood),
@@ -667,7 +681,7 @@ def _damage(game):
                     for room in game.damage.compartments.values()]
     teams = [dict(team=team, compartment=game.damage.teams[team])
              for team in sorted(game.damage.teams)]
-    return dict(compartments=compartments, teams=teams,
+    return dict(compartments=compartments, teams=teams, crew=_crew(game),
                 total=_number(game.damage.total), sunk=bool(game.damage.ship_sunk),
                 stability=dict(list_deg=_number(game.damage.list_deg()),
                                trim_deg=_number(game.damage.trim_deg()),
@@ -1084,7 +1098,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                           if row.get("_opz")
                                           and row["source"] not in ("ESM", "FUSION")
                                           and not row["source"].startswith("SONAR")],
-                        sightings=_sightings(game)),
+                        sightings=_sightings(game), crew=_crew(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),
         "weapons": _weapons(game, rows, target_ref, asset_refs,
                             direct_fire_refs["weapons"]),
@@ -1333,10 +1347,12 @@ def _uboot_ballast(sub):
         drift_mps=_number(ballast.vertical_drift_mps(flooding, sub.speed, moment)))
 
 
-def _uboot_damage(sub):
-    """The boat's own compartments and damage-control teams (own-ship truth)."""
+def _uboot_damage(game, boat):
+    """The boat's own compartments, damage-control teams and crew (own-ship truth)."""
+    sub = boat.sub
     control = sub.damage_control
     return dict(
+        crew=_crew(game, boat.watch),
         power=bool(control.power()), pumping=bool(control.pumping),
         compartments=[dict(
             name=name, water_kg=_number(c.water_kg), capacity_kg=_number(capacity_kg(index)),
@@ -1480,7 +1496,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         plant=_uboot_plant(sub),
         esm=_uboot_esm(game, boat),
         ballast=_uboot_ballast(sub),
-        damage_control=_uboot_damage(sub),
+        damage_control=_uboot_damage(game, boat),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

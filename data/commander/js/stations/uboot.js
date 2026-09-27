@@ -37,7 +37,7 @@ function renderReadouts(nav, status) {
     ["course", heading(nav.course), t("uboot_ordered_value", {value: heading(nav.target_course)}), ""],
     ["speed", unit(nav.speed, "kn"), t("uboot_ordered_value", {value: unit(nav.target_speed, "kn")}), nav.cavitating ? "alarm" : ""],
     ["depth", unit(nav.depth_m, "m", 0), t("uboot_ordered_value", {value: unit(nav.target_depth_m, "m", 0)}), ""],
-    ["uboot_battery", battery === null ? t("unavailable") : unit(battery, "%", 0), status.endurance_phase || "",
+    ["uboot_battery", battery === null ? t("unavailable") : unit(battery, "%", 0), status.endurance_phase ? t(`uboot_phase_${status.endurance_phase.toLowerCase()}`) : "",
       battery !== null && battery <= 3 ? "alarm" : battery !== null && battery <= 20 ? "caution" : ""],
   ];
   const box = $("uboot-readouts");

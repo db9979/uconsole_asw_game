@@ -11,7 +11,7 @@ import math
 import pygame
 
 from src.core import config
-from src.core.i18n import localize, localized
+from src.core.i18n import display_message, localize, localized
 from src.core.station import Station
 from src.ui import layout
 from src.ui import observations
@@ -168,7 +168,7 @@ def station_hit_target(game, pos):
             if pygame.Rect(x + half + 10, y2, half, box_h).collidepoint(pos):
                 return layout.tooltip_payload(
                     "panel.speed_acoustics", message("station.tooltip.actual_target_speed", actual=f"{game.ship.speed:.1f}", target=f"{game.ship.target_speed:.1f}"),
-                    message("station.tooltip.telegraph_noise", telegraph=game.ship.telegraph, noise=f"{game.ship.noise_level():.0%}"),
+                    message("station.tooltip.telegraph_noise", telegraph=display_message("telegraph", game.ship.telegraph), noise=f"{game.ship.noise_level():.0%}"),
                     "control.bridge_speed",
                     target_id="bridge:speed")
         elif page == 2:
@@ -209,9 +209,9 @@ def station_hit_target(game, pos):
                                     *config.TELEGRAPH_ORDERS)
                 if 0 <= row < len(displayed_orders):
                     name, speed = displayed_orders[row]
-                    action = message("station.tooltip.telegraph_order", order=name, speed=f"{speed:.1f}")
+                    action = message("station.tooltip.telegraph_order", order=display_message("telegraph", name), speed=f"{speed:.1f}")
                 return layout.tooltip_payload(
-                    "panel.engine_order", message("station.tooltip.current_target_speed", current=game.ship.telegraph, target=f"{game.ship.target_speed:.1f}"),
+                    "panel.engine_order", message("station.tooltip.current_target_speed", current=display_message("telegraph", game.ship.telegraph), target=f"{game.ship.target_speed:.1f}"),
                     action, "tooltip.quiet_toggle",
                     target_id="engine:telegraph")
             if pygame.Rect(x + col_w + gap, cy, col_w, content_h).collidepoint(pos):

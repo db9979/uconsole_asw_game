@@ -4,7 +4,7 @@
 import pygame
 
 from src.core import config
-from src.core.i18n import display_value, localized, localize
+from src.core.i18n import display_message, display_value, localized, localize
 from src.core.station import Station
 from src.ship.ship import PLANT_DIESEL_MAX_KN, Ship
 from src.ui import layout
@@ -41,7 +41,7 @@ def draw_engine_view(game, tr=None) -> None:
         col_w = (w - gap) // 2
         orders = layout.box(s, (x, cy, col_w, content_h), "panel.engine_order")
         ox, oy, ow, _ = orders
-        layout.blit_line(s, ship.telegraph, (ox, oy, ow, 40), config.COLOR_TEXT, size=28)
+        layout.blit_line(s, display_message("telegraph", ship.telegraph), (ox, oy, ow, 40), config.COLOR_TEXT, size=28)
         oy += 48
         displayed_orders = (("ASTERN", config.ASTERN_SPEED_KN),
                             *config.TELEGRAPH_ORDERS)
@@ -53,7 +53,8 @@ def draw_engine_view(game, tr=None) -> None:
             if selected:
                 pygame.draw.rect(s, (20, 43, 29), (ox - 4, oy - 2, ow + 8, 28))
             layout.status_line(s, ox, oy, ow,
-                               message("engine.line.order", mark=mark, order=name),
+                               message("engine.line.order", mark=mark,
+                                       order=display_message("telegraph", name)),
                                message("bridge.line.speed", speed=f"{sp:4.1f}"),
                                color=col, label_w=200, size=18)
             oy += 32

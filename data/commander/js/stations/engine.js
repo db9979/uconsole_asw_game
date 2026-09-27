@@ -7,7 +7,7 @@ export function renderEngineStation(payload) {
   const propulsion = payload.propulsion;
   metrics($("engine-propulsion"), [["course", unit(propulsion.course, "\u00b0", 0)], ["ordered_course", unit(propulsion.target_course, "\u00b0", 0)],
     ["speed", unit(propulsion.speed, "kn")], ["ordered_speed", unit(propulsion.target_speed, "kn")],
-    ["telegraph", propulsion.telegraph], ["rpm", unit(propulsion.rpm, "RPM", 0)], ["quiet_mode", yesNo(propulsion.quiet_mode)],
+    ["telegraph", t(`telegraph_${propulsion.telegraph.toLowerCase()}`)], ["rpm", unit(propulsion.rpm, "RPM", 0)], ["quiet_mode", yesNo(propulsion.quiet_mode)],
     ["plant_mode", t(`plant_${propulsion.plant_mode.toLowerCase()}`)],
     ["cavitating", yesNo(propulsion.cavitating)], ["engine_fuel", unit(propulsion.fuel_kg / 1000, "t")],
     ["engine_fuel_capacity", unit(propulsion.fuel_capacity_kg / 1000, "t")], ["engine_fuel_burn", unit(propulsion.fuel_burn_kg_h, "kg/h", 0)],
@@ -25,8 +25,9 @@ export function renderEngineStation(payload) {
     ["tas_performance", number(effects.tas_performance, 2)]]);
   const controls = payload.controls;
   if (!$("engine-telegraph").options.length) $("engine-telegraph").replaceChildren(...controls.orders.map((order) => {
-    const option = node("option", order); option.value = order; return option;
+    const option = node("option", t(`telegraph_${order.toLowerCase()}`)); option.value = order; return option;
   }));
+  for (const option of $("engine-telegraph").options) option.textContent = t(`telegraph_${option.value.toLowerCase()}`);
   if (!S.stationDrafts.has("engine-telegraph")) $("engine-telegraph").value = propulsion.telegraph;
   if (!S.stationDrafts.has("engine-course")) $("engine-course").value = String(propulsion.target_course);
   $("engine-speed").max = String(Math.min(controls.speed_max_kn, machinery.speed_cap));

@@ -66,6 +66,7 @@ DISPLAY_KEYS = {
         "VERALTET": "tma.stale", "STALE": "tma.stale",
         "BRAUCHBAR": "tma.useful", "USEFUL": "tma.useful",
         "SCHWACH": "tma.weak", "WEAK": "tma.weak",
+        "KEINE": "tma.none",
     },
     "fusion": {
         "KEINE DATEN": "enum.fusion.none", "KEINE FUSION": "enum.fusion.none",
@@ -73,6 +74,9 @@ DISPLAY_KEYS = {
         "MOEGLICHER GEISTERKONTAKT": "enum.fusion.ghost",
         "TAS L/R?": "enum.fusion.ambiguous",
         "TAS L/R? WENDE": "enum.fusion.ambiguous_turned",
+        "DIVERGENT / GEISTERKONTAKT?": "enum.fusion.divergent_ghost",
+        "UNSICHER": "enum.fusion.uncertain",
+        "NUR BOW": "enum.fusion.only_bow", "NUR TOWED": "enum.fusion.only_tas",
     },
     "weapon_mode": {"DRAHT": "enum.weapon.wire", "SUCHER": "enum.weapon.seeker"},
     "compartment": {key: "compartment." + key for key in (
@@ -144,6 +148,15 @@ DISPLAY_KEYS = {
         "HELO_ACOUSTIC": "station.page.helo_acoustic",
         "ELOKA_INTERCEPTS": "station.page.eloka_intercepts",
         "ELOKA_EVIDENCE": "station.page.eloka_evidence",
+    },
+    "telegraph": {
+        "ASTERN": "telegraph.astern", "STOP": "telegraph.stop", "SLOW": "telegraph.slow",
+        "HALF": "telegraph.half", "FULL": "telegraph.full", "FLANK": "telegraph.flank",
+    },
+    "endurance_phase": {
+        "SUBMERGED": "uboot.phase.submerged", "AIP": "uboot.phase.aip",
+        "ASCENDING": "uboot.phase.ascending", "SNORKEL": "uboot.phase.snorkel",
+        "RADIO": "uboot.phase.radio", "DESCENDING": "uboot.phase.descending",
     },
     "sighting_class": {
         "warship": "uboot.sighting.warship",

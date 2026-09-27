@@ -527,6 +527,7 @@ class SaveMixin:
                 time_limit_s=self.mission.time_limit_s,
                 asm_count=self.mission.asm_count,
                 custom_definition=self.custom_mission_definition,
+                units={key: int(value) for key, value in sorted(self.mission_units.items())},
                 difficulty=dict(self.difficulty)),
             "damage": dict(
                 repair_mult=self.damage.repair_mult,
@@ -976,6 +977,8 @@ class SaveMixin:
         self.mission.time_limit_s = float(runtime_mission["time_limit_s"])
         self.mission.asm_count = runtime_mission["asm_count"]
         self.custom_mission_definition = runtime_mission["custom_definition"]
+        self.mission_units = {str(key): int(value)
+                              for key, value in runtime_mission["units"].items()}
         if self.custom_mission_definition is not None:
             environment = self.custom_mission_definition.get("environment", {})
             thermo = environment.get("thermocline_depth_m")

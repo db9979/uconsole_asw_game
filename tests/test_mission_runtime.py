@@ -27,8 +27,8 @@ def _definition(key="user.runtime", objective="sink", **world):
     definition = default_mission(key)
     definition["seed"] = 4242
     definition["units"]["exact"] = [_sub()]
-    definition["objective"] = {"type": objective, "target_ids": ["target"] if objective == "sink" else [],
-                               "time_limit_s": 1800.0}
+    definition["objective"].update(type=objective, time_limit_s=1800.0,
+                                   target_ids=["target"] if objective == "sink" else [])
     definition["world"].update(world)
     return definition
 
@@ -92,3 +92,74 @@ def test_two_reference_world_runs_are_identical():
         runs.append((_poses(game), game.world.coast.metadata["sector_id"],
                      round(game.world.weather_values()["wind_speed_kn"], 6)))
     assert runs[0] == runs[1]
+
+
+# --- step 2: protect and reach --------------------------------------------------
+
+def _civilian(unit_id="tanker", x=260.0, y=250.0, side="neutral"):
+    return {"id": unit_id, "profile": "civ_01", "side": side,
+            "placement": {"kind": "fixed", "x": x, "y": y}, "course_deg": 0.0, "speed_kn": 0.0}
+
+
+def test_reach_objective_needs_its_point_and_protect_its_units():
+    game = _game()
+    reach = _definition(objective="reach")
+    del reach["objective"]["reach"]
+    assert {problem.code for problem in validate_mission(reach)} >= {"required"}
+    assert not game.start_custom_mission(reach)
+    reach["objective"]["reach"] = {"x": 250.0, "y": 250.0, "radius_nm": 60.0}
+    assert validate_mission(reach)
+    protect = _definition(objective="protect")
+    assert "required" in {problem.code for problem in validate_mission(protect)}
+    protect["objective"]["target_ids"] = ["target"]           # a hostile boat: refused
+    assert not validate_mission(protect) and not game.start_custom_mission(protect)
+
+
+def test_protect_is_lost_with_the_unit_and_won_at_the_time_limit(tmp_path):
+    civ_key = next(iter(_game().runtime_catalog.surfaces))
+    for outcome in ("lost", "won"):
+        game = _game()
+        definition = _definition(objective="protect")
+        definition["units"]["exact"].append(dict(_civilian(), profile=civ_key))
+        definition["objective"]["target_ids"] = ["tanker"]
+        definition["objective"]["time_limit_s"] = 60.0
+        assert game.start_custom_mission(definition), validate_mission(definition)
+        assert game.mission.win_mode == "protect"
+        assert set(game.mission_units) == {"target", "tanker"}
+        tanker = game.mission_entity("tanker")
+        assert tanker is not None and tanker in game.civilians + game.warships
+        # The bookkeeping survives a save; the objective text names the mode.
+        state = json.loads(json.dumps(game.save_state(), allow_nan=False))
+        assert state["mission_runtime"]["units"] == game.mission_units
+        other = _game(seed=2)
+        assert other._load_save_data(copy.deepcopy(state))
+        assert other.mission_units == game.mission_units
+        assert other.mission_entity("tanker") is not None
+        from src.core.i18n import Translator, localize
+        assert "Protect" in localize(game.mission_objective_display(), Translator("en").t)
+        if outcome == "lost":
+            tanker.sunk = True
+            _run(game, 1.0)
+            assert game.mission_result == "VERLOREN"
+            assert localize(game.result_reason, Translator("en").t) == "Protected unit tanker was lost"
+        else:
+            _run(game, 61.0)
+            assert game.mission_result == "SIEG"
+            assert localize(game.result_reason, Translator("de").t).startswith("Die geschützten")
+
+
+def test_reach_is_won_at_the_point_and_lost_at_the_deadline():
+    for outcome in ("won", "lost"):
+        game = _game()
+        definition = _definition(objective="reach")
+        definition["objective"]["time_limit_s"] = 30.0
+        definition["player"].update(x=250.0, y=250.0, speed_kn=0.0)
+        point = {"x": 251.0, "y": 250.0, "radius_nm": 2.0} if outcome == "won" else \
+            {"x": 400.0, "y": 400.0, "radius_nm": 2.0}
+        definition["objective"]["reach"] = point
+        assert game.start_custom_mission(definition), validate_mission(definition)
+        _run(game, 31.0)
+        assert game.mission_result == ("SIEG" if outcome == "won" else "VERLOREN")
+        from src.core.i18n import Translator, localize
+        reason = localize(game.result_reason, Translator("en").t)
+        assert reason == ("Objective point reached" if outcome == "won" else "Time limit exceeded")

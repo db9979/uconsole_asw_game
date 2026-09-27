@@ -429,6 +429,11 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
     if (not isinstance(difficulty, dict)
             or set(difficulty) != set(config.DIFFICULTY_FIELDS)):
         return False
+    units = runtime_mission.get("units")
+    if (not isinstance(units, dict) or len(units) > 512
+            or any(not isinstance(key, str) or not 1 <= len(key) <= 64
+                   or not identity(value) for key, value in units.items())):
+        return False
     for name, (kind, low, high, _step, _default) in config.DIFFICULTY_FIELDS.items():
         amount = difficulty[name]
         if kind is int:

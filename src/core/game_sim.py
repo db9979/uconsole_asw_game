@@ -15,7 +15,7 @@ import pygame
 from src.audio.preview import unit_sonar_preview
 from src.core import config
 from src.core import detrand
-from src.core.i18n import message
+from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core import opfor
 from src.core.limits import (
@@ -1203,7 +1203,7 @@ class SimMixin:
                 suffix = "minutes" if minutes else "seconds"
                 # Running out the clock wins a survive mission: announce the
                 # remaining time as progress, not as a deadline.
-                prefix = ("runtime.survive." if self.mission.win_mode == "survive"
+                prefix = ("runtime.survive." if self.mission.win_mode in ("survive", "protect")
                           else "runtime.deadline.")
                 self.flash(message(prefix + "warning_" + suffix,
                                    amount=amount), 4.0)
@@ -1226,6 +1226,27 @@ class SimMixin:
             return
         if self.incident:
             self._end_mission(False, message("end.reason.incident"))
+            return
+        definition = self.custom_mission_definition
+        if definition is not None and m.win_mode in ("protect", "reach"):
+            objective = definition["objective"]
+            if m.win_mode == "protect":
+                for unit_id in objective["target_ids"]:
+                    entity = self.mission_entity(unit_id)
+                    if entity is None or getattr(entity, "sunk", False) \
+                            or getattr(entity, "dead", False):
+                        self._end_mission(False, message("end.reason.protected_lost",
+                                                         unit=raw_text(str(unit_id))))
+                        return
+                if self.mission_time >= m.time_limit_s:
+                    self._end_mission(True, message("end.reason.protected_survived"))
+                return
+            point = objective["reach"]
+            if math.hypot(self.ship.x - float(point["x"]),
+                          self.ship.y - float(point["y"])) <= float(point["radius_nm"]):
+                self._end_mission(True, message("end.reason.point_reached"))
+            elif self.mission_time >= m.time_limit_s:
+                self._end_mission(False, message("end.reason.time_limit"))
             return
         if m.win_mode == "sink":
             targets = [sub for sub in self.subs if sub.side == "hostile"]

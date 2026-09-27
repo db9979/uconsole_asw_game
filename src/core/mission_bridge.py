@@ -38,8 +38,8 @@ class MissionBridgeMixin:
         world = definition["world"]
         reference_sector = (reference_sector_index(world.get("reference"))
                             if world["kind"] == "reference" else None)
+        objective = definition["objective"]
         if (definition["events"] or definition["units"]["random_groups"]
-                or definition["objective"]["type"] not in ("sink", "survive")
                 or float(world["size_nm"]) != config.WORLD_SIZE_NM
                 or world["kind"] not in ("fixed", "reference")
                 or (world["kind"] == "reference" and reference_sector is None)
@@ -65,8 +65,15 @@ class MissionBridgeMixin:
         expected_targets = {unit["id"] for unit in exact
                             if unit["profile"] in self.runtime_catalog.subs
                             and unit["side"] == "hostile"}
-        if (definition["objective"]["type"] == "sink"
-                and set(definition["objective"]["target_ids"]) != expected_targets):
+        if objective["type"] == "sink" and set(objective["target_ids"]) != expected_targets:
+            return False
+        if objective["type"] == "protect":
+            # Protected units are placed friendly or neutral units.
+            sides = {unit["id"]: unit["side"] for unit in exact}
+            if any(sides.get(target) not in ("friendly", "neutral")
+                   for target in objective["target_ids"]):
+                return False
+        if objective["type"] == "reach" and objective.get("reach") is None:
             return False
         # A fixed-coordinate world keeps the game's current world mode (as
         # before); a reference world selects its packaged real sector.
@@ -91,6 +98,7 @@ class MissionBridgeMixin:
         thermo = float(env["thermocline_depth_m"])
         self.world._thermo = [[thermo for _ in row] for row in self.world._thermo]
         lv = self.difficulty
+        self.mission_units = {}
         for unit in exact:
             marker = markers[unit["id"]]
             x, y = self.world.nearest_water(marker["x"], marker["y"])
@@ -113,6 +121,7 @@ class MissionBridgeMixin:
                                asw_rng=self.rng_asw)
                 entity.speed = float(unit.get("speed_kn", 0.0))
                 self.subs.append(entity)
+                self.mission_units[unit["id"]] = int(entity.id)
             elif self.runtime_catalog.surfaces[profile].category == "KAMPFSCHIFF":
                 entity = SurfaceShip(
                     x, y, rng=self.rng_world, side=unit["side"],
@@ -122,6 +131,7 @@ class MissionBridgeMixin:
                 entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
                 entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
                 self.warships.append(entity)
+                self.mission_units[unit["id"]] = int(entity.id)
             else:
                 entity = CivilianShip(
                     x, y, rng=self.rng_world,
@@ -131,6 +141,7 @@ class MissionBridgeMixin:
                 entity.course = entity.target_course = float(unit.get("course_deg", 0.0))
                 entity.speed = entity.target_speed = float(unit.get("speed_kn", 0.0))
                 self.civilians.append(entity)
+                self.mission_units[unit["id"]] = int(entity.id)
         self.mission.name = definition["name"]
         self.mission.win_mode = definition["objective"]["type"]
         self.mission.time_limit_s = float(definition["objective"]["time_limit_s"])
@@ -339,11 +350,25 @@ class MissionBridgeMixin:
                     "s3_abfang": "intercept", "s4_zufall": "random"}[self.scenario_key]
         return "scenario." + scenario + ".brief"
 
+    def mission_entity(self, unit_id: str):
+        """The placed entity a mission unit id names (own bookkeeping), or None."""
+        entity_id = self.mission_units.get(unit_id)
+        if entity_id is None:
+            return None
+        for group in (self.subs, self.civilians, self.warships, self.animals,
+                      self.decoys, self.flights.flights):
+            for entity in group:
+                if getattr(entity, "id", getattr(entity, "seq", None)) == entity_id:
+                    return entity
+        return None
+
     def mission_objective_display(self):
         if self.custom_mission_definition is not None:
             objective_type = self.custom_mission_definition["objective"]["type"]
-            return message("mission.objective.convoy" if objective_type == "survive"
-                           else "mission.objective.sink")
+            return message({"survive": "mission.objective.convoy",
+                            "protect": "mission.objective.protect",
+                            "reach": "mission.objective.reach"}.get(
+                                objective_type, "mission.objective.sink"))
         if self.mission.win_mode == "survive":
             objective = message("mission.objective.convoy")
         elif self.mission.type_key == "nuklearer_abfang":

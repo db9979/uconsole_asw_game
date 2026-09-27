@@ -380,6 +380,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.mission = Mission(seed, type_key=sc["mission_type"],
                                difficulty=self.difficulty)
         self.custom_mission_definition = None
+        # Mission unit id -> entity id of the placed unit (custom missions).
+        self.mission_units = {}
         self.mission_time = 0.0
         self.score = 0
         self.mission_result = None   # None | "SIEG" | "VERLOREN"

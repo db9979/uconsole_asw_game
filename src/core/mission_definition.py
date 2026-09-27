@@ -60,7 +60,8 @@ def default_mission(key: str = "user.new_mission") -> dict[str, Any]:
         "environment": {"sea_state": 3, "time_hour": 12.0,
                         "thermocline_depth_m": 80.0, "weather": "clear"},
         "units": {"exact": [], "random_groups": []},
-        "objective": {"type": "sink", "target_ids": [], "time_limit_s": 3600.0},
+        "objective": {"type": "sink", "target_ids": [], "time_limit_s": 3600.0,
+                      "reach": {"x": 250.0, "y": 250.0, "radius_nm": 2.0}},
         "events": [],
     }
 
@@ -236,6 +237,21 @@ def validate_mission(data: Mapping[str, Any],
                 problems += text(target, f"objective.target_ids[{index}]", maximum=64)
                 if target not in known:
                     problems.append(issue(f"objective.target_ids[{index}]", "reference", "unknown unit/group id"))
+            if objective.get("type") == "protect" and not targets:
+                problems.append(issue("objective.target_ids", "required",
+                                      "protect needs at least one unit to protect"))
+        reach = objective.get("reach")
+        if objective.get("type") == "reach" and reach is None:
+            problems.append(issue("objective.reach", "required", "reach needs its point"))
+        elif reach is not None:
+            reach = _obj(reach, "objective.reach", problems)
+            if reach is not None:
+                if set(reach) != {"x", "y", "radius_nm"}:
+                    problems.append(issue("objective.reach", "schema", "must have x, y and radius_nm"))
+                problems += finite_number(reach.get("x"), "objective.reach.x", minimum=0, maximum=size)
+                problems += finite_number(reach.get("y"), "objective.reach.y", minimum=0, maximum=size)
+                problems += finite_number(reach.get("radius_nm"), "objective.reach.radius_nm",
+                                          minimum=0.1, maximum=50)
 
     events = data.get("events")
     if not isinstance(events, list):

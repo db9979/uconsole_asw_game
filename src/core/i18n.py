@@ -154,6 +154,10 @@ DISPLAY_KEYS = {
         "ASTERN": "telegraph.astern", "STOP": "telegraph.stop", "SLOW": "telegraph.slow",
         "HALF": "telegraph.half", "FULL": "telegraph.full", "FLANK": "telegraph.flank",
     },
+    "esm_modulation": {
+        modulation: f"eloka.modulation.{modulation}" for modulation in (
+            "continuous_wave", "frequency_agile", "pulse", "pulse_doppler", "unknown")
+    },
     "endurance_phase": {
         "SUBMERGED": "uboot.phase.submerged", "AIP": "uboot.phase.aip",
         "ASCENDING": "uboot.phase.ascending", "SNORKEL": "uboot.phase.snorkel",

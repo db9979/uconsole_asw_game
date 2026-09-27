@@ -14,6 +14,7 @@ from collections import deque
 import math
 
 from src.core import config, detrand
+from src.core.boat_esm import BoatESM
 from src.core.i18n import message
 from src.core.plot import PlotLayer
 from src.physics import torpedo_dyn
@@ -68,7 +69,8 @@ class CrewOrders:
               "sighting_unknown": "sonar",
               "air_caution": "navigation", "air_danger": "navigation",
               "absorber_spent": "navigation", "fuel_low": "navigation",
-              "fuel_empty": "navigation"}
+              "fuel_empty": "navigation", "esm_mast_threat": "navigation",
+              "mast_overtime": "navigation"}
 
     def __init__(self):
         self.silent = False
@@ -79,7 +81,6 @@ class CrewOrders:
         self.ping_bearing = None
         self.torpedo_bearing = None
         self.esm = []
-        self._esm_seen = set()
         # Periscope: line of sight relative to the bow, and what it sees.
         self.scope_rel_deg = 0.0
         self.sightings = []
@@ -123,7 +124,6 @@ class CrewOrders:
             alarm_seq=self.alarm_seq, ping_bearing=self.ping_bearing,
             torpedo_bearing=self.torpedo_bearing,
             esm=[[bearing, quality, age] for bearing, quality, age in self.esm],
-            esm_seen=sorted(self._esm_seen, key=str),
             scope_rel_deg=self.scope_rel_deg,
             sightings=[dict(row) for row in self.sightings],
             sightings_seen=sorted(self._sightings_seen),
@@ -147,7 +147,6 @@ class CrewOrders:
         self.ping_bearing = data["ping_bearing"]
         self.torpedo_bearing = data["torpedo_bearing"]
         self.esm = [tuple(row) for row in data["esm"]]
-        self._esm_seen = set(data["esm_seen"])
         self.scope_rel_deg = data["scope_rel_deg"]
         self.sightings = [dict(row) for row in data["sightings"]]
         self._sightings_seen = set(data["sightings_seen"])
@@ -213,6 +212,10 @@ class CrewedBoat:
         self.feed_seq = 0
         # The boat's own grease-pencil plot (transient, never the frigate's).
         self.plot = PlotLayer()
+        # The crew's ESM picture (saved) and the emitter the uConsole
+        # operator has selected on the ESM page (display only).
+        self.esm = BoatESM()
+        self.esm_selected = None
         # Local command-station UI (display only): chart camera and page.
         self.chart_view = None
         self.chart_follow = True
@@ -238,6 +241,7 @@ class CrewedBoat:
                     command_page=int(self.command_page),
                     chart_follow=bool(self.chart_follow),
                     plot=self.plot.to_save(),
+                    esm=self.esm.to_save(),
                     feed=[dict(row) for row in self.feed],
                     feed_seq=int(self.feed_seq))
 
@@ -246,6 +250,7 @@ class CrewedBoat:
         self.command_page = data["command_page"]
         self.chart_follow = data["chart_follow"]
         self.plot = PlotLayer.from_save(data["plot"])
+        self.esm = BoatESM.from_save(data["esm"])
         self.feed = deque((dict(row) for row in data["feed"]), maxlen=OPFOR_FEED_MAX)
         self.feed_seq = data["feed_seq"]
 
@@ -485,17 +490,8 @@ def update_crew(game, boat: CrewedBoat) -> None:
         orders.event("obstacle_ahead", distance=f"{ahead:.1f}")
     orders._obstacle_warned = ahead is not None and sub.order_speed > 0.0
     # ESM with the mast up: the boat's own intercepts of radar emitters.
-    esm = []
-    if orders.mast:
-        for observation in sub.sensor_suite.local_picture.tracks(game.sim_t, ("esm",)):
-            age = max(0.0, game.sim_t - observation.last_seen)
-            esm.append((observation.bearing % 360.0, observation.quality, age))
-            if observation.track_id not in orders._esm_seen:
-                orders._esm_seen.add(observation.track_id)
-                orders.event("esm_intercept", bearing=f"{observation.bearing % 360.0:03.0f}")
-    else:
-        orders._esm_seen.clear()
-    orders.esm = sorted(esm)[:16]
+    boat.esm.update(game, boat)
+    orders.esm = boat.esm.bearings(game.sim_t) if orders.mast else []
     update_sightings(game, boat)
     for key, values in orders.drain_events():
         boat.notice(game.sim_t, CrewOrders.EVENTS[key], message(f"uboot.event.{key}", **values),

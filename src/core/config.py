@@ -316,6 +316,38 @@ UBOOT_STADIMETER_WINDOW_DEG = 3.0   # the crosshair must be this close to the si
 # unrecognized surface contact is measured as a generic frigate.
 UBOOT_STADIMETER_LENGTHS_M = {"warship": 130.0, "merchant": 150.0, "unknown": 130.0}
 
+# The boat's own ESM (mast raised): intercepts, emitter memory, cross-fix.
+UBOOT_ESM_SCAN_S = 1.0              # one intercept scan per second of sim time
+UBOOT_ESM_BEARING_ERR_DEG = 4.0     # +- bearing error of the mast antenna (coarser than the frigate)
+UBOOT_ESM_ANTENNA_M = 3.0         # the ESM antenna on the raised mast (radar horizon)
+UBOOT_ESM_SHIP_ANTENNA_M = 20.0     # assumed antenna height of a ship's radar (horizon)
+UBOOT_ESM_MEMORY_S = 1800.0         # an emitter stays in the crew's list this long after its last intercept
+UBOOT_ESM_LIVE_S = 10.0             # ... and counts as live (strobe, warning) this long
+UBOOT_ESM_EMITTERS_MAX = 16
+UBOOT_ESM_HISTORY_MAX = 40          # bearing-history samples per emitter (20 min)
+UBOOT_ESM_HISTORY_STEP_S = 30.0     # at most one history sample per emitter this often
+UBOOT_ESM_DRIFT_DEG_PER_MIN = 3.0   # the association gate widens this much per minute of silence
+UBOOT_ESM_DRIFT_MAX_DEG = 45.0
+UBOOT_ESM_FIX_WINDOW_S = 1200.0     # a cross-fix uses the history of the last 20 minutes
+UBOOT_ESM_FIX_MIN_SAMPLES = 3
+UBOOT_ESM_FIX_EMITTER_KN = 8.0     # assumed emitter drift: older lines count for less
+UBOOT_ESM_FIX_MIN_SWING_DEG = 8.0   # own motion must swing the bearing this much (baseline)
+UBOOT_ESM_FIX_MAX_AXIS_NM = 40.0    # a longer error ellipse is no fix (baseline too short)
+UBOOT_ESM_FIX_MAX_AXIS_RATIO = 1.0  # ... as is one longer than the range itself
+UBOOT_ESM_FIX_CONFIDENCE = 2.4477   # 95 % error ellipse (sqrt of chi-square, 2 dof)
+UBOOT_ESM_FIX_CHI2_MAX = 4.0        # a worse fit marks the fix inconsistent (moving emitter)
+UBOOT_ESM_TREND_WINDOW_S = 300.0    # signal-strength trend over the last five minutes
+UBOOT_ESM_TREND_DB_PER_MIN = 0.5    # a slope beyond this reads rising/falling
+UBOOT_ESM_WASH_SEA_STATE = 3.0      # from this sea state waves wash over the mast antenna ...
+UBOOT_ESM_WASH_PER_SEA = 0.12       # ... losing this fraction of scans per sea state above it
+UBOOT_ESM_WASH_MAX = 0.6
+# Recommended mast time: short in a calm sea (the mast stands out of the
+# clutter), longer when sea clutter hides it; short whenever an intercepted
+# search radar is close enough to see the mast.
+UBOOT_MAST_TIME_BASE_S = 60.0
+UBOOT_MAST_TIME_CLUTTER_S = 240.0
+UBOOT_MAST_TIME_THREAT_S = 20.0
+
 # Display scales of the bridge lookout page (NM, radius of the scope).
 LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
 # Bridge lookout binoculars over the chart (display only): field of view and

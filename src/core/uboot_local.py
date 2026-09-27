@@ -20,7 +20,7 @@ import math
 import pygame
 
 from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
-from src.core import config, opfor
+from src.core import boat_esm, config, opfor
 from src.core.i18n import display_value, message
 from src.core.station import Station
 
@@ -458,6 +458,28 @@ def _stadimeter_notice(game, current, result) -> None:
         bearing=f"{row['bearing']:03.0f}", range=f"{row['range_nm']:.1f}"), 2.5)
 
 
+def _esm_number(current):
+    from src.ui import uboot_view
+    _emitters, chosen = uboot_view.esm_selection(current)
+    return None if chosen is None else boat_esm.emitter_number(chosen.track.track_key)
+
+
+def _esm_notice(game, current, result, what: str) -> None:
+    number = _esm_number(current)
+    if result is not True or number is None:
+        game.flash(message("uboot.local.esm_" + ("full" if result == "active_limit"
+                                                  else "none")), 2.0)
+        return
+    emitter = current.esm.by_number(number)
+    if what == "classified":
+        name = current.esm.classified(game, emitter)
+        game.flash(message("uboot.local.esm_classified", emitter=f"E{number}",
+                           name=(game.eloka_emitter_name(emitter.label) or emitter.label)
+                           if name is not None else message("uboot.esm.unclassified")), 1.5)
+    else:
+        _announce(game, "sonar", message("uboot.local.esm_plotted", emitter=f"E{number}"), 1.5)
+
+
 def _key_action(key, mods):
     if key == pygame.K_g:
         return "uboot_bottom" if mods & pygame.KMOD_SHIFT else "uboot_silent"
@@ -488,6 +510,17 @@ def _command_key(game, current, key, mods) -> None:
             and not mods & pygame.KMOD_CTRL:
         if order_allowed(game, "uboot_scope_mark"):
             _stadimeter_notice(game, current, opfor.stadimeter(game, current))
+    elif page == "UBOOT_ESM" and key in (pygame.K_UP, pygame.K_DOWN):
+        uboot_view.step_esm_selection(current, 1 if key == pygame.K_DOWN else -1)
+    elif page == "UBOOT_ESM" and key in (pygame.K_LEFT, pygame.K_RIGHT):
+        if order_allowed(game, "uboot_esm_classify"):
+            _esm_notice(game, current, current.esm.cycle_classification(
+                game, _esm_number(current), 1 if key == pygame.K_RIGHT else -1), "classified")
+    elif page == "UBOOT_ESM" and key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+            and not mods & pygame.KMOD_CTRL:
+        if order_allowed(game, "uboot_esm_plot"):
+            _esm_notice(game, current, current.esm.to_plot(game, current, _esm_number(current)),
+                        "plotted")
     elif key in (pygame.K_q, pygame.K_e):
         _chart_zoom(game, current, (1.0 / config.MAP_ZOOM_WHEEL_FACTOR
                                     if key == pygame.K_q else config.MAP_ZOOM_WHEEL_FACTOR))

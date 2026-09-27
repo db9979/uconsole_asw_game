@@ -15,6 +15,7 @@ import { syncPlotAnimation } from "../plot/clock.js";
 import { buildDisplayModel } from "../state/display-model.js";
 import { elokaFilters, lookoutView, mapRoles, roleMapViews, sonarDisplay, sonarScopeNames, tabNames, view, visualCanvasIds, wideScreen } from "../state/shared.js";
 import { syncWeatherAnimation } from "../stations/bridge.js";
+import { drawUbootGraphics, renderUbootStation } from "../stations/uboot.js";
 import { broadbandVisible, drawSonarVisuals } from "../stations/sonar-visuals.js";
 import { analysisProfile, renderContactAnalysis } from "../views/analyzer.js";
 import { chartGeometry, fitChart, plotClick, plotTrackBearing, queueDraw, releaseCanvas } from "../views/chart.js";
@@ -536,6 +537,26 @@ export function init() {
   // Engine room stores: snorkel charge rate, absorber change, oxygen candle.
   for (const button of document.querySelectorAll("[data-uboot-charge-rate]"))
     button.addEventListener("click", () => sendStationAction("uboot_charge_rate", {rate: button.dataset.ubootChargeRate}));
+  // Mast station ESM: pick an emitter, classify it, transfer it to the plot.
+  $("uboot-esm-emitters").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-uboot-esm-emitter]");
+    if (!button) return;
+    S.ubootEsmSelected = Number(button.dataset.ubootEsmEmitter);
+    S.stationDrafts.delete("uboot-esm-class");
+    const payload = S.v2State?.[S.v2State?.role];
+    if (payload?.esm) renderUbootStation(payload);
+  });
+  $("uboot-esm-class").addEventListener("change", () => S.stationDrafts.add("uboot-esm-class"));
+  $("uboot-esm-class-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const candidate = Number($("uboot-esm-class").value);
+    S.stationDrafts.delete("uboot-esm-class");
+    if (Number.isSafeInteger(S.ubootEsmSelected) && Number.isInteger(candidate))
+      sendStationAction("uboot_esm_classify", {emitter: S.ubootEsmSelected, candidate});
+  });
+  $("uboot-esm-plot").addEventListener("click", () => {
+    if (Number.isSafeInteger(S.ubootEsmSelected)) sendStationAction("uboot_esm_plot", {emitter: S.ubootEsmSelected});
+  });
   $("uboot-absorber").addEventListener("click", () => sendStationAction("uboot_absorber", {}));
   $("uboot-o2-candle").addEventListener("click", () => sendStationAction("uboot_o2_candle", {}));
   $("simlog-export").addEventListener("click", () => exportSimlog());
@@ -960,6 +981,12 @@ export function init() {
   new ResizeObserver(queueDraw).observe(canvas);
   new ResizeObserver(queueLookoutDraw).observe(lookoutCanvas);
   for (const id of visualCanvasIds) new ResizeObserver(() => { queueVisualDraw(); syncOpzSweepAnimation(); }).observe($(id));
+  let boatFrame = 0;
+  const boatRedraw = () => {
+    if (boatFrame) return;
+    boatFrame = requestAnimationFrame(() => { boatFrame = 0; drawUbootGraphics(S.v2State?.[S.v2State?.role]); });
+  };
+  for (const id of ["uboot-depth-canvas", "uboot-esm-canvas", "uboot-scope-canvas"]) new ResizeObserver(boatRedraw).observe($(id));
   window.addEventListener("resize", () => { queueDraw(); queueLookoutDraw(); queueVisualDraw(); });
   window.addEventListener("hashchange", () => { applySimlogView(); loadSimlog(); });
   document.addEventListener("visibilitychange", () => {

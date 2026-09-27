@@ -15,12 +15,13 @@ import math
 import pygame
 
 from src.commander.server import OPFOR_ROLES
-from src.core import config, opfor, uboot_local
+from src.core import boat_esm, config, opfor, uboot_local
 from src.core.i18n import display_message, display_value, localize, message, raw_text
 from src.core.station import Station
 from src.ui import layout, lines, nato_symbols
 from src.ui.feedback import FeedEntry
 from src.ui.map_view import chart_background, draw_chart_frame, draw_chart_geography
+from src.ui.plot_view import draw_plot
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
@@ -263,6 +264,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
                          2 if is_selected else 1)
         lx, ly = bx + 90 * math.sin(rad), by - 90 * math.cos(rad)
         _label(s, game, label, (int(lx) + 6, int(ly) - 8), color, r)
+    draw_esm_chart(game, boat, view, r)
     # Own torpedoes in the water (commanded own weapons).
     for index, torpedo in enumerate(_own_torpedoes(game, sub), start=1):
         px, py = view.world_to_screen(torpedo.x, torpedo.y)
@@ -308,6 +310,7 @@ def draw_chart(game, boat) -> None:
     view = chart_view(game, boat)
     with layout.clip_to(s, r):
         draw_chart_geography(game, view, r)
+        draw_plot(game.screen, game, view, r, layer=boat.plot, own=boat.sub)
         _draw_chart_overlays(game, boat, view, r)
     draw_chart_frame(game, view, r, boat.chart_follow)
 
@@ -579,7 +582,7 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
             label=raw_text(f"K{contact.id:02d}"),
             bearing=_fmt(_contact_bearing(contact), "{:03.0f}"),
             range=_fmt(distance, "{:.1f}"),
-            quality=_fmt(max(contact.quality, contact.confidence), "{:.2f}"),
+            quality=_fmt(max(contact.quality, contact.confidence) * 100.0, "{:.0f}"),
             classification=display_value("classification", contact.player_class)
             if contact.player_class in config.PLAYER_CLASSES
             else message("uboot.local.unclassified"))))
@@ -622,7 +625,9 @@ _FOOTERS = {
                                        ("G", "uboot.footer.silent"),
                                        ("N", "uboot.footer.snorkel"),
                                        ("help.key.uboot_blow", "uboot.footer.blow")),
-    ("uboot_esm", "UBOOT_ESM"): (("P", "uboot.footer.mast"), ("Q/E", "uboot.footer.chart")),
+    ("uboot_esm", "UBOOT_ESM"): (("P", "uboot.footer.mast"), ("↑/↓", "uboot.footer.esm_select"),
+                                 ("←/→", "uboot.footer.esm_classify"),
+                                 ("help.key.enter", "uboot.footer.esm_plot")),
     ("uboot_engine", "UBOOT_SUPPLY"): (("R", "uboot.footer.charge_rate"),
                                        ("A", "uboot.footer.absorber"),
                                        ("O", "uboot.footer.o2_candle"),
@@ -830,9 +835,35 @@ def _alarm_value(age, bearing):
     return message("uboot.value.alarm", bearing=_fmt(bearing, "{:03.0f}"), age=_fmt(age))
 
 
-def _draw_esm_rose(s, game, boat, rect) -> None:
-    """Bearing rose: own heading, ESM strobes and the alarm bearings (own measurements)."""
-    sub, orders = boat.sub, boat.orders
+def esm_selection(boat):
+    """The emitter selected on the ESM page (display only), else the newest."""
+    emitters = boat.esm.ordered()
+    chosen = boat.esm.by_number(boat.esm_selected)
+    if chosen is None and emitters:
+        chosen = emitters[0]
+    return emitters, chosen
+
+
+def step_esm_selection(boat, delta: int) -> None:
+    emitters, chosen = esm_selection(boat)
+    if not emitters:
+        boat.esm_selected = None
+        return
+    index = emitters.index(chosen) if chosen in emitters else 0
+    chosen = emitters[(index + delta) % len(emitters)]
+    boat.esm_selected = boat_esm.emitter_number(chosen.track.track_key)
+
+
+def _esm_weather(game):
+    sea = float(getattr(game.world, "effective_sea_state", game.world.sea_state))
+    rain = config.clamp(float(getattr(game.world, "rain_intensity", 0.0)), 0.0, 1.0)
+    return sea, rain
+
+
+def _draw_esm_rose(s, game, boat, rect, threats) -> None:
+    """Bearing rose: own heading, each emitter's strobe (live bright, remembered
+    faint, a mast threat red) and the alarm bearings (own measurements)."""
+    sub = boat.sub
     pygame.draw.rect(s, config.COLOR_GEO_BG, rect)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, rect, 1)
     radius = max(20, min(rect.w, rect.h) // 2 - 18)
@@ -850,12 +881,28 @@ def _draw_esm_rose(s, game, boat, rect) -> None:
         layout.blit_line(s, raw_text("N" if bearing == 0 else f"{bearing:03d}"),
                          (tx - 16, ty - 7, 32, 14), config.COLOR_TEXT_DIM, size=11, align="center")
     lines.line(s, nato_symbols.AFFILIATION_COLORS["FRIEND"], (cx, cy),
-                     at(sub.course, radius * .35), 2)
-    for bearing, _quality, _age in orders.esm:
-        lines.line(s, config.COLOR_WARN, (cx, cy), at(bearing, radius), 2)
+               at(sub.course, radius * .35), 2)
+    _, chosen = esm_selection(boat)
+    # Emitters on nearly the same bearing get their labels stepped inwards.
+    steps, previous, step = {}, None, 0
+    for emitter in sorted(boat.esm.ordered(), key=lambda item: item.track.bearing % 360.0):
+        bearing = emitter.track.bearing % 360.0
+        step = step + 1 if previous is not None and bearing - previous < 8.0 else 0
+        steps[id(emitter)], previous = step, bearing
+    for emitter in boat.esm.ordered():
+        track = emitter.track
+        live = boat.esm.live(emitter, game.sim_t)
+        color = (config.COLOR_DANGER if emitter in threats else config.COLOR_WARN if live
+                 else config.COLOR_TEXT_DIM)
+        lines.line(s, color, (cx, cy), at(track.bearing, radius),
+                   3 if emitter is chosen else 2 if live else 1)
+        lx, ly = at(track.bearing, max(radius * .3, radius * .78 - steps[id(emitter)] * 14))
+        layout.blit_line(s, raw_text(boat_esm.emitter_label(track.track_key)),
+                         (lx - 18, ly - 8, 36, 16), color, size=12, align="center")
     memory = sub.memory
-    for age, bearing, color in ((memory["last_ping_age"], orders.ping_bearing, config.COLOR_WARN),
-                                (memory["last_torpedo_age"], orders.torpedo_bearing,
+    for age, bearing, color in ((memory["last_ping_age"], boat.orders.ping_bearing,
+                                 config.COLOR_WARN),
+                                (memory["last_torpedo_age"], boat.orders.torpedo_bearing,
                                  config.COLOR_DANGER)):
         if bearing is None or not math.isfinite(age) or age >= ALARM_WINDOW_S:
             continue
@@ -866,43 +913,149 @@ def _draw_esm_rose(s, game, boat, rect) -> None:
             lines.line(s, color, a, b, 3)
 
 
+def _esm_trend_text(emitter, now):
+    slope, trend = boat_esm.level_trend(emitter.history, now)
+    return "--" if trend is None else f"{localize(message(f'uboot.esm.trend.{trend}'))} {slope:+.1f}"
+
+
+def _esm_class_text(game, boat, emitter):
+    profile = boat.esm.classified(game, emitter)
+    if profile is None:
+        return message("uboot.esm.unclassified")
+    return raw_text(str(game.eloka_emitter_name(emitter.label)
+                        or emitter.label.rsplit(".", 1)[-1])[:32])
+
+
 def _draw_esm_page(s, game, boat, x, y, w, h) -> None:
-    """Mast & ESM: mast state, the boat's own radar intercepts and alarm bearings."""
+    """Mast & ESM: mast time, the crew's emitter list and the selected
+    emitter's evaluation (its own measurements and the crew's cross-fix)."""
     from src.sensors.platform import MAST_DEPTH_M
-    sub, orders = boat.sub, boat.orders
-    mast = layout.box(s, (x, y, w, 64), "uboot.panel.mast",
-                      border=config.COLOR_WARN if orders.mast else config.COLOR_TEXT)
+    esm, orders, now = boat.esm, boat.orders, game.sim_t
+    sea, rain = _esm_weather(game)
+    mast_range = boat_esm.mast_radar_nm(sea, rain)
+    threats = [item for item in esm.ordered() if esm.mast_threat(game, item, now, mast_range)]
+    limit = boat_esm.recommended_mast_time_s(sea, rain, bool(threats))
+    elapsed = esm.mast_time_s(now)
+    over = elapsed is not None and elapsed > limit
+    border = (config.COLOR_DANGER if threats else config.COLOR_WARN if orders.mast or over
+              else config.COLOR_TEXT)
+    mast = layout.box(s, (x, y, w, 96), "uboot.panel.mast", border=border)
     mx, my, mw, _ = mast
     layout.blit_line(s, message("uboot.line.mast_up" if orders.mast else "uboot.line.mast_down",
-                                depth=_fmt(MAST_DEPTH_M)), (mx, my, mw, 26),
-                     config.COLOR_WARN if orders.mast else config.COLOR_TEXT, size=20)
-    alarm_y = y + 74
-    alarms = layout.box(s, (x, alarm_y, w, 84), "uboot.panel.alarms")
-    ax, ay, aw, _ = alarms
-    memory = sub.memory
+                                depth=_fmt(MAST_DEPTH_M)), (mx, my, mw, 22),
+                     config.COLOR_WARN if orders.mast else config.COLOR_TEXT, size=17)
+    layout.blit_line(s, message("uboot.esm.mast_time", elapsed=_fmt(elapsed), limit=_fmt(limit))
+                     if elapsed is not None else message("uboot.esm.mast_time_limit",
+                                                        limit=_fmt(limit)),
+                     (mx, my + 22, mw, 22),
+                     config.COLOR_WARN if over else config.COLOR_TEXT, size=15)
+    warning = ("uboot.esm.threat" if threats else "uboot.esm.overtime" if over else None)
+    layout.blit_line(s, warning or message("uboot.esm.mast_radar", range=_fmt(mast_range, "{:.1f}"),
+                                           wash=_fmt(boat_esm.wash_fraction(sea) * 100)),
+                     (mx, my + 44, mw, 22),
+                     config.COLOR_DANGER if threats else config.COLOR_WARN if over
+                     else config.COLOR_TEXT_DIM, size=15)
+    top = y + 104
+    rose_w = min(w * 2 // 5, 220)
+    rose_h = min(rose_w, max(120, h - (top - y) - 150))
+    _draw_esm_rose(s, game, boat, pygame.Rect(x, top, rose_w, rose_h), threats)
+    memory = boat.sub.memory
     layout.blit_line(s, message("uboot.line.alarm_ping", value=_alarm_value(
-        memory["last_ping_age"], orders.ping_bearing)), (ax, ay, aw, 22),
-        config.COLOR_TEXT, size=17)
+        memory["last_ping_age"], orders.ping_bearing)), (x, top + rose_h + 4, rose_w, 18),
+        config.COLOR_TEXT, size=13)
     layout.blit_line(s, message("uboot.line.alarm_torpedo", value=_alarm_value(
-        memory["last_torpedo_age"], orders.torpedo_bearing)), (ax, ay + 24, aw, 22),
-        config.COLOR_TEXT, size=17)
-    esm_y = alarm_y + 94
-    rose_w = min(w // 2, y + h - esm_y)
-    _draw_esm_rose(s, game, boat, pygame.Rect(x, esm_y, rose_w, y + h - esm_y))
-    listing = layout.box(s, (x + rose_w + 10, esm_y, w - rose_w - 10, y + h - esm_y),
+        memory["last_torpedo_age"], orders.torpedo_bearing)), (x, top + rose_h + 22, rose_w, 18),
+        config.COLOR_TEXT, size=13)
+    listing = layout.box(s, (x + rose_w + 10, top, w - rose_w - 10, rose_h + 40),
                          "uboot.panel.esm")
     lx, ly, lw, lh = listing
-    if not orders.mast or not orders.esm:
+    emitters, chosen = esm_selection(boat)
+    if not emitters:
         layout.blit_line(s, "uboot.line.no_esm" if orders.mast else "uboot.line.esm_mast_down",
                          (lx, ly, lw, 22), config.COLOR_TEXT_DIM, size=16)
-        return
-    for index, (bearing, quality, age) in enumerate(orders.esm):
-        row_y = ly + index * 24
-        if row_y + 24 > ly + lh:
+    for index, emitter in enumerate(emitters):
+        row_y = ly + index * 20
+        if row_y + 20 > ly + lh:
             break
-        layout.blit_line(s, message("uboot.line.esm_row", bearing=_fmt(bearing, "{:03.0f}"),
-                                    quality=_fmt(quality * 100), age=_fmt(age)),
-                         (lx, row_y + 2, lw, 20), config.COLOR_WARN, size=16)
+        track = emitter.track
+        live = esm.live(emitter, now)
+        color = (config.COLOR_DANGER if emitter in threats else config.COLOR_WARN if live
+                 else config.COLOR_TEXT_DIM)
+        if emitter is chosen:
+            pygame.draw.rect(s, config.COLOR_SONAR_RING, (lx - 2, row_y, lw + 4, 20), 1)
+        layout.blit_line(s, message(
+            "uboot.esm.row", label=boat_esm.emitter_label(track.track_key),
+            bearing=_fmt(track.bearing % 360.0, "{:03.0f}"),
+            band=boat_esm.band(track.frequency_hz).upper().replace("_", "/"),
+            level=_fmt(track.signal_db), fix="+" if emitter.fix(now) is not None else " "),
+            (lx, row_y + 2, lw, 18), color, size=14)
+    detail_y = top + rose_h + 48
+    detail = layout.box(s, (x, detail_y, w, y + h - detail_y), "uboot.panel.esm_detail")
+    dx, dy, dw, dh = detail
+    if chosen is None:
+        return
+    track = chosen.track
+    fix = chosen.fix(now)
+    rows = [
+        (message("uboot.esm.label.signal"), message(
+            "uboot.esm.signal", frequency=f"{track.frequency_hz / 1e9:.2f}",
+            prf=_fmt(track.prf_hz) if track.prf_hz is not None else "--",
+            modulation=display_value("esm_modulation", track.modulation_code))),
+        (message("uboot.esm.label.level"), message(
+            "uboot.esm.level", level=_fmt(track.signal_db), trend=_esm_trend_text(chosen, now),
+            range=_fmt(esm.range_estimate_nm(game, chosen), "{:.1f}"))),
+        (message("uboot.esm.label.fix"), message(
+            "uboot.esm.fix", x=f"{fix['x']:.1f}", y=f"{fix['y']:.1f}",
+            major=f"{fix['major_nm']:.1f}", minor=f"{fix['minor_nm']:.1f}",
+            lines=fix["lines"]) if fix is not None else message("uboot.esm.no_fix")),
+        (message("uboot.esm.label.class"), _esm_class_text(game, boat, chosen)),
+    ]
+    for index, (label, value) in enumerate(rows):
+        if (index + 1) * 20 > dh:
+            break
+        layout.status_line(s, dx, dy + index * 20, dw, label, value,
+                           color=(config.COLOR_WARN if index == 2 and fix is not None
+                                  and not fix["consistent"] else None),
+                           size=14, label_w=104)
+
+
+def draw_esm_chart(game, boat, view, r) -> None:
+    """ESM mapping on the boat's chart: each emitter's latest bearing line
+    from where the boat took it and the crew's cross-fix with its ellipse."""
+    s = game.screen
+    now = game.sim_t
+    _, chosen = esm_selection(boat)
+    for emitter in boat.esm.ordered():
+        if not emitter.history:
+            continue
+        live = boat.esm.live(emitter, now)
+        color = config.COLOR_WARN if live else config.COLOR_TEXT_DIM
+        label = raw_text(boat_esm.emitter_label(emitter.track.track_key))
+        for row in emitter.history[-(3 if emitter is chosen else 1):]:
+            ox, oy = view.world_to_screen(row[1], row[2])
+            rad = math.radians(row[3])
+            length = 360 if emitter is chosen else 220
+            end = (ox + length * math.sin(rad), oy - length * math.cos(rad))
+            for step in range(0, 20, 2):
+                a = (ox + (end[0] - ox) * step / 20, oy + (end[1] - oy) * step / 20)
+                b = (ox + (end[0] - ox) * (step + 1) / 20, oy + (end[1] - oy) * (step + 1) / 20)
+                lines.line(s, color, a, b, 2 if emitter is chosen else 1)
+        fix = emitter.fix(now)
+        if fix is None:
+            continue
+        px, py = view.world_to_screen(fix["x"], fix["y"])
+        major = max(2.0, fix["major_nm"] * view.scale)
+        minor = max(2.0, fix["minor_nm"] * view.scale)
+        axis = math.radians(fix["axis_deg"])
+        points = []
+        for step in range(24):
+            angle = 2.0 * math.pi * step / 24
+            u, v = major * math.cos(angle), minor * math.sin(angle)
+            points.append((px + u * math.sin(axis) + v * math.cos(axis),
+                           py - u * math.cos(axis) + v * math.sin(axis)))
+        pygame.draw.lines(s, config.COLOR_WARN, True, points, 1)
+        pygame.draw.rect(s, config.COLOR_WARN, (int(px) - 3, int(py) - 3, 7, 7), 1)
+        _label(s, game, label, (int(px) + 8, int(py) - 18), config.COLOR_WARN, r)
 
 
 def _footer(s, rect, specs) -> None:

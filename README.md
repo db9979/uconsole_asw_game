@@ -27,10 +27,10 @@ role, a debrief timeline with JSON export and voice on by default; and a
 mission runtime that takes the editor's scope (reference sectors, protect
 and reach objectives, random groups, timed events, authored weather, placed
 aircraft, animals and decoys). The core is split into mixins and the test
-suite runs in parallel. **Saves are format v17 (submarine diesel, charge rate
-and air stores, crewed-boat crew state, periscope sightings, weapon settings,
-mission events, foreign pings still travelling to the frigate); v16 saves are
-rejected.**
+suite runs in parallel. **Saves are format v18 (the crewed boat's ESM picture,
+submarine diesel, charge rate and air stores, crewed-boat crew state, periscope
+sightings, weapon settings, mission events, foreign pings still travelling to
+the frigate); v17 and older saves are rejected.**
 
 Release 1.2.0 tightens the game flow and the hand-over between stations: the
 `Esc` dialog and the mission-end screen return to the main menu (`M`), `R`
@@ -337,7 +337,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v17 game saves for deterministic restoration of existing sessions.
+in v18 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -447,11 +447,11 @@ Validated does not mean runtime-effective. In release 1.0.0:
 
 ## Saves and User Data
 
-This build writes and loads save format **v17** only. V17 requires the exact
-`u-jagd-save-v17` schema, including the current runtime catalog snapshot, all
+This build writes and loads save format **v18** only. V18 requires the exact
+`u-jagd-save-v18` schema, including the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
-modes, mast, wires, plot, alarm bearings, its sonar station) when a crew holds
-the boat, every conventional submarine's diesel, charge rate and air stores,
+modes, mast, wires, plot, alarm bearings, its sonar station and its ESM
+picture) when a crew holds the boat, every conventional submarine's diesel, charge rate and air stores,
 and foreign active pings whose sound is still travelling to the
 frigate. Older (including every 1.0.0 v11 save),
 newer, malformed, or incomplete saves are rejected without replacing the

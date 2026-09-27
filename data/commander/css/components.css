@@ -201,7 +201,27 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .uboot-presets, .uboot-telegraph, .uboot-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); gap: .3rem; }
 .uboot-presets button, .uboot-telegraph button, .uboot-pair button { min-height: 2.5rem; }
 .uboot-grid[data-role="uboot_esm"] .uboot-esm-card { grid-column: 1 / -1; }
-.uboot-grid[data-role="uboot_esm"] .uboot-esm-card .uboot-canvas { height: clamp(18rem, 48vh, 36rem); }
+.uboot-grid[data-role="uboot_esm"] .uboot-esm-card .uboot-canvas { height: clamp(16rem, 40vh, 30rem); }
+.uboot-esm-columns { display: grid; grid-template-columns: minmax(15rem, 2fr) minmax(0, 3fr); gap: .6rem; align-items: start; }
+@media (max-width: 60rem) { .uboot-esm-columns { grid-template-columns: minmax(0, 1fr); } }
+.uboot-esm-columns section { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.uboot-esm-columns h4, .uboot-esm-detail h4 { margin: 0; }
+.uboot-esm-table-wrap { max-height: 22rem; overflow: auto; }
+.uboot-esm-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--font-sm); }
+.uboot-esm-table th, .uboot-esm-table td { padding: .15rem .35rem; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.uboot-esm-table thead th { position: sticky; top: 0; background: var(--bg-2); color: var(--text-dim); font-family: var(--font-ui); font-size: var(--font-xs); text-transform: uppercase; letter-spacing: .04em; }
+.uboot-esm-table tbody tr { cursor: pointer; }
+.uboot-esm-table tbody tr[data-live="false"] { color: var(--text-dim); }
+.uboot-esm-table tbody tr[data-threat="true"] td:first-child { color: var(--alarm); font-weight: 700; }
+.uboot-esm-table tbody tr[aria-selected="true"] { background: var(--live-bg); }
+.uboot-esm-table button { min-height: 1.8rem; padding: 0 .4rem; font-family: var(--font-mono); }
+.uboot-esm-empty { margin: 0; color: var(--text-dim); }
+.uboot-esm-detail { display: flex; flex-direction: column; gap: .35rem; padding: .4rem .5rem; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius); }
+#uboot-esm-class-form { grid-template-columns: minmax(0, 1fr) auto; }
+#uboot-esm-class-form label { grid-column: 1 / -1; }
+#uboot-esm-class-form select { min-width: 0; width: 100%; }
+#uboot-esm-mast[data-level="caution"] dd { color: var(--caution); }
+#uboot-esm-mast[data-level="alarm"] dd { color: var(--alarm); }
 .uboot-scope-canvas { height: clamp(16rem, 36vh, 28rem); background: var(--scope-bg); }
 .uboot-grid[data-role="uboot_esm"] .uboot-scope-card .uboot-canvas { height: clamp(20rem, 52vh, 40rem); }
 .uboot-scope-status { margin: .35rem 0; color: var(--text-dim); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }

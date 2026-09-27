@@ -70,7 +70,10 @@ class CrewOrders:
               "air_caution": "navigation", "air_danger": "navigation",
               "absorber_spent": "navigation", "fuel_low": "navigation",
               "fuel_empty": "navigation", "esm_mast_threat": "navigation",
-              "mast_overtime": "navigation"}
+              "mast_overtime": "navigation", "tanks_venting": "navigation",
+              "tanks_flooded": "navigation", "boat_heavy": "navigation",
+              "boat_light": "navigation", "trim_angle": "navigation",
+              "hp_air_low": "navigation"}
 
     def __init__(self):
         self.silent = False

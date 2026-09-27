@@ -24,6 +24,7 @@ from src.sensors.platform import (
 )
 from src.weapons.torpedo import underwater_path_blocked
 from src.weapons.asw import ConsumableStore, WeaponBattery
+from src.enemies.ballast import BoatBallast
 from src.enemies.endurance import SubmarineEndurance
 
 CATALOG = catalog.CATALOG
@@ -181,6 +182,9 @@ class Sub:
         # Physics state (saved): one emergency blow, blow in progress, loud
         # transient timer (launch/blow) and pressure-hull fatigue (0..1).
         self.blow_available = True
+        # Tanks, trim and air bottles; only a crewed boat feels them (the
+        # AI keeps itself trimmed and keeps its one legacy blow).
+        self.ballast = BoatBallast()
         # Own passive TMA on one bearing-only contact and crew reaction.
         self.tma_track = BearingTrack()
         self.tma_track_id = None
@@ -580,7 +584,14 @@ class Sub:
         if self.snorkeling:
             # Diesels (or only the fans) running at snorkel depth.
             level += config.UBOOT_CHARGE_NOISE_DB[self.snorkel_rate]
+        if self.pumping:
+            level += config.UBOOT_PUMP_NOISE_DB
         return level
+
+    @property
+    def pumping(self) -> bool:
+        """A crewed boat's trim pumps are running."""
+        return bool(self.manual and self.ballast.pumping)
 
     def _advance_depth(self, target_depth: float, max_rate: float, dt: float) -> None:
         """Acceleration-limited depth approach (closed-form, no overshoot).
@@ -915,9 +926,12 @@ class Sub:
                 nx, ny, self.depth + self._bottom_clearance_m() - 1e-6)):
             if self.manual:
                 # A crewed boat stops short of the obstacle instead of
-                # veering: the crew must choose a new course.
+                # veering: the crew must choose a new course.  Only a boat
+                # under way reports it; a stopped one merely set by the
+                # current against the obstacle stays where it is quietly.
+                under_way = self.speed > 0.0 or self.order_speed > 0.0
                 self.speed = self.order_speed = 0.0
-                if self.crew is not None:
+                if self.crew is not None and under_way:
                     self.crew.event("obstacle")
             else:
                 self.target_course = (self.course + 90.0) % 360.0
@@ -1012,6 +1026,8 @@ class Sub:
             q += config.SNOCKEL_TRANSMIT_NOISE  # M13: Senden macht lauter
         if self.snorkeling:
             q -= config.UBOOT_CHARGE_QUIET_LOSS[self.snorkel_rate]
+        if self.pumping:
+            q -= config.UBOOT_PUMP_QUIET_LOSS
         return config.clamp(q, 0.0, 1.0)
 
     def noise_level(self) -> float:
@@ -1198,8 +1214,12 @@ class Sub:
             if self.snorkeling:
                 ceiling = min(ceiling, config.UBOOT_SNORKEL_MAX_KN)
         self.target_depth = config.clamp(order_depth, 0.0, safe_depth)
+        if not self.ballast.dived():
+            # Main ballast blown: the boat stays up until the vents flood it.
+            self.target_depth = min(self.target_depth, config.UBOOT_MBT_SURFACE_DEPTH_M)
         self._advance_depth(self.target_depth, self.motion.depth_rate_m_s, dt)
         self.speed = config.clamp(self.order_speed, 0.0, ceiling)
+        self._update_ballast(dt)
         if crew is not None and crew.mast and self.depth > MAST_DEPTH_M + 1.0:
             crew.mast = False                   # masts come down when diving
             crew.event("mast_lowered")
@@ -1208,6 +1228,50 @@ class Sub:
             self.endurance.stop_snorkel()
             if crew is not None:
                 crew.event("snorkel_stopped")
+
+    def _update_ballast(self, dt: float) -> None:
+        """Pumps, vents and compressor; the residual weight and trim move
+        the boat off its ordered depth where the planes cannot hold it."""
+        ballast = self.ballast
+        compressor = self.snorkeling and self.snorkel_rate != "vent"
+        vent = self.order_depth > config.UBOOT_MBT_SURFACE_DEPTH_M + 2.0
+        notices = ballast.update(dt, damage=self.damage, compressor=compressor,
+                                 vent_ordered=vent)
+        if ballast.dived() and not self.emergency_ascent:
+            drift = ballast.vertical_drift_mps(self.damage, self.speed)
+            bottom = self.last_bottom_m if self.last_bottom_m is not None else float("inf")
+            self.depth = config.clamp(self.depth + drift * dt, 0.0, max(0.0, bottom))
+        self.blow_available = ballast.can_blow() and not self.emergency_ascent
+        crew = self.crew
+        if crew is None:
+            return
+        for key in notices:
+            crew.event(key)
+        # Out-of-trim warnings on the edge (display state, not saved: a loaded
+        # boat starts from its current trim and so announces nothing).
+        residual = ballast.residual_kg(self.damage)
+        heavy = ("heavy" if residual > config.UBOOT_HEAVY_WARN_KG
+                 else "light" if residual < -config.UBOOT_HEAVY_WARN_KG else None)
+        if heavy is not None and heavy != getattr(self, "_trim_seen", heavy):
+            crew.event(f"boat_{heavy}", weight=f"{abs(residual) / 1000.0:.1f}")
+        self._trim_seen = heavy
+        angle = abs(ballast.trim_deg()) > config.UBOOT_TRIM_WARN_DEG
+        if angle and not getattr(self, "_trim_angle_seen", True):
+            crew.event("trim_angle", angle=f"{ballast.trim_deg():+.1f}")
+        self._trim_angle_seen = angle
+
+    def command_trim_auto(self, enabled):
+        """Crew: the engineer keeps the boat trimmed, or the crew does."""
+        if not self._crew_ready():
+            return "not_ready"
+        return self.ballast.set_auto(enabled)
+
+    def command_ballast(self, tank, direction):
+        """Crew: flood (+1) or pump out (-1) the regulating tank, or move
+        trim water forward (+1) or aft (-1); switches the automatic trim off."""
+        if not self._crew_ready():
+            return "not_ready"
+        return self.ballast.step(tank, direction)
 
     def fire_readiness(self, bearing=None, salvo: int = 1):
         """Why a crew torpedo shot is impossible now, or None when ready."""
@@ -1272,6 +1336,8 @@ class Sub:
         launched = self._fire_salvo(observation, salvo)
         if not launched:
             return "not_ready"
+        for _ in range(launched):
+            self.ballast.torpedo_away()
         # Crew presets on the rows just loaded: run depth, and a two-torpedo
         # spread either side of the fire-control course.
         first = len(self.pending_torpedoes) - launched
@@ -1315,11 +1381,18 @@ class Sub:
         """Blow main ballast with the one high-pressure air charge."""
         if not self.manual or self.sunk or self.state in ("SINKING", "SUNK"):
             return "not_ready"
-        if not self.blow_available or self.emergency_ascent or self.depth <= 30.0:
+        if self.emergency_ascent or self.depth <= 30.0:
             return "not_ready"
+        result = self.ballast.blow()
+        if result is not True:
+            return result
         self.blow_available = False
         self.emergency_ascent = True
         self.transient_left = max(self.transient_left, 20.0)
+        # Up and stay up: the crew orders a depth again to flood and dive.
+        self.order_depth = config.UBOOT_MBT_SURFACE_DEPTH_M
+        if self.crew is not None and self.ballast.blows_left() == 0:
+            self.crew.event("hp_air_low")
         return True
 
     @property
@@ -1497,6 +1570,8 @@ class Sub:
                 result.extend(((20.0, 0.95, 2.0), (35.0, 0.70, 1.5)))
             if self.snorkeling:
                 result.extend(self._snorkel_lines())        # diesel firing lines
+            if self.pumping:
+                result.append(config.UBOOT_PUMP_LINE)
             if self.damage > 30.0:
                 result.append((55.0, 0.25 + 0.45 * self.damage / 100.0, 4.0))
             return result
@@ -1529,6 +1604,8 @@ class Sub:
             lines.append((35.0, 0.70, 1.5))
         if self.snorkeling:
             lines.extend(self._snorkel_lines())          # diesel firing lines
+        if self.pumping:
+            lines.append(config.UBOOT_PUMP_LINE)
         if self.damage > 30.0:
             lines.append((55.0, 0.25 + 0.45 * self.damage / 100.0, 4.0))
         return lines

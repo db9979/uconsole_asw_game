@@ -32,6 +32,7 @@ from src.core.save_schema import (
     CREW_WIRE_STATES, DAMAGE_FIELDS, PING_INTERCEPTS_MAX, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
     SUB_CREW_FIELDS, WORLD_FIELDS)
 from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
+from src.enemies.ballast import BoatBallast
 from src.enemies.endurance import SubmarineEndurance
 from src.sensors.esm import valid_esm_state
 from src.sensors.platform import validate_suite_state
@@ -987,6 +988,10 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                             or not bounded(entry["order_depth"], 0.0, 10_000.0)
                             or not (entry["last_bottom_m"] is None
                                     or bounded(entry["last_bottom_m"], 0.0, 20_000.0))):
+                        return False
+                    try:
+                        BoatBallast.restore(entry["ballast"])
+                    except (TypeError, ValueError):
                         return False
                     if not bounded(entry.get("active_ping_cd"), 0.0,
                                    config.SUB_ACTIVE_PING_COOLDOWN_S):

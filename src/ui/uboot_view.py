@@ -25,6 +25,7 @@ from src.ui.plot_view import draw_plot
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
+from src.ui.uboot_ballast import draw_ballast_page
 from src.ui.uboot_scope import draw_scope_page
 from src.ui.viewport import Viewport
 from src.ui.weather_station import draw_weather_station
@@ -32,7 +33,7 @@ from src.ui.weather_station import draw_weather_station
 UBOOT_PAGES = ("UBOOT_NAV", "UBOOT_WEAPONS", "UBOOT_SCOPE")
 # Panel pages of each boat station beside the chart (the sonar room is full screen).
 STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
-                 "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY"),
+                 "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY", "UBOOT_BALLAST"),
                  "uboot_esm": ("UBOOT_ESM", "UBOOT_SCOPE"),
                  "uboot_nav": ("UBOOT_NAV",)}
 
@@ -632,6 +633,9 @@ _FOOTERS = {
                                        ("A", "uboot.footer.absorber"),
                                        ("O", "uboot.footer.o2_candle"),
                                        ("N", "uboot.footer.snorkel")),
+    ("uboot_engine", "UBOOT_BALLAST"): (("↑/↓", "uboot.footer.regulating"),
+                                        ("←/→", "uboot.footer.trim"),
+                                        ("Z", "uboot.footer.trim_auto")),
 }
 
 
@@ -661,7 +665,7 @@ def draw_command_panel(game, boat) -> None:
     name = pages[page]
     drawer = {"UBOOT_NAV": _draw_nav_page, "UBOOT_WEAPONS": _draw_weapons_page,
               "UBOOT_ENGINE": _draw_engine_page, "UBOOT_SUPPLY": _draw_supply_page,
-              "UBOOT_ESM": _draw_esm_page,
+              "UBOOT_ESM": _draw_esm_page, "UBOOT_BALLAST": draw_ballast_page,
               "UBOOT_SCOPE": draw_scope_page}[name]
     drawer(s, game, boat, x, content_y, w, content_h)
     specs = tuple(

@@ -537,6 +537,10 @@ export function init() {
   // Engine room stores: snorkel charge rate, absorber change, oxygen candle.
   for (const button of document.querySelectorAll("[data-uboot-charge-rate]"))
     button.addEventListener("click", () => sendStationAction("uboot_charge_rate", {rate: button.dataset.ubootChargeRate}));
+  // Engine room tanks: one step of the regulating or trim tank set point.
+  for (const button of document.querySelectorAll("[data-uboot-ballast]"))
+    button.addEventListener("click", () => sendStationAction("uboot_ballast",
+      {tank: button.dataset.ubootBallast, direction: Number(button.dataset.direction)}));
   // Mast station ESM: pick an emitter, classify it, transfer it to the plot.
   $("uboot-esm-emitters").addEventListener("click", (event) => {
     const button = event.target.closest("[data-uboot-esm-emitter]");
@@ -986,7 +990,8 @@ export function init() {
     if (boatFrame) return;
     boatFrame = requestAnimationFrame(() => { boatFrame = 0; drawUbootGraphics(S.v2State?.[S.v2State?.role]); });
   };
-  for (const id of ["uboot-depth-canvas", "uboot-esm-canvas", "uboot-scope-canvas"]) new ResizeObserver(boatRedraw).observe($(id));
+  for (const id of ["uboot-depth-canvas", "uboot-esm-canvas", "uboot-scope-canvas", "uboot-ballast-canvas"])
+    new ResizeObserver(boatRedraw).observe($(id));
   window.addEventListener("resize", () => { queueDraw(); queueLookoutDraw(); queueVisualDraw(); });
   window.addEventListener("hashchange", () => { applySimlogView(); loadSimlog(); });
   document.addEventListener("visibilitychange", () => {

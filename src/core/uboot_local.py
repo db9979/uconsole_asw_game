@@ -41,7 +41,7 @@ UBOOT_INPUT_MODES = ("uboot_course", "uboot_speed", "uboot_depth", "uboot_bearin
 # Rejections of boat-mode orders that have their own local text.
 UBOOT_LOCAL_REASONS = ("not_ready", "uboot_too_deep", "uboot_no_snorkel", "uboot_mast_depth",
                        "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
-                       "uboot_no_air_stores")
+                       "uboot_no_air_stores", "uboot_no_hp_air")
 
 
 def playing(game) -> bool:
@@ -440,7 +440,7 @@ _KEY_ACTIONS = {
     pygame.K_t: "uboot_fire", pygame.K_y: "uboot_fire", pygame.K_w: "uboot_wire_steer",
     pygame.K_p: "uboot_mast", pygame.K_n: "uboot_snorkel",
     pygame.K_r: "uboot_charge_rate", pygame.K_a: "uboot_absorber",
-    pygame.K_o: "uboot_o2_candle",
+    pygame.K_o: "uboot_o2_candle", pygame.K_z: "uboot_trim_auto",
     pygame.K_u: "uboot_set_depth", pygame.K_j: "uboot_set_depth", pygame.K_h: "uboot_set_depth",
     pygame.K_PLUS: "uboot_set_speed", pygame.K_EQUALS: "uboot_set_speed",
     pygame.K_KP_PLUS: "uboot_set_speed", pygame.K_MINUS: "uboot_set_speed",
@@ -478,6 +478,16 @@ def _esm_notice(game, current, result, what: str) -> None:
                            if name is not None else message("uboot.esm.unclassified")), 1.5)
     else:
         _announce(game, "sonar", message("uboot.local.esm_plotted", emitter=f"E{number}"), 1.5)
+
+
+def _ballast_notice(game, sub, tank, result) -> None:
+    if result is not True:
+        game.flash(message("uboot.local.ballast_unavailable"), 2.0)
+        return
+    ballast = sub.ballast
+    order = ballast.regulating_order_kg if tank == "regulating" else ballast.trim_order_kg
+    _announce(game, "navigation", message(f"uboot.local.ballast_{tank}",
+                                          order=f"{order / 1000.0:+.1f}"), 1.5)
 
 
 def _key_action(key, mods):
@@ -521,6 +531,12 @@ def _command_key(game, current, key, mods) -> None:
         if order_allowed(game, "uboot_esm_plot"):
             _esm_notice(game, current, current.esm.to_plot(game, current, _esm_number(current)),
                         "plotted")
+    elif page == "UBOOT_BALLAST" and key in (pygame.K_UP, pygame.K_DOWN,
+                                             pygame.K_LEFT, pygame.K_RIGHT):
+        if order_allowed(game, "uboot_ballast"):
+            tank = "regulating" if key in (pygame.K_UP, pygame.K_DOWN) else "trim"
+            direction = 1 if key in (pygame.K_DOWN, pygame.K_RIGHT) else -1
+            _ballast_notice(game, sub, tank, sub.command_ballast(tank, direction))
     elif key in (pygame.K_q, pygame.K_e):
         _chart_zoom(game, current, (1.0 / config.MAP_ZOOM_WHEEL_FACTOR
                                     if key == pygame.K_q else config.MAP_ZOOM_WHEEL_FACTOR))
@@ -606,6 +622,9 @@ def _command_key(game, current, key, mods) -> None:
             _announce(game, "navigation", message("uboot.local.absorber"), 2.0)
         else:
             _mode_notice(game, "absorber", True, result)
+    elif key == pygame.K_z:
+        on = not sub.ballast.auto
+        _mode_notice(game, "trim_auto", on, sub.command_trim_auto(on))
     elif key == pygame.K_o:
         result = sub.command_o2_candle()
         if result is True:
@@ -623,4 +642,5 @@ def _command_key(game, current, key, mods) -> None:
         if result is True:
             _announce(game, "navigation", message("uboot.local.blow"), 2.5)
         else:
-            game.flash(message("uboot.local.blow_unavailable"), 2.5)
+            game.flash(message("uboot.local.blow_no_air" if result == "uboot_no_hp_air"
+                               else "uboot.local.blow_unavailable"), 2.5)

@@ -12,6 +12,7 @@ import weakref
 from src.core import boat_esm, config, opfor, plot
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
+from src.enemies.ballast import flooding_kg
 from src.sonar import analysis_tools
 from src.core.i18n import localize
 from src.core.version import APP_VERSION
@@ -1292,6 +1293,28 @@ def _uboot_plant(sub):
                  efficiency=_number(air.efficiency())))
 
 
+def _uboot_ballast(sub):
+    """The boat's own tanks, trim and air bottles (own-ship truth)."""
+    ballast = sub.ballast
+    return dict(
+        blowing=bool(ballast.blowing), venting=bool(ballast.venting),
+        auto=bool(ballast.auto), pumping=bool(ballast.pumping),
+        compressor=bool(sub.snorkeling and sub.snorkel_rate != "vent"
+                        and ballast.hp_air_bar < config.UBOOT_HP_AIR_MAX_BAR),
+        hp_air_bar=_number(ballast.hp_air_bar),
+        hp_air_max_bar=_number(config.UBOOT_HP_AIR_MAX_BAR),
+        blows_left=int(ballast.blows_left()), mbt_pct=_number(ballast.mbt * 100.0),
+        regulating_kg=_number(ballast.regulating_kg),
+        regulating_order_kg=_number(ballast.regulating_order_kg),
+        regulating_capacity_kg=_number(config.UBOOT_REGULATING_KG),
+        trim_kg=_number(ballast.trim_kg), trim_order_kg=_number(ballast.trim_order_kg),
+        trim_capacity_kg=_number(config.UBOOT_TRIM_TANK_KG),
+        load_kg=_number(ballast.load_kg), flooding_kg=_number(flooding_kg(sub.damage)),
+        residual_kg=_number(ballast.residual_kg(sub.damage)),
+        trim_deg=_number(ballast.trim_deg()),
+        drift_mps=_number(ballast.vertical_drift_mps(sub.damage, sub.speed)))
+
+
 # Library suggestions per emitter in the browser (the crew picks by index).
 UBOOT_ESM_CANDIDATES = 8
 
@@ -1422,6 +1445,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         scope=_uboot_scope(game, boat),
         plant=_uboot_plant(sub),
         esm=_uboot_esm(game, boat),
+        ballast=_uboot_ballast(sub),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

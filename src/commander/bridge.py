@@ -499,6 +499,19 @@ def _helicopter_launch_torpedo(game, params, bindings):
     return game.launch_helicopter_torpedo_at(contact, params["depth_m"])
 
 
+def _weapons_set_torpedo_settings(game, params, _bindings):
+    """Type, pattern, enable point and salvo in one settings command; the
+    first refused value stops the sequence and names the reason."""
+    for setter, value in ((game.set_torpedo_type, params["torpedo_type"]),
+                          (game.set_torpedo_pattern, params["pattern"]),
+                          (game.set_torpedo_enable, float(params["enable_nm"])),
+                          (game.set_torpedo_salvo, params["salvo"])):
+        result = setter(value)
+        if result is not True:
+            return result
+    return True
+
+
 def _weapons_deploy_nixie(game, params, _bindings):
     return game.deploy_nixie_result()
 
@@ -694,6 +707,7 @@ _V2_ACTION_HANDLERS = {
     "weapons_launch_torpedo": _weapons_launch_torpedo,
     "helicopter_launch_torpedo": _helicopter_launch_torpedo,
     "weapons_deploy_nixie": _weapons_deploy_nixie,
+    "weapons_set_torpedo_settings": _weapons_set_torpedo_settings,
     "opz_launch_essm": _opz_launch_essm,
     "opz_launch_chaff": _opz_launch_chaff,
 }

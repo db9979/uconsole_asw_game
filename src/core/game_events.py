@@ -1022,6 +1022,13 @@ class EventMixin:
                     and self.station is Station.BRIDGE and self.station_page == 2:
                 self._cycle_lookout_range(1 if e.key == pygame.K_PERIOD else -1)
             elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
+                    and self.station is Station.WEAPONS:
+                self._adjust_torpedo_enable(1 if e.key == pygame.K_PERIOD else -1)
+            elif e.key == pygame.K_w and self.station is Station.WEAPONS:
+                self._cycle_torpedo_type()
+            elif e.key == pygame.K_x and self.station is Station.WEAPONS:
+                self._cycle_torpedo_pattern()
+            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
                     and self.station is Station.HELICOPTER and self.station_page == 3:
                 self.sonar_volume = round(config.clamp(self.sonar_volume +
                     (.1 if e.key == pygame.K_PERIOD else -.1), 0.0, 1.0), 1)
@@ -1165,6 +1172,8 @@ class EventMixin:
                     self._cycle_eloka_filter("band")
                 elif self.station is Station.OPZ:
                     self._mark_newest_blip()
+            elif e.key == pygame.K_y and self.station is Station.WEAPONS:
+                self._cycle_torpedo_salvo()
             elif e.key == pygame.K_y:
                 if self.station is Station.SONAR:
                     if self.damage.station_down("sonar"):

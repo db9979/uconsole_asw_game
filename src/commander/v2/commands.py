@@ -101,6 +101,18 @@ def _torpedo_params(params):
             and 10 <= params["depth_m"] <= 300)
 
 
+def _torpedo_settings_params(params):
+    return (type(params) is dict
+            and set(params) == {"torpedo_type", "pattern", "enable_nm", "salvo"}
+            and isinstance(params["torpedo_type"], str)
+            and 1 <= len(params["torpedo_type"]) <= 64
+            and params["pattern"] in ("snake", "circle", "helix")
+            and type(params["enable_nm"]) in (int, float)
+            and math.isfinite(params["enable_nm"])
+            and 0.6 <= params["enable_nm"] <= 3.0
+            and type(params["salvo"]) is int and params["salvo"] in (1, 2))
+
+
 def _radar_params(params):
     return (type(params) is dict and set(params) == {"domain", "enabled"}
             and params["domain"] in ("surface", "air")
@@ -509,6 +521,8 @@ V2_ACTION_REGISTRY = {
         direct_fire=True),
     "weapons_deploy_nixie": V2Action(
         frozenset({"weapons"}), _no_params, direct_fire=True),
+    "weapons_set_torpedo_settings": V2Action(
+        frozenset({"weapons"}), _torpedo_settings_params),
     "opz_launch_essm": V2Action(
         frozenset({"opz"}), _single_ref_params, direct_fire=True),
     "opz_launch_chaff": V2Action(

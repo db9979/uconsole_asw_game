@@ -1185,6 +1185,31 @@ Notizen Phase 2:
   (Thread-Zaehlung) und `test_audio_websocket_resumes_behind_the_browser_cursor`
   (409 stream_exists); alle drei bestehen einzeln.
 
+| 4 Waffen Fregatte | fertig | siehe `git log` | fokussiert 900+ Tests gruen, Kalibrierung 77/77, volle Suite am Phasenende ausstehend | – |
+
+Notizen Phase 4:
+
+- Zweiter Typ `frigate_torp_mk2` (55 kn, 8 sm, 0,12 sm Trefferradius) in
+  `torpedoes.json` + `sources.json` (`game_assumption`); Ladeplan
+  `data/loadouts/ownship.json` Version 2 mit zwei Magazinen und `share` 2:1
+  (`split_stock`: Nebenmagazin floor(N/3)). `WeaponBattery.retask()` laedt ein
+  Rohr auf den gewaehlten Typ um; `_reserve_weapon` faellt auf den anderen Typ
+  zurueck, damit kein Rohr leer bleibt.
+- Suchmuster `snake|circle|helix` und Aktivierungspunkt 0,6-3,0 sm (0,2-Raster)
+  je Torpedo (`Torpedo.pattern/enable_nm/_turns_done`, pure Funktionen in
+  `torpedo_dyn`). Golden bleibt: Default = snake bei `TORP_HOME_RANGE_NM`.
+- Salve 2 startet beide Torpedos sofort mit +/-8 Grad und um das Schiff
+  gedrehten Datums (Abweichung von A4.5: kein 4-s-Versatz, keine Warteschlange
+  im Save; wie der Boot-Faecher). Braucht zwei geladene Rohre des Typs und
+  bleibt unter `TORP_MAX_IN_AIR`.
+- Save v15: Wurzelblock `weapon_settings` (`torpedo_type`, `pattern`,
+  `enable_nm`, `salvo`), Torpedozeile + `pattern`, `enable_nm`, `turns_done`.
+- Tasten Waffenstation `W`/`X`/`,` `.`/`Y`; Web: Karte "Torpedo-Einstellungen"
+  mit Befehl `weapons_set_torpedo_settings`; Projektion `weapons.settings`.
+- Kein Tiefenunterschied Mk1/Mk2 (A4.1 "+30 % Maximaltiefe" entfaellt: das
+  Torpedomodell kennt keine Maximaltiefe). Katalogzaehlungen in
+  `test_catalog_v2.py` angepasst (117 Maschinen, 475 Claims, 119 Profile).
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

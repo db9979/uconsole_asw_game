@@ -23,8 +23,11 @@ SAVE_ROOT_FIELDS = frozenset({
     "ciws_cooldown_s", "ciws_mount_deg", "chaff_clouds", "chaff_seq",
     "schedulers", "rngs", "ui",
     "autocrew", "ais", "plot",
-    "crew",
+    "crew", "weapon_settings",
 })
+
+# Save v15: the operator's torpedo settings (plan 1.3, phase 4).
+WEAPON_SETTINGS_FIELDS = frozenset({"torpedo_type", "pattern", "enable_nm", "salvo"})
 
 # Save v15: the crewed submarine binding (``Game._opfor``), or None.
 CREW_FIELDS = frozenset({

@@ -485,6 +485,13 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.torpedo_total = self.player_torpedo_battery.capacity_total
         self.torpedo_count = self.player_torpedo_battery.remaining_total
         self.torpedo_depth = 60.0
+        # Operator weapon settings (save v15 ``weapon_settings``): torpedo type,
+        # terminal search pattern, seeker enable point and salvo size.
+        self.torpedo_type = self._ownship_loadout["weapons"][0]["key"]
+        self.player_torpedo_battery.preferred_weapon_key = self.torpedo_type
+        self.torpedo_pattern = "snake"
+        self.torpedo_enable_nm = config.TORP_HOME_RANGE_NM
+        self.torpedo_salvo = 1
         self.target = None
         self.selected_contact = None  # M9: im Sonar-Panel markierter Kontakt
         self.torpedoes = []

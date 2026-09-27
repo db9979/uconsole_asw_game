@@ -19,10 +19,12 @@ from src.sensors.ais import AISReceiver
 from src.sensors import lookout_id
 from src.sonar import equation as sonar_equation
 from src.physics import ship_dynamics
+from src.physics import torpedo_dyn
 from src.physics import missile as missile_physics
 from src.ship import damage as damage_physics
 from src.world.ocean import OceanEnvironment
 from src.core.save_schema import (
+    WEAPON_SETTINGS_FIELDS,
     COMPARTMENT_FIELDS, COMPARTMENT_STATES, CREW_BATTERY_STATES, CREW_FEED_FIELDS,
     CREW_FIELDS, CREW_ORDERS_FIELDS, CREW_STATION_FIELDS, CREW_WIRE_FIELDS,
     CREW_WIRE_STATES, DAMAGE_FIELDS, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
@@ -1364,7 +1366,12 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                 or not bounded(torpedo.get("target_depth", 5), 0, 10000)
                 or not bounded(torpedo.get("travel", 0), 0, distance)
                 or not bounded(torpedo.get("midcourse_timer", 0), 0, Torpedo.WIRE_BREAK_S)
-                or not {"search_phase", "midcourse"} <= set(torpedo)
+                or not {"search_phase", "midcourse", "pattern", "enable_nm",
+                        "turns_done"} <= set(torpedo)
+                or torpedo["pattern"] not in torpedo_dyn.SEARCH_PATTERNS
+                or not bounded(torpedo["enable_nm"], torpedo_dyn.ENABLE_RANGE_MIN_NM,
+                               torpedo_dyn.ENABLE_RANGE_MAX_NM)
+                or not bounded(torpedo["turns_done"], 0, 1e6)
                 or not bounded(torpedo.get("search_phase", 0), 0, 1e12)
                 or not bounded(torpedo.get("midcourse", torpedo.get("course")),
                                0, 360)
@@ -1850,6 +1857,21 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
         return True
 
     if not valid_sonar(data.get("sonar"), entity_ids):
+        return False
+    settings = data.get("weapon_settings")
+    asw_block = data.get("asw")
+    loadout = asw_block.get("loadout") if isinstance(asw_block, dict) else None
+    weapon_keys = ({weapon.get("key") for weapon in loadout.get("weapons", ())
+                    if isinstance(weapon, dict)}
+                   if isinstance(loadout, dict) and isinstance(loadout.get("weapons"), list)
+                   else set())
+    if (not isinstance(settings, dict) or set(settings) != WEAPON_SETTINGS_FIELDS
+            or settings["torpedo_type"] not in weapon_keys
+            or settings["pattern"] not in torpedo_dyn.SEARCH_PATTERNS
+            or not bounded(settings["enable_nm"], torpedo_dyn.ENABLE_RANGE_MIN_NM,
+                           torpedo_dyn.ENABLE_RANGE_MAX_NM)
+            or type(settings["salvo"]) is not int
+            or settings["salvo"] not in torpedo_dyn.SALVO_SIZES):
         return False
     if not _valid_crew_block(
             data, valid_sonar=valid_sonar,

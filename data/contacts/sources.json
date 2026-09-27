@@ -11377,6 +11377,38 @@
       "source_ids": [
         "u-jagd.game-model"
       ]
+    },
+    {
+      "resource": "torpedoes.json",
+      "profile_key": "frigate_torp_mk2",
+      "field_paths": [
+        "/reference/hull_type",
+        "/machine/cruise_speed_kn",
+        "/machine/maximum_speed_kn",
+        "/machine/propulsion_codes",
+        "/machine/propulsor_type",
+        "/machine/cruise_lines",
+        "/machine/high_speed_lines"
+      ],
+      "status": "game_assumption",
+      "source_ids": [
+        "u-jagd.game-model"
+      ]
+    },
+    {
+      "resource": "torpedoes.json",
+      "profile_key": "frigate_torp_mk2",
+      "field_paths": [
+        "/reference/length_m",
+        "/machine/quiet_speed_kn",
+        "/machine/motor_rpm",
+        "/machine/shaft_rpm",
+        "/machine/blade_count",
+        "/machine/cruise_broadband",
+        "/machine/high_speed_broadband"
+      ],
+      "status": "unknown",
+      "source_ids": []
     }
   ]
 }

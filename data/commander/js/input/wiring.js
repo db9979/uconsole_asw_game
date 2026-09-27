@@ -370,7 +370,8 @@ export function init() {
     "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth",
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
     "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range", "uboot-fire-depth",
-    "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range"]) {
+    "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range",
+    "weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo"]) {
     $(id).addEventListener("input", () => S.stationDrafts.add(id));
     $(id).addEventListener("change", () => S.stationDrafts.add(id));
     if (id.includes("fire")) for (const eventName of ["input", "change"]) $(id).addEventListener(eventName, () => {
@@ -412,6 +413,12 @@ export function init() {
   });
   $("sonar-clear-focus").addEventListener("click", () => sendStationAction("sonar_clear_focus", {}));
   $("sonar-array-apply").addEventListener("click", () => sendStationAction("sonar_set_array_mode", {mode: $("sonar-array-mode").value}));
+  $("weapons-settings-apply").addEventListener("click", () => {
+    for (const id of ["weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo"]) S.stationDrafts.delete(id);
+    sendStationAction("weapons_set_torpedo_settings", {torpedo_type: $("weapons-torpedo-type").value,
+      pattern: $("weapons-pattern").value, enable_nm: $("weapons-enable").valueAsNumber,
+      salvo: Number($("weapons-salvo").value)});
+  });
   $("sonar-tas").addEventListener("click", () => sendStationAction("sonar_set_tas", {deployed: $("sonar-tas").dataset.deployed !== "true"}));
   $("sonar-depth-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("sonar-depth-form", "sonar-depth", "sonar_set_tow_depth", "depth_m", 20, 260);

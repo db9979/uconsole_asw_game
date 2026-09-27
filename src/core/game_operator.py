@@ -11,6 +11,7 @@ import math
 from src.core import config
 from src.core.commands import STATION_PAGES, station_page_step
 from src.core.i18n import display_value, message, raw_text
+from src.physics import torpedo_dyn
 from src.core.station import Station
 from src.core import opfor
 from src.core.limits import MAX_DECOYS
@@ -1410,6 +1411,76 @@ class OperatorMixin:
                 return t
         return None
 
+    # --- torpedo settings (type, pattern, enable point, salvo) --------------
+
+    def torpedo_type_choices(self) -> list:
+        """(weapon key, profile name, remaining) of every ship torpedo type."""
+        battery = self.player_torpedo_battery
+        rows = []
+        for weapon in self._ownship_loadout["weapons"]:
+            profile = self.runtime_catalog.torpedoes.get(weapon["runtime_profile_key"])
+            rows.append((weapon["key"], profile.name if profile is not None
+                         else weapon["runtime_profile_key"],
+                         battery.remaining_of(weapon["key"])))
+        return rows
+
+    def set_torpedo_type(self, weapon_key):
+        """Select the torpedo type the tubes load next (a tube swaps over if
+        none holds it yet). Returns True or a reason code."""
+        if weapon_key not in {row[0] for row in self.torpedo_type_choices()}:
+            return "invalid_value"
+        self.torpedo_type = weapon_key
+        if not self.player_torpedo_battery.retask(weapon_key):
+            self.flash(message("runtime.torpedo.type_empty"), 2.0)
+            return "empty"
+        name = next(row[1] for row in self.torpedo_type_choices() if row[0] == weapon_key)
+        self.flash(message("runtime.torpedo.type", name=raw_text(name)), 2.0)
+        return True
+
+    def _cycle_torpedo_type(self) -> None:
+        keys = [row[0] for row in self.torpedo_type_choices()]
+        index = keys.index(self.torpedo_type) if self.torpedo_type in keys else -1
+        self.set_torpedo_type(keys[(index + 1) % len(keys)])
+
+    def set_torpedo_pattern(self, pattern):
+        if pattern not in torpedo_dyn.SEARCH_PATTERNS:
+            return "invalid_value"
+        self.torpedo_pattern = pattern
+        self.flash(message("runtime.torpedo.pattern",
+                           pattern=display_value("torpedo_pattern", pattern, self.tr)), 2.0)
+        return True
+
+    def _cycle_torpedo_pattern(self) -> None:
+        patterns = torpedo_dyn.SEARCH_PATTERNS
+        self.set_torpedo_pattern(patterns[(patterns.index(self.torpedo_pattern) + 1)
+                                          % len(patterns)])
+
+    def set_torpedo_enable(self, enable_nm):
+        if (type(enable_nm) not in (int, float) or not math.isfinite(enable_nm)
+                or not torpedo_dyn.ENABLE_RANGE_MIN_NM <= enable_nm
+                <= torpedo_dyn.ENABLE_RANGE_MAX_NM):
+            return "invalid_value"
+        self.torpedo_enable_nm = torpedo_dyn.quantized_enable_nm(enable_nm)
+        self.flash(message("runtime.torpedo.enable",
+                           range=f"{self.torpedo_enable_nm:.1f}"), 2.0)
+        return True
+
+    def _adjust_torpedo_enable(self, steps: int) -> None:
+        wanted = self.torpedo_enable_nm + steps * torpedo_dyn.ENABLE_RANGE_STEP_NM
+        self.set_torpedo_enable(config.clamp(wanted, torpedo_dyn.ENABLE_RANGE_MIN_NM,
+                                             torpedo_dyn.ENABLE_RANGE_MAX_NM))
+
+    def set_torpedo_salvo(self, salvo):
+        if type(salvo) is not int or salvo not in torpedo_dyn.SALVO_SIZES:
+            return "invalid_value"
+        self.torpedo_salvo = salvo
+        self.flash(message("runtime.torpedo.salvo", salvo=salvo), 2.0)
+        return True
+
+    def _cycle_torpedo_salvo(self) -> None:
+        sizes = torpedo_dyn.SALVO_SIZES
+        self.set_torpedo_salvo(sizes[(sizes.index(self.torpedo_salvo) + 1) % len(sizes)])
+
     def launch_torpedo(self) -> None:
         if (self.target is None
                 or self.sim_t - self.target.last_seen >= config.SONAR_CONTACT_LOST_S):
@@ -1470,23 +1541,44 @@ class OperatorMixin:
             est_y = self.ship.y - range_nm * math.cos(math.radians(contact.bearing))
         course = math.degrees(math.atan2(est_x - self.ship.x,
                                          -(est_y - self.ship.y))) % 360.0
-        weapon_key = self.player_torpedo_battery.fire()
-        if weapon_key is None:
+        battery = self.player_torpedo_battery
+        if battery.loaded_count(self.torpedo_type) <= 0:
+            self.flash(message("runtime.torpedo.no_tube_type"))
+            return "no_tube_type"
+        # A two-torpedo salvo opens a spread about the line of fire; every
+        # weapon gets its own datum turned about the ship by the same angle.
+        salvo = 2 if (self.torpedo_salvo == 2
+                      and battery.loaded_count(self.torpedo_type) >= 2
+                      and active_torpedoes + 2 <= salvo_limit) else 1
+        launches = []
+        for launch_course in torpedo_dyn.spread_courses(course, salvo):
+            offset = config.angle_diff_deg(launch_course, course)
+            launches.append((launch_course, *torpedo_dyn.rotate_datum(
+                self.ship.x, self.ship.y, est_x, est_y, offset)))
+        launched = []
+        for launch_course, datum_x, datum_y in launches:
+            weapon_key = battery.fire(self.torpedo_type)
+            if weapon_key is None:
+                break
+            self.torpedo_seq += 1
+            weapon_definition = next(
+                item
+                for item in self._ownship_loadout["weapons"]
+                if item["key"] == weapon_key)
+            profile_key = weapon_definition["runtime_profile_key"]
+            profile = self.runtime_catalog.torpedoes[profile_key]
+            self.torpedoes.append(Torpedo(self.ship.x, self.ship.y, launch_course,
+                                          depth_m, tgt, self.torpedo_seq,
+                                          kill_dist_nm=self.difficulty["kill_dist_nm"],
+                                          kill_depth_m=self.difficulty["kill_depth_m"],
+                                          guidance_x=datum_x, guidance_y=datum_y,
+                                          profile=profile, time_since_launch=0.0,
+                                          pattern=self.torpedo_pattern,
+                                          enable_nm=self.torpedo_enable_nm))
+            launched.append(self.torpedo_seq)
+        if not launched:
             self.flash(message("runtime.torpedo.no_tube"))
             return "no_tube"
-        self.torpedo_seq += 1
-        weapon_definition = next(
-            item
-            for item in self._ownship_loadout["weapons"]
-            if item["key"] == weapon_key)
-        profile_key = weapon_definition["runtime_profile_key"]
-        profile = self.runtime_catalog.torpedoes[profile_key]
-        self.torpedoes.append(Torpedo(self.ship.x, self.ship.y, course,
-                                      depth_m, tgt, self.torpedo_seq,
-                                      kill_dist_nm=self.difficulty["kill_dist_nm"],
-                                      kill_depth_m=self.difficulty["kill_depth_m"],
-                                      guidance_x=est_x, guidance_y=est_y,
-                                      profile=profile, time_since_launch=0.0))
         self.torpedo_count = self.player_torpedo_battery.remaining_total
         # W2: the launch transient itself is a loud, one-time acoustic event,
         # audible passively much farther than a torpedo's own terminal seeker
@@ -1521,10 +1613,11 @@ class OperatorMixin:
                         self.runtime_catalog.acoustic_for(decoy_profile.key),
                         source_id=warship.id))
         self._emit_sound("torpedo_launch")
-        self.flash(message("runtime.torpedo.launched", torpedo=self.torpedo_seq), 2.0)
-        self.feed.add(self.world.format_time(), "waffen",
-                      message("runtime.torpedo.feed", torpedo=self.torpedo_seq,
-                              contact=contact.id))
+        for torpedo_idx in launched:
+            self.flash(message("runtime.torpedo.launched", torpedo=torpedo_idx), 2.0)
+            self.feed.add(self.world.format_time(), "waffen",
+                          message("runtime.torpedo.feed", torpedo=torpedo_idx,
+                                  contact=contact.id))
         return True
 
     # --- Update ---

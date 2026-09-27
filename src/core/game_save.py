@@ -744,7 +744,9 @@ class SaveMixin:
                      energy_s=t.energy_s, motor_fraction=t.motor_fraction,
                      depth_rate=t.depth_rate, wire_ship_out_nm=t.wire_ship_out_nm,
                      wire_stress_s=t.wire_stress_s,
-                     rejected_ids=list(t.rejected_ids))
+                     rejected_ids=list(t.rejected_ids),
+                     pattern=t.pattern, enable_nm=t.enable_nm,
+                     turns_done=t._turns_done)
                 for t in self.torpedoes],
             "enemy_torpedoes": [
                 dict(id=t.id, x=t.x, y=t.y, course=t.course, depth=t.depth,
@@ -805,6 +807,10 @@ class SaveMixin:
             },
             "sonar": self._sonar_system_state(entity_ids),
             "crew": self._crew_state(entity_ids),
+            "weapon_settings": dict(torpedo_type=self.torpedo_type,
+                                    pattern=self.torpedo_pattern,
+                                    enable_nm=self.torpedo_enable_nm,
+                                    salvo=self.torpedo_salvo),
             "sim_t": self.sim_t,
             # Legacy v12 fields: the game always runs at 1x and never pauses.
             "time_scale_idx": 0,
@@ -1363,7 +1369,9 @@ class SaveMixin:
                          launch_origin=td["launch_origin"],
                          launch_platform_id=td["launch_platform_id"],
                          launch_weapon_key=td["launch_weapon_key"],
-                         time_since_launch=td["time_since_launch"])
+                         time_since_launch=td["time_since_launch"],
+                         pattern=td["pattern"], enable_nm=td["enable_nm"])
+            t._turns_done = td["turns_done"]
             t.depth = td["depth"]
             t.travel = td["travel"]
             t.seeker_acquired = td["seeker_acquired"]
@@ -1479,6 +1487,12 @@ class SaveMixin:
         self.flights._spawn_cd = flight_data["spawn_cd"]
         self._restore_sonar_system(data.get("sonar"), by_id)
         self._restore_crew(data["crew"], by_id)
+        settings = data["weapon_settings"]
+        self.torpedo_type = settings["torpedo_type"]
+        self.torpedo_pattern = settings["pattern"]
+        self.torpedo_enable_nm = settings["enable_nm"]
+        self.torpedo_salvo = settings["salvo"]
+        self.player_torpedo_battery.preferred_weapon_key = self.torpedo_type
         self._last_tow_state = self.sonar.tow_state
         # Intercepts already audible at save time were announced then.
         self.torpedo_cues = []

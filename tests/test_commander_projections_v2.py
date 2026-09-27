@@ -112,7 +112,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
                    "tactical_summary", "sightings"},
         "sonar": {"observations", "settings", "visualization"},
         "weapons": {"inventory", "readiness", "designated_target", "navigation",
-                    "tactical", "target_choices", "depth_m", "tubes",
+                    "tactical", "target_choices", "depth_m", "tubes", "settings",
                     "own_weapons", "active_assets"},
         "damage": {"compartments", "teams", "total", "sunk"},
         "opz": {"observations", "fusions", "radar", "source_classifications",

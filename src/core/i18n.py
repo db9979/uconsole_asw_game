@@ -75,6 +75,9 @@ DISPLAY_KEYS = {
         "TAS L/R? WENDE": "enum.fusion.ambiguous_turned",
     },
     "weapon_mode": {"DRAHT": "enum.weapon.wire", "SUCHER": "enum.weapon.seeker"},
+    "torpedo_pattern": {"snake": "enum.torpedo_pattern.snake",
+                        "circle": "enum.torpedo_pattern.circle",
+                        "helix": "enum.torpedo_pattern.helix"},
     "profile_kind": {
         "sub": "enum.kind.sub", "surface": "enum.kind.surface",
         "aircraft": "enum.kind.aircraft", "animal": "enum.kind.animal",

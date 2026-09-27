@@ -6,7 +6,7 @@ Weapons control turns a sonar contact into a firing solution. It launches the fr
 
 ## Displays and instruments {#weapons-displays}
 
-Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state and helicopter stores.
+Page 1 (target) shows the chart with the selected contact, the torpedo depth and the fire-control readiness line. Page 2 (stores) lists tubes, reload timers, torpedo stock, Nixie state, helicopter stores and the torpedo setup line: selected type with its remaining stock, search pattern, seeker enable point and salvo size.
 
 The readiness line is checked top to bottom; the first failed check is shown:
 
@@ -30,7 +30,10 @@ Torpedo run, seen from above:
                      every 0.5 s)                     candidate
 ```
 
-- Frigate torpedo: 45 kn, 12 NM, two tubes, 60 s reload. Stock per mission is set by the scenario (default 6).
+- Two torpedo types share the two tubes (60 s reload). Mk1: 45 kn, 12 NM, wire-guided. Mk2: 55 kn but only 8 NM. The scenario stock (default 6) is split 2:1 between Mk1 and Mk2; `W` selects the type, and if no tube holds it a tube unloads and reloads with it (60 s).
+- Search pattern (`X`): the snake (+/-15 deg about the datum course, default), a circle of 0.4 NM about the enable point, or a helix that opens from 0.15 NM by 0.15 NM per turn to 1 NM. The pattern runs only once the seeker is enabled and has not acquired.
+- Seeker enable point (`,` / `.`): 0.6 to 3.0 NM from the datum in 0.2 NM steps (default 1.2 NM). Earlier enable finds a target that has moved off the datum; later enable keeps the weapon quiet longer.
+- Salvo (`Y`): one torpedo, or two in a +/-8 deg spread with their own datums turned about the ship; a spread needs two loaded tubes of the selected type and counts against the doctrine limit.
 - Preset depth 10-300 m (default 60 m). A wrong depth is a miss: take depth from a ping, not from TMA.
 - The wire updates the datum from the contact's observed position. Without updates it becomes STALE after 3 s and BROKEN after 12 s; the torpedo then continues to the last datum.
 - The seeker homes on the nearest candidate: that can be a decoy, a whale or a merchant ship. A civilian hit ends the mission.
@@ -74,5 +77,5 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 ## Not modelled {#weapons-limits}
 
 - No depth charges, ASW rockets or ship-launched ASROC (ASROC is used only by friendly AI warships).
-- No selectable torpedo search pattern and no manual enable point: the snake search and the 1.2 NM seeker switch-on are fixed (friendly ASROC payloads use a helix search at their splash point).
-- One torpedo type for the ship and one for the helicopter; no selectable salvo doctrine.
+- One torpedo type for the helicopter; the doctrine limit of two own torpedoes running is fixed.
+- No depth ceiling difference between Mk1 and Mk2; both run at the set depth.

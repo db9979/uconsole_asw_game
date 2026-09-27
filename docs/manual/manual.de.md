@@ -404,7 +404,7 @@ Die Waffenzentrale macht aus einem Sonarkontakt eine Feuerlösung. Sie startet d
 
 ### Anzeigen und Instrumente
 
-Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand und Helikopter-Zuladung.
+Seite 1 (Ziel) zeigt die Karte mit dem gewählten Kontakt, die Torpedotiefe und die Bereitschaftszeile der Feuerleitung. Seite 2 (Bestände) listet Rohre, Nachladezeiten, Torpedovorrat, Nixie-Zustand, Helikopter-Zuladung und die Torpedo-Einstellzeile: gewählter Typ mit Restvorrat, Suchmuster, Sucheraktivierungspunkt und Salvengröße.
 
 Die Bereitschaftszeile wird von oben nach unten geprüft; die erste fehlgeschlagene Prüfung wird angezeigt:
 
@@ -428,7 +428,10 @@ Torpedolauf von oben:
                     alle 0,5 s)                   Kandidaten an
 ```
 
-- Fregattentorpedo: 45 kn, 12 sm, zwei Rohre, 60 s Nachladen. Der Vorrat je Mission kommt aus dem Szenario (Standard 6).
+- Zwei Torpedotypen teilen sich die zwei Rohre (60 s Nachladen). Mk1: 45 kn, 12 sm, drahtgelenkt. Mk2: 55 kn, aber nur 8 sm. Der Szenariovorrat (Standard 6) ist 2:1 auf Mk1 und Mk2 verteilt; `W` wählt den Typ, und hält kein Rohr ihn, entlädt ein Rohr und lädt ihn nach (60 s).
+- Suchmuster (`X`): die Schlange (+/-15° um den Datumskurs, Standard), ein Kreis von 0,4 sm um den Aktivierungspunkt oder eine Helix, die sich von 0,15 sm um 0,15 sm je Umlauf bis 1 sm öffnet. Das Muster läuft erst, wenn der Sucher aktiv ist und noch nicht erfasst hat.
+- Sucheraktivierungspunkt (`,` / `.`): 0,6 bis 3,0 sm vor dem Datum in Schritten von 0,2 sm (Standard 1,2 sm). Frühe Aktivierung findet ein Ziel, das sich vom Datum entfernt hat; späte Aktivierung hält die Waffe länger still.
+- Salve (`Y`): ein Torpedo oder zwei im Fächer von +/-8° mit eigenen, um das Schiff gedrehten Datums; ein Fächer braucht zwei geladene Rohre des gewählten Typs und zählt gegen die Doktringrenze.
 - Voreingestellte Tiefe 10-300 m (Standard 60 m). Falsche Tiefe bedeutet Fehlschuss: Tiefe aus dem Ping nehmen, nicht aus der TMA.
 - Der Draht aktualisiert das Datum aus der beobachteten Kontaktposition. Ohne Updates wird er nach 3 s STALE und nach 12 s BROKEN; der Torpedo läuft dann zum letzten Datum weiter.
 - Der Sucher steuert den nächsten Kandidaten an: das kann ein Täuschkörper, ein Wal oder ein Handelsschiff sein. Ein ziviler Treffer beendet die Mission.
@@ -442,6 +445,10 @@ Torpedolauf von oben:
 | `Auf / Ab halten` | Torpedotiefe (10-300 m) |
 | `<- / ->` | Sonarkontakt für Zielwahl wählen |
 | `T / Ctrl+Enter` | Torpedo abfeuern (ROE-Prüfung) |
+| `W` | Torpedotyp (Rohre laden um; W wechselt Mk1/Mk2) |
+| `X` | Suchmuster im Endanlauf: Schlange, Kreis, Helix |
+| `, / .` | Sucheraktivierung -/+ (0,6 bis 3,0 sm, Schritte 0,2 sm) |
+| `Y` | Salve: ein Torpedo oder zwei im Fächer +/-8° |
 | `H` | HSP-5 starten / zurückrufen |
 | `B` | Sonarbojen aussetzen (HSP-5 in Luft) |
 | `D` | Leichttorpedo vom HSP-5 |
@@ -488,8 +495,8 @@ Das Hauptquartier schaltet nach dem ersten versenkten feindlichen U-Boot per Fun
 ### Nicht modelliert
 
 - Keine Wasserbomben, U-Jagd-Raketen oder vom Schiff gestartetes ASROC (ASROC nutzen nur befreundete KI-Kriegsschiffe).
-- Kein wählbares Torpedo-Suchmuster und kein manueller Aktivierungspunkt: Schlangensuche und Sucheraktivierung bei 1,2 sm sind fest (befreundete ASROC-Nutzlasten suchen in einer Helix um ihren Eintauchpunkt).
-- Ein Torpedotyp für das Schiff und einer für den Helikopter; keine wählbare Salvendoktrin.
+- Ein Torpedotyp für den Helikopter; die Doktringrenze von zwei laufenden eigenen Torpedos ist fest.
+- Kein Tiefenunterschied zwischen Mk1 und Mk2; beide laufen auf der eingestellten Tiefe.
 
 ## 4 Schadensabwehr
 

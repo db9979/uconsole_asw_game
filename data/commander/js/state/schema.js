@@ -111,7 +111,7 @@ export function validateV2State(state) {
   const payload = state[state.role];
   const shapes = {
     bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings"], sonar: ["observations", "settings", "visualization"],
-    weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "own_weapons", "active_assets"],
+    weapons: ["inventory", "readiness", "designated_target", "navigation", "tactical", "target_choices", "depth_m", "tubes", "settings", "own_weapons", "active_assets"],
     damage: ["compartments", "teams", "total", "sunk"],
     opz: ["observations", "fusions", "radar", "defense", "asm_observations", "source_classifications", "radar_blips", "designated_target_ref", "own_assets"],
     radio: ["observations", "logged_fixes", "logged_bearings", "messages", "station_down", "navigation", "tactical"],
@@ -230,7 +230,11 @@ export function validateV2State(state) {
       ![null, "ACTIVE", "BROKEN", "CUT"].includes(row.wire) ||
       [row.datum_bearing, row.datum_range_nm].some((value) => value !== null && !finite(value)))) throw new Error("protocol");
   } else if (state.role === "weapons") {
-    if (!exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
+    if (!exactKeys(payload.settings, ["torpedo_type", "choices", "pattern", "enable_nm", "salvo"]) ||
+        !boundedArray(payload.settings.choices, 8) ||
+        !payload.settings.choices.every((row) => exactKeys(row, ["key", "name", "stock", "loaded"])) ||
+        !["snake", "circle", "helix"].includes(payload.settings.pattern) || ![1, 2].includes(payload.settings.salvo) ||
+        !exactKeys(payload.inventory, ["torpedoes", "vls", "ciws", "aa", "chaff_ready", "nixies"]) ||
         !exactKeys(payload.readiness, ["station_down", "roe", "ciws_ready", "aa_ready", "state", "interlock", "reload_s"]) ||
         (payload.designated_target !== null && !exactKeys(payload.designated_target, ["ref", "label", "domain", "source", "affiliation", "classification", "bearing", "range_nm", "x", "y", "depth_m", "course", "speed_kn", "quality", "age_s", "fix_age_s", "bearing_uncertainty_deg", "range_uncertainty_nm"])) ||
         !exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"]) ||

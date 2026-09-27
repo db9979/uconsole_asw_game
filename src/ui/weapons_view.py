@@ -367,6 +367,14 @@ def draw_weapons_panel(game, tr=None) -> None:
                             label_w=120, size=17)
         layout.status_line(s, ix, iy + 120, iw, "ui.buoys", str(game.helo.buoys_left),
                             label_w=120, size=17)
+        stock = next((row[2] for row in game.torpedo_type_choices()
+                      if row[0] == game.torpedo_type), 0)
+        layout.status_line(s, ix, iy + 150, iw, "weapons.setup_short", message(
+            "weapons.line.torpedo_setup",
+            name=localize("weapons.type." + game.torpedo_type), stock=stock,
+            pattern=display_value("torpedo_pattern", game.torpedo_pattern),
+            enable=f"{game.torpedo_enable_nm:.1f}", salvo=game.torpedo_salvo),
+            label_w=100, size=14)
 
         active = layout.box(s, regions["active"],
                              "panel.active_weapons")

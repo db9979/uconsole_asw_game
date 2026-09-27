@@ -627,6 +627,15 @@ def _weapons(game, rows, target_ref, asset_refs, direct_refs):
                  navigation=_own_navigation(game), tactical=_map_rows(tactical),
                   target_choices=_direct_fire_observations(rows, direct_refs),
                  depth_m=_number(game.torpedo_depth), tubes=tubes,
+                 settings=dict(
+                     torpedo_type=str(game.torpedo_type)[:64],
+                     choices=[dict(key=str(key)[:64], name=str(name)[:80],
+                                   stock=int(stock),
+                                   loaded=int(battery.loaded_count(key)) if battery else 0)
+                              for key, name, stock in game.torpedo_type_choices()[:8]],
+                     pattern=str(game.torpedo_pattern),
+                     enable_nm=_number(game.torpedo_enable_nm),
+                     salvo=int(game.torpedo_salvo)),
                  own_weapons=torpedoes + asrocs,
                  active_assets=torpedoes + asrocs + nixies)
 

@@ -536,6 +536,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.sonar_page = 0
         self.station_page = 0
         self.lookout_range_nm = 12.0                 # bridge lookout page scale (UI only)
+        self.lookout_glasses = False                 # binoculars over the chart (UI only)
+        self.lookout_glasses_rel = 0.0               # their line of sight off the bow
         self.helo_acoustic_page = 1
         self.sonar_harmonic_hz = None
         # Operator LOFAR/DEMON tools: cursor, marks, integration (UI only).

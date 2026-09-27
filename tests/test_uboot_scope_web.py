@@ -208,9 +208,9 @@ def test_periscope_card_offers_the_mast_to_its_owner_and_names_it_for_command():
     html = index_html()
     card = html[html.index('class="station-card-view station-wide uboot-scope-card"'):]
     card = card[:card.index("</article>")]
-    # The Mast & ESM station raises the mast from the periscope card itself.
-    assert 'data-uboot-stations="uboot_esm"><button type="button" data-uboot-mode="uboot_mast" data-enabled="true"' in card
+    # Command and the Mast & ESM station raise the mast from the periscope card itself.
+    assert 'data-uboot-stations="uboot uboot_esm"><button type="button" data-uboot-mode="uboot_mast" data-enabled="true"' in card
     assert 'data-uboot-mode="uboot_mast" data-enabled="false"' in card
-    # Command sees the periscope but does not own the mast: the hint names the station.
+    # The hint still names the other station that can raise it.
     for catalog in catalogs():
         assert "ESM" in catalog["commander.web.uboot_scope_mast_down"]

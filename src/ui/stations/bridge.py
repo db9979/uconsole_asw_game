@@ -245,7 +245,10 @@ def draw_bridge_view(game, tr=None) -> None:
     _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
         ("←/→", "bridge.footer.course"),
         ("↑/↓", "bridge.footer.telegraph"),
-        (", / .", "bridge.footer.lookout_range"),
+        (", / .", "bridge.footer.glasses_train" if game.lookout_glasses
+         else "bridge.footer.lookout_range"),
+        ("B", "bridge.footer.glasses_close" if game.lookout_glasses
+         else "bridge.footer.glasses"),
     ) if page == 2 else (
         ("←/→", "bridge.footer.course"),
         ("↑/↓", "bridge.footer.telegraph"),
@@ -385,3 +388,101 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
         layout.blit_block(s, game.lookout_report_text(report), ix, ry + 16, iw, 56,
                           color=config.COLOR_TEXT, size=13)
         ry += 76
+
+
+# --- binoculars over the chart (bridge lookout page, display only) ----------
+
+def _glasses_layout():
+    """(frame, eyepiece, panorama) rects of the binoculars over the chart."""
+    frame = pygame.Rect(config.MAP_RECT)
+    inner = frame.inflate(-20, -20)
+    eyepiece = pygame.Rect(inner.x, inner.y + 30, inner.w, int(inner.h * 0.52))
+    panorama = pygame.Rect(inner.x, eyepiece.bottom + 44, inner.w, 56)
+    return frame, eyepiece, panorama
+
+
+def _panorama_x(panorama: pygame.Rect, bearing: float, course: float) -> int:
+    """Panorama position of a true bearing: the bow in the middle, astern at the ends."""
+    return panorama.x + int((horizon.relative_offset(bearing, course) + 180.0)
+                            / 360.0 * panorama.w)
+
+
+def lookout_glasses_bearing_at(game, canvas):
+    """True bearing under a click on the binoculars' panorama, else None."""
+    if canvas is None or not game.lookout_glasses_shown():
+        return None
+    _frame, _eyepiece, panorama = _glasses_layout()
+    if not panorama.collidepoint(canvas):
+        return None
+    fraction = (canvas[0] - panorama.x) / max(1, panorama.w)
+    return (game.ship.course + fraction * 360.0 - 180.0) % 360.0
+
+
+def draw_lookout_glasses(game) -> None:
+    """The lookout's binoculars, large over the chart: a trainable eyepiece
+    with the outlines of his own sightings and an all-round panorama of their
+    measured bearings (the same reports as the lookout page)."""
+    s = game.screen
+    frame, eyepiece, panorama = _glasses_layout()
+    pygame.draw.rect(s, config.COLOR_PANEL_BG, frame)
+    layout.box(s, frame, "panel.lookout_glasses")
+    weather = game.world.weather_values()
+    night = game.world.is_night()
+    sightings = game.lookout_sightings()
+    course = game.ship.course % 360.0
+    line_of_sight = (course + game.lookout_glasses_rel) % 360.0
+    horizon.draw_horizon(
+        s, eyepiece, line_of_sight=line_of_sight, fov_deg=config.LOOKOUT_GLASSES_FOV_DEG,
+        night=night, visibility_nm=weather["visibility_nm"],
+        motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
+        outlines=lookout_outlines(game, sightings))
+    pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
+    layout.blit_line(s, structured_message(
+        "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",
+        relative=f"{game.lookout_glasses_rel:03.0f}"),
+        (eyepiece.x, eyepiece.bottom + 8, eyepiece.w, 24), config.COLOR_TEXT, size=18)
+    # All-round panorama: the bow in the middle; each sighting as a tick at
+    # its measured bearing, the binoculars' field as a frame.
+    pygame.draw.rect(s, config.COLOR_GEO_BG, panorama)
+    pygame.draw.rect(s, config.COLOR_SONAR_RING, panorama, 1)
+    for relative in (-180, -90, 0, 90, 180):
+        px = panorama.x + int((relative + 180.0) / 360.0 * panorama.w)
+        pygame.draw.line(s, config.COLOR_SONAR_RING, (px, panorama.y), (px, panorama.y + 8))
+        label_x = min(max(px - 20, panorama.x), panorama.right - 40)
+        layout.blit_line(s, f"{(course + relative) % 360.0:03.0f}",
+                         (label_x, panorama.bottom + 2, 40, 16), config.COLOR_TEXT_DIM,
+                         size=13, align="left" if relative == -180 else
+                         "right" if relative == 180 else "center")
+    for track in sightings:
+        if track.bearing is None:
+            continue
+        px = _panorama_x(panorama, track.bearing % 360.0, course)
+        color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
+        pygame.draw.line(s, color, (px, panorama.y + 12), (px, panorama.bottom - 12), 3)
+    half = config.LOOKOUT_GLASSES_FOV_DEG / 2.0
+    left = panorama.x + int((horizon.relative_offset(line_of_sight - half, course) + 180.0)
+                            / 360.0 * panorama.w)
+    width = max(4, int(config.LOOKOUT_GLASSES_FOV_DEG / 360.0 * panorama.w))
+    for start in {left, left - panorama.w, left + panorama.w}:
+        window = pygame.Rect(start, panorama.y + 2, width, panorama.h - 4).clip(panorama)
+        if window.w > 0:
+            pygame.draw.rect(s, config.COLOR_WARN, window, 2)
+    layout.blit_line(s, structured_message("bridge.line.glasses_hint"),
+                     (frame.x + 10, panorama.bottom + 22, frame.w - 20, 20),
+                     config.COLOR_TEXT_DIM, size=14)
+    # The lookout's sightings, nearest the line of sight first.
+    row_y = panorama.bottom + 48
+    rows = sorted((track for track in sightings if track.bearing is not None),
+                  key=lambda track: abs(horizon.relative_offset(track.bearing, line_of_sight)))
+    for track in rows:
+        if row_y + 20 > frame.bottom - 8:
+            break
+        what = game.lookout_visual_what(track.label) or localize("bridge.line.glasses_unknown")
+        in_view = (abs(horizon.relative_offset(track.bearing, line_of_sight))
+                   <= config.LOOKOUT_GLASSES_FOV_DEG / 2.0)
+        layout.blit_line(s, structured_message(
+            "bridge.line.glasses_row", bearing=f"{track.bearing % 360.0:03.0f}", what=what,
+            range=f"{track.range_nm:.1f}" if track.range_nm is not None else "--"),
+            (frame.x + 10, row_y, frame.w - 20, 20),
+            config.COLOR_WARN if in_view else config.COLOR_TEXT, size=15)
+        row_y += 21

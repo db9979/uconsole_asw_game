@@ -553,7 +553,7 @@ V2_ACTION_REGISTRY = {
     "uboot_decoy": V2Action(frozenset({"uboot_weapons"}), _no_params),
     "uboot_blow": V2Action(frozenset({"uboot", "uboot_engine"}), _no_params),
     "uboot_snorkel": V2Action(frozenset({"uboot_engine"}), _bool_params("enabled")),
-    "uboot_mast": V2Action(frozenset({"uboot_esm"}), _bool_params("enabled")),
+    "uboot_mast": V2Action(frozenset({"uboot", "uboot_esm"}), _bool_params("enabled")),
     "uboot_wire_steer": V2Action(frozenset({"uboot_weapons"}), _uboot_wire_params),
     "uboot_wire_cut": V2Action(frozenset({"uboot_weapons"}), _single_ref_params),
     "uboot_silent": V2Action(frozenset({"uboot", "uboot_engine"}), _bool_params("enabled")),

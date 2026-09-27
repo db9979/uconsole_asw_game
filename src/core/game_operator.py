@@ -837,6 +837,24 @@ class OperatorMixin:
         self.lookout_range_nm = scales[max(0, min(len(scales) - 1, index + delta))]
         self.flash(message("runtime.lookout.range", range=f"{self.lookout_range_nm:.0f}"), 1.5)
 
+    def lookout_glasses_shown(self) -> bool:
+        """The bridge lookout's binoculars cover the chart (display only)."""
+        return (bool(getattr(self, "lookout_glasses", False))
+                and self.station is Station.BRIDGE and self.station_page == 2)
+
+    def _toggle_lookout_glasses(self) -> None:
+        self.lookout_glasses = not self.lookout_glasses
+        self._map_drag = None
+        self.flash(message("runtime.lookout.glasses_on" if self.lookout_glasses
+                           else "runtime.lookout.glasses_off"), 1.5)
+
+    def _train_lookout_glasses(self, delta_deg: float) -> None:
+        """Train the binoculars relative to the bow (presentation only)."""
+        self.lookout_glasses_rel = (self.lookout_glasses_rel + delta_deg) % 360.0
+
+    def _train_lookout_glasses_to(self, bearing: float) -> None:
+        self.lookout_glasses_rel = (bearing - self.ship.course) % 360.0
+
     def lookout_sightings(self) -> list:
         """Current bridge-lookout tracks (measured bearing/range, visual label)."""
         return [track for track in self.air_picture.tracks(self.sim_t)

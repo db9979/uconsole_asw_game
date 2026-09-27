@@ -605,7 +605,7 @@ _FOOTERS = {
                                  ("Q/E", "uboot.footer.chart")),
     ("uboot", "UBOOT_SCOPE"): (("←/→", "uboot.footer.scope_turn"),
                                ("help.key.enter", "uboot.footer.stadimeter"),
-                               ("↑/↓", "uboot.footer.contact"), ("Q/E", "uboot.footer.chart")),
+                               ("P", "uboot.footer.mast"), ("Q/E", "uboot.footer.chart")),
     ("uboot_esm", "UBOOT_SCOPE"): (("←/→", "uboot.footer.scope_turn"),
                                    ("help.key.enter", "uboot.footer.stadimeter"),
                                    ("P", "uboot.footer.mast")),

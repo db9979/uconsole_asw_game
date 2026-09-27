@@ -73,10 +73,12 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
     orders = boat.orders
     available = opfor.scope_available(boat)
     view_h = max(120, min(int(h * 0.56), 260))
-    box = layout.box(s, (x, y, w, view_h + 24), "uboot.panel.scope",
+    box_h = view_h + 44
+    box = layout.box(s, (x, y, w, box_h), "uboot.panel.scope",
                      border=config.COLOR_WARN if available else config.COLOR_TEXT)
-    bx, by, bw, _ = box
-    view = pygame.Rect(bx, by, bw, view_h)
+    bx, by, bw, bh = box
+    # The eyepiece fills the box's inner area, never its frame.
+    view = pygame.Rect(bx, by, bw, bh)
     if available:
         draw_eyepiece(s, game, boat, view)
     else:
@@ -84,7 +86,7 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
         pygame.draw.rect(s, config.COLOR_SONAR_RING, view, 1)
         layout.blit_block(s, "uboot.line.scope_mast_down", view.x + 12, view.y + view.h // 2 - 24,
                           view.w - 24, 48, config.COLOR_TEXT_DIM, size=18, align="center")
-    info_y = y + view_h + 34
+    info_y = y + box_h + 8
     line_of_sight = opfor.scope_bearing(boat)
     layout.blit_line(s, message("uboot.line.scope_bearing", bearing=f"{line_of_sight:03.0f}",
                                 relative=f"{orders.scope_rel_deg:03.0f}"),

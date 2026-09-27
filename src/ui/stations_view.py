@@ -43,6 +43,7 @@ from src.ui.stations.common import (  # noqa: F401
 from src.ui.stations.bridge import (  # noqa: F401
     _draw_bridge_weather,
     draw_bridge_view,
+    draw_lookout_glasses,
     _LOOKOUT_KIND_COLORS,
     _lookout_scope_rect,
     _draw_bridge_lookout)

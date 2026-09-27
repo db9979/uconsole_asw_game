@@ -30,6 +30,7 @@ from src.nations.nations import reference_summary
 from src.ui import layout
 from src.ui.editor_widgets import TextField
 from src.ui.map_view import map_hit_target
+from src.ui.stations.bridge import lookout_glasses_bearing_at
 from src.ui.sonar_view import sonar_click_target, sonar_hit_target
 from src.ui.stations_view import station_hit_target
 from src.ui.stations_view import (damage_compartment_at, eloka_track_at,
@@ -363,6 +364,9 @@ class EventMixin:
         canvas = self._window_to_canvas(pos)
         if canvas is None or not self._map_station_visible():
             return None
+        # The lookout's binoculars cover the chart: it takes no pointer then.
+        if self.lookout_glasses_shown():
+            return None
         if not pygame.Rect(config.MAP_RECT).collidepoint(canvas):
             return None
         return canvas
@@ -397,6 +401,8 @@ class EventMixin:
         try:
             if (self._map_station_visible()
                     and pygame.Rect(config.MAP_RECT).collidepoint(canvas_pos)):
+                if self.lookout_glasses_shown():
+                    return None
                 return map_hit_target(self, canvas_pos)
             if self.station is Station.SONAR:
                 return sonar_hit_target(self, canvas_pos)
@@ -1022,6 +1028,15 @@ class EventMixin:
                 self._stop_sonar_audio()
                 self.flash(message("runtime.sonar_audio.on" if self.helo_audio_enabled
                                    else "runtime.sonar_audio.off"))
+            elif e.key == pygame.K_b and self.station is Station.BRIDGE \
+                    and self.station_page == 2:
+                self._toggle_lookout_glasses()
+            elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
+                    and self.lookout_glasses_shown():
+                step = (config.LOOKOUT_GLASSES_STEP_FAST_DEG
+                        if getattr(e, "mod", 0) & pygame.KMOD_SHIFT
+                        else config.LOOKOUT_GLASSES_STEP_DEG)
+                self._train_lookout_glasses(step if e.key == pygame.K_PERIOD else -step)
             elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
                     and self.station is Station.BRIDGE and self.station_page == 2:
                 self._cycle_lookout_range(1 if e.key == pygame.K_PERIOD else -1)
@@ -1493,6 +1508,14 @@ class EventMixin:
                     if pointer is not None:
                         self._map_drag = pointer
                         self._map_drag_moved = False
+                        return
+                if self.lookout_glasses_shown():
+                    canvas = self._window_to_canvas(getattr(e, "pos", None)
+                                                     or pygame.mouse.get_pos())
+                    bearing = (lookout_glasses_bearing_at(self, canvas)
+                               if canvas is not None else None)
+                    if bearing is not None:
+                        self._train_lookout_glasses_to(bearing)
                         return
                 pointer = self._map_pointer(getattr(e, "pos", None))
                 if pointer is not None:

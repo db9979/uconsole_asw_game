@@ -85,10 +85,13 @@ from src.core.game_tasking import TaskingMixin
 from src.core.game_crew import CrewMixin
 from src.core.game_mpa import MpaMixin
 from src.core.game_debrief import DebriefMixin
+from src.core.game_training import TrainingMixin
+from src.core.game_campaign import CampaignMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
-           SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin):
+           SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin,
+           TrainingMixin, CampaignMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -324,7 +327,8 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
             boat.sub.release_manual()
 
     def reset(self, seed: int, scenario_key: str = None, *, publish_intel: bool = True,
-              reference_sector: int | None = None) -> None:
+              reference_sector: int | None = None,
+              difficulty_override: dict | None = None) -> None:
         """Spielzustand neu aufbauen (Start/Neustart).
 
         W4: Szenario (config.SCENARIOS) legt Level, Missionstyp und
@@ -353,7 +357,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.scenario_key = scenario_key
         self.difficulty = {**config.DEFAULT_DIFFICULTY,
                            **(sc["difficulty"] if sc["difficulty"] is not None
-                              else self.menu_difficulty)}
+                              else self.menu_difficulty),
+                           # A campaign leg brings its carried torpedo stock.
+                           **(difficulty_override or {})}
         self.level = "custom"
 
         if reference_sector is not None:
@@ -406,6 +412,11 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self._reset_crew()
         # Post-mission debrief recording (transient, never saved).
         self._reset_debrief()
+        # A guided lesson's coach (set by start_training, never saved).
+        self.training = None
+        # Whether this mission is the current campaign leg (never saved).
+        self.campaign_mission = False
+        self._campaign_leg_shown = False
         self.mission_result = None   # None | "SIEG" | "VERLOREN"
         self.result_reason = ""
 

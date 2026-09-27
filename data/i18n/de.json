@@ -4424,5 +4424,16 @@
   "bridge.footer.glasses_train": "SCHWENKEN",
   "help.bridge.lookout_glasses": "Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken)",
   "bridge.line.glasses_row": "{bearing}°  {what}  {range} sm",
-  "bridge.line.glasses_unknown": "nicht erkannt"
+  "bridge.line.glasses_unknown": "nicht erkannt",
+  "weather.line.temperature_boat": "Luft {air} °C  Wasser {sea} °C",
+  "weather.box.boat": "Boot · Tarnung und Geräusch",
+  "weather.boat.mast_radar": "Mast im Radar: erfasst auf {range} sm (ruhige See {calm} sm)",
+  "weather.boat.sighting": "Aufgetaucht mit dem Auge: gesichtet auf {range} sm (Tag, klar, ruhig {reference} sm)",
+  "weather.boat.sighting_none": "Aufgetaucht mit dem Auge: bei diesem Licht und Seegang nicht gesichtet (Tag, klar, ruhig {reference} sm)",
+  "weather.boat.ambient": "Umgebungsrauschen ggü. ruhig: {bands}",
+  "weather.boat.band": "{band} Hz {excess} dB",
+  "weather.boat.snorkel": "Schnorchel: max. {speed} kn · +{noise} dB · Diesellinien {lines} Hz hörbar",
+  "weather.boat.snorkel_active": "SCHNORCHELT: max. {speed} kn · +{noise} dB · Diesellinien {lines} Hz hörbar",
+  "weather.boat.snorkel_none": "Schnorchel: keiner (keine Dieselanlage)",
+  "help.uboot.weather": "Wetterseite des Boots (0 oder Esc schließt)"
 }

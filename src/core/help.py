@@ -241,6 +241,7 @@ _UBOOT_HELP = (
         ("help.key.enter", "help.uboot.stadimeter"),
         ("+ / -", "help.uboot.telegraph"),
         ("help.key.uboot_sonar", "help.uboot.sonar"),
+        ("0", "help.uboot.weather"),
         ("S / L / F9", "help.uboot.admin"),
     ],
 )

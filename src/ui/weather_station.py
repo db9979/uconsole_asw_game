@@ -1,7 +1,8 @@
 """Weather & sonar analysis panel (key 0), drawn over the station area.
 
 Consumes only ``Game.weather_station_data()`` (an observation-safe DTO):
-own-ship atmosphere and flight weather, and - only after a sonar
+own-ship atmosphere and flight weather (aboard the crewed boat: what the
+weather does to the boat), and - only after a sonar
 bathythermograph measurement - the measured ocean profile with its layer,
 shadow zone, SOFAR axis and a few sound rays.
 """
@@ -59,14 +60,20 @@ def _environment(screen, rect, data) -> None:
                           tendency=f"{a['pressure_tendency_hpa_3h']:+.0f}",
                           trend=message("weather.trend." + trend)),
           x, y + 3 * LINE_H, w, trend_color)
-    ceiling = a["ceiling_ft"]
-    _line(screen, message("weather.line.temperature", air=_fmt(a["air_temp_c"], 1),
-                          sea=_fmt(a["sea_temp_c"], 1),
-                          ceiling=(message("weather.ceiling.none") if ceiling is None
-                                   else message("weather.ceiling.ft", ceiling=_fmt(ceiling))),
-                          icing=message("weather.icing." + a["icing"])),
-          x, y + 4 * LINE_H, w,
-          config.COLOR_WARN if a["icing"] != "none" else config.COLOR_TEXT)
+    if "icing" not in a:
+        # The boat's instruments: no cloud ceiling or icing (nothing flies).
+        _line(screen, message("weather.line.temperature_boat", air=_fmt(a["air_temp_c"], 1),
+                              sea=_fmt(a["sea_temp_c"], 1)), x, y + 4 * LINE_H, w)
+    else:
+        ceiling = a["ceiling_ft"]
+        _line(screen, message("weather.line.temperature", air=_fmt(a["air_temp_c"], 1),
+                              sea=_fmt(a["sea_temp_c"], 1),
+                              ceiling=(message("weather.ceiling.none") if ceiling is None
+                                       else message("weather.ceiling.ft",
+                                                    ceiling=_fmt(ceiling))),
+                              icing=message("weather.icing." + a["icing"])),
+              x, y + 4 * LINE_H, w,
+              config.COLOR_WARN if a["icing"] != "none" else config.COLOR_TEXT)
     if a["storm_warning"]:
         _line(screen, "weather.storm_warning", x, y + 5 * LINE_H, w, config.COLOR_DANGER)
 
@@ -120,6 +127,34 @@ def _flight(screen, rect, data) -> None:
         row, col = divmod(index, 2)
         _line(screen, text, x + col * column, y + 32 + row * LINE_H, column - 8,
               config.COLOR_WARN if warn.get(index) else config.COLOR_TEXT, size=TEXT)
+
+
+def _boat(screen, rect, data) -> None:
+    """What the weather does to the crewed boat (instead of flight weather)."""
+    x, y, w, h = layout.box(screen, rect, "weather.box.boat")
+    b = data["boat"]
+    bands = "  ".join(str(localize(message("weather.boat.band", band=_fmt(band),
+                                           excess=f"{excess:+.0f}")))
+                      for band, excess in zip(b["ambient_bands_hz"], b["ambient_excess_db"]))
+    lines_hz = "/".join(_fmt(line) for line in b["snorkel_lines_hz"])
+    snorkel = (message("weather.boat.snorkel_none") if not b["snorkel_available"] else
+               message("weather.boat.snorkel_active" if b["snorkeling"]
+                       else "weather.boat.snorkel", speed=_fmt(b["snorkel_max_kn"]),
+                       noise=_fmt(b["snorkel_noise_db"]), lines=lines_hz))
+    sighting = (message("weather.boat.sighting", range=_fmt(b["sighting_nm"], 1),
+                        reference=_fmt(b["sighting_ref_nm"], 1))
+                if b["sighting_nm"] >= 0.05 else
+                message("weather.boat.sighting_none", reference=_fmt(b["sighting_ref_nm"], 1)))
+    rows = ((message("weather.boat.mast_radar", range=_fmt(b["mast_radar_nm"], 1),
+                     calm=_fmt(b["mast_radar_calm_nm"], 1)),
+             b["mast_radar_nm"] < b["mast_radar_calm_nm"] * 0.8),
+            (sighting, False),
+            (message("weather.boat.ambient", bands=bands), False),
+            (snorkel, b["snorkeling"]))
+    row_h = max(LINE_H, (h - 4) // len(rows))
+    for index, (text, warn) in enumerate(rows):
+        layout.blit_block(screen, text, x, y + index * row_h, w, row_h - 2,
+                          config.COLOR_OK if warn else config.COLOR_TEXT, size=TEXT - 2)
 
 
 def _profile(screen, rect, data, mouse=None) -> None:
@@ -254,7 +289,11 @@ def draw_weather_station(game, tr=None) -> None:
     top_h = 6 * LINE_H + 52
     left_w = int(width * 0.54)
     _environment(screen, (x, y, left_w, top_h), data)
-    _flight(screen, (x + left_w + 10, y, width - left_w - 10, top_h), data)
+    side = (x + left_w + 10, y, width - left_w - 10, top_h)
+    if "boat" in data:
+        _boat(screen, side, data)
+    else:
+        _flight(screen, side, data)
     _effects(screen, (x + 8, y + top_h + 6, width - 16, LINE_H), data)
     profile_y = y + top_h + LINE_H + 12
     _profile(screen, (x, profile_y, width, r[1] + r[3] - profile_y - 6), data,

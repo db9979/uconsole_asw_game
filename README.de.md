@@ -30,9 +30,9 @@ Sprachfunk ab Start; und eine Missionslaufzeit im Umfang des Editors
 (Referenzsektoren, Schützen- und Erreichen-Ziele, Zufallsgruppen,
 zeitgesteuerte Ereignisse, eingestelltes Wetter, platzierte Luftfahrzeuge,
 Tiere und Täuschkörper). Der Kern ist in Mixins zerlegt, die Testsuite läuft
-parallel. **Spielstände haben das Format v15 (Crew-Zustand des Bootes,
-Sehrohr-Sichtungen, Waffeneinstellungen, Missionsereignisse); v14-Stände
-werden abgewiesen.**
+parallel. **Spielstände haben das Format v16 (Crew-Zustand des Bootes,
+Sehrohr-Sichtungen, Waffeneinstellungen, Missionsereignisse, fremde Pings auf
+dem Weg zur Fregatte); v15-Stände werden abgewiesen.**
 
 Version 1.2.0 verbessert den Spielfluss und die Übergabe zwischen den
 Stationen: Der `Esc`-Dialog und das Missionsende führen zurück ins Hauptmenü
@@ -356,7 +356,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v15 gespeichert.
+v16 gespeichert.
 
 ## Commander-LAN-Koop
 

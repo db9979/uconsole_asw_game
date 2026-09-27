@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v15`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v16`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -24,7 +24,12 @@ SAVE_ROOT_FIELDS = frozenset({
     "schedulers", "rngs", "ui",
     "autocrew", "ais", "plot",
     "crew", "weapon_settings", "mission_events",
+    "ping_intercepts",
 })
+
+# Save v16: foreign active pings still travelling to the frigate, as
+# [arrival sim time, source x, source y] in arrival order.
+PING_INTERCEPTS_MAX = 16
 
 # Save v15: the operator's torpedo settings (plan 1.3, phase 4).
 WEAPON_SETTINGS_FIELDS = frozenset({"torpedo_type", "pattern", "enable_nm", "salvo"})

@@ -17,6 +17,7 @@ from src.core import config
 from src.core import detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
+from src.core.save_schema import PING_INTERCEPTS_MAX
 from src.core import opfor
 from src.core.limits import (
     MAX_DECOYS,
@@ -434,24 +435,44 @@ class SimMixin:
                      and track.fix_source in ("ACTIVE", "TMA", "BUOY", "FUSED")
                      and track.x is not None and track.y is not None), None)
 
+    def _deliver_ping_intercepts(self) -> None:
+        """Warn of foreign active pings whose sound has reached the frigate.
+
+        Pings still travelling are saved (v16 ``ping_intercepts``)."""
+        arrived = [row for row in self._ping_intercepts if row[0] <= self.sim_t]
+        if not arrived:
+            return
+        self._ping_intercepts = [row for row in self._ping_intercepts
+                                 if row[0] > self.sim_t]
+        for _, x, y in sorted(arrived):
+            bearing = math.degrees(math.atan2(
+                x - self.ship.x, -(y - self.ship.y))) % 360.0
+            self.flash(message("runtime.enemy_ping.detected",
+                               bearing=f"{bearing:05.1f}"), 3.0)
+            self.audio.play_alert("danger")
+            self.feed.add(self.world.format_time(), "sonar",
+                          message("runtime.enemy_ping.feed",
+                                  bearing=f"{bearing:05.1f}"))
+
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""
+        self._deliver_ping_intercepts()
         for sub in self.subs:
             was_sunk = sub.sunk
             sub.update(dt, getattr(sub, "_tactical_observation", None), self.world)
+            distance = math.hypot(sub.x - self.ship.x, sub.y - self.ship.y)
             if (sub.pinged_this_tick
-                    and math.hypot(sub.x - self.ship.x, sub.y - self.ship.y)
-                    <= config.SONAR_PING_HEAR_RANGE_NM
+                    and distance <= config.SONAR_PING_HEAR_RANGE_NM
                     and not self.world.sonar_path_blocked(
-                        sub.x, sub.y, sub.depth, self.ship.x, self.ship.y, 5.0)):
-                bearing = math.degrees(math.atan2(
-                    sub.x - self.ship.x, -(sub.y - self.ship.y))) % 360.0
-                self.flash(message("runtime.enemy_ping.detected",
-                                   bearing=f"{bearing:05.1f}"), 3.0)
-                self.audio.play_alert("danger")
-                self.feed.add(self.world.format_time(), "sonar",
-                              message("runtime.enemy_ping.feed",
-                                      bearing=f"{bearing:05.1f}"))
+                        sub.x, sub.y, sub.depth, self.ship.x, self.ship.y, 5.0)
+                    and len(self._ping_intercepts) < PING_INTERCEPTS_MAX):
+                # The transmission reaches the frigate after its one-way travel
+                # time, not in the frame the boat sends.
+                self._ping_intercepts.append((
+                    float(self.sim_t + self.world.echo_delay_s(
+                        distance, (sub.x + self.ship.x) * .5,
+                        (sub.y + self.ship.y) * .5) * .5),
+                    float(sub.x), float(sub.y)))
             if sub.sunk and not was_sunk:
                 if sub.side == "hostile":
                     self.score += config.SCORE_SUNK

@@ -40,6 +40,11 @@ def render_block() -> str:
     lines.append(f"  const radioFields = {_array(schema.RADIO_FIELDS)};\n")
     lines.append("  const helicopterTacticalFields = "
                  f"{_array(schema.HELICOPTER_TACTICAL_FIELDS)};\n")
+    lines.append("  const weatherFields = {\n")
+    lines.append(f"    atmosphere: {_array(schema.WEATHER_ATMOSPHERE_FIELDS)},\n")
+    lines.append(f"    boatAtmosphere: {_array(schema.WEATHER_BOAT_ATMOSPHERE_FIELDS)},\n")
+    lines.append(f"    boat: {_array(schema.WEATHER_BOAT_FIELDS)},\n")
+    lines.append("  };\n")
     lines.append(END)
     return "".join(lines)
 

@@ -17,6 +17,7 @@ from src.core import config
 from src.core import detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
+from src.core.save_schema import PING_INTERCEPTS_MAX
 from src.core import opfor
 from src.core.limits import (
     MAX_DECOYS,
@@ -35,6 +36,7 @@ from src.physics import torpedo_dyn
 from src.physics import ship_dynamics
 from src.weapons import ciws as ciws_physics
 from src.sensors.platform import MAST_DEPTH_M
+from src.data import catalog as contact_catalog
 from src.data.catalog import EmitterProfile
 from src.enemies.decoy import Decoy
 from src.enemies.sub import Sub
@@ -434,24 +436,44 @@ class SimMixin:
                      and track.fix_source in ("ACTIVE", "TMA", "BUOY", "FUSED")
                      and track.x is not None and track.y is not None), None)
 
+    def _deliver_ping_intercepts(self) -> None:
+        """Warn of foreign active pings whose sound has reached the frigate.
+
+        Pings still travelling are saved (v16 ``ping_intercepts``)."""
+        arrived = [row for row in self._ping_intercepts if row[0] <= self.sim_t]
+        if not arrived:
+            return
+        self._ping_intercepts = [row for row in self._ping_intercepts
+                                 if row[0] > self.sim_t]
+        for _, x, y in sorted(arrived):
+            bearing = math.degrees(math.atan2(
+                x - self.ship.x, -(y - self.ship.y))) % 360.0
+            self.flash(message("runtime.enemy_ping.detected",
+                               bearing=f"{bearing:05.1f}"), 3.0)
+            self.audio.play_alert("danger")
+            self.feed.add(self.world.format_time(), "sonar",
+                          message("runtime.enemy_ping.feed",
+                                  bearing=f"{bearing:05.1f}"))
+
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""
+        self._deliver_ping_intercepts()
         for sub in self.subs:
             was_sunk = sub.sunk
             sub.update(dt, getattr(sub, "_tactical_observation", None), self.world)
+            distance = math.hypot(sub.x - self.ship.x, sub.y - self.ship.y)
             if (sub.pinged_this_tick
-                    and math.hypot(sub.x - self.ship.x, sub.y - self.ship.y)
-                    <= config.SONAR_PING_HEAR_RANGE_NM
+                    and distance <= config.SONAR_PING_HEAR_RANGE_NM
                     and not self.world.sonar_path_blocked(
-                        sub.x, sub.y, sub.depth, self.ship.x, self.ship.y, 5.0)):
-                bearing = math.degrees(math.atan2(
-                    sub.x - self.ship.x, -(sub.y - self.ship.y))) % 360.0
-                self.flash(message("runtime.enemy_ping.detected",
-                                   bearing=f"{bearing:05.1f}"), 3.0)
-                self.audio.play_alert("danger")
-                self.feed.add(self.world.format_time(), "sonar",
-                              message("runtime.enemy_ping.feed",
-                                      bearing=f"{bearing:05.1f}"))
+                        sub.x, sub.y, sub.depth, self.ship.x, self.ship.y, 5.0)
+                    and len(self._ping_intercepts) < PING_INTERCEPTS_MAX):
+                # The transmission reaches the frigate after its one-way travel
+                # time, not in the frame the boat sends.
+                self._ping_intercepts.append((
+                    float(self.sim_t + self.world.echo_delay_s(
+                        distance, (sub.x + self.ship.x) * .5,
+                        (sub.y + self.ship.y) * .5) * .5),
+                    float(sub.x), float(sub.y)))
             if sub.sunk and not was_sunk:
                 if sub.side == "hostile":
                     self.score += config.SCORE_SUNK
@@ -1660,8 +1682,7 @@ class SimMixin:
                 continue
             dist = a.distance_nm(self.ship)
             # A sea-skimmer is below the radar (and radio) horizon until close.
-            if dist > config.radar_horizon_nm(config.RADAR_ANTENNA_HEIGHT_M,
-                                              a.altitude_m):
+            if dist > self._asm_radar_horizon_nm(a):
                 continue
             if (a.jamming(self.ship) and dist <= config.ESM_RANGE_NM
                     and not self.world.land_blocks_line(
@@ -1749,15 +1770,23 @@ class SimMixin:
                      and self.runtime_catalog.emitters[key].domain == "radar"), None)
 
     @staticmethod
-    def _asm_seeker_emitter(profile: dict) -> EmitterProfile:
-        """Terminal active-radar seeker signature of an inbound ASM."""
-        return EmitterProfile(
-            key=profile["key"] + ".seeker", domain="radar",
-            frequency_band_hz=tuple(profile["seeker_frequency_hz"]),
-            prf_band_hz=tuple(profile["seeker_prf_hz"]),
-            modulation_codes=(profile["seeker_modulation"],),
-            radar_role="missile_seeker", operating_mode="terminal_search",
-            power_class="medium", operating_period_s=.5, on_duration_s=.5)
+    def _asm_radar_horizon_nm(asm) -> float:
+        """Two-way horizon between the own mast and an inbound missile."""
+        return config.radar_horizon_nm(config.RADAR_ANTENNA_HEIGHT_M,
+                                       asm.altitude_m)
+
+    def _asm_seeker_emitter(self, profile: dict) -> EmitterProfile:
+        """Terminal active-radar seeker signature of an inbound ASM.
+
+        The signature is the catalog's library emitter the loadout names; a
+        save written before the seeker was catalogued carries a snapshot
+        without it and keeps emitting the packaged signature.
+        """
+        key = profile["seeker_emitter_key"]
+        emitter = self.runtime_catalog.emitters.get(key)
+        if emitter is None:
+            emitter = contact_catalog.CATALOG.emitters[key]
+        return emitter
 
     def _radar_signals(self, actor, profile_key: str, *, enabled=True,
                        synthetic=False, fire_control=False, terminal=False):
@@ -1816,8 +1845,9 @@ class SimMixin:
             self.sim_t, asm.x, asm.y, terminal=True)
         if not signals:
             return None
-        blocked = self.world.land_blocks_line(
-            self.ship.x, self.ship.y, asm.x, asm.y)
+        blocked = (asm.distance_nm(self.ship) > self._asm_radar_horizon_nm(asm)
+                   or self.world.land_blocks_line(
+                       self.ship.x, self.ship.y, asm.x, asm.y))
         return self.ecm_jammer.effect_details_on(
             signals[0], asm.distance_nm(self.ship), line_of_sight=not blocked,
             operational=not self.damage.station_down("opz"),
@@ -1897,6 +1927,10 @@ class SimMixin:
                         fire_control=raider.fc_radar_on)
                     yield from self._signal_measurements(raider, signals)
                 for asm in self.asms:
+                    # A sea-skimmer's seeker is heard only once the missile
+                    # has risen above the mast's radar horizon.
+                    if asm.distance_nm(self.ship) > self._asm_radar_horizon_nm(asm):
+                        continue
                     emitter = self._asm_seeker_emitter(asm.profile)
                     signals = RadarSuiteController(
                         (emitter,), asm.sensor_seed).active_signals(

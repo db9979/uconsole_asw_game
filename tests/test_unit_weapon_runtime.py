@@ -216,11 +216,61 @@ def test_hostile_sub_active_ping_is_heard_by_player(game):
     sub.memory["contact_age"] = 0.0
     game.subs = [sub]
 
+    feed_before = len(game.feed.entries)
+    game.msg = None
     game._update_underwater_entities(1.0)
 
     assert sub.pinged_this_tick is True
+    # The transmission is heard after its one-way travel time (5 NM ~ 6 s),
+    # not in the frame the boat sends.
+    assert game.msg is None
+    assert len(game.feed.entries) == feed_before
+    arrival = game._ping_intercepts[0][0]
+    assert 5.5 < arrival - game.sim_t < 7.0
+
+    sub.stype.aggression = 0.0
+    game.sim_t = arrival - 0.01
+    game._update_underwater_entities(0.01)
+    assert game.msg is None
+    game.sim_t = arrival
+    game._update_underwater_entities(0.01)
     assert game.msg["__u_jagd_i18n__"] == "runtime.enemy_ping.detected"
     assert game.feed.entries[-1].category == "sonar"
+    assert game._ping_intercepts == []
+
+
+def test_travelling_foreign_ping_survives_save_and_load(game):
+    import copy
+    import json
+    sub = Sub(game.ship.x + 5.0, game.ship.y, 50, 0, "diesel_alt", random.Random(41),
+              side="hostile", asw_rng=SimpleNamespace(random=lambda: 0.0))
+    sub.stype.aggression = 0.9
+    sub.memory["contact"] = dict(x=sub.x, y=sub.y, speed=0.0, course=0.0, noise=0.5)
+    sub.memory["contact_age"] = 0.0
+    game.subs = [sub]
+    game._update_underwater_entities(1.0)
+    state = json.loads(json.dumps(game.save_state()))
+    assert len(state["ping_intercepts"]) == 1
+    arrival = state["ping_intercepts"][0][0]
+
+    restored = Game(seed=1, start_menu=False, audio_enabled=False, language="en")
+    try:
+        assert restored._load_save_data(copy.deepcopy(state))
+        assert restored.save_state()["ping_intercepts"] == state["ping_intercepts"]
+        restored.subs[0].stype.aggression = 0.0
+        restored.msg = None
+        restored.sim_t = arrival
+        restored._update_underwater_entities(0.01)
+        assert restored.msg["__u_jagd_i18n__"] == "runtime.enemy_ping.detected"
+        assert restored._ping_intercepts == []
+        for bad in ([[arrival, 1, 2.0]], [[-1.0, 1.0, 2.0]], [[arrival, 1.0]],
+                    [[arrival, 1.0, 2.0]] * 17,
+                    [[arrival + 1.0, 1.0, 2.0], [arrival, 1.0, 2.0]]):
+            broken = copy.deepcopy(state)
+            broken["ping_intercepts"] = bad
+            assert not restored._load_save_data(broken)
+    finally:
+        restored.audio.shutdown()
 
 
 def test_explicit_torpedo_helper_uses_depth_and_observation_without_ui_mutation(game):

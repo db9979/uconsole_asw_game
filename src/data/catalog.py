@@ -1737,6 +1737,13 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
     if any(key.removeprefix("endurance.") not in sub_entries for key in endurances):
         raise ValueError("endurance component attached outside submarine catalog")
     referenced["endurances"].update(endurances)
+    # Missile seekers are a weapon library: they radiate from an inbound
+    # round, never from a platform suite, so no profile references them.
+    for emitter in emitters.values():
+        if emitter.radar_role == "missile_seeker":
+            if emitter.key in referenced["emitters"]:
+                raise ValueError(f"emitter {emitter.key!r}: missile seeker attached to a platform")
+            referenced["emitters"].add(emitter.key)
 
     for field, values in registries.items():
         orphaned = values.keys() - referenced[field]

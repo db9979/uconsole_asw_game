@@ -119,3 +119,23 @@ class LookoutModel:
         if night:
             eps *= self.night_factor(illumination)
         return apparent_contrast(self.c0[kind], range_nm, visibility_nm) / eps
+
+    def sighting_range_nm(self, kind: str, *, visibility_nm: float, night: bool,
+                          illumination: float, sea_state: float,
+                          eye_m: float = LOOKOUT_EYE_HEIGHT_M) -> float:
+        """Largest range at which ``margin`` still reaches 1 (bisection; for
+        displays).  The margin falls monotonically with range and is cut at
+        the geometric horizon, so the result is at most that horizon."""
+        conditions = dict(visibility_nm=visibility_nm, night=night,
+                          illumination=illumination, sea_state=sea_state, eye_m=eye_m)
+        high = optical_horizon_nm(eye_m, TARGET_HEIGHT_M[kind])
+        if self.margin(kind, high, **conditions) >= 1.0:
+            return high
+        low = 0.0
+        for _ in range(40):
+            mid = 0.5 * (low + high)
+            if self.margin(kind, mid, **conditions) >= 1.0:
+                low = mid
+            else:
+                high = mid
+        return low

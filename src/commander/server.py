@@ -225,6 +225,9 @@ class CommanderServer:
         self._v2_events = {}
         self._v2_private_events = {}
         self._v2_simlogs = {}
+        # id(entry) -> (entry, compact JSON bytes) of the last SimLog publication
+        # (main thread only); holding the entry keeps its id from being reused.
+        self._v2_simlog_entry_bytes = {}
         unpublished = dict(protocol=2, version="", session="unpublished", epoch=0,
                            revision=0, seq=0, phase="blocked", role=None,
                            chart_revision="unpublished")
@@ -1555,6 +1558,7 @@ class CommanderServer:
                 or set(entries_by_role) != set(ROLES)):
             raise ValueError("invalid v2 simlog publication")
         encoded = {}
+        cache, kept = self._v2_simlog_entry_bytes, {}
         for role, entries in entries_by_role.items():
             if type(entries) is not list or len(entries) > SIMLOG_ENTRIES_MAX:
                 raise ValueError("invalid v2 simlog publication")
@@ -1588,13 +1592,21 @@ class CommanderServer:
                                            "raiders"))):
                     raise ValueError("invalid v2 simlog publication")
                 previous = entry["seq"]
-                detached.append(entry)
-            payload = _json_bytes({
+                cached = cache.get(id(entry))
+                if cached is None or cached[0] is not entry:
+                    cached = (entry, _json_bytes(entry))
+                kept[id(entry)] = cached
+                detached.append(cached[1])
+            # Byte-identical to encoding the whole document, but each entry is
+            # encoded once across publications instead of on every new row.
+            envelope = _json_bytes({
                 "protocol": 2, "session": world_session, "epoch": world_epoch,
-                "role": role, "entries": detached})
+                "role": role, "entries": []})
+            payload = envelope[:-2] + b",".join(detached) + envelope[-2:]
             if len(payload) > SIMLOG_MAX_BYTES:
                 raise ValueError("v2 simlog publication size limit exceeded")
             encoded[role] = payload
+        self._v2_simlog_entry_bytes = kept
         with self._lock:
             self._v2_simlogs = encoded
 

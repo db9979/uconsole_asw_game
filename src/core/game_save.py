@@ -1,4 +1,4 @@
-"""Save v15 persistence of the game: canonical document, strict validation,
+"""Save v16 persistence of the game: canonical document, strict validation,
 transactional candidate restore and the five slots (``Game`` mixin).
 
 Every method here is a verbatim move from ``game.py`` (plan 1.3, phase 2,
@@ -456,6 +456,7 @@ class SaveMixin:
             "mission_type": self.mission.type_key,
             "mission_time": self.mission_time,
             "mission_events": list(self.mission_events_pending),
+            "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
             "score": self.score,
             "incident": self.incident,
             "mission_result": self.mission_result,
@@ -990,6 +991,7 @@ class SaveMixin:
                                       for row in self.world._thermo]
         self.mission_time = data["mission_time"]
         self.mission_events_pending = [str(item) for item in data["mission_events"]]
+        self._ping_intercepts = [tuple(row) for row in data["ping_intercepts"]]
         self.score = data["score"]
         self.incident = data["incident"]
         self.sim_t = data["sim_t"]

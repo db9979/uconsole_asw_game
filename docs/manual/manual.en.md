@@ -803,6 +803,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 - **Launch limits:** wind up to 32 kn, crosswind up to 22 kn, visibility at least 2 NM, sea state 5 or less, working flight deck, gusts up to 40 kn, cloud ceiling at least 300 ft, no severe icing, and a deck-motion window (roll within 8 degrees, pitch within 3.5 degrees). Light icing costs 20 % more fuel; the weather & sonar analysis (`0`) shows CLEAR, LIMITED or NO-GO. Landing also waits for such a window; turning into the sea reduces pitching.
 - **Dipping sonar:** depth 15-300 m (default 75 m, at least 10 m above the seabed), passive 18 NM with +/-2 degrees, active ping 14 NM with 30 s cooldown. Dipping needs wind up to 30 kn, visibility of 1 NM and no icing.
 - **Sonobuoys:** 5 per sortie, 8 NM range, 60 min battery; they drift with the current and a little with the wind. PASSIVE buoys give bearings (like DIFAR); ACTIVE buoys give range and bearing every 30 s (like DICASS).
+- **Buoy patterns:** with `X` a pattern is planned: a queue of drop points about the waypoint: a 2x2 field (1.5 NM spacing), a barrier across the bearing from the ship to the waypoint (3 NM spacing) or a circle of 1.5 NM radius, each with up to 4 buoys of the remaining stock. The helicopter flies the points one after the other and drops the ordinary single buoy (in the selected mode) at each; SINGLE clears the queue, returning home drops it.
+- **MAD run:** with `Shift+M` and the dipping sonar stowed the helicopter descends to 30 m and slows to 90 kn. A submerged hull within about 400 m slant range is detected on a stateless draw per sensor tick (sure inside 250 m) and reported as a MAD position fix without depth or course; it feeds the weapons' range check and, once the helicopter releases its contact, Operations.
 - **Lightweight torpedo:** 2 per sortie, 55 kn, 12 NM, dropped from the helicopter's position towards the datum, no wire. The target must be classified as submarine.
 
 ### Keys
@@ -814,6 +816,8 @@ The station has four pages (`8` again cycles them); it opens on page 3.
 | `M` | Set sonar contact as air-torpedo target |
 | `B` | Deploy one sonobuoy at current position |
 | `Shift+B` | Next sonobuoy mode PASSIVE / ACTIVE |
+| `X` | Buoy pattern: single, 2x2 field, barrier across the waypoint bearing, circle (X again: next; single clears) |
+| `Shift+M` | MAD run on/off: low and slow, dipping sonar stowed |
 | `T` | Sensor source: dipping sonar / sonobuoys |
 | `F` | Confirm / unconfirm selected helicopter contact |
 | `C` | Classify contact (submarine / warship / biological / vessel / aircraft / torpedo) |
@@ -860,8 +864,8 @@ Attack sequence:
 
 ### Not modelled
 
-- No buoy patterns (field, barrier) and no frequency channel management; buoys are dropped one at a time.
-- No MAD (magnetic anomaly detector) and no radar on the helicopter.
+- No frequency channel management for buoys.
+- No radar on the helicopter.
 - Only one helicopter.
 
 ## 9 Electronic warfare

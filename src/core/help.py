@@ -146,6 +146,7 @@ STATION_HELP = {
         [("H", "help.control.helo_toggle"), ("help.key.arrows", "help.control.waypoint"),
           ("M", "help.control.helo_target"), ("B", "help.control.drop_buoy"),
           ("Shift+B", "help.control.buoy_mode"),
+          ("X", "help.control.buoy_pattern"), ("Shift+M", "help.control.mad"),
           ("T", "help.control.helo_source"), ("F", "help.control.helo_qualify"),
           ("C", "help.control.classify"),
           ("G / Shift+G", "help.control.helo_contact_release"),
@@ -163,6 +164,7 @@ STATION_HELP = {
           ("help.key.p3_mode", "help.control.helo_audition_mode"),
           ("help.key.p3_band", "help.control.helo_band")],
         ["help.note.helo_stores", "help.note.helo_fuel", "help.note.buoys",
+          "help.note.buoy_patterns", "help.note.mad",
           "help.note.helo_roe", "help.note.shared_controls"], "help.note.helo_tactic"),
     Station.ELOKA: _station(
         "help.eloka.intro",

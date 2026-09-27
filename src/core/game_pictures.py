@@ -216,7 +216,7 @@ class PicturesMixin:
                        and 0 <= self.sim_t - contact.dip_last_seen
                        < config.SONAR_CONTACT_LOST_S)
             fixes = [fix for fix in contact.active_fixes(self.sim_t)
-                     if fix["source"] == "DIPPING"]
+                     if fix["source"] in ("DIPPING", "MAD")]
             fix = max(fixes, key=lambda item: item["fixed_at"]) if fixes else None
             if not passive and fix is None:
                 continue
@@ -229,7 +229,8 @@ class PicturesMixin:
             observation_id = self._opz_observation_id("sonar-dip", contact.target_id)
             reports.append(OPZObservation(
                 observation_id,
-                "SONAR-DIP-BRG" if passive else "SONAR-DIPPING",
+                "SONAR-DIP-BRG" if passive else (
+                    "HELO-MAD" if fix["source"] == "MAD" else "SONAR-DIPPING"),
                 "UNKNOWN", bearing, range_nm,
                 None if passive else fix["x"],
                 None if passive else fix["y"], None,

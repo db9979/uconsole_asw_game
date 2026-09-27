@@ -427,10 +427,20 @@ def draw_helicopter_view(game, tr=None) -> None:
                  localize("helo.launch_rule"), localize("helo.dip_controls"),
                  localize("helo.weapon_controls"),
                  _helo_dip_contact_line(game),
+                 localize(message(
+                     "helo.pattern_rule",
+                     pattern=display_value("buoy_pattern",
+                                           getattr(helo, "pattern", "single")),
+                     remaining=len(getattr(helo, "pattern_queue", ())),
+                     mad=localize("ui.active" if getattr(helo, "mad_mode", False)
+                                  else "helo.standby"))),
                  localize("view.helo.roe"))
         colors = (config.COLOR_TEXT, margin_color, config.COLOR_TEXT_DIM,
                   config.COLOR_OK, config.COLOR_WARN,
                   config.COLOR_OK if dip_contacts else config.COLOR_TEXT_DIM,
+                  config.COLOR_OK if (getattr(helo, "pattern_queue", ())
+                                      or getattr(helo, "mad_mode", False))
+                  else config.COLOR_TEXT_DIM,
                   config.COLOR_WARN)
         line_y = my
         line_h = max(30, layout.font(18).get_linesize() + 4)

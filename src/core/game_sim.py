@@ -52,6 +52,7 @@ from src.ui import layout
 from src.ui.splash_view import SPLASH_PING_PERIOD_S
 from src.air.asm import ASM
 from src.air import helicopter as helicopter_physics
+from src.sensors import mad as mad_physics
 from src.air.flights import Flight
 from src.air.raid import Raider
 from src.weapons.torpedo import EnemyTorpedo, Torpedo
@@ -493,11 +494,65 @@ class SimMixin:
                              self.ship.roll, self.ship.pitch),
                          fuel_factor=(config.HELO_ICING_FUEL_FACTOR
                                       if icing != "none" else 1.0))
+        self._fly_buoy_pattern()
         for buoy in self.buoys:
             buoy.update(dt, self.world)
         self.buoys = [buoy for buoy in self.buoys if buoy.active]
         self.softkill_store.update(dt)
         self.chaff_cd = min(self.softkill_store.loading, default=0.0)
+
+    def _fly_buoy_pattern(self) -> None:
+        """Fly the queued pattern points; each one is an ordinary single drop
+        at the helicopter's measured position when it gets there."""
+        helo = self.helo
+        if not helo.pattern_queue:
+            return
+        if helo.state != "AUF" or helo.hovering:
+            return
+        target_x, target_y = helo.pattern_queue[0]
+        if (helo.waypoint_x, helo.waypoint_y) != (target_x, target_y):
+            helo.set_waypoint(target_x, target_y)
+        if math.hypot(helo.x - target_x, helo.y - target_y) > helicopter_physics.PATTERN_DROP_RADIUS_NM:
+            return
+        result = self.deploy_helicopter_buoy()
+        helo.pattern_queue.pop(0)
+        if result is True:
+            buoy = self.buoys[-1]
+            self.flash(message("runtime.buoy.deployed", buoy=buoy.seq))
+            self.feed.add(self.world.format_time(), "sonar",
+                          message("runtime.buoy.active", buoy=buoy.seq))
+        elif result == "no_buoys":
+            helo.pattern_queue = []
+        if not helo.pattern_queue:
+            helo.pattern = "single"
+            self.flash(message("runtime.helo.pattern_done"), 2.0)
+
+    def _update_mad(self, targets, dt: float) -> None:
+        """MAD run: a stateless draw per submerged hull under the helicopter."""
+        helo = self.helo
+        if not helo.mad_mode or not helo.airborne or helo.hovering:
+            return
+        tick = int(self.sim_t / max(dt, 1e-6))
+        for target in targets:
+            if (getattr(target, "sensor_domain", None) != "subsurface"
+                    or getattr(target, "sunk", False)):
+                continue
+            slant = mad_physics.slant_m(math.hypot(helo.x - target.x, helo.y - target.y),
+                                        getattr(target, "depth", 0.0))
+            if slant > mad_physics.MAD_MAX_SLANT_M:
+                continue
+            if not mad_physics.detects(self.seed, target.id, tick, slant):
+                continue
+            contact = self.sonar._get_contact(target)
+            contact._fx, contact._fy = self.ship.x, self.ship.y
+            previous = contact.fixes.get("MAD")
+            contact.update_mad(helo.x, helo.y, self.sim_t,
+                               mad_physics.MAD_FIX_UNCERTAINTY_NM,
+                               mad_physics.MAD_FIX_QUALITY)
+            if previous is None or self.sim_t - previous["measured_at"] >= 10.0:
+                notice = message("runtime.helo.mad_contact", contact=contact.id)
+                self.flash(notice, 3.0)
+                self.feed.add(self.world.format_time(), "sonar", notice)
 
     def _update_asw_stores(self, dt: float) -> None:
         scale = (0.0 if self.damage.station_down("weapons") else
@@ -906,6 +961,7 @@ class SimMixin:
             self.selected_contact = None
         prev_cts = {c.id for c in self.sonar.contacts.values()}
         targets = self._sonar_targets()
+        self._update_mad(targets, dt)
         if self.damage.station_down("sonar"):
             if self.sonar.lofar_history:
                 self.sonar.reset_listening_history()

@@ -437,6 +437,14 @@ def _helicopter_deploy_buoy(game, params, _bindings):
     return game.deploy_helicopter_buoy()
 
 
+def _helicopter_set_pattern(game, params, _bindings):
+    return game.set_helicopter_pattern(params["kind"])
+
+
+def _helicopter_set_mad(game, params, _bindings):
+    return game.set_helicopter_mad(params["enabled"])
+
+
 def _helicopter_set_buoy_mode(game, params, _bindings):
     return game.set_helicopter_buoy_mode(params["mode"])
 
@@ -703,6 +711,8 @@ _V2_ACTION_HANDLERS = {
     "helicopter_return": _helicopter_return,
     "helicopter_set_waypoint": _helicopter_set_waypoint,
     "helicopter_deploy_buoy": _helicopter_deploy_buoy,
+    "helicopter_set_pattern": _helicopter_set_pattern,
+    "helicopter_set_mad": _helicopter_set_mad,
     "helicopter_set_buoy_mode": _helicopter_set_buoy_mode,
     "helicopter_set_listen_source": _helicopter_set_listen_source,
     "helicopter_set_listen_bearing": _helicopter_set_listen_bearing,

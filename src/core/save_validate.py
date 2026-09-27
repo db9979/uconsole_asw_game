@@ -1197,8 +1197,20 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             "buoys_left", "fuel_s", "waypoint_x", "waypoint_y",
             "dip_state", "dip_depth_m", "dip_depth_target_m",
             "dip_water_depth_m", "dip_ping_cooldown", "hover_x", "hover_y",
+            "pattern", "pattern_queue", "mad_mode",
         }
         if set(helo) != required_helo:
+            return False
+        queue = helo["pattern_queue"]
+        if (helo["pattern"] not in ("single", "field", "barrier", "circle")
+                or type(helo["mad_mode"]) is not bool
+                or not isinstance(queue, list) or len(queue) > 8
+                or any(not isinstance(point, list) or len(point) != 2
+                       or not bounded(point[0], -1_000_000, 1_000_000)
+                       or not bounded(point[1], -1_000_000, 1_000_000)
+                       for point in queue)
+                or (helo["pattern"] == "single") != (not queue)
+                or (helo["mad_mode"] and helo["state"] != "AUF")):
             return False
         if ((helo["hover_x"] is None) != (helo["hover_y"] is None)
                 or (helo["hover_x"] is not None and (
@@ -1651,7 +1663,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
             if tma_seen is not None and not bounded(tma_seen, 0, 1e12):
                 return False
             published_fixes = contact.get("fixes")
-            if (not isinstance(published_fixes, list) or len(published_fixes) > 4
+            if (not isinstance(published_fixes, list) or len(published_fixes) > 5
                     or len({fix.get("source") for fix in published_fixes
                             if isinstance(fix, dict)}) != len(published_fixes)):
                 return False
@@ -1661,7 +1673,7 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                           "quality"}
                 if (not isinstance(fix, dict) or set(fix) != fields
                         or fix["source"] not in (
-                            "PING", "DIPPING", "TMA", "SONOBUOY")
+                            "PING", "DIPPING", "TMA", "SONOBUOY", "MAD")
                         or not bounded(fix["measured_at"], 0, save_sim_t)
                         or not bounded(fix["fixed_at"], fix["measured_at"], save_sim_t)
                         or not bounded(fix["x"], -1_000_000, 1_000_000)

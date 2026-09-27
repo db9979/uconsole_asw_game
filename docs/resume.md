@@ -1257,6 +1257,28 @@ Notizen Phase 8:
   `NOISE_LEVEL_MAX` (Flank kavitierend, 1,05) begrenzt, damit gespeicherte
   Beobachtungen im Validator-Rahmen bleiben.
 
+| 6 Hubschrauber | fertig | siehe `git log` | fokussiert 795+ gruen, Kalibrierung siehe Log | Muster auf 4 Bojen begrenzt (Vorrat 5) |
+
+Notizen Phase 6:
+
+- Bojenmuster als Warteschlange von Abwurfpunkten (`Helicopter.pattern`,
+  `pattern_queue`; `plan_buoy_pattern` pur): 2x2-Feld 1,5 sm, Sperre 3 sm quer
+  zur Wegpunktpeilung, Kreis 1,5 sm, je hoechstens 4 Bojen (Abweichung von
+  A6.1: 3x3/5/6 sind mit 5 Bojen je Einsatz nicht moeglich). `_fly_buoy_pattern`
+  in `_update_aviation` setzt den Wegpunkt auf den naechsten Punkt und wirft
+  innerhalb 0,3 sm die gewoehnliche Einzelboje; Rueckflug/Verlust verwerfen.
+- MAD: `src/sensors/mad.py` (30 m, 90 kn, 400 m Schraegdistanz, sicher unter
+  250 m, `detrand`-Tag `mad` je Ziel und Sensortakt). Fix als
+  `Contact.fixes["MAD"]` (`update_mad`, Quelle "MAD" in `active_fixes`,
+  Validator erlaubt 5 Fixe), `range_source == "mad"`; OPZ zeigt ihn als
+  `HELO-MAD` ueber die freigegebene Helikoptermeldung. Wahrheit nur an der
+  Sensorgrenze (`_update_mad` in `_update_sensors`).
+- Tasten Helikopter `X` (Muster) und `Umschalt+M` (MAD); Befehle
+  `helicopter_set_pattern`, `helicopter_set_mad`; Projektion `asset.pattern`,
+  `pattern_remaining`, `mad_mode`, Bereitschaft `can_pattern`, `can_mad`.
+  Save: `helo.pattern`, `helo.pattern_queue`, `helo.mad_mode` (im `helo`-Block
+  statt eines eigenen Wurzelblocks `helo_pattern`).
+
 Vorbestehende Fehlschlaege (auf `main` ef45a4f identisch, nicht Teil des
 Durchlaufs): `test_commander_browser_sessions_v2.py::test_real_v2_role_states_survive_unpublished_admin_grants_and_presence`
 (beide Aufloesungen, Helikopter-LOFAR-Ansicht) und

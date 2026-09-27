@@ -12,6 +12,7 @@ from src.core import config
 from src.core.commands import STATION_PAGES, station_page_step
 from src.core.i18n import display_value, message, raw_text
 from src.physics import torpedo_dyn
+from src.air import helicopter as helicopter_physics
 from src.core.station import Station
 from src.core import opfor
 from src.core.limits import MAX_DECOYS
@@ -949,6 +950,58 @@ class OperatorMixin:
         self.buoys.append(buoy)
         if buoy.mode == "PASSIVE" and not self.helicopter_audio_ready():
             self.set_helicopter_listen_source(f"SB{buoy.seq}")
+        return True
+
+    def set_helicopter_pattern(self, kind: str):
+        """Plan a buoy pattern about the current waypoint (single clears it)."""
+        if type(kind) is not str or kind not in helicopter_physics.BUOY_PATTERNS:
+            return "invalid_value"
+        helo = self.helo
+        if kind == "single":
+            helo.pattern_queue = []
+            helo.pattern = "single"
+            self.flash(message("runtime.helo.pattern_cleared"), 1.5)
+            return True
+        if helo.state != "AUF":
+            return "not_ready"
+        if helo.buoys_left <= 0:
+            return "no_buoys"
+        bearing, distance = self._helo_waypoint_polar()
+        centre_x = self.ship.x + distance * math.sin(math.radians(bearing))
+        centre_y = self.ship.y - distance * math.cos(math.radians(bearing))
+        points = helicopter_physics.plan_buoy_pattern(kind, centre_x, centre_y, bearing,
+                                                      helo.buoys_left)
+        size = float(self.world.size_nm)
+        points = [(config.clamp(x, 0.0, size), config.clamp(y, 0.0, size)) for x, y in points]
+        if not points:
+            return "invalid_value"
+        helo.pattern = kind
+        helo.pattern_queue = points
+        helo.set_waypoint(*points[0])
+        self.flash(message("runtime.helo.pattern", pattern=display_value("buoy_pattern", kind),
+                           count=len(points)), 2.0)
+        return True
+
+    def _cycle_helicopter_pattern(self) -> None:
+        kinds = helicopter_physics.BUOY_PATTERNS
+        current = self.helo.pattern if self.helo.pattern_queue else "single"
+        self.set_helicopter_pattern(kinds[(kinds.index(current) + 1) % len(kinds)])
+
+    def set_helicopter_mad(self, enabled: bool):
+        """Start or end the MAD run (low and slow, dipping sonar stowed)."""
+        if type(enabled) is not bool:
+            return "invalid_value"
+        helo = self.helo
+        if not enabled:
+            helo.mad_mode = False
+            self.flash(message("runtime.helo.mad_off"), 1.5)
+            return True
+        if helo.state != "AUF":
+            return "not_ready"
+        if helo.dip_state != "STOWED":
+            return "dip_deployed"
+        helo.mad_mode = True
+        self.flash(message("runtime.helo.mad_on"), 2.0)
         return True
 
     def set_helicopter_buoy_mode(self, mode: str):

@@ -613,7 +613,10 @@ class SaveMixin:
                            dip_depth_target_m=self.helo.dip_depth_target_m,
                            dip_water_depth_m=self.helo.dip_water_depth_m,
                            dip_ping_cooldown=self.helo.dip_ping_cooldown,
-                           hover_x=self.helo.hover_x, hover_y=self.helo.hover_y),
+                           hover_x=self.helo.hover_x, hover_y=self.helo.hover_y,
+                           pattern=self.helo.pattern,
+                           pattern_queue=[list(point) for point in self.helo.pattern_queue],
+                           mad_mode=self.helo.mad_mode),
             "subs": [dict(id=s.id, x=s.x, y=s.y, depth=s.depth, course=s.course,
                            state=s.state, speed=s.speed, damage=s.damage,
                            torpedoes_left=s.torpedoes_left, heard_ping=s.heard_ping,
@@ -1166,6 +1169,9 @@ class SaveMixin:
         self.helo.dip_water_depth_m = hd["dip_water_depth_m"]
         self.helo.dip_ping_cooldown = hd["dip_ping_cooldown"]
         self.helo.hover_x, self.helo.hover_y = hd["hover_x"], hd["hover_y"]
+        self.helo.pattern = hd["pattern"]
+        self.helo.pattern_queue = [tuple(point) for point in hd["pattern_queue"]]
+        self.helo.mad_mode = hd["mad_mode"]
         # U-Boote (Phase 2: vollstaendiger KI-Zustand)
         self.subs = []
         for sd in data["subs"]:

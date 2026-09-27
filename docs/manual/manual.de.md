@@ -804,6 +804,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 - **Startgrenzen:** Wind bis 32 kn, Seitenwind bis 22 kn, Sicht mindestens 2 sm, Seegang höchstens 5, einsatzbereites Flugdeck, Böen bis 40 kn, Wolkenuntergrenze mindestens 300 ft, keine starke Vereisung und ein ruhiges Deckfenster (Rollen höchstens 8 Grad, Stampfen höchstens 3,5 Grad). Leichte Vereisung kostet 20 % mehr Treibstoff; die Wetter- & Sonar-Analyse (`0`) zeigt CLEAR, LIMITED oder NO-GO. Auch die Landung wartet auf ein solches Fenster; gegen die See gedreht stampft das Schiff weniger.
 - **Tauchsonar:** Tiefe 15-300 m (Standard 75 m, mindestens 10 m über Grund), passiv 18 sm mit +/-2 Grad, aktiver Ping 14 sm mit 30 s Abklingzeit. Tauchen braucht Wind bis 30 kn, 1 sm Sicht und keine Vereisung.
 - **Sonarbojen:** 5 je Einsatz, 8 sm Reichweite, 60 min Batterie; sie treiben mit der Strömung und etwas mit dem Wind. PASSIV-Bojen liefern Peilungen (wie DIFAR); AKTIV-Bojen liefern Entfernung und Peilung alle 30 s (wie DICASS).
+- **Bojenmuster:** mit `X` wird ein Muster geplant: eine Folge von Abwurfpunkten um den Wegpunkt: ein 2x2-Feld (Abstand 1,5 sm), eine Sperre quer zur Peilung vom Schiff zum Wegpunkt (Abstand 3 sm) oder ein Kreis von 1,5 sm Radius, jeweils mit bis zu 4 Bojen des Restvorrats. Der Helikopter fliegt die Punkte nacheinander an und wirft an jedem die gewöhnliche Einzelboje (in der gewählten Betriebsart); EINZELN löscht die Folge, der Rückflug verwirft sie.
+- **MAD-Anflug:** mit `Umschalt+M` und eingeholtem Tauchsonar geht der Helikopter auf 30 m und 90 kn. Ein getauchter Rumpf innerhalb von etwa 400 m Schrägdistanz wird je Sensortakt mit einem zustandslosen Zufallszug erfasst (sicher innerhalb 250 m) und als MAD-Positionsfix ohne Tiefe oder Kurs gemeldet; er zählt für die Entfernungsprüfung der Waffen und, sobald der Helikopter seinen Kontakt freigibt, für die OPZ.
 - **Leichttorpedo:** 2 je Einsatz, 55 kn, 12 sm, von der Helikopterposition Richtung Datum geworfen, ohne Draht. Das Ziel muss als U-Boot klassifiziert sein.
 
 ### Tasten
@@ -815,6 +817,8 @@ Die Station hat vier Seiten (nochmals `8` blättert); sie öffnet auf Seite 3.
 | `M` | Sonarkontakt als Ziel für Lufttorpedo setzen |
 | `B` | Eine Sonarboje an aktueller Position aussetzen |
 | `Umschalt+B` | Modus der nächsten Boje PASSIV / AKTIV |
+| `X` | Bojenmuster: einzeln, 2x2-Feld, Sperre quer zur Wegpunktpeilung, Kreis (X erneut: nächstes; einzeln löscht) |
+| `Shift+M` | MAD-Anflug ein/aus: tief und langsam, Tauchsonar eingeholt |
 | `T` | Sensorquelle: Tauchsonar / Sonarbojen |
 | `F` | Gewählten Hubschrauberkontakt bestätigen / aufheben |
 | `C` | Kontakt klassifizieren (U-Boot / Kampfschiff / Biologisch / Fahrzeug / Flugzeug / Torpedo) |
@@ -861,8 +865,8 @@ Angriffsablauf:
 
 ### Nicht modelliert
 
-- Keine Bojenmuster (Feld, Sperre) und keine Kanalverwaltung; Bojen werden einzeln geworfen.
-- Kein MAD (Magnetanomaliedetektor) und kein Radar am Helikopter.
+- Keine Kanalverwaltung für Bojen.
+- Kein Radar am Helikopter.
 - Nur ein Helikopter.
 
 ## 9 EloKa

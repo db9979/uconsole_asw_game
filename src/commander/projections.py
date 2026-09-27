@@ -716,9 +716,12 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                  dip_water_depth_m=_number(helo.dip_water_depth_m),
                  dip_ping_ready=bool(helo.dip_ping_ready),
                  dip_ping_cooldown_s=_number(helo.dip_ping_cooldown),
-                 buoy_mode=game.helo_buoy_mode)
+                 buoy_mode=game.helo_buoy_mode,
+                 pattern=str(helo.pattern), pattern_remaining=len(helo.pattern_queue),
+                 mad_mode=bool(helo.mad_mode))
     if asset_only:
-        asset.pop("buoy_mode")
+        for key in ("buoy_mode", "pattern", "pattern_remaining", "mad_mode"):
+            asset.pop(key)
         return {"asset": asset}
     water_available = airborne and helo.water_entry_clear(game.world)
     water_depth = (float(game.world.depth_m(helo.x, helo.y))
@@ -884,6 +887,8 @@ def _helicopter(game, rows, asset_refs, buoy_labels, direct_refs=None,
                      can_set_waypoint=helo.state != "VERLOREN",
                      can_deploy_buoy=airborne and helo.buoys_left > 0
                       and helo.water_entry_clear(game.world),
+                     can_pattern=helo.state == "AUF" and helo.buoys_left > 0,
+                     can_mad=helo.state == "AUF" and helo.dip_state == "STOWED",
                       can_set_dipping=helo.state == "AUF"
                        and (helo.dip_state != "STOWED"
                             or flight_weather["dipping_safe"])

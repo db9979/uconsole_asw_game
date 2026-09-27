@@ -387,10 +387,10 @@ class Contact:
     def active_fixes(self, now: float) -> tuple:
         """Return stable detached fix copies whose measurements remain current."""
         result = []
-        for source in ("PING", "DIPPING", "TMA", "SONOBUOY"):
+        for source in ("PING", "DIPPING", "TMA", "SONOBUOY", "MAD"):
             fix = self.fixes.get(source)
             lifetime = (config.SONAR_PING_FIX_MAX_AGE_S
-                        if source in ("PING", "DIPPING")
+                        if source in ("PING", "DIPPING", "MAD")
                         else config.SONAR_CONTACT_LOST_S)
             if (fix is not None and 0.0 <= now - fix["measured_at"] <= lifetime):
                 result.append(dict(fix))
@@ -507,6 +507,27 @@ class Contact:
         self.range_source = "buoy"
         self.range_seen = t
         self.origin = "bojenkreuzpeilung"
+
+    def update_mad(self, x: float, y: float, t: float, uncertainty_nm: float,
+                   quality: float):
+        """A MAD pass over the hull: a dated position fix without depth,
+        course or speed. A fresh ping keeps precedence over it."""
+        self.expire_ping_fix(t)
+        self._publish_fix("MAD", t, t, x, y, uncertainty_nm, quality)
+        self.confidence = min(1.0, max(self.confidence, quality))
+        self.quality = max(self.quality, quality)
+        self.last_seen = t
+        if self.range_source == "ping":
+            return
+        self.observed_x, self.observed_y = x, y
+        self.bearing = math.degrees(math.atan2(x - self._fx, -(y - self._fy))) % 360
+        self.range_est = math.hypot(x - self._fx, y - self._fy)
+        self.range_sigma_nm = uncertainty_nm
+        self.bearing_uncertainty_deg = None
+        self.depth_est = self.depth_sigma_m = None
+        self.range_source = "mad"
+        self.range_seen = t
+        self.origin = "mad"
 
     def tma_range_sigma_nm(self, quality: float) -> float:
         """1-sigma position uncertainty: the covariance semi-major axis, never

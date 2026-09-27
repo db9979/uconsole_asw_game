@@ -37,7 +37,13 @@ export function renderHelicopterStation(payload) {
     ["helicopter_hovering", yesNo(asset.hovering)], ["helicopter_dip_state", asset.dip_state],
     ["helicopter_dip_depth", unit(asset.dip_depth_m, "m", 0)],
     ["helicopter_dip_water", unit(asset.dip_water_depth_m, "m", 0)],
-    ["helicopter_dip_cooldown", unit(asset.dip_ping_cooldown_s, "s", 0)]]);
+    ["helicopter_dip_cooldown", unit(asset.dip_ping_cooldown_s, "s", 0)],
+    ["helicopter_pattern", t(`buoy_pattern_${asset.pattern}`)],
+    ["helicopter_pattern_remaining", number(asset.pattern_remaining, 0)],
+    ["helicopter_mad", yesNo(asset.mad_mode)]]);
+  if (!S.stationDrafts.has("helicopter-pattern")) $("helicopter-pattern").value = asset.pattern;
+  $("helicopter-mad").textContent = t(asset.mad_mode ? "helicopter_mad_stop" : "helicopter_mad_start");
+  $("helicopter-mad").setAttribute("aria-pressed", String(asset.mad_mode));
   metrics($("helicopter-waypoint"), [["position", payload.waypoint ? position(payload.waypoint) : t("station_none")]]);
   const environment = payload.dip_environment;
   metrics($("helicopter-dip-environment"), [
@@ -52,6 +58,7 @@ export function renderHelicopterStation(payload) {
     ["helicopter_can_launch", yesNo(ready.can_launch)], ["helicopter_can_return", yesNo(ready.can_return)],
     ["deck_state", ready.deck_state], ["helicopter_can_waypoint", yesNo(ready.can_set_waypoint)],
     ["helicopter_can_buoy", yesNo(ready.can_deploy_buoy)],
+    ["helicopter_can_pattern", yesNo(ready.can_pattern)], ["helicopter_can_mad", yesNo(ready.can_mad)],
     ["helicopter_can_dipping", yesNo(ready.can_set_dipping)],
     ["helicopter_can_dip_ping", yesNo(ready.can_dipping_ping)],
     ["helicopter_weather_launch", yesNo(ready.weather_launch_safe)],
@@ -64,6 +71,8 @@ export function renderHelicopterStation(payload) {
   $("helicopter-x").dataset.ready = String(ready.can_set_waypoint);
   $("helicopter-y").dataset.ready = String(ready.can_set_waypoint);
   $("helicopter-buoy").dataset.ready = String(ready.can_deploy_buoy);
+  $("helicopter-pattern-apply").dataset.ready = String(ready.can_pattern);
+  $("helicopter-mad").dataset.ready = String(ready.can_mad || asset.mad_mode);
   const dipping = asset.dip_state !== "STOWED";
   $("helicopter-dip-toggle").textContent = t(dipping ? "helicopter_dip_retrieve" : "helicopter_dip_deploy");
   $("helicopter-dip-toggle").dataset.deployed = String(dipping);

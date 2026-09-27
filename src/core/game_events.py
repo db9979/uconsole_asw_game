@@ -1028,6 +1028,15 @@ class EventMixin:
                 self._cycle_torpedo_type()
             elif e.key == pygame.K_x and self.station is Station.WEAPONS:
                 self._cycle_torpedo_pattern()
+            elif e.key == pygame.K_x and self.station is Station.HELICOPTER:
+                self._cycle_helicopter_pattern()
+            elif (e.key == pygame.K_m and self.station is Station.HELICOPTER
+                  and getattr(e, "mod", 0) & pygame.KMOD_SHIFT):
+                result = self.set_helicopter_mad(not self.helo.mad_mode)
+                if result == "dip_deployed":
+                    self.flash(message("runtime.helo.mad_dip"), 2.0)
+                elif result == "not_ready":
+                    self.flash(message("runtime.helo.not_airborne"))
             elif e.key in (pygame.K_COMMA, pygame.K_PERIOD) \
                     and self.station is Station.HELICOPTER and self.station_page == 3:
                 self.sonar_volume = round(config.clamp(self.sonar_volume +

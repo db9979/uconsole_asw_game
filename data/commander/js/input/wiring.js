@@ -371,7 +371,7 @@ export function init() {
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
     "uboot-fire-target", "uboot-fire-bearing", "uboot-fire-range", "uboot-fire-depth",
     "uboot-fire-salvo", "uboot-wire-weapon", "uboot-wire-bearing", "uboot-wire-range",
-    "weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo", "engine-plant"]) {
+    "weapons-torpedo-type", "weapons-pattern", "weapons-enable", "weapons-salvo", "engine-plant", "helicopter-pattern"]) {
     $(id).addEventListener("input", () => S.stationDrafts.add(id));
     $(id).addEventListener("change", () => S.stationDrafts.add(id));
     if (id.includes("fire")) for (const eventName of ["input", "change"]) $(id).addEventListener(eventName, () => {
@@ -532,6 +532,12 @@ export function init() {
     if (finite(x) && finite(y) && x >= 0 && x <= 1000 && y >= 0 && y <= 1000) sendStationAction("helicopter_set_waypoint", {x, y});
   });
   $("helicopter-buoy").addEventListener("click", () => sendStationAction("helicopter_deploy_buoy", {}));
+  $("helicopter-pattern-apply").addEventListener("click", () => {
+    S.stationDrafts.delete("helicopter-pattern");
+    sendStationAction("helicopter_set_pattern", {kind: $("helicopter-pattern").value});
+  });
+  $("helicopter-mad").addEventListener("click", () => sendStationAction("helicopter_set_mad",
+    {enabled: !S.v2State?.helicopter?.asset.mad_mode}));
   for (const mode of ["acoustic", "map"]) $(
     `helicopter-visual-${mode}`).addEventListener("click", () => {
       S.helicopterVisualPage = mode;

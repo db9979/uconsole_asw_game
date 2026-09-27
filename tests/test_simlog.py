@@ -476,6 +476,42 @@ def test_remote_simlog_trim_keeps_largest_suffix_without_reencoding_history(
                 if isinstance(value, dict) and "truth" in value]
 
 
+def test_remote_simlog_publication_is_byte_identical_and_encodes_entries_once(
+        game, server, monkeypatch):
+    game.preferences = replace(game.preferences, simlog=True)
+    bridge = CommanderBridge()
+    bridge.pump(game, server, now=time.monotonic())
+    cookie, _ = pair(server, role="bridge", simlog=True)
+    bridge.pump(game, server, now=time.monotonic() + .6)
+    for index in range(5):
+        game.feed.add("00:00", "mission", f"once {index}")
+    bridge.pump(game, server, now=time.monotonic() + 1.2)
+    body = remote_simlog(server, cookie)
+    assert len(body["entries"]) >= 2
+    history = list(bridge._v2_simlog["bridge"])
+    assert server._v2_simlogs["bridge"] == transport._json_bytes({
+        "protocol": 2, "session": body["session"], "epoch": body["epoch"],
+        "role": "bridge", "entries": history})
+    # Every role's entry shares one detached truth snapshot per row.
+    assert bridge._v2_simlog["sonar"][-1]["truth"] is history[-1]["truth"]
+
+    # A new row encodes only the new entries, never the published history.
+    encoded = []
+    original = transport._json_bytes
+
+    def counting(value):
+        encoded.append(value)
+        return original(value)
+
+    monkeypatch.setattr(transport, "_json_bytes", counting)
+    game.feed.add("00:00", "mission", "once more")
+    bridge.pump(game, server, now=time.monotonic() + 1.8)
+    assert all(value is not entry for value in encoded for entry in history)
+    assert not [value for value in encoded
+                if isinstance(value, dict) and value.get("entries")]
+    assert remote_simlog(server, cookie)["entries"][-1]["seq"] > history[-1]["seq"]
+
+
 def _spawn_live_traffic(game):
     """One live AIS ship and one live ADS-B aircraft in the running game."""
     from src.world.projection import nm_to_lonlat

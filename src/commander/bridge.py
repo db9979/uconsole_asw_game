@@ -1989,6 +1989,8 @@ class CommanderBridge:
             for row in source:
                 if row["seq"] <= self._v2_simlog_seq:
                     continue
+                # One detached truth per row, shared read-only by every role's
+                # entry (it is only ever serialized).
                 truth = deepcopy(row.get("data") or game._simlog_state_data())
                 for role in ROLES:
                     if self._last_v2_states[role].get("role") != role:
@@ -1997,7 +1999,7 @@ class CommanderBridge:
                     self._v2_simlog[role].append(dict(
                         seq=row["seq"], t=row["t"], stamp=row["stamp"],
                         state=deepcopy(self._last_v2_states[role]),
-                        truth=deepcopy(truth)))
+                        truth=truth))
                 self._v2_simlog_seq = row["seq"]
         entries = {role: list(history) for role, history in self._v2_simlog.items()}
         cache, kept = self._v2_simlog_bytes, {}

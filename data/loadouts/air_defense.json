@@ -9,9 +9,7 @@
     "jam_break_nm": 20.0,
     "hit_distance_nm": 0.15,
     "seeker_active_range_nm": 18.0,
-    "seeker_frequency_hz": [9000000000.0, 9500000000.0],
-    "seeker_prf_hz": [1800.0, 3200.0],
-    "seeker_modulation": "pulse_doppler"
+    "seeker_emitter_key": "emitter.air_defense.asm.seeker"
   },
   "sam": {
     "key": "weapon.ownship.essm",

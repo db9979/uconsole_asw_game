@@ -195,7 +195,7 @@ def test_packaged_migration_versions_counts_and_provenance():
         | set(ALL_TORPEDO_KEYS) | set(ALL_DECOY_KEYS)
     assert len(catalog.CATALOG.references) == len(catalog.CATALOG.machines) == 117
     assert len(catalog.CATALOG.sensors) == 217
-    assert len(catalog.CATALOG.emitters) == 194
+    assert len(catalog.CATALOG.emitters) == 195  # incl. the ASM seeker library emitter
     # Weapon/launcher/magazine/countermeasure counts are unchanged: demoted
     # ex-warships moved to civilians.json keep their v2 combat components
     # (profile_systems/launchers/etc. are global registries, not file-scoped;

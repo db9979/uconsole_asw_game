@@ -445,8 +445,12 @@ def test_catalog_emitter_names_resolve_to_owning_platforms():
     assert CATALOG.emitter_name(None) is None
     assert CATALOG.emitter_name(42) is None
     for key, emitter in CATALOG.emitters.items():
-        if emitter.domain == "radar":
+        # Missile seekers are platform-less library emitters, named by
+        # Game.eloka_emitter_name (tests/test_asm_seeker_catalog.py).
+        if emitter.domain == "radar" and emitter.radar_role != "missile_seeker":
             assert CATALOG.emitter_name(key)
+        elif emitter.radar_role == "missile_seeker":
+            assert CATALOG.emitter_name(key) is None
 
 
 def test_eloka_accessors_resolve_annotations_to_platform_names(monkeypatch):

@@ -4665,5 +4665,13 @@
   "uboot.local.esm_plotted": "{emitter} in den Plot übernommen.",
   "help.uboot.esm_select": "Seite Mast & ESM: Emitter wählen",
   "help.uboot.esm_classify": "Seite Mast & ESM: Emitter aus der Bibliothek einstufen (Annotation, keine Wahrheit)",
-  "help.uboot.esm_plot": "Seite Mast & ESM: Kreuzpeilung (oder Peillinie) in den Plot des Boots"
+  "help.uboot.esm_plot": "Seite Mast & ESM: Kreuzpeilung (oder Peillinie) in den Plot des Boots",
+  "input.uboot_course": "SOLLKURS 000-359 Grad",
+  "input.uboot_speed": "SOLLFAHRT kn",
+  "input.uboot_depth": "SOLLTIEFE m",
+  "input.uboot_bearing": "SCHUSSPEILUNG 000-359 Grad",
+  "input.uboot_range": "ENTFERNUNG ZUM DATUM NM (Enter: keine)",
+  "input.uboot_torpedo_depth": "TORPEDO-LAUFTIEFE 5-300 m",
+  "input.uboot_wire_bearing": "DRAHT: PEILUNG DES NEUEN DATUMS Grad",
+  "input.uboot_wire_range": "DRAHT: ENTFERNUNG DES NEUEN DATUMS NM"
 }

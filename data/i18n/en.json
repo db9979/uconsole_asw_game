@@ -4665,5 +4665,13 @@
   "uboot.local.esm_plotted": "{emitter} transferred to the plot.",
   "help.uboot.esm_select": "Mast & ESM page: select an emitter",
   "help.uboot.esm_classify": "Mast & ESM page: classify the emitter from the library (annotation, never truth)",
-  "help.uboot.esm_plot": "Mast & ESM page: cross-fix (or the bearing line) into the boat's plot"
+  "help.uboot.esm_plot": "Mast & ESM page: cross-fix (or the bearing line) into the boat's plot",
+  "input.uboot_course": "ORDERED COURSE 000-359 deg",
+  "input.uboot_speed": "ORDERED SPEED kn",
+  "input.uboot_depth": "ORDERED DEPTH m",
+  "input.uboot_bearing": "FIRING BEARING 000-359 deg",
+  "input.uboot_range": "DISTANCE TO DATUM NM (Enter: none)",
+  "input.uboot_torpedo_depth": "TORPEDO RUN DEPTH 5-300 m",
+  "input.uboot_wire_bearing": "WIRE: BEARING OF THE NEW DATUM deg",
+  "input.uboot_wire_range": "WIRE: DISTANCE OF THE NEW DATUM NM"
 }

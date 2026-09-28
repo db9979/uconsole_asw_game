@@ -4,6 +4,13 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.43
+
+Release 1.3.43 keeps only the newest release on GitHub: after publishing a new
+version the Windows workflow deletes every older release (their git tags stay).
+The Windows starter and the uConsole updater read only the latest release.
+Saves stay v27.
+
 ## 1.3.42
 
 Release 1.3.42 keeps only the newest release on GitHub: after publishing a new

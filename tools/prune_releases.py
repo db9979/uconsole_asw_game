@@ -34,6 +34,8 @@ def main(argv=None) -> int:
     if len(argv) != 1:
         print("usage: prune_releases.py VERSION < tags", file=sys.stderr)
         return 2
+    # Plain "\n" even on Windows: a "\r" would become part of the tag.
+    sys.stdout.reconfigure(newline="\n")
     for tag in older_tags(argv[0], sys.stdin):
         print(tag)
     return 0

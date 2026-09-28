@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.42**
+Current release: **1.3.43**
 
-Release 1.3.42 keeps only the newest release on GitHub: after publishing a new
+Release 1.3.43 keeps only the newest release on GitHub: after publishing a new
 version the Windows workflow deletes every older release (their git tags stay).
 The Windows starter and the uConsole updater read only the latest release.
 Saves stay v27.

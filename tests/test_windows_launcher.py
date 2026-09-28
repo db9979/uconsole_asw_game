@@ -279,3 +279,13 @@ def test_release_pruning_keeps_the_current_and_newer_releases():
     assert prune.older_tags("1.3.11", ["v1.3.11"]) == []
     with pytest.raises(ValueError):
         prune.older_tags("1.3", tags)
+
+
+def test_release_pruning_prints_bare_tags(tmp_path):
+    import subprocess
+    from pathlib import Path
+
+    tool = Path(__file__).resolve().parents[1] / "tools" / "prune_releases.py"
+    out = subprocess.run([sys.executable, str(tool), "1.3.42"], input=b"v1.3.41\r\nv1.3.43\r\n",
+                         capture_output=True, check=True).stdout
+    assert out == b"v1.3.41\n"

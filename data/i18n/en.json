@@ -5635,5 +5635,14 @@
   "commander.web.reason_uboot_tubes_full": "No empty tube to load.",
   "commander.web.reason_uboot_no_dry_tube": "No loaded, dry tube to flood.",
   "help.uboot.tube_load": "Load the next empty torpedo tube (Weapons)",
-  "help.uboot.tube_flood": "Flood the next loaded tube and open its outer door; only a flooded tube fires (Weapons)"
+  "help.uboot.tube_flood": "Flood the next loaded tube and open its outer door; only a flooded tube fires (Weapons)",
+  "uboot.event.esm_steady": "Radar {emitter} on {bearing}° holds us: steady illumination, tracking or fire control.",
+  "uboot.esm.label.scan": "Scan",
+  "uboot.esm.scan.measuring": "measuring",
+  "uboot.esm.scan.rotating": "{period} s sweep",
+  "uboot.esm.scan.steady": "steady beam",
+  "commander.web.uboot_esm_scan": "Scan period",
+  "commander.web.uboot_esm_scan_measuring": "measuring",
+  "commander.web.uboot_esm_scan_rotating": "{period} s: search radar sweeping",
+  "commander.web.uboot_esm_scan_steady": "steady: tracking or fire control"
 }

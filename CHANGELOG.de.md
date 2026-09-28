@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.33
+
+Version 1.3.33 lässt das ESM des besetzten U-Boots die Umlaufzeit jedes Radars
+messen, die Zeit zwischen den Treffern seiner Hauptkeule: ein Suchradar zeigt
+„dreht“ mit seiner Umlaufzeit (etwa 2,5 s für Navigations- und Seeraumradar, 5
+s für Luftraumradar), ein Verfolgungs- oder Feuerleitradar „dauernd“. Eine
+Dauerbeleuchtung des Mastes ist immer eine Mastwarnung und steht im Log; die
+Seite Mast & ESM am uConsole und der Browser zeigen die Messung. Spielstände
+sind jetzt v27.
+
 ## 1.3.32
 
 Version 1.3.32 bringt Richtungshören: Mit Stereoton kommen Detonationen,

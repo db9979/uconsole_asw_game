@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.33
+
+Release 1.3.33 lets the crewed submarine's ESM measure each radar's scan
+period, the time between its main-beam hits: a search radar reads rotating
+with its period (about 2.5 s for navigation and surface search, 5 s for air
+search), a tracking or fire-control radar reads steady. A steady beam on the
+mast is always a mast warning and is reported in the log; the uConsole's Mast
+& ESM page and the browser show the reading. Saves are now v27.
+
 ## 1.3.32
 
 Release 1.3.32 adds directional hearing: with stereo sound, detonations,

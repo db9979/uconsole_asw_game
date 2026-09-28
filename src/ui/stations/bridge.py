@@ -9,7 +9,7 @@ from src.core import config
 from src.core.i18n import (display_message, display_value, localized, localize,
                             message as structured_message)
 from src.core.station import Station
-from src.ui import horizon, layout
+from src.ui import horizon, layout, sight_scene
 from src.ui import observations
 
 
@@ -373,7 +373,7 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             visibility_nm=weather["visibility_nm"],
             motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
             outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
-            anim_t=game.sim_t)
+            anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"])
         iy += strip_h + 6
         ih -= strip_h + 6
     layout.blit_line(s, message("bridge.line.lookout_visibility",
@@ -444,7 +444,8 @@ def draw_lookout_glasses(game) -> None:
         s, eyepiece, line_of_sight=line_of_sight, fov_deg=config.LOOKOUT_GLASSES_FOV_DEG,
         night=night, visibility_nm=weather["visibility_nm"],
         motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
-        outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t)
+        outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t,
+        sky=sight_scene.sky_state(game), sea_state=weather["sea_state"])
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
     layout.blit_line(s, structured_message(
         "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",

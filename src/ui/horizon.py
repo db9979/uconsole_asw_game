@@ -16,14 +16,11 @@ import pygame
 from src.core import config
 from src.core.i18n import raw_text
 from src.physics import ship_dynamics
-from src.ui import layout, silhouettes
+from src.ui import layout, sight_scene, silhouettes
 
-SKY_DAY = ((25, 70, 92), (111, 151, 157))
-SKY_NIGHT = ((5, 14, 27), (38, 53, 62))
-SEA_DAY, SEA_NIGHT = (9, 54, 67), (7, 35, 48)
-HAZE = (150, 160, 165)
-SCALE_COLOR = (220, 225, 225)
-CROSSHAIR_COLOR = (235, 235, 210)
+SCALE_COLOR = (170, 232, 208)
+CROSSHAIR_COLOR = (120, 214, 180)
+SCALE_LABEL_MIN_PX = 36
 # Horizon motion: px per rad of wave slope, bounded.
 MOTION_PX_PER_RAD = 260.0
 # Charted coast on the horizon: rays per full circle, the observer's move that
@@ -33,7 +30,7 @@ LAND_RAYS = 720
 LAND_RECAST_NM = 0.1
 LAND_CACHE_MAX = 4
 LAND_HEIGHT_M = (25.0, 70.0)
-LAND_DAY, LAND_NIGHT = (52, 66, 52), (14, 22, 24)
+LAND_DAY, LAND_NIGHT = (52, 66, 58), (8, 20, 26)
 _LAND_CACHE = OrderedDict()
 
 
@@ -107,11 +104,12 @@ def land_view(world, x: float, y: float, eye_height_m: float):
 
 
 def _draw_land(s, rect, land, *, line_of_sight, fov_deg, horizon, tilt, night,
-               visibility_nm, haze_color) -> None:
+               visibility_nm, haze_color, colors=None) -> None:
     distance, height = land
     px_per_deg = rect.w / fov_deg
     step = 360.0 / len(distance)
     base_color = LAND_NIGHT if night else LAND_DAY
+    rim = None if colors is None else colors["rim"]
     first = int(math.floor((line_of_sight - fov_deg / 2) / step)) - 1
     last = int(math.ceil((line_of_sight + fov_deg / 2) / step)) + 1
     column = None
@@ -133,6 +131,9 @@ def _draw_land(s, rect, land, *, line_of_sight, fov_deg, horizon, tilt, night,
             if px - x0 < rect.w:
                 pygame.draw.polygon(s, color, [(x0, top0), (px, top), (px, base + 1),
                                                (x0, base0 + 1)])
+                if rim is not None:
+                    pygame.draw.line(s, blend(rim, haze_color, 0.3 + 0.6 * fade),
+                                     (x0, top0), (px, top), 1)
         column = (px, top, base)
 
 
@@ -156,7 +157,7 @@ def horizon_motion(seed: int, sim_t: float, sea_state: float) -> tuple:
 
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
-                 t: float = 0.0) -> None:
+                 t: float = 0.0, *, rim=None, lights=None) -> None:
     """Procedural side view of a coarse class, ``width`` px long, sitting on
     the horizon (aircraft: hovering above it).  ``t`` (display clock)
     animates pitch, radar, rotor and wake."""
@@ -167,39 +168,34 @@ def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
                          max(1, min(3, width // 12)))
         return
     silhouettes.draw_profile(s, cls if cls in silhouettes.PROFILES else "unknown",
-                             cx, base_y, width, color, t=t)
+                             cx, base_y, width, color, t=t, rim=rim, lights=lights)
 
 
 def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
-                 land=None, anim_t: float = 0.0) -> None:
-    """The picture in the eyepiece or binoculars: sky, sea, the horizon in
-    motion, the true-bearing scale, the outlines within the field and an
-    optional crosshair with its measuring window (half width in degrees)."""
+                 land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0) -> None:
+    """The picture in the eyepiece or binoculars in the start screen's look:
+    sky with stars, moon or sun and clouds, the sea in motion, the charted
+    coast, the outlines within the field in steel with a lit rim, rain, snow
+    or fog, the true-bearing scale, an optional crosshair with its measuring
+    window (half width in degrees) and the corner brackets.  ``sky`` is a
+    ``sight_scene.sky_values`` dict; without one a clear noon or midnight."""
     rect = pygame.Rect(rect)
-    haze = 1.0 - config.clamp(visibility_nm / config.WEATHER_VISIBILITY_MAX_NM, 0.0, 1.0)
-    sky_top, sky_bottom = SKY_NIGHT if night else SKY_DAY
-    sea = SEA_NIGHT if night else SEA_DAY
-    haze_color = blend(HAZE, (40, 48, 54), 0.8 if night else 0.0)
+    sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
     horizon = rect.y + int(rect.h * 0.5 + offset)
+    view = sight_scene.View(rect, line_of_sight, fov_deg, horizon, tilt)
     with layout.clip_to(s, rect):
-        for py in range(rect.y, rect.bottom):
-            t = (py - rect.y) / max(1, rect.h - 1)
-            pygame.draw.line(s, blend(blend(sky_top, sky_bottom, t), haze_color, haze * 0.6),
-                             (rect.x, py), (rect.right, py))
-        dy = int(math.tan(tilt) * rect.w / 2)
-        sea_color = blend(sea, haze_color, haze * 0.4)
-        pygame.draw.polygon(s, sea_color, [(rect.x, horizon - dy), (rect.right, horizon + dy),
-                                           (rect.right, rect.bottom), (rect.x, rect.bottom)])
-        pygame.draw.line(s, blend(sea_color, (200, 210, 210), 0.35),
-                         (rect.x, horizon - dy), (rect.right, horizon + dy), 1)
+        colors = sight_scene.draw_scene(s, view, sky, visibility_nm=visibility_nm,
+                                        sea_state=sea_state, t=anim_t)
+        haze = colors["haze_level"]
+        haze_color = colors["haze"]
         if land is not None:
             _draw_land(s, rect, land, line_of_sight=line_of_sight, fov_deg=fov_deg,
-                       horizon=horizon, tilt=tilt, night=night,
-                       visibility_nm=visibility_nm, haze_color=haze_color)
+                       horizon=horizon, tilt=tilt, night=sky["light"] < 0.5,
+                       visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
         px_per_deg = rect.w / fov_deg
-        dark = (60, 66, 72) if night else (28, 34, 40)
+        lit = sky["light"] < 0.45
         for bearing, span_deg, cls, stale in outlines:
             off = relative_offset(bearing, line_of_sight)
             if abs(off) > fov_deg / 2 + span_deg / 2:
@@ -207,15 +203,24 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             cx = rect.centerx + int(off * px_per_deg)
             base = horizon + int(math.tan(tilt) * (cx - rect.centerx))
             width = min(rect.w, max(3, int(span_deg * px_per_deg)))
-            draw_outline(s, cls, cx, base, width,
-                         blend(dark, haze_color, 0.5 if stale else haze * 0.5), anim_t)
+            fade = 0.55 if stale else haze * 0.6
+            draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
+                         anim_t, rim=blend(colors["rim"], haze_color, fade),
+                         lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None))
+        sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
+        # Labels at least ``SCALE_LABEL_MIN_PX`` apart (the narrow lookout
+        # strip labels every 30 degrees, the eyepieces every 10).
+        label_step = next((step for step in (10, 30, 45, 90)
+                           if step * px_per_deg >= SCALE_LABEL_MIN_PX), 90)
         first = int(math.floor((line_of_sight - fov_deg / 2) / 5.0)) * 5
         for tick in range(first, first + int(fov_deg) + 10, 5):
             off = relative_offset(tick, line_of_sight)
             if abs(off) > fov_deg / 2:
                 continue
             tx = rect.x + int((off + fov_deg / 2) * px_per_deg)
-            major = tick % 10 == 0
+            major = tick % label_step == 0
+            if not major and tick % 10 and 5 * px_per_deg < 6:
+                continue
             pygame.draw.line(s, SCALE_COLOR, (tx, rect.y), (tx, rect.y + (10 if major else 5)), 1)
             if major and rect.h >= 40:
                 layout.blit_line(s, raw_text(f"{tick % 360:03d}"), (tx - 16, rect.y + 11, 32, 13),
@@ -226,4 +231,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             window = int(crosshair_deg * px_per_deg)
             pygame.draw.line(s, CROSSHAIR_COLOR, (rect.centerx - window, rect.centery),
                              (rect.centerx + window, rect.centery), 1)
-        pygame.draw.rect(s, CROSSHAIR_COLOR, rect, 1)
+            for mark in (-1, 1):
+                x = rect.centerx + mark * window
+                pygame.draw.line(s, CROSSHAIR_COLOR, (x, rect.centery - 4), (x, rect.centery + 4), 1)
+        sight_scene.draw_frame(s, rect)

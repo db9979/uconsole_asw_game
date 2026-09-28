@@ -129,7 +129,7 @@ export function validateV2State(state) {
   const payload = state[state.role];
   // BEGIN GENERATED (tools/gen_web_schema.py; do not edit by hand)
   const shapes = {
-    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew"],
+    bridge: ["navigation", "orders", "threat", "systems", "tactical_summary", "sightings", "crew", "lookout"],
     damage: ["compartments", "teams", "total", "sunk", "stability", "crew"],
     eloka: ["intercepts", "station_down", "status", "hardware"],
     engine: ["propulsion", "machinery", "controls", "environment_effects"],
@@ -167,6 +167,12 @@ export function validateV2State(state) {
     atmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "ceiling_ft", "icing", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
     boatAtmosphere: ["weather", "precipitation", "rain_intensity", "visibility_nm", "sea_state", "wind_from_deg", "wind_kn", "gust_kn", "beaufort", "pressure_hpa", "pressure_tendency_hpa_3h", "pressure_trend", "storm_warning", "air_temp_c", "sea_temp_c", "cloud_cover", "sun_elevation_deg", "daylight", "moon_phase", "moon_illumination", "time"],
     boat: ["mast_radar_nm", "mast_radar_calm_nm", "sighting_nm", "sighting_ref_nm", "ambient_bands_hz", "ambient_excess_db", "snorkel_available", "snorkeling", "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz"],
+  };
+  const sightFields = {
+    sky: ["light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg", "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg", "moon_illumination", "moon_waxing"],
+    glasses: ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt", "sky", "outlines"],
+    outline: ["bearing", "span_deg", "cls", "stale"],
+    classes: ["warship", "merchant", "aircraft", "torpedo", "unknown"],
   };
   const boatFields = {
     plant: ["propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh", "aip_capacity_kwh", "aip_kw", "load_kw", "supply_kw", "net_kw", "empty_s", "full_s", "generator_kw", "fuel_l", "fuel_capacity_l", "charge_rate", "snorkel_rate", "endurance", "air"],

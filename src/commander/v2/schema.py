@@ -57,6 +57,16 @@ WEATHER_BOAT_FIELDS = (
     "ambient_bands_hz", "ambient_excess_db", "snorkel_available", "snorkeling",
     "snorkel_max_kn", "snorkel_noise_db", "snorkel_lines_hz")
 
+# The eyepieces' sky (``src/ui/sight_scene.py``): light, cloud and weather
+# in the picture, sun and moon; the bridge lookout's binoculars (``lookout``).
+SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from_deg",
+              "sun_bearing", "sun_alt_deg", "moon_bearing", "moon_alt_deg",
+              "moon_illumination", "moon_waxing")
+LOOKOUT_GLASSES_FIELDS = ("course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",
+                          "horizon_tilt", "sky", "outlines")
+LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale")
+SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
+
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
                         "own_weapons", "designated_target_ref", "feed", "scope", "plant",
                         "esm", "ballast", "damage_control", "threat", "radio")
@@ -116,7 +126,7 @@ UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "
 # Top-level keys of every role payload (exact sets on both sides).
 ROLE_SHAPES = {
     "bridge": ("navigation", "orders", "threat", "systems", "tactical_summary", "sightings",
-               "crew"),
+               "crew", "lookout"),
     "sonar": ("observations", "settings", "visualization"),
     "weapons": ("inventory", "readiness", "designated_target", "navigation", "tactical",
                 "target_choices", "depth_m", "tubes", "settings", "own_weapons",

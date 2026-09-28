@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.42**
+Current release: **1.3.45**
 
-Release 1.3.42 keeps the sky still in the periscope and the lookout's
+Release 1.3.45 keeps the sky still in the periscope and the lookout's
 binoculars: clouds, stars, the sun and the moon stay in place while the sea and
 the horizon roll with the swell. From dusk to dawn and in poor visibility
 neutral ships run their navigation lights as the collision regulations lay
@@ -152,7 +152,8 @@ anyway"). Saves and settings live in `%USERPROFILE%\.u-jagd\` as on Linux.
 The workflow `.github/workflows/windows.yml` builds the program with
 PyInstaller (`packaging/windows/u-jagd-windows.spec`) on every push and pull
 request, runs its headless self-test (a short mission plus the Remote Crew
-pages) and, on `main`, publishes release `v<APP_VERSION>` once per version.
+pages) and, on `main`, publishes release `v<APP_VERSION>` once per version and then deletes every older
+release, so only the newest one stays (git tags are kept).
 To build locally on Windows: `python -m pip install -e ".[windows]"` and
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

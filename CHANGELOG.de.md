@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.42
+## 1.3.45
 
-Version 1.3.42 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
+Version 1.3.45 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
 Wolken, Sterne, Sonne und Mond bleiben stehen, während See und Horizont mit dem
 Seegang schwanken. Von der Dämmerung bis zum Morgen und bei schlechter Sicht
 führen neutrale Schiffe ihre Positionslichter nach den
@@ -18,6 +18,33 @@ Heck- und blitzenden Kollisionswarnlichter; der Bug zeigt dorthin, wohin die Lic
 beleuchtetes Schiff wird im Dunkeln an seinen Lichtern gesichtet.
 Kriegsschiffe und Militärflugzeuge bleiben dunkel. Auf der uConsole und im Browser;
 Spielstände bleiben v27.
+
+## 1.3.44
+
+Version 1.3.44 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
+dieser Browser nicht lesen kann“ einfroren. Vier Listen nannten die Art einer
+Zeile mit einem Feld, das der Browser in jedem Stationszustand ablehnt: das
+Funklog des U-Boots, seine Bedrohungs-Peilungen und sein Ausweichbefehl sowie
+die HQ-Aufträge im Funkraum der Fregatte. Sobald die erste Sendung mitgeschrieben,
+ein Ping oder Torpedo gehört oder ein Auftrag angeboten war, stand das
+Lagebild still und Aktionen waren gesperrt. Diese Zeilen senden das Feld jetzt
+als `type`; ein neuer Test findet solche Felder auch ohne Chromium. Nach dem
+Update des Hosts die Browserseite einmal neu laden, damit sie den neuen
+Web-Client lädt. Spielstände bleiben v27.
+
+## 1.3.43
+
+Version 1.3.43 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
+Veröffentlichen einer neuen Version löscht der Windows-Workflow alle älteren
+Releases (ihre Git-Tags bleiben). Windows-Starter und uConsole-Updater lesen
+nur das neueste Release. Spielstände bleiben v27.
+
+## 1.3.42
+
+Version 1.3.42 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
+Veröffentlichen einer neuen Version löscht der Windows-Workflow alle älteren
+Releases (ihre Git-Tags bleiben). Windows-Starter und uConsole-Updater lesen
+nur das neueste Release. Spielstände bleiben v27.
 
 ## 1.3.41
 

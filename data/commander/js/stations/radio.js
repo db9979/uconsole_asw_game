@@ -83,9 +83,9 @@ function taskFacts(row) {
   if (finite(row.course)) facts.push(t("radio_task_motion", {course: number(row.course, 0), speed: number(row.speed_kn, 0)}));
   if (finite(row.respond_s)) facts.push(t("radio_task_respond", {seconds: number(row.respond_s, 0)}));
   else if (finite(row.remaining_s)) facts.push(t("radio_task_remaining", {minutes: number(row.remaining_s / 60, 0)}));
-  if (row.kind === "sar" && !CLOSED_TASK_STATES.includes(row.state))
+  if (row.type === "sar" && !CLOSED_TASK_STATES.includes(row.state))
     facts.push(t(row.sighted ? "radio_task_sighted" : "radio_task_not_sighted"));
-  if (row.state === "active" && row.kind !== "identify")
+  if (row.state === "active" && row.type !== "identify")
     facts.push(t("radio_task_progress", {progress: number(row.progress * 100, 0)}));
   if (row.verdict) facts.push(t(`radio_task_verdict_${row.verdict}`));
   if (CLOSED_TASK_STATES.includes(row.state))
@@ -99,9 +99,9 @@ function taskCard(row) {
   card.dataset.state = row.state;
   card.dataset.rowKey = String(row.id);
   const head = node("div", undefined, "radio-task-head");
-  head.append(node("strong", `${row.kind.toUpperCase()} ${row.id} · ${t(`radio_task_kind_${row.kind}`)}`),
+  head.append(node("strong", `${row.type.toUpperCase()} ${row.id} · ${t(`radio_task_kind_${row.type}`)}`),
     node("span", t(`radio_task_state_${row.state}`), "radio-task-state"));
-  card.append(head, node("p", t(`radio_task_brief_${row.kind}`, {name: row.name ?? "-", persons: row.persons}), "radio-task-brief"),
+  card.append(head, node("p", t(`radio_task_brief_${row.type}`, {name: row.name ?? "-", persons: row.persons}), "radio-task-brief"),
     node("p", taskFacts(row), "radio-task-facts"));
   if (row.state === "offered") {
     const actions = node("div", undefined, "radio-task-actions");

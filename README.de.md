@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.42**
+Aktuelle Version: **1.3.45**
 
-Version 1.3.42 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
+Version 1.3.45 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
 Wolken, Sterne, Sonne und Mond bleiben stehen, während See und Horizont mit dem
 Seegang schwanken. Von der Dämmerung bis zum Morgen und bei schlechter Sicht
 führen neutrale Schiffe ihre Positionslichter nach den
@@ -160,7 +160,8 @@ Der Workflow `.github/workflows/windows.yml` baut das Programm mit PyInstaller
 (`packaging/windows/u-jagd-windows.spec`) bei jedem Push und Pull Request,
 führt seinen Selbsttest ohne Bildschirm aus (kurze Mission plus
 Remote-Crew-Seiten) und veröffentlicht auf `main` einmal je Version das
-Release `v<APP_VERSION>`. Selbst bauen unter Windows:
+Release `v<APP_VERSION>`; danach löscht er alle älteren Releases, sodass nur das
+neueste stehen bleibt (Git-Tags bleiben). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

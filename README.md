@@ -12,15 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.50**
+Current release: **1.3.51**
 
-Release 1.3.50 adds a guard against frozen Remote Crew browsers. A new test
-plays two busy missions (the frigate with the autocrew on every station
-against the AI submarine, and a crewed submarine with its radio, threat
-picture and HQ tasks filled), publishes every station's state and chart for
-both units and runs the browser's own validators over all of them in Node. A
-field the browser would refuse, as in 1.3.44, now fails the tests before a
-release. Nothing changes in play. Saves stay v27.
+Release 1.3.51 lets the AI hunters use the frigate's ESM. When the frigate has
+no position on the submarine, an ESM intercept of a mast radar now gives the
+search line: the library must rank a submarine radar among its three best
+matches and no ship the frigate tracks by radar or AIS may lie within 10° of
+the bearing. It competes with the HF/DF bearings by age and stays a datum for
+5 minutes, so a submarine that radiates at periscope depth draws the frigate,
+its helicopter and the patrol aircraft down that bearing. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

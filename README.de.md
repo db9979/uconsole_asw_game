@@ -14,16 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.50**
+Aktuelle Version: **1.3.51**
 
-Version 1.3.50 bringt eine Absicherung gegen eingefrorene Remote-Crew-Browser.
-Ein neuer Test spielt zwei belebte Missionen (die Fregatte mit Autocrew auf
-allen Stationen gegen das KI-U-Boot und ein besetztes U-Boot mit gefülltem
-Funkraum, Bedrohungsbild und HQ-Aufträgen), veröffentlicht Zustand und Karte
-jeder Station beider Einheiten und prüft sie alle in Node mit den Prüfroutinen
-des Browsers selbst. Ein Feld, das der Browser ablehnen würde, wie in 1.3.44,
-lässt jetzt die Tests vor einem Release scheitern. Am Spiel ändert sich
-nichts. Spielstände bleiben v27.
+Version 1.3.51 lässt die KI-Jäger das ESM der Fregatte nutzen. Hat die
+Fregatte keinen Standort des U-Boots, gibt jetzt ein ESM-Intercept eines
+Mastradars die Suchlinie: Die Bibliothek muss unter ihren drei besten Treffern
+ein U-Boot-Radar führen, und kein Schiff, das die Fregatte per Radar oder AIS
+verfolgt, darf innerhalb 10° der Peilung stehen. Die Peilung konkurriert nach
+Alter mit den HF/DF-Peilungen und bleibt 5 Minuten ein Datum; ein U-Boot, das
+auf Sehrohrtiefe sein Radar benutzt, zieht so Fregatte, Hubschrauber und
+Seefernaufklärer auf diese Peilung. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.51
+
+Version 1.3.51 lässt die KI-Jäger das ESM der Fregatte nutzen. Hat die
+Fregatte keinen Standort des U-Boots, gibt jetzt ein ESM-Intercept eines
+Mastradars die Suchlinie: Die Bibliothek muss unter ihren drei besten Treffern
+ein U-Boot-Radar führen, und kein Schiff, das die Fregatte per Radar oder AIS
+verfolgt, darf innerhalb 10° der Peilung stehen. Die Peilung konkurriert nach
+Alter mit den HF/DF-Peilungen und bleibt 5 Minuten ein Datum; ein U-Boot, das
+auf Sehrohrtiefe sein Radar benutzt, zieht so Fregatte, Hubschrauber und
+Seefernaufklärer auf diese Peilung. Spielstände bleiben v27.
+
 ## 1.3.50
 
 Version 1.3.50 bringt eine Absicherung gegen eingefrorene Remote-Crew-Browser.

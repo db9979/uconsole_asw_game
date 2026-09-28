@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.51
+
+Release 1.3.51 lets the AI hunters use the frigate's ESM. When the frigate has
+no position on the submarine, an ESM intercept of a mast radar now gives the
+search line: the library must rank a submarine radar among its three best
+matches and no ship the frigate tracks by radar or AIS may lie within 10° of
+the bearing. It competes with the HF/DF bearings by age and stays a datum for
+5 minutes, so a submarine that radiates at periscope depth draws the frigate,
+its helicopter and the patrol aircraft down that bearing. Saves stay v27.
+
 ## 1.3.50
 
 Release 1.3.50 adds a guard against frozen Remote Crew browsers. A new test

@@ -9,7 +9,9 @@ sensors, searches, closes, pings, sends the helicopter and the patrol
 aircraft, and attacks a located boat. The OPZ marks the radar blips of a
 raised mast into tracks; a mast track, an HF/DF fix and an HQ datum report
 compete by age for the datum, and a mast track on a sonar bearing places the
-contact. A located boat is passed over the datalink to friendly escorts,
+contact. Without a position, the ESM bearing of a mast radar (an intercept
+the library matches to a submarine radar, with no radar or AIS ship on its
+bearing) competes with the HF/DF bearings for the search line. A located boat is passed over the datalink to friendly escorts,
 whose ASROC fire on it when it lies in their range.
 
 Observation boundary: every decision reads the frigate's own contacts, HF/DF
@@ -53,6 +55,9 @@ HQ_DATUM_S = 1800.0             # an HQ datum report stays a datum this long
 CORRELATE_DEG = 10.0            # a mast track this close to a sonar bearing is that contact
 ASROC_EVERY_S = 120.0
 ASROC_DATUM_S = 120.0           # only a datum this fresh is passed on for an ASROC
+ESM_DATUM_S = 300.0             # an ESM bearing on a mast radar stays a datum this long
+ESM_CANDIDATES = 3              # a submarine radar among this many library matches
+SURFACE_EXPLAINS_S = 60.0       # a ship track this fresh on the bearing explains the radar
 _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
             ("eloka", Station.ELOKA), ("damage", Station.DAMAGE),
             ("engine", Station.ENGINE), ("opz", Station.OPZ))
@@ -84,6 +89,21 @@ def _sub_signatures(catalog) -> tuple:
 
 def sub_signatures(game) -> tuple:
     return _sub_signatures(game.runtime_catalog)
+
+
+@lru_cache(maxsize=1)
+def _sub_emitters(catalog) -> frozenset:
+    """Emitter keys the library knows only from submarine profiles."""
+    owners = {}
+    for profile_key, systems in catalog.profile_systems.items():
+        resource = catalog.profile_resources.get(profile_key)
+        for emitter_key in systems.emitter_keys:
+            owners.setdefault(emitter_key, set()).add(resource == "subs.json")
+    return frozenset(key for key, kinds in owners.items() if kinds == {True})
+
+
+def sub_emitters(game) -> frozenset:
+    return _sub_emitters(game.runtime_catalog)
 
 
 def _bearing(x0, y0, x1, y1) -> float:
@@ -148,6 +168,50 @@ def hq_datums(game) -> list:
     return sorted(rows, key=lambda task: (-task["report_t"], task["id"]))
 
 
+def _surface_bearings(game) -> list:
+    """Bearings of fresh radar and AIS ship tracks from the frigate."""
+    ship = game.ship
+    rows = []
+    for track in game.air_picture._tracks.values():
+        source = str(getattr(track, "source", ""))
+        if not (source.startswith("RADAR") or "AIS" in source.upper()):
+            continue
+        seen = getattr(track, "last_seen", None)
+        if seen is None or not 0.0 <= game.sim_t - seen <= SURFACE_EXPLAINS_S:
+            continue
+        if track.x is not None and track.y is not None:
+            rows.append(_bearing(ship.x, ship.y, track.x, track.y))
+        elif track.bearing is not None:
+            rows.append(float(track.bearing))
+    return rows
+
+
+def esm_bearings(game) -> list:
+    """ESM intercepts of a mast radar, freshest first: the library ranks a
+    submarine radar among its best matches and no ship the frigate tracks
+    by radar or AIS lies on the bearing. Reads the intercept only."""
+    if game.damage.station_down("opz"):
+        return []
+    sub_keys = sub_emitters(game)
+    surface = None
+    rows = []
+    for track in game.eloka_tracks():
+        age = track.age(game.sim_t)
+        if age > ESM_DATUM_S:
+            continue
+        analysis = game.eloka_analysis(track)
+        if analysis is None or not any(
+                candidate.emitter_key in sub_keys
+                for candidate in analysis.candidates[:ESM_CANDIDATES]):
+            continue
+        if surface is None:
+            surface = _surface_bearings(game)
+        if any(_off(track.bearing, bearing) <= CORRELATE_DEG for bearing in surface):
+            continue
+        rows.append((age, track.track_key, track))
+    return [track for _, _, track in sorted(rows, key=lambda row: (row[0], row[1]))]
+
+
 def _on_bearing(game, track, contacts):
     """The sonar contact whose bearing runs through a mast track, or None."""
     ship = game.ship
@@ -161,7 +225,8 @@ def datum(game):
     """The best estimate of the boat: a position, a bearing line, or None.
 
     A fresh sonar fix wins; otherwise the freshest of a mast track, an HF/DF
-    fix and an HQ datum report; otherwise a sonar or HF/DF bearing."""
+    fix and an HQ datum report; otherwise a sonar bearing, else the freshest
+    HF/DF or ESM bearing."""
     contacts = hunt_contacts(game)
     for contact in contacts:
         if game._contact_range_fresh(contact) and contact.observed_x is not None:
@@ -185,11 +250,14 @@ def datum(game):
         return min(positions, key=lambda row: (row[0], row[1]))[2]
     if contacts:
         return {"bearing": contacts[0].bearing, "contact": contacts[0], "source": "sonar"}
-    reports = sorted((report for report in game.hfdf_bearings()
-                      if report.age(game.sim_t) <= config.RADAR_TRACK_STALE_S),
-                     key=lambda report: (report.age(game.sim_t), report.track_id))
-    if reports:
-        return {"bearing": reports[0].bearing, "contact": None, "source": "hfdf"}
+    bearings = [(report.age(game.sim_t), 0, report.track_id, report.bearing, "hfdf")
+                for report in game.hfdf_bearings()
+                if report.age(game.sim_t) <= config.RADAR_TRACK_STALE_S]
+    bearings += [(track.age(game.sim_t), 1, track.track_key, track.bearing, "esm")
+                 for track in esm_bearings(game)]
+    if bearings:
+        _, _, _, bearing, source = min(bearings)
+        return {"bearing": bearing, "contact": None, "source": source}
     return None
 
 

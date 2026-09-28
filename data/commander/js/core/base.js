@@ -52,6 +52,7 @@ export const reasons = {
   uboot_candle_burning: "reason_uboot_candle_burning",
   uboot_no_air_stores: "reason_uboot_no_air_stores",
   uboot_no_antenna: "reason_uboot_no_antenna", uboot_transmitting: "reason_uboot_transmitting",
+  uboot_no_solution: "reason_uboot_no_solution",
   ok: "reason_ok",
 };
 // Listening streams: frigate sonar, helicopter and the submarine's sonar room.

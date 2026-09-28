@@ -99,6 +99,8 @@ class CrewOrders:
         self.scope_rel_deg = 0.0
         self.sightings = []
         self._sightings_seen = set()
+        # Attack computer: stadimeter marks by sighting (``attack_computer``).
+        self.tdc = {}
         # Wire-guided crew torpedoes: EnemyTorpedo id -> CrewWire.
         self.wires = {}
         self._known_torpedoes = set()
@@ -153,6 +155,9 @@ class CrewOrders:
             scope_rel_deg=self.scope_rel_deg,
             sightings=[dict(row) for row in self.sightings],
             sightings_seen=sorted(self._sightings_seen),
+            tdc={ref: dict(target_id=entry["target_id"],
+                           marks=[list(mark) for mark in entry["marks"]])
+                 for ref, entry in sorted(self.tdc.items())},
             wires={str(torpedo_id): wire.to_save()
                    for torpedo_id, wire in sorted(self.wires.items())},
             known_torpedoes=sorted(self._known_torpedoes),
@@ -176,6 +181,9 @@ class CrewOrders:
         self.scope_rel_deg = data["scope_rel_deg"]
         self.sightings = [dict(row) for row in data["sightings"]]
         self._sightings_seen = set(data["sightings_seen"])
+        self.tdc = {ref: dict(target_id=entry["target_id"],
+                              marks=[list(mark) for mark in entry["marks"]])
+                    for ref, entry in data["tdc"].items()}
         self.wires = {int(torpedo_id): CrewWire.from_save(int(torpedo_id), wire)
                       for torpedo_id, wire in data["wires"].items()}
         self._known_torpedoes = set(data["known_torpedoes"])
@@ -732,6 +740,8 @@ def stadimeter(game, boat: CrewedBoat):
     if contact is not None:
         contact.update_visual(row["bearing"], range_nm, game.sim_t, sigma, row["quality"],
                               boat.sub.x, boat.sub.y)
+    from src.core import attack_computer
+    attack_computer.record_mark(boat, row, game.sim_t)
     return True
 
 

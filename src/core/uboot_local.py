@@ -20,7 +20,7 @@ import math
 import pygame
 
 from src.commander.server import OPFOR_ROLES, V2_ACTION_REGISTRY
-from src.core import boat_esm, config, opfor
+from src.core import attack_computer, boat_esm, config, opfor
 from src.core.i18n import display_value, message
 from src.core.station import Station
 from src.enemies import damage_control
@@ -125,6 +125,10 @@ def fire_at_contact(game, current, contact):
         return "unknown_ref"
     if not 0 <= game.sim_t - contact.last_seen < config.SONAR_CONTACT_LOST_S:
         return "stale_ref"
+    solution = attack_computer.solution_for_target(current, contact.target_id, game.sim_t)
+    if solution is not None:
+        # The periscope's attack computer has a course and speed on it.
+        return attack_computer.fire_on_solution(game, current, solution)
     bearing = (contact.passive_bearing if contact.passive_bearing is not None
                else contact.bearing)
     range_nm = course = speed = None
@@ -188,7 +192,8 @@ def _fire_notice(game, result) -> None:
                            if result in ("not_ready", "no_torpedoes", "reloading",
                                          "out_of_arc", "stale_ref", "unknown_ref",
                                          "uboot_no_wire", "invalid_value",
-                                         "uboot_compartment_down")
+                                         "uboot_compartment_down", "uboot_no_solution",
+                                         "uboot_mast_down", "uboot_no_sighting")
                            else message("uboot.reason.not_ready")), 2.5)
 
 
@@ -511,11 +516,14 @@ def _key_action(key, mods):
 
 def _command_key(game, current, key, mods) -> None:
     sub = current.sub
-    action = _key_action(key, mods)
-    if action is not None and not order_allowed(game, action):
-        return
     from src.ui import uboot_view
     page = uboot_view.page_name(game, current)
+    action = _key_action(key, mods)
+    if action == "uboot_fire" and page == "UBOOT_SCOPE" and key in (pygame.K_RETURN,
+                                                                     pygame.K_KP_ENTER):
+        action = "uboot_scope_fire"       # the periscope fires on its solution
+    if action is not None and not order_allowed(game, action):
+        return
     if key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN):
         pages = uboot_view.station_pages(local_station(game))
         current.command_page = (current.command_page
@@ -529,6 +537,10 @@ def _command_key(game, current, key, mods) -> None:
             and not mods & pygame.KMOD_CTRL:
         if order_allowed(game, "uboot_scope_mark"):
             _stadimeter_notice(game, current, opfor.stadimeter(game, current))
+    elif page == "UBOOT_SCOPE" and key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+        # Ctrl+Enter on the periscope: fire on the attack computer's solution.
+        if order_allowed(game, "uboot_scope_fire"):
+            _fire_notice(game, attack_computer.fire_on_crosshair(game, current))
     elif page == "UBOOT_ESM" and key in (pygame.K_UP, pygame.K_DOWN):
         uboot_view.step_esm_selection(current, 1 if key == pygame.K_DOWN else -1)
     elif page == "UBOOT_ESM" and key in (pygame.K_LEFT, pygame.K_RIGHT):

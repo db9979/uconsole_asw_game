@@ -14,13 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.19**
+Aktuelle Version: **1.3.20**
 
-Version 1.3.19 macht den Start auf der uConsole sofort sichtbar: Ein kleines
-Startfenster zeigt, ob der Starter nach einem Update sucht, es lädt oder
-installiert, und schließt sich, sobald das Spiel erscheint. Ein zweiter Start,
-während U-Jagd startet oder läuft, öffnet das Spiel nicht mehr doppelt, sondern
-meldet „U-Jagd läuft bereits.“. Spielstände bleiben v23.
+Version 1.3.20 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede
+Stadimeter-Messung ist eine Marke, und zwei oder mehr Marken im Abstand von
+einer Minute ergeben Kurs und Fahrt des Ziels, den Vorhaltewinkel und die
+Laufzeit des Torpedos unter dem Sehrohr (Browser: Spalte Lösung).
+`Strg+Enter` auf der Sehrohrseite (Browser: Schuss nach Lösung) schießt auf
+den Abfangkurs; ein Schuss auf einen markierten Sonarkontakt nutzt die Lösung
+ebenfalls. Spielstände wechseln auf **v24** (die Marken werden gespeichert);
+v23-Spielstände werden nicht mehr geladen.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -389,7 +392,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v23 gespeichert.
+v24 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -471,7 +474,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v23** sind
+Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v24** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -527,8 +530,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v23**. V23
-verlangt das exakte Schema `u-jagd-save-v23` einschließlich des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v24**. V24
+verlangt das exakte Schema `u-jagd-save-v24` einschließlich der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

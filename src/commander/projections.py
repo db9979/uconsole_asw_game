@@ -9,7 +9,7 @@ from copy import deepcopy
 import math
 import weakref
 
-from src.core import boat_esm, boat_missions, boat_threat, config, opfor, plot
+from src.core import attack_computer, boat_esm, boat_missions, boat_threat, config, opfor, plot
 from src.commander.v2 import schema as web_schema
 from src.core.autocrew import AUTOCREW_STATIONS
 from src.enemies.damage_control import COMPARTMENTS, capacity_kg
@@ -1315,8 +1315,19 @@ def _uboot_scope(game, boat):
                         age_s=_age(now, row["t"]), range_nm=_number(row["range_nm"]),
                         range_sigma_nm=_number(row["range_sigma_nm"]),
                         range_age_s=(_age(now, row["range_t"])
-                                     if row["range_t"] is not None else None))
+                                     if row["range_t"] is not None else None),
+                        solution=_uboot_solution(boat, row["ref"], now))
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
+
+
+def _uboot_solution(boat, ref, now):
+    """The attack computer's estimate on one sighting (the crew's own marks)."""
+    values = attack_computer.summary(boat, ref, now)
+    if values is None:
+        return None
+    return dict(marks=int(values["marks"]), course=_number(values["course"]),
+                speed_kn=_number(values["speed_kn"]), lead_deg=_number(values["lead_deg"]),
+                run_s=_number(values["run_s"]), quality=_number(values["quality"]))
 
 
 def _uboot_plant(sub):

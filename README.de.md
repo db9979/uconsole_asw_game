@@ -14,12 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.29**
+Aktuelle Version: **1.3.30**
 
-Version 1.3.29 benennt das U-Boot einheitlich: Alle Anzeigen, die
-Web-Clients, Hilfe und Handbuch sagen jetzt **U-Boot** (englisch
-**submarine**), wo bisher nur „Boot“ stand, etwa **U-Boot-Kampagne** und
-U-Boot-Missionen. Spielstände bleiben v25.
+Version 1.3.30 lässt die **Fregatte die U-Boot-Missionen gegen die KI
+spielen**: Ein unbesetztes Missions-U-Boot verfolgt jetzt seinen Auftrag,
+statt zu patrouillieren. Es läuft unter der Sprungschicht zum
+Durchbruchsziel, folgt den Feindmeldungen der Führung und geht zum Sichten
+und Melden der Fregatte auf Sehrohrtiefe, und beim Geleitzugangriff läuft es
+dem Geleitzug voraus und torpediert seine Handelsschiffe einzeln.
+Spielstände bleiben v25.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

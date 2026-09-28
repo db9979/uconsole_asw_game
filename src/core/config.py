@@ -1014,6 +1014,16 @@ BOAT_CONVOY_WARHEAD = 100.0        # a heavyweight hit breaks a merchant
 BOAT_GOAL_BEYOND_NM = 10.0
 BOAT_GOAL_RADIUS_NM = 3.0
 BOAT_GOAL_MIN_DEPTH_M = 40.0
+# The AI boat's mission legs (src/core/boat_ai.py) when nobody crews it.
+BOAT_AI_TRANSIT_KN = 6.0           # quiet transit below the layer
+BOAT_AI_PERISCOPE_KN = 3.0         # at periscope depth or creeping in to fire
+BOAT_AI_BELOW_LAYER_M = 30.0
+BOAT_AI_MIN_WATER_M = 30.0         # the leg detours round shallower water
+BOAT_AI_SIGHT_NM = 8.0             # recon: come up and sight the frigate this close
+BOAT_AI_REPORT_EVERY_S = 120.0     # recon: the report goes out on this cadence
+BOAT_AI_ATTACK_NM = 4.0            # convoy attack: fire at a merchant this close
+BOAT_AI_CLOSING_KN = 4.0           # close a running target this much faster than it
+BOAT_AI_FIRE_EVERY_S = 60.0
 
 # W4: Vordefinierte Szenarien (eigene Briefings, Startposition, Schwierigkeit)
 # hq_intel: "coarse" = HQ meldet nur grob Peilung/Entfernung einer Bedrohung,

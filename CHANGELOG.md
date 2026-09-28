@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.30
+
+Release 1.3.30 lets the **frigate play the submarine missions against the AI**:
+an uncrewed mission submarine now pursues its objective instead of
+patrolling. It runs below the layer for the breakthrough goal, follows HQ's
+contact reports and comes to periscope depth to sight and report the
+frigate, and in the convoy attack runs ahead of the convoy and torpedoes its
+merchants one at a time. Saves stay v25.
+
 ## 1.3.29
 
 Release 1.3.29 names the submarine consistently: every screen, the web

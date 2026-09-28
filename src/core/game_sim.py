@@ -18,7 +18,7 @@ from src.core import detrand
 from src.core.i18n import message, raw_text
 from src.core.station import Station
 from src.core.save_schema import PING_INTERCEPTS_MAX
-from src.core import boat_missions, hunter, opfor
+from src.core import boat_ai, boat_missions, hunter, opfor
 from src.core.limits import (
     MAX_DECOYS,
     MAX_ENEMY_TORPEDOES,
@@ -466,6 +466,8 @@ class SimMixin:
     def _update_underwater_entities(self, dt: float) -> None:
         """Aktualisiert U-Boote, Tiere, Zivile und Dekoys."""
         self._deliver_ping_intercepts()
+        # The AI mission boat's leg for this substep (before it moves).
+        boat_ai.steer(self)
         for sub in self.subs:
             was_sunk = sub.sunk
             sub.update(dt, getattr(sub, "_tactical_observation", None), self.world)
@@ -716,14 +718,18 @@ class SimMixin:
         """Erzeugt und bewegt Feindtorpedos; Treffer werden als Schaden gebucht."""
         self._drain_enemy_torpedoes()
         boat = self._opfor
-        boat_id = boat.sub.id if boat is not None else None
-        # Only the crewed boat's weapons may take another ship (convoy attack).
+        attackers = {boat.sub.id} if boat is not None else set()
+        mission_boat = boat_ai.boat(self)
+        if mission_boat is not None and boat_missions.mode(self) == "convoy_attack":
+            attackers.add(mission_boat.id)
+        # Only the crewed boat's weapons, or the AI boat's in the convoy
+        # attack, may take another ship.
         merchants = ([ship for ship in self.civilians if not ship.sunk]
-                     if boat_id is not None else [])
+                     if attackers else [])
         for torpedo in self.enemy_torpedoes:
             torpedo.update(dt, self.ship, world=self.world,
                            seeker_candidates=self.nixies,
-                           surface_targets=(merchants if torpedo.launch_platform_id == boat_id
+                           surface_targets=(merchants if torpedo.launch_platform_id in attackers
                                             else ()))
         for torpedo in self.enemy_torpedoes:
             if torpedo.state == "STRUCK":
@@ -1237,6 +1243,8 @@ class SimMixin:
         self.autocrew.update(self)
         # With nobody on the frigate, the hunters crew its unleased stations.
         hunter.update(self, dt)
+        # An uncrewed mission boat fires and reports on its own cadence.
+        boat_ai.update(self, dt)
         self._record_simlog_state(dt)
 
     def _mission_time_warning(self) -> None:

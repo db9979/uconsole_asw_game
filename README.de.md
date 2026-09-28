@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.9**
+Aktuelle Version: **1.3.10**
 
-Version 1.3.9 bringt ein **Windows-Programm**: `U-Jagd-Windows.exe` startet
+Version 1.3.10 bringt ein **Windows-Programm**: `U-Jagd-Windows.exe` startet
 das Spiel als Remote-Crew-Server (Besatzungs- oder Solomodus, wahlweise als
 U-Boot), zeigt Browser-Adresse, Beitrittscode und QR-Code und bietet jede
 neuere Version selbst zum Update an. GitHub Actions baut es bei jedem Push auf
@@ -24,6 +24,13 @@ neuere Version selbst zum Update an. GitHub Actions baut es bei jedem Push auf
 `--remote-crew` (Remote Crew im Besatzungsmodus auf der ersten privaten
 LAN-Adresse beim Start) und `--status-file`. Siehe
 [Windows-Programm](#windows-programm). Spielstände bleiben v23.
+
+Version 1.3.9 bringt einen Ein-Befehl-Installer für die uConsole mit
+automatischem Update: Jeder Start holt das neueste GitHub-Release (ein
+Hintergrund-Timer prüft zusätzlich alle sechs Stunden), ohne Netz startet die
+installierte Version, und eine Version, die nicht startet, wird zurückgerollt.
+Er legt Menüeintrag, Desktop-Verknüpfung und den Befehl `u-jagd` an.
+Spielstände bleiben v23.
 
 Version 1.3.8 bringt einen Unterstützungslink: einen QR-Code im Hauptmenü des
 uConsole und einen kleinen Link auf den Remote-Crew-Seiten Kopplung, Lobby und
@@ -260,6 +267,16 @@ Release `v<APP_VERSION>`. Selbst bauen unter Windows:
 
 ## Schnellstart
 
+Auf der ClockworkPi uConsole installiert ein einziger Befehl das Spiel mit
+Menüeintrag und automatischem Update (jeder Start holt das neueste Release;
+ohne Netz startet die installierte Version):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh
+```
+
+Manuelle Einrichtung auf jedem Linux-System:
+
 ```sh
 git clone https://github.com/db9979/uconsole_asw_game.git
 cd uconsole_asw_game
@@ -270,8 +287,8 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-Systempakete, Aktualisierungen und Fehlerbehebung für die ClockworkPi uConsole
-sind in [`docs/install-uconsole.md`](docs/install-uconsole.md) beschrieben.
+Details zum Installer, Systempakete, manuelle Aktualisierungen und
+Fehlerbehebung für die ClockworkPi uConsole sind in [`docs/install-uconsole.md`](docs/install-uconsole.md) beschrieben.
 
 ## Kommandozeile
 
@@ -552,7 +569,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.8**, API-Protokoll **v2** und Speicherformat **v23** sind
+Anwendungsversion **1.3.9**, API-Protokoll **v2** und Speicherformat **v23** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.

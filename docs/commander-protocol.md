@@ -2,7 +2,7 @@
 
 [Deutsch](commander-protocol.de.md)
 
-Application 1.3.8, API protocol 2, save format v23-only. These versions are independent.
+Application 1.3.9, API protocol 2, save format v23-only. These versions are independent.
 No credentials, network sessions, leases, command queues or proposals are saved.
 Shared annotations and crew-accepted target/navigation setpoints use normal game
 persistence.

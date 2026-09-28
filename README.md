@@ -12,15 +12,21 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.9**
+Current release: **1.3.10**
 
-Release 1.3.9 adds a **Windows program**: `U-Jagd-Windows.exe` starts the game
+Release 1.3.10 adds a **Windows program**: `U-Jagd-Windows.exe` starts the game
 as Remote Crew server (crew or solo mode, optionally as the submarine), shows
 the browser address, join code and QR code, and offers each newer release
 itself. GitHub Actions builds it on every push to `main` and publishes it as
 release `v<version>`. The game also gains `--remote-crew` (crew-mode Remote
 Crew on the first private LAN address at launch) and `--status-file`. See
 [Windows program](#windows-program). Saves stay v23.
+
+Release 1.3.9 adds a one-command installer for the uConsole with automatic
+updates: every start fetches the newest GitHub release (a background timer also
+checks every six hours), offline the installed version starts, and a version
+that does not start is rolled back. It creates a menu entry, a desktop shortcut
+and the `u-jagd` command. Saves stay v23.
 
 Release 1.3.8 adds a support link: a QR code in the uConsole main menu and a
 small link on the Remote Crew pairing, lobby and settings screens and the
@@ -241,6 +247,16 @@ To build locally on Windows: `python -m pip install -e ".[windows]"` and
 
 ## Quick Start
 
+On the ClockworkPi uConsole, one command installs the game with a menu entry
+and automatic updates (every start fetches the newest release; offline the
+installed version starts):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/db9979/uconsole_asw_game/main/packaging/uconsole/install.sh | sh
+```
+
+Manual setup on any Linux system:
+
 ```sh
 git clone https://github.com/db9979/uconsole_asw_game.git
 cd uconsole_asw_game
@@ -251,7 +267,8 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
-For ClockworkPi uConsole system packages, updates, and troubleshooting, see
+For the installer's details, ClockworkPi uConsole system packages, manual
+updates, and troubleshooting, see
 [`docs/install-uconsole.en.md`](docs/install-uconsole.en.md).
 
 ## Command Line

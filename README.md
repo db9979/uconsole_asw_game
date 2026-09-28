@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.23**
+Current release: **1.3.24**
 
-Release 1.3.23 gives every menu and dialog the start screen's look: help,
-options, save/load, quit, nations, Remote Crew administration (`F9`) and the
-mission end now show the night hunt behind a translucent console panel with
-phosphor corner brackets and a glowing title, while the mission keeps running
-behind them. In high contrast the panels stay opaque. Browser dialogs use the
-same night sky and bracket frame. Saves stay v24.
+Release 1.3.24 brings **atmosphere to the crewed boat**: the pressure hull creaks
+deep down and cracks when it fails, detonations in the water are heard close
+aboard or far off and logged with a bearing, and **silent running** rigs the
+boat's screens for dimmed red light on the uConsole and in the browser. The
+boat's browsers now play its own sound cues, and a rescue task's alarm cue no
+longer upsets the browser. Saves stay v24.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

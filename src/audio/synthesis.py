@@ -173,6 +173,47 @@ def combat_effect(kind: str, sample_rate: int,
     return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
 
 
+def boat_effect(kind: str, sample_rate: int, amplitude: float = .28) -> np.ndarray:
+    """Deterministic atmosphere cues heard inside the crewed boat: the hull
+    creaking deep down, a hull failure's crack and near/distant detonations."""
+    if kind == "hull_creak":
+        duration = 1.8
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        noise = filtered_noise_event(duration, sample_rate, 60.0, 420.0,
+                                     amplitude, 433).astype(np.float64)
+        # A slow groan: a low tone sagging in pitch under a rasping band.
+        phase = 2 * np.pi * (88.0 * t - 9.0 * t * t)
+        rasp = 1.0 + .6 * np.sin(2 * np.pi * 11.0 * t)
+        envelope = np.sin(np.pi * np.minimum(1.0, t / duration)) ** 1.5
+        signal = envelope * (.55 * noise * rasp + amplitude * .5 * np.sin(phase))
+    elif kind == "hull_crack":
+        duration = .9
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        noise = filtered_noise_event(duration, sample_rate, 300.0, 5200.0,
+                                     amplitude, 457).astype(np.float64)
+        signal = noise * 2.2 * np.exp(-30.0 * t)
+        signal += amplitude * .8 * np.sin(2 * np.pi * 46.0 * t) * np.exp(-6.0 * t)
+    else:
+        near = kind == "detonation_near"
+        duration = 1.6 if near else 2.4
+        count = int(duration * sample_rate)
+        t = np.arange(count, dtype=np.float64) / sample_rate
+        noise = filtered_noise_event(duration, sample_rate, 20.0,
+                                     1400.0 if near else 260.0,
+                                     amplitude * (1.0 if near else .55),
+                                     461 if near else 463).astype(np.float64)
+        envelope = np.minimum(1.0, t * (120.0 if near else 18.0)) \
+            * np.exp(-(2.6 if near else 1.6) * t)
+        signal = noise * envelope
+        signal += amplitude * (.7 if near else .35) * np.sin(2 * np.pi * 38.0 * t) * envelope
+    edge = min(count // 2, max(1, round(.006 * sample_rate)))
+    signal[:edge] *= np.linspace(0.0, 1.0, edge)
+    signal[-edge:] *= np.linspace(1.0, 0.0, edge)
+    return np.clip(np.nan_to_num(signal), -1, 1).astype(np.float32)
+
+
 def stereo_bearing(samples: np.ndarray, bearing_deg: float,
                    listener_bearing_deg: float = 0.0) -> np.ndarray:
     """Pannt ein Monosignal nach relativer Peilung mit konstanter Leistung."""

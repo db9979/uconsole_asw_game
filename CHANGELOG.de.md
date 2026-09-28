@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.24
+
+Version 1.3.24 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
+der Tiefe und kracht, wenn er versagt, Detonationen im Wasser sind dicht beim
+Boot oder in der Ferne zu hören und stehen mit Peilung im Log, und bei
+**Schleichfahrt** schalten die Boot-Bildschirme am uConsole und im Browser auf
+gedimmtes Rotlicht. Die Browser des Boots spielen jetzt dessen eigene Töne, und
+der Alarmton einer Rettungsaufgabe stört den Browser nicht mehr. Spielstände
+bleiben v24.
+
 ## 1.3.23
 
 Version 1.3.23 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:

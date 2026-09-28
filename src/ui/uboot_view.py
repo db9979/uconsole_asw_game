@@ -1171,6 +1171,15 @@ def draw_end_panel(game, boat) -> None:
                       56, config.COLOR_TEXT_DIM, size=16, align="center")
 
 
+def silent_light(s, boat) -> bool:
+    """Silent running: the boat rigs for red, dimmed light (display only)."""
+    if boat is None or not boat.orders.silent or boat.sub.sunk:
+        return False
+    s.fill(config.UBOOT_SILENT_LIGHT, special_flags=pygame.BLEND_MULT)
+    s.fill(config.UBOOT_SILENT_LIGHT_FLOOR, special_flags=pygame.BLEND_ADD)
+    return True
+
+
 def draw(game) -> None:
     """The whole mission screen while the uConsole plays the submarine."""
     boat = game.opfor
@@ -1198,6 +1207,7 @@ def draw(game) -> None:
                 draw_command_panel(game, boat)
         draw_bottom(game, boat)
         game.draw_navigation_input()
+        silent_light(game.screen, boat)
         if game.game_over and getattr(game, "debrief_open", False):
             from src.ui.debrief_view import draw_debrief
             draw_debrief(game)

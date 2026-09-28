@@ -14,15 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.23**
+Aktuelle Version: **1.3.24**
 
-Version 1.3.23 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
-Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Remote-Crew-Verwaltung
-(`F9`) und das Missionsende zeigen jetzt die nächtliche Jagd hinter einem
-durchscheinenden Konsolen-Panel mit Phosphor-Eckwinkeln und leuchtendem Titel;
-die Mission läuft dahinter weiter. Bei hohem Kontrast bleiben die Panels
-deckend. Die Browser-Dialoge nutzen denselben Nachthimmel und Winkelrahmen.
-Spielstände bleiben v24.
+Version 1.3.24 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
+der Tiefe und kracht, wenn er versagt, Detonationen im Wasser sind dicht beim
+Boot oder in der Ferne zu hören und stehen mit Peilung im Log, und bei
+**Schleichfahrt** schalten die Boot-Bildschirme am uConsole und im Browser auf
+gedimmtes Rotlicht. Die Browser des Boots spielen jetzt dessen eigene Töne, und
+der Alarmton einer Rettungsaufgabe stört den Browser nicht mehr. Spielstände
+bleiben v24.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

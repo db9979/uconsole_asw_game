@@ -1255,7 +1255,7 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
 def _opfor_common(game, status, role, boat):
     """Common block of a submarine role: the boat's own instruments only.
 
-    No frigate plot, audio cue, autocrew or mission framing ever reaches the
+    No frigate plot, frigate audio cue, autocrew or mission framing ever reaches the
     opposing side; the weather block is read through the boat's workstation.
     """
     with game.sonar_perspective(boat.station):
@@ -1265,7 +1265,10 @@ def _opfor_common(game, status, role, boat):
                       dict(objects=[], max_objects=plot.MAX_OBJECTS,
                            max_label=plot.MAX_LABEL))
     common["mission"]["objective"] = localize(boat_missions.objective(game, boat), game.tr)
-    common["audio"] = dict(events=[], callouts=boat.callouts.detached())
+    # The boat's own atmosphere cues (hull, detonations), never the frigate's.
+    common["audio"] = dict(events=[dict(seq=int(row["seq"]), cue=str(row["kind"]))
+                                   for row in list(boat.sound_events)[-16:]],
+                           callouts=boat.callouts.detached())
     common["autocrew"] = dict(enabled=False, status="off")
     common["autocrew_overview"] = []
     return common

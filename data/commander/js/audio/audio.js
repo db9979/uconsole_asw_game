@@ -43,6 +43,11 @@ function playGameEffect(kind) {
     // Returned echoes: CW a steady carrier tone, LFM a short 100 Hz sweep.
     sonar_echo_cw: [900, 900, .55, .07, "sine"], sonar_echo_cw_faint: [900, 900, .55, .025, "sine"],
     sonar_echo_lfm: [850, 950, .32, .08, "sine"], sonar_echo_lfm_faint: [850, 950, .32, .03, "sine"],
+    alarm: [880, 660, .6, .12, "square"],
+    // Inside the crewed boat: the hull groaning deep down, a hull failure's
+    // crack and detonations close by or far off.
+    hull_creak: [88, 70, 1.8, .10, "sawtooth"], hull_crack: [180, 46, .5, .22, "square"],
+    detonation_near: [60, 24, 1.6, .22, "sawtooth"], detonation_far: [42, 22, 2.4, .09, "triangle"],
   }[kind];
   const [startHz, endHz, duration, gainLevel, type] = profile;
   const oscillator = S.audio.createOscillator();
@@ -50,7 +55,7 @@ function playGameEffect(kind) {
   const now = S.audio.currentTime;
   oscillator.type = type;
   oscillator.frequency.setValueAtTime(startHz, now);
-  if (kind.startsWith("sonar_echo_lfm")) oscillator.frequency.linearRampToValueAtTime(endHz, now + duration);
+  if (kind.startsWith("sonar_echo_lfm") || kind === "hull_creak") oscillator.frequency.linearRampToValueAtTime(endHz, now + duration);
   else oscillator.frequency.setValueAtTime(endHz, now + duration);
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(volume * gainLevel, now + .012);

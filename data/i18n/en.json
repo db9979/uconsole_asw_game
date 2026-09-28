@@ -5597,5 +5597,7 @@
   "uboot.threat.overdepth": "BELOW TEST DEPTH {depth} m (test {test} m, crush {crush} m)",
   "uboot.ladder.crush": "Crush {depth} m",
   "commander.web.uboot_depth_mark_crush": "Crush {depth} m",
-  "commander.web.uboot_chip_overdepth": "Below test depth {test} m (crush {crush} m)"
+  "commander.web.uboot_chip_overdepth": "Below test depth {test} m (crush {crush} m)",
+  "uboot.event.detonation_near": "Detonation close aboard, bearing {bearing}!",
+  "uboot.event.detonation_far": "Distant detonation, bearing {bearing}."
 }

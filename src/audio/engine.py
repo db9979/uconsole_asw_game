@@ -11,7 +11,7 @@ import numpy as np
 import pygame
 
 from src.audio.receiver import smooth_limit
-from src.audio.synthesis import (active_sonar_ping, combat_effect,
+from src.audio.synthesis import (active_sonar_ping, boat_effect, combat_effect,
                                  sonar_echo, stereo_bearing, tone)
 from src.core import config
 from src.core.debuglog import append_bounded_log
@@ -268,6 +268,37 @@ class AudioEngine:
                 lambda: combat_effect(kind, self.sample_rate,
                                       self.SOURCE_LIMITS["alert"]),
                 ("alert", "effect", kind, self.sample_rate))
+            if sound is None:
+                return False
+            if self._alert_channel.get_busy():
+                self._alert_channel.queue(sound)
+            else:
+                self._alert_channel.play(sound)
+            return True
+        except pygame.error:
+            self._latch_device_error()
+            return False
+        except (TypeError, ValueError, OverflowError):
+            return False
+
+    BOAT_CUES = frozenset({"hull_creak", "hull_crack", "detonation_near",
+                           "detonation_far"})
+
+    def play_boat_cue(self, kind: str) -> bool:
+        """One atmosphere cue inside the crewed boat (the uConsole as the boat;
+        ``local_effects`` is off there, so this is the boat's only effect)."""
+        if kind not in self.BOAT_CUES:
+            return False
+        if not self.enabled or not self.available or self._alert_channel is None:
+            return False
+        try:
+            if (self._alert_channel.get_busy()
+                    and self._alert_channel.get_queue() is not None):
+                self.alert_dropped_events += 1
+                return False
+            sound = self._sound(
+                lambda: boat_effect(kind, self.sample_rate, self.SOURCE_LIMITS["alert"]),
+                ("alert", "boat", kind, self.sample_rate))
             if sound is None:
                 return False
             if self._alert_channel.get_busy():

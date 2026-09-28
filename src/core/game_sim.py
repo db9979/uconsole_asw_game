@@ -245,8 +245,12 @@ class SimMixin:
                     break
                 self._sonar_audio_sequence = sequence
 
-    def _emit_sound(self, kind: str) -> None:
-        """Play locally and publish a bounded, detached browser sound cue."""
+    def _emit_sound(self, kind: str, at=None) -> None:
+        """Play locally and publish a bounded, detached browser sound cue.
+
+        ``at``: where a detonation happened, so a crewed boat hears it too."""
+        if at is not None and self._opfor is not None:
+            opfor.hear_detonation(self, self._opfor, float(at[0]), float(at[1]))
         if kind == "sonar_ping":
             self.audio.play_ping()
         elif kind == "esm_contact":
@@ -610,7 +614,7 @@ class SimMixin:
                        chaff_target=clouds.get(asm.chaff_cloud))
             if asm.state == "TREFFER":
                 hit = self.damage.missile_hit(*self._hull_impact(asm.x, asm.y))
-                self._emit_sound("explosion")
+                self._emit_sound("explosion", at=(asm.x, asm.y))
                 self.announce(message("runtime.hit.asm", compartments=", ".join(
                     self.damage.compartments[k].name for k in hit)),
                     "schaden", 5.0)
@@ -732,7 +736,7 @@ class SimMixin:
                 hit = self.damage.torpedo_hit(
                     impact=self._hull_impact(torpedo.x, torpedo.y),
                     hole_scale=config.clamp(20.0 / distance_m, 0.5, 3.0))
-                self._emit_sound("explosion")
+                self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
                 text = ", ".join(self.damage.compartments[k].name for k in hit)
                 self.flash(message("runtime.hit.torpedo", compartments=text), 5.0)
                 self.feed.add(self.world.format_time(), "schaden",
@@ -883,7 +887,7 @@ class SimMixin:
                 continue
             if torpedo.state != "HIT":
                 continue
-            self._emit_sound("explosion")
+            self._emit_sound("explosion", at=(torpedo.x, torpedo.y))
             if (isinstance(torpedo.target, SurfaceShip)
                     and torpedo.target.side != "hostile"):
                 torpedo.target.sunk = True

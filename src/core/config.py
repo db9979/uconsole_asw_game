@@ -374,6 +374,21 @@ UBOOT_HULL_SEAL_CHANCE = 0.3
 UBOOT_HULL_FRACTURE_DAMAGE = 30.0
 UBOOT_HULL_SEAL_DAMAGE = 12.0
 UBOOT_HULL_BOLTS_DAMAGE = 6.0
+# Boat atmosphere (cues only, never simulation): the hull creaks from
+# UBOOT_CREAK_START of test depth, a check every UBOOT_CREAK_TICK_S with a
+# chance growing to 1 at test depth; detonations are heard out to
+# UBOOT_DETONATION_HEARD_NM, "close" inside UBOOT_DETONATION_NEAR_NM, with a
+# bearing error of UBOOT_DETONATION_BEARING_SD_DEG.
+UBOOT_CREAK_START = 0.6
+UBOOT_CREAK_TICK_S = 4.0
+UBOOT_CREAK_MIN_CHANCE = 0.1
+UBOOT_DETONATION_HEARD_NM = 30.0
+UBOOT_DETONATION_NEAR_NM = 2.0
+UBOOT_DETONATION_BEARING_SD_DEG = 3.0
+UBOOT_SOUND_EVENTS_MAX = 16
+# Silent running: red, dimmed light (multiply, then a red floor so dark blues redden).
+UBOOT_SILENT_LIGHT = (255, 110, 95)
+UBOOT_SILENT_LIGHT_FLOOR = (36, 0, 0)
 UBOOT_DC_SPILL_FRACTION = 0.5       # water above this spills (and smothers fire)
 UBOOT_DC_SPILL_KG_S = 20.0
 UBOOT_DC_FIRE_GROW_S = 120.0

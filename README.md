@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.22**
+Current release: **1.3.24**
 
-Release 1.3.22 brings **atmosphere to the crewed boat**: the pressure hull creaks
+Release 1.3.24 brings **atmosphere to the crewed boat**: the pressure hull creaks
 deep down and cracks when it fails, detonations in the water are heard close
 aboard or far off and logged with a bearing, and **silent running** rigs the
 boat's screens for dimmed red light on the uConsole and in the browser. The

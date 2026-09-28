@@ -4,15 +4,36 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.22
+## 1.3.24
 
-Version 1.3.22 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
+Version 1.3.24 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
 der Tiefe und kracht, wenn er versagt, Detonationen im Wasser sind dicht beim
 Boot oder in der Ferne zu hören und stehen mit Peilung im Log, und bei
 **Schleichfahrt** schalten die Boot-Bildschirme am uConsole und im Browser auf
 gedimmtes Rotlicht. Die Browser des Boots spielen jetzt dessen eigene Töne, und
 der Alarmton einer Rettungsaufgabe stört den Browser nicht mehr. Spielstände
 bleiben v24.
+
+## 1.3.23
+
+Version 1.3.23 gibt allen Menüs und Dialogen das Aussehen des Startbildschirms:
+Hilfe, Optionen, Speichern/Laden, Beenden, Nationen, Remote-Crew-Verwaltung
+(`F9`) und das Missionsende zeigen jetzt die nächtliche Jagd hinter einem
+durchscheinenden Konsolen-Panel mit Phosphor-Eckwinkeln und leuchtendem Titel;
+die Mission läuft dahinter weiter. Bei hohem Kontrast bleiben die Panels
+deckend. Die Browser-Dialoge nutzen denselben Nachthimmel und Winkelrahmen.
+Spielstände bleiben v24.
+
+## 1.3.22
+
+Version 1.3.22 macht die Remote-Crew-Datenströme stabiler. Ein Browser, der
+seinen Sonar-Audio- oder Sonar-Anzeigestrom neu verbindet, übernimmt jetzt
+sofort seinen eigenen bisherigen Strom, statt abgewiesen zu werden, solange der
+Host die alte Verbindung noch nicht als beendet erkannt hat. Der Web-Client
+fragt bei eingeschaltetem Push nicht mehr zu jedem gepushten Zustand
+zusätzlich den Zustand ab. Die Browsertests für Live-Audio und den
+Zustands-Push laufen jetzt in Echtzeit neben dem Host. Spielstände bleiben
+v23.
 
 ## 1.3.21
 

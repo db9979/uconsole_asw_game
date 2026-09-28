@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.22**
+Aktuelle Version: **1.3.24**
 
-Version 1.3.22 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
+Version 1.3.24 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
 der Tiefe und kracht, wenn er versagt, Detonationen im Wasser sind dicht beim
 Boot oder in der Ferne zu hören und stehen mit Peilung im Log, und bei
 **Schleichfahrt** schalten die Boot-Bildschirme am uConsole und im Browser auf

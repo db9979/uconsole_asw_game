@@ -5,7 +5,7 @@ import pygame
 from src.commander.server import DIRECT_FIRE_ROLES, SONAR_AUDIO_ROLES
 from src.core import config
 from src.core.i18n import message, raw_text, translation_scope
-from src.ui import layout
+from src.ui import layout, overlay_style
 
 
 class StationAdmission:
@@ -97,9 +97,9 @@ class StationAdmission:
 
     def draw(self, game):
         with translation_scope(game.tr):
-            layout.panel(game.screen, pygame.Rect(220, 96, 840, 544))
-            layout.blit_line(game.screen, "commander.admission.title", (244, 116, 792, 36),
-                             config.COLOR_WARN, size=28)
+            overlay_style.panel(game.screen, pygame.Rect(220, 96, 840, 544))
+            overlay_style.title(game.screen, "commander.admission.title",
+                                (244, 116, 792, 36), size=28, align="left")
             station = self.request["requested_station"]
             key = "station.ew" if station == "eloka" else "station." + station
             layout.blit_block(game.screen, message("commander.admission.player",

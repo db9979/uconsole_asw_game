@@ -7,7 +7,7 @@ import time
 
 import pygame
 import pytest
-from commander_web import copy_assets, index_html, inject_probe, page_dataset
+from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 
 from src.commander import server
 from src.core.game import Game
@@ -146,7 +146,8 @@ def test_submarine_sonar_filters_and_audio_survive_host_input(tmp_path, monkeypa
     epoch = boat = None
     bumped_at = None
     root = {}
-    read_at = started
+    # The live stream plays at wall-clock speed, so the host simulates at it too.
+    host = RealTimeHost(game, profile)
     try:
         while process.poll() is None and time.monotonic() - started < 120:
             if not granted:
@@ -167,15 +168,14 @@ def test_submarine_sonar_filters_and_audio_survive_host_input(tmp_path, monkeypa
                     game.handle_event(pygame.event.Event(
                         pygame.KEYDOWN, key=key, mod=0, unicode=""))
                 bumped_at = time.monotonic()
-            if time.monotonic() - read_at > .5:
-                read_at = time.monotonic()
-                root = page_dataset(profile) or root
-                if root.get("opforTest"):
-                    break
+            root = host.dataset or root
+            if root.get("opforTest"):
+                break
             console.pump(game)
-            game.update(.02)
+            host.step()
             time.sleep(.02)
     finally:
+        host.close()
         process.kill()
         process.wait(timeout=5)
         log.close()

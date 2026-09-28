@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.34
+
+Version 1.3.34 schreibt ein Absturzprotokoll: Jeder Spielstart hängt an
+`~/.u-jagd/crash.log` eine Start- und eine Endzeile an, und endet das Spiel
+durch einen Fehler, steht dort der Traceback, nach einem harten Absturz
+(Speicherzugriffsfehler in SDL oder Audio, `SIGTERM`) die Stapel aller Threads.
+Eine Startzeile ohne Endzeile heißt, das Spiel wurde von außen beendet, meist
+vom Kernel bei Speichermangel. Die Datei bleibt unter 256 KiB. Spielstände
+bleiben v26.
+
 ## 1.3.33
 
 Version 1.3.33 lässt das ESM des besetzten U-Boots die Umlaufzeit jedes Radars

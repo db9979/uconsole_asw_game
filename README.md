@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.35**
+Current release: **1.3.36**
 
-Release 1.3.35 fixes sonar audio on the uConsole that could fall silent until
+Release 1.3.36 fixes sonar audio on the uConsole that could fall silent until
 audio was switched off and on in the options. A rare race in the pygame mixer
 could leave the sonar channel idle with its next block queued forever, and
 the sonar playback waited for that queue slot for good. Playback now replays

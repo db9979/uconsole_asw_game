@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.35**
+Aktuelle Version: **1.3.36**
 
-Version 1.3.35 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis
+Version 1.3.36 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis
 man den Ton in den Optionen aus- und wieder einschaltete. Ein seltenes
 Wettrennen im pygame-Mixer konnte den Sonarkanal still stehen lassen, während
 sein nächster Block für immer in der Warteschlange hing, und die

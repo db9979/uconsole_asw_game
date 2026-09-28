@@ -5572,5 +5572,6 @@
   "campaign.boat.status_lost": "Campaign over: boat lost or commander relieved. N starts a new one.",
   "campaign.boat.port_refit": "1 Full refit: full torpedo load, hull repaired (standing -5)",
   "campaign.boat.port_quick": "2 Quick turnaround: {torpedoes} torpedoes, hull damage {damage} % stays (standing +3)",
-  "campaign.boat.sail_hint": "Enter: put to sea for the next boat mission"
+  "campaign.boat.sail_hint": "Enter: put to sea for the next boat mission",
+  "launcher.support": "Enjoying U-Jagd? Buy me a coffee"
 }

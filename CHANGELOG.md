@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.17
+
+Release 1.3.17 fixes the Windows program's self-update: after swapping in the
+new `U-Jagd-Windows.exe` it failed to start ("Failed to load Python DLL")
+because it inherited the old process's already deleted unpack directory. The
+restart now unpacks afresh. The starter window also shows the "Buy me a
+coffee" link. Saves stay v23.
+
 ## 1.3.16
 
 Release 1.3.16 adds the **boat campaign**: five linked boat missions in one sea

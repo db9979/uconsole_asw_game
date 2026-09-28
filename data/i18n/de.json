@@ -5572,5 +5572,6 @@
   "campaign.boat.status_lost": "Kampagne beendet: Boot verloren oder Kommandant abgelöst. N startet eine neue.",
   "campaign.boat.port_refit": "1 Volle Überholung: volle Torpedobeladung, Rumpf repariert (Ansehen -5)",
   "campaign.boat.port_quick": "2 Schnelles Auslaufen: {torpedoes} Torpedos, Rumpfschaden {damage} % bleibt (Ansehen +3)",
-  "campaign.boat.sail_hint": "Enter: zur nächsten Bootsmission auslaufen"
+  "campaign.boat.sail_hint": "Enter: zur nächsten Bootsmission auslaufen",
+  "launcher.support": "Gefällt dir U-Jagd? Spendier mir einen Kaffee"
 }

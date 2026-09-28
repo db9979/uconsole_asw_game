@@ -21,6 +21,7 @@ from src.core.i18n import Translator
 from src.core.preferences import load_preferences
 from src.core.version import APP_VERSION
 from src.launcher import update
+from src.ui.support import SUPPORT_URL
 
 POLL_MS = 500
 DEFAULT_PORT = 8765
@@ -140,6 +141,10 @@ class Starter:
         self.open_button.grid(row=0, column=2)
         ttk.Button(buttons, text=self.t("launcher.log"),
                    command=self.open_log).grid(row=0, column=3, padx=6)
+        support = ttk.Label(buttons, text=self.t("launcher.support"), foreground="#1a5fb4",
+                            cursor="hand2", font=("Segoe UI", 9, "underline"))
+        support.grid(row=0, column=4, padx=(10, 0))
+        support.bind("<Button-1>", lambda _event: webbrowser.open(SUPPORT_URL))
 
         updates = ttk.Frame(frame)
         updates.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
@@ -377,6 +382,7 @@ class Starter:
     def _restart_into(self, script):
         flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         subprocess.Popen(["cmd", "/c", script], creationflags=flags,
+                         env=update.clean_environment(os.environ),
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL)
         self.root.destroy()

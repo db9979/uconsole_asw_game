@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 1.3.11 (`src/core/version.py`); current saves are v23-only. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 1.3.12 (`src/core/version.py`); current saves are v23-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-1.3.md` and `docs/resume.md`.
@@ -122,5 +122,6 @@ python -m build
 
 - `pytest` configures SDL dummy video/audio and isolates saves. Run focused tests while iterating, then the full suite for cross-system changes.
 - `python -m build` requires the `build` extra/package and produces both sdist and wheel. Packaging tests build/install artifacts and verify package resources.
-- For releases, verify `src/core/version.py`, save compatibility, README release statements, package metadata, wheel/sdist resources, notices/licenses, full tests, catalog check, smoke test, and a clean install. Do not include caches, local saves/settings, build trees, source snapshots, private references, or unlicensed assets.
+- Release notes: `README.md`/`README.de.md` describe only the current release (one paragraph each); every release adds its entry at the top of `CHANGELOG.md` and `CHANGELOG.de.md` (`## x.y.z`), which also becomes the GitHub release text (`tools/changelog_notes.py`, `--check` in `tests/test_changelog.py`). After visible changes regenerate the README screenshots with `python tools/capture_screenshots.py` and `python tools/capture_commander.py` (Chromium on `PATH`).
+- For releases, verify `src/core/version.py`, save compatibility, README release statement, changelog entries, package metadata, wheel/sdist resources, notices/licenses, full tests, catalog check, smoke test, and a clean install. Do not include caches, local saves/settings, build trees, source snapshots, private references, or unlicensed assets.
 - Keep commits narrowly scoped; inspect status/diff before staging, never overwrite unrelated work, never commit secrets or local user data, and do not rewrite history or force-push without explicit approval. Generated artifacts must be reproducible and accompanied by their provenance updates.

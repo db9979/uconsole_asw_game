@@ -29,6 +29,7 @@ from src.ui.map_view import draw_map_view
 from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
 from src.ui.support import draw_support_corner
+from src.core.game_bugreport import BUG_REPORT_ENTRY, MAIN_MENU_LABELS
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.weather_station import draw_weather_station
 from src.ui import uboot_view
@@ -129,19 +130,20 @@ class DrawMixin:
         draw_logo(s, cx, 34)
 
         if self.main_menu:
-            draw_menu_panel(s, (cx - 260, 148, 520, 400),
-                            (cx - 250, 157 + self.main_menu_sel * 42, 500, 36))
-            labels = ("menu.new_game", "menu.training", "menu.campaign", "menu.load",
-                      "menu.mission_editor", "menu.unit_editor", "menu.contact_analyzer",
-                      "option.title", "menu.quit")
-            for i, key in enumerate(labels):
+            draw_menu_panel(s, (cx - 260, 148, 520, 412),
+                            (cx - 250, 157 + self.main_menu_sel * 40, 500, 36))
+            for i, key in enumerate(MAIN_MENU_LABELS):
                 marker = "> " if i == self.main_menu_sel else "  "
                 color = config.COLOR_TEXT if i == self.main_menu_sel else config.COLOR_TEXT_DIM
                 center(message("menu.choice", marker=marker,
-                               label=self.tr(key).upper()), 175 + i * 42, color=color)
+                               label=self.tr(key).upper()), 175 + i * 40, color=color)
+            if self.bug_report_offer:
+                center(self.tr("menu.bug_report.offer"), 584, color=config.COLOR_WARN)
             # Support link: main menu page only, never over a mission.
             draw_support_corner(s, config.SCREEN_W - 24, 600,
                                 config.COLOR_TEXT, config.COLOR_TEXT_DIM)
+        elif self.menu_screen == BUG_REPORT_ENTRY:
+            self._draw_bug_report_page(center)
         elif self.menu_screen == "training":
             self._draw_training_menu(center)
         elif self.menu_screen == "campaign":
@@ -465,10 +467,10 @@ class DrawMixin:
                          (0, config.TOP_BAR_H - 1),
                          (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
         station = display_value("station", self.station.name, self.tr).upper()
-        # Speed and course live in the telemetry band; the bar names only
-        # the station and the clock.
         txt = self.tr("top.status", station=station,
-                      time=self.world.format_time())
+                      scenario=self.top_bar_scenario(),
+                      time=self.world.format_time(), speed=f"{self.ship.speed:.1f}",
+                      course=f"{self.ship.course % 360:03.0f}")
         layout.blit_line(s, txt, (10, 4, config.SCREEN_W - 20,
                                   config.TOP_BAR_H - 8),
                          config.COLOR_TEXT, size=18)

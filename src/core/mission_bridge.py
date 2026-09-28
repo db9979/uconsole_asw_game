@@ -9,7 +9,7 @@ import json
 import math
 
 
-from src.core import config
+from src.core import config, crashlog
 from src.core.i18n import message, raw_text
 from src.core.mission_definition import (_stable_seed, reference_sector_index,
                                          static_preview, validate_mission)
@@ -327,6 +327,8 @@ class MissionBridgeMixin:
         self._prepared_menu_mission = None
         self.in_menu = False
         self.main_menu = False
+        crashlog.note(f"mission {self.scenario_key}, world {self.world_mode}, "
+                      f"seed {self.seed}, side {self.local_side}")
         if not reuse:
             self.reset(self.seed, self.scenario_key)
             return

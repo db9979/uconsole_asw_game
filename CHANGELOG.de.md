@@ -4,6 +4,25 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.41
+
+Version 1.3.41 bringt die volle obere Leiste auf der uConsole zurück: Die
+Fregatte zeigt wieder Station, Mission, Uhrzeit, Fahrt und Kurs, das besetzte
+U-Boot Mission, Uhrzeit, Fahrt, Kurs und Tiefe, jetzt kompakt durch „·“
+getrennt. Spielstände bleiben v27.
+
+## 1.3.40
+
+Version 1.3.40 bringt eine Fehlermeldung. „Fehler melden“ im Hauptmenü
+schreibt `~/.u-jagd/bug-report.txt` mit Version, Plattform und den neuesten
+Zeilen des Absturz-Logs (Benutzername aus Pfaden entfernt) und zeigt einen
+QR-Code, der am Handy ein vorausgefülltes GitHub-Issue öffnet; `Enter` öffnet
+es mit Log im Browser, wo das Gerät einen hat. Nach einem abgestürzten Start
+bietet das Hauptmenü den Punkt an. Der Windows-Starter und das
+Einstellungsmenü im Browser verlinken dasselbe Formular, und das Absturz-Log
+hält jetzt auch jeden Missionsstart fest. Gesendet wird erst, wenn Sie das
+Issue mit Ihrem eigenen GitHub-Konto abschicken. Spielstände bleiben v27.
+
 ## 1.3.39
 
 Version 1.3.39 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen

@@ -291,3 +291,5 @@ body.workstation-mode #station-uboot .uboot-grid > .station-controls:not(.statio
 .support-line { margin: 0.75rem 0 0; }
 .support-link { color: var(--caution); text-decoration: underline; text-underline-offset: 0.2em; }
 .support-link:hover, .support-link:focus-visible { color: var(--text); }
+.bug-report-link { color: var(--muted); text-decoration: underline; text-underline-offset: 0.2em; }
+.bug-report-link:hover, .bug-report-link:focus-visible { color: var(--text); }

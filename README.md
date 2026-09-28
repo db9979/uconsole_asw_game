@@ -12,17 +12,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.39**
+Current release: **1.3.41**
 
-Release 1.3.39 gives the periscope, the lookout's binoculars and every station
-the start screen's look. The eyepieces show day, dusk and night with stars, the
-moon in its phase and its glitter on the water, clouds, rain, snow and fog from
-the weather, and the ships in steel with a lit rim, lit windows at night, bow
-wave and wake. The Remote Crew bridge gets the lookout's binoculars as a card
-and the browser periscope the same picture and silhouettes. uConsole and
-browser stations use the turquoise phosphor and night blue of the start screen
-with corner brackets on the panels; the chart keeps its NATO symbols and the
-high-contrast theme is unchanged. Saves stay v27.
+Release 1.3.41 brings back the full top bar on the uConsole: the frigate shows
+the station, the mission, the clock, speed and course again, and the crewed
+submarine shows the mission, the clock, speed, course and depth, now compactly
+separated by "·". Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

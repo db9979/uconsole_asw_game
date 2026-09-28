@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.28
+
+Release 1.3.28 makes the **AI hunters smarter**: the OPZ marks the bare radar
+blip of a raised mast or snorkel, and a mast track, an HF/DF cross-fix or an
+HQ submarine datum report now becomes the hunt's datum. A fresh fix from the
+ship's own sensors goes over the datalink to a friendly AI warship with
+ASROC in range. Saves are now v25 (radar blips and marks).
+
 ## 1.3.27
 
 Release 1.3.27 sorts the boat's **ESM library by fit**: the emitters whose

@@ -14,14 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.27**
+Aktuelle Version: **1.3.28**
 
-Version 1.3.27 sortiert die **ESM-Bibliothek des Boots nach Passung**: die
-Emitter, deren veröffentlichte Bereiche eine Messung enthalten, stehen mit der
-besten Passung zuerst (Frequenz und PRF nahe der Bereichsmitte, dieselbe
-Modulation), jeder mit der Stufe gut, mittel oder schwach am uConsole und im
-Browser, sodass ein gut passendes Radar wie das des Hubschraubers nicht mehr
-aus der Liste fällt. Spielstände bleiben v24.
+Version 1.3.28 macht die **KI-Jäger klüger**: Die OPZ markiert den bloßen
+Radarpunkt eines ausgefahrenen Masts oder Schnorchels, und eine Mastspur,
+eine HF/DF-Kreuzpeilung oder eine U-Boot-Datummeldung der Führung wird jetzt
+zum Datum der Jagd. Ein frischer Fix der eigenen Sensoren geht per Datenlink
+an ein befreundetes KI-Kriegsschiff mit ASROC in Reichweite. Spielstände sind
+jetzt v25 (Radarpunkte und Markierungen).
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -390,7 +390,7 @@ Die Einstellungen für Sprache, Vollbildmodus, Audio, Großschrift und
 Kontexthinweise werden in `~/.u-jagd/settings.json` geschrieben. Der Zustand der
 Kontexthinweise gilt daher global und wird für die deterministische
 Wiederherstellung bestehender Sitzungen zusätzlich in Spielständen des Formats
-v24 gespeichert.
+v25 gespeichert.
 
 ## Commander-LAN-Koop
 
@@ -472,7 +472,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v24** sind
+Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v25** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.
@@ -528,8 +528,8 @@ Version gilt:
 
 ## Spielstände und Benutzerdaten
 
-Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v24**. V24
-verlangt das exakte Schema `u-jagd-save-v24` einschließlich der Marken des Angriffsrechners, des Tiefensonars
+Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v25**. V25
+verlangt das exakte Schema `u-jagd-save-v25` einschließlich der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
 der Fregatte, des Funkraums des besetzten Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen

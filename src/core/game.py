@@ -646,8 +646,9 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.asm_sel = 0
         self.air_picture = TrackPicture(
             config.RADAR_TRACK_STALE_S, maximum=MAX_AIR_PICTURE_TRACKS)
-        # Unmarked mast/snorkel echoes (transient display, never saved) and the
-        # boats whose echoes the OPZ marked into a track: sub id -> track id.
+        # Unmarked mast/snorkel echoes and the boats whose echoes the OPZ
+        # marked into a track: sub id -> (track id, last echo). Saved since
+        # v25 (``radar_marks``): the AI hunters act on them.
         self.radar_blips = deque(maxlen=config.RADAR_BLIP_MAX)
         self.radar_blip_seq = 0
         self._radar_marked = {}

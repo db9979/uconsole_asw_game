@@ -274,12 +274,6 @@ class SurfaceShip:
                 or observation.last_seen <= self.asw_last_seen):
             return
         self.asw_last_seen = observation.last_seen
-        weapon_key = next((key for key in self.asroc_battery.weapon_keys
-                           if self.runtime_catalog.weapons[key].weapon_type == "asroc"), None)
-        if weapon_key is None:
-            return
-        weapon = self.runtime_catalog.weapons[weapon_key]
-        low, high = weapon.engagement_range_nm
         if observation.x is not None and observation.y is not None:
             datum_x, datum_y = observation.x, observation.y
         elif observation.range_nm is not None:
@@ -289,17 +283,34 @@ class SurfaceShip:
                 math.radians(observation.bearing))
         else:
             return
+        self.fire_asroc_at(datum_x, datum_y, observation.depth_m)
+
+    def asroc_weapon_key(self) -> str | None:
+        if self.asroc_battery is None:
+            return None
+        return next((key for key in self.asroc_battery.weapon_keys
+                     if self.runtime_catalog.weapons[key].weapon_type == "asroc"), None)
+
+    def fire_asroc_at(self, datum_x: float, datum_y: float, depth_m=None) -> bool:
+        """Queue one ASROC on a datum (own sonar, or passed over the datalink)
+        when it lies inside the weapon's engagement range."""
+        if self.side != "friendly" or self.sunk:
+            return False
+        weapon_key = self.asroc_weapon_key()
+        if weapon_key is None:
+            return False
+        low, high = self.runtime_catalog.weapons[weapon_key].engagement_range_nm
         distance = math.hypot(datum_x - self.x, datum_y - self.y)
         if not low <= distance <= high or self.pending_asroc:
-            return
+            return False
         if self.asroc_battery.fire(weapon_key) is None:
-            return
+            return False
         self.pending_asroc.append({
             "x": self.x, "y": self.y, "datum_x": datum_x,
             "datum_y": datum_y, "weapon_key": weapon_key,
-            "target_depth_m": (observation.depth_m
-                               if observation.depth_m is not None else 60.0),
+            "target_depth_m": depth_m if depth_m is not None else 60.0,
         })
+        return True
 
     def _steer(self, dt: float, max_rate: float, world=None) -> None:
         # Safety owns the final steering order, after tactical/route orders.

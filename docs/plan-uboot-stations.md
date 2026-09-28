@@ -147,9 +147,22 @@ plan mit auf und setzte das auch um"):
    Rotlicht bei Schleichfahrt.
 5. ~~**ESM-Bibliothek**~~ erledigt in 1.3.27: Kandidaten nach Passung
    (Frequenz, PRF, Modulation; gut/mittel/schwach) statt Katalogreihenfolge.
-6. **KI-Jäger klüger:** Radarechos, ESM und Meldungen der Führung dem Boot
-   zuordnen, ASROC einsetzen.
+6. ~~**KI-Jäger klüger**~~ erledigt in 1.3.28: die OPZ markiert Mastechos,
+   Mastspuren, HF/DF-Kreuzpeilungen und Datummeldungen der Führung werden
+   zum Datum, befreundete KI-Kriegsschiffe mit ASROC schießen per Datenlink
+   (Dominik: kein eigener Geleitzerstörer). Radarpunkte und Markierungen im
+   Spielstand v25 (`radar_marks`). ESM-Peilungen der Fregatte auf das
+   Bootsradar werden noch nicht genutzt.
 7. **KI-U-Boot mit Auftrag:** Ein von der KI gefahrenes Boot verfolgt die
    Bootsaufträge (Durchbruch, Aufklärung, Geleitzugangriff).
 
 Dominik, 2026-09-28: „ja führe das alles durch.“ (Punkte 3 bis 7)
+
+Danach (Dominik, 2026-09-28: „3,5,7 umsetzen, das andere nicht“):
+
+8. **Torpedorohre und Nachladen:** Rohre mit Ladezustand, Nachladezeit
+   und begrenztem Vorrat im Boot.
+9. **Stereo-Richtungshören:** Detonationen und Bootsgeräusche kommen im
+   Kopfhörer aus ihrer Richtung.
+10. **ESM-Umlaufzeit:** das Boots-ESM misst die Antennenumlaufzeit eines
+   Senders und nutzt sie beim Bibliotheksvergleich.

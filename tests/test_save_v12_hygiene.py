@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v24_and_older_documents_are_rejected():
+def test_save_is_v25_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (24, "u-jagd-save-v24")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (24, "u-jagd-save-v24")
+    assert (state["version"], state["save_schema"]) == (25, "u-jagd-save-v25")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (25, "u-jagd-save-v25")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)
@@ -111,6 +111,12 @@ def test_save_is_v24_and_older_documents_are_rejected():
     v23["version"] = 23
     v23["save_schema"] = "u-jagd-save-v23"
     assert not game._load_save_data(v23)
+    # v24 differs only by the radar's mast echoes and marks (radar_marks).
+    v24 = copy.deepcopy(state)
+    v24["version"] = 24
+    v24["save_schema"] = "u-jagd-save-v24"
+    del v24["radar_marks"]
+    assert not game._load_save_data(v24)
     assert game.save_state() == before
 
 

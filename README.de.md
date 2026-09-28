@@ -14,14 +14,12 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.28**
+Aktuelle Version: **1.3.29**
 
-Version 1.3.28 macht die **KI-Jäger klüger**: Die OPZ markiert den bloßen
-Radarpunkt eines ausgefahrenen Masts oder Schnorchels, und eine Mastspur,
-eine HF/DF-Kreuzpeilung oder eine U-Boot-Datummeldung der Führung wird jetzt
-zum Datum der Jagd. Ein frischer Fix der eigenen Sensoren geht per Datenlink
-an ein befreundetes KI-Kriegsschiff mit ASROC in Reichweite. Spielstände sind
-jetzt v25 (Radarpunkte und Markierungen).
+Version 1.3.29 benennt das U-Boot einheitlich: Alle Anzeigen, die
+Web-Clients, Hilfe und Handbuch sagen jetzt **U-Boot** (englisch
+**submarine**), wo bisher nur „Boot“ stand, etwa **U-Boot-Kampagne** und
+U-Boot-Missionen. Spielstände bleiben v25.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -530,11 +528,11 @@ Version gilt:
 
 Dieser Stand schreibt und lädt ausschließlich das Speicherformat **v25**. V25
 verlangt das exakte Schema `u-jagd-save-v25` einschließlich der Radarpunkte und OPZ-Markierungen der Fregatte, der Marken des Angriffsrechners, des Tiefensonars
-der Fregatte, des Funkraums des besetzten Boots, der Auftragstafel
+der Fregatte, des Funkraums des besetzten U-Boots, der Auftragstafel
 der Führung, der Wachpläne beider Crews, des Seefernaufklärers und des Besitzers
 jeder Boje, des aktuellen
 Schnappschusses des Laufzeitkatalogs, des gesamten Zustands für die
-deterministische Fortsetzung, des Crew-Zustands des besetzten Boots mit seinem
+deterministische Fortsetzung, des Crew-Zustands des besetzten U-Boots mit seinem
 ESM-Bild, von Tauchzellen, Trimm, Pressluft, Abteilungen und Leckwehrtrupps jedes U-Boots, von
 Diesel, Laderate und Luftvorräten jedes konventionellen U-Boots und der fremden
 Aktivpings, deren Schall noch zur Fregatte unterwegs ist. Ältere (auch alle v11-Spielstände von 1.0.0),

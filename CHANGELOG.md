@@ -4,6 +4,13 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.29
+
+Release 1.3.29 names the submarine consistently: every screen, the web
+clients, help and manual now say **submarine** (German **U-Boot**) where they
+used to say just "boat", for example the **Submarine campaign** and the
+submarine missions. Saves stay v25.
+
 ## 1.3.28
 
 Release 1.3.28 makes the **AI hunters smarter**: the OPZ marks the bare radar

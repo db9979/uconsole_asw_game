@@ -52,7 +52,7 @@ Der Automatikmodus (`A`) wählt Ziele und Techniken und koppelt das Stören wäh
 - Wechselt eine Erfassung bei stehender Peilung von Suche auf einen Puls-Doppler-Sucher mit hoher PRF, steht ein Flugkörperangriff bevor: sofort die OPZ warnen.
 - Das Zuordnen eines Radartyps (`C`) gibt die Peilung an die OPZ frei; das Löschen der Zuordnung zieht sie zurück.
 - Stören ist eine Aussendung. Gezielt einsetzen, nicht dauerhaft.
-- Das eigene Radar wird ebenfalls gehört: ein U-Boot auf Sehrohrtiefe (Mast oben, etwa 18 m) fängt es mit seinem ESM auf und kann die Peilung über seinen Datalink an andere Gegner weitergeben. Tief getauchte Boote hören weder Radar noch empfangen sie den Datalink.
+- Das eigene Radar wird ebenfalls gehört: ein U-Boot auf Sehrohrtiefe (Mast oben, etwa 18 m) fängt es mit seinem ESM auf und kann die Peilung über seinen Datalink an andere Gegner weitergeben. Tief getauchte U-Boote hören weder Radar noch empfangen sie den Datalink.
 
 ## Nicht modelliert {#eloka-limits}
 

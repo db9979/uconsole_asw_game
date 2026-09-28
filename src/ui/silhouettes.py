@@ -65,6 +65,10 @@ _WARSHIP = {
     "radar": (0.34, 0.24, 0.024),
     "funnel_top": (0.51, 0.14),
     "masthead": (0.34, 0.252),
+    # Navigation lights: both masthead lights on the enclosed mast (warships
+    # may deviate from the spacing, rule 1e), side lights on the bridge.
+    "nav": {"mast": [(0.30, 0.20), (0.34, 0.26)], "side": (0.27, 0.10),
+            "stern": (0.995, 0.040), "round": (0.34, 0.215)},
     "pitch_deg": 0.8, "pitch_hz": 0.11, "wake": True,
 }
 
@@ -88,6 +92,10 @@ _MERCHANT = {
     "panels": [],
     "funnel_top": (0.91, 0.19),
     "masthead": (0.061, 0.142),
+    # Navigation lights: masthead lights (forward, aft and higher), side
+    # lights on the bridge wings, stern light.
+    "nav": {"mast": [(0.061, 0.150), (0.80, 0.215)], "side": (0.77, 0.166),
+            "stern": (0.995, 0.062), "round": (0.84, 0.25)},
     "pitch_deg": 0.5, "pitch_hz": 0.07, "wake": True,
 }
 
@@ -105,6 +113,8 @@ _UNKNOWN = {
     "windows": [(0.22 + i * 0.03, 0.17) for i in range(5)],
     "panels": [],
     "masthead": (0.30, 0.365),
+    "nav": {"mast": [(0.30, 0.37), (0.89, 0.45)], "side": (0.20, 0.19),
+            "stern": (0.99, 0.075), "round": (0.30, 0.37)},
     "pitch_deg": 1.6, "pitch_hz": 0.19, "wake": True,
 }
 
@@ -121,6 +131,10 @@ _AIRCRAFT = {
     "rotor": (0.31, 0.64, 0.48),
     "tail_rotor": (0.985, 0.58, 0.06),
     "masthead": (0.30, 0.47),
+    # Position lights on the cabin sides, tail light, anti-collision beacons
+    # on top and underneath, strobe on the tail fin.
+    "nav": {"mast": [], "side": (0.20, 0.555), "stern": (0.995, 0.585),
+            "beacon": [(0.36, 0.615), (0.30, 0.49)], "strobe": (0.975, 0.60)},
     "hover": True, "pitch_deg": 2.0, "pitch_hz": 0.23, "wake": False,
 }
 
@@ -218,14 +232,74 @@ def _draw_rotor(s, frame: _Frame, profile: dict, color, t: float) -> None:
                      (c[0] + r * math.cos(angle), c[1] + r * math.sin(angle)), 1)
 
 
+# Navigation light colours: white masthead/stern, red port, green starboard.
+NAV_LIGHT = {"white": (255, 246, 222), "red": (255, 74, 58), "green": (96, 255, 150)}
+
+
+def anti_collision(t: float) -> tuple:
+    """(beacon on, strobe on) at display time ``t``: a red beacon flash
+    every second, a white strobe double flash every 1.2 seconds."""
+    beacon = (t % 1.0) < 0.12
+    phase = t % 1.2
+    return beacon, phase < 0.06 or 0.18 <= phase < 0.24
+
+
+def draw_nav_lights(s, cls: str, frame: _Frame, width: float, code: str,
+                    t: float = 0.0) -> None:
+    """The ``nav_lights`` code as points of light with a soft glow; drawn at
+    any size, since at night the lights are what the eye picks up first."""
+    nav = PROFILES.get(cls, _MERCHANT).get("nav") or _MERCHANT["nav"]
+    masts, red, green, stern = int(code[1]), code[2] == "r", code[3] == "g", code[4] == "s"
+    round_lights = code[5:]
+    nav = nav if round_lights != "AC" else PROFILES["aircraft"]["nav"]
+    core = max(1, min(3, int(width / 150)))
+    # A trawler's single masthead light stands abaft and above her green.
+    mast = nav["mast"][1:] if round_lights == "GW" else nav["mast"]
+    points = [(mast[i], "white") for i in range(masts)]
+    su, sv = nav["side"]
+    if red and green:           # head on: both side lights, just apart
+        points += [((su - 0.004, sv), "red"), ((su + 0.004, sv), "green")]
+    elif red:
+        points.append(((su, sv), "red"))
+    elif green:
+        points.append(((su, sv), "green"))
+    if stern:
+        points.append((nav["stern"], "white"))
+    spots = [(frame.point(u, v), name) for (u, v), name in points]
+    if round_lights == "AC":
+        beacon, strobe = anti_collision(t)
+        if beacon:
+            spots += [(frame.point(u, v), "red") for u, v in nav["beacon"]]
+        if strobe:
+            spots.append((frame.point(*nav["strobe"]), "white"))
+    elif round_lights:
+        # All-round lights in a vertical line down the mast, at least a
+        # glow apart (mine clearance: one at the masthead, one each yardarm).
+        x, y = frame.point(*nav["round"])
+        step = max(core * 2 + 3, width * 0.02)
+        names = {"W": "white", "R": "red", "G": "green"}
+        if round_lights == "GGG":
+            spots += [((x, y - step), "green"), ((x - step, y), "green"),
+                      ((x + step, y), "green")]
+        else:
+            spots += [((x, y - step * (len(round_lights) - i)), names[letter])
+                      for i, letter in enumerate(round_lights)]
+    for (x, y), name in spots:
+        color = NAV_LIGHT[name]
+        glow = tuple(int(c * 0.45) for c in color)
+        pygame.draw.circle(s, glow, (int(x), int(y)), core + 2)
+        pygame.draw.circle(s, color, (int(x), int(y)), core)
+
+
 def draw_profile(s, cls: str, cx: float, base_y: float, width: float, color, *,
                  t: float = 0.0, facing: int = -1, rim=None, lights=None,
-                 wake: bool = True) -> _Frame:
+                 wake: bool = True, nav: str | None = None) -> _Frame:
     """Draw ``cls`` ``width`` px long on the waterline ``base_y``.
 
     ``t`` animates pitch, radar, rotors and the wake; ``rim`` outlines the
     polygons (moonlit edges) and ``lights`` colours bridge windows, both only
-    when the silhouette is large enough to show them.  Returns the frame.
+    when the silhouette is large enough to show them; ``nav`` is a
+    ``nav_lights`` code of the navigation lights shown.  Returns the frame.
     """
     profile = PROFILES.get(cls, _UNKNOWN)
     width = max(3.0, float(width))
@@ -263,4 +337,6 @@ def draw_profile(s, cls: str, cx: float, base_y: float, width: float, color, *,
             pygame.draw.rect(s, lights, (int(x), int(y), size + 1, size))
     if wake and profile.get("wake") and detail:
         draw_wake(s, frame, width, t)
+    if nav is not None:
+        draw_nav_lights(s, cls, frame, width, nav, t)
     return frame

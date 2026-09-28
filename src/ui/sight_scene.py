@@ -202,12 +202,16 @@ def _wrap(bearing: float, line_of_sight: float) -> float:
 class View:
     """Geometry of one eyepiece picture (screen px per degree, horizon)."""
 
-    def __init__(self, rect, line_of_sight, fov_deg, horizon, tilt):
+    def __init__(self, rect, line_of_sight, fov_deg, horizon, tilt, lift=0.0):
         self.rect = pygame.Rect(rect)
         self.los, self.fov = line_of_sight, fov_deg
         self.px_per_deg = self.rect.w / fov_deg
         self.horizon, self.tilt = horizon, tilt
-        self.sky_h = max(8, horizon - self.rect.y)
+        # The sky (stars, sun, moon, clouds) hangs on the eyepiece's nominal
+        # horizon, not on the one rolling with the sea: it stays still.
+        self.sky_h = max(8, self.rect.h // 2)
+        # Tilting the optics up moves the sky and the horizon down.
+        self.lift = float(lift)
 
     def x(self, bearing: float) -> float:
         return self.rect.centerx + _wrap(bearing, self.los) * self.px_per_deg
@@ -220,7 +224,7 @@ class View:
 
     def alt_y(self, fraction: float, x: float) -> float:
         """Height ``fraction`` (0 horizon .. 1 top) of the eyepiece's sky."""
-        return self.base(x) - fraction * self.sky_h
+        return self.rect.y + self.rect.h / 2.0 + self.lift - fraction * self.sky_h
 
 
 def _body_fraction(alt_deg: float) -> float:
@@ -311,14 +315,28 @@ def _draw_clouds(s, view, sky, colors, t, haze):
             pygame.draw.ellipse(s, color, rect)
 
 
+def sea_aspect(wind_from_deg: float, line_of_sight: float) -> tuple:
+    """(head, cross) of the sea as seen: the waves run from where the wind
+    blows.  ``head`` is 1 looking into the sea (crests come at the eye), -1
+    looking down-sea (their backs run away), ``cross`` is +1 when they run
+    from left to right across the picture."""
+    angle = math.radians(wind_from_deg - line_of_sight)
+    return math.cos(angle), -math.sin(angle)
+
+
 def _draw_sea(s, view, sky, colors, sea_state, t, haze):
     rect = view.rect
     dy = math.tan(view.tilt) * rect.w / 2.0
     left, right = view.horizon - dy, view.horizon + dy
     amp = 0.6 + 0.35 * sea_state
     step = max(6, rect.w // 60)
-    crest = [(x, view.base(x) + amp * math.sin(x * 0.045 + t * 1.6)
-              + 0.6 * amp * math.sin(x * 0.013 - t * 0.9))
+    head, cross = sea_aspect(sky["wind_from_deg"], view.los)
+    # The pattern lies on the sea (bearing space), so it slides past as the
+    # line of sight turns; along the crests it runs with the swell.
+    anchor = view.los * view.px_per_deg
+    swell = cross * t * 14.0
+    crest = [(x, view.base(x) + amp * math.sin((x + anchor - swell) * 0.045 + t * 1.6 * abs(head))
+              + 0.6 * amp * math.sin((x + anchor - swell) * 0.013 - t * 0.9))
              for x in range(rect.x, rect.right + step, step)]
     pygame.draw.polygon(s, colors["sea"][0], crest + [(rect.right, rect.bottom),
                                                        (rect.x, rect.bottom)])
@@ -328,25 +346,35 @@ def _draw_sea(s, view, sky, colors, sea_state, t, haze):
         shade = _cached(_SHADE_CACHE, (rect.w, depth, colors["sea"][1]),
                         lambda: _shade((rect.w, depth), colors["sea"][1]))
         s.blit(shade, (rect.x, top))
-    # Wave rows: denser toward the horizon, moving with the swell.
+    # Wave rows, denser toward the horizon.  Looking into or down the sea the
+    # crests are long rows that come at the eye or run away from it; across
+    # the sea they are short, run sideways and lean with the perspective.
     rows = 9
     below = rect.bottom - view.horizon
-    for row in range(1, rows + 1):
+    along = abs(head)
+    roll = (t * 0.12 * head) % 1.0
+    for index in range(rows + 1):
+        row = index + roll
         depth_px = below * (row / rows) ** 1.7
-        if depth_px < 3:
+        if depth_px < 3 or row > rows:
             continue
-        spacing = 24 + row * 10
-        length = 6 + row * 3
-        offset = (t * (6 + row * 3)) % (2 * spacing)
+        spacing = int(24 + row * 10)
+        length = (6 + row * 3) * (0.55 + 1.1 * along)
+        lean = cross * (1 + row * 0.7) * (1.0 - along)
+        offset = (anchor + t * (6 + row * 3) * cross) % (2 * spacing)
         shade = blend(colors["wave"], colors["sea"][1], row / (rows + 3))
+        # Down-sea the eye sees the waves' backs: fainter rows.
+        if head < 0:
+            shade = blend(shade, colors["sea"][1], 0.35 * -head)
         for x in range(rect.x - 2 * spacing, rect.right, spacing):
-            if (x // spacing + row) % 2:
+            if (x // spacing + index) % 2:
                 continue
-            x0 = x + offset
+            x0 = x - offset
             y0 = view.base(x0) + depth_px
-            pygame.draw.line(s, shade, (x0, y0), (x0 + length, y0), 1)
-            if sea_state >= 4 and ((x // spacing) * 7 + row) % 5 == 0:
-                pygame.draw.line(s, colors["crest"], (x0 + 2, y0 - 1), (x0 + length - 2, y0 - 1), 1)
+            pygame.draw.line(s, shade, (x0, y0), (x0 + length, y0 - lean), 1)
+            if sea_state >= 4 and ((x // spacing) * 7 + index) % 5 == 0:
+                pygame.draw.line(s, colors["crest"], (x0 + 2, y0 - 1),
+                                 (x0 + length - 2, y0 - 1 - lean), 1)
     pygame.draw.lines(s, colors["crest"], False, crest, 1)
     # Glitter under the moon or the sun.
     light = sky["light"]
@@ -382,9 +410,12 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
     rect = view.rect
     sky_img = _cached(_SKY_CACHE, (rect.w, rect.h, colors["sky"]),
                       lambda: _gradient((rect.w, rect.h), *colors["sky"]))
-    # The horizon moves: stretch the gradient so its bottom meets the horizon.
-    s.blit(sky_img, rect.topleft, (0, max(0, rect.h - max(8, int(view.horizon - rect.y) + 40)),
-                                   rect.w, rect.h))
+    # The sky stays still: its gradient meets the nominal horizon (moved by
+    # the optics' elevation); above it the zenith colour.
+    top = int(rect.y + view.sky_h + 40 + view.lift - rect.h)
+    if top > rect.y:
+        s.fill(colors["sky"][0], (rect.x, rect.y, rect.w, top - rect.y))
+    s.blit(sky_img, (rect.x, top))
     _draw_stars(s, view, sky, colors, t, haze)
     _draw_body(s, view, sky, colors, haze)
     _draw_clouds(s, view, sky, colors, t, haze)

@@ -519,6 +519,7 @@ def _key_action(key, mods):
 
 
 def _command_key(game, current, key, mods) -> None:
+    from src.core.optics import optics_key
     sub = current.sub
     from src.ui import uboot_view
     page = uboot_view.page_name(game, current)
@@ -532,6 +533,11 @@ def _command_key(game, current, key, mods) -> None:
         pages = uboot_view.station_pages(local_station(game))
         current.command_page = (current.command_page
                                 + (-1 if key == pygame.K_PAGEUP else 1)) % len(pages)
+    elif page == "UBOOT_SCOPE" and key in (pygame.K_UP, pygame.K_DOWN, pygame.K_COMMA,
+                                           pygame.K_PERIOD, pygame.K_SPACE):
+        # The eyepiece: tilt, low/high power (, / .; Q/E stay the chart's).
+        optics_key(game, current.scope_optics, key, mods,
+                   zoom_keys=(pygame.K_COMMA, pygame.K_PERIOD))
     elif page == "UBOOT_SCOPE" and key in (pygame.K_LEFT, pygame.K_RIGHT):
         if order_allowed(game, "uboot_scope_bearing"):
             step = (config.UBOOT_SCOPE_STEP_FAST_DEG if mods & pygame.KMOD_SHIFT

@@ -115,7 +115,9 @@ def render_profiles() -> str:
             " do not edit by hand.\n"
             f"export const PROFILES = {body};\n"
             f"export const DETAIL_MIN_PX = {silhouettes.DETAIL_MIN_PX};\n"
-            f"export const FOAM = {_array(silhouettes.FOAM)};\n")
+            f"export const FOAM = {_array(silhouettes.FOAM)};\n"
+            "export const NAV_LIGHT = {%s};\n" % ", ".join(
+                f"{name}: {_array(color)}" for name, color in sorted(silhouettes.NAV_LIGHT.items())))
 
 
 def render(text: str) -> str:

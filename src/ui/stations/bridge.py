@@ -247,7 +247,8 @@ def draw_bridge_view(game, tr=None) -> None:
     station_bottom = config.STATION_RECT[1] + config.STATION_RECT[3]
     _shortcut_footer(s, (x, station_bottom - 26, w, 20), (
         ("←/→", "bridge.footer.course"),
-        ("↑/↓", "bridge.footer.telegraph"),
+        ("↑/↓", "bridge.footer.glasses_tilt" if game.lookout_glasses
+         else "bridge.footer.telegraph"),
         (", / .", "bridge.footer.glasses_train" if game.lookout_glasses
          else "bridge.footer.lookout_range"),
         ("B", "bridge.footer.glasses_close" if game.lookout_glasses
@@ -289,9 +290,11 @@ def _lookout_land(game):
 
 
 def lookout_outlines(game, sightings) -> list:
-    """Detached ``(bearing, span_deg, cls, stale)`` rows of the lookout's own
-    tracks: the class from his report, the size from the measured range."""
+    """Detached ``(bearing, span_deg, cls, stale, lights)`` rows of the
+    lookout's own tracks: the class from his report, the size from the
+    measured range, the navigation lights he makes out (``nav_lights`` code)."""
     from src.sensors import lookout_id
+    lit = getattr(game, "_lookout_lights", {})
     rows = []
     for track in sightings:
         if track.bearing is None or track.range_nm is None or track.range_nm <= 0.0:
@@ -305,8 +308,10 @@ def lookout_outlines(game, sightings) -> list:
             cls = "merchant"
         span = math.degrees(_LOOKOUT_KIND_LENGTH_M.get(track.kind, 100.0)
                             / max(track.range_nm * 1852.0, 1.0))
-        rows.append((track.bearing % 360.0, max(1e-3, min(180.0, span)), cls,
-                     game.sim_t - track.last_seen > config.LOOKOUT_EPOCH_S * 2))
+        stale = game.sim_t - track.last_seen > config.LOOKOUT_EPOCH_S * 2
+        lights = lit.get(getattr(track, "track_id", None))
+        rows.append((track.bearing % 360.0, max(1e-3, min(180.0, span)), cls, stale,
+                     lights[0] if lights is not None and not stale else None))
     return rows
 
 
@@ -373,7 +378,8 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             s, (ix, iy, iw, strip_h), line_of_sight=game.ship.course % 360.0,
             fov_deg=LOOKOUT_HORIZON_FOV_DEG, night=night,
             visibility_nm=weather["visibility_nm"],
-            motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
+            motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"],
+                                          weather["wind_from_deg"] - game.ship.course),
             outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
             anim_t=game.sim_t, sky=sight_scene.sky_state(game), sea_state=weather["sea_state"])
         iy += strip_h + 6
@@ -442,16 +448,22 @@ def draw_lookout_glasses(game) -> None:
     course = game.ship.course % 360.0
     line_of_sight = (course + game.lookout_glasses_rel) % 360.0
     land = _lookout_land(game)
+    sight = game.lookout_optics
+    fov = sight.fov_deg
     horizon.draw_horizon(
-        s, eyepiece, line_of_sight=line_of_sight, fov_deg=config.LOOKOUT_GLASSES_FOV_DEG,
+        s, eyepiece, line_of_sight=line_of_sight, fov_deg=fov,
         night=night, visibility_nm=weather["visibility_nm"],
-        motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
+        motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"],
+                                      weather["wind_from_deg"] - course,
+                                      game.lookout_glasses_rel),
         outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t,
-        sky=sight_scene.sky_state(game), sea_state=weather["sea_state"])
+        sky=sight_scene.sky_state(game), sea_state=weather["sea_state"],
+        elevation_deg=sight.elevation_deg, stabilized=sight.stabilized)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
     layout.blit_line(s, structured_message(
         "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",
-        relative=f"{game.lookout_glasses_rel:03.0f}"),
+        relative=f"{game.lookout_glasses_rel:03.0f}",
+        elevation=f"{sight.elevation_deg:+.0f}", fov=f"{fov:.0f}"),
         (eyepiece.x, eyepiece.bottom + 8, eyepiece.w, 24), config.COLOR_TEXT, size=18)
     # All-round panorama: the bow in the middle; each sighting as a tick at
     # its measured bearing, the binoculars' field as a frame.
@@ -479,10 +491,10 @@ def draw_lookout_glasses(game) -> None:
         px = _panorama_x(panorama, track.bearing % 360.0, course)
         color = _LOOKOUT_KIND_COLORS.get(track.kind, config.COLOR_TEXT_DIM)
         pygame.draw.line(s, color, (px, panorama.y + 12), (px, panorama.bottom - 12), 3)
-    half = config.LOOKOUT_GLASSES_FOV_DEG / 2.0
+    half = fov / 2.0
     left = panorama.x + int((horizon.relative_offset(line_of_sight - half, course) + 180.0)
                             / 360.0 * panorama.w)
-    width = max(4, int(config.LOOKOUT_GLASSES_FOV_DEG / 360.0 * panorama.w))
+    width = max(4, int(fov / 360.0 * panorama.w))
     for start in {left, left - panorama.w, left + panorama.w}:
         window = pygame.Rect(start, panorama.y + 2, width, panorama.h - 4).clip(panorama)
         if window.w > 0:
@@ -499,7 +511,7 @@ def draw_lookout_glasses(game) -> None:
             break
         what = game.lookout_visual_what(track.label) or localize("bridge.line.glasses_unknown")
         in_view = (abs(horizon.relative_offset(track.bearing, line_of_sight))
-                   <= config.LOOKOUT_GLASSES_FOV_DEG / 2.0)
+                   <= fov / 2.0)
         layout.blit_line(s, structured_message(
             "bridge.line.glasses_row", bearing=f"{track.bearing % 360.0:03.0f}", what=what,
             range=f"{track.range_nm:.1f}" if track.range_nm is not None else "--"),

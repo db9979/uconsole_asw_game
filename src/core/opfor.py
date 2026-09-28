@@ -23,6 +23,8 @@ from src.core.i18n import message
 from src.core.plot import PlotLayer
 from src.physics import torpedo_dyn
 from src.sensors import lookout_id
+from src.sensors import nav_lights
+from src.core import optics
 from src.sensors import visual as visual_physics
 from src.sensors.platform import MAST_DEPTH_M
 from src.sonar.platforms import (OWNSHIP_SIGNATURE_KEY, OWNSHIP_TARGET_ID,
@@ -105,6 +107,9 @@ class CrewOrders:
         self.scope_rel_deg = 0.0
         self.sightings = []
         self._sightings_seen = set()
+        # Navigation lights made out per sighting (never saved; the next
+        # look restores them).
+        self._lights = {}
         # Attack computer: stadimeter marks by sighting (``attack_computer``).
         self.tdc = {}
         # Flood state of each torpedo tube, ``[state, seconds left]`` with the
@@ -274,6 +279,9 @@ class CrewedBoat:
         self.sub_id = sub.id
         self.orders = CrewOrders()
         sub.crew = self.orders
+        # The uConsole's eyepiece settings: tilt, power, stabilizer (display
+        # only, never saved; each browser keeps its own).
+        self.scope_optics = optics.periscope()
         # The crew takes over with the loaded tubes flooded, ready to fire.
         battery = sub.weapon_battery
         self.orders.tubes = ([["flooded" if tube.loaded_weapon_key is not None else "dry", 0.0]
@@ -704,7 +712,9 @@ def horizon_motion(game, boat) -> tuple:
     see (display only, deterministic in sim time)."""
     from src.ui.horizon import horizon_motion as motion
     sea_state = getattr(game.world, "effective_sea_state", game.world.sea_state)
-    return motion(int(boat.sub.id), game.sim_t, sea_state)
+    wind_from = game.world.weather_values()["wind_from_deg"]
+    return motion(int(boat.sub.id), game.sim_t, sea_state,
+                  wind_from - boat.sub.course, boat.orders.scope_rel_deg)
 
 
 def _frigate_length_m(game) -> float:
@@ -754,6 +764,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     if not scope_available(boat):
         orders.sightings = []
         orders._sightings_seen.clear()
+        orders._lights = {}
         return
     now = game.sim_t
     seed = int(sub.sensor_seed)
@@ -763,6 +774,9 @@ def update_sightings(game, boat: CrewedBoat) -> None:
     rows = []
     # A tired watch on the periscope needs more contrast (1.0 when fresh).
     alert = boat.watch.effectiveness(game.sim_t)
+    # Neutral traffic runs its navigation lights; warships run darkened.
+    lit = nav_lights.lit(game.world.daylight_stage(), environment["visibility_nm"])
+    lights = {}
     for target_id, actor, cls, length_m, altitude_m in _scope_candidates(game, boat):
         dx, dy = actor.x - sub.x, actor.y - sub.y
         distance = math.hypot(dx, dy)
@@ -770,6 +784,16 @@ def update_sightings(game, boat: CrewedBoat) -> None:
         margin = alert * _SCOPE_MODEL.margin(kind, distance, altitude_m=altitude_m,
                                              eye_m=config.UBOOT_SCOPE_EYE_HEIGHT_M,
                                              **environment)
+        true_bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
+        course = getattr(actor, "course", None)
+        code = (nav_lights.code(course, true_bearing, distance, length_m,
+                                environment["visibility_nm"],
+                                nav_lights.duty(getattr(actor, "profile", None)))
+                if lit and cls == "merchant" and course is not None else None)
+        # Navigation lights in range are seen even where the dark hull is not
+        # (a bare sighting; the class still needs the silhouette).
+        if code is not None:
+            margin = max(margin, 1.0)
         if margin < 1.0 or game.world.land_blocks_line(sub.x, sub.y, actor.x, actor.y):
             continue
         recognized = cls
@@ -780,17 +804,17 @@ def update_sightings(game, boat: CrewedBoat) -> None:
                 / lookout_id.CLASS_SIZE[_RECOGNIZE_CLASS[cls]],
                 **environment) * alert < 1.0:
             recognized = "unknown"
-        true_bearing = math.degrees(math.atan2(dx, -dy)) % 360.0
         error = (0.7 * detrand.normal(seed, "scope-bias", target_id)
                  + 0.3 * detrand.normal(seed, "scope-jitter", target_id, epoch))
         bearing = (true_bearing + error * config.UBOOT_SCOPE_BEARING_ERR_DEG) % 360.0
-        course = getattr(actor, "course", None)
         aspect = (1.0 if course is None
                   else max(0.2, abs(math.sin(math.radians(course - true_bearing)))))
         span = math.degrees(length_m * aspect / max(distance * 1852.0, length_m))
         span *= 1.0 + 0.05 * detrand.normal(seed, "scope-span", target_id, epoch)
         quality = config.clamp(.5 + .45 * (1.0 - 1.0 / margin), .5, .95)
         ref = "V-%08X" % (detrand.bits(seed, "scope-ref", target_id) & 0xFFFFFFFF)
+        if code is not None:
+            lights[ref] = code
         old = previous.get(ref)
         if old is not None and recognized == "unknown" and old["cls"] != "unknown":
             recognized = old["cls"]      # a class once made out is held
@@ -811,6 +835,7 @@ def update_sightings(game, boat: CrewedBoat) -> None:
             row["range_nm"] = row["range_sigma_nm"] = row["range_t"] = None
     rows.sort(key=lambda row: (row["bearing"], row["ref"]))
     orders.sightings = rows[:config.UBOOT_SIGHTINGS_MAX]
+    orders._lights = lights
     for row in orders.sightings:
         if row["ref"] not in orders._sightings_seen and row["t"] == now:
             orders._sightings_seen.add(row["ref"])

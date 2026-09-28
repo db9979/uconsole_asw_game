@@ -1,6 +1,7 @@
 """Browser contract of the bridge lookout's binoculars (Chromium)."""
 
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -53,7 +54,24 @@ PROBE = r'''
     await until(() => relative() === '010', () => `no 10 degree step: ${status()}`);
     $('bridge-glasses-bow').click();
     await until(() => relative() === '000', () => `not back to the bow: ${status()}`);
+    // Tilt, zoom and stabilizer stay in this browser.
+    document.querySelector('[data-optics="glasses"] [data-optics-tilt="2"]').click();
+    document.querySelector('[data-optics="glasses"] [data-optics-zoom="1"]').click();
+    const stabilizer = document.querySelector('[data-optics="glasses"] [data-optics-stabilizer]');
+    stabilizer.click();
+    if (stabilizer.getAttribute('aria-pressed') !== 'true') throw new Error('stabilizer not pressed');
+    await until(() => status().includes('+2°') && status().includes('8°'), () => `no optics in: ${status()}`);
+    document.querySelector('[data-optics="glasses"] [data-optics-zoom="-1"]').click();
+    document.querySelector('[data-optics="glasses"] [data-optics-tilt="-2"]').click();
     const canvas = $('bridge-glasses-canvas');
+    // The neutral merchant crossing ahead shows its red port side light.
+    const redLight = () => {
+      const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let index = 0; index < data.length; index += 4)
+        if (data[index] > 220 && data[index + 1] < 110 && data[index + 2] < 100) return true;
+      return false;
+    };
+    await until(redLight, 'no port side light in the binoculars');
     const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
     const colors = new Set();
     for (let index = 0; index < pixels.length; index += 4 * 97)
@@ -77,6 +95,16 @@ def test_bridge_binoculars_train_in_the_browser(tmp_path, monkeypatch):
     en, de = catalogs()
     game = Game(seed=917, start_menu=False, audio_enabled=False, language="en")
     game.world.hour = 23.0
+    # A neutral merchant 1 NM ahead crossing from right to left (port side).
+    merchant = game.civilians[0]
+    for other in game.civilians[1:] + game.warships:
+        other.x, other.y = game.ship.x + 60.0, game.ship.y + 60.0
+    ahead = math.radians(game.ship.course)
+    merchant.x = game.ship.x + math.sin(ahead)
+    merchant.y = game.ship.y - math.cos(ahead)
+    merchant.course = (game.ship.course - 90.0) % 360.0
+    merchant.speed = 0.0
+    game.world.land_blocks_line = lambda *args: False
     console = game.commander
     console.port = 0
     console._translations = {

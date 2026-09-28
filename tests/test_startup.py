@@ -6,15 +6,17 @@ import pytest
 
 from src.core.game import Game
 from src.core.version import APP_VERSION, SPLASH_TEXT
-from src.ui.splash_view import (SPLASH_PING_PERIOD_S,
-                                SPLASH_PING_SPEED_PX_S, draw_splash)
+from src.core.i18n import Translator
+from src.ui import layout
+from src.ui.splash_view import (SPLASH_PING_PERIOD_S, SPLASH_PING_SPEED_PX_S,
+                                draw_splash, ping_origin, submarine_center)
 from src.world.real_coast import sector_for_seed
 
 
 def test_release_version_and_exact_splash_text():
-    assert APP_VERSION == "1.3.5"
+    assert APP_VERSION == "1.3.6"
     assert SPLASH_TEXT == (
-        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 1.3.5"
+        "Anti Sub Marine Warfare on uConsole by Dominik Bornhäußer Version 1.3.6"
     )
 
 
@@ -32,32 +34,46 @@ def test_splash_draws_without_advancing_simulation_and_can_be_skipped():
     assert game.in_menu is True
 
 
-def test_splash_sonar_arcs_travel_from_frigate_towards_submarine(monkeypatch):
+def test_splash_sonar_pulse_travels_from_frigate_to_submarine(monkeypatch):
     arcs = []
 
     def record_arc(surface, color, rect, start_angle, stop_angle, width):
-        arcs.append((rect, start_angle, stop_angle))
+        arcs.append((tuple(rect), start_angle, stop_angle))
 
+    # The moment the pulse front reaches the submarine in the first cycle.
+    elapsed = 1.0
+    for _ in range(20):
+        distance = math.dist(ping_origin(elapsed), submarine_center(elapsed))
+        elapsed = distance / SPLASH_PING_SPEED_PX_S
+    assert elapsed < SPLASH_PING_PERIOD_S
+    origin = ping_origin(elapsed)
     monkeypatch.setattr(pygame.draw, "arc", record_arc)
-    frigate_origin = (470, int(720 * .43) + 56)
-    submarine_center = (665, 535 + 27)
-    target_radius = math.dist(frigate_origin, submarine_center)
-    elapsed = (target_radius - 116) / SPLASH_PING_SPEED_PX_S
-
     draw_splash(pygame.Surface((1280, 720)), elapsed)
 
-    assert arcs
-    radii = []
-    for rect, start_angle, stop_angle in arcs:
-        radius = rect[2] // 2
-        radii.append(radius)
-        assert (rect[0] + radius, rect[1] + radius) == frigate_origin
-        target_angle = math.atan2(
-            frigate_origin[1] - submarine_center[1],
-            submarine_center[0] - frigate_origin[0],
-        ) % (2 * math.pi)
-        assert start_angle < target_angle < stop_angle
-    assert max(radii) >= int(target_radius) - 1
+    fronts = [(rect, start, stop) for rect, start, stop in arcs
+              if abs(rect[0] + rect[2] // 2 - int(origin[0])) <= 1
+              and abs(rect[1] + rect[3] // 2 - int(origin[1])) <= 1]
+    assert fronts, "no pulse front centred on the frigate's sonar dome"
+    target = math.dist(origin, submarine_center(elapsed))
+    assert any(abs(rect[2] / 2 - target) <= 2 for rect, _s, _e in fronts)
+    # The pulse spreads through the water below the frigate.
+    assert all(start >= math.pi - 1e-9 for _rect, start, _stop in fronts)
+
+
+def test_splash_and_menu_show_author_and_version():
+    game = Game(seed=19, start_menu=True, show_splash=True)
+    for language in ("en", "de"):
+        game.tr = Translator(language)
+        game._t = game.splash_started_at + 1.0
+        with layout.capture_text() as texts:
+            game.draw()
+        shown = " ".join(item["text"] for item in texts)
+        assert "by Dominik Bornhäußer" in shown and APP_VERSION in shown
+    game.splash_active = False
+    with layout.capture_text() as texts:
+        game.draw()
+    shown = " ".join(item["text"] for item in texts)
+    assert "by Dominik Bornhäußer" in shown and APP_VERSION in shown
 
 
 def test_splash_plays_one_ping_per_wave_cycle(monkeypatch):

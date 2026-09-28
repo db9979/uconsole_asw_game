@@ -24,7 +24,8 @@ from src.nations.nations import reference_summary
 from src.ui import layout
 from src.ui import observations
 from src.ui.map_view import draw_map_view
-from src.ui.splash_view import draw_splash
+from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
+                                draw_splash)
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.weather_station import draw_weather_station
 from src.ui import uboot_view
@@ -112,8 +113,9 @@ class DrawMixin:
     def draw_menu(self) -> None:
         """W4: Szenario -> (Level bei s4) -> Briefing -> Start."""
         s = self.screen
-        s.fill(config.COLOR_BG)
         cx = config.SCREEN_W // 2
+        # The start screen's night hunt, dimmed, behind every menu page.
+        draw_menu_backdrop(s, self._t)
 
         def center(text: str, y: int, font=None, color=config.COLOR_TEXT) -> None:
             f = font or self.menu_font
@@ -121,9 +123,11 @@ class DrawMixin:
             surf = f.render(text, True, color)
             s.blit(surf, surf.get_rect(center=(cx, y)))
 
-        center("U-JAGD – FREGATTE F-217", 100, self.menu_font_big)
+        draw_logo(s, cx, 34)
 
         if self.main_menu:
+            draw_menu_panel(s, (cx - 260, 148, 520, 400),
+                            (cx - 250, 157 + self.main_menu_sel * 42, 500, 36))
             labels = ("menu.new_game", "menu.training", "menu.campaign", "menu.load",
                       "menu.mission_editor", "menu.unit_editor", "menu.contact_analyzer",
                       "option.title", "menu.quit")

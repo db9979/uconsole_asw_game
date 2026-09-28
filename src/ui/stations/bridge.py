@@ -372,7 +372,8 @@ def _draw_bridge_lookout(game, s, area: pygame.Rect) -> None:
             fov_deg=LOOKOUT_HORIZON_FOV_DEG, night=night,
             visibility_nm=weather["visibility_nm"],
             motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
-            outlines=lookout_outlines(game, sightings), land=_lookout_land(game))
+            outlines=lookout_outlines(game, sightings), land=_lookout_land(game),
+            anim_t=game.sim_t)
         iy += strip_h + 6
         ih -= strip_h + 6
     layout.blit_line(s, message("bridge.line.lookout_visibility",
@@ -443,7 +444,7 @@ def draw_lookout_glasses(game) -> None:
         s, eyepiece, line_of_sight=line_of_sight, fov_deg=config.LOOKOUT_GLASSES_FOV_DEG,
         night=night, visibility_nm=weather["visibility_nm"],
         motion=horizon.horizon_motion(0, game.sim_t, weather["sea_state"]),
-        outlines=lookout_outlines(game, sightings), land=land)
+        outlines=lookout_outlines(game, sightings), land=land, anim_t=game.sim_t)
     pygame.draw.rect(s, config.COLOR_SONAR_RING, eyepiece, 1)
     layout.blit_line(s, structured_message(
         "bridge.line.glasses_bearing", bearing=f"{line_of_sight:03.0f}",

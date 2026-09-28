@@ -134,6 +134,17 @@ async function run() {
   await sleep(1500);
   await until(() => $("station-tab-bridge") && !$("operations").hidden, "console lost after a new game", 3000);
   assert($("station-tabs").children.length === 9, "stations missing after a new game");
+
+  // A new game on the submarine side: the solo session moves to the boat.
+  await until(() => !$("host-new").disabled, "new game locked again", 5000);
+  $("host-new").click();
+  await until(() => $("host-new-dialog").open, "new game dialog did not reopen");
+  assert($("host-new-side").value === "frigate", "the side does not start at the frigate");
+  $("host-new-side").value = "uboot";
+  $("host-new-seed").value = "4242";
+  $("host-new-form").requestSubmit();
+  await until(() => $("station-tab-uboot") && !$("station-tab-bridge"),
+    "the submarine side was not taken", 3000);
   assert(scriptErrors.length === 0, `script errors: ${scriptErrors.join(" | ")}`);
 }
 

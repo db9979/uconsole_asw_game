@@ -10,7 +10,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.5**
+Current release: **1.3.6**
+
+Release 1.3.6 redraws the start screen as an animated night hunt: the
+frigate F-217 with turning radar, funnel smoke, bow wave and towed array,
+the helicopter with its dipping sonar, and a submarine below the layer that
+lights up when the hull sonar's pulse reaches it, with the author and the
+version on the title. The same scene, dimmed, lies behind the main menu.
+The silhouettes in the periscope and the bridge binoculars now show
+detailed class profiles (frigate, container ship, small craft, helicopter)
+that pitch with the sea, turn their radar and rotors and trail a bow wave
+and wake. In Remote Crew solo mode the New Game dialog picks the side:
+the frigate or the submarine, which the AI hunters then chase. Saves stay
+v23.
 
 Release 1.3.5 adds AI hunters: when nobody sails the frigate (the uConsole
 plays the boat, or a solo browser plays the submarine), the frigate, its

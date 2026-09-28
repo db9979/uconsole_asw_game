@@ -264,3 +264,18 @@ def test_starter_links_the_support_page():
     source = open(app.__file__, encoding="utf-8").read()
     assert "launcher.support" in source and "SUPPORT_URL" in source
     assert SUPPORT_URL.startswith("https://buymeacoffee.com/")
+
+
+def test_release_pruning_keeps_the_current_and_newer_releases():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "tools" / "prune_releases.py"
+    spec = importlib.util.spec_from_file_location("prune_releases", path)
+    prune = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prune)
+    tags = ["v1.3.41\n", "v1.3.40\n", "v1.3.9\n", "v1.3.39\n", "latest\n", "v1.3.40-rc1\n"]
+    assert prune.older_tags("1.3.40", tags) == ["v1.3.9", "v1.3.39"]
+    assert prune.older_tags("1.3.11", ["v1.3.11"]) == []
+    with pytest.raises(ValueError):
+        prune.older_tags("1.3", tags)

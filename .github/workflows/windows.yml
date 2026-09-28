@@ -91,3 +91,20 @@ jobs:
           else
             gh release upload "$tag" dist/U-Jagd-Windows.exe
           fi
+
+      - name: Remove older releases
+        # Only the newest release stays on GitHub (Dominik, 2026-09-28). Both
+        # updaters read releases/latest only; the git tags stay.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release view "v$VERSION" --json assets --jq '.assets[].name' | grep -qx "U-Jagd-Windows.exe"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '.[].tag_name' \
+            | python tools/prune_releases.py "$VERSION" \
+            | while read -r old; do
+                echo "Deleting release $old (tag kept)"
+                gh release delete "$old" --yes
+              done

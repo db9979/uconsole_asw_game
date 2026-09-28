@@ -178,7 +178,8 @@ def test_published_role_states_pass_the_browser_validator(tmp_path):
     roles = {role for sample in states for role in sample if role not in ("None", "null")}
     assert roles == {"bridge", "sonar", "weapons", "damage", "opz", "radio",
                      "engine", "helicopter", "eloka", "uboot", "uboot_sonar",
-                     "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav"}
+                     "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav",
+                     "uboot_radio"}
     page = tmp_path / "validate.html"
     page.write_text(_validator_page(states), encoding="utf-8")
     result = subprocess.run(

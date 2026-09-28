@@ -523,7 +523,11 @@ class Sub:
 
     @property
     def transmitting(self) -> bool:
-        """Only the explicit radio phase is detectable by HFDF."""
+        """Only the explicit radio phase (or a crew's situation report on
+        the air) is detectable by HFDF."""
+        crew_radio = getattr(self.crew, "radio", None) if self.crew is not None else None
+        if crew_radio is not None and crew_radio.transmitting:
+            return True
         return self.endurance is not None and self.endurance.transmitting
 
     # --- Physik/KI ---

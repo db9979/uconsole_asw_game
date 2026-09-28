@@ -339,6 +339,42 @@ function renderEsm(esm, status) {
 
 // Counter-detection picture: the boat's own intercepts, layer and noise,
 // and the evasion order the button gives (own measurements only).
+// Radio room: HQ broadcast schedule, own situation reports and HQ's contact
+// report (modelled intelligence with its age and error circle).
+function radioReportText(report, nav) {
+  const dx = report.x - nav.x, dy = report.y - nav.y;
+  const bearing = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+  return t("uboot_radio_report_value", {bearing: number(bearing, 0), range: number(Math.hypot(dx, dy), 1),
+    radius: number(report.radius_nm, 0), course: number(report.course, 0), speed: number(report.speed_kn, 0),
+    age: number((report.age_s ?? 0) / 60, 0)});
+}
+
+function radioLogText(row) {
+  const age = duration(row.age_s);
+  if (row.kind === "broadcast") {
+    const text = t(row.report ? "uboot_radio_log_broadcast_report" : "uboot_radio_log_broadcast", {age, number: row.number});
+    return row.ack ? t("uboot_radio_log_with_ack", {entry: text}) : text;
+  }
+  return row.kind === "sent" ? t("uboot_radio_log_sent", {age, number: row.number}) : t("uboot_radio_log_aborted", {age});
+}
+
+function renderRadio(radio, nav) {
+  const broadcast = radio.copied ? t("uboot_radio_copied", {number: radio.broadcast})
+    : radio.copy !== null ? t("uboot_radio_copying", {number: radio.broadcast, percent: number(radio.copy * 100, 0)})
+    : t("uboot_radio_missed", {number: radio.broadcast});
+  metrics($("uboot-radio"), [
+    ["uboot_radio_antenna", t(radio.antenna ? "uboot_radio_antenna_up" : "uboot_radio_antenna_down")],
+    ["uboot_radio_broadcast", broadcast], ["uboot_radio_next", duration(radio.next_s)],
+    ["uboot_radio_sitreps", t(radio.ack_due ? "uboot_radio_sitreps_ack" : "uboot_radio_sitreps_value", {count: radio.sitreps})]]);
+  $("uboot-radio-warning").hidden = !radio.transmitting;
+  $("uboot-radio-warning").textContent = t("uboot_radio_on_air", {percent: number((radio.send ?? 0) * 100, 0)});
+  $("uboot-radio-send").dataset.ready = String(radio.antenna && !radio.transmitting);
+  $("uboot-radio-status").textContent = radio.antenna ? "" : t("uboot_radio_need_antenna");
+  metrics($("uboot-radio-report"), [["uboot_radio_report", radio.report ? radioReportText(radio.report, nav) : t("uboot_radio_no_report")]]);
+  $("uboot-radio-log").replaceChildren(...(radio.log.length ? radio.log.map((row) => node("p", radioLogText(row), "uboot-log-line"))
+    : [node("p", t("uboot_radio_log_empty"), "uboot-log-line")]));
+}
+
 function renderThreat(threat) {
   const counts = threat.counts;
   metrics($("uboot-threat"), [
@@ -409,6 +445,7 @@ export function renderUbootStation(payload) {
     ["uboot_torpedo_alarm", alarmText(alarms.torpedo_age_s, alarms.torpedo_bearing)]]);
   renderEsm(payload.esm, status);
   renderThreat(payload.threat);
+  renderRadio(payload.radio, nav);
   document.body.classList.toggle("uboot-torpedo-alarm", alarms.torpedo_age_s !== null && alarms.torpedo_age_s < 60);
   if (!S.stationDrafts.has("uboot-depth")) $("uboot-depth").max = String(nav.max_depth_m);
   if (!S.stationDrafts.has("uboot-speed")) $("uboot-speed").max = String(nav.max_speed_kn);

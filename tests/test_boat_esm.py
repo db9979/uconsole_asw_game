@@ -245,3 +245,46 @@ def test_uconsole_esm_page_keys_and_chart():
     _key(game, pygame.K_RETURN)
     assert len(boat.plot.objects) > objects
     game.draw()
+
+
+def _heard(game, boat, seconds=30.0):
+    """Bearings (deg) of the emitters in the boat's list after ``seconds``."""
+    game.surface_radar_on = game.air_radar_on = False
+    for _ in range(int(seconds / 0.25)):
+        game._update_sim(0.25)
+    return [emitter.track.bearing for emitter in boat.esm.emitters.values()]
+
+
+def test_boat_esm_hears_the_helicopter_and_patrol_aircraft_radars():
+    game, _server, _bridge = _crewed(seed=61)
+    boat = game.opfor
+    _mast_up_near_frigate(game, boat, distance_nm=25.0)
+    assert _heard(game, boat, 12.0) == []
+    helo = game.helo
+    helo.launch(game.ship)
+    helo.x, helo.y = boat.sub.x + 6.0, boat.sub.y
+    bearings = _heard(game, boat)
+    assert len(bearings) == 1 and abs(config.angle_diff_deg(bearings[0], 90.0)) < 10.0
+    emitter = next(iter(boat.esm.emitters.values()))
+    helo_radar = game.runtime_catalog.emitters[config.HELO_RADAR_EMITTER]
+    low, high = helo_radar.frequency_band_hz
+    assert low <= emitter.track.frequency_hz <= high
+    assert game.eloka_emitter_name(config.HELO_RADAR_EMITTER) == "ASW helicopter search radar"
+    # In the dip the helicopter hovers with its radar off.
+    helo.dip_state = "DEPLOYED"
+    assert list(boat_esm.own_asset_emissions(game)) == []
+
+
+def test_patrol_aircraft_radar_follows_its_switch():
+    game, _server, _bridge = _crewed(seed=61)
+    boat = game.opfor
+    _mast_up_near_frigate(game, boat, distance_nm=25.0)
+    mpa = game.mpa
+    mpa.state = "STATION"
+    mpa.x, mpa.y = boat.sub.x, boat.sub.y - 20.0
+    mpa.radar_on = False
+    signals = list(boat_esm.own_asset_emissions(game))
+    assert not signals
+    mpa.radar_on = True
+    signals = [signal for signal, _height in boat_esm.own_asset_emissions(game)]
+    assert signals and all(signal.x == mpa.x for signal in signals)

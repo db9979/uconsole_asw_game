@@ -10,7 +10,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.0**
+Current release: **1.3.1**
+
+Release 1.3.1 gives the crewed submarine a radio room (a seventh boat
+station: HQ's broadcast with a contact report on the frigate, and situation
+reports the frigate's HF direction finder can bear) and lets the boat's ESM
+hear the frigate's helicopter and the patrol aircraft by their own catalogued
+search radars. Saves move to format v22 (the radio room's state).
 
 Release 1.3.0 widens the simulation and the crew's tools without moving the
 1.0.0 balance (77 calibration metrics still match): a second lightweight
@@ -27,7 +33,7 @@ role, a debrief timeline with JSON export and voice on by default; and a
 mission runtime that takes the editor's scope (reference sectors, protect
 and reach objectives, random groups, timed events, authored weather, placed
 aircraft, animals and decoys). The core is split into mixins and the test
-suite runs in parallel. **Saves are format v21 (HQ radio tasks, the crew's watch bill, fatigue and morale, the on-call patrol aircraft, the crewed boat's compartments and damage control, its tanks, trim and high-pressure air, its ESM picture,
+suite runs in parallel. **Saves are format v22 (the crewed boat's radio room, HQ radio tasks, the crew's watch bill, fatigue and morale, the on-call patrol aircraft, the crewed boat's compartments and damage control, its tanks, trim and high-pressure air, its ESM picture,
 submarine diesel, charge rate and air stores, crewed-boat crew state, periscope
 sightings, weapon settings, mission events, foreign pings still travelling to
 the frigate); v20 and older saves are rejected.**
@@ -337,7 +343,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v21 game saves for deterministic restoration of existing sessions.
+in v22 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -447,8 +453,8 @@ Validated does not mean runtime-effective. In release 1.0.0:
 
 ## Saves and User Data
 
-This build writes and loads save format **v21** only. V21 requires the exact
-`u-jagd-save-v21` schema, including the HQ task board, both crews' watch bills,
+This build writes and loads save format **v22** only. V22 requires the exact
+`u-jagd-save-v22` schema, including the crewed boat's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

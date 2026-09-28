@@ -642,6 +642,10 @@ MODULATION_CODES = {"continuous_wave", "frequency_agile", "pulse", "pulse_dopple
 RADAR_ROLES = {"navigation", "surface_search", "air_search", "multi_function",
                "fire_control", "missile_seeker"}
 RADAR_POWER_CLASSES = {"low", "medium", "high"}
+# Radars of the frigate's own aircraft (helicopter, patrol aircraft): a
+# library like the missile seekers, radiated by those assets, never by a
+# catalog platform.
+OWN_ASSET_EMITTER_PREFIX = "emitter.own_asset."
 WEAPON_TYPES = {"asm", "asroc", "ciws", "sam", "torpedo"}
 TARGET_DOMAINS = {"air", "subsurface", "surface"}
 SEEKER_TYPES = {"acoustic_active", "acoustic_passive", "command", "infrared", "none", "radar_active"}
@@ -1743,6 +1747,10 @@ def _collect_v2(documents, profile_keys_by_resource, runtime_weapon_keys, decoy_
         if emitter.radar_role == "missile_seeker":
             if emitter.key in referenced["emitters"]:
                 raise ValueError(f"emitter {emitter.key!r}: missile seeker attached to a platform")
+            referenced["emitters"].add(emitter.key)
+        elif emitter.key.startswith(OWN_ASSET_EMITTER_PREFIX):
+            if emitter.key in referenced["emitters"]:
+                raise ValueError(f"emitter {emitter.key!r}: own-asset radar attached to a platform")
             referenced["emitters"].add(emitter.key)
 
     for field, values in registries.items():

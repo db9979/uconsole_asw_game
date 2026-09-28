@@ -6,11 +6,12 @@ export const classes = { U_BOOT: "class_submarine", KAMPFSCHIFF: "class_warship"
 export const phases = { live: "phase_live", menu: "phase_menu", blocked: "phase_blocked", ended: "phase_ended" };
 export const damageStates = { OK: "damage_ok", FLUTEND: "damage_flooding", BESCHAEDIGT: "damage_damaged", ZERSTOERT: "damage_destroyed" };
 export const heloStates = { HANGAR: "helo_stowed", AUF: "helo_airborne", ZURUECK: "helo_returning", VERLOREN: "helo_lost" };
-// Nine frigate stations, then the crewed submarine's six (the opposing
+// Nine frigate stations, then the crewed submarine's seven (the opposing
 // side). A session only ever holds roles of one side.
 export const stationNames = ["bridge", "sonar", "weapons", "damage", "opz", "radio", "engine", "helicopter", "eloka",
-  "uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav"];
-export const opforRoles = new Set(["uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav"]);
+  "uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav", "uboot_radio"];
+export const opforRoles = new Set(["uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm", "uboot_nav",
+  "uboot_radio"]);
 // The boat's stations besides its sonar room share one projection and panel.
 export const isBoatCommand = (role) => opforRoles.has(role) && role !== "uboot_sonar";
 // Both sonar rooms share one panel; the submarine's has no towed array.
@@ -50,6 +51,7 @@ export const reasons = {
   uboot_no_absorbers: "reason_uboot_no_absorbers", uboot_no_candles: "reason_uboot_no_candles",
   uboot_candle_burning: "reason_uboot_candle_burning",
   uboot_no_air_stores: "reason_uboot_no_air_stores",
+  uboot_no_antenna: "reason_uboot_no_antenna", uboot_transmitting: "reason_uboot_transmitting",
   ok: "reason_ok",
 };
 // Listening streams: frigate sonar, helicopter and the submarine's sonar room.

@@ -31,7 +31,11 @@ export function mapPayload(role) {
         ({observer_x: item.x, observer_y: item.y, bearing: item.bearing, age_s: item.age_s}))).slice(0, 64),
       fixes: payload.esm.emitters.filter((row) => row.fix).map((row) => ({ref: row.label, display: row.label,
         x: row.fix.x, y: row.fix.y, uncertainty_nm: row.fix.major_nm,
-        ellipse: {major: row.fix.major_nm, minor: row.fix.minor_nm, axis: row.fix.axis_deg}}))};
+        ellipse: {major: row.fix.major_nm, minor: row.fix.minor_nm, axis: row.fix.axis_deg}})).concat(
+        // HQ's latest contact report from the radio room, with its error circle.
+        payload.radio.report ? [{ref: "HQ", x: payload.radio.report.x, y: payload.radio.report.y,
+          uncertainty_nm: payload.radio.report.radius_nm,
+          display: t("uboot_radio_chart_label", {age: Math.round((payload.radio.report.age_s ?? 0) / 60)})}] : [])};
   }
   return {own: payload.navigation, observations: payload.tactical,
     assets: [payload.asset, ...payload.buoys.map((buoy) => ({...buoy, display: buoy.label})),

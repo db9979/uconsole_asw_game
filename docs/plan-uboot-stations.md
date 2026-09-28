@@ -111,3 +111,31 @@ sichtbaren Nutzen. C ist Voraussetzung für die Auftriebsfolgen in D.
 4. Leckwehr zunächst als Seite von Station 4 oder gleich als eigene
    Browserrolle?
 5. Reihenfolge A → B → C → D?
+
+## Stufe E und weitere Punkte (Stand 2026-09-28, App 1.3.1)
+
+Erledigt:
+
+- **Funkraum (7. Bootsstation, Save v22):** Rundspruch der Führung alle
+  10 Minuten mit Feindlagemeldung, Lagemeldung per KW (die Fregatte kann
+  peilen), Funktagebuch; uConsole Taste 7, Browser-Rolle `uboot_radio`.
+- **Luftfahrzeugradare im Boots-ESM:** Katalog-Emitter
+  `emitter.own_asset.helicopter.radar` und `emitter.own_asset.mpa.radar`;
+  der Hubschrauber strahlt im Flug (nicht beim Tauchen), das MPA nur mit
+  eingeschaltetem Radar.
+
+Offen, in dieser Reihenfolge (Dominik, 2026-09-28: "ja nehme das in den
+plan mit auf und setzte das auch um"):
+
+1. **KI-Jäger:** Fregatte, Hubschrauber und MPA jagen das Boot aktiv, wenn
+   niemand die Fregatte spielt (Suchmuster, Bojenfelder, Datum aus
+   HF-DF/ESM, Angriff). Voraussetzung für ein Solo-Spiel auf der Bootsseite.
+2. **Bootsmissionen und Bootskampagne:** Durchbruch, Angriff auf einen
+   Geleitzug, Aufklärung; baut auf Punkt 1 auf.
+3. **Angriffsrechner am Sehrohr:** Lösung aus Peilung, Stadimeter und Lage,
+   Vorhaltewinkel für den Torpedo.
+4. **Atmosphäre:** Bootsgeräusche, Wasserbomben/Detonationen,
+   Druckkörperknacken in der Tiefe, gedämpftes Licht bei Schleichfahrt.
+5. **ESM-Bibliothek:** Kandidaten nach Passung (PRF, Modulation) statt
+   Katalogreihenfolge sortieren, damit das Hubschrauberradar in der Liste
+   bleibt.

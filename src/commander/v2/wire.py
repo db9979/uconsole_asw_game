@@ -27,11 +27,11 @@ _V2_STATION_LEASE_S = 15.0
 _V2_SESSION_LIMIT = 12
 STATIONS = ("bridge", "sonar", "weapons", "damage", "opz", "radio",
             "engine", "helicopter", "eloka")
-# The crewed hostile submarine's six stations (command, sonar, weapons,
-# engine, mast/ESM, navigation). They are leased like the frigate's but never
+# The crewed hostile submarine's seven stations (command, sonar, weapons,
+# engine, mast/ESM, navigation, radio room). They are leased like the frigate's but never
 # belong to the frigate crew: a session holds roles of one side only.
 OPFOR_ROLES = ("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine", "uboot_esm",
-               "uboot_nav")
+               "uboot_nav", "uboot_radio")
 # Boat stations served by the command projection (everything but its sonar room).
 UBOOT_COMMAND_ROLES = tuple(role for role in OPFOR_ROLES if role != "uboot_sonar")
 ROLES = STATIONS + OPFOR_ROLES

@@ -59,7 +59,7 @@ WEATHER_BOAT_FIELDS = (
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",
                         "own_weapons", "designated_target_ref", "feed", "scope", "plant",
-                        "esm", "ballast", "damage_control", "threat")
+                        "esm", "ballast", "damage_control", "threat", "radio")
 # The boat's plant and stores (``plant``): numbers, then the air block.
 UBOOT_PLANT_FIELDS = (
     "propulsion", "phase", "battery_kwh", "battery_capacity_kwh", "aip_kwh",
@@ -105,6 +105,13 @@ UBOOT_THREAT_ADVICE = ("uboot.advice.torpedo", "uboot.advice.mast_down",
                        "uboot.advice.go_below", "uboot.advice.evade")
 UBOOT_EVADE_PLAN_FIELDS = ("kind", "bearing", "course", "speed_kn", "depth_m", "silent",
                            "decoy")
+# The boat's radio room (``radio``, src/core/boat_radio.py): schedule,
+# transmissions, HQ's latest contact report and the message log.
+UBOOT_RADIO_FIELDS = ("antenna", "broadcast", "copied", "next_s", "copy", "send",
+                      "transmitting", "sitreps", "ack_due", "report", "log")
+UBOOT_RADIO_LOG_FIELDS = ("seq", "kind", "age_s", "number", "ack", "report")
+UBOOT_RADIO_LOG_KINDS = ("broadcast", "sent", "aborted")
+UBOOT_RADIO_REPORT_FIELDS = ("x", "y", "radius_nm", "course", "speed_kn", "age_s")
 UBOOT_ESM_FIX_FIELDS = ("x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent")
 # Top-level keys of every role payload (exact sets on both sides).
 ROLE_SHAPES = {

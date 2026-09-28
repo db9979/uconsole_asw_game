@@ -21,7 +21,7 @@ from src.core import config, detrand
 from src.core import plot as plot_geometry
 from src.sensors import radar as radar_physics
 from src.sensors.esm import (ESM_ASSOCIATION_MAX_GAP_S, ESMMeasurement, ESMTrack,
-                             POWER_CLASS_RANGE_NM, SignalType,
+                             POWER_CLASS_RANGE_NM, RadarSuiteController, SignalType,
                              _validate_track, estimated_range_nm, library_emitters,
                              scan_for_signals, spectrum_band)
 from src.sensors.platform import MAST_DEPTH_M
@@ -646,6 +646,25 @@ def emissions(game):
         for signal in game._radar_signals(raider, "su_25", enabled=not raider.despawned,
                                           fire_control=raider.fc_radar_on):
             yield signal, float(raider.altitude_m)
+    yield from own_asset_emissions(game)
+
+
+def own_asset_emissions(game):
+    """The frigate's aircraft radars: the helicopter's search radar while it
+    flies (not in the dip) and the patrol aircraft's while it is switched on."""
+    emitters = game.runtime_catalog.emitters
+    helo = game.helo
+    key = config.HELO_RADAR_EMITTER
+    if key in emitters and helo.airborne and helo.dip_state == "STOWED":
+        controller = RadarSuiteController((emitters[key],), game.seed * 31 + 1)
+        for signal in controller.active_signals(game.sim_t, helo.x, helo.y):
+            yield signal, config.HELO_RADAR_ALTITUDE_M
+    mpa = getattr(game, "mpa", None)
+    key = config.MPA_RADAR_EMITTER
+    if key in emitters and mpa is not None and mpa.airborne and mpa.radar_on:
+        controller = RadarSuiteController((emitters[key],), game.seed * 31 + 2)
+        for signal in controller.active_signals(game.sim_t, mpa.x, mpa.y):
+            yield signal, config.MPA_ALTITUDE_M
 
 
 def band(frequency_hz: float) -> str:

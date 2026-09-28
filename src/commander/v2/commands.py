@@ -134,7 +134,7 @@ UBOOT_REASONS = frozenset((
     "uboot_mast_down", "uboot_no_sighting", "uboot_no_stadimeter",
     "uboot_no_absorbers", "uboot_no_candles", "uboot_candle_burning",
     "uboot_no_air_stores", "uboot_no_hp_air", "uboot_compartment_down",
-    "uboot_no_antenna", "uboot_transmitting"))
+    "uboot_no_antenna", "uboot_transmitting", "uboot_no_solution"))
 
 
 def _uboot_ballast_params(params):
@@ -650,6 +650,8 @@ V2_ACTION_REGISTRY = {
     # The periscope: Command and the mast station train it and read the stadimeter.
     "uboot_scope_bearing": V2Action(frozenset({"uboot", "uboot_esm"}), _uboot_scope_params),
     "uboot_scope_mark": V2Action(frozenset({"uboot", "uboot_esm"}), _no_params),
+    # Command fires on the attack computer's solution of the crosshair sighting.
+    "uboot_scope_fire": V2Action(frozenset({"uboot"}), _no_params),
     # The mast station evaluates its ESM picture: classify, transfer to the plot.
     "uboot_esm_classify": V2Action(frozenset({"uboot", "uboot_esm"}),
                                    _uboot_esm_classify_params),

@@ -12,13 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.18**
+Current release: **1.3.19**
 
-Release 1.3.18 adds an **A4 poster** in German and English (PNG at 300 dpi
-and PDF) in `docs/poster/`: the start-screen scene, a short description of the
-uConsole and Windows versions, four screenshots and QR codes for the download
-and the support page. `tools/build_poster.py` renders it again from the
-current scene and screenshots. The game itself is unchanged; saves stay v23.
+Release 1.3.19 adds the boat's **periscope attack computer**: every stadimeter
+reading is a mark, and two or more marks a minute apart give the target's
+course and speed, the lead angle and the torpedo's running time under the
+periscope (browser: Solution column). `Ctrl+Enter` on the periscope page
+(browser: Fire on solution) fires on the intercept course; a shot at a marked
+sonar contact uses the solution too. Saves move to **v24** (the marks are
+saved); v23 saves are no longer loaded.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -372,7 +374,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v23 game saves for deterministic restoration of existing sessions.
+in v24 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -487,8 +489,8 @@ Validated does not mean runtime-effective. In this release:
 
 ## Saves and User Data
 
-This build writes and loads save format **v23** only. V23 requires the exact
-`u-jagd-save-v23` schema, including the frigate's variable-depth sonar, the crewed boat's radio room, the HQ task board, both crews' watch bills,
+This build writes and loads save format **v24** only. V24 requires the exact
+`u-jagd-save-v24` schema, including the crewed boat's attack-computer marks, the frigate's variable-depth sonar, the crewed boat's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

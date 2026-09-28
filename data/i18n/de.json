@@ -5573,5 +5573,21 @@
   "campaign.boat.port_refit": "1 Volle Überholung: volle Torpedobeladung, Rumpf repariert (Ansehen -5)",
   "campaign.boat.port_quick": "2 Schnelles Auslaufen: {torpedoes} Torpedos, Rumpfschaden {damage} % bleibt (Ansehen +3)",
   "campaign.boat.sail_hint": "Enter: zur nächsten Bootsmission auslaufen",
-  "launcher.support": "Gefällt dir U-Jagd? Spendier mir einen Kaffee"
+  "launcher.support": "Gefällt dir U-Jagd? Spendier mir einen Kaffee",
+  "uboot.line.tdc_idle": "Angriffsrechner: Enter auf einer Sichtung setzt eine Marke (Stadimeter)",
+  "uboot.line.tdc_marking": "Angriffsrechner: {marks} Marke(n), nach einer Minute oder mehr erneut messen",
+  "uboot.line.tdc_no_intercept": "Angriffsrechner: Kurs {course}° {speed} kn, der Torpedo holt es nicht ein",
+  "uboot.line.tdc_solution": "Lösung: Kurs {course}° {speed} kn · Vorhalt {lead} · Laufzeit {run} · {marks} Marken {quality} % · Strg+Enter schießt",
+  "uboot.value.lead_left": "{angle}° links",
+  "uboot.value.lead_right": "{angle}° rechts",
+  "uboot.reason.uboot_no_solution": "keine Lösung im Angriffsrechner",
+  "uboot.reason.uboot_mast_down": "Mast eingefahren",
+  "uboot.reason.uboot_no_sighting": "keine Sichtung im Fadenkreuz",
+  "commander.web.reason_uboot_no_solution": "Keine Lösung im Angriffsrechner für diese Sichtung: zweimal im Abstand von einer Minute messen.",
+  "commander.web.uboot_scope_fire": "Schuss nach Lösung",
+  "commander.web.uboot_sighting_solution": "Lösung",
+  "commander.web.uboot_solution_value": "{course} {speed} · Vorhalt {lead} · Laufzeit {run} ({marks} Marken)",
+  "commander.web.uboot_solution_marks": "{marks} Marke(n)",
+  "commander.web.uboot_solution_no_intercept": "{course} {speed} · kein Treffpunkt",
+  "help.uboot.scope_fire": "Sehrohrseite: Schuss nach der Lösung des Angriffsrechners für die Sichtung unter dem Fadenkreuz (Führung)"
 }

@@ -110,6 +110,18 @@ function renderPresets(nav) {
   }
 }
 
+// The attack computer's estimate on one sighting: course, speed, lead and run.
+function solutionText(solution, heading) {
+  if (!solution) return t("station_none");
+  if (solution.course === null) return t("uboot_solution_marks", {marks: solution.marks});
+  const course = heading(solution.course), speed = unit(solution.speed_kn, "kn", 0);
+  if (solution.lead_deg === null) return t("uboot_solution_no_intercept", {course, speed});
+  const total = Math.round(solution.run_s);
+  const run = `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+  return t("uboot_solution_value", {course, speed, lead: `${number(solution.lead_deg, 0)}\u00b0`,
+    run, marks: solution.marks});
+}
+
 // The periscope: line of sight and light, its controls, and the crew's sightings.
 function renderScope(payload) {
   const scope = payload.scope;
@@ -123,13 +135,17 @@ function renderScope(payload) {
   const inWindow = scope.available && scope.sightings.some((row) => row.age_s !== null && row.age_s <= 1 &&
     Math.abs(((row.bearing - scope.bearing + 540) % 360) - 180) <= scope.window_deg && row.cls !== "aircraft" && row.cls !== "torpedo");
   $("uboot-scope-mark").dataset.ready = String(inWindow);
+  $("uboot-scope-fire").dataset.ready = String(inWindow && scope.sightings.some((row) => row.solution
+    && row.solution.lead_deg !== null && row.age_s !== null && row.age_s <= 1
+    && Math.abs(((row.bearing - scope.bearing + 540) % 360) - 180) <= scope.window_deg));
   if (!S.stationDrafts.has("uboot-scope-relative")) $("uboot-scope-relative").value = String(Math.round(scope.relative_deg));
   const rows = [...scope.sightings].sort((a, b) => Math.abs(((a.bearing - scope.bearing + 540) % 360) - 180) - Math.abs(((b.bearing - scope.bearing + 540) % 360) - 180));
   stationRows($("uboot-sightings"), rows, (row) => [["reference", heading(row.bearing)],
     ["uboot_sighting_class", t(`uboot_sighting_${row.cls}`)], ["uboot_sighting_span", unit(row.span_deg * 60, "\u2032", 0)],
     ["quality", number(row.quality, 2)], ["age", unit(row.age_s, "s", 0)],
     ["uboot_sighting_range", row.range_nm === null ? t("station_none")
-      : `${unit(row.range_nm, "NM")} \u00b1${unit(row.range_sigma_nm, "NM")} (${unit(row.range_age_s, "s", 0)})`]],
+      : `${unit(row.range_nm, "NM")} \u00b1${unit(row.range_sigma_nm, "NM")} (${unit(row.range_age_s, "s", 0)})`],
+    ["uboot_sighting_solution", solutionText(row.solution, heading)]],
   scope.available ? "uboot_no_sighting" : "uboot_scope_mast_down");
   drawBoatScope("uboot-scope-canvas", payload);
   drawBoatBallast("uboot-ballast-canvas", payload);

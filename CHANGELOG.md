@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.21
+
+Release 1.3.21 lets the crewed boat go **below its test depth**, down to crush
+depth (1.5 x test depth), at a growing risk: sheared bolts, failed shaft or
+valve seals and, deeper, a cracked pressure hull flood compartments and add
+damage, far more often the deeper the boat goes; at crush depth the hull
+collapses. The depth columns mark the crush depth and a red alarm shows while
+the boat is below test depth. Saves stay v24.
+
 ## 1.3.20
 
 Release 1.3.20 adds the boat's **periscope attack computer**: every stadimeter

@@ -19,7 +19,7 @@ export function drawBoatDepth(id, payload) {
   const {context: g, width, height} = plot, colors = palette();
   const nav = payload.navigation, presets = nav.depth_presets;
   const bottom = finite(nav.water_depth_m) ? nav.water_depth_m : null;
-  const scaleMax = Math.max(100, bottom ?? 0, nav.max_depth_m, nav.depth_m, nav.target_depth_m) * 1.06;
+  const scaleMax = Math.max(100, bottom ?? 0, nav.crush_depth_m, nav.depth_m, nav.target_depth_m) * 1.06;
   const left = 46, right = Math.max(left + 60, width * .55), top = 14, bottom_px = height - 12;
   const y = (depth) => top + (bottom_px - top) * Math.max(0, Math.min(1, depth / scaleMax));
   const water = g.createLinearGradient(0, top, 0, bottom_px);
@@ -43,6 +43,7 @@ export function drawBoatDepth(id, payload) {
   line(presets.periscope, colors.amber, [2, 4], t("uboot_depth_mark_periscope", {depth: number(presets.periscope, 0)}));
   line(presets.layer, colors.accent, [8, 4], t("uboot_depth_mark_layer", {depth: number(presets.layer, 0)}));
   line(nav.safe_depth_m, colors.red, [6, 4], t("uboot_depth_mark_safe", {depth: number(nav.safe_depth_m, 0)}));
+  line(nav.crush_depth_m, colors.red, [], t("uboot_depth_mark_crush", {depth: number(nav.crush_depth_m, 0)}));
   line(nav.target_depth_m, colors.text, [3, 3], t("uboot_depth_mark_order", {depth: number(nav.target_depth_m, 0)}));
   if (bottom !== null) marks.push([y(Math.min(bottom, scaleMax)), t("uboot_depth_mark_bottom", {depth: number(bottom, 0)}), colors.muted]);
   // The boat: hull and sail at its depth, the dive direction as an arrow.

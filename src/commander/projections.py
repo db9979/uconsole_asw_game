@@ -1542,6 +1542,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
             target_depth_m=_number(sub.order_depth),
             safe_depth_m=_number(sub.safe_depth_m(game.world)),
             max_depth_m=_number(float(sub.stype.max_depth_m)),
+            crush_depth_m=_number(sub.crush_depth_m),
             max_speed_kn=_number(sub.motion.maximum_speed_kn),
             water_depth_m=_number(game.world.depth_m(sub.x, sub.y)),
             under_keel_m=_number(game.world.depth_m(sub.x, sub.y) - sub.depth),

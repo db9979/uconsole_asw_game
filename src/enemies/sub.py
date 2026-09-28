@@ -576,15 +576,28 @@ class Sub:
         self.memory["contact_t"] = float(observation.last_seen)
 
     def _update_hull_stress(self, dt: float) -> None:
-        """Pressure-hull fatigue below test depth; collapse beyond crush depth."""
+        """Pressure-hull fatigue below test depth; collapse beyond crush depth.
+
+        A crewed boat may go below test depth: there hull failures come much
+        faster (``overdepth_rate_per_s``) and grow worse with the depth."""
         test = self.stype.max_depth_m
         if self.depth >= sub_physics.crush_depth_m(test):
             self.damage = 100.0
-        self.hull_fatigue += sub_physics.fatigue_rate_per_s(self.depth, test) * dt
+            if self.crew is not None and self.state != "SINKING":
+                self.crew.event("hull_collapse")
+        rate = sub_physics.fatigue_rate_per_s(self.depth, test)
+        crewed = self.manual and self.crew is not None
+        if crewed:
+            rate += sub_physics.overdepth_rate_per_s(self.depth, test)
+        self.hull_fatigue += rate * dt
         if self.hull_fatigue >= 1.0:
             self.hull_fatigue -= 1.0
-            self.damage = min(100.0, self.damage + 20.0)
-            self._compartment_hit(config.UBOOT_DC_FATIGUE_LEAK / config.UBOOT_DC_LEAK_PER_PCT)
+            if crewed:
+                self._hull_failure(self.depth / max(test, 1.0))
+            else:
+                self.damage = min(100.0, self.damage + 20.0)
+                self._compartment_hit(config.UBOOT_DC_FATIGUE_LEAK
+                                      / config.UBOOT_DC_LEAK_PER_PCT)
         if self.damage >= 100.0 and self.state != "SINKING":
             self.state = "SINKING"
             self.sink_left = 20.0
@@ -826,7 +839,9 @@ class Sub:
             old_depth = self.depth
 
         if self.manual:
-            self._steer_to_orders(dt, safe_depth)
+            # A crew may take the boat below test depth, down to crush depth.
+            self._steer_to_orders(dt, safe_depth, min(
+                self.crush_depth_m, max(0.0, bottom - self._bottom_clearance_m())))
         elif self.state == "EVADE":
             self.evac_left -= dt
             if self.evac_left <= 0:
@@ -1194,6 +1209,13 @@ class Sub:
             return config.UBOOT_BOTTOM_CLEARANCE_M
         return 25.0
 
+    @property
+    def crush_depth_m(self) -> float:
+        return sub_physics.crush_depth_m(self.stype.max_depth_m)
+
+    def beyond_test_depth(self) -> bool:
+        return self.depth > self.stype.max_depth_m
+
     def safe_depth_m(self, world) -> float:
         """Deepest ordered depth: test depth, and 25 m clear of the bottom."""
         bottom = getattr(world, "depth_m", lambda x, y: 1000.0)(self.x, self.y)
@@ -1209,7 +1231,7 @@ class Sub:
             return "invalid_value"
         if speed is not None and not 0.0 <= speed <= self.motion.maximum_speed_kn:
             return "invalid_value"
-        if depth is not None and not 0.0 <= depth <= self.stype.max_depth_m:
+        if depth is not None and not 0.0 <= depth <= self.crush_depth_m:
             return "invalid_value"
         if not self.manual or self.sunk or self.state == "SINKING":
             return "not_ready"
@@ -1224,8 +1246,10 @@ class Sub:
             self.order_depth = float(depth)
         return True
 
-    def _steer_to_orders(self, dt: float, safe_depth: float) -> None:
-        """Follow the crew's orders within the boat's handling limits."""
+    def _steer_to_orders(self, dt: float, safe_depth: float,
+                         order_limit: float | None = None) -> None:
+        """Follow the crew's orders within the boat's handling limits
+        (``order_limit``: the deepest order, below test depth at the crew's risk)."""
         self.target_course = self.order_course % 360.0
         diff = config.angle_diff_deg(self.target_course, self.course)
         self.course = (self.course + config.clamp(
@@ -1251,7 +1275,9 @@ class Sub:
             self.endurance.stop_snorkel()
             if crew is not None:
                 crew.event("snorkel_stopped")
-        self.target_depth = config.clamp(order_depth, 0.0, safe_depth)
+        limit = safe_depth if order_limit is None or (crew is not None and crew.bottomed) \
+            else order_limit
+        self.target_depth = config.clamp(order_depth, 0.0, limit)
         if not self.ballast.dived():
             # Main ballast blown: the boat stays up until the vents flood it.
             self.target_depth = min(self.target_depth, config.UBOOT_MBT_SURFACE_DEPTH_M)
@@ -1274,6 +1300,33 @@ class Sub:
 
     def flood_moment_kg(self) -> float:
         return self.damage_control.water_moment_kg()
+
+    def _hull_failure(self, ratio: float) -> None:
+        """One pressure-hull failure of a crewed boat deep below its limits:
+        a bolted fitting, a shaft or valve seal, or a crack in the hull.
+        The deeper the boat, the likelier the crack."""
+        if self.sunk or self.state == "SINKING":
+            return
+        control = self.damage_control
+        draw = detrand.u01(self.sensor_seed, "hull-failure", control.hits)
+        fracture = config.clamp((ratio - 1.0) * config.UBOOT_HULL_FRACTURE_PER_EXCESS,
+                                0.0, config.UBOOT_HULL_FRACTURE_MAX)
+        if draw < fracture:
+            kind, damage = "hull_fracture", config.UBOOT_HULL_FRACTURE_DAMAGE
+            notices = control.hull_leak(1.0, self.sensor_seed, spread=0.6)
+        elif draw < fracture + config.UBOOT_HULL_SEAL_CHANCE:
+            kind, damage = "hull_seal", config.UBOOT_HULL_SEAL_DAMAGE
+            where = "stern" if detrand.u01(self.sensor_seed, "hull-seal",
+                                           control.hits) < 0.5 else "engine"
+            notices = control.hull_leak(0.5, self.sensor_seed, where=where)
+        else:
+            kind, damage = "hull_bolts", config.UBOOT_HULL_BOLTS_DAMAGE
+            notices = control.hull_leak(0.25, self.sensor_seed)
+        self.damage = min(100.0, self.damage + damage)
+        if self.crew is not None:
+            self.crew.event(kind, compartment=notices[0][1]["compartment"])
+            for key, values in notices:
+                self.crew.event(key, **values)
 
     def _compartment_hit(self, amount: float) -> None:
         """A crewed boat feels a hit compartment by compartment."""

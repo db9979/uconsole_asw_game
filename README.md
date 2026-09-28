@@ -12,15 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.20**
+Current release: **1.3.21**
 
-Release 1.3.20 adds the boat's **periscope attack computer**: every stadimeter
-reading is a mark, and two or more marks a minute apart give the target's
-course and speed, the lead angle and the torpedo's running time under the
-periscope (browser: Solution column). `Ctrl+Enter` on the periscope page
-(browser: Fire on solution) fires on the intercept course; a shot at a marked
-sonar contact uses the solution too. Saves move to **v24** (the marks are
-saved); v23 saves are no longer loaded.
+Release 1.3.21 lets the crewed boat go **below its test depth**, down to crush
+depth (1.5 x test depth), at a growing risk: sheared bolts, failed shaft or
+valve seals and, deeper, a cracked pressure hull flood compartments and add
+damage, far more often the deeper the boat goes; at crush depth the hull
+collapses. The depth columns mark the crush depth and a red alarm shows while
+the boat is below test depth. Saves stay v24.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

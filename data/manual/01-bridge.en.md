@@ -6,7 +6,7 @@ The Bridge conns the frigate: course, speed and position relative to coast, cont
 
 ## Displays and instruments {#bridge-displays}
 
-The top bar names only the station and the clock; course and speed are in the telemetry band at the bottom, and the chart header shows only its scale (plus "follow" while `K` follows own ship). Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope. The chart water darkens with the clock in three steps (day, dusk within an hour of 05:30 and 19:30, night), and rain or a storm hatches the chart with dashed diagonals (a storm adds an amber border); both are display only, as on the browser chart. Options page 2 can anti-alias the chart and plot lines.
+The top bar shows the station, the mission, the clock, speed and course; the chart header shows only its scale (plus "follow" while `K` follows own ship). Page 1 (navigation) shows the chart and four panels; page 2 (press `1` again) shows the mission briefing; page 3 is the lookout scope. The chart water darkens with the clock in three steps (day, dusk within an hour of 05:30 and 19:30, night), and rain or a storm hatches the chart with dashed diagonals (a storm adds an amber border); both are display only, as on the browser chart. Options page 2 can anti-alias the chart and plot lines.
 
 ```text
 +---------------------------+----------------------+

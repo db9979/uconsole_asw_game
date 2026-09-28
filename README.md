@@ -12,15 +12,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.38**
+Current release: **1.3.39**
 
-Release 1.3.38 lets the uConsole charts zoom much further in. `Q`/`E` now
-step through fixed chart heights of 500, 250, 100, 50, 25, 10, 5, 2, 1 and
-0.5 NM on the bridge, weapons, helicopter and submarine charts, and the mouse
-wheel zooms smoothly down to 0.5 NM; the operations centre chart goes down to
-a 0.25 NM radius. The grid gets finer as you zoom (down to 0.1 NM, with
-decimal labels), the scale line shows fractions, and coastlines and radar
-rings are clipped so strong zoom stays fast. Saves stay v27.
+Release 1.3.39 brings back the full top bar on the uConsole: the frigate shows
+the station, the mission, the clock, speed and course again, and the crewed
+submarine shows the mission, the clock, speed, course and depth, now compactly
+separated by "·". Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

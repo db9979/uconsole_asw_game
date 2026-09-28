@@ -359,8 +359,11 @@ def test_escape_quits_but_q_is_station_scoped_map_zoom(game):
     press(game, pygame.K_q)
     assert not game.quit_confirm
     assert game.map_view.scale < before
+    zoomed_out = game.map_view.scale
     press(game, pygame.K_e)
-    assert game.map_view.scale == pytest.approx(before)
+    # Q/E snap to the fixed chart heights.
+    assert game.map_view.scale > zoomed_out
+    assert round(game.map_view.rect[3] / game.map_view.scale, 6) in config.MAP_ZOOM_STEPS_NM
     press(game, pygame.K_ESCAPE)
     assert game.quit_confirm
 

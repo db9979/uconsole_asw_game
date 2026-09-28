@@ -28,7 +28,7 @@ The top bar names only the station and the clock; course and speed are in the te
 - **Course / rudder:** current course, ordered course (`→`), rudder angle in whole degrees and, only while turning, the turn radius.
 - **Speed / acoustics:** telegraph order, speed, own noise in percent and a CAVITATION warning above 15 kn.
 - **Tactical picture:** observed threats (a heard torpedo launch transient or HF seeker pulses, a contact sonar classified as torpedo, or an air track flagged as a possible missile), sensor state (radar, TAS), assets (helicopter, buoys) and weather/day-night.
-- **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. Wheel or `Q`/`E` zoom, drag pans, `K` follows own ship.
+- **Chart:** synthetic chart depth and coastline, own ship, tracks published by the other stations. `Q`/`E` zoom in fixed steps (chart height 500, 250, 100, 50, 25, 10, 5, 2, 1 and 0.5 NM), the wheel zooms smoothly down to 0.5 NM; the grid gets finer as you zoom in (down to 0.1 NM). Drag pans, `K` follows own ship.
 
 ## Bridge lookout reports {#bridge-lookout}
 

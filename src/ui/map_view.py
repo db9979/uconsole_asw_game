@@ -212,6 +212,87 @@ def _in_rect(px: float, py: float, r: tuple, m: float = 60.0) -> bool:
             r[1] - m <= py <= r[1] + r[3] + m)
 
 
+GRID_STEPS_NM = (0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 25.0, 50.0)
+# Clip margin around the chart: far outside lines never reach gfxdraw's
+# 16-bit coordinates, and polygon edges stay outside the visible chart.
+_CLIP_MARGIN_PX = 64.0
+
+
+def grid_step_nm(scale_px_per_nm: float) -> float:
+    """Grid spacing for a chart scale: the legacy 50/25/10 NM steps up to
+    8 px/NM, then the smallest step at least 80 px apart."""
+    if scale_px_per_nm < 3.0:
+        return 50.0
+    if scale_px_per_nm < 8.0:
+        return 25.0
+    for step in GRID_STEPS_NM:
+        if step <= 10.0 and step * scale_px_per_nm >= 80.0:
+            return step
+    return 10.0
+
+
+def grid_label(value_nm: float) -> str:
+    """Grid coordinate label: whole NM without decimals, else one decimal."""
+    rounded = round(value_nm, 1)
+    return f"{rounded:.0f}" if abs(rounded - round(rounded)) < 1e-6 else f"{rounded:.1f}"
+
+
+def scale_label(height_nm: float) -> str:
+    """Chart height for the scale line (``0.5``, ``2``, ``51``)."""
+    if height_nm < 9.95:
+        text = f"{height_nm:.1f}"
+        return text[:-2] if text.endswith(".0") else text
+    return f"{height_nm:.0f}"
+
+
+def clip_polygon_to_rect(points, rect, margin: float = _CLIP_MARGIN_PX) -> list:
+    """Clip a screen polygon to ``rect`` grown by ``margin`` (Sutherland-Hodgman).
+
+    Polygons already inside the grown rect are returned unchanged, so the
+    normal zoom levels keep their exact outline; at strong zoom the huge
+    off-screen coordinates are cut away before drawing."""
+    left = rect[0] - margin
+    top = rect[1] - margin
+    right = rect[0] + rect[2] + margin
+    bottom = rect[1] + rect[3] + margin
+    pts = list(points)
+    if all(left <= x <= right and top <= y <= bottom for x, y in pts):
+        return pts
+    for edge in range(4):
+        if not pts:
+            break
+        out = []
+        prev = pts[-1]
+        for cur in pts:
+            inside_cur = _clip_inside(cur, edge, left, top, right, bottom)
+            inside_prev = _clip_inside(prev, edge, left, top, right, bottom)
+            if inside_cur:
+                if not inside_prev:
+                    out.append(_clip_cross(prev, cur, edge, left, top, right, bottom))
+                out.append(cur)
+            elif inside_prev:
+                out.append(_clip_cross(prev, cur, edge, left, top, right, bottom))
+            prev = cur
+        pts = out
+    return pts
+
+
+def _clip_inside(point, edge, left, top, right, bottom) -> bool:
+    x, y = point
+    return (x >= left, y >= top, x <= right, y <= bottom)[edge]
+
+
+def _clip_cross(a, b, edge, left, top, right, bottom):
+    (x0, y0), (x1, y1) = a, b
+    if edge in (0, 2):
+        bound = left if edge == 0 else right
+        t = (bound - x0) / (x1 - x0)
+        return bound, y0 + (y1 - y0) * t
+    bound = top if edge == 1 else bottom
+    t = (bound - y0) / (y1 - y0)
+    return x0 + (x1 - x0) * t, bound
+
+
 def _visible_landmasses(coast, view, rect):
     """Cull in world space before transforming dense coastline points."""
     left, top = view.screen_to_world(rect[0], rect[1])
@@ -270,7 +351,8 @@ def draw_chart_geography(game, view, r) -> None:
                 cached = (w, coast, key, colors)
                 draw_map_view._bathymetry_cache = cached
             colors = cached[3]
-        cell_nm = 10.0 if view.scale >= 4.0 else 25.0
+        cell_nm = (2.0 if view.scale >= 40.0 else
+                   10.0 if view.scale >= 4.0 else 25.0)
         wl, wt = view.screen_to_world(r[0], r[1])
         wr, wb = view.screen_to_world(r[0] + r[2], r[1] + r[3])
         x0 = max(0.0, math.floor(min(wl, wr) / cell_nm) * cell_nm)
@@ -305,25 +387,27 @@ def draw_chart_geography(game, view, r) -> None:
                                       max(1, int(py2 - py) + 1)))
                 x_nm += cell_nm
             y_nm += cell_nm
-    # Gitter (sichtbare 50-NM-Linien)
-    step = 10 if view.scale >= 8 else (25 if view.scale >= 3 else 50)
+    # Gitter: Linienabstand waechst mit dem Zoom (50 NM bis 0.1 NM).
+    step = grid_step_nm(view.scale)
     wl, wt = view.screen_to_world(r[0], r[1])
     wr, wb = view.screen_to_world(r[0] + r[2], r[1] + r[3])
-    gx0 = int(max(0.0, min(wl, wr)) // step) * step
-    gx1 = int(min(w.size_nm, max(wl, wr)) // step) * step
-    gy0 = int(max(0.0, min(wt, wb)) // step) * step
-    gy1 = int(min(w.size_nm, max(wt, wb)) // step) * step
-    for g in range(gx0, gx1 + 1, step):
+    gx0 = math.ceil(max(0.0, min(wl, wr)) / step - 1e-9)
+    gx1 = math.floor(min(w.size_nm, max(wl, wr)) / step + 1e-9)
+    gy0 = math.ceil(max(0.0, min(wt, wb)) / step - 1e-9)
+    gy1 = math.floor(min(w.size_nm, max(wt, wb)) / step + 1e-9)
+    for k in range(gx0, gx1 + 1):
+        g = k * step
         x, _ = view.world_to_screen(g, 0)
         if r[0] <= x <= r[0] + r[2]:
             lines.line(s, config.COLOR_GEO_GRID, (int(x), r[1]), (int(x), r[1] + r[3]))
-            s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
+            s.blit(game.font.render(grid_label(g), True, config.COLOR_TEXT_DIM),
                    (int(x) + 3, r[1] + r[3] - 18))
-    for g in range(gy0, gy1 + 1, step):
+    for k in range(gy0, gy1 + 1):
+        g = k * step
         _, y = view.world_to_screen(0, g)
         if r[1] <= y <= r[1] + r[3]:
             lines.line(s, config.COLOR_GEO_GRID, (r[0], int(y)), (r[0] + r[2], int(y)))
-            s.blit(game.font.render(f"{g}", True, config.COLOR_TEXT_DIM),
+            s.blit(game.font.render(grid_label(g), True, config.COLOR_TEXT_DIM),
                    (r[0] + 3, int(y) + 3))
 
     # Land / Inseln. Legacy/fake coast providers retain their old API.
@@ -334,6 +418,9 @@ def draw_chart_geography(game, view, r) -> None:
                  for land in visible_land]
                 if visible_land is not None else coast.land_points_px(view))
     for poly in polygons:
+        poly = clip_polygon_to_rect(poly, r)
+        if len(poly) < 3:
+            continue
         lines.polygon(s, config.COLOR_LAND, poly)
         lines.polygon(s, config.COLOR_LAND_EDGE, poly, 1)
     shown_countries = set()
@@ -635,6 +722,6 @@ def draw_chart_frame(game, view, r, following: bool) -> None:
     zoom_nm = r[3] / view.scale
     layout.blit_line(
         s, structured_message("map.line.scale_follow" if following else "map.line.scale",
-                              zoom=f"{zoom_nm:.0f}"),
+                              zoom=scale_label(zoom_nm)),
         (r[0] + 4, r[1] + 4, r[2] - 8, 20), config.COLOR_TEXT_DIM,
         size=13)

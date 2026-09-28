@@ -298,6 +298,9 @@ class FieldRow:
     value: Any
     setter: Callable[[Any], None]
     header: bool = False
+    # A closed value set: Enter opens a pick list of (value, display text)
+    # instead of free text editing. Display text is drawn raw.
+    choices: Callable[[], list[tuple[Any, str]]] | None = None
 
 
 def section_header(group: str) -> FieldRow:
@@ -377,6 +380,15 @@ class FieldList:
         self.input = TextField(maximum=4096)
         self.original: Any = None
         self.error = ""
+        self.choice_items: list[tuple[Any, str]] = []
+        self.choice_index = 0
+        self.choice_scroll = 0
+        self._choice_rect: pygame.Rect | None = None
+        self._choice_row_height = 26
+
+    @property
+    def choosing(self) -> bool:
+        return self.editing and bool(self.choice_items)
 
     @property
     def selected_row(self) -> FieldRow | None:
@@ -411,6 +423,11 @@ class FieldList:
         if row is None or row.header:
             return False
         self.original = row.value
+        self.choice_items = list(row.choices()) if row.choices is not None else []
+        if row.choices is not None and not self.choice_items:
+            return False
+        self.choice_index = next((index for index, (value, _) in enumerate(self.choice_items)
+                                  if value == row.value), 0)
         self.input.value = value_text(row.value)
         self.input.selected_all = True
         self.input._key_text = ""
@@ -422,15 +439,26 @@ class FieldList:
         if not self.editing:
             return False
         self.editing = False
+        self.choice_items = []
         self.error = ""
         return True
+
+    def move_choice(self, amount: int) -> bool:
+        if not self.choosing:
+            return False
+        before = self.choice_index
+        self.choice_index = max(0, min(len(self.choice_items) - 1, self.choice_index + amount))
+        return before != self.choice_index
 
     def apply_edit(self, tr: Tr = IDENTITY_TR) -> bool:
         row = self.selected_row
         if not self.editing or row is None:
             return False
         try:
-            value = parse_value(self.input.value, self.original, row.path)
+            if self.choice_items:
+                value = self.choice_items[self.choice_index][0]
+            else:
+                value = parse_value(self.input.value, self.original, row.path)
             row.setter(value)
         except ContentValidationError as exc:
             self.error = localized_error(exc, tr)
@@ -439,6 +467,7 @@ class FieldList:
             self.error = f"{row.path}: {exc}"
             return True
         self.editing = False
+        self.choice_items = []
         self.error = ""
         return True
 
@@ -462,6 +491,8 @@ class FieldList:
 
     def handle_event(self, event: pygame.event.Event, rect: pygame.Rect,
                      row_height: int = 32, tr: Tr = IDENTITY_TR) -> bool:
+        if self.choosing:
+            return self._handle_choice_event(event, rect)
         if self.editing:
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
@@ -499,9 +530,68 @@ class FieldList:
                 return True if changed or self.editing else True
         return False
 
+    def _handle_choice_event(self, event: pygame.event.Event, rect: pygame.Rect) -> bool:
+        """The open pick list owns all input until Enter or Esc."""
+        page = max(1, (self._choice_rect.height if self._choice_rect else rect.height)
+                   // self._choice_row_height - 1)
+        if event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                return self.apply_edit()
+            if event.key == pygame.K_ESCAPE:
+                return self.cancel_edit()
+            steps = {pygame.K_UP: -1, pygame.K_k: -1, pygame.K_DOWN: 1, pygame.K_j: 1,
+                     pygame.K_PAGEUP: -page, pygame.K_PAGEDOWN: page,
+                     pygame.K_HOME: -len(self.choice_items), pygame.K_END: len(self.choice_items)}
+            if event.key in steps:
+                self.move_choice(steps[event.key])
+            return True
+        position = event_position(event)
+        if event.type == pygame.MOUSEWHEEL:
+            self.move_choice(-event.y)
+            return True
+        if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "button", 0) == 1 and position:
+            box = self._choice_rect
+            if box is None or not box.collidepoint(position):
+                return self.cancel_edit()
+            index = self.choice_scroll + int((position[1] - box.y) // self._choice_row_height)
+            if 0 <= index < len(self.choice_items):
+                self.choice_index = index
+                return self.apply_edit()
+            return True
+        return event.type == pygame.TEXTINPUT
+
+    def _draw_choices(self, surface: pygame.Surface, rect: pygame.Rect,
+                      anchor: pygame.Rect, value_x: int) -> None:
+        """Draw the pick list under (or above) the edited row, inside rect."""
+        height = self._choice_row_height
+        below = rect.bottom - anchor.bottom
+        above = anchor.top - rect.top
+        room = below if below >= above else above
+        visible = max(1, min(len(self.choice_items), (room - 4) // height))
+        box_h = visible * height + 4
+        top = anchor.bottom if below >= above else anchor.top - box_h
+        box = pygame.Rect(value_x, top, max(1, rect.right - value_x - 4), box_h)
+        self._choice_rect = box
+        self.choice_scroll = max(0, min(self.choice_scroll, len(self.choice_items) - visible))
+        if self.choice_index < self.choice_scroll:
+            self.choice_scroll = self.choice_index
+        elif self.choice_index >= self.choice_scroll + visible:
+            self.choice_scroll = self.choice_index - visible + 1
+        pygame.draw.rect(surface, PALETTE.panel, box)
+        pygame.draw.rect(surface, PALETTE.focus, box, 1)
+        for offset, (_, label) in enumerate(
+                self.choice_items[self.choice_scroll:self.choice_scroll + visible]):
+            index = self.choice_scroll + offset
+            item = pygame.Rect(box.x + 2, box.y + 2 + offset * height, box.width - 4, height)
+            if index == self.choice_index:
+                pygame.draw.rect(surface, PALETTE.raised, item)
+            draw_text(surface, raw_text(label), item.inflate(-8, 0), size=13,
+                      color=PALETTE.focus if index == self.choice_index else PALETTE.text)
+
     def draw(self, surface: pygame.Surface, rect: pygame.Rect, *, tr: Tr = IDENTITY_TR,
              label_width: int = 245, row_height: int = 32) -> None:
         pygame.draw.rect(surface, PALETTE.background, rect)
+        choice_anchor: tuple[pygame.Rect, int] | None = None
         visible = max(1, rect.height // row_height)
         self.scroll = max(0, min(self.scroll, max(0, len(self.rows) - visible)))
         if self.selected < self.scroll:
@@ -531,10 +621,17 @@ class FieldList:
                                          max(1, row_rect.right - label_rect.right - 12), row_height - 6)
                 draw_text(surface, tr(row.label), label_rect, color=PALETTE.text if selected else PALETTE.dim,
                           size=13)
-                if selected and self.editing:
+                if selected and self.choosing:
+                    pygame.draw.rect(surface, PALETTE.focus, value_rect, 1)
+                    draw_text(surface, raw_text(self.choice_items[self.choice_index][1]),
+                              value_rect.inflate(-8, 0), size=14)
+                    choice_anchor = (row_rect, value_rect.x)
+                elif selected and self.editing:
                     self.input.draw(surface, value_rect, focused=True)
                 else:
                     draw_text(surface, raw_text(value_text(row.value)), value_rect, size=14)
+            if choice_anchor is not None:
+                self._draw_choices(surface, rect, *choice_anchor)
 
 
 def _leaf_rows(current: dict[str, Any], current_prefix: str,

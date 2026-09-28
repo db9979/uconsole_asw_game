@@ -9,12 +9,29 @@ from typing import Any, Iterable, Mapping
 import pygame
 
 from src.core.i18n import raw_text, translation_scope
-from src.core.mission_definition import (MISSION_FIELD_METADATA, MissionDefinition,
-                                         default_mission)
+from src.core.mission_definition import (MISSION_FIELD_METADATA, REFERENCE_PREFIX,
+                                         MissionDefinition, default_mission,
+                                         reference_sector_index)
 from src.data.user_content import ContentRecord, UserContentStore
 from src.data.validation import (ContentValidationError, localized_error,
                                  localized_issue)
 from src.ui import editor_widgets as widgets
+from src.world.real_coast import SECTOR_COUNT, sector_for_index
+
+WORLD_KINDS = ("fixed", "reference")
+_SECTOR_SUMMARIES: list[tuple[int, tuple[str, ...], tuple[tuple[tuple[float, float], ...], ...]]] = []
+
+
+def sector_summaries():
+    """(index, countries, landmass outlines) of every packaged sector, loaded
+    once per process: the pick list and the preview coast read this cache."""
+    if not _SECTOR_SUMMARIES:
+        for index in range(SECTOR_COUNT):
+            sector, _ = sector_for_index(index)
+            outlines = tuple(tuple((float(x), float(y)) for x, y in land["points"])
+                             for land in sector["landmasses"])
+            _SECTOR_SUMMARIES.append((index, tuple(sector["countries"]), outlines))
+    return _SECTOR_SUMMARIES
 
 
 class MissionEditor:
@@ -218,6 +235,12 @@ class MissionEditor:
             if "reference" not in data["world"]:
                 rows.append(widgets.FieldRow("world.reference", "field.reference", "",
                                              lambda value: data["world"].__setitem__("reference", value)))
+            for row in rows:
+                if row.path == "world.kind":
+                    row.choices = lambda: [(kind, kind) for kind in WORLD_KINDS]
+                elif row.path == "world.reference":
+                    row.choices = self._sector_choices
+                    row.setter = lambda value, world=data["world"]: self._set_reference(world, value)
         elif self.tab == "objective":
             rows = widgets.mapping_rows(data["objective"], "objective")
         elif self.tab == "units":
@@ -279,6 +302,21 @@ class MissionEditor:
         else:
             rows = []
         self.fields.set_rows(rows)
+
+    def _sector_choices(self) -> list[tuple[str, str]]:
+        return [(f"{REFERENCE_PREFIX}{index}",
+                 self.tr("editor.sector_choice", sector=f"{REFERENCE_PREFIX}{index}",
+                         countries=" / ".join(countries[:3])))
+                for index, countries, _ in sector_summaries()]
+
+    @staticmethod
+    def _set_reference(world: dict[str, Any], value: Any) -> None:
+        """Picking a sector makes the world a reference world at the only
+        runtime size; typing any other text stays a plain edit."""
+        world["reference"] = value
+        if reference_sector_index(value) is not None:
+            world["kind"] = "reference"
+            world["size_nm"] = 500.0
 
     def _add_exact(self) -> None:
         values = self._data()["units"]["exact"]
@@ -390,9 +428,13 @@ class MissionEditor:
                         self.status = localized_error(exc, self.tr)
                 return True
             handled = self.fields.handle_event(event, self._rects.get("fields", pygame.Rect(40, 150, 900, 450)))
-            if self.fields.error:
+            if self.fields.choosing:
+                self.status = self.tr("editor.choose_hint")
+            elif self.fields.error:
                 self.status = self.fields.error
             elif handled:
+                if self.status == self.tr("editor.choose_hint"):
+                    self.status = ""
                 self._sync_fields()
             return handled
         if self._delete_pending is not None:
@@ -439,6 +481,8 @@ class MissionEditor:
                         pygame.K_HOME, pygame.K_END, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
                     return True
         if self.fields.handle_event(event, self._rects.get("fields", pygame.Rect(40, 150, 900, 450))):
+            if self.fields.choosing:
+                self.status = self.tr("editor.choose_hint")
             return True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -586,7 +630,17 @@ class MissionEditor:
         pygame.draw.rect(surface, (9, 28, 35), map_rect)
         pygame.draw.rect(surface, widgets.PALETTE.border, map_rect, 1)
         world_size = preview["world_size_nm"]
+        world = self._data()["world"]
+        reference = (reference_sector_index(world.get("reference"))
+                     if world.get("kind") == "reference" else None)
         with widgets.clipped(surface, map_rect):
+            if reference is not None:
+                scale = map_rect.width / world_size
+                for outline in sector_summaries()[reference][2]:
+                    points = [(map_rect.x + x * scale, map_rect.y + y * scale) for x, y in outline]
+                    if len(points) >= 3:
+                        pygame.draw.polygon(surface, widgets.PALETTE.raised, points)
+                        pygame.draw.lines(surface, widgets.PALETTE.dim, True, points)
             for sector in preview["sectors"]:
                 box = pygame.Rect(map_rect.x + sector["x"] / world_size * map_rect.width,
                                   map_rect.y + sector["y"] / world_size * map_rect.height,
@@ -600,11 +654,14 @@ class MissionEditor:
                          round(map_rect.y + marker["y"] / world_size * map_rect.height))
                 pygame.draw.circle(surface, colors.get(marker["side"], widgets.PALETTE.text), point, 5, 1)
         details = pygame.Rect(map_rect.right + 14, inner.y, max(1, inner.right - map_rect.right - 14), inner.height)
-        lines = (self.tr("editor.preview_seed", seed=preview["seed"]),
+        lines = ((self.tr("editor.preview_sector", sector=f"{REFERENCE_PREFIX}{reference}",
+                          countries=", ".join(sector_summaries()[reference][1]))
+                  if reference is not None else self.tr("editor.preview_fixed_world")),
+                 self.tr("editor.preview_seed", seed=preview["seed"]),
                  self.tr("editor.preview_markers", count=len(preview["markers"])),
                  self.tr("editor.preview_events", count=len(preview["events"])),
                  self.tr("editor.static_only"), self.tr("editor.runtime_scope"))
         for row, line in enumerate(lines):
             widgets.draw_text(surface, line,
                               (details.x, details.y + row * 30, details.width, 26),
-                              color=widgets.PALETTE.focus if row >= 3 else widgets.PALETTE.text)
+                              color=widgets.PALETTE.focus if row >= 4 else widgets.PALETTE.text)

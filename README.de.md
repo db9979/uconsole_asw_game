@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.42**
+Aktuelle Version: **1.3.43**
 
-Version 1.3.42 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
+Version 1.3.43 behebt Remote-Crew-Browser, die mit „Host sendet Daten, die
 dieser Browser nicht lesen kann“ einfroren. Vier Listen nannten die Art einer
 Zeile mit einem Feld, das der Browser in jedem Stationszustand ablehnt: das
 Funklog des U-Boots, seine Bedrohungs-Peilungen und sein Ausweichbefehl sowie
@@ -158,7 +158,8 @@ Der Workflow `.github/workflows/windows.yml` baut das Programm mit PyInstaller
 (`packaging/windows/u-jagd-windows.spec`) bei jedem Push und Pull Request,
 führt seinen Selbsttest ohne Bildschirm aus (kurze Mission plus
 Remote-Crew-Seiten) und veröffentlicht auf `main` einmal je Version das
-Release `v<APP_VERSION>`. Selbst bauen unter Windows:
+Release `v<APP_VERSION>`; danach löscht er alle älteren Releases, sodass nur das
+neueste stehen bleibt (Git-Tags bleiben). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

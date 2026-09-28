@@ -14,13 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.26**
+Aktuelle Version: **1.3.27**
 
-Version 1.3.26 überspringt auf der uConsole die Update-Suche, wenn kein
-Internet da ist: Ein Verbindungstest zu GitHub entscheidet in höchstens 2,5
-Sekunden, danach startet das Spiel sofort, statt auf Zeitüberschreitungen zu
-warten. Hängende Git-Abrufe brechen nach spätestens 60 Sekunden ab. Spielstände
-bleiben v23.
+Version 1.3.27 sortiert die **ESM-Bibliothek des Boots nach Passung**: die
+Emitter, deren veröffentlichte Bereiche eine Messung enthalten, stehen mit der
+besten Passung zuerst (Frequenz und PRF nahe der Bereichsmitte, dieselbe
+Modulation), jeder mit der Stufe gut, mittel oder schwach am uConsole und im
+Browser, sodass ein gut passendes Radar wie das des Hubschraubers nicht mehr
+aus der Liste fällt. Spielstände bleiben v24.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

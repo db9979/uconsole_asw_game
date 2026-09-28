@@ -288,3 +288,56 @@ def test_patrol_aircraft_radar_follows_its_switch():
     mpa.radar_on = True
     signals = [signal for signal, _height in boat_esm.own_asset_emissions(game)]
     assert signals and all(signal.x == mpa.x for signal in signals)
+
+
+def test_the_library_lists_the_best_fit_first():
+    from dataclasses import replace
+    from types import SimpleNamespace
+    from src.sensors.esm import FIT_GRADES, fit_grade, library_fit
+    game, _server, _bridge = _crewed()
+    boat = game.opfor
+    _mast_up_near_frigate(game, boat, 8.0, bearing=90.0)
+    _run(game, 10.0)
+    emitter = boat.esm.ordered()[0]
+    emitters = game.runtime_catalog.emitters
+    library = boat.esm.library(game, emitter)
+    grades = [boat.esm.fit(game, emitter, key) for key in library]
+    order = [grade for _floor, grade in FIT_GRADES]
+    assert [order.index(grade) for grade in grades] == sorted(order.index(g) for g in grades)
+    for grade in set(grades):
+        keys = [key for key, g in zip(library, grades) if g == grade]
+        assert keys == sorted(keys)
+    # Fit: the middle of the ranges and the same modulation fit best.
+    profile = emitters[library[0]]
+    low, high = profile.frequency_band_hz
+    track = replace(emitter.track, frequency_hz=(low + high) / 2.0, prf_hz=None,
+                    modulation_code=next(iter(profile.modulation_codes)))
+    edge = replace(track, frequency_hz=low, modulation_code="continuous_wave"
+                   if "continuous_wave" not in profile.modulation_codes else "pulse")
+    assert library_fit(track, profile) > library_fit(edge, profile)
+    assert fit_grade(1.0) == "good" and fit_grade(0.6) == "fair" and fit_grade(0.1) == "poor"
+    # More matches than the list holds: a good fit is not cut off by the key order.
+    wide = replace(profile, frequency_band_hz=(low - 1e9, high + 1e9),
+                   modulation_codes=frozenset({"continuous_wave"}))
+    fitted = replace(profile, frequency_band_hz=(low, high))
+    catalog = {f"radar.a{index:02d}": wide for index in range(20)}
+    catalog["radar.zz_best"] = fitted
+    fake = SimpleNamespace(runtime_catalog=SimpleNamespace(emitters=catalog))
+    probe = boat_esm.BoatEmitter(track)
+    ranked = boat.esm.library(fake, probe)
+    assert len(ranked) == boat_esm.LIBRARY_MAX and ranked[0] == "radar.zz_best"
+
+
+def test_the_crew_sees_each_candidates_fit():
+    game, server, bridge = _crewed()
+    boat = game.opfor
+    _mast_up_near_frigate(game, boat, 8.0, bearing=90.0)
+    _run(game, 10.0)
+    bridge.pump(game, server, now=30.0)
+    rows = server.v2_states["uboot"]["uboot"]["esm"]["emitters"]
+    candidates = [item for row in rows for item in row["candidates"]]
+    assert candidates and all(item["fit"] in ("good", "fair", "poor") for item in candidates)
+    emitter = boat.esm.ordered()[0]
+    emitter.label = boat.esm.library(game, emitter)[0]
+    text = uboot_view._esm_class_text(game, boat, emitter)
+    assert text["__u_jagd_i18n__"] == "uboot.esm.class_fit"

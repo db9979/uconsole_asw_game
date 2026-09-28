@@ -1421,10 +1421,12 @@ def _uboot_damage(game, boat):
 UBOOT_ESM_CANDIDATES = 8
 
 
-def _uboot_esm_candidate(game, key):
+def _uboot_esm_candidate(game, esm, emitter, key):
+    """A library entry as the crew reads it: name, radar role and fit grade."""
     profile = game.runtime_catalog.emitters.get(key)
     name = game.eloka_emitter_name(key) or key.rsplit(".", 1)[-1]
-    return dict(name=str(name)[:64], role=str(getattr(profile, "radar_role", "unknown"))[:32])
+    return dict(name=str(name)[:64], role=str(getattr(profile, "radar_role", "unknown"))[:32],
+                fit=esm.fit(game, emitter, key) or "poor")
 
 
 def _uboot_esm(game, boat):
@@ -1455,8 +1457,8 @@ def _uboot_esm(game, boat):
             age_s=_age(now, track.last_seen), live=live,
             quality=_number(track.display_quality(now, config.UBOOT_ESM_MEMORY_S)),
             classification=(None if esm.classified(game, emitter) is None
-                            else _uboot_esm_candidate(game, emitter.label)),
-            candidates=[_uboot_esm_candidate(game, key)
+                            else _uboot_esm_candidate(game, esm, emitter, emitter.label)),
+            candidates=[_uboot_esm_candidate(game, esm, emitter, key)
                         for key in esm.library(game, emitter)[:UBOOT_ESM_CANDIDATES]],
             range_estimate_nm=_number(esm.range_estimate_nm(game, emitter)),
             mast_threat=danger,

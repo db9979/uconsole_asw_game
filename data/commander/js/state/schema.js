@@ -181,7 +181,7 @@ export function validateV2State(state) {
     esmEmitter: ["number", "label", "bearing", "bearing_uncertainty_deg", "frequency_hz", "band", "prf_hz", "modulation", "signal_db", "trend", "trend_db_min", "age_s", "live", "quality", "classification", "candidates", "range_estimate_nm", "mast_threat", "history", "fix"],
     esmHistory: ["age_s", "x", "y", "bearing"],
     esmFix: ["x", "y", "major_nm", "minor_nm", "axis_deg", "lines", "consistent"],
-    esmCandidate: ["name", "role"],
+    esmCandidate: ["name", "role", "fit"],
     threat: ["intercepts", "counts", "loudest_db", "echo_likely", "trend", "layer", "layer_m", "depth_m", "noise", "mast", "esm_count", "advice", "plan"],
     intercept: ["kind", "bearing", "level_db", "age_s"],
     interceptKinds: ["hull", "dipping", "buoy", "splash", "torpedo"],
@@ -376,7 +376,7 @@ export function validateV2State(state) {
     const esm = payload.esm;
     const nullableNumber = (value) => value === null || finite(value);
     const candidateOk = (row) => exactKeys(row, boatFields.esmCandidate) && typeof row.name === "string" && row.name.length <= 64 &&
-      typeof row.role === "string" && row.role.length <= 32;
+      typeof row.role === "string" && row.role.length <= 32 && ["good", "fair", "poor"].includes(row.fit);
     if (!exactKeys(esm, boatFields.esm) || typeof esm.mast_up !== "boolean" || typeof esm.mast_threat !== "boolean" ||
         !nullableNumber(esm.mast_s) || !finite(esm.mast_time_s) || !finite(esm.mast_radar_nm) || !finite(esm.wash) ||
         !boundedArray(esm.emitters, 16) || esm.emitters.some((row) => !exactKeys(row, boatFields.esmEmitter) ||

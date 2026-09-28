@@ -5599,5 +5599,12 @@
   "commander.web.uboot_depth_mark_crush": "Crush {depth} m",
   "commander.web.uboot_chip_overdepth": "Below test depth {test} m (crush {crush} m)",
   "uboot.event.detonation_near": "Detonation close aboard, bearing {bearing}!",
-  "uboot.event.detonation_far": "Distant detonation, bearing {bearing}."
+  "uboot.event.detonation_far": "Distant detonation, bearing {bearing}.",
+  "uboot.esm.class_fit": "{name} ({fit})",
+  "uboot.esm.fit.good": "good fit",
+  "uboot.esm.fit.fair": "fair fit",
+  "uboot.esm.fit.poor": "poor fit",
+  "commander.web.uboot_esm_fit_good": "good fit",
+  "commander.web.uboot_esm_fit_fair": "fair fit",
+  "commander.web.uboot_esm_fit_poor": "poor fit"
 }

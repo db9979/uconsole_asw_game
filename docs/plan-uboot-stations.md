@@ -136,16 +136,17 @@ plan mit auf und setzte das auch um"):
    Aufklärung in 1.3.14, Geleitzugangriff in 1.3.15
    (`src/core/boat_missions.py`), Bootskampagne mit fünf Etappen in 1.3.16
    (`src/core/boat_campaign.py`, eigene Datei `boat_campaign.json`).
-3. ~~**Angriffsrechner am Sehrohr**~~ erledigt in 1.3.19
+3. ~~**Angriffsrechner am Sehrohr**~~ erledigt in 1.3.20
    (`src/core/attack_computer.py`, Spielstand v24 `crew.orders.tdc`): jede
    Stadimeter-Messung ist eine Marke, eine Gerade durch die Marken gibt Kurs
    und Fahrt, dazu Vorhaltewinkel und Laufzeit; `Strg+Enter` am Sehrohr
    bzw. „Schuss nach Lösung“ im Browser schießt auf den Abfangkurs.
-4. **Atmosphäre:** Bootsgeräusche, Wasserbomben/Detonationen,
-   Druckkörperknacken in der Tiefe, gedämpftes Licht bei Schleichfahrt.
-5. **ESM-Bibliothek:** Kandidaten nach Passung (PRF, Modulation) statt
-   Katalogreihenfolge sortieren, damit das Hubschrauberradar in der Liste
-   bleibt.
+4. ~~**Atmosphäre**~~ erledigt in 1.3.24: Rumpfknarzen in der Tiefe,
+   Krachen bei Druckkörperversagen (Tauchen unter die Testtiefe mit Bolzen,
+   Dichtungen und Rissen in 1.3.21), hörbare Detonationen mit Peilung,
+   Rotlicht bei Schleichfahrt.
+5. ~~**ESM-Bibliothek**~~ erledigt in 1.3.27: Kandidaten nach Passung
+   (Frequenz, PRF, Modulation; gut/mittel/schwach) statt Katalogreihenfolge.
 6. **KI-Jäger klüger:** Radarechos, ESM und Meldungen der Führung dem Boot
    zuordnen, ASROC einsetzen.
 7. **KI-U-Boot mit Auftrag:** Ein von der KI gefahrenes Boot verfolgt die

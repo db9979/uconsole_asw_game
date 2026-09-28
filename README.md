@@ -12,12 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.26**
+Current release: **1.3.27**
 
-Release 1.3.26 skips the update check on the uConsole when there is no
-internet: a connection test to GitHub decides within 2.5 seconds, and the game
-then starts right away instead of waiting on timeouts. Stalled git downloads
-give up after at most 60 seconds. Saves stay v23.
+Release 1.3.27 sorts the boat's **ESM library by fit**: the emitters whose
+published ranges hold a measurement are listed best fit first (frequency and
+PRF near the middle of their ranges, the same modulation), each with a grade
+of good, fair or poor on the uConsole and in the browser, so a well-fitting
+radar such as the helicopter's no longer drops off the list. Saves stay v24.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

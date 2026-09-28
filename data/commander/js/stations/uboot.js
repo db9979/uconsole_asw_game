@@ -339,14 +339,14 @@ function renderEsm(esm, status) {
     ["uboot_esm_range", t("uboot_esm_range_value", {range: number(row.range_estimate_nm, 1)})],
     ["uboot_esm_col_fix", row.fix ? fixText(row.fix) : t("uboot_esm_no_fix")],
     ["uboot_esm_fix_state", row.fix === null ? t("unavailable") : t(row.fix.consistent ? "uboot_esm_fix_consistent" : "uboot_esm_fix_inconsistent", {lines: row.fix.lines})],
-    ["uboot_esm_col_class", row.classification ? `${row.classification.name} (${stateText("uboot_esm_role", row.classification.role)})` : t("uboot_esm_unclassified")]]);
+    ["uboot_esm_col_class", row.classification ? `${row.classification.name} (${stateText("uboot_esm_role", row.classification.role)}, ${t(`uboot_esm_fit_${row.classification.fit}`)})` : t("uboot_esm_unclassified")]]);
   const select = $("uboot-esm-class");
   if (!S.stationDrafts.has("uboot-esm-class") || select.dataset.emitter !== String(row.number)) {
     S.stationDrafts.delete("uboot-esm-class");
     select.dataset.emitter = String(row.number);
     const options = [Object.assign(document.createElement("option"), {value: "-1", textContent: t("uboot_esm_unclassified")}),
       ...row.candidates.map((candidate, index) => Object.assign(document.createElement("option"),
-        {value: String(index), textContent: `${candidate.name} (${stateText("uboot_esm_role", candidate.role)})`}))];
+        {value: String(index), textContent: `${candidate.name} (${stateText("uboot_esm_role", candidate.role)}, ${t(`uboot_esm_fit_${candidate.fit}`)})`}))];
     select.replaceChildren(...options);
     const current = row.classification ? row.candidates.findIndex((candidate) =>
       candidate.name === row.classification.name && candidate.role === row.classification.role) : -1;

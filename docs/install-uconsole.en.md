@@ -32,7 +32,9 @@ The installer
 fetches the newest GitHub release (tag `vX.Y.Z`, the same source as the Windows
 starter) and then starts the game; while there is no release yet, the uConsole
 follows the `main` branch. When dependencies change, `pip install -e .` runs
-automatically. Offline, the installed version starts at once. A new version that
+automatically. Without internet the installed version starts at once: a connection test to
+GitHub (at most 2.5 s) then skips the whole update check, and a stalled git
+download gives up after 60 s at most. A new version that
 does not even start (`main.py --version` fails) is rolled back, and only the
 next version is tried again. Local changes in the checkout, a branch other than
 `main`, or a running game leave everything untouched. Log:

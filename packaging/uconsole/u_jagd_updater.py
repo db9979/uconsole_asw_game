@@ -26,10 +26,13 @@ import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -39,7 +42,12 @@ TAG_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
 VERSION_RE = re.compile(r'^APP_VERSION\s*=\s*"(\d+)\.(\d+)\.(\d+)"', re.M)
 DEP_FILES = ("pyproject.toml", "requirements.txt")
 NET_TIMEOUT_S = 6
-GIT_TIMEOUT_S = 180
+PROBE_TIMEOUT_S = 2.5
+PROBE_HOST = ("github.com", 443)
+GIT_TIMEOUT_S = 60
+# git gives up on a stalled or unreachable remote instead of hanging the start
+GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
+           "GIT_HTTP_LOW_SPEED_TIME": "15"}
 PIP_TIMEOUT_S = 1200
 VERIFY_TIMEOUT_S = 90
 LOG_MAX_BYTES = 256 * 1024
@@ -80,10 +88,44 @@ def notify(message: str) -> None:
 
 def git(app: Path, *args: str, timeout: float = GIT_TIMEOUT_S) -> str:
     result = subprocess.run(["git", "-C", str(app), *args], capture_output=True,
-                            text=True, timeout=timeout, check=False)
+                            text=True, timeout=timeout, check=False,
+                            env={**os.environ, **GIT_ENV})
     if result.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)}: {result.stderr.strip()}")
     return result.stdout.strip()
+
+
+def probe_address() -> tuple[str, int]:
+    """GitHub, or the HTTPS proxy when one is configured."""
+    proxy = os.environ.get("https_proxy") or os.environ.get("HTTPS_PROXY")
+    if proxy:
+        try:
+            parts = urllib.parse.urlsplit(proxy if "://" in proxy else "http://" + proxy)
+            if parts.hostname:
+                return parts.hostname, parts.port or 80
+        except ValueError:
+            pass
+    return PROBE_HOST
+
+
+def online(timeout: float = PROBE_TIMEOUT_S) -> bool:
+    """Whether GitHub is reachable, decided within ``timeout`` seconds.
+
+    Name resolution ignores socket timeouts, so the probe runs in a daemon
+    thread and a hanging DNS lookup simply counts as offline."""
+    result: list[bool] = []
+
+    def probe() -> None:
+        try:
+            socket.create_connection(probe_address(), timeout=timeout).close()
+            result.append(True)
+        except OSError:
+            result.append(False)
+
+    worker = threading.Thread(target=probe, daemon=True)
+    worker.start()
+    worker.join(timeout)
+    return bool(result and result[0])
 
 
 def parse_version(text: str) -> tuple[int, int, int] | None:
@@ -251,6 +293,9 @@ def update(app: Path = APP_DIR, channel: str | None = None, progress=_no_progres
             log(f"branch {branch} checked out; update skipped")
             return False
         progress("check")
+        if not online():
+            log("offline (GitHub not reachable); update check skipped")
+            return False
         target = resolve_target(app, channel)
         old = git(app, "rev-parse", "HEAD")
         if target is None or target[1] == old:

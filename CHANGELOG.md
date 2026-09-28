@@ -4,6 +4,13 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.26
+
+Release 1.3.26 skips the update check on the uConsole when there is no
+internet: a connection test to GitHub decides within 2.5 seconds, and the game
+then starts right away instead of waiting on timeouts. Stalled git downloads
+give up after at most 60 seconds. Saves stay v23.
+
 ## 1.3.25
 
 Release 1.3.25 tidies up the documentation. Gameplay is unchanged and saves stay

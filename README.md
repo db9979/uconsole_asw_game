@@ -12,17 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.35**
+Current release: **1.3.36**
 
-Release 1.3.35 puts less text on the uConsole screens. The top bar names only
-the station and the clock, the chart header only its scale. The sonar loses its
-header status chips and legend lines and keeps one row of four main keys (the
-rest is in F1); a towed or variable-depth array shows its state only while it
-is moving or not ready. The submarine's threat box appears only while a threat
-is fresh, then an amber triangle next to the clock marks standing warnings.
-Courses read in whole degrees with °, and the turn radius shows only in a turn.
-The TMA header no longer overlaps, and the submarine's Weapons tab, tube line
-and alarm lines are no longer cut off. Saves stay v27.
+Release 1.3.36 gives the periscope, the lookout's binoculars and every station
+the start screen's look. The eyepieces show day, dusk and night with stars, the
+moon in its phase and its glitter on the water, clouds, rain, snow and fog from
+the weather, and the ships in steel with a lit rim, lit windows at night, bow
+wave and wake. The Remote Crew bridge gets the lookout's binoculars as a card
+and the browser periscope the same picture and silhouettes. uConsole and
+browser stations use the turquoise phosphor and night blue of the start screen
+with corner brackets on the panels; the chart keeps its NATO symbols and the
+high-contrast theme is unchanged. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

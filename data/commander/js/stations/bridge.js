@@ -5,6 +5,40 @@ import { sightingText } from "../state/schema.js";
 import { metrics, node, position, stationRows, tacticalEntries, yesNo } from "../views/dom.js";
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { renderCrew } from "../views/crew.js";
+import { drawSightView } from "../views/sight-scene.js";
+import { visualContext } from "../views/visual-common.js";
+
+// The lookout's binoculars: trained relative to the bow in this browser only
+// (presentation, like the uConsole's binoculars); the picture shows his own
+// sightings from the published ``lookout`` block.
+const glasses = {relative: 0, wired: false};
+function wireGlasses() {
+  if (glasses.wired) return;
+  glasses.wired = true;
+  for (const button of document.querySelectorAll("[data-glasses-turn]"))
+    button.addEventListener("click", () => {
+      glasses.relative = ((glasses.relative + Number(button.dataset.glassesTurn)) % 360 + 360) % 360;
+      renderGlassesStatus(); drawBridgeGlasses(performance.now());
+    });
+  $("bridge-glasses-bow").addEventListener("click", () => {
+    glasses.relative = 0; renderGlassesStatus(); drawBridgeGlasses(performance.now());
+  });
+}
+function renderGlassesStatus() {
+  const lookout = S.v2State?.bridge?.lookout;
+  if (!lookout) return;
+  const bearing = (lookout.course + glasses.relative) % 360;
+  const text = t("glasses_bearing", {bearing: number(bearing, 0).padStart(3, "0"), relative: number(glasses.relative, 0).padStart(3, "0")});
+  if ($("bridge-glasses-status").textContent !== text) $("bridge-glasses-status").textContent = text;
+}
+export function drawBridgeGlasses(now) {
+  const lookout = S.v2State?.bridge?.lookout;
+  if (!lookout || S.session?.station !== "bridge") return;
+  const plot = visualContext("bridge-glasses-canvas");
+  if (!plot) return;
+  drawSightView(plot.context, plot.width, plot.height,
+    {...lookout, bearing: (lookout.course + glasses.relative) % 360}, now / 1000, plot.context.font);
+}
 
 export function renderBridgeStation(payload) {
   const navigation = payload.navigation;
@@ -23,6 +57,9 @@ export function renderBridgeStation(payload) {
       bearing: number(payload.threat.torpedoes[0].bearing, 1), age: number(payload.threat.torpedoes[0].age_s, 0)}) : t("torpedo_warning_none")]]);
   stationRows($("bridge-tactical"), payload.tactical_summary, tacticalEntries);
   renderSightings(payload.sightings);
+  wireGlasses();
+  renderGlassesStatus();
+  drawBridgeGlasses(performance.now());
   drawBridgeWeather(performance.now());
   syncWeatherAnimation();
   const weather = S.v2State.environment;
@@ -88,7 +125,7 @@ function drawBridgeWeather(now) {
 }
 function weatherAnimation(now) {
   S.weatherFrame = null;
-  if (now - S.weatherLastDraw >= 66) { S.weatherLastDraw = now; drawBridgeWeather(now); }
+  if (now - S.weatherLastDraw >= 66) { S.weatherLastDraw = now; drawBridgeWeather(now); drawBridgeGlasses(now); }
   syncWeatherAnimation();
 }
 export function syncWeatherAnimation() {

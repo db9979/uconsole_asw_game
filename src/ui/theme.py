@@ -3,8 +3,9 @@ hardcoded palettes (config.COLOR_*, sonar_view's module colors, and
 editor_widgets.EditorPalette) and applying a high-contrast/colorblind-safe
 variant on request.
 
-STANDARD mirrors the previously hardcoded values exactly, so the default
-appearance is unchanged. HIGH_CONTRAST boosts background/text contrast and
+STANDARD is the start screen's look: night blue surfaces, turquoise
+phosphor text and the splash frame colour for rings and borders; config.py
+carries the same values as its defaults. HIGH_CONTRAST boosts background/text contrast and
 separates the friend/neutral/hostile/warn/danger/ok hues using an
 Okabe-Ito-style palette, which stays distinguishable under the common forms
 of color-vision deficiency.
@@ -13,16 +14,16 @@ of color-vision deficiency.
 from __future__ import annotations
 
 CONFIG_COLORS_STANDARD = {
-    "COLOR_BG": (8, 14, 10),
+    "COLOR_BG": (4, 9, 15),
     "COLOR_GEO_BG": (5, 18, 34),
-    "COLOR_GRID": (20, 38, 28),
+    "COLOR_GRID": (16, 36, 42),
     "COLOR_GEO_GRID": (18, 49, 72),
-    "COLOR_TEXT": (140, 230, 160),
-    "COLOR_TEXT_DIM": (105, 158, 126),
+    "COLOR_TEXT": (150, 240, 205),
+    "COLOR_TEXT_DIM": (98, 160, 148),
     "COLOR_WARN": (230, 190, 60),
     "COLOR_DANGER": (230, 80, 70),
-    "COLOR_OK": (90, 210, 120),
-    "COLOR_SONAR_RING": (40, 90, 60),
+    "COLOR_OK": (80, 212, 160),
+    "COLOR_SONAR_RING": (40, 96, 90),
     "COLOR_CONTACT": (255, 255, 255),
     "COLOR_CONTACT_ZIVIL": (90, 200, 120),
     "COLOR_CONTACT_WARSHIP": (230, 120, 60),
@@ -38,12 +39,12 @@ CONFIG_COLORS_STANDARD = {
     "COLOR_FLIGHT": (220, 180, 90),
     "COLOR_PLOT": (255, 160, 230),
     "COLOR_CONTACT_MISSILE": (235, 70, 180),
-    "COLOR_FEED_BG": (10, 18, 14),
-    "COLOR_PANEL_BG": (14, 24, 18),
-    "COLOR_OVERLAY_BG": (7, 18, 13),
-    "COLOR_SELECT_BG": (30, 44, 30),
-    "COLOR_ALARM_BG": (18, 28, 22),
-    "COLOR_TAB_ACTIVE": (21, 55, 68),
+    "COLOR_FEED_BG": (5, 12, 18),
+    "COLOR_PANEL_BG": (8, 18, 25),
+    "COLOR_OVERLAY_BG": (5, 14, 20),
+    "COLOR_SELECT_BG": (18, 58, 56),
+    "COLOR_ALARM_BG": (10, 22, 28),
+    "COLOR_TAB_ACTIVE": (18, 60, 62),
 }
 
 CONFIG_COLORS_HIGH_CONTRAST = {

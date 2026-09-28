@@ -225,6 +225,17 @@ export function validateV2State(state) {
     ["PASSIVE", "ACTIVE"].includes(mpa.buoy_mode) && ["single", "field", "barrier", "circle"].includes(mpa.pattern) &&
     boundedArray(mpa.pattern_points, 4) && mpa.pattern_points.every((row) => exactKeys(row, ["x", "y"]) && finite(row.x) && finite(row.y));
   // A crew's watch bill: three watches, fatigue and morale 0..1.
+  // The eyepieces' sky and the bridge lookout's binoculars (display only).
+  const skyOk = (sky) => exactKeys(sky, sightFields.sky) &&
+    ["none", "rain", "snow"].includes(sky.precipitation) && typeof sky.moon_waxing === "boolean" &&
+    sightFields.sky.every((key) => ["precipitation", "moon_waxing"].includes(key) || finite(sky[key])) &&
+    [sky.light, sky.dusk, sky.cloud, sky.intensity, sky.moon_illumination].every((value) => value >= 0 && value <= 1);
+  const glassesOk = (glasses) => exactKeys(glasses, sightFields.glasses) && skyOk(glasses.sky) &&
+    ["course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"].every((key) => finite(glasses[key])) &&
+    glasses.fov_deg > 0 && glasses.fov_deg <= 180 &&
+    boundedArray(glasses.outlines, 16) && glasses.outlines.every((row) => exactKeys(row, sightFields.outline) &&
+      finite(row.bearing) && finite(row.span_deg) && row.span_deg > 0 && sightFields.classes.includes(row.cls) &&
+      typeof row.stale === "boolean");
   const crewOk = (crew) => exactKeys(crew, crewFields.row) &&
     Number.isInteger(crew.on_watch) && crew.on_watch >= 1 && crew.on_watch <= 3 &&
     Array.isArray(crew.watches) && crew.watches.length === 3 &&
@@ -235,7 +246,7 @@ export function validateV2State(state) {
     finite(crew.morale) && crew.morale >= 0 && crew.morale <= 1 &&
     finite(crew.effectiveness) && crew.effectiveness > 0 && crew.effectiveness <= 2;
   if (state.role === "bridge") {
-    if (!crewOk(payload.crew)) throw new Error("protocol");
+    if (!crewOk(payload.crew) || !glassesOk(payload.lookout)) throw new Error("protocol");
     if (!exactKeys(payload.navigation, ["x", "y", "course", "speed", "target_course", "target_speed", "rudder_angle", "yaw_rate", "turn_radius_nm"])) throw new Error("protocol");
     if (!exactKeys(payload.orders, ["station_down", "speed_max_kn", "telegraph", "noise", "cavitating"]) ||
         typeof payload.orders.station_down !== "boolean" || !finite(payload.orders.speed_max_kn) ||
@@ -334,7 +345,7 @@ export function validateV2State(state) {
     // The periscope: line of sight, light and the crew's own sightings (no target truth).
     const scope = payload.scope;
     const scopeNumbers = ["relative_deg", "bearing", "fov_deg", "window_deg", "visibility_nm", "sea_state", "horizon_offset", "horizon_tilt"];
-    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sightings"]) ||
+    if (!exactKeys(scope, ["available", "night", ...scopeNumbers, "sky", "sightings"]) || !skyOk(scope.sky) ||
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
         !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>

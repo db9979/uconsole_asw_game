@@ -14,18 +14,18 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.35**
+Aktuelle Version: **1.3.36**
 
-Version 1.3.35 bringt weniger Text auf die uConsole-Bildschirme. Die obere
-Leiste nennt nur Station und Uhrzeit, der Kartenkopf nur den Maßstab. Das Sonar
-verliert die Statusfelder im Kopf und die Legendenzeilen und behält eine Zeile
-mit vier Haupttasten (der Rest steht in F1); ein Schlepp- oder Tiefensonar
-zeigt seinen Zustand nur, solange es fährt oder nicht bereit ist. Die
-Bedrohungsbox des U-Boots erscheint nur bei frischer Bedrohung, danach markiert
-ein gelbes Dreieck neben der Uhrzeit anstehende Warnungen. Kurse stehen in
-ganzen Grad mit °, der Drehkreis nur während einer Drehung. Der TMA-Kopf
-überlappt nicht mehr, und Waffen-Reiter, Rohrzeile und Alarmzeilen des U-Boots
-werden nicht mehr abgeschnitten. Spielstände bleiben v27.
+Version 1.3.36 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen
+den Stil des Startbilds. Die Okulare zeigen Tag, Dämmerung und Nacht mit
+Sternen, dem Mond in seiner Phase und seinem Glitzern auf dem Wasser, Wolken,
+Regen, Schnee und Nebel nach dem Wetter, und die Schiffe in Stahl mit heller
+Kante, nachts mit beleuchteten Fenstern, Bugwelle und Kielwasser. Die
+Remote-Crew-Brücke bekommt das Fernglas des Ausgucks als Karte und das
+Browser-Sehrohr dasselbe Bild und dieselben Schiffsformen. Die Stationen auf
+der uConsole und im Browser tragen das Türkis und Nachtblau des Startbilds mit
+Eckwinkeln an den Feldern; die Karte behält ihre NATO-Symbole, der
+Kontrastmodus bleibt unverändert. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

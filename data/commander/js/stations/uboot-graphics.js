@@ -1,6 +1,7 @@
 import { finite, number, t } from "../core/format.js";
 import { palette } from "../core/palette.js";
 import { drawEmpty, visualContext } from "../views/visual-common.js";
+import { drawSightView } from "../views/sight-scene.js";
 
 // Boat instruments drawn from the boat's own picture only: its depth and
 // orders, the charted bottom, the layer of its own BT measurement, and the
@@ -219,50 +220,6 @@ export function drawBoatDamage(id, payload) {
   label(g, dc.power ? t("uboot_dc_power_on") : t("uboot_dc_power_off"), left, top - 12, dc.power ? colors.muted : colors.red);
 }
 
-// Procedural outline by the coarse class the eye made out; `width` is the
-// apparent length in pixels, sitting on the horizon (aircraft above it).
-const HEIGHT_RATIO = {warship: .24, merchant: .17, unknown: .15, aircraft: .45, torpedo: .04};
-function drawOutline(g, cls, cx, base, width, color) {
-  width = Math.max(3, width);
-  const height = Math.max(2, width * (HEIGHT_RATIO[cls] ?? .15)), left = cx - width / 2;
-  g.fillStyle = color; g.strokeStyle = color; g.lineWidth = 1;
-  if (cls === "torpedo") {
-    g.strokeStyle = "rgb(215, 225, 225)"; g.lineWidth = Math.max(1, Math.min(3, width / 12));
-    g.beginPath(); g.moveTo(left, base + 1); g.lineTo(left + width, base + 1); g.stroke();
-    return;
-  }
-  if (cls === "aircraft") {
-    const bodyY = base - height * 3;
-    g.beginPath(); g.ellipse(cx, bodyY, width / 2, Math.max(1, height / 4), 0, 0, Math.PI * 2); g.fill();
-    g.beginPath(); g.moveTo(left - width / 6, bodyY - 2); g.lineTo(left + width + width / 6, bodyY - 2);
-    g.moveTo(left + width * .75, bodyY); g.lineTo(left + width, bodyY - height / 2); g.stroke();
-    return;
-  }
-  const hull = Math.max(1, height / 3), bow = width / 10;
-  g.beginPath(); g.moveTo(left + bow, base - hull); g.lineTo(left + width, base - hull);
-  g.lineTo(left + width - bow / 2, base); g.lineTo(left, base); g.closePath(); g.fill();
-  if (cls === "warship") {
-    const blockW = width / 3, blockH = height - hull, blockX = left + width / 3;
-    g.fillRect(blockX, base - hull - blockH, blockW, blockH);
-    g.fillRect(blockX + blockW / 3, base - height - height / 4, Math.max(1, blockW / 6), height / 4 + 1);
-    g.beginPath(); g.moveTo(blockX + blockW / 2, base - height); g.lineTo(blockX + blockW / 2, base - height * 1.5); g.stroke();
-    g.fillRect(left + width * .75, base - hull - blockH / 2, Math.max(1, width / 12), blockH / 2);
-  } else if (cls === "merchant") {
-    const blockW = width / 6, blockH = height - hull, blockX = left + width - width / 5;
-    g.fillRect(blockX, base - hull - blockH, blockW, blockH);
-    g.fillRect(blockX + blockW / 3, base - height - height / 3, Math.max(1, blockW / 4), height / 3 + 1);
-    for (let post = 1; post < 4; post++) {
-      const px = left + bow + post * (width - width / 5 - bow) / 4;
-      g.beginPath(); g.moveTo(px, base - hull); g.lineTo(px, base - height); g.stroke();
-    }
-  } else {
-    g.fillRect(left + width / 3, base - height, width / 3, height - hull);
-  }
-}
-
-const mix = (a, b, f) => a.map((value, index) => Math.round(value + (b[index] - value) * Math.max(0, Math.min(1, f))));
-const rgb = (color) => `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-
 // The eyepiece: sky and sea in the light the optics see, the horizon in
 // motion, the bearing scale, the crosshair with the stadimeter window and
 // the outlines of the crew's own sightings inside the field of view.
@@ -273,12 +230,6 @@ const rgb = (color) => `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 const SCOPE_EASE_S = 0.25;
 const scopeView = {id: null, target: null, shown: null, frame: null, last: 0};
 const wrap180 = (deg) => ((deg + 540) % 360) - 180;
-
-function scopeSettled() {
-  const {target: a, shown: b} = scopeView;
-  return Math.abs(wrap180(a.bearing - b.bearing)) < .01 && Math.abs(a.horizon_offset - b.horizon_offset) < .01
-    && Math.abs(a.horizon_tilt - b.horizon_tilt) < 1e-4;
-}
 
 function scopeStep(now) {
   scopeView.frame = null;
@@ -292,7 +243,8 @@ function scopeStep(now) {
   shown.horizon_tilt += (target.horizon_tilt - shown.horizon_tilt) * k;
   if (!drawScopeFrame(scopeView.id, {...target, bearing: shown.bearing,
     horizon_offset: shown.horizon_offset, horizon_tilt: shown.horizon_tilt})) return;
-  if (!scopeSettled()) scopeView.frame = requestAnimationFrame(scopeStep);
+  // Waves, clouds and weather move on: keep drawing while the picture shows.
+  if (!document.hidden) scopeView.frame = requestAnimationFrame(scopeStep);
 }
 
 export function drawBoatScope(id, payload) {
@@ -312,7 +264,7 @@ export function drawBoatScope(id, payload) {
     scopeView.shown = {bearing: scope.bearing, horizon_offset: scope.horizon_offset, horizon_tilt: scope.horizon_tilt};
   }
   if (!drawScopeFrame(id, {...scope, ...scopeView.shown})) return;
-  if (scopeView.frame === null && !scopeSettled()) {
+  if (scopeView.frame === null) {
     scopeView.last = performance.now();
     scopeView.frame = requestAnimationFrame(scopeStep);
   }
@@ -326,43 +278,9 @@ function drawScopeFrame(id, scope) {
     label(g, t("uboot_scope_mast_down"), width / 2, height / 2, colors.muted, "center");
     return true;
   }
-  const haze = 1 - Math.max(0, Math.min(1, scope.visibility_nm / 30));
-  const hazeColor = scope.night ? [40, 48, 54] : [150, 160, 165];
-  const skyTop = scope.night ? [5, 14, 27] : [25, 70, 92], skyBottom = scope.night ? [38, 53, 62] : [111, 151, 157];
-  const sea = mix(scope.night ? [7, 35, 48] : [9, 54, 67], hazeColor, haze * .4);
-  const sky = g.createLinearGradient(0, 0, 0, height);
-  sky.addColorStop(0, rgb(mix(skyTop, hazeColor, haze * .6))); sky.addColorStop(1, rgb(mix(skyBottom, hazeColor, haze * .6)));
-  g.fillStyle = sky; g.fillRect(0, 0, width, height);
-  const horizon = height / 2 + scope.horizon_offset * (height / 260), dy = Math.tan(scope.horizon_tilt) * width / 2;
-  g.fillStyle = rgb(sea); g.beginPath(); g.moveTo(0, horizon - dy); g.lineTo(width, horizon + dy);
-  g.lineTo(width, height); g.lineTo(0, height); g.closePath(); g.fill();
-  g.strokeStyle = rgb(mix(sea, [200, 210, 210], .35)); g.lineWidth = 1;
-  g.beginPath(); g.moveTo(0, horizon - dy); g.lineTo(width, horizon + dy); g.stroke();
-  const fov = scope.fov_deg, pxPerDeg = width / fov;
-  const offset = (bearing) => ((bearing - scope.bearing + 540) % 360) - 180;
-  const dark = scope.night ? [60, 66, 72] : [28, 34, 40];
-  for (const row of scope.sightings) {
-    const off = offset(row.bearing);
-    if (Math.abs(off) > fov / 2 + row.span_deg / 2) continue;
-    const cx = width / 2 + off * pxPerDeg, base = horizon + Math.tan(scope.horizon_tilt) * (cx - width / 2);
-    const stale = row.age_s === null || row.age_s > 1;
-    drawOutline(g, row.cls, cx, base, Math.min(width, row.span_deg * pxPerDeg), rgb(mix(dark, hazeColor, stale ? .5 : haze * .5)));
-  }
-  // Bearing scale (true bearings) along the top edge.
-  const first = Math.floor((scope.bearing - fov / 2) / 5) * 5;
-  g.strokeStyle = "rgb(220, 225, 225)";
-  for (let tick = first; tick <= first + fov + 10; tick += 5) {
-    const off = offset(tick);
-    if (Math.abs(off) > fov / 2) continue;
-    const tx = (off + fov / 2) * pxPerDeg, major = tick % 10 === 0;
-    g.beginPath(); g.moveTo(tx, 0); g.lineTo(tx, major ? 10 : 5); g.stroke();
-    if (major) label(g, String(((tick % 360) + 360) % 360).padStart(3, "0"), tx, 18, "rgb(220, 225, 225)", "center");
-  }
-  // Crosshair with the stadimeter window.
-  g.strokeStyle = "rgb(235, 235, 210)";
-  const window = scope.window_deg * pxPerDeg;
-  g.beginPath(); g.moveTo(width / 2, 26); g.lineTo(width / 2, height);
-  g.moveTo(width / 2 - window, height / 2); g.lineTo(width / 2 + window, height / 2); g.stroke();
+  drawSightView(g, width, height, {...scope, window_deg: scope.window_deg,
+    outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: row.span_deg, cls: row.cls,
+      stale: row.age_s === null || row.age_s > 1}))}, performance.now() / 1000, g.font);
   if (!finite(scope.bearing)) drawEmpty(plot);
   return true;
 }

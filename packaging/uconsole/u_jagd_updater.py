@@ -189,8 +189,56 @@ def resolve_target(app: Path, channel: str) -> tuple[str, str] | None:
     return "main", git(app, "rev-parse", "origin/main^{commit}")
 
 
-def update(app: Path = APP_DIR, channel: str | None = None) -> bool:
-    """Bring the checkout to the newest release; True when it changed."""
+MESSAGES = {
+    "de": {
+        "check": "Suche nach Updates …",
+        "download": "Lade Update {label} …",
+        "deps": "Installiere Abhängigkeiten …",
+        "verify": "Prüfe neue Version …",
+        "rollback": "Update fehlgeschlagen, starte bisherige Version …",
+        "start": "Starte U-Jagd …",
+        "busy": "Hintergrund-Update läuft, bitte warten …",
+        "running": "U-Jagd läuft bereits.",
+        "failed": "Start fehlgeschlagen, siehe ~/.u-jagd/updater.log",
+    },
+    "en": {
+        "check": "Checking for updates …",
+        "download": "Downloading update {label} …",
+        "deps": "Installing dependencies …",
+        "verify": "Checking the new version …",
+        "rollback": "Update failed, starting the previous version …",
+        "start": "Starting U-Jagd …",
+        "busy": "Background update running, please wait …",
+        "running": "U-Jagd is already running.",
+        "failed": "Start failed, see ~/.u-jagd/updater.log",
+    },
+}
+
+
+def language() -> str:
+    """The game's saved language, else the system locale (de or en)."""
+    try:
+        data = json.loads((state_dir() / "settings.json").read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data.get("language") in MESSAGES:
+            return data["language"]
+    except (OSError, ValueError):
+        pass
+    lang = os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG", "")
+    return "de" if lang.startswith("de") else "en"
+
+
+def message(key: str, **values: str) -> str:
+    return MESSAGES[language()][key].format(**values)
+
+
+def _no_progress(key: str, **values: str) -> None:
+    pass
+
+
+def update(app: Path = APP_DIR, channel: str | None = None, progress=_no_progress) -> bool:
+    """Bring the checkout to the newest release; True when it changed.
+
+    ``progress(key, **values)`` reports each step (keys of ``MESSAGES``)."""
     channel = channel or os.environ.get("U_JAGD_UPDATE_CHANNEL", "release")
     if os.environ.get("U_JAGD_NO_UPDATE"):
         return False
@@ -202,6 +250,7 @@ def update(app: Path = APP_DIR, channel: str | None = None) -> bool:
         if branch not in ("main", "HEAD"):
             log(f"branch {branch} checked out; update skipped")
             return False
+        progress("check")
         target = resolve_target(app, channel)
         old = git(app, "rev-parse", "HEAD")
         if target is None or target[1] == old:
@@ -215,7 +264,7 @@ def update(app: Path = APP_DIR, channel: str | None = None) -> bool:
             return False
         deps_changed = bool(git(app, "diff", "--name-only", old, new, "--", *DEP_FILES))
         log(f"updating to {label} ({new[:10]})")
-        notify(f"Update auf {label} …")
+        progress("download", label=label)
         if branch == "main":
             git(app, "merge", "--quiet", "--ff-only", new)
         else:
@@ -224,13 +273,16 @@ def update(app: Path = APP_DIR, channel: str | None = None) -> bool:
         log(f"update check failed: {exc}")
         return False
     try:
+        if deps_changed:
+            progress("deps")
         ensure_venv(app, force_install=deps_changed)
+        progress("verify")
         reported = verify(app)
         if not reported:
             raise RuntimeError("new version does not start")
     except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
         log(f"update to {label} failed ({exc}); rolling back to {old[:10]}")
-        notify("Update fehlgeschlagen, alte Version bleibt.")
+        progress("rollback")
         remember_failed(new)
         try:
             git(app, "reset", "--quiet", "--keep", old)
@@ -243,7 +295,10 @@ def update(app: Path = APP_DIR, channel: str | None = None) -> bool:
 
 
 class GameLock:
-    """Held by the updater and, inherited through exec, by the running game."""
+    """Held by the launcher and, inherited through exec, by the running game.
+
+    The lock file names its holder (``launch``, ``game`` or ``update``) so a
+    second start can tell a running game from a background update."""
 
     def __init__(self) -> None:
         state_dir().mkdir(parents=True, exist_ok=True)
@@ -256,24 +311,127 @@ class GameLock:
             return False
         return True
 
+    def acquire(self, timeout_s: float) -> bool:
+        deadline = time.monotonic() + timeout_s
+        while not self.try_acquire():
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.5)
+        return True
+
+    def set_role(self, role: str) -> None:
+        os.ftruncate(self.fd, 0)
+        os.pwrite(self.fd, f"{role} {os.getpid()}\n".encode("ascii"), 0)
+
+    def holder(self) -> str:
+        """Role written by the current holder ("" while it is still starting)."""
+        try:
+            return os.pread(self.fd, 64, 0).decode("ascii", "replace").split(" ")[0].strip()
+        except OSError:
+            return ""
+
+
+class Splash:
+    """The start window (``u_jagd_splash.py``), fed through a pipe.
+
+    Without a display or without Pygame in the venv it silently does nothing."""
+
+    def __init__(self, app: Path) -> None:
+        self.proc = None
+        self.fd = None
+        py = venv_python(app)
+        script = app / "packaging/uconsole/u_jagd_splash.py"
+        if os.environ.get("U_JAGD_NO_SPLASH") or not py.exists() or not script.exists():
+            return
+        if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+            return
+        read_fd, write_fd = os.pipe()
+        try:
+            self.proc = subprocess.Popen([str(py), str(script)], stdin=read_fd,
+                                         stdout=subprocess.DEVNULL,
+                                         stderr=subprocess.DEVNULL,
+                                         start_new_session=True)
+        except OSError:
+            os.close(write_fd)
+            write_fd = None
+        finally:
+            os.close(read_fd)
+        self.fd = write_fd
+
+    def send(self, kind: str, value: str) -> None:
+        if self.fd is None:
+            return
+        try:
+            os.write(self.fd, f"{kind}\t{value}\n".encode("utf-8"))
+        except OSError:
+            self.close()
+
+    def status(self, key: str, **values: str) -> None:
+        self.send("status", message(key, **values))
+
+    def close(self) -> None:
+        if self.fd is not None:
+            try:
+                os.close(self.fd)
+            except OSError:
+                pass
+            self.fd = None
+
+    def hand_to_game(self, env: dict) -> None:
+        """The game closes the pipe after its first frame; the window follows."""
+        if self.fd is not None:
+            os.set_inheritable(self.fd, True)
+            env["U_JAGD_SPLASH_FD"] = str(self.fd)
+
+
+def show_briefly(app: Path, key: str) -> None:
+    splash = Splash(app)
+    splash.status(key)
+    splash.send("close", "3")
+    if splash.proc is None:
+        notify(message(key))
+    splash.close()
+    if key == "running" and shutil.which("wmctrl"):
+        try:  # bring the running game to the front where a window manager allows it
+            subprocess.run(["wmctrl", "-a", "U-Jagd"], timeout=5, check=False,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
 
 def launch(argv: list[str], app: Path = APP_DIR) -> int:
     lock = GameLock()
-    if lock.try_acquire():
-        update(app)
-        try:
-            ensure_venv(app)
-        except (OSError, subprocess.SubprocessError) as exc:
-            log(f"virtual environment missing and could not be created: {exc}")
-            notify("Start fehlgeschlagen, siehe ~/.u-jagd/updater.log")
+    splash = None
+    if not lock.try_acquire():
+        if lock.holder() != "update":
+            log("U-Jagd is already running or starting; second start ignored")
+            show_briefly(app, "running")
+            return 0
+        splash = Splash(app)
+        splash.status("busy")
+        if not lock.acquire(PIP_TIMEOUT_S):
+            splash.close()
             return 1
-        os.set_inheritable(lock.fd, True)  # the game keeps the lock while it runs
-    else:
-        log("U-Jagd already running or updating; starting without update")
+    lock.set_role("launch")
+    splash = splash or Splash(app)
+    update(app, progress=splash.status)
+    try:
+        ensure_venv(app)
+    except (OSError, subprocess.SubprocessError) as exc:
+        log(f"virtual environment missing and could not be created: {exc}")
+        splash.status("failed")
+        splash.send("close", "5")
+        notify(message("failed"))
+        return 1
+    splash.status("start")
+    lock.set_role("game")
+    os.set_inheritable(lock.fd, True)  # the game keeps the lock while it runs
+    env = dict(os.environ)
+    splash.hand_to_game(env)
     os.chdir(app)
     py = str(venv_python(app))
-    os.execv(py, [py, "main.py", *argv])
-    return 1  # pragma: no cover - execv does not return
+    os.execve(py, [py, "main.py", *argv], env)
+    return 1  # pragma: no cover - execve does not return
 
 
 def background_update(app: Path = APP_DIR) -> int:
@@ -281,6 +439,7 @@ def background_update(app: Path = APP_DIR) -> int:
     if not lock.try_acquire():
         log("game running; background update postponed")
         return 0
+    lock.set_role("update")
     update(app)
     return 0
 

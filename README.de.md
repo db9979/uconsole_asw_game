@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.19**
+Aktuelle Version: **1.3.20**
 
-Version 1.3.19 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede
+Version 1.3.20 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede
 Stadimeter-Messung ist eine Marke, und zwei oder mehr Marken im Abstand von
 einer Minute ergeben Kurs und Fahrt des Ziels, den Vorhaltewinkel und die
 Laufzeit des Torpedos unter dem Sehrohr (Browser: Spalte Lösung).

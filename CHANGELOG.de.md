@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.19
+## 1.3.20
 
-Version 1.3.19 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede
+Version 1.3.20 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede
 Stadimeter-Messung ist eine Marke, und zwei oder mehr Marken im Abstand von
 einer Minute ergeben Kurs und Fahrt des Ziels, den Vorhaltewinkel und die
 Laufzeit des Torpedos unter dem Sehrohr (Browser: Spalte Lösung).
@@ -14,6 +14,14 @@ Laufzeit des Torpedos unter dem Sehrohr (Browser: Spalte Lösung).
 den Abfangkurs; ein Schuss auf einen markierten Sonarkontakt nutzt die Lösung
 ebenfalls. Spielstände wechseln auf **v24** (die Marken werden gespeichert);
 v23-Spielstände werden nicht mehr geladen.
+
+## 1.3.19
+
+Version 1.3.19 macht den Start auf der uConsole sofort sichtbar: Ein kleines
+Startfenster zeigt, ob der Starter nach einem Update sucht, es lädt oder
+installiert, und schließt sich, sobald das Spiel erscheint. Ein zweiter Start,
+während U-Jagd startet oder läuft, öffnet das Spiel nicht mehr doppelt, sondern
+meldet „U-Jagd läuft bereits.“. Spielstände bleiben v23.
 
 ## 1.3.18
 

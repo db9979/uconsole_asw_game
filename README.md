@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.19**
+Current release: **1.3.20**
 
-Release 1.3.19 adds the boat's **periscope attack computer**: every stadimeter
+Release 1.3.20 adds the boat's **periscope attack computer**: every stadimeter
 reading is a mark, and two or more marks a minute apart give the target's
 course and speed, the lead angle and the torpedo's running time under the
 periscope (browser: Solution column). `Ctrl+Enter` on the periscope page

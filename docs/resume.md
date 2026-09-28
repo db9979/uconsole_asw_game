@@ -1542,3 +1542,15 @@ Notizen Phase 1:
   nicht bitgleich (transienter Overlap-Add-Zustand des Audioempfaengers, wie
   bei der Fregatte); der Continuation-Test vergleicht sie deshalb nicht,
   alle Simulationsfelder sind ueber 300 s identisch.
+
+## Editor-Sektorauswahl (2026-09-28, App 1.3.2)
+
+- Offener Punkt aus Phase 13 erledigt: `FieldRow.choices` macht eine Zeile
+  zur geschlossenen Auswahl; `Enter` öffnet in `FieldList` eine Auswahlliste
+  (Hoch/Runter, Bild auf/ab, Pos1/Ende, Mausrad, Klick; `Enter` übernimmt,
+  `Esc` bricht ab). Im Missionseditor nutzen `world.kind` (fixed/reference)
+  und `world.reference` (die 128 Sektoren mit Ländern) diese Liste.
+- Die Wahl eines Sektors setzt `world.kind = "reference"` und
+  `size_nm = 500`. Die Vorschau zeichnet die Küste des Referenzsektors aus
+  einem einmal pro Prozess geladenen Sektor-Cache (`sector_summaries`).
+- Weiter offen aus 1.3: OffscreenCanvas (Phase 11), VDS (Phase 7).

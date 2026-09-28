@@ -126,3 +126,50 @@ def test_mission_authoring_events_add_edit_delete_and_save(tmp_path, language):
     assert (tmp_path / language / "missions" / "user.edited.json").exists()
     editor.draw(surface)
     pygame.quit()
+
+
+def _world_row(editor, path):
+    editor.tab_index = editor.tabs.index("world")
+    editor._sync_fields()
+    index = next(i for i, row in enumerate(editor.fields.rows) if row.path == path)
+    editor.fields.selected = index
+    return editor.fields.rows[index]
+
+
+def test_world_reference_is_picked_from_the_packaged_sectors(tmp_path):
+    pygame.init()
+    editor = MissionEditor(store=UserContentStore(tmp_path), profile_keys={"sub"},
+                           tr=Translator("en").translate)
+    editor.new("user.sector_pick")
+    row = _world_row(editor, "world.reference")
+    choices = row.choices()
+    assert len(choices) == 128
+    assert choices[17][0] == "sector:17" and "Greece" in choices[17][1]
+    key = lambda k: pygame.event.Event(pygame.KEYDOWN, key=k, unicode="", mod=0)
+    assert editor.handle_event(key(pygame.K_RETURN))
+    assert editor.fields.choosing and editor.status
+    for _ in range(17):
+        editor.handle_event(key(pygame.K_DOWN))
+    editor.draw(pygame.Surface((1280, 720)))
+    assert editor.handle_event(key(pygame.K_RETURN))
+    world = editor.current.data["world"]
+    assert world["reference"] == "sector:17" and not editor.status
+    assert world["kind"] == "reference" and world["size_nm"] == 500.0
+    assert not [p for p in editor.validate() if p.path.startswith("world")]
+    pygame.quit()
+
+
+def test_world_kind_is_a_closed_choice_and_preview_draws_the_sector_coast(tmp_path):
+    pygame.init()
+    editor = MissionEditor(store=UserContentStore(tmp_path), profile_keys={"sub"},
+                           tr=Translator("de").translate)
+    editor.new("user.sector_preview")
+    assert [value for value, _ in _world_row(editor, "world.kind").choices()] == ["fixed", "reference"]
+    surface = pygame.Surface((1280, 720))
+    editor.tab_index = editor.tabs.index("preview")
+    editor.draw(surface)
+    fixed = pygame.image.tobytes(surface, "RGB")
+    editor.current.data["world"].update(kind="reference", reference="sector:17")
+    editor.draw(surface)
+    assert pygame.image.tobytes(surface, "RGB") != fixed
+    pygame.quit()

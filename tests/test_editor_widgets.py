@@ -97,3 +97,59 @@ def test_filter_field_textinput_dedup_matches_key_text():
         pygame.event.Event(pygame.TEXTINPUT, text="q"))
     assert consumed
     assert field.text == "q"
+
+
+def _keydown(key):
+    return pygame.event.Event(pygame.KEYDOWN, key=key, unicode="", mod=0)
+
+
+def _choice_fields(taken):
+    fields = FieldList()
+    fields.set_rows([FieldRow("world.kind", "kind", "fixed", taken.append,
+                              choices=lambda: [("fixed", "fixed"), ("reference", "reference")])])
+    return fields
+
+
+def test_choice_row_opens_pick_list_and_applies_the_chosen_value():
+    taken = []
+    fields = _choice_fields(taken)
+    rect = pygame.Rect(0, 0, 400, 300)
+    assert fields.handle_event(_keydown(pygame.K_RETURN), rect)
+    assert fields.choosing and fields.choice_index == 0
+    assert fields.handle_event(_keydown(pygame.K_DOWN), rect)
+    assert fields.handle_event(_keydown(pygame.K_DOWN), rect)  # clamps at the end
+    assert fields.choice_index == 1
+    # Text typed into an open pick list is swallowed, not parsed.
+    assert fields.handle_event(pygame.event.Event(pygame.TEXTINPUT, text="x"), rect)
+    assert fields.handle_event(_keydown(pygame.K_RETURN), rect)
+    assert taken == ["reference"]
+    assert not fields.editing and not fields.choosing
+
+
+def test_choice_row_escape_keeps_the_value():
+    taken = []
+    fields = _choice_fields(taken)
+    rect = pygame.Rect(0, 0, 400, 300)
+    fields.handle_event(_keydown(pygame.K_RETURN), rect)
+    fields.handle_event(_keydown(pygame.K_END), rect)
+    assert fields.handle_event(_keydown(pygame.K_ESCAPE), rect)
+    assert taken == [] and not fields.editing
+
+
+def test_choice_row_click_uses_the_drawn_list_geometry():
+    taken = []
+    fields = _choice_fields(taken)
+    rect = pygame.Rect(0, 0, 400, 300)
+    surface = pygame.Surface((400, 300))
+    fields.begin_edit()
+    fields.draw(surface, rect)
+    box = fields._choice_rect
+    assert box is not None and rect.contains(box)
+    row = fields._choice_row_height
+    assert fields.handle_event(_click((box.x + 10.0, box.y + 2 + row * 1.5)), rect)
+    assert taken == ["reference"]
+    # A click outside an open list closes it without a change.
+    fields.begin_edit()
+    fields.draw(surface, rect)
+    assert fields.handle_event(_click((5.0, 5.0)), rect)
+    assert taken == ["reference"] and not fields.editing

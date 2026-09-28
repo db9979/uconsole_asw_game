@@ -10,7 +10,11 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.1**
+Current release: **1.3.2**
+
+Release 1.3.2 lets the Mission Editor pick a mission's reference world from a
+list of the 128 packaged sectors (with their countries) instead of typing
+`sector:<n>`, and its preview draws the chosen sector's coast. Saves stay v22.
 
 Release 1.3.1 gives the crewed submarine a radio room (a seventh boat
 station: HQ's broadcast with a contact report on the frigate, and situation

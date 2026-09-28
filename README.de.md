@@ -12,7 +12,12 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.0**
+Aktuelle Version: **1.3.2**
+
+Version 1.3.2 lässt im Missionseditor die Referenzwelt einer Mission aus einer
+Liste der 128 mitgelieferten Sektoren (mit ihren Ländern) wählen, statt
+`sector:<n>` einzutippen; die Vorschau zeichnet die Küste des gewählten
+Sektors. Spielstände bleiben v22.
 
 Version 1.3.0 erweitert Simulation und Werkzeuge der Besatzung, ohne die
 Balance von 1.0.0 zu verschieben (77 Kalibrierungsmetriken unverändert): ein

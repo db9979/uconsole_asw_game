@@ -214,3 +214,19 @@ def test_scripts_are_executable_posix_shell():
     for script in (LAUNCH, INSTALL):
         subprocess.run(["sh", "-n", str(script)], check=True)
     assert "releases/latest" in UPDATER.read_text()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="the installer refuses to run as root")
+def test_installer_updates_checkout_that_predates_it(repos, tmp_path):
+    """An old ~/games/u-jagd without the updater is fast-forwarded first."""
+    work, app = repos
+    stub = work / "packaging/uconsole/u_jagd_updater.py"
+    stub.parent.mkdir(parents=True)
+    stub.write_text("import sys\nprint('stub', *sys.argv[1:])\n")
+    run(work, "git", "add", "-A")
+    run(work, "git", "commit", "-qm", "installer")
+    run(work, "git", "push", "-q", "origin", "main")
+    result = subprocess.run(["sh", str(INSTALL)], capture_output=True, text=True,
+                            env={**os.environ, "U_JAGD_DIR": str(app)}, check=True)
+    assert "stub update" in result.stdout and "stub setup" in result.stdout
+    assert (app / "packaging/uconsole/u_jagd_updater.py").exists()

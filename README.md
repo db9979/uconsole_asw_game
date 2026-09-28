@@ -12,15 +12,19 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.10**
+Current release: **1.3.11**
 
-Release 1.3.10 adds a **Windows program**: `U-Jagd-Windows.exe` starts the game
+Release 1.3.11 adds a **Windows program**: `U-Jagd-Windows.exe` starts the game
 as Remote Crew server (crew or solo mode, optionally as the submarine), shows
 the browser address, join code and QR code, and offers each newer release
 itself. GitHub Actions builds it on every push to `main` and publishes it as
 release `v<version>`. The game also gains `--remote-crew` (crew-mode Remote
 Crew on the first private LAN address at launch) and `--status-file`. See
 [Windows program](#windows-program). Saves stay v23.
+
+Release 1.3.10 fixes the uConsole installer on a checkout that is older than
+the installer itself: it now fast-forwards that checkout to `main` first
+instead of stopping with a missing `u_jagd_updater.py`.
 
 Release 1.3.9 adds a one-command installer for the uConsole with automatic
 updates: every start fetches the newest GitHub release (a background timer also

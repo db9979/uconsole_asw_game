@@ -1607,8 +1607,9 @@ Notizen Phase 1:
 - `packaging/uconsole/u_jagd_updater.py` (nur Standardbibliothek, System-`python3`): Quelle `releases/latest`, Tag `vX.Y.Z` wie der Windows-Starter (Release legt `.github/workflows/windows.yml` beim Push auf main an); ohne Release `origin/main`, `U_JAGD_UPDATE_CHANNEL=main` erzwingt main. Nur Fast-Forward auf `main` (oder detached), nie bei lokalen Änderungen/anderem Zweig; `pip install -e .` nur wenn `pyproject.toml`/`requirements.txt` sich ändern; Prüfung `main.py --version`, sonst `git reset --keep` zurück und Commit in `~/.u-jagd/updater-failed` gemerkt. Log `~/.u-jagd/updater.log`.
 - Sperre `~/.u-jagd/updater.lock` (flock) erbt das Spiel per `execv`: der systemd-Benutzertimer `u-jagd-update.timer` (3 min nach Boot, alle 6 h) aktualisiert nie unter einem laufenden Spiel.
 - Tests: `tests/test_uconsole_updater.py` (lokale Bare-Repos). Auf dem echten Gerät noch nicht getestet.
+- 1.3.10: `install.sh` zieht einen vorhandenen Checkout ohne `u_jagd_updater.py` (älter als 1.3.9) erst per `fetch` + `merge --ff-only` auf main (nur auf Zweig main); Test `test_installer_updates_checkout_that_predates_it` (läuft nur ohne root).
 
-## Windows-Programm mit Auto-Update (2026-09-28, App 1.3.10)
+## Windows-Programm mit Auto-Update (2026-09-28, App 1.3.11)
 
 - `src/launcher/`: `app.py` Tk-Starter (startet dieselbe EXE mit `--game`, liest `--status-file`, zeigt URL/Code/QR aus `src/ui/qr.py`), `update.py` (`releases/latest`, Asset `U-Jagd-Windows.exe`, Größe + GitHub-`digest` sha256, `.cmd` tauscht die EXE nach Prozessende), `entry.py` (`--game`, `--self-test REPORT`).
 - Spiel: `--remote-crew` (Besatzungsmodus wie F9, `CommanderConsole.autostart`), `--status-file` (`publish_status`, nur bei Änderung), `prepare()` nimmt ohne `fcntl` die Routing-Adresse (UDP-connect an 192.0.2.1, kein Paket, kein DNS).

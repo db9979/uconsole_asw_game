@@ -40,6 +40,15 @@ python3 -c 'import sys; sys.exit(sys.version_info < (3, 11))' \
 
 if [ -d "$APP_DIR/.git" ]; then
     say "using existing checkout $APP_DIR"
+    if [ ! -f "$APP_DIR/packaging/uconsole/u_jagd_updater.py" ]; then
+        # A checkout from before the installer existed: bring it to main first.
+        say "checkout predates the installer; updating it to main"
+        [ "$(git -C "$APP_DIR" rev-parse --abbrev-ref HEAD)" = main ] \
+            || die "$APP_DIR is not on branch main; switch with 'git -C $APP_DIR checkout main' and try again."
+        git -C "$APP_DIR" fetch origin main \
+            && git -C "$APP_DIR" merge --ff-only FETCH_HEAD \
+            || die "could not update $APP_DIR (local changes or another branch?). Run 'git -C $APP_DIR status', then 'git -C $APP_DIR pull --ff-only' and try again."
+    fi
 elif [ -e "$APP_DIR" ]; then
     die "$APP_DIR exists but is not a git checkout; set U_JAGD_DIR to another folder."
 else

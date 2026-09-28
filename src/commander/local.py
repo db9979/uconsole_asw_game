@@ -7,6 +7,8 @@ including menu frames, and stop() uses the transport's bounded shutdown.
 
 import ipaddress
 from itertools import islice
+import json
+import os
 import socket
 import struct
 import time
@@ -79,6 +81,10 @@ class CommanderConsole:
         self._url_qr_payload = None
         self._url_qr_box_px = None
         self._url_qr_surface = None
+        # Optional launcher status file (Windows starter): written only when
+        # the listener address or join code changes, never per frame.
+        self.status_path = None
+        self._status_written = None
 
     def prepare(self):
         """Discover at most 64 Linux interface IPv4s, with no DNS or LAN probe."""
@@ -101,11 +107,46 @@ class CommanderConsole:
                     except OSError:
                         continue
         except (ImportError, AttributeError, OSError):
-            # Loopback remains usable without Linux ioctls; never fall back to
-            # wildcard binding or a potentially blocking hostname resolver.
-            pass
+            # Without Linux ioctls (Windows) ask the routing table which local
+            # address reaches the network: a UDP connect to an IP literal sends
+            # nothing and resolves no name. Never fall back to wildcard binding
+            # or a potentially blocking hostname resolver.
+            address = self._route_address()
+            if address is not None and any(address in net for net in networks):
+                hosts.add(str(address))
         self.hosts = ("127.0.0.1", *sorted(hosts - {"127.0.0.1"}))
         self._prepared = True
+
+    @staticmethod
+    def _route_address():
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+                probe.connect(("192.0.2.1", 9))  # TEST-NET-1, no packet sent
+                return ipaddress.IPv4Address(probe.getsockname()[0])
+        except (OSError, ValueError):
+            return None
+
+    def publish_status(self):
+        """Write the launcher status file when address or join code changed."""
+        if self.status_path is None:
+            return
+        running = self.address is not None
+        status = {
+            "state": "running" if running else ("error" if self.error else "stopped"),
+            "url": (f"http://{self.address[0]}:{self.address[1]}/" if running else None),
+            "code": self.pairing_code if running else None,
+            "solo": self.solo,
+        }
+        if status == self._status_written:
+            return
+        staging = f"{self.status_path}.tmp"
+        try:
+            with open(staging, "w", encoding="utf-8") as handle:
+                json.dump(status, handle, allow_nan=False)
+            os.replace(staging, self.status_path)
+        except OSError:
+            return
+        self._status_written = status
 
     def invalidate_commands(self):
         self.bridge.invalidate_commands()
@@ -352,6 +393,7 @@ class CommanderConsole:
                 self.error = f"commander.local.hotspot.error.{self.hotspot.error}"
         if self.address is None:
             self._close_confirmation()
+            self.publish_status()
             return
         now = time.monotonic()
         if not self.web_mode and hasattr(self.server, "resolve_station_request"):
@@ -408,6 +450,7 @@ class CommanderConsole:
                 "navigation": self.bridge.navigation_proposal,
             })
         self.pairing_code = self.server.pairing_code
+        self.publish_status()
         if not self.web_mode:
             self._sync_confirmation(game)
         sequence = self.bridge.proposal_sequence
@@ -663,7 +706,11 @@ class CommanderConsole:
 
     def autostart_solo(self):
         """Launch-time solo start on the first private LAN address, else loopback."""
-        self.solo = True
+        self.autostart(solo=True)
+
+    def autostart(self, solo=False):
+        """Launch-time Remote Crew start on the first private LAN address."""
+        self.solo = bool(solo)
         self.error = None
         try:
             self.prepare()

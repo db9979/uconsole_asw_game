@@ -31,6 +31,7 @@ Issues = "https://github.com/db9979/uconsole_asw_game/issues"
 
 [project.optional-dependencies]
 dev = ["build>=1", "pytest>=8", "pytest-xdist>=3"]
+windows = ["pyinstaller>=6.10,<7"]
 
 [project.scripts]
 u-jagd = "main:main"

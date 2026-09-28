@@ -12,7 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.10**
+Current release: **1.3.11**
+
+Release 1.3.11 adds a **Windows program**: `U-Jagd-Windows.exe` starts the game
+as Remote Crew server (crew or solo mode, optionally as the submarine), shows
+the browser address, join code and QR code, and offers each newer release
+itself. GitHub Actions builds it on every push to `main` and publishes it as
+release `v<version>`. The game also gains `--remote-crew` (crew-mode Remote
+Crew on the first private LAN address at launch) and `--status-file`. See
+[Windows program](#windows-program). Saves stay v23.
 
 Release 1.3.10 fixes the uConsole installer on a checkout that is older than
 the installer itself: it now fast-forwards that checkout to `main` first
@@ -203,9 +211,37 @@ Commander browser: [OPZ/CIC at 1920 x 1080](docs/screenshots/commander-overview.
   does not add hidden wind drift.
 - Modeled fuel consumption, endurance, range and repair trends in Engineering.
 
+## Windows program
+
+Download `U-Jagd-Windows.exe` from the
+[latest release](https://github.com/db9979/uconsole_asw_game/releases/latest)
+and run it; no Python installation is needed. The starter window lets you
+choose crew mode (several browsers, one station each) or solo mode (one
+browser runs every station), whether this PC plays the submarine, window or
+full screen, sound and the port, then **Start server** opens the game window
+with Remote Crew already listening on the PC's private LAN address. The
+starter shows the browser address, the join code and a QR code; station
+requests are approved in the game window (F9) as on the uConsole. Windows may
+ask once whether U-Jagd may use private networks: allow it, otherwise other
+devices cannot connect. **Stop server** ends the game (unsaved progress is
+lost); the game log is kept in `%USERPROFILE%\.u-jagd\logs\server.log`.
+
+At every start the program asks GitHub whether a newer release exists and
+offers **Install update**: it downloads the new file, checks its size and
+SHA-256 digest, replaces itself and restarts. The build is not code-signed,
+so Windows SmartScreen may warn on the first start ("More info", "Run
+anyway"). Saves and settings live in `%USERPROFILE%\.u-jagd\` as on Linux.
+
+The workflow `.github/workflows/windows.yml` builds the program with
+PyInstaller (`packaging/windows/u-jagd-windows.spec`) on every push and pull
+request, runs its headless self-test (a short mission plus the Remote Crew
+pages) and, on `main`, publishes release `v<APP_VERSION>` once per version.
+To build locally on Windows: `python -m pip install -e ".[windows]"` and
+`pyinstaller packaging/windows/u-jagd-windows.spec`.
+
 ## Requirements
 
-- Linux
+- Linux (or Windows with the packaged [Windows program](#windows-program))
 - Python 3.11 or newer
 - Pygame 2.6 or newer
 - NumPy 2.0 or newer
@@ -261,6 +297,12 @@ python main.py --version
 launch. There is no `--fullscreen` or command-line language option. After a
 package installation, the same entry point is available as `u-jagd`, for
 example `u-jagd --windowed`.
+
+`python main.py --remote-crew` starts Remote Crew in crew mode on the first
+private LAN address at launch, as the F9 row would (`--solo-crew` does the same
+in solo mode; `--web-port` picks the port, default 8765). `--status-file PATH`
+writes the Remote Crew address and join code as JSON to `PATH` whenever they
+change; the Windows starter reads it.
 
 ## Starting a Game
 

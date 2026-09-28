@@ -43,6 +43,15 @@ A reload may recover the same session, but station authority expires quickly if
 presence polling stops. Never publish real pairing codes, cookies, or CSRF tokens
 in screenshots, logs, or issue reports.
 
+**Windows PC as server.** `U-Jagd-Windows.exe` (see the README section
+"Windows program") runs the same game on a Windows PC. Its starter window
+launches the game with `--remote-crew` or `--solo-crew`, so the listener is
+already up on the PC's private LAN address (steps 1-5 are done), and it shows
+the URL, the pairing code and a QR code. Steps 6-8 stay the same: the host
+approves station requests in the game window (F9). The hotspot mode is
+Linux-only. Allow U-Jagd on private networks when the Windows firewall asks.
+`python main.py --remote-crew` does the same on Linux.
+
 ## Role Controls
 
 - The host grants one exclusive owner per station. One client may retain several

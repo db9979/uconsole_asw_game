@@ -291,7 +291,8 @@ function drawScopeFrame(id, scope) {
     stabilized: scopeOptics.stabilized, stab_label: t("sight_stabilized"),
     optics_label: opticsText(scopeOptics, scope.fov_deg),
     outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: row.span_deg, cls: row.cls,
-      stale: row.age_s === null || row.age_s > 1, lights: row.lights}))}, performance.now() / 1000, g.font);
+      stale: row.age_s === null || row.age_s > 1, lights: row.lights, elevation_deg: row.elevation_deg,
+      ...(Number.isFinite(row.elevation_deg) ? {cls: "aircraft"} : {})}))}, performance.now() / 1000, g.font);
   if (!finite(scope.bearing)) drawEmpty(plot);
   return true;
 }

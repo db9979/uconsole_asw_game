@@ -1408,6 +1408,8 @@ class SimMixin:
         # Navigation lights the lookout made out, per track (never saved; the
         # next observation restores them).
         self._lookout_lights: dict[str, tuple] = {}
+        # Elevation (deg above the sea horizon) of each aircraft he sees.
+        self._lookout_elevation: dict[str, tuple] = {}
 
     def _lookout_environment(self) -> dict:
         return dict(
@@ -1494,6 +1496,9 @@ class SimMixin:
             self._lookout_lights.pop(track_id, None)
         else:
             self._lookout_lights[track_id] = (lights, self.sim_t)
+        if kind == "FLG":
+            self._lookout_elevation[track_id] = (max(-5.0, visual_physics.elevation_deg(
+                altitude_m or 0.0, distance, visual_physics.LOOKOUT_EYE_HEIGHT_M)), self.sim_t)
         # One report per new sighting and per step up in recognition; a call
         # inside the same measurement epoch leaves the track unchanged.
         if level > previous_level and track.label == label:
@@ -1579,6 +1584,9 @@ class SimMixin:
                     lit=lit and id(actor) in civilians)
         self._lookout_lights = {key: value for key, value in self._lookout_lights.items()
                                 if self.sim_t - value[1] <= config.LOOKOUT_EPOCH_S * 2}
+        self._lookout_elevation = {
+            key: value for key, value in getattr(self, "_lookout_elevation", {}).items()
+            if self.sim_t - value[1] <= config.LOOKOUT_EPOCH_S * 2}
         for actor in sorted(self.subs, key=lambda item: item.id):
             if (not actor.sunk and actor.state != "SINKING"
                     and actor.depth <= config.LOOKOUT_SUB_SURFACED_MAX_DEPTH_M):

@@ -12,13 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.46**
+Current release: **1.3.47**
 
-Release 1.3.46 redraws the bridge's small weather picture in the start screen's
-look: it now looks into the wind with the sky of the hour (sun, moon and stars),
-the clouds, rain, snow or fog and the sea running at the eye, and a turquoise
-wind rose in its corner, framed by the corner brackets of the other views. Both
-on the uConsole and in the Remote Crew browser; saves stay v27.
+Release 1.3.47 puts aircraft at their true height in the lookout's binoculars,
+the lookout strip and the periscope: each stands at its elevation above the
+horizon, worked out from its altitude and range less the curve of the Earth, so
+a high aircraft close by needs the optics tilted up. Aircraft now hang in the
+still sky behind the clouds instead of riding the swell with the ships. Both on
+the uConsole and in the Remote Crew browser; saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

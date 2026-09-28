@@ -12,12 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.29**
+Current release: **1.3.30**
 
-Release 1.3.29 names the submarine consistently: every screen, the web
-clients, help and manual now say **submarine** (German **U-Boot**) where they
-used to say just "boat", for example the **Submarine campaign** and the
-submarine missions. Saves stay v25.
+Release 1.3.30 lets the **frigate play the submarine missions against the AI**:
+an uncrewed mission submarine now pursues its objective instead of
+patrolling. It runs below the layer for the breakthrough goal, follows HQ's
+contact reports and comes to periscope depth to sight and report the
+frigate, and in the convoy attack runs ahead of the convoy and torpedoes its
+merchants one at a time. Saves stay v25.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

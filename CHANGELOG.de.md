@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.13
+
+Version 1.3.13 rendert die uConsole-Screenshots nach drei simulierten
+Minuten statt nach sechs Sekunden, damit Wasserfälle, Plots und Kontaktlisten
+gefüllt sind, und zeigt den Missionseditor mit der mitgelieferten
+Beispielmission (Bibliothek und Seed-Vorschau des Sektors) statt einer leeren
+Bibliothek. Die README verlinkt jetzt auch Menü- und Editoransichten.
+Spielstände bleiben v23.
+
 ## 1.3.12
 
 Version 1.3.12 erneuert die Screenshots in der README aus dem aktuellen

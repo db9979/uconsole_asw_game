@@ -14,14 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.12**
+Aktuelle Version: **1.3.13**
 
-Version 1.3.12 erneuert die Screenshots auf dieser Seite aus dem aktuellen
-Spiel (uConsole mit 1280 x 720, einschließlich der Stationen des besetzten
-U-Boots, und der Remote-Crew-Browser in Chromium) und verschiebt die
-Versionsgeschichte nach [CHANGELOG.de.md](CHANGELOG.de.md), damit hier nur noch
-die neueste Version steht. `tools/capture_screenshots.py` und
-`tools/capture_commander.py` erzeugen alle Bilder neu. Spielstände bleiben v23.
+Version 1.3.13 rendert die uConsole-Screenshots nach drei simulierten
+Minuten statt nach sechs Sekunden, damit Wasserfälle, Plots und Kontaktlisten
+gefüllt sind, und zeigt den Missionseditor mit der mitgelieferten
+Beispielmission (Bibliothek und Seed-Vorschau des Sektors) statt einer leeren
+Bibliothek. Die README verlinkt jetzt auch Menü- und Editoransichten.
+Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -65,6 +65,14 @@ U-Boot-Stationen: [Führung](docs/screenshots/de-uboot-command.png),
 Beispiel der Schadensabwehr mit vorgegebenen Flutungen, Bränden, ausgefallenen
 Zonen und Reparaturtrupps:
 [F-217-Schadensschema](docs/screenshots/de-damage-control-alert.png).
+
+Menüs und Editoren: [Szenarioauswahl](docs/screenshots/de-mission-scenario-selection.png),
+[Einsatzbesprechung](docs/screenshots/de-mission-briefing.png),
+[Optionen](docs/screenshots/de-options.png),
+[Missionseditor](docs/screenshots/de-mission-editor.png) mit
+[Seed-Vorschau](docs/screenshots/de-mission-editor-detail.png),
+[Einheiteneditor](docs/screenshots/de-unit-editor.png) und der
+[taktische Einheitenanalysator](docs/screenshots/de-contact-analyzer.png).
 
 ### Remote-Crew-Browser
 

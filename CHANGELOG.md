@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.13
+
+Release 1.3.13 renders the uConsole screenshots after three simulated
+minutes instead of six seconds, so waterfalls, plots and contact lists are
+filled, and shows the Mission Editor with the packaged example mission (library
+and seeded sector preview) instead of an empty library. The README now links
+the menu and editor views too. Saves stay v23.
+
 ## 1.3.12
 
 Release 1.3.12 refreshes the screenshots in the README from the current game

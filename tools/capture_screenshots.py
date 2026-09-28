@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import json
 import os
 import sys
 import tempfile
@@ -54,6 +55,8 @@ UBOOT_STATIONS = (
 )
 
 LANGUAGES = ("en", "de")
+WARMUP_STEP_S = 0.1
+WARMUP_STEPS = 1800
 SONAR_PAGES = (
     "broadband",
     "lofar",
@@ -128,6 +131,9 @@ def capture_all(output_dir: Path, seed: int = 1234,
         config.SAVE_DIR = str(content_root)
         config.SAVE_PATH = str(content_root / "save.json")
         store = UserContentStore(content_root)
+        # The packaged template gives the Mission Editor a mission to show.
+        store.save("mission", json.loads(
+            (ROOT / "data" / "editor_templates" / "mission.json").read_text(encoding="utf-8")))
         menu: Game | None = None
         game: Game | None = None
         boat: Game | None = None
@@ -146,9 +152,10 @@ def capture_all(output_dir: Path, seed: int = 1234,
             boat.local_side = "uboot"
 
             # Build one representative observation history for both languages.
-            for _ in range(360):
-                game.update(1.0 / config.FPS)
-                boat.update(1.0 / config.FPS)
+            # Three simulated minutes fill the waterfalls, plots and contact lists.
+            for _ in range(WARMUP_STEPS):
+                game.update(WARMUP_STEP_S)
+                boat.update(WARMUP_STEP_S)
             boat.msg_until = 0.0
             game.msg_until = 0.0
             baseline_damage = copy.deepcopy(game.damage)
@@ -189,6 +196,12 @@ def capture_all(output_dir: Path, seed: int = 1234,
                                             profile_keys=profiles)
                 _capture_to(menu, output_dir, language,
                             "mission-editor.png", written)
+                if menu.editor.open_selected() is not None:
+                    # The static seed preview draws the reference sector and units.
+                    menu.editor.tab_index = menu.editor.tabs.index("preview")
+                    menu.editor._sync_fields()
+                    _capture_to(menu, output_dir, language,
+                                "mission-editor-detail.png", written)
 
                 menu.editor = UnitEditor(builtins, store=store, tr=menu.tr)
                 _capture_to(menu, output_dir, language, "unit-editor.png", written)

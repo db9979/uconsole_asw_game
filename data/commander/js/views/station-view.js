@@ -68,6 +68,8 @@ export function renderStationView() {
     if (section.hidden) for (const container of section.querySelectorAll("dl, .station-list")) container.replaceChildren();
   }
   renderRoleVisuals(active);
+  // Silent running: the boat's command stations rig for red, dimmed light.
+  document.body.dataset.boatLight = isBoatCommand(active) && S.v2State[active]?.status?.silent === true ? "red" : "";
   if (!active) return;
   const signature = `${S.language}:${active}:${JSON.stringify(S.v2State[active])}:${JSON.stringify(S.v2State.environment)}`;
   if (signature === S.stationRenderSignature) return;

@@ -86,7 +86,8 @@ class CrewOrders:
               "dc_flooded": "schaden", "dc_chlorine": "schaden",
               "dc_power_lost": "schaden", "dc_power_restored": "schaden",
               "radio_sending": "funk", "radio_sent": "funk", "radio_aborted": "funk",
-              "radio_copied": "funk", "radio_copied_report": "funk"}
+              "radio_copied": "funk", "radio_copied_report": "funk",
+              "detonation_near": "sonar", "detonation_far": "sonar"}
 
     def __init__(self):
         self.silent = False
@@ -271,6 +272,12 @@ class CrewedBoat:
         # Spoken crew reports from this feed (transient, like the frigate's).
         self.callouts = CalloutLog("boat")
         self.evaded_t = None             # last evasion order (sim s, transient)
+        # Atmosphere cues the boat hears (hull creaks, cracks, detonations):
+        # transient like the frigate's, played locally when the uConsole is
+        # the boat and published to the boat's browsers.
+        self.sound_events = deque(maxlen=config.UBOOT_SOUND_EVENTS_MAX)
+        self.sound_seq = 0
+        self._creak_tick = None
         # Cached radiating adapters (identity stays stable between updates).
         self._ownship_source = None
         self._torpedo_sources = {}
@@ -522,6 +529,59 @@ def obstacle_ahead_nm(world, sub):
     return None
 
 
+BOAT_CUES = ("hull_creak", "hull_crack", "detonation_near", "detonation_far")
+_HULL_FAILURES = ("hull_bolts", "hull_seal", "hull_fracture", "hull_collapse")
+
+
+def boat_sound(game, boat, cue: str) -> None:
+    """One atmosphere cue in the boat: played on the uConsole when it is the
+    boat and published to the boat's browsers (never to the frigate)."""
+    boat.sound_seq += 1
+    boat.sound_events.append(dict(seq=boat.sound_seq, kind=cue))
+    if game.local_side == "uboot" and game.opfor is boat:
+        game.audio.play_boat_cue(cue)
+
+
+def creak_chance(depth_m: float, test_depth_m: float) -> float:
+    """Chance per creak check: none shallow, rising to 1 at test depth."""
+    ratio = depth_m / max(test_depth_m, 1.0)
+    if ratio < config.UBOOT_CREAK_START:
+        return 0.0
+    span = (ratio - config.UBOOT_CREAK_START) / (1.0 - config.UBOOT_CREAK_START)
+    return min(1.0, config.UBOOT_CREAK_MIN_CHANCE
+               + (1.0 - config.UBOOT_CREAK_MIN_CHANCE) * span)
+
+
+def update_creak(game, boat) -> None:
+    """The pressure hull works audibly deep down (a cue, never simulation)."""
+    sub = boat.sub
+    tick = int(game.sim_t // config.UBOOT_CREAK_TICK_S)
+    if tick == boat._creak_tick:
+        return
+    boat._creak_tick = tick
+    chance = creak_chance(sub.depth, sub.stype.max_depth_m)
+    if chance > 0.0 and detrand.u01(sub.sensor_seed, "hull-creak", tick) < chance:
+        boat_sound(game, boat, "hull_creak")
+
+
+def hear_detonation(game, boat, x: float, y: float) -> None:
+    """A detonation in the water: the crew hears it, close or distant, with
+    the bearing its own ears measure (a few degrees off)."""
+    sub = boat.sub
+    if sub.sunk:
+        return
+    distance = math.hypot(x - sub.x, y - sub.y)
+    if distance > config.UBOOT_DETONATION_HEARD_NM:
+        return
+    near = distance <= config.UBOOT_DETONATION_NEAR_NM
+    bearing = (math.degrees(math.atan2(x - sub.x, -(y - sub.y)))
+               + config.UBOOT_DETONATION_BEARING_SD_DEG
+               * detrand.normal(sub.sensor_seed, "detonation", int(game.sim_t * 1000.0))) % 360.0
+    key = "detonation_near" if near else "detonation_far"
+    boat_sound(game, boat, key)
+    boat.orders.event(key, bearing=f"{round(bearing) % 360:03d}")
+
+
 def update_crew(game, boat: CrewedBoat) -> None:
     """Crew warnings from the boat's own state (0.25 s cadence)."""
     sub, orders = boat.sub, boat.orders
@@ -554,7 +614,10 @@ def update_crew(game, boat: CrewedBoat) -> None:
     orders.esm = boat.esm.bearings(game.sim_t) if orders.mast else []
     update_sightings(game, boat)
     boat.radio.update(game, boat)
+    update_creak(game, boat)
     for key, values in orders.drain_events():
+        if key in _HULL_FAILURES:
+            boat_sound(game, boat, "hull_crack")
         if "compartment" in values:
             values = dict(values, compartment=message(
                 f"uboot.compartment.{values['compartment']}"))

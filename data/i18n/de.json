@@ -5597,5 +5597,7 @@
   "uboot.threat.overdepth": "UNTER TESTTIEFE {depth} m (Test {test} m, Zerstörung {crush} m)",
   "uboot.ladder.crush": "Zerstörung {depth} m",
   "commander.web.uboot_depth_mark_crush": "Zerstörung {depth} m",
-  "commander.web.uboot_chip_overdepth": "Unter Testtiefe {test} m (Zerstörung {crush} m)"
+  "commander.web.uboot_chip_overdepth": "Unter Testtiefe {test} m (Zerstörung {crush} m)",
+  "uboot.event.detonation_near": "Detonation dicht beim Boot, Peilung {bearing}!",
+  "uboot.event.detonation_far": "Entfernte Detonation, Peilung {bearing}."
 }

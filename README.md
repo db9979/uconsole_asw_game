@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.21**
+Current release: **1.3.22**
 
-Release 1.3.21 lets the crewed boat go **below its test depth**, down to crush
-depth (1.5 x test depth), at a growing risk: sheared bolts, failed shaft or
-valve seals and, deeper, a cracked pressure hull flood compartments and add
-damage, far more often the deeper the boat goes; at crush depth the hull
-collapses. The depth columns mark the crush depth and a red alarm shows while
-the boat is below test depth. Saves stay v24.
+Release 1.3.22 brings **atmosphere to the crewed boat**: the pressure hull creaks
+deep down and cracks when it fails, detonations in the water are heard close
+aboard or far off and logged with a bearing, and **silent running** rigs the
+boat's screens for dimmed red light on the uConsole and in the browser. The
+boat's browsers now play its own sound cues, and a rescue task's alarm cue no
+longer upsets the browser. Saves stay v24.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

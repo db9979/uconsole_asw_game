@@ -45,7 +45,8 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  outlines=scope_outlines(game, boat) if opfor.scope_available(boat) else [],
                  crosshair_deg=config.UBOOT_STADIMETER_WINDOW_DEG,
                  land=land_view(game.world, boat.sub.x, boat.sub.y,
-                                config.UBOOT_SCOPE_EYE_HEIGHT_M))
+                                config.UBOOT_SCOPE_EYE_HEIGHT_M),
+                 anim_t=game.sim_t)
 
 
 def sighting_rows(game, boat) -> list:

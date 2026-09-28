@@ -1,4 +1,4 @@
-# U-Jagd 1.3.0 - Stations- und Tastenkürzel
+# U-Jagd 1.3.6 - Stations- und Tastenkürzel
 
 Druckfassung: [`station-shortcuts.de.pdf`](station-shortcuts.de.pdf).
 Maßgeblich ist die implementierte lokale Bedienung. Stationsnummern und
@@ -35,6 +35,7 @@ Berechtigungsprüfungen bleiben wirksam.
 | `M R B C D · Enter · Rück` | Im Plotmodus: Werkzeug wählen, Punkt mit Enter oder Klick setzen (Pfeile bewegen den Cursor, Shift schneller), nächstes Objekt löschen (Shift: alle) |
 | `Esc` | Eingabe abbrechen oder Beenden-Dialog öffnen |
 | `R / M` | Nach Missionsende: Neustart mit gleichem Seed / Hauptmenü |
+| `D` | Nach Missionsende: Nachbesprechung mit der Wahrheit neben dem Wissen der Crew |
 
 ## 1 Brücke
 
@@ -49,19 +50,22 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Q / E` | Karte heraus-/hineinzoomen |
 | `K` | Kamera-Follow an/aus |
 | `, / .` | Ausguck-Seite: Radius kleiner / größer |
+| `B` | Ausguck-Seite: Fernglas über der Karte ein/aus (, / . schwenken) |
+| `G` | Gefechtsstationen an/aus |
 
 ## 2 Sonar
 
 | Taste / Eingabe | Funktion |
 |---|---|
 | `Shift+A` | Aktiv-Ping abfeuern (Kühlzeit, verrät Position!) |
-| `Umschalt+B` | Empfangsarray zwischen HMS und TAS wechseln |
+| `Umschalt+B` | Empfangsarray wechseln: HMS, TAS, VDS |
 | `Y` | TAS ausbringen / einholen (nur bei 3-12 kn) |
+| `Shift+Y` | VDS fieren / hieven (3-15 kn, Seegang bis 5) |
 | `Bild Auf / Ab` | Broadband / LOFAR / DEMON / TMA / Umwelt / ACTIVE |
 | `2` | 2 erneut drücken, um die Sonarseite weiterzuschalten |
 | `E` | Bathythermograph: lokales Schallprofil messen |
 | `W` | Aktivpuls CW / LFM |
-| `U / V` | TAS/VDS-Solltiefe um 10 m heben / senken |
+| `U / V` | Solltiefe des gewählten Arrays (TAS oder VDS) um 10 m heben / senken |
 | `R` | Hörpeilung direkt: 000 bis 359.9 Grad rechtweisend |
 | `<- / ->` | Peilung +/-0.5 Grad; Shift: 5, Ctrl: 0.1 |
 | `Auf / Ab` | Kontakt für TMA und Klassifikation wählen |
@@ -125,6 +129,8 @@ Berechtigungsprüfungen bleiben wirksam.
 | `Eingabe` | Gewähltes Team dem gewählten Kompartiment zuweisen |
 | `Backspace` | Gewähltes Team zurückziehen |
 | `C` | Hohe Rumpfseite gegen Krängung gegenfluten (erneut: Ventil schließen) |
+| `W` | Wache jetzt ablösen (Seite Besatzung) |
+| `G` | Gefechtsstationen an/aus |
 | `1-9` | Immer Station wechseln, keine Teamzuweisung |
 | `Klick` | Raum oder Beschriftung wählen; Enter weist das gewählte Team zu |
 
@@ -151,6 +157,13 @@ Berechtigungsprüfungen bleiben wirksam.
 | `B` | Neuestes bloßes Radarecho als Track markieren (oder das Echo anklicken) |
 | `Eingabe` | Angriff nach Feind-Einstufung eines realen Kontakts bestätigen |
 | `K` | Kamera-Follow an/aus |
+| `A` | OPZ Seite 3: Seefernaufklärer anfordern / heimschicken |
+| `W` | Suchgebiet auf die gewählte Spur (sonst eigenes Schiff); Klick in die Karte für einen Punkt |
+| `Z / Shift+Z` | Bojenmuster um das Suchgebiet wechseln / Shift bricht ab |
+| `X` | Eine Boje am Flugzeug werfen |
+| `Y` | Bojenmodus des Flugzeugs PASSIV / AKTIV |
+| `T` | Seeraumradar des Flugzeugs ein/aus |
+| `D` | Torpedo auf den zugewiesenen Kontakt (Flugzeug höchstens 2 sm vom Datum) |
 
 ## 6 Funk
 
@@ -158,6 +171,9 @@ Berechtigungsprüfungen bleiben wirksam.
 |---|---|
 | `Auf / Ab` | HFDF-Signal auswählen |
 | `Eingabe` | Peilung mit eigener Position protokollieren |
+| `Auf / Ab` | HQ-Auftrag wählen (Seite Aufträge) |
+| `A` | Gewählten Auftrag annehmen |
+| `D` | Gewählten Auftrag ablehnen |
 
 ## 7 Maschinenraum
 

@@ -5,7 +5,7 @@ import { renderDisabledReasons, unavailable } from "./controls.js";
 import { node } from "./dom.js";
 import { simlogActive } from "./simlog.js";
 import { sendHostAction } from "../net/host.js";
-import { switchSoloSide } from "./lobby.js";
+import { mutateStation, switchSoloSide } from "./lobby.js";
 import { opforRoles } from "../core/base.js";
 
 // ---- Solo host surface --------------------------------------------------
@@ -122,6 +122,7 @@ function openNewGameDialog() {
   }));
   $("host-new-scenario").value = S.hostView.scenario;
   $("host-new-world").value = S.hostView.world_mode;
+  $("host-new-side").value = opforRoles.has(S.session?.station) ? "uboot" : "frigate";
   $("host-new-seed").value = "";
   syncNewGameDifficulty();
   renderDisabledReasons();
@@ -138,7 +139,7 @@ export function init() {
   $("host-new-cancel").addEventListener("click", () => closeHostDialog($("host-new-dialog")));
   $("instructor-cancel").addEventListener("click", () => closeHostDialog($("instructor-dialog")));
   $("host-new-scenario").addEventListener("change", syncNewGameDifficulty);
-  $("host-new-form").addEventListener("submit", (event) => {
+  $("host-new-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!$("host-new-form").reportValidity()) return;
     const params = {scenario: $("host-new-scenario").value, world_mode: $("host-new-world").value};
@@ -154,6 +155,12 @@ export function init() {
     }
     if ($("host-new-seed").value.trim()) params.seed = $("host-new-seed").valueAsNumber;
     closeHostDialog($("host-new-dialog"));
+    // The side is the solo session's: switch it first, the new world keeps it.
+    const boat = opforRoles.has(S.session?.station);
+    if (($("host-new-side").value === "uboot") !== boat) {
+      await mutateStation("/stations/request", {station: boat ? "bridge" : "uboot"});
+      if (opforRoles.has(S.session?.station) === boat) return;
+    }
     sendHostAction("host_new_game", params);
   });
   for (const id of ["host-save"]) $(id).addEventListener("click", () => openSlotDialog("save"));

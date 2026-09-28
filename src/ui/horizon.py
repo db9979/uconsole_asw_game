@@ -16,11 +16,8 @@ import pygame
 from src.core import config
 from src.core.i18n import raw_text
 from src.physics import ship_dynamics
-from src.ui import layout
+from src.ui import layout, silhouettes
 
-# Outline height over apparent length by class (dimensionless).
-HEIGHT_RATIO = {"warship": 0.24, "merchant": 0.17, "unknown": 0.15,
-                "aircraft": 0.45, "torpedo": 0.04}
 SKY_DAY = ((25, 70, 92), (111, 151, 157))
 SKY_NIGHT = ((5, 14, 27), (38, 53, 62))
 SEA_DAY, SEA_NIGHT = (9, 54, 67), (7, 35, 48)
@@ -158,55 +155,24 @@ def horizon_motion(seed: int, sim_t: float, sea_state: float) -> tuple:
     return offset, tilt
 
 
-def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color) -> None:
-    """Procedural outline of a coarse class, ``width`` px long, sitting on the
-    horizon (aircraft: hovering above it)."""
+def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
+                 t: float = 0.0) -> None:
+    """Procedural side view of a coarse class, ``width`` px long, sitting on
+    the horizon (aircraft: hovering above it).  ``t`` (display clock)
+    animates pitch, radar, rotor and wake."""
     width = max(3, int(width))
-    height = max(2, int(width * HEIGHT_RATIO.get(cls, 0.15)))
-    left = cx - width // 2
     if cls == "torpedo":
-        pygame.draw.line(s, (215, 225, 225), (left, base_y + 1), (left + width, base_y + 1),
+        left = cx - width // 2
+        pygame.draw.line(s, silhouettes.FOAM, (left, base_y + 1), (left + width, base_y + 1),
                          max(1, min(3, width // 12)))
         return
-    if cls == "aircraft":
-        body_y = base_y - height * 3
-        pygame.draw.ellipse(s, color, (left, body_y, width, max(2, height // 2)))
-        pygame.draw.line(s, color, (left - width // 6, body_y - 2),
-                         (left + width + width // 6, body_y - 2), 1)
-        pygame.draw.line(s, color, (left + width * 3 // 4, body_y),
-                         (left + width, body_y - height // 2), 1)
-        return
-    hull_h = max(1, height // 3)
-    bow = width // 10
-    pygame.draw.polygon(s, color, [(left + bow, base_y - hull_h), (left + width, base_y - hull_h),
-                                   (left + width - bow // 2, base_y), (left, base_y)])
-    if cls == "warship":
-        block_w, block_h = width // 3, height - hull_h
-        block_x = left + width // 3
-        pygame.draw.rect(s, color, (block_x, base_y - hull_h - block_h, block_w, block_h))
-        pygame.draw.rect(s, color, (block_x + block_w // 3, base_y - height - height // 4,
-                                    max(1, block_w // 6), height // 4 + 1))
-        pygame.draw.line(s, color, (block_x + block_w // 2, base_y - height),
-                         (block_x + block_w // 2, base_y - height - height // 2), 1)
-        pygame.draw.rect(s, color, (left + width * 3 // 4, base_y - hull_h - block_h // 2,
-                                    max(1, width // 12), block_h // 2))
-    elif cls == "merchant":
-        block_w, block_h = width // 6, height - hull_h
-        block_x = left + width - width // 5
-        pygame.draw.rect(s, color, (block_x, base_y - hull_h - block_h, block_w, block_h))
-        pygame.draw.rect(s, color, (block_x + block_w // 3, base_y - height - height // 3,
-                                    max(1, block_w // 4), height // 3 + 1))
-        for post in range(1, 4):
-            px = left + bow + post * (width - width // 5 - bow) // 4
-            pygame.draw.line(s, color, (px, base_y - hull_h), (px, base_y - height), 1)
-    else:
-        pygame.draw.rect(s, color, (left + width // 3, base_y - height,
-                                    width // 3, height - hull_h))
+    silhouettes.draw_profile(s, cls if cls in silhouettes.PROFILES else "unknown",
+                             cx, base_y, width, color, t=t)
 
 
 def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
-                 land=None) -> None:
+                 land=None, anim_t: float = 0.0) -> None:
     """The picture in the eyepiece or binoculars: sky, sea, the horizon in
     motion, the true-bearing scale, the outlines within the field and an
     optional crosshair with its measuring window (half width in degrees)."""
@@ -242,7 +208,7 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             base = horizon + int(math.tan(tilt) * (cx - rect.centerx))
             width = min(rect.w, max(3, int(span_deg * px_per_deg)))
             draw_outline(s, cls, cx, base, width,
-                         blend(dark, haze_color, 0.5 if stale else haze * 0.5))
+                         blend(dark, haze_color, 0.5 if stale else haze * 0.5), anim_t)
         first = int(math.floor((line_of_sight - fov_deg / 2) / 5.0)) * 5
         for tick in range(first, first + int(fov_deg) + 10, 5):
             off = relative_offset(tick, line_of_sight)

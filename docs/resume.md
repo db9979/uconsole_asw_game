@@ -1581,3 +1581,10 @@ Notizen Phase 1:
 - Passiv und aktiv aus der Tiefe des Schleppkörpers (Schicht-Bonus/-Malus wie TAS); Fusion nimmt das bessere von BOW/VDS als eindeutige Referenz für die TAS-Seite.
 - Save v23: `vds_state`, `vds_payout`, `vds_depth_m`, `vds_depth_target_m`, `vds_settle_s`, `vds_handling_ok` im Sonar-Block; v22 wird abgewiesen. Kalibrierung unverändert 77/77.
 - Tests: `tests/test_vds.py`; Seite-4-Layout mit ausgefahrenem VDS in `test_sonar_evidence.py`.
+
+## Startbildschirm, Silhouetten, Web-Solo-Seite (2026-09-28, App 1.3.6)
+
+- `src/ui/splash_view.py`: animierte Nachtszene (Himmel/Sterne/Mond, See, Fregatte mit Radar, Rauch, Bugwelle, Schleppantenne, Hubschrauber mit Tauchsonar, U-Boot mit Echo-Aufleuchten, Bläschen). Titel `splash.title`, Autor `splash.author` ("by Dominik Bornhäußer"), Version `splash.version`; statische Ebenen und Texte gecacht. `draw_menu_backdrop`/`draw_logo`/`draw_menu_panel` für das Hauptmenü.
+- `src/ui/silhouettes.py`: Klassenprofile (warship, merchant, unknown, aircraft, submarine) in Rumpfeinheiten; `horizon.draw_outline` zeichnet damit Sehrohr und Fernglas, animiert mit `anim_t` (Sim-Zeit, nur Anzeige).
+- Tests: `tests/test_silhouettes.py`, `tests/test_startup.py` (Puls trifft das U-Boot, Autor und Version auf Splash und Menü).
+- Web-Solo: der Dialog Neues Spiel hat `host-new-side` (Fregatte/U-Boot); weicht die Wahl ab, wechselt der Browser erst per `/stations/request` die Seite (`_solo_switch_side_locked`), dann `host_new_game`; `solo_rebase` behält die Seite. Die Fregatte fährt dann der KI-Jäger (`src/core/hunter.py`).

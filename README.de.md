@@ -12,7 +12,19 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.5**
+Aktuelle Version: **1.3.6**
+
+Version 1.3.6 zeichnet den Startbildschirm als animierte Nachtjagd: die
+Fregatte F-217 mit drehendem Radar, Schornsteinrauch, Bugwelle und
+Schleppantenne, der Hubschrauber mit Tauchsonar und ein U-Boot unter der
+Sprungschicht, das aufleuchtet, wenn der Puls des Rumpfsonars es trifft; im
+Titel stehen Autor und Version. Dieselbe Szene liegt abgedunkelt hinter dem
+Hauptmenü. Die Silhouetten in Sehrohr und Brückenfernglas zeigen jetzt
+detaillierte Klassenprofile (Fregatte, Containerschiff, Kleinfahrzeug,
+Hubschrauber), die mit der See stampfen, Radar und Rotoren drehen und Bugwelle
+und Kielwasser ziehen. Im Remote-Crew-Solomodus wählt der Dialog „Neues
+Spiel“ die Seite: Fregatte oder U-Boot, das dann die KI-Jäger jagen.
+Spielstände bleiben v23.
 
 Version 1.3.5 bringt KI-Jäger: Wenn niemand die Fregatte fährt (die uConsole
 spielt das Boot oder ein Solo-Browser das U-Boot), jagen Fregatte,

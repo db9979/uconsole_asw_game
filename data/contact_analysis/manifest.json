@@ -1458,8 +1458,8 @@
       "filename": "passenger_02-cruise.png",
       "width": 320,
       "height": 180,
-      "bytes": 15114,
-      "sha256": "ccca0e8cc37083917a3645253d931f13a586d6230c232737c6ed00d75ea95243"
+      "bytes": 15111,
+      "sha256": "3d4cd840c69ae6702aed50e7f3eee33ef34a086da57451154a0e025da0053920"
     },
     {
       "profile_key": "passenger_02",
@@ -1578,8 +1578,8 @@
       "filename": "passenger_06-cruise.png",
       "width": 320,
       "height": 180,
-      "bytes": 15114,
-      "sha256": "ccca0e8cc37083917a3645253d931f13a586d6230c232737c6ed00d75ea95243"
+      "bytes": 15111,
+      "sha256": "3d4cd840c69ae6702aed50e7f3eee33ef34a086da57451154a0e025da0053920"
     },
     {
       "profile_key": "passenger_06",
@@ -1698,8 +1698,8 @@
       "filename": "passenger_10-cruise.png",
       "width": 320,
       "height": 180,
-      "bytes": 15114,
-      "sha256": "ccca0e8cc37083917a3645253d931f13a586d6230c232737c6ed00d75ea95243"
+      "bytes": 15111,
+      "sha256": "3d4cd840c69ae6702aed50e7f3eee33ef34a086da57451154a0e025da0053920"
     },
     {
       "profile_key": "passenger_10",
@@ -1818,8 +1818,8 @@
       "filename": "passenger_14-cruise.png",
       "width": 320,
       "height": 180,
-      "bytes": 15114,
-      "sha256": "ccca0e8cc37083917a3645253d931f13a586d6230c232737c6ed00d75ea95243"
+      "bytes": 15111,
+      "sha256": "3d4cd840c69ae6702aed50e7f3eee33ef34a086da57451154a0e025da0053920"
     },
     {
       "profile_key": "passenger_14",

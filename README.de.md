@@ -14,14 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.18**
+Aktuelle Version: **1.3.19**
 
-Version 1.3.18 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit
-300 dpi und PDF) in `docs/poster/`: die Szene des Startbildschirms, eine kurze
-Beschreibung der uConsole- und Windows-Version, vier Screenshots und QR-Codes
-zum Download und zur Unterstützerseite. `tools/build_poster.py` rendert es aus
-der aktuellen Szene und den Screenshots neu. Das Spiel selbst ist unverändert;
-Spielstände bleiben v23.
+Version 1.3.19 macht die Remote-Crew-Datenströme stabiler. Ein Browser, der
+seinen Sonar-Audio- oder Sonar-Anzeigestrom neu verbindet, übernimmt jetzt
+sofort seinen eigenen bisherigen Strom, statt abgewiesen zu werden, solange der
+Host die alte Verbindung noch nicht als beendet erkannt hat. Der Web-Client
+fragt bei eingeschaltetem Push nicht mehr zu jedem gepushten Zustand
+zusätzlich den Zustand ab. Die Browsertests für Live-Audio und den
+Zustands-Push laufen jetzt in Echtzeit neben dem Host. Spielstände bleiben
+v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

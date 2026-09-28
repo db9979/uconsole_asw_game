@@ -9,11 +9,11 @@ import time
 from pathlib import Path
 
 import pytest
-from commander_web import copy_assets, index_html, inject_probe
+from commander_web import RealTimeHost, copy_assets, index_html, inject_probe
 
 from src.commander import server
 from src.core.game import Game
-from test_commander_assets import Document, PREFIX, catalogs
+from test_commander_assets import PREFIX, catalogs
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -30,14 +30,13 @@ PROBE = r'''
     if (String(args[0]).includes('/api/v2/state') && response.status === 200) statePolls++;
     return response;
   };
-  // Virtual time races ahead while the page idles; a real round trip every
-  // few iterations keeps the waits in step with the host.
+  // The page runs in real time next to the host (no virtual time), so every
+  // wait is a condition with a generous bound, never a race against the host.
   async function until(check, message, limit = 3000) {
     for (let index = 0; index < limit; index++) {
       root.dataset.push = document.body.dataset.push || '';
       root.dataset.connection = $('connection')?.textContent || '';
       if (check()) return;
-      if (index % 5 === 0) await nativeFetch('/push-test-tick').catch(() => {});
       await sleep(20);
     }
     throw new Error(typeof message === 'function' ? message() : message);
@@ -112,7 +111,7 @@ def test_console_runs_on_pushed_state_and_falls_back_to_polling(tmp_path, monkey
         def __init__(self, assets):
             super().__init__(assets)
             self.seen = set()
-            for name in ("tick", "drop", "restore"):
+            for name in ("drop", "restore"):
                 self[f"/push-test-{name}"] = ("text/plain; charset=utf-8", b"ok")
 
         def __contains__(self, key):
@@ -123,19 +122,25 @@ def test_console_runs_on_pushed_state_and_falls_back_to_polling(tmp_path, monkey
     signals = Signals(console.server._http.assets)
     console.server._http.assets = signals
     console.bridge.allowed = True
+    # Real time, not --virtual-time-budget: virtual time outruns the host loop,
+    # so the probe's bounded waits expired before the host had acted on its
+    # signals. The result is read from the running page over DevTools.
+    profile = tmp_path / "browser"
+    log = (tmp_path / "chromium.log").open("wb")
     process = subprocess.Popen([
         chromium, "--headless", "--no-sandbox", "--disable-gpu",
         "--disable-background-networking", "--no-first-run",
         "--no-default-browser-check", "--disable-dev-shm-usage",
-        f"--user-data-dir={tmp_path / 'browser'}", "--window-size=2560,1440",
-        "--force-device-scale-factor=1",
-        "--virtual-time-budget=300000", "--dump-dom",
+        f"--user-data-dir={profile}", "--window-size=2560,1440",
+        "--force-device-scale-factor=1", "--remote-debugging-port=0",
         f"http://{console.address[0]}:{console.address[1]}/",
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    ], stdout=subprocess.DEVNULL, stderr=log)
     started = time.monotonic()
     granted = False
     dropped = restored = False
     push_seen = 0
+    root = {}
+    host = RealTimeHost(game, profile)
     try:
         while process.poll() is None and time.monotonic() - started < 150:
             if not granted:
@@ -152,25 +157,28 @@ def test_console_runs_on_pushed_state_and_falls_back_to_polling(tmp_path, monkey
             elif dropped and not restored and "/push-test-restore" in signals.seen:
                 console.server.set_state_push(True)
                 restored = True
+            root = host.dataset or root
+            if root.get("pushTest"):
+                break
             console.pump(game)
-            game.update(.02)
+            host.step()
             time.sleep(.02)
-        stdout, stderr = process.communicate(timeout=5)
     finally:
-        if process.poll() is None:
-            process.kill()
-            stdout, stderr = process.communicate(timeout=5)
+        host.close()
+        process.kill()
+        process.wait(timeout=5)
+        log.close()
         console.stop()
         game.audio.shutdown()
-    root = next((attrs for tag, attrs in Document(stdout).elements if tag == "html"), {})
-    assert root.get("data-push-test") == "passed", (
-        root.get("data-stage"), root.get("data-push"), root.get("data-connection"),
-        root.get("data-failure", stderr[-400:]), push_seen, dropped, restored)
+    assert root.get("pushTest") == "passed", (
+        root.get("stage"), root.get("push"), root.get("connection"),
+        root.get("failure", (tmp_path / "chromium.log").read_text(errors="replace")[-400:]),
+        push_seen, dropped, restored)
     assert push_seen >= 1 and dropped and restored
     # Chart frame time at 2560x1440 (software rendering in headless Chromium):
     # logged for the hardware checklist, sanity-bounded here.
-    frames = int(root.get("data-chart-frames", "0"))
-    mean_ms = float(root.get("data-chart-mean-ms", "0"))
-    print(f"chart frames={frames} mean_ms={mean_ms:.2f} max_ms={root.get('data-chart-max-ms')}")
+    frames = int(root.get("chartFrames", "0"))
+    mean_ms = float(root.get("chartMeanMs", "0"))
+    print(f"chart frames={frames} mean_ms={mean_ms:.2f} max_ms={root.get('chartMaxMs')}")
     assert frames >= 1 and mean_ms < 50.0
-    assert int(root.get("data-polls-while-pushed", "99")) <= 6
+    assert int(root.get("pollsWhilePushed", "99")) <= 6

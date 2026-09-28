@@ -12,13 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.18**
+Current release: **1.3.19**
 
-Release 1.3.18 adds an **A4 poster** in German and English (PNG at 300 dpi
-and PDF) in `docs/poster/`: the start-screen scene, a short description of the
-uConsole and Windows versions, four screenshots and QR codes for the download
-and the support page. `tools/build_poster.py` renders it again from the
-current scene and screenshots. The game itself is unchanged; saves stay v23.
+Release 1.3.19 makes the Remote Crew streams steadier. A browser that
+reconnects its sonar audio or sonar display stream now takes over its own
+previous stream at once instead of being refused while the host had not yet
+noticed that the old connection was gone. The web client no longer sends an
+extra state request for every pushed state. The browser tests for live audio
+and the state push now run in real time next to the host. Saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

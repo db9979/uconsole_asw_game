@@ -167,6 +167,9 @@ export async function poll() {
       // With a healthy push the timer only refreshes session presence, chart
       // and feeds; pushed states wake the loop themselves.
       const cadence = S.session?.station === null ? 1000 : pushHealthy() ? 2500 : delay;
+      // A push-woken poll replaces the pending timer; an orphaned timer would
+      // add a /state request per pushed state.
+      clearTimeout(S.pollTimer);
       S.pollTimer = setTimeout(poll, context !== S.generation ? 0 : S.failures ? delay : Math.max(0, cadence - (performance.now() - started)));
     }
   }

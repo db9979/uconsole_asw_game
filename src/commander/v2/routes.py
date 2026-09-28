@@ -491,9 +491,10 @@ class _Handler(BaseHTTPRequestHandler):
                     or stream_payload is None or stream_context is None):
                 self.send_error(403)
                 return
-            if digest in owner._sonar_stream_clients:
-                self._reply(409, {"error": "stream_exists"})
-                return
+            # One stream per client: a reconnect supersedes the client's older
+            # socket, whose worker may still idle on a peer that is gone.
+            if owner._sonar_stream_clients.pop(digest, None) is not None:
+                owner._sonar_stream_condition.notify_all()
             station_generation = lease["generation"]
             active_generation = session["active_generation"]
             world_context = stream_context
@@ -508,6 +509,9 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         if not self.server.mark_upgraded():
+            with owner._lock:
+                if owner._sonar_stream_clients.get(digest) is client_token:
+                    del owner._sonar_stream_clients[digest]
             return
         last_sequence = -1
         try:
@@ -704,9 +708,11 @@ class _Handler(BaseHTTPRequestHandler):
                 self.send_error(403)
                 return
             client_key = (digest, role)
-            if client_key in owner._audio_clients:
-                self._reply(409, {"error": "stream_exists"})
-                return
+            # One stream per client and role: a reconnect supersedes the
+            # client's older socket, whose worker may still idle on a peer that
+            # is gone (it notices only at its next send or lease check).
+            if owner._audio_clients.pop(client_key, None) is not None:
+                owner._audio_condition.notify_all()
             owner._audio_clients[client_key] = marker
             owner.audio_stream_stats_locked(role)["connections"] += 1
         accept = base64.b64encode(hashlib.sha1(
@@ -720,7 +726,8 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         if not self.server.mark_upgraded():
             with owner._audio_condition:
-                owner._audio_clients.pop(client_key, None)
+                if owner._audio_clients.get(client_key) is marker:
+                    del owner._audio_clients[client_key]
             return
         try:
             # Send each 250 ms block at once; Nagle would batch small frames

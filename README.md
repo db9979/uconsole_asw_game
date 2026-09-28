@@ -12,7 +12,11 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.9**
+Current release: **1.3.10**
+
+Release 1.3.10 fixes the uConsole installer on a checkout that is older than
+the installer itself: it now fast-forwards that checkout to `main` first
+instead of stopping with a missing `u_jagd_updater.py`.
 
 Release 1.3.9 adds a one-command installer for the uConsole with automatic
 updates: every start fetches the newest GitHub release (a background timer also

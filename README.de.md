@@ -14,7 +14,11 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.9**
+Aktuelle Version: **1.3.10**
+
+Version 1.3.10 behebt den uConsole-Installer bei einem Checkout, der älter als
+der Installer ist: Er zieht diesen Checkout jetzt zuerst per Fast-Forward auf
+`main`, statt mit fehlender `u_jagd_updater.py` abzubrechen.
 
 Version 1.3.9 bringt einen Ein-Befehl-Installer für die uConsole mit
 automatischem Update: Jeder Start holt das neueste GitHub-Release (ein
@@ -521,7 +525,7 @@ Beim Überfahren eines nicht verfügbaren Browser-Bedienelements erscheint der
 aktuelle lokalisierte Grund, etwa fehlende Freigabe, Stationsschaden, Abklingzeit,
 leerer Bestand, ausstehender Befehl oder die TAS-Fahrtgrenze.
 
-Anwendungsversion **1.3.9**, API-Protokoll **v2** und Speicherformat **v23** sind
+Anwendungsversion **1.3.10**, API-Protokoll **v2** und Speicherformat **v23** sind
 voneinander unabhängige Kompatibilitätsverträge. Remote Crew verwendet
 ausschließlich Protokoll v2; sämtliche Legacy-Routen unter `/api/v1/*` sind
 entfernt und liefern 404.

@@ -4,6 +4,14 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.37
+
+Version 1.3.37 behebt einen Absturz, der das Spiel schloss, sobald ein
+Torpedo der Fregatte oder der KI im Wasser war, während das
+Simulationsprotokoll (Optionen, Simulationsprotokoll) aufzeichnete: Der Zustandsschnappschuss
+des Protokolls las eine Torpedonummer, die der Torpedo nicht hat. Das in 1.3.34
+eingebaute Absturzprotokoll zeigte die Ursache. Spielstände bleiben v27.
+
 ## 1.3.36
 
 Version 1.3.36 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis

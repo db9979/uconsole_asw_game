@@ -1523,11 +1523,10 @@ class PicturesMixin:
                             for c in self.civilians]),
             "animals": [{"id": a.id, "x": r2(a.x), "y": r2(a.y),
                          "dead": a.dead} for a in self.animals],
-            "torpedoes": [{"id": t.id, "x": r2(t.x), "y": r2(t.y),
+            "torpedoes": [{"id": t.idx, "x": r2(t.x), "y": r2(t.y),
                            "depth": r1(t.depth), "course": r1(t.course),
                            "state": t.state,
-                           "target": (t.target.id if t.target is not None
-                                      else None)}
+                           "target": getattr(t.target, "id", None)}
                           for t in self.torpedoes],
             "enemy_torpedoes": [{"id": t.id, "x": r2(t.x), "y": r2(t.y),
                                  "depth": r1(t.depth), "course": r1(t.course),

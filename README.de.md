@@ -14,17 +14,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.36**
+Aktuelle Version: **1.3.37**
 
-Version 1.3.36 behebt Sonar-Ton auf der uConsole, der verstummen konnte, bis
-man den Ton in den Optionen aus- und wieder einschaltete. Ein seltenes
-Wettrennen im pygame-Mixer konnte den Sonarkanal still stehen lassen, während
-sein nächster Block für immer in der Warteschlange hing, und die
-Sonar-Wiedergabe wartete dauerhaft auf diesen Platz. Die Wiedergabe spielt
-einen solchen hängenden Block jetzt selbst ab und macht weiter, und ein
-beendeter Sonar-Audio-Thread startet mit dem nächsten Block neu.
-`audio_debug.log` zählt beides (`queue_stranded`, `worker_restarts`).
-Spielstände bleiben v27.
+Version 1.3.37 behebt einen Absturz, der das Spiel schloss, sobald ein
+Torpedo der Fregatte oder der KI im Wasser war, während das
+Simulationsprotokoll (Optionen, Simulationsprotokoll) aufzeichnete: Der Zustandsschnappschuss
+des Protokolls las eine Torpedonummer, die der Torpedo nicht hat. Das in 1.3.34
+eingebaute Absturzprotokoll zeigte die Ursache. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

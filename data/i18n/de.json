@@ -417,6 +417,8 @@
   "commander.web.pair_intro": "Mission beobachten, Kontakte bewerten und der Besatzung ein Ziel vorschlagen. Das taktische Lagebild im Blick behalten, ohne das Ruder zu übernehmen.",
   "commander.web.authority_note": "Schiffsführung und Waffeneinsatz bleiben bei der Besatzung. Ein Zielvorschlag ist kein Waffenbefehl.",
   "commander.web.pair_heading": "Mit der Besatzung verbinden",
+  "commander.web.browser_hint": "Remote Crew ist für Chrome oder Chromium (auch Edge) auf einem Desktop-PC gebaut und getestet. Dieser Browser basiert nicht auf Chromium, daher können Kopplung, Ton oder Stationsbilder versagen. Öffne diese Adresse in Chrome oder Chromium.",
+  "commander.web.browser_stalled": "Die Crew-Seite ist in diesem Browser nicht gestartet. Öffne diese Adresse in Chrome oder Chromium (auch Edge) oder lade die Seite neu.",
   "commander.web.pair_help": "Den Host-Code eingeben: 3 Ziffern, danach 3 Großbuchstaben. Kleinbuchstaben werden automatisch umgewandelt. Der Code läuft nach 5 Minuten ab. Nur ein vertrauenswürdiges Netz verwenden.",
   "commander.web.pair_name": "Stationsname",
   "commander.web.pair_name_default": "Wachoffizier",

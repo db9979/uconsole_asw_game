@@ -268,3 +268,4 @@ body.workstation-mode .tablist { display: none; }
   .dock[data-collapsed="true"] .dock-title { writing-mode: horizontal-tb; transform: none; }
   .dock[data-collapsed="true"] .dock-toggle { order: 0; }
 }
+.bootstrap-hint { flex-basis: 100%; max-width: 46ch; margin: 0; color: var(--alarm); text-align: center; }

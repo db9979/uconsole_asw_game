@@ -118,7 +118,7 @@ export function validateProposals(value) {
   if (value.navigation !== null && (!exactKeys(value.navigation, ["course", "speed_kn", "status"]) ||
       value.role !== "bridge" || !validStatus(value.navigation.status) ||
       (value.navigation.course !== null && (!finite(value.navigation.course) || value.navigation.course < 0 || value.navigation.course >= 360)) ||
-      (value.navigation.speed_kn !== null && (!finite(value.navigation.speed_kn) || value.navigation.speed_kn < 0 || value.navigation.speed_kn > 25)) ||
+      (value.navigation.speed_kn !== null && (!finite(value.navigation.speed_kn) || value.navigation.speed_kn < 0 || value.navigation.speed_kn > 31)) ||
       value.navigation.course === null && value.navigation.speed_kn === null)) throw new Error("proposals");
 }
 export function validateEvents(value) {

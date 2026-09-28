@@ -70,7 +70,7 @@ HQ switches to FREE by radio after the first hostile submarine is sunk; the play
 - The wire is a physical cable: it snaps if the ship runs faster than 20 kn or turns faster than 1.5 deg/s for about 5 s, when the ship-side spool (5 NM of own track) runs out, or when the torpedo has run 1.25 x its range.
 - Torpedo range comes from its battery: at full speed it runs the catalogue range, hard manoeuvring throttles it and saves energy; when the battery is empty it coasts for a few seconds and is lost. Turning is slower right after launch (constant turning circle), and depth changes need a moment to build up.
 - The warhead has a proximity fuze: it fires at the closest approach inside its radius, and the damage falls with distance (shock factor). A near miss can leave a submarine damaged but able to escape.
-- A running torpedo is heard by the target through the sonar equation: quiet boats in calm water hear it from a few miles, rain and their own speed mask it.
+- A running torpedo is heard by the target through the sonar equation: quiet submarines in calm water hear it from a few miles, rain and their own speed mask it.
 - Only two Nixies per mission: stream the first when a torpedo is likely, keep the second for the next attack.
 - Homing seekers lock on the loudest candidate and only switch when another is clearly (6 dB) louder. They ignore echoes without Doppler, so a hovering target is hard to find; a torpedo that overruns a decoy without a hull hit remembers it and re-attacks. Hostile submarine decoys fade as their battery drains; hostile warships stream their own decoys when they hear your torpedo launch.
 

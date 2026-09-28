@@ -4,6 +4,13 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.29
+
+Version 1.3.29 benennt das U-Boot einheitlich: Alle Anzeigen, die
+Web-Clients, Hilfe und Handbuch sagen jetzt **U-Boot** (englisch
+**submarine**), wo bisher nur „Boot“ stand, etwa **U-Boot-Kampagne** und
+U-Boot-Missionen. Spielstände bleiben v25.
+
 ## 1.3.28
 
 Version 1.3.28 macht die **KI-Jäger klüger**: Die OPZ markiert den bloßen

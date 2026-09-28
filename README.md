@@ -12,13 +12,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.28**
+Current release: **1.3.29**
 
-Release 1.3.28 makes the **AI hunters smarter**: the OPZ marks the bare radar
-blip of a raised mast or snorkel, and a mast track, an HF/DF cross-fix or an
-HQ submarine datum report now becomes the hunt's datum. A fresh fix from the
-ship's own sensors goes over the datalink to a friendly AI warship with
-ASROC in range. Saves are now v25 (radar blips and marks).
+Release 1.3.29 names the submarine consistently: every screen, the web
+clients, help and manual now say **submarine** (German **U-Boot**) where they
+used to say just "boat", for example the **Submarine campaign** and the
+submarine missions. Saves stay v25.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -488,11 +487,11 @@ Validated does not mean runtime-effective. In this release:
 ## Saves and User Data
 
 This build writes and loads save format **v25** only. V25 requires the exact
-`u-jagd-save-v25` schema, including the frigate's radar blips and OPZ marks, the crewed boat's attack-computer marks, the frigate's variable-depth sonar, the crewed boat's radio room, the HQ task board, both crews' watch bills,
+`u-jagd-save-v25` schema, including the frigate's radar blips and OPZ marks, the crewed submarine's attack-computer marks, the frigate's variable-depth sonar, the crewed submarine's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM
-picture) when a crew holds the boat, every submarine's ballast, trim and high-pressure air and its compartments and damage-control teams, every conventional submarine's diesel, charge rate and air stores,
+picture) when a crew holds the submarine, every submarine's ballast, trim and high-pressure air and its compartments and damage-control teams, every conventional submarine's diesel, charge rate and air stores,
 and foreign active pings whose sound is still travelling to the
 frigate. Older (including every 1.0.0 v11 save),
 newer, malformed, or incomplete saves are rejected without replacing the

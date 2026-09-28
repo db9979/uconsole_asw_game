@@ -87,7 +87,7 @@ def test_weapons_panel_shows_tma_evidence_and_engagement_stages(monkeypatch):
         helo=NS(torps=2, buoys_left=6, airborne=False, state="HANGAR"),
     )
     weapons_view.draw_weapons_panel(game)
-    assert any("TMA 145.0 deg / 7.0 kn Q72%" in line
+    assert any("TMA 145.0° / 7.0 kn Q72%" in line
                 for line in lines)
     assert "Target ASSIGNED" in lines
     assert "Fix VALID" in lines

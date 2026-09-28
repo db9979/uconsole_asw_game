@@ -109,10 +109,10 @@ def test_tabs_contacts_and_safe_actions_share_draw_hit_geometry(monkeypatch):
         assert sonar_view.sonar_click_target(game, (echo_rect.centerx, echo_rect.bottom)) is None
         action_rects = {item["title"]: item["rect"] for item in drawn
                         if item["kind"] == "sonar-action"}
+        # One row of at most four main keys per page (the rest is in F1).
         assert set(action_rects) == {
-            "sonar:action:page", "sonar:action:array", "sonar:action:gain",
-            "sonar:action:band_filter", "sonar:action:notch",
-            "sonar:action:harmonic", "sonar:action:peak", "sonar:action:audio"}
+            "sonar:action:array", "sonar:action:gain",
+            "sonar:action:peak", "sonar:action:audio"}
         for name, rect in action_rects.items():
             target = sonar_view.sonar_click_target(game, rect.center)
             assert target == {"action": name.rsplit(":", 1)[-1], "safe": True}

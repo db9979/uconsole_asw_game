@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.35
+
+Release 1.3.35 puts less text on the uConsole screens. The top bar names only
+the station and the clock, the chart header only its scale. The sonar loses its
+header status chips and legend lines and keeps one row of four main keys (the
+rest is in F1); a towed or variable-depth array shows its state only while it
+is moving or not ready. The submarine's threat box appears only while a threat
+is fresh, then an amber triangle next to the clock marks standing warnings.
+Courses read in whole degrees with °, and the turn radius shows only in a turn.
+The TMA header no longer overlaps, and the submarine's Weapons tab, tube line
+and alarm lines are no longer cut off. Saves stay v27.
+
 ## 1.3.34
 
 Release 1.3.34 writes a crash log: every game start adds a start and an end

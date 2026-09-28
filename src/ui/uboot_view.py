@@ -60,6 +60,9 @@ STATION_TAB_W = 100
 CONTACT_ROWS = 10
 # Alarms stay on the threat bar this long after the event (s).
 ALARM_WINDOW_S = 120.0
+# A heard ping or ESM intercept fills the threat box only this long; older
+# warnings shrink to the marker in the top bar (details on the threat page).
+THREAT_FRESH_S = 30.0
 # Contact classification -> NATO frame domain on the chart (annotation only).
 _CLASS_DOMAIN = {"U_BOOT": "SUBSURFACE", "KAMPFSCHIFF": "SURFACE",
                  "FAHRZEUG": "SURFACE", "FLUGZEUG": "AIR",
@@ -131,7 +134,6 @@ def draw_top_bar(game, boat) -> None:
     pygame.draw.rect(s, config.COLOR_PANEL_BG, (0, 0, config.SCREEN_W, config.TOP_BAR_H))
     lines.line(s, config.COLOR_SONAR_RING, (0, config.TOP_BAR_H - 1),
                      (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
-    sub = boat.sub if boat is not None else None
     # The boat's seven stations as tabs (key number and short name); a station a
     # browser crews is marked and not operated from here.
     shown = uboot_local.local_station(game)
@@ -148,14 +150,23 @@ def draw_top_bar(game, boat) -> None:
         layout.blit_line(s, label, rect, config.COLOR_WARN if remote else
                          config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
                          size=14, align="center")
-    text = message("uboot.top.status", scenario=raw_text(game.top_bar_scenario()),
-                   time=game.world.format_time(),
-                   course=_fmt(sub.course if sub else None, "{:03.0f}"),
-                   speed=_fmt(sub.speed if sub else None, "{:.1f}"),
-                   depth=_fmt(sub.depth if sub else None))
+    # Course, speed and depth live in the telemetry band.
+    text = message("uboot.top.status", time=game.world.format_time())
     left = tabs[-1].right + 12
     layout.blit_line(s, text, (left, 4, config.SCREEN_W - left - 10, config.TOP_BAR_H - 8),
                      config.COLOR_TEXT, size=16, align="right")
+    rows = threat_rows(game, boat) if boat is not None and boat.sub is not None else []
+    if rows and not any(fresh for _text, _level, fresh in rows):
+        # Only stale warnings: a small marker left of the clock.
+        _draw_threat_marker(s, config.SCREEN_W - 10 - layout.font(16).size(
+            localize(text))[0] - 30, config.TOP_BAR_H // 2, len(rows))
+
+
+def _draw_threat_marker(s, x, cy, count) -> None:
+    """Amber warning triangle with the number of standing warnings."""
+    pygame.draw.polygon(s, config.COLOR_WARN, ((x - 12, cy + 7), (x - 4, cy - 7), (x + 4, cy + 7)))
+    layout.blit_line(s, raw_text(str(count)), (x + 7, cy - 9, 16, 18),
+                     config.COLOR_WARN, size=14)
 
 
 def feed_entries(boat) -> list:
@@ -362,6 +373,11 @@ def _battery_fraction(sub):
 
 def threats(game, boat) -> list:
     """``(text, level)`` for the threat bar, most urgent first."""
+    return [(text, level) for text, level, _fresh in threat_rows(game, boat)]
+
+
+def threat_rows(game, boat) -> list:
+    """``(text, level, fresh)``: stale ping/ESM warnings are not fresh."""
     sub = boat.sub
     rows = []
     alarms = sub.memory
@@ -370,55 +386,58 @@ def threats(game, boat) -> list:
     if math.isfinite(torpedo_age) and torpedo_age < ALARM_WINDOW_S:
         if crew is not None and crew.torpedo_bearing is not None:
             rows.append((message("uboot.threat.torpedo_bearing", age=_fmt(torpedo_age),
-                                 bearing=f"{crew.torpedo_bearing:03.0f}"), "danger"))
+                                 bearing=f"{crew.torpedo_bearing:03.0f}"), "danger", True))
         else:
-            rows.append((message("uboot.threat.torpedo", age=_fmt(torpedo_age)), "danger"))
+            rows.append((message("uboot.threat.torpedo", age=_fmt(torpedo_age)), "danger", True))
     if sub.damage >= 50:
-        rows.append((message("uboot.threat.damage", value=_fmt(sub.damage)), "danger"))
+        rows.append((message("uboot.threat.damage", value=_fmt(sub.damage)), "danger", True))
     control = sub.damage_control
     if not control.power():
-        rows.append((message("uboot.threat.power"), "danger"))
+        rows.append((message("uboot.threat.power"), "danger", True))
     burning = [name for name, c in zip(COMPARTMENTS, control.compartments) if c.fire > 0.0]
     if burning:
         rows.append((message("uboot.threat.fire",
-                             compartment=message(f"uboot.compartment.{burning[0]}")), "danger"))
+                             compartment=message(f"uboot.compartment.{burning[0]}")), "danger", True))
     leaking = [name for name, c in zip(COMPARTMENTS, control.compartments) if c.leak > 0.0]
     if leaking:
         rows.append((message("uboot.threat.leak",
-                             compartment=message(f"uboot.compartment.{leaking[0]}")), "warn"))
+                             compartment=message(f"uboot.compartment.{leaking[0]}")), "warn", True))
     ping_age = alarms["last_ping_age"]
     if math.isfinite(ping_age) and ping_age < ALARM_WINDOW_S:
         if crew is not None and crew.ping_bearing is not None:
             rows.append((message("uboot.threat.ping_bearing", age=_fmt(ping_age),
-                                 bearing=f"{crew.ping_bearing:03.0f}"), "warn"))
+                                 bearing=f"{crew.ping_bearing:03.0f}"), "warn",
+                         ping_age < THREAT_FRESH_S))
         else:
-            rows.append((message("uboot.threat.ping", age=_fmt(ping_age)), "warn"))
+            rows.append((message("uboot.threat.ping", age=_fmt(ping_age)), "warn",
+                         ping_age < THREAT_FRESH_S))
     if crew is not None and crew.esm:
         bearing, _quality, _age = crew.esm[0]
+        newest = min(age for _bearing, _quality, age in crew.esm)
         rows.append((message("uboot.threat.esm", bearing=f"{bearing:03.0f}",
-                             count=len(crew.esm)), "warn"))
+                             count=len(crew.esm)), "warn", newest < THREAT_FRESH_S))
     if sub.cavitating:
-        rows.append((message("uboot.threat.cavitation"), "warn"))
+        rows.append((message("uboot.threat.cavitation"), "warn", True))
     if sub.beyond_test_depth():
         rows.insert(0, (message("uboot.threat.overdepth", depth=_fmt(sub.depth),
                                 test=_fmt(sub.stype.max_depth_m),
-                                crush=_fmt(sub.crush_depth_m)), "danger"))
+                                crush=_fmt(sub.crush_depth_m)), "danger", True))
     ahead = crew.obstacle_ahead_nm if crew is not None else None
     if ahead is not None and sub.order_speed > 0.0:
-        rows.append((message("uboot.threat.obstacle", distance=f"{ahead:.1f}"), "warn"))
+        rows.append((message("uboot.threat.obstacle", distance=f"{ahead:.1f}"), "warn", True))
     battery = _battery_fraction(sub)
     if battery is not None and battery < .15:
-        rows.append((message("uboot.threat.battery", value=_fmt(battery * 100)), "warn"))
+        rows.append((message("uboot.threat.battery", value=_fmt(battery * 100)), "warn", True))
     return rows
 
 
 def _draw_threat_bar(s, game, boat, x, y, w) -> int:
-    rows = threats(game, boat)
-    if rows:
-        text, level = rows[0]
-        color = config.COLOR_DANGER if level == "danger" else config.COLOR_WARN
-    else:
-        text, color = "panel.no_threat", config.COLOR_OK
+    """The alarm box, only while a threat is fresh; else nothing (height 0)."""
+    rows = [(text, level) for text, level, fresh in threat_rows(game, boat) if fresh]
+    if not rows:
+        return 0
+    text, level = rows[0]
+    color = config.COLOR_DANGER if level == "danger" else config.COLOR_WARN
     height = 54 if len(rows) > 1 else 38
     pygame.draw.rect(s, config.COLOR_ALARM_BG, (x, y, w, height))
     pygame.draw.rect(s, color, (x, y, w, height), 2)
@@ -529,10 +548,10 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     nav = layout.box(s, (x, y, half, box_h), "uboot.panel.course_depth",
                      border=config.COLOR_TEXT)
     nx, ny, nw, _ = nav
-    layout.blit_line(s, message("bridge.line.course", course=f"{sub.course:05.1f}"),
+    layout.blit_line(s, message("bridge.line.course", course=f"{sub.course % 360:03.0f}"),
                      (nx, ny, nw, 34), config.COLOR_TEXT, size=28)
     layout.status_line(s, nx, ny + 36, nw, "ui.target_value_short",
-                       message("bridge.line.course", course=f"{sub.order_course:05.1f}"),
+                       message("bridge.line.course", course=f"{sub.order_course % 360:03.0f}"),
                        size=18, label_w=80)
     layout.blit_line(s, message("uboot.line.depth", depth=_fmt(sub.depth)),
                      (nx, ny + 62, nw, 34), config.COLOR_TEXT, size=28)
@@ -552,7 +571,7 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
     drive = layout.box(s, (x + half + 10, y, half, box_h), "panel.speed_acoustics",
                        border=config.COLOR_WARN if sub.cavitating else config.COLOR_TEXT)
     dx, dy, dw, _ = drive
-    layout.blit_line(s, message("bridge.line.speed", speed=f"{sub.speed:04.1f}"),
+    layout.blit_line(s, message("bridge.line.speed", speed=f"{sub.speed:.1f}"),
                      (dx, dy, dw, 34), config.COLOR_TEXT, size=28)
     layout.status_line(s, dx, dy + 36, dw, "ui.target_value_short",
                        message("bridge.line.speed", speed=f"{sub.order_speed:.1f}"),
@@ -587,12 +606,17 @@ def _draw_nav_page(s, game, boat, x, y, w, h) -> None:
         draw_depth_ladder(s, game, boat, inner)
 
 
-def tube_line(sub):
-    """``1 ready · 2 dry · 3 loading 40 s · 4 empty`` (localized)."""
+def tube_line(sub, busy_only=False):
+    """``1 ready · 2 dry · 3 loading 40 s · 4 empty`` (localized); with
+    ``busy_only`` the ready tubes are left out (``None`` when all are ready)."""
     parts = []
     for index, (state, left) in enumerate(opfor.tube_states(sub), start=1):
+        if busy_only and state == "flooded":
+            continue
         parts.append(message(f"uboot.tube.{state}", tube=index,
                              seconds=_fmt(left, "{:.0f}")))
+    if busy_only and not parts:
+        return None
     return raw_text(" · ".join(str(localize(part)) for part in parts)) if parts \
         else raw_text("--")
 
@@ -633,8 +657,11 @@ def _draw_weapons_page(s, game, boat, x, y, w, h) -> None:
         depth=_fmt(orders.torpedo_depth) if orders.torpedo_depth else message("uboot.value.auto_depth"),
         salvo=orders.salvo, wires=wired),
         (fx + half + 10, fy + 88, half, 20), config.COLOR_TEXT_DIM, size=15)
-    layout.blit_line(s, message("uboot.line.tubes", tubes=tube_line(sub)),
-                     (fx, fy + 112, fw, 20), config.COLOR_TEXT, size=15)
+    busy = tube_line(sub, busy_only=True)
+    if busy is not None:
+        # Only tubes that are not ready; "tubes ready n/m" covers the rest.
+        layout.blit_line(s, message("uboot.line.tubes", tubes=busy),
+                         (fx, fy + 112, fw, 20), config.COLOR_WARN, size=15)
     contacts_y = y + box_h + 10
     listing = layout.box(s, (x, contacts_y, w, y + h - contacts_y), "uboot.local.contacts")
     lx, ly, lw, lh = listing
@@ -689,12 +716,11 @@ _FOOTERS = {
     ("uboot_nav", "UBOOT_NAV"): (("C", "uboot.footer.course"), ("D", "uboot.footer.depth"),
                                  ("U/J/H", "uboot.footer.presets"),
                                  ("Shift+G", "uboot.footer.bottom")),
+    # At most four main keys per page; fire bearing, decoy and flooding are in F1.
     ("uboot_weapons", "UBOOT_WEAPONS"): (("↑/↓", "uboot.footer.contact"),
                                          ("help.key.uboot_fire", "uboot.footer.fire"),
-                                         ("F", "uboot.footer.fire_bearing"),
-                                         ("W", "uboot.footer.wire"), ("X", "uboot.footer.decoy"),
-                                         ("M", "uboot.footer.tube_load"),
-                                         ("Shift+M", "uboot.footer.tube_flood")),
+                                         ("W", "uboot.footer.wire"),
+                                         ("M", "uboot.footer.tube_load")),
     ("uboot_radio", "UBOOT_RADIO"): (("help.key.enter", "uboot.footer.radio_send"),
                                      ("P", "uboot.footer.mast"), ("Q/E", "uboot.footer.chart")),
     ("uboot_engine", "UBOOT_ENGINE"): (("+/-", "uboot.footer.telegraph"),
@@ -764,7 +790,7 @@ def _draw_engine_page(s, game, boat, x, y, w, h) -> None:
                        border=config.COLOR_WARN if sub.cavitating else config.COLOR_TEXT)
     px, py, pw, _ = plant
     half = (pw - 10) // 2
-    layout.blit_line(s, message("bridge.line.speed", speed=f"{sub.speed:04.1f}"),
+    layout.blit_line(s, message("bridge.line.speed", speed=f"{sub.speed:.1f}"),
                      (px, py, half, 34), config.COLOR_TEXT, size=28)
     layout.status_line(s, px, py + 36, half, "ui.target_value_short",
                        message("bridge.line.speed", speed=f"{sub.order_speed:.1f}"),

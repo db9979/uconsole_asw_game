@@ -75,8 +75,8 @@ def test_broadband_interpolation_is_circular_and_preserves_real_bins():
 def test_broadband_tooltip_snaps_to_two_degree_source_bin(game):
     game.sonar.broadband_history = [list(np.arange(180) / 180.0)]
     station = pygame.Rect(config.STATION_RECT)
-    body = pygame.Rect(station.x + 12, station.y + 69,
-                       station.w - 24, station.h - 111)
+    body = pygame.Rect(station.x + 12, station.y + 43,
+                       station.w - 24, station.h - 68)
     rail_w = min(350, max(240, round(body.w * .28)))
     main = pygame.Rect(body.x, body.y, body.w - rail_w - 12, body.h)
     plot = pygame.Rect(main.x + 57, main.y + 61, main.w - 83, main.h - 108)
@@ -270,21 +270,22 @@ def test_station_layout_has_large_plot_and_readable_contact_window(game, monkeyp
     assert (contact_panels[0].h - 33) // 43 >= 3
 
 
-def test_station_header_uses_divided_status_groups_without_microtext(game, monkeypatch):
+def test_station_header_has_no_status_chips_and_at_most_four_keys(game, monkeypatch):
     drawn = []
     monkeypatch.setattr(view, "_text", lambda screen, text, rect, color=view.TEXT,
                         size=14, align="left": drawn.append((view.localize(text), pygame.Rect(rect), size)))
 
-    view.draw_sonar_view(game)
-
-    # Four chips share the header row; when the full wording does not fit
-    # they switch to the catalog abbreviations together (never clipped).
-    groups = [item for item in drawn if item[0].startswith(
-        ("ARRAY", "HMS |", "BEARING", "BRG ", "BROADBAND |", "BB ", "G "))]
-    assert [item[0].split()[0] for item in groups] in (
-        ["ARRAY", "BEARING", "BROADBAND", "G"], ["HMS", "BRG", "BB", "G"])
-    assert len({item[1].x for item in groups}) == 4
-    assert min(size for _, _, size in drawn) >= 12
+    for page in range(len(view.PAGES)):
+        drawn.clear()
+        game.sonar_page = page
+        view.draw_sonar_view(game)
+        # The former status chips (array, bearing/gain, filter, audio) are gone;
+        # the footer keeps one row of at most four main keys.
+        assert not [item for item in drawn if item[0].startswith(
+            ("ARRAY ", "HMS |", "BEARING ", "BRG ", "BROADBAND |", "BB ", "G "))]
+        assert len(view.sonar_geometry(game, page)["footer"]) <= 4
+        if page == 0:
+            assert min(size for _, _, size in drawn) >= 12
 
 
 def test_demon_chart_uses_actual_envelope_bins_on_hz_axis(game, monkeypatch):
@@ -394,7 +395,7 @@ def test_every_sonar_page_shows_tas_payout_and_stability(game, page, monkeypatch
                         texts.append(view.localize(text)))
     game.sonar_page = page
     view.draw_sonar_view(game)
-    assert any(re.search(r"TAS (DEPLOYING|DEPLOY) 42% (STABILITY|STAB) 25% PAUSE", text)
+    assert any(re.search(r"TAS (DEPLOYING|DEPLOY) 42% STAB 25% PAUSE", text)
                for text in texts)
 
 

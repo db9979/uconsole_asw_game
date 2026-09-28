@@ -6,7 +6,7 @@ The sonar room is the main ASW sensor. It listens passively on the hull-mounted 
 
 ## Displays and instruments {#sonar-displays}
 
-The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them.
+The station has six pages. `PgUp`/`PgDn` (or `2` again) cycles them. The listening post on the right shows the evidence source and age, the array, the listening bearing and the ping readiness; a towed or variable-depth array that is moving or not yet ready appears on every page in amber with payout, stability and PAUSE when handling is outside its limits. The single key row at the bottom shows the page's four main keys with their values; every other key is listed under F1. On BROADBAND the amber line is the listening bearing and the grey lines the beam limits; dark means quiet, turquoise loud.
 
 | Page | Shows | Use it for |
 |---|---|---|

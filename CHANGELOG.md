@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.22
+
+Release 1.3.22 makes the Remote Crew streams steadier. A browser that
+reconnects its sonar audio or sonar display stream now takes over its own
+previous stream at once instead of being refused while the host had not yet
+noticed that the old connection was gone. The web client no longer sends an
+extra state request for every pushed state. The browser tests for live audio
+and the state push now run in real time next to the host. Saves stay v23.
+
 ## 1.3.21
 
 Release 1.3.21 lets the crewed boat go **below its test depth**, down to crush

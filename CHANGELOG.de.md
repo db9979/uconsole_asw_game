@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.22
+
+Version 1.3.22 macht die Remote-Crew-Datenströme stabiler. Ein Browser, der
+seinen Sonar-Audio- oder Sonar-Anzeigestrom neu verbindet, übernimmt jetzt
+sofort seinen eigenen bisherigen Strom, statt abgewiesen zu werden, solange der
+Host die alte Verbindung noch nicht als beendet erkannt hat. Der Web-Client
+fragt bei eingeschaltetem Push nicht mehr zu jedem gepushten Zustand
+zusätzlich den Zustand ab. Die Browsertests für Live-Audio und den
+Zustands-Push laufen jetzt in Echtzeit neben dem Host. Spielstände bleiben
+v23.
+
 ## 1.3.21
 
 Version 1.3.21 lässt das besetzte Boot **unter seine Testtiefe** tauchen, bis zur

@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.40**
+Aktuelle Version: **1.3.42**
 
-Version 1.3.40 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
+Version 1.3.42 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
 Wolken, Sterne, Sonne und Mond bleiben stehen, während See und Horizont mit dem
 Seegang schwanken. Von der Dämmerung bis zum Morgen und bei schlechter Sicht
 führen neutrale Schiffe ihre Positionslichter nach den

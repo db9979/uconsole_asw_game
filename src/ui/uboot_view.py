@@ -150,8 +150,12 @@ def draw_top_bar(game, boat) -> None:
         layout.blit_line(s, label, rect, config.COLOR_WARN if remote else
                          config.COLOR_TEXT if active else config.COLOR_TEXT_DIM,
                          size=14, align="center")
-    # Course, speed and depth live in the telemetry band.
-    text = message("uboot.top.status", time=game.world.format_time())
+    sub = boat.sub if boat is not None else None
+    text = message("uboot.top.status", scenario=raw_text(game.top_bar_scenario()),
+                   time=game.world.format_time(),
+                   course=_fmt(sub.course % 360.0 if sub else None, "{:03.0f}"),
+                   speed=_fmt(sub.speed if sub else None, "{:.1f}"),
+                   depth=_fmt(sub.depth if sub else None))
     left = tabs[-1].right + 12
     layout.blit_line(s, text, (left, 4, config.SCREEN_W - left - 10, config.TOP_BAR_H - 8),
                      config.COLOR_TEXT, size=16, align="right")

@@ -6,7 +6,7 @@ Die Brücke führt die Fregatte: Kurs, Fahrt und Position zu Küste, Kontakten u
 
 ## Anzeigen und Instrumente {#bridge-displays}
 
-Die obere Leiste nennt nur die Station und die Uhrzeit; Kurs und Fahrt stehen in der Telemetrie unten, und der Kartenkopf zeigt nur den Maßstab (dazu „folgen“, solange `K` dem eigenen Schiff folgt). Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt das Missionsbriefing; Seite 3 ist das Ausguck-Sichtfeld. Das Kartenwasser dunkelt mit der Uhr in drei Stufen ab (Tag, Dämmerung innerhalb einer Stunde um 05:30 und 19:30, Nacht), und Regen oder Sturm schraffiert die Karte mit gestrichelten Diagonalen (ein Sturm zusätzlich mit gelbem Rand); beides ist nur Anzeige, ebenso auf der Browserkarte. Optionen Seite 2 kann Karten- und Plotlinien glätten.
+Die obere Leiste zeigt Station, Mission, Uhrzeit, Fahrt und Kurs; der Kartenkopf zeigt nur den Maßstab (dazu „folgen“, solange `K` dem eigenen Schiff folgt). Seite 1 (Navigation) zeigt Karte und vier Felder; Seite 2 (nochmals `1`) zeigt das Missionsbriefing; Seite 3 ist das Ausguck-Sichtfeld. Das Kartenwasser dunkelt mit der Uhr in drei Stufen ab (Tag, Dämmerung innerhalb einer Stunde um 05:30 und 19:30, Nacht), und Regen oder Sturm schraffiert die Karte mit gestrichelten Diagonalen (ein Sturm zusätzlich mit gelbem Rand); beides ist nur Anzeige, ebenso auf der Browserkarte. Optionen Seite 2 kann Karten- und Plotlinien glätten.
 
 ```text
 +---------------------------+----------------------+

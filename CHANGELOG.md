@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.40
+## 1.3.42
 
-Release 1.3.40 keeps the sky still in the periscope and the lookout's
+Release 1.3.42 keeps the sky still in the periscope and the lookout's
 binoculars: clouds, stars, the sun and the moon stay in place while the sea and
 the horizon roll with the swell. From dusk to dawn and in poor visibility
 neutral ships run their navigation lights as the collision regulations lay
@@ -16,6 +16,24 @@ lights of vessels at work (trawler, pilot, survey ship and cable layer, mine
 clearance), and civil aircraft their wingtip, tail and flashing anti-collision
 lights; the ship's bow points the way its lights show, and a lit ship is sighted by its lights in the dark.
 Warships and military aircraft run dark. Both on the uConsole and in the browser; saves stay v27.
+
+## 1.3.41
+
+Release 1.3.41 brings back the full top bar on the uConsole: the frigate shows
+the station, the mission, the clock, speed and course again, and the crewed
+submarine shows the mission, the clock, speed, course and depth, now compactly
+separated by "·". Saves stay v27.
+
+## 1.3.40
+
+Release 1.3.40 adds a bug report. "Report a bug" in the main menu writes
+`~/.u-jagd/bug-report.txt` with version, platform and the newest lines of the
+crash log (your user name removed from paths) and shows a QR code that opens a
+prefilled GitHub issue on a phone; `Enter` opens it with the log in a browser
+where the device has one. After a crashed start the main menu offers it. The
+Windows starter and the browser settings menu link to the same issue form, and
+the crash log now also records each mission start. Nothing is sent until you
+submit the issue with your own GitHub account. Saves stay v27.
 
 ## 1.3.39
 

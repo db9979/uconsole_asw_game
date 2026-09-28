@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.40**
+Current release: **1.3.42**
 
-Release 1.3.40 keeps the sky still in the periscope and the lookout's
+Release 1.3.42 keeps the sky still in the periscope and the lookout's
 binoculars: clouds, stars, the sun and the moon stay in place while the sea and
 the horizon roll with the swell. From dusk to dawn and in poor visibility
 neutral ships run their navigation lights as the collision regulations lay

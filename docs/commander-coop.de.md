@@ -149,8 +149,9 @@ Die Hubschrauberkarte folgt dem fliegenden Hubschrauber statt dem Schiff und
 bezeichnet ihre projizierten Sonarbojen kurz als `SB01`, `SB02` und so weiter.
 
 Das Wetterinstrument der Brücke zeigt den maßgeblichen Tag-/Nachtzustand,
-effektiven Seegang, Wetterart, Wind, Regen und Sicht. Seine zurückhaltende Wellen-
-und Regenanimation folgt der projizierten Simulationszeit. Die Helikopterbereitschaft zeigt Wetterfreigaben für Start und Tauchsonar
+effektiven Seegang, Wetterart, Wind, Regen und Sicht. Sein Bild blickt im Stil
+des Startbilds in den Wind (Himmel der Stunde, Wolken, Regen, Schnee, Nebel, See)
+mit einer Windrose in der Ecke und folgt der projizierten Simulationszeit. Die Helikopterbereitschaft zeigt Wetterfreigaben für Start und Tauchsonar
 sowie Querwind getrennt an. Der Autocrew-Status ist in jeder Browserrolle nur
 lesbar; gesteuert wird Autocrew lokal durch den Host.
 

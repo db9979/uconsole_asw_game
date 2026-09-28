@@ -78,6 +78,16 @@ PROBE = r'''
       colors.add(`${pixels[index]},${pixels[index + 1]},${pixels[index + 2]}`);
     if (colors.size < 8) throw new Error(`flat binoculars: ${colors.size} colours`);
     root.dataset.colors = String(colors.size);
+    // The weather instrument is a small eyepiece into the wind with the
+    // turquoise wind rose in its corner.
+    const weather = $('bridge-weather-canvas').getContext('2d');
+    const near = (data, rgb) => {
+      for (let index = 0; index < data.length; index += 4)
+        if (Math.abs(data[index] - rgb[0]) + Math.abs(data[index + 1] - rgb[1]) + Math.abs(data[index + 2] - rgb[2]) < 24) return true;
+      return false;
+    };
+    await until(() => near(weather.getImageData(0, 0, 60, 60).data, [120, 214, 180]), 'no wind rose in the weather picture');
+    if (!near(weather.getImageData(300, 0, 60, 30).data, [40, 96, 90])) throw new Error('no brackets on the weather picture');
   }
   run().then(() => { root.dataset.scopeTest = 'passed'; }, (error) => {
     root.dataset.scopeTest = 'failed';

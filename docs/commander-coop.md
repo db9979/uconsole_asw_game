@@ -127,8 +127,9 @@ The Helicopter chart follows the airborne helicopter rather than the ship and
 labels its projected Sonobuoys `SB01`, `SB02`, and so on.
 
 The Bridge weather instrument shows the authoritative day/night state, effective
-sea state, weather class, wind, rain and visibility. Its subdued wave and rain
-animation follows projected simulation time. Helicopter
+sea state, weather class, wind, rain and visibility. Its picture looks into the
+wind in the start screen's look (sky of the hour, clouds, rain, snow, fog, sea)
+with a wind rose in the corner and follows projected simulation time. Helicopter
 readiness separately shows weather-safe launch/dipping decisions and crosswind.
 Autocrew status is read-only in every browser role; the host controls it locally.
 

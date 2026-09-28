@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.46**
+Current release: **1.3.47**
 
-Release 1.3.46 puts a phone on watch. `F9` shows a second QR code, Phone
+Release 1.3.47 puts a phone on watch. `F9` shows a second QR code, Phone
 lookout: scan it, accept the game's own certificate once, type the pairing code,
 and the phone becomes the frigate's bridge lookout or the crewed submarine's
 periscope. Turn the phone like binoculars (gyroscope) or swipe, zoom, and report

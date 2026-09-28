@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.46**
+Aktuelle Version: **1.3.47**
 
-Version 1.3.46 schickt ein Handy auf Wache. `F9` zeigt einen zweiten QR-Code,
+Version 1.3.47 schickt ein Handy auf Wache. `F9` zeigt einen zweiten QR-Code,
 Handy-Ausguck: scannen, das eigene Zertifikat des Spiels einmal bestätigen, den
 Kopplungscode eintippen, und das Handy wird zum Ausguck auf der Brücke der
 Fregatte oder zum Sehrohr des besetzten U-Boots. Das Handy wie ein Fernglas

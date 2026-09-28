@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.46
+## 1.3.47
 
-Version 1.3.46 schickt ein Handy auf Wache. `F9` zeigt einen zweiten QR-Code,
+Version 1.3.47 schickt ein Handy auf Wache. `F9` zeigt einen zweiten QR-Code,
 Handy-Ausguck: scannen, das eigene Zertifikat des Spiels einmal bestätigen, den
 Kopplungscode eintippen, und das Handy wird zum Ausguck auf der Brücke der
 Fregatte oder zum Sehrohr des besetzten U-Boots. Das Handy wie ein Fernglas
@@ -19,6 +19,14 @@ das Sehrohr und nimmt Stadimeter-Entfernungen. Der Listener liefert die Seite
 über HTTPS auf dem nächsten Port (selbst erzeugtes Zertifikat), weil Handys
 Gyroskop und Mikrofon nur einer sicheren Seite freigeben; Spielstände bleiben
 v27.
+
+## 1.3.46
+
+Version 1.3.46 zeichnet das kleine Wetterbild der Brücke im Stil des Startbilds:
+Es blickt jetzt in den Wind, mit dem Himmel der Stunde (Sonne, Mond und Sterne),
+den Wolken, Regen, Schnee oder Nebel und der auf das Auge zulaufenden See, dazu
+eine türkise Windrose in der Ecke und die Eckwinkel der anderen Sichten. Auf der
+uConsole und im Remote-Crew-Browser; Spielstände bleiben v27.
 
 ## 1.3.45
 

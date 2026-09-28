@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.50
+
+Version 1.3.50 bringt eine Absicherung gegen eingefrorene Remote-Crew-Browser.
+Ein neuer Test spielt zwei belebte Missionen (die Fregatte mit Autocrew auf
+allen Stationen gegen das KI-U-Boot und ein besetztes U-Boot mit gefülltem
+Funkraum, Bedrohungsbild und HQ-Aufträgen), veröffentlicht Zustand und Karte
+jeder Station beider Einheiten und prüft sie alle in Node mit den Prüfroutinen
+des Browsers selbst. Ein Feld, das der Browser ablehnen würde, wie in 1.3.44,
+lässt jetzt die Tests vor einem Release scheitern. Am Spiel ändert sich
+nichts. Spielstände bleiben v27.
+
 ## 1.3.49
 
 Version 1.3.49 lässt Remote-Crew-Browser einem Update des Hosts selbst folgen.

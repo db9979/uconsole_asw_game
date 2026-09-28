@@ -12,13 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.49**
+Current release: **1.3.50**
 
-Release 1.3.49 lets Remote Crew browsers follow a host update by themselves.
-The host now names its version on every reply and in the page it serves; a
-browser page that is still open from before an update reloads itself once and
-so always runs the web client that matches the host, instead of freezing on
-data it cannot read. Saves stay v27.
+Release 1.3.50 adds a guard against frozen Remote Crew browsers. A new test
+plays two busy missions (the frigate with the autocrew on every station
+against the AI submarine, and a crewed submarine with its radio, threat
+picture and HQ tasks filled), publishes every station's state and chart for
+both units and runs the browser's own validators over all of them in Node. A
+field the browser would refuse, as in 1.3.44, now fails the tests before a
+release. Nothing changes in play. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

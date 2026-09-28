@@ -14,14 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.49**
+Aktuelle Version: **1.3.50**
 
-Version 1.3.49 lässt Remote-Crew-Browser einem Update des Hosts selbst folgen.
-Der Host nennt seine Version jetzt in jeder Antwort und in der Seite, die er
-ausliefert; eine Browserseite, die noch von vor dem Update offen ist, lädt
-sich einmal selbst neu und läuft so immer mit dem Web-Client, der zum Host
-passt, statt an Daten hängen zu bleiben, die sie nicht lesen kann. Spielstände
-bleiben v27.
+Version 1.3.50 bringt eine Absicherung gegen eingefrorene Remote-Crew-Browser.
+Ein neuer Test spielt zwei belebte Missionen (die Fregatte mit Autocrew auf
+allen Stationen gegen das KI-U-Boot und ein besetztes U-Boot mit gefülltem
+Funkraum, Bedrohungsbild und HQ-Aufträgen), veröffentlicht Zustand und Karte
+jeder Station beider Einheiten und prüft sie alle in Node mit den Prüfroutinen
+des Browsers selbst. Ein Feld, das der Browser ablehnen würde, wie in 1.3.44,
+lässt jetzt die Tests vor einem Release scheitern. Am Spiel ändert sich
+nichts. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

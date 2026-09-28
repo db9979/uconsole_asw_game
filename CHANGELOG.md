@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.50
+
+Release 1.3.50 adds a guard against frozen Remote Crew browsers. A new test
+plays two busy missions (the frigate with the autocrew on every station
+against the AI submarine, and a crewed submarine with its radio, threat
+picture and HQ tasks filled), publishes every station's state and chart for
+both units and runs the browser's own validators over all of them in Node. A
+field the browser would refuse, as in 1.3.44, now fails the tests before a
+release. Nothing changes in play. Saves stay v27.
+
 ## 1.3.49
 
 Release 1.3.49 lets Remote Crew browsers follow a host update by themselves.

@@ -76,9 +76,9 @@ from src.core.game_sim import (
     SimMixin,
     SONAR_CLASS_KINDS,
     LOOKOUT_MODEL,
-    CIWS_TRACK_RANGE_NM,
     TORPEDO_WAKE_VISIBLE_NM,
     TORPEDO_WAKE_VISIBLE_DEPTH_M)
+from src.core.game_radar import CIWS_TRACK_RANGE_NM, RadarPictureMixin
 from src.core.game_events import (EventMixin, _ECO_REFRESH_EVENTS)
 from src.core.mission_bridge import (MissionBridgeMixin)
 from src.core.game_draw import (DrawMixin)
@@ -97,6 +97,7 @@ from src.core.game_welcome import WelcomeMixin
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
+           RadarPictureMixin,
            SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin,
            TrainingMixin, CampaignMixin, BugReportMixin, AutosaveMixin, WelcomeMixin):
     # Options overlay rows in display order; the last two open sub-menus.

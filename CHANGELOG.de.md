@@ -4,6 +4,17 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.56
+
+Version 1.3.56 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
+sind entlang ihrer Nähte geteilt: Radar-, Luft-, ECM-, ESM- und Funklage mit
+Flugkörpern und Angreifern ziehen aus dem Simulationsschritt in ein eigenes
+Modul, und die Aktionen der Remote-Crew-Stationen ziehen aus der Brücke in ein
+eigenes Modul; der Code wird unverändert verschoben, und die
+Aktualisierungsreihenfolge bleibt eingefroren. Der Changelog-Eintrag zu 1.3.43
+beschreibt jetzt, was diese Version tatsächlich behoben hat. Spielstände
+bleiben v28.
+
 ## 1.3.55
 
 Version 1.3.55 begrüßt den ersten Start mit einer Auswahl. Gibt es noch keine
@@ -152,10 +163,10 @@ Web-Client lädt. Spielstände bleiben v27.
 
 ## 1.3.43
 
-Version 1.3.43 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
-Veröffentlichen einer neuen Version löscht der Windows-Workflow alle älteren
-Releases (ihre Git-Tags bleiben). Windows-Starter und uConsole-Updater lesen
-nur das neueste Release. Spielstände bleiben v27.
+Version 1.3.43 repariert das Aufräumen der Releases aus 1.3.42 auf GitHub: Die
+Liste der älteren Releases kam mit Windows-Zeilenenden, deshalb schlug ihr
+Löschen fehl; der Workflow entfernt sie jetzt, und ältere Releases werden wie
+vorgesehen gelöscht. Spielstände bleiben v27.
 
 ## 1.3.42
 

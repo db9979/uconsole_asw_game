@@ -12,15 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.55**
+Current release: **1.3.56**
 
-Release 1.3.55 greets a first launch with a choice. When no settings file
-exists yet, the splash is followed by one page asking what you want to play:
-Frigate opens the training with the first frigate lesson selected, Submarine
-opens the first submarine lesson and sets the uConsole to the submarine side,
-Remote Crew opens the F9 page for browser crews, and Main menu (or `Esc`) goes
-straight to the menu. Any choice is remembered, so the page appears only once.
-Saves stay v28.
+Release 1.3.56 is a clean-up with no change in play. The two largest modules
+are split along their seams: the radar, air, ECM, ESM and radio pictures with
+missiles and raiders move from the simulation step into their own module, and
+the Remote Crew station action handlers move out of the bridge into their own
+module; the code moves verbatim and the update order stays frozen. The
+changelog entry of 1.3.43 now says what that release actually fixed. Saves
+stay v28.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

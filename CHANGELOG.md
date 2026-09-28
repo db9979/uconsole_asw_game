@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.56
+
+Release 1.3.56 is a clean-up with no change in play. The two largest modules
+are split along their seams: the radar, air, ECM, ESM and radio pictures with
+missiles and raiders move from the simulation step into their own module, and
+the Remote Crew station action handlers move out of the bridge into their own
+module; the code moves verbatim and the update order stays frozen. The
+changelog entry of 1.3.43 now says what that release actually fixed. Saves
+stay v28.
+
 ## 1.3.55
 
 Release 1.3.55 greets a first launch with a choice. When no settings file
@@ -140,10 +150,10 @@ client. Saves stay v27.
 
 ## 1.3.43
 
-Release 1.3.43 keeps only the newest release on GitHub: after publishing a new
-version the Windows workflow deletes every older release (their git tags stay).
-The Windows starter and the uConsole updater read only the latest release.
-Saves stay v27.
+Release 1.3.43 fixes the release clean-up of 1.3.42 on GitHub: the list of
+older releases came with Windows line endings, so their deletion failed; the
+workflow now strips them and older releases are removed as intended. Saves
+stay v27.
 
 ## 1.3.42
 

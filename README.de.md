@@ -14,15 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.55**
+Aktuelle Version: **1.3.56**
 
-Version 1.3.55 begrüßt den ersten Start mit einer Auswahl. Gibt es noch keine
-Einstellungsdatei, folgt auf das Startbild eine Seite mit der Frage, was du
-spielen möchtest: Fregatte öffnet das Training mit der ersten Fregatten-
-Lektion, U-Boot öffnet die erste U-Boot-Lektion und stellt die uConsole auf
-die U-Boot-Seite, Remote Crew öffnet die F9-Seite für Browser-Crews, und
-Hauptmenü (oder `Esc`) führt direkt ins Menü. Die Wahl wird gemerkt, die Seite
-erscheint also nur einmal. Spielstände bleiben v28.
+Version 1.3.56 räumt auf, ohne das Spiel zu ändern. Die beiden größten Module
+sind entlang ihrer Nähte geteilt: Radar-, Luft-, ECM-, ESM- und Funklage mit
+Flugkörpern und Angreifern ziehen aus dem Simulationsschritt in ein eigenes
+Modul, und die Aktionen der Remote-Crew-Stationen ziehen aus der Brücke in ein
+eigenes Modul; der Code wird unverändert verschoben, und die
+Aktualisierungsreihenfolge bleibt eingefroren. Der Changelog-Eintrag zu 1.3.43
+beschreibt jetzt, was diese Version tatsächlich behoben hat. Spielstände
+bleiben v28.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.37**
+Current release: **1.3.38**
 
-Release 1.3.37 lets the uConsole charts zoom much further in. `Q`/`E` now
+Release 1.3.38 lets the uConsole charts zoom much further in. `Q`/`E` now
 step through fixed chart heights of 500, 250, 100, 50, 25, 10, 5, 2, 1 and
 0.5 NM on the bridge, weapons, helicopter and submarine charts, and the mouse
 wheel zooms smoothly down to 0.5 NM; the operations centre chart goes down to

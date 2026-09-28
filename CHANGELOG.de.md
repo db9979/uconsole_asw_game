@@ -4,15 +4,23 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.37
+## 1.3.38
 
-Version 1.3.37 lässt die Karten auf der uConsole viel weiter hineinzoomen.
+Version 1.3.38 lässt die Karten auf der uConsole viel weiter hineinzoomen.
 `Q`/`E` springen jetzt auf Brücke, Waffen, Helikopter und der U-Boot-Karte in
 festen Stufen durch die Kartenhöhen 500, 250, 100, 50, 25, 10, 5, 2, 1 und
 0,5 sm, das Mausrad zoomt stufenlos bis 0,5 sm; die OPZ-Karte geht bis 0,25 sm
 Radius. Das Gitter wird beim Hineinzoomen feiner (bis 0,1 sm, mit
 Dezimalbeschriftung), der Maßstab zeigt Bruchteile, und Küsten und Radarringe
 werden beschnitten, damit starker Zoom schnell bleibt. Spielstände bleiben v27.
+
+## 1.3.37
+
+Version 1.3.37 behebt einen Absturz, der das Spiel schloss, sobald ein
+Torpedo der Fregatte oder der KI im Wasser war, während das
+Simulationsprotokoll (Optionen, Simulationsprotokoll) aufzeichnete: Der Zustandsschnappschuss
+des Protokolls las eine Torpedonummer, die der Torpedo nicht hat. Das in 1.3.34
+eingebaute Absturzprotokoll zeigte die Ursache. Spielstände bleiben v27.
 
 ## 1.3.36
 

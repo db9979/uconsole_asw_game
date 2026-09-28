@@ -12,14 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.48**
+Current release: **1.3.49**
 
-Release 1.3.48 adds an autosave. A running mission is saved every 5 minutes
-and when you quit or leave it for the main menu, to `~/.u-jagd/autosave.json`
-beside the five slots. The main menu then starts with "Continue mission",
-which resumes it exactly; after a crash it holds the last 5-minute save. The
-file is written in the background so the uConsole does not stutter. A mission
-that ends and any new mission delete the autosave. Saves stay v27.
+Release 1.3.49 lets Remote Crew browsers follow a host update by themselves.
+The host now names its version on every reply and in the page it serves; a
+browser page that is still open from before an update reloads itself once and
+so always runs the web client that matches the host, instead of freezing on
+data it cannot read. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

@@ -18,6 +18,7 @@ import select
 import unicodedata
 from urllib.parse import urlsplit
 
+from src.core.version import APP_VERSION
 from src.commander.voice import PCM_BYTES as VOICE_PCM_BYTES, VoicePeer, read_frames
 from src.commander.v2.commands import (
     V2CommandEnvelope,
@@ -213,6 +214,8 @@ class _Handler(BaseHTTPRequestHandler):
         for key, value in (
             ("Content-Type", content_type), ("Content-Length", str(len(body))),
             ("Connection", "close"), ("Cache-Control", "no-store"),
+            # The browser reloads itself when the host was updated under it.
+            ("X-U-Jagd-Version", APP_VERSION),
             ("X-Content-Type-Options", "nosniff"), ("X-Frame-Options", "DENY"),
             ("Referrer-Policy", "no-referrer"),
             ("Permissions-Policy", "camera=(), microphone=(self), geolocation=()"),

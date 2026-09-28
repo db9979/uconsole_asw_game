@@ -12,6 +12,7 @@ import pytest
 from commander_web import top_level_files
 
 from src.commander import CommanderServer
+from src.core.version import APP_VERSION
 from src.commander import server as transport
 
 
@@ -144,6 +145,7 @@ def test_static_resources_cached_and_security_headers(server, assets):
         status, headers, body = request(server, route)
         assert status == 200 and body == f"fixture {name}".encode()
         assert headers["Cache-Control"] == "no-store"
+        assert headers["X-U-Jagd-Version"] == APP_VERSION
         assert headers["X-Content-Type-Options"] == "nosniff"
         assert headers["X-Frame-Options"] == "DENY"
         assert headers["Referrer-Policy"] == "no-referrer"

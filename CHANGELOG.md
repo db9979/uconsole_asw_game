@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.49
+
+Release 1.3.49 lets Remote Crew browsers follow a host update by themselves.
+The host now names its version on every reply and in the page it serves; a
+browser page that is still open from before an update reloads itself once and
+so always runs the web client that matches the host, instead of freezing on
+data it cannot read. Saves stay v27.
+
 ## 1.3.48
 
 Release 1.3.48 adds an autosave. A running mission is saved every 5 minutes

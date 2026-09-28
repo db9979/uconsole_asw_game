@@ -14,15 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.48**
+Aktuelle Version: **1.3.49**
 
-Version 1.3.48 bringt einen Autosave. Eine laufende Mission wird alle 5
-Minuten und beim Beenden oder Verlassen ins Hauptmenü nach
-`~/.u-jagd/autosave.json` gespeichert, neben den fünf Plätzen. Das Hauptmenü
-beginnt dann mit „Einsatz fortsetzen“, das sie exakt weiterführt; nach einem
-Absturz ist es der letzte 5-Minuten-Stand. Die Datei wird im Hintergrund
-geschrieben, damit die uConsole nicht ruckelt. Eine beendete und jede neue
-Mission löschen den Autosave. Spielstände bleiben v27.
+Version 1.3.49 lässt Remote-Crew-Browser einem Update des Hosts selbst folgen.
+Der Host nennt seine Version jetzt in jeder Antwort und in der Seite, die er
+ausliefert; eine Browserseite, die noch von vor dem Update offen ist, lädt
+sich einmal selbst neu und läuft so immer mit dem Web-Client, der zum Host
+passt, statt an Daten hängen zu bleiben, die sie nicht lesen kann. Spielstände
+bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

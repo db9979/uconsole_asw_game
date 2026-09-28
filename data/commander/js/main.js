@@ -63,7 +63,10 @@ import { init as initInputWiring } from "./input/wiring.js";
 import { init as initViewsStationTabs } from "./views/station-tabs.js";
 import { init as initViewsHost } from "./views/host.js";
 import { init as initAppBootstrap } from "./app/bootstrap.js";
+import { setPageVersion } from "./net/version.js";
 
+// The version the host served this page with; a newer host reloads it once.
+setPageVersion(document.querySelector('meta[name="u-jagd-version"]')?.getAttribute("content") || null);
 initAppBindings();
 initViewsCanvases();
 initViewsLayout();

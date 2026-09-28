@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.49
+
+Version 1.3.49 lässt Remote-Crew-Browser einem Update des Hosts selbst folgen.
+Der Host nennt seine Version jetzt in jeder Antwort und in der Seite, die er
+ausliefert; eine Browserseite, die noch von vor dem Update offen ist, lädt
+sich einmal selbst neu und läuft so immer mit dem Web-Client, der zum Host
+passt, statt an Daten hängen zu bleiben, die sie nicht lesen kann. Spielstände
+bleiben v27.
+
 ## 1.3.48
 
 Version 1.3.48 bringt einen Autosave. Eine laufende Mission wird alle 5

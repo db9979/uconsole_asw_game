@@ -4,6 +4,13 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.42
+
+Version 1.3.42 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
+Veröffentlichen einer neuen Version löscht der Windows-Workflow alle älteren
+Releases (ihre Git-Tags bleiben). Windows-Starter und uConsole-Updater lesen
+nur das neueste Release. Spielstände bleiben v27.
+
 ## 1.3.41
 
 Version 1.3.41 bringt die volle obere Leiste auf der uConsole zurück: Die

@@ -14,12 +14,12 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.41**
+Aktuelle Version: **1.3.42**
 
-Version 1.3.41 bringt die volle obere Leiste auf der uConsole zurück: Die
-Fregatte zeigt wieder Station, Mission, Uhrzeit, Fahrt und Kurs, das besetzte
-U-Boot Mission, Uhrzeit, Fahrt, Kurs und Tiefe, jetzt kompakt durch „·“
-getrennt. Spielstände bleiben v27.
+Version 1.3.42 lässt auf GitHub nur noch das neueste Release stehen: Nach dem
+Veröffentlichen einer neuen Version löscht der Windows-Workflow alle älteren
+Releases (ihre Git-Tags bleiben). Windows-Starter und uConsole-Updater lesen
+nur das neueste Release. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 
@@ -152,7 +152,8 @@ Der Workflow `.github/workflows/windows.yml` baut das Programm mit PyInstaller
 (`packaging/windows/u-jagd-windows.spec`) bei jedem Push und Pull Request,
 führt seinen Selbsttest ohne Bildschirm aus (kurze Mission plus
 Remote-Crew-Seiten) und veröffentlicht auf `main` einmal je Version das
-Release `v<APP_VERSION>`. Selbst bauen unter Windows:
+Release `v<APP_VERSION>`; danach löscht er alle älteren Releases, sodass nur das
+neueste stehen bleibt (Git-Tags bleiben). Selbst bauen unter Windows:
 `python -m pip install -e ".[windows]"` und
 `pyinstaller packaging/windows/u-jagd-windows.spec`.
 

@@ -634,6 +634,9 @@ class EventMixin:
             self._map_drag_moved = False
             return
         if e.type == pygame.QUIT:
+            if self.welcome_active:
+                # Closing the window on the welcome page also ends onboarding.
+                self._finish_onboarding()
             if not self.quit_confirm:
                 self._open_administration("quit")
             return
@@ -1683,6 +1686,9 @@ class EventMixin:
             return
         if key == pygame.K_r:
             self._reroll_menu_seed()
+            return
+        if self.welcome_active:
+            self._handle_welcome_key(key)
             return
         if self.main_menu:
             entries = self.main_menu_entries()

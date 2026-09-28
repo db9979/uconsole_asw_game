@@ -4,6 +4,16 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.55
+
+Release 1.3.55 greets a first launch with a choice. When no settings file
+exists yet, the splash is followed by one page asking what you want to play:
+Frigate opens the training with the first frigate lesson selected, Submarine
+opens the first submarine lesson and sets the uConsole to the submarine side,
+Remote Crew opens the F9 page for browser crews, and Main menu (or `Esc`) goes
+straight to the menu. Any choice is remembered, so the page appears only once.
+Saves stay v28.
+
 ## 1.3.54
 
 Release 1.3.54 lets the submarine's crew speak more of its reports. Besides

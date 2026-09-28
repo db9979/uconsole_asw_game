@@ -30,6 +30,7 @@ from src.ui.splash_view import (draw_logo, draw_menu_backdrop, draw_menu_panel,
                                 draw_splash)
 from src.ui.support import draw_support_corner
 from src.core.game_bugreport import BUG_REPORT_ENTRY, MAIN_MENU_LABELS
+from src.core.game_welcome import WELCOME_SCREEN
 from src.ui.sonar_view import draw_sonar_view
 from src.ui.weather_station import draw_weather_station
 from src.ui import uboot_view
@@ -145,6 +146,8 @@ class DrawMixin:
             # Support link: main menu page only, never over a mission.
             draw_support_corner(s, config.SCREEN_W - 24, 600,
                                 config.COLOR_TEXT, config.COLOR_TEXT_DIM)
+        elif self.menu_screen == WELCOME_SCREEN:
+            self._draw_welcome_page()
         elif self.menu_screen == BUG_REPORT_ENTRY:
             self._draw_bug_report_page(center)
         elif self.menu_screen == "training":

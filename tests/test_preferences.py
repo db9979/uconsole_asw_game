@@ -29,10 +29,27 @@ def test_preferences_round_trip_at_configurable_path(tmp_path):
 def test_missing_and_corrupt_preferences_use_defaults(tmp_path, monkeypatch):
     set_locale(monkeypatch, "de_DE.UTF-8")
     expected = Preferences(language="de")
-    assert load_preferences(tmp_path / "missing.json") == expected
+    # Only an absent file is a first launch that shows the welcome page.
+    assert load_preferences(tmp_path / "missing.json") == Preferences(
+        language="de", onboarded=False)
 
     path = tmp_path / "preferences.json"
     path.write_text("not json", encoding="utf-8")
+    assert load_preferences(path) == expected
+
+
+def test_onboarded_is_strict_and_legacy_files_count_as_onboarded(tmp_path):
+    path = tmp_path / "preferences.json"
+    path.write_text(json.dumps({"language": "de", "audio": False}),
+                    encoding="utf-8")
+    assert load_preferences(path).onboarded is True
+    for bad in ("no", 0, None, [], {}):
+        path.write_text(json.dumps({"onboarded": bad}), encoding="utf-8")
+        assert load_preferences(path).onboarded is True
+    path.write_text(json.dumps({"onboarded": False}), encoding="utf-8")
+    assert load_preferences(path).onboarded is False
+    expected = Preferences(onboarded=False)
+    save_preferences(expected, path)
     assert load_preferences(path) == expected
 
 

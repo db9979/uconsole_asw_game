@@ -12,17 +12,15 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.54**
+Current release: **1.3.55**
 
-Release 1.3.54 lets the submarine's crew speak more of its reports. Besides
-contacts, pings and torpedo warnings the boat now calls out its own torpedo
-leaving the tube, detonations close aboard or at a distance with their
-bearing, breaking-up noises its sonar can hear, a copied HQ broadcast (and
-whether it carries a contact report on the frigate), each class the periscope
-sights with its bearing, approaching and passing test depth on the way down, a
-hit, hull damage and the mission result, in English or German. Every spoken
-report comes from a line in the boat's own log, so the crew never hears more
-than it has been told. Saves stay v28.
+Release 1.3.55 greets a first launch with a choice. When no settings file
+exists yet, the splash is followed by one page asking what you want to play:
+Frigate opens the training with the first frigate lesson selected, Submarine
+opens the first submarine lesson and sets the uConsole to the submarine side,
+Remote Crew opens the F9 page for browser crews, and Main menu (or `Esc`) goes
+straight to the menu. Any choice is remembered, so the page appears only once.
+Saves stay v28.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

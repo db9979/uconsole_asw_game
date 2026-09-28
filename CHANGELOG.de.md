@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.55
+
+Version 1.3.55 begrüßt den ersten Start mit einer Auswahl. Gibt es noch keine
+Einstellungsdatei, folgt auf das Startbild eine Seite mit der Frage, was du
+spielen möchtest: Fregatte öffnet das Training mit der ersten Fregatten-
+Lektion, U-Boot öffnet die erste U-Boot-Lektion und stellt die uConsole auf
+die U-Boot-Seite, Remote Crew öffnet die F9-Seite für Browser-Crews, und
+Hauptmenü (oder `Esc`) führt direkt ins Menü. Die Wahl wird gemerkt, die Seite
+erscheint also nur einmal. Spielstände bleiben v28.
+
 ## 1.3.54
 
 Version 1.3.54 lässt die U-Boot-Besatzung mehr Meldungen sprechen. Neben

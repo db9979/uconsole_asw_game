@@ -42,6 +42,10 @@ class Preferences:
     live_adsb_enabled: bool = False
     aisstream_api_key: str = ""
     opensky_credentials: str = ""
+    # First-launch welcome page ("What do you want to play?") already shown.
+    # True by default: only a launch without any settings.json shows it;
+    # settings files written before the field existed count as onboarded.
+    onboarded: bool = True
 
     @classmethod
     def defaults(cls) -> "Preferences":
@@ -53,12 +57,18 @@ def default_preferences_path() -> Path:
 
 
 def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
-    """Load preferences, returning safe defaults for absent or corrupt files."""
+    """Load preferences, returning safe defaults for absent or corrupt files.
+
+    Only an absent file marks a first launch (``onboarded`` False); a corrupt
+    or unreadable one keeps the default, so the welcome page is not repeated.
+    """
     defaults = Preferences.defaults()
     target = Path(path).expanduser() if path is not None else default_preferences_path()
     try:
         with target.open("r", encoding="utf-8") as handle:
             payload = json.load(handle)
+    except FileNotFoundError:
+        return replace(defaults, onboarded=False)
     except (OSError, UnicodeError, json.JSONDecodeError):
         return defaults
     if not isinstance(payload, dict):
@@ -70,7 +80,7 @@ def load_preferences(path: str | os.PathLike[str] | None = None) -> Preferences:
     values: dict[str, object] = {"language": language}
     for name in ("fullscreen", "audio", "large_text", "tooltips", "simlog",
                  "night_mode", "high_contrast", "aa_lines", "speech", "live_ais_enabled",
-                 "live_adsb_enabled"):
+                 "live_adsb_enabled", "onboarded"):
         value = payload.get(name, getattr(defaults, name))
         values[name] = value if isinstance(value, bool) else getattr(defaults, name)
     frame_rate = payload.get("frame_rate", defaults.frame_rate)

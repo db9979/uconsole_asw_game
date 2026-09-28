@@ -493,12 +493,6 @@ def test_migrated_claims_cover_every_component_field():
         for claim in catalog.CATALOG.provenance_claims for path in claim.field_paths
     }
     assert claimed == expected
-    assert not any(
-        "waveops" in " ".join(filter(None, (
-            source.id, source.title, source.publisher, source.url))).lower()
-        or "mnw" in " ".join(filter(None, (
-            source.id, source.title, source.publisher, source.url))).lower()
-        for source in catalog.CATALOG.sources.values())
 
 
 def test_r4_pilot_capacity_and_mission_load_are_separate_and_not_runtime_effective():

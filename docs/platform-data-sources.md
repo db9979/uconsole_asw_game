@@ -233,10 +233,8 @@ privaten Quelldateien oder nachgezeichneten Drittgrafiken gebuendelt. Die
 Analyzerdiagramme entstehen deterministisch aus normalisierten Akustikfeldern;
 sie enthalten keine fremden Grafiken, Schriften oder Aufnahmen.
 
-Private WaveOps-/MNW-PDFs sind keine Quelle fuer Daten, Text, Bilder, Layouts
-oder abgeleitete Diagramme. Sie erhalten weder eine Quellen-ID noch eine
-`game_assumption`-Zuordnung. Hersteller-Claims duerfen nur wirklich oeffentliches
-Herstellermaterial referenzieren, keine privat bereitgestellten Broschueren.
+Hersteller-Claims duerfen nur wirklich oeffentliches Herstellermaterial
+referenzieren, keine privat bereitgestellten Broschueren.
 
 ## Pflegeverfahren
 

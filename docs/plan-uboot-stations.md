@@ -145,7 +145,7 @@ plan mit auf und setzte das auch um"):
    Krachen bei Druckkörperversagen (Tauchen unter die Testtiefe mit Bolzen,
    Dichtungen und Rissen in 1.3.21), hörbare Detonationen mit Peilung,
    Rotlicht bei Schleichfahrt.
-5. ~~**ESM-Bibliothek**~~ erledigt in 1.3.25: Kandidaten nach Passung
+5. ~~**ESM-Bibliothek**~~ erledigt in 1.3.27: Kandidaten nach Passung
    (Frequenz, PRF, Modulation; gut/mittel/schwach) statt Katalogreihenfolge.
 6. **KI-Jäger klüger:** Radarechos, ESM und Meldungen der Führung dem Boot
    zuordnen, ASROC einsetzen.

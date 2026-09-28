@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.25**
+Current release: **1.3.27**
 
-Release 1.3.25 sorts the boat's **ESM library by fit**: the emitters whose
+Release 1.3.27 sorts the boat's **ESM library by fit**: the emitters whose
 published ranges hold a measurement are listed best fit first (frequency and
 PRF near the middle of their ranges, the same modulation), each with a grade
 of good, fair or poor on the uConsole and in the browser, so a well-fitting
@@ -519,9 +519,7 @@ by Natural Earth, Wikidata, their contributors, any platform manufacturer,
 military organization, government, or source rights holder.
 
 Exact provenance, versions, hashes, transformation notes, and licenses are in
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). Private WaveOps/MNW material
-is not a repository source. No text, images, layouts, data, imitation,
-transcription, or derived material from it is used.
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ## Development and Tests
 

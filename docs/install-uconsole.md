@@ -32,8 +32,10 @@ Der Installer
 zuerst das neueste GitHub-Release (Tag `vX.Y.Z`, dieselbe Quelle wie der
 Windows-Starter) und startet dann das Spiel; gibt es noch kein Release, folgt
 die uConsole dem Zweig `main`. Ändern sich die Abhängigkeiten, wird
-`pip install -e .` automatisch ausgeführt. Ohne Netz startet sofort die
-installierte Version. Startet eine neue Version nicht einmal
+`pip install -e .` automatisch ausgeführt. Ohne Internet startet die
+installierte Version sofort: Ein Verbindungstest zu GitHub (höchstens 2,5 s)
+überspringt dann die ganze Update-Suche, und hängende Git-Abrufe brechen nach
+spätestens 60 s ab. Startet eine neue Version nicht einmal
 (`main.py --version` schlägt fehl), wird sie zurückgerollt und erst die
 nächste Version wieder versucht. Bei eigenen Änderungen im Checkout, auf einem
 anderen Zweig als `main` oder während das Spiel läuft wird nichts verändert.

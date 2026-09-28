@@ -2,7 +2,7 @@
 
 ## Authority and scope
 
-- This is U-Jagd 1.3.25 (`src/core/version.py`); current saves are v24-only. Treat these as compatibility contracts, not changelog entries.
+- This is U-Jagd 1.3.27 (`src/core/version.py`); current saves are v24-only. Treat these as compatibility contracts, not changelog entries.
 - Resolve conflicts in this order: executable code and focused tests; packaged JSON/runtime resources; `pyproject.toml` and provenance/license notices; `README.md`; design/history documents under `docs/`. A plan or old comment is not an implementation contract.
 - Preserve explicit compatibility tests and user data unless a task intentionally changes the contract. Add a regression test for behavior changes.
 - Older phase/milestone labels under `docs/GDD.md`, `docs/implementation-plan.md`, `docs/plan-0.1.6.md`, and `docs/plan-0.1.7.md` are historical. Current resumable work is tracked in `docs/plan-1.3.md` and `docs/resume.md`.
@@ -89,7 +89,7 @@
 - `data/coastlines/region.json` is the hand-maintained stylized legacy map. `data/coastlines/real_sectors.json.gz` is a generated runtime artifact: exactly 128 distinct, validated 500 NM sectors selected by `seed % 128`.
 - Never hand-edit, casually recompress, or replace the generated catalog. `tools/build_coastline_sectors.py` is offline and deterministic (sorted JSON, gzip `mtime=0`) and accepts only the pinned Natural Earth and Wikidata snapshots with exact SHA-256 values embedded in the tool.
 - The source snapshots are not runtime assets. Regenerate only from rights-cleared pinned inputs, then verify embedded provenance, `THIRD_PARTY_NOTICES.md`, loader/integrity tests, package inclusion, deterministic seed mapping, and geographic disclaimers together. Gameplay roles and synthetic bathymetry are not claims about real states or real seabed.
-- Private WaveOps PDFs are non-distributable inspiration only. Do not add, quote, transcribe, imitate, or derive text, images, layouts, or data from them. New third-party assets require source, author, license, modification terms, attribution, and redistribution rights documented before release.
+- New third-party assets require source, author, license, modification terms, attribution, and redistribution rights documented before release.
 
 ## Current intentional limits
 

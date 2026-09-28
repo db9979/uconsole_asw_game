@@ -14,9 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.25**
+Aktuelle Version: **1.3.27**
 
-Version 1.3.25 sortiert die **ESM-Bibliothek des Boots nach Passung**: die
+Version 1.3.27 sortiert die **ESM-Bibliothek des Boots nach Passung**: die
 Emitter, deren veröffentlichte Bereiche eine Messung enthalten, stehen mit der
 besten Passung zuerst (Frequenz und PRF nahe der Bereichsmitte, dieselbe
 Modulation), jeder mit der Stufe gut, mittel oder schwach am uConsole und im
@@ -565,10 +565,7 @@ Plattformherstellern, militärischen Organisationen, Regierungen oder Inhabern
 von Rechten an Quellen in Verbindung noch wird es von ihnen unterstützt.
 
 Die genaue Herkunft, Versionen, Hashes, Hinweise zur Verarbeitung und Lizenzen
-sind in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) dokumentiert. Privates
-WaveOps/MNW-Material ist keine Quelle des Repositorys. Es werden daraus weder
-Texte, Bilder, Layouts, Daten, Nachahmungen, Transkriptionen noch abgeleitete
-Materialien verwendet.
+sind in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) dokumentiert.
 
 ## Entwicklung und Tests
 

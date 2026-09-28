@@ -120,3 +120,13 @@ def test_web_silhouettes_are_generated_from_the_uconsole_profiles():
     import gen_web_schema
     assert gen_web_schema.render_profiles() == gen_web_schema.PROFILES_JS.read_text(
         encoding="utf-8")
+
+
+def test_the_sky_stays_still_while_the_horizon_rolls():
+    sky = _sky(22.0, cloud_cover=0.9)
+    calm = _picture(sky, motion=(0.0, 0.0), outlines=[], crosshair_deg=None)
+    rolling = _picture(sky, motion=(25.0, 0.08), outlines=[], crosshair_deg=None)
+    # Clouds, stars and moon in the upper sky are drawn at the same place.
+    band = pygame.Rect(20, 30, 360, 30)
+    assert (pygame.image.tobytes(calm.subsurface(band), "RGB")
+            == pygame.image.tobytes(rolling.subsurface(band), "RGB"))

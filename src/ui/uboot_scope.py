@@ -30,9 +30,15 @@ def draw_silhouette(s, cls: str, cx: int, base_y: int, width: int, color) -> Non
 
 
 def scope_outlines(game, boat) -> list:
-    """Detached ``(bearing, span_deg, cls, stale)`` rows of the sightings."""
-    return [(row["bearing"], row["span_deg"], row["cls"], game.sim_t - row["t"] > 1.0)
-            for row in boat.orders.sightings]
+    """Detached ``(bearing, span_deg, cls, stale, lights)`` rows of the
+    sightings (``lights``: the ``nav_lights`` code made out, if any)."""
+    lights = getattr(boat.orders, "_lights", {})
+    rows = []
+    for row in boat.orders.sightings:
+        stale = game.sim_t - row["t"] > 1.0
+        rows.append((row["bearing"], row["span_deg"], row["cls"], stale,
+                     None if stale else lights.get(row["ref"])))
+    return rows
 
 
 def draw_eyepiece(s, game, boat, rect) -> None:

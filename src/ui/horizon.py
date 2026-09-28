@@ -16,6 +16,7 @@ import pygame
 from src.core import config
 from src.core.i18n import raw_text
 from src.physics import ship_dynamics
+from src.sensors import nav_lights
 from src.ui import layout, sight_scene, silhouettes
 
 SCALE_COLOR = (170, 232, 208)
@@ -157,7 +158,7 @@ def horizon_motion(seed: int, sim_t: float, sea_state: float) -> tuple:
 
 
 def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
-                 t: float = 0.0, *, rim=None, lights=None) -> None:
+                 t: float = 0.0, *, rim=None, lights=None, nav=None) -> None:
     """Procedural side view of a coarse class, ``width`` px long, sitting on
     the horizon (aircraft: hovering above it).  ``t`` (display clock)
     animates pitch, radar, rotor and wake."""
@@ -168,7 +169,8 @@ def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
                          max(1, min(3, width // 12)))
         return
     silhouettes.draw_profile(s, cls if cls in silhouettes.PROFILES else "unknown",
-                             cx, base_y, width, color, t=t, rim=rim, lights=lights)
+                             cx, base_y, width, color, t=t, rim=rim, lights=lights,
+                             facing=nav_lights.facing(nav), nav=nav)
 
 
 def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
@@ -196,7 +198,9 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                        visibility_nm=visibility_nm, haze_color=haze_color, colors=colors)
         px_per_deg = rect.w / fov_deg
         lit = sky["light"] < 0.45
-        for bearing, span_deg, cls, stale in outlines:
+        for row in outlines:
+            bearing, span_deg, cls, stale = row[:4]
+            nav = row[4] if len(row) > 4 else None
             off = relative_offset(bearing, line_of_sight)
             if abs(off) > fov_deg / 2 + span_deg / 2:
                 continue
@@ -206,7 +210,8 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             fade = 0.55 if stale else haze * 0.6
             draw_outline(s, cls, cx, base, width, blend(colors["steel"], haze_color, fade),
                          anim_t, rim=blend(colors["rim"], haze_color, fade),
-                         lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None))
+                         lights=(sight_scene.WINDOW_LIGHT if lit and not stale else None),
+                         nav=nav)
         sight_scene.draw_weather(s, view, sky, colors, visibility_nm=visibility_nm, t=anim_t)
         # Labels at least ``SCALE_LABEL_MIN_PX`` apart (the narrow lookout
         # strip labels every 30 degrees, the eyepieces every 10).

@@ -64,7 +64,9 @@ SKY_FIELDS = ("light", "dusk", "cloud", "precipitation", "intensity", "wind_from
               "moon_illumination", "moon_waxing")
 LOOKOUT_GLASSES_FIELDS = ("course", "fov_deg", "visibility_nm", "sea_state", "horizon_offset",
                           "horizon_tilt", "sky", "outlines")
-LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale")
+# ``lights``: the navigation lights made out (``src/sensors/nav_lights.py``
+# code) or null.
+LOOKOUT_OUTLINE_FIELDS = ("bearing", "span_deg", "cls", "stale", "lights")
 SIGHT_CLASSES = ("warship", "merchant", "aircraft", "torpedo", "unknown")
 
 _UBOOT_COMMAND_SHAPE = ("navigation", "status", "weapons", "alarms", "contacts",

@@ -12,17 +12,18 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.39**
+Current release: **1.3.40**
 
-Release 1.3.39 gives the periscope, the lookout's binoculars and every station
-the start screen's look. The eyepieces show day, dusk and night with stars, the
-moon in its phase and its glitter on the water, clouds, rain, snow and fog from
-the weather, and the ships in steel with a lit rim, lit windows at night, bow
-wave and wake. The Remote Crew bridge gets the lookout's binoculars as a card
-and the browser periscope the same picture and silhouettes. uConsole and
-browser stations use the turquoise phosphor and night blue of the start screen
-with corner brackets on the panels; the chart keeps its NATO symbols and the
-high-contrast theme is unchanged. Saves stay v27.
+Release 1.3.40 keeps the sky still in the periscope and the lookout's
+binoculars: clouds, stars, the sun and the moon stay in place while the sea and
+the horizon roll with the swell. From dusk to dawn and in poor visibility
+neutral ships run their navigation lights as the collision regulations lay
+down: white masthead lights, the red or green side light for the side you see,
+the white stern light from astern, each within its range, and the all-round
+lights of vessels at work (trawler, pilot, survey ship and cable layer, mine
+clearance), and civil aircraft their wingtip, tail and flashing anti-collision
+lights; the ship's bow points the way its lights show, and a lit ship is sighted by its lights in the dark.
+Warships and military aircraft run dark. Both on the uConsole and in the browser; saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

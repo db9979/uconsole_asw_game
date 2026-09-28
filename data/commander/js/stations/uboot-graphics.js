@@ -280,7 +280,7 @@ function drawScopeFrame(id, scope) {
   }
   drawSightView(g, width, height, {...scope, window_deg: scope.window_deg,
     outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: row.span_deg, cls: row.cls,
-      stale: row.age_s === null || row.age_s > 1}))}, performance.now() / 1000, g.font);
+      stale: row.age_s === null || row.age_s > 1, lights: row.lights}))}, performance.now() / 1000, g.font);
   if (!finite(scope.bearing)) drawEmpty(plot);
   return true;
 }

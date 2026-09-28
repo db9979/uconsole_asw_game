@@ -4,6 +4,21 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.40
+
+Version 1.3.40 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
+Wolken, Sterne, Sonne und Mond bleiben stehen, während See und Horizont mit dem
+Seegang schwanken. Von der Dämmerung bis zum Morgen und bei schlechter Sicht
+führen neutrale Schiffe ihre Positionslichter nach den
+Kollisionsverhütungsregeln: weiße Topplichter, das rote oder grüne Seitenlicht
+der Seite, die man sieht, von achtern das weiße Hecklicht, jedes in seiner
+Tragweite, und die Rundumlichter von Fahrzeugen bei der Arbeit (Trawler, Lotse,
+Vermesser und Kabelleger, Minenräumer), zivile Flugzeuge ihre Flügelspitzen-,
+Heck- und blitzenden Kollisionswarnlichter; der Bug zeigt dorthin, wohin die Lichter weisen, und ein
+beleuchtetes Schiff wird im Dunkeln an seinen Lichtern gesichtet.
+Kriegsschiffe und Militärflugzeuge bleiben dunkel. Auf der uConsole und im Browser;
+Spielstände bleiben v27.
+
 ## 1.3.39
 
 Version 1.3.39 gibt dem Sehrohr, dem Fernglas des Ausgucks und allen Stationen

@@ -289,9 +289,11 @@ def _lookout_land(game):
 
 
 def lookout_outlines(game, sightings) -> list:
-    """Detached ``(bearing, span_deg, cls, stale)`` rows of the lookout's own
-    tracks: the class from his report, the size from the measured range."""
+    """Detached ``(bearing, span_deg, cls, stale, lights)`` rows of the
+    lookout's own tracks: the class from his report, the size from the
+    measured range, the navigation lights he makes out (``nav_lights`` code)."""
     from src.sensors import lookout_id
+    lit = getattr(game, "_lookout_lights", {})
     rows = []
     for track in sightings:
         if track.bearing is None or track.range_nm is None or track.range_nm <= 0.0:
@@ -305,8 +307,10 @@ def lookout_outlines(game, sightings) -> list:
             cls = "merchant"
         span = math.degrees(_LOOKOUT_KIND_LENGTH_M.get(track.kind, 100.0)
                             / max(track.range_nm * 1852.0, 1.0))
-        rows.append((track.bearing % 360.0, max(1e-3, min(180.0, span)), cls,
-                     game.sim_t - track.last_seen > config.LOOKOUT_EPOCH_S * 2))
+        stale = game.sim_t - track.last_seen > config.LOOKOUT_EPOCH_S * 2
+        lights = lit.get(getattr(track, "track_id", None))
+        rows.append((track.bearing % 360.0, max(1e-3, min(180.0, span)), cls, stale,
+                     lights[0] if lights is not None and not stale else None))
     return rows
 
 

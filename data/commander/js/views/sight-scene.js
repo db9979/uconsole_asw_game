@@ -4,7 +4,7 @@
 // in steel with a lit rim, rain, snow or fog, the bearing scale and the
 // corner brackets.  Display only: every value comes from the detached state
 // (the view's ``sky`` block and outlines); the phase is the wall clock.
-import { DETAIL_MIN_PX, FOAM, PROFILES } from "./silhouette-profiles.js";
+import { DETAIL_MIN_PX, FOAM, NAV_LIGHT, PROFILES } from "./silhouette-profiles.js";
 
 const SKY_NIGHT = [[3, 7, 16], [20, 44, 62]], SKY_DAY = [[34, 88, 118], [138, 176, 182]], SKY_DUSK = [[24, 30, 60], [204, 128, 78]];
 const SEA_NIGHT = [[10, 44, 58], [2, 9, 15]], SEA_DAY = [[24, 78, 92], [6, 34, 46]], SEA_DUSK = [[44, 50, 66], [8, 14, 26]];
@@ -50,13 +50,13 @@ export function palette(sky, haze) {
 }
 
 // --- silhouettes (the uConsole's profiles, generated) -----------------------
-function frameFor(cls, cx, base, width, t) {
+function frameFor(cls, cx, base, width, t, facing = -1) {
   const profile = PROFILES[cls] || PROFILES.unknown;
   const lift = profile.hover ? width * (.25 + .02 * Math.sin(t * 1.3)) : 0;
   const pitch = profile.pitch_deg * Math.PI / 180 * Math.sin(2 * Math.PI * profile.pitch_hz * t);
   const cos = Math.cos(pitch), sin = Math.sin(pitch), left = cx - width / 2, baseY = base - lift;
   const point = (u, v) => {
-    const du = u - .5, ru = du * cos - v * sin, rv = du * sin + v * cos;
+    const du = u - .5, ru = (du * cos - v * sin) * (facing > 0 ? -1 : 1), rv = du * sin + v * cos;
     return [left + (.5 + ru) * width, baseY - rv * width];
   };
   return {point, poly: (points) => points.map(([u, v]) => point(u, v))};
@@ -70,13 +70,57 @@ function line(g, a, b, color, width = 1) {
   g.strokeStyle = color; g.lineWidth = width; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
 }
 
-export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null} = {}) {
+// Navigation lights: code "<L|R><masts><r|-><g|-><s|->" (src/sensors/nav_lights.py);
+// drawn at any size, since at night the lights are what the eye picks up first.
+export const navFacing = (code) => (typeof code === "string" && code[0] === "R" ? 1 : -1);
+
+// A red beacon flash every second, a white strobe double flash every 1.2 s.
+function antiCollision(t) {
+  const phase = t % 1.2;
+  return [t % 1 < .12, phase < .06 || (phase >= .18 && phase < .24)];
+}
+
+function drawNavLights(g, cls, frame, width, code, t) {
+  const aircraft = code.slice(5) === "AC";
+  const nav = aircraft ? PROFILES.aircraft.nav : (PROFILES[cls] || PROFILES.merchant).nav || PROFILES.merchant.nav;
+  const core = Math.max(1, Math.min(3, Math.floor(width / 150))), points = [], roundLights = code.slice(5);
+  // A trawler's single masthead light stands abaft and above her green.
+  const mast = roundLights === "GW" ? nav.mast.slice(1) : nav.mast;
+  for (let index = 0; index < Number(code[1]); index++) points.push([mast[index], "white"]);
+  const [su, sv] = nav.side, red = code[2] === "r", green = code[3] === "g";
+  if (red && green) points.push([[su - .004, sv], "red"], [[su + .004, sv], "green"]);
+  else if (red) points.push([[su, sv], "red"]);
+  else if (green) points.push([[su, sv], "green"]);
+  if (code[4] === "s") points.push([nav.stern, "white"]);
+  const spots = points.map(([[u, v], name]) => [frame.point(u, v), name]);
+  if (aircraft) {
+    const [beacon, strobe] = antiCollision(t);
+    if (beacon) for (const [u, v] of nav.beacon) spots.push([frame.point(u, v), "red"]);
+    if (strobe) spots.push([frame.point(...nav.strobe), "white"]);
+  } else if (roundLights) {
+    // All-round lights down the mast (mine clearance: masthead and each yardarm).
+    const [x, y] = frame.point(...nav.round), step = Math.max(core * 2 + 3, width * .02);
+    const names = {W: "white", R: "red", G: "green"};
+    if (roundLights === "GGG") spots.push([[x, y - step], "green"], [[x - step, y], "green"], [[x + step, y], "green"]);
+    else [...roundLights].forEach((letter, index) => spots.push([[x, y - step * (roundLights.length - index)], names[letter]]));
+  }
+  for (const [[x, y], name] of spots) {
+    const color = NAV_LIGHT[name];
+    g.fillStyle = rgb(color.map((c) => Math.floor(c * .45)));
+    g.beginPath(); g.arc(x, y, core + 2, 0, 2 * Math.PI); g.fill();
+    g.fillStyle = rgb(color);
+    g.beginPath(); g.arc(x, y, core, 0, 2 * Math.PI); g.fill();
+  }
+}
+
+export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, lights = null, nav = null} = {}) {
   width = Math.max(3, width);
   if (cls === "torpedo") {
     line(g, [cx - width / 2, base + 1], [cx + width / 2, base + 1], rgb(FOAM), Math.max(1, Math.min(3, width / 12)));
     return;
   }
-  const profile = PROFILES[cls] || PROFILES.unknown, frame = frameFor(cls, cx, base, width, t);
+  const facing = navFacing(nav);
+  const profile = PROFILES[cls] || PROFILES.unknown, frame = frameFor(cls, cx, base, width, t, facing);
   const detail = width >= DETAIL_MIN_PX, fillColor = rgb(fill), rimColor = rim ? rgb(rim) : fillColor;
   const polys = [frame.poly(profile.hull), ...profile.blocks.map((block) => frame.poly(block))];
   g.fillStyle = fillColor;
@@ -107,15 +151,16 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
     const bow = frame.point(.03, 0), stern = frame.point(1, 0), foam = rgb(FOAM);
     for (let index = 0; index < 3; index++) {
       const phase = (t * 1.7 + index * .33) % 1, reach = width * (.01 + .035 * phase), rise = width * .018 * (1 - phase);
-      line(g, [bow[0] - reach * .3, bow[1]], [bow[0] - reach, bow[1] - rise], foam);
+      line(g, [bow[0] + facing * reach * .3, bow[1]], [bow[0] + facing * reach, bow[1] - rise], foam);
     }
     const step = Math.max(3, width * .04), offset = (t * 18) % (2 * step);
     for (let k = 0; k < 6; k++) {
       const start = offset + k * 2 * step;
       if (start > width * .35) break;
-      line(g, [stern[0] + start, stern[1]], [stern[0] + start + step * .8, stern[1]], foam);
+      line(g, [stern[0] - facing * start, stern[1]], [stern[0] - facing * (start + step * .8), stern[1]], foam);
     }
   }
+  if (typeof nav === "string") drawNavLights(g, cls, frame, width, nav, t);
 }
 
 // --- the picture ------------------------------------------------------------
@@ -123,7 +168,7 @@ function view(width, height, v) {
   const pxPerDeg = width / v.fov_deg;
   const horizon = height / 2 + v.horizon_offset * (height / 260);
   const tilt = v.horizon_tilt;
-  const skyH = Math.max(8, horizon);
+  const skyH = Math.max(8, height / 2);  // the sky stays still: nominal horizon
   return {width, height, pxPerDeg, horizon, tilt, skyH, los: v.bearing,
     x: (bearing) => width / 2 + wrap(bearing - v.bearing) * pxPerDeg,
     base: (x) => horizon + Math.tan(tilt) * (x - width / 2),
@@ -133,14 +178,14 @@ function view(width, height, v) {
 const bodyFraction = (alt) => .12 + .7 * clamp(alt / BODY_MAX_ALT_DEG);
 
 function drawSky(g, w, sky, colors, t, haze) {
-  const gradient = g.createLinearGradient(0, w.horizon + 40 - w.height, 0, w.horizon + 40);
+  const gradient = g.createLinearGradient(0, w.skyH + 40 - w.height, 0, w.skyH + 40);
   gradient.addColorStop(0, rgb(colors.sky[0])); gradient.addColorStop(1, rgb(colors.sky[1]));
   g.fillStyle = gradient; g.fillRect(0, 0, w.width, w.height);
   const stars = (1 - sky.light * 1.8) * (1 - sky.cloud) * (1 - haze);
   if (stars > .05) {
     for (const [bearing, alt, phase, speed, bright] of FIELD.stars) {
       if (!w.visible(bearing)) continue;
-      const x = w.x(bearing), y = w.base(x) - (.08 + .92 * alt) * w.skyH;
+      const x = w.x(bearing), y = w.skyH - (.08 + .92 * alt) * w.skyH;
       if (y < 2) continue;
       const glow = (.55 + .45 * Math.sin(t * speed + phase)) * stars, level = Math.round((bright ? 150 : 90) * glow + 30 * stars);
       g.fillStyle = rgb(mix(colors.sky[0], [level + 40, level + 40, Math.min(255, level + 70)], stars));
@@ -153,11 +198,11 @@ function drawSky(g, w, sky, colors, t, haze) {
     g.fillStyle = rgb(color); g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); g.fill();
   };
   if (sky.light > .05 && sky.sun_alt_deg > -1 && cover > .05 && w.visible(sky.sun_bearing, 2)) {
-    const x = w.x(sky.sun_bearing), y = w.base(x) - bodyFraction(sky.sun_alt_deg) * w.skyH;
+    const x = w.x(sky.sun_bearing), y = w.skyH - bodyFraction(sky.sun_alt_deg) * w.skyH;
     disc(x, y, mix(mix(SUN_DAY, SUN_DUSK, sky.dusk), colors.sky[1], 1 - cover), [[radius * 3, .85], [radius * 2, .7]]);
   }
   if (sky.light < .6 && sky.moon_alt_deg > 0 && sky.moon_illumination > .03 && cover > .05 && w.visible(sky.moon_bearing, 2)) {
-    const x = w.x(sky.moon_bearing), y = w.base(x) - bodyFraction(sky.moon_alt_deg) * w.skyH;
+    const x = w.x(sky.moon_bearing), y = w.skyH - bodyFraction(sky.moon_alt_deg) * w.skyH;
     disc(x, y, mix(MOON, colors.sky[1], (1 - cover) + haze * .5), [[radius * 4, .9], [radius * 3, .82], [radius * 2, .7]]);
     if (sky.moon_illumination < .97) {
       const shift = (sky.moon_waxing ? -1 : 1) * 2 * radius * sky.moon_illumination;
@@ -174,7 +219,7 @@ function drawSky(g, w, sky, colors, t, haze) {
     for (const [start, alt, widthDeg, height, shade] of FIELD.clouds.slice(0, count)) {
       const bearing = start + drift;
       if (!w.visible(bearing, widthDeg)) continue;
-      const x = w.x(bearing), y = w.base(x) - alt * w.skyH, cw = widthDeg * w.pxPerDeg, ch = Math.max(4, height * w.skyH * 1.6);
+      const x = w.x(bearing), y = w.skyH - alt * w.skyH, cw = widthDeg * w.pxPerDeg, ch = Math.max(4, height * w.skyH * 1.6);
       const puffs = [[0, 0, 1, .6], [-.25, -.25, .5, .6], [.2, -.3, .45, .7], [.3, .05, .5, .5]];
       puffs.forEach(([dx, dy, fw, fh], index) => {
         const ex = x + dx * cw, ey = y + dy * ch;
@@ -263,7 +308,7 @@ function drawFrame(g, width, height) {
 
 // One eyepiece picture.  ``v``: bearing (line of sight), fov_deg,
 // horizon_offset, horizon_tilt, visibility_nm, sea_state, sky, outlines
-// ([{bearing, span_deg, cls, stale}]) and an optional window_deg crosshair.
+// ([{bearing, span_deg, cls, stale, lights}]) and an optional window_deg crosshair.
 export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monospace, monospace") {
   const w = view(width, height, v), haze = 1 - clamp(v.visibility_nm / VISIBILITY_MAX_NM);
   const sky = v.sky, colors = palette(sky, haze);
@@ -274,7 +319,8 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
     if (!w.visible(row.bearing, row.span_deg / 2)) continue;
     const cx = w.x(row.bearing), fade = row.stale ? .55 : haze * .6;
     drawProfile(g, row.cls, cx, w.base(cx), Math.min(width, Math.max(3, row.span_deg * w.pxPerDeg)), mix(colors.steel, colors.haze, fade),
-      {t, rim: mix(colors.rim, colors.haze, fade), lights: lit && !row.stale ? WINDOW_LIGHT : null});
+      {t, rim: mix(colors.rim, colors.haze, fade), lights: lit && !row.stale ? WINDOW_LIGHT : null,
+        nav: row.stale ? null : row.lights ?? null});
   }
   drawWeather(g, w, sky, colors, v.visibility_nm, t, haze);
   const labelStep = [10, 30, 45, 90].find((step) => step * w.pxPerDeg >= SCALE_LABEL_MIN_PX) ?? 90;

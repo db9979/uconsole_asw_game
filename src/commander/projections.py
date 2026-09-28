@@ -1313,6 +1313,12 @@ def _sky(game):
             for key in web_schema.SKY_FIELDS}
 
 
+def _nav_lights(code):
+    """A ``nav_lights`` code as published, or None."""
+    from src.sensors import nav_lights
+    return code if code is not None and nav_lights.valid(code) else None
+
+
 def _lookout_glasses(game):
     """The bridge lookout's binoculars: the horizon in motion and the outlines
     of his own sightings (measured bearing, class he made out, apparent
@@ -1328,8 +1334,8 @@ def _lookout_glasses(game):
                 horizon_offset=_number(offset), horizon_tilt=_number(tilt),
                 sky=_sky(game),
                 outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
-                               stale=bool(stale))
-                          for bearing, span, cls, stale in
+                               stale=bool(stale), lights=_nav_lights(lights))
+                          for bearing, span, cls, stale, lights in
                           lookout_outlines(game, game.lookout_sightings())[:16]])
 
 
@@ -1358,7 +1364,9 @@ def _uboot_scope(game, boat):
                         range_sigma_nm=_number(row["range_sigma_nm"]),
                         range_age_s=(_age(now, row["range_t"])
                                      if row["range_t"] is not None else None),
-                        solution=_uboot_solution(boat, row["ref"], now))
+                        solution=_uboot_solution(boat, row["ref"], now),
+                        lights=(None if now - row["t"] > 1.0
+                                else _nav_lights(boat.orders._lights.get(row["ref"]))))
                    for row in boat.orders.sightings[:config.UBOOT_SIGHTINGS_MAX]])
 
 

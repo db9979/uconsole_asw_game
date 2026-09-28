@@ -207,7 +207,9 @@ class View:
         self.los, self.fov = line_of_sight, fov_deg
         self.px_per_deg = self.rect.w / fov_deg
         self.horizon, self.tilt = horizon, tilt
-        self.sky_h = max(8, horizon - self.rect.y)
+        # The sky (stars, sun, moon, clouds) hangs on the eyepiece's nominal
+        # horizon, not on the one rolling with the sea: it stays still.
+        self.sky_h = max(8, self.rect.h // 2)
 
     def x(self, bearing: float) -> float:
         return self.rect.centerx + _wrap(bearing, self.los) * self.px_per_deg
@@ -220,7 +222,7 @@ class View:
 
     def alt_y(self, fraction: float, x: float) -> float:
         """Height ``fraction`` (0 horizon .. 1 top) of the eyepiece's sky."""
-        return self.base(x) - fraction * self.sky_h
+        return self.rect.y + self.rect.h / 2.0 - fraction * self.sky_h
 
 
 def _body_fraction(alt_deg: float) -> float:
@@ -382,9 +384,8 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
     rect = view.rect
     sky_img = _cached(_SKY_CACHE, (rect.w, rect.h, colors["sky"]),
                       lambda: _gradient((rect.w, rect.h), *colors["sky"]))
-    # The horizon moves: stretch the gradient so its bottom meets the horizon.
-    s.blit(sky_img, rect.topleft, (0, max(0, rect.h - max(8, int(view.horizon - rect.y) + 40)),
-                                   rect.w, rect.h))
+    # The sky stays still: its gradient meets the nominal horizon.
+    s.blit(sky_img, rect.topleft, (0, max(0, rect.h - (view.sky_h + 40)), rect.w, rect.h))
     _draw_stars(s, view, sky, colors, t, haze)
     _draw_body(s, view, sky, colors, haze)
     _draw_clouds(s, view, sky, colors, t, haze)

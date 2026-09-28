@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>U-Jagd Poster</title>
+<style>
+@page { size: 210mm 297mm; margin: 0; }
+:root{--sky:#03070f;--phos:#96ffcd;--phos-dim:#3e8c80;--gold:#ecCC80;--teal:#46bebe;--panel:#071a1f;--line:#285a5a;--text:#cfe9e2;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:2480px;height:3508px;background:var(--sky);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media print{html{zoom:0.32}}
+body{position:relative;overflow:hidden;color:var(--text);font-family:"DejaVu Sans","Liberation Sans",sans-serif}
+.mono{font-family:"Liberation Mono","DejaVu Sans Mono",monospace}
+.hero{position:absolute;left:0;top:0;width:2480px;height:1685px;background:var(--sky)}
+.hero img{position:absolute;left:0;top:285px;width:2480px;height:1395px;image-rendering:auto}
+.hero:after{content:"";position:absolute;left:0;right:0;bottom:0;height:220px;background:linear-gradient(transparent,var(--sky))}
+.stars{position:absolute;inset:0 0 auto 0;height:300px}
+.title{position:absolute;left:0;right:0;top:100px;text-align:center}
+.title h1{font-family:"Liberation Mono",monospace;font-weight:700;font-size:300px;line-height:1;color:var(--phos);letter-spacing:6px;
+  text-shadow:0 0 18px rgba(20,120,100,.9),0 0 60px rgba(20,90,80,.6),8px 8px 0 #0e3c34}
+.title .sub{font-family:"Liberation Mono",monospace;font-size:62px;letter-spacing:12px;color:var(--phos-dim);margin-top:26px}
+.title .by{font-family:"Liberation Mono",monospace;font-weight:700;font-size:82px;color:var(--gold);margin-top:22px}
+.corner{position:absolute;width:110px;height:110px;border-color:#285e5a;border-style:solid;border-width:0}
+.c1{left:56px;top:56px;border-left-width:6px;border-top-width:6px}
+.c2{right:56px;top:56px;border-right-width:6px;border-top-width:6px}
+.c3{left:56px;bottom:56px;border-left-width:6px;border-bottom-width:6px}
+.c4{right:56px;bottom:56px;border-right-width:6px;border-bottom-width:6px}
+.content{position:absolute;left:150px;right:150px;top:1455px}
+.lead{font-size:58px;line-height:1.38;color:#dff3ee;text-align:center;max-width:2050px;margin:0 auto}
+.lead b{color:var(--phos);font-weight:700}
+.platforms{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:70px;margin-top:74px}
+.card{border:4px solid var(--line);background:rgba(6,24,28,.85);border-radius:14px;padding:38px 50px 42px}
+.card h2{font-family:"Liberation Mono",monospace;font-size:66px;color:var(--phos);letter-spacing:3px;margin-bottom:22px}
+.card h2 span{color:var(--gold)}
+.card p{font-size:44px;line-height:1.42}
+.card code{display:block;margin-top:26px;font-family:"DejaVu Sans Mono",monospace;font-size:29px;color:var(--gold);background:#030c10;border:2px solid #1d4644;border-radius:8px;padding:18px 20px;line-height:1.4}
+.shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:40px;margin-top:74px}
+.shot figure{margin:0}
+.shot img{width:100%;display:block;border:4px solid var(--line);border-radius:10px;box-shadow:0 0 40px rgba(40,140,130,.18)}
+.shot figcaption{font-family:"Liberation Mono",monospace;font-size:31px;line-height:1.3;color:var(--phos-dim);margin-top:14px;letter-spacing:2px}
+.shot figcaption b{color:var(--phos)}
+.qrrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:70px;margin-top:74px}
+.qr{display:flex;align-items:center;gap:44px;border:4px solid var(--line);border-radius:14px;padding:36px 44px;background:rgba(6,24,28,.85)}
+.qr .code{background:#e9fff6;padding:26px;border-radius:12px;flex:none}
+.qr .code img{width:300px;height:300px;display:block}
+.qr h3{font-family:"Liberation Mono",monospace;font-size:58px;white-space:nowrap;color:var(--phos);margin-bottom:16px}
+.qr.coffee h3{color:var(--gold)}
+.qr p{font-size:40px;line-height:1.4}
+.qr .url{font-family:"DejaVu Sans Mono",monospace;font-size:31px;color:var(--teal);margin-top:18px;word-break:break-all}
+.foot{position:absolute;left:150px;right:150px;bottom:92px;text-align:center;font-size:32px;color:#4f8580;font-family:"Liberation Mono",monospace;letter-spacing:1px}
+</style></head><body>
+<div class="hero"><canvas class="stars" id="stars" width="2480" height="300"></canvas><img src="scene.png" alt=""></div>
+<div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+<div class="title">
+  <h1>U-JAGD</h1>
+  <div class="sub">REAL-TIME TACTICAL SUBMARINE HUNT</div>
+  <div class="by">by Dominik Bornhäußer</div>
+</div>
+<div class="content">
+  <p class="lead">Hunt submarines with the frigate <b>F-217</b> or dive as the <b>U-boat</b>: sonar, radar, ESM, helicopter and torpedoes at nine stations. With <b>Remote Crew</b>, friends man the stations in a browser.</p>
+  <div class="platforms">
+    <div class="card"><h2>uConsole <span>/</span> Linux</h2>
+      <p>Built for the ClockworkPi uConsole. One line installs the game, and it keeps itself up to date:</p>
+      <code>curl -fsSL https://raw.githubusercontent.com/<wbr>db9979/uconsole_asw_game/main/<wbr>packaging/uconsole/install.sh | sh</code></div>
+    <div class="card"><h2>Windows <span>/</span> Browser</h2>
+      <p>Just run U-Jagd-Windows.exe. Your PC becomes the server and you play in the browser: as a crew with one station each, or solo at all of them. Updates install automatically.</p></div>
+  </div>
+  <div class="shots">
+    <div class="shot"><figure><img src="SCREENSHOTS/sonar-broadband.png"><figcaption><b>SONAR</b><br>Broadband</figcaption></figure></div>
+    <div class="shot"><figure><img src="SCREENSHOTS/station-weapons.png"><figcaption><b>WEAPONS</b><br>Fire control</figcaption></figure></div>
+    <div class="shot"><figure><img src="SCREENSHOTS/uboot-command.png"><figcaption><b>SUBMARINE</b><br>Command</figcaption></figure></div>
+    <div class="shot"><figure><img src="SCREENSHOTS/commander-v2-en-bridge-desktop.png"><figcaption><b>REMOTE CREW</b><br>Bridge in the browser</figcaption></figure></div>
+  </div>
+  <div class="qrrow">
+    <div class="qr"><div class="code"><img src="qr_download.svg"></div><div><h3>Download</h3><p>Windows program and uConsole version on GitHub.</p><div class="url">github.com/db9979/<br>uconsole_asw_game</div></div></div>
+    <div class="qr coffee"><div class="code"><img src="qr_coffee.svg"></div><div><h3>Buy me a coffee</h3><p>Enjoying U-Jagd? Support the development.</p><div class="url">buymeacoffee.com/<br>zquu1xu570</div></div></div>
+  </div>
+</div>
+<div class="foot">Free hobby project · fictional scenario, not a training or navigation product</div>
+<script>
+const c=document.getElementById('stars').getContext('2d');let s=217;const r=()=>{s=(s*1103515245+12345)%2147483648;return s/2147483648};
+for(let i=0;i<150;i++){const x=r()*2480,y=r()*300,a=.25+r()*.6,z=r()<.1?3.4:1.8;c.fillStyle=`rgba(200,225,235,${a})`;c.fillRect(x,y,z,z);}
+</script>
+</body></html>

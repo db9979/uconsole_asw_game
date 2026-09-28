@@ -12,13 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.17**
+Current release: **1.3.18**
 
-Release 1.3.17 fixes the Windows program's self-update: after swapping in the
-new `U-Jagd-Windows.exe` it failed to start ("Failed to load Python DLL")
-because it inherited the old process's already deleted unpack directory. The
-restart now unpacks afresh. The starter window also shows the "Buy me a
-coffee" link. Saves stay v23.
+Release 1.3.18 adds an **A4 poster** in German and English (PNG at 300 dpi
+and PDF) in `docs/poster/`: the start-screen scene, a short description of the
+uConsole and Windows versions, four screenshots and QR codes for the download
+and the support page. `tools/build_poster.py` renders it again from the
+current scene and screenshots. The game itself is unchanged; saves stay v23.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

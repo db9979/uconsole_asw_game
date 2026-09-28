@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.18
+
+Version 1.3.18 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit
+300 dpi und PDF) in `docs/poster/`: die Szene des Startbildschirms, eine kurze
+Beschreibung der uConsole- und Windows-Version, vier Screenshots und QR-Codes
+zum Download und zur Unterstützerseite. `tools/build_poster.py` rendert es aus
+der aktuellen Szene und den Screenshots neu. Das Spiel selbst ist unverändert;
+Spielstände bleiben v23.
+
 ## 1.3.17
 
 Version 1.3.17 behebt das Selbst-Update des Windows-Programms: Nach dem

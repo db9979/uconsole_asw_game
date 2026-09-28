@@ -14,13 +14,14 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.17**
+Aktuelle Version: **1.3.18**
 
-Version 1.3.17 behebt das Selbst-Update des Windows-Programms: Nach dem
-Austausch startete die neue `U-Jagd-Windows.exe` nicht ("Failed to load
-Python DLL"), weil sie das bereits gelöschte Entpackverzeichnis des alten
-Prozesses erbte. Der Neustart entpackt jetzt frisch. Das Starterfenster zeigt
-außerdem den Link "Spendier mir einen Kaffee". Spielstände bleiben v23.
+Version 1.3.18 bringt ein **A4-Werbeplakat** auf Deutsch und Englisch (PNG mit
+300 dpi und PDF) in `docs/poster/`: die Szene des Startbildschirms, eine kurze
+Beschreibung der uConsole- und Windows-Version, vier Screenshots und QR-Codes
+zum Download und zur Unterstützerseite. `tools/build_poster.py` rendert es aus
+der aktuellen Szene und den Screenshots neu. Das Spiel selbst ist unverändert;
+Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

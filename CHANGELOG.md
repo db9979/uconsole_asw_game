@@ -4,6 +4,14 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.18
+
+Release 1.3.18 adds an **A4 poster** in German and English (PNG at 300 dpi
+and PDF) in `docs/poster/`: the start-screen scene, a short description of the
+uConsole and Windows versions, four screenshots and QR codes for the download
+and the support page. `tools/build_poster.py` renders it again from the
+current scene and screenshots. The game itself is unchanged; saves stay v23.
+
 ## 1.3.17
 
 Release 1.3.17 fixes the Windows program's self-update: after swapping in the

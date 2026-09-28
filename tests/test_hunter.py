@@ -151,3 +151,91 @@ def test_the_frigate_hunts_without_the_autocrew():
     _run(game, 4.0)
     assert abs(((game.ship.target_course + 180.0) % 360.0) - 180.0) < 1.0
     assert game.ship.target_speed == min(hunter.TRANSIT_KN, config.SHIP_SPEED_MAX_KN)
+
+
+def _mast_up(game, boat, distance_nm=6.0, bearing=90.0):
+    from src.sensors.platform import MAST_DEPTH_M
+    _place(game, boat, distance_nm, bearing=bearing, depth=MAST_DEPTH_M - 3.0)
+    assert boat.sub.command_mast(True) is True
+    game.surface_radar_on = True
+    game.world.land_blocks_line = lambda *args: False
+    game._radar_conditions = lambda: dict(sea_state=1, rain_intensity=0.0, capability=1.0)
+
+
+def test_the_opz_marks_a_mast_blip_and_the_hunt_goes_there():
+    game, boat = _local_boat(seed=62)
+    game.sonar.contacts.clear()
+    _mast_up(game, boat, 3.0, bearing=90.0)
+    sub = boat.sub
+    for _ in range(240):
+        game._update_sim(0.25)
+        if hunter.mast_tracks(game):
+            break
+    tracks = hunter.mast_tracks(game)
+    assert tracks and tracks[0]["track_id"].startswith("R-")
+    found = hunter.datum(game)
+    assert found["source"] in ("radar", "sonar")
+    if found["source"] == "radar":
+        assert math.hypot(found["x"] - sub.x, found["y"] - sub.y) < 1.5
+    # The marks survive a save: a loaded game carries the same radar picture.
+    import copy
+    import json
+    data = json.loads(json.dumps(game.save_state()))
+    marks = copy.deepcopy(data["radar_marks"])
+    assert marks["marked"] and marks["blip_seq"] >= 1
+    assert game._load_save_data(copy.deepcopy(data))
+    assert json.loads(json.dumps(game.save_state()))["radar_marks"] == marks
+    for mutate in (lambda m: m.update(blip_seq=-1),
+                   lambda m: m["marked"][0].__setitem__(1, ""),
+                   lambda m: m["marked"].append(list(m["marked"][0])),
+                   lambda m: m.update(extra=1)):
+        broken = copy.deepcopy(data)
+        mutate(broken["radar_marks"])
+        assert not game._load_save_data(broken)
+
+
+def test_the_freshest_of_mast_track_hfdf_fix_and_hq_report_is_the_datum():
+    game, boat = _local_boat(seed=63)
+    _place(game, boat, 60.0)
+    game.sonar.contacts.clear()
+    assert hunter.datum(game) is None
+    task = dict(id=99, kind="datum", state="offered", offered_t=game.sim_t,
+                respond_by_t=game.sim_t + 600.0, deadline_t=game.sim_t + 3600.0,
+                ended_t=None, x=game.ship.x + 20.0, y=game.ship.y, radius_nm=5.0,
+                course=None, speed_kn=None, report_t=game.sim_t, name="", persons=0,
+                target_id=None, true_x=None, true_y=None, progress=0.0, sighted=False,
+                plot_id=None, verdict=None, points=0)
+    game.tasking.tasks.append(task)
+    found = hunter.datum(game)
+    assert found["source"] == "hq" and (found["x"], found["y"]) == (task["x"], task["y"])
+    assert hunter.asroc(game, found) == "monitoring"       # a report is no firing datum
+    game.sim_t += 300.0
+    _fix(game, game.ship.x, game.ship.y - 15.0, age_s=60.0)
+    assert hunter.datum(game)["source"] == "hfdf"           # fresher than the report
+    _fix(game, game.ship.x, game.ship.y - 15.0, age_s=400.0)
+    assert hunter.datum(game)["source"] == "hq"
+    task["state"] = "declined"
+    assert hunter.datum(game)["source"] == "hfdf"
+
+
+def test_a_located_boat_is_passed_to_a_friendly_escorts_asroc():
+    import random
+    from src.enemies.surface import SurfaceShip
+    game, boat = _local_boat(seed=64)
+    catalog = game.runtime_catalog
+    escort = SurfaceShip(game.ship.x - 2.0, game.ship.y, rng=random.Random(1), hostile=False,
+                         profile=catalog.surfaces["warship_01"], side="friendly",
+                         doctrine="surface_combatant", runtime_catalog=catalog)
+    assert escort.asroc_weapon_key() is not None
+    game.warships.append(escort)
+    low, high = catalog.weapons[escort.asroc_weapon_key()].engagement_range_nm
+    x, y = escort.x + (low + high) / 2.0, escort.y
+    found = {"x": x, "y": y, "contact": None, "source": "radar", "age": 10.0}
+    game.sim_t = hunter.ASROC_EVERY_S * 3.0 + 0.5            # a window tick
+    assert hunter.asroc(game, dict(found, age=hunter.ASROC_DATUM_S + 1.0)) == "monitoring"
+    assert hunter.asroc(game, found) == "asroc"
+    assert escort.pending_asroc and escort.pending_asroc[0]["datum_x"] == x
+    assert hunter.asroc(game, found) == "monitoring"         # one in hand at a time
+    far = dict(found, x=escort.x + high + 5.0)
+    escort.pending_asroc.clear()
+    assert hunter.asroc(game, far) == "monitoring"          # out of the weapon's range

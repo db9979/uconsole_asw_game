@@ -31,7 +31,8 @@ from src.core.save_schema import (
     CREW_FIELDS, CREW_ORDERS_FIELDS, CREW_SIGHTING_FIELDS, CREW_STATION_FIELDS,
     CREW_TDC_FIELDS,
     CREW_WIRE_FIELDS,
-    CREW_WIRE_STATES, DAMAGE_FIELDS, PING_INTERCEPTS_MAX, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
+    CREW_WIRE_STATES, DAMAGE_FIELDS, PING_INTERCEPTS_MAX, RADAR_BLIP_FIELDS,
+    RADAR_MARKED_MAX, RADAR_MARKS_FIELDS, RNG_STREAMS, SAVE_ROOT_FIELDS, SHIP_FIELDS,
     SUB_CREW_FIELDS, WORLD_FIELDS)
 from src.data.catalog import CATALOG, catalog_from_runtime_snapshot
 from src.enemies.ballast import BoatBallast
@@ -487,6 +488,8 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                           or abs(value) > 1e9 for value in row)
                    or row[0] < 0.0 for row in intercepts)
             or intercepts != sorted(intercepts)):
+        return False
+    if not _radar_marks_ok(data.get("radar_marks"), save_sim_t):
         return False
     units = runtime_mission.get("units")
     if (not isinstance(units, dict) or len(units) > 512
@@ -2052,3 +2055,38 @@ def valid_save_document(data, runtime_catalog=None) -> bool:
                                    if emitter.domain == "radar")):
         return False
     return True
+
+
+def _radar_marks_ok(marks, save_sim_t) -> bool:
+    """Save v25 ``radar_marks``: unmarked mast echoes and marked boats."""
+    def real(value, limit=1e9):
+        return type(value) is float and math.isfinite(value) and abs(value) <= limit
+
+    def count(value):
+        return type(value) is int and 0 <= value <= 2**53
+
+    if not isinstance(marks, dict) or set(marks) != RADAR_MARKS_FIELDS:
+        return False
+    blips, marked = marks["blips"], marks["marked"]
+    if (not count(marks["blip_seq"]) or not isinstance(blips, list)
+            or len(blips) > config.RADAR_BLIP_MAX
+            or not isinstance(marked, list) or len(marked) > RADAR_MARKED_MAX):
+        return False
+    previous = 0
+    for blip in blips:
+        if (not isinstance(blip, dict) or set(blip) != RADAR_BLIP_FIELDS
+                or not count(blip["seq"]) or not count(blip["target"])
+                or not previous < blip["seq"] <= marks["blip_seq"]
+                or not all(real(blip[key]) for key in (
+                    "t", "bearing", "range_nm", "error", "observer_x", "observer_y", "x", "y"))
+                or not 0.0 <= blip["t"] <= save_sim_t
+                or not 0.0 <= blip["bearing"] < 360.0 or blip["range_nm"] < 0.0
+                or blip["error"] < 0.0):
+            return False
+        previous = blip["seq"]
+    subs = [row[0] for row in marked if isinstance(row, list) and row]
+    if len(set(subs)) != len(subs):
+        return False
+    return all(isinstance(row, list) and len(row) == 3 and count(row[0])
+               and type(row[1]) is str and 1 <= len(row[1]) <= 32 and real(row[2])
+               and 0.0 <= row[2] <= save_sim_t for row in marked)

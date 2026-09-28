@@ -6,12 +6,17 @@ browser playing the submarine, the frigate would otherwise only react. The
 hunter crews every frigate station no browser holds: it classifies what the
 sonar hears against the signature library, builds a datum from its own
 sensors, searches, closes, pings, sends the helicopter and the patrol
-aircraft, and attacks a located boat.
+aircraft, and attacks a located boat. The OPZ marks the radar blips of a
+raised mast into tracks; a mast track, an HF/DF fix and an HQ datum report
+compete by age for the datum, and a mast track on a sonar bearing places the
+contact. A located boat is passed over the datalink to friendly escorts,
+whose ASROC fire on it when it lies in their range.
 
 Observation boundary: every decision reads the frigate's own contacts, HF/DF
 bearings and fixes, never the boat's position, class or identity. Stateless:
-each decision derives from the simulation time and the seed, so the hunt
-needs no saved state and a loaded game continues it identically.
+each decision derives from the simulation time, the seed and saved sensor
+state (contacts, fixes, radar marks, the HQ task board), so the hunt needs no
+state of its own and a loaded game continues it identically.
 """
 
 from __future__ import annotations
@@ -43,6 +48,11 @@ PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
 ESCORT_AHEAD_NM = 3.0           # the escort's station ahead of the convoy
 ESCORT_STATION_NM = 2.5         # farther off than this it closes at transit speed
 ESCORT_LEASH_NM = 8.0           # an escort prosecutes a datum this close to its convoy
+RADAR_DATUM_S = 600.0           # a mast track stays a datum this long
+HQ_DATUM_S = 1800.0             # an HQ datum report stays a datum this long
+CORRELATE_DEG = 10.0            # a mast track this close to a sonar bearing is that contact
+ASROC_EVERY_S = 120.0
+ASROC_DATUM_S = 120.0           # only a datum this fresh is passed on for an ASROC
 _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
             ("eloka", Station.ELOKA), ("damage", Station.DAMAGE),
             ("engine", Station.ENGINE), ("opz", Station.OPZ))
@@ -111,18 +121,68 @@ def classify(game) -> bool:
     return False
 
 
+def mark_blips(game) -> int:
+    """The OPZ marks every unmarked radar blip into a track, as an operator
+    would; returns how many."""
+    marked = 0
+    for blip in list(game.radar_blip_view()):
+        if game.mark_radar_blip(blip["seq"]) is True:
+            marked += 1
+    return marked
+
+
+def mast_tracks(game) -> list:
+    """Marked mast tracks (``R-`` tracks the OPZ started from a blip) with a
+    measured position, freshest first."""
+    rows = [track for track in game.radar_tracks()
+            if str(track["track_id"]).startswith("R-") and track["x"] is not None
+            and track["y"] is not None and track["age"] <= RADAR_DATUM_S]
+    return sorted(rows, key=lambda track: (track["age"], track["track_id"]))
+
+
+def hq_datums(game) -> list:
+    """Submarine datums HQ has reported (offered or accepted tasks)."""
+    rows = [task for task in game.tasking.tasks
+            if task["kind"] == "datum" and task["state"] in ("offered", "active")
+            and 0.0 <= game.sim_t - task["report_t"] <= HQ_DATUM_S]
+    return sorted(rows, key=lambda task: (-task["report_t"], task["id"]))
+
+
+def _on_bearing(game, track, contacts):
+    """The sonar contact whose bearing runs through a mast track, or None."""
+    ship = game.ship
+    bearing = _bearing(ship.x, ship.y, track["x"], track["y"])
+    near = [contact for contact in contacts if _off(contact.bearing, bearing) <= CORRELATE_DEG]
+    return min(near, key=lambda contact: (_off(contact.bearing, bearing), contact.id),
+               default=None)
+
+
 def datum(game):
-    """The best estimate of the boat: a position, a bearing line, or None."""
-    for contact in hunt_contacts(game):
+    """The best estimate of the boat: a position, a bearing line, or None.
+
+    A fresh sonar fix wins; otherwise the freshest of a mast track, an HF/DF
+    fix and an HQ datum report; otherwise a sonar or HF/DF bearing."""
+    contacts = hunt_contacts(game)
+    for contact in contacts:
         if game._contact_range_fresh(contact) and contact.observed_x is not None:
             return {"x": contact.observed_x, "y": contact.observed_y,
-                    "contact": contact, "source": "sonar"}
-    fixes = [(fix["t"], key, fix) for key, fix in game.hfdf_fixes.items()
-             if 0.0 <= game.sim_t - fix["t"] <= FIX_MAX_AGE_S]
-    if fixes:
-        _t, _key, fix = max(fixes, key=lambda row: (row[0], row[1]))
-        return {"x": fix["x"], "y": fix["y"], "contact": None, "source": "hfdf"}
-    contacts = hunt_contacts(game)
+                    "contact": contact, "source": "sonar", "age": 0.0}
+    positions = []
+    for track in mast_tracks(game):
+        positions.append((track["age"], 0, {
+            "x": track["x"], "y": track["y"], "contact": _on_bearing(game, track, contacts),
+            "source": "radar", "age": track["age"]}))
+    for key, fix in sorted(game.hfdf_fixes.items()):
+        age = game.sim_t - fix["t"]
+        if 0.0 <= age <= FIX_MAX_AGE_S:
+            positions.append((age, 1, {"x": fix["x"], "y": fix["y"], "contact": None,
+                                       "source": "hfdf", "age": age}))
+    for task in hq_datums(game):
+        age = game.sim_t - task["report_t"]
+        positions.append((age, 2, {"x": task["x"], "y": task["y"], "contact": None,
+                                   "source": "hq", "age": age}))
+    if positions:
+        return min(positions, key=lambda row: (row[0], row[1]))[2]
     if contacts:
         return {"bearing": contacts[0].bearing, "contact": contacts[0], "source": "sonar"}
     reports = sorted((report for report in game.hfdf_bearings()
@@ -354,6 +414,25 @@ def mpa(game, found) -> str:
     return "moving"
 
 
+def asroc(game, found) -> str:
+    """Pass a fresh located datum over the datalink: the nearest friendly
+    escort with an ASROC in range fires one (one weapon in the water at a time)."""
+    if (found is None or "x" not in found or found["source"] == "hq"
+            or found.get("age", 0.0) > ASROC_DATUM_S
+            or _running(game, "asroc") or game.asrocs or not _window(game, ASROC_EVERY_S)):
+        return "monitoring"
+    contact = found.get("contact")
+    depth = None if contact is None else contact.depth_est
+    escorts = [ship for ship in game.warships
+               if ship.side == "friendly" and not ship.sunk
+               and ship.asroc_weapon_key() is not None and not ship.pending_asroc]
+    for ship in sorted(escorts, key=lambda item: (
+            math.hypot(item.x - found["x"], item.y - found["y"]), item.id)):
+        if ship.fire_asroc_at(float(found["x"]), float(found["y"]), depth):
+            return "asroc"
+    return "monitoring"
+
+
 def update(game, dt: float) -> None:
     """Run the hunt on its cadence; stations a browser holds are left alone."""
     if math.floor(game.sim_t / CADENCE_S) == math.floor((game.sim_t - dt) / CADENCE_S):
@@ -366,11 +445,14 @@ def update(game, dt: float) -> None:
         getattr(AutocrewController, f"_{key}")(game)
     if not manned(game, Station.SONAR):
         sonar(game)
+    if not manned(game, Station.OPZ):
+        mark_blips(game)
     found = datum(game)
     if not manned(game, Station.BRIDGE):
         bridge(game, found)
     if not manned(game, Station.WEAPONS):
         weapons(game, found)
+        asroc(game, found)
     if not manned(game, Station.HELICOPTER):
         helicopter(game, found)
     if not manned(game, Station.OPZ):

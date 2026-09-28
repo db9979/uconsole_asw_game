@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v24`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v25`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -24,8 +24,15 @@ SAVE_ROOT_FIELDS = frozenset({
     "schedulers", "rngs", "ui",
     "autocrew", "ais", "plot",
     "crew", "weapon_settings", "mission_events",
-    "ping_intercepts", "tasking", "watch", "mpa",
+    "ping_intercepts", "tasking", "watch", "mpa", "radar_marks",
 })
+
+# Save v25: the surface radar's unmarked mast echoes and marked boats
+# (``Game.radar_blips``, ``radar_blip_seq``, ``_radar_marked``).
+RADAR_MARKS_FIELDS = frozenset({"blip_seq", "blips", "marked"})
+RADAR_BLIP_FIELDS = frozenset({"seq", "t", "target", "bearing", "range_nm", "error",
+                               "observer_x", "observer_y", "x", "y"})
+RADAR_MARKED_MAX = 64
 
 # Save v16: foreign active pings still travelling to the frigate, as
 # [arrival sim time, source x, source y] in arrival order.

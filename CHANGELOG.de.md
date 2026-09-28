@@ -4,6 +4,15 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.28
+
+Version 1.3.28 macht die **KI-Jäger klüger**: Die OPZ markiert den bloßen
+Radarpunkt eines ausgefahrenen Masts oder Schnorchels, und eine Mastspur,
+eine HF/DF-Kreuzpeilung oder eine U-Boot-Datummeldung der Führung wird jetzt
+zum Datum der Jagd. Ein frischer Fix der eigenen Sensoren geht per Datenlink
+an ein befreundetes KI-Kriegsschiff mit ASROC in Reichweite. Spielstände sind
+jetzt v25 (Radarpunkte und Markierungen).
+
 ## 1.3.27
 
 Version 1.3.27 sortiert die **ESM-Bibliothek des Boots nach Passung**: die

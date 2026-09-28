@@ -1187,12 +1187,13 @@ Scenarios 5 to 7 give the submarine the objective; the frigate's task is to stop
 When nobody sails the frigate (the uConsole plays the boat, or a solo browser plays the submarine), AI hunters crew every frigate station no browser holds; a station a browser takes is left to it at once. They read only what the frigate's own sensors report, never the boat's position or identity:
 
 - **Classification:** a contact whose heard signature the library knows only from submarines is classified submarine, as an operator comparing it with the library would. Other contacts stay unclassified.
-- **Datum:** the freshest located submarine contact (ping, TMA or buoy fix), else an HF/DF cross-fix up to 15 minutes old, else the bearing of a submarine contact or a fresh HF/DF bearing. The radio room takes HF/DF bearings and cross-fixes like the autocrew.
+- **Datum:** the freshest located submarine contact (ping, TMA or buoy fix); else the youngest of a radar mast track up to 10 minutes old, an HF/DF cross-fix up to 15 minutes old and an HQ submarine datum report up to 30 minutes old; else the bearing of a submarine contact or a fresh HF/DF bearing. The OPZ marks every bare radar blip of a raised mast or snorkel as a track, like an operator, and a mast track within 10° of a submarine contact's bearing counts as that contact. The radio room takes HF/DF bearings and cross-fixes like the autocrew.
 - **Bridge:** in the convoy attack the frigate keeps station 3 NM ahead of the convoy, weaving 45° either side every 5 minutes (it closes at 18 kn when more than 2.5 NM off station), and prosecutes a datum only within 8 NM of the convoy. Otherwise, without a datum the frigate searches at 10 kn on a zigzag (legs of 10 minutes) whose base course turns 90° every 30 minutes. It runs at 18 kn to a position datum farther than 6 NM and works a closer one at 8 kn on a crossing course (60° off, switching sides every 5 minutes) so the towed array and TMA get bearing motion; on a bearing alone it steers 30° off it at 12 kn. It turns away from torpedoes and missiles like the autocrew and never steers into shoal water.
 - **Sonar and weapons:** the ship pings once a minute on a submarine contact that has no fresh range, and fires one torpedo (or the set salvo) at a located submarine within 6 NM, again only when it has stopped running. Nixies go out against a heard torpedo.
 - **Helicopter:** launched for a datum within 30 NM (weather and deck permitting); it flies to the datum, or 8 NM down a bearing, dips, pings every 30 s and drops a torpedo on a located submarine within 1.5 NM, one at a time. Without a datum it recovers.
 - **Patrol aircraft:** requested once a datum exists; it flies to the datum with its radar on, lays a circle of buoys where none listen within 4 NM, and attacks a located submarine within its drop range over the datalink.
-- The other stations (damage control, engine room, OPZ air defence, ELOKA) run the autocrew's policies. The hunt keeps no state of its own, so a loaded game continues it unchanged.
+- **ASROC:** a position datum at most 2 minutes old from the ship's own sensors (not an HQ report) is passed over the datalink to the nearest friendly AI warship that carries ASROC and has it in range, at most every 2 minutes and never while an ASROC is in flight or its torpedo is running. The frigate itself carries no ASROC, and the boat scenarios add no escort for it.
+- The other stations (damage control, engine room, OPZ air defence, ELOKA) run the autocrew's policies. The hunt keeps no state of its own; the radar blips and the OPZ's marks it acts on are saved (save v25), so a loaded game continues it unchanged.
 
 #### Not modelled
 
@@ -1206,7 +1207,7 @@ When nobody sails the frigate (the uConsole plays the boat, or a solo browser pl
 - The fit grade is the crew's reading of the published ranges, not a likelihood: a wide-band radar measured near the middle of its range can fit better than the true emitter measured near its edge, and the browser shows the first 8 entries.
 - The boat campaign has no port choices beyond refit and quick turnaround, and no damage-control state carried over (only the overall hull damage). Outside the convoy attack the boat's torpedoes home on the frigate only, and the AI's boats never attack merchants.
 - The AI does not steer a boat towards a boat mission's objective.
-- The AI hunters do not correlate radar blips, ESM or HQ reports with the boat, and they fire no ASROC.
+- The AI hunters do not use the frigate's ESM bearings of the boat's radar, and ASROC comes only from friendly warships already in the scenario.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.
 
 ### Mission and scoring

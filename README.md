@@ -12,13 +12,13 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.27**
+Current release: **1.3.28**
 
-Release 1.3.27 sorts the boat's **ESM library by fit**: the emitters whose
-published ranges hold a measurement are listed best fit first (frequency and
-PRF near the middle of their ranges, the same modulation), each with a grade
-of good, fair or poor on the uConsole and in the browser, so a well-fitting
-radar such as the helicopter's no longer drops off the list. Saves stay v24.
+Release 1.3.28 makes the **AI hunters smarter**: the OPZ marks the bare radar
+blip of a raised mast or snorkel, and a mast track, an HF/DF cross-fix or an
+HQ submarine datum report now becomes the hunt's datum. A fresh fix from the
+ship's own sensors goes over the datalink to a friendly AI warship with
+ASROC in range. Saves are now v25 (radar blips and marks).
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 
@@ -372,7 +372,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v24 game saves for deterministic restoration of existing sessions.
+in v25 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -487,8 +487,8 @@ Validated does not mean runtime-effective. In this release:
 
 ## Saves and User Data
 
-This build writes and loads save format **v24** only. V24 requires the exact
-`u-jagd-save-v24` schema, including the crewed boat's attack-computer marks, the frigate's variable-depth sonar, the crewed boat's radio room, the HQ task board, both crews' watch bills,
+This build writes and loads save format **v25** only. V25 requires the exact
+`u-jagd-save-v25` schema, including the frigate's radar blips and OPZ marks, the crewed boat's attack-computer marks, the frigate's variable-depth sonar, the crewed boat's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

@@ -4,6 +4,7 @@ transactional candidate restore and the five slots (``Game`` mixin).
 Every method here is a verbatim move from ``game.py`` (plan 1.3, phase 2,
 step 1); the persistence contract is unchanged."""
 
+from collections import deque
 import copy
 import json
 import math
@@ -477,6 +478,11 @@ class SaveMixin:
             "watch": self.crew_watch.serialize(),
             "mpa": self.mpa.serialize(),
             "ping_intercepts": [list(row) for row in sorted(self._ping_intercepts)],
+            "radar_marks": dict(
+                blip_seq=int(self.radar_blip_seq),
+                blips=[dict(blip) for blip in self.radar_blips],
+                marked=[[int(sub_id), str(track_id), float(last)] for sub_id, (track_id, last)
+                        in sorted(self._radar_marked.items())]),
             "score": self.score,
             "incident": self.incident,
             "mission_result": self.mission_result,
@@ -1019,6 +1025,12 @@ class SaveMixin:
         self.crew_watch = CrewState.restore(data["watch"])
         self.mpa = PatrolAircraft.restore(data["mpa"], self.world.size_nm)
         self._ping_intercepts = [tuple(row) for row in data["ping_intercepts"]]
+        marks = data["radar_marks"]
+        self.radar_blip_seq = marks["blip_seq"]
+        self.radar_blips = deque((dict(blip) for blip in marks["blips"]),
+                                 maxlen=config.RADAR_BLIP_MAX)
+        self._radar_marked = {sub_id: (track_id, last) for sub_id, track_id, last
+                              in marks["marked"]}
         self.score = data["score"]
         self.incident = data["incident"]
         self.sim_t = data["sim_t"]

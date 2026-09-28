@@ -194,7 +194,13 @@ AUTOMATION = r"""
     const section = $(`station-${expectedRole}`) || $("station-uboot");
     const selectedRole = document.querySelector(".station-tab[aria-selected='true']")?.dataset.station || "";
     const selectorCount = $("station-tabs").children.length;
+    // An eyepiece card sizes and paints its canvas only once it is in view.
+    if (["glasses", "periscope"].includes(scene) && section && !section.hidden &&
+        selectedRole === expectedRole) positionMobileScene();
     const canvas = instrumentFor(expectedRole);
+    // The binoculars redraw on a new state or a training press; a frozen
+    // simulation sends no new state, so "Bow" (already the bearing) draws them.
+    if (scene === "glasses" && positioned && canvas && canvas.width < 300) $("bridge-glasses-bow").click();
     // Sonar and the helicopter (which opens on its acoustic page) show
     // waterfalls painted on an animation clock that headless Chromium's
     // virtual time does not advance; their controls are checked below.

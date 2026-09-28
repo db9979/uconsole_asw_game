@@ -30,7 +30,7 @@ from src.data.user_content import UserContentStore
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 
-from sight_capture import SIGHT_TIMES, WARSHIP_OFF_BOW_DEG, sight_world
+from sight_capture import SIGHT_TIMES, sight_world
 
 
 STATIONS = (
@@ -113,8 +113,8 @@ def _montage(images: list[pygame.Surface]) -> pygame.Surface:
 
 
 def _sight_game(seed: int, language: str, hour: float) -> Game:
-    """One world for both eyepieces: the frigate's binoculars on the warship
-    off its bow and the submarine's periscope on the frigate."""
+    """One world for both eyepieces: the frigate's binoculars on the ships
+    off her bow and the submarine's periscope on the frigate."""
     game = Game(seed=seed, start_menu=False, show_splash=False,
                 fullscreen=False, audio_enabled=False,
                 preferences=_preferences(language))
@@ -122,12 +122,7 @@ def _sight_game(seed: int, language: str, hour: float) -> Game:
     game.station = Station.BRIDGE
     game.station_page = 2
     game.lookout_glasses = True
-    sightings = game.lookout_sightings()
-    if sightings:
-        bow = (game.ship.course + WARSHIP_OFF_BOW_DEG) % 360.0
-        track = min(sightings, key=lambda row: abs(
-            (row.bearing - bow + 180.0) % 360.0 - 180.0))
-        game._train_lookout_glasses_to(track.bearing)
+    game.lookout_glasses_rel = 0.0       # the bow, between warship and merchant
     return game
 
 

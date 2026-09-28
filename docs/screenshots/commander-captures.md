@@ -27,6 +27,23 @@ allowlisted projection.
 README links. `commander-wide.png` is a separate 2560 x 1440 English Sonar
 capture.
 
+## Eyepieces
+
+The bridge lookout's binoculars and the submarine's periscope (Mast & ESM
+station) by day (11:00) and by night (22:30), 1920 x 1080, seed 1234. The scene
+comes from `tools/sight_capture.py`: the submarine at periscope depth with its
+mast up, the frigate stopped close ahead of it, a warship and a neutral
+merchant off the frigate's bow and a second merchant ahead of the submarine;
+what the optics then show comes from the running simulation (at night the
+merchants' navigation lights).
+
+| Eyepiece | English | German |
+| --- | --- | --- |
+| Binoculars, day | [PNG](commander-v2-en-binoculars-day.png) | [PNG](commander-v2-de-binoculars-day.png) |
+| Binoculars, night | [PNG](commander-v2-en-binoculars-night.png) | [PNG](commander-v2-de-binoculars-night.png) |
+| Periscope, day | [PNG](commander-v2-en-periscope-day.png) | [PNG](commander-v2-de-periscope-day.png) |
+| Periscope, night | [PNG](commander-v2-en-periscope-night.png) | [PNG](commander-v2-de-periscope-night.png) |
+
 ## Mobile Views
 
 The 500 x 844 captures exercise the responsive single-column layout. Chromium's

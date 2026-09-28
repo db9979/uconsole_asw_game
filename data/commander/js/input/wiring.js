@@ -366,7 +366,7 @@ export function init() {
     S.opzManage = $("opz-manage").checked;
     if (S.v2State) { S.snapshot = buildDisplayModel(S.v2State); renderSnapshot(); }
   });
-  for (const id of ["sonar-array-mode", "sonar-audition-mode", "sonar-band", "sonar-listen-band", "sonar-bearing", "sonar-depth", "sonar-gain",
+  for (const id of ["sonar-array-mode", "sonar-audition-mode", "sonar-band", "sonar-listen-band", "sonar-bearing", "sonar-depth", "sonar-vds-depth", "sonar-gain",
     "sonar-harmonic-input", "engine-telegraph", "engine-course", "engine-speed", "helicopter-x", "helicopter-y",
     "helicopter-dip-depth", "uboot-course", "uboot-speed", "uboot-depth", "uboot-scope-relative",
     "weapons-fire-target", "weapons-fire-depth", "helicopter-fire-target", "helicopter-fire-depth", "opz-fire-target",
@@ -423,6 +423,10 @@ export function init() {
   $("sonar-tas").addEventListener("click", () => sendStationAction("sonar_set_tas", {deployed: $("sonar-tas").dataset.deployed !== "true"}));
   $("sonar-depth-form").addEventListener("submit", (event) => {
     event.preventDefault(); numberAction("sonar-depth-form", "sonar-depth", "sonar_set_tow_depth", "depth_m", 20, 260);
+  });
+  $("sonar-vds").addEventListener("click", () => sendStationAction("sonar_set_vds", {deployed: $("sonar-vds").dataset.deployed !== "true"}));
+  $("sonar-vds-depth-form").addEventListener("submit", (event) => {
+    event.preventDefault(); numberAction("sonar-vds-depth-form", "sonar-vds-depth", "sonar_set_vds_depth", "depth_m", 20, 300);
   });
   $("sonar-bt").addEventListener("click", () => sendStationAction("sonar_measure_bt", {}));
   $("sonar-ping").addEventListener("click", () => sendStationAction("sonar_active_ping", {}));

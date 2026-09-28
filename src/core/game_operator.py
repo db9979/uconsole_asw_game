@@ -20,7 +20,7 @@ from src.core.limits import MAX_DECOYS
 from src.sonar import analysis_tools
 from src.sonar import tma_operator
 from src.enemies.decoy import Decoy
-from src.sonar.sonar import Contact, TowState
+from src.sonar.sonar import SONAR_ARRAY_MODES, Contact, TowState
 from src.ui.contact_analyzer import ContactAnalyzer
 from src.air.asm import ESSM
 from src.air import chaff as chaff_physics
@@ -224,7 +224,7 @@ class OperatorMixin:
         return True
 
     def set_sonar_array_mode(self, mode: str):
-        if mode not in ("BOW", "TOWED") or type(mode) is not str:
+        if type(mode) is not str or mode not in SONAR_ARRAY_MODES:
             return "invalid_value"
         if self._sonar_down():
             return "sonar_down"
@@ -261,6 +261,35 @@ class OperatorMixin:
         self.sonar.towed_depth_target_m = depth_m
         return True
 
+    def _sea_state_now(self) -> float:
+        return float(getattr(self.world, "effective_sea_state", self.world.sea_state))
+
+    def set_sonar_vds(self, deployed: bool):
+        if type(deployed) is not bool:
+            return "invalid_value"
+        if self._sonar_down():
+            return "sonar_down"
+        state = self.sonar.vds_status()["state"]
+        if state == "FAULT":
+            return "vds_fault"
+        if deployed == (state in ("DEPLOYING", "STREAMED")):
+            return True
+        return (True if self.sonar.toggle_vds(self.sonar_observer.speed, self._sea_state_now())
+                else "vds_fault")
+
+    def set_sonar_vds_depth(self, depth_m: float):
+        if (type(depth_m) not in (int, float) or not math.isfinite(depth_m)
+                or not config.SONAR_VDS_DEPTH_MIN_M <= depth_m <= config.SONAR_VDS_DEPTH_MAX_M):
+            return "invalid_value"
+        if self._sonar_down():
+            return "sonar_down"
+        if self.sonar.vds_state != TowState.STREAMED:
+            return "not_ready"
+        if depth_m > self.sonar.vds_depth_limit_m(self.sonar_observer.speed):
+            return "not_ready"
+        self.sonar.vds_depth_target_m = float(depth_m)
+        return True
+
     def measure_sonar_bt(self):
         if self._sonar_down():
             return "sonar_down"
@@ -272,8 +301,7 @@ class OperatorMixin:
             return opfor.send_ping(self, self._opfor)
         if self._sonar_down():
             return "sonar_down"
-        if (self.sonar_mode == "TOWED"
-                and not self.sonar.tow_status(self.ship.speed)["available"]):
+        if not self.sonar.array_available(self.sonar_mode, self.ship.speed):
             return "not_ready"
         if not self.sonar.fire_ping():
             return "not_ready"
@@ -424,9 +452,10 @@ class OperatorMixin:
     # --- Display (M8): Letterbox-Scaling + Vollbild ---
 
     def _cycle_sonar_mode(self) -> None:
-        self.set_sonar_array_mode("TOWED" if self.sonar_mode == "BOW" else "BOW")
-        self.flash(message("runtime.sonar_array.towed" if self.sonar_mode == "TOWED"
-                           else "runtime.sonar_array.bow"), 1.5)
+        order = SONAR_ARRAY_MODES
+        self.set_sonar_array_mode(order[(order.index(self.sonar_mode) + 1) % len(order)])
+        self.flash(message({"TOWED": "runtime.sonar_array.towed", "VDS": "runtime.sonar_array.vds"}
+                           .get(self.sonar_mode, "runtime.sonar_array.bow")), 1.5)
 
     def _handle_sonar_click(self, target) -> bool:
         """Execute the sonar view's closed allowlist of non-critical actions."""

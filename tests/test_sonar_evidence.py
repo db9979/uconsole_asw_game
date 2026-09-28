@@ -13,7 +13,7 @@ from src.core import config
 from src.core.i18n import Translator, translation_scope
 from src.enemies.sub import Sub
 from src.ship.ship import Ship
-from src.sonar.sonar import Contact, SonarSystem
+from src.sonar.sonar import Contact, SonarSystem, TowState
 from src.sonar.tma import BearingTrack, solve_tma
 from src.ui import layout, sonar_view as view
 from src.core.i18n import localize
@@ -220,11 +220,13 @@ def display_game(monkeypatch):
               preferences=NS(large_text=False), sim_t=100, tr=Translator("en"))
 
 
+@pytest.mark.parametrize("vds", ["STOWED", "STREAMED"])
 @pytest.mark.parametrize("language", ["en", "de"])
 @pytest.mark.parametrize("large", [False, True])
 @pytest.mark.parametrize("page", range(6))
-def test_all_detail_rows_fit_actual_panel_and_font(display_game, language, large, page):
+def test_all_detail_rows_fit_actual_panel_and_font(display_game, language, large, page, vds):
     game = display_game
+    game.sonar.vds_state = TowState[vds]
     game.tr, game.preferences.large_text, game.sonar_page = Translator(language), large, page
     with layout.capture_geometry() as geometry, layout.capture_text() as texts:
         view.draw_sonar_view(game)

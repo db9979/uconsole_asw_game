@@ -228,7 +228,7 @@ Combat situation:
 
 ### Purpose
 
-The sonar room is the main ASW sensor. It listens passively on the hull-mounted sonar (HMS) and the towed array (TAS), analyses signatures on LOFAR and DEMON, estimates target motion with TMA, measures the sound profile and, when ordered, transmits an active ping. It classifies contacts and releases them to Operations and Weapons.
+The sonar room is the main ASW sensor. It listens passively on the hull-mounted sonar (HMS), the towed array (TAS) and the variable-depth sonar (VDS), analyses signatures on LOFAR and DEMON, estimates target motion with TMA, measures the sound profile and, when ordered, transmits an active ping. It classifies contacts and releases them to Operations and Weapons.
 
 ### Displays and instruments
 
@@ -294,20 +294,21 @@ The display shows measured modulation, not identity. After changing the bearing 
 - **ACTIVE** lists echoes of the last 120 s: bearing, range and depth (+/-12 m). A ping fix ages out after 120 s. `W` selects the pulse: **CW** (1 s tone) gives coarse range (about 0.1-0.3 NM) but its Doppler separates a moving target from seabed reverberation; **LFM** (100 Hz sweep) measures range to a few metres and gains 20 dB against noise, but a slow or stationary target stays inside the reverberation. The echo strength depends on the target's aspect (broadside about 15 dB stronger than bow-on) and size. Rocky ground reverberates far more than mud; charted wrecks return real echoes that no contact owns ("unassociated echo").
 - **Hearing the echo:** every return is audible when it arrives, after its real two-way travel time (about 2.5 s per nautical mile of range), for the ship's sonar and the helicopter's dipping sonar alike. A CW echo is a soft tone on the carrier, an LFM echo a short sweep; the pulse is the one the ping was sent with. A strong echo stands out clearly, a faint one barely rises out of the reverberation hiss. In the Remote Crew browser the echo plays with the general sound (loud or faint). A submarine's active ping is heard the other way round, after its one-way travel time (about 1.2 s per nautical mile): only then does the frigate sound its low warning tone and log the ping with the bearing measured by ear (whole degrees, about ±2° off); a ping never gives its range.
 
-### Hull sonar versus towed array
+### Hull sonar, towed array and VDS
 
-|  | HMS (hull) | TAS (towed) |
-|---|---|---|
-| Passive range | 1.0 x base | 1.4 x base, minus 3 % per knot |
-| Beam width | 12 degrees | 6 degrees |
-| Bearing error | +/-6 degrees | +/-2 degrees |
-| Self-noise | full | 35 % of hull |
-| Ping range | 1.0 x | 0.8 x |
-| Handling | always ready | stream 360 s, recover 480 s, only at 3-12 kn, 30 s settle |
+|  | HMS (hull) | TAS (towed) | VDS (variable depth) |
+|---|---|---|---|
+| Passive range | 1.0 x base | 1.4 x base, minus 3 % per knot | 1.15 x base |
+| Beam width | 12 degrees | 6 degrees | 8 degrees |
+| Bearing error | +/-6 degrees | +/-2 degrees, left/right ambiguous | +/-4 degrees, unambiguous |
+| Self-noise | full | 35 % of hull | 60 % of hull |
+| Ping range | 1.0 x | 0.8 x | 1.1 x, from the body's depth |
+| Handling | always ready | stream 360 s, recover 480 s, only at 3-12 kn, 30 s settle | lower 120 s, recover 120 s, only at 3-15 kn and sea state 5 or less, 20 s settle |
 
 - TAS depth 20-260 m (`U`/`V` in 10 m steps), limited to 260 m minus 4 m per knot of own speed. At 30 m or deeper and in the same layer as the target it gains another 25 %.
 - Above 20 kn with any cable out the array suffers a permanent FAULT.
 - The array heading lags the ship by about 45 s after a turn; its bearings are less reliable while it swings.
+- VDS (`Shift+Y` lowers or recovers it, `Shift+B` selects it): a body on a short cable, 20-300 m deep and limited to 300 m minus 8 m per knot. `U`/`V` move the depth of whichever array is selected. At 30 m or deeper in the target's layer it gains the same 25 % as the TAS. It is unambiguous, so a VDS bearing resolves the TAS side just like the hull sonar. Pinging on the VDS transmits from the body: below the layer the shadow-zone loss hits shallow targets instead of deep ones. Lowering and recovery pause outside 3-15 kn or above sea state 5; above 24 kn with the body out it is lost (FAULT).
 
 ```text
           HMS                          TAS
@@ -323,13 +324,14 @@ The display shows measured modulation, not identity. After changing the bearing 
 | Key | Action |
 |---|---|
 | `Shift+A` | Transmit active ping (cooldown; reveals position!) |
-| `Shift+B` | Switch receiver array between HMS and TAS |
+| `Shift+B` | Switch receiver array: HMS, TAS, VDS |
 | `Y` | Deploy / retrieve TAS (only at 3-12 kn) |
+| `Shift+Y` | Lower / recover VDS (3-15 kn, sea state up to 5) |
 | `Page Up / Down` | Broadband / LOFAR / DEMON / TMA / Environment / ACTIVE |
 | `2` | Press 2 again to advance the sonar page |
 | `E` | Bathythermograph: measure local sound profile |
 | `W` | Active pulse CW / LFM |
-| `U / V` | Raise / lower TAS/VDS target depth by 10 m |
+| `U / V` | Raise / lower the selected array's target depth (TAS or VDS) by 10 m |
 | `R` | Direct listening bearing: 000 to 359.9 degrees true |
 | `<- / ->` | Bearing +/-0.5 degrees; Shift: 5, Ctrl: 0.1 |
 | `Up / Down` | Select contact for TMA and classification |
@@ -399,7 +401,6 @@ Combat situation:
 - `T` switches the solver behind the training aid; the automatic solver never writes a fix by itself.
 - No selectable split-window normalisation (TPSW); use gain, black level and contrast instead.
 - No hard blind baffle sector; own noise is a soft lobe.
-- No variable-depth sonar separate from the TAS.
 
 ## 3 Weapons
 

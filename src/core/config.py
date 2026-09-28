@@ -522,6 +522,25 @@ SONAR_TOWED_AVAILABLE_PAYOUT = 0.95
 SONAR_TOWED_SETTLE_S = 30.0
 SONAR_TOWED_HEADING_LAG_S = 45.0
 SONAR_TOWED_SELF_NOISE_FACTOR = 0.35
+# Variable-depth sonar (VDS): a body lowered astern on a short cable. It is
+# unambiguous like the hull array, sits away from the hull's noise and can be
+# put below the layer. Handling (lowering and recovery) needs 3-15 kn and a
+# sea state of at most 5; above 24 kn a lowered body is lost (FAULT).
+SONAR_VDS_DEPTH_M = 50.0
+SONAR_VDS_DEPTH_MIN_M = 20.0
+SONAR_VDS_DEPTH_MAX_M = 300.0
+SONAR_VDS_DEPTH_RATE_M_S = 3.0
+SONAR_VDS_SPEED_SHALLOW_M_PER_KN = 8.0
+SONAR_VDS_DEPLOY_S = 120.0
+SONAR_VDS_RETRIEVE_S = 120.0
+SONAR_VDS_HANDLING_MIN_KN = 3.0
+SONAR_VDS_HANDLING_MAX_KN = 15.0
+SONAR_VDS_MAX_SEA_STATE = 5
+SONAR_VDS_MAX_SAFE_KN = 24.0
+SONAR_VDS_SETTLE_S = 20.0
+SONAR_ARRAY_VDS_PASSIVE = 1.15
+SONAR_ARRAY_VDS_PING = 1.1
+SONAR_VDS_SELF_NOISE_FACTOR = 0.6
 SONAR_FUSION_CONFIRM_DEG = 5.0
 SONAR_FUSION_DIVERGENT_DEG = 9.0
 SONAR_BT_COOLDOWN_S = 60.0
@@ -742,6 +761,7 @@ TMA_ROBUST_SIGMA = 2.5          # Huber-Grenze in Mess-Standardabweichungen
 BEARING_TRACK_MAX_PTS = 80      # 4-s-Fenster umfasst gut fünf Minuten
 BEARING_TRACK_MIN_INTERVAL_S = 4.0  # unabhaengige TMA-Peilungen
 BEARING_ERR_BOW_DEG = 6.0           # Peilfehler Basis: Bug-Array (±)
+BEARING_ERR_VDS_DEG = 4.0           # Peilfehler Basis: VDS (eindeutig)
 BEARING_ERR_TOWED_DEG = 2.0         # Peilfehler Basis: Schleppsonar (±)
 BEARING_ERR_SPEED_FACTOR = 0.12     # relativer Aufschlag pro kn Eigenfahrt
 BEARING_ERR_QUALITY_SPAN = 0.9      # Fehlerfaktor: 1.4 - SPAN*quality

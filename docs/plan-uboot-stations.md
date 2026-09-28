@@ -127,7 +127,7 @@ Erledigt:
 Offen, in dieser Reihenfolge (Dominik, 2026-09-28: "ja nehme das in den
 plan mit auf und setzte das auch um"):
 
-1. ~~**KI-Jäger**~~ erledigt in 1.3.4 (`src/core/hunter.py`): Fregatte,
+1. ~~**KI-Jäger**~~ erledigt in 1.3.5 (`src/core/hunter.py`): Fregatte,
    Hubschrauber und MPA jagen das Boot, wenn niemand die Fregatte spielt
    (uConsole auf dem Boot oder Solo-Browser als U-Boot), auf jeder Station,
    die kein Browser hält. Datum aus Sonar und HF/DF; Radarechos, ESM und

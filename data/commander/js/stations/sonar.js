@@ -7,7 +7,8 @@ export function renderSonarStation(payload) {
   const settings = payload.settings;
   // The submarine's sonar room: hull array only, no OPZ to release to.
   const submarine = S.session?.station === "uboot_sonar";
-  for (const id of ["sonar-array-mode", "sonar-array-apply", "sonar-tas", "sonar-depth-form", "sonar-tas-flip", "sonar-tas-confirm"])
+  for (const id of ["sonar-array-mode", "sonar-array-apply", "sonar-tas", "sonar-depth-form", "sonar-vds", "sonar-vds-depth-form",
+    "sonar-tas-flip", "sonar-tas-confirm"])
     $(id).hidden = submarine;
   $("station-sonar-title").textContent = t(submarine ? "station_uboot_sonar" : "station_sonar");
   const auditionMode = payload.visualization.receiver.listen_mode;
@@ -17,6 +18,8 @@ export function renderSonarStation(payload) {
     ["sonar_tow_state", stateText("tow_state", settings.tow.state)], ["sonar_tow_payout", unit(settings.tow.payout * 100, "%", 0)],
     ["sonar_tow_speed_window", `${unit(settings.tow.speed_min_kn, "kn", 0)} - ${unit(settings.tow.speed_max_kn, "kn", 0)}`],
     ["sonar_tow_depth", unit(settings.tow.depth_m, "m", 0)],
+    ["sonar_vds_state", stateText("tow_state", settings.vds.state)], ["sonar_vds_payout", unit(settings.vds.payout * 100, "%", 0)],
+    ["sonar_vds_depth", unit(settings.vds.depth_m, "m", 0)],
     ["sonar_bt_ready", yesNo(settings.bt.ready)], ["sonar_ping_ready", yesNo(settings.ping.ready)],
     ["sonar_tma", yesNo(settings.tma_enabled)], ["sonar_audition_mode", enumText({BROADBAND: "sonar_audition_broadband", FILTERED: "sonar_audition_filtered", HETERODYNE: "sonar_audition_heterodyne"}, auditionMode)], ["sonar_gain", unit(settings.gain_db, "dB")],
     ["sonar_band", settings.band_preset || settings.band_hz.map((value) => number(value, 0)).join("-")],
@@ -40,6 +43,9 @@ export function renderSonarStation(payload) {
   const tasDeployed = ["DEPLOYING", "STREAMED"].includes(settings.tow.state);
   $("sonar-tas").textContent = t(tasDeployed ? "sonar_tas_retrieve" : "sonar_tas_deploy");
   $("sonar-tas").dataset.deployed = String(tasDeployed);
+  const vdsDeployed = ["DEPLOYING", "STREAMED"].includes(settings.vds.state);
+  $("sonar-vds").textContent = t(vdsDeployed ? "sonar_vds_retrieve" : "sonar_vds_deploy");
+  $("sonar-vds").dataset.deployed = String(vdsDeployed);
   $("sonar-tma").checked = settings.tma_enabled;
   $("sonar-notch").checked = settings.notch;
   $("sonar-listen-notch").checked = settings.notch;
@@ -51,11 +57,14 @@ export function renderSonarStation(payload) {
     const option = node("option"); option.value = String(value); return option;
   }));
   $("sonar-ping").dataset.ready = String(live && settings.ping.ready &&
-    (settings.mode !== "TOWED" || settings.tow.available));
+    (settings.mode !== "TOWED" || settings.tow.available) && (settings.mode !== "VDS" || settings.vds.available));
   $("sonar-bt").dataset.ready = String(live && settings.bt.ready);
   $("sonar-tas").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state !== "FAULT");
   $("sonar-depth-submit").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state === "STREAMED");
   $("sonar-depth").dataset.ready = String(live && settings.tow.handling_ok && settings.tow.state === "STREAMED");
+  $("sonar-vds").dataset.ready = String(live && settings.vds.handling_ok && settings.vds.state !== "FAULT");
+  $("sonar-vds-depth-submit").dataset.ready = String(live && settings.vds.state === "STREAMED");
+  $("sonar-vds-depth").dataset.ready = String(live && settings.vds.state === "STREAMED");
   stationRows($("sonar-observations"), payload.observations, (row) => submarine ? sonarEntries(row) : [...sonarEntries(row),
     ["opz_release_status", t(row.released_to_opz ? "opz_release_active" : "opz_release_private")]]);
 }

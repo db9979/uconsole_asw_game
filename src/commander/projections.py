@@ -541,6 +541,8 @@ def _sonar_visualization(game, rows, sonar_refs):
 def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
     observer = _sonar_observer(game)
     tow = game.sonar.tow_status(observer.speed)
+    vds = game.sonar.vds_status(observer.speed, float(getattr(
+        game.world, "effective_sea_state", game.world.sea_state)))
     band = (game.sonar.band_low_hz, game.sonar.band_high_hz)
     presets = {"FULL": (0.0, 300.0), "LOW": (4.0, 80.0),
                "SHAFT": (8.0, 55.0), "MID": (20.0, 120.0)}
@@ -563,6 +565,15 @@ def _sonar(game, rows, focus_ref, target_ref, sonar_refs):
                                         depth_m=_number(tow["depth_m"]),
                                        depth_target_m=_number(
                                            tow["depth_target_m"])),
+                              vds=dict(state=str(vds["state"])[:32],
+                                       payout=_number(vds["payout"]),
+                                       available=bool(vds["available"]),
+                                       handling_ok=bool(vds["handling_ok"]),
+                                       speed_min_kn=config.SONAR_VDS_HANDLING_MIN_KN,
+                                       speed_max_kn=config.SONAR_VDS_HANDLING_MAX_KN,
+                                       max_sea_state=config.SONAR_VDS_MAX_SEA_STATE,
+                                       depth_m=_number(vds["depth_m"]),
+                                       depth_target_m=_number(vds["depth_target_m"])),
                               bt=dict(ready=game.sonar.bt_cooldown <= 0,
                                        cooldown_s=_number(game.sonar.bt_cooldown),
                                        thermocline_m=_number(

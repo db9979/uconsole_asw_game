@@ -10,6 +10,7 @@ from itertools import islice
 import json
 import os
 import socket
+import ssl
 import struct
 import time
 
@@ -47,6 +48,10 @@ class CommanderConsole:
         self.host = self.hosts[0]
         self.port = 8765
         self.address = None
+        # The phone lookouts' HTTPS address and certificate fingerprint.
+        self.tls_address = None
+        self.tls_fingerprint = None
+        self.tls_error = None
         self.error = None
         # Admin page "end game": the process quits once the result is out.
         self.shutdown_at = None
@@ -134,6 +139,8 @@ class CommanderConsole:
         status = {
             "state": "running" if running else ("error" if self.error else "stopped"),
             "url": (f"http://{self.address[0]}:{self.address[1]}/" if running else None),
+            "lookout_url": (f"https://{self.tls_address[0]}:{self.tls_address[1]}/lookout"
+                            if running and self.tls_address is not None else None),
             "code": self.pairing_code if running else None,
             "solo": self.solo,
         }
@@ -157,6 +164,7 @@ class CommanderConsole:
         if self.server is not None:
             self.server.stop()
         self.address = None
+        self.tls_address = None
         self.connected = False
         self.active_crew = False
         self.pairing_code = None
@@ -730,10 +738,30 @@ class CommanderConsole:
         self._prepare_transport()
         self._start_transport(self.host)
 
+    def _lookout_tls(self, host):
+        """TLS context for the phone lookouts' HTTPS listener, or None (the
+        crew then plays on plain HTTP; the phone falls back to swiping)."""
+        self.tls_error = None
+        if self.web_mode:
+            return None
+        try:
+            from src.commander import tls
+            cert, key = tls.ensure_certificate(os.path.join(config.SAVE_DIR, "tls"), host)
+            self.tls_fingerprint = tls.fingerprint(cert)
+            return tls.context(cert, key)
+        except (OSError, ValueError, ssl.SSLError):
+            self.tls_error = "commander.local.tls_unavailable"
+            self.tls_fingerprint = None
+            return None
+
     def _start_transport(self, host):
         self._prepare_transport()
-        self.server.start(host, self.port)
+        context = self._lookout_tls(host)
+        self.server.start(host, self.port, tls_context=context)
         self.address = self.server.address
+        self.tls_address = getattr(self.server, "tls_address", None)
+        if context is not None and self.tls_address is None:
+            self.tls_error = "commander.local.tls_unavailable"
         self.pairing_code = self.server.pairing_code
         self._notice_seq = None
         self.invalidate_commands()

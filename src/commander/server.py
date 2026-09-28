@@ -184,6 +184,8 @@ class CommanderServer:
         self._lifecycle = threading.Lock()
         self._http = None
         self._thread = None
+        self._https = None
+        self._https_thread = None
         self._running = False
         self._code_index = None
         self._rotate_code_locked()
@@ -283,8 +285,12 @@ class CommanderServer:
             for lang in ("en", "de")
         }
 
-    def start(self, host: str, port: int = 8765):
-        """Bind only an explicit RFC1918 or loopback IPv4 address (port 0 allowed)."""
+    def start(self, host: str, port: int = 8765, *, tls_context=None, tls_port=None):
+        """Bind only an explicit RFC1918 or loopback IPv4 address (port 0 allowed).
+
+        With ``tls_context`` the same routes are also served over HTTPS on
+        ``tls_port`` (default the next port; 0 picks a free one) for the phone
+        lookouts, whose gyroscope and microphone need a secure context."""
         if not isinstance(host, str):
             raise ValueError("explicit private or loopback IPv4 required")
         address = ipaddress.IPv4Address(host)
@@ -304,33 +310,66 @@ class CommanderServer:
                 raise ValueError("duplicate Commander asset route")
             assets.update(self._prebuilt_assets)
             http = _HTTPServer((str(address), port), self, assets)
+            secure = None
+            if tls_context is not None:
+                if tls_port is None:
+                    tls_port = 0 if port == 0 else http.server_address[1] + 1
+                if type(tls_port) is not int or (tls_port != 0
+                                                 and not 1024 <= tls_port <= 65535):
+                    http.server_close()
+                    raise ValueError("invalid port")
+                try:
+                    secure = _HTTPServer((str(address), tls_port), self, assets,
+                                         tls=tls_context)
+                except OSError:
+                    # The HTTPS port is taken: the crew still plays on HTTP
+                    # (``tls_address`` stays None; the phone falls back to swiping).
+                    secure = None
+                except BaseException:
+                    http.server_close()
+                    raise
             thread = threading.Thread(target=http.serve_forever,
                                       kwargs={"poll_interval": 0.05},
                                       name="commander-listener", daemon=True)
+            secure_thread = (None if secure is None else threading.Thread(
+                target=secure.serve_forever, kwargs={"poll_interval": 0.05},
+                name="commander-listener-tls", daemon=True))
             with self._lock:
                 self._http = http
                 self._thread = thread
+                self._https = secure
+                self._https_thread = secure_thread
                 self._running = True
                 self._voice_enabled = True
             try:
                 thread.start()
+                if secure_thread is not None:
+                    secure_thread.start()
             except BaseException:
                 with self._lock:
                     self._running = False
                     self._http = self._thread = None
+                    self._https = self._https_thread = None
+                http.shutdown() if thread.is_alive() else None
                 http.server_close()
+                if secure is not None:
+                    secure.server_close()
                 raise
 
     def stop(self):
         """Revoke access, close active sockets, and join within a bounded interval."""
         with self._lifecycle:
             with self._lock:
-                http, thread = self._http, self._thread
+                listeners = [(self._http, self._thread), (self._https, self._https_thread)]
                 self._running = False
                 self._voice_enabled = False
                 self._http = self._thread = None
+                self._https = self._https_thread = None
                 self._revoke_locked()
-            if http is not None:
+            deadline = time.monotonic() + 2.0
+            for http, thread in listeners:
+                if http is None:
+                    continue
                 http.shutdown()
                 http.server_close()
                 with http.work_lock:
@@ -338,7 +377,6 @@ class CommanderServer:
                 for worker, connection in workers:
                     http._interrupt_connection(connection)
                     connection.close()
-                deadline = time.monotonic() + 2.0
                 for worker, _ in workers:
                     worker.join(max(0.0, deadline - time.monotonic()))
                 thread.join(max(0.0, deadline - time.monotonic()))
@@ -349,6 +387,12 @@ class CommanderServer:
             if self._http is None:
                 raise RuntimeError("Commander server is not started")
             return self._http.server_address
+
+    @property
+    def tls_address(self):
+        """The phone lookouts' HTTPS address, or None without it."""
+        with self._lock:
+            return None if self._https is None else self._https.server_address
 
     @property
     def pairing_code(self) -> str:

@@ -75,9 +75,12 @@ class _HTTPServer(HTTPServer):
     allow_reuse_address = True
     request_queue_size = _CONNECTION_SLOT_LIMIT
 
-    def __init__(self, address, owner, assets):
+    def __init__(self, address, owner, assets, tls=None):
         self.owner = owner
         self.assets = assets
+        # The phone lookouts' HTTPS listener (src/commander/tls.py): the same
+        # routes behind a per-connection TLS handshake in the worker thread.
+        self.tls = tls
         self.slots = threading.BoundedSemaphore(_CONNECTION_SLOT_LIMIT)
         self.work_lock = threading.Lock()
         self.workers = {}
@@ -110,7 +113,7 @@ class _HTTPServer(HTTPServer):
         if owner.public_origin is not None:
             origins.add(owner.public_origin)
         if host in self.direct_hosts:
-            origins.add(f"http://{host}")
+            origins.add(f"{'https' if self.tls is not None else 'http'}://{host}")
         return frozenset(origins)
 
     def process_request(self, request, client_address):
@@ -160,6 +163,14 @@ class _HTTPServer(HTTPServer):
         timer.daemon = True
         try:
             timer.start()
+            if self.tls is not None:
+                # The handshake runs here, bounded by the same deadline; the
+                # wrapped socket keeps the descriptor the timer shuts down.
+                request = self.tls.wrap_socket(request, server_side=True,
+                                               do_handshake_on_connect=False)
+                with self.work_lock:
+                    self.workers[threading.current_thread()] = request
+                request.do_handshake()
             self.finish_request(request, client_address)
         except (OSError, ValueError, RuntimeError):
             pass
@@ -432,8 +443,11 @@ class _Handler(BaseHTTPRequestHandler):
         return session, digest, True
 
     def _via_https_proxy(self) -> bool:
-        """This request came through the HTTPS proxy, not the direct LAN URL."""
+        """This request came through HTTPS (the proxy or the phone listener),
+        not the direct plain-HTTP LAN URL."""
         owner = self.server.owner
+        if self.server.tls is not None:
+            return True
         return owner.public_origin is not None and (
             owner.web_auth is not None
             or self.headers.get("Origin") == owner.public_origin
@@ -863,7 +877,9 @@ class _Handler(BaseHTTPRequestHandler):
                     peer.outgoing.clear()
                 for opcode, payload in pending:
                     self.connection.sendall(_websocket_frame(payload, opcode=opcode))
-                readable, _, _ = select.select([self.connection], [], [], 0.025)
+                # A TLS socket may hold decrypted bytes select() cannot see.
+                buffered = getattr(self.connection, "pending", lambda: 0)()
+                readable = buffered or select.select([self.connection], [], [], 0.025)[0]
                 if not readable:
                     continue
                 chunk = self.connection.recv(4096)

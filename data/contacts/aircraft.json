@@ -402,6 +402,47 @@
       "power_class": "medium",
       "operating_period_s": 0.5,
       "on_duration_s": 0.5
+    },
+    {
+      "key": "emitter.own_asset.helicopter.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9200000000.0,
+        9500000000.0
+      ],
+      "prf_band_hz": [
+        800.0,
+        2000.0
+      ],
+      "modulation_codes": [
+        "pulse"
+      ],
+      "radar_role": "surface_search",
+      "operating_mode": "asw_surface_search",
+      "power_class": "low",
+      "operating_period_s": 5.0,
+      "on_duration_s": 5.0
+    },
+    {
+      "key": "emitter.own_asset.mpa.radar",
+      "domain": "radar",
+      "frequency_band_hz": [
+        9000000000.0,
+        10000000000.0
+      ],
+      "prf_band_hz": [
+        300.0,
+        2500.0
+      ],
+      "modulation_codes": [
+        "pulse",
+        "frequency_agile"
+      ],
+      "radar_role": "surface_search",
+      "operating_mode": "maritime_patrol_search",
+      "power_class": "medium",
+      "operating_period_s": 6.0,
+      "on_duration_s": 6.0
     }
   ],
   "weapons": [],

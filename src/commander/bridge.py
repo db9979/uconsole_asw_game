@@ -709,6 +709,10 @@ def _uboot_mast(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_mast(params["enabled"]))
 
 
+def _uboot_radio_send(game, boat, params, _bindings):
+    return boat.radio.send_sitrep(game, boat)
+
+
 def _uboot_silent(game, boat, params, _bindings):
     return _uboot_result(boat.sub.command_silent(params["enabled"]))
 
@@ -761,6 +765,7 @@ _UBOOT_ACTION_HANDLERS = {
     "uboot_watch_change": _uboot_watch_change,
     "uboot_o2_candle": _uboot_o2_candle,
     "uboot_mast": _uboot_mast,
+    "uboot_radio_send": _uboot_radio_send,
     "uboot_silent": _uboot_silent,
     "uboot_evade": _uboot_evade,
     "uboot_bottom": _uboot_bottom,

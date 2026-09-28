@@ -839,7 +839,7 @@ def test_each_boat_station_owns_its_own_orders():
     owners = {action: spec.stations for action, spec in V2_ACTION_REGISTRY.items()
               if action.startswith("uboot_")}
     assert owners["uboot_fire"] == {"uboot_weapons"} and "uboot_weapons" in DIRECT_FIRE_ROLES
-    assert owners["uboot_mast"] == {"uboot", "uboot_esm"}
+    assert owners["uboot_mast"] == {"uboot", "uboot_esm", "uboot_radio"}
     assert owners["uboot_snorkel"] == {"uboot_engine"}
     assert "uboot_nav" in owners["uboot_set_course"]
     # The commander no longer fires; the weapons station does.
@@ -869,7 +869,7 @@ def test_new_game_asks_which_unit_the_uconsole_plays():
 
 
 @pytest.mark.parametrize("language", ["en", "de"])
-def test_local_boat_has_six_stations_and_orders_stay_at_their_station(language):
+def test_local_boat_has_seven_stations_and_orders_stay_at_their_station(language):
     from src.ui import uboot_view
     game = Game(seed=83, start_menu=False, audio_enabled=False, language=language)
     game.local_side = "uboot"
@@ -881,7 +881,7 @@ def test_local_boat_has_six_stations_and_orders_stay_at_their_station(language):
         game.handle_event(pygame.event.Event(pygame.KEYDOWN, key=value, mod=mod, unicode=""))
 
     for number, role in enumerate(("uboot", "uboot_sonar", "uboot_weapons", "uboot_engine",
-                                   "uboot_esm", "uboot_nav"), start=1):
+                                   "uboot_esm", "uboot_nav", "uboot_radio"), start=1):
         key(pygame.K_0 + number)
         assert uboot_local.local_station(game) == role
         assert (game.station is Station.SONAR) == (role == "uboot_sonar")
@@ -889,6 +889,7 @@ def test_local_boat_has_six_stations_and_orders_stay_at_their_station(language):
     # Navigation may not raise the mast; the ESM station may.
     sub.depth = sub.target_depth = sub.order_depth = 12.0
     game.msg = ""
+    key(pygame.K_6)
     key(pygame.K_p)
     assert not boat.orders.mast
     key(pygame.K_5)

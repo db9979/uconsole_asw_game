@@ -27,6 +27,7 @@ from src.ui.stations_view import (_panel, _station_content_top,
                                   draw_station_page_tabs, station_page_tab_at)
 from src.ui.uboot_ballast import draw_ballast_page
 from src.ui.uboot_damage import draw_damage_page
+from src.ui.uboot_radio import draw_radio_page, draw_report_chart
 from src.ui.uboot_threat import draw_intercept_lines, draw_threat_page
 from src.enemies.damage_control import COMPARTMENTS
 from src.ui.uboot_scope import draw_scope_page
@@ -39,7 +40,8 @@ STATION_PAGES = {"uboot": UBOOT_PAGES, "uboot_weapons": ("UBOOT_WEAPONS",),
                  "uboot_engine": ("UBOOT_ENGINE", "UBOOT_SUPPLY", "UBOOT_BALLAST",
                                   "UBOOT_DAMAGE"),
                  "uboot_esm": ("UBOOT_ESM", "UBOOT_SCOPE"),
-                 "uboot_nav": ("UBOOT_NAV", "UBOOT_THREAT")}
+                 "uboot_nav": ("UBOOT_NAV", "UBOOT_THREAT"),
+                 "uboot_radio": ("UBOOT_RADIO",)}
 
 
 def station_pages(station: str) -> tuple:
@@ -54,7 +56,7 @@ def page_name(game, boat) -> str | None:
     pages = station_pages(uboot_local.local_station(game))
     return pages[boat.command_page % len(pages)]
 # Station tabs in the top bar: (x, width) of each, in station key order.
-STATION_TAB_W = 104
+STATION_TAB_W = 100
 CONTACT_ROWS = 10
 # Alarms stay on the threat bar this long after the event (s).
 ALARM_WINDOW_S = 120.0
@@ -130,7 +132,7 @@ def draw_top_bar(game, boat) -> None:
     lines.line(s, config.COLOR_SONAR_RING, (0, config.TOP_BAR_H - 1),
                      (config.SCREEN_W, config.TOP_BAR_H - 1), 1)
     sub = boat.sub if boat is not None else None
-    # The boat's six stations as tabs (key number and short name); a station a
+    # The boat's seven stations as tabs (key number and short name); a station a
     # browser crews is marked and not operated from here.
     shown = uboot_local.local_station(game)
     leased = getattr(getattr(game.commander, "server", None), "station_leased", None)
@@ -271,6 +273,7 @@ def _draw_chart_overlays(game, boat, view, r) -> None:
         _label(s, game, label, (int(lx) + 6, int(ly) - 8), color, r)
     draw_esm_chart(game, boat, view, r)
     draw_intercept_lines(game, boat, view, bx, by)
+    draw_report_chart(game, boat, view)
     # Own torpedoes in the water (commanded own weapons).
     for index, torpedo in enumerate(_own_torpedoes(game, sub), start=1):
         px, py = view.world_to_screen(torpedo.x, torpedo.y)
@@ -643,6 +646,8 @@ _FOOTERS = {
                                          ("help.key.uboot_fire", "uboot.footer.fire"),
                                          ("F", "uboot.footer.fire_bearing"),
                                          ("W", "uboot.footer.wire"), ("X", "uboot.footer.decoy")),
+    ("uboot_radio", "UBOOT_RADIO"): (("help.key.enter", "uboot.footer.radio_send"),
+                                     ("P", "uboot.footer.mast"), ("Q/E", "uboot.footer.chart")),
     ("uboot_engine", "UBOOT_ENGINE"): (("+/-", "uboot.footer.telegraph"),
                                        ("G", "uboot.footer.silent"),
                                        ("N", "uboot.footer.snorkel"),
@@ -692,7 +697,8 @@ def draw_command_panel(game, boat) -> None:
               "UBOOT_ENGINE": _draw_engine_page, "UBOOT_SUPPLY": _draw_supply_page,
               "UBOOT_ESM": _draw_esm_page, "UBOOT_BALLAST": draw_ballast_page,
               "UBOOT_DAMAGE": draw_damage_page,
-              "UBOOT_SCOPE": draw_scope_page, "UBOOT_THREAT": draw_threat_page}[name]
+              "UBOOT_SCOPE": draw_scope_page, "UBOOT_THREAT": draw_threat_page,
+              "UBOOT_RADIO": draw_radio_page}[name]
     drawer(s, game, boat, x, content_y, w, content_h)
     specs = tuple(
         (key, "uboot.footer.mast_down" if text == "uboot.footer.mast" and boat.orders.mast

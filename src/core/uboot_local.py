@@ -2,8 +2,8 @@
 
 The frigate then belongs to the Remote Crew browsers (or to its autocrew);
 the local screen, keys and sound serve only the crewed boat.  The boat has the
-six stations of its Remote Crew roles (keys 1-6 or Tab): command, sonar,
-weapons, engine room, mast & ESM and navigation.  The sonar room uses the
+seven stations of its Remote Crew roles (keys 1-7 or Tab): command, sonar,
+weapons, engine room, mast & ESM, navigation and the radio room.  The sonar room uses the
 ``Station.SONAR`` slot (the ordinary sonar workstation drawn and operated
 inside ``Game.sonar_perspective``), every other station the ``Station.BRIDGE``
 slot.  Each order key works only at the station that owns the order, exactly
@@ -348,7 +348,7 @@ def handle_key(game, event) -> None:
         if key in (pygame.K_s, pygame.K_l) and game.station is not Station.SONAR:
             game._open_administration("save" if key == pygame.K_s else "load")
             return
-        if pygame.K_1 <= key <= pygame.K_6 or key == pygame.K_TAB:
+        if pygame.K_1 <= key <= pygame.K_7 or key == pygame.K_TAB:
             shown = local_station(game)
             if key == pygame.K_TAB:
                 step = -1 if mods & pygame.KMOD_SHIFT else 1
@@ -376,7 +376,7 @@ def handle_key(game, event) -> None:
                 finally:
                     game._uboot_dispatch = False
             return
-        if current is None or pygame.K_7 <= key <= pygame.K_9:
+        if current is None or pygame.K_8 <= key <= pygame.K_9:
             return
         if station_remote(game):
             game.flash(message("uboot.local.station_remote",
@@ -540,6 +540,14 @@ def _command_key(game, current, key, mods) -> None:
         if order_allowed(game, "uboot_esm_plot"):
             _esm_notice(game, current, current.esm.to_plot(game, current, _esm_number(current)),
                         "plotted")
+    elif page == "UBOOT_RADIO" and key in (pygame.K_RETURN, pygame.K_KP_ENTER) \
+            and not mods & pygame.KMOD_CTRL:
+        if order_allowed(game, "uboot_radio_send"):
+            result = current.radio.send_sitrep(game, current)
+            if result is not True:
+                game.flash(message("uboot.local.radio_" + (
+                    result if result in ("uboot_no_antenna", "uboot_transmitting")
+                    else "not_ready")), 2.0)
     elif page == "UBOOT_BALLAST" and key in (pygame.K_UP, pygame.K_DOWN,
                                              pygame.K_LEFT, pygame.K_RIGHT):
         if order_allowed(game, "uboot_ballast"):

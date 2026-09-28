@@ -984,6 +984,10 @@ class PicturesMixin:
             emitter = self.runtime_catalog.emitters.get(emitter_key)
             if getattr(emitter, "radar_role", None) == "missile_seeker":
                 name = self.tr("eloka.emitter.asm_seeker")
+            elif emitter_key == config.HELO_RADAR_EMITTER:
+                name = self.tr("eloka.emitter.helicopter_radar")
+            elif emitter_key == config.MPA_RADAR_EMITTER:
+                name = self.tr("eloka.emitter.mpa_radar")
         return name
 
     def eloka_annotation_name(self, track_key: str) -> str | None:

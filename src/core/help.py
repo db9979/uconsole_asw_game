@@ -227,7 +227,7 @@ _WEB_HELP = (
 _UBOOT_HELP = (
     "help.uboot.title",
     [
-        ("1 … 6 / Tab", "help.uboot.views"),
+        ("1 … 7 / Tab", "help.uboot.views"),
         ("C / V / D", "help.uboot.orders"),
         ("U / J / H", "help.uboot.presets"),
         ("help.key.page", "help.uboot.pages"),
@@ -264,6 +264,7 @@ _UBOOT_HELP = (
         ("help.key.enter", "help.uboot.dc_team"),
         ("I", "help.uboot.dc_bulkhead"),
         ("I", "help.uboot.evade"),
+        ("help.key.enter", "help.uboot.radio_send"),
         ("M", "help.uboot.watch_change"),
         ("B", "help.uboot.action_stations"),
         ("0", "help.uboot.weather"),

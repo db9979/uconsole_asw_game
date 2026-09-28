@@ -277,6 +277,20 @@ UBOOT_CHARGE_POWER = {"full": 1.0, "half": 0.5, "vent": 0.0}
 UBOOT_CHARGE_NOISE_DB = {"full": 12.0, "half": 9.0, "vent": 4.0}
 UBOOT_CHARGE_QUIET_LOSS = {"full": 0.25, "half": 0.18, "vent": 0.06}
 UBOOT_CHARGE_LINE_SCALE = {"full": 1.0, "half": 0.7, "vent": 0.0}
+# Radio room of the crewed boat (fictional schedule).  HQ sends a new
+# submarine broadcast every BROADCAST_S; copying needs the antenna (raised
+# mast at periscope depth) up for COPY_S.  A situation report is TX_S of HF
+# transmission (HF-DF can bear it).  A broadcast carries a contact report on
+# the frigate with probability INTEL_P (always after a situation report,
+# then with the sharper radius); the report is AGE_S old.
+UBOOT_RADIO_BROADCAST_S = 600.0
+UBOOT_RADIO_COPY_S = 20.0
+UBOOT_RADIO_TX_S = 20.0
+UBOOT_RADIO_LOG_MAX = 12
+UBOOT_RADIO_INTEL_P = 0.6
+UBOOT_RADIO_REPORT_AGE_S = (300.0, 900.0)
+UBOOT_RADIO_REPORT_RADIUS_NM = 4.0
+UBOOT_RADIO_REPORT_SHARP_NM = 2.0
 # Diesel fuel of conventional boats (fictional): the bunkers hold this many
 # hours of full generator power; a mission starts mid-patrol at this fill.
 # Displayed as litres of diesel per kWh of generator output.
@@ -880,6 +894,11 @@ MPA_ORBIT_NM = 3.0
 MPA_BUOYS = 16
 MPA_TORPS = 2
 MPA_ALTITUDE_M = 300.0              # search altitude (radar horizon)
+# The own aircraft's search radars in the emitter library (heard by the
+# crewed boat's ESM; data/contacts/aircraft.json).
+MPA_RADAR_EMITTER = "emitter.own_asset.mpa.radar"
+HELO_RADAR_EMITTER = "emitter.own_asset.helicopter.radar"
+HELO_RADAR_ALTITUDE_M = 150.0      # transit altitude for the radar horizon
 MPA_RADAR_RANGE_NM = 60.0           # nominal surface-search range, large ship
 MPA_RADAR_LOOK_S = 2.0              # one look per target per scan
 MPA_RADAR_BEARING_ERR_DEG = 1.0

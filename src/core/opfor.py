@@ -16,6 +16,7 @@ import math
 from src.core.callouts import CalloutLog
 from src.core import config, detrand
 from src.core.boat_esm import BoatESM
+from src.core.boat_radio import BoatRadio
 from src.core.crew import CrewState
 from src.core.i18n import message
 from src.core.plot import PlotLayer
@@ -81,7 +82,9 @@ class CrewOrders:
               "hp_air_low": "navigation", "dc_leak": "schaden", "dc_fire": "schaden",
               "dc_fire_out": "schaden", "dc_leak_sealed": "schaden",
               "dc_flooded": "schaden", "dc_chlorine": "schaden",
-              "dc_power_lost": "schaden", "dc_power_restored": "schaden"}
+              "dc_power_lost": "schaden", "dc_power_restored": "schaden",
+              "radio_sending": "funk", "radio_sent": "funk", "radio_aborted": "funk",
+              "radio_copied": "funk", "radio_copied_report": "funk"}
 
     def __init__(self):
         self.silent = False
@@ -114,6 +117,9 @@ class CrewOrders:
         # Intercepts not yet stamped by the crew update (never saved; see
         # CrewedBoat.intercepts).
         self._pending_intercepts = []
+        # The boat's radio room (``CrewedBoat.radio``); the Sub reads its
+        # transmissions for HF-DF.  Never saved here (``crew.radio``).
+        self.radio = None
 
     def event(self, key: str, **values) -> None:
         if key in self.EVENTS and (values or all(k != key for k, _ in self._events)):
@@ -226,6 +232,8 @@ class CrewedBoat:
         # Watches, fatigue and morale of the boat's crew (saved; the game
         # replaces it with one that knows the current sim time on claim).
         self.watch = CrewState()
+        # Radio room: HQ broadcast and situation reports (saved).
+        self.radio = self.orders.radio = BoatRadio()
         platform = SubSonarPlatform(sub)
         sonar = SonarSystem(seed=(int(sub.sensor_seed) ^ _SONAR_SEED_SALT) & 0x7FFFFFFF,
                             acoustic_profiles=runtime_catalog.acoustic_profiles)
@@ -278,7 +286,8 @@ class CrewedBoat:
                     esm=self.esm.to_save(),
                     feed=[dict(row) for row in self.feed],
                     feed_seq=int(self.feed_seq),
-                    watch=self.watch.serialize())
+                    watch=self.watch.serialize(),
+                    radio=self.radio.to_save())
 
     def restore(self, data: dict) -> None:
         self.orders.restore(data["orders"])
@@ -289,6 +298,7 @@ class CrewedBoat:
         self.feed = deque((dict(row) for row in data["feed"]), maxlen=OPFOR_FEED_MAX)
         self.feed_seq = data["feed_seq"]
         self.watch = CrewState.restore(data["watch"])
+        self.radio = self.orders.radio = BoatRadio.from_save(data["radio"])
 
     def sonar_targets(self, game) -> list:
         """Everything this boat's sonar can hear (never the boat itself)."""
@@ -533,6 +543,7 @@ def update_crew(game, boat: CrewedBoat) -> None:
     boat.esm.update(game, boat)
     orders.esm = boat.esm.bearings(game.sim_t) if orders.mast else []
     update_sightings(game, boat)
+    boat.radio.update(game, boat)
     for key, values in orders.drain_events():
         if "compartment" in values:
             values = dict(values, compartment=message(

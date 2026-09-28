@@ -9,7 +9,7 @@ import pytest
 from src.air.flights import Flight
 from src.core.game import Game
 from src.core.station import Station
-from src.data.catalog import CATALOG
+from src.data.catalog import CATALOG, OWN_ASSET_EMITTER_PREFIX
 from src.enemies.sub import Sub
 from src.enemies.surface import SurfaceShip
 from src.sensors.esm import (
@@ -445,11 +445,14 @@ def test_catalog_emitter_names_resolve_to_owning_platforms():
     assert CATALOG.emitter_name(None) is None
     assert CATALOG.emitter_name(42) is None
     for key, emitter in CATALOG.emitters.items():
-        # Missile seekers are platform-less library emitters, named by
-        # Game.eloka_emitter_name (tests/test_asm_seeker_catalog.py).
-        if emitter.domain == "radar" and emitter.radar_role != "missile_seeker":
+        # Missile seekers and the frigate's own air assets' radars are
+        # platform-less library emitters, named by Game.eloka_emitter_name
+        # (tests/test_asm_seeker_catalog.py, tests/test_boat_esm.py).
+        own_asset = key.startswith(OWN_ASSET_EMITTER_PREFIX)
+        if emitter.domain == "radar" and emitter.radar_role != "missile_seeker" \
+                and not own_asset:
             assert CATALOG.emitter_name(key)
-        elif emitter.radar_role == "missile_seeker":
+        elif emitter.radar_role == "missile_seeker" or own_asset:
             assert CATALOG.emitter_name(key) is None
 
 

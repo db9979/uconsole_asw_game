@@ -19,11 +19,11 @@ def _game(seed=1201):
     return Game(seed=seed, start_menu=False, audio_enabled=False)
 
 
-def test_save_is_v21_and_older_documents_are_rejected():
+def test_save_is_v22_and_older_documents_are_rejected():
     game = _game()
     state = json.loads(json.dumps(game.save_state()))
-    assert (state["version"], state["save_schema"]) == (21, "u-jagd-save-v21")
-    assert (SAVE_VERSION, SAVE_SCHEMA) == (21, "u-jagd-save-v21")
+    assert (state["version"], state["save_schema"]) == (22, "u-jagd-save-v22")
+    assert (SAVE_VERSION, SAVE_SCHEMA) == (22, "u-jagd-save-v22")
     assert set(state) == SAVE_ROOT_FIELDS
     before = game.save_state()
     legacy = copy.deepcopy(state)

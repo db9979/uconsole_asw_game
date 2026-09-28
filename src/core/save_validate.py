@@ -14,6 +14,7 @@ from src.core import config
 from src.core.plot import PlotLayer
 from src.core.autocrew import AutocrewController
 from src.core.boat_esm import BoatESM
+from src.core.boat_radio import BoatRadio
 from src.core import opfor
 from src.core.version import SAVE_SCHEMA, SAVE_VERSION
 from src.sensors.ais import AISReceiver
@@ -113,6 +114,8 @@ def _valid_crew_block(data, *, valid_sonar, valid_sonar_controls, entity_ids,
         return False
     if (not CrewState.valid_state(crew["watch"])
             or crew["watch"]["watch_t"] > data.get("sim_t", 0.0)):
+        return False
+    if not BoatRadio.valid_state(crew["radio"]):
         return False
     torpedo_ids = {row.get("id") for row in data.get("enemy_torpedoes", ())
                    if isinstance(row, dict)}

@@ -1,4 +1,4 @@
-"""Declarative exact key sets for the ``u-jagd-save-v21`` document.
+"""Declarative exact key sets for the ``u-jagd-save-v22`` document.
 
 Every persisted block whose shape is validated exactly is declared here, so a
 new saved field is added in exactly three places: this module,
@@ -37,7 +37,7 @@ WEAPON_SETTINGS_FIELDS = frozenset({"torpedo_type", "pattern", "enable_nm", "sal
 # Save v15: the crewed submarine binding (``Game._opfor``), or None.
 CREW_FIELDS = frozenset({
     "sub_id", "orders", "command_page", "chart_follow", "plot", "esm", "feed",
-    "feed_seq", "hold_s", "station", "watch",
+    "feed_seq", "hold_s", "station", "watch", "radio",
 })
 CREW_ORDERS_FIELDS = frozenset({
     "silent", "bottomed", "mast", "alarm_seq", "ping_bearing",

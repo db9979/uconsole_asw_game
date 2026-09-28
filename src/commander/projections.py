@@ -1466,6 +1466,35 @@ def _uboot_threat(game, boat):
     return view
 
 
+def _uboot_radio_report(game, report):
+    if report is None:
+        return None
+    return dict(x=_number(report["x"]), y=_number(report["y"]),
+                radius_nm=_number(report["radius_nm"]), course=_number(report["course"]),
+                speed_kn=_number(report["speed_kn"]),
+                age_s=_number(max(0.0, game.sim_t - report["as_of"])))
+
+
+def _uboot_radio(game, boat):
+    """The radio room: HQ broadcast schedule, the boat's own transmissions and
+    the copied messages (HQ's contact report is modelled intelligence, see
+    src/core/boat_radio.py)."""
+    radio = boat.radio
+    progress = radio.progress(game, boat)
+    latest = radio.latest_report()
+    return dict(
+        antenna=bool(progress["antenna"]), broadcast=int(progress["broadcast"]),
+        copied=bool(progress["copied"]), next_s=_number(progress["next_s"]),
+        copy=_number(progress["copy"]), send=_number(progress["send"]),
+        transmitting=bool(radio.transmitting), sitreps=int(progress["sitreps"]),
+        ack_due=bool(progress["ack_due"]),
+        report=_uboot_radio_report(game, None if latest is None else latest["report"]),
+        log=[dict(seq=int(row["seq"]), kind=row["kind"], age_s=_age(game.sim_t, row["t"]),
+                  number=None if row["number"] is None else int(row["number"]),
+                  ack=bool(row["ack"]), report=_uboot_radio_report(game, row["report"]))
+             for row in reversed(radio.log)])
+
+
 def _uboot(game, boat, rows, target_ref, asset_refs):
     """The crewed submarine's commander: own boat (legitimate truth), its
     orders, weapons and the boat's own sonar contacts."""
@@ -1543,6 +1572,7 @@ def _uboot(game, boat, rows, target_ref, asset_refs):
         ballast=_uboot_ballast(sub),
         damage_control=_uboot_damage(game, boat),
         threat=_uboot_threat(game, boat),
+        radio=_uboot_radio(game, boat),
         feed=[dict(seq=int(row["seq"]), age_s=_age(game.sim_t, row["t"]),
                    message=str(localize(row["text"], game.tr))[:256])
               for row in list(boat.feed)[-16:]])

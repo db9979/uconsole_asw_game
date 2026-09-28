@@ -861,8 +861,6 @@ Der verbindliche Gesamtplan steht in `docs/plan-0.1.7.md`. Kerngrenzen:
 - Runtime bis ASW-Tier 2 und Luftabwehr-Tier 3.
 - Nimitz-Luftgruppe, Type-901-Nachversorgung, LACM, Geschuetzkrieg und
   Verbandsoperationen bleiben Tier 4.
-- Private WaveOps-/MNW-Unterlagen liefern weder Daten noch Bilder, Layouts oder
-  abgeleitete Diagramme.
 - Pakete B-F sind freigegeben und folgen nach R13 in der festgelegten Reihenfolge.
 - R15 umfasst verbindlich die verdichtete, seitenspezifische Sonardarstellung
   fuer LOFAR und DEMON, strukturierte Footer-Segmente und die Abnahme des

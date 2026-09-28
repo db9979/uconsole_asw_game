@@ -77,15 +77,6 @@ Tiefen sind nicht für Navigation, Vermessung oder reale Einsatzplanung geeignet
 Natural Earth, Wikidata, ihre Beitragenden und Rechteinhaber sind weder mit
 U-Jagd verbunden noch unterstützen, billigen oder empfehlen sie das Projekt.
 
-## Private Designreferenzen
-
-Drei WaveOps-PDF-Dokumente wurden privat als Designreferenzen bereitgestellt.
-Sie sind all-rights-reserved und nicht Bestandteil dieses Repositorys oder
-eines Distributionspakets. Es werden weder Text noch Bilder, Gestaltung oder
-Daten daraus gebündelt oder kopiert. Berücksichtigt wurde ausschließlich
-abstrakte Inspiration für Arbeitsabläufe. Weitere Abgrenzung:
-[`docs/design-references.md`](docs/design-references.md).
-
 Für später hinzugefügte Medien gelten die Dokumentationsanforderungen in
 [`assets/README.md`](assets/README.md). Markennamen und Produktnamen gehören
 gegebenenfalls ihren jeweiligen Inhabern; ihre Nennung bedeutet keine

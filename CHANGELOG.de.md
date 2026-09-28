@@ -4,6 +4,11 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.25
+
+Version 1.3.25 räumt die Dokumentation auf. Das Spiel bleibt unverändert, Spielstände
+bleiben v24.
+
 ## 1.3.24
 
 Version 1.3.24 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in

@@ -14,14 +14,9 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.24**
+Aktuelle Version: **1.3.25**
 
-Version 1.3.24 bringt **Atmosphäre ins besetzte Boot**: der Druckkörper knarzt in
-der Tiefe und kracht, wenn er versagt, Detonationen im Wasser sind dicht beim
-Boot oder in der Ferne zu hören und stehen mit Peilung im Log, und bei
-**Schleichfahrt** schalten die Boot-Bildschirme am uConsole und im Browser auf
-gedimmtes Rotlicht. Die Browser des Boots spielen jetzt dessen eigene Töne, und
-der Alarmton einer Rettungsaufgabe stört den Browser nicht mehr. Spielstände
+Version 1.3.25 räumt die Dokumentation auf. Das Spiel bleibt unverändert, Spielstände
 bleiben v24.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
@@ -566,10 +561,7 @@ Plattformherstellern, militärischen Organisationen, Regierungen oder Inhabern
 von Rechten an Quellen in Verbindung noch wird es von ihnen unterstützt.
 
 Die genaue Herkunft, Versionen, Hashes, Hinweise zur Verarbeitung und Lizenzen
-sind in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) dokumentiert. Privates
-WaveOps/MNW-Material ist keine Quelle des Repositorys. Es werden daraus weder
-Texte, Bilder, Layouts, Daten, Nachahmungen, Transkriptionen noch abgeleitete
-Materialien verwendet.
+sind in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) dokumentiert.
 
 ## Entwicklung und Tests
 

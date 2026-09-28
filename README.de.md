@@ -14,24 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.45**
+Aktuelle Version: **1.3.46**
 
-Version 1.3.45 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:
-Wolken, Sterne, Sonne und Mond bleiben stehen, während See und Horizont mit dem
-Seegang schwanken. Von der Dämmerung bis zum Morgen und bei schlechter Sicht
-führen neutrale Schiffe ihre Positionslichter nach den
-Kollisionsverhütungsregeln: weiße Topplichter, das rote oder grüne Seitenlicht
-der Seite, die man sieht, von achtern das weiße Hecklicht, jedes in seiner
-Tragweite, und die Rundumlichter von Fahrzeugen bei der Arbeit (Trawler, Lotse,
-Vermesser und Kabelleger, Minenräumer), zivile Flugzeuge ihre Flügelspitzen-,
-Heck- und blitzenden Kollisionswarnlichter; der Bug zeigt dorthin, wohin die Lichter weisen, und ein
-beleuchtetes Schiff wird im Dunkeln an seinen Lichtern gesichtet.
-Kriegsschiffe und Militärflugzeuge bleiben dunkel. Die See folgt dem Wind:
-gegen die See laufen die Kämme auf einen zu, mit der See davon, quer dazu
-seitlich, und das Schiff stampft in Gegensee und rollt in Dwarssee. Fernglas und
-Sehrohr lassen sich jetzt nach oben und unten neigen, zoomen (Fernglas 16°, 8°,
-4°; Sehrohr kleine und große Vergrößerung) und haben eine
-Horizontstabilisierung. Auf der uConsole und im Browser; Spielstände bleiben v27.
+Version 1.3.46 bringt einen Autosave. Eine laufende Mission wird alle 5
+Minuten und beim Beenden oder Verlassen ins Hauptmenü nach
+`~/.u-jagd/autosave.json` gespeichert, neben den fünf Plätzen. Das Hauptmenü
+beginnt dann mit „Einsatz fortsetzen“, das sie exakt weiterführt; nach einem
+Absturz ist es der letzte 5-Minuten-Stand. Die Datei wird im Hintergrund
+geschrieben, damit die uConsole nicht ruckelt. Eine beendete und jede neue
+Mission löschen den Autosave. Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

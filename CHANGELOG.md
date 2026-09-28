@@ -4,6 +4,15 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.46
+
+Release 1.3.46 adds an autosave. A running mission is saved every 5 minutes
+and when you quit or leave it for the main menu, to `~/.u-jagd/autosave.json`
+beside the five slots. The main menu then starts with "Continue mission",
+which resumes it exactly; after a crash it holds the last 5-minute save. The
+file is written in the background so the uConsole does not stutter. A mission
+that ends and any new mission delete the autosave. Saves stay v27.
+
 ## 1.3.45
 
 Release 1.3.45 keeps the sky still in the periscope and the lookout's

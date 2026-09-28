@@ -1444,6 +1444,8 @@
   "menu.contact_analyzer": "Taktischer Einheitenanalysator",
   "menu.mission_editor": "Missionseditor",
   "menu.new_game": "Neuer Einsatz",
+  "autosave.loaded": "Autosave geladen: der Einsatz läuft weiter",
+  "autosave.invalid": "Der Autosave lässt sich nicht laden",
   "menu.procedural_world": "Prozedurale Welt",
   "menu.quit": "Beenden",
   "splash.title": "U-JAGD",

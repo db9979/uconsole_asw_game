@@ -43,7 +43,7 @@ from src.ui import simlog_map
 from src.ui.weapons_view import weapons_hit_target
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.game_save import _read_save_document
-from src.core.game_bugreport import BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES
+from src.core.game_bugreport import BUG_REPORT_ENTRY
 
 
 # Input and window changes redraw an eco frame at once; pointer motion does not.
@@ -1659,14 +1659,16 @@ class EventMixin:
             self._reroll_menu_seed()
             return
         if self.main_menu:
-            entries = MAIN_MENU_ENTRIES
+            entries = self.main_menu_entries()
             if key == pygame.K_UP:
                 self.main_menu_sel = (self.main_menu_sel - 1) % len(entries)
             elif key == pygame.K_DOWN:
                 self.main_menu_sel = (self.main_menu_sel + 1) % len(entries)
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
-                action = entries[self.main_menu_sel]
-                if action == "new":
+                action = entries[self.main_menu_sel % len(entries)]
+                if action == "continue":
+                    self.continue_from_autosave()
+                elif action == "new":
                     # A new game first asks which unit the uConsole plays.
                     self.main_menu = False
                     self.menu_screen = "side"
@@ -1715,7 +1717,7 @@ class EventMixin:
                     self.flash(message("training.start_failed"), 3.0)
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self.main_menu = True
-                self.main_menu_sel = 1
+                self.main_menu_sel = self.main_menu_index("training")
             return
         if self.menu_screen == "campaign":
             self._handle_campaign_menu_key(key)
@@ -1731,7 +1733,7 @@ class EventMixin:
                 self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self.main_menu = True
-                self.main_menu_sel = 0
+                self.main_menu_sel = self.main_menu_index("new")
             return
         if self.menu_screen == "scenario":
             n = len(config.SCENARIO_ORDER)
@@ -1750,7 +1752,7 @@ class EventMixin:
                     self.menu_sel = 0
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self.main_menu = True
-                self.main_menu_sel = 0
+                self.main_menu_sel = self.main_menu_index("new")
             return
         if self.menu_screen == "difficulty":
             # The last row (after the saved difficulty fields) is the HQ intel.

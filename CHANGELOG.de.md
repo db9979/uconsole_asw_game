@@ -4,6 +4,16 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
+## 1.3.46
+
+Version 1.3.46 bringt einen Autosave. Eine laufende Mission wird alle 5
+Minuten und beim Beenden oder Verlassen ins Hauptmenü nach
+`~/.u-jagd/autosave.json` gespeichert, neben den fünf Plätzen. Das Hauptmenü
+beginnt dann mit „Einsatz fortsetzen“, das sie exakt weiterführt; nach einem
+Absturz ist es der letzte 5-Minuten-Stand. Die Datei wird im Hintergrund
+geschrieben, damit die uConsole nicht ruckelt. Eine beendete und jede neue
+Mission löschen den Autosave. Spielstände bleiben v27.
+
 ## 1.3.45
 
 Version 1.3.45 hält den Himmel im Sehrohr und im Fernglas des Ausgucks ruhig:

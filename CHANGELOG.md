@@ -15,7 +15,12 @@ the white stern light from astern, each within its range, and the all-round
 lights of vessels at work (trawler, pilot, survey ship and cable layer, mine
 clearance), and civil aircraft their wingtip, tail and flashing anti-collision
 lights; the ship's bow points the way its lights show, and a lit ship is sighted by its lights in the dark.
-Warships and military aircraft run dark. Both on the uConsole and in the browser; saves stay v27.
+Warships and military aircraft run dark. The sea follows the wind: into it the
+crests come at you, down-sea they run away, across it they run sideways, and
+the ship pitches in head seas and rolls in beam seas. The binoculars and the
+periscope now tilt up and down, zoom (binoculars 16°, 8°, 4°; periscope low and
+high power) and have a horizon stabilizer. Both on the uConsole and in the
+browser; saves stay v27.
 
 ## 1.3.44
 

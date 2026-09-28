@@ -2,6 +2,7 @@ import { finite, number, t } from "../core/format.js";
 import { palette } from "../core/palette.js";
 import { drawEmpty, visualContext } from "../views/visual-common.js";
 import { drawSightView } from "../views/sight-scene.js";
+import { createOptics, opticsFov, opticsText, wireOptics } from "../views/optics.js";
 
 // Boat instruments drawn from the boat's own picture only: its depth and
 // orders, the charted bottom, the layer of its own BT measurement, and the
@@ -228,6 +229,9 @@ export function drawBoatDamage(id, payload) {
 // of jumping once per state (time constant SCOPE_EASE_S, wall clock only;
 // display only, the orders and the stadimeter use the published state).
 const SCOPE_EASE_S = 0.25;
+// This browser's eyepiece: low/high power (config.UBOOT_SCOPE_POWERS) and
+// the head's tilt range (config.UBOOT_SCOPE_ELEVATION_DEG).
+const scopeOptics = createOptics([1, 4], [-10, 60]);
 const scopeView = {id: null, target: null, shown: null, frame: null, last: 0};
 const wrap180 = (deg) => ((deg + 540) % 360) - 180;
 
@@ -249,6 +253,10 @@ function scopeStep(now) {
 
 export function drawBoatScope(id, payload) {
   const scope = payload.scope;
+  wireOptics(document.querySelector('[data-optics="scope"]'), scopeOptics, () => {
+    if (scopeView.target && scopeView.shown) drawScopeFrame(scopeView.id, {...scopeView.target, ...scopeView.shown});
+    else drawScopeFrame(id, payload.scope);
+  });
   const smooth = scope.available && finite(scope.bearing) && finite(scope.horizon_offset) && finite(scope.horizon_tilt);
   const continuing = smooth && scopeView.id === id && scopeView.shown !== null;
   scopeView.id = id;
@@ -279,6 +287,9 @@ function drawScopeFrame(id, scope) {
     return true;
   }
   drawSightView(g, width, height, {...scope, window_deg: scope.window_deg,
+    fov_deg: opticsFov(scopeOptics, scope.fov_deg), elevation_deg: scopeOptics.elevation,
+    stabilized: scopeOptics.stabilized, stab_label: t("sight_stabilized"),
+    optics_label: opticsText(scopeOptics, scope.fov_deg),
     outlines: scope.sightings.map((row) => ({bearing: row.bearing, span_deg: row.span_deg, cls: row.cls,
       stale: row.age_s === null || row.age_s > 1, lights: row.lights}))}, performance.now() / 1000, g.font);
   if (!finite(scope.bearing)) drawEmpty(plot);

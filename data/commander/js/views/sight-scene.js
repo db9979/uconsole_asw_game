@@ -14,6 +14,7 @@ const MOON = [214, 222, 206], MOON_DARK = [26, 34, 42], SUN_DAY = [255, 244, 210
 const STEEL_NIGHT = [19, 36, 46], STEEL_DAY = [44, 56, 64], RIM_NIGHT = [84, 150, 158], RIM_DAY = [170, 196, 200];
 const WINDOW_LIGHT = [250, 205, 120], FRAME = [40, 96, 90];
 const SCALE = "rgb(170, 232, 208)", CROSSHAIR = "rgb(120, 214, 180)";
+const STABILIZED_RESIDUAL = .12;   // src/ui/horizon.py
 const VISIBILITY_MAX_NM = 30, BODY_MAX_ALT_DEG = 45, SCALE_LABEL_MIN_PX = 36;
 
 const clamp = (value, low = 0, high = 1) => Math.max(low, Math.min(high, value));
@@ -166,10 +167,13 @@ export function drawProfile(g, cls, cx, base, width, fill, {t = 0, rim = null, l
 // --- the picture ------------------------------------------------------------
 function view(width, height, v) {
   const pxPerDeg = width / v.fov_deg;
-  const horizon = height / 2 + v.horizon_offset * (height / 260);
-  const tilt = v.horizon_tilt;
-  const skyH = Math.max(8, height / 2);  // the sky stays still: nominal horizon
-  return {width, height, pxPerDeg, horizon, tilt, skyH, los: v.bearing,
+  // A stabilized optic keeps STABILIZED_RESIDUAL of the hull's motion;
+  // tilting it up (elevation_deg) moves the sky and the horizon down.
+  const steady = v.stabilized ? STABILIZED_RESIDUAL : 1, lift = (v.elevation_deg || 0) * pxPerDeg;
+  const horizon = height / 2 + v.horizon_offset * steady * (height / 260) + lift;
+  const tilt = v.horizon_tilt * steady;
+  const skyH = Math.max(8, height / 2), skyY = skyH + lift;  // the sky stays still: nominal horizon
+  return {width, height, pxPerDeg, horizon, tilt, skyH, skyY, los: v.bearing,
     x: (bearing) => width / 2 + wrap(bearing - v.bearing) * pxPerDeg,
     base: (x) => horizon + Math.tan(tilt) * (x - width / 2),
     visible: (bearing, half = 0) => Math.abs(wrap(bearing - v.bearing)) <= v.fov_deg / 2 + half};
@@ -178,14 +182,14 @@ function view(width, height, v) {
 const bodyFraction = (alt) => .12 + .7 * clamp(alt / BODY_MAX_ALT_DEG);
 
 function drawSky(g, w, sky, colors, t, haze) {
-  const gradient = g.createLinearGradient(0, w.skyH + 40 - w.height, 0, w.skyH + 40);
+  const gradient = g.createLinearGradient(0, w.skyY + 40 - w.height, 0, w.skyY + 40);
   gradient.addColorStop(0, rgb(colors.sky[0])); gradient.addColorStop(1, rgb(colors.sky[1]));
   g.fillStyle = gradient; g.fillRect(0, 0, w.width, w.height);
   const stars = (1 - sky.light * 1.8) * (1 - sky.cloud) * (1 - haze);
   if (stars > .05) {
     for (const [bearing, alt, phase, speed, bright] of FIELD.stars) {
       if (!w.visible(bearing)) continue;
-      const x = w.x(bearing), y = w.skyH - (.08 + .92 * alt) * w.skyH;
+      const x = w.x(bearing), y = w.skyY - (.08 + .92 * alt) * w.skyH;
       if (y < 2) continue;
       const glow = (.55 + .45 * Math.sin(t * speed + phase)) * stars, level = Math.round((bright ? 150 : 90) * glow + 30 * stars);
       g.fillStyle = rgb(mix(colors.sky[0], [level + 40, level + 40, Math.min(255, level + 70)], stars));
@@ -198,11 +202,11 @@ function drawSky(g, w, sky, colors, t, haze) {
     g.fillStyle = rgb(color); g.beginPath(); g.arc(x, y, radius, 0, Math.PI * 2); g.fill();
   };
   if (sky.light > .05 && sky.sun_alt_deg > -1 && cover > .05 && w.visible(sky.sun_bearing, 2)) {
-    const x = w.x(sky.sun_bearing), y = w.skyH - bodyFraction(sky.sun_alt_deg) * w.skyH;
+    const x = w.x(sky.sun_bearing), y = w.skyY - bodyFraction(sky.sun_alt_deg) * w.skyH;
     disc(x, y, mix(mix(SUN_DAY, SUN_DUSK, sky.dusk), colors.sky[1], 1 - cover), [[radius * 3, .85], [radius * 2, .7]]);
   }
   if (sky.light < .6 && sky.moon_alt_deg > 0 && sky.moon_illumination > .03 && cover > .05 && w.visible(sky.moon_bearing, 2)) {
-    const x = w.x(sky.moon_bearing), y = w.skyH - bodyFraction(sky.moon_alt_deg) * w.skyH;
+    const x = w.x(sky.moon_bearing), y = w.skyY - bodyFraction(sky.moon_alt_deg) * w.skyH;
     disc(x, y, mix(MOON, colors.sky[1], (1 - cover) + haze * .5), [[radius * 4, .9], [radius * 3, .82], [radius * 2, .7]]);
     if (sky.moon_illumination < .97) {
       const shift = (sky.moon_waxing ? -1 : 1) * 2 * radius * sky.moon_illumination;
@@ -219,7 +223,7 @@ function drawSky(g, w, sky, colors, t, haze) {
     for (const [start, alt, widthDeg, height, shade] of FIELD.clouds.slice(0, count)) {
       const bearing = start + drift;
       if (!w.visible(bearing, widthDeg)) continue;
-      const x = w.x(bearing), y = w.skyH - alt * w.skyH, cw = widthDeg * w.pxPerDeg, ch = Math.max(4, height * w.skyH * 1.6);
+      const x = w.x(bearing), y = w.skyY - alt * w.skyH, cw = widthDeg * w.pxPerDeg, ch = Math.max(4, height * w.skyH * 1.6);
       const puffs = [[0, 0, 1, .6], [-.25, -.25, .5, .6], [.2, -.3, .45, .7], [.3, .05, .5, .5]];
       puffs.forEach(([dx, dy, fw, fh], index) => {
         const ex = x + dx * cw, ey = y + dy * ch;
@@ -363,6 +367,11 @@ export function drawSightView(g, width, height, v, t, labelFont = "11px ui-monos
     line(g, [cx, 26], [cx, height], CROSSHAIR);
     line(g, [cx - window, cy], [cx + window, cy], CROSSHAIR);
     for (const mark of [-1, 1]) line(g, [cx + mark * window, cy - 4], [cx + mark * window, cy + 4], CROSSHAIR);
+  }
+  if (height >= 60) {
+    g.fillStyle = CROSSHAIR; g.textBaseline = "bottom";
+    if (v.stabilized && v.stab_label) { g.textAlign = "left"; g.fillText(v.stab_label, 10, height - 8); }
+    if (v.optics_label) { g.textAlign = "right"; g.fillText(v.optics_label, width - 10, height - 8); }
   }
   drawFrame(g, width, height);
 }

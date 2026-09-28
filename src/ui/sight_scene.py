@@ -202,7 +202,7 @@ def _wrap(bearing: float, line_of_sight: float) -> float:
 class View:
     """Geometry of one eyepiece picture (screen px per degree, horizon)."""
 
-    def __init__(self, rect, line_of_sight, fov_deg, horizon, tilt):
+    def __init__(self, rect, line_of_sight, fov_deg, horizon, tilt, lift=0.0):
         self.rect = pygame.Rect(rect)
         self.los, self.fov = line_of_sight, fov_deg
         self.px_per_deg = self.rect.w / fov_deg
@@ -210,6 +210,8 @@ class View:
         # The sky (stars, sun, moon, clouds) hangs on the eyepiece's nominal
         # horizon, not on the one rolling with the sea: it stays still.
         self.sky_h = max(8, self.rect.h // 2)
+        # Tilting the optics up moves the sky and the horizon down.
+        self.lift = float(lift)
 
     def x(self, bearing: float) -> float:
         return self.rect.centerx + _wrap(bearing, self.los) * self.px_per_deg
@@ -222,7 +224,7 @@ class View:
 
     def alt_y(self, fraction: float, x: float) -> float:
         """Height ``fraction`` (0 horizon .. 1 top) of the eyepiece's sky."""
-        return self.rect.y + self.rect.h / 2.0 - fraction * self.sky_h
+        return self.rect.y + self.rect.h / 2.0 + self.lift - fraction * self.sky_h
 
 
 def _body_fraction(alt_deg: float) -> float:
@@ -408,8 +410,12 @@ def draw_scene(s, view: View, sky: dict, *, visibility_nm: float, sea_state: flo
     rect = view.rect
     sky_img = _cached(_SKY_CACHE, (rect.w, rect.h, colors["sky"]),
                       lambda: _gradient((rect.w, rect.h), *colors["sky"]))
-    # The sky stays still: its gradient meets the nominal horizon.
-    s.blit(sky_img, rect.topleft, (0, max(0, rect.h - (view.sky_h + 40)), rect.w, rect.h))
+    # The sky stays still: its gradient meets the nominal horizon (moved by
+    # the optics' elevation); above it the zenith colour.
+    top = int(rect.y + view.sky_h + 40 + view.lift - rect.h)
+    if top > rect.y:
+        s.fill(colors["sky"][0], (rect.x, rect.y, rect.w, top - rect.y))
+    s.blit(sky_img, (rect.x, top))
     _draw_stars(s, view, sky, colors, t, haze)
     _draw_body(s, view, sky, colors, haze)
     _draw_clouds(s, view, sky, colors, t, haze)

@@ -43,9 +43,11 @@ def scope_outlines(game, boat) -> list:
 
 def draw_eyepiece(s, game, boat, rect) -> None:
     """The picture in the eyepiece: sky, sea, horizon in motion, bearing scale,
-    crosshair and the outlines of the boat's sightings within the field."""
+    crosshair and the outlines of the boat's sightings within the field,
+    at the eyepiece's tilt, power and stabilizer."""
+    sight = boat.scope_optics
     draw_horizon(s, rect, line_of_sight=opfor.scope_bearing(boat),
-                 fov_deg=config.UBOOT_SCOPE_FOV_DEG, night=game.world.is_night(),
+                 fov_deg=sight.fov_deg, night=game.world.is_night(),
                  visibility_nm=getattr(game.world, "visibility_nm",
                                        config.WEATHER_VISIBILITY_MAX_NM),
                  motion=opfor.horizon_motion(game, boat),
@@ -54,7 +56,10 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  land=land_view(game.world, boat.sub.x, boat.sub.y,
                                 config.UBOOT_SCOPE_EYE_HEIGHT_M),
                  anim_t=game.sim_t, sky=sight_scene.sky_state(game),
-                 sea_state=getattr(game.world, "effective_sea_state", game.world.sea_state))
+                 sea_state=getattr(game.world, "effective_sea_state", game.world.sea_state),
+                 elevation_deg=sight.elevation_deg, stabilized=sight.stabilized,
+                 optics_label=message("sight.optics", elevation=f"{sight.elevation_deg:+.0f}",
+                                      fov=f"{sight.fov_deg:.0f}"))
 
 
 def sighting_rows(game, boat) -> list:

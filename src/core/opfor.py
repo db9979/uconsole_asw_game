@@ -24,6 +24,7 @@ from src.core.plot import PlotLayer
 from src.physics import torpedo_dyn
 from src.sensors import lookout_id
 from src.sensors import nav_lights
+from src.core import optics
 from src.sensors import visual as visual_physics
 from src.sensors.platform import MAST_DEPTH_M
 from src.sonar.platforms import (OWNSHIP_SIGNATURE_KEY, OWNSHIP_TARGET_ID,
@@ -278,6 +279,9 @@ class CrewedBoat:
         self.sub_id = sub.id
         self.orders = CrewOrders()
         sub.crew = self.orders
+        # The uConsole's eyepiece settings: tilt, power, stabilizer (display
+        # only, never saved; each browser keeps its own).
+        self.scope_optics = optics.periscope()
         # The crew takes over with the loaded tubes flooded, ready to fire.
         battery = sub.weapon_battery
         self.orders.tubes = ([["flooded" if tube.loaded_weapon_key is not None else "dry", 0.0]

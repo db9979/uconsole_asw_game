@@ -14,7 +14,7 @@ import numpy as np
 import pygame
 
 from src.core import config
-from src.core.i18n import raw_text
+from src.core.i18n import message, raw_text
 from src.physics import ship_dynamics
 from src.sensors import nav_lights
 from src.ui import layout, sight_scene, silhouettes
@@ -24,6 +24,8 @@ CROSSHAIR_COLOR = (120, 214, 180)
 SCALE_LABEL_MIN_PX = 36
 # Horizon motion: px per rad of wave slope, bounded.
 MOTION_PX_PER_RAD = 260.0
+# A stabilized binocular or periscope keeps this share of the hull motion.
+STABILIZED_RESIDUAL = 0.12
 # Charted coast on the horizon: rays per full circle, the observer's move that
 # re-casts them, the bounded cache, and the assumed coastal heights (m; the
 # chart has no elevation, so hills vary smoothly along the coast).
@@ -205,18 +207,25 @@ def draw_outline(s, cls: str, cx: int, base_y: int, width: int, color,
 
 def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
                  visibility_nm: float, motion: tuple, outlines, crosshair_deg=None,
-                 land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0) -> None:
+                 land=None, anim_t: float = 0.0, sky=None, sea_state: float = 2.0,
+                 elevation_deg: float = 0.0, stabilized: bool = False,
+                 optics_label=None) -> None:
     """The picture in the eyepiece or binoculars in the start screen's look:
     sky with stars, moon or sun and clouds, the sea in motion, the charted
     coast, the outlines within the field in steel with a lit rim, rain, snow
     or fog, the true-bearing scale, an optional crosshair with its measuring
     window (half width in degrees) and the corner brackets.  ``sky`` is a
-    ``sight_scene.sky_values`` dict; without one a clear noon or midnight."""
+    ``sight_scene.sky_values`` dict; without one a clear noon or midnight.
+    ``elevation_deg`` tilts the optics up (positive) or down; ``stabilized``
+    takes out all but ``STABILIZED_RESIDUAL`` of the hull's motion."""
     rect = pygame.Rect(rect)
     sky = sky if sky is not None else sight_scene.plain_sky(night)
     offset, tilt = motion
-    horizon = rect.y + int(rect.h * 0.5 + offset)
-    view = sight_scene.View(rect, line_of_sight, fov_deg, horizon, tilt)
+    if stabilized:
+        offset, tilt = offset * STABILIZED_RESIDUAL, tilt * STABILIZED_RESIDUAL
+    lift = elevation_deg * rect.w / fov_deg
+    horizon = rect.y + int(rect.h * 0.5 + offset + lift)
+    view = sight_scene.View(rect, line_of_sight, fov_deg, horizon, tilt, lift)
     with layout.clip_to(s, rect):
         colors = sight_scene.draw_scene(s, view, sky, visibility_nm=visibility_nm,
                                         sea_state=sea_state, t=anim_t)
@@ -269,4 +278,10 @@ def draw_horizon(s, rect, *, line_of_sight: float, fov_deg: float, night: bool,
             for mark in (-1, 1):
                 x = rect.centerx + mark * window
                 pygame.draw.line(s, CROSSHAIR_COLOR, (x, rect.centery - 4), (x, rect.centery + 4), 1)
+        if stabilized and rect.h >= 60:
+            layout.blit_line(s, message("sight.stabilized"),
+                             (rect.x + 10, rect.bottom - 22, 80, 16), CROSSHAIR_COLOR, size=13)
+        if optics_label is not None and rect.h >= 60:
+            layout.blit_line(s, optics_label, (rect.right - 250, rect.bottom - 22, 240, 16),
+                             CROSSHAIR_COLOR, size=13, align="right")
         sight_scene.draw_frame(s, rect)

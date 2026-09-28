@@ -26,8 +26,12 @@ Tragweite, und die Rundumlichter von Fahrzeugen bei der Arbeit (Trawler, Lotse,
 Vermesser und Kabelleger, Minenräumer), zivile Flugzeuge ihre Flügelspitzen-,
 Heck- und blitzenden Kollisionswarnlichter; der Bug zeigt dorthin, wohin die Lichter weisen, und ein
 beleuchtetes Schiff wird im Dunkeln an seinen Lichtern gesichtet.
-Kriegsschiffe und Militärflugzeuge bleiben dunkel. Auf der uConsole und im Browser;
-Spielstände bleiben v27.
+Kriegsschiffe und Militärflugzeuge bleiben dunkel. Die See folgt dem Wind:
+gegen die See laufen die Kämme auf einen zu, mit der See davon, quer dazu
+seitlich, und das Schiff stampft in Gegensee und rollt in Dwarssee. Fernglas und
+Sehrohr lassen sich jetzt nach oben und unten neigen, zoomen (Fernglas 16°, 8°,
+4°; Sehrohr kleine und große Vergrößerung) und haben eine
+Horizontstabilisierung. Auf der uConsole und im Browser; Spielstände bleiben v27.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

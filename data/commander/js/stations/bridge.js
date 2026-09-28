@@ -6,12 +6,15 @@ import { metrics, node, position, stationRows, tacticalEntries, yesNo } from "..
 import { DISPLAY_CLOCK_LAG_S, displaySimNow } from "../state/display-clock.js";
 import { renderCrew } from "../views/crew.js";
 import { drawSightView, viewMotion } from "../views/sight-scene.js";
+import { createOptics, opticsFov, opticsText, wireOptics } from "../views/optics.js";
 import { visualContext } from "../views/visual-common.js";
 
 // The lookout's binoculars: trained relative to the bow in this browser only
 // (presentation, like the uConsole's binoculars); the picture shows his own
 // sightings from the published ``lookout`` block.
-const glasses = {relative: 0, wired: false};
+const glasses = {relative: 0, wired: false,
+  // Zoom binoculars (config.LOOKOUT_GLASSES_POWERS, _ELEVATION_DEG).
+  optics: createOptics([1, 2, 4], [-20, 45])};
 function wireGlasses() {
   if (glasses.wired) return;
   glasses.wired = true;
@@ -20,6 +23,8 @@ function wireGlasses() {
       glasses.relative = ((glasses.relative + Number(button.dataset.glassesTurn)) % 360 + 360) % 360;
       renderGlassesStatus(); drawBridgeGlasses(performance.now());
     });
+  wireOptics(document.querySelector('[data-optics="glasses"]'), glasses.optics,
+    () => { renderGlassesStatus(); drawBridgeGlasses(performance.now()); });
   $("bridge-glasses-bow").addEventListener("click", () => {
     glasses.relative = 0; renderGlassesStatus(); drawBridgeGlasses(performance.now());
   });
@@ -28,7 +33,8 @@ function renderGlassesStatus() {
   const lookout = S.v2State?.bridge?.lookout;
   if (!lookout) return;
   const bearing = (lookout.course + glasses.relative) % 360;
-  const text = t("glasses_bearing", {bearing: number(bearing, 0).padStart(3, "0"), relative: number(glasses.relative, 0).padStart(3, "0")});
+  const text = `${t("glasses_bearing", {bearing: number(bearing, 0).padStart(3, "0"),
+    relative: number(glasses.relative, 0).padStart(3, "0")})} · ${opticsText(glasses.optics, lookout.fov_deg)}`;
   if ($("bridge-glasses-status").textContent !== text) $("bridge-glasses-status").textContent = text;
 }
 export function drawBridgeGlasses(now) {
@@ -39,7 +45,10 @@ export function drawBridgeGlasses(now) {
   // The hull's pitch and roll seen along this browser's own line of sight.
   const [offset, tilt] = viewMotion(lookout.motion_pitch, lookout.motion_roll, glasses.relative);
   drawSightView(plot.context, plot.width, plot.height,
-    {...lookout, bearing: (lookout.course + glasses.relative) % 360, horizon_offset: offset, horizon_tilt: tilt},
+    {...lookout, bearing: (lookout.course + glasses.relative) % 360, horizon_offset: offset, horizon_tilt: tilt,
+      fov_deg: opticsFov(glasses.optics, lookout.fov_deg), elevation_deg: glasses.optics.elevation,
+      stabilized: glasses.optics.stabilized, stab_label: t("sight_stabilized"),
+      optics_label: opticsText(glasses.optics, lookout.fov_deg)},
     now / 1000, plot.context.font);
 }
 

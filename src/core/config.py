@@ -418,6 +418,8 @@ UBOOT_TUBE_FLOOD_NOISE_S = 4.0
 UBOOT_TUBE_STATES = ("dry", "flooding", "flooded")
 UBOOT_SCOPE_EYE_HEIGHT_M = 2.5      # optics just above the surface
 UBOOT_SCOPE_FOV_DEG = 32.0          # field of view of the low-power optics
+UBOOT_SCOPE_POWERS = (1.0, 4.0)     # low power (1.5x) and high power (6x)
+UBOOT_SCOPE_ELEVATION_DEG = (-10.0, 60.0)   # the head tilts up for the sky
 UBOOT_SCOPE_STEP_DEG = 2.0          # arrow keys turn the scope by this
 UBOOT_SCOPE_STEP_FAST_DEG = 10.0    # ... and with Shift by this
 UBOOT_SCOPE_BEARING_ERR_DEG = 1.0   # sigma of a periscope bearing
@@ -486,6 +488,12 @@ LOOKOUT_DISPLAY_RANGES_NM = (2.0, 5.0, 12.0, 20.0, 30.0)
 LOOKOUT_GLASSES_FOV_DEG = 16.0
 LOOKOUT_GLASSES_STEP_DEG = 5.0
 LOOKOUT_GLASSES_STEP_FAST_DEG = 20.0
+# Zoom binoculars: the field narrows 16, 8, 4 degrees; tilt 20 down to 45 up.
+LOOKOUT_GLASSES_POWERS = (1.0, 2.0, 4.0)
+LOOKOUT_GLASSES_ELEVATION_DEG = (-20.0, 45.0)
+# Tilting the binoculars or the periscope head (Shift: fast).
+SIGHT_TILT_STEP_DEG = 2.0
+SIGHT_TILT_STEP_FAST_DEG = 10.0
 # Land in sight: day/clear range of a coast with 50 m hills, checked on a
 # slow cadence; a landmass is reported again only after it dropped out of
 # sight.

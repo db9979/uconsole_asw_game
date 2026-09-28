@@ -54,6 +54,15 @@ PROBE = r'''
     await until(() => relative() === '010', () => `no 10 degree step: ${status()}`);
     $('bridge-glasses-bow').click();
     await until(() => relative() === '000', () => `not back to the bow: ${status()}`);
+    // Tilt, zoom and stabilizer stay in this browser.
+    document.querySelector('[data-optics="glasses"] [data-optics-tilt="2"]').click();
+    document.querySelector('[data-optics="glasses"] [data-optics-zoom="1"]').click();
+    const stabilizer = document.querySelector('[data-optics="glasses"] [data-optics-stabilizer]');
+    stabilizer.click();
+    if (stabilizer.getAttribute('aria-pressed') !== 'true') throw new Error('stabilizer not pressed');
+    await until(() => status().includes('+2°') && status().includes('8°'), () => `no optics in: ${status()}`);
+    document.querySelector('[data-optics="glasses"] [data-optics-zoom="-1"]').click();
+    document.querySelector('[data-optics="glasses"] [data-optics-tilt="-2"]').click();
     const canvas = $('bridge-glasses-canvas');
     // The neutral merchant crossing ahead shows its red port side light.
     const redLight = () => {

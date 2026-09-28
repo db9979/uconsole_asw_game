@@ -12,14 +12,14 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.33**
+Current release: **1.3.34**
 
-Release 1.3.33 lets the crewed submarine's ESM measure each radar's scan
-period, the time between its main-beam hits: a search radar reads rotating
-with its period (about 2.5 s for navigation and surface search, 5 s for air
-search), a tracking or fire-control radar reads steady. A steady beam on the
-mast is always a mast warning and is reported in the log; the uConsole's Mast
-& ESM page and the browser show the reading. Saves are now v27.
+Release 1.3.34 writes a crash log: every game start adds a start and an end
+line to `~/.u-jagd/crash.log`, and a game that ends on an error leaves its
+traceback there, or after a hard crash (a segmentation fault in SDL or audio,
+`SIGTERM`) the stacks of all threads. A start line with no end line means the
+game was killed from outside, usually by the kernel when memory ran out. The
+file stays below 256 KiB. Saves stay v26.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

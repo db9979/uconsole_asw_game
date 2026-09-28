@@ -14,15 +14,15 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.33**
+Aktuelle Version: **1.3.34**
 
-Version 1.3.33 lässt das ESM des besetzten U-Boots die Umlaufzeit jedes Radars
-messen, die Zeit zwischen den Treffern seiner Hauptkeule: ein Suchradar zeigt
-„dreht“ mit seiner Umlaufzeit (etwa 2,5 s für Navigations- und Seeraumradar, 5
-s für Luftraumradar), ein Verfolgungs- oder Feuerleitradar „dauernd“. Eine
-Dauerbeleuchtung des Mastes ist immer eine Mastwarnung und steht im Log; die
-Seite Mast & ESM am uConsole und der Browser zeigen die Messung. Spielstände
-sind jetzt v27.
+Version 1.3.34 schreibt ein Absturzprotokoll: Jeder Spielstart hängt an
+`~/.u-jagd/crash.log` eine Start- und eine Endzeile an, und endet das Spiel
+durch einen Fehler, steht dort der Traceback, nach einem harten Absturz
+(Speicherzugriffsfehler in SDL oder Audio, `SIGTERM`) die Stapel aller Threads.
+Eine Startzeile ohne Endzeile heißt, das Spiel wurde von außen beendet, meist
+vom Kernel bei Speichermangel. Die Datei bleibt unter 256 KiB. Spielstände
+bleiben v26.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

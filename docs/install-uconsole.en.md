@@ -40,6 +40,14 @@ next version is tried again. Local changes in the checkout, a branch other than
 `main`, or a running game leave everything untouched. Log:
 `~/.u-jagd/updater.log`. Saves under `~/.u-jagd/` are not touched.
 
+**Crash log:** every game start writes a start and an end line to
+`~/.u-jagd/crash.log`. If the game ends on an error, the traceback is there;
+after a hard crash (a segmentation fault in SDL or audio, `SIGTERM`) the
+stacks of all threads. A start line followed by neither an end line nor an
+error means the game was killed from outside, usually by the kernel when
+memory ran out (`dmesg | grep -i -e oom -e killed`). The file stays below
+256 KiB.
+
 **Start window:** right after the click a small "U-Jagd" window shows the
 current step (checking for updates, downloading the update, installing
 dependencies, checking the new version, starting U-Jagd). It closes as soon as

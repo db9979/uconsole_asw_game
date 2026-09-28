@@ -8,6 +8,7 @@ import random
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from src.core.crashlog import run_logged
 from src.core.game import Game
 from src.core.preferences import load_preferences
 from src.core.version import APP_VERSION
@@ -80,6 +81,12 @@ def main(argv=None) -> int:
             parser.error("--web-bind must be a private or loopback IPv4 address")
         os.environ["SDL_VIDEODRIVER"] = "dummy"
         os.environ["SDL_AUDIODRIVER"] = "dummy"
+    # Without a terminal (uConsole menu entry) a crash would leave no trace:
+    # ~/.u-jagd/crash.log records start, end and any traceback or fatal signal.
+    return run_logged(lambda: _start(args))
+
+
+def _start(args) -> int:
     auth = WebHostAuth(Path.home() / ".u-jagd" / "web-host.json") if args.web_host else None
     if args.reset_web_host_password:
         auth.reset_local()

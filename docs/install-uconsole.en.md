@@ -46,7 +46,13 @@ after a hard crash (a segmentation fault in SDL or audio, `SIGTERM`) the
 stacks of all threads. A start line followed by neither an end line nor an
 error means the game was killed from outside, usually by the kernel when
 memory ran out (`dmesg | grep -i -e oom -e killed`). The file stays below
-256 KiB.
+256 KiB. Mission starts are logged there too (scenario, world, seed, side).
+
+**Report a bug:** the main menu entry "Report a bug" writes
+`~/.u-jagd/bug-report.txt` (version, platform, newest log lines without your
+user name) and shows a QR code that opens a prefilled GitHub issue on a
+phone; attach the file there. After a crash the main menu offers the entry at
+the next start.
 
 **Start window:** right after the click a small "U-Jagd" window shows the
 current step (checking for updates, downloading the update, installing

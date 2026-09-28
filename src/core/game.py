@@ -89,11 +89,13 @@ from src.core.game_mpa import MpaMixin
 from src.core.game_debrief import DebriefMixin
 from src.core.game_training import TrainingMixin
 from src.core.game_campaign import CampaignMixin
+from src.core.game_bugreport import (BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES,
+                                     BugReportMixin)
 
 
 class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMixin, SimMixin,
            SaveMixin, TaskingMixin, CrewMixin, MpaMixin, DebriefMixin,
-           TrainingMixin, CampaignMixin):
+           TrainingMixin, CampaignMixin, BugReportMixin):
     # Options overlay rows in display order; the last two open sub-menus.
     _OPTION_ROWS = ("language", "fullscreen", "audio", "large_text", "tooltips",
                     "simlog", "night_mode", "high_contrast", "frame_rate",
@@ -206,6 +208,10 @@ class Game(PicturesMixin, OperatorMixin, DrawMixin, MissionBridgeMixin, EventMix
         self.menu_screen = "scenario"  # "scenario" | "difficulty" | "briefing"
         self.main_menu = bool(start_menu)
         self.main_menu_sel = 0
+        self._init_bug_report()
+        if self.bug_report_offer and self.main_menu:
+            # The last launch crashed: preselect "Report a bug".
+            self.main_menu_sel = MAIN_MENU_ENTRIES.index(BUG_REPORT_ENTRY)
         self.editor = None
         self.simlog_view_open = False
         self.simlog_view_scroll = 0

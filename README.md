@@ -12,17 +12,16 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.39**
+Current release: **1.3.40**
 
-Release 1.3.39 gives the periscope, the lookout's binoculars and every station
-the start screen's look. The eyepieces show day, dusk and night with stars, the
-moon in its phase and its glitter on the water, clouds, rain, snow and fog from
-the weather, and the ships in steel with a lit rim, lit windows at night, bow
-wave and wake. The Remote Crew bridge gets the lookout's binoculars as a card
-and the browser periscope the same picture and silhouettes. uConsole and
-browser stations use the turquoise phosphor and night blue of the start screen
-with corner brackets on the panels; the chart keeps its NATO symbols and the
-high-contrast theme is unchanged. Saves stay v27.
+Release 1.3.40 adds a bug report. "Report a bug" in the main menu writes
+`~/.u-jagd/bug-report.txt` with version, platform and the newest lines of the
+crash log (your user name removed from paths) and shows a QR code that opens a
+prefilled GitHub issue on a phone; `Enter` opens it with the log in a browser
+where the device has one. After a crashed start the main menu offers it. The
+Windows starter and the browser settings menu link to the same issue form, and
+the crash log now also records each mission start. Nothing is sent until you
+submit the issue with your own GitHub account. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

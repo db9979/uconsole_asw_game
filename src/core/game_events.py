@@ -43,6 +43,7 @@ from src.ui import simlog_map
 from src.ui.weapons_view import weapons_hit_target
 # Names tests and tools import from ``src.core.game`` (kept as re-exports).
 from src.core.game_save import _read_save_document
+from src.core.game_bugreport import BUG_REPORT_ENTRY, MAIN_MENU_ENTRIES
 
 
 # Input and window changes redraw an eco frame at once; pointer motion does not.
@@ -1654,8 +1655,7 @@ class EventMixin:
             self._reroll_menu_seed()
             return
         if self.main_menu:
-            entries = ("new", "training", "campaign", "load", "mission_editor",
-                       "unit_editor", "contact_analyzer", "options", "quit")
+            entries = MAIN_MENU_ENTRIES
             if key == pygame.K_UP:
                 self.main_menu_sel = (self.main_menu_sel - 1) % len(entries)
             elif key == pygame.K_DOWN:
@@ -1687,10 +1687,15 @@ class EventMixin:
                     self.editor = self._make_analyzer()
                 elif action == "options":
                     self._open_administration("options")
+                elif action == BUG_REPORT_ENTRY:
+                    self.open_bug_report()
                 else:
                     self._open_administration("quit")
             elif key in (pygame.K_ESCAPE, pygame.K_q):
                 self._open_administration("quit")
+            return
+        if self.menu_screen == BUG_REPORT_ENTRY:
+            self._handle_bug_report_key(key)
             return
         if self.menu_screen == "training":
             count = len(training.LESSONS)

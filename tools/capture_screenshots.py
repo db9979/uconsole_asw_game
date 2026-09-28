@@ -30,6 +30,8 @@ from src.data.user_content import UserContentStore
 from src.ui.mission_editor import MissionEditor
 from src.ui.unit_editor import UnitEditor, catalog_builtins
 
+from sight_capture import SIGHT_TIMES, sight_world
+
 
 STATIONS = (
     (Station.BRIDGE, "bridge"),
@@ -65,7 +67,6 @@ SONAR_PAGES = (
     "environment-fusion",
     "active",
 )
-
 
 def _preferences(language: str) -> Preferences:
     return Preferences(language=language, fullscreen=False, audio=False,
@@ -109,6 +110,20 @@ def _montage(images: list[pygame.Surface]) -> pygame.Surface:
         result.blit(image, ((index % columns) * width,
                             (index // columns) * height))
     return result
+
+
+def _sight_game(seed: int, language: str, hour: float) -> Game:
+    """One world for both eyepieces: the frigate's binoculars on the ships
+    off her bow and the submarine's periscope on the frigate."""
+    game = Game(seed=seed, start_menu=False, show_splash=False,
+                fullscreen=False, audio_enabled=False,
+                preferences=_preferences(language))
+    sight_world(game, hour)
+    game.station = Station.BRIDGE
+    game.station_page = 2
+    game.lookout_glasses = True
+    game.lookout_glasses_rel = 0.0       # the bow, between warship and merchant
+    return game
 
 
 def capture_all(output_dir: Path, seed: int = 1234,
@@ -273,6 +288,27 @@ def capture_all(output_dir: Path, seed: int = 1234,
                 path = output_dir / ("uboot-overview.png" if language == "en"
                                      else f"{language}-uboot-overview.png")
                 _save(_montage(boat_images[:4]), path)
+                written.append(path)
+
+                sight_images: list[pygame.Surface] = []
+                for tag, hour in SIGHT_TIMES:
+                    sight = _sight_game(seed, language, hour)
+                    try:
+                        sight_images.append(_capture_to(
+                            sight, output_dir, language,
+                            f"frigate-binoculars-{tag}.png", written))
+                        sight.local_side = "uboot"
+                        uboot_local.set_local_station(sight, "uboot")
+                        sight.opfor.command_page = 2
+                        sight_images.append(_capture_to(
+                            sight, output_dir, language,
+                            f"uboot-periscope-{tag}.png", written))
+                    finally:
+                        sight.commander.stop()
+                        sight.audio.shutdown()
+                path = output_dir / ("sight-overview.png" if language == "en"
+                                     else f"{language}-sight-overview.png")
+                _save(_montage(sight_images), path)
                 written.append(path)
         finally:
             for owner in (menu, game, boat):

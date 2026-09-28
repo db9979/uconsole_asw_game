@@ -12,9 +12,9 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.20**
+Current release: **1.3.21**
 
-Release 1.3.20 makes the Remote Crew streams steadier. A browser that
+Release 1.3.21 makes the Remote Crew streams steadier. A browser that
 reconnects its sonar audio or sonar display stream now takes over its own
 previous stream at once instead of being refused while the host had not yet
 noticed that the old connection was gone. The web client no longer sends an
@@ -373,7 +373,7 @@ between `en` and `de` and controls fullscreen, audio, large text, and tooltips.
 
 Language, fullscreen, audio, large-text, and tooltip preferences are written to
 `~/.u-jagd/settings.json`. Tooltip state is therefore global and is also stored
-in v23 game saves for deterministic restoration of existing sessions.
+in v24 game saves for deterministic restoration of existing sessions.
 
 ## Commander LAN Co-op
 
@@ -488,8 +488,8 @@ Validated does not mean runtime-effective. In this release:
 
 ## Saves and User Data
 
-This build writes and loads save format **v23** only. V23 requires the exact
-`u-jagd-save-v23` schema, including the frigate's variable-depth sonar, the crewed boat's radio room, the HQ task board, both crews' watch bills,
+This build writes and loads save format **v24** only. V24 requires the exact
+`u-jagd-save-v24` schema, including the crewed boat's attack-computer marks, the frigate's variable-depth sonar, the crewed boat's radio room, the HQ task board, both crews' watch bills,
 the patrol aircraft and each buoy's owner, the current runtime catalog snapshot, all
 deterministic continuation state, the crewed submarine's crew state (orders,
 modes, mast, wires, plot, alarm bearings, its sonar station and its ESM

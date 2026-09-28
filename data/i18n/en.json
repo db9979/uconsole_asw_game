@@ -5573,5 +5573,21 @@
   "campaign.boat.port_refit": "1 Full refit: full torpedo load, hull repaired (standing -5)",
   "campaign.boat.port_quick": "2 Quick turnaround: {torpedoes} torpedoes, hull damage {damage} % stays (standing +3)",
   "campaign.boat.sail_hint": "Enter: put to sea for the next boat mission",
-  "launcher.support": "Enjoying U-Jagd? Buy me a coffee"
+  "launcher.support": "Enjoying U-Jagd? Buy me a coffee",
+  "uboot.line.tdc_idle": "Attack computer: Enter on a sighting marks it (stadimeter)",
+  "uboot.line.tdc_marking": "Attack computer: {marks} mark(s), mark again after a minute or more",
+  "uboot.line.tdc_no_intercept": "Attack computer: course {course}° {speed} kn, the torpedo cannot catch it",
+  "uboot.line.tdc_solution": "Solution: course {course}° {speed} kn · lead {lead} · run {run} · {marks} marks {quality} % · Ctrl+Enter fires",
+  "uboot.value.lead_left": "{angle}° left",
+  "uboot.value.lead_right": "{angle}° right",
+  "uboot.reason.uboot_no_solution": "no attack-computer solution",
+  "uboot.reason.uboot_mast_down": "mast down",
+  "uboot.reason.uboot_no_sighting": "no sighting under the crosshair",
+  "commander.web.reason_uboot_no_solution": "No attack-computer solution on that sighting: mark it twice, a minute apart.",
+  "commander.web.uboot_scope_fire": "Fire on solution",
+  "commander.web.uboot_sighting_solution": "Solution",
+  "commander.web.uboot_solution_value": "{course} {speed} · lead {lead} · run {run} ({marks} marks)",
+  "commander.web.uboot_solution_marks": "{marks} mark(s)",
+  "commander.web.uboot_solution_no_intercept": "{course} {speed} · no intercept",
+  "help.uboot.scope_fire": "Periscope page: fire on the attack computer's solution of the sighting under the crosshair (Command)"
 }

@@ -253,6 +253,7 @@ _UBOOT_HELP = (
         ("help.key.enter", "help.uboot.esm_plot"),
         ("help.key.left_right", "help.uboot.scope_turn"),
         ("help.key.enter", "help.uboot.stadimeter"),
+        ("help.key.uboot_fire", "help.uboot.scope_fire"),
         ("+ / -", "help.uboot.telegraph"),
         ("help.key.uboot_sonar", "help.uboot.sonar"),
         ("R", "help.uboot.charge_rate"),

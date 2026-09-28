@@ -329,7 +329,11 @@ export function validateV2State(state) {
         typeof scope.available !== "boolean" || typeof scope.night !== "boolean" ||
         scopeNumbers.some((key) => !finite(scope[key])) || scope.relative_deg < 0 || scope.relative_deg >= 360 ||
         !boundedArray(scope.sightings, 16) || scope.sightings.some((row) =>
-          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s"]) ||
+          !exactKeys(row, ["ref", "category", "cls", "bearing", "span_deg", "quality", "age_s", "range_nm", "range_sigma_nm", "range_age_s", "solution"]) ||
+          (row.solution !== null && (!exactKeys(row.solution, ["marks", "course", "speed_kn", "lead_deg", "run_s", "quality"]) ||
+            !Number.isSafeInteger(row.solution.marks) || row.solution.marks < 1 || row.solution.marks > 6 ||
+            [row.solution.course, row.solution.speed_kn, row.solution.lead_deg, row.solution.run_s].some((value) => value !== null && !finite(value)) ||
+            !finite(row.solution.quality))) ||
           typeof row.ref !== "string" || row.ref.length > 16 || !["SURFACE", "FLG", "TORP"].includes(row.category) ||
           !["warship", "merchant", "aircraft", "torpedo", "unknown"].includes(row.cls) ||
           [row.bearing, row.span_deg, row.quality].some((value) => !finite(value)) || (row.age_s !== null && !finite(row.age_s)) ||

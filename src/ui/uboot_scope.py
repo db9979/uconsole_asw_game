@@ -11,7 +11,7 @@ import math
 
 import pygame
 
-from src.core import config, opfor
+from src.core import attack_computer, config, opfor
 from src.core.i18n import display_value, localize, message
 from src.ui import layout
 
@@ -102,7 +102,9 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
                                 light=localize("weather.night" if night else "weather.day"),
                                 visibility=f"{visibility:.0f}", sea=f"{sea_state:.0f}"),
                      (x, info_y + 26, w, 20), config.COLOR_TEXT_DIM, size=15)
-    list_y = info_y + 52
+    text, color = tdc_line(game, boat)
+    layout.blit_line(s, text, (x, info_y + 48, w, 20), color, size=15)
+    list_y = info_y + 72
     list_h = y + h - list_y
     if list_h < 40:
         return
@@ -118,3 +120,29 @@ def draw_scope_page(s, game, boat, x, y, w, h) -> None:
         if row_y + 22 > ly + lh:
             break
         layout.blit_line(s, text, (lx, row_y + 2, lw, 20), color, size=15)
+
+
+def _signed_lead(lead):
+    side = "uboot.value.lead_right" if lead >= 0.0 else "uboot.value.lead_left"
+    return message(side, angle=f"{abs(lead):.0f}")
+
+
+def tdc_line(game, boat):
+    """``(text, color)`` of the attack computer on the crosshair sighting."""
+    row = opfor.sighting_in_crosshair(boat, game.sim_t) if opfor.scope_available(boat) else None
+    if row is None:
+        return "uboot.line.tdc_idle", config.COLOR_TEXT_DIM
+    values = attack_computer.summary(boat, row["ref"], game.sim_t)
+    if values is None:
+        return "uboot.line.tdc_idle", config.COLOR_TEXT_DIM
+    if values["course"] is None:
+        return (message("uboot.line.tdc_marking", marks=values["marks"]),
+                config.COLOR_TEXT)
+    if values["lead_deg"] is None:
+        return (message("uboot.line.tdc_no_intercept", course=f"{values['course']:03.0f}",
+                        speed=f"{values['speed_kn']:.0f}"), config.COLOR_WARN)
+    minutes, seconds = divmod(int(round(values["run_s"])), 60)
+    return (message("uboot.line.tdc_solution", course=f"{values['course']:03.0f}",
+                    speed=f"{values['speed_kn']:.0f}", lead=_signed_lead(values["lead_deg"]),
+                    run=f"{minutes}:{seconds:02d}", marks=values["marks"],
+                    quality=f"{values['quality'] * 100:.0f}"), config.COLOR_OK)

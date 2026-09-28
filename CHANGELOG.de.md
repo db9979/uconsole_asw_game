@@ -4,9 +4,9 @@
 
 Alle Versionen von U-Jagd, die neueste zuerst. Die [README](README.de.md) zeigt nur die neueste.
 
-## 1.3.20
+## 1.3.21
 
-Version 1.3.20 macht die Remote-Crew-Datenströme stabiler. Ein Browser, der
+Version 1.3.21 macht die Remote-Crew-Datenströme stabiler. Ein Browser, der
 seinen Sonar-Audio- oder Sonar-Anzeigestrom neu verbindet, übernimmt jetzt
 sofort seinen eigenen bisherigen Strom, statt abgewiesen zu werden, solange der
 Host die alte Verbindung noch nicht als beendet erkannt hat. Der Web-Client
@@ -14,6 +14,17 @@ fragt bei eingeschaltetem Push nicht mehr zu jedem gepushten Zustand
 zusätzlich den Zustand ab. Die Browsertests für Live-Audio und den
 Zustands-Push laufen jetzt in Echtzeit neben dem Host. Spielstände bleiben
 v23.
+
+## 1.3.20
+
+Version 1.3.20 bringt den **Angriffsrechner am Sehrohr** des Boots: Jede
+Stadimeter-Messung ist eine Marke, und zwei oder mehr Marken im Abstand von
+einer Minute ergeben Kurs und Fahrt des Ziels, den Vorhaltewinkel und die
+Laufzeit des Torpedos unter dem Sehrohr (Browser: Spalte Lösung).
+`Strg+Enter` auf der Sehrohrseite (Browser: Schuss nach Lösung) schießt auf
+den Abfangkurs; ein Schuss auf einen markierten Sonarkontakt nutzt die Lösung
+ebenfalls. Spielstände wechseln auf **v24** (die Marken werden gespeichert);
+v23-Spielstände werden nicht mehr geladen.
 
 ## 1.3.19
 

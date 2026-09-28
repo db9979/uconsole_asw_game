@@ -397,6 +397,14 @@ UBOOT_STADIMETER_WINDOW_DEG = 3.0   # the crosshair must be this close to the si
 # Assumed hull lengths of the stadimeter by recognized class (m); an
 # unrecognized surface contact is measured as a generic frigate.
 UBOOT_STADIMETER_LENGTHS_M = {"warship": 130.0, "merchant": 150.0, "unknown": 130.0}
+# The periscope attack computer: stadimeter marks per sighting (saved in
+# ``crew.orders.tdc``), fitted to the target's course and speed.
+UBOOT_TDC_TARGETS_MAX = 8           # sightings with marks at a time
+UBOOT_TDC_MARKS_MAX = 6             # marks kept per sighting (the latest)
+UBOOT_TDC_WINDOW_S = 900.0          # a mark older than this drops out of the fit
+UBOOT_TDC_MIN_BASE_S = 60.0         # first to last mark needed for a solution
+UBOOT_TDC_MAX_SPEED_KN = 40.0       # a faster fit is rejected as a bad mark
+UBOOT_TDC_GOOD_BASE_S = 300.0       # a base this long gives full quality
 
 # The boat's own ESM (mast raised): intercepts, emitter memory, cross-fix.
 UBOOT_ESM_SCAN_S = 1.0              # one intercept scan per second of sim time

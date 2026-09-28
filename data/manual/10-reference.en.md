@@ -131,11 +131,12 @@ The top bar shows the boat's seven stations as tabs: `1` Command, `2` Sonar, `3`
 
 ### Boat missions {#ref-opfor-missions}
 
-Scenarios 5 and 6 give the submarine the objective; the frigate's task is to stop it. They are meant for a crewed boat (the uConsole on the boat side, a solo browser as the submarine, or a boat crew in the browsers); with the AI on the boat it hunts as in any other scenario and does not pursue the objective. The boat's orders stand in one line over its chart and as the mission line of the browser's boat stations.
+Scenarios 5 to 7 give the submarine the objective; the frigate's task is to stop it. They are meant for a crewed boat (the uConsole on the boat side, a solo browser as the submarine, or a boat crew in the browsers); with the AI on the boat it hunts as in any other scenario and does not pursue the objective. The boat's orders stand in one line over its chart and as the mission line of the browser's boat stations.
 
 - **Breakthrough (5):** the goal area (3 NM radius) lies about 10 NM beyond the frigate's patrol position, seen from the boat's start, in water at least 40 m deep; the boat's chart marks it as GOAL and the orders give bearing and range from the boat. The boat wins when it enters the area, the frigate when it sinks the boat or holds it off for 4 hours. The rule that a boat escapes 150 NM from its start does not apply.
 - **Reconnaissance (6):** the boat must get the frigate in sight through the periscope and complete a situation report in the radio room while the frigate is still among its sightings. The orders read "Frigate in sight" as soon as it is. A report without the frigate in sight does not count. The frigate wins when it sinks the boat or no such report goes out within 2 hours.
-- The boat's end panel reads BROKE THROUGH or FRIGATE REPORTED on a win, MISSION OVER when the time runs out.
+- **Convoy attack (7):** the frigate escorts a convoy of four merchants sailing east at 10 kn in a box about 1 NM around it. The boat must sink two of them; only the crewed boat's torpedoes take a merchant (one hit sinks it) and each hit is logged. The orders give how many are sunk. The frigate wins when it sinks the boat or the convoy holds out for 3 hours. Sinking a merchant here is the mission, not an incident.
+- The boat's end panel reads BROKE THROUGH, FRIGATE REPORTED or CONVOY HIT on a win, MISSION OVER when the time runs out.
 
 ### AI hunters {#ref-opfor-hunters}
 
@@ -143,7 +144,7 @@ When nobody sails the frigate (the uConsole plays the boat, or a solo browser pl
 
 - **Classification:** a contact whose heard signature the library knows only from submarines is classified submarine, as an operator comparing it with the library would. Other contacts stay unclassified.
 - **Datum:** the freshest located submarine contact (ping, TMA or buoy fix), else an HF/DF cross-fix up to 15 minutes old, else the bearing of a submarine contact or a fresh HF/DF bearing. The radio room takes HF/DF bearings and cross-fixes like the autocrew.
-- **Bridge:** without a datum the frigate searches at 10 kn on a zigzag (legs of 10 minutes) whose base course turns 90° every 30 minutes. It runs at 18 kn to a position datum farther than 6 NM and works a closer one at 8 kn on a crossing course (60° off, switching sides every 5 minutes) so the towed array and TMA get bearing motion; on a bearing alone it steers 30° off it at 12 kn. It turns away from torpedoes and missiles like the autocrew and never steers into shoal water.
+- **Bridge:** in the convoy attack the frigate keeps station 3 NM ahead of the convoy, weaving 45° either side every 5 minutes (it closes at 18 kn when more than 2.5 NM off station), and prosecutes a datum only within 8 NM of the convoy. Otherwise, without a datum the frigate searches at 10 kn on a zigzag (legs of 10 minutes) whose base course turns 90° every 30 minutes. It runs at 18 kn to a position datum farther than 6 NM and works a closer one at 8 kn on a crossing course (60° off, switching sides every 5 minutes) so the towed array and TMA get bearing motion; on a bearing alone it steers 30° off it at 12 kn. It turns away from torpedoes and missiles like the autocrew and never steers into shoal water.
 - **Sonar and weapons:** the ship pings once a minute on a submarine contact that has no fresh range, and fires one torpedo (or the set salvo) at a located submarine within 6 NM, again only when it has stopped running. Nixies go out against a heard torpedo.
 - **Helicopter:** launched for a datum within 30 NM (weather and deck permitting); it flies to the datum, or 8 NM down a bearing, dips, pings every 30 s and drops a torpedo on a located submarine within 1.5 NM, one at a time. Without a datum it recovers.
 - **Patrol aircraft:** requested once a datum exists; it flies to the datum with its radar on, lays a circle of buoys where none listen within 4 NM, and attacks a located submarine within its drop range over the datalink.
@@ -157,7 +158,7 @@ When nobody sails the frigate (the uConsole plays the boat, or a solo browser pl
 - A raised mast or snorkel head is seen by the frigate's radar only as a bare blip (see the OPZ chapter).
 - The boat's ESM hears no other submarine's radar and no missile seeker; it has no scored library analysis, no scan-period measurement and no target motion analysis of an emitter (the cross-fix assumes a slow emitter).
 - The boat's library shows only the first candidates in catalogue order; for an X-band search radar with many possible matches (the helicopter's) the right entry can fall outside the list.
-- The campaign is played from the frigate only; there is no boat campaign yet, and no convoy attack for the boat (its torpedoes home on the frigate only).
+- The campaign is played from the frigate only; there is no boat campaign yet. Outside the convoy attack the boat's torpedoes home on the frigate only, and the AI's boats never attack merchants.
 - The AI does not steer a boat towards a boat mission's objective.
 - The AI hunters do not correlate radar blips, ESM or HQ reports with the boat, and they fire no ASROC.
 - The periscope has one magnification and no camera; sightings carry no identification beyond the coarse class, and the stadimeter assumes a class length rather than a masthead height.

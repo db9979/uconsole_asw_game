@@ -19,7 +19,7 @@ from __future__ import annotations
 import math
 from functools import lru_cache
 
-from src.core import config, detrand
+from src.core import boat_missions, config, detrand
 from src.core.autocrew import AutocrewController, _nearest_threat
 from src.core.station import Station
 
@@ -40,6 +40,9 @@ BEARING_DATUM_NM = 8.0          # bearing-only datum: this far down the line
 SHIP_FIRE_NM = 6.0
 FIX_MAX_AGE_S = 900.0
 PATTERN_CLEAR_NM = 4.0          # no new buoy pattern where buoys already listen
+ESCORT_AHEAD_NM = 3.0           # the escort's station ahead of the convoy
+ESCORT_STATION_NM = 2.5         # farther off than this it closes at transit speed
+ESCORT_LEASH_NM = 8.0           # an escort prosecutes a datum this close to its convoy
 _SUPPORT = (("sonar", Station.SONAR), ("radio", Station.RADIO),
             ("eloka", Station.ELOKA), ("damage", Station.DAMAGE),
             ("engine", Station.ENGINE), ("opz", Station.OPZ))
@@ -185,11 +188,46 @@ def search_course(game) -> float:
     return (base + 90.0 * box + (45.0 if leg % 2 else -45.0)) % 360.0
 
 
+def convoy_center(game):
+    ships = [ship for ship in boat_missions.convoy(game) if not ship.sunk]
+    if not ships:
+        return None
+    return (sum(ship.x for ship in ships) / len(ships),
+            sum(ship.y for ship in ships) / len(ships))
+
+
+def escort_course(game):
+    """Course and speed that keep the frigate with the convoy it escorts
+    (the merchants' own AIS positions), or None without a convoy."""
+    ships = [ship for ship in boat_missions.convoy(game) if not ship.sunk]
+    if not ships:
+        return None
+    cx, cy = convoy_center(game)
+    course = ships[0].course
+    rad = math.radians(course)
+    # Screen ahead of the convoy, weaving across its track.
+    ax, ay = cx + ESCORT_AHEAD_NM * math.sin(rad), cy - ESCORT_AHEAD_NM * math.cos(rad)
+    ship = game.ship
+    if math.hypot(ax - ship.x, ay - ship.y) > ESCORT_STATION_NM:
+        return _bearing(ship.x, ship.y, ax, ay), TRANSIT_KN
+    side = 1.0 if math.floor(game.sim_t / CROSS_LEG_S) % 2 else -1.0
+    return course + side * 45.0, ships[0].speed + 2.0
+
+
 def bridge(game, found) -> str:
     if _nearest_threat(game) is not None:
         return AutocrewController._bridge(game)
     ship = game.ship
+    escort = escort_course(game)
+    if escort is not None and found is not None:
+        # An escort prosecutes near its convoy only, never chasing far off.
+        point = datum_point(game, found)
+        center = convoy_center(game)
+        if math.hypot(point[0] - center[0], point[1] - center[1]) > ESCORT_LEASH_NM:
+            found = None
     if found is None:
+        if escort is not None:
+            return _steer(game, *escort)
         return _steer(game, search_course(game), SEARCH_KN)
     side = 1.0 if math.floor(game.sim_t / CROSS_LEG_S) % 2 else -1.0
     if "x" in found:

@@ -966,7 +966,17 @@ MISSION_TYPES = {
         sub_types=["diesel_alt", "aip_modern"],
         animals=(1, 2), civilians=(1, 2), asm=(0, 0), warships=(0, 0),
         time_limit_s=7200, win="recon"),
+    "geleitzug": dict(
+        name="Geleitzug", weight=0, subs=1,
+        sub_types=["diesel_alt", "aip_modern"],
+        animals=(1, 2), civilians=(0, 0), asm=(0, 0), warships=(0, 0),
+        time_limit_s=10800, win="convoy_attack"),
 }
+BOAT_CONVOY_SIZE = 4               # merchants in the escorted convoy
+BOAT_CONVOY_SINK = 2               # the boat wins after sinking this many
+BOAT_CONVOY_SPEED_KN = 10.0
+BOAT_CONVOY_SPACING_NM = 1.0
+BOAT_CONVOY_WARHEAD = 100.0        # a heavyweight hit breaks a merchant
 # Boat missions: the goal lies this far beyond the frigate's start, seen from
 # the boat's start, and counts as reached within the radius.
 BOAT_GOAL_BEYOND_NM = 10.0
@@ -980,11 +990,12 @@ BOAT_GOAL_MIN_DEPTH_M = 40.0
 # ab, deshalb gehört die Einstellung nicht in den gespeicherten Schwierigkeitssatz.
 HQ_INTEL_MODES = ("coarse", "exact")
 SCENARIO_ORDER = ("s1_patrouille", "s2_doppeljagd", "s3_abfang", "s4_zufall",
-                  "s5_durchbruch", "s6_aufklaerung")
+                  "s5_durchbruch", "s6_aufklaerung", "s7_geleitzug")
 # Catalog name of each scenario (``scenario.<name>.title`` and friends).
 SCENARIO_NAMES = {"s1_patrouille": "patrol", "s2_doppeljagd": "double",
                   "s3_abfang": "intercept", "s4_zufall": "random",
-                  "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon"}
+                  "s5_durchbruch": "breakthrough", "s6_aufklaerung": "recon",
+                  "s7_geleitzug": "convoy_attack"}
 SCENARIOS = {
     "s1_patrouille": dict(
         title="Patrouille",
@@ -1067,6 +1078,21 @@ SCENARIOS = {
         briefing="Boot: Die Fregatte sichten und per Funk melden.",
         win_text="Meldung verhindert",
         lose_text="Boot meldet die Fregatte / Fregatte gesunken",
+    ),
+    "s7_geleitzug": dict(
+        title="Geleitzug",
+        difficulty=dict(quiet_mult=1.0, repair_mult=1.0, torpedo_count=6,
+                       kill_dist_nm=0.135, kill_depth_m=15.0,
+                       enemy_attack_mult=1.0, enemy_cooldown_s=900.0,
+                       enemy_solution_threshold=0.25,
+                       second_sub_prob=0.0),
+        mission_type="geleitzug",
+        hq_intel="coarse",
+        ship_start=(250.0, 300.0), ship_course=90.0,
+        boat=True,
+        briefing="Boot: Zwei Handelsschiffe des Geleitzugs versenken.",
+        win_text="Geleitzug geschuetzt",
+        lose_text="Zwei Handelsschiffe verloren / Fregatte gesunken",
     ),
     "s4_zufall": dict(
         title="Freie Jagd (Zufall)",

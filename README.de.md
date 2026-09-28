@@ -14,15 +14,13 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.14**
+Aktuelle Version: **1.3.15**
 
-Version 1.3.14 bringt **Bootsmissionen**: Szenario 5 *Durchbruch* (das U-Boot
-muss ein Zielgebiet hinter der Patrouillenposition der Fregatte erreichen)
-und Szenario 6 *Aufklärung* (es muss die Fregatte durch das Sehrohr sichten
-und eine Lagemeldung funken, während sie in Sicht ist). Die Fregatte muss das
-verhindern. Der Auftrag des Boots steht über seiner Karte und in den
-Bootsstationen im Browser; das Ziel ist auf der Bootskarte markiert.
-Spielstände bleiben v23.
+Version 1.3.15 bringt Bootsmission 7, **Geleitzugangriff**: Die Fregatte
+geleitet vier Handelsschiffe, und das U-Boot muss zwei davon versenken. Nur
+die Torpedos des besetzten Boots treffen ein Handelsschiff; die KI-Fregatte
+hält ihre Position vor dem Geleitzug und verfolgt Kontakte nur in seiner Nähe.
+Der Auftrag des Boots zählt die versenkten Handelsschiffe. Spielstände bleiben v23.
 
 Frühere Versionen: [CHANGELOG.de.md](CHANGELOG.de.md).
 

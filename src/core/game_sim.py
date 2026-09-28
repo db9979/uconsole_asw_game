@@ -711,9 +711,19 @@ class SimMixin:
     def _update_enemy_torpedoes(self, dt: float) -> None:
         """Erzeugt und bewegt Feindtorpedos; Treffer werden als Schaden gebucht."""
         self._drain_enemy_torpedoes()
+        boat = self._opfor
+        boat_id = boat.sub.id if boat is not None else None
+        # Only the crewed boat's weapons may take another ship (convoy attack).
+        merchants = ([ship for ship in self.civilians if not ship.sunk]
+                     if boat_id is not None else [])
         for torpedo in self.enemy_torpedoes:
             torpedo.update(dt, self.ship, world=self.world,
-                           seeker_candidates=self.nixies)
+                           seeker_candidates=self.nixies,
+                           surface_targets=(merchants if torpedo.launch_platform_id == boat_id
+                                            else ()))
+        for torpedo in self.enemy_torpedoes:
+            if torpedo.state == "STRUCK":
+                boat_missions.merchant_struck(self, torpedo.struck)
         for torpedo in self.enemy_torpedoes:
             if torpedo.state == "HIT":
                 distance_m = max(1.0, math.hypot(torpedo.x - self.ship.x,

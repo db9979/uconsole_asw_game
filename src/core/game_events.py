@@ -1730,7 +1730,7 @@ class EventMixin:
             elif key == pygame.K_DOWN:
                 self.menu_sel = (self.menu_sel + 1) % n
             elif key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4,
-                         pygame.K_5, pygame.K_6)[:n]:
+                         pygame.K_5, pygame.K_6, pygame.K_7)[:n]:
                 self.menu_sel = int(pygame.key.name(key)) - 1
             elif key in (pygame.K_RETURN, pygame.K_SPACE):
                 self.scenario_key = config.SCENARIO_ORDER[self.menu_sel]

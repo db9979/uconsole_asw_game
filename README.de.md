@@ -14,7 +14,16 @@ Sie führen eine fiktive Fregatte und wechseln zwischen neun Arbeitsplätzen, um
 zu navigieren, zu suchen, Kontakte zu klassifizieren, Ziele zu bekämpfen und das
 Schiff einsatzfähig zu halten.
 
-Aktuelle Version: **1.3.10**
+Aktuelle Version: **1.3.11**
+
+Version 1.3.11 bringt ein **Windows-Programm**: `U-Jagd-Windows.exe` startet
+das Spiel als Remote-Crew-Server (Besatzungs- oder Solomodus, wahlweise als
+U-Boot), zeigt Browser-Adresse, Beitrittscode und QR-Code und bietet jede
+neuere Version selbst zum Update an. GitHub Actions baut es bei jedem Push auf
+`main` und veröffentlicht es als Release `v<Version>`. Das Spiel kennt dazu
+`--remote-crew` (Remote Crew im Besatzungsmodus auf der ersten privaten
+LAN-Adresse beim Start) und `--status-file`. Siehe
+[Windows-Programm](#windows-programm). Spielstände bleiben v23.
 
 Version 1.3.10 behebt den uConsole-Installer bei einem Checkout, der älter als
 der Installer ist: Er zieht diesen Checkout jetzt zuerst per Fast-Forward auf
@@ -218,9 +227,41 @@ Commander-Browser: [OPZ/CIC mit 1920 x 1080](docs/screenshots/commander-v2-de-op
 - Modellierter Treibstoffverbrauch mit Ausdauer, Reichweite und Reparaturtrends
   im Maschinenraum.
 
+
+## Windows-Programm
+
+Lade `U-Jagd-Windows.exe` aus dem
+[neuesten Release](https://github.com/db9979/uconsole_asw_game/releases/latest)
+und starte es; Python ist nicht nötig. Im Starterfenster wählst du den
+Besatzungsmodus (mehrere Browser, je eine Station) oder den Solomodus (ein
+Browser bedient alle Stationen), ob dieser PC das U-Boot spielt, Fenster oder
+Vollbild, Ton und Port; **Server starten** öffnet dann das Spielfenster, und
+Remote Crew lauscht bereits auf der privaten LAN-Adresse des PCs. Der Starter
+zeigt Browser-Adresse, Beitrittscode und QR-Code; Stationsanfragen bestätigst
+du wie auf dem uConsole im Spielfenster (F9). Windows fragt eventuell einmal,
+ob U-Jagd private Netzwerke nutzen darf: zulassen, sonst können sich andere
+Geräte nicht verbinden. **Server stoppen** beendet das Spiel (nicht
+gespeicherter Fortschritt geht verloren); das Protokoll liegt in
+`%USERPROFILE%\.u-jagd\logs\server.log`.
+
+Bei jedem Start fragt das Programm GitHub, ob es ein neueres Release gibt, und
+bietet **Update installieren** an: Es lädt die neue Datei, prüft Größe und
+SHA-256-Prüfsumme, ersetzt sich selbst und startet neu. Das Programm ist nicht
+signiert, deshalb warnt Windows SmartScreen beim ersten Start eventuell
+("Weitere Informationen", "Trotzdem ausführen"). Spielstände und Einstellungen
+liegen wie unter Linux in `%USERPROFILE%\.u-jagd\`.
+
+Der Workflow `.github/workflows/windows.yml` baut das Programm mit PyInstaller
+(`packaging/windows/u-jagd-windows.spec`) bei jedem Push und Pull Request,
+führt seinen Selbsttest ohne Bildschirm aus (kurze Mission plus
+Remote-Crew-Seiten) und veröffentlicht auf `main` einmal je Version das
+Release `v<APP_VERSION>`. Selbst bauen unter Windows:
+`python -m pip install -e ".[windows]"` und
+`pyinstaller packaging/windows/u-jagd-windows.spec`.
+
 ## Voraussetzungen
 
-- Linux
+- Linux (oder Windows mit dem fertigen [Windows-Programm](#windows-programm))
 - Python 3.11 oder neuer
 - Pygame 2.6 oder neuer
 - NumPy 2.0 oder neuer
@@ -275,6 +316,13 @@ python main.py --version
 gespeicherten Optionen. Es gibt weder `--fullscreen` noch eine
 Kommandozeilenoption für die Sprache. Nach einer Paketinstallation ist derselbe
 Einstiegspunkt als `u-jagd` verfügbar, beispielsweise `u-jagd --windowed`.
+
+`python main.py --remote-crew` startet Remote Crew beim Start im
+Besatzungsmodus auf der ersten privaten LAN-Adresse, wie es die F9-Zeile tun
+würde (`--solo-crew` entsprechend im Solomodus; `--web-port` wählt den Port,
+Standard 8765). `--status-file PFAD` schreibt Remote-Crew-Adresse und
+Beitrittscode als JSON nach `PFAD`, sobald sie sich ändern; der
+Windows-Starter liest diese Datei.
 
 ## Spiel starten
 

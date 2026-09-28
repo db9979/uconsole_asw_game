@@ -1,0 +1,73 @@
+# Builds the Windows program (U-Jagd-Windows.exe: starter window + game) on
+# every push and pull request. A push to main publishes it as the GitHub
+# release "v<APP_VERSION>"; the program's update check reads that release.
+name: Windows program
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[windows]"
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(python -c 'from src.core.version import APP_VERSION; print(APP_VERSION)')" >> "$GITHUB_OUTPUT"
+
+      - name: Build U-Jagd-Windows.exe
+        run: pyinstaller --noconfirm packaging/windows/u-jagd-windows.spec
+
+      - name: Self-test the built program
+        shell: pwsh
+        run: |
+          $report = Join-Path $env:RUNNER_TEMP "selftest.json"
+          $p = Start-Process -FilePath dist\U-Jagd-Windows.exe -ArgumentList "--self-test", "`"$report`"" -Wait -PassThru
+          Get-Content $report
+          if ($p.ExitCode -ne 0) { exit 1 }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: U-Jagd-Windows-${{ steps.version.outputs.version }}
+          path: dist/U-Jagd-Windows.exe
+
+      - name: Publish release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # One release per version, shared with other build jobs (for example
+          # the uConsole package): create it if missing, then add this asset
+          # unless it is already there. Never replace a published asset.
+          tag="v$VERSION"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --title "U-Jagd $VERSION" \
+              --notes "U-Jagd $VERSION. Windows: download U-Jagd-Windows.exe and run it; it offers later versions itself." \
+              || gh release view "$tag" >/dev/null
+          fi
+          if gh release view "$tag" --json assets --jq '.assets[].name' | grep -qx "U-Jagd-Windows.exe"; then
+            echo "U-Jagd-Windows.exe is already published for $tag; bump src/core/version.py for a new build."
+          else
+            gh release upload "$tag" dist/U-Jagd-Windows.exe
+          fi

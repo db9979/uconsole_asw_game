@@ -4,6 +4,13 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.37
+
+Release 1.3.37 fixes a crash that closed the game as soon as a frigate or
+AI torpedo was in the water while the simulation log (Options, Simulation log) was
+recording: the log's state snapshot read a torpedo number the torpedo does
+not have. The crash log added in 1.3.34 showed the cause. Saves stay v27.
+
 ## 1.3.36
 
 Release 1.3.36 fixes sonar audio on the uConsole that could fall silent until

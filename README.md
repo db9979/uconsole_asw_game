@@ -12,15 +12,12 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.36**
+Current release: **1.3.37**
 
-Release 1.3.36 fixes sonar audio on the uConsole that could fall silent until
-audio was switched off and on in the options. A rare race in the pygame mixer
-could leave the sonar channel idle with its next block queued forever, and
-the sonar playback waited for that queue slot for good. Playback now replays
-such a stranded block and carries on, and a stopped sonar audio worker is
-restarted with the next block. `audio_debug.log` counts both
-(`queue_stranded`, `worker_restarts`). Saves stay v27.
+Release 1.3.37 fixes a crash that closed the game as soon as a frigate or
+AI torpedo was in the water while the simulation log (Options, Simulation log) was
+recording: the log's state snapshot read a torpedo number the torpedo does
+not have. The crash log added in 1.3.34 showed the cause. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

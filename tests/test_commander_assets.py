@@ -536,7 +536,11 @@ def test_contacts_panel_owns_bounded_browser_and_detail_scrolling():
     assert re.search(r"\.analyzer-panel:not\(\[hidden\]\).*overflow: hidden", css)
     assert re.search(r"\.analysis-list \{[^}]*overflow-y: auto", css)
     assert re.search(r"\.analyzer-detail \{[^}]*overflow-y: auto", css)
-    assert "silhouette" not in client_js().lower()
+    # The analyzer shows catalog images only; silhouettes belong to the
+    # eyepieces (views/sight-scene.js), drawn from observed classes.
+    analyzer = (ROOT / "data" / "commander" / "js" / "views" / "analyzer.js").read_text(
+        encoding="utf-8")
+    assert "silhouette" not in analyzer.lower()
     for catalog in catalogs():
         spectrum = catalog[PREFIX + "analyzer_spectrum_legend"]
         hypothesis = catalog[PREFIX + "analyzer_hypothesis_legend"]

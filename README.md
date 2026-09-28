@@ -12,15 +12,17 @@ around the ClockworkPi uConsole's 1280 x 720 workspace. You command a fictional
 frigate and move between nine workstations to navigate, search, classify,
 engage, and keep the ship operational.
 
-Current release: **1.3.38**
+Current release: **1.3.39**
 
-Release 1.3.38 lets the uConsole charts zoom much further in. `Q`/`E` now
-step through fixed chart heights of 500, 250, 100, 50, 25, 10, 5, 2, 1 and
-0.5 NM on the bridge, weapons, helicopter and submarine charts, and the mouse
-wheel zooms smoothly down to 0.5 NM; the operations centre chart goes down to
-a 0.25 NM radius. The grid gets finer as you zoom (down to 0.1 NM, with
-decimal labels), the scale line shows fractions, and coastlines and radar
-rings are clipped so strong zoom stays fast. Saves stay v27.
+Release 1.3.39 gives the periscope, the lookout's binoculars and every station
+the start screen's look. The eyepieces show day, dusk and night with stars, the
+moon in its phase and its glitter on the water, clouds, rain, snow and fog from
+the weather, and the ships in steel with a lit rim, lit windows at night, bow
+wave and wake. The Remote Crew bridge gets the lookout's binoculars as a card
+and the browser periscope the same picture and silhouettes. uConsole and
+browser stations use the turquoise phosphor and night blue of the start screen
+with corner brackets on the panels; the chart keeps its NATO symbols and the
+high-contrast theme is unchanged. Saves stay v27.
 
 Earlier releases: [CHANGELOG.md](CHANGELOG.md).
 

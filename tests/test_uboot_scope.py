@@ -10,6 +10,8 @@ from pathlib import Path
 import pygame
 import pytest
 
+from src.commander.v2 import schema as web_schema
+
 from src.commander import projections
 from src.core import config, opfor, uboot_local
 from src.core.i18n import Translator, pseudolocale
@@ -189,7 +191,8 @@ def test_projection_carries_sightings_without_truth():
     assert scope["available"] and scope["night"] is False
     assert set(scope) == {"available", "relative_deg", "bearing", "fov_deg", "window_deg",
                           "night", "visibility_nm", "sea_state", "horizon_offset",
-                          "horizon_tilt", "sightings"}
+                          "horizon_tilt", "sky", "sightings"}
+    assert set(scope["sky"]) == set(web_schema.SKY_FIELDS)
     row = next(row for row in scope["sightings"] if row["cls"] == "warship")
     assert set(row) == {"ref", "category", "cls", "bearing", "span_deg", "quality", "age_s",
                         "range_nm", "range_sigma_nm", "range_age_s", "solution"}

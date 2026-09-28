@@ -109,7 +109,7 @@ def test_role_allowlists_detachment_bounds_and_no_hidden_identifiers(published):
     game, _, server = published
     expected = {
         "bridge": {"navigation", "orders", "threat", "systems",
-                   "tactical_summary", "sightings", "crew"},
+                   "tactical_summary", "sightings", "crew", "lookout"},
         "sonar": {"observations", "settings", "visualization"},
         "weapons": {"inventory", "readiness", "designated_target", "navigation",
                     "tactical", "target_choices", "depth_m", "tubes", "settings",

@@ -4,6 +4,18 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
+## 1.3.39
+
+Release 1.3.39 gives the periscope, the lookout's binoculars and every station
+the start screen's look. The eyepieces show day, dusk and night with stars, the
+moon in its phase and its glitter on the water, clouds, rain, snow and fog from
+the weather, and the ships in steel with a lit rim, lit windows at night, bow
+wave and wake. The Remote Crew bridge gets the lookout's binoculars as a card
+and the browser periscope the same picture and silhouettes. uConsole and
+browser stations use the turquoise phosphor and night blue of the start screen
+with corner brackets on the panels; the chart keeps its NATO symbols and the
+high-contrast theme is unchanged. Saves stay v27.
+
 ## 1.3.38
 
 Release 1.3.38 lets the uConsole charts zoom much further in. `Q`/`E` now

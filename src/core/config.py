@@ -1166,17 +1166,17 @@ SCENARIOS = {
 }
 
 # Farben (CRT-Grün-Theme)
-COLOR_BG = (8, 14, 10)
+COLOR_BG = (4, 9, 15)
 # Gemeinsamer geografischer Hintergrund fuer Karte und PPI.
 COLOR_GEO_BG = (5, 18, 34)
-COLOR_GRID = (20, 38, 28)
+COLOR_GRID = (16, 36, 42)
 COLOR_GEO_GRID = (18, 49, 72)
-COLOR_TEXT = (140, 230, 160)
-COLOR_TEXT_DIM = (105, 158, 126)
+COLOR_TEXT = (150, 240, 205)
+COLOR_TEXT_DIM = (98, 160, 148)
 COLOR_WARN = (230, 190, 60)
 COLOR_DANGER = (230, 80, 70)
-COLOR_OK = (90, 210, 120)
-COLOR_SONAR_RING = (40, 90, 60)
+COLOR_OK = (80, 212, 160)
+COLOR_SONAR_RING = (40, 96, 90)
 COLOR_CONTACT = (255, 255, 255)
 COLOR_CONTACT_ZIVIL = (90, 200, 120)
 COLOR_CONTACT_WARSHIP = (230, 120, 60)
@@ -1195,12 +1195,12 @@ COLOR_PLOT = (255, 160, 230)
 # W2: OPZ-Domänenfarbe für Flugkörper/Torpedo - eigene Farbe, da COLOR_DANGER
 # und COLOR_CONTACT_UBOOT (Unterwasser-Domäne) sonst fast ununterscheidbar sind.
 COLOR_CONTACT_MISSILE = (235, 70, 180)
-COLOR_FEED_BG = (10, 18, 14)       # event feed / telemetry / ticker ground
-COLOR_PANEL_BG = (14, 24, 18)      # top bar and panel boxes
-COLOR_OVERLAY_BG = (7, 18, 13)     # dialogs over a running mission
-COLOR_SELECT_BG = (30, 44, 30)     # selected list row
-COLOR_ALARM_BG = (18, 28, 22)      # bridge alarm bar
-COLOR_TAB_ACTIVE = (21, 55, 68)    # active page tab / selected sonar row
+COLOR_FEED_BG = (5, 12, 18)       # event feed / telemetry / ticker ground
+COLOR_PANEL_BG = (8, 18, 25)      # top bar and panel boxes
+COLOR_OVERLAY_BG = (5, 14, 20)     # dialogs over a running mission
+COLOR_SELECT_BG = (18, 58, 56)     # selected list row
+COLOR_ALARM_BG = (10, 22, 28)      # bridge alarm bar
+COLOR_TAB_ACTIVE = (18, 60, 62)    # active page tab / selected sonar row
 
 # W3: Feed-Kategorien (Farbe, Kürzel)
 FEED_CATEGORIES = {

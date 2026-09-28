@@ -7,35 +7,36 @@
   --aff-neutral: #8fdfab;
   --aff-hostile: #ff9090;
 
-  /* Surfaces: deep navy to slate, darkest behind the instruments. */
-  --scope: #03080d;
-  --bg-0: #060b11;
-  --bg-1: #09111a;
-  --bg-2: #0d1722;
-  --bg-3: #122030;
-  --bg-4: #19293b;
-  --line-faint: #111e2b;
-  --line: #1b2b3b;
-  --line-strong: #2a4054;
+  /* Surfaces: the start screen's night blue, darkest behind the instruments. */
+  --scope: #03070f;
+  --bg-0: #03080e;
+  --bg-1: #060e16;
+  --bg-2: #09151d;
+  --bg-3: #0e1f28;
+  --bg-4: #153038;
+  --line-faint: #0d1c22;
+  --line: #162e36;
+  --line-strong: #28605a;
 
   /* Text: bright for live values, dim for labels, faint for legends/history. */
-  --text: #d5e0e9;
-  --text-dim: #8497a8;
-  --text-faint: #56697a;
+  --text: #d6ece5;
+  --text-dim: #84a7a0;
+  --text-faint: #55726d;
 
-  /* Signal colours. Live data is cyan/emerald, attention amber, alarms red. */
-  --live: #57d3e3;
-  --live-strong: #9ae9f2;
+  /* Signal colours. Live data is the start screen's turquoise phosphor,
+     attention amber, alarms red. */
+  --live: #6ee4c0;
+  --live-strong: #96ffcd;
   --live-2: #5fdea8;
   --caution: #f0b64a;
   --alarm: #ff5b55;
   --alarm-2: #ff8a3d;
   --info: #7fb6ff;
   --plot-ink: #ffa0e6;
-  --live-bg: #0c2a31;
+  --live-bg: #0a2a28;
   --caution-bg: #2c2112;
   --alarm-bg: #33110f;
-  --on-live: #042026;
+  --on-live: #03201a;
   --on-alarm: #1a0605;
   --shadow: #000000;
 

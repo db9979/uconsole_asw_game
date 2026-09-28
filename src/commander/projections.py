@@ -1143,7 +1143,8 @@ def build_role_states(game, status, rows, target_ref, focus_ref, ref_by_track,
                                           if row.get("_opz")
                                           and row["source"] not in ("ESM", "FUSION")
                                           and not row["source"].startswith("SONAR")],
-                        sightings=_sightings(game), crew=_crew(game)),
+                        sightings=_sightings(game), crew=_crew(game),
+                        lookout=_lookout_glasses(game)),
         "sonar": _sonar(game, rows, focus_ref, target_ref, sonar_refs),
         "weapons": _weapons(game, rows, target_ref, asset_refs,
                             direct_fire_refs["weapons"]),
@@ -1303,6 +1304,35 @@ def _uboot_weapons(game, boat, asset_refs):
             if ("uboot_torpedo", id(item)) in asset_refs][:16]
 
 
+def _sky(game):
+    """The eyepieces' sky (light, cloud, precipitation, sun and moon) from
+    the observed atmosphere and the clock; display only."""
+    from src.ui import sight_scene
+    values = sight_scene.sky_state(game)
+    return {key: (values[key] if isinstance(values[key], (bool, str)) else _number(values[key]))
+            for key in web_schema.SKY_FIELDS}
+
+
+def _lookout_glasses(game):
+    """The bridge lookout's binoculars: the horizon in motion and the outlines
+    of his own sightings (measured bearing, class he made out, apparent
+    length from the measured range); never a target's position."""
+    from src.ui import horizon
+    from src.ui.stations.bridge import lookout_outlines
+    weather = game.world.weather_values()
+    offset, tilt = horizon.horizon_motion(0, game.sim_t, weather["sea_state"])
+    return dict(course=_number(game.ship.course % 360.0),
+                fov_deg=_number(config.LOOKOUT_GLASSES_FOV_DEG),
+                visibility_nm=_number(weather["visibility_nm"]),
+                sea_state=_number(weather["sea_state"]),
+                horizon_offset=_number(offset), horizon_tilt=_number(tilt),
+                sky=_sky(game),
+                outlines=[dict(bearing=_number(bearing), span_deg=_number(span), cls=str(cls),
+                               stale=bool(stale))
+                          for bearing, span, cls, stale in
+                          lookout_outlines(game, game.lookout_sightings())[:16]])
+
+
 def _uboot_scope(game, boat):
     """The periscope: its line of sight, the light its optics see and the
     crew's own sightings (bearing, class, apparent length, stadimeter range);
@@ -1320,6 +1350,7 @@ def _uboot_scope(game, boat):
                                       config.WEATHER_VISIBILITY_MAX_NM)),
         sea_state=_number(getattr(game.world, "effective_sea_state", game.world.sea_state)),
         horizon_offset=_number(offset), horizon_tilt=_number(tilt),
+        sky=_sky(game),
         sightings=[dict(ref=str(row["ref"])[:16], category=str(row["kind"]),
                         cls=str(row["cls"]), bearing=_number(row["bearing"]),
                         span_deg=_number(row["span_deg"]), quality=_number(row["quality"]),

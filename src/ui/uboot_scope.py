@@ -15,6 +15,7 @@ from src.core import attack_computer, config, opfor
 from src.core.i18n import display_value, localize, message
 from src.ui import layout
 
+from src.ui import sight_scene  # noqa: E402
 from src.ui.horizon import (draw_horizon, draw_outline, land_view,  # noqa: E402,F401
                             relative_offset)
 
@@ -46,7 +47,8 @@ def draw_eyepiece(s, game, boat, rect) -> None:
                  crosshair_deg=config.UBOOT_STADIMETER_WINDOW_DEG,
                  land=land_view(game.world, boat.sub.x, boat.sub.y,
                                 config.UBOOT_SCOPE_EYE_HEIGHT_M),
-                 anim_t=game.sim_t)
+                 anim_t=game.sim_t, sky=sight_scene.sky_state(game),
+                 sea_state=getattr(game.world, "effective_sea_state", game.world.sea_state))
 
 
 def sighting_rows(game, boat) -> list:

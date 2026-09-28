@@ -103,8 +103,22 @@ body.workstation-mode .chart-panel { display: none; }
 .station-section { min-width: 0; }
 .station-heading { display: none; }
 .station-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: .5rem; min-width: 0; }
-.station-card-view { min-width: 0; padding: .6rem; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius); }
-.station-card-view > h3, .station-card-view > summary > h3 { margin-bottom: .45rem; color: var(--text-dim); font-size: var(--font-xs); font-weight: 650; text-transform: uppercase; letter-spacing: .12em; }
+/* Station cards in the start screen's look: phosphor corner brackets. */
+.station-card-view {
+  --bracket: color-mix(in srgb, var(--live) 55%, transparent);
+  min-width: 0; padding: .6rem; border: 1px solid var(--line); border-radius: var(--radius);
+  background:
+    linear-gradient(var(--bracket), var(--bracket)) top left / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top left / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) top right / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom left / 2px .8rem no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / .8rem 2px no-repeat,
+    linear-gradient(var(--bracket), var(--bracket)) bottom right / 2px .8rem no-repeat,
+    var(--bg-2);
+}
+.station-card-view > h3, .station-card-view > summary > h3 { margin-bottom: .45rem; color: var(--live); font-size: var(--font-xs); font-weight: 650; text-transform: uppercase; letter-spacing: .12em; }
 .station-card-view > summary { cursor: pointer; list-style: none; }
 .station-card-view > summary::-webkit-details-marker { display: none; }
 .station-card-view > summary h3 { display: inline; }

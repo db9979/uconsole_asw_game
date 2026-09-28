@@ -3,7 +3,7 @@
 ``validateV2State`` (data/commander/js/state/schema.js) walks every published
 role state and rejects the whole snapshot when any object has one of its
 forbidden keys; the client then freezes with "Host sends data this browser
-cannot read". Before 1.3.41 four rows used ``kind`` (the submarine's radio log,
+cannot read". Before 1.3.42 four rows used ``kind`` (the submarine's radio log,
 threat intercepts and evasion order, the frigate's HQ tasks), so the picture
 froze as soon as one of those lists filled. These checks run without
 Chromium, so a plain ``pytest`` catches the next such field.

@@ -4,9 +4,9 @@
 
 Every U-Jagd release, newest first. The [README](README.md) shows only the latest one.
 
-## 1.3.41
+## 1.3.42
 
-Release 1.3.41 fixes Remote Crew browsers that froze with "Host sends data
+Release 1.3.42 fixes Remote Crew browsers that froze with "Host sends data
 this browser cannot read". Four lists named a row's type with a field the
 browser refuses in every station state: the submarine's radio log, its threat
 intercepts and evasion order, and the frigate radio room's HQ tasks. As soon as
@@ -15,6 +15,13 @@ task, the station picture stopped and actions were locked. These rows now send
 the field as `type`; a new test catches such a field without Chromium. After
 updating the host, reload the browser page once so it loads the new web
 client. Saves stay v27.
+
+## 1.3.41
+
+Release 1.3.41 brings back the full top bar on the uConsole: the frigate shows
+the station, the mission, the clock, speed and course again, and the crewed
+submarine shows the mission, the clock, speed, course and depth, now compactly
+separated by "·". Saves stay v27.
 
 ## 1.3.40
 
